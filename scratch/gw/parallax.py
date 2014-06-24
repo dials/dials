@@ -16,7 +16,7 @@ def derive_absorption_coefficient_Si(energy_kev):
 
   derive a smoothed atenuation coefficient at a given energy in KeV, in cm ^ -1'''
 
-  if True:
+  if False:
 
     # computed from mu_en
 

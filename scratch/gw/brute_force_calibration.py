@@ -73,16 +73,17 @@ def run_job(executable, arguments = [], stdin = [], working_directory = None):
   return output
 
 xds_template = '''JOB=XYCORR
-DETECTOR=PILATUS MINIMUM_VALID_PIXEL_VALUE=0 OVERLOAD=244849
+DETECTOR=PILATUS MINIMUM_VALID_PIXEL_VALUE=0 OVERLOAD=1000000
 DIRECTION_OF_DETECTOR_X-AXIS=1 0 0
 DIRECTION_OF_DETECTOR_Y-AXIS=0 1 0
 TRUSTED_REGION=0.0 1.41
-NX=8000 NY=8000 QX=0.05 QY=0.05
+NX=2463 NY=2527 QX=0.172 QY=0.172
 DETECTOR_DISTANCE=%(distance).2f
 X-RAY_WAVELENGTH=%(wavelength).6f
 INCIDENT_BEAM_DIRECTION= 0 0 1
 SENSOR_THICKNESS= %(thickness).3f
-ORGX=4000 ORGY=4000'''
+ORGX=1231.5 ORGY=1263.5
+'''
 
 def run_xds_xycorr(distance, wavelength, thickness):
   '''Run XDS XYCORR step for given distance, wavelength & thickness, read
@@ -104,13 +105,11 @@ def analyse_corrections(distance, wavelength, thickness):
   x_corr = read_xds_calibration_file('X-CORRECTIONS.cbf').as_double() * 0.1
   y_corr = read_xds_calibration_file('Y-CORRECTIONS.cbf').as_double() * 0.1
   o_squared = x_corr * x_corr + y_corr * y_corr
-  size_x = 2000
-  size_y = 2000
 
-  dir_x = 4000
-  dir_y = 4000
+  dir_x = 2463 * 0.5
+  dir_y = 2527 * 0.5
 
-  pixel = 0.05
+  pixel = 0.172
 
   from scitbx import matrix
   import math
@@ -125,22 +124,22 @@ def analyse_corrections(distance, wavelength, thickness):
     nx = nint(x / 4)
     ny = nint(y / 4)
     o = math.sqrt(o_squared[ny, nx])
-    p = matrix.col((pixel * (dir_x - x), pixel * (dir_y - y), distance))
+    p = matrix.col((4 * pixel * (dir_x - x), 4 * pixel * (dir_y - y), distance))
     theta = p.angle(n)
     theta_o[theta] = o
 
   return theta_o
 
-def main(distance):
+def main(distance=150):
   thickness = 0.32
 
   from parallax import derive_absorption_coefficient_Si, compute_offset, \
      compute_offset_dectris
 
   t0_cm = 0.032
-  pixel_cm = 0.005
+  pixel_cm = 0.0172
 
-  for energy_ev in range(7000, 13001, 2000):
+  for energy_ev in range(8000, 16001, 4000):
 
     mu_cm = derive_absorption_coefficient_Si(energy_ev * 0.001)
 
@@ -161,7 +160,7 @@ def main_plot(distance, energy_ev):
      compute_offset_dectris
 
   t0_cm = 0.032
-  pixel_cm = 0.005
+  pixel_cm = 0.0172
 
   mu_cm = derive_absorption_coefficient_Si(energy_ev * 0.001)
 
@@ -169,8 +168,7 @@ def main_plot(distance, energy_ev):
   theta_o = run_xds_xycorr(distance, wavelength, thickness)
 
   import math
-  r2d = 180.0 / math.pi
-  angles = []
+  displacement = []
   xds = []
   m_gw = []
   m_dec = []
@@ -178,7 +176,7 @@ def main_plot(distance, energy_ev):
   for theta in sorted(theta_o):
     model = compute_offset(t0_cm, theta, mu_cm) / pixel_cm
     model_d = compute_offset_dectris(t0_cm, theta, mu_cm) / pixel_cm
-    angles.append((r2d * theta))
+    displacement.append(distance * math.tan(theta))
     xds.append(theta_o[theta])
     m_gw.append(model)
     m_dec.append(model_d)
@@ -186,8 +184,9 @@ def main_plot(distance, energy_ev):
   import matplotlib
   matplotlib.use('Agg')
   from matplotlib import pyplot
-  p1, p2, p3 = pyplot.plot(angles, xds, angles, m_gw, angles, m_dec)
-  pyplot.xlabel('Angle, degrees')
+  p1, p2, p3 = pyplot.plot(displacement, xds, displacement, m_gw,
+                           displacement, m_dec)
+  pyplot.xlabel('Displacement, pixels')
   pyplot.ylabel('Offset, pixels')
   pyplot.title('Parallax correction offsets at %deV' % energy_ev)
   pyplot.legend([p1, p2, p3], ['Calculated by XDS', 'GW model', 'Dectris model'],
@@ -196,4 +195,4 @@ def main_plot(distance, energy_ev):
 
 if __name__ == '__main__':
   import sys
-  main_plot(200, energy_ev=float(sys.argv[1]))
+  main_plot(150, energy_ev=float(sys.argv[1]))
