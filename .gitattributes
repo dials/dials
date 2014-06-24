@@ -676,6 +676,7 @@ scratch/luiso_s/wx_toys/bitmap_from_numpy_w_matplotlib_one_more_try.py -text
 scratch/luiso_s/wx_toys/wx_bitmaps_resize_w_jpg.py -text
 scratch/luiso_s/wx_toys/wx_h_world.py -text
 scratch/luiso_s/wx_toys/wx_sizers_and_np_arays.py -text
+scratch/luiso_s/wx_toys/wx_viewer_template_one_more_test.py -text
 scratch/luiso_s/wx_toys/wx_viewer_template_w_simple_ap_w_panel.py -text
 scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
