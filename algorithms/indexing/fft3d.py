@@ -185,25 +185,12 @@ class indexer_fft3d(indexer_base):
     with open('peaks.pdb', 'wb') as f:
       print >> f, xs.as_pdb_file()
 
-    vector_heights = flex.double()
-
     sites_frac = xs.sites_frac()
-    pair_asu_table = xs.pair_asu_table(distance_cutoff=self.params.max_cell)
-    asu_mappings = pair_asu_table.asu_mappings()
-    distances = crystal.calculate_distances(pair_asu_table, sites_frac)
-    vectors = []
-    for di in distances:
-      if di.distance < self.params.min_cell: continue
-      i_seq, j_seq = di.i_seq, di.j_seq
-      if i_seq > 0:
-        continue
-      # Is this the peak centred at (0,0,0)?
-      assert (sum(x**2 for x in sites_frac[i_seq]) < 1e-8)
-      rt_mx_ji = di.rt_mx_ji
-      site_frac_ji = rt_mx_ji * sites_frac[j_seq]
-      site_cart = self.fft_cell.orthogonalize(site_frac_ji)
-      vectors.append(matrix.col(site_cart))
-      #vector_heights.append(heights[j_seq])
+    vectors = xs.sites_cart()
+    norms = vectors.norms()
+    vectors = vectors.select(
+      (norms > self.params.min_cell) & (norms < self.params.max_cell))
+    vectors = [matrix.col(v) for v in vectors]
 
     # XXX loop over these vectors and sort into groups similar to further down
     # group similar angle and lengths, also catch integer multiples of vectors
