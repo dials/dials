@@ -39,6 +39,13 @@ def compute_offset(t0, theta, mu):
     (mu * (1 - math.exp(- mu * t)))
   return offset
 
+def compute_offset_dectris(t0, theta, mu):
+  import math
+  t = t0 / math.cos(theta)
+  _mu = 1.0 / mu
+  offset = math.sin(theta) * (_mu - (t + _mu) * math.exp(- mu * t))
+  return offset
+
 def dqe(t0, theta, mu):
   '''Compute DQE for the given thickness of sensor, for the given angle and linear
   absorption coefficient.'''

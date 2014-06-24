@@ -134,7 +134,8 @@ def analyse_corrections(distance, wavelength, thickness):
 def main(distance):
   thickness = 0.32
 
-  from parallax import derive_absorption_coefficient_Si, compute_offset
+  from parallax import derive_absorption_coefficient_Si, compute_offset, \
+     compute_offset_dectris
 
   t0_cm = 0.032
   pixel_cm = 0.005
@@ -149,8 +150,50 @@ def main(distance):
     fout = open('p%d.dat' % energy_ev, 'w')
     for theta in sorted(theta_o):
       model = compute_offset(t0_cm, theta, mu_cm) / pixel_cm
-      fout.write('%.3f %.3f %.3f\n' % (theta, theta_o[theta], model))
+      model_d = compute_offset_dectris(t0_cm, theta, mu_cm) / pixel_cm
+      fout.write('%.3f %.3f %.3f %.3f\n' % (theta, theta_o[theta], model, model_d))
     fout.close()
 
+def main_plot(distance, energy_ev):
+  thickness = 0.32
+
+  from parallax import derive_absorption_coefficient_Si, compute_offset, \
+     compute_offset_dectris
+
+  t0_cm = 0.032
+  pixel_cm = 0.005
+
+  mu_cm = derive_absorption_coefficient_Si(energy_ev * 0.001)
+
+  wavelength = 12.3985  / (energy_ev * 0.001)
+  theta_o = run_xds_xycorr(distance, wavelength, thickness)
+
+  import math
+  r2d = 180.0 / math.pi
+  angles = []
+  xds = []
+  m_gw = []
+  m_dec = []
+
+  for theta in sorted(theta_o):
+    model = compute_offset(t0_cm, theta, mu_cm) / pixel_cm
+    model_d = compute_offset_dectris(t0_cm, theta, mu_cm) / pixel_cm
+    angles.append((r2d * theta))
+    xds.append(theta_o[theta])
+    m_gw.append(model)
+    m_dec.append(model_d)
+
+  import matplotlib
+  matplotlib.use('Agg')
+  from matplotlib import pyplot
+  p1, p2, p3 = pyplot.plot(angles, xds, angles, m_gw, angles, m_dec)
+  pyplot.xlabel('Angle, degrees')
+  pyplot.ylabel('Offset, pixels')
+  pyplot.title('Parallax correction offsets at %deV' % energy_ev)
+  pyplot.legend([p1, p2, p3], ['Calculated by XDS', 'GW model', 'Dectris model'],
+                loc=2)
+  pyplot.savefig('%d.png' % energy_ev)
+
 if __name__ == '__main__':
-  main(200)
+  import sys
+  main_plot(200, energy_ev=float(sys.argv[1]))
