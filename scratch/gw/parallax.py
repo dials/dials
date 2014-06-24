@@ -16,12 +16,29 @@ def derive_absorption_coefficient_Si(energy_kev):
 
   derive a smoothed atenuation coefficient at a given energy in KeV, in cm ^ -1'''
 
-  coefficients = [(3.0, 2217.228), (4.0, 1031.491), (5.0, 559.2),
-                  (6.0, 335.287), (8.0, 147.0929), (10.0, 76.6337),
-                  (15.0, 22.82002), (20.0, 9.49708)]
+  if True:
 
-  assert(energy_kev >= 3.0)
-  assert(energy_kev <= 20.0)
+    # computed from mu_en
+
+    coefficients = [(3.0, 2217.228), (4.0, 1031.491), (5.0, 559.2),
+                    (6.0, 335.287), (8.0, 147.0929), (10.0, 76.6337),
+                    (15.0, 22.82002), (20.0, 9.49708)]
+
+    assert(energy_kev >= 3.0)
+    assert(energy_kev <= 20.0)
+
+  else:
+
+    # computed from mu
+
+    coefficients = [(2.0, 6470.41), (3.0, 2279.672), (4.0, 1055.257),
+                    (5.0, 570.85), (6.0, 342.51), (8.0, 150.7044),
+                    (10.0, 78.9637), (15.0, 24.0922), (20.0, 10.40112),
+                    (30.0, 3.34588), (40.0, 1.633796), (50.0, 1.021705),
+                    (60.0, 0.747231)]
+
+    assert(energy_kev >= 2.0)
+    assert(energy_kev <= 60.0)
 
   for j, e_mu in enumerate(coefficients):
     e, mu = e_mu
