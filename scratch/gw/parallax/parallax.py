@@ -56,6 +56,12 @@ def compute_offset(t0, theta, mu):
     (mu * (1 - math.exp(- mu * t)))
   return offset
 
+def compute_offset_test(t0, theta, mu):
+  import math
+  t = t0 / math.cos(theta)
+  offset = math.sin(theta) * (1 - (1 + mu * t) * math.exp(- mu * t)) / mu
+  return offset
+
 def compute_offset_dectris(t0, theta, mu):
   import math
   t = t0 / math.cos(theta)
@@ -214,7 +220,7 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
   return flex.sqrt(x_corrections_parallax * x_corrections_parallax + \
                    y_corrections_parallax * y_corrections_parallax)
 
-def image_to_parallax(image_filename, sensor_thickness_mm):
+def image_to_parallax(image_filename, sensor_thickness_mm, method):
   from dxtbx import load
   from scitbx import matrix
   import math
@@ -247,11 +253,10 @@ def image_to_parallax(image_filename, sensor_thickness_mm):
   S = slow * pixel_size[1]
 
   for i in range(image_size[0]):
-    print i
     for j in range(image_size[1]):
       p = origin + i * S + j * F
       theta = p.angle(normal)
-      parallax[i,j] = compute_offset(sensor_thickness_mm, theta, mu)
+      parallax[i,j] = method(sensor_thickness_mm, theta, mu)
 
   return parallax
 
@@ -260,7 +265,12 @@ if __name__ == '__main__':
   import sys
   from scitbx.array_family import flex
   xds_parallax = image_to_XDS_XYCORR(sys.argv[1], float(sys.argv[2]))
-  dials_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]))
+  dials_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]),
+                                     method=compute_offset)
+  dectris_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]),
+                                       method=compute_offset_dectris)
+  test_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]),
+                                    method=compute_offset_test)
 
   import matplotlib
   matplotlib.use('Agg')
@@ -270,3 +280,7 @@ if __name__ == '__main__':
   pyplot.savefig('xds_parallax.png')
   pyplot.imshow(dials_parallax.as_numpy_array())
   pyplot.savefig('dials_parallax.png')
+  pyplot.imshow(dectris_parallax.as_numpy_array())
+  pyplot.savefig('dectris_parallax.png')
+  pyplot.imshow(test_parallax.as_numpy_array())
+  pyplot.savefig('test_parallax.png')
