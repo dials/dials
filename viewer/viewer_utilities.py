@@ -23,14 +23,20 @@ def GetBitmap_from_np_array(np_img_2d, Intst_max, img_scale):
   np_buf.shape = (width, height, 3)
   np_buf = numpy.roll(np_buf, 3, axis = 2)
   image = wx.EmptyImage(width, height)
-  NewW = int(width * img_scale)
-  NewH = int(height * img_scale)
   image.SetData( np_buf )
-  image = image.Scale(NewW, NewH, wx.IMAGE_QUALITY_HIGH)
-  #image.SetData( np_buf.tostring()) # looks like there is no need to convert
-  wxBitmap = image.ConvertToBitmap()
 
+
+  return image, width, height
+
+def from_wx_image_to_wx_bitmap(wx_image, width, height, scale):
+  NewW = int(width * scale)
+  NewH = int(height * scale)
+  wx_image = wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_HIGH)
+
+  #image.SetData( np_buf.tostring()) # looks like there is no need to convert
+  wxBitmap = wx_image.ConvertToBitmap()
   return wxBitmap
+
 
 def build_np_img(width = 64, height = 64):
   data2d = numpy.zeros( (width, height), 'float')

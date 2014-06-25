@@ -9,7 +9,9 @@
 #  included in the root directory of this package."
 
 import wx, os
-from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
+from dials.viewer.viewer_utilities \
+     import GetBitmap_from_np_array, build_np_img, from_wx_image_to_wx_bitmap
+
 from dials.viewer.reflection_data_navigator import table_s_navigator
 
 
@@ -18,15 +20,18 @@ class ReflectionFrame(wx.Frame):
     wx.Frame.__init__(self, *args, **kwargs)
 
 
-    self.MaxImageSizeX = 320
-    self.MaxImageSizeY = 240
+    self.MaxImageSizeX = 220
+    self.MaxImageSizeY = 140
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
+
+    test_code = '''
     btn_tst = wx.Button(self, -1, "tst btn")
     btn_tst1 = wx.Button(self, -1, "tst btn1")
+    '''
 
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
@@ -58,13 +63,15 @@ class ReflectionFrame(wx.Frame):
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
     r_box.AddSpacer(50)
 
+    test_code = '''
     r_box.Add(btn_tst, 0, wx.CENTER | wx.ALL,5)
     r_box.Add(btn_tst1, 0, wx.CENTER | wx.ALL,5)
+    '''
 
     h_box.Add(r_box)
     v_box.Add(h_box)
 
-    self.frame_scale = 0.5
+    self.frame_scale = 0.3
 
     self.sizing_counter = 0
     self.SetSizerAndFit(v_box)
@@ -73,8 +80,10 @@ class ReflectionFrame(wx.Frame):
     btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
     btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
+    test_code = '''
     btn_tst.Bind(wx.EVT_BUTTON, self.B_tst)
     btn_tst1.Bind(wx.EVT_BUTTON, self.B_tst1)
+    '''
     self.Bind(wx.EVT_SIZE, self.OnSize)
 
     wx.EVT_CLOSE(self, self.On_Close_Window)
@@ -95,6 +104,7 @@ class ReflectionFrame(wx.Frame):
   def DisplayPrev_slice(self, event = None):
     self.tabl.Previous_slice()
     self.My_Update()
+  test_code = '''
   def B_tst(self, event = None):
     self.frame_scale = self.frame_scale * 1.1
     self.My_Update()
@@ -103,6 +113,7 @@ class ReflectionFrame(wx.Frame):
     self.frame_scale = self.frame_scale * 0.9
     self.My_Update()
     print "self.GetSize() =", self.GetSize()
+  '''
 
   def OnSize(self, event = None):
     if( self.sizing_counter > 5 ):
@@ -121,13 +132,58 @@ class ReflectionFrame(wx.Frame):
         print "use float(siz_data[0] (with) to calculate new size"
         self.frame_scale = float(siz_data[0]) * 0.5 / 1100.0
         #(1100, 291)
-      self.My_Update(request_new_size = False)
+      self.My_Update(request_new_data = False)
       print "resizing"
     else:
       self.sizing_counter += 1
 
-  def My_Update(self, request_new_size = True):
-    if( request_new_size == True ):
+  def My_Update(self, request_new_data = True):
+
+
+    if( request_new_data == True ):
+      self.bkg, self.dat, self.msk = self.tabl()
+      self.I_max = self.tabl.Get_Max()
+      print "re - fitting"
+
+      self.wx_Img_dat, self.img_width, self.img_height = GetBitmap_from_np_array(
+                                      np_img_2d = self.dat
+                                    , Intst_max = self.I_max
+                                    , img_scale = self.frame_scale)
+
+      self.wx_Img_bkg, self.img_width, self.img_height = GetBitmap_from_np_array(
+                                      np_img_2d = self.bkg
+                                    , Intst_max = self.I_max
+                                    , img_scale = self.frame_scale)
+
+      self.wx_Img_msk, self.img_width, self.img_height = GetBitmap_from_np_array(
+                                      np_img_2d = self.msk
+                                    , Intst_max = -1
+                                    , img_scale = self.frame_scale)
+
+    self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_dat
+            , self.img_width, self.img_height, self.frame_scale)
+
+    self.Image_01.SetBitmap(self.My_Img_01)
+
+    self.My_Img_02 = from_wx_image_to_wx_bitmap(self.wx_Img_bkg
+            , self.img_width, self.img_height, self.frame_scale)
+
+    self.Image_02.SetBitmap(self.My_Img_02)
+
+    self.My_Img_03 = from_wx_image_to_wx_bitmap(self.wx_Img_msk
+            , self.img_width, self.img_height, self.frame_scale)
+
+    self.Image_03.SetBitmap(self.My_Img_03)
+
+
+
+    self.Layout()
+    self.Refresh()
+
+
+
+    old_way = '''
+    if( request_new_data == True ):
       self.bkg, self.dat, self.msk = self.tabl()
       self.I_max = self.tabl.Get_Max()
 
@@ -141,22 +197,19 @@ class ReflectionFrame(wx.Frame):
                                      , img_scale = self.frame_scale)
     self.Image_03.SetBitmap(My_Img)
 
-    if( request_new_size == True ):
+    if( request_new_data == True ):
       print "re - fitting"
       self.Fit()
 
     self.Layout()
     self.Refresh()
+    '''
 
   def On_Close_Window(self, event):
     self.Destroy()
 
 class App(wx.App):
   def OnInit(self):
-    original = '''
-    self.frame = ReflectionFrame(None, -1, "DIALS Reflections Viewer"
-    , wx.DefaultPosition,(550,200))
-    '''
     self.frame = ReflectionFrame(None, -1, "DIALS Reflections Viewer"
     , wx.DefaultPosition,(550,200))
 
