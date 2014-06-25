@@ -9,7 +9,8 @@
 #  included in the root directory of this package."
 
 import wx, os
-from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
+from dials.viewer.viewer_utilities \
+     import GetBitmap_from_np_array, build_np_img, from_wx_image_to_wx_bitmap
 
 import numpy
 
@@ -115,20 +116,41 @@ class ReflectionFrame(wx.Frame):
       self.dat = np_tmp
       self.msk = np_tmp
       self.I_max = 100
-
-    My_Img = GetBitmap_from_np_array(np_img_2d = self.dat, Intst_max = self.I_max
-                                     ,img_scale = self.frame_scale)
-    self.Image_01.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = self.bkg, Intst_max = self.I_max
-                                     ,img_scale = self.frame_scale)
-    self.Image_02.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = self.msk, Intst_max = -1
-                                     , img_scale = self.frame_scale)
-    self.Image_03.SetBitmap(My_Img)
-
-    if( request_new_size == True ):
       print "re - fitting"
+
+      self.wx_Img_dat, self.img_width, self.img_height = GetBitmap_from_np_array(
+                                      np_img_2d = self.dat
+                                    , Intst_max = self.I_max
+                                    , img_scale = self.frame_scale)
+
+      self.wx_Img_bkg, self.img_width, self.img_height = GetBitmap_from_np_array(
+                                      np_img_2d = self.bkg
+                                    , Intst_max = self.I_max
+                                    , img_scale = self.frame_scale)
+
+      self.wx_Img_msk, self.img_width, self.img_height = GetBitmap_from_np_array(
+                                      np_img_2d = self.msk
+                                    , Intst_max = self.I_max
+                                    , img_scale = self.frame_scale)
+
       self.Fit()
+    else:
+      self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_dat
+              , self.img_width, self.img_height, self.frame_scale)
+
+      self.Image_01.SetBitmap(self.My_Img_01)
+
+      self.My_Img_02 = from_wx_image_to_wx_bitmap(self.wx_Img_bkg
+              , self.img_width, self.img_height, self.frame_scale)
+
+      self.Image_02.SetBitmap(self.My_Img_02)
+
+      self.My_Img_03 = from_wx_image_to_wx_bitmap(self.wx_Img_msk
+              , self.img_width, self.img_height, self.frame_scale)
+
+      self.Image_03.SetBitmap(self.My_Img_03)
+
+
 
     self.Layout()
     self.Refresh()
