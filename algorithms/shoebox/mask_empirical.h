@@ -18,6 +18,7 @@
 #include <dials/array_family/reflection_table.h>
 #include <annlib_adaptbx/ann_adaptor.h>
 #include <dials/error.h>
+#include <boost/math/special_functions/round.hpp>
 
 namespace dials { namespace algorithms { namespace shoebox {
 
@@ -84,9 +85,9 @@ namespace dials { namespace algorithms { namespace shoebox {
         int tblx2 = table_bbox[1]; int tbly2 = table_bbox[3]; int tblz2 = table_bbox[5];
 
         // Calculate the midpoint of the query reflection.  Center the union of the reference masks around this point
-        int tmid_x = static_cast<int>(std::round((tblx2-tblx1)/2));
-        int tmid_y = static_cast<int>(std::round((tbly2-tbly1)/2));
-        int tmid_z = static_cast<int>(std::round((tblz2-tblz1)/2));
+        int tmid_x = boost::math::iround((tblx2-tblx1)/2);
+        int tmid_y = boost::math::iround((tbly2-tbly1)/2);
+        int tmid_z = boost::math::iround((tblz2-tblz1)/2);
 
         // Iterate over the nearest bright neigbors of this query reflection
         for (std::size_t nn_iter = query_iter * nn_window; nn_iter < (query_iter * nn_window) + nn_window; ++nn_iter) {
@@ -98,9 +99,9 @@ namespace dials { namespace algorithms { namespace shoebox {
 
           // Calculate the midpoint of the reference reflection.  Center the union of this reflection's mask on the
           // query reflection around this point
-          int rmid_x = static_cast<int>(std::round((nnx2-nnx1)/2));
-          int rmid_y = static_cast<int>(std::round((nny2-nny1)/2));
-          int rmid_z = static_cast<int>(std::round((nnz2-nnz1)/2));
+          int rmid_x = boost::math::iround((nnx2-nnx1)/2);
+          int rmid_y = boost::math::iround((nny2-nny1)/2);
+          int rmid_z = boost::math::iround((nnz2-nnz1)/2);
 
           // Union this reflection's mask with the query reflection
           for (std::size_t z = 0; z < nnz2-nnz1; z++) {
@@ -120,7 +121,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         for (std::size_t z = 0; z < tblz2-tblz1; z++)
           for (std::size_t y = 0; y < tbly2-tbly1; y++)
             for (std::size_t x = 0; x < tblx2-tblx1; x++)
-              if ((table_mask(z,y,z) & Foreground) != Foreground)
+              if ((table_mask(z,y,x) & Foreground) != Foreground)
                 table_mask(z,y,x) |= Background;
       }
     }
