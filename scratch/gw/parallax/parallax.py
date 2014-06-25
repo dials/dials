@@ -153,7 +153,8 @@ DETECTOR_DISTANCE=%(distance).2f
 X-RAY_WAVELENGTH=%(wavelength).6f
 INCIDENT_BEAM_DIRECTION=%(beam_x).3f %(beam_y).3f %(beam_z).3f
 SENSOR_THICKNESS= %(thickness).3f
-ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f'''
+ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f
+'''
 
 def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
   '''Generate an XYCORR input file from an image header via dxtbx, noting
