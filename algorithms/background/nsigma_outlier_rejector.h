@@ -59,9 +59,10 @@ namespace dials { namespace algorithms { namespace background {
           data.push_back(shoebox[i]);
         }
       }
-      DIALS_ASSERT(data.size() > 0);
 
       // Compute the mean and sigma
+      DIALS_ASSERT(data.size() > 1);
+
       mean_and_variance<double> mv(data.const_ref());
       double mean = mv.mean();
       double sigma = mv.unweighted_sample_standard_deviation();
