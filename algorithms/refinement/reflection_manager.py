@@ -308,8 +308,8 @@ class ReflectionManager(object):
     causing problems in refinement.
 
     """
-
-    sort_obs = deepcopy(obs)
+    import copy
+    sort_obs = copy.deepcopy(obs)
     if angular:
       sort_obs.sort('phi_resid', reverse=True)
     else:
