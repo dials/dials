@@ -117,6 +117,7 @@ class MaskerEmpirical(MaskerBase):
 
     # Construct the foreground pixel mask
     self.mask_empirical = MaskEmpirical(reference)
+    self._reference = reference
 
   def __call__(self, reflections, adjacency_list=None):
     ''' Mask the given reflections.
