@@ -56,12 +56,6 @@ def compute_offset(t0, theta, mu):
     (mu * (1 - math.exp(- mu * t)))
   return offset
 
-def compute_offset_test(t0, theta, mu):
-  import math
-  t = t0 / math.cos(theta)
-  offset = math.sin(theta) * (1 - (1 + mu * t) * math.exp(- mu * t)) / mu
-  return offset
-
 def compute_offset_dectris(t0, theta, mu):
   import math
   t = t0 / math.cos(theta)
@@ -153,8 +147,7 @@ DETECTOR_DISTANCE=%(distance).2f
 X-RAY_WAVELENGTH=%(wavelength).6f
 INCIDENT_BEAM_DIRECTION=%(beam_x).3f %(beam_y).3f %(beam_z).3f
 SENSOR_THICKNESS= %(thickness).3f
-ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f
-'''
+ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f'''
 
 def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
   '''Generate an XYCORR input file from an image header via dxtbx, noting
@@ -221,6 +214,89 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
   return flex.sqrt(x_corrections_parallax * x_corrections_parallax + \
                    y_corrections_parallax * y_corrections_parallax)
 
+def image_to_test(image_filename, sensor_thickness_mm):
+  xds_table = image_to_XDS_XYCORR(image_filename, sensor_thickness_mm)
+
+  from dxtbx import load
+  from scitbx import matrix
+  import math
+  import random
+  import os
+
+  image = load(image_filename)
+
+  beam = matrix.col(image.get_beam().get_s0())
+  wavelength = image.get_beam().get_wavelength()
+  energy_kev = 12.3985 / wavelength
+  mu = derive_absorption_coefficient_Si(energy_kev)
+  d = image.get_detector()[0]
+  fast = matrix.col(d.get_fast_axis())
+  slow = matrix.col(d.get_slow_axis())
+  normal = matrix.col(d.get_normal())
+  origin = matrix.col(d.get_origin())
+  distance = origin.dot(normal)
+  offset = distance * normal - origin
+  offset_fast = offset.dot(fast)
+  offset_slow = offset.dot(slow)
+  pixel_size = d.get_pixel_size()
+
+  # this is in order slow, fast i.e. C order
+  image_size = image.get_raw_data().focus()
+
+  F = fast * pixel_size[0]
+  S = slow * pixel_size[1]
+
+  _theta = []
+  _xds = []
+  _dials = []
+  _dectris = []
+
+  pixel_cm = pixel_size[0] / 10.0
+
+  for j in range(10000):
+    x = random.random() * image_size[1]
+    y = random.random() * image_size[0]
+    p = origin + y * S + x * F
+    theta = p.angle(normal)
+    xds = xds_table[int(y), int(x)]
+    dials = compute_offset(sensor_thickness_mm, theta, mu)
+    dectris = compute_offset_dectris(sensor_thickness_mm, theta, mu)
+
+    _theta.append(theta * 180.0 / math.pi)
+    _xds.append(xds)
+    _dials.append(dials / pixel_cm)
+    _dectris.append(dectris / pixel_cm)
+
+  # sort the results
+
+  values = { }
+
+  for t, x, di, de in zip(_theta, _xds, _dials, _dectris):
+    values[t] = x, di, de
+
+  _theta, _xds, _dials, _dectris = [], [], [], []
+  for t in sorted(values):
+    x, di, de = values[t]
+    _theta.append(t)
+    _xds.append(x)
+    _dials.append(di)
+    _dectris.append(de)
+    print t, x, di, de
+
+  import matplotlib
+  matplotlib.use('Agg')
+  from matplotlib import pyplot
+  p1, p2, p3 = pyplot.plot(_theta, _xds, _theta, _dials, _theta, _dectris)
+  pyplot.xlabel('Angle, degrees')
+  pyplot.ylabel('Offset, pixels')
+  pyplot.title('Parallax correction offsets for %s' % os.path.split(
+    image_filename)[-1])
+  pyplot.legend([p1, p2, p3],
+                ['Calculated by XDS', 'DIALS model', 'Dectris model'],
+                loc=2)
+  pyplot.savefig('corrections.png')
+  return
+
 def image_to_parallax(image_filename, sensor_thickness_mm, method):
   from dxtbx import load
   from scitbx import matrix
@@ -262,7 +338,7 @@ def image_to_parallax(image_filename, sensor_thickness_mm, method):
   return parallax
 
 
-if __name__ == '__main__':
+if __name__ == '__main_old__':
   import sys
   from scitbx.array_family import flex
   xds_parallax = image_to_XDS_XYCORR(sys.argv[1], float(sys.argv[2]))
@@ -270,8 +346,6 @@ if __name__ == '__main__':
                                      method=compute_offset)
   dectris_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]),
                                        method=compute_offset_dectris)
-  test_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]),
-                                    method=compute_offset_test)
 
   import matplotlib
   matplotlib.use('Agg')
@@ -283,5 +357,7 @@ if __name__ == '__main__':
   pyplot.savefig('dials_parallax.png')
   pyplot.imshow(dectris_parallax.as_numpy_array())
   pyplot.savefig('dectris_parallax.png')
-  pyplot.imshow(test_parallax.as_numpy_array())
-  pyplot.savefig('test_parallax.png')
+
+if __name__ == '__main__':
+  import sys
+  xds_parallax = image_to_test(sys.argv[1], float(sys.argv[2]))
