@@ -144,8 +144,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
   def correct_intensity(self, experiment):
     ''' Helper function to correct the intensity. '''
-    from dials.algorithms.integration.lp_correction import correct_intensity
-    correct_intensity(experiment, self)
+    if experiment.goniometer is not None:
+      from dials.algorithms.integration.lp_correction import correct_intensity
+      correct_intensity(experiment, self)
 
   def integrate(self, experiment, save_profiles=False):
     ''' Helper function to integrate reflections. '''
