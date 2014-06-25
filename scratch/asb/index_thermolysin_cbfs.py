@@ -10,14 +10,17 @@ def do_work(path):
   spots       = os.path.join(root, basename + "_strong.pickle")
   reflections = os.path.join(root, basename + "_reflections.pickle")
   experiments = os.path.join(root, basename + "_experiments.json")
+  integrated  = os.path.join(root, basename + "_integrated.pickle")
 
   print "Preparing to index", basename
 
   easy_run.call("dials.import %s --output %s"%(path,datablock))
   easy_run.call("dials.find_spots %s threshold.xds.sigma_strong=15 min_spot_size=2 -o %s"%(datablock, spots))
   easy_run.call("dials.index %s %s method=fft1d beam.fix=all detector.fix=all known_symmetry.unit_cell=93,93,130,90,90,120 known_symmetry.space_group=P6122 n_macro_cycles=5 d_min_final=0.5 experiments=%s reflections=%s"%(spots, datablock, experiments, reflections))
+  easy_run.call("dials.integrate %s -r %s -o %s"%(experiments, reflections, integrated))
 
-  if os.path.exists(reflections):
+  if os.path.exists(integrated):
+    assert os.path.exists(reflections)
     assert os.path.exists(experiments)
     print basename, "indexed succesfully"
 
