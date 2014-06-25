@@ -56,6 +56,12 @@ def compute_offset(t0, theta, mu):
     (mu * (1 - math.exp(- mu * t)))
   return offset
 
+def compute_offset_no_dqe(t0, theta, mu):
+  import math
+  t = t0 / math.cos(theta)
+  offset = math.sin(theta) * (1 - (1 + mu * t) * math.exp(- mu * t)) / mu
+  return offset
+
 def compute_offset_dectris(t0, theta, mu):
   import math
   t = t0 / math.cos(theta)
@@ -149,7 +155,7 @@ INCIDENT_BEAM_DIRECTION=%(beam_x).3f %(beam_y).3f %(beam_z).3f
 SENSOR_THICKNESS= %(thickness).3f
 ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f'''
 
-def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
+def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm, energy_ev=None):
   '''Generate an XYCORR input file from an image header via dxtbx, noting
   well that this will *tell lies* as the image is rescaled to give a 1:1
   correction table in 0.025 rather than 0.1 (original) pixel increments.'''
@@ -160,7 +166,10 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
   image = load(image_filename)
 
   beam = matrix.col(image.get_beam().get_s0())
-  wavelength = image.get_beam().get_wavelength()
+  if energy_ev:
+    wavelength = 12398.5 / energy_ev
+  else:
+    wavelength = image.get_beam().get_wavelength()
   d = image.get_detector()[0]
   fast = matrix.col(d.get_fast_axis())
   slow = matrix.col(d.get_slow_axis())
@@ -195,7 +204,7 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
     'beam_x':beam.elems[0],
     'beam_y':beam.elems[1],
     'beam_z':beam.elems[2],
-    'thickness':sensor_thickness_mm,
+    'thickness':int(sensor_thickness_mm * 1000),
     'origin_fast':offset_fast / (pixel_size[0] / 4.0),
     'origin_slow':offset_slow / (pixel_size[1] / 4.0)
     })
@@ -214,8 +223,9 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
   return flex.sqrt(x_corrections_parallax * x_corrections_parallax + \
                    y_corrections_parallax * y_corrections_parallax)
 
-def image_to_test(image_filename, sensor_thickness_mm):
-  xds_table = image_to_XDS_XYCORR(image_filename, sensor_thickness_mm)
+def image_to_test(image_filename, sensor_thickness_mm, energy_ev=None):
+  xds_table = image_to_XDS_XYCORR(image_filename, sensor_thickness_mm,
+                                  energy_ev=energy_ev)
 
   from dxtbx import load
   from scitbx import matrix
@@ -226,8 +236,13 @@ def image_to_test(image_filename, sensor_thickness_mm):
   image = load(image_filename)
 
   beam = matrix.col(image.get_beam().get_s0())
-  wavelength = image.get_beam().get_wavelength()
-  energy_kev = 12.3985 / wavelength
+  
+  if energy_ev:
+    energy_kev = energy_ev * 0.001
+  else:
+    wavelength = image.get_beam().get_wavelength()
+    energy_kev = 12.3985 / wavelength
+    
   mu = derive_absorption_coefficient_Si(energy_kev)
   d = image.get_detector()[0]
   fast = matrix.col(d.get_fast_axis())
@@ -250,6 +265,7 @@ def image_to_test(image_filename, sensor_thickness_mm):
   _xds = []
   _dials = []
   _dectris = []
+  _dials_nodqe = []
 
   pixel_cm = pixel_size[0] / 10.0
 
@@ -259,42 +275,51 @@ def image_to_test(image_filename, sensor_thickness_mm):
     p = origin + y * S + x * F
     theta = p.angle(normal)
     xds = xds_table[int(y), int(x)]
-    dials = compute_offset(sensor_thickness_mm, theta, mu)
-    dectris = compute_offset_dectris(sensor_thickness_mm, theta, mu)
+    dials = compute_offset(0.1 * sensor_thickness_mm, theta, mu)
+    dectris = compute_offset_dectris(0.1 * sensor_thickness_mm, theta, mu)
+    dials_nodqe = compute_offset_no_dqe(0.1 * sensor_thickness_mm, theta, mu)
 
     _theta.append(theta * 180.0 / math.pi)
     _xds.append(xds)
     _dials.append(dials / pixel_cm)
     _dectris.append(dectris / pixel_cm)
+    _dials_nodqe.append(dials_nodqe / pixel_cm)
 
   # sort the results
 
   values = { }
 
-  for t, x, di, de in zip(_theta, _xds, _dials, _dectris):
-    values[t] = x, di, de
+  for t, x, di, de, dn in zip(_theta, _xds, _dials, _dectris, _dials_nodqe):
+    values[t] = x, di, de, dn
 
-  _theta, _xds, _dials, _dectris = [], [], [], []
+  _theta, _xds, _dials, _dectris, _dials_nodqe = [], [], [], [], []
   for t in sorted(values):
-    x, di, de = values[t]
+    x, di, de, dn = values[t]
     _theta.append(t)
     _xds.append(x)
     _dials.append(di)
     _dectris.append(de)
-    print t, x, di, de
+    _dials_nodqe.append(dn)
+    print t, x, di, de, dn
 
   import matplotlib
   matplotlib.use('Agg')
   from matplotlib import pyplot
-  p1, p2, p3 = pyplot.plot(_theta, _xds, _theta, _dials, _theta, _dectris)
+  p1, p2, p3, p4 = pyplot.plot(_theta, _xds, _theta, _dials,
+                               _theta, _dectris, _theta, _dials_nodqe)
   pyplot.xlabel('Angle, degrees')
   pyplot.ylabel('Offset, pixels')
   pyplot.title('Parallax correction offsets for %s' % os.path.split(
     image_filename)[-1])
-  pyplot.legend([p1, p2, p3],
-                ['Calculated by XDS', 'DIALS model', 'Dectris model'],
+  pyplot.legend([p1, p2, p3, p4],
+                ['Calculated by XDS', 'DIALS model',
+                 'Dectris model', 'DIALS no DQE model'],
                 loc=2)
-  pyplot.savefig('corrections.png')
+  if energy_ev:
+    pyplot.savefig('corrections%d.png' % energy_ev)
+  else:
+    pyplot.savefig('corrections.png')
+    
   return
 
 def image_to_parallax(image_filename, sensor_thickness_mm, method):
@@ -360,4 +385,10 @@ if __name__ == '__main_old__':
 
 if __name__ == '__main__':
   import sys
-  xds_parallax = image_to_test(sys.argv[1], float(sys.argv[2]))
+  if len(sys.argv) == 3:
+    xds_parallax = image_to_test(sys.argv[1], float(sys.argv[2]))
+  else:
+    for arg in sys.argv[3:]:
+      xds_parallax = image_to_test(sys.argv[1], float(sys.argv[2]),
+                                   energy_ev = int(arg))
+      
