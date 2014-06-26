@@ -1,3 +1,4 @@
+from __future__ import division
 
 
 def kstest_greater(dist, data):

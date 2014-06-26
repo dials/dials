@@ -1,3 +1,4 @@
+from __future__ import division
 class bicubic_bilinear_spline(object):
   '''A class to provide support for bicubic spline interpolation falling back
   on bilinear spline interpolation at the corners. To avoid the fallback, pad

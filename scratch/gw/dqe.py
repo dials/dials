@@ -1,3 +1,4 @@
+from __future__ import division
 def work_dqe():
   from parallax import dqe, derive_absorption_coefficient_Si
   t0 = 0.032

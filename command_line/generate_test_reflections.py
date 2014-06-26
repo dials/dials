@@ -1,3 +1,4 @@
+from __future__ import division
 
 def main(args):
   from dials.algorithms.simulation.generate_test_reflections import \

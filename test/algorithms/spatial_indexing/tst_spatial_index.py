@@ -1,3 +1,4 @@
+from __future__ import division
 
 from dials.algorithms.spatial_indexing import make_spatial_index
 

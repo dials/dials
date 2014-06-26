@@ -1,3 +1,4 @@
+from __future__ import division
 def create_phil_string(n, cts, bg):
   template = """
     nrefl = %d

@@ -1,3 +1,4 @@
+from __future__ import division
 import glob
 import os
 from libtbx import easy_run

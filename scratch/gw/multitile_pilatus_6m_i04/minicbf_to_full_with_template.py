@@ -1,3 +1,4 @@
+from __future__ import division
 def read_template(template_name='DLS6MSN100.cbft'):
   return open(template_name, 'r').read()
 

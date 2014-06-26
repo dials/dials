@@ -1,3 +1,4 @@
+from __future__ import division
 
 
 def parse_frame_data(filename):

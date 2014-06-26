@@ -9,6 +9,7 @@
 
 """Contains classes used to manage the reflections used during refinement,
 principally ReflectionManager."""
+from __future__ import division
 
 from math import pi
 

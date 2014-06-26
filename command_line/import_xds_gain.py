@@ -1,3 +1,4 @@
+from __future__ import division
 
 def import_xds_gain(sweep_filename, in_filename, out_filename):
   from dials.util import image

@@ -1,3 +1,4 @@
+from __future__ import division
 def read_xds_calibration_file(calibration_file):
   '''Read XDS calibration file, return as flex array.'''
 

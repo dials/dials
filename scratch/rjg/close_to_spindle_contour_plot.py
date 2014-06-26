@@ -1,3 +1,4 @@
+from __future__ import division
 
 def run(args):
   from scitbx.array_family import flex

@@ -1,3 +1,4 @@
+from __future__ import division
 #
 # projection_from_3d_to)2d.py
 #

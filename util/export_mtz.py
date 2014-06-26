@@ -1,3 +1,4 @@
+from __future__ import division
 def export_mtz(integrated_data, experiment_list, hklout):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''

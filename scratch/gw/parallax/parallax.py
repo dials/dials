@@ -1,3 +1,4 @@
+from __future__ import division
 def log_interpolate(x0, y0, x1, y1, x):
   '''Return y(x) where we have fit a linear model to ln(y)(x)'''
   import math

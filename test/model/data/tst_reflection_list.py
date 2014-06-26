@@ -1,3 +1,4 @@
+from __future__ import division
 
 def assert_almost(a, b, eps=1e-7):
   if isinstance(a, tuple):
