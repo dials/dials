@@ -13,7 +13,6 @@ from __future__ import division
 
 def run(args):
   import os
-  from libtbx.phil import command_line
   from dials.util.command_line import Importer
   from dxtbx.serialize import xds
 

@@ -28,7 +28,6 @@ class ScriptRunner(object):
   def __call__(self):
     '''Run the script.'''
     from dials.model.data import ReflectionList # import dependency
-    from dials.util.command_line import Command
 
     self.view()
 

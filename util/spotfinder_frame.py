@@ -9,7 +9,6 @@ class SpotFrame(XrayFrame) :
     self.imagesets = kwds["imagesets"]
     self.reflections = kwds["reflections"]
     self.crystals = kwds["crystals"]
-    from dials.model.data import ReflectionList
     del kwds["imagesets"]; del kwds["reflections"] #otherwise wx complains
     del kwds["crystals"] #otherwise wx complains
     super(SpotFrame, self).__init__(*args, **kwds)

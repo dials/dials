@@ -479,7 +479,7 @@ class indexer_fft3d(indexer_base):
   def debug_plot_clusters(self, vectors, labels, min_cluster_size=1):
     assert len(vectors) == len(labels)
     from matplotlib import pyplot
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D # import dependency
     import numpy
 
     # Black removed and is used for noise instead.
@@ -528,8 +528,6 @@ class indexer_fft3d(indexer_base):
     pyplot.show()
 
   def find_peaks_clean(self):
-    import time
-
     d_min = self.params.fft3d.reciprocal_space_grid.d_min
     rlgrid = 2 / (d_min * self.gridding[0])
 

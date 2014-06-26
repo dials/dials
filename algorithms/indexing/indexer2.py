@@ -13,7 +13,6 @@
 from __future__ import division
 from libtbx import easy_pickle
 import math
-import sys
 
 from libtbx.utils import Sorry
 import iotbx.phil
@@ -23,7 +22,7 @@ from cctbx.array_family import flex
 from cctbx import crystal, sgtbx, uctbx, xray
 
 from dxtbx.model.crystal import crystal_model as Crystal
-from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment.experiment_list import ExperimentList
 
 master_phil_scope = iotbx.phil.parse("""
 reference {

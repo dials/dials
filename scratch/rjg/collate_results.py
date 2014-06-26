@@ -3,11 +3,6 @@ import os
 import math
 import glob
 
-try:
-  import scipy.linalg
-except ImportError, e:
-  pass
-
 from libtbx import easy_mp, easy_pickle
 from libtbx import group_args
 from dials.array_family import flex
@@ -341,5 +336,4 @@ def run(args):
 
 if __name__ == '__main__':
   import sys
-  import libtbx.load_env
   run(sys.argv[1:])

@@ -10,7 +10,6 @@ import libtbx.load_env
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from libtbx.test_utils import open_tmp_directory
-from scitbx import matrix
 from cctbx.array_family import flex # import dependency
 from cctbx import uctbx
 from dials.model.serialize import load
@@ -34,12 +33,6 @@ try:
   have_sklearn = True
 except ImportError:
   have_sklearn = False
-
-try:
-  import hcluster
-  have_hcluster = True
-except ImportError:
-  have_hcluster = False
 
 try:
   import networkx
