@@ -56,12 +56,6 @@ def compute_offset(t0, theta, mu):
     (mu * (1 - math.exp(- mu * t)))
   return offset
 
-def compute_offset_no_dqe(t0, theta, mu):
-  import math
-  t = t0 / math.cos(theta)
-  offset = math.sin(theta) * (1 - (1 + mu * t) * math.exp(- mu * t)) / mu
-  return offset
-
 def compute_offset_dectris(t0, theta, mu):
   import math
   t = t0 / math.cos(theta)
@@ -153,7 +147,8 @@ DETECTOR_DISTANCE=%(distance).2f
 X-RAY_WAVELENGTH=%(wavelength).6f
 INCIDENT_BEAM_DIRECTION=%(beam_x).3f %(beam_y).3f %(beam_z).3f
 SENSOR_THICKNESS= %(thickness).3f
-ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f'''
+ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f
+'''
 
 def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm, energy_ev=None):
   '''Generate an XYCORR input file from an image header via dxtbx, noting
@@ -165,7 +160,7 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm, energy_ev=None):
 
   image = load(image_filename)
 
-  beam = matrix.col(image.get_beam().get_s0())
+  beam = matrix.col(image.get_beam().get_s0()).normalize()
   if energy_ev:
     wavelength = 12398.5 / energy_ev
   else:
@@ -204,7 +199,7 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm, energy_ev=None):
     'beam_x':beam.elems[0],
     'beam_y':beam.elems[1],
     'beam_z':beam.elems[2],
-    'thickness':int(sensor_thickness_mm * 1000),
+    'thickness':sensor_thickness_mm,
     'origin_fast':offset_fast / (pixel_size[0] / 4.0),
     'origin_slow':offset_slow / (pixel_size[1] / 4.0)
     })
@@ -235,14 +230,14 @@ def image_to_test(image_filename, sensor_thickness_mm, energy_ev=None):
 
   image = load(image_filename)
 
-  beam = matrix.col(image.get_beam().get_s0())
-  
+  beam = matrix.col(image.get_beam().get_s0()).normalize()
+
   if energy_ev:
     energy_kev = energy_ev * 0.001
   else:
     wavelength = image.get_beam().get_wavelength()
     energy_kev = 12.3985 / wavelength
-    
+
   mu = derive_absorption_coefficient_Si(energy_kev)
   d = image.get_detector()[0]
   fast = matrix.col(d.get_fast_axis())
@@ -265,11 +260,10 @@ def image_to_test(image_filename, sensor_thickness_mm, energy_ev=None):
   _xds = []
   _dials = []
   _dectris = []
-  _dials_nodqe = []
 
   pixel_cm = pixel_size[0] / 10.0
 
-  for j in range(10000):
+  for j in range(100):
     x = random.random() * image_size[1]
     y = random.random() * image_size[0]
     p = origin + y * S + x * F
@@ -277,100 +271,51 @@ def image_to_test(image_filename, sensor_thickness_mm, energy_ev=None):
     xds = xds_table[int(y), int(x)]
     dials = compute_offset(0.1 * sensor_thickness_mm, theta, mu)
     dectris = compute_offset_dectris(0.1 * sensor_thickness_mm, theta, mu)
-    dials_nodqe = compute_offset_no_dqe(0.1 * sensor_thickness_mm, theta, mu)
 
     _theta.append(theta * 180.0 / math.pi)
     _xds.append(xds)
     _dials.append(dials / pixel_cm)
     _dectris.append(dectris / pixel_cm)
-    _dials_nodqe.append(dials_nodqe / pixel_cm)
 
   # sort the results
 
   values = { }
 
-  for t, x, di, de, dn in zip(_theta, _xds, _dials, _dectris, _dials_nodqe):
-    values[t] = x, di, de, dn
+  for t, x, di, de in zip(_theta, _xds, _dials, _dectris):
+    values[t] = x, di, de
 
-  _theta, _xds, _dials, _dectris, _dials_nodqe = [], [], [], [], []
+  _theta, _xds, _dials, _dectris = [], [], [], []
   for t in sorted(values):
-    x, di, de, dn = values[t]
+    x, di, de = values[t]
     _theta.append(t)
     _xds.append(x)
     _dials.append(di)
     _dectris.append(de)
-    _dials_nodqe.append(dn)
-    print t, x, di, de, dn
+    print t, x, di, de
 
   import matplotlib
   matplotlib.use('Agg')
   from matplotlib import pyplot
-  p1, p2, p3, p4 = pyplot.plot(_theta, _xds, _theta, _dials,
-                               _theta, _dectris, _theta, _dials_nodqe)
+  p1, p2, p3 = pyplot.plot(_theta, _xds, _theta, _dials, _theta, _dectris)
   pyplot.xlabel('Angle, degrees')
   pyplot.ylabel('Offset, pixels')
   pyplot.title('Parallax correction offsets for %s' % os.path.split(
     image_filename)[-1])
-  pyplot.legend([p1, p2, p3, p4],
+  pyplot.legend([p1, p2, p3],
                 ['Calculated by XDS', 'DIALS model',
-                 'Dectris model', 'DIALS no DQE model'],
+                 'Dectris model'],
                 loc=2)
   if energy_ev:
     pyplot.savefig('corrections%d.png' % energy_ev)
   else:
     pyplot.savefig('corrections.png')
-    
+
   return
-
-def image_to_parallax(image_filename, sensor_thickness_mm, method):
-  from dxtbx import load
-  from scitbx import matrix
-  import math
-
-  image = load(image_filename)
-
-  beam = matrix.col(image.get_beam().get_s0())
-  wavelength = image.get_beam().get_wavelength()
-  energy_kev = 12.3985 / wavelength
-  mu = derive_absorption_coefficient_Si(energy_kev)
-  d = image.get_detector()[0]
-  fast = matrix.col(d.get_fast_axis())
-  slow = matrix.col(d.get_slow_axis())
-  normal = matrix.col(d.get_normal())
-  origin = matrix.col(d.get_origin())
-  distance = origin.dot(normal)
-  offset = distance * normal - origin
-  offset_fast = offset.dot(fast)
-  offset_slow = offset.dot(slow)
-  pixel_size = d.get_pixel_size()
-
-  # this is in order slow, fast i.e. C order
-  image_size = image.get_raw_data().focus()
-
-  # now scan over the image creating correction tables
-  from scitbx.array_family import flex
-  parallax = flex.double(flex.grid(image_size[0], image_size[1]), 0)
-
-  F = fast * pixel_size[0]
-  S = slow * pixel_size[1]
-
-  for i in range(image_size[0]):
-    for j in range(image_size[1]):
-      p = origin + i * S + j * F
-      theta = p.angle(normal)
-      parallax[i,j] = method(sensor_thickness_mm, theta, mu)
-
-  return parallax
-
 
 if __name__ == '__main_old__':
   import sys
   from scitbx.array_family import flex
   xds_parallax = image_to_XDS_XYCORR(sys.argv[1], float(sys.argv[2]))
-  dials_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]),
-                                     method=compute_offset)
-  dectris_parallax = image_to_parallax(sys.argv[1], float(sys.argv[2]),
-                                       method=compute_offset_dectris)
 
   import matplotlib
   matplotlib.use('Agg')
@@ -378,10 +323,6 @@ if __name__ == '__main_old__':
   pyplot.imshow(xds_parallax.as_numpy_array())
   pyplot.colorbar()
   pyplot.savefig('xds_parallax.png')
-  pyplot.imshow(dials_parallax.as_numpy_array())
-  pyplot.savefig('dials_parallax.png')
-  pyplot.imshow(dectris_parallax.as_numpy_array())
-  pyplot.savefig('dectris_parallax.png')
 
 if __name__ == '__main__':
   import sys
@@ -391,4 +332,3 @@ if __name__ == '__main__':
     for arg in sys.argv[3:]:
       xds_parallax = image_to_test(sys.argv[1], float(sys.argv[2]),
                                    energy_ev = int(arg))
-      
