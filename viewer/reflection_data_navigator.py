@@ -1,6 +1,5 @@
-from __future__ import division
 #
-#  DIALS viewer
+#  DIALS reflection table navigator
 #
 #  Copyright (C) 2014 Diamond Light Source
 #

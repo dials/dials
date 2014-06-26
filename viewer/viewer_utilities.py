@@ -1,4 +1,3 @@
-from __future__ import division
 #
 #  viewer_utilities.py
 #
@@ -16,8 +15,23 @@ def GetBitmap_from_np_array(np_img_2d, Intst_max, img_scale):
   # remember to make sure this is our convention in (x, y) vs (row, col)
   if Intst_max > 0:
     plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = Intst_max)
+
+
   else:
     plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = 10)
+
+
+  ax = fig.add_subplot(1,1,1)
+  #ax.plot([1, 2, 3, 4], [10, 20, 25, 30])
+  #set_default_intervals()
+  #ax.xaxis.set_data_interval(vmin = 2, vmax = 4, ignore=False)
+  dat = ax.xaxis.get_ticklabels()
+  for dat_prnt in dat:
+    print "ax.xaxis.get_ticklabels() =", dat_prnt
+  ax.xaxis.set_ticklabels(["foo" , "bar", "ouch"])
+
+
+
   fig.canvas.draw()
   width, height = fig.canvas.get_width_height()
   np_buf = numpy.fromstring ( fig.canvas.tostring_rgb(), dtype=numpy.uint8 )
