@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace background {
   using namespace boost::python;
 
   af::shared<bool> call_for_shoeboxes(
-      const Creator &self, 
+      const Creator &self,
       const af::const_ref< Shoebox<> > &sbox) {
     af::shared<double> mse(sbox.size());
     return self(sbox, mse.ref());
