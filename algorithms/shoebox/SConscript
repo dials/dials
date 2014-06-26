@@ -34,4 +34,5 @@ sources = [
 
 env.SharedLibrary(
     target='#/lib/dials_algorithms_shoebox_ext',
-    source=sources)
+    source=sources,
+    LIBS=['ann'])
