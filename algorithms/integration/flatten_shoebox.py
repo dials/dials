@@ -18,7 +18,7 @@ def flatten_shoebox(shoebox, background, mask):
   # as two-dimensional image
 
   array_dimensions = shoebox.all()
-  assert array_dimensions = background.all()
+  assert array_dimensions == background.all()
 
   if array_dimensions[0] == 1:
     import copy
