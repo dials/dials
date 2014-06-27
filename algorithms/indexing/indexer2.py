@@ -821,9 +821,15 @@ class indexer_base(object):
 
     orientation = crystal_orientation(direct_matrix.inverse(), True)
     items = iotbx_converter(orientation.unit_cell(), max_delta=5.0)
+    target_sg_reference_setting \
+      = target_space_group.info().reference_setting().group()
     if target_space_group.crystal_system().lower() != 'triclinic':
       for item in items:
-        if target_space_group.crystal_system() != item['best_group'].crystal_system():
+        if (target_space_group.crystal_system() !=
+            item['best_group'].crystal_system()):
+          continue
+        if (target_sg_reference_setting.conventional_centring_type_symbol() !=
+            item['best_group'].conventional_centring_type_symbol()):
           continue
         cb_op = item['cb_op_inp_best'].c().as_double_array()[0:9]
         cb_op_inv = item['cb_op_inp_best'].inverse().c().as_double_array()[0:9]
@@ -832,8 +838,8 @@ class indexer_base(object):
         constrain_orient = orient_best.constrain(item['system'])
         orientation = constrain_orient.change_basis(
           matrix.sqr(cb_op_inv).transpose())
-        target_space_group = target_space_group.info().reference_setting()\
-          .group().change_basis(item['cb_op_inp_best'].inverse())
+        target_space_group = target_sg_reference_setting.change_basis(
+          item['cb_op_inp_best'].inverse())
         break
 
     direct_matrix = orientation.direct_matrix()
