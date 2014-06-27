@@ -832,8 +832,8 @@ class indexer_base(object):
         constrain_orient = orient_best.constrain(item['system'])
         orientation = constrain_orient.change_basis(
           matrix.sqr(cb_op_inv).transpose())
-        target_space_group = item['best_group'].change_basis(
-          item['cb_op_inp_best'].inverse())
+        target_space_group = target_space_group.info().reference_setting()\
+          .group().change_basis(item['cb_op_inp_best'].inverse())
         break
 
     direct_matrix = orientation.direct_matrix()
