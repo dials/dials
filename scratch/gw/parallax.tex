@@ -168,6 +168,40 @@ deviates substantially at higher energy.
 \end{tabular}
 }
 
+\section{Practical Implementation}
+
+Though the overall offset has been derived here what is more useful is
+the expected shift in $x$ and $y$ i.e. how the mapping deviates from a
+perfect rectangular grid. This is easily derived from 
+
+\begin{equation}
+\theta_f = \cos^{-1} \underline{\hat{p}}.\underline{\hat{f}}
+\end{equation}
+
+\noindent
+where $\theta_f$ is the angle between the incoming ray
+$\underline{\hat{p}}$ and the fast direction $\underline{\hat{f}}$,
+and similar for $\theta_s$ for the slow direction. Given the rules of
+direction cosines it is easy to show that
+
+\begin{equation}
+<o_f> = \cos \theta_f \left( \frac{1}{\mu} - \left( \frac{t_0}{\cos
+      \theta} + \frac{1}{\mu} \right) e^{- \frac{\mu t_0}{\cos \theta}} \right)
+\end{equation}
+
+\noindent 
+and similar for $<o_s>$. The equation assumed for XDS may similarly be
+decomposed to:
+
+\begin{equation}
+<o_f> = \rm{min}\left(\frac{\cos \theta_f}{\mu}, t_0 \frac{\cos
+    \theta_f}{\cos \theta} \right)
+\end{equation}
+
+\noindent
+where in both cases $\theta$ continues to be the angle between the ray
+and detector normal.
+
 \section{Next Steps}
 
 Need to actually get experimental justification for these results
