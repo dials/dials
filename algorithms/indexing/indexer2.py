@@ -280,14 +280,18 @@ class indexer_base(object):
     self.target_symmetry_centred = None
     self.cb_op_centred_to_primitive = None
     self.cb_op_minimum_cell_to_primitive = None
+    self.cb_op_primitive_to_given = None
     if (self.params.known_symmetry.space_group is not None or
         self.params.known_symmetry.unit_cell is not None):
       is_centred = False
       if self.params.known_symmetry.space_group is not None:
         space_group_info = self.params.known_symmetry.space_group
         is_centred = space_group_info.group().conventional_centring_type_symbol() != 'P'
-        cb_op_to_primitive = space_group_info.change_of_basis_op_to_primitive_setting()
-        sgi_primitive = space_group_info.change_basis(cb_op_to_primitive)
+        cb_op_given_to_primitive \
+          = space_group_info.change_of_basis_op_to_primitive_setting()
+        sgi_primitive = space_group_info.change_basis(
+          cb_op_given_to_primitive)
+        self.cb_op_primitive_to_given = cb_op_given_to_primitive.inverse()
         space_group_primitive = sgi_primitive.group()
       else:
         space_group_primitive = sgtbx.space_group("P 1")
@@ -301,13 +305,17 @@ class indexer_base(object):
           self.target_symmetry_centred = crystal.symmetry(
             unit_cell=self.params.known_symmetry.unit_cell,
             space_group=self.params.known_symmetry.space_group.group())
+          self.cb_op_centred_to_primitive \
+            = self.target_symmetry_centred.change_of_basis_op_to_primitive_setting()
           self.target_symmetry_primitive = self.target_symmetry_centred.change_basis(
-            self.target_symmetry_centred.change_of_basis_op_to_primitive_setting())
+            self.cb_op_centred_to_primitive)
+          self.cb_op_primitive_to_given = self.cb_op_centred_to_primitive.inverse()
         else:
           self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
             self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
-        self.cb_op_centred_to_primitive \
-          = self.target_symmetry_centred.change_of_basis_op_to_primitive_setting()
+          self.cb_op_centred_to_primitive \
+            = self.target_symmetry_centred.change_of_basis_op_to_primitive_setting()
+          self.cb_op_primitive_to_given = None # given symmetry was primitive
       if self.params.known_symmetry.unit_cell is not None:
         assert (self.target_symmetry_primitive.unit_cell().is_similar_to(
           self.params.known_symmetry.unit_cell) or self.target_symmetry_centred.unit_cell().is_similar_to(
@@ -315,6 +323,10 @@ class indexer_base(object):
         self.target_symmetry_minimum_cell = self.target_symmetry_primitive.minimum_cell()
         self.cb_op_minimum_cell_to_primitive \
           = self.target_symmetry_primitive.change_of_basis_op_to_minimum_cell().inverse()
+        if self.cb_op_primitive_to_given is not None:
+          assert self.target_symmetry_primitive.change_basis(
+            self.cb_op_primitive_to_given).unit_cell().is_similar_to(
+              self.params.known_symmetry.unit_cell)
 
   def index(self):
     import libtbx
@@ -425,12 +437,16 @@ class indexer_base(object):
         # that a reflection doesn't belong to any lattice so far
         self.reflections['id'] = flex.int(len(self.reflections), -1)
 
-        if i_cycle == 0 and self.target_symmetry_primitive is not None:
+        if (i_cycle == 0 and self.target_symmetry_primitive is not None
+            and self.target_symmetry_primitive.unit_cell() is not None):
           # if a target cell is given make sure that we match any permutation
           # of the cell dimensions
-          for expt in experiments:
-            expt.crystal = self.apply_symmetry(
-              expt.crystal, self.target_symmetry_primitive, cell_only=True)
+          for i_expt, expt in enumerate(experiments):
+            if i_expt >= n_lattices_previous_cycle:
+              expt.crystal, _ = self.apply_symmetry(
+                expt.crystal, self.target_symmetry_primitive,
+                return_primitive_setting=True,
+                cell_only=True)
 
         hkl_tolerance = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
         self.index_reflections(experiments.crystals(), tolerance=hkl_tolerance)
@@ -439,10 +455,25 @@ class indexer_base(object):
             and self.target_symmetry_primitive.space_group() is not None):
           # now apply the space group symmetry only after the first indexing
           # need to make sure that the symmetrized orientation is similar to the P1 model
-          for expt in experiments:
-            expt.crystal = self.apply_symmetry(
-              expt.crystal, self.target_symmetry_primitive,
-              space_group_only=True)
+          for i_expt, expt in enumerate(experiments):
+            if i_expt >= n_lattices_previous_cycle:
+              expt.crystal, cb_op_to_primitive = self.apply_symmetry(
+                expt.crystal, self.target_symmetry_primitive,
+                return_primitive_setting=True,
+                space_group_only=True)
+              if not cb_op_to_primitive.is_identity_op():
+                miller_indices = self.reflections['miller_index'].select(
+                  self.reflections['id'] == i_expt)
+                miller_indices = cb_op_to_primitive.apply(miller_indices)
+                self.reflections['miller_index'].set_selected(
+                  self.reflections['id'] == i_expt, miller_indices)
+              if self.cb_op_primitive_to_given is not None:
+                expt.crystal = expt.crystal.change_basis(self.cb_op_primitive_to_given)
+                miller_indices = self.reflections['miller_index'].select(
+                  self.reflections['id'] == i_expt)
+                miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
+                self.reflections['miller_index'].set_selected(
+                  self.reflections['id'] == i_expt, miller_indices)
 
         if len(experiments) > 1:
           from dials.algorithms.indexing.compare_orientation_matrices \
@@ -683,20 +714,22 @@ class indexer_base(object):
           cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
           model = model.change_basis(cb_op_to_niggli)
           uc = model.get_unit_cell()
-          if self.target_symmetry_minimum_cell is not None:
-            symmetrized_model = self.apply_symmetry(
-            model, self.target_symmetry_minimum_cell,
-            return_primitive_setting=True)
-            cb_op_to_primitive = self.cb_op_minimum_cell_to_primitive
+          if (self.target_symmetry_centred is not None or
+              self.target_symmetry_primitive is not None or
+              self.target_symmetry_minimum_cell is not None):
+            symmetrized_model = None
+            if self.target_symmetry_minimum_cell is not None:
+              symmetrized_model, cb_op_to_primitive = self.apply_symmetry(
+              model, self.target_symmetry_minimum_cell,
+              return_primitive_setting=True)
             if symmetrized_model is None and self.target_symmetry_primitive is not None:
-              symmetrized_model = self.apply_symmetry(
-                model, self.target_symmetry_primitive)
-              cb_op_to_primitive = None
+              symmetrized_model, cb_op_to_primitive = self.apply_symmetry(
+                model, self.target_symmetry_primitive,
+              return_primitive_setting=True)
             if symmetrized_model is None and self.target_symmetry_centred is not None:
-              symmetrized_model = self.apply_symmetry(
+              symmetrized_model, cb_op_to_primitive = self.apply_symmetry(
               model, self.target_symmetry_centred,
               return_primitive_setting=True)
-              cb_op_to_primitive = self.cb_op_centred_to_primitive
             if symmetrized_model is None:
               continue
             if apply_symmetry:
@@ -776,29 +809,52 @@ class indexer_base(object):
             best_perm = list(perm)
             best_sign = sign
       if best_perm is None:
-        return None
+        return None, None
     direct_matrix = matrix.sqr(
       basis_vectors[best_perm[0]] + basis_vectors[best_perm[1]] +
       tuple([i * best_sign for i in basis_vectors[best_perm[2]]]))
-    from rstbx.symmetry.constraints import parameter_reduction
-    s = parameter_reduction.symmetrize_reduce_enlarge(target_space_group)
-    s.set_orientation(direct_matrix.inverse())
-    s.symmetrize()
-    if return_primitive_setting:
-      sgi = sgtbx.space_group_info(group=target_space_group)
-      cb_op_to_primitive = sgi.change_of_basis_op_to_primitive_setting()
-      direct_matrix = s.orientation.change_basis(
-        cb_op_to_primitive).direct_matrix()
-    else:
-      direct_matrix = s.orientation.direct_matrix()
+
+    from cctbx.crystal_orientation import crystal_orientation
+    from rstbx import dps_core # import dependency
+    from rstbx.dps_core.lepage import iotbx_converter
+    from dials.algorithms.indexing.symmetry import dials_crystal_from_orientation
+
+    orientation = crystal_orientation(direct_matrix.inverse(), True)
+    items = iotbx_converter(orientation.unit_cell(), max_delta=5.0)
+    if target_space_group.crystal_system().lower() != 'triclinic':
+      for item in items:
+        if target_space_group.crystal_system() != item['best_group'].crystal_system():
+          continue
+        cb_op = item['cb_op_inp_best'].c().as_double_array()[0:9]
+        cb_op_inv = item['cb_op_inp_best'].inverse().c().as_double_array()[0:9]
+        orient = crystal_orientation(direct_matrix.inverse(), True)
+        orient_best = orient.change_basis(matrix.sqr(cb_op).transpose())
+        constrain_orient = orient_best.constrain(item['system'])
+        orientation = constrain_orient.change_basis(
+          matrix.sqr(cb_op_inv).transpose())
+        target_space_group = item['best_group'].change_basis(
+          item['cb_op_inp_best'].inverse())
+        break
+
+    direct_matrix = orientation.direct_matrix()
     a = matrix.col(direct_matrix[:3])
     b = matrix.col(direct_matrix[3:6])
     c = matrix.col(direct_matrix[6:9])
     ## verify it is still right-handed basis set
     #assert a.cross(b).dot(c) > 0
+    cb_op_to_primitive = None
     model = Crystal(
       a, b, c, space_group=target_space_group)
-    return model
+    if return_primitive_setting:
+      # for some reason I do not understand, it is necessary to go via the
+      # reference setting to ensure we get the correct primitive setting
+      cb_op_to_reference \
+        = model.get_space_group().info().change_of_basis_op_to_reference_setting()
+      cb_op_to_primitive = cb_op_to_reference
+      cb_op_to_primitive.update(
+        model.get_space_group().info().reference_setting().change_of_basis_op_to_primitive_setting())
+      model = model.change_basis(cb_op_to_primitive)
+    return model, cb_op_to_primitive
 
   def index_reflections(self, crystal_models, tolerance=0.3):
     from dials.algorithms.indexing import index_reflections

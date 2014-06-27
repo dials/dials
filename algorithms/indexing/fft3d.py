@@ -66,7 +66,7 @@ class indexer_fft3d(indexer_base):
       if self.params.debug:
         self.debug_show_candidate_basis_vectors()
       self.candidate_crystal_models = self.find_candidate_orientation_matrices(
-        self.candidate_basis_vectors, apply_symmetry=False)
+        self.candidate_basis_vectors, return_first=True, apply_symmetry=False)
       crystal_models = self.candidate_crystal_models[:1]
     experiments = ExperimentList()
     for cm in crystal_models:
