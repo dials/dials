@@ -97,6 +97,7 @@ tst_list = (
     ["$D/test/algorithms/indexing/tst_index.py", "10"],
     ["$D/test/algorithms/indexing/tst_index.py", "11"],
     ["$D/test/algorithms/indexing/tst_index.py", "12"],
+    ["$D/test/algorithms/indexing/tst_index.py", "13"],
     "$D/test/command_line/tst_refine_bravais_settings.py",
     "$D/test/command_line/tst_discover_better_experimental_model.py",
     "$D/test/algorithms/indexing/tst_compare_orientation_matrices.py",

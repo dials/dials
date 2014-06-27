@@ -454,6 +454,33 @@ def exercise_12():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
 
+def exercise_13():
+  # test on spots derived from imosflm tutorial data:
+  # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "imosflm_hg_mar")
+  pickle_path = os.path.join(data_dir, "strong.pickle")
+  sweep_path = os.path.join(data_dir, "datablock.json")
+
+  unit_cell = uctbx.unit_cell((58.373, 58.373, 155.939, 90, 90, 120))
+  hall_symbol = '-R 3 2"'
+
+  for uc, hall in ((unit_cell, hall_symbol), (None, hall_symbol)):
+    extra_args = []
+    if uc is not None:
+      extra_args.append("unit_cell='%s %s %s %s %s %s'" %unit_cell.parameters())
+    if hall is not None:
+      extra_args.append("space_group='Hall: %s'" %hall)
+
+    expected_unit_cell = unit_cell
+    if hall is not None:
+      expected_hall_symbol = hall
+    else:
+      expected_hall_symbol = ' P 1'
+    expected_rmsds = (0.08, 0.11, 0.004)
+
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
+
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
@@ -461,7 +488,7 @@ def run(args):
 
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
                exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
-               exercise_11, exercise_12)
+               exercise_11, exercise_12, exercise_13)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
