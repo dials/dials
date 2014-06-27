@@ -78,7 +78,10 @@ class PredictionParameterisation(object):
     self._xl_unit_cell_parameterisations = \
         xl_unit_cell_parameterisations
 
+    # Check there are free parameters to refine
     self._length = self._len()
+    if self._length == 0:
+      raise RuntimeError("There are no free parameters for refinement")
 
     # Calculate Experiment to parameterisation mapping
     e2bp = dict([(ids, i) for i, dp in enumerate(beam_parameterisations) \
