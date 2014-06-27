@@ -15,7 +15,7 @@ def derive_absorption_coefficient_Si(energy_kev):
 
   http://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z14.html
 
-  derive a smoothed atenuation coefficient at a given energy in KeV, in cm ^ -1'''
+  derive a smoothed atenuation coefficient at a given energy in KeV, in mm ^ -1'''
 
   if True:
 
@@ -46,23 +46,29 @@ def derive_absorption_coefficient_Si(energy_kev):
     if e >= energy_kev:
       e_mu0 = coefficients[j-1]
       e_mu1 = coefficients[j]
-      return log_interpolate(e_mu0[0], e_mu0[1], e_mu1[0], e_mu1[1], energy_kev)
+      # / 10 to get per mm not per cm
+      return 0.1 * log_interpolate(e_mu0[0], e_mu0[1], e_mu1[0], e_mu1[1],
+                                   energy_kev)
 
   raise RuntimeError, 'cannot reach this point'
 
 def compute_offset(t0, theta, mu):
   import math
   t = t0 / math.cos(theta)
-  offset = math.sin(theta) * (1 - (1 + mu * t) * math.exp(- mu * t)) / \
-    (mu * (1 - math.exp(- mu * t)))
-  return offset
+  _mu = 1.0 / mu
+  return math.sin(theta) * (_mu - (t + _mu) * math.exp(- mu * t))
 
-def compute_offset_dectris(t0, theta, mu):
+def compute_offset_xds(t0, theta, mu):
+  import math
+  return min(t0 * math.tan(theta), math.sin(theta) / mu)
+
+def dqe(t0, theta, mu):
+  '''Compute DQE for the given thickness of sensor, for the given angle and linear
+  absorption coefficient.'''
+
   import math
   t = t0 / math.cos(theta)
-  _mu = 1.0 / mu
-  offset = math.sin(theta) * (_mu - (t + _mu) * math.exp(- mu * t))
-  return offset
+  return 1.0 - math.exp(-mu * t)
 
 def read_xds_calibration_file(calibration_file):
   '''Read XDS calibration file, return as flex array.'''
@@ -147,6 +153,7 @@ NX=%(n_fast)d NY=%(n_slow)d QX=%(pixel_fast).4f QY=%(pixel_slow).4f
 DETECTOR_DISTANCE=%(distance).2f
 X-RAY_WAVELENGTH=%(wavelength).6f
 INCIDENT_BEAM_DIRECTION=%(beam_x).3f %(beam_y).3f %(beam_z).3f
+SILICON= %(silicon).3f
 SENSOR_THICKNESS= %(thickness).3f
 ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f
 '''
@@ -166,6 +173,9 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm, energy_ev=None):
     wavelength = 12398.5 / energy_ev
   else:
     wavelength = image.get_beam().get_wavelength()
+    energy_ev = 12398.5 / wavelength
+
+  silicon = derive_absorption_coefficient_Si(0.001 * energy_ev)
   d = image.get_detector()[0]
   fast = matrix.col(d.get_fast_axis())
   slow = matrix.col(d.get_slow_axis())
@@ -200,6 +210,7 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm, energy_ev=None):
     'beam_x':beam.elems[0],
     'beam_y':beam.elems[1],
     'beam_z':beam.elems[2],
+    'silicon':silicon,
     'thickness':sensor_thickness_mm,
     'origin_fast':offset_fast / (pixel_size[0] / 4.0),
     'origin_slow':offset_slow / (pixel_size[1] / 4.0)
@@ -214,6 +225,9 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm, energy_ev=None):
     'X-CORRECTIONS.cbf').as_double() / 40.0
   y_corrections_parallax = read_xds_calibration_file(
     'Y-CORRECTIONS.cbf').as_double() / 40.0
+
+  if False:
+    return x_corrections_parallax, y_corrections_parallax
 
   from scitbx.array_family import flex
   return flex.sqrt(x_corrections_parallax * x_corrections_parallax + \
@@ -260,51 +274,47 @@ def image_to_test(image_filename, sensor_thickness_mm, energy_ev=None):
   _theta = []
   _xds = []
   _dials = []
-  _dectris = []
+  _xds2 = []
 
-  pixel_cm = pixel_size[0] / 10.0
-
-  for j in range(100):
+  for j in range(10000):
     x = random.random() * image_size[1]
     y = random.random() * image_size[0]
     p = origin + y * S + x * F
     theta = p.angle(normal)
     xds = xds_table[int(y), int(x)]
-    dials = compute_offset(0.1 * sensor_thickness_mm, theta, mu)
-    dectris = compute_offset_dectris(0.1 * sensor_thickness_mm, theta, mu)
+    dials = compute_offset(sensor_thickness_mm, theta, mu)
+    xds2 = compute_offset_xds(sensor_thickness_mm, theta, mu)
 
     _theta.append(theta * 180.0 / math.pi)
     _xds.append(xds)
-    _dials.append(dials / pixel_cm)
-    _dectris.append(dectris / pixel_cm)
+    _dials.append(dials / pixel_size[0])
+    _xds2.append(xds2 / pixel_size[0])
 
   # sort the results
 
   values = { }
 
-  for t, x, di, de in zip(_theta, _xds, _dials, _dectris):
-    values[t] = x, di, de
+  for t, x, d, x2 in zip(_theta, _xds, _dials, _xds2):
+    values[t] = x, d, x2
 
-  _theta, _xds, _dials, _dectris = [], [], [], []
+  _theta, _xds, _dials, _xds2 = [], [], [], []
   for t in sorted(values):
-    x, di, de = values[t]
+    x, d, x2 = values[t]
     _theta.append(t)
     _xds.append(x)
-    _dials.append(di)
-    _dectris.append(de)
-    print t, x, di, de
+    _dials.append(d)
+    _xds2.append(x2)
 
   import matplotlib
   matplotlib.use('Agg')
   from matplotlib import pyplot
-  p1, p2, p3 = pyplot.plot(_theta, _xds, _theta, _dials, _theta, _dectris)
+  p1, p2, p3 = pyplot.plot(_theta, _xds, _theta, _dials, _theta, _xds2)
   pyplot.xlabel('Angle, degrees')
   pyplot.ylabel('Offset, pixels')
   pyplot.title('Parallax correction offsets for %s' % os.path.split(
     image_filename)[-1])
   pyplot.legend([p1, p2, p3],
-                ['Calculated by XDS', 'DIALS model',
-                 'Dectris model'],
+                ['Calculated by XDS', 'DIALS model', 'XDS model'],
                 loc=2)
   if energy_ev:
     pyplot.savefig('corrections%d.png' % energy_ev)
@@ -313,17 +323,20 @@ def image_to_test(image_filename, sensor_thickness_mm, energy_ev=None):
 
   return
 
-if __name__ == '__main_old__':
+if __name__ == '__make_xds_pictures__':
   import sys
   from scitbx.array_family import flex
-  xds_parallax = image_to_XDS_XYCORR(sys.argv[1], float(sys.argv[2]))
+  xds_parallax_x, xds_parallax_y = image_to_XDS_XYCORR(
+    sys.argv[1], float(sys.argv[2]))
 
   import matplotlib
   matplotlib.use('Agg')
   from matplotlib import pyplot
-  pyplot.imshow(xds_parallax.as_numpy_array())
+  pyplot.imshow(xds_parallax_x.as_numpy_array())
   pyplot.colorbar()
-  pyplot.savefig('xds_parallax.png')
+  pyplot.savefig('xds_parallax_x.png')
+  pyplot.imshow(xds_parallax_y.as_numpy_array())
+  pyplot.savefig('xds_parallax_y.png')
 
 if __name__ == '__main__':
   import sys
