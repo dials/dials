@@ -228,7 +228,7 @@ class Refinery(object):
     for i in range(self.history._step + 1):
       rmsds = [r*m for (r,m) in zip(self.history.rmsd[i], rmsd_multipliers)]
       rows.append([str(i), str(self.history.num_reflections[i]),
-                  str(self.history.objective[i])] + ["%.5g" % r for r in rmsds])
+                   "%.5g" % self.history.objective[i]] + ["%.5g" % r for r in rmsds])
 
     st = simple_table(rows, header)
     print st.format()
