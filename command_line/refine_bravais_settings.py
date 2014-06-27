@@ -37,6 +37,21 @@ def run(args):
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic
 
+  from dxtbx.model.crystal import crystal_model
+  cb_op_to_primitive = experiment.crystal.get_space_group().info()\
+    .change_of_basis_op_to_primitive_setting()
+  if experiment.crystal.get_space_group().n_ltr() > 1:
+    effective_group = experiment.crystal.get_space_group()\
+      .build_derived_reflection_intensity_group(anomalous_flag=False)
+    sys_absent_flags = effective_group.is_sys_absent(
+      reflections['miller_index'])
+    reflections = reflections.select(~sys_absent_flags)
+  experiment.crystal = experiment.crystal.change_basis(cb_op_to_primitive)
+  miller_indices = reflections.select(reflections['id'] == 0)['miller_index']
+  miller_indices = cb_op_to_primitive.apply(miller_indices)
+  reflections['miller_index'].set_selected(
+    reflections['id'] == 0, miller_indices)
+
   Lfat = refined_settings_factory_from_refined_triclinic(
     params, experiment, reflections, lepage_max_delta=params.lepage_max_delta,
     nproc=params.nproc, refiner_verbosity=params.verbosity)
