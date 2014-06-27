@@ -44,6 +44,7 @@ class Target(object):
 
   __metaclass__  = abc.ABCMeta
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
+  rmsd_units = ["mm", "mm", "rad"]
 
   def __init__(self, experiments, reflection_predictor, ref_manager,
                prediction_parameterisation, jacobian_max_nref=None):

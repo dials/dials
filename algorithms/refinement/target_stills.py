@@ -26,6 +26,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
   convergence of the chosen minimiser)"""
 
   rmsd_names = ["RMSD_X", "RMSD_Y"]
+  rmsd_units = ["mm", "mm"]
 
   def __init__(self, experiments, reflection_predictor, ref_man,
                prediction_parameterisation,

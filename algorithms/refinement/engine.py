@@ -202,29 +202,36 @@ class Refinery(object):
     return l1 > l2 and n1 <= n2
 
   def print_table(self):
-    """print useful output in the form of a space-separated table"""
+    """print useful output in the form of a simple table"""
 
+    from libtbx.table_utils import simple_table
     print
     print "Refinement steps"
     print "----------------"
-    rmsd_title = " ".join(self._target.rmsd_names)
-    n_rmsds = len(self._target.rmsd_names)
-    header = "Step Nref Objective " + rmsd_title
-    if self._verbosity > 1:
-      header += " " + "Param_%02d " * len(self._parameters)
-      header = header % tuple(range(1, len(self._parameters) + 1))
-    print header
 
+    from math import pi
+    rad2deg = 180/pi
+
+    rmsd_multipliers = []
+    header = ["Step", "Nref", "Objective"]
+    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+      if units == "mm":
+        header.append(name + "\n(mm)")
+        rmsd_multipliers.append(1.0)
+      elif units == "rad": # convert radians to degrees for reporting
+        header.append(name + "\n(deg)")
+        rmsd_multipliers.append(rad2deg)
+      else: # leave unknown units alone
+        header.append(name + "\n(" + units + ")")
+
+    rows = []
     for i in range(self.history._step + 1):
-      dat = (i,) + (self.history.num_reflections[i],) + \
-            (self.history.objective[i],) + \
-            tuple(self.history.rmsd[i])
-      if self._verbosity > 1:
-        dat += tuple(self.history.parameter_vector[i])
-        print  ("%d " + "%d " + "%.5g " + "%.5g " * n_rmsds +
-                "%.5g " * len(self._parameters)) % dat
-      else:
-        print  ("%d " + "%d " + "%.5g " + "%.5g " * n_rmsds) % dat
+      rmsds = [r*m for (r,m) in zip(self.history.rmsd[i], rmsd_multipliers)]
+      rows.append([str(i), str(self.history.num_reflections[i]),
+                  str(self.history.objective[i])] + ["%.5g" % r for r in rmsds])
+
+    st = simple_table(rows, header)
+    print st.format()
     print self.history.reason_for_termination
 
     return
