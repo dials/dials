@@ -514,6 +514,12 @@ scratch/dgw/turtle_spotter.py -text
 scratch/gw/adaptive_cubic_spline.py -text
 scratch/gw/biostruct-25.py -text
 scratch/gw/brute_force_calibration.py -text
+scratch/gw/corrections10000.png -text
+scratch/gw/corrections12000.png -text
+scratch/gw/corrections14000.png -text
+scratch/gw/corrections16000.png -text
+scratch/gw/corrections18000.png -text
+scratch/gw/corrections8000.png -text
 scratch/gw/dqe.py -text
 scratch/gw/multitile_pilatus_6m_i04/DLS6MSN100.cbft -text
 scratch/gw/multitile_pilatus_6m_i04/DLS6MSN100_multitile.cbft -text
@@ -540,6 +546,8 @@ scratch/gw/x2tbx/x2tbx.cpp -text
 scratch/gw/x2tbx/x2tbx.h -text
 scratch/gw/x2tbx/x2tbx_ol.cpp -text
 scratch/gw/x2tbx/x2tbx_rl.cpp -text
+scratch/gw/xds_parallax_x.png -text
+scratch/gw/xds_parallax_y.png -text
 scratch/jmp/__init__.py -text
 scratch/jmp/analysis/average_intensity_per_image.py -text
 scratch/jmp/analysis/centroid_difference.py -text

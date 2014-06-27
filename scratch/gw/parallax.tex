@@ -1,7 +1,43 @@
 \documentclass{article}
+\usepackage{graphicx}
 \begin{document}
 \noindent
-Definitions:
+\section{Introduction}
+
+Solid state pixel array detectors have thick sensors relative to their
+pixel size in order to obtain good quantum efficiency of
+detection. This gives rise to a shift in the position where a photon
+is \emph{recorded} with respect to it's intersection with the detector
+face, which becomes more pronounced as the angle between the incoming
+ray and the detector normal increaases. This parallax correction is
+modest (under a pixel) for conventional energies used in MX with
+standard sensor thickness, but can become much more pronounced at high
+energy.
+
+XDS produces correction tables \verb|X-CORRECTIONS.cbf| and
+\verb|Y-CORRECTIONS.cbf| to account for this, which give a shift
+between the ideal pixel position and the effective mm position
+allowing for this parallax correction. For DIALS such a correction is
+necessary in order to most accurately model the detector behaviour.
+
+\section{Acknowledgment}
+
+The initial calculations(i.e. earlier versions of this document) were
+frustrated by trying to reproduce the correction tables from XDS -
+this will be revisited below. Having got in touch with DECTRIS, Peter
+Trueb provided an equation for the parallax correction which is also
+rederived below which however disagrees with XDS. It was felt the only
+way to address this disagreement was to reverse engineer the XDS model
+to allow a direct comparison\footnote{It is worth noting here that
+  the XDS model was felt a good basis, as it is currently in
+  widespread use for processing X-ray diffraction data from pixel
+  array detectors.}.
+
+\section{Terminology}
+
+In an effort to be clear the terminology must be consistent, so the
+following definitions are used:
+
 \begin{itemize}
 \item{$t_0$ sensor thickness}
 \item{$\theta$ angle between incoming ray and detector normal}
@@ -10,76 +46,133 @@ Definitions:
 \end{itemize}
 
 \noindent
-The DQE may be calculated as
+In all cases lengths are in mm, so $\mu$ is scaled to $\rm{mm}^{-1}$.
+
+\section{XDS Model}
+
+The XDS model (below) was calculated using the XDS XYCORR step,
+however unlike the conventional use case the array was calculated at
+full image resolution by multiplying by four the number of pixels in
+both directions and dividing by four the pixel size - this then gave
+integer CBF images in units of $\frac{1}{40}$ pixel. Once rescaled these
+were used for direct comparison.
+
+{
+\centering
+\includegraphics[scale=0.3]{xds_parallax_x.png}
+\includegraphics[scale=0.3]{xds_parallax_y.png}
+}
+
+\noindent
+For reference these were derived from the following \verb|XDS.INP|:
+
+{\small
+\begin{verbatim}
+JOB=XYCORR
+DETECTOR=PILATUS MINIMUM_VALID_PIXEL_VALUE=0 OVERLOAD=161977
+DIRECTION_OF_DETECTOR_X-AXIS=1.000 0.000 0.000
+DIRECTION_OF_DETECTOR_Y-AXIS=0.000 -1.000 0.000
+TRUSTED_REGION=0.0 1.41
+NX=9852 NY=10108 QX=0.0430 QY=0.0430
+DETECTOR_DISTANCE=265.27
+X-RAY_WAVELENGTH=0.976250
+INCIDENT_BEAM_DIRECTION=-0.000 -0.000 -1.000
+SILICON= 3.984
+SENSOR_THICKNESS= 0.320
+ORGX=4901.40 ORGY=4773.88
+\end{verbatim}
+}
+
+\noindent
+and correspond to measured data. The \verb|SILICON=| was assigned
+from NIST values as this was found to be slightly different when
+derived from XDS itself (3.670 in this instance). 
+
+\section{Analytical Model}
+
+The initial analytical model worked out was incorrect, in that the
+initial approach was incorrect. As mentioned above, Peter Trueb
+provided a better derivation as follows:
 
 \begin{equation}
-K \int_0^t e^{-\mu x} dx = K \left[ - \frac{1}{\mu} e^{-\mu x} \right]_0^t = 
-K \frac{1}{\mu} \left( 1 - e^{-\mu t} \right)
+\frac{I(x)}{I_0} = e^{- \mu x}
 \end{equation}
 
 \noindent
-modulo some constant term e.g. integral to infinity of same, divided
-through to normalize - this will be $K = \mu$.
-So for determination of the ``average'' shift in the central impact i.e. the shift for the centre of the energy deposition range simply need to solve 
+so probability of photon being absorbed between $x$ and $x + \delta x$
+is
 
 \begin{equation}
-\frac{1}{2} = \frac{\int_0^s e^{-\mu x} dx}{\int_0^t e^{-\mu x} dx}
+p(x) dx = - frac{d \frac{I(x)}{I_0}}{dx} = \mu e^{- \mu x} dx
 \end{equation}
 
 \noindent
-for $s$, from which we may derive the offset $o = s \sin
-\theta$. N.B. in all of these calculations no units have been
-presented or are required, all that is necessary is that the units are
-\emph{consistent}. Also N.B. the constant term referred to above
-should drop out here anyhow...
-
-Solving this equation gives (after a little math, on page 73 of my notebook)
+therefore 
 
 \begin{equation}
-s = - \frac{1}{\mu} \ln \left( \frac{1}{2} \left( 1 + e^{-\mu t} \right) \right)
+<x> = \int_0^t x p(x) dx = \left[ - \left( \frac{1}{\mu} + x \right) 
+e^{- \mu x} \right]_0^t
 \end{equation}
 
 \noindent
-which expanded in full (i.e. with the $\theta$ terms) gives
+i.e.
 
 \begin{equation}
-o = - \frac{\sin \theta}{\mu} \ln \left( \frac{1}{2} \left( 1 + e^{-\mu t_0 / \cos \theta} \right) \right)
+<x> = \frac{1}{\mu} - \left( t + \frac{1}{\mu} \right) e^{- \mu t}
 \end{equation}
 
 \noindent
-where $o$ is the shift in the direction of the vector component of the incoming ray normal to the detector normal.
-
-Aha on reflection this protocol is probably not correct - solving for
-$s$ does not really determine where the energy is distributed as the
-profile for this is asymmetric. In fact probably better to look at
+for the offset this is simply equal to $\sin \theta <x>$, and $t =
+\frac{t_0}{\cos \theta}$ so
 
 \begin{equation}
-o = \frac{\int_0^t \sin \theta x e^{-\mu x} dx}{\int_0^t e^{-\mu x} dx}
+<o> = \sin \theta \left( \frac{1}{\mu} - \left( \frac{t_0}{\cos
+      \theta} + \frac{1}{\mu} \right) e^{- \frac{\mu t_0}{\cos \theta}} \right)
+\end{equation}
+
+
+\section{XDS Model Analysis}
+
+Analysis of this model as a function of different scattering angles,
+energies and sensor thickness values indicated that the model for the
+absolute offset $<o>$ is
+
+\begin{equation}
+<o> = \rm{min}\left(\frac{\sin \theta}{\mu}, t_0 \tan \theta \right)
 \end{equation}
 
 \noindent
-which would better express the ``average'' position on the detector
-that the energy was deposited at, w.r.t. the incoming ray
-position. Working this through gives
+This seems rather ad-hoc to me but does agree well when there is a
+high DQE i.e. the sensor is thick or the energy is low.
 
-\begin{equation}
-o = \frac{\left[ - \frac{1}{\mu^2} \sin \theta \left( \mu x + 1
-    \right)e^{-\mu x} \right]_0^t}
-{\left[ - \frac{1}{\mu} e^{-\mu x} \right]_0^t}
-\end{equation}
+\section{Example Results}
 
-\noindent
-which I evaluate to
+Following examples are calculated from an example data set recorded on
+Diamond I04 with a $320 \rm{\mu m}$ thickness sensor, but with the
+energy set from 4keV to 18keV in 1keV steps. Here follow plots for 8,
+10, 12, 14, 16 and 18keV. The XDS numerical results (i.e. derived from
+the correction tables) are shown in dark blue, the model above in pale
+blue and the assumed analytical form of the XDS model in red - clearly
+the last of these runs through the centre of the first, and the second
+deviates substantially at higher energy.
 
-\begin{equation}
-o = \frac{\sin \theta \left( 1 - \left( 1 + \mu t
-    \right) e^{-\mu t}\right)} {\mu \left( 1 - e^{-\mu t} \right)}
-\end{equation}
+{
+\centering
+\begin{tabular}{cc}
+\includegraphics[scale=0.3]{corrections8000.png} & 
+\includegraphics[scale=0.3]{corrections10000.png} \\ 
+\includegraphics[scale=0.3]{corrections12000.png} &
+\includegraphics[scale=0.3]{corrections14000.png} \\
+\includegraphics[scale=0.3]{corrections16000.png} & 
+\includegraphics[scale=0.3]{corrections18000.png} \\
+\end{tabular}
+}
 
-\noindent
-where of course $t = \frac{t_0}{\cos \theta}$. When input this gave
-more realistic extremes of offset in the range 
--0.8 to 0.8 pixels or so... 
+\section{Next Steps}
+
+Need to actually get experimental justification for these results
+however am confident at this stage that they are (i) correct and (ii)
+differ substantially from the model XDS uses.
 
 \end{document}
 
