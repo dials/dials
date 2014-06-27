@@ -683,20 +683,20 @@ class indexer_base(object):
           cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
           model = model.change_basis(cb_op_to_niggli)
           uc = model.get_unit_cell()
-          if self.target_symmetry_primitive is not None:
+          if self.target_symmetry_minimum_cell is not None:
             symmetrized_model = self.apply_symmetry(
-              model, self.target_symmetry_primitive)
-            cb_op_to_primitive = None
+            model, self.target_symmetry_minimum_cell,
+            return_primitive_setting=True)
+            cb_op_to_primitive = self.cb_op_minimum_cell_to_primitive
+            if symmetrized_model is None and self.target_symmetry_primitive is not None:
+              symmetrized_model = self.apply_symmetry(
+                model, self.target_symmetry_primitive)
+              cb_op_to_primitive = None
             if symmetrized_model is None and self.target_symmetry_centred is not None:
               symmetrized_model = self.apply_symmetry(
               model, self.target_symmetry_centred,
               return_primitive_setting=True)
               cb_op_to_primitive = self.cb_op_centred_to_primitive
-            if symmetrized_model is None and self.target_symmetry_minimum_cell is not None:
-              symmetrized_model = self.apply_symmetry(
-              model, self.target_symmetry_minimum_cell,
-              return_primitive_setting=True)
-              cb_op_to_primitive = self.cb_op_minimum_cell_to_primitive
             if symmetrized_model is None:
               continue
             if apply_symmetry:
