@@ -25,8 +25,8 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
   sphere, DeltaPsi. Terminates refinement on achieved rmsd (or on intrisic
   convergence of the chosen minimiser)"""
 
-  rmsd_names = ["RMSD_X", "RMSD_Y"]
-  rmsd_units = ["mm", "mm"]
+  rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_DeltaPsi"]
+  rmsd_units = ["mm", "mm", "rad"]
 
   def __init__(self, experiments, reflection_predictor, ref_man,
                prediction_parameterisation,
@@ -128,11 +128,13 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     self.update_matches()
     resid_x = flex.sum(self._matches['x_resid2'])
     resid_y = flex.sum(self._matches['y_resid2'])
+    resid_z = flex.sum(self._matches['delpsical2'])
 
     # cache rmsd calculation for achieved test
     n = len(self._matches)
     self._rmsds = (sqrt(resid_x / n),
-                   sqrt(resid_y / n))
+                   sqrt(resid_y / n),
+                   sqrt(resid_z / n))
 
     return self._rmsds
 
@@ -143,6 +145,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     # reset cached rmsds to avoid getting out of step
     self._rmsds = None
 
+    # only use RMSD_X and RMSD_Y
     if (r[0] < self._binsize_cutoffs[0] and
         r[1] < self._binsize_cutoffs[1]):
       return True
