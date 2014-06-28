@@ -18,7 +18,7 @@ def exercise_1():
   tmp_dir = open_tmp_directory()
   os.chdir(tmp_dir)
   print tmp_dir
-  g = glob.glob(os.path.join(data_dir, "hg_*.mar1600"))
+  g = sorted(glob.glob(os.path.join(data_dir, "hg_*.mar1600")))
   assert len(g) == 84
   hall_symbol =  '-R 3 2"'
   cmd = " ".join(["dials.process", "scan_varying=True",
@@ -53,7 +53,7 @@ def exercise_2():
   tmp_dir = open_tmp_directory()
   os.chdir(tmp_dir)
   print tmp_dir
-  g = glob.glob(os.path.join(data_dir, "insulin*.img"))
+  g = sorted(glob.glob(os.path.join(data_dir, "insulin*.img")))
   assert len(g) == 45
   hall_symbol =  " I 2 2 3"
   cmd = " ".join(["dials.process", "scan_varying=True",
