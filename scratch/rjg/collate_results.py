@@ -3,14 +3,15 @@ import os
 import math
 import glob
 
+import libtbx
 from libtbx import easy_mp, easy_pickle
 from libtbx import group_args
+from libtbx import table_utils
 from dials.array_family import flex
 from cctbx import crystal
 
 def run_once(directory):
-  from dxtbx.serialize.load import datablock as load_datablock
-  from dials.model.serialize.load import experiment_list as load_experiments
+  from dxtbx.serialize import load
   sweep_dir = os.path.basename(directory)
   print sweep_dir
 
@@ -25,7 +26,7 @@ def run_once(directory):
   if not (os.path.exists(datablock_name) and os.path.exists(strong_spots_name)):
     return
 
-  datablock = load_datablock(datablock_name)
+  datablock = load.datablock(datablock_name)
   assert len(datablock) == 1
   if len(datablock[0].extract_sweeps()) == 0:
     print "Skipping %s" %directory
@@ -36,7 +37,7 @@ def run_once(directory):
   strong_spots = easy_pickle.load(strong_spots_name)
   n_strong_spots = len(strong_spots)
   if os.path.exists(experiments_name):
-    experiments = load_experiments(experiments_name)
+    experiments = load.experiment_list(experiments_name)
     n_indexed_lattices = len(experiments)
   else:
     experiments = None
@@ -73,6 +74,7 @@ def run_once(directory):
     d_strong_spots_99th_percentile = 0
     d_strong_spots_95th_percentile = 0
     d_strong_spots_50th_percentile = 0
+    n_strong_spots_dmin_4 = 0
   else:
     spots_mm = indexer2.indexer_base.map_spots_pixel_to_mm_rad(
       strong_spots, detector, scan)
@@ -214,7 +216,6 @@ def run(args):
     rmsds.extend(result.rmsds)
     sweep_dir_cryst.extend(result.sweep_dir_cryst)
 
-  from libtbx import table_utils
   table_data = [('sweep_dir', 'template', '#strong_spots', '#unindexed_spots', '#lattices',
                  'd_spacing_50th_percentile', 'd_spacing_95th_percentile',
                  'd_spacing_99th_percentile',)]
@@ -299,22 +300,23 @@ def run(args):
   pdf.close()
   #pyplot.show()
 
-  hist = flex.histogram(n_integrated_lattices.as_double(),
-                        n_slots=flex.max(n_integrated_lattices))
-  hist.show()
-  fig = pyplot.figure()
-  ax = fig.add_subplot(1,1,1)
-  ax.bar(range(int(hist.data_max())), hist.slots(),
-         width=0.75*hist.slot_width(),
-         align='center', color=blue, edgecolor=blue)
-  ax.set_xlim(-0.5, hist.data_max()-0.5)
-  ax.set_xticks(range(0,int(hist.data_max())))
-  ax.set_xlabel('Number of integrated lattices')
-  ax.set_ylabel('Frequency')
-  pdf = PdfPages("n_integrated_lattices_histogram.pdf")
-  pdf.savefig(fig)
-  pdf.close()
-  #pyplot.show()
+  if flex.max(n_integrated_lattices) > 0:
+    hist = flex.histogram(n_integrated_lattices.as_double(),
+                          n_slots=flex.max(n_integrated_lattices))
+    hist.show()
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.bar(range(int(hist.data_max())), hist.slots(),
+           width=0.75*hist.slot_width(),
+           align='center', color=blue, edgecolor=blue)
+    ax.set_xlim(-0.5, hist.data_max()-0.5)
+    ax.set_xticks(range(0,int(hist.data_max())))
+    ax.set_xlabel('Number of integrated lattices')
+    ax.set_ylabel('Frequency')
+    pdf = PdfPages("n_integrated_lattices_histogram.pdf")
+    pdf.savefig(fig)
+    pdf.close()
+    #pyplot.show()
 
   fig, axes = pyplot.subplots(nrows=2, ncols=3, squeeze=False)
   for i, cell_param in enumerate(

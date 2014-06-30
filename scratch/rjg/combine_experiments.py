@@ -94,10 +94,10 @@ def run(args):
 
   assert (reflection_table['id'] > -1).count(True) == len(reflection_table)
 
-  from dials.model.serialize import dump
-
-  dump.experiment_list(experiment_list, 'combined_experiments.json')
-  dump.reflections(reflection_table, 'combined_reflections.pickle')
+  from dials.model.serialize import dump as dials_dump
+  from dxtbx.serialize import dump as dxtbx_dump
+  dxtbx_dump.experiment_list(experiment_list, 'combined_experiments.json')
+  dials_dump.reflections(reflection_table, 'combined_reflections.pickle')
 
 if __name__ == '__main__':
   import sys
