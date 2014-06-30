@@ -8,7 +8,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package."
 
-import wx, os, numpy
+import wx, numpy
 import matplotlib.pyplot as plt
 class TestFrame(wx.Frame):
     def __init__(self, *args, **kwargs):

@@ -1,11 +1,9 @@
-import os
+#import os, io, Image, PIL
 import wx
 import numpy
 import matplotlib.pyplot as plt
-import io
-import Image
-import PIL
-from cStringIO import StringIO
+
+#from cStringIO import StringIO
 
 def GetBitmap_from_np_array(data2d):
 

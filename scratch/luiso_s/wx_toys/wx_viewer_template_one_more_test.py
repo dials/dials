@@ -8,11 +8,12 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package."
 
-import wx, os
+import wx
 from dials.viewer.viewer_utilities \
-     import GetBitmap_from_np_array, build_np_img, from_wx_image_to_wx_bitmap
-
+     import GetBitmap_from_np_array, from_wx_image_to_wx_bitmap
 import numpy
+
+
 
 class ReflectionFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
