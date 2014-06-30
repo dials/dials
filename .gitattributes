@@ -521,6 +521,8 @@ scratch/gw/corrections16000.png -text
 scratch/gw/corrections18000.png -text
 scratch/gw/corrections8000.png -text
 scratch/gw/dqe.py -text
+scratch/gw/dx.png -text
+scratch/gw/dy.png -text
 scratch/gw/multitile_pilatus_6m_i04/DLS6MSN100.cbft -text
 scratch/gw/multitile_pilatus_6m_i04/DLS6MSN100_multitile.cbft -text
 scratch/gw/multitile_pilatus_6m_i04/generate_tile_description.py -text
@@ -528,8 +530,6 @@ scratch/gw/multitile_pilatus_6m_i04/minicbf_to_full_with_template.py -text
 scratch/gw/parallax.py -text
 scratch/gw/parallax.tex -text
 scratch/gw/parallax/dials_parallax.png -text
-scratch/gw/parallax/dx.png -text
-scratch/gw/parallax/dy.png -text
 scratch/gw/parallax/mu_Si.py -text
 scratch/gw/parallax/parallax.py -text
 scratch/gw/parallax/parallax_xds.py -text

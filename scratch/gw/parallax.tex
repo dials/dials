@@ -200,13 +200,22 @@ decomposed to:
 
 \noindent
 where in both cases $\theta$ continues to be the angle between the ray
-and detector normal.
+and detector normal. Turns out the errors in doing this are rather small:
+
+{
+\centering
+\includegraphics[scale=0.3]{dx.png}
+\includegraphics[scale=0.3]{dy.png}
+}
+
 
 \section{Next Steps}
 
 Need to actually get experimental justification for these results
 however am confident at this stage that they are (i) correct and (ii)
-differ substantially from the model XDS uses.
+differ substantially from the model XDS uses. Now have a plan to get
+some Monte Carlo simulations going, and also some offline test cases
+where we ignore mm to pixel correction and apply manually.
 
 \end{document}
 
