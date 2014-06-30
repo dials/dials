@@ -308,6 +308,26 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
     return
 
+  def set_param_esds(self, esds):
+    """set the estimated standard deviations of the internal list of parameters
+    from a sequence of floats.
+
+    First break the sequence into sub sequences of the same length
+    as the _set_len.
+
+    Only free parameters can be set, therefore the length of esds must equal
+    the value of num_free"""
+
+    assert(len(esds) == self.num_free())
+    i = 0
+    for p in self._param:
+      if not p.get_fixed(): # only set the free parameter sets
+        new_esds = esds[i:i+self._set_len]
+        p.esd = new_esds
+        i += self._set_len
+
+    return
+
   #def get_fixed(self): inherited unchanged from ModelParameterisation
 
   #def set_fixed(self, fix): inherited unchanged from ModelParameterisation

@@ -1207,7 +1207,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       # set up the parameters.
       # distance from lab origin to ref_panel plane along its normal,
       # in initial orientation
-      #from dials.util.command_line import interactive_console; interactive_console()
       distance = self._groups[igp].get_distance()
       dist = Parameter(distance, dn, 'length (mm)', 'Group{0}Dist'.format(igp))
 
