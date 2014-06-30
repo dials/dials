@@ -20,6 +20,13 @@ import sys
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
+# termination reason strings
+TARGET_ACHIEVED = "RMSD target achieved"
+RMSD_CONVERGED = "RMSD no longer decreasing"
+STEP_TOO_SMALL = "Step too small"
+OBJECTIVE_INCREASE = "Refinement failure: objective increased"
+MAX_ITERATIONS = "Reached maximum number of iterations"
+
 class Journal(object):
   """Container in which to store information about refinement history"""
   pass
@@ -281,7 +288,15 @@ class AdaptLbfgs(Refinery):
       print self.history._step,
       sys.stdout.flush()
 
-    return self.test_for_termination()
+    if self.test_for_termination():
+      self.history.reason_for_termination = TARGET_ACHIEVED
+      return True
+
+    if self.test_rmsd_convergence():
+      self.history.reason_for_termination = RMSD_CONVERGED
+      return True
+
+    return False
 
   def run_lbfgs(self, curvatures=False):
     """
@@ -303,7 +318,11 @@ class AdaptLbfgs(Refinery):
 
     pos = log.rfind("lbfgs minimizer stop: ")
     if pos >= 0:
-      self.history.reason_for_termination = log[pos:].splitlines()[0]
+      msg = log[pos:].splitlines()[0]
+      if self.history.reason_for_termination:
+        self.history.reason_for_termination += "\n"
+        self.history.reason_for_termination += msg
+      else: self.history.reason_for_termination = msg
 
     if self.minimizer.error:
       self.history.reason_for_termination = self.minimizer.error
@@ -515,28 +534,26 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
       # test termination criteria
       if self.test_for_termination():
-        self.history.reason_for_termination = "RMSD target achieved"
+        self.history.reason_for_termination = TARGET_ACHIEVED
         break
 
       if self.test_rmsd_convergence():
-        self.history.reason_for_termination = "RMSD no longer decreasing"
+        self.history.reason_for_termination = RMSD_CONVERGED
         break
 
       if self.had_too_small_a_step():
-        self.history.reason_for_termination = "Step too small"
+        self.history.reason_for_termination = STEP_TOO_SMALL
         break
 
       if self.test_objective_increasing_but_not_nref():
-        self.history.reason_for_termination = "Refinement failure:" \
-            "objective increased"
+        self.history.reason_for_termination = OBJECTIVE_INCREASE
         if self.step_backward():
           self.history.reason_for_termination += ". Parameters set back one step"
         self.prepare_for_step()
         break
 
       if self.n_iterations == self._max_iterations:
-        self.history.reason_for_termination = "Reached maximum number of " \
-            "iterations"
+        self.history.reason_for_termination = MAX_ITERATIONS
         break
 
       # prepare for next step
