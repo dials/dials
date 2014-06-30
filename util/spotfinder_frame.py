@@ -20,6 +20,8 @@ class SpotFrame(XrayFrame) :
     self.max_pix_layer = None
     self.predictions_layer = None
     self.miller_indices_layer = None
+    self.vector_layer = None
+    self.vector_text_layer = None
 
     from libtbx.utils import time_log
     self.show_all_pix_timer = time_log("show_all_pix")
@@ -64,6 +66,8 @@ class SpotFrame(XrayFrame) :
       max_pix_data = spotfinder_data.max_pix_data
       predictions_data = spotfinder_data.predictions_data
       miller_indices_data = spotfinder_data.miller_indices_data
+      vector_data = spotfinder_data.vector_data
+      vector_text_data = spotfinder_data.vector_text_data
       if self.dials_spotfinder_layer is not None:
         self.pyslip.DeleteLayer(self.dials_spotfinder_layer)
         self.dials_spotfinder_layer = None
@@ -82,6 +86,12 @@ class SpotFrame(XrayFrame) :
       if self.miller_indices_layer is not None:
         self.pyslip.DeleteLayer(self.miller_indices_layer)
         self.miller_indices_layer = None
+      if self.vector_layer is not None:
+        self.pyslip.DeleteLayer(self.vector_layer)
+        self.vector_layer = None
+      if self.vector_text_layer is not None:
+        self.pyslip.DeleteLayer(self.vector_text_layer)
+        self.vector_text_layer = None
 
       if self.settings.show_miller_indices and len(miller_indices_data):
         self.miller_indices_layer = self.pyslip.AddTextLayer(
@@ -127,6 +137,18 @@ class SpotFrame(XrayFrame) :
           renderer = self.pyslip.LightweightDrawPointLayer,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
         self.draw_max_pix_timer.stop()
+      if True:
+        self.vector_layer = self.pyslip.AddPolygonLayer(
+          vector_data, map_rel=True, visible=True,
+          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          selectable=False,
+          name='<vector_layer>')
+        self.vector_text_layer = self.pyslip.AddTextLayer(
+          vector_text_data, map_rel=True, visible=True,
+          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          selectable=False,
+          name='<vector_text_layer>',
+          colour='#F62817')
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
@@ -145,17 +167,21 @@ class SpotFrame(XrayFrame) :
 
     shoebox_dict = {'width': 2, 'color': '#0000FFA0', 'closed': False}
     ctr_mass_dict = {'width': 2, 'color': '#FF0000', 'closed': False}
+    vector_dict = {'width': 4, 'color': '#F62817', 'closed': False}
     i_frame = self.image_chooser.GetClientData(
       self.image_chooser.GetSelection()).index
     imageset = self.image_chooser.GetClientData(
       self.image_chooser.GetSelection()).image_set
-    i_frame += imageset.get_array_range()[0]
+    if imageset.get_scan() is not None:
+      i_frame += imageset.get_array_range()[0]
     shoebox_data = []
     all_pix_data = []
     ctr_mass_data = []
     max_pix_data = []
     predictions_data = []
     miller_indices_data = []
+    vector_data = []
+    vector_text_data = []
     detector = self.pyslip.tiles.raw_image.get_detector()
     scan = self.pyslip.tiles.raw_image.get_scan()
     to_degrees = 180 / math.pi
@@ -239,8 +265,9 @@ class SpotFrame(XrayFrame) :
       else:
         phi = ref_list['xyzcal.mm'].parts()[2]
         frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
+      n = 0 # buffer
       frame_predictions_sel = (
-        (frame_numbers >= i_frame) & (frame_numbers < (i_frame+1)))
+        (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
       for reflection in ref_list.select(frame_predictions_sel):
         if (self.settings.show_predictions and
             reflection.has_key('xyzcal.px')):
@@ -262,45 +289,34 @@ class SpotFrame(XrayFrame) :
 
     if self.crystals is not None:
       from scitbx import matrix
-      crystal = self.crystals[0]
-      A = crystal.get_A()
-      A_inv = A.inverse()
-      a = matrix.col(A_inv[:3])
-      b = matrix.col(A_inv[3:6])
-      c = matrix.col(A_inv[6:])
+      from cctbx import crystal
+      crystal_model = self.crystals[0]
+      cs = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(), space_group=crystal_model.get_space_group())
+      cb_op = cs.change_of_basis_op_to_reference_setting()
+      crystal_model = crystal_model.change_basis(cb_op)
+      A = crystal_model.get_A()
       scan = imageset.get_scan()
+      beam = imageset.get_beam()
       phi = scan.get_angle_from_array_index(
         i_frame-imageset.get_array_range()[0], deg=True)
       axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
-      a_phi = a.rotate_around_origin(axis, phi, deg=True)
-      b_phi = b.rotate_around_origin(axis, phi, deg=True)
-      c_phi = c.rotate_around_origin(axis, phi, deg=True)
-      n = matrix.col(detector[0].get_normal())
-      projections = []
-      for v in (a_phi, b_phi, c_phi):
-        # http://www.euclideanspace.com/maths/geometry/elements/plane/lineOnPlane/
-        v_proj = n.cross(v.cross(n))
-        projections.append(v_proj)
-        #print v_proj.length()
+      beam_centre = detector[0].get_ray_intersection(beam.get_s0())
+      beam_x, beam_y = detector[0].millimeter_to_pixel(beam_centre)
+      beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, reflection['panel'])
+      lines = []
+      for i, h in enumerate(((10,0,0), (0,10,0), (0,0,10))):
+        r = A * matrix.col(h)
+        r_phi = r.rotate_around_origin(axis, phi, deg=True)
+        s1 = matrix.col(beam.get_s0()) + r_phi
+        x, y = detector[0].get_ray_intersection(s1)
+        x, y = detector[0].millimeter_to_pixel((x,y))
+        x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
+        vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
 
-      max_length = max(v.length() for v in (a, b, c))
-      from matplotlib import pyplot
-      pyplot.clf()
-      ax = pyplot.axes()
-      for i, v in enumerate(projections):
-        #ax.plot([0,v.elems[0]], [0,v.elems[1]], 'k-', lw=2)
-        ax.arrow(0,0,v.elems[0], v.elems[1],
-                 head_width=0.03*max_length, head_length=0.05*max_length,
-                 fc='k', ec='k')
-        ax.text(v.elems[0]+(0.05*max_length), v.elems[1]+(0.05*max_length),
-                'abc'[i] + ': %.1f' %((a,b,c)[i].length()),
-                horizontalalignment='left',
-                verticalalignment='bottom',
-                transform=ax.transData)
-      pyplot.xlim(-max_length, max_length)
-      pyplot.ylim(-max_length, max_length)
-      pyplot.draw()
-      pyplot.show(block=False)
+        vector_text_data.append((x, y, ('a*', 'b*', 'c*')[i],
+                                 {'placement':'ne',
+                                  'fontsize': 20,
+                                  'color':'#F62817'}))
 
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,
@@ -308,7 +324,9 @@ class SpotFrame(XrayFrame) :
                       ctr_mass_data=ctr_mass_data,
                       max_pix_data=max_pix_data,
                       predictions_data=predictions_data,
-                      miller_indices_data=miller_indices_data)
+                      miller_indices_data=miller_indices_data,
+                      vector_data=vector_data,
+                      vector_text_data=vector_text_data)
 
 
 class SpotSettingsFrame (SettingsFrame) :
