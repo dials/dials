@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 def GetBitmap_from_np_array(data2d):
 
   plt.imshow(data2d, interpolation = "nearest")
-
   plt.savefig("/dev/shm/img_tmp.png", format = 'png')
-
   wxBitmap = wx.Bitmap("/dev/shm/img_tmp.png")
 
   return wxBitmap
