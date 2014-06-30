@@ -23,6 +23,8 @@ run_xds = False
   .type = bool
 run_mosflm = False
   .type = bool
+min_sweep_length = 1
+  .type = int(value_min=1)
 xds {
   include_resolution_range = (40, 0)
     .type = floats(size=2)
@@ -56,15 +58,22 @@ def run(args):
   filenames = []
 
   for t in templates:
+    print t
     filenames.extend(glob.glob(t))
+  print filenames
   from dxtbx.imageset import ImageSetFactory, ImageSweep
-  imagesets = ImageSetFactory.new(filenames, check_headers=False)
+  from dxtbx.datablock import DataBlockFactory
+  datablocks = DataBlockFactory.from_args(filenames, verbose=True)
+
   i = 0
-  for imageset in imagesets:
-    if isinstance(imageset, ImageSweep) and len(imageset) > 3:
-      i += 1
-      print imageset.get_template()
-      args.append((imageset.paths(), i, params))
+  for i, datablock in enumerate(datablocks):
+    sweeps = datablock.extract_sweeps()
+    for imageset in sweeps:
+      if isinstance(imageset, ImageSweep) and len(imageset) >= params.min_sweep_length:
+        i += 1
+        print imageset
+        print imageset.get_template()
+        args.append((imageset.paths(), i, params))
 
   # sort based on the first filename of each imageset
   args.sort(key=lambda x: x[0][0])
