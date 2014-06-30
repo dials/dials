@@ -9,10 +9,12 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d,  sigma_2d, \
                                           fitting_2d_multile_var_build_mat, \
-                                          fitting_2d_partials, test_outlier\
+                                          fitting_2d_partials
+
+#the next line is a duty that might be retaken soon
+#from dials.algorithms.integration import test_outlier
 
 from dials.array_family import flex
 from dials.algorithms.integration.projection_from_3d_to_2d import \

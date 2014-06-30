@@ -12,8 +12,6 @@ from __future__ import division
 from dials.algorithms.integration.mosflm_2D_profile import \
  fit_profile_2d, make_2d_profile
 
-from dials.model.data import Reflection, ReflectionList
-
 from dials.array_family import flex
 
 def mosflm_caller(ref_table_in, xmax, ymax, n_div):

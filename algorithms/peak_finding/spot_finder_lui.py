@@ -187,8 +187,6 @@ def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_l
   Returns:
       A list of reflections
   '''
-  from dials.model.data import Reflection, ReflectionList
-  from dials.algorithms.integration import allocate_reflection_profiles
 
   # Create the reflection list
   length = len(x_from_lst)

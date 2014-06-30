@@ -8,10 +8,10 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package."
 
-import wx, os
+import wx
 from dials.viewer.viewer_utilities \
-     import GetBitmap_from_np_array, build_np_img, from_wx_image_to_wx_bitmap
-
+     import GetBitmap_from_np_array, from_wx_image_to_wx_bitmap
+#from dials.viewer.viewer_utilities import build_np_img
 from dials.viewer.reflection_data_navigator import table_s_navigator
 
 

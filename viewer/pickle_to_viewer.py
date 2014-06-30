@@ -5,8 +5,11 @@ from dials.viewer.reflection_view import paint_refl
 if __name__ == '__main__':
   import cPickle as pickle
   import sys
-  from dials.model.data import ReflectionList # implicit import
+
   table = pickle.load(open(sys.argv[1]))
+
+  ## or
+  #table = flex.reflection_table.from_pickle(
 
   print "num of ref =", len(table)
   tmp_not_needed = '''
