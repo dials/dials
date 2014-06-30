@@ -2,13 +2,8 @@ from __future__ import division
 from scitbx.array_family import flex
 from dials.scratch.luiso_s import model_2d
 
-from matplotlib import pylab
-
-import numpy
-
 nrow = 35
 ncol = 35
-
 ref_ang = 5
 local_i = 170
 

@@ -665,16 +665,13 @@ scratch/luiso_s/test_code/test_flex_integr_2d_single_pixel.py -text
 scratch/luiso_s/test_code/test_mask.py -text
 scratch/luiso_s/test_code/test_profilefitting_2D.py -text
 scratch/luiso_s/test_code/test_profilefitting_3D.py -text
-scratch/luiso_s/test_code/treshold_2d_smooth_masker_caller.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_CLI.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_CLI_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_loops.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_mask.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_math.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_matrix_01.py -text svneol=unset#text/plain
-scratch/luiso_s/test_code/tst_mosflm_real_img.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
-scratch/luiso_s/test_code/tst_plotting_1d_demo.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/versa_test.py -text
 scratch/luiso_s/test_code/versa_test_01.py -text
 scratch/luiso_s/test_code/view_background_algrm.py -text

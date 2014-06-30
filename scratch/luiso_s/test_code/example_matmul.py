@@ -20,8 +20,6 @@ write_2d(b)
 
 
 
-
-from scitbx import matrix
 a_mat = a.as_scitbx_matrix()
 b_mat = b.as_scitbx_matrix()
 

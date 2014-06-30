@@ -14,8 +14,7 @@ x = A ** (-1) * B
 
 '''
 
-from scitbx import matrix
-from dials.scratch.luiso_s import tst_prod , write_2d
+from dials.scratch.luiso_s import write_2d
 from scitbx.array_family import flex
 import random
 a = flex.double(flex.grid(3, 3))
