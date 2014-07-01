@@ -22,7 +22,11 @@ def exercise_1():
   assert len(g) == 84
   hall_symbol =  '-R 3 2"'
   cmd = " ".join(["dials.process", "scan_varying=True", "--nproc=1",
-                  "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol]
+                  "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
+                  "n_macro_cycles=5",
+                  "maximum_spot_error=3",
+                  "maximum_phi_error=2",
+                  ]
                 + ['"%s"' %p for p in g]
                  )
   #print cmd
@@ -34,7 +38,6 @@ def exercise_1():
   from iotbx.reflection_file_reader import any_reflection_file
   reader = any_reflection_file('integrated.mtz')
   mtz_object = reader.file_content()
-  assert mtz_object.n_reflections() == 34104
   assert mtz_object.column_labels() == [
     'H', 'K', 'L', 'M_ISYM', 'BATCH', 'I', 'SIGI', 'FRACTIONCALC',
     'XDET', 'YDET', 'ROT']
@@ -44,6 +47,7 @@ def exercise_1():
     (58.373, 58.373, 155.939, 90, 90, 120))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
+  assert mtz_object.n_reflections() == 34094
   os.chdir(cwd)
 
 
@@ -57,7 +61,11 @@ def exercise_2():
   assert len(g) == 45
   hall_symbol =  " I 2 2 3"
   cmd = " ".join(["dials.process", "scan_varying=True", "--nproc=1",
-                  "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol]
+                  "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
+                  "n_macro_cycles=5",
+                  "maximum_spot_error=3",
+                  "maximum_phi_error=2",
+                  ]
                 + ['"%s"' %p for p in g]
                  )
   #print cmd
@@ -69,7 +77,6 @@ def exercise_2():
   from iotbx.reflection_file_reader import any_reflection_file
   reader = any_reflection_file('integrated.mtz')
   mtz_object = reader.file_content()
-  assert mtz_object.n_reflections() == 48720
   assert mtz_object.column_labels() == [
     'H', 'K', 'L', 'M_ISYM', 'BATCH', 'I', 'SIGI', 'FRACTIONCALC',
     'XDET', 'YDET', 'ROT']
@@ -78,6 +85,7 @@ def exercise_2():
   expected_unit_cell = uctbx.unit_cell((78.07, 78.07, 78.07, 90, 90, 90))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
+  assert mtz_object.n_reflections() == 48646
   os.chdir(cwd)
 
 

@@ -83,7 +83,7 @@ known_symmetry {
     .help = "Angular tolerance (in degrees) in unit cell comparison."
 }
 basis_vector_combinations {
-  max_try = 1
+  max_try = 10
     .type = int(value_min=1)
 }
 optimise_initial_basis_vectors = False
@@ -794,6 +794,13 @@ class indexer_base(object):
     min_likelihood = 0.3
     best_likelihood = min_likelihood
 
+    import copy
+    params = copy.deepcopy(self.params)
+    params.refinement.parameterisation.crystal.scan_varying = False
+    params.refinement.parameterisation.detector.fix = "all"
+    params.refinement.parameterisation.beam.fix = "all"
+    params.refinement.refinery.max_iterations = 1
+
     for cm in candidate_orientation_matrices:
       sel = ((self.reflections['id'] == -1) &
              (1/self.reciprocal_space_points.norms() > self.d_min))
@@ -811,9 +818,11 @@ class indexer_base(object):
                               goniometer=self.goniometer,
                               scan=self.scan,
                               crystal=cm)
+
       refiner = RefinerFactory.from_parameters_data_experiments(
-        self.params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
+        params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
         verbosity=0)
+      refiner.run()
       rmsds = refiner.rmsds()
       xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
       model_likelihood = 1.0 - xy_rmsds
