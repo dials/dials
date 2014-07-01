@@ -125,48 +125,15 @@ class indexer_real_space_grid_search(indexer_base):
         print
 
     crystal_models = []
-    while True:
-      self.candidate_basis_vectors = unique_vectors
-      if self.params.debug:
-        self.debug_show_candidate_basis_vectors()
-      candidate_orientation_matrices \
-        = self.find_candidate_orientation_matrices(
-          unique_vectors, return_first=False, apply_symmetry=False)
-      if len(candidate_orientation_matrices) == 0: break
-      n_indexed = flex.int()
-      from dials.algorithms.indexing import index_reflections
-      for cm in candidate_orientation_matrices:
-        refl = copy.deepcopy(self.reflections).select(
-          (self.reflections['id'] == -1) &
-          (1/self.reciprocal_space_points.norms() > d_min))
-        #refl['id'] = flex.int(refl.size(), -1)
-        index_reflections(refl, reciprocal_space_points,
-                          [cm], self.d_min, tolerance=0.25,
-                          verbosity=0)
-        n_indexed.append((refl['id'] > -1).count(True))
-      perm = flex.sort_permutation(n_indexed, reverse=True)
-      if self.params.debug:
-        print list(perm)
-        print list(n_indexed.select(perm))
-      print candidate_orientation_matrices[perm[0]]
-
-      if n_indexed[perm[0]] < 20:
-        break
-
-      new_unique_vectors = []
-      cm = candidate_orientation_matrices[perm[0]]
-      crystal_models.append(cm)
-      #a, b, c = cm.get_real_space_vectors()
-      #for v in unique_vectors:
-        #if not (is_approximate_integer_multiple(v, a) or
-                #is_approximate_integer_multiple(v, b) or
-                #is_approximate_integer_multiple(v, c)):
-          #new_unique_vectors.append(v)
-      #assert len(new_unique_vectors) == len(unique_vectors) - 3
-      #if len(new_unique_vectors) < 3: break
-      #unique_vectors = new_unique_vectors
-      if len(crystal_models) == 1:
-        break
+    self.candidate_basis_vectors = unique_vectors
+    if self.params.debug:
+      self.debug_show_candidate_basis_vectors()
+    candidate_orientation_matrices \
+      = self.find_candidate_orientation_matrices(
+        unique_vectors, max_combinations=30, apply_symmetry=False)
+    crystal_model, n_indexed = self.choose_best_orientation_matrix(
+      candidate_orientation_matrices)
+    crystal_models = [crystal_model]
 
     #assert len(crystal_models) > 0
 

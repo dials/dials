@@ -312,7 +312,7 @@ def exercise_8():
                 "known_symmetry.space_group=P212121",
                 "scan_range=0,10",
                 "beam.fix=all",
-                "detector.fix=orientation",
+                "detector.fix=all",
                 "maximum_spot_error=3",
                 "max_cell=70",
                 ]

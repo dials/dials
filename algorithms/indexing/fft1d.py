@@ -41,8 +41,12 @@ class indexer_fft1d(indexer_base):
     if self.params.debug:
       self.debug_show_candidate_basis_vectors()
     self.candidate_crystal_models = self.find_candidate_orientation_matrices(
-      self.candidate_basis_vectors, return_first=True, apply_symmetry=False)
-    crystal_models = self.candidate_crystal_models[:1]
+      self.candidate_basis_vectors,
+      max_combinations=self.params.basis_vector_combinations.max_try,
+      apply_symmetry=False)
+    crystal_model, n_indexed = self.choose_best_orientation_matrix(
+      self.candidate_crystal_models)
+    crystal_models = [crystal_model]
     experiments = ExperimentList()
     for cm in crystal_models:
       experiments.append(Experiment(beam=self.beam,

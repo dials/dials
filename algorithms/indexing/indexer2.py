@@ -82,6 +82,10 @@ known_symmetry {
     .type = float
     .help = "Angular tolerance (in degrees) in unit cell comparison."
 }
+basis_vector_combinations {
+  max_try = 1
+    .type = int(value_min=1)
+}
 optimise_initial_basis_vectors = False
   .type = bool
 debug = False
@@ -674,7 +678,7 @@ class indexer_base(object):
     return opt_detector, opt_beam
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
-                                          return_first=False,
+                                          max_combinations=1,
                                           apply_symmetry=True):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
@@ -743,9 +747,32 @@ class indexer_base(object):
           if uc.volume() > (params[0]*params[1]*params[2]/100):
             # unit cell volume cutoff from labelit 2004 paper
             candidate_crystal_models.append(model)
-            if return_first:
+            if len(candidate_crystal_models) == max_combinations:
               return candidate_crystal_models
     return candidate_crystal_models
+
+  def choose_best_orientation_matrix(self, candidate_orientation_matrices):
+    from dials.algorithms.indexing import index_reflections
+    hkl_tolerance \
+      = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
+    n_indexed = flex.int()
+    for cm in candidate_orientation_matrices:
+      sel = ((self.reflections['id'] == -1) &
+             (1/self.reciprocal_space_points.norms() > self.d_min))
+      refl = self.reflections.select(sel)
+      reciprocal_space_points = self.reciprocal_space_points.select(sel)
+      index_reflections(refl, reciprocal_space_points,
+                        [cm], self.d_min,
+                        tolerance=hkl_tolerance,
+                        verbosity=0)
+      n_indexed.append((refl['id'] > -1).count(True))
+    perm = flex.sort_permutation(n_indexed, reverse=True)
+    if self.params.debug:
+      print list(perm)
+      print list(n_indexed.select(perm))
+      print candidate_orientation_matrices[perm[0]]
+
+    return candidate_orientation_matrices[perm[0]], n_indexed[perm[0]]
 
   def apply_symmetry(self, crystal_model, target_symmetry,
                      return_primitive_setting=False,
