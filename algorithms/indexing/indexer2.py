@@ -822,11 +822,14 @@ class indexer_base(object):
                  crystal=cm,
                  rmsds=rmsds,
                  n_indexed=n_indexed[-1]))
-      print "model_likelihood: %.2f" %model_likelihood
+      if self.params.debug:
+        print "model_likelihood: %.2f" %model_likelihood
       if model_likelihood > best_likelihood:
         best_likelihood = model_likelihood
 
     best_solution = solutions.best_solution()
+    if self.params.debug:
+      print "best model_likelihood: %.2f" %best_solution.model_likelihood
     return best_solution.crystal, best_solution.n_indexed
 
   def apply_symmetry(self, crystal_model, target_symmetry,
