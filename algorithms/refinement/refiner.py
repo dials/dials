@@ -34,7 +34,7 @@ class RefinerFactory(object):
     #or stills (the combination of both not yet supported)?
 
     # if no verbosity override is given, take from the parameters
-    if not verbosity:
+    if verbosity is None:
       verbosity = params.refinement.verbosity
 
     # copy the experiments
