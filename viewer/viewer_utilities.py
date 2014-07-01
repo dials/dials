@@ -10,26 +10,46 @@
 
 import numpy, wx
 import matplotlib.pyplot as plt
-def GetBitmap_from_np_array(np_img_2d, Intst_max, img_scale):
+def GetBitmap_from_np_array(np_img_2d, Intst_max, img_scale, ofst):
   fig = plt.figure()
   # remember to make sure this is our convention in (x, y) vs (row, col)
   if Intst_max > 0:
-    plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = Intst_max)
-
-
+    plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0
+               , vmax = Intst_max)
   else:
-    plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = 10)
+    plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0
+               , vmax = 10)
+  calc_ofst = True
+  if(calc_ofst == True):
+    ax = fig.add_subplot(1,1,1)
 
+    xlabl = ax.xaxis.get_majorticklocs()
+    if(len(xlabl) > 5):
+      to_many_labels = True
+    else:
+      to_many_labels = False
+    x_new_labl =[]
+    print xlabl
+    for pos in range(len(xlabl)):
+      if( float(pos) / 2.0 == int(pos / 2) or to_many_labels == False):
+        x_new_labl.append(str(xlabl[pos] + ofst[0] + 0.5))
+      else:
+        x_new_labl.append("")
+    ax.xaxis.set_ticklabels(x_new_labl)
 
-  ax = fig.add_subplot(1,1,1)
-  #ax.plot([1, 2, 3, 4], [10, 20, 25, 30])
-  #set_default_intervals()
-  #ax.xaxis.set_data_interval(vmin = 2, vmax = 4, ignore=False)
-  dat = ax.xaxis.get_ticklabels()
-  for dat_prnt in dat:
-    print "ax.xaxis.get_ticklabels() =", dat_prnt
-  ax.xaxis.set_ticklabels(["foo" , "bar", "ouch"])
-
+    ylabl = ax.yaxis.get_majorticklocs()
+    if(len(ylabl) > 4):
+      to_many_labels = True
+    else:
+      to_many_labels = False
+    y_new_labl =[]
+    print ylabl
+    for pos in range(len(ylabl)):
+      if( float(pos) / 2.0 == int(pos / 2) or to_many_labels == False):
+        y_new_labl.append(str(ylabl[pos] + ofst[2] + 0.5))
+      else:
+        y_new_labl.append("")
+    ax.yaxis.set_ticklabels(y_new_labl)
 
 
   fig.canvas.draw()

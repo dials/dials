@@ -139,26 +139,28 @@ class ReflectionFrame(wx.Frame):
 
   def My_Update(self, request_new_data = True):
 
-
     if( request_new_data == True ):
       self.bkg, self.dat, self.msk = self.tabl()
       self.I_max = self.tabl.Get_Max()
-      print "re - fitting"
+      self.box_lmt = self.tabl.Get_bbox()
 
       self.wx_Img_dat, self.img_width, self.img_height = GetBitmap_from_np_array(
                                       np_img_2d = self.dat
                                     , Intst_max = self.I_max
-                                    , img_scale = self.frame_scale)
+                                    , img_scale = self.frame_scale
+                                    , ofst = self.box_lmt)
 
       self.wx_Img_bkg, self.img_width, self.img_height = GetBitmap_from_np_array(
                                       np_img_2d = self.bkg
                                     , Intst_max = self.I_max
-                                    , img_scale = self.frame_scale)
+                                    , img_scale = self.frame_scale
+                                    , ofst = self.box_lmt)
 
       self.wx_Img_msk, self.img_width, self.img_height = GetBitmap_from_np_array(
                                       np_img_2d = self.msk
                                     , Intst_max = -1
-                                    , img_scale = self.frame_scale)
+                                    , img_scale = self.frame_scale
+                                    , ofst = self.box_lmt)
 
     self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_dat
             , self.img_width, self.img_height, self.frame_scale)
@@ -180,30 +182,6 @@ class ReflectionFrame(wx.Frame):
     self.Layout()
     self.Refresh()
 
-
-
-    old_way = '''
-    if( request_new_data == True ):
-      self.bkg, self.dat, self.msk = self.tabl()
-      self.I_max = self.tabl.Get_Max()
-
-    My_Img = GetBitmap_from_np_array(np_img_2d = self.dat, Intst_max = self.I_max
-                                     ,img_scale = self.frame_scale)
-    self.Image_01.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = self.bkg, Intst_max = self.I_max
-                                     ,img_scale = self.frame_scale)
-    self.Image_02.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = self.msk, Intst_max = -1
-                                     , img_scale = self.frame_scale)
-    self.Image_03.SetBitmap(My_Img)
-
-    if( request_new_data == True ):
-      print "re - fitting"
-      self.Fit()
-
-    self.Layout()
-    self.Refresh()
-    '''
 
   def On_Close_Window(self, event):
     self.Destroy()
@@ -227,7 +205,10 @@ if __name__ == "__main__":
   import sys
   from dials.model.data import ReflectionList # implicit import
   table = pickle.load(open(sys.argv[1]))
-
+  pos_of_best_example_so_far = '''
+  .... dials_regression/refinement_test_data/radiation_damaged_thaumatin/
+  indexed.pickle
+  '''
   print "num of ref =", len(table)
 
   app = App(redirect=False)
