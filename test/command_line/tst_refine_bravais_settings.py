@@ -44,7 +44,7 @@ def exercise_refine_bravais_settings():
   assert experiments_list[0].crystal.get_unit_cell().is_similar_to(
     uctbx.unit_cell((57.782, 57.782, 150.011, 90, 90, 90)))
   assert experiments_list[0].crystal.get_space_group().type().hall_symbol() \
-         == '-P 4 2'
+         == ' P 4 2'
 
   assert os.path.exists("bravais_summary.json")
   from json import load
