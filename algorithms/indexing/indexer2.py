@@ -753,9 +753,47 @@ class indexer_base(object):
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
     from dials.algorithms.indexing import index_reflections
+
+    from libtbx import group_args
+    class Solution(group_args):
+      pass
+
+    # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
+    class SolutionTracker(object):
+      def __init__(self):
+        self.all_solutions = []
+        self.volume_filtered = []
+
+      def append(self, item):
+        self.all_solutions.append(item)
+        self.update_analysis()
+
+      def update_analysis(self):
+        self.best_likelihood = max(
+          s.model_likelihood for s in self.all_solutions)
+        self.close_solutions = [
+        s for s in self.all_solutions
+        if s.model_likelihood >= (0.9 * self.best_likelihood)]
+        self.min_volume = min(s.crystal.get_unit_cell().volume()
+                              for s in self.close_solutions)
+        self.volume_filtered = [
+          s for s in self.close_solutions
+          if s.crystal.get_unit_cell().volume() < (1.25 * self.min_volume)]
+        self.best_volume_filtered_liklihood = max(
+          s.model_likelihood for s in self.volume_filtered)
+
+      def best_solution(self):
+        solutions = [s for s in self.volume_filtered
+                    if s.model_likelihood == self.best_volume_filtered_liklihood]
+        return solutions[0]
+
+    solutions = SolutionTracker()
     hkl_tolerance \
       = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
     n_indexed = flex.int()
+    min_likelihood = 0.3
+    best_likelihood = min_likelihood
+
     for cm in candidate_orientation_matrices:
       sel = ((self.reflections['id'] == -1) &
              (1/self.reciprocal_space_points.norms() > self.d_min))
@@ -766,13 +804,30 @@ class indexer_base(object):
                         tolerance=hkl_tolerance,
                         verbosity=0)
       n_indexed.append((refl['id'] > -1).count(True))
-    perm = flex.sort_permutation(n_indexed, reverse=True)
-    if self.params.debug:
-      print list(perm)
-      print list(n_indexed.select(perm))
-      print candidate_orientation_matrices[perm[0]]
+      from dials.algorithms.refinement import RefinerFactory
+      from dxtbx.model.experiment.experiment_list import Experiment
+      experiment = Experiment(beam=self.beam,
+                              detector=self.detector,
+                              goniometer=self.goniometer,
+                              scan=self.scan,
+                              crystal=cm)
+      refiner = RefinerFactory.from_parameters_data_experiments(
+        self.params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
+        verbosity=0)
+      rmsds = refiner.rmsds()
+      xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
+      model_likelihood = 1.0 - xy_rmsds
+      solutions.append(
+        Solution(model_likelihood=model_likelihood,
+                 crystal=cm,
+                 rmsds=rmsds,
+                 n_indexed=n_indexed[-1]))
+      print "model_likelihood: %.2f" %model_likelihood
+      if model_likelihood > best_likelihood:
+        best_likelihood = model_likelihood
 
-    return candidate_orientation_matrices[perm[0]], n_indexed[perm[0]]
+    best_solution = solutions.best_solution()
+    return best_solution.crystal, best_solution.n_indexed
 
   def apply_symmetry(self, crystal_model, target_symmetry,
                      return_primitive_setting=False,
