@@ -102,7 +102,7 @@ def refined_settings_factory_from_refined_triclinic(
     orient = crystal_orientation(crystal.get_A(),True)
     orient_best = orient.change_basis(matrix.sqr(cb_op).transpose())
     constrain_orient = orient_best.constrain(Lfat[j]['system'])
-    space_group = Lfat[j]["best_group"]
+    space_group = Lfat[j]["best_group"].build_derived_acentric_group()
     Lfat[j].unrefined_crystal = dials_crystal_from_orientation(
       constrain_orient, space_group)
 
