@@ -406,7 +406,8 @@ class indexer_base(object):
 
     if self.params.discover_better_experimental_model:
       opt_detector, opt_beam = self.discover_better_experimental_model(
-        self.reflections, self.detector, self.beam, self.goniometer, self.scan)
+        self.reflections, self.detector, self.beam, self.goniometer,
+        self.imagesets[0].get_scan())
       self.sweep.set_detector(opt_detector)
       self.sweep.set_beam(opt_beam)
       self.detector = opt_detector
