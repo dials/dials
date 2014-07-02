@@ -47,7 +47,8 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 
 # Imports for the target function
 from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+  LeastSquaresPositionalResidualWithRmsdCutoff
+from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
 # Import helper functions
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
@@ -214,6 +215,10 @@ refman = ReflectionManager(obs_refs.to_table(centroid_is_mm=True), experiments)
 ##############################
 # Set up the target function #
 ##############################
+
+# Redefine the reflection predictor to use the type expected by the Target class
+from dials.algorithms.refinement.prediction import ExperimentsPredictor
+ref_predictor = ExperimentsPredictor(experiments)
 
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
     experiments, ref_predictor, refman, pred_param)
