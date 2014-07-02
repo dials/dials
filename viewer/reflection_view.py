@@ -10,7 +10,7 @@
 
 import wx
 from dials.viewer.viewer_utilities \
-     import GetBitmap_from_np_array, from_wx_image_to_wx_bitmap
+     import from_wx_image_to_wx_bitmap, np_to_bmp
 #from dials.viewer.viewer_utilities import build_np_img
 from dials.viewer.reflection_data_navigator import table_s_navigator
 
@@ -86,6 +86,8 @@ class ReflectionFrame(wx.Frame):
     '''
     self.Bind(wx.EVT_SIZE, self.OnSize)
 
+    self.bmp = np_to_bmp()
+
     wx.EVT_CLOSE(self, self.On_Close_Window)
 
   def tabl_to_frame(self, loc_tabl):
@@ -144,22 +146,20 @@ class ReflectionFrame(wx.Frame):
       self.I_max = self.tabl.Get_Max()
       self.box_lmt = self.tabl.Get_bbox()
 
-      self.wx_Img_dat, self.img_width, self.img_height = GetBitmap_from_np_array(
+
+      self.wx_Img_dat, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = self.dat
                                     , Intst_max = self.I_max
-                                    , img_scale = self.frame_scale
                                     , ofst = self.box_lmt)
 
-      self.wx_Img_bkg, self.img_width, self.img_height = GetBitmap_from_np_array(
+      self.wx_Img_bkg, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = self.bkg
                                     , Intst_max = self.I_max
-                                    , img_scale = self.frame_scale
                                     , ofst = self.box_lmt)
 
-      self.wx_Img_msk, self.img_width, self.img_height = GetBitmap_from_np_array(
+      self.wx_Img_msk, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = self.msk
                                     , Intst_max = -1
-                                    , img_scale = self.frame_scale
                                     , ofst = self.box_lmt)
 
     self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_dat
@@ -176,8 +176,6 @@ class ReflectionFrame(wx.Frame):
             , self.img_width, self.img_height, self.frame_scale)
 
     self.Image_03.SetBitmap(self.My_Img_03)
-
-
 
     self.Layout()
     self.Refresh()
