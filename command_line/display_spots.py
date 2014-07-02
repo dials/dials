@@ -41,6 +41,12 @@ if __name__ == '__main__':
   import sys
   from dials.util.command_line import Importer
   args = sys.argv[1:]
+  if len(args) == 0:
+    from libtbx.utils import Usage
+    import libtbx.load_env
+    usage_message = """\
+%s datablock.json reflections.pickle""" %libtbx.env.dispatcher_name
+    raise Usage(usage_message)
   importer = Importer(args, check_format=True)
   crystals = None
   if importer.datablocks is not None and len(importer.datablocks) == 1:

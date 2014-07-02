@@ -30,6 +30,19 @@ output {
 """)
 
 def run(args):
+  if len(args) == 0:
+    from libtbx.utils import Usage
+    import libtbx.load_env
+    from cStringIO import StringIO
+    usage_message = """\
+%s datablock.json reflections.pickle [options]
+
+Parameters:
+""" %libtbx.env.dispatcher_name
+    s = StringIO()
+    master_phil_scope.show(out=s)
+    usage_message += s.getvalue()
+    raise Usage(usage_message)
   from dials.util.command_line import Importer
   from scitbx.array_family import flex
   from scitbx import matrix

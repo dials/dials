@@ -1,6 +1,12 @@
 from __future__ import division
 
 def run(args):
+  if len(args) == 0:
+    from libtbx.utils import Usage
+    import libtbx.load_env
+    usage_message = """\
+%s datablock.json | experiments.json""" %libtbx.env.dispatcher_name
+    raise Usage(usage_message)
   from dials.util.command_line import Importer
   importer = Importer(args)
   experiments = importer.experiments

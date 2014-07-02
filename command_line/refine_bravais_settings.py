@@ -18,6 +18,19 @@ master_params = master_phil_scope.fetch().extract()
 
 
 def run(args):
+  if len(args) == 0:
+    from libtbx.utils import Usage
+    import libtbx.load_env
+    from cStringIO import StringIO
+    usage_message = """\
+%s experiments.json indexed.pickle [options]
+
+Parameters:
+""" %libtbx.env.dispatcher_name
+    s = StringIO()
+    master_phil_scope.show(out=s)
+    usage_message += s.getvalue()
+    raise Usage(usage_message)
   importer = Importer(args, check_format=False)
   if len(importer.experiments) == 0:
     print "No ExperimentList could be constructed"

@@ -265,6 +265,19 @@ def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
 
 
 def run(args):
+  if len(args) == 0:
+    from libtbx.utils import Usage
+    import libtbx.load_env
+    from cStringIO import StringIO
+    usage_message = """\
+%s datablock.json strong.pickle [options]
+
+Parameters:
+""" %libtbx.env.dispatcher_name
+    s = StringIO()
+    master_phil_scope.show(out=s)
+    usage_message += s.getvalue()
+    raise Usage(usage_message)
   importer = Importer(args, check_format=False)
   if len(importer.datablocks) == 0:
     print "No DataBlock could be constructed"
@@ -300,6 +313,4 @@ def run(args):
 
 if __name__ == '__main__':
   import sys
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
   run(sys.argv[1:])
