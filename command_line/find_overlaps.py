@@ -305,7 +305,7 @@ class find_overlaps(object):
 
       # Create the function to mask the shoebox profiles
       from dials.algorithms import shoebox
-      mask_profiles = shoebox.Masker(expt, delta_d, delta_m)
+      mask_profiles = shoebox.Masker3DProfile(expt, delta_d, delta_m)
       mask_profiles(ref_table, None)
       reflection_table.extend(ref_table)
 
