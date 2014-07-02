@@ -159,26 +159,6 @@ class Script(ScriptRunner):
     print '*' * 80
 
     imagesets = datablock.extract_imagesets()
-    if len(imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
-    imageset = imagesets[0]
-
-    #cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-    ## switch off scan-varying refinement for indexing, leaving it set (if
-    ## requested) for the refinement step
-    #extra_src = parse(
-      #"refinement.parameterisation.crystal.scan_varying=False")
-    #working_phil = cmd_line.process_and_fetch(args=unhandled,extra_sources=[extra_src])
-    #working_phil.show()
-
-    gonio = imageset.get_goniometer()
-    detector = imageset.get_detector()
-    scan = imageset.get_scan()
-    beam = imageset.get_beam()
-    print detector
-    print scan
-    print gonio
-    print beam
 
     #params = working_phil.extract()
     params = self.params.indexing
@@ -189,7 +169,7 @@ class Script(ScriptRunner):
     elif params.method == "real_space_grid_search":
       from dials.algorithms.indexing.real_space_grid_search \
            import indexer_real_space_grid_search as indexer
-    idxr = indexer(reflections, imageset, params=params)
+    idxr = indexer(reflections, imagesets, params=params)
     idxr.index()
 
     from dials.array_family import flex
