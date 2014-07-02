@@ -18,7 +18,7 @@ from libtbx.utils import Sorry
 import iotbx.phil
 from scitbx import matrix
 
-from cctbx.array_family import flex
+from dials.array_family import flex
 from cctbx import crystal, sgtbx, uctbx, xray
 
 from dxtbx.model.crystal import crystal_model as Crystal
@@ -235,11 +235,17 @@ deg_to_radians = math.pi/180
 
 class indexer_base(object):
 
-  def __init__(self, reflections, sweep, params=None):
+  def __init__(self, reflections, imagesets, params=None):
     # XXX should use ReflectionTable internally instead of ReflectionList
     from dials.model.data import ReflectionList
 
     self.reflections = reflections
+    self.imagesets = imagesets
+    for imageset in imagesets[1:]:
+      assert imageset.get_detector() == self.imagesets[0].get_detector()
+      assert imageset.get_beam() == self.imagesets[0].get_beam()
+      assert imageset.get_goniometer() == self.imagesets[0].get_goniometer()
+    sweep = self.imagesets[0]
     self.sweep = sweep
 
     from dxtbx.serialize import load
@@ -257,7 +263,8 @@ class indexer_base(object):
       print self.sweep.get_detector()
       print "with:"
       print reference_detector
-      self.sweep.set_detector(reference_detector)
+      for imageset in self.imagesets:
+        imageset.set_detector(reference_detector)
     if params.reference.beam is not None:
       try:
         experiments = load.experiment_list(
@@ -271,11 +278,12 @@ class indexer_base(object):
       print self.sweep.get_beam()
       print "with:"
       print reference_beam
-      self.sweep.set_beam(reference_beam)
+      for imageset in self.imagesets:
+        imageset.set_beam(set_beam)
 
     self.goniometer = sweep.get_goniometer()
     self.detector = sweep.get_detector()
-    self.scan = sweep.get_scan()
+    #self.scan = sweep.get_scan()
     self.beam = sweep.get_beam()
     self.params = params
 
@@ -334,8 +342,13 @@ class indexer_base(object):
 
   def index(self):
     import libtbx
-    self.reflections = self.map_spots_pixel_to_mm_rad(
-      self.reflections, self.detector, self.scan)
+    self.reflections_input = self.reflections
+    self.reflections = flex.reflection_table()
+    for i, imageset in enumerate(self.imagesets):
+      sel = (self.reflections_input['id'] == i)
+      self.reflections.extend(self.map_spots_pixel_to_mm_rad(
+        self.reflections_input.select(sel),
+        imageset.get_detector(), imageset.get_scan()))
     self.filter_reflections_by_scan_range()
     self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
@@ -816,7 +829,7 @@ class indexer_base(object):
       experiment = Experiment(beam=self.beam,
                               detector=self.detector,
                               goniometer=self.goniometer,
-                              scan=self.scan,
+                              scan=self.imagesets[0].get_scan(),
                               crystal=cm)
 
       refiner = RefinerFactory.from_parameters_data_experiments(
@@ -826,6 +839,8 @@ class indexer_base(object):
       rmsds = refiner.rmsds()
       xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
       model_likelihood = 1.0 - xy_rmsds
+      if model_likelihood < 0:
+        continue
       solutions.append(
         Solution(model_likelihood=model_likelihood,
                  crystal=cm,

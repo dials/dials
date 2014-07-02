@@ -34,9 +34,6 @@ Parameters:
   elif len(importer.datablocks) > 1:
     raise RuntimeError("Only one DataBlock can be processed at a time")
   imagesets = importer.datablocks[0].extract_imagesets()
-  if len(imagesets) > 1:
-    raise RuntimeError("Only one imageset can be processed at a time")
-  imageset = imagesets[0]
   assert len(importer.reflections) == 1
   reflections = importer.reflections[0]
   args = importer.unhandled_arguments
@@ -44,15 +41,6 @@ Parameters:
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil = cmd_line.process_and_fetch(args=args)
   working_phil.show()
-
-  gonio = imageset.get_goniometer()
-  detector = imageset.get_detector()
-  scan = imageset.get_scan()
-  beam = imageset.get_beam()
-  print detector
-  print scan
-  print gonio
-  print beam
 
   params = working_phil.extract()
   if params.method == "fft3d":
@@ -62,7 +50,7 @@ Parameters:
   elif params.method == "real_space_grid_search":
     from dials.algorithms.indexing.real_space_grid_search \
          import indexer_real_space_grid_search as indexer
-  idxr = indexer(reflections, imageset, params=params)
+  idxr = indexer(reflections, imagesets, params=params)
   idxr.index()
   refined_experiments = idxr.refined_experiments
   refined_reflections = idxr.refined_reflections

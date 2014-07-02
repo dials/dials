@@ -35,7 +35,7 @@ class indexer_fft1d(indexer_base):
       (1/self.reciprocal_space_points.norms() > self.d_min))
     solutions = candidate_basis_vectors_fft1d(
       reflections, self.detector, self.beam,
-      self.goniometer, self.scan, hardcoded_phil,
+      self.goniometer, self.imagesets[0].get_scan(), hardcoded_phil,
       max_cell=self.params.max_cell)
     self.candidate_basis_vectors = solutions[0]
     if self.params.debug:
@@ -52,6 +52,6 @@ class indexer_fft1d(indexer_base):
       experiments.append(Experiment(beam=self.beam,
                                     detector=self.detector,
                                     goniometer=self.goniometer,
-                                    scan=self.scan,
+                                    scan=self.imagesets[0].get_scan(),
                                     crystal=cm))
     return experiments
