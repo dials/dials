@@ -813,6 +813,7 @@ class indexer_base(object):
     params.refinement.parameterisation.detector.fix = "all"
     params.refinement.parameterisation.beam.fix = "all"
     params.refinement.refinery.max_iterations = 1
+    params.refinement.reflections.minimum_number_of_reflections = 1
 
     for cm in candidate_orientation_matrices:
       sel = ((self.reflections['id'] == -1) &

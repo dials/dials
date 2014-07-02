@@ -510,19 +510,20 @@ def exercise_14():
   pickle_path = os.path.join(tmp_dir, "strong.pickle")
   assert os.path.exists(pickle_path)
 
-
   expected_unit_cell = uctbx.unit_cell((78.184, 78.184, 78.184, 90.000, 90.000, 90.000))
   expected_hall_symbol = ' I 2 2 3'
-
-  extra_args = []
-  extra_args.append(
-    "unit_cell='%s %s %s %s %s %s'" %expected_unit_cell.parameters())
-  extra_args.append("space_group='Hall: %s'" %expected_hall_symbol)
-
   expected_rmsds = (0.03, 0.04, 0.007)
 
-  result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
+  for method in ("fft3d", "fft1d", "real_space_grid_search"):
+    extra_args = []
+    extra_args.append(
+      "unit_cell='%s %s %s %s %s %s'" %expected_unit_cell.parameters())
+    extra_args.append("space_group='Hall: %s'" %expected_hall_symbol)
+    extra_args.append("method=%s" %method)
+
+
+    result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
 def run(args):
   if not libtbx.env.has_module("dials_regression"):

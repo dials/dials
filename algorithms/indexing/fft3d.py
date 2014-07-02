@@ -548,8 +548,9 @@ class indexer_fft3d(indexer_base):
     if not len(scan_range):
       scan_range = [[scan_range_min, scan_range_max]]
 
+    scan = self.imagesets[0].get_scan() # XXX
     angle_ranges = [
-      [self.scan.get_angle_from_array_index(i, deg=False) for i in range_]
+      [scan.get_angle_from_array_index(i, deg=False) for i in range_]
       for range_ in scan_range]
 
     from dials.algorithms.indexing import sampling_volume_map, clean_3d

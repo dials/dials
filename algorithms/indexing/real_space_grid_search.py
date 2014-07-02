@@ -38,7 +38,7 @@ class indexer_real_space_grid_search(indexer_base):
       experiments.append(Experiment(beam=self.beam,
                                     detector=self.detector,
                                     goniometer=self.goniometer,
-                                    scan=self.scan,
+                                    scan=self.imagesets[0].get_scan(),
                                     crystal=cm))
     return experiments
 
