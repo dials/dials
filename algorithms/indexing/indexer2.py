@@ -832,6 +832,22 @@ class indexer_base(object):
                               scan=self.imagesets[0].get_scan(),
                               crystal=cm)
 
+      if (self.target_symmetry_primitive is not None
+          and self.target_symmetry_primitive.space_group() is not None):
+        experiment.crystal, cb_op_to_primitive = self.apply_symmetry(
+          experiment.crystal, self.target_symmetry_primitive,
+          return_primitive_setting=True,
+          space_group_only=True)
+        if not cb_op_to_primitive.is_identity_op():
+          miller_indices = refl['miller_index'].select(refl['id'] == 0)
+          miller_indices = cb_op_to_primitive.apply(miller_indices)
+          refl['miller_index'].set_selected(refl['id'] == 0, miller_indices)
+        if self.cb_op_primitive_to_given is not None:
+          experiment.crystal = experiment.crystal.change_basis(self.cb_op_primitive_to_given)
+          miller_indices = refl['miller_index'].select(refl['id'] == 0)
+          miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
+          refl['miller_index'].set_selected(refl['id'] == 0, miller_indices)
+
       refiner = RefinerFactory.from_parameters_data_experiments(
         params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
         verbosity=0)
