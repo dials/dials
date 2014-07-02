@@ -481,6 +481,49 @@ def exercise_13():
     result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                               expected_rmsds, expected_hall_symbol)
 
+def exercise_14():
+  data_dir = os.path.join(dials_regression, "xia2_demo_data")
+
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = os.path.abspath(open_tmp_directory())
+  os.chdir(tmp_dir)
+  print tmp_dir
+
+  import shutil
+  for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
+    shutil.copyfile(
+      os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
+
+  args = ["dials.import", os.path.join(tmp_dir, "image_00*.img"),
+          "--output=datablock.json"]
+  command = " ".join(args)
+  #print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+
+  datablock_json = os.path.join(tmp_dir, "datablock.json")
+
+  args = ["dials.find_spots", datablock_json]
+
+  command = " ".join(args)
+  #print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  pickle_path = os.path.join(tmp_dir, "strong.pickle")
+  assert os.path.exists(pickle_path)
+
+
+  expected_unit_cell = uctbx.unit_cell((78.184, 78.184, 78.184, 90.000, 90.000, 90.000))
+  expected_hall_symbol = ' I 2 2 3'
+
+  extra_args = []
+  extra_args.append(
+    "unit_cell='%s %s %s %s %s %s'" %expected_unit_cell.parameters())
+  extra_args.append("space_group='Hall: %s'" %expected_hall_symbol)
+
+  expected_rmsds = (0.03, 0.04, 0.007)
+
+  result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol)
+
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
@@ -488,7 +531,7 @@ def run(args):
 
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
                exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
-               exercise_11, exercise_12, exercise_13)
+               exercise_11, exercise_12, exercise_13, exercise_14)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
