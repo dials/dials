@@ -75,6 +75,12 @@ class ScriptRunner(object):
         usage      = kwargs.get('usage', ''),
         home_scope = kwargs.get('home_scope', ''))
 
+    # Add an option for verbosity
+    self._config.add_option(
+        '-v', action='count', dest='verbosity',
+        help='Set the verbosity',
+        default=0)
+
     # Add an option to show the current configuraton
     if kwargs.get('show_config_option', True):
       self._config.add_option(
@@ -122,7 +128,7 @@ class ScriptRunner(object):
     # If the show_config flag is set, then print and exit
     try:
       if options.show_config:
-        self._config.print_phil()
+        self._config.print_phil(options.verbosity)
         sys.exit(0)
     except AttributeError:
       pass

@@ -73,24 +73,20 @@ class OptionParser(optparse.OptionParser):
   def phil(self):
     '''Get the phil object'''
     from dials.framework.registry import Registry
-    return Registry().config().phil()
+    return Registry().config().phil(scope=self._scope)
 
   def system_phil(self):
     '''Get the system phil.'''
     from dials.framework.registry import Registry
-    return Registry().config().system_phil()
+    return Registry().config().system_phil(scope=self._scope)
 
   def print_phil(self, attributes_level=0):
     '''Print the system and command line parameters.'''
-    import sys
-    from dials.framework.registry import Registry
-    print Registry().config().phil().as_str(attributes_level=attributes_level)
+    print self.phil().as_str(attributes_level=attributes_level)
 
   def print_system_phil(self, attributes_level=0):
     '''Print the system parameters.'''
-    import sys
-    from dials.framework.registry import Registry
-    print registry.config().system_phil().as_str(attributes_level=attributes_level)
+    print self.system_phil.as_str(attributes_level=attributes_level)
 
 
 

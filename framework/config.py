@@ -67,12 +67,16 @@ class Config(object):
     self._phil = self._system_phil
     self._params = self._phil.extract()
 
-  def system_phil(self):
+  def system_phil(self, scope=None):
     ''' Return the system phil. '''
+    if scope is not None:
+      return self._system_phil.get(scope)
     return self._system_phil
 
-  def phil(self):
+  def phil(self, scope=None):
     ''' Return the user phil. '''
+    if scope is not None:
+      return self._phil.get(scope)
     return self._phil
 
   def params(self):
