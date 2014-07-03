@@ -10,6 +10,7 @@
 #include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/integration/profile/profile_allocator.h>
+#include <dials/algorithms/integration/profile/profile_manager.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -57,7 +58,8 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < spec_.bbox.size(); ++i) {
         int z0 = spec_.bbox[i][4];
         int z1 = spec_.bbox[i][5];
-        for (std::size_t z = z0; z < z1; ++z, ++size);
+        DIALS_ASSERT(z1 > z0);
+        size += z1 - z0;
       }
 
       // Set the reflection indices, frames and 2d bboxes
@@ -124,10 +126,6 @@ namespace dials { namespace algorithms {
     }
 
     void compute_summed_intensity(std::size_t index) {
-
-    }
-
-    void compute_profile_fitted_intensity(std::size_t index) {
 
     }
 
