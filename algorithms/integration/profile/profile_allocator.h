@@ -157,7 +157,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(held(index));
       return &mask_[offset_[index] * max_size_];
     }
-    
+
     /**
      * Get the profile background for the selected index.
      */
