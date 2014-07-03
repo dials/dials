@@ -12,6 +12,39 @@
 from __future__ import division
 from dials.util.script import ScriptRunner
 
+help_message = '''
+
+This is the main dials program. Given a set of images, the data will be
+processed and a list of integrated reflections will be given as output. More
+specialised help can be seen by looking at the command line programs that
+perform the individual processing steps. Looks at the following for more
+details:
+
+  dials.import
+  dials.find_spots
+  dials.index
+  dials.refine
+  dials.integrate
+  dials.export_mtz
+
+This program will do the following:
+
+  First the image data will be imported into a datablock. Strong spots will then
+  be found on all the images of the datablock. These strong spots will then be
+  indexed (the indexing step also includes some static centroid refinement). The
+  experimental geometry will then be refined and the reflections integrated.
+  Finally, the integrated reflections will be exported to an MTZ file which can
+  be input into Aimless to be scaled.
+
+  Examples:
+
+    dials.process images*.cbf
+
+    dials.process datablock.json
+
+    find . -name "images*.cbf" | dials.process -i
+
+'''
 
 class Script(ScriptRunner):
   '''A class for running the script.'''
@@ -23,7 +56,7 @@ class Script(ScriptRunner):
     usage = "usage: %prog [options] [param.phil] datablock.json"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage)
+    ScriptRunner.__init__(self, usage=usage, epilog=help_message)
 
     # read image files from stdin
     self.config().add_option(
@@ -59,6 +92,10 @@ class Script(ScriptRunner):
     if options.stdin:
       import sys
       args.extend([l.strip() for l in sys.stdin.readlines()])
+
+    if len(args) == 0:
+      self.config().print_help()
+      return
 
     st = time()
 

@@ -328,7 +328,6 @@ command_line/parameters.py -text
 command_line/plot_reflections.py -text
 command_line/plot_scan_varying_crystal.py -text
 command_line/predict.py -text
-command_line/print_reflection_stats.py -text
 command_line/print_test_reflections.py -text
 command_line/process.py -text
 command_line/refine.py -text

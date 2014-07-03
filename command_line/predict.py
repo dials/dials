@@ -69,10 +69,11 @@ class Script(ScriptRunner):
       print 'The following command line arguments weren\'t handled'
       for arg in importer.unhandled_arguments:
         print '  ' + arg
+      exit(1)
 
     # Check the number of experiments
     if importer.experiments is None or len(importer.experiments) == 0:
-      print 'Error: no experiment list specified'
+      self.config().print_help()
       return
     assert(len(importer.experiments) == 1)
 
