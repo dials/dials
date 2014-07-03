@@ -13,6 +13,29 @@ from dxtbx.datablock import DataBlockFactory, DataBlockDumper
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment.experiment_list import ExperimentListDumper
 
+help_message = '''
+
+This program is used to import image data files into a format that can be used
+within dials. The program looks at the metadata for each image along with the
+filenames to determine the relationship between sets of images. Once all the
+images have been analysed, a datablock object is written to file which specifies
+the relationship between files. For example if two sets of images which belong
+to two rotation scans have been given, two image sweeps will be saved. Images to
+be processed are specified as command line arguments. Sometimes, there is a
+maximum number of arguments that can be given on the command line and the number
+of files may exceed this. In this case image filenames can be input on stdin
+delmited by a new line using the -i option (see below for examples).
+
+Examples:
+
+  dials.import image_*.cbf
+
+  dials.import image_1_*.cbf image_2_*.cbf
+
+  find . -name "image_*.cbf" | dials.import -i
+
+'''
+
 
 class ImageFileImporter(object):
   ''' Import a data block from files. '''
@@ -92,13 +115,17 @@ class ImageFileImporter(object):
 
 class ParseOptions(object):
   ''' Class to parse the command line options. '''
+  from optparse import OptionParser
+
+  class Parser(OptionParser):
+    def format_epilog(self, formatter):
+      return self.epilog
 
   def __init__(self):
     ''' Set the expected options. '''
 
-    from optparse import OptionParser
     usage = "usage: %prog [options] /path/to/image/files"
-    self.parser = OptionParser(usage)
+    self.parser = ParseOptions.Parser(usage, epilog=help_message)
 
     # Print verbose output
     self.parser.add_option(

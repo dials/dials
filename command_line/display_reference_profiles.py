@@ -130,6 +130,9 @@ def display_reference_profiles(reference_pickle_file, profile_number,
 if __name__ == '__main__':
   import sys
 
+  if len(sys.argv) < 2:
+    print "Usage: dials.display_reference_profiles reflections.pickle"
+    exit(0)
   if len(sys.argv) > 2:
     profile_number = int(sys.argv[2])
   else:

@@ -23,7 +23,7 @@ class Script(ScriptRunner):
             "{sweep.json | image1.file [image2.file ...]}"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage)
+    ScriptRunner.__init__(self, usage=usage, home_scope="integration")
 
     # The block length
     self.config().add_option(
@@ -65,7 +65,7 @@ class Script(ScriptRunner):
 
     # Check the number of experiments
     if importer.experiments is None or len(importer.experiments) == 0:
-      print 'Error: no experiment list specified'
+      self.config().print_help()
       return
     elif len(importer.experiments) > 1:
       print 'Error: only 1 experiment currently supported'
