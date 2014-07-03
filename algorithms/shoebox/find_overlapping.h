@@ -45,7 +45,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * find the colliding bounding_boxes and then puts all the pairs of colliding
    * indices into an adjacency list. Vertices are referred to in the
    * adjacency list by index.
-   * @param reflections The reflection list.
+   * @param bbox The list of bounding boxes
    * @returns An adjacency list
    */
   inline
@@ -69,6 +69,87 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
     // Return the adjacency list
+    return list;
+  }
+
+  namespace detail {
+
+    // Struct to help sort data
+      struct sort_by_panel {
+        const af::const_ref<std::size_t> p_;
+        sort_by_panel(
+            const af::const_ref<std::size_t> &p)
+          : p_(p) {}
+        bool operator()(std::size_t a, std::size_t b) {
+          return p_[a] < p_[b];
+        }
+      };
+  }
+
+  /**
+   * Given a set of reflections, find the bounding_boxes that overlap.
+   * This function uses a single shot collision detection algorithm to
+   * find the colliding bounding_boxes and then puts all the pairs of colliding
+   * indices into an adjacency list. Vertices are referred to in the
+   * adjacency list by index.
+   * @param panel The list of panels
+   * @param bbox The list of bounding boxes
+   * @returns An adjacency list
+   */
+  inline
+  boost::shared_ptr<AdjacencyList> find_overlapping_multi_panel(
+      const af::const_ref<int6> &bbox,
+      const af::const_ref<std::size_t> &panel) {
+
+
+    DIALS_ASSERT(panel.size() > 0);
+    DIALS_ASSERT(panel.size() == bbox.size());
+
+    // The arrays to use in the collision detection
+    std::vector<int6> data(panel.size());
+    std::vector<std::size_t> index(panel.size());
+    std::vector<std::size_t> offset;
+
+    // Sort arrays by panel
+    std::sort(index.begin(), index.end(), detail::sort_by_panel(panel));
+
+    // Create an array of offsets where the panel number is the same
+    // and put the sorted list of bboxes into an new array
+    offset.push_back(0);
+    std::size_t p = panel[index[0]];
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      data[i] = bbox[index[i]];
+      if (panel[index[i]] != p) {
+        p = panel[index[i]];
+        offset.push_back(i);
+      }
+    }
+    offset.push_back(index.size());
+
+    // Do the collision detection for all bboxes in the same panel
+    boost::shared_ptr<AdjacencyList> list(new AdjacencyList);
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      add_vertex(*list);
+    }
+    for (std::size_t i = 0; i < offset.size() - 1; ++i) {
+      std::size_t d0 = offset[i];
+      std::size_t d1 = offset[i+1];
+      std::vector< std::pair<int,int> > collisions;
+
+      // Detect the collisions
+      detect_collisions3d(
+          data.begin() + d0,
+          data.begin() + d1,
+          collisions);
+
+      // Put all the collisions into an adjacency list
+      for (std::size_t i = 0; i < collisions.size(); ++i) {
+        add_edge(
+            index[collisions[i].first],
+            index[collisions[i].second],
+            *list);
+      }
+    }
     return list;
   }
 
