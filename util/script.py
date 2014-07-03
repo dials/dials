@@ -72,6 +72,7 @@ class ScriptRunner(object):
 
     # Create the option parser
     self._config = OptionParser(
+        epilog     = kwargs.get('epilog', ''),
         usage      = kwargs.get('usage', ''),
         home_scope = kwargs.get('home_scope', ''))
 

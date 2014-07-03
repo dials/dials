@@ -88,6 +88,9 @@ class OptionParser(optparse.OptionParser):
     '''Print the system parameters.'''
     print self.system_phil.as_str(attributes_level=attributes_level)
 
+  def format_epilog(self, formatter):
+    ''' Don't do formatting on epilog. '''
+    return self.epilog
 
 
 
