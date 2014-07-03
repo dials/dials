@@ -23,7 +23,7 @@ class Script(ScriptRunner):
             "{sweep.json | image1.file [image2.file ...]}"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage)
+    ScriptRunner.__init__(self, usage=usage, home_scope='integration')
 
     # Output filename option
     self.config().add_option(
