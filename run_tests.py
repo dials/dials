@@ -86,6 +86,7 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_mask_foreground.py",
     "$D/test/algorithms/shoebox/tst_mask_overlapping.py",
     "$D/test/algorithms/shoebox/tst_helpers.py",
+    "$D/test/algorithms/shoebox/tst_find_overlapping.py",
     "$D/test/algorithms/generate_test_reflections/tst_generate_test_refl.py",
     "$D/test/tst_plot_reflections.py",
     ["$D/test/algorithms/indexing/tst_index.py", "1"],

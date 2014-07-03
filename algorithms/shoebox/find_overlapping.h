@@ -77,8 +77,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     // Struct to help sort data
       struct sort_by_panel {
         const af::const_ref<std::size_t> p_;
-        sort_by_panel(
-            const af::const_ref<std::size_t> &p)
+        sort_by_panel(const af::const_ref<std::size_t> &p)
           : p_(p) {}
         bool operator()(std::size_t a, std::size_t b) {
           return p_[a] < p_[b];
@@ -108,6 +107,9 @@ namespace dials { namespace algorithms { namespace shoebox {
     // The arrays to use in the collision detection
     std::vector<int6> data(panel.size());
     std::vector<std::size_t> index(panel.size());
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      index[i] = i;
+    }
     std::vector<std::size_t> offset;
 
     // Sort arrays by panel
@@ -117,10 +119,11 @@ namespace dials { namespace algorithms { namespace shoebox {
     // and put the sorted list of bboxes into an new array
     offset.push_back(0);
     std::size_t p = panel[index[0]];
-    for (std::size_t i = 0; i < bbox.size(); ++i) {
-      data[i] = bbox[index[i]];
-      if (panel[index[i]] != p) {
-        p = panel[index[i]];
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      std::size_t j = index[i];
+      data[i] = bbox[j];
+      if (panel[j] != p) {
+        p = panel[j];
         offset.push_back(i);
       }
     }
@@ -131,9 +134,9 @@ namespace dials { namespace algorithms { namespace shoebox {
     for (std::size_t i = 0; i < bbox.size(); ++i) {
       add_vertex(*list);
     }
-    for (std::size_t i = 0; i < offset.size() - 1; ++i) {
-      std::size_t d0 = offset[i];
-      std::size_t d1 = offset[i+1];
+    for (std::size_t j = 0; j < offset.size() - 1; ++j) {
+      std::size_t d0 = offset[j];
+      std::size_t d1 = offset[j+1];
       std::vector< std::pair<int,int> > collisions;
 
       // Detect the collisions
@@ -145,8 +148,8 @@ namespace dials { namespace algorithms { namespace shoebox {
       // Put all the collisions into an adjacency list
       for (std::size_t i = 0; i < collisions.size(); ++i) {
         add_edge(
-            index[collisions[i].first],
-            index[collisions[i].second],
+            index[d0 + collisions[i].first],
+            index[d0 + collisions[i].second],
             *list);
       }
     }
