@@ -35,6 +35,8 @@ namespace dials { namespace algorithms {
   class ProfileAllocator {
   public:
 
+    typedef const std::size_t* iterator;
+
     /**
      * Sort by Z
      */
@@ -53,7 +55,9 @@ namespace dials { namespace algorithms {
      */
     ProfileAllocator()
         : max_size_(0),
-          max_num_(0) {}
+          max_num_(0),
+          max_image_(0),
+          radius_(0) {}
 
     /**
      * Initialise and allocate memory
@@ -68,25 +72,50 @@ namespace dials { namespace algorithms {
         : max_size_(0),
           max_num_(0),
           max_image_(0),
+          radius_(radius),
+          index_(frame.size()),
           offset_(frame.size()) {
 
       DIALS_ASSERT(frame.size() == bbox.size());
 
       // Compute maximum size of the 2D shoebox
+      std::size_t num_frames = 0;
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         const int4 &b = bbox[i];
         std::size_t size = (b[3] - b[2])*(b[1] - b[0]);
         if (size > max_size_) {
           max_size_ = size;
         }
+        DIALS_ASSERT(frame[i] >= 0);
+        if (frame[i] > num_frames) {
+          num_frames = frame[i];
+        }
       }
+      num_frames++;
 
       // Index of shoebox sorted by min and max z
-      std::vector<std::size_t> index(frame.size());
-      for (std::size_t i = 0; i < index.size(); ++i) {
-        index[i] = i;
+      for (std::size_t i = 0; i < index_.size(); ++i) {
+        index_[i] = i;
       }
-      std::sort(index.begin(), index.end(), sort_by_z(frame));
+      std::sort(index_.begin(), index_.end(), sort_by_z(frame));
+
+      // Setup the frame offset index
+      frame_offset_.resize(num_frames+1);
+      frame_offset_[0] = 0;
+      int current_frame = frame[index_[0]];
+      DIALS_ASSERT(current_frame == 0);
+      for (std::size_t i = 1; i < index_.size(); ++i) {
+        if (frame[index_[i]] == current_frame) {
+          continue;
+        } else if (frame[index_[i]] == current_frame+1) {
+          current_frame = frame[index_[i]];
+          frame_offset_[current_frame] = i;
+        } else {
+          DIALS_ERROR("No predicted reflections on frame");
+        }
+      }
+      DIALS_ASSERT(current_frame+1 == frame_offset_.size() - 1);
+      frame_offset_[current_frame+1] = index_.size();
 
       // Find a position available in the buffer and assign to shoebox. If no
       // position is available add another. When positions become available add
@@ -95,15 +124,15 @@ namespace dials { namespace algorithms {
       std::size_t imin = 0;
       std::size_t imax = 0;
       int length = 2 * radius + 1;
-      while (imax < index.size()) {
-        int f1 = frame[index[imax]];
+      while (imax < index_.size()) {
+        int f1 = frame[index_[imax]];
         int f0 = f1 - length;
-        while (imin < index.size() && frame[index[imin]] <= f0) {
-          available.push(offset_[index[imin]]);
+        while (imin < index_.size() && frame[index_[imin]] <= f0) {
+          available.push(offset_[index_[imin]]);
           imin++;
         }
         std::size_t count = 0;
-        while (imax < index.size() && frame[index[imax]] == f1) {
+        while (imax < index_.size() && frame[index_[imax]] == f1) {
           std::size_t pos = 0;
           if (available.empty()) {
             pos = max_num_++;
@@ -111,7 +140,7 @@ namespace dials { namespace algorithms {
             pos = available.top();
             available.pop();
           }
-          offset_[index[imax]] = pos;
+          offset_[index_[imax]] = pos;
           imax++;
           count++;
         }
@@ -143,6 +172,24 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Loop through all the reflections that have finished and free them. Then
+     * loop through all those that are starting and hold them.
+     */
+    void lock(std::size_t frame) {
+      iterator beg, end;
+      beg = begin_free(frame);
+      end = end_free(frame);
+      for (iterator it = beg; it != end; ++it) {
+        free(*it);
+      }
+      beg = begin_hold(frame);
+      end = end_hold(frame);
+      for (iterator it = beg; it != end; ++it) {
+        hold(*it);
+      }
+    }
+
+    /**
      * Get the profile for the selected index.
      */
     int* data(std::size_t index) {
@@ -164,6 +211,63 @@ namespace dials { namespace algorithms {
     double* background(std::size_t index) {
       DIALS_ASSERT(held(index));
       return &bgrd_[offset_[index] * max_size_];
+    }
+
+    /**
+     * Get the first index of partial reflections for this frame.
+     */
+    iterator begin(std::size_t frame) const {
+      DIALS_ASSERT(frame < frame_offset_.size());
+      return &index_[frame_offset_[frame]];
+    }
+
+    /**
+     * Get the last index of partial reflections for this frame.
+     */
+    iterator end(std::size_t frame) const {
+      return begin(frame+1);
+    }
+
+    /**
+     * Get the first index of partial reflections for this frame.
+     */
+    iterator begin_active(std::size_t frame) const {
+      return begin(frame > 2*radius_ ? frame - 2*radius_ : 0);
+    }
+
+    /**
+     * Get the last index of partial reflections for this frame.
+     */
+    iterator end_active(std::size_t frame) const {
+      return end(frame);
+    }
+
+    /**
+     * Get the first index of partial reflections for this frame.
+     */
+    iterator begin_free(std::size_t frame) const {
+      return begin_active(frame > 0 ? frame - 1 : 0);
+    }
+
+    /**
+     * Get the last index of partial reflections for this frame.
+     */
+    iterator end_free(std::size_t frame) const {
+      return begin_free(frame+1);
+    }
+
+    /**
+     * Get the first index of partial reflections for this frame.
+     */
+    iterator begin_hold(std::size_t frame) const {
+      return begin(frame);
+    }
+
+    /**
+     * Get the last index of partial reflections for this frame.
+     */
+    iterator end_hold(std::size_t frame) const {
+      return end(frame);
     }
 
     /**
@@ -200,6 +304,9 @@ namespace dials { namespace algorithms {
     std::size_t max_size_;
     std::size_t max_num_;
     std::size_t max_image_;
+    std::size_t radius_;
+    std::vector<std::size_t> index_;
+    std::vector<std::size_t> frame_offset_;
     std::vector<int> offset_;
     std::vector<int> lock_;
     std::vector<int> data_;

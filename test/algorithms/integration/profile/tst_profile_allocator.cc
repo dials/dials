@@ -5,7 +5,7 @@ using namespace dials;
 using namespace dials::algorithms;
 
 
-int main() {
+void test_1() {
 
   // Setup the sizes
   std::size_t nrefl = 100000;
@@ -102,6 +102,62 @@ int main() {
     }
   }
   std::cout << "OK" << std::endl;
+}
 
+void test_2() {
+
+  // Setup the sizes
+  std::size_t nrefl = 100000;
+  std::size_t size = 10;
+  std::size_t num = nrefl * size;
+
+  // Allocate arrays
+  af::shared<int> frame(num);
+  af::shared<int4> bbox(num);
+  std::size_t radius = 10;
+
+  // Fill arrays
+  for (std::size_t i = 0, k = 0; i < nrefl; ++i) {
+    int z0 = rand() % 1000;
+    int x0 = rand() % 1000;
+    int y0 = rand() % 1000;
+    int nx = 3 + rand() % 10;
+    int ny = 3 + rand() % 10;
+    int x1 = x0 + nx;
+    int y1 = y0 + ny;
+    for (std::size_t j = 0; j < size; ++j, ++k) {
+      frame[k] = z0 + j;
+      bbox[k][0] = x0;
+      bbox[k][1] = x1;
+      bbox[k][2] = y0;
+      bbox[k][3] = y1;
+    }
+  }
+
+  // Create the profile allocator
+  ProfileAllocator allocator(frame.const_ref(), bbox.const_ref(), radius);
+  typedef ProfileAllocator::iterator iterator;
+
+  // Test locking and iterators
+  for (std::size_t f = 0; f < 1000; ++f) {
+    allocator.lock(f);
+    for (iterator it = allocator.begin(f); it != allocator.end(f); ++it) {
+      allocator.data(*it);
+      allocator.mask(*it);
+      allocator.background(*it);
+    }
+    for (iterator it = allocator.begin_active(f); it != allocator.end_active(f); ++it) {
+      allocator.data(*it);
+      allocator.mask(*it);
+      allocator.background(*it);
+    }
+  }
+
+  std::cout << "OK" << std::endl;
+}
+
+int main() {
+  test_1();
+  test_2();
   return 0;
 }
