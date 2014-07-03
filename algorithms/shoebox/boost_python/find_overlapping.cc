@@ -23,6 +23,10 @@ namespace dials { namespace algorithms { namespace shoebox {
   {
     def("find_overlapping",
       &find_overlapping, (arg("bboxes")));
+    def("find_overlapping",
+      &find_overlapping_multi_panel, (
+        arg("bbox"),
+        arg("panel")));
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python
