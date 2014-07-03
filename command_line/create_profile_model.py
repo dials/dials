@@ -12,8 +12,8 @@
 from __future__ import division
 
 if __name__ == '__main__':
-  from optparse import OptionParser
   from dials.util.command_line import Importer
+  from optparse import OptionParser
   from dials.algorithms.profile_model.profile_model import ProfileModel
   from math import pi
   from dials.util.command_line import Command
@@ -34,13 +34,15 @@ if __name__ == '__main__':
   options, args = parser.parse_args()
 
   # Import the items
-  Command.start('Importing Data')
   importer = Importer(args, check_format=False)
   experiments = importer.experiments
-  assert(len(experiments) == 1)
-  assert(len(importer.reflections) == 1)
+  if experiments is None or len(experiments) != 1:
+    parser.print_help()
+    exit(0)
+  if importer.reflections is None or len(importer.reflections) != 1:
+    parser.print_help()
+    exit(0)
   reflections = importer.reflections[0]
-  Command.end('Imported %d reflections' % len(reflections))
 
   from dials.array_family import flex
   Command.start('Removing invalid coordinates')
