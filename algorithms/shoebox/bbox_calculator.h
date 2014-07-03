@@ -171,13 +171,16 @@ namespace dials { namespace algorithms { namespace shoebox {
                 (int)floor(min(z)), (int)ceil(max(z)));
 
       vec2<std::size_t> image_size = detector_[panel].get_image_size();
-      std::size_t zrange = delta_divergence_.size();
+      vec2<int> array_range = scan_.get_array_range();
       bbox[0] = std::max(bbox[0], 0);
       bbox[1] = std::min(bbox[1], (int)image_size[0]);
       bbox[2] = std::max(bbox[2], 0);
       bbox[3] = std::min(bbox[3], (int)image_size[1]);
-      bbox[4] = std::max(bbox[4], 0);
-      bbox[5] = std::min(bbox[5], (int)zrange);
+      bbox[4] = std::max(bbox[4], array_range[0]);
+      bbox[5] = std::min(bbox[5], array_range[1]);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
       return bbox;
     }
 
