@@ -74,6 +74,7 @@ class Test(object):
       self.panels,
       self.bboxes,
       self.z,
+      0,
       self.nframes,
       self.npanels)
 
