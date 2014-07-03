@@ -27,9 +27,9 @@ class ReflectionFrame(wx.Frame):
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
 
-    radio1 = wx.RadioButton(self, -1, "Elmo", style = wx.RB_GROUP)
-    radio2 = wx.RadioButton(self, -1, "Ern")
-    radio3 = wx.RadioButton(self, -1, "Brt")
+    radio1 = wx.RadioButton(self, -1, "data, background, mask", style = wx.RB_GROUP)
+    radio2 = wx.RadioButton(self, -1, "3 layers of data")
+    radio3 = wx.RadioButton(self, -1, "3 layers of background")
 
 
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
