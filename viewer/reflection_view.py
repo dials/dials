@@ -11,9 +11,8 @@
 import wx
 from dials.viewer.viewer_utilities \
      import from_wx_image_to_wx_bitmap, np_to_bmp
-#from dials.viewer.viewer_utilities import build_np_img
-from dials.viewer.reflection_data_navigator import table_s_navigator
 
+from dials.viewer.reflection_data_navigator import table_s_navigator
 
 class ReflectionFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
@@ -31,7 +30,6 @@ class ReflectionFrame(wx.Frame):
     radio1 = wx.RadioButton(self, -1, "Elmo", style = wx.RB_GROUP)
     radio2 = wx.RadioButton(self, -1, "Ern")
     radio3 = wx.RadioButton(self, -1, "Brt")
-
 
 
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
@@ -146,7 +144,7 @@ class ReflectionFrame(wx.Frame):
   def My_Update(self, request_new_data = True):
 
     if( request_new_data == True ):
-      self.bkg, self.dat, self.msk = self.tabl()
+      self.dat, self.bkg, self.msk = self.tabl()
       self.I_max = self.tabl.Get_Max()
       self.box_lmt = self.tabl.Get_bbox()
 
@@ -163,7 +161,8 @@ class ReflectionFrame(wx.Frame):
 
       self.wx_Img_msk, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = self.msk
-                                    , Intst_max = -1
+                                    #, Intst_max = -1
+                                    , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
     self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_dat

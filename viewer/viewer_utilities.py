@@ -75,7 +75,6 @@ class np_to_bmp(object):
           y_new_labl.append("")
       ax.yaxis.set_ticklabels(y_new_labl)
 
-
     self.fig.canvas.draw()
     width, height = self.fig.canvas.get_width_height()
     self.np_buf = numpy.fromstring ( self.fig.canvas.tostring_rgb()
