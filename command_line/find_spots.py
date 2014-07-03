@@ -12,6 +12,35 @@
 from __future__ import division
 from dials.util.script import ScriptRunner
 
+help_message = '''
+
+This program tries to find strong spots on a sequence of images. The program can
+be called with either a "datablock.json" file or a sequence of image files (see
+help for dials.import for more information about how images are imported). Spot
+finding will be done against each logically grouped set of images given. Strong
+pixels will be found on each image and spots will be formed from connected
+components. In the case of rotation images, connected component labelling will
+be done in 3D.
+
+Once a set of spots have been found, their centroids and intensities will be
+calculated. They will then be filtered according to the particular preferences
+of the user. The output will be a file (strong.pickle) containing a list of spot
+centroids and intensities which can be used in the dials.index program. To view
+a list of parameters for spot finding use the --show-config option.
+
+Examples:
+
+  dials.find_spots image1.cbf
+
+  dials.find_spots imager_00*.cbf
+
+  dials.find_spots datablock.json
+
+  dials.find_spots datablock.json -o strong.pickle
+
+'''
+
+
 class Script(ScriptRunner):
   '''A class for running the script.'''
 
@@ -23,7 +52,9 @@ class Script(ScriptRunner):
             "{datablock.json | image1.file [image2.file ...]}"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage, home_scope="spotfinder")
+    ScriptRunner.__init__(self, usage=usage,
+                          epilog=help_message,
+                          home_scope="spotfinder")
 
     # Output filename option
     self.config().add_option(
