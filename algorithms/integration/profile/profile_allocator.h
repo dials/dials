@@ -120,6 +120,8 @@ namespace dials { namespace algorithms {
 
       // Allocate memory for array
       data_.resize(max_num_ * max_size_, 0);
+      mask_.resize(max_num_ * max_size_, 0);
+      bgrd_.resize(max_num_ * max_size_, 0);
       lock_.resize(max_num_, -1);
     }
 
@@ -136,8 +138,7 @@ namespace dials { namespace algorithms {
      * Free the selected profile.
      */
     void free(std::size_t index) {
-      DIALS_ASSERT(index < offset_.size());
-      DIALS_ASSERT(lock_[offset_[index]] == index);
+      DIALS_ASSERT(held(index));
       lock_[offset_[index]] = -1;
     }
 
@@ -145,9 +146,24 @@ namespace dials { namespace algorithms {
      * Get the profile for the selected index.
      */
     int* data(std::size_t index) {
-      DIALS_ASSERT(index < offset_.size());
-      DIALS_ASSERT(lock_[offset_[index]] == index);
+      DIALS_ASSERT(held(index));
       return &data_[offset_[index] * max_size_];
+    }
+
+    /**
+     * Get the profile mask for the selected index.
+     */
+    int* mask(std::size_t index) {
+      DIALS_ASSERT(held(index));
+      return &mask_[offset_[index] * max_size_];
+    }
+    
+    /**
+     * Get the profile background for the selected index.
+     */
+    double* background(std::size_t index) {
+      DIALS_ASSERT(held(index));
+      return &bgrd_[offset_[index] * max_size_];
     }
 
     /**
@@ -187,6 +203,8 @@ namespace dials { namespace algorithms {
     std::vector<int> offset_;
     std::vector<int> lock_;
     std::vector<int> data_;
+    std::vector<int> mask_;
+    std::vector<double> bgrd_;
   };
 
 }}
