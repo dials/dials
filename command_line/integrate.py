@@ -12,6 +12,38 @@
 from __future__ import division
 from dials.util.script import ScriptRunner
 
+help_message = '''
+
+This program is used to integrate the reflections on the diffraction images. It
+is called with an experiment list outputted from dials.index or dials.refine.
+The extend of the shoeboxes is specified through the profile parameters
+shoebox.sigma_b and shoebox.sigma_m (use the --show-config option for more
+details). These parameters can be specified directly, otherwise a set of strong
+indexed reflections are needed to form the profile model; these are specified
+using the -r (for reference) option. The program can also be called with a
+specific set of predictions using the -p option.
+
+Once a profile model is given and the size of the measurement boxes have been
+calculated, the program will extract the reflections to file. The reflections
+will then be integrated. The reflections can be integrated with different
+options using the same measurement boxes by giving the measurement box file
+using the -s option. This will skip reading the measurement boxes and go
+directly to integrating the reflections.
+
+Examples:
+
+  dials.integrate experiments.json -r indexed.pickle
+
+  dials.integrate experiments.json -r indexed.pickle -o integrated.pickle
+
+  dials.integrate experiments.json shoebox.sigma_b=0.024 shoebox.sigma_m=0.044
+
+  dials.integrate experiments.json -p predicted.pickle -r indexed.pickle
+
+  dials.integrate experiments.json -s shoeboxes.dat
+
+'''
+
 class Script(ScriptRunner):
   ''' The integration program. '''
 
@@ -22,7 +54,9 @@ class Script(ScriptRunner):
     usage  = "usage: %prog [options] experiment.json"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage, home_scope="integration")
+    ScriptRunner.__init__(self, usage=usage,
+                          epilog=help_message,
+                          home_scope="integration")
 
     # Output filename option
     self.config().add_option(
