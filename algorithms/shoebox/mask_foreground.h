@@ -126,10 +126,11 @@ namespace dials { namespace algorithms { namespace shoebox {
         int zsize = z1 - z0;
 
         int z = (int)floor(frame);
-        DIALS_ASSERT(z >= 0 && z < delta_b_r_.size());
+        DIALS_ASSERT(z >= index0_);
+        DIALS_ASSERT(z < index1_);
         DIALS_ASSERT(z >= z0 && z < z1);
-        double delta_b_r2 = delta_b_r_[z] * delta_b_r_[z];
-        double delta_m_r2 = delta_m_r_[z] * delta_m_r_[z];
+        double delta_b_r2 = delta_b_r_[z-index0_] * delta_b_r_[z-index0_];
+        double delta_m_r2 = delta_m_r_[z-index0_] * delta_m_r_[z-index0_];
 
         // Check the size of the mask
         DIALS_ASSERT(mask.accessor()[0] == zsize);
