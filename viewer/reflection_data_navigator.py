@@ -80,13 +80,13 @@ class table_s_navigator(object):
     return self.box_lim
 
   def background(self):
-    print "from background(self)"
+    #print "from background(self)"
     return self.img_background
 
   def data(self):
-    print "from data(self)"
+    #print "from data(self)"
     return self.img_data
 
   def mask(self):
-    print "from mask(self)"
+    #print "from mask(self)"
     return self.img_mask

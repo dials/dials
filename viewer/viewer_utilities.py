@@ -53,7 +53,7 @@ class np_to_bmp(object):
       else:
         to_many_labels = False
       x_new_labl =[]
-      print xlabl
+      #print xlabl
       for pos in range(len(xlabl)):
         if( float(pos) / 2.0 == int(pos / 2) or to_many_labels == False):
           x_new_labl.append(str(xlabl[pos] + ofst[0] + 0.5))
@@ -67,7 +67,7 @@ class np_to_bmp(object):
       else:
         to_many_labels = False
       y_new_labl =[]
-      print ylabl
+      #print ylabl
       for pos in range(len(ylabl)):
         if( float(pos) / 2.0 == int(pos / 2) or to_many_labels == False):
           y_new_labl.append(str(ylabl[pos] + ofst[2] + 0.5))

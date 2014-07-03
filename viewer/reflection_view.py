@@ -28,10 +28,11 @@ class ReflectionFrame(wx.Frame):
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
 
-    test_code = '''
-    btn_tst = wx.Button(self, -1, "tst btn")
-    btn_tst1 = wx.Button(self, -1, "tst btn1")
-    '''
+    radio1 = wx.RadioButton(self, -1, "Elmo", style = wx.RB_GROUP)
+    radio2 = wx.RadioButton(self, -1, "Ern")
+    radio3 = wx.RadioButton(self, -1, "Brt")
+
+
 
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
@@ -46,6 +47,12 @@ class ReflectionFrame(wx.Frame):
 
     u_box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
+
+
+    u_box.Add(radio1, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(radio2, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(radio3, 0, wx.CENTER | wx.ALL,5)
+
 
     v_box.Add(u_box)
 
@@ -63,10 +70,6 @@ class ReflectionFrame(wx.Frame):
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
     r_box.AddSpacer(50)
 
-    test_code = '''
-    r_box.Add(btn_tst, 0, wx.CENTER | wx.ALL,5)
-    r_box.Add(btn_tst1, 0, wx.CENTER | wx.ALL,5)
-    '''
 
     h_box.Add(r_box)
     v_box.Add(h_box)
@@ -80,10 +83,11 @@ class ReflectionFrame(wx.Frame):
     btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
     btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
-    test_code = '''
-    btn_tst.Bind(wx.EVT_BUTTON, self.B_tst)
-    btn_tst1.Bind(wx.EVT_BUTTON, self.B_tst1)
-    '''
+
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio1, radio1)
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio2, radio2)
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio3, radio3)
+
     self.Bind(wx.EVT_SIZE, self.OnSize)
 
     self.bmp = np_to_bmp()
@@ -106,36 +110,36 @@ class ReflectionFrame(wx.Frame):
   def DisplayPrev_slice(self, event = None):
     self.tabl.Previous_slice()
     self.My_Update()
-  test_code = '''
-  def B_tst(self, event = None):
-    self.frame_scale = self.frame_scale * 1.1
-    self.My_Update()
-    print "self.GetSize() =", self.GetSize()
-  def B_tst1(self, event = None):
-    self.frame_scale = self.frame_scale * 0.9
-    self.My_Update()
-    print "self.GetSize() =", self.GetSize()
-  '''
+
+
+  def OnRadio1(self, event = None):
+    print "clicked on Radio1"
+  def OnRadio2(self, event = None):
+    print "clicked on Radio2"
+  def OnRadio3(self, event = None):
+    print "clicked on Radio3"
+
+
 
   def OnSize(self, event = None):
     if( self.sizing_counter > 5 ):
       siz_data = self.GetSize()
-      print "New size of window =", siz_data
+      #print "New size of window =", siz_data
       optm_aspec_ratio = 3.81
-      print "siz_data = ", siz_data[0], siz_data[1]
-      print "aspect ratio = ", float(siz_data[0])/ float(siz_data[1])
+      #print "siz_data = ", siz_data[0], siz_data[1]
+      #print "aspect ratio = ", float(siz_data[0])/ float(siz_data[1])
       aspec_ratio = float(siz_data[0])/ float(siz_data[1])
 
       if(aspec_ratio > optm_aspec_ratio):
-        print "use float(siz_data[1] (Height) to calculate new size"
+        #print "use float(siz_data[1] (Height) to calculate new size"
         self.frame_scale = float(siz_data[1]) * 0.5 / 291.0
         #(1100, 291)
       else:
-        print "use float(siz_data[0] (with) to calculate new size"
+        #print "use float(siz_data[0] (with) to calculate new size"
         self.frame_scale = float(siz_data[0]) * 0.5 / 1100.0
         #(1100, 291)
       self.My_Update(request_new_data = False)
-      print "resizing"
+      #print "resizing"
     else:
       self.sizing_counter += 1
 
@@ -207,7 +211,7 @@ if __name__ == "__main__":
   .... dials_regression/refinement_test_data/radiation_damaged_thaumatin/
   indexed.pickle
   '''
-  print "num of ref =", len(table)
+  #print "num of ref =", len(table)
 
   app = App(redirect=False)
   app.table_in(table)
