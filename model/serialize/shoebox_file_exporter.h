@@ -18,6 +18,8 @@
 #include <dials/error.h>
 #include <dials/model/serialize/shoebox_file.h>
 
+#define MAX_SHOEBOX_SIZE 1000000
+
 namespace dials { namespace model { namespace serialize {
 
   using af::int2;
@@ -61,7 +63,9 @@ namespace dials { namespace model { namespace serialize {
      * @param bbox The bounding boxes
      * @param nframes The number of frames in the imageset
      */
-    ShoeboxFileExporterBuffer(const af::const_ref<int6> &bbox, std::size_t nframes)
+    ShoeboxFileExporterBuffer(
+          const af::const_ref<int6> &bbox,
+          int frame_offset, std::size_t nframes)
         : max_size_(0),
           max_num_(0),
           offset_(bbox.size()) {
@@ -73,6 +77,7 @@ namespace dials { namespace model { namespace serialize {
           max_size_ = size;
         }
       }
+      DIALS_ASSERT(max_size_ < MAX_SHOEBOX_SIZE);
 
       // Index of shoebox sorted by min and max z
       std::vector<std::size_t> minz(bbox.size());
@@ -91,7 +96,7 @@ namespace dials { namespace model { namespace serialize {
       std::size_t minz_index = 0;
       std::size_t maxz_index = 0;
       int current_frame = bbox[minz[minz_index]][4];
-      while(current_frame <= nframes) {
+      while(current_frame <= nframes + frame_offset) {
         while (maxz_index < maxz.size()
             && bbox[maxz[maxz_index]][5] == current_frame) {
           available.push(offset_[maxz[maxz_index]]);
@@ -199,13 +204,15 @@ namespace dials { namespace model { namespace serialize {
             const af::const_ref<std::size_t> &panel,
             const af::const_ref<int6> &bbox,
             const af::const_ref<double> &z,
+            int frame_offset,
             std::size_t num_frame,
             std::size_t num_panel,
             const std::string &blob)
         : writer_(filename, panel, bbox, z, BUFFER_MAX_SIZE, blob),
           bbox_(bbox.begin(), bbox.end()),
           panel_(panel.begin(), panel.end()),
-          shoeboxes_(bbox, num_frame),
+          shoeboxes_(bbox, frame_offset, num_frame),
+          frame_offset_(frame_offset),
           num_frame_(num_frame),
           cur_frame_(0),
           num_panel_(num_panel),
@@ -275,7 +282,7 @@ namespace dials { namespace model { namespace serialize {
         std::size_t zs = bbox[5] - bbox[4];
         std::size_t ys = bbox[3] - bbox[2];
         std::size_t xs = bbox[1] - bbox[0];
-        if (bbox[4] == cur_frame_) {
+        if (bbox[4] == cur_frame_ + frame_offset_) {
           shoeboxes_.hold(index);
         }
         shoebox_type shoebox = shoeboxes_[index];
@@ -285,7 +292,7 @@ namespace dials { namespace model { namespace serialize {
         add(shoebox_ref, bbox, cur_frame_, image);
 
         // Write and release shoebox
-        if (bbox[5] == cur_frame_+1) {
+        if (bbox[5] == cur_frame_+frame_offset_+1) {
           writer_.write(index, shoebox_ref);
           shoeboxes_.release(index);
         }
@@ -316,11 +323,12 @@ namespace dials { namespace model { namespace serialize {
       for (std::size_t i = 0; i < bbox_.size(); ++i) {
         DIALS_ASSERT(panel_[i] < num_panel_);
         DIALS_ASSERT(bbox_[i][4] < bbox_[i][5]);
-        DIALS_ASSERT(bbox_[i][4] >= 0);
-        DIALS_ASSERT(bbox_[i][5] <= num_frame_);
+        DIALS_ASSERT(bbox_[i][4] >= frame_offset_);
+        DIALS_ASSERT(bbox_[i][5] <= frame_offset_ + num_frame_);
         std::size_t p = panel_[i];
-        for (std::size_t j = bbox_[i][4]; j < bbox_[i][5]; ++j) {
-          per_frame_indices_[j*num_panel_ + p].push_back(i);
+        for (int j = bbox_[i][4]; j < bbox_[i][5]; ++j) {
+          std::size_t k = j - frame_offset_;
+          per_frame_indices_[k*num_panel_ + p].push_back(i);
         }
       }
     }
@@ -350,10 +358,10 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(bbox[1] <= image.accessor()[1]);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[3] <= image.accessor()[0]);
-      DIALS_ASSERT(z >= bbox[4] && z < bbox[5]);
+      DIALS_ASSERT(z + frame_offset_ >= bbox[4] && z + frame_offset_ < bbox[5]);
 
       // The offsets into the image
-      std::size_t k = z - bbox[4];
+      std::size_t k = z + frame_offset_ - bbox[4];
       std::size_t is = bbox[1] - bbox[0];
       std::size_t js = bbox[3] - bbox[2];
       std::size_t ks = bbox[5] - bbox[4];
@@ -377,6 +385,7 @@ namespace dials { namespace model { namespace serialize {
     af::shared<int6> bbox_;
     af::shared<std::size_t> panel_;
     ShoeboxFileExporterBuffer shoeboxes_;
+    int frame_offset_;
     std::size_t num_frame_;
     std::size_t cur_frame_;
     std::size_t num_panel_;

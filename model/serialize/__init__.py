@@ -41,8 +41,10 @@ def extract_shoeboxes_to_file(filename, imageset, reflections):
 
   # Get some stuff from the experiment
   detector = imageset.get_detector()
-
-  num_frames = len(imageset)
+  scan = imageset.get_scan()
+  frame_offset = scan.get_array_range()[0]
+  num_frames = scan.get_num_images()
+  assert(num_frames == len(imageset))
   num_panels = len(detector)
 
   # Create the shoebox file exporter
@@ -51,6 +53,7 @@ def extract_shoeboxes_to_file(filename, imageset, reflections):
     reflections['panel'],
     reflections['bbox'],
     reflections['xyzcal.px'].parts()[2],
+    frame_offset,
     num_frames,
     num_panels,
     pickle.dumps(reflections, protocol=pickle.HIGHEST_PROTOCOL))

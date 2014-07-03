@@ -25,6 +25,7 @@ namespace dials { namespace model { namespace serialize {
                 const af::const_ref<std::size_t>&,
                 const af::const_ref<int6>,
                 const af::const_ref<double>,
+                int,
                 std::size_t,
                 std::size_t,
                 const std::string&>((
@@ -32,6 +33,7 @@ namespace dials { namespace model { namespace serialize {
         arg("panel"),
         arg("bbox"),
         arg("z"),
+        arg("frame_offset"),
         arg("num_frame"),
         arg("num_panel"),
         arg("blob") = "")))

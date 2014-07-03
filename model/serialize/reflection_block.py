@@ -100,18 +100,19 @@ class ReflectionBlockExtractor(object):
     from math import ceil
     phi0, dphi = scan.get_oscillation(deg=True)
     nframes = scan.get_num_images()
+    frame0 = scan.get_array_range()[0]
     assert(block_size >= dphi)
     block_length = float(block_size) / dphi
     nblocks = int(ceil(nframes / block_length))
     assert(nblocks <= nframes)
     block_length = int(ceil(nframes / nblocks))
-    blocks = [0]
+    blocks = [frame0]
     for i in range(nblocks):
-      frame = (i + 1) * block_length
-      if frame > nframes:
-        frame = nframes
+      frame = frame0 + (i + 1) * block_length
+      if frame > frame0+nframes:
+        frame = frame0+nframes
       blocks.append(frame)
-      if frame == nframes:
+      if frame == frame0+nframes:
         break
     assert(all(b > a for a, b in zip(blocks, blocks[1:])))
     return blocks

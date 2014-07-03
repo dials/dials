@@ -223,6 +223,9 @@ namespace dials { namespace model { namespace serialize {
       // Calculate the offsets
       offset_[0] = 0;
       for (std::size_t i = 0; i < bbox_.size(); ++i) {
+        DIALS_ASSERT(bbox_[i][1] > bbox_[i][0]);
+        DIALS_ASSERT(bbox_[i][3] > bbox_[i][2]);
+        DIALS_ASSERT(bbox_[i][5] > bbox_[i][4]);
         uint64_t box_size =
           (bbox_[i][1] - bbox_[i][0]) *
           (bbox_[i][3] - bbox_[i][2]) *
