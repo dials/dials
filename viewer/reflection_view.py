@@ -73,6 +73,7 @@ class ReflectionFrame(wx.Frame):
     v_box.Add(h_box)
 
     self.frame_scale = 0.3
+    self.opt = 0
 
     self.sizing_counter = 0
     self.SetSizerAndFit(v_box)
@@ -111,9 +112,11 @@ class ReflectionFrame(wx.Frame):
 
 
   def OnRadio1(self, event = None):
-    print "clicked on Radio1"
+    self.opt = 0
+    self.My_Update(request_new_data = True)
   def OnRadio2(self, event = None):
-    print "clicked on Radio2"
+    self.opt = 1
+    self.My_Update(request_new_data = True)
   def OnRadio3(self, event = None):
     print "clicked on Radio3"
 
@@ -144,7 +147,7 @@ class ReflectionFrame(wx.Frame):
   def My_Update(self, request_new_data = True):
 
     if( request_new_data == True ):
-      self.dat, self.bkg, self.msk = self.tabl()
+      self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
       self.I_max = self.tabl.Get_Max()
       self.box_lmt = self.tabl.Get_bbox()
 
