@@ -292,6 +292,12 @@ class Test(object):
     I_sim = I_sim.select(mask)
     I_exp = I_exp.select(mask)
 
+    mask = I_var > 0
+    I_cal = I_cal.select(mask)
+    I_var = I_var.select(mask)
+    I_sim = I_sim.select(mask)
+    I_exp = I_exp.select(mask)
+
     # Calculate the z score
     perc = self.mv3n_tolerance_interval(3*3)
     Z = (I_cal - I_sim) / flex.sqrt(I_var)
