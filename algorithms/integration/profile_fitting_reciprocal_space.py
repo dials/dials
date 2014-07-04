@@ -39,6 +39,7 @@ class ProfileFittingReciprocalSpace(object):
     '''
     from dials.model.serialize import dump
     assert("flags" in reflections)
+    assert(len(experiment.detector) == 1)
     self._integrate_by_summation(experiment, reflections)
     self._transform_profiles(experiment, reflections)
     self.learner = self._learn_references(experiment, reflections)
