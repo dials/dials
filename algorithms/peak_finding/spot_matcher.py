@@ -75,14 +75,50 @@ class SpotMatcher(object):
     from math import sqrt
 
     # Get the predicted coordinates
+    predicted_panel = predicted['panel']
     predicted_xyz = predicted['xyzcal.px']
+    observed_panel = observed['panel']
     observed_xyz = observed['xyzobs.px.value']
 
+    # Get the number of panels
+    max_panel1 = flex.max(predicted_panel)
+    max_panel2 = flex.max(observed_panel)
+    max_panel = max([max_panel1, max_panel2])
+
+    nn_all = flex.size_t()
+    dd_all = flex.double()
+    for panel in range(max_panel+1):
+      pind = predicted_panel == panel
+      oind = observed_panel == panel
+      pxyz = predicted_xyz.select(pind)
+      oxyz = observed_xyz.select(oind)
+      nn, d = self._find_nearest_neighbours_single(oxyz, pxyz)
+      indices = flex.size_t(range(len(pind))).select(pind)
+      indices = indices.select(flex.size_t(list(nn)))
+      nn_all.extend(indices)
+      dd_all.extend(d)
+    return nn_all, dd_all
+
+  def _find_nearest_neighbours_single(self, oxyz, pxyz):
+    '''Find the nearest predicted spot to the observed spot.
+
+    Params:
+        observed The observed reflections
+        predicted The predicted reflections
+
+    Returns:
+        (nearest neighbours, distance)
+
+    '''
+    from annlib_ext import AnnAdaptor
+    from scitbx.array_family import flex
+    from math import sqrt
+
     # Create the KD Tree
-    ann = AnnAdaptor(predicted_xyz.as_double().as_1d(), 3)
+    ann = AnnAdaptor(pxyz.as_double().as_1d(), 3)
 
     # Query to find all the nearest neighbours
-    ann.query(observed_xyz.as_double().as_1d())
+    ann.query(oxyz.as_double().as_1d())
 
     # Return the nearest neighbours and distances
     return ann.nn, flex.sqrt(ann.distances)
