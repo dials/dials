@@ -30,7 +30,7 @@ class ReflectionFrame(wx.Frame):
     radio1 = wx.RadioButton(self, -1, "data, background, mask", style = wx.RB_GROUP)
     radio2 = wx.RadioButton(self, -1, "3 layers of data")
     radio3 = wx.RadioButton(self, -1, "3 layers of background")
-
+    radio4 = wx.RadioButton(self, -1, "3 layers of mask")
 
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
@@ -39,20 +39,18 @@ class ReflectionFrame(wx.Frame):
     self.Image_03 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
 
-    v_box = wx.BoxSizer(wx.VERTICAL)
     h_box = wx.BoxSizer(wx.HORIZONTAL)
-    u_box = wx.BoxSizer(wx.HORIZONTAL)
+    u_box = wx.BoxSizer(wx.VERTICAL)
 
     u_box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
-
-
     u_box.Add(radio1, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(radio2, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(radio3, 0, wx.CENTER | wx.ALL,5)
-
-
-    v_box.Add(u_box)
+    u_box.Add(radio4, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
+    h_box.Add(u_box)
 
     h_box.Add(self.Image_01, 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
@@ -63,20 +61,11 @@ class ReflectionFrame(wx.Frame):
     h_box.Add(self.Image_03, 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
-    r_box = wx.BoxSizer(wx.VERTICAL)
-    r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
-    r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
-    r_box.AddSpacer(50)
-
-
-    h_box.Add(r_box)
-    v_box.Add(h_box)
-
     self.frame_scale = 0.3
     self.opt = 0
 
     self.sizing_counter = 0
-    self.SetSizerAndFit(v_box)
+    self.SetSizerAndFit(h_box)
 
     btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
     btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
@@ -86,6 +75,7 @@ class ReflectionFrame(wx.Frame):
     self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio1, radio1)
     self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio2, radio2)
     self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio3, radio3)
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio4, radio4)
 
     self.Bind(wx.EVT_SIZE, self.OnSize)
 
@@ -96,7 +86,6 @@ class ReflectionFrame(wx.Frame):
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
     self.DisplayPrev_refl()
-
   def DisplayNext_refl(self, event = None):
     self.tabl.next_Reflection()
     self.My_Update()
@@ -114,13 +103,16 @@ class ReflectionFrame(wx.Frame):
   def OnRadio1(self, event = None):
     self.opt = 0
     self.My_Update(request_new_data = True)
+
   def OnRadio2(self, event = None):
     self.opt = 1
     self.My_Update(request_new_data = True)
+
   def OnRadio3(self, event = None):
     print "clicked on Radio3"
 
-
+  def OnRadio4(self, event = None):
+    print "clicked on Radio4"
 
   def OnSize(self, event = None):
     if( self.sizing_counter > 5 ):
