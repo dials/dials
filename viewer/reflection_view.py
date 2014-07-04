@@ -19,8 +19,8 @@ class ReflectionFrame(wx.Frame):
     wx.Frame.__init__(self, *args, **kwargs)
 
 
-    self.MaxImageSizeX = 220
-    self.MaxImageSizeY = 140
+    self.MaxImageSizeX = 280
+    self.MaxImageSizeY = 150
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
@@ -61,7 +61,7 @@ class ReflectionFrame(wx.Frame):
     h_box.Add(self.Image_03, 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
-    self.frame_scale = 0.3
+    self.frame_scale = 0.5
     self.opt = 0
 
     self.sizing_counter = 0
@@ -118,21 +118,22 @@ class ReflectionFrame(wx.Frame):
     if( self.sizing_counter > 5 ):
       siz_data = self.GetSize()
       #print "New size of window =", siz_data
-      optm_aspec_ratio = 3.81
-      #print "siz_data = ", siz_data[0], siz_data[1]
+      optm_aspec_ratio = 4.21
+      print "siz_data = ", siz_data[0], siz_data[1]
       #print "aspect ratio = ", float(siz_data[0])/ float(siz_data[1])
       aspec_ratio = float(siz_data[0])/ float(siz_data[1])
 
       if(aspec_ratio > optm_aspec_ratio):
         #print "use float(siz_data[1] (Height) to calculate new size"
-        self.frame_scale = float(siz_data[1]) * 0.5 / 291.0
-        #(1100, 291)
+        self.frame_scale = float(siz_data[1]) * 0.5 / 295.0
+        #(1227, 295)
       else:
         #print "use float(siz_data[0] (with) to calculate new size"
-        self.frame_scale = float(siz_data[0]) * 0.5 / 1100.0
-        #(1100, 291)
+        self.frame_scale = float(siz_data[0]) * 0.5 / 1227.0
+        #(1227, 295)
       self.My_Update(request_new_data = False)
       #print "resizing"
+      print "aspec_ratio =", aspec_ratio
     else:
       self.sizing_counter += 1
 
