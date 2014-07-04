@@ -61,7 +61,7 @@ class ReflectionFrame(wx.Frame):
     h_box.Add(self.Image_03, 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
-    self.frame_scale = 0.5
+    self.frame_scale = 0.4
     self.opt = 0
 
     self.sizing_counter = 0
@@ -119,7 +119,7 @@ class ReflectionFrame(wx.Frame):
       siz_data = self.GetSize()
       #print "New size of window =", siz_data
       optm_aspec_ratio = 4.21
-      print "siz_data = ", siz_data[0], siz_data[1]
+      #print "siz_data = ", siz_data[0], siz_data[1]
       #print "aspect ratio = ", float(siz_data[0])/ float(siz_data[1])
       aspec_ratio = float(siz_data[0])/ float(siz_data[1])
 
@@ -133,7 +133,7 @@ class ReflectionFrame(wx.Frame):
         #(1227, 295)
       self.My_Update(request_new_data = False)
       #print "resizing"
-      print "aspec_ratio =", aspec_ratio
+      #print "aspec_ratio =", aspec_ratio
     else:
       self.sizing_counter += 1
 
