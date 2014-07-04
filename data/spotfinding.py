@@ -65,6 +65,9 @@ def generate_phil_scope():
         space_group = 194
           .type = space_group
           .help = "The space group used to generate d_spacings for powder rings."
+        width = 0.06
+          .type = float(value_min=0.0)
+          .help = "The width of an ice ring (in d-spacing)."
       }
 
       untrusted_polygon = None

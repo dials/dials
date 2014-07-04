@@ -168,7 +168,8 @@ class PowderRingFilter(object):
   def __init__(self, crystal_symmetry):
     self.crystal_symmetry = crystal_symmetry
 
-  def run(self, flags, sweep=None, observations=None, **kwargs):
+  def run(self, flags, sweep=None, observations=None,
+          width=0.06, **kwargs):
     from cctbx import crystal, sgtbx, uctbx
 
     from dials.array_family import flex
@@ -185,13 +186,14 @@ class PowderRingFilter(object):
     two_thetas_obs = flex.double()
     wavelength = beam.get_wavelength()
 
+    half_width = 0.5 * width
     for i, centroid in enumerate(observations):
       if not flags[i]: continue
       x, y = centroid.centroid.px_xy
       d_spacing = detector[centroid.panel].get_resolution_at_pixel(
         beam.get_s0(), (x, y))
       for j, d in enumerate(ms.d_spacings().data()):
-        if abs(d - d_spacing) < 0.02:
+        if abs(d - d_spacing) < half_width:
           flags[i] = False
           miller_indices.append(ms.indices()[j])
           two_thetas_obs.append(uctbx.d_star_sq_as_two_theta(
@@ -349,7 +351,9 @@ class SpotFinderFactory(object):
       crystal_symmetry = crystal.symmetry(
         unit_cell=params.spotfinder.filter.ice_rings.unit_cell,
         space_group=params.spotfinder.filter.ice_rings.space_group.group())
-      filters.append(PowderRingFilter(crystal_symmetry))
+      filters.append(
+        PowderRingFilter(crystal_symmetry,
+                         width=params.spotfinder.filter.ice_rings.width))
     if len(params.spotfinder.filter.untrusted_polygon):
       polygons = []
       for vertices in params.spotfinder.filter.untrusted_polygon:
