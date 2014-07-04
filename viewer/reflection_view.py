@@ -149,33 +149,33 @@ class ReflectionFrame(wx.Frame):
       self.box_lmt = self.tabl.Get_bbox()
 
 
-      self.wx_Img_dat, self.img_width, self.img_height = self.bmp(
+      self.wx_Img_01, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = self.dat
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
-      self.wx_Img_bkg, self.img_width, self.img_height = self.bmp(
+      self.wx_Img_02, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = self.bkg
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
-      self.wx_Img_msk, self.img_width, self.img_height = self.bmp(
+      self.wx_Img_03, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = self.msk
                                     #, Intst_max = -1
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
-    self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_dat
+    self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_01
             , self.img_width, self.img_height, self.frame_scale)
 
     self.Image_01.SetBitmap(self.My_Img_01)
 
-    self.My_Img_02 = from_wx_image_to_wx_bitmap(self.wx_Img_bkg
+    self.My_Img_02 = from_wx_image_to_wx_bitmap(self.wx_Img_02
             , self.img_width, self.img_height, self.frame_scale)
 
     self.Image_02.SetBitmap(self.My_Img_02)
 
-    self.My_Img_03 = from_wx_image_to_wx_bitmap(self.wx_Img_msk
+    self.My_Img_03 = from_wx_image_to_wx_bitmap(self.wx_Img_03
             , self.img_width, self.img_height, self.frame_scale)
 
     self.Image_03.SetBitmap(self.My_Img_03)
