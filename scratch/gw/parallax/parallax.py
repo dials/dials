@@ -14,7 +14,7 @@ def compute_absolute_offset_xds(t0, theta, mu):
   import math
   return min(t0 / math.cos(theta), 1.0 / mu)
 
-def generate_dials_corrections(image_filename, sensor_thickness_mm, 
+def generate_dials_corrections(image_filename, sensor_thickness_mm,
                                energy_ev = None, method=compute_absolute_offset):
   '''Generate equivalent correction tables equivalent to those from XDS, but using
   the equations above.'''
@@ -56,7 +56,7 @@ def generate_dials_corrections(image_filename, sensor_thickness_mm,
 
   fast_parallax = flex.double(flex.grid(image_size))
   slow_parallax = flex.double(flex.grid(image_size))
-  
+
   for i in range(image_size[0]):
     for j in range(image_size[1]):
       p = (origin + i * S + j * F).normalize()
@@ -70,7 +70,7 @@ def generate_dials_corrections(image_filename, sensor_thickness_mm,
   return fast_parallax, slow_parallax
 
 def work(image_filename, sensor_thickness_mm, energy_ev=None):
-  '''Exercise the DIALS implementation of the XDS correction, compare with 
+  '''Exercise the DIALS implementation of the XDS correction, compare with
   the XDS correction tables.'''
   from parallax_xds import generate_xds_corrections
   xds_parallax_x, xds_parallax_y = generate_xds_corrections(
@@ -78,7 +78,7 @@ def work(image_filename, sensor_thickness_mm, energy_ev=None):
   print min(xds_parallax_x), min(xds_parallax_y), \
     max(xds_parallax_x), max(xds_parallax_y)
   dials_parallax_x, dials_parallax_y = generate_dials_corrections(
-    image_filename, sensor_thickness_mm, energy_ev, 
+    image_filename, sensor_thickness_mm, energy_ev,
     method=compute_absolute_offset_xds)
   print min(dials_parallax_x), min(dials_parallax_y), \
     max(dials_parallax_x), max(dials_parallax_y)
@@ -86,7 +86,7 @@ def work(image_filename, sensor_thickness_mm, energy_ev=None):
   dy = xds_parallax_y - dials_parallax_y
 
   print min(dx), min(dy), max(dx), max(dy)
-  
+
   import matplotlib
   matplotlib.use('Agg')
   from matplotlib import pyplot
@@ -95,7 +95,7 @@ def work(image_filename, sensor_thickness_mm, energy_ev=None):
   pyplot.savefig('dx.png')
   pyplot.imshow(dy.as_numpy_array())
   pyplot.savefig('dy.png')
-  
+
   return
 
 if __name__ == '__main__':
@@ -104,4 +104,3 @@ if __name__ == '__main__':
     work(sys.argv[1], float(sys.argv[2]))
   else:
     work(sys.argv[1], float(sys.argv[2]), energy_ev = int(sys.argv[3]))
-    

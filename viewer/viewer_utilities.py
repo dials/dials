@@ -87,5 +87,3 @@ class np_to_bmp(object):
     plt.close(self.fig)
 
     return self.image, width, height
-
-

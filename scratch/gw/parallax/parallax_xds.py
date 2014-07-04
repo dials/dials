@@ -88,7 +88,7 @@ ORGX=%(origin_fast).2f ORGY=%(origin_slow).2f
 
 # FIXME need export_xds_corrections()
 
-def generate_xds_corrections(image_filename, sensor_thickness_mm, 
+def generate_xds_corrections(image_filename, sensor_thickness_mm,
                              energy_ev=None):
   '''Generate an XYCORR input file from an image header via dxtbx, noting
   well that this will *tell lies* as the image is rescaled to give a 1:1
@@ -106,7 +106,7 @@ def generate_xds_corrections(image_filename, sensor_thickness_mm,
     wavelength = image.get_beam().get_wavelength()
     energy_ev = 12398.5 / wavelength
 
-  from mu_Si import derive_absorption_coefficient_Si    
+  from mu_Si import derive_absorption_coefficient_Si
   silicon = derive_absorption_coefficient_Si(0.001 * energy_ev)
   d = image.get_detector()[0]
   fast = matrix.col(d.get_fast_axis())
@@ -150,7 +150,7 @@ def generate_xds_corrections(image_filename, sensor_thickness_mm,
 
   output = run_job('xds_par')
 
-  # now read the correction tables in and scale to mm - recall pixel size / 4 
+  # now read the correction tables in and scale to mm - recall pixel size / 4
   # above..
 
   x_corrections_parallax = read_xds_calibration_file(
@@ -159,4 +159,3 @@ def generate_xds_corrections(image_filename, sensor_thickness_mm,
     'Y-CORRECTIONS.cbf').as_double() * (pixel_size[0] / 40.0)
 
   return x_corrections_parallax, y_corrections_parallax
-

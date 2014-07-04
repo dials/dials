@@ -17,11 +17,11 @@ def derive_absorption_coefficient_Si(energy_kev):
   derive a smoothed atenuation coefficient at a given energy in KeV, in mm ^ -1'''
 
   # FIXME need to decide which absorption coefficient to use - I think the mu_en
-  # one which refers to energy deposition. N.B. only tabulated likely range 3 - 
+  # one which refers to energy deposition. N.B. only tabulated likely range 3 -
   # 20 keV
-  
+
   use_mu_en = True
-  
+
   if use_mu_en:
 
     # computed from mu_en
