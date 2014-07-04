@@ -10,12 +10,33 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <scitbx/array_family/flex_types.h>
 #include <dials/algorithms/filtering/filter.h>
 
 namespace dials { namespace algorithms { namespace filter {
     namespace boost_python {
 
   using namespace boost::python;
+
+  using scitbx::af::flex_bool;
+
+  af::shared<bool> by_detector_mask_multipanel_wrapper(
+      const af::const_ref<std::size_t> &panel,
+      const af::const_ref<int6> bboxes,
+      boost::python::tuple mask_tuple,
+      int2 scan_range) {
+
+    af::shared< af::const_ref<bool, af::c_grid<2> > > mask(len(mask_tuple));
+    for (std::size_t i = 0; i < mask.size(); ++i) {
+      flex_bool temp =  extract<flex_bool>(mask_tuple[i]);
+      DIALS_ASSERT(temp.accessor().all().size() == 2);
+      mask[i] = af::const_ref<bool, af::c_grid<2> >(
+          &temp[0], af::c_grid<2>(temp.accessor().all()[0],
+            temp.accessor().all()[1]));
+    }
+
+    return by_detector_mask_multipanel(panel, bboxes, mask.const_ref(), scan_range);
+  }
 
   void export_is_zeta_valid()
   {
@@ -84,6 +105,7 @@ namespace dials { namespace algorithms { namespace filter {
     def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels);
     def("is_bbox_valid", &is_bbox_valid);
     def("by_detector_mask", &by_detector_mask);
+    def("by_detector_mask", &by_detector_mask_multipanel_wrapper);
 
     def("by_resolution_at_centroid",
       &by_resolution_at_centroid);

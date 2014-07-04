@@ -420,6 +420,21 @@ namespace dials { namespace algorithms { namespace filter {
     return result;
   }
 
+  inline
+  af::shared<bool> by_detector_mask_multipanel(
+      const af::const_ref<std::size_t> &panel,
+      const af::const_ref<int6> bboxes,
+      const af::const_ref< af::const_ref<bool, af::c_grid<2> > > &mask,
+      int2 scan_range) {
+    DIALS_ASSERT(panel.size() == bboxes.size());
+    af::shared<bool> result(bboxes.size());
+    for (std::size_t i = 0; i < bboxes.size(); ++i) {
+      DIALS_ASSERT(panel[i] < mask.size());
+      result[i] = is_bbox_valid(bboxes[i], mask[panel[i]], scan_range);
+    }
+    return result;
+  }
+
   /**
    * Filter the reflection list by the distance between the centroid
    * position and predicted position.

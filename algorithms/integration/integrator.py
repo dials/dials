@@ -162,12 +162,24 @@ class Integrator(object):
     from dials.algorithms import filtering
     from dials.array_family import flex
 
+    image = experiments[0].imageset[0]
+    detector = experiments[0].detector
+    if not isinstance(image, tuple):
+      image = (image,)
+    image_mask = []
+    for im, panel in zip(image, detector):
+      tr = panel.get_trusted_range()
+      m = im >= int(tr[0])
+      image_mask.append(m)
+    image_mask = tuple(image_mask)
+
     # Set all reflections which overlap bad pixels to zero
     Command.start('Filtering reflections by detector mask')
     array_range = experiments[0].scan.get_array_range()
     mask = filtering.by_detector_mask(
+      reflections['panel'],
       reflections['bbox'],
-      experiments[0].imageset[0] >= 0,
+      image_mask,
       array_range)
     reflections.del_selected(mask != True)
     Command.end('Filtered %d reflections by detector mask' % len(reflections))
