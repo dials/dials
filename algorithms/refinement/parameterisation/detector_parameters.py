@@ -102,12 +102,8 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # build the parameter list in a specific,  maintained order
     p_list = [dist, shift1, shift2, tau1, tau2, tau3]
 
-    # set up the list of model objects being parameterised (here
-    # just the detector containing a single panel)
-    models = [detector]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list,
+    ModelParameterisation.__init__(self, detector, istate, p_list,
                                    experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
@@ -176,9 +172,9 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     dir2 = d2
 
     # now update the panel with its new position and orientation.
-    # The detector is the first model in _models, the panel is the
-    # first in the detector
-    (self._models[0])[0].set_frame(dir1, dir2, o)
+    # The detector is self._model, the panel is the first in the
+    # detector
+    (self._model)[0].set_frame(dir1, dir2, o)
 
     # calculate derivatives of the state wrt parameters
     # =================================================
@@ -389,7 +385,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
   def get_state(self):
 
     # only a single panel exists, so no multi_state_elt argument is allowed
-    panel = (self._models[0])[0]
+    panel = (self._model)[0]
     return matrix.sqr(panel.get_d_matrix())
 
 class DetectorParameterisationMultiPanel(ModelParameterisation):
@@ -494,12 +490,8 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
     # build the parameter list in a specific,  maintained order
     p_list = [dist, shift1, shift2, tau1, tau2, tau3]
 
-    # set up the list of model objects being parameterised (here
-    # just a single detector containing multiple panels)
-    models = [detector]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list,
+    ModelParameterisation.__init__(self, detector, istate, p_list,
                                    experiment_ids=experiment_ids,
                                    is_multi_state=True)
 
@@ -536,7 +528,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
     ret = multi_panel_compose(flex.vec3_double([self._initial_state[tag] for tag in ('d1','d2','dn')]),
                               flex.double([p.value for p in self._param]),
                               flex.vec3_double([p.axis for p in self._param]),
-                              self._models[0],
+                              self._model,
                               flex.vec3_double(self._offsets),
                               flex.vec3_double(self._dir1s),
                               flex.vec3_double(self._dir2s),
@@ -550,7 +542,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
   def get_state(self, multi_state_elt=0):
 
     # There is only one detector, but the req. panel must be specified
-    panel = (self._models[0])[multi_state_elt]
+    panel = (self._model)[multi_state_elt]
     return matrix.sqr(panel.get_d_matrix())
 
 class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
@@ -566,8 +558,8 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
     # extract parameters from the internal list
     dist, shift1, shift2, tau1, tau2, tau3 = self._param
 
-    # Extract the detector model, which is the first entry in _models.
-    detector = self._models[0]
+    # Extract the detector model
+    detector = self._model
 
     # convert angles to radians
     tau1rad = tau1.value / 1000.
@@ -995,12 +987,8 @@ class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel
       # extend the parameter list with those pertaining to this group
       p_list.extend([dist, shift1, shift2, tau1, tau2, tau3])
 
-    # set up the list of model objects being parameterised (here just a single
-    # detector containing multiple panels in groups)
-    models = [detector]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list,
+    ModelParameterisation.__init__(self, detector, istate, p_list,
                                    experiment_ids=experiment_ids,
                                    is_multi_state=True)
 
@@ -1016,7 +1004,7 @@ class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel
 
     # reset the list that holds derivatives
     for i in range(len(self._dstate_dp)):
-      self._dstate_dp[i] = [matrix.sqr((0,0,0,0,0,0,0,0,0))] * len(self._models[0])
+      self._dstate_dp[i] = [matrix.sqr((0,0,0,0,0,0,0,0,0))] * len(self._model)
 
     # loop over groups of panels collecting derivatives of the state wrt
     # parameters
@@ -1062,7 +1050,7 @@ class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel
       ret = multi_panel_compose(flex.vec3_double([initial_state[tag] for tag in ('d1','d2','dn')]),
                                 param_vals,
                                 param_axes,
-                                self._models[0],
+                                self._model,
                                 flex.int(pnl_ids),
                                 offsets,
                                 dir1s,
@@ -1227,12 +1215,8 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       # extend the parameter list with those pertaining to this group
       p_list.extend([dist, shift1, shift2, tau1, tau2, tau3])
 
-    # set up the list of model objects being parameterised (here just a single
-    # detector containing multiple panels in groups)
-    models = [detector]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list,
+    ModelParameterisation.__init__(self, detector, istate, p_list,
                                    experiment_ids=experiment_ids,
                                    is_multi_state=True)
 
@@ -1245,7 +1229,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
     # reset the list that holds derivatives
     for i in range(len(self._dstate_dp)):
-      self._dstate_dp[i] = [matrix.sqr((0,0,0,0,0,0,0,0,0))] * len(self._models[0])
+      self._dstate_dp[i] = [matrix.sqr((0,0,0,0,0,0,0,0,0))] * len(self._model)
 
     # loop over groups of panels collecting derivatives of the state wrt
     # parameters
@@ -1575,8 +1559,8 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 #    # extract parameters from the internal list
 #    dist, shift1, shift2, tau1, tau2, tau3 = self._param
 #
-#    # Extract the detector model, which is the first entry in _models.
-#    detector = self._models[0]
+#    # Extract the detector model
+#    detector = self._model
 #
 #    # convert angles to radians
 #    tau1rad = tau1.value / 1000.

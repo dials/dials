@@ -54,12 +54,8 @@ class BeamParameterisationOrientation(ModelParameterisation):
     # build the parameter list in a specific,  maintained order
     p_list = [mu1, mu2]
 
-    # set up the list of model objects being parameterised (here
-    # just a single beam model)
-    models = [beam]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list,
+    ModelParameterisation.__init__(self, beam, istate, p_list,
                                    experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
@@ -91,8 +87,8 @@ class BeamParameterisationOrientation(ModelParameterisation):
     s0_new_dir = (Mu21 * is0).normalize()
 
     # now update the model with its new orientation
-    s0mag = 1. / self._models[0].get_wavelength()
-    self._models[0].set_unit_s0(s0mag * s0_new_dir)
+    s0mag = 1. / self._model.get_wavelength()
+    self._model.set_unit_s0(s0mag * s0_new_dir)
 
     ### calculate derivatives of the state wrt parameters
     # derivative wrt mu1
@@ -116,4 +112,4 @@ class BeamParameterisationOrientation(ModelParameterisation):
 
     # only a single beam exists, so no multi_state_elt argument is allowed
 
-    return matrix.col(self._models[0].get_s0())
+    return matrix.col(self._model.get_s0())

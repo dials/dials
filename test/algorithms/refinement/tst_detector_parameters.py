@@ -124,7 +124,7 @@ if __name__ == '__main__':
   p_vals = dp.get_param_vals()
   p_vals[0:3] = [100., 0., 0.]
   dp.set_param_vals(p_vals)
-  detector = dp._models[0]
+  detector = dp._model
   assert(len(detector) == 1)
   panel = detector[0]
   v1 = matrix.col(panel.get_origin())
@@ -140,7 +140,7 @@ if __name__ == '__main__':
   p_vals[3] = 1000. * pi/2 # set tau1 value
   dp.set_param_vals(p_vals)
 
-  detector = dp._models[0]
+  detector = dp._model
   assert(len(detector) == 1)
   panel = detector[0]
   assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(dp._initial_state['d1']), 0.))
@@ -162,7 +162,7 @@ if __name__ == '__main__':
                    -cos(pi/18),
                    sqrt((2*sin(pi/36)*sin(pi/18))**2 - sin(pi/18)**4) - sin(pi/18)))
 
-  detector = dp._models[0]
+  detector = dp._model
   assert(len(detector) == 1)
   panel = detector[0]
   assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(v1), 1.))

@@ -15,15 +15,15 @@ def vis(dp, header=True):
     print "n <- 1"
   print "dorg <- c(%.9f, %.9f, %.9f)" % dp._initial_state['dorg'].elems
   print "offset <- c(%.9f, %.9f, %.9f)" % dp._initial_state['offset'].elems
-  print "sensor_origin <- c(%.9f, %.9f, %.9f)" % dp._models[0].origin
-  print "sensor_d1 <- c(%.9f, %.9f, %.9f)" % dp._models[0].dir1
-  print "sensor_d2 <- c(%.9f, %.9f, %.9f)" % dp._models[0].dir2
-  print "sensor_dn <- c(%.9f, %.9f, %.9f)" % dp._models[0].normal
+  print "sensor_origin <- c(%.9f, %.9f, %.9f)" % dp._model.origin
+  print "sensor_d1 <- c(%.9f, %.9f, %.9f)" % dp._model.dir1
+  print "sensor_d2 <- c(%.9f, %.9f, %.9f)" % dp._model.dir2
+  print "sensor_dn <- c(%.9f, %.9f, %.9f)" % dp._model.normal
   print "det_d1 <- c(%.9f, %.9f, %.9f)" % dp._initial_state['d1'].elems
   print "det_d2 <- c(%.9f, %.9f, %.9f)" % dp._initial_state['d2'].elems
   print "det_dn <- c(%.9f, %.9f, %.9f)" % dp._initial_state['dn'].elems
-  print "sensor_lim1 <- c(%.9f, %.9f)" % dp._models[0].lim1
-  print "sensor_lim2 <- c(%.9f, %.9f)" % dp._models[0].lim2
+  print "sensor_lim1 <- c(%.9f, %.9f)" % dp._model.lim1
+  print "sensor_lim2 <- c(%.9f, %.9f)" % dp._model.lim2
   print 'lines3d(rbind(c(0,0,0),dorg),col="red")'
   print 'lines3d(rbind(c(0,0,0),sensor_origin),col="green")'
   print 'lines3d(rbind(dorg,dorg + offset[1] * det_d1 + offset[2] * det_d2))'

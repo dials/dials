@@ -55,12 +55,8 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
     # Build the list of parameter sets in a specific, maintained order
     p_list = [phi1, phi2, phi3]
 
-    # Set up the list of model objects being parameterised (here
-    # just a single crystal model)
-    models = [crystal]
-
     # Set up the base class
-    ScanVaryingModelParameterisation.__init__(self, models, istate,
+    ScanVaryingModelParameterisation.__init__(self, crystal, istate,
                                               p_list, smoother,
                                               experiment_ids=experiment_ids)
 
@@ -160,12 +156,8 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
     p_list = [ScanVaryingParameterSet(e * 1.e5, nv, name = "g_param_%d" % i) \
               for i, e in enumerate(X)]
 
-    # set up the list of model objects being parameterised (here
-    # just a single crystal model)
-    models = [crystal]
-
     # Set up the base class
-    ScanVaryingModelParameterisation.__init__(self, models, istate,
+    ScanVaryingModelParameterisation.__init__(self, crystal, istate,
                                               p_list, smoother,
                                               experiment_ids=experiment_ids)
 

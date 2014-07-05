@@ -94,12 +94,8 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # build the parameter list in a specific,  maintained order
     p_list = [dist, shift1, shift2, tau1, tau2, tau3]
 
-    # set up the list of model objects being parameterised (here
-    # just the detector containing a single panel)
-    models = [detector]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list)
+    ModelParameterisation.__init__(self, detector, istate, p_list)
 
     # call compose to calculate all the derivatives
     self.compose()
@@ -167,7 +163,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # now update the panel with its new position and orientation.
     # The detector is the first model in _models, the panel is the
     # first in the detector
-    (self._models[0])[0].set_frame(dir1, dir2, o)
+    (self._model)[0].set_frame(dir1, dir2, o)
 
     # calculate derivatives of the state wrt parameters
     # =================================================
@@ -377,7 +373,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
 
   def get_state(self):
     # only a single panel
-    panel = (self._models[0])[0]
+    panel = (self._model)[0]
     return matrix.sqr(panel.get_d_matrix())
 
 def random_panel(lim = (0, 50)):
@@ -436,7 +432,7 @@ if __name__ == '__main__':
   p_vals = dp.get_param_vals()
   p_vals[0:3] = [100., 0., 0.]
   dp.set_param_vals(p_vals)
-  panel = dp._models[0]
+  panel = dp._model
   v1 = matrix.col(panel.get_origin())
   v2 = matrix.col((0., 0., 1.))
   assert(approx_equal(v1.dot(v2), -100.))
@@ -450,7 +446,7 @@ if __name__ == '__main__':
   p_vals[3] = 1000. * pi/2 # set tau1 value
   dp.set_param_vals(p_vals)
 
-  panel = dp._models[0]
+  panel = dp._model
   assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(dp._initial_state['d1']), 0.))
   assert(approx_equal(matrix.col(panel.get_slow_axis()).dot(dp._initial_state['d2']), 0.))
   assert(approx_equal(matrix.col(panel.get_normal()).dot(dp._initial_state['dn']), 1.))
@@ -470,9 +466,9 @@ if __name__ == '__main__':
   #print "d2 = (%.3f, %.3f, %.3f)" % dp._initial_state['d2'].elems
   #print "dn = (%.3f, %.3f, %.3f)" % dp._initial_state['dn'].elems
   #print "composed state"
-  #print "dir1 = (%.3f, %.3f, %.3f)" % dp._models[0].dir1
-  #print "d2 = (%.9f, %.9f, %.9f)" % dp._models[0].dir2
-  #print "dn = (%.3f, %.3f, %.3f)" % dp._models[0].normal
+  #print "dir1 = (%.3f, %.3f, %.3f)" % dp._model.dir1
+  #print "d2 = (%.9f, %.9f, %.9f)" % dp._model.dir2
+  #print "dn = (%.3f, %.3f, %.3f)" % dp._model.normal
 
   # paper calculation values
   v1 = matrix.col((cos(pi/18), 0, sin(pi/18)))
@@ -480,7 +476,7 @@ if __name__ == '__main__':
                    -cos(pi/18),
                    sqrt((2*sin(pi/36)*sin(pi/18))**2 - sin(pi/18)**4) - sin(pi/18)))
 
-  panel = dp._models[0]
+  panel = dp._model
   assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(v1), 1.))
   assert(approx_equal(matrix.col(panel.get_slow_axis()).dot(v2), 1.))
 

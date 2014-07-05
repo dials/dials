@@ -107,11 +107,11 @@ class ModelParameterisation(object):
 
   __metaclass__  = abc.ABCMeta
 
-  def __init__(self, models, initial_state, param_list, experiment_ids,
+  def __init__(self, model, initial_state, param_list, experiment_ids,
                is_multi_state=False):
     assert(isinstance(param_list, list))
     self._initial_state = initial_state
-    self._models = models
+    self._model = model
     self._param = list(param_list)
     self._total_len = len(self._param)
     self._num_free = None
@@ -134,6 +134,10 @@ class ModelParameterisation(object):
   def get_experiment_ids(self):
     """the experiments parameterised by this ModelParameterisation"""
     return self._exp_ids
+
+  def get_model(self):
+    """return the model parameterised"""
+    return self._model
 
   @abc.abstractmethod
   def compose(self):

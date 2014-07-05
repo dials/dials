@@ -43,12 +43,8 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     # build the parameter list in a specific,  maintained order
     p_list = [phi1, phi2, phi3]
 
-    # set up the list of model objects being parameterised (here
-    # just a single crystal model)
-    models = [crystal]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list,
+    ModelParameterisation.__init__(self, crystal, istate, p_list,
                                    experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
@@ -88,7 +84,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     ### Compose new state
 
     newU = Phi321 * U0
-    self._models[0].set_U(newU)
+    self._model.set_U(newU)
 
     ### calculate derivatives of the state wrt parameters
     dU_dphi1 = Phi3 * Phi2 * dPhi1_dphi1 * U0
@@ -104,7 +100,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
 
     # only a single crystal is parameterised here, so no multi_state_elt
     # argument is allowed
-    return matrix.sqr(self._models[0].get_U())
+    return matrix.sqr(self._model.get_U())
 
 class CrystalUnitCellParameterisation(ModelParameterisation):
   """Parameterisation for the unit cell"""
@@ -133,12 +129,8 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     p_list = [Parameter(e * 1.e5, name = "g_param_%d" % i) \
               for i, e in enumerate(X)]
 
-    # set up the list of model objects being parameterised (here
-    # just a single crystal model)
-    models = [crystal]
-
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list,
+    ModelParameterisation.__init__(self, crystal, istate, p_list,
                                    experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
@@ -157,7 +149,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
             self._S.backward_orientation(p_vals).reciprocal_matrix())
 
     # Now pass new B to the crystal model
-    self._models[0].set_B(newB)
+    self._model.set_B(newB)
 
     # returns the independent parameters given the set_orientation() B
     # matrix. Used here for side effects
@@ -173,4 +165,4 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
 
     # only a single crystal is parameterised here, so no multi_state_elt
     # argument is allowed
-    return matrix.sqr(self._models[0].get_B())
+    return matrix.sqr(self._model.get_B())

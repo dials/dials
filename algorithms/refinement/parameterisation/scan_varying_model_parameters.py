@@ -217,10 +217,10 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
   __metaclass__  = abc.ABCMeta
 
-  def __init__(self, models, initial_state, param_sets, smoother,
+  def __init__(self, model, initial_state, param_sets, smoother,
                experiment_ids, is_multi_state=False):
 
-    ModelParameterisation.__init__(self, models, initial_state, param_sets,
+    ModelParameterisation.__init__(self, model, initial_state, param_sets,
       experiment_ids, is_multi_state)
 
     self._num_sets = len(self._param)
