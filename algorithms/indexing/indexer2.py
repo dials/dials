@@ -279,7 +279,7 @@ class indexer_base(object):
       print "with:"
       print reference_beam
       for imageset in self.imagesets:
-        imageset.set_beam(set_beam)
+        imageset.set_beam(reference_beam)
 
     self.goniometer = sweep.get_goniometer()
     self.detector = sweep.get_detector()
