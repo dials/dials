@@ -11,7 +11,6 @@
 import numpy, wx
 import matplotlib.pyplot as plt
 
-
 def from_wx_image_to_wx_bitmap(wx_image, width, height, scale):
   NewW = int(width * scale)
   NewH = int(height * scale)
