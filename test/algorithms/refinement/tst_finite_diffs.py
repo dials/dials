@@ -50,9 +50,6 @@ from dials.algorithms.refinement.target import \
   LeastSquaresPositionalResidualWithRmsdCutoff
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
-# Import helper functions
-from dials.algorithms.refinement.refinement_helpers import print_model_geometry
-
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
   return vector.rotate_around_origin(matrix.col(
@@ -100,10 +97,6 @@ experiments.append(Experiment(
       beam=mybeam, detector=mydetector, goniometer=mygonio,
       scan=myscan, crystal=mycrystal, imageset=None))
 
-print "Initial experimental model"
-print "=========================="
-print_model_geometry(mybeam, mydetector, mycrystal)
-
 ###########################
 # Parameterise the models #
 ###########################
@@ -142,11 +135,6 @@ xlo_p_vals = xlo_param.get_param_vals()
 p_vals = [a + b for a, b in zip(xlo_p_vals, [2.0, 2.0, 2.0])]
 xlo_param.set_param_vals(p_vals)
 
-print "Offsetting initial model"
-print "========================"
-print_model_geometry(mybeam, mydetector, mycrystal)
-print
-
 #############################
 # Generate some reflections #
 #############################
@@ -161,10 +149,6 @@ indices = index_generator.to_array()
 ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
-
-print "Generating reflections"
-print "======================"
-print "Total number of reflections excited", len(obs_refs)
 
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
@@ -190,8 +174,6 @@ for ref in obs_refs:
   ref.frame_number = myscan.get_image_index_from_angle(
       ref.rotation_angle, deg=False)
 
-print "Total number of observations made", len(obs_refs), "\n"
-
 ###############################
 # Undo known parameter shifts #
 ###############################
@@ -199,12 +181,6 @@ print "Total number of observations made", len(obs_refs), "\n"
 s0_param.set_param_vals(s0_p_vals)
 det_param.set_param_vals(det_p_vals)
 xlo_param.set_param_vals(xlo_p_vals)
-
-print "Resetting to initial model"
-print "=========================="
-print "Initial values of parameters are"
-msg = "Parameters: " + "%.5f " * len(pred_param)
-print msg % tuple(pred_param.get_param_vals()), "\n"
 
 #####################################
 # Select reflections for refinement #
@@ -231,16 +207,6 @@ try:
 except AttributeError:
   curvs = None
 
-print "Calculated gradients"
-print "===================="
-print "Target L           = %.6f" % L
-msg = "Gradients dL/dp    = " + "%.6f " * len(dL_dp)
-print msg % tuple(dL_dp)
-if curvs:
-  msg = "Curvatures d2L/dp2 = " + "%.6f " * len(curvs)
-  print msg % tuple(curvs)
-print
-
 ####################################
 # Do FD calculation for comparison #
 ####################################
@@ -264,11 +230,9 @@ def get_fd_gradients(target, pred_param, deltas):
   except AttributeError:
     do_curvs = False
 
-  print "Parameter",
   for i in range(len(deltas)):
     val = p_vals[i]
 
-    print i,
     sys.stdout.flush()
     p_vals[i] -= deltas[i] / 2.
     pred_param.set_param_vals(p_vals)
@@ -294,39 +258,22 @@ def get_fd_gradients(target, pred_param, deltas):
     # set parameter back to centred value
     p_vals[i] = val
 
-  print "\n"
-
   # return to the initial state
   pred_param.set_param_vals(p_vals)
 
   return fd_grad, fd_curvs
 
-print "Finite difference gradients"
-print "==========================="
+# test normalised differences between FD and analytical calculations
 fdgrads = get_fd_gradients(mytarget, pred_param, [1.e-7] * len(pred_param))
-msg = "FD gradients dL[fd]/dp          = " + "%.6f " * len(fdgrads[0])
-print msg % tuple(fdgrads[0])
 diffs = [a - b for a, b in zip(dL_dp, fdgrads[0])]
-msg = "dL/dp - dL[fd]/dp               = " + "%.6f " * len(diffs)
-print msg % tuple(diffs)
-print "Normalised differences:"
-msg = "(dL/dp - dL[fd]/dp) / dL[fd]/dp = " + "%.6f " * len(diffs)
 norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[0])])
-print msg % norm_diffs
-print
-
 for e in norm_diffs: assert abs(e) < 0.001 # check differences less than 0.1%
+print "OK"
 
+# test normalised differences between FD curvatures and analytical least
+# squares approximation. We don't expect this to be especially close
 if curvs:
-  print "Finite difference curvatures"
-  print "============================"
-  msg = "FD curvatures d2L[fd]/dp2             = " + "%.6f " * len(fdgrads[1])
-  print msg % tuple(fdgrads[1])
   diffs = [a - b for a, b in zip(curvs, fdgrads[1])]
-  msg = "d2L/dp2 - d2L[fd]/dp2                 = " + "%.6f " * len(diffs)
-  print msg % tuple(diffs)
-  print "Normalised differences:"
-  msg = "(d2L/dp2 - d2L[fd]/dp2) / d2L[fd]/dp2 = " + "%.6f " * len(diffs)
-  print msg % tuple([a / b for a, b in zip(diffs, fdgrads[1])])
-
+  norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[1])])
+  for e in norm_diffs: assert abs(e) < 0.1 # check differences less than 10%
 print "OK"
