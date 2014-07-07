@@ -109,6 +109,14 @@ class ProfileFittingReciprocalSpace(object):
     coords = reflections['xyzcal.px'].select(pind)
     learner.learn(profiles, coords)
 
+    # Create the average profile
+    from dials.util import pprint
+    locator = learner.locate()
+    profiles = [locator.profile(i) for i in range(len(locator))]
+    average_profile = sum(profiles) / len(profiles)
+    print "Average Profile:\n"
+    print pprint.profile3d(average_profile)
+
     # Return the learner
     return learner
 
