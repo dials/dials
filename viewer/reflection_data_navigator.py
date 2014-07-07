@@ -96,10 +96,10 @@ class table_s_navigator(object):
     else:
       print "first reflection reached"
   def Get_Max(self, opt = 0):
-    if(opt /= 3):
+    if(opt != 3):
       self.I_Max = flex.max(self.data_flex)
     else:
-      self.I_Max = flex.max(self.mask_flex)
+      self.I_Max = flex.max(self.mask_flex) * 2
     return self.I_Max
 
   def Get_bbox(self):
