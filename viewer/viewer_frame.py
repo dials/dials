@@ -159,9 +159,14 @@ class ReflectionFrame(wx.Frame):
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
-      self.wx_Img_03, self.img_width, self.img_height = self.bmp(
+      if( self.opt == 0 ):
+        self.wx_Img_03, self.img_width, self.img_height = self.bmp(
                                       np_img_2d = arr_img03
-                                    #, Intst_max = -1
+                                    , Intst_max = 10
+                                    , ofst = self.box_lmt)
+      else:
+        self.wx_Img_03, self.img_width, self.img_height = self.bmp(
+                                      np_img_2d = arr_img03
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
