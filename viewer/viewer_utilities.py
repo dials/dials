@@ -9,6 +9,9 @@
 #  included in the root directory of this package.
 
 import numpy, wx
+# set backend before importing pyplot
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 def from_wx_image_to_wx_bitmap(wx_image, width, height, scale):
