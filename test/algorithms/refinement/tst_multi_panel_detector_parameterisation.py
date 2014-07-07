@@ -68,9 +68,6 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 from dials.algorithms.refinement.target import LeastSquaresPositionalResidualWithRmsdCutoff
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
-# Import helper functions
-from dials.algorithms.refinement.refinement_helpers import print_model_geometry
-
 ###################
 # Local functions #
 ###################
@@ -220,13 +217,6 @@ if __name__ == '__main__':
   # Generate some reflections #
   #############################
 
-  print "Reflections will be generated with the following geometry:"
-  print_model_geometry(mybeam, single_panel_detector, mycrystal)
-  print "Target values of parameters are"
-  msg = "Parameters: " + "%.5f " * len(pred_param)
-  print msg % tuple(pred_param.get_param_vals())
-  print
-
   # All indices in a 2.0 Angstrom sphere
   resolution = 2.0
   index_generator = IndexGenerator(mycrystal.get_unit_cell(),
@@ -242,8 +232,6 @@ if __name__ == '__main__':
   obs_refs2 = ref_predictor.predict(indices)
   for r1, r2 in zip(obs_refs, obs_refs2):
     assert r1.beam_vector == r2.beam_vector
-
-  print "Total number of reflections excited", len(obs_refs)
 
   # get the panel intersections
   obs_refs = ray_intersection(single_panel_detector, obs_refs)
@@ -273,8 +261,6 @@ if __name__ == '__main__':
         ref.rotation_angle, deg=False)
     ref2.frame_number = myscan.get_image_index_from_angle(
         ref2.rotation_angle, deg=False)
-
-  print "Total number of observations made", len(obs_refs)
 
   ###############################
   # Undo known parameter shifts #
@@ -320,9 +306,6 @@ if __name__ == '__main__':
                                     cmdline_args = args).refiner
 
 
-  print "\nRefining using the single panel detector"
-  print   "----------------------------------------\n"
-
   refiner.run()
 
   # reset parameters and run refinement with the multi panel detector
@@ -331,15 +314,7 @@ if __name__ == '__main__':
   xlo_param.set_param_vals(xlo_p_vals)
   xluc_param.set_param_vals(xluc_p_vals)
 
-
-  print "\nRe-running refinement with the multi panel detector"
-  print   "---------------------------------------------------\n"
-
   refiner2.run()
-
-  # Check that the two refinement runs were the same
-  print "\nChecking that the refinement runs were identical"
-  print   "------------------------------------------------\n"
 
   # same number of steps
   assert refiner.get_num_steps() == refiner2.get_num_steps()
