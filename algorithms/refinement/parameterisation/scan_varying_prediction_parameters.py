@@ -223,6 +223,9 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       # Access the detector model being parameterised
       detector = dp.get_model()
 
+      # Get panel numbers of the affected reflections
+      panel = reflections['panel'].select(isel)
+
       # loop through the panels in this detector
       for panel_id, _ in enumerate(exp.detector):
 
@@ -337,7 +340,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       s1 = self._s1.select(isel)
       e_X_r = self._e_X_r.select(isel)
       e_r_s0 = self._e_r_s0.select(isel)
-      U = self._B.select(isel)
+      U = self._U.select(isel)
       D = self._D.select(isel)
 
       w_inv = self._w_inv.select(isel)
