@@ -20,8 +20,6 @@ import os
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
-from math import pi
-from libtbx.test_utils import open_tmp_directory
 
 def test1():
 
@@ -35,15 +33,13 @@ def test1():
   assert os.path.exists(phil_path)
 
   cwd = os.path.abspath(os.curdir)
-  #tmp_dir = open_tmp_directory(suffix="test_refine_multi_wedges")
   os.chdir(data_dir)
   command = "dials.python refine_multi_wedges.py all.phil"
-  print command
   try:
     result = easy_run.fully_buffered(command=command).raise_if_errors()
   finally:
     os.chdir(cwd)
-
+  print "OK"
   return
 
 def run():
