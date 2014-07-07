@@ -576,7 +576,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         self._iparam += 1
 
     # loop over the crystal unit cell parameterisations
-    for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
+    for xlucp in self._xl_unit_cell_parameterisations:
 
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
