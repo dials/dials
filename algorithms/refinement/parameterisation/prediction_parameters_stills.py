@@ -490,21 +490,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     # q1 completes an orthonormal set with q0 and e1
     self._q1 = self._q0.cross(self._e1).each_normalize()
 
-    # c0 completes an orthonormal set with s0u and e1
-    self._c0 = self._s0u.cross(self._e1).each_normalize()
-
-    # calculate 'a' and 'b', the components of r in the directions -s0u and
-    # c0 respectively
-    self._a = -1.0 * self._r.dot(self._s0u)
-    self._b = self._r.dot(self._c0)
-
     # we want the wavelength
     self._wavelength = 1. / self._s0.norms()
-
-    # calculate chi and upsilon. In the paper these are called 'x' and 'y', but
-    # we rename here to avoid confusion with detector coordinates X and Y.
-    self._upsilon = self._r.dot(self._q1)
-    self._chi = self._r.dot(self._q0)
 
     # Set up the lists of derivatives: a separate array over reflections for
     # each free parameter
