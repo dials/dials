@@ -67,7 +67,7 @@ class table_s_navigator(object):
     self.background_flex = table_row['shoebox'].background
     self.mask_flex = table_row['shoebox'].mask
     self.box_lim = table_row['bbox']
-    self.I_Max = flex.max(self.data_flex)
+
     self.depth = self.data_flex.all()[0]
     if self.depth <= 0:
       print "ERROR 0 depth"
@@ -95,7 +95,11 @@ class table_s_navigator(object):
       self.z = 0
     else:
       print "first reflection reached"
-  def Get_Max(self):
+  def Get_Max(self, opt = 0):
+    if(opt /= 3):
+      self.I_Max = flex.max(self.data_flex)
+    else:
+      self.I_Max = flex.max(self.mask_flex)
     return self.I_Max
 
   def Get_bbox(self):

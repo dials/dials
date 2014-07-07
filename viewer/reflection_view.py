@@ -145,7 +145,7 @@ class ReflectionFrame(wx.Frame):
       #self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
       arr_img01, arr_img02, arr_img03 = self.tabl(opt = self.opt)
 
-      self.I_max = self.tabl.Get_Max()
+      self.I_max = self.tabl.Get_Max(self.opt)
       self.box_lmt = self.tabl.Get_bbox()
 
 
