@@ -462,43 +462,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # reset a pointer to the parameter number
     self._iparam = 0
 
-    # select items of interest for this experiment
-    #panel = reflections['panel'].select(isel)
-    #s0 = self._s0.select(isel)
-    #
-    #r = self._r.select(isel)
-    #D = self._D.select(isel)
-    #
-    #h = self._h.select(isel)
-    #B = self._B.select(isel)
-    #U = self._U.select(isel)
-    #
-    #s1 = self._s1.select(isel)
-    #phi_calc = self._phi_calc.select(isel)
-    #axis = self._axis.select(isel)
-    #
-    #e_X_r = self._e_X_r.select(isel)
-    #e_r_s0 = self._e_r_s0.select(isel)
-    #
-    #pv = self._pv.select(isel)
-    #w_inv = self._w_inv.select(isel)
-    #u_w_inv = self._u_w_inv.select(isel)
-    #v_w_inv = self._v_w_inv.select(isel)
-    #
-    ## identify which parameterisations to use for this experiment
-    #param_set = self._exp_to_param[iexp]
-    #beam_param_id = param_set.beam_param
-    #xl_ori_param_id = param_set.xl_ori_param
-    #xl_uc_param_id = param_set.xl_uc_param
-    #det_param_id = param_set.det_param
-
   ### Work through the parameterisations, calculating their contributions
   ### to derivatives d[pv]/dp and d[phi]/dp
 
-    # loop over all the detector parameterisations, even though we are only
-    # setting values for one of them. We still need to move the _iparam pointer
-    # for the others.
-    for idp, dp in enumerate(self._detector_parameterisations):
+    # loop over the detector parameterisations
+    for dp in self._detector_parameterisations:
 
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
@@ -540,10 +508,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       # increment the parameter index pointer to the last detector parameter
       self._iparam += dp.num_free()
 
-    # loop over all the beam parameterisations, even though we are only setting
-    # values for one of them. We still need to move the _iparam pointer for the
-    # others.
-    for ibp, bp in enumerate(self._beam_parameterisations):
+    # loop over the beam parameterisations
+    for bp in self._beam_parameterisations:
 
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
@@ -573,10 +539,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         # increment the parameter index pointer
         self._iparam += 1
 
-    # loop over all the crystal orientation parameterisations, even though we
-    # are only setting values for one of them. We still need to move the
-    # _iparam pointer for the others.
-    for ixlop, xlop in enumerate(self._xl_orientation_parameterisations):
+    # loop over the crystal orientation parameterisations
+    for xlop in self._xl_orientation_parameterisations:
 
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
@@ -611,9 +575,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         # increment the parameter index pointer
         self._iparam += 1
 
-    # loop over all the crystal unit cell parameterisations, even though we
-    # are only setting values for one of them. We still need to move the
-    # _iparam pointer for the others.
+    # loop over the crystal unit cell parameterisations
     for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
 
       # Determine (sub)set of reflections affected by this parameterisation
