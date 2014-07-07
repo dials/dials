@@ -10,7 +10,7 @@
 #include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/integration/profile/profile_allocator.h>
-//#include <dials/algorithms/integration/profile/profile_manager.h>
+#include <dials/algorithms/integration/profile/profile_manager.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
