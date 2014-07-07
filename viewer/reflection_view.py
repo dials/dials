@@ -109,10 +109,12 @@ class ReflectionFrame(wx.Frame):
     self.My_Update(request_new_data = True)
 
   def OnRadio3(self, event = None):
-    print "clicked on Radio3"
+    self.opt = 2
+    self.My_Update(request_new_data = True)
 
   def OnRadio4(self, event = None):
-    print "clicked on Radio4"
+    self.opt = 3
+    self.My_Update(request_new_data = True)
 
   def OnSize(self, event = None):
     if( self.sizing_counter > 5 ):
@@ -140,23 +142,25 @@ class ReflectionFrame(wx.Frame):
   def My_Update(self, request_new_data = True):
 
     if( request_new_data == True ):
-      self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
+      #self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
+      arr_img01, arr_img02, arr_img03 = self.tabl(opt = self.opt)
+
       self.I_max = self.tabl.Get_Max()
       self.box_lmt = self.tabl.Get_bbox()
 
 
       self.wx_Img_01, self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = self.dat
+                                      np_img_2d = arr_img01
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
       self.wx_Img_02, self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = self.bkg
+                                      np_img_2d = arr_img02
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
       self.wx_Img_03, self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = self.msk
+                                      np_img_2d = arr_img03
                                     #, Intst_max = -1
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)

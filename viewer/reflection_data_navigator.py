@@ -38,19 +38,26 @@ class table_s_navigator(object):
       mask2d.reshape(flex.grid(self.mask_flex.all()[1:]))
       np_lst.append(mask2d.as_numpy_array())
 
-    elif( opt == 1 ):
+    elif( opt == 1 or opt == 2 or opt == 3 ):
 
       for post in range(3):
         z_from = self.z + post - 1
         z_to = self.z + post
         if z_from >= 0 and z_to <=self.depth:
-          data2d = self.data_flex[z_from:z_to, :, :]
+          if( opt == 1 ):
+            data2d = self.data_flex[z_from:z_to, :, :]
+          elif( opt == 2 ):
+            data2d = self.background_flex[z_from:z_to, :, :]
+          elif( opt == 3 ):
+            data2d = self.mask_flex[z_from:z_to, :, :]
           data2d.reshape(flex.grid(self.data_flex.all()[1:]))
           data2d_np = data2d.as_numpy_array()
           np_lst.append(data2d_np)
         else:
           np_lst.append(build_np_img())
-
+    else:
+      print "wrong option"
+      np_lst = [build_np_img(), build_np_img(), build_np_img()]
     return np_lst
 
 
