@@ -85,6 +85,8 @@ known_symmetry {
 basis_vector_combinations {
   max_try = 10
     .type = int(value_min=1)
+  metric = *model_likelihood n_indexed
+    .type = choice
 }
 optimise_initial_basis_vectors = False
   .type = bool
@@ -801,7 +803,29 @@ class indexer_base(object):
                     if s.model_likelihood == self.best_volume_filtered_liklihood]
         return solutions[0]
 
-    solutions = SolutionTracker()
+    # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
+    class SolutionTrackerSimple(object):
+      def __init__(self):
+        self.all_solutions = []
+
+      def append(self, item):
+        self.all_solutions.append(item)
+        self.update_analysis()
+
+      def update_analysis(self):
+        self.best_n_indexed = max(
+          s.n_indexed for s in self.all_solutions)
+
+      def best_solution(self):
+        solutions = [s for s in self.all_solutions
+                    if s.n_indexed == self.best_n_indexed]
+        return solutions[0]
+
+    if self.params.basis_vector_combinations.metric == "model_likelihood":
+      solutions = SolutionTracker()
+    else:
+      solutions = SolutionTrackerSimple()
+
     hkl_tolerance \
       = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
     n_indexed = flex.int()
@@ -866,12 +890,14 @@ class indexer_base(object):
                  n_indexed=n_indexed[-1]))
       if self.params.debug:
         print "model_likelihood: %.2f" %model_likelihood
+        print "n_indexed: %i" %n_indexed[-1]
       if model_likelihood > best_likelihood:
         best_likelihood = model_likelihood
 
     best_solution = solutions.best_solution()
     if self.params.debug:
       print "best model_likelihood: %.2f" %best_solution.model_likelihood
+      print "best n_indexed: %i" %best_solution.n_indexed
     return best_solution.crystal, best_solution.n_indexed
 
   def apply_symmetry(self, crystal_model, target_symmetry,
