@@ -198,179 +198,168 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     n = len(self) # number of free parameters
     dX_dp, dY_dp, dphi_dp = self._prepare_gradient_vectors(m, n)
 
-    # loop over experiments
+    # determine experiment to indices mappings once, here
+    experiment_to_idx = []
     for iexp, exp in enumerate(self._experiments):
 
       sel = reflections['id'] == iexp
       isel = sel.iselection()
+      experiment_to_idx.append(isel)
 
-      # select items of interest for this experiment
-      panel = reflections['panel'].select(isel)
-      s0 = self._s0.select(isel)
-
-      r = self._r.select(isel)
-      D = self._D.select(isel)
-
-      h = self._h.select(isel)
-      B = self._B.select(isel)
-      U = self._U.select(isel)
-
-      s1 = self._s1.select(isel)
-      phi_calc = self._phi_calc.select(isel)
-      axis = self._axis.select(isel)
-
-      e_X_r = self._e_X_r.select(isel)
-      e_r_s0 = self._e_r_s0.select(isel)
-
-      pv = self._pv.select(isel)
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      # identify which parameterisations to use for this experiment
-      param_set = self._exp_to_param[iexp]
-      beam_param_id = param_set.beam_param
-      xl_ori_param_id = param_set.xl_ori_param
-      xl_uc_param_id = param_set.xl_uc_param
-      det_param_id = param_set.det_param
-
-      # reset a pointer to the parameter number
-      self._iparam = 0
+    # reset a pointer to the parameter number
+    self._iparam = 0
 
     ### Work through the parameterisations, calculating their contributions
     ### to derivatives d[pv]/dp and d[phi]/dp
 
-      # loop over all the detector parameterisations, even though we are only
-      # setting values for one of them. We still need to move the _iparam pointer
-      # for the others.
-      for idp, dp in enumerate(self._detector_parameterisations):
+    # loop over the detector parameterisations
+    for dp in self._detector_parameterisations:
 
-        # Calculate gradients only for the correct detector parameterisation for
-        # this experiment
-        if idp == det_param_id:
+      # Determine (sub)set of reflections affected by this parameterisation
+      isel = flex.size_t()
+      for exp_id in dp.get_experiment_ids():
+        isel.extend(experiment_to_idx[exp_id])
 
-          # loop through the panels in this detector
-          for panel_id, _ in enumerate(exp.detector):
+      # Access the detector model being parameterised
+      detector = dp.get_model()
 
-            # get the right subset of array indices to set for this panel
-            sub_isel = isel.select(panel == panel_id)
-            sub_pv = self._pv.select(sub_isel)
-            sub_D = self._D.select(sub_isel)
-            dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
+      # loop through the panels in this detector
+      for panel_id, _ in enumerate(exp.detector):
 
-            # convert to dX/dp, dY/dp and assign the elements of the vectors
-            # corresponding to this experiment and panel
-            sub_w_inv = self._w_inv.select(sub_isel)
-            sub_u_w_inv = self._u_w_inv.select(sub_isel)
-            sub_v_w_inv = self._v_w_inv.select(sub_isel)
-            dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-              sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p)
-            iparam = self._iparam
-            for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-              dX_dp[iparam].set_selected(sub_isel, dX)
-              dY_dp[iparam].set_selected(sub_isel, dY)
-              # increment the local parameter index pointer
-              iparam += 1
+        # get the right subset of array indices to set for this panel
+        sub_isel = isel.select(panel == panel_id)
+        sub_pv = self._pv.select(sub_isel)
+        sub_D = self._D.select(sub_isel)
+        dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
 
-          # increment the parameter index pointer to the last detector parameter
-          self._iparam += dp.num_free()
+        # convert to dX/dp, dY/dp and assign the elements of the vectors
+        # corresponding to this experiment and panel
+        sub_w_inv = self._w_inv.select(sub_isel)
+        sub_u_w_inv = self._u_w_inv.select(sub_isel)
+        sub_v_w_inv = self._v_w_inv.select(sub_isel)
+        dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+          sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p)
+        iparam = self._iparam
+        for dX, dY in zip(dX_ddet_p, dY_ddet_p):
+          dX_dp[iparam].set_selected(sub_isel, dX)
+          dY_dp[iparam].set_selected(sub_isel, dY)
+          # increment the local parameter index pointer
+          iparam += 1
 
-        # For any other detector parameterisations, leave derivatives as zero
-        else:
-          # just increment the pointer
-          self._iparam += dp.num_free()
+      # increment the parameter index pointer to the last detector parameter
+      self._iparam += dp.num_free()
 
-      # loop over all the beam parameterisations, even though we are only setting
-      # values for one of them. We still need to move the _iparam pointer for the
-      # others.
-      for ibp, bp in enumerate(self._beam_parameterisations):
+    # loop over the beam parameterisations
+    for bp in self._beam_parameterisations:
 
-        # Calculate gradients only for the correct beam parameterisation
-        if ibp == beam_param_id:
+      # Determine (sub)set of reflections affected by this parameterisation
+      isel = flex.size_t()
+      for exp_id in bp.get_experiment_ids():
+        isel.extend(experiment_to_idx[exp_id])
 
-          dpv_dbeam_p, dphi_dbeam_p = self._beam_derivatives(bp, r, e_X_r, e_r_s0, D)
+      # Get required data from those reflections
+      r = self._r.select(isel)
+      e_X_r = self._e_X_r.select(isel)
+      e_r_s0 = self._e_r_s0.select(isel)
+      D = self._D.select(isel)
 
-          # convert to dX/dp, dY/dp and assign the elements of the vectors
-          # corresponding to this experiment
-          dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-            w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
-          for dX, dY, dphi in zip(dX_dbeam_p, dY_dbeam_p, dphi_dbeam_p):
-            dphi_dp[self._iparam].set_selected(isel, dphi)
-            dX_dp[self._iparam].set_selected(isel, dX)
-            dY_dp[self._iparam].set_selected(isel, dY)
-            # increment the parameter index pointer
-            self._iparam += 1
+      w_inv = self._w_inv.select(isel)
+      u_w_inv = self._u_w_inv.select(isel)
+      v_w_inv = self._v_w_inv.select(isel)
 
-        # For any other beam parameterisations, leave derivatives as zero
-        else:
-          # just increment the pointer
-          self._iparam += bp.num_free()
+      dpv_dbeam_p, dphi_dbeam_p = self._beam_derivatives(bp, r, e_X_r, e_r_s0, D)
 
-      # loop over all the crystal orientation parameterisations, even though we
-      # are only setting values for one of them. We still need to move the
-      # _iparam pointer for the others.
-      local_iparam = 0
-      for ixlop, xlop in enumerate(self._xl_orientation_parameterisations):
+      # convert to dX/dp, dY/dp and assign the elements of the vectors
+      # corresponding to this experiment
+      dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+        w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
+      for dX, dY, dphi in zip(dX_dbeam_p, dY_dbeam_p, dphi_dbeam_p):
+        dphi_dp[self._iparam].set_selected(isel, dphi)
+        dX_dp[self._iparam].set_selected(isel, dX)
+        dY_dp[self._iparam].set_selected(isel, dY)
+        # increment the parameter index pointer
+        self._iparam += 1
 
-        # Calculate gradients only for the correct xl orientation parameterisation
-        if ixlop == xl_ori_param_id:
+    # loop over the crystal orientation parameterisations
+    local_iparam = 0
+    for xlop in self._xl_orientation_parameterisations:
 
-          # get derivatives of the U matrix wrt the parameters
-          dU_dxlo_p = [self._dU_dp[i].select(isel) for i in range(local_iparam,
-            local_iparam + xlop.num_free())]
-          dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(
-            dU_dxlo_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, B, D)
+      # Determine (sub)set of reflections affected by this parameterisation
+      isel = flex.size_t()
+      for exp_id in xlop.get_experiment_ids():
+        isel.extend(experiment_to_idx[exp_id])
 
-          # convert to dX/dp, dY/dp and assign the elements of the vectors
-          # corresponding to this experiment
-          dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-            w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
-          for dX, dY, dphi in zip(dX_dxlo_p, dY_dxlo_p, dphi_dxlo_p):
-            dphi_dp[self._iparam].set_selected(isel, dphi)
-            dX_dp[self._iparam].set_selected(isel, dX)
-            dY_dp[self._iparam].set_selected(isel, dY)
-            # increment the parameter index pointer
-            self._iparam += 1
-            local_iparam += 1
+      # Get required data from those reflections
+      axis = self._axis.select(isel)
+      phi_calc = self._phi_calc.select(isel)
+      h = self._h.select(isel)
+      s1 = self._s1.select(isel)
+      e_X_r = self._e_X_r.select(isel)
+      e_r_s0 = self._e_r_s0.select(isel)
+      B = self._B.select(isel)
+      D = self._D.select(isel)
 
-        # For any other xl orientation parameterisations, leave derivatives as zero
-        else:
-          # just increment the pointer
-          self._iparam += xlop.num_free()
-          local_iparam += xlop.num_free()
+      w_inv = self._w_inv.select(isel)
+      u_w_inv = self._u_w_inv.select(isel)
+      v_w_inv = self._v_w_inv.select(isel)
 
-      # loop over all the crystal unit cell parameterisations, even though we
-      # are only setting values for one of them. We still need to move the
-      # _iparam pointer for the others.
-      local_iparam = 0
-      for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
+      # get derivatives of the U matrix wrt the parameters
+      dU_dxlo_p = [self._dU_dp[i].select(isel) for i in range(local_iparam,
+        local_iparam + xlop.num_free())]
+      dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(
+        dU_dxlo_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, B, D)
 
-        # Calculate gradients only for the correct xl unit cell parameterisation
-        if ixlucp == xl_uc_param_id:
+      # convert to dX/dp, dY/dp and assign the elements of the vectors
+      # corresponding to this experiment
+      dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+        w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
+      for dX, dY, dphi in zip(dX_dxlo_p, dY_dxlo_p, dphi_dxlo_p):
+        dphi_dp[self._iparam].set_selected(isel, dphi)
+        dX_dp[self._iparam].set_selected(isel, dX)
+        dY_dp[self._iparam].set_selected(isel, dY)
+        # increment the parameter index pointer
+        self._iparam += 1
+        local_iparam += 1
 
-          dB_dxluc_p = [self._dB_dp[i].select(isel) for i in range(
-            local_iparam, local_iparam + xlucp.num_free())]
-          dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(
-            dB_dxluc_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, U, D)
+    # loop over the crystal unit cell parameterisations
+    local_iparam = 0
+    for xlucp in self._xl_unit_cell_parameterisations:
 
-          # convert to dX/dp, dY/dp and assign the elements of the vectors
-          # corresponding to this experiment
-          dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-            w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
-          for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
-            dphi_dp[self._iparam].set_selected(isel, dphi)
-            dX_dp[self._iparam].set_selected(isel, dX)
-            dY_dp[self._iparam].set_selected(isel, dY)
-            # increment the parameter index pointer
-            self._iparam += 1
-            local_iparam += 1
+      # Determine (sub)set of reflections affected by this parameterisation
+      isel = flex.size_t()
+      for exp_id in xlop.get_experiment_ids():
+        isel.extend(experiment_to_idx[exp_id])
 
-        # For any other xl unit cell parameterisations, leave derivatives as zero
-        else:
-          # just increment the pointer
-          # just increment the pointer
-          self._iparam += xlop.num_free()
-          local_iparam += xlop.num_free()
+      # Get required data from those reflections
+      axis = self._axis.select(isel)
+      phi_calc = self._phi_calc.select(isel)
+      h = self._h.select(isel)
+      s1 = self._s1.select(isel)
+      e_X_r = self._e_X_r.select(isel)
+      e_r_s0 = self._e_r_s0.select(isel)
+      U = self._B.select(isel)
+      D = self._D.select(isel)
+
+      w_inv = self._w_inv.select(isel)
+      u_w_inv = self._u_w_inv.select(isel)
+      v_w_inv = self._v_w_inv.select(isel)
+
+      dB_dxluc_p = [self._dB_dp[i].select(isel) for i in range(
+        local_iparam, local_iparam + xlucp.num_free())]
+      dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(
+        dB_dxluc_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, U, D)
+
+      # convert to dX/dp, dY/dp and assign the elements of the vectors
+      # corresponding to this experiment
+      dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+        w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
+      for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
+        dphi_dp[self._iparam].set_selected(isel, dphi)
+        dX_dp[self._iparam].set_selected(isel, dX)
+        dY_dp[self._iparam].set_selected(isel, dY)
+        # increment the parameter index pointer
+        self._iparam += 1
+        local_iparam += 1
 
     return (dX_dp, dY_dp, dphi_dp)
 
