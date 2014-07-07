@@ -590,7 +590,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       s1 = self._s1.select(isel)
       e_X_r = self._e_X_r.select(isel)
       e_r_s0 = self._e_r_s0.select(isel)
-      U = self._B.select(isel)
+      U = self._U.select(isel)
       D = self._D.select(isel)
 
       w_inv = self._w_inv.select(isel)
