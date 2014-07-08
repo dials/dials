@@ -128,7 +128,7 @@ class ExtractSpots(object):
       nproc = len(imageset)
 
     # Extract the pixels in blocks of images in parallel
-    Command.start("Extracing strong pixels from images (may take a while)")
+    Command.start("Extracting strong pixels from images (may take a while)")
     pl = easy_mp.parallel_map(
       func=Extract(imageset, self.threshold_image, self.mask),
       iterable=self._calculate_blocks(imageset, nproc),
