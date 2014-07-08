@@ -15,15 +15,27 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 def from_wx_image_to_wx_bitmap(wx_image, width, height, scale):
+
   NewW = int(width * scale)
   NewH = int(height * scale)
   wx_image = wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_HIGH)
   #image.SetData( np_buf.tostring()) # looks like there is no need to convert
   wxBitmap = wx_image.ConvertToBitmap()
+
+  '''
+  dc = wx.MemoryDC(wxBitmap)
+  text = 'whatever'
+  w, h = dc.GetSize()
+  tw, th = dc.GetTextExtent(text)
+  dc.DrawText(text, (w - tw) / 2, (h - th) / 2) #display text in center
+  dc.SelectObject(wxBitmap)
+  del dc
+  '''
   return wxBitmap
 
 
 def build_np_img(width = 64, height = 64):
+  '''
   a = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\
        [0,0,0,0,0,0,7,0,7,7,0,0,0,0,7,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\
        [0,0,0,0,0,0,9,4,0,0,9,0,0,9,4,0,4,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\
@@ -39,6 +51,8 @@ def build_np_img(width = 64, height = 64):
        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,0,0,0,0,0,0,0,0],\
        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
   data2d = numpy.transpose( numpy.asarray(a))
+  '''
+  data2d = numpy.asarray([[-1]])
   return data2d
 
 class np_to_bmp(object):
@@ -49,6 +63,8 @@ class np_to_bmp(object):
   def __call__(self, np_img_2d, Intst_max, ofst):
     self.fig = plt.figure()
     # remember to make sure this is our convention in (x, y) vs (row, col)
+
+
     if Intst_max > 0:
       plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                  , vmax = Intst_max)
@@ -95,6 +111,7 @@ class np_to_bmp(object):
     self.np_buf = numpy.roll(self.np_buf, 3, axis = 2)
     self.image = wx.EmptyImage(width, height)
     self.image.SetData( self.np_buf )
+
 
     plt.close(self.fig)
 
