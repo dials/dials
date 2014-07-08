@@ -278,6 +278,16 @@ from copy import deepcopy
 p6m = deepcopy(im_set.get_detector())
 print p6m[0]
 
+# get a P12M (cropped to middle 18 modules)
+data_dir = os.path.join(dials_regression, "indexing_test_data",
+                        "i23-multiple-germanate")
+datablock_path = os.path.join(data_dir, "datablock.json")
+datablock = DataBlockFactory.from_serialized_format(datablock_path, check_format=False)
+im_set = datablock[0].extract_imagesets()[0]
+from copy import deepcopy
+p12m = deepcopy(im_set.get_detector())
+print p12m[0]
+
 # hierarchical parameterisation
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationHierarchical, get_panel_groups_at_depth, \
