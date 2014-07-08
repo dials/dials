@@ -443,8 +443,6 @@ class indexer_base(object):
         # no more lattices found
         break
 
-      self.refined_crystal_models = []
-
       for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
         if i_cycle > 0:
           self.d_min -= self.params.refinement_protocol.d_min_step
@@ -784,6 +782,9 @@ class indexer_base(object):
         self.all_solutions.append(item)
         self.update_analysis()
 
+      def __len__(self):
+        return len(self.volume_filtered)
+
       def update_analysis(self):
         self.best_likelihood = max(
           s.model_likelihood for s in self.all_solutions)
@@ -811,6 +812,9 @@ class indexer_base(object):
       def append(self, item):
         self.all_solutions.append(item)
         self.update_analysis()
+
+      def __len__(self):
+        return len(self.all_solutions)
 
       def update_analysis(self):
         self.best_n_indexed = max(
@@ -862,7 +866,7 @@ class indexer_base(object):
           R_ab, euler_angles, cb_op_ab = \
             difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
           min_angle = self.params.multiple_lattice_search.minimum_angular_separation
-          print euler_angles
+          #print euler_angles
           if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
             orientation_too_similar = True
             break
@@ -924,11 +928,14 @@ class indexer_base(object):
       if model_likelihood > best_likelihood:
         best_likelihood = model_likelihood
 
-    best_solution = solutions.best_solution()
-    if self.params.debug:
-      print "best model_likelihood: %.2f" %best_solution.model_likelihood
-      print "best n_indexed: %i" %best_solution.n_indexed
-    return best_solution.crystal, best_solution.n_indexed
+    if len(solutions):
+      best_solution = solutions.best_solution()
+      if self.params.debug:
+        print "best model_likelihood: %.2f" %best_solution.model_likelihood
+        print "best n_indexed: %i" %best_solution.n_indexed
+      return best_solution.crystal, best_solution.n_indexed
+    else:
+      return None, None
 
   def apply_symmetry(self, crystal_model, target_symmetry,
                      return_primitive_setting=False,

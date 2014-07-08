@@ -46,7 +46,10 @@ class indexer_fft1d(indexer_base):
       apply_symmetry=False)
     crystal_model, n_indexed = self.choose_best_orientation_matrix(
       self.candidate_crystal_models)
-    crystal_models = [crystal_model]
+    if crystal_model is not None:
+      crystal_models = [crystal_model]
+    else:
+      crystal_models = []
     experiments = ExperimentList()
     for cm in crystal_models:
       experiments.append(Experiment(beam=self.beam,

@@ -71,7 +71,10 @@ class indexer_fft3d(indexer_base):
         apply_symmetry=False)
       crystal_model, n_indexed = self.choose_best_orientation_matrix(
         self.candidate_crystal_models)
-      crystal_models = [crystal_model]
+      if crystal_model is not None:
+        crystal_models = [crystal_model]
+      else:
+        crystal_models = []
     experiments = ExperimentList()
     for cm in crystal_models:
       experiments.append(Experiment(beam=self.beam,
@@ -416,6 +419,7 @@ class indexer_fft3d(indexer_base):
         continue
       crystal_model, n_indexed = self.choose_best_orientation_matrix(
         candidate_orientation_matrices)
+      if crystal_model is None: continue
       # map to minimum reduced cell
       crystal_symmetry = crystal.symmetry(
         unit_cell=crystal_model.get_unit_cell(),
