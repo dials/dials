@@ -288,6 +288,7 @@ class indexer_base(object):
     #self.scan = sweep.get_scan()
     self.beam = sweep.get_beam()
     self.params = params
+    self.refined_experiments = None
 
     self.target_symmetry_primitive = None
     self.target_symmetry_minimum_cell = None
@@ -590,6 +591,7 @@ class indexer_base(object):
 
         # update for next cycle
         experiments = refined_experiments
+        self.refined_experiments = refined_experiments
 
       if not self.params.multiple_lattice_search.recycle_unindexed_reflections:
         break
@@ -597,8 +599,6 @@ class indexer_base(object):
     # XXX currently need to store the imageset otherwise we can't read the experiment list back in
     for expt in refined_experiments:
       expt.imageset = self.sweep
-
-    self.refined_experiments = refined_experiments
 
     if len(self.refined_experiments) > 1:
       from dials.algorithms.indexing.compare_orientation_matrices \
@@ -840,7 +840,37 @@ class indexer_base(object):
     params.refinement.refinery.max_iterations = 1
     params.refinement.reflections.minimum_number_of_reflections = 1
 
+    from dials.algorithms.indexing.compare_orientation_matrices \
+         import difference_rotation_matrix_and_euler_angles
     for cm in candidate_orientation_matrices:
+      if (self.refined_experiments is not None and
+          len(self.refined_experiments) > 0):
+        orientation_too_similar = False
+        if self.target_symmetry_primitive is not None:
+          cryst_b = cm
+          cryst_b, cb_op_to_primitive = self.apply_symmetry(
+            cryst_b, self.target_symmetry_primitive,
+            return_primitive_setting=True,
+            cell_only=True)
+          cryst_b, cb_op_to_primitive = self.apply_symmetry(
+            cryst_b, self.target_symmetry_primitive,
+            return_primitive_setting=True,
+            space_group_only=True)
+          if self.cb_op_primitive_to_given is not None:
+            cryst_b = cryst_b.change_basis(self.cb_op_primitive_to_given)
+        for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
+          R_ab, euler_angles, cb_op_ab = \
+            difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
+          min_angle = self.params.multiple_lattice_search.minimum_angular_separation
+          print euler_angles
+          if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
+            orientation_too_similar = True
+            break
+        if orientation_too_similar:
+          if params.debug:
+            print "skipping crystal: too similar to other crystals"
+          continue
+
       sel = ((self.reflections['id'] == -1) &
              (1/self.reciprocal_space_points.norms() > self.d_min))
       refl = self.reflections.select(sel)
