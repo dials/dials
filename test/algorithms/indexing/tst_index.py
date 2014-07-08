@@ -355,7 +355,8 @@ def exercise_10():
                 "known_symmetry.space_group=P212121",
                 "scan_range=0,10",
                 "beam.fix=all",
-                "detector.fix=orientation",
+                "detector.fix=all",
+                "basis_vector_combinations.metric=n_indexed",
                 "maximum_spot_error=3",
                 "maximum_phi_error=2",
                 "recycle_unindexed_reflections=True",
@@ -363,7 +364,7 @@ def exercise_10():
                 ]
 
   expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.18, 0.21, 0.004)
+  expected_rmsds = (0.27, 0.24, 0.004)
   expected_hall_symbol = ' P 2ac 2ab'
   n_expected_lattices = 3
 
