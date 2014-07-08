@@ -8,7 +8,7 @@ def run(args):
 %s datablock.json | experiments.json""" %libtbx.env.dispatcher_name
     raise Usage(usage_message)
   from dials.util.command_line import Importer
-  importer = Importer(args)
+  importer = Importer(args, check_format=False)
   experiments = importer.experiments
   if experiments is not None:
     for detector in experiments.detectors():
@@ -25,7 +25,7 @@ def run(args):
     for datablock in importer.datablocks:
       imagesets = datablock.extract_imagesets()
       for imageset in imagesets:
-        print imageset
+        print imageset.get_template()
         print imageset.get_detector()
         print imageset.get_beam()
         if imageset.get_scan() is not None:
