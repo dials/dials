@@ -11,7 +11,7 @@
 
 """
 A simple test of stills refinement using fake data (that is not really still).
-We only attempt to refine the crystal. The beam and detector are known.
+Only the crystal is perturbed while the beam and detector are known.
 
 """
 
@@ -141,11 +141,6 @@ xluc_param.set_param_vals(X)
 # Generate some reflections #
 #############################
 
-#print "Reflections will be generated with the following geometry:"
-#print mybeam
-#print mydetector
-#print crystal
-
 # All indices in a 2.0 Angstrom sphere for crystal1
 resolution = 2.0
 index_generator = IndexGenerator(crystal.get_unit_cell(),
@@ -156,8 +151,6 @@ indices = index_generator.to_array()
 ref_predictor = ScansRayPredictor(scans_experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices, experiment_id=0)
-
-#print "Total number of reflections excited", len(obs_refs)
 
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
@@ -182,8 +175,6 @@ for ref in obs_refs:
   # ensure the crystal number is set to zero (should be by default)
   ref.crystal = 0
 
-#print "Total number of observations made", len(obs_refs)
-
 ###############################
 # Undo known parameter shifts #
 ###############################
@@ -191,19 +182,10 @@ for ref in obs_refs:
 xlo_param.set_param_vals(xlo_p_vals[0])
 xluc_param.set_param_vals(xluc_p_vals[0])
 
-#print "Refinement will start from the following geometry:"
-#print mybeam
-#print mydetector
-#print crystal
-
 # make a refiner
 from dials.framework.registry import Registry
 sysconfig = Registry().config()
 params = sysconfig.params()
-
-# overrides to fix beam and detector
-#params.refinement.parameterisation.beam.fix="all"
-#params.refinement.parameterisation.detector.fix="all"
 
 # Change this to get a plot
 do_plot = False
@@ -221,8 +203,4 @@ if do_plot:
   plt.show()
 
 print "OK"
-#print "Refinement has completed with the following geometry:"
-#expts = refiner.get_experiments()
-#for beam in expts.beams(): print beam
-#for detector in expts.detectors(): print detector
-#for crystal in  expts.crystals(): print crystal
+
