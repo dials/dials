@@ -54,10 +54,10 @@ class table_s_navigator(object):
           data2d_np = data2d.as_numpy_array()
           np_lst.append(data2d_np)
         else:
-          np_lst.append(build_np_img())
+          np_lst.append(None)
     else:
       print "wrong option"
-      np_lst = [build_np_img(), build_np_img(), build_np_img()]
+      np_lst = [None, None, None]
     return np_lst
 
 
