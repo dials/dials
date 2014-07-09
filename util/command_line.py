@@ -103,6 +103,10 @@ class ProgressBar:
     import sys
     from math import ceil
 
+    # do not update if not a tty
+    if not sys.stdout.isatty():
+      return
+
     # Get integer percentage
     percent = int(fpercent)
     if percent < 0: percent = 0
@@ -208,7 +212,14 @@ class Command(object):
     ''' Print the 'start command' string.'''
     from sys import stdout
     from time import time
-    #from termcolor import colored
+    # from termcolor import colored
+
+    # Get the command start time
+    self._start_time = time()
+
+    # do not output if not a tty
+    if not stdout.isatty():
+      return
 
     # Truncate the string to the maximum length
     max_length = self.max_length - self.indent - 3
@@ -218,9 +229,6 @@ class Command(object):
     # Write the string to stdout
     stdout.write(string)
     stdout.flush()
-
-    # Get the command start time
-    self._start_time = time()
 
   @classmethod
   def end(self, string):
