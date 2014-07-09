@@ -850,8 +850,8 @@ class indexer_base(object):
       if (self.refined_experiments is not None and
           len(self.refined_experiments) > 0):
         orientation_too_similar = False
+        cryst_b = cm
         if self.target_symmetry_primitive is not None:
-          cryst_b = cm
           cryst_b, cb_op_to_primitive = self.apply_symmetry(
             cryst_b, self.target_symmetry_primitive,
             return_primitive_setting=True,
