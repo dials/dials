@@ -80,7 +80,9 @@ class ReflectionFrame(wx.Frame):
     self.Bind(wx.EVT_SIZE, self.OnSize)
 
     self.bmp = np_to_bmp()
-
+    self.arr_img = [None, None, None]
+    self.My_Img = [None, None, None]
+    self.wx_Img = [None, None, None]
     wx.EVT_CLOSE(self, self.On_Close_Window)
 
   def tabl_to_frame(self, loc_tabl):
@@ -143,47 +145,46 @@ class ReflectionFrame(wx.Frame):
 
     if( request_new_data == True ):
       #self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
-      arr_img01, arr_img02, arr_img03 = self.tabl(opt = self.opt)
+      self.arr_img[0], self.arr_img[1], self.arr_img[2] = self.tabl(opt = self.opt)
 
       self.I_max = self.tabl.Get_Max(self.opt)
       self.box_lmt = self.tabl.Get_bbox()
 
 
-      self.wx_Img_01, self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = arr_img01
+      self.wx_Img[0], self.img_width, self.img_height = self.bmp(
+                                      np_img_2d = self.arr_img[0]
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
-      self.wx_Img_02, self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = arr_img02
+      self.wx_Img[1], self.img_width, self.img_height = self.bmp(
+                                      np_img_2d = self.arr_img[1]
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
       if( self.opt == 0 ):
-        self.wx_Img_03, self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = arr_img03
+        self.wx_Img[2], self.img_width, self.img_height = self.bmp(
+                                      np_img_2d = self.arr_img[2]
                                     , Intst_max = 10
                                     , ofst = self.box_lmt)
       else:
-        self.wx_Img_03, self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = arr_img03
+        self.wx_Img[2], self.img_width, self.img_height = self.bmp(
+                                      np_img_2d = self.arr_img[2]
                                     , Intst_max = self.I_max
                                     , ofst = self.box_lmt)
 
-    self.My_Img_01 = from_wx_image_to_wx_bitmap(self.wx_Img_01
-            , self.img_width, self.img_height, self.frame_scale)
 
-    self.Image_01.SetBitmap(self.My_Img_01)
+    for indx in range(len(self.arr_img)):
+      if( self.arr_img[indx] != None ):
+        self.My_Img[indx] = from_wx_image_to_wx_bitmap(self.wx_Img[indx]
+                         , self.img_width, self.img_height, self.frame_scale)
+      else:
+        self.My_Img[indx] = from_wx_image_to_wx_bitmap(self.wx_Img[indx]
+                         , self.img_width, self.img_height
+                         , self.frame_scale, empty = True)
 
-    self.My_Img_02 = from_wx_image_to_wx_bitmap(self.wx_Img_02
-            , self.img_width, self.img_height, self.frame_scale)
-
-    self.Image_02.SetBitmap(self.My_Img_02)
-
-    self.My_Img_03 = from_wx_image_to_wx_bitmap(self.wx_Img_03
-            , self.img_width, self.img_height, self.frame_scale)
-
-    self.Image_03.SetBitmap(self.My_Img_03)
+    self.Image_01.SetBitmap(self.My_Img[0])
+    self.Image_02.SetBitmap(self.My_Img[1])
+    self.Image_03.SetBitmap(self.My_Img[2])
 
     self.Layout()
     self.Refresh()
