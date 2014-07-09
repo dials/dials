@@ -682,6 +682,7 @@ scratch/luiso_s/wx_toys/bitmap__w_sizers.py -text
 scratch/luiso_s/wx_toys/bitmap_from_numpy.py -text
 scratch/luiso_s/wx_toys/bitmap_from_numpy_w_matplotlib.py -text
 scratch/luiso_s/wx_toys/bitmap_from_numpy_w_matplotlib_one_more_try.py -text
+scratch/luiso_s/wx_toys/py_bmp.py -text
 scratch/luiso_s/wx_toys/radiobutton_test.py -text
 scratch/luiso_s/wx_toys/radiobutton_test_simpl.py -text
 scratch/luiso_s/wx_toys/text_pyplot.py -text
