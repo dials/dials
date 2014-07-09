@@ -31,13 +31,10 @@ class ReflectionFrame(wx.Frame):
     radio2 = wx.RadioButton(self, -1, "3 layers of data")
     radio3 = wx.RadioButton(self, -1, "3 layers of background")
     radio4 = wx.RadioButton(self, -1, "3 layers of mask")
-
-    self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-                                 self.MaxImageSizeX, self.MaxImageSizeY))
-    self.Image_02 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-                                 self.MaxImageSizeX, self.MaxImageSizeY))
-    self.Image_03 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-                                 self.MaxImageSizeX, self.MaxImageSizeY))
+    self.Image = [None, None, None]
+    for indx in range(len(self.Image)):
+      self.Image[indx] = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+                                         self.MaxImageSizeX, self.MaxImageSizeY))
 
     h_box = wx.BoxSizer(wx.HORIZONTAL)
     u_box = wx.BoxSizer(wx.VERTICAL)
@@ -52,13 +49,13 @@ class ReflectionFrame(wx.Frame):
     u_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(u_box)
 
-    h_box.Add(self.Image_01, 0
+    h_box.Add(self.Image[0], 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
-    h_box.Add(self.Image_02, 0
+    h_box.Add(self.Image[1], 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
-    h_box.Add(self.Image_03, 0
+    h_box.Add(self.Image[2], 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
     self.frame_scale = 0.4
@@ -145,33 +142,20 @@ class ReflectionFrame(wx.Frame):
 
     if( request_new_data == True ):
       #self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
-      self.arr_img[0], self.arr_img[1], self.arr_img[2] = self.tabl(opt = self.opt)
+      self.arr_img = self.tabl(opt = self.opt)
 
-      self.I_max = self.tabl.Get_Max(self.opt)
-      self.box_lmt = self.tabl.Get_bbox()
+      ref_max = self.tabl.Get_Max(self.opt)
+      box_lmt = self.tabl.Get_bbox()
 
-
-      self.wx_Img[0], self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = self.arr_img[0]
-                                    , Intst_max = self.I_max
-                                    , ofst = self.box_lmt)
-
-      self.wx_Img[1], self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = self.arr_img[1]
-                                    , Intst_max = self.I_max
-                                    , ofst = self.box_lmt)
-
-      if( self.opt == 0 ):
-        self.wx_Img[2], self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = self.arr_img[2]
-                                    , Intst_max = 10
-                                    , ofst = self.box_lmt)
-      else:
-        self.wx_Img[2], self.img_width, self.img_height = self.bmp(
-                                      np_img_2d = self.arr_img[2]
-                                    , Intst_max = self.I_max
-                                    , ofst = self.box_lmt)
-
+      for indx in range(len(self.arr_img)):
+        if( self.opt == 0 and indx == len(self.arr_img) - 1 ):
+          Imax = 10
+        else:
+          Imax = ref_max
+        self.wx_Img[indx], self.img_width, self.img_height = self.bmp(
+                                          np_img_2d = self.arr_img[indx]
+                                        , Intst_max = Imax
+                                        , ofst = box_lmt)
 
     for indx in range(len(self.arr_img)):
       if( self.arr_img[indx] != None ):
@@ -181,14 +165,10 @@ class ReflectionFrame(wx.Frame):
         self.My_Img[indx] = from_wx_image_to_wx_bitmap(self.wx_Img[indx]
                          , self.img_width, self.img_height
                          , self.frame_scale, empty = True)
-
-    self.Image_01.SetBitmap(self.My_Img[0])
-    self.Image_02.SetBitmap(self.My_Img[1])
-    self.Image_03.SetBitmap(self.My_Img[2])
+      self.Image[indx].SetBitmap(self.My_Img[indx])
 
     self.Layout()
     self.Refresh()
-
 
   def On_Close_Window(self, event):
     self.Destroy()
