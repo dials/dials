@@ -19,6 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_summation();
   void export_profile_fitting_reciprocal_space();
   void export_integrator_2d();
+  void export_flattened_2d_profile_fitting();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
@@ -26,6 +27,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_summation();
     export_profile_fitting_reciprocal_space();
     export_integrator_2d();
+    export_flattened_2d_profile_fitting();
   }
 
 }}} // namespace = dials::algorithms::boost_python
