@@ -3,6 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/grid_sampler.cc',
+    'boost_python/grid_sampler_2d.cc',
     'boost_python/xds_circle_sampler.cc',
     'boost_python/reference_locator.cc',
     'boost_python/reference_learner.cc',
