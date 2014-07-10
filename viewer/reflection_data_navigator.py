@@ -92,6 +92,7 @@ class table_s_navigator(object):
       self.calc_pos = table_row['xyzcal.px']
     except:
       print "No xyzcal.px data"
+      self.calc_pos = None
 
     self.depth = self.data_flex.all()[0]
     if self.depth <= 0:
