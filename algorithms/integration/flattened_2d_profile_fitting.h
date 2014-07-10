@@ -22,6 +22,7 @@ namespace dials { namespace algorithms {
     Flattened2DProfileFitting(
         std::size_t image_width,
         std::size_t image_height,
+        const af::const_ref< vec3<double> > &xyz,
         const af::const_ref< Shoebox<> > &sbox) {
 
       // Allocate arrays for flattened shoebox
@@ -50,7 +51,13 @@ namespace dials { namespace algorithms {
       int2 image_size(image_width, image_height);
       int2 grid_size(5, 5);
       GridSampler2D grid(image_size, grid_size);
-      
+    
+      // Find the nearest grid point to each profile
+      af::shared<std::size_t> profile_index(sbox.size());
+      for (std::size_t i = 0; i < sbox.size(); ++i) {
+        double2 xy(xyz[i][0], xyz[i][1]);
+        profile_index[i] = grid.nearest(xy);
+      }
 
     }
 
