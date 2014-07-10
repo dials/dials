@@ -6,6 +6,7 @@
 
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/shoebox.h>
+#include <dials/algorithms/integration/profile/grid_sampler_2d.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -19,6 +20,8 @@ namespace dials { namespace algorithms {
     typedef af::versa< int,    af::c_grid<2> > int2d;
 
     Flattened2DProfileFitting(
+        std::size_t image_width,
+        std::size_t image_height,
         const af::const_ref< Shoebox<> > &sbox) {
 
       // Allocate arrays for flattened shoebox
@@ -42,6 +45,13 @@ namespace dials { namespace algorithms {
           }
         }
       }
+
+      // Create the grid
+      int2 image_size(image_width, image_height);
+      int2 grid_size(5, 5);
+      GridSampler2D grid(image_size, grid_size);
+      
+
     }
 
     af::shared<double> intensity() const {
