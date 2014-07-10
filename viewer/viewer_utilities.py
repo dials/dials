@@ -14,24 +14,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def from_wx_image_to_wx_bitmap(wx_image, width, height, scale, empty = False):
-
-  NewW = int(width * scale)
-  NewH = int(height * scale)
-  wx_image = wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_HIGH)
-  #image.SetData( np_buf.tostring()) # looks like there is no need to convert
-  wxBitmap = wx_image.ConvertToBitmap()
-
-  if(empty == True):
-    dc = wx.MemoryDC(wxBitmap)
-    text = 'No Image'
-    w, h = dc.GetSize()
-    tw, th = dc.GetTextExtent(text)
-    dc.Clear()
-    dc.DrawText(text, (w - tw) / 2, (h - th) / 2) #display text in center
-    dc.SelectObject(wxBitmap)
-    del dc
-  return wxBitmap
 
 
 class np_to_bmp(object):
@@ -47,12 +29,12 @@ class np_to_bmp(object):
       plt.imshow(numpy.asarray([[-1]]), interpolation = "nearest")
 
       self.fig.canvas.draw()
-      width, height = self.fig.canvas.get_width_height()
+      self.width, self.height = self.fig.canvas.get_width_height()
       self.np_buf = numpy.fromstring ( self.fig.canvas.tostring_rgb()
                                       , dtype=numpy.uint8 )
-      self.np_buf.shape = (width, height, 3)
+      self.np_buf.shape = (self.width, self.height, 3)
       self.np_buf = numpy.roll(self.np_buf, 3, axis = 2)
-      self.image = wx.EmptyImage(width, height)
+      self.image = wx.EmptyImage(self.width, self.height)
       self.image.SetData( self.np_buf )
 
       plt.close(self.fig)
@@ -96,14 +78,32 @@ class np_to_bmp(object):
         ax.yaxis.set_ticklabels(y_new_labl)
 
       self.fig.canvas.draw()
-      width, height = self.fig.canvas.get_width_height()
+      self.width, self.height = self.fig.canvas.get_width_height()
       self.np_buf = numpy.fromstring ( self.fig.canvas.tostring_rgb()
                                       , dtype=numpy.uint8 )
-      self.np_buf.shape = (width, height, 3)
+      self.np_buf.shape = (self.width, self.height, 3)
       self.np_buf = numpy.roll(self.np_buf, 3, axis = 2)
-      self.image = wx.EmptyImage(width, height)
+      self.image = wx.EmptyImage(self.width, self.height)
       self.image.SetData( self.np_buf )
 
       plt.close(self.fig)
 
-    return self.image, width, height
+    return self.image
+
+  def from_wx_image_to_wx_bitmap(self, wx_image, scale, empty = False):
+
+    NewW = int(self.width * scale)
+    NewH = int(self.height * scale)
+    wx_image = wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_HIGH)
+    wxBitmap = wx_image.ConvertToBitmap()
+
+    if(empty == True):
+      dc = wx.MemoryDC(wxBitmap)
+      text = 'No Image'
+      w, h = dc.GetSize()
+      tw, th = dc.GetTextExtent(text)
+      dc.Clear()
+      dc.DrawText(text, (w - tw) / 2, (h - th) / 2) #display text in center
+      dc.SelectObject(wxBitmap)
+      del dc
+    return wxBitmap

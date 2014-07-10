@@ -10,7 +10,7 @@
 
 import wx
 from dials.viewer.viewer_utilities \
-     import from_wx_image_to_wx_bitmap, np_to_bmp
+     import np_to_bmp
 
 from dials.viewer.reflection_data_navigator import table_s_navigator
 
@@ -152,18 +152,16 @@ class ReflectionFrame(wx.Frame):
           Imax = 10
         else:
           Imax = ref_max
-        self.wx_Img[indx], self.img_width, self.img_height = self.bmp(
-                                          np_img_2d = self.arr_img[indx]
-                                        , Intst_max = Imax
-                                        , ofst = box_lmt)
+        self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx], Intst_max = Imax
+                          , ofst = box_lmt)
 
     for indx in range(len(self.arr_img)):
       if( self.arr_img[indx] == None ):
         empty_flag = True
       else:
         empty_flag = False
-      self.My_Img[indx] = from_wx_image_to_wx_bitmap(self.wx_Img[indx], self.img_width
-                        , self.img_height, self.frame_scale, empty = empty_flag)
+      self.My_Img[indx] = self.bmp.from_wx_image_to_wx_bitmap(self.wx_Img[indx]
+                        , self.frame_scale, empty = empty_flag)
       self.Image[indx].SetBitmap(self.My_Img[indx])
 
     self.Layout()
