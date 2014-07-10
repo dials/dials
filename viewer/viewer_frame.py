@@ -158,13 +158,12 @@ class ReflectionFrame(wx.Frame):
                                         , ofst = box_lmt)
 
     for indx in range(len(self.arr_img)):
-      if( self.arr_img[indx] != None ):
-        self.My_Img[indx] = from_wx_image_to_wx_bitmap(self.wx_Img[indx]
-                         , self.img_width, self.img_height, self.frame_scale)
+      if( self.arr_img[indx] == None ):
+        empty_flag = True
       else:
-        self.My_Img[indx] = from_wx_image_to_wx_bitmap(self.wx_Img[indx]
-                         , self.img_width, self.img_height
-                         , self.frame_scale, empty = True)
+        empty_flag = False
+      self.My_Img[indx] = from_wx_image_to_wx_bitmap(self.wx_Img[indx], self.img_width
+                        , self.img_height, self.frame_scale, empty = empty_flag)
       self.Image[indx].SetBitmap(self.My_Img[indx])
 
     self.Layout()
