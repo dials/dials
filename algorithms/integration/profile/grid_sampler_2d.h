@@ -75,6 +75,8 @@ namespace dials { namespace algorithms {
      * @returns The index of the reference profile
      */
     std::size_t nearest(double2 xy) const {
+      DIALS_ASSERT(xy[0] >= 0 && xy[1] >= 0);
+      DIALS_ASSERT(xy[0] < image_size_[0] && xy[1] < image_size_[1]);
       int ix = (int)floor(xy[0] / step_size_[0]);
       int iy = (int)floor(xy[1] / step_size_[1]);
       if (ix < 0) ix = 0;
@@ -91,19 +93,33 @@ namespace dials { namespace algorithms {
      * @returns A list of reference profile indices
      */
     af::shared<std::size_t> nearest_n(double2 xy) const {
+      DIALS_ASSERT(xy[0] >= 0 && xy[1] >= 0);
+      DIALS_ASSERT(xy[0] < image_size_[0] && xy[1] < image_size_[1]);
+      double fx = xy[0] / step_size_[0];
+      double fy = xy[1] / step_size_[1];
       int ix = (int)floor(xy[0] / step_size_[0]);
       int iy = (int)floor(xy[1] / step_size_[1]);
-      if (ix < 0) ix = 0;
-      if (iy < 0) iy = 0;
-      if (ix >= grid_size_[0]) ix = grid_size_[0] - 1;
-      if (iy >= grid_size_[1]) iy = grid_size_[1] - 1;
+      DIALS_ASSERT(ix >= 0 && ix < grid_size_[0]);
+      DIALS_ASSERT(iy >= 0 && iy < grid_size_[1]);
+      double dx1 = std::abs(fx - ix);
+      double dx2 = std::abs(fx - ix - 1);
+      double dy1 = std::abs(fy - iy);
+      double dy2 = std::abs(fy - iy - 1);
+      int ix2 = dx1 < dx2 ? ix - 1 : ix + 1;
+      int iy2 = dy1 < dy2 ? iy - 1 : iy + 1;
+      bool xv = ix2 >= 0 && ix2 < grid_size_[0];
+      bool yv = iy2 >= 0 && iy2 < grid_size_[1];
       af::shared<std::size_t> result;
-      // FIXME Do inside box
       result.push_back(index(ix, iy));
-      if (ix > 0) result.push_back(index(ix-1, iy));
-      if (iy > 0) result.push_back(index(ix, iy-1));
-      if (ix < grid_size_[0]-1) result.push_back(index(ix+1, iy));
-      if (iy < grid_size_[1]-1) result.push_back(index(ix, iy+1));
+      if (xv) {
+        result.push_back(index(ix2, iy));
+      }
+      if (yv) {
+        result.push_back(index(ix, iy2));
+      }
+      if (xv && yv) {
+        result.push_back(index(ix2, iy2));
+      }
       return result;
     }
 
@@ -129,8 +145,7 @@ namespace dials { namespace algorithms {
     double2 operator[](std::size_t index) const {
       DIALS_ASSERT(index < size());
       int i = index % grid_size_[0];
-      int jk = index / grid_size_[0];
-      int j = jk % grid_size_[1];
+      int j = index / grid_size_[0];
       double x = (i + 0.5) * step_size_[0];
       double y = (j + 0.5) * step_size_[1];
       return double2(x, y);
@@ -144,6 +159,7 @@ namespace dials { namespace algorithms {
     std::size_t index(std::size_t ix, std::size_t iy) const {
       return ix + iy * grid_size_[0];
     }
+
 
     int2 image_size_;
     int2 grid_size_;
