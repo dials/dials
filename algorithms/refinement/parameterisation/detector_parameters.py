@@ -1113,12 +1113,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     # loop over the groups, collecting initial parameters and states
     for igp, pnl_ids in enumerate(self._panel_ids_by_group):
 
-      # determine which panel in the group is nearest to the direct beam. Call
-      # this the reference panel for this group
-      #beam_centres = [matrix.col(detector[i].get_beam_centre(beam.get_unit_s0())) \
-      #                for i in pnl_ids]
-      #panel_centres = [0.5 * matrix.col(detector[i].get_image_size_mm())
-      #                 for i in pnl_ids]
       panel_centres_in_lab_frame = []
       for i in pnl_ids:
         pnl = detector[i]
@@ -1127,10 +1121,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
             0.5 * matrix.col(pnl.get_fast_axis()) * im_size[0] + \
             0.5 * matrix.col(pnl.get_slow_axis()) * im_size[1]
         panel_centres_in_lab_frame.append(cntr)
-      #beam_to_centres = [(a - b).length() for a, b in \
-      #                  zip(beam_centres, panel_centres)]
-      #ref_panel_id = beam_to_centres.index(min(beam_to_centres))
-      #ref_panel = detector[ref_panel_id]
 
       # get some vectors we need from the group
       go = matrix.col(self._groups[igp].get_origin())
@@ -1140,26 +1130,20 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
       # we choose the dorg vector for this group to terminate on the group's
       # frame, at a point that we consider close to the centre of the group of
-      # panels. This point is defined by projecting the vector pointing to the
-      # centre of each panel onto the group frame, then taking the centroid of
-      # the resultant set of 2D projections.
-
-      # project the panel centres onto the group frame
-      pts = [matrix.col(self._groups[igp].get_ray_intersection(cntr)) \
-             for cntr in panel_centres_in_lab_frame]
-      # find their centroid
-      centroid = reduce(lambda x,y: x+y, pts) / len(pts)
-
-      dorg = go + centroid[0] * d1 + centroid[1] * d2
+      # panels. This point is defined by taking the 3D centroid of the panel
+      # centres then projecting that point onto the group frame.
+      centroid = reduce(lambda a,b: a+b, panel_centres_in_lab_frame) / len(
+        panel_centres_in_lab_frame)
+      gp_centroid = matrix.col(self._groups[igp].get_ray_intersection(centroid))
+      dorg = go + gp_centroid[0] * d1 + gp_centroid[1] * d2
 
       # The offset between the end of the dorg vector and
       # each Panel origin is a coordinate matrix with elements in the basis d1,
       # d2, dn. We need also each Panel's plane directions dir1 and dir2 in
       # terms of d1, d2 and dn.
-
       offsets, dir1s, dir2s = [], [], []
-      #FIXME these dot products more efficiently done using a change of basis
-      # matrix instead
+      #FIXME these dot products would be more efficiently done using a change of
+      # basis matrix instead
       for p in [detector[i] for i in pnl_ids]:
         offset = matrix.col(p.get_origin()) - dorg
         offsets.append(matrix.col((offset.dot(d1),
