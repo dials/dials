@@ -21,7 +21,7 @@ class np_to_bmp(object):
   def __init__(self):
     print "from init"
 
-  def __call__(self, np_img_2d, Intst_max, ofst):
+  def __call__(self, np_img_2d, Intst_max, ofst, xyz):
     self.fig = plt.figure()
 
     if( np_img_2d == None ):
@@ -45,6 +45,10 @@ class np_to_bmp(object):
       else:
         plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                    , vmax = 10)
+
+      #plt.vlines(xyz[0], 0.2, 0.9)
+      #print xyz[0], xyz[1], xyz[2]
+
       calc_ofst = True
       if(calc_ofst == True):
         ax = self.fig.add_subplot(1,1,1)

@@ -62,11 +62,36 @@ class table_s_navigator(object):
 
 
   def get_dat_bkg_msk(self):
-    table_row = self.table[self.row_pos]
-    self.data_flex = table_row['shoebox'].data
-    self.background_flex = table_row['shoebox'].background
-    self.mask_flex = table_row['shoebox'].mask
-    self.box_lim = table_row['bbox']
+    try:
+      table_row = self.table[self.row_pos]
+    except:
+      print "No Table to read from"
+
+    try:
+      self.data_flex = table_row['shoebox'].data
+    except:
+      print "No shoebox IMG data"
+
+    try:
+      self.background_flex = table_row['shoebox'].background
+    except:
+      print "No background data"
+      #self.background_flex = None
+
+    try:
+      self.mask_flex = table_row['shoebox'].mask
+    except:
+      print "No mask data"
+
+    try:
+      self.box_lim = table_row['bbox']
+    except:
+      print "No bbox data"
+
+    try:
+      self.calc_pos = table_row['xyzcal.px']
+    except:
+      print "No xyzcal.px data"
 
     self.depth = self.data_flex.all()[0]
     if self.depth <= 0:
@@ -101,7 +126,8 @@ class table_s_navigator(object):
     else:
       self.I_Max = flex.max(self.mask_flex) * 2
     return self.I_Max
-
+  def Get_xyz(self):
+    return self.calc_pos
   def Get_bbox(self):
     return self.box_lim
 

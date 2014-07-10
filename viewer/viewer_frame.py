@@ -146,6 +146,7 @@ class ReflectionFrame(wx.Frame):
 
       ref_max = self.tabl.Get_Max(self.opt)
       box_lmt = self.tabl.Get_bbox()
+      xyz_px = self.tabl.Get_xyz()
 
       for indx in range(len(self.arr_img)):
         if( self.opt == 0 and indx == len(self.arr_img) - 1 ):
@@ -153,7 +154,7 @@ class ReflectionFrame(wx.Frame):
         else:
           Imax = ref_max
         self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx], Intst_max = Imax
-                          , ofst = box_lmt)
+                          , ofst = box_lmt, xyz = xyz_px)
 
     for indx in range(len(self.arr_img)):
       if( self.arr_img[indx] == None ):

@@ -11,7 +11,7 @@
 import wx
 from dials.viewer.viewer_frame import ReflectionFrame
 
-class App(wx.App):
+class viewer_App(wx.App):
   def OnInit(self):
     self.frame = ReflectionFrame(None, -1, "DIALS Reflections Viewer"
     , wx.DefaultPosition,(550,200))
@@ -28,15 +28,16 @@ if __name__ == "__main__":
 
   import cPickle as pickle
   import sys
-  from dials.model.data import ReflectionList # implicit import
-  table = pickle.load(open(sys.argv[1]))
+  from dials.array_family import flex
+  table = flex.reflection_table.from_pickle(sys.argv[1])
+
   pos_of_best_example_so_far = '''
   .... dials_regression/refinement_test_data/radiation_damaged_thaumatin/
   indexed.pickle
   '''
   #print "num of ref =", len(table)
 
-  app = App(redirect=False)
+  app = viewer_App(redirect=False)
   app.table_in(table)
 
   app.MainLoop()
