@@ -9,7 +9,7 @@
 #  included in the root directory of this package."
 
 from dials.array_family import flex
-from dials.viewer.viewer_utilities import build_np_img
+
 
 class table_s_navigator(object):
 
