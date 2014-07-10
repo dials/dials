@@ -37,7 +37,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 371
+    assert len(reflections) == 370
     refl = reflections[0]
     assert "shoebox" not in reflections
   print 'OK'
