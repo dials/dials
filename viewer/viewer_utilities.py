@@ -8,13 +8,12 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-import numpy, wx
+import numpy as np
+import wx
 # set backend before importing pyplot
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-
 
 class np_to_bmp(object):
 
@@ -26,28 +25,32 @@ class np_to_bmp(object):
 
     if( np_img_2d == None ):
 
-      plt.imshow(numpy.asarray([[-1]]), interpolation = "nearest")
+      plt.imshow(np.asarray([[-1]]), interpolation = "nearest")
 
       self.fig.canvas.draw()
       self.width, self.height = self.fig.canvas.get_width_height()
-      self.np_buf = numpy.fromstring ( self.fig.canvas.tostring_rgb()
-                                      , dtype=numpy.uint8 )
+      self.np_buf = np.fromstring ( self.fig.canvas.tostring_rgb()
+                                      , dtype=np.uint8 )
       self.np_buf.shape = (self.width, self.height, 3)
-      self.np_buf = numpy.roll(self.np_buf, 3, axis = 2)
+      self.np_buf = np.roll(self.np_buf, 3, axis = 2)
       self.image = wx.EmptyImage(self.width, self.height)
       self.image.SetData( self.np_buf )
 
       plt.close(self.fig)
     else:
       if Intst_max > 0:
-        plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0
+        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                    , vmax = Intst_max)
       else:
-        plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0
+        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                    , vmax = 10)
 
-      #plt.vlines(xyz[0], 0.2, 0.9)
-      #print xyz[0], xyz[1], xyz[2]
+      if(xyz != None):
+        arr_w = np.shape(np_img_2d)[0]
+        arr_h = np.shape(np_img_2d)[1]
+
+        plt.vlines(xyz[0], arr_h / 3.0, arr_h - arr_h / 3.0)
+        plt.hlines(xyz[1], arr_w / 3.0, arr_w - arr_w / 3.0)
 
       calc_ofst = True
       if(calc_ofst == True):
@@ -83,10 +86,10 @@ class np_to_bmp(object):
 
       self.fig.canvas.draw()
       self.width, self.height = self.fig.canvas.get_width_height()
-      self.np_buf = numpy.fromstring ( self.fig.canvas.tostring_rgb()
-                                      , dtype=numpy.uint8 )
+      self.np_buf = np.fromstring ( self.fig.canvas.tostring_rgb()
+                                      , dtype=np.uint8 )
       self.np_buf.shape = (self.width, self.height, 3)
-      self.np_buf = numpy.roll(self.np_buf, 3, axis = 2)
+      self.np_buf = np.roll(self.np_buf, 3, axis = 2)
       self.image = wx.EmptyImage(self.width, self.height)
       self.image.SetData( self.np_buf )
 
