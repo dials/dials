@@ -234,6 +234,10 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     self._smoother = smoother
     assert self._smoother.num_values() == self._set_len
 
+    # define an attribute for caching the variance-covariance matrix of
+    # parameters
+    self._var_cov = None
+
     return
 
   def num_free(self):
@@ -361,3 +365,29 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     using the smoother."""
 
     return self._smoother.value_weight(t, pset)[0]
+
+  def calculate_state_uncertainties(self, var_cov=None):
+    """Given a variance-covariance array for the parameters of this model,
+    propagate those estimated errors into the uncertainties of the model state
+    at every scan point"""
+
+    if var_cov is not None:
+      # first call, just cache the variance-covariance matrix
+      self._var_cov = var_cov
+      return None
+
+    # later calls, make sure it has been cached!
+    assert self._var_cov is not None
+
+    # later calls, assumes compose has been called at image number t, so that
+    # get_ds_dp will be specific for that image. Now call the base class method
+    # and return the result
+    return super(ScanVaryingModelParameterisation,
+          self).calculate_state_uncertainties(self._var_cov)
+
+  def set_state_uncertainties(self, var_cov_list):
+    """Send the calculated variance-covariance matrices for model state elements
+    for all scan points back to the model for storage alongside the model state
+    """
+
+    pass

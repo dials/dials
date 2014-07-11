@@ -306,7 +306,6 @@ class ModelParameterisation(object):
       # Reshape this data so that the list over the number of states becomes
       # the outer level.
       reshaped = []
-      from dials.util.command_line import interactive_console; interactive_console()
       for i in range(len(grads[0])):
         reshaped.append([g[i] for g in grads])
       grads = reshaped
@@ -331,20 +330,12 @@ class ModelParameterisation(object):
       # covariance matrix of the state elements
       state_covs.append(jacobian * var_cov * jacobian_t)
 
-    # FIXME also need a special case for scan-varying model parameterisation,
-    # as get_state just returns the state at a single scan-point 't'
-
-    if self._is_multi_state:
-      for i, state_cov in enumerate(state_covs):
-        self._set_state_uncertainties(state_cov, multi_state_elt=i)
-    else:
-      self._set_state_uncertainties(state_covs[0])
     #FIXME don't have anywhere to put this information yet! Probably need to
     #assign it to the model somehow
-    return
+    return state_covs
 
   #@abc.abstractmethod
-  def _set_state_uncertainties(self, var_cov, multi_state_elt=None):
+  def set_state_uncertainties(self, var_cov, multi_state_elt=None):
     """Send the calculated variance-covariance matrix for model state elements
     back to the model for storage alongside the model state, and potentially
     use in further propagation of error calculations."""

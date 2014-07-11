@@ -953,6 +953,18 @@ class Refiner(object):
                                                             ar_range[1]+1)]
         exp.crystal.set_A_at_scan_points(A_list)
 
+        # get state covariance matrices the whole range of images. We select
+        # the first element of this at each image because crystal scan-varying
+        # parameterisations are not multi-state
+        state_cov_list = [self._pred_param.calculate_model_state_uncertainties(
+          obs_image_number=t, experiment_id=iexp) for t in range(ar_range[0],
+                                                            ar_range[1]+1)]
+        u_cov_list, b_cov_list = zip(*state_cov_list)
+
+        # return these to the model parameterisations to be set in the models
+        self._pred_param.set_model_state_uncertainties(
+          u_cov_list, b_cov_list, iexp)
+
     if self._verbosity > 1:
       print
       print "Experimental models after refinement"

@@ -419,6 +419,66 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return dpv_dp, dphi_dp
 
+  def calculate_model_state_uncertainties(self, var_cov=None,
+                                          obs_image_number=None,
+                                          experiment_id=None):
+    """
+    Take the variance-covariance matrix of all free parameters calculated by
+    the minimisation engine. For each parameterisation in the global model,
+    extract the subset of this matrix for the associated block of parameters.
+    Pass this on to the relevant model parameterisation to calculate its own
+    uncertainty of state.
+
+    This scan-varying version should first be called with var_cov set but
+    obs_image_number=None and experiment_id=None. This calls the scan-static
+    version to do the calculation for the scan-static parameterisations and
+    also caches the subsets of var_cov relevant for the scan-varying
+    parameterisations. Subsequent calls should provide obs_image_number and
+    experiment_id to calculate for a particular crystal at a particular
+    scan-point"""
+
+    # first call, only a variance-covariance matrix is supplied
+    if var_cov is not None:
+      assert [obs_image_number, experiment_id].count(None) == 2
+      super(VaryingCrystalPredictionParameterisation,
+            self).calculate_model_state_uncertainties(var_cov)
+      return
+
+    # later calls, only an experiment and image number are supplied
+    else:
+      # identify the crystal parameterisations for this experiment
+      param_set = self._exp_to_param[experiment_id]
+      xl_ori_param_id = param_set.xl_ori_param
+      xl_uc_param_id = param_set.xl_uc_param
+      xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
+      xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+
+      # compose at the requested image number
+      xl_op.compose(obs_image_number)
+      xl_ucp.compose(obs_image_number)
+
+      # calculate using the cached varcov matrices. Take the first elt of the
+      # list becase the crystal parameterisations are not multi-state
+      U_cov = xl_op.calculate_state_uncertainties(var_cov=None)[0]
+      B_cov = xl_ucp.calculate_state_uncertainties(var_cov=None)[0]
+
+    return U_cov, B_cov
+
+  def set_model_state_uncertainties(self, u_cov_list, b_cov_list,
+                                          experiment_id=None):
+    """Identify the parameterisation"""
+
+
+    param_set = self._exp_to_param[experiment_id]
+    xl_ori_param_id = param_set.xl_ori_param
+    xl_uc_param_id = param_set.xl_uc_param
+    xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
+    xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+
+    xl_op.set_state_uncertainties(u_cov_list)
+    xl_ucp.set_state_uncertainties(b_cov_list)
+
+    return
 
 class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParameterisation):
   """Overloads compose to calculate UB model per frame rather than per

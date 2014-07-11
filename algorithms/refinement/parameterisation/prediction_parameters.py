@@ -257,28 +257,52 @@ class PredictionParameterisation(object):
       for model in self._detector_parameterisations:
         n = model.num_free()
         sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
-        model.calculate_state_uncertainties(sub)
+        state_covs = model.calculate_state_uncertainties(sub)
+        if state_covs is None: continue
+        if len(state_covs) == 1:
+          model.set_state_uncertainties(state_covs[0])
+        else:
+          for i_state, state_cov in enumerate(state_covs):
+            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
         i += n
 
     if self._beam_parameterisations:
       for model in self._beam_parameterisations:
         n = model.num_free()
         sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
-        model.calculate_state_uncertainties(sub)
+        state_covs = model.calculate_state_uncertainties(sub)
+        if state_covs is None: continue
+        if len(state_covs) == 1:
+          model.set_state_uncertainties(state_covs[0])
+        else:
+          for i_state, state_cov in enumerate(state_covs):
+            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
         i += n
 
     if self._xl_orientation_parameterisations:
       for model in self._xl_orientation_parameterisations:
         n = model.num_free()
         sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
-        model.calculate_state_uncertainties(sub)
+        state_covs = model.calculate_state_uncertainties(sub)
+        if state_covs is None: continue
+        if len(state_covs) == 1:
+          model.set_state_uncertainties(state_covs[0])
+        else:
+          for i_state, state_cov in enumerate(state_covs):
+            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
         i += n
 
     if self._xl_unit_cell_parameterisations:
       for model in self._xl_unit_cell_parameterisations:
         n = model.num_free()
         sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
-        model.calculate_state_uncertainties(sub)
+        state_covs = model.calculate_state_uncertainties(sub)
+        if state_covs is None: continue
+        if len(state_covs) == 1:
+          model.set_state_uncertainties(state_covs[0])
+        else:
+          for i_state, state_cov in enumerate(state_covs):
+            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
         i += n
 
     return
