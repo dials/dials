@@ -46,6 +46,7 @@ tst_list = (
     "$D/test/algorithms/background/tst_outlier_rejector.py",
     "$D/test/algorithms/background/tst_creator.py",
     "$D/test/algorithms/integration/profile/tst_grid_sampler.py",
+    "$D/test/algorithms/integration/profile/tst_grid_sampler_2d.py",
     "$D/test/algorithms/integration/profile/tst_xds_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_reference_locator.py",
     "$D/test/algorithms/integration/profile/tst_reference_learner.py",

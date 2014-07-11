@@ -97,8 +97,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(xy[0] < image_size_[0] && xy[1] < image_size_[1]);
       double fx = xy[0] / step_size_[0];
       double fy = xy[1] / step_size_[1];
-      int ix = (int)floor(xy[0] / step_size_[0]);
-      int iy = (int)floor(xy[1] / step_size_[1]);
+      int ix = (int)floor(fx);
+      int iy = (int)floor(fy);
       DIALS_ASSERT(ix >= 0 && ix < grid_size_[0]);
       DIALS_ASSERT(iy >= 0 && iy < grid_size_[1]);
       double dx1 = std::abs(fx - ix);

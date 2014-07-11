@@ -739,6 +739,7 @@ test/algorithms/indexing/tst_compare_orientation_matrices.py -text
 test/algorithms/indexing/tst_index.py -text
 test/algorithms/integration/profile/__init__.py -text
 test/algorithms/integration/profile/tst_grid_sampler.py -text
+test/algorithms/integration/profile/tst_grid_sampler_2d.py -text
 test/algorithms/integration/profile/tst_profile_allocator.cc -text
 test/algorithms/integration/profile/tst_profile_fitting.py -text
 test/algorithms/integration/profile/tst_profile_helpers.py -text
