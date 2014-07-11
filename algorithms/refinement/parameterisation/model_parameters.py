@@ -300,32 +300,51 @@ class ModelParameterisation(object):
     if len(grads) == 0: return
 
     if self._is_multi_state:
-      # FIXME need special code to handle the multi state case
-      return
+      # in this case the gradients are an n-element list, each element of which
+      # is a list of length of the number of states. Each element of the list
+      # is an object of length m with the same dimensions as the model state.
+      # Reshape this data so that the list over the number of states becomes
+      # the outer level.
+      reshaped = []
+      from dials.util.command_line import interactive_console; interactive_console()
+      for i in range(len(grads[0])):
+        reshaped.append([g[i] for g in grads])
+      grads = reshaped
+    else:
+      # we only have a single state, so put gradients in a 1-elt list to mimic
+      # the structure of the multi-state case
+      grads = [grads]
 
     # the jacobian is the m*n matrix of partial derivatives of the m state
     # elements wrt the n parameters
     from libtbx.utils import flat_list
     from scitbx import matrix
-    jacobian_t = matrix.rec(flat_list(grads), (len(grads), len(grads[0].elems)))
-    jacobian = jacobian_t.transpose()
+
+    state_covs = []
+    for grads_one_state in grads:
+      jacobian_t = matrix.rec(flat_list(grads_one_state), (len(grads_one_state),
+        len(grads_one_state[0].elems)))
+      jacobian = jacobian_t.transpose()
+      # propagation of errors takes the variance-covariance matrix of parameters,
+      # along with the jacobian mapping changes in parameter values to changes
+      # in the model state elements, to calculate an approximate variance-
+      # covariance matrix of the state elements
+      state_covs.append(jacobian * var_cov * jacobian_t)
 
     # FIXME also need a special case for scan-varying model parameterisation,
     # as get_state just returns the state at a single scan-point 't'
 
-    # propagation of errors takes the variance-covariance matrix of parameters,
-    # along with the jacobian mapping changes in parameter values to changes
-    # in the model state elements, to calculate an approximate variance-
-    # covariance matrix of the state elements
-    state_cov = jacobian * var_cov * jacobian_t
-
-    self._set_state_uncertainties(state_cov)
+    if self._is_multi_state:
+      for i, state_cov in enumerate(state_covs):
+        self._set_state_uncertainties(state_cov, multi_state_elt=i)
+    else:
+      self._set_state_uncertainties(state_covs[0])
     #FIXME don't have anywhere to put this information yet! Probably need to
     #assign it to the model somehow
     return
 
   #@abc.abstractmethod
-  def _set_state_uncertainties(self, var_cov):
+  def _set_state_uncertainties(self, var_cov, multi_state_elt=None):
     """Send the calculated variance-covariance matrix for model state elements
     back to the model for storage alongside the model state, and potentially
     use in further propagation of error calculations."""
