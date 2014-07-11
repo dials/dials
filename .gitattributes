@@ -89,6 +89,7 @@ algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/flattened_2d_profile_fitting.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/integrator_2d.cc -text
+algorithms/integration/boost_python/interpolate_profile2d.cc -text
 algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
 algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
 algorithms/integration/boost_python/summation.cc -text
@@ -97,6 +98,7 @@ algorithms/integration/flatten_shoebox.py -text
 algorithms/integration/flattened_2d_profile_fitting.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/integrator_2d.h -text
+algorithms/integration/interpolate_profile2d.h -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain
 algorithms/integration/lui_2d_integration.h -text svneol=unset#text/plain
 algorithms/integration/mosflm_2D_profile.py -text
@@ -747,6 +749,7 @@ test/algorithms/integration/profile/tst_reference_learner.py -text
 test/algorithms/integration/profile/tst_reference_locator.py -text
 test/algorithms/integration/profile/tst_xds_circle_sampler.py -text
 test/algorithms/integration/test_integration_summation_2d.py -text
+test/algorithms/integration/tst_interpolate_profile2d.py -text
 test/algorithms/integration/tst_profile_fitting_rs.py -text
 test/algorithms/integration/tst_summation3d.py -text
 test/algorithms/peak_finding/tst_merge_spot_lists.py -text

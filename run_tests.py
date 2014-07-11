@@ -55,6 +55,7 @@ tst_list = (
     "$D/test/algorithms/integration/test_integration_summation_2d.py",
     "$D/test/algorithms/integration/tst_summation3d.py",
     "$D/test/algorithms/integration/tst_profile_fitting_rs.py",
+    "$D/test/algorithms/integration/tst_interpolate_profile2d.py",
     "$B/test/algorithms/spatial_indexing/tst_quadtree",
     "$B/test/algorithms/spatial_indexing/tst_octree",
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",
