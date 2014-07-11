@@ -125,7 +125,7 @@ def fit_profile_2d(reflection_pointers, ref_table
     col_variance = ref_table['intensity.sum.variance']
     col_shoebox = ref_table['shoebox']
 
-    col_xyzcal = ref_table['xyzcal.px']
+    col_xyzcal = ref_table['xyzcal.px'] # why this line is duplicated
     col_bbox = ref_table['bbox']
 
     for t_row in reflection_pointers:

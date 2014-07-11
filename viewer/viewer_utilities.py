@@ -49,8 +49,8 @@ class np_to_bmp(object):
         arr_w = np.shape(np_img_2d)[0]
         arr_h = np.shape(np_img_2d)[1]
 
-        plt.vlines(xyz[0], arr_h / 3.0, arr_h - arr_h / 3.0)
-        plt.hlines(xyz[1], arr_w / 3.0, arr_w - arr_w / 3.0)
+        plt.vlines(xyz[0], xyz[1] * 2.0 / 3.0, arr_h - xyz[1] * 2.0 / 3.0)
+        plt.hlines(xyz[1], xyz[0] * 2.0 / 3.0, arr_w - xyz[0] * 2.0 / 3.0)
 
       calc_ofst = True
       if(calc_ofst == True):
