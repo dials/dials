@@ -14,11 +14,21 @@ class MyFrame(wx.Frame):
     super(MyFrame, self).__init__(parent, id, title,
                                   pos, size, style, name)
     # Attributes
-    self.panel = wx.Panel(self)
 
-    text01 = wx.TextCtrl(self.panel, -1, "enter txt", size = (100, -1))
+    text01 = wx.TextCtrl(self, -1, "enter txt", size = (300, -1))
+    btn_nxt_refl = wx.Button(self, -1, "Previous Reflection")
 
+    h_box = wx.BoxSizer(wx.HORIZONTAL)
+    v_box = wx.BoxSizer(wx.VERTICAL)
+    v_box.Add(text01, 0, wx.CENTER | wx.ALL,5)
+    v_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
+    h_box.Add(v_box)
 
+    self.SetSizerAndFit(h_box)
+    btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
+  def DisplayNext_refl(self, event = None):
+    print "clicked"
+    #'GetValue'
 if(__name__ == "__main__"):
   app = MyApp(False)
   app.MainLoop()
