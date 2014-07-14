@@ -21,22 +21,22 @@ class np_to_bmp(object):
     print "from init"
 
   def __call__(self, np_img_2d, Intst_max, ofst, xyz):
-    self.fig = plt.figure()
+    lc_fig = plt.figure()
 
     if( np_img_2d == None ):
 
       plt.imshow(np.asarray([[-1]]), interpolation = "nearest")
 
-      self.fig.canvas.draw()
-      self.width, self.height = self.fig.canvas.get_width_height()
-      self.np_buf = np.fromstring ( self.fig.canvas.tostring_rgb()
+      lc_fig.canvas.draw()
+      self.width, self.height = lc_fig.canvas.get_width_height()
+      self.np_buf = np.fromstring ( lc_fig.canvas.tostring_rgb()
                                       , dtype=np.uint8 )
       self.np_buf.shape = (self.width, self.height, 3)
       self.np_buf = np.roll(self.np_buf, 3, axis = 2)
       self.image = wx.EmptyImage(self.width, self.height)
       self.image.SetData( self.np_buf )
 
-      plt.close(self.fig)
+      plt.close(lc_fig)
     else:
       if Intst_max > 0:
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
@@ -48,13 +48,16 @@ class np_to_bmp(object):
       if(xyz != None):
         arr_w = np.shape(np_img_2d)[0]
         arr_h = np.shape(np_img_2d)[1]
-
-        plt.vlines(xyz[0], xyz[1] * 2.0 / 3.0, arr_h - xyz[1] * 2.0 / 3.0)
-        plt.hlines(xyz[1], xyz[0] * 2.0 / 3.0, arr_w - xyz[0] * 2.0 / 3.0)
+        #TODO check convention of coordinates DIALS vs Matplotlib
+        xyz_lst = list(xyz)
+        xyz_lst[0] = 10.0
+        xyz_lst[1] = 10.0
+        plt.vlines(xyz_lst[0], xyz_lst[1] / 2.0, (arr_h + xyz_lst[1]) / 2.0)
+        plt.hlines(xyz_lst[1], xyz_lst[0] / 2.0, (arr_w + xyz_lst[0]) / 2.0)
 
       calc_ofst = True
       if(calc_ofst == True):
-        ax = self.fig.add_subplot(1,1,1)
+        ax = lc_fig.add_subplot(1,1,1)
 
         xlabl = ax.xaxis.get_majorticklocs()
         if(len(xlabl) > 5):
@@ -84,16 +87,16 @@ class np_to_bmp(object):
             y_new_labl.append("")
         ax.yaxis.set_ticklabels(y_new_labl)
 
-      self.fig.canvas.draw()
-      self.width, self.height = self.fig.canvas.get_width_height()
-      self.np_buf = np.fromstring ( self.fig.canvas.tostring_rgb()
+      lc_fig.canvas.draw()
+      self.width, self.height = lc_fig.canvas.get_width_height()
+      self.np_buf = np.fromstring ( lc_fig.canvas.tostring_rgb()
                                       , dtype=np.uint8 )
       self.np_buf.shape = (self.width, self.height, 3)
       self.np_buf = np.roll(self.np_buf, 3, axis = 2)
       self.image = wx.EmptyImage(self.width, self.height)
       self.image.SetData( self.np_buf )
 
-      plt.close(self.fig)
+      plt.close(lc_fig)
 
     return self.image
 
