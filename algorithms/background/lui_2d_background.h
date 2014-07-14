@@ -40,7 +40,6 @@ namespace dials { namespace algorithms {
     return background2d;
   }
 
-
   class local_avg{
 
     public:
