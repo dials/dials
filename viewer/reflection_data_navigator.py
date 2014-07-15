@@ -121,6 +121,9 @@ class table_s_navigator(object):
       self.z = 0
     else:
       print "first reflection reached"
+  def Jump_to_Reflection(self, Ref_Num):
+    self.row_pos = Ref_Num
+
   def Get_Max(self, opt = 0):
     if(opt != 3):
       self.I_Max = flex.max(self.data_flex)

@@ -122,8 +122,8 @@ class ReflectionFrame(wx.Frame):
   def read_num_from_txt(self, event = None):
     # TODO check if the user entered a number
     a = int(self.text01.GetValue())
-    print "a =", a
-    print "a * 2 =", a * 2
+    self.tabl.Jump_to_Reflection(a)
+    self.My_Update()
 
   def OnRadio1(self, event = None):
     self.opt = 0
