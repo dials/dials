@@ -15,20 +15,22 @@ class MyFrame(wx.Frame):
                                   pos, size, style, name)
     # Attributes
 
-    text01 = wx.TextCtrl(self, -1, "enter txt", size = (300, -1))
-    btn_nxt_refl = wx.Button(self, -1, "Previous Reflection")
+    self.text01 = wx.TextCtrl(self, -1, "enter number", size = (300, -1))
+    btn_read = wx.Button(self, -1, "Read number")
 
     h_box = wx.BoxSizer(wx.HORIZONTAL)
     v_box = wx.BoxSizer(wx.VERTICAL)
-    v_box.Add(text01, 0, wx.CENTER | wx.ALL,5)
-    v_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
+    v_box.Add(self.text01, 0, wx.CENTER | wx.ALL,5)
+    v_box.Add(btn_read, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(v_box)
 
     self.SetSizerAndFit(h_box)
-    btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
+    btn_read.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
   def DisplayNext_refl(self, event = None):
     print "clicked"
-    #'GetValue'
+    a = int(self.text01.GetValue())
+    print "a =", a
+    print "a * 2", a * 2
 if(__name__ == "__main__"):
   app = MyApp(False)
   app.MainLoop()
