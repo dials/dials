@@ -18,35 +18,54 @@ class ReflectionFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
-
     self.MaxImageSizeX = 280
     self.MaxImageSizeY = 150
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
-    btn_nxt_slice = wx.Button(self, -1, "Next slice ")
-    btn_prv_slice = wx.Button(self, -1, "Previous slice")
+    btn_read = wx.Button(self, -1, "Jump to Reflection")
 
-    radio1 = wx.RadioButton(self, -1, "data, background, mask", style = wx.RB_GROUP)
+    radio1 = wx.RadioButton(self, -1, "data, background, mask"
+                           , style = wx.RB_GROUP)
     radio2 = wx.RadioButton(self, -1, "3 layers of data")
     radio3 = wx.RadioButton(self, -1, "3 layers of background")
     radio4 = wx.RadioButton(self, -1, "3 layers of mask")
+
+    btn_nxt_slice = wx.Button(self, -1, "Next slice ")
+    btn_prv_slice = wx.Button(self, -1, "Previous slice")
+
+
     self.Image = [None, None, None]
+
     for indx in range(len(self.Image)):
-      self.Image[indx] = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+      self.Image[indx] = wx.StaticBitmap(self, bitmap = wx.EmptyBitmap(
                                          self.MaxImageSizeX, self.MaxImageSizeY))
 
-    h_box = wx.BoxSizer(wx.HORIZONTAL)
-    u_box = wx.BoxSizer(wx.VERTICAL)
+    self.text01 = wx.TextCtrl(self, -1, "enter number", size = (100, -1))
 
-    u_box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,5)
-    u_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
+    h_box = wx.BoxSizer(wx.HORIZONTAL)
+
+    u_box = wx.BoxSizer(wx.VERTICAL)
+    div_h_box = wx.BoxSizer(wx.HORIZONTAL)
+    div_h_box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,5)
+    div_h_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(div_h_box)
+
+    div_h_box = wx.BoxSizer(wx.HORIZONTAL)
+    div_h_box.Add(btn_read, 0, wx.CENTER | wx.ALL,5)
+    div_h_box.Add(self.text01, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(div_h_box)
+
     u_box.Add(radio1, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(radio2, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(radio3, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(radio4, 0, wx.CENTER | wx.ALL,5)
-    u_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
-    u_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
+
+    div_h_box = wx.BoxSizer(wx.HORIZONTAL)
+    div_h_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
+    div_h_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(div_h_box)
+
     h_box.Add(u_box)
 
     h_box.Add(self.Image[0], 0
@@ -74,6 +93,8 @@ class ReflectionFrame(wx.Frame):
     self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio3, radio3)
     self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio4, radio4)
 
+    self.Bind(wx.EVT_BUTTON, self.read_num_from_txt, btn_read)
+
     self.Bind(wx.EVT_SIZE, self.OnSize)
 
     self.bmp = np_to_bmp()
@@ -98,6 +119,11 @@ class ReflectionFrame(wx.Frame):
     self.tabl.Previous_slice()
     self.My_Update()
 
+  def read_num_from_txt(self, event = None):
+    # TODO check if the user entered a number
+    a = int(self.text01.GetValue())
+    print "a =", a
+    print "a * 2 =", a * 2
 
   def OnRadio1(self, event = None):
     self.opt = 0
@@ -153,8 +179,8 @@ class ReflectionFrame(wx.Frame):
           Imax = 10
         else:
           Imax = ref_max
-        self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx], Intst_max = Imax
-                          , ofst = box_lmt, xyz = xyz_px)
+        self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx]
+                          , Intst_max = Imax, ofst = box_lmt, xyz = xyz_px)
 
     for indx in range(len(self.arr_img)):
       if( self.arr_img[indx] == None ):
