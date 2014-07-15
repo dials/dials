@@ -83,65 +83,65 @@ class ReflectionFrame(wx.Frame):
     self.sizing_counter = 0
     self.SetSizerAndFit(h_box)
 
-    btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
-    btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
-    btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
-    btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
+    btn_nxt_refl.Bind(wx.EVT_BUTTON, self._DisplayNext_refl)
+    btn_prv_refl.Bind(wx.EVT_BUTTON, self._DisplayPrev_refl)
+    btn_nxt_slice.Bind(wx.EVT_BUTTON, self._DisplayNext_slice)
+    btn_prv_slice.Bind(wx.EVT_BUTTON, self._DisplayPrev_slice)
 
-    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio1, radio1)
-    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio2, radio2)
-    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio3, radio3)
-    self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio4, radio4)
+    self.Bind(wx.EVT_RADIOBUTTON, self._OnRadio1, radio1)
+    self.Bind(wx.EVT_RADIOBUTTON, self._OnRadio2, radio2)
+    self.Bind(wx.EVT_RADIOBUTTON, self._OnRadio3, radio3)
+    self.Bind(wx.EVT_RADIOBUTTON, self._OnRadio4, radio4)
 
-    self.Bind(wx.EVT_BUTTON, self.read_num_from_txt, btn_read)
+    self.Bind(wx.EVT_BUTTON, self._read_num_from_txt, btn_read)
 
-    self.Bind(wx.EVT_SIZE, self.OnSize)
+    self.Bind(wx.EVT_SIZE, self._OnSize)
 
     self.bmp = np_to_bmp()
     self.arr_img = [None, None, None]
     self.My_Img = [None, None, None]
     self.wx_Img = [None, None, None]
-    wx.EVT_CLOSE(self, self.On_Close_Window)
+    wx.EVT_CLOSE(self, self._On_Close_Window)
 
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
-    self.DisplayPrev_refl()
-  def DisplayNext_refl(self, event = None):
+    self._DisplayPrev_refl()
+  def _DisplayNext_refl(self, event = None):
     self.tabl.next_Reflection()
-    self.My_Update()
-  def DisplayPrev_refl(self, event = None):
+    self._My_Update()
+  def _DisplayPrev_refl(self, event = None):
     self.tabl.Previous_Reflection()
-    self.My_Update()
-  def DisplayNext_slice(self, event = None):
+    self._My_Update()
+  def _DisplayNext_slice(self, event = None):
     self.tabl.next_slice()
-    self.My_Update()
-  def DisplayPrev_slice(self, event = None):
+    self._My_Update()
+  def _DisplayPrev_slice(self, event = None):
     self.tabl.Previous_slice()
-    self.My_Update()
+    self._My_Update()
 
-  def read_num_from_txt(self, event = None):
+  def _read_num_from_txt(self, event = None):
     # TODO check if the user entered a number
     a = int(self.text01.GetValue())
     self.tabl.Jump_to_Reflection(a)
-    self.My_Update()
+    self._My_Update()
 
-  def OnRadio1(self, event = None):
+  def _OnRadio1(self, event = None):
     self.opt = 0
-    self.My_Update(request_new_data = True)
+    self._My_Update(request_new_data = True)
 
-  def OnRadio2(self, event = None):
+  def _OnRadio2(self, event = None):
     self.opt = 1
-    self.My_Update(request_new_data = True)
+    self._My_Update(request_new_data = True)
 
-  def OnRadio3(self, event = None):
+  def _OnRadio3(self, event = None):
     self.opt = 2
-    self.My_Update(request_new_data = True)
+    self._My_Update(request_new_data = True)
 
-  def OnRadio4(self, event = None):
+  def _OnRadio4(self, event = None):
     self.opt = 3
-    self.My_Update(request_new_data = True)
+    self._My_Update(request_new_data = True)
 
-  def OnSize(self, event = None):
+  def _OnSize(self, event = None):
     if( self.sizing_counter > 5 ):
       siz_data = self.GetSize()
       #print "New size of window =", siz_data
@@ -158,13 +158,13 @@ class ReflectionFrame(wx.Frame):
         #print "use float(siz_data[0] (with) to calculate new size"
         self.frame_scale = float(siz_data[0]) * 0.5 / 1227.0
         #(1227, 295)
-      self.My_Update(request_new_data = False)
+      self._My_Update(request_new_data = False)
       #print "resizing"
       #print "aspec_ratio =", aspec_ratio
     else:
       self.sizing_counter += 1
 
-  def My_Update(self, request_new_data = True):
+  def _My_Update(self, request_new_data = True):
 
     if( request_new_data == True ):
       #self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
@@ -194,5 +194,5 @@ class ReflectionFrame(wx.Frame):
     self.Layout()
     self.Refresh()
 
-  def On_Close_Window(self, event):
+  def _On_Close_Window(self, event):
     self.Destroy()

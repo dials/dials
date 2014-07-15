@@ -21,8 +21,8 @@ class table_s_navigator(object):
     else:
       print "ERROR 0 reflections"
     self.z = 0
-  def __call__(self, opt = 0):
 
+  def __call__(self, opt = 0):
     self.get_dat_bkg_msk()
     np_lst = []
     if( opt == 0 ):
@@ -59,7 +59,6 @@ class table_s_navigator(object):
       print "wrong option"
       np_lst = [None, None, None]
     return np_lst
-
 
   def get_dat_bkg_msk(self):
     try:
@@ -104,25 +103,33 @@ class table_s_navigator(object):
       self.z += 1
     else:
       print "maximum depth reached"
+
   def Previous_slice(self):
     if self.z > 0:
       self.z -= 1
     else:
       print "depth 0 reached"
+
   def next_Reflection(self):
     if self.row_pos < self.num_ref - 1:
       self.row_pos += 1
       self.z = 0
     else:
       print "last reflection reached"
+
   def Previous_Reflection(self):
     if self.row_pos > 0:
       self.row_pos -= 1
       self.z = 0
     else:
       print "first reflection reached"
+
   def Jump_to_Reflection(self, Ref_Num):
-    self.row_pos = Ref_Num
+    if Ref_Num > self.num_ref - 1 or Ref_Num < 0:
+      print "There is no reflection #", Ref_Num
+    else:
+      self.row_pos = Ref_Num
+      self.z = 0
 
   def Get_Max(self, opt = 0):
     if(opt != 3):
@@ -130,8 +137,10 @@ class table_s_navigator(object):
     else:
       self.I_Max = flex.max(self.mask_flex) * 2
     return self.I_Max
+
   def Get_xyz(self):
     return self.calc_pos
+
   def Get_bbox(self):
     return self.box_lim
 
