@@ -13,7 +13,6 @@ class MyFrame(wx.Frame):
       name="MyFrame"):
     super(MyFrame, self).__init__(parent, id, title,
                                   pos, size, style, name)
-    # Attributes
 
     self.text01 = wx.TextCtrl(self, -1, "enter number", size = (300, -1))
     btn_read = wx.Button(self, -1, "Read number")
@@ -23,14 +22,15 @@ class MyFrame(wx.Frame):
     v_box.Add(self.text01, 0, wx.CENTER | wx.ALL,5)
     v_box.Add(btn_read, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(v_box)
+    btn_read.Bind(wx.EVT_BUTTON, self.read_num_from_txt)
 
     self.SetSizerAndFit(h_box)
-    btn_read.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
-  def DisplayNext_refl(self, event = None):
+
+  def read_num_from_txt(self, event = None):
     print "clicked"
     a = int(self.text01.GetValue())
     print "a =", a
-    print "a * 2", a * 2
+    print "a * 2 =", a * 2
 if(__name__ == "__main__"):
   app = MyApp(False)
   app.MainLoop()
