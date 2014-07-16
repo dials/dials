@@ -29,6 +29,7 @@ namespace dials { namespace algorithms {
    * @param data The profile to interpolate
    * @returns The interpolated profile.
    */
+  inline
   af::versa< double, af::c_grid<2> > interpolate_profile2d(
       double x, double y,
       const af::const_ref< double, af::c_grid<2> > &data) {
