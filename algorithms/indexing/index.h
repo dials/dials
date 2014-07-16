@@ -168,7 +168,8 @@ namespace dials { namespace algorithms {
       af::const_ref<scitbx::mat3<double> > const & UB_matrices,
       const double epsilon=0.05,
       const double delta=5,
-      const double l_min=0.8
+      const double l_min=0.8,
+      const int nearest_neighbours=20
       )
       : miller_indices_(
           reciprocal_space_points.size(), cctbx::miller::index<>(0,0,0)),
@@ -203,8 +204,7 @@ namespace dials { namespace algorithms {
         }
       }
 
-      int nn_window = 10;
-      AnnAdaptor ann = AnnAdaptor(rlps_double, 3, nn_window);
+      AnnAdaptor ann = AnnAdaptor(rlps_double, 3, nearest_neighbours);
       ann.query(rlps_double);
 
       scitbx::mat3<double> const &A = UB_matrices[0];
@@ -222,8 +222,8 @@ namespace dials { namespace algorithms {
       double sum_l_ij = 0;
 
       for (std::size_t i=0; i < reciprocal_space_points.size(); i++) {
-        std::size_t i_k = i * nn_window;
-        for (std::size_t i_ann=0; i_ann < nn_window; i_ann++) {
+        std::size_t i_k = i * nearest_neighbours;
+        for (std::size_t i_ann=0; i_ann < nearest_neighbours; i_ann++) {
           std::size_t i_k_plus_i_ann = i_k + i_ann;
           std::size_t j = ann.nn[i_k_plus_i_ann];
           if (boost::edge(i, j, G).second) {

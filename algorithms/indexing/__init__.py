@@ -111,7 +111,7 @@ def index_reflections(
 
 def index_reflections_local(
     reflections, reciprocal_space_points, crystal_models, d_min,
-    epsilon=0.05, delta=8, l_min=0.8, verbosity=0):
+    epsilon=0.05, delta=8, l_min=0.8, nearest_neighbours=20, verbosity=0):
   from scitbx import matrix
   from libtbx.math_utils import nearest_integer as nint
 
@@ -138,7 +138,8 @@ def index_reflections_local(
   if 1:
     # Use fast c++ version
     result = AssignIndicesLocal(
-      rlps, UB_matrices, epsilon=epsilon, delta=delta, l_min=l_min)
+      rlps, UB_matrices, epsilon=epsilon, delta=delta, l_min=l_min,
+      nearest_neighbours=nearest_neighbours)
     miller_indices = result.miller_indices()
     crystal_ids = result.crystal_ids()
     n_rejects = result.n_rejects()
@@ -256,11 +257,11 @@ def index_reflections_local(
   offset = (h_0 - matrix.col(hkl_sel[0])).elems
 
   h = hkl_sel + flex.vec3_double(hkl_sel.size(), offset)
-  test_rlp = tuple(A) * h
-  d_rlp = rlp_sel - test_rlp
-  print d_rlp.min(), d_rlp.max(), d_rlp.mean()
-  for i in range(20):
-    print "(%i, %i, %i)" %h[i], "(%.2f, %.2f, %.2f)" %test_rlp[i], "(%.2f, %.2f, %.2f)" %d_rlp[i]
+  #test_rlp = tuple(A) * h
+  #d_rlp = rlp_sel - test_rlp
+  #print d_rlp.min(), d_rlp.max(), d_rlp.mean()
+  #for i in range(20):
+    #print "(%i, %i, %i)" %h[i], "(%.2f, %.2f, %.2f)" %test_rlp[i], "(%.2f, %.2f, %.2f)" %d_rlp[i]
 
   refs['miller_index'].set_selected(
     subtree_sel, flex.miller_index(list(h.iround())))

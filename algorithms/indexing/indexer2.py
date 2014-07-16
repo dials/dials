@@ -102,6 +102,8 @@ index_assignment {
       .type = int
     l_min = 0.8
       .type = float
+    nearest_neighbours = 20
+      .type = int(value_min=1)
   }
 }
 optimise_initial_basis_vectors = False
@@ -1070,6 +1072,7 @@ class indexer_base(object):
         self.reflections, self.reciprocal_space_points,
         crystal_models, self.d_min, epsilon=params_local.epsilon,
         delta=params_local.delta, l_min=params_local.l_min,
+        nearest_neighbours=params_local.nearest_neighbours,
         verbosity=self.params.refinement_protocol.verbosity)
     else:
       params_simple = self.params.index_assignment.simple
