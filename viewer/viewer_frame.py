@@ -177,11 +177,9 @@ class ReflectionFrame(wx.Frame):
   def _My_Update(self, request_new_data = True):
 
     if( request_new_data == True ):
-      #self.dat, self.bkg, self.msk = self.tabl(opt = self.opt)
       self.arr_img = self.tabl(opt = self.opt)
-
       ref_max = self.tabl.Get_Max(self.opt)
-      box_lmt = self.tabl.Get_bbox()
+      #box_lmt = self.tabl.Get_bbox()
       self.xyz_px = self.tabl.Get_xyz()
       self.bbox_px = self.tabl.Get_bbox()
       for indx in range(len(self.arr_img)):
@@ -190,7 +188,8 @@ class ReflectionFrame(wx.Frame):
         else:
           Imax = ref_max
         self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx]
-                          , Intst_max = Imax, ofst = box_lmt, xyz = self.xyz_px)
+                          , Intst_max = Imax, ofst = self.bbox_px
+                          , xyz = self.xyz_px)
 
     for indx in range(len(self.arr_img)):
       if( self.arr_img[indx] == None ):
