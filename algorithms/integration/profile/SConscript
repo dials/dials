@@ -7,6 +7,7 @@ sources = [
     'boost_python/xds_circle_sampler.cc',
     'boost_python/reference_locator.cc',
     'boost_python/reference_learner.cc',
+    'boost_python/reference_learner2d.cc',
     'boost_python/fitting.cc',
     'boost_python/profile_ext.cc']
 
