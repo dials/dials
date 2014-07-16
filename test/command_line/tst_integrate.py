@@ -29,9 +29,9 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.path, 'experiments.json'),
-      'integration.intensity.algorithm=sum3d',
-      'integration.shoebox.sigma_b=0.058',
-      'integration.shoebox.sigma_m=0.157',
+      'intensity.algorithm=sum3d',
+      'shoebox.sigma_b=0.058',
+      'shoebox.sigma_m=0.157',
     ]).raise_if_errors()
 
     import cPickle as pickle
