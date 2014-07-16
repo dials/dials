@@ -1,3 +1,13 @@
+/*
+ * interpolate_profile2d.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 
 
 #ifndef DIALS_ALGORITHMS_INTEGRATION_INERPOLATE_PROFILE_2D_H
@@ -12,6 +22,13 @@ namespace dials { namespace algorithms {
 
   using scitbx::vec3;
 
+  /**
+   * Interpolate the 2D profile given the offset.
+   * @param x The x offset
+   * @param y The y offset
+   * @param data The profile to interpolate
+   * @returns The interpolated profile.
+   */
   af::versa< double, af::c_grid<2> > interpolate_profile2d(
       double x, double y,
       const af::const_ref< double, af::c_grid<2> > &data) {
