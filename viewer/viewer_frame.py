@@ -34,8 +34,9 @@ class ReflectionFrame(wx.Frame):
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
 
-    self.tst_txt = wx.StaticText(self, -1, "Centroid Pos = (                  )"
-                           , size = (200, 100))
+    self.data_txt_01 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
+    self.data_txt_02 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
+    self.data_txt_03 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
 
     self.Image = [None, None, None]
 
@@ -81,7 +82,9 @@ class ReflectionFrame(wx.Frame):
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
     div_u_box = wx.BoxSizer(wx.VERTICAL)
     div_u_box.Add(div_h_box)
-    div_u_box.Add(self.tst_txt, 0, wx.CENTER | wx.ALL,5)
+    div_u_box.Add(self.data_txt_01, 0, wx.CENTER | wx.ALL,5)
+    div_u_box.Add(self.data_txt_02, 0, wx.CENTER | wx.ALL,5)
+    div_u_box.Add(self.data_txt_03, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(div_u_box)
 
     self.frame_scale = 0.4
@@ -203,10 +206,17 @@ class ReflectionFrame(wx.Frame):
                  + str(self.xyz_px[1]) + ", "
                  + str(self.xyz_px[2]) + ") "
                  )
-        self.tst_txt.SetLabel(my_str)
-      else:
-        self.tst_txt.SetLabel(" No (x, y, z) Data ")
+        self.data_txt_01.SetLabel(my_str)
 
+      else:
+        self.data_txt_01.SetLabel(" No (x, y, z) Data ")
+      '''
+      if( self.xyz_px != None ):
+        self.data_txt_02.SetLabel(" No (x, y, z) Data ")
+        self.data_txt_03.SetLabel(" No (x, y, z) Data ")
+        self.data_txt_02.SetLabel(my_str)
+        self.data_txt_03.SetLabel(my_str)
+      '''
     self.Layout()
     self.Refresh()
 

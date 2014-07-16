@@ -83,15 +83,17 @@ class table_s_navigator(object):
       print "No mask data"
 
     try:
-      self.box_lim = table_row['bbox']
+      self.r_bbox = table_row['bbox']
     except:
       print "No bbox data"
 
     try:
-      self.calc_pos = table_row['xyzcal.px']
+      self.xyzcal_px = list(table_row['xyzcal.px'])
+      self.xyzcal_px[0] = self.xyzcal_px[0] - self.r_bbox[0]
+      self.xyzcal_px[1] = self.xyzcal_px[1] - self.r_bbox[2]
     except:
       print "No xyzcal.px data"
-      self.calc_pos = None
+      self.xyzcal_px = None
 
     self.depth = self.data_flex.all()[0]
     if self.depth <= 0:
@@ -139,8 +141,8 @@ class table_s_navigator(object):
     return self.I_Max
 
   def Get_xyz(self):
-    return self.calc_pos
+    return self.xyzcal_px
 
   def Get_bbox(self):
-    return self.box_lim
+    return self.r_bbox
 
