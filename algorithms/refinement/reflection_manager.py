@@ -367,9 +367,9 @@ class ReflectionManager(object):
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                            e['y_resid'],
                            e['phi_resid'],
-                           e['weight_x_obs'],
-                           e['weight_y_obs'],
-                           e['weight_phi_obs']))
+                           e['xyzobs.mm.weights'][0],
+                           e['xyzobs.mm.weights'][1],
+                           e['xyzobs.mm.weights'][2]))
           print msg
         print
         sl = self._sort_obs_by_residual(sl, angular=True)
@@ -382,9 +382,9 @@ class ReflectionManager(object):
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                                                  e['y_resid'],
                                                  e['phi_resid'],
-                                                 e['weight_x_obs'],
-                                                 e['weight_y_obs'],
-                                                 e['weight_phi_obs']))
+                                                 e['xyzobs.mm.weights'][0],
+                                                 e['xyzobs.mm.weights'][1],
+                                                 e['xyzobs.mm.weights'][2]))
           print msg
         print
 
@@ -517,8 +517,8 @@ class StillsReflectionManager(ReflectionManager):
           e = sl[i]
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                                                  e['y_resid'],
-                                                 e['weight_x_obs'],
-                                                 e['weight_y_obs']))
+                                                 e['xyzobs.mm.weights'][0],
+                                                 e['xyzobs.mm.weights'][1]))
           print msg
         print
 
