@@ -32,6 +32,8 @@ class ProfileFittingRSIntegrationExt(IntensityIface):
       .type = float
   '''
 
+  default = True
+
   def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
     from dials.algorithms.integration import ProfileFittingReciprocalSpace

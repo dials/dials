@@ -25,6 +25,9 @@ class ReflectionBlockExtractor(object):
     import cPickle as pickle
     from math import log10, floor
 
+    # Ensure we have lookup tables
+    gain, dark, mask = self._check_lookup(imageset, gain, dark, mask)
+
     # Reorder the reflections and extract shoeboxes
     if reflections:
       self.reflections = self._reorder_reflections(reflections)
@@ -116,3 +119,29 @@ class ReflectionBlockExtractor(object):
         break
     assert(all(b > a for a, b in zip(blocks, blocks[1:])))
     return blocks
+
+  def _check_lookup(self, imageset, gain, dark, mask):
+    ''' Ensure the lookup tables are Ok '''
+    from dials.array_family import flex
+    detector = imageset.get_detector()
+    npanels = len(detector)
+    if gain is None:
+      gain = []
+      for i in range(npanels):
+        isize = detector[i].get_image_size()[::-1]
+        gain.append(flex.double(flex.grid(isize),1.0))
+    if dark is None:
+      dark = []
+      for i in range(npanels):
+        isize = detector[i].get_image_size()[::-1]
+        dark.append(flex.double(flex.grid(isize),0.0))
+    if mask is None:
+      mask = []
+      image = imageset[0]
+      if npanels == 1:
+        image = (image,)
+      for i in range(npanels):
+        trusted_range = detector[i].get_trusted_range()
+        m = image[i] >= int(trusted_range[0])
+        mask.append(m)
+    return tuple(gain), tuple(dark), tuple(mask)
