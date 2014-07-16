@@ -29,17 +29,36 @@ namespace dials { namespace algorithms { namespace boost_python {
                 double>((
         arg("reciprocal_space_points"),
         arg("UB_matrices"),
-        arg("tolerance") = 10)))
+        arg("tolerance") = 0.3)))
       .def("miller_indices", &w_t::miller_indices)
       .def("crystal_ids", &w_t::crystal_ids)
       .def("n_rejects", &w_t::n_rejects);
+  }
 
+  void export_assign_indices_local() {
+
+    typedef AssignIndicesLocal w_t;
+    class_<w_t>(
+        "AssignIndicesLocal", no_init)
+      .def(init<af::const_ref<scitbx::vec3<double> > const &,
+                af::const_ref<scitbx::mat3<double> > const &,
+                double, double, double>((
+        arg("reciprocal_space_points"),
+        arg("UB_matrices"),
+        arg("epsilon") = 0.05,
+        arg("delta") = 8,
+        arg("l_min") = 0.8)))
+      .def("miller_indices", &w_t::miller_indices)
+      .def("subtree_ids", &w_t::subtree_ids)
+      .def("crystal_ids", &w_t::crystal_ids)
+      .def("n_rejects", &w_t::n_rejects);
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_indexing_ext)
   {
     export_fft3d();
     export_assign_indices();
+    export_assign_indices_local();
   }
 
 }}} // namespace = dials::algorithms::boost_python

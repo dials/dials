@@ -88,6 +88,22 @@ basis_vector_combinations {
   metric = *model_likelihood n_indexed
     .type = choice
 }
+index_assignment {
+  method = *simple local
+    .type = choice
+  simple {
+    hkl_tolerance = 0.3
+      .type = float(value_min=0, value_max=0.5)
+  }
+  local {
+    epsilon = 0.05
+      .type = float
+    delta = 8
+      .type = int
+    l_min = 0.8
+      .type = float
+  }
+}
 optimise_initial_basis_vectors = False
   .type = bool
 debug = False
@@ -126,8 +142,6 @@ refinement_protocol {
               "differ by more than the given value (degress)."
               "No outlier rejection is performed in the first macro cycle, and "
               "in the second macro cycle twice the given multiple is used."
-    hkl_tolerance = 0.3
-      .type = float(value_min=0, value_max=0.5)
   }
 }
 method = *fft3d fft1d real_space_grid_search
@@ -467,8 +481,7 @@ class indexer_base(object):
                 return_primitive_setting=True,
                 cell_only=True)
 
-        hkl_tolerance = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
-        self.index_reflections(experiments.crystals(), tolerance=hkl_tolerance)
+        self.index_reflections(experiments.crystals())
 
         if (i_cycle == 0 and self.target_symmetry_primitive is not None
             and self.target_symmetry_primitive.space_group() is not None):
@@ -830,8 +843,6 @@ class indexer_base(object):
     else:
       solutions = SolutionTrackerSimple()
 
-    hkl_tolerance \
-      = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
     n_indexed = flex.int()
     min_likelihood = 0.3
     best_likelihood = min_likelihood
@@ -881,7 +892,6 @@ class indexer_base(object):
       reciprocal_space_points = self.reciprocal_space_points.select(sel)
       index_reflections(refl, reciprocal_space_points,
                         [cm], self.d_min,
-                        tolerance=hkl_tolerance,
                         verbosity=0)
       n_indexed.append((refl['id'] > -1).count(True))
       from dials.algorithms.refinement import RefinerFactory
@@ -1052,11 +1062,22 @@ class indexer_base(object):
       model = model.change_basis(cb_op_to_primitive)
     return model, cb_op_to_primitive
 
-  def index_reflections(self, crystal_models, tolerance=0.3):
-    from dials.algorithms.indexing import index_reflections
-    index_reflections(self.reflections, self.reciprocal_space_points,
-                      crystal_models, self.d_min, tolerance=tolerance,
-                      verbosity=self.params.refinement_protocol.verbosity)
+  def index_reflections(self, crystal_models):
+    if self.params.index_assignment.method == 'local':
+      params_local = self.params.index_assignment.local
+      from dials.algorithms.indexing import index_reflections_local
+      index_reflections_local(
+        self.reflections, self.reciprocal_space_points,
+        crystal_models, self.d_min, epsilon=params_local.epsilon,
+        delta=params_local.delta, l_min=params_local.l_min,
+        verbosity=self.params.refinement_protocol.verbosity)
+    else:
+      params_simple = self.params.index_assignment.simple
+      from dials.algorithms.indexing import index_reflections
+      index_reflections(self.reflections, self.reciprocal_space_points,
+                        crystal_models, self.d_min,
+                        tolerance=params_simple.hkl_tolerance,
+                        verbosity=self.params.refinement_protocol.verbosity)
 
   def refine(self, experiments, maximum_spot_error=None,
              maximum_phi_error=None):

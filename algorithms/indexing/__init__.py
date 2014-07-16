@@ -111,7 +111,10 @@ def index_reflections(
 
 def index_reflections_local(
     reflections, reciprocal_space_points, crystal_models, d_min,
-    tolerance=0.3, verbosity=0):
+    epsilon=0.05, delta=8, l_min=0.8, verbosity=0):
+  from scitbx import matrix
+  from libtbx.math_utils import nearest_integer as nint
+
   if 'miller_index' not in reflections:
     reflections['miller_index'] = flex.miller_index(len(reflections))
   if d_min is not None:
@@ -130,94 +133,118 @@ def index_reflections_local(
   norms = []
   hkl_ints = []
 
-  difference_vectors = flex.vec3_double()
+  UB_matrices = flex.mat3_double([cm.get_A() for cm in crystal_models])
 
-  k = 10
-  from annlib_ext import AnnAdaptor as ann_adaptor
-  ann = ann_adaptor(data=rlps.as_double(), dim=3, k=k)
-  ann.query(rlps.as_double())
-  from scitbx import matrix
-  #for i in range(rlps.size()):
-    #r_i = matrix.col(rlps[i])
-    #for ik in range(k):
-      #r_ik = matrix.col(rlps[ann.nn[(i*k + ik)]])
-      #d = r_i - r_ik
-      #difference_vectors.append(d.elems)
+  if 1:
+    # Use fast c++ version
+    result = AssignIndicesLocal(
+      rlps, UB_matrices, epsilon=epsilon, delta=delta, l_min=l_min)
+    miller_indices = result.miller_indices()
+    crystal_ids = result.crystal_ids()
+    n_rejects = result.n_rejects()
+    subtree_ids = result.subtree_ids()
 
-  import math
-  epsilon = 0.05
-  delta = 5
-
-  from libtbx.math_utils import nearest_integer as nint
-  from libtbx.test_utils import approx_equal
-
-  for i_lattice, crystal_model in enumerate(crystal_models):
-    A = crystal_model.get_A()
-    A_inv = A.inverse()
-
-    import networkx as nx
-    G = nx.Graph()
-    G.add_nodes_from(range(len(rlps)))
-
-    for i in range(rlps.size()):
-      i_k = i * k
-      for i_ann in range(k):
-        i_k_plus_i_ann = i_k + i_ann
-        j = ann.nn[i_k_plus_i_ann]
-        if i > j and G.has_edge(i, j):
-          continue
-        d_r = matrix.col(rlps[i]) - matrix.col(rlps[j])
-        h_f = A_inv * d_r
-        h_ij = matrix.col([nint(f) for f in h_f.elems])
-        d_h = h_f - h_ij
-        n_h = d_h.length()
-        l_ij = 1 - math.exp(-2 * sum(
-          [(max(abs(d_h[ii]) - epsilon, 0)/epsilon)**2 +
-           (max(abs(h_ij[ii]) - delta, 0))**2 for ii in range(3)]))
-
-        if i < j:
-          G.add_edge(i, j, weight=l_ij, h_ij=h_ij, d_r=d_r, h_f=h_f)
-        else:
-          G.add_edge(j, i, weight=l_ij, h_ij=-h_ij, d_r=-d_r, h_f=-h_f)
-
-
-    T = nx.minimum_spanning_tree(G)
-
-    hkl = flex.vec3_int(T.number_of_nodes())
-    subtree_id = flex.int(T.number_of_nodes(), -1)
-    last_hkl = (0,0,0)
-    subtree_id[0] = 0
-    l_min = 0.8 # XDS parameter INDEX_QUALITY=
-
-    for i, j in nx.dfs_edges(T, source=0):
-      if j < i:
-        sign = -1
-      else:
-        sign = 1
-      hkl_i = hkl[i]
-      edge = T.get_edge_data(i, j)
-      l_ij = edge['weight']
-      h_ij = sign * edge['h_ij']
-      hkl[j] = (matrix.col(hkl_i) - matrix.col(h_ij)).elems
-      if l_ij < l_min:
-        subtree_id[j] = subtree_id[i]
-      else:
-        subtree_id[j] = subtree_id[i] + 1
-
-    unique_subtree_ids = set(subtree_id)
+    unique_subtree_ids = set(subtree_ids)
     largest_subtree_id = -1
     largest_subtree_size = 0
     for i in unique_subtree_ids:
-      subtree_size = subtree_id.count(i)
+      subtree_size = subtree_ids.count(i)
       if subtree_size > largest_subtree_size:
         largest_subtree_size = subtree_size
         largest_subtree_id = i
 
     print "Largest subtree: %i, %i" %(largest_subtree_id, largest_subtree_size)
 
-    subtree_sel = (subtree_id == largest_subtree_id)
+    subtree_sel = (subtree_ids == largest_subtree_id)
+    hkl = miller_indices.as_vec3_double().iround()
 
-  n_rejects = 0
+    A = crystal_models[0].get_A()
+    A_inv = A.inverse()
+
+  else:
+
+    difference_vectors = flex.vec3_double()
+
+    k = 10
+    from annlib_ext import AnnAdaptor as ann_adaptor
+    ann = ann_adaptor(data=rlps.as_double(), dim=3, k=k)
+    ann.query(rlps.as_double())
+
+    import math
+
+    from libtbx.test_utils import approx_equal
+
+    for i_lattice, crystal_model in enumerate(crystal_models):
+      A = crystal_model.get_A()
+      A_inv = A.inverse()
+
+      import networkx as nx
+      G = nx.Graph()
+      G.add_nodes_from(range(len(rlps)))
+
+      sum_l_ij = 0
+
+      for i in range(rlps.size()):
+        i_k = i * k
+        for i_ann in range(k):
+          i_k_plus_i_ann = i_k + i_ann
+          j = ann.nn[i_k_plus_i_ann]
+          if i > j and G.has_edge(i, j):
+            continue
+          d_r = matrix.col(rlps[i]) - matrix.col(rlps[j])
+          h_f = A_inv * d_r
+          h_ij = matrix.col([nint(f) for f in h_f.elems])
+          d_h = h_f - h_ij
+          n_h = d_h.length()
+          l_ij = 1 - math.exp(-2 * sum(
+            [(max(abs(d_h[ii]) - epsilon, 0)/epsilon)**2 +
+             (max(abs(h_ij[ii]) - delta, 0))**2 for ii in range(3)]))
+          sum_l_ij += l_ij
+          if i < j:
+            G.add_edge(i, j, weight=l_ij, h_ij=h_ij, d_r=d_r, h_f=h_f)
+          else:
+            G.add_edge(j, i, weight=l_ij, h_ij=-h_ij, d_r=-d_r, h_f=-h_f)
+
+      T = nx.minimum_spanning_tree(G)
+
+      hkl = flex.vec3_int(T.number_of_nodes())
+      subtree_id = flex.int(T.number_of_nodes(), -1)
+      last_hkl = (0,0,0)
+      subtree_id[0] = 0
+
+      sum_l_ij = 0
+
+      for i, j in nx.dfs_edges(T, source=0):
+        if j < i:
+          sign = -1
+        else:
+          sign = 1
+        hkl_i = hkl[i]
+        edge = T.get_edge_data(i, j)
+        l_ij = edge['weight']
+        h_ij = sign * edge['h_ij']
+        hkl[j] = (matrix.col(hkl_i) - matrix.col(h_ij)).elems
+        if l_ij < l_min:
+          subtree_id[j] = subtree_id[i]
+        else:
+          subtree_id[j] = subtree_id[i] + 1
+          print "l_ij:", l_ij
+        sum_l_ij += l_ij
+
+      unique_subtree_ids = set(subtree_id)
+      largest_subtree_id = -1
+      largest_subtree_size = 0
+      for i in unique_subtree_ids:
+        subtree_size = subtree_id.count(i)
+        if subtree_size > largest_subtree_size:
+          largest_subtree_size = subtree_size
+          largest_subtree_id = i
+
+      print "Largest subtree: %i, %i" %(largest_subtree_id, largest_subtree_size)
+
+      subtree_sel = (subtree_id == largest_subtree_id)
+
+    n_rejects = subtree_sel.count(False)
 
   ref_sel = refs.select(subtree_sel)
   rlp_sel = rlps.select(subtree_sel)
@@ -237,6 +264,7 @@ def index_reflections_local(
 
   refs['miller_index'].set_selected(
     subtree_sel, flex.miller_index(list(h.iround())))
+  refs['id'] = flex.int(len(refs), -1)
   refs['id'].set_selected(subtree_sel, 0)
 
   reflections['miller_index'].set_selected(isel, refs['miller_index'])
@@ -250,5 +278,3 @@ def index_reflections_local(
       print
 
     print "%i unindexed reflections" %n_rejects
-
-#index_reflections = index_reflections_local

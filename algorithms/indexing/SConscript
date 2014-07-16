@@ -1,9 +1,30 @@
 
 Import('env')
 
+
+Import("env_base", "env_etc")
+
+import libtbx, os
+
+env_etc.dials_indexing_dist = libtbx.env.dist_path("dials")
+env_etc.dials_indexing_include = os.path.dirname(env_etc.dials_indexing_dist)
+env_etc.dials_indexing_common_includes = [
+  env_etc.boost_include,
+  env_etc.annlib_dist,
+  env_etc.annlib_include[0],
+  env_etc.annlib_include[1],
+  env_etc.annlib_adaptbx_include[0],
+  env_etc.annlib_adaptbx_include[1],
+]
+
+env_etc.include_registry.append(
+  env=env,
+  paths=env_etc.dials_indexing_common_includes)
+
 sources = [
     'boost_python/fft3d.cc',
     'boost_python/indexing_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_indexing_ext',
-    source=sources)
+    source=sources,
+    LIBS=['ann'])
