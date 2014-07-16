@@ -214,6 +214,8 @@ class Script(ScriptRunner):
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments
 
+    indexed.as_pickle("indexed.pickle")
+
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
     return experiments, indexed

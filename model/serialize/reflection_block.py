@@ -25,6 +25,9 @@ class ReflectionBlockExtractor(object):
     import cPickle as pickle
     from math import log10, floor
 
+    # Save the imageset
+    self.imageset = imageset
+
     # Ensure we have lookup tables
     gain, dark, mask = self._check_lookup(imageset, gain, dark, mask)
 
@@ -142,6 +145,6 @@ class ReflectionBlockExtractor(object):
         image = (image,)
       for i in range(npanels):
         trusted_range = detector[i].get_trusted_range()
-        m = image[i] >= int(trusted_range[0])
+        m = image[i] > int(trusted_range[0])
         mask.append(m)
     return tuple(gain), tuple(dark), tuple(mask)

@@ -169,7 +169,7 @@ class Integrator(object):
     image_mask = []
     for im, panel in zip(image, detector):
       tr = panel.get_trusted_range()
-      m = im >= int(tr[0])
+      m = im > int(tr[0])
       image_mask.append(m)
     image_mask = tuple(image_mask)
 
@@ -192,4 +192,4 @@ class Integrator(object):
       reflections.del_selected(flex.abs(zeta) < min_zeta)
       n = len(reflections)
       Command.end('Filtered %d reflections by zeta >= %f' % (n, min_zeta))
-      return reflections
+    return reflections
