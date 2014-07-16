@@ -11,6 +11,7 @@ class Test(object):
     self.tst_nearest()
     self.tst_nearest_n()
     self.tst_weights()
+    self.tst_neighbours()
     self.tst_self_consistent()
     self.tst_pickle()
 
@@ -233,6 +234,41 @@ class Test(object):
           weight = sampler.weight(l1, ( coord1 + coord )/2.0)
           assert(abs(weight - 0.5) < eps)
 
+    print 'OK'
+
+  def tst_neighbours(self):
+    from dials.algorithms.integration.profile import GridSampler2D
+    width = 1000
+    height = 1000
+    nx = 5
+    ny = 5
+    sampler = GridSampler2D((width, height), (nx, ny))
+
+    assert(sorted(sampler.neighbours(0)) == [1, 5, 6])
+    assert(sorted(sampler.neighbours(1)) == [0, 2, 5, 6, 7])
+    assert(sorted(sampler.neighbours(2)) == [1, 3, 6, 7, 8])
+    assert(sorted(sampler.neighbours(3)) == [2, 4, 7, 8, 9])
+    assert(sorted(sampler.neighbours(4)) == [3, 8, 9])
+    assert(sorted(sampler.neighbours(5)) == [0, 1, 6, 10, 11])
+    assert(sorted(sampler.neighbours(6)) == [0, 1, 2, 5, 7, 10, 11, 12])
+    assert(sorted(sampler.neighbours(7)) == [1, 2, 3, 6, 8, 11, 12, 13])
+    assert(sorted(sampler.neighbours(8)) == [2, 3, 4, 7, 9, 12, 13, 14])
+    assert(sorted(sampler.neighbours(9)) == [3, 4, 8, 13, 14])
+    assert(sorted(sampler.neighbours(10)) == [5, 6, 11, 15, 16])
+    assert(sorted(sampler.neighbours(11)) == [5, 6, 7, 10, 12, 15, 16, 17])
+    assert(sorted(sampler.neighbours(12)) == [6, 7, 8, 11, 13, 16, 17, 18])
+    assert(sorted(sampler.neighbours(13)) == [7, 8, 9, 12, 14, 17, 18, 19])
+    assert(sorted(sampler.neighbours(14)) == [8, 9, 13, 18, 19])
+    assert(sorted(sampler.neighbours(15)) == [10, 11, 16, 20, 21])
+    assert(sorted(sampler.neighbours(16)) == [10, 11, 12, 15, 17, 20, 21, 22])
+    assert(sorted(sampler.neighbours(17)) == [11, 12, 13, 16, 18, 21, 22, 23])
+    assert(sorted(sampler.neighbours(18)) == [12, 13, 14, 17, 19, 22, 23, 24])
+    assert(sorted(sampler.neighbours(19)) == [13, 14, 18, 23, 24])
+    assert(sorted(sampler.neighbours(20)) == [15, 16, 21])
+    assert(sorted(sampler.neighbours(21)) == [15, 16, 17, 20, 22])
+    assert(sorted(sampler.neighbours(22)) == [16, 17, 18, 21, 23])
+    assert(sorted(sampler.neighbours(23)) == [17, 18, 19, 22, 24])
+    assert(sorted(sampler.neighbours(24)) == [18, 19, 23])
     print 'OK'
 
   def tst_self_consistent(self):

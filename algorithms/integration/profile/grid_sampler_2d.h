@@ -151,6 +151,41 @@ namespace dials { namespace algorithms {
       return double2(x, y);
     }
 
+    /**
+     * Return the neighbouring grid points.
+     */
+    af::shared<std::size_t> neighbours(std::size_t index) const {
+      DIALS_ASSERT(index < size());
+      int i = index % grid_size_[0];
+      int j = index / grid_size_[0];
+      af::shared<std::size_t> result;
+      if (i > 0) {
+        result.push_back((i-1) + j * grid_size_[0]);
+      }
+      if (j > 0) {
+        result.push_back(i + (j-1) * grid_size_[0]);
+      }
+      if (i < grid_size_[0] - 1) {
+        result.push_back((i+1) + j * grid_size_[0]);
+      }
+      if (j < grid_size_[1] - 1) {
+        result.push_back(i + (j+1) * grid_size_[0]);
+      }
+      if (i > 0 && j > 0) {
+        result.push_back((i-1) + (j-1) * grid_size_[0]);
+      }
+      if (i < grid_size_[0] - 1 && j > 0) {
+        result.push_back((i+1) + (j-1) * grid_size_[0]);
+      }
+      if (i > 0 && j < grid_size_[1] - 1) {
+        result.push_back((i-1) + (j+1) * grid_size_[0]);
+      }
+      if (i < grid_size_[0] - 1 && j < grid_size_[1] - 1) {
+        result.push_back((i+1) + (j+1) * grid_size_[0]);
+      }
+      return result;
+    }
+
   private:
 
     /**
