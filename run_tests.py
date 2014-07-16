@@ -50,6 +50,7 @@ tst_list = (
     "$D/test/algorithms/integration/profile/tst_xds_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_reference_locator.py",
     "$D/test/algorithms/integration/profile/tst_reference_learner.py",
+    "$D/test/algorithms/integration/profile/tst_reference_learner2d.py",
     "$D/test/algorithms/integration/profile/tst_profile_fitting.py",
     "$B/test/algorithms/integration/profile/tst_profile_allocator",
     "$D/test/algorithms/integration/test_integration_summation_2d.py",
