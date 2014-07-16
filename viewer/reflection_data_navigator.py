@@ -89,8 +89,10 @@ class table_s_navigator(object):
 
     try:
       self.xyzcal_px = list(table_row['xyzcal.px'])
+      #'''
       self.xyzcal_px[0] = self.xyzcal_px[0] - self.r_bbox[0]
       self.xyzcal_px[1] = self.xyzcal_px[1] - self.r_bbox[2]
+      #'''
     except:
       print "No xyzcal.px data"
       self.xyzcal_px = None

@@ -49,8 +49,8 @@ class np_to_bmp(object):
         arr_h = np.shape(np_img_2d)[1]
         #TODO check convention of coordinates DIALS vs Matplotlib
 
-        plt.vlines(xyz[0] - 0.5, xyz[1] / 2.0, (arr_h + xyz[1]) / 2.0)
-        plt.hlines(xyz[1] - 0.5, xyz[0] / 2.0, (arr_w + xyz[0]) / 2.0)
+        plt.vlines(xyz[0], xyz[1] / 2.0, (arr_h + xyz[1]) / 2.0)
+        plt.hlines(xyz[1], xyz[0] / 2.0, (arr_w + xyz[0]) / 2.0)
 
       calc_ofst = True
       if(calc_ofst == True):

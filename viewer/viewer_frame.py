@@ -183,7 +183,7 @@ class ReflectionFrame(wx.Frame):
       ref_max = self.tabl.Get_Max(self.opt)
       box_lmt = self.tabl.Get_bbox()
       self.xyz_px = self.tabl.Get_xyz()
-
+      self.bbox_px = self.tabl.Get_bbox()
       for indx in range(len(self.arr_img)):
         if( self.opt == 0 and indx == len(self.arr_img) - 1 ):
           Imax = 10
@@ -204,17 +204,26 @@ class ReflectionFrame(wx.Frame):
         my_str = ( " Centroid Position = ( "
                  + str(self.xyz_px[0]) + ", "
                  + str(self.xyz_px[1]) + ", "
-                 + str(self.xyz_px[2]) + ") "
-                 )
+                 + str(self.xyz_px[2]) + ") ")
         self.data_txt_01.SetLabel(my_str)
-
       else:
-        self.data_txt_01.SetLabel(" No (x, y, z) Data ")
+        self.data_txt_01.SetLabel(" No (x, y, z) Data")
+
+      if( self.bbox_px != None ):
+        my_str_01 = ( " Bbox = ( "
+                 + str(self.bbox_px[0]) + ", "
+                 + str(self.bbox_px[1]) + ", "
+                 + str(self.bbox_px[2]) + ", "
+                 + str(self.bbox_px[3]) + ", "
+                 + str(self.bbox_px[4]) + ", "
+                 + str(self.bbox_px[5]) + ") ")
+        self.data_txt_02.SetLabel(my_str_01)
+      else:
+        self.data_txt_02.SetLabel(" No Bbox Data")
+
+
       '''
-      if( self.xyz_px != None ):
-        self.data_txt_02.SetLabel(" No (x, y, z) Data ")
         self.data_txt_03.SetLabel(" No (x, y, z) Data ")
-        self.data_txt_02.SetLabel(my_str)
         self.data_txt_03.SetLabel(my_str)
       '''
     self.Layout()
