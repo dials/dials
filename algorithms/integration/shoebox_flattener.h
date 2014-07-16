@@ -125,6 +125,15 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(y0 >= y00);
         std::size_t xoff = x0 - x00;
         std::size_t yoff = y0 - y00;
+        DIALS_ASSERT(old_zsize == sbox[i].data.accessor()[0]);
+        DIALS_ASSERT(old_ysize == sbox[i].data.accessor()[1]);
+        DIALS_ASSERT(old_xsize == sbox[i].data.accessor()[2]);
+        DIALS_ASSERT(old_zsize == sbox[i].background.accessor()[0]);
+        DIALS_ASSERT(old_ysize == sbox[i].background.accessor()[1]);
+        DIALS_ASSERT(old_xsize == sbox[i].background.accessor()[2]);
+        DIALS_ASSERT(old_zsize == sbox[i].mask.accessor()[0]);
+        DIALS_ASSERT(old_ysize == sbox[i].mask.accessor()[1]);
+        DIALS_ASSERT(old_xsize == sbox[i].mask.accessor()[2]);
         double2d data(af::c_grid<2>(ysize, xsize),0);
         double2d bgrd(af::c_grid<2>(ysize, xsize),0);
         int2d mask(af::c_grid<2>(ysize, xsize),0);

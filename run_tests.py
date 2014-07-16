@@ -56,6 +56,7 @@ tst_list = (
     "$D/test/algorithms/integration/tst_summation3d.py",
     "$D/test/algorithms/integration/tst_profile_fitting_rs.py",
     "$D/test/algorithms/integration/tst_interpolate_profile2d.py",
+    "$D/test/algorithms/integration/tst_shoebox_flattener.py",
     "$B/test/algorithms/spatial_indexing/tst_quadtree",
     "$B/test/algorithms/spatial_indexing/tst_octree",
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",

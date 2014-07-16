@@ -36,6 +36,7 @@ class Test(object):
 
     # Create the array of shoeboxes
     self.sbox = flex.shoebox(self.panel, self.bbox)
+    self.sbox.allocate()
     for i in range(len(self.sbox)):
       data = self.sbox[i].data
       for j in range(len(data)):
@@ -58,6 +59,52 @@ class Test(object):
 
     # All the shoebox data
     data = [flattener.data(i) for i in range(len(flattener))]
+
+    # Ensure that all the bboxes within a grid are the same size
+    count = [0 for i in range(5*5)]
+    xsize = [0 for i in range(5*5)]
+    ysize = [0 for i in range(5*5)]
+    for i in range(len(index)):
+      j = index[i]
+      b = bbox[i]
+      d = data[i]
+      xs = b[1] - b[0]
+      ys = b[3] - b[2]
+      zs = b[5] - b[4]
+      ys1, xs1 = d.all()
+      assert(xs == xs1)
+      assert(ys == ys1)
+      if count[j] == 0:
+        xsize[j] = xs
+        ysize[j] = ys
+      else:
+        assert(xsize[j] == xs)
+        assert(ysize[j] == ys)
+
+    # Check that the flattened shoebox values are correct
+    for i in range(len(self.sbox)):
+      b1 = self.bbox[i]
+      b2 = bbox[i]
+      d1 = self.sbox[i].data
+      d2 = data[i]
+      x0 = b2[0] - b1[0]
+      x1 = b2[1] - b1[0]
+      y0 = b2[2] - b1[2]
+      y1 = b2[3] - b1[2]
+      d11 = d1[:,y0:y1,x0:x1]
+      ys1, xs1 = d2.all()
+      zs2, ys2, xs2 = d11.all()
+      assert(ys1 == ys2)
+      assert(xs1 == xs2)
+      for y in range(ys2):
+        for x in range(xs2):
+          value = 0
+          for z in range(zs2):
+            value += d11[z,y,x]
+          assert(value == d2[y,x])
+
+    # Test passed
+    print 'OK'
 
 
 if __name__ == '__main__':
