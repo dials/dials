@@ -34,6 +34,8 @@ class ReflectionFrame(wx.Frame):
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
 
+    self.tst_txt = wx.StaticText(self, -1, "Centroid Pos = (                  )"
+                           , size = (200, 100))
 
     self.Image = [None, None, None]
 
@@ -42,8 +44,6 @@ class ReflectionFrame(wx.Frame):
                                          self.MaxImageSizeX, self.MaxImageSizeY))
 
     self.text01 = wx.TextCtrl(self, -1, "enter number", size = (100, -1))
-
-    h_box = wx.BoxSizer(wx.HORIZONTAL)
 
     u_box = wx.BoxSizer(wx.VERTICAL)
     div_h_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -66,16 +66,23 @@ class ReflectionFrame(wx.Frame):
     div_h_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
     u_box.Add(div_h_box)
 
+    h_box = wx.BoxSizer(wx.HORIZONTAL)
+
     h_box.Add(u_box)
 
-    h_box.Add(self.Image[0], 0
+    div_h_box = wx.BoxSizer(wx.HORIZONTAL)
+    div_h_box.Add(self.Image[0], 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
-    h_box.Add(self.Image[1], 0
+    div_h_box.Add(self.Image[1], 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
 
-    h_box.Add(self.Image[2], 0
+    div_h_box.Add(self.Image[2], 0
             , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+    div_u_box = wx.BoxSizer(wx.VERTICAL)
+    div_u_box.Add(div_h_box)
+    div_u_box.Add(self.tst_txt, 0, wx.CENTER | wx.ALL,5)
+    h_box.Add(div_u_box)
 
     self.frame_scale = 0.4
     self.opt = 0
@@ -172,7 +179,7 @@ class ReflectionFrame(wx.Frame):
 
       ref_max = self.tabl.Get_Max(self.opt)
       box_lmt = self.tabl.Get_bbox()
-      xyz_px = self.tabl.Get_xyz()
+      self.xyz_px = self.tabl.Get_xyz()
 
       for indx in range(len(self.arr_img)):
         if( self.opt == 0 and indx == len(self.arr_img) - 1 ):
@@ -180,7 +187,7 @@ class ReflectionFrame(wx.Frame):
         else:
           Imax = ref_max
         self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx]
-                          , Intst_max = Imax, ofst = box_lmt, xyz = xyz_px)
+                          , Intst_max = Imax, ofst = box_lmt, xyz = self.xyz_px)
 
     for indx in range(len(self.arr_img)):
       if( self.arr_img[indx] == None ):
@@ -190,6 +197,15 @@ class ReflectionFrame(wx.Frame):
       self.My_Img[indx] = self.bmp.from_wx_image_to_wx_bitmap(self.wx_Img[indx]
                         , self.frame_scale, empty = empty_flag)
       self.Image[indx].SetBitmap(self.My_Img[indx])
+      if( self.xyz_px != None ):
+        my_str = ( " Centroid Position = ( "
+                 + str(self.xyz_px[0]) + ", "
+                 + str(self.xyz_px[1]) + ", "
+                 + str(self.xyz_px[2]) + ") "
+                 )
+        self.tst_txt.SetLabel(my_str)
+      else:
+        self.tst_txt.SetLabel(" No (x, y, z) Data ")
 
     self.Layout()
     self.Refresh()
