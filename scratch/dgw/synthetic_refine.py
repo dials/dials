@@ -211,5 +211,3 @@ if __name__ == "__main__":
     new_fast, deg=True), "degrees"
   print "offset angle between slow axes is", old_slow.accute_angle(
     new_slow, deg=True), "degrees"
-
-

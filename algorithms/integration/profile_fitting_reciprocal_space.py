@@ -108,10 +108,18 @@ class ProfileFittingReciprocalSpace(object):
     profiles = reflections['rs_shoebox'].select(pind)
     coords = reflections['xyzcal.px'].select(pind)
     learner.learn(profiles, coords)
+    counts = learner.counts()
 
     # Create the average profile
     from dials.util import pprint
     locator = learner.locate()
+
+    print "Number of reflections contributing to each profile:"
+    for i, num in enumerate(counts):
+      xyz = locator.coord(i)
+      print "%d: (%d, %d, %d); %d" % (
+        i, int(xyz[0]), int(xyz[1]), int(xyz[2]), num)
+
     profiles = [locator.profile(i) for i in range(len(locator))]
     average_profile = sum(profiles) / len(profiles)
     print "Average Profile:\n"
