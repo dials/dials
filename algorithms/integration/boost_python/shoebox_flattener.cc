@@ -28,7 +28,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("bbox", &ShoeboxFlattener::bbox)
       .def("data", &ShoeboxFlattener::data)
       .def("background", &ShoeboxFlattener::background)
-      .def("mask", &ShoeboxFlattener::mask);
+      .def("mask", &ShoeboxFlattener::mask)
+      .def("__len__", &ShoeboxFlattener::size);
   }
 
 }}} // namespace = dials::algorithms::boost_python

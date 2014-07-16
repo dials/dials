@@ -24,6 +24,9 @@ namespace dials { namespace algorithms {
   using scitbx::af::tiny;
   using model::Shoebox;
 
+  /**
+   * Crude class to flatten and resize shoeboxes in each grid area
+   */
   class ShoeboxFlattener {
   public:
 
@@ -148,16 +151,20 @@ namespace dials { namespace algorithms {
       return bbox_;
     }
 
-    af::shared<double2d> data() {
-      return data_;
+    double2d data(std::size_t index) {
+      return data_[index];
     }
 
-    af::shared<double2d> background() {
-      return bgrd_;
+    double2d background(std::size_t index) {
+      return bgrd_[index];
     }
 
-    af::shared<int2d> mask() {
-      return mask_;
+    int2d mask(std::size_t index) {
+      return mask_[index];
+    }
+
+    std::size_t size() const {
+      return index_.size();
     }
 
     af::shared<std::size_t> index_;
