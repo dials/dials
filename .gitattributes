@@ -489,6 +489,7 @@ scratch/asb/dummy.phil -text
 scratch/asb/experiment_json_to_cbf_def.py -text
 scratch/asb/index_thermolysin_cbfs.py -text
 scratch/asb/refine_quadrants.py -text
+scratch/asb/refine_quadrants_hybrid.py -text
 scratch/asb/refine_quadrants_lbfgs.py -text
 scratch/asb/refined_quads_to_cbf.py -text
 scratch/dgw/__init__.py -text
