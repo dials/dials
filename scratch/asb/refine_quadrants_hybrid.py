@@ -90,6 +90,7 @@ refiner = RefinerFactory.from_parameters_data_experiments(
     params, reflections, experiments,
     verbosity=2)
 refiner.run()
+experiments = refiner.get_experiments()
 
 # second macrocycle: individual crystals, fixed detector
 user_phil=parse("""
