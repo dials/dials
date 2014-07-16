@@ -71,6 +71,14 @@ namespace dials { namespace algorithms {
       return masks_[index];
     }
 
+    std::size_t size() const {
+      return sampler_.size();
+    }
+
+    double2 coord(std::size_t index) const {
+      return sampler_[index];
+    }
+
   private:
 
     void add_internal(

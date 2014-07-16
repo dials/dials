@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
 
-  void export_reference_learner_2d()
+  void export_reference_learner2d()
   {
     class_<ReferenceLearner2D>("ReferenceLearner2D", no_init)
       .def(init<
@@ -30,7 +30,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("finish", &ReferenceLearner2D::finish)
       .def("counts", &ReferenceLearner2D::counts)
       .def("profile", &ReferenceLearner2D::profile)
-      .def("mask", &ReferenceLearner2D::mask);
+      .def("mask", &ReferenceLearner2D::mask)
+      .def("coord", &ReferenceLearner2D::coord)
+      .def("__len__", &ReferenceLearner2D::size);
   }
 
 }}} // namespace = dials::algorithms::boost_python

@@ -752,6 +752,7 @@ test/algorithms/integration/profile/tst_profile_allocator.cc -text
 test/algorithms/integration/profile/tst_profile_fitting.py -text
 test/algorithms/integration/profile/tst_profile_helpers.py -text
 test/algorithms/integration/profile/tst_reference_learner.py -text
+test/algorithms/integration/profile/tst_reference_learner2d.py -text
 test/algorithms/integration/profile/tst_reference_locator.py -text
 test/algorithms/integration/profile/tst_xds_circle_sampler.py -text
 test/algorithms/integration/test_integration_summation_2d.py -text
