@@ -191,3 +191,25 @@ if __name__ == "__main__":
   refiner = RefinerFactory.from_parameters_data_experiments(
     params, reflections, importer.experiments)
   refiner.run()
+
+  refined_experiments = refiner.get_experiments()
+
+  # quick check on refined detector geometry using panel 0
+  old_detector = importer.experiments[0].detector
+  new_detector = refined_experiments[0].detector
+  old_origin = matrix.col(old_detector[0].get_origin())
+  new_origin = matrix.col(new_detector[0].get_origin())
+  dorigin = new_origin - old_origin
+  print "origin offset is", dorigin.length(), "mm"
+
+  old_fast = matrix.col(old_detector[0].get_fast_axis())
+  old_slow = matrix.col(old_detector[0].get_slow_axis())
+  new_fast = matrix.col(new_detector[0].get_fast_axis())
+  new_slow = matrix.col(new_detector[0].get_slow_axis())
+
+  print "offset angle between fast axes is", old_fast.accute_angle(
+    new_fast, deg=True), "degrees"
+  print "offset angle between slow axes is", old_slow.accute_angle(
+    new_slow, deg=True), "degrees"
+
+
