@@ -755,6 +755,7 @@ test/algorithms/integration/profile/tst_xds_circle_sampler.py -text
 test/algorithms/integration/test_integration_summation_2d.py -text
 test/algorithms/integration/tst_interpolate_profile2d.py -text
 test/algorithms/integration/tst_profile_fitting_rs.py -text
+test/algorithms/integration/tst_shoebox_flattener.py -text
 test/algorithms/integration/tst_summation3d.py -text
 test/algorithms/peak_finding/tst_merge_spot_lists.py -text
 test/algorithms/polygon/clip/tst_clipping.py -text

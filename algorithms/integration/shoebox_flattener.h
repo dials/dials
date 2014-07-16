@@ -105,8 +105,8 @@ namespace dials { namespace algorithms {
         bbox_[i][3] = y1;
         bbox_[i][4] = sbox[i].bbox[4];
         bbox_[i][5] = sbox[i].bbox[5];
-        std::size_t xsize = xsize1 + xsize2 + 1;
-        std::size_t ysize = ysize1 + ysize2 + 1;
+        std::size_t xsize = xsize1 + xsize2;
+        std::size_t ysize = ysize1 + ysize2;
         int x00 = sbox[i].bbox[0];
         int x11 = sbox[i].bbox[1];
         int y00 = sbox[i].bbox[2];
@@ -114,8 +114,8 @@ namespace dials { namespace algorithms {
         int z00 = sbox[i].bbox[4];
         int z11 = sbox[i].bbox[5];
         DIALS_ASSERT(x11 > x00);
-        DIALS_ASSERT(y11 > x00);
-        DIALS_ASSERT(z11 > x00);
+        DIALS_ASSERT(y11 > y00);
+        DIALS_ASSERT(z11 > z00);
         std::size_t old_xsize = x11 - x00;
         std::size_t old_ysize = y11 - y00;
         std::size_t old_zsize = z11 - z00;
