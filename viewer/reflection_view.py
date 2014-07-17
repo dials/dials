@@ -23,7 +23,6 @@ class viewer_App(wx.App):
   def table_in(self, loc_tabl):
     self.frame.tabl_to_frame(loc_tabl)
 
-
 if __name__ == "__main__":
 
   import cPickle as pickle
