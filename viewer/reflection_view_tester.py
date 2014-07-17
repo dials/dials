@@ -8,8 +8,8 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package."
 
-from dials.viewer.reflection_view import viewer_App
 import cPickle as pickle
+from dials.viewer.reflection_view import viewer_App
 from dials.array_family import flex
 
 table = flex.reflection_table.from_pickle("all_refl.pickle")
