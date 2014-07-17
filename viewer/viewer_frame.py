@@ -21,9 +21,11 @@ class ReflectionFrame(wx.Frame):
     self.MaxImageSizeX = 280
     self.MaxImageSizeY = 150
 
-    btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
-    btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
-    btn_read = wx.Button(self, -1, "Jump to Reflection")
+    nxt_ref = "Reflection -->"
+    btn_nxt_refl = wx.Button(self, -1, nxt_ref)
+    prv_ref = "<-- Reflection"
+    btn_prv_refl = wx.Button(self, -1, prv_ref)
+    btn_read = wx.Button(self, -1, "Reflection #")
 
     radio1 = wx.RadioButton(self, -1, "data, background, mask"
                            , style = wx.RB_GROUP)
@@ -31,8 +33,8 @@ class ReflectionFrame(wx.Frame):
     radio3 = wx.RadioButton(self, -1, "3 layers of background")
     radio4 = wx.RadioButton(self, -1, "3 layers of mask")
 
-    btn_nxt_slice = wx.Button(self, -1, "Next slice ")
-    btn_prv_slice = wx.Button(self, -1, "Previous slice")
+    btn_nxt_slice = wx.Button(self, -1, "slice  -->")
+    btn_prv_slice = wx.Button(self, -1, "<--  slice")
 
     self.data_txt_01 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
     self.data_txt_02 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
@@ -48,23 +50,23 @@ class ReflectionFrame(wx.Frame):
 
     u_box = wx.BoxSizer(wx.VERTICAL)
     div_h_box = wx.BoxSizer(wx.HORIZONTAL)
-    div_h_box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,5)
-    div_h_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
+    div_h_box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,3)
+    div_h_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,3)
     u_box.Add(div_h_box)
 
     div_h_box = wx.BoxSizer(wx.HORIZONTAL)
-    div_h_box.Add(btn_read, 0, wx.CENTER | wx.ALL,5)
-    div_h_box.Add(self.text01, 0, wx.CENTER | wx.ALL,5)
+    div_h_box.Add(btn_read, 0, wx.CENTER | wx.ALL,3)
+    div_h_box.Add(self.text01, 0, wx.CENTER | wx.ALL,3)
     u_box.Add(div_h_box)
 
-    u_box.Add(radio1, 0, wx.CENTER | wx.ALL,5)
-    u_box.Add(radio2, 0, wx.CENTER | wx.ALL,5)
-    u_box.Add(radio3, 0, wx.CENTER | wx.ALL,5)
-    u_box.Add(radio4, 0, wx.CENTER | wx.ALL,5)
+    u_box.Add(radio1, 0, wx.LEFT | wx.ALL,3)
+    u_box.Add(radio2, 0, wx.LEFT | wx.ALL,3)
+    u_box.Add(radio3, 0, wx.LEFT | wx.ALL,3)
+    u_box.Add(radio4, 0, wx.LEFT | wx.ALL,3)
 
     div_h_box = wx.BoxSizer(wx.HORIZONTAL)
-    div_h_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
-    div_h_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
+    div_h_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,3)
+    div_h_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,3)
     u_box.Add(div_h_box)
 
     h_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -73,18 +75,18 @@ class ReflectionFrame(wx.Frame):
 
     div_h_box = wx.BoxSizer(wx.HORIZONTAL)
     div_h_box.Add(self.Image[0], 0
-            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 5)
 
     div_h_box.Add(self.Image[1], 0
-            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 5)
 
     div_h_box.Add(self.Image[2], 0
-            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 5)
     div_u_box = wx.BoxSizer(wx.VERTICAL)
     div_u_box.Add(div_h_box)
-    div_u_box.Add(self.data_txt_01, 0, wx.CENTER | wx.ALL,5)
-    div_u_box.Add(self.data_txt_02, 0, wx.CENTER | wx.ALL,5)
-    div_u_box.Add(self.data_txt_03, 0, wx.CENTER | wx.ALL,5)
+    div_u_box.Add(self.data_txt_01, 0, wx.CENTER | wx.ALL,3)
+    div_u_box.Add(self.data_txt_02, 0, wx.CENTER | wx.ALL,3)
+    div_u_box.Add(self.data_txt_03, 0, wx.CENTER | wx.ALL,3)
     h_box.Add(div_u_box)
 
     self.frame_scale = 0.4
@@ -190,6 +192,7 @@ class ReflectionFrame(wx.Frame):
         self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx]
                           , Intst_max = Imax, ofst = self.bbox_px
                           , xyz = self.xyz_px)
+      self.text01.SetValue(str(self.tabl.Get_ref_num()))
 
     for indx in range(len(self.arr_img)):
       if( self.arr_img[indx] == None ):

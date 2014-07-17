@@ -145,6 +145,9 @@ class table_s_navigator(object):
   def Get_xyz(self):
     return self.xyzcal_px
 
+  def Get_ref_num(self):
+    return self.row_pos
+
   def Get_bbox(self):
     return self.r_bbox
 
