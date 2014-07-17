@@ -1,4 +1,11 @@
 #!/usr/bin/env dials.python
+
+"""This script is intended for quadrant refinement using still shot data
+collected on a CSPAD detector. This version of the script uses a 'hybrid
+minimiser'. Rather than a single joint refinement job of all crystals and the
+detector, only the detector parameters are refined at first (using all data)
+then each crystal is refined individually. This forms one macrocycle."""
+
 from __future__ import division
 import sys
 
@@ -9,12 +16,6 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.model.serialize import load as load_dials
 from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
-
-"""This script is intended for quadrant refinement using still shot data
-collected on a CSPAD detector. This version of the script uses a 'hybrid
-minimiser'. Rather than a single joint refinement job of all crystals and the
-detector, only the detector parameters are refined at first (using all data)
-then each crystal is refined individually. This forms one macrocycle."""
 
 def load_input(exp_path, ref_path):
 
