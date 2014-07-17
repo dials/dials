@@ -39,6 +39,7 @@ class np_to_bmp(object):
       plt.close(lc_fig)
     else:
       if Intst_max > 0:
+        np_img_2d[0:1,0:2] = 100
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                    , vmax = Intst_max)
         #plt.imshow(np_img_2d, interpolation = "nearest", vmin = 0
@@ -49,11 +50,18 @@ class np_to_bmp(object):
       if(xyz != None):
         arr_w = np.shape(np_img_2d)[0]
         arr_h = np.shape(np_img_2d)[1]
+        xyz[0] = 0.5
+        xyz[1] = 1.5
+        #xyz_pnt = [xyz[0] - 0.5, xyz[1] - 0.5]
 
         #TODO check convention of coordinates DIALS vs Matplotlib
 
-        plt.vlines(xyz[0] - 0.5, xyz[1] / 2.0, (arr_h + xyz[1]) / 2.0)
-        plt.hlines(xyz[1] - 0.5, xyz[0] / 2.0, (arr_w + xyz[0]) / 2.0)
+        #plt.vlines(xyz_pnt[0], xyz_pnt[1] / 2.0, (arr_h - xyz_pnt[1]) / 2.0)
+        #plt.hlines(xyz_pnt[1], xyz_pnt[0] / 2.0, (arr_w - xyz_pnt[0]) / 2.0)
+
+        plt.vlines(xyz[0] - 0.5, xyz[1] / 2.0 - 0.5, (arr_h - xyz[1]) / 2.0 - 0.5)
+        plt.hlines(xyz[1] - 0.5, xyz[0] / 2.0 - 0.5, (arr_w - xyz[0]) / 2.0 - 0.5)
+
 
       calc_ofst = True
       if(calc_ofst == True):
