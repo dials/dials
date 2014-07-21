@@ -39,29 +39,31 @@ class np_to_bmp(object):
       plt.close(lc_fig)
     else:
       if Intst_max > 0:
-        np_img_2d[0:1,0:2] = 100
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                    , vmax = Intst_max)
-        #plt.imshow(np_img_2d, interpolation = "nearest", vmin = 0
-        #           , vmax = Intst_max)
       else:
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = 10)
 
       if(xyz != None):
         arr_w = np.shape(np_img_2d)[0]
         arr_h = np.shape(np_img_2d)[1]
-        xyz[0] = 0.5
-        xyz[1] = 1.5
-        #xyz_pnt = [xyz[0] - 0.5, xyz[1] - 0.5]
 
-        #TODO check convention of coordinates DIALS vs Matplotlib
+        ini_x = ini_y = - 0.5
+        end_y = arr_w - 0.5
+        end_x = arr_h - 0.5
 
-        #plt.vlines(xyz_pnt[0], xyz_pnt[1] / 2.0, (arr_h - xyz_pnt[1]) / 2.0)
-        #plt.hlines(xyz_pnt[1], xyz_pnt[0] / 2.0, (arr_w - xyz_pnt[0]) / 2.0)
+        coords = [0,0]
+        coords[0] = xyz[0] - 0.5
+        coords[1] = xyz[1] - 0.5
 
-        plt.vlines(xyz[0] - 0.5, xyz[1] / 2.0 - 0.5, (arr_h - xyz[1]) / 2.0 - 0.5)
-        plt.hlines(xyz[1] - 0.5, xyz[0] / 2.0 - 0.5, (arr_w - xyz[0]) / 2.0 - 0.5)
+        x_lin_from = (ini_x + coords[0]) / 2.0
+        y_lin_from = (ini_y + coords[1]) / 2.0
 
+        x_lin_to = (coords[0] + end_x) / 2.0
+        y_lin_to = (coords[1] + end_y) / 2.0
+
+        plt.vlines(coords[0], y_lin_from, y_lin_to)
+        plt.hlines(coords[1], x_lin_from, x_lin_to)
 
       calc_ofst = True
       if(calc_ofst == True):
