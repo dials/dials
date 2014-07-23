@@ -781,7 +781,6 @@ class indexer_base(object):
     return candidate_crystal_models
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
-    from dials.algorithms.indexing import index_reflections
 
     from libtbx import group_args
     class Solution(group_args):
@@ -892,9 +891,20 @@ class indexer_base(object):
              (1/self.reciprocal_space_points.norms() > self.d_min))
       refl = self.reflections.select(sel)
       reciprocal_space_points = self.reciprocal_space_points.select(sel)
-      index_reflections(refl, reciprocal_space_points,
-                        [cm], self.d_min,
-                        verbosity=0)
+      if self.params.index_assignment.method == 'local':
+        params_local = self.params.index_assignment.local
+        from dials.algorithms.indexing import index_reflections_local
+        index_reflections_local(
+          refl, reciprocal_space_points,
+          [cm], self.d_min, epsilon=params_local.epsilon,
+          delta=params_local.delta, l_min=params_local.l_min,
+          nearest_neighbours=params_local.nearest_neighbours)
+      else:
+        params_simple = self.params.index_assignment.simple
+        from dials.algorithms.indexing import index_reflections
+        index_reflections(refl, reciprocal_space_points,
+                          [cm], self.d_min,
+                          tolerance=params_simple.hkl_tolerance)
       n_indexed.append((refl['id'] > -1).count(True))
       from dials.algorithms.refinement import RefinerFactory
       from dxtbx.model.experiment.experiment_list import Experiment

@@ -23,6 +23,7 @@
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
+#include <boost/graph/connected_components.hpp>
 #include <annlib_adaptbx/ann_adaptor.h>
 
 
@@ -258,13 +259,12 @@ namespace dials { namespace algorithms {
         }
       }
 
-      std::vector< Edge > spanning_tree;
-      kruskal_minimum_spanning_tree(G, std::back_inserter(spanning_tree));
-
       //create a graph for the MST
       Graph MST(reciprocal_space_points.size());
-
       WeightMap weightMST = get(edge_weight, MST);
+
+      std::vector< Edge > spanning_tree;
+      kruskal_minimum_spanning_tree(G, std::back_inserter(spanning_tree));
 
       for(size_t i = 0; i < spanning_tree.size(); ++i){
         //get the edge
@@ -274,16 +274,34 @@ namespace dials { namespace algorithms {
         weightMST[e] = weight[e];
       }
 
-      std::vector<Edge> ordered_edges;
+      // Get the connected components in case there is more than one tree
+      std::vector<int> component(num_vertices(MST));
+      connected_components(MST, &component[0]);
 
+      /*int num = connected_components(MST, &component[0]);*/
+      /*std::cout << "Total number of components: " << num << std::endl;*/
+
+      // Record the order of edges for a depth first search so we can walk
+      // the tree later
+      std::vector<Edge> ordered_edges;
       record_dfs_order<Edge> vis(ordered_edges);
       depth_first_search(MST, visitor(vis));
 
+      // Walk the tree(s), incrementing the subtree_id for each node if the
+      // edge weight l_ij >= l_min, or if we start a new component
+      std::size_t next_subtree = 0;
+      int last_component = -1;
       for (std::vector<Edge>::iterator it = ordered_edges.begin() ;
            it != ordered_edges.end(); ++it) {
         Edge e = *it;
         std::size_t i = source(e, MST);
         std::size_t j = target(e, MST);
+        if (component[i] != last_component) {
+          subtree_ids_[i] = next_subtree;
+          next_subtree += 1;
+        }
+        last_component = component[i];
+        SCITBX_ASSERT(component[i] == component[j]);
         cctbx::miller::index<> h_ij = edge_to_h_ij[pair_t(i, j)];
         double l_ij = edge_to_l_ij[pair_t(i, j)];
         miller_indices_[j] = miller_indices_[i] - h_ij;

@@ -4,7 +4,7 @@ from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import *
 
 def index_reflections(
-    reflections, reciprocal_space_points, crystal_models, d_min,
+    reflections, reciprocal_space_points, crystal_models, d_min=None,
     tolerance=0.3, verbosity=0):
   if 'miller_index' not in reflections:
     reflections['miller_index'] = flex.miller_index(len(reflections))
@@ -110,7 +110,7 @@ def index_reflections(
 
 
 def index_reflections_local(
-    reflections, reciprocal_space_points, crystal_models, d_min,
+    reflections, reciprocal_space_points, crystal_models, d_min=None,
     epsilon=0.05, delta=8, l_min=0.8, nearest_neighbours=20, verbosity=0):
   from scitbx import matrix
   from libtbx.math_utils import nearest_integer as nint
@@ -254,11 +254,12 @@ def index_reflections_local(
   d_sel = 1/rlp_sel.norms()
   d_perm = flex.sort_permutation(d_sel, reverse=True)
 
-  hf_0 = A_inv * rlp_sel[d_perm[i]]
+  hf_0 = A_inv * rlp_sel[d_perm[0]]
   h_0 = matrix.col([nint(j) for j in hf_0.elems])
-  offset = h_0 - matrix.col(hkl_sel[d_perm[i]])
+  offset = h_0 - matrix.col(hkl_sel[d_perm[0]])
+  print "offset:", offset.elems
 
-  h = hkl_sel + flex.vec3_double(hkl_sel.size(), best_offset.elems)
+  h = hkl_sel + flex.vec3_double(hkl_sel.size(), offset.elems)
 
   refs['miller_index'].set_selected(
     subtree_sel, flex.miller_index(list(h.iround())))
