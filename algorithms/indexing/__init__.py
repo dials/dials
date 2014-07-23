@@ -245,23 +245,20 @@ def index_reflections_local(
 
       subtree_sel = (subtree_id == largest_subtree_id)
 
-    n_rejects = subtree_sel.count(False)
+  n_rejects = subtree_sel.count(False)
 
   ref_sel = refs.select(subtree_sel)
   rlp_sel = rlps.select(subtree_sel)
   hkl_sel = hkl.select(subtree_sel).as_vec3_double()
 
-  # need to do a proper search to find best offset
-  hf_0 = A_inv * rlp_sel[0]
-  h_0 = matrix.col([nint(i) for i in hf_0.elems])
-  offset = (h_0 - matrix.col(hkl_sel[0])).elems
+  d_sel = 1/rlp_sel.norms()
+  d_perm = flex.sort_permutation(d_sel, reverse=True)
 
-  h = hkl_sel + flex.vec3_double(hkl_sel.size(), offset)
-  #test_rlp = tuple(A) * h
-  #d_rlp = rlp_sel - test_rlp
-  #print d_rlp.min(), d_rlp.max(), d_rlp.mean()
-  #for i in range(20):
-    #print "(%i, %i, %i)" %h[i], "(%.2f, %.2f, %.2f)" %test_rlp[i], "(%.2f, %.2f, %.2f)" %d_rlp[i]
+  hf_0 = A_inv * rlp_sel[d_perm[i]]
+  h_0 = matrix.col([nint(j) for j in hf_0.elems])
+  offset = h_0 - matrix.col(hkl_sel[d_perm[i]])
+
+  h = hkl_sel + flex.vec3_double(hkl_sel.size(), best_offset.elems)
 
   refs['miller_index'].set_selected(
     subtree_sel, flex.miller_index(list(h.iround())))
