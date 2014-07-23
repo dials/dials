@@ -50,7 +50,6 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("l_min") = 0.8,
         arg("nearest_neighbours") = 20)))
       .def("miller_indices", &w_t::miller_indices)
-      .def("subtree_ids", &w_t::subtree_ids)
       .def("crystal_ids", &w_t::crystal_ids)
       .def("n_rejects", &w_t::n_rejects);
   }

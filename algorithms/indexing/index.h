@@ -174,12 +174,9 @@ namespace dials { namespace algorithms {
       )
       : miller_indices_(
           reciprocal_space_points.size(), cctbx::miller::index<>(0,0,0)),
-        subtree_ids_(reciprocal_space_points.size(), 0),
+        /*subtree_ids_(reciprocal_space_points.size(), 0),*/
         crystal_ids_(reciprocal_space_points.size(), -1),
         n_rejects_(0) {
-
-      // Currently only support 1 lattice
-      //DIALS_ASSERT(UB_matrices.size() == 1);
 
       using annlib_adaptbx::AnnAdaptor;
       using namespace boost;
@@ -208,108 +205,150 @@ namespace dials { namespace algorithms {
       AnnAdaptor ann = AnnAdaptor(rlps_double, 3, nearest_neighbours);
       ann.query(rlps_double);
 
-      scitbx::mat3<double> const &A = UB_matrices[0];
-      scitbx::mat3<double> const &A_inv = A.inverse();
-
-      Graph G(reciprocal_space_points.size());
-
       typedef std::pair<const int, const int> pair_t;
 
-      std::map<pair_t, cctbx::miller::index<> > edge_to_h_ij;
-      std::map<pair_t, double> edge_to_l_ij;
-
-      WeightMap weight = get(edge_weight, G);
 
       double sum_l_ij = 0;
 
-      for (std::size_t i=0; i < reciprocal_space_points.size(); i++) {
-        std::size_t i_k = i * nearest_neighbours;
-        for (std::size_t i_ann=0; i_ann < nearest_neighbours; i_ann++) {
-          std::size_t i_k_plus_i_ann = i_k + i_ann;
-          std::size_t j = ann.nn[i_k_plus_i_ann];
-          if (boost::edge(i, j, G).second) {
+      // loop over crystals and assign one hkl per crystal per reflection
+      for (int i_lattice=0; i_lattice<UB_matrices.size(); i_lattice++) {
+        scitbx::mat3<double> const &A = UB_matrices[i_lattice];
+        scitbx::mat3<double> const &A_inv = A.inverse();
+
+        Graph G(reciprocal_space_points.size());
+        std::map<pair_t, cctbx::miller::index<> > edge_to_h_ij;
+        std::map<pair_t, double> edge_to_l_ij;
+        WeightMap weight = get(edge_weight, G);
+
+        for (std::size_t i=0; i < reciprocal_space_points.size(); i++) {
+          std::size_t i_k = i * nearest_neighbours;
+          for (std::size_t i_ann=0; i_ann < nearest_neighbours; i_ann++) {
+            std::size_t i_k_plus_i_ann = i_k + i_ann;
+            std::size_t j = ann.nn[i_k_plus_i_ann];
+            if (boost::edge(i, j, G).second) {
+              continue;
+            }
+            scitbx::vec3<double>
+            d_r = reciprocal_space_points[i] - reciprocal_space_points[j];
+            scitbx::vec3<double> h_f = A_inv * d_r;
+            scitbx::vec3<double> h_ij;
+            for (std::size_t ii=0; ii<3; ii++) {
+              h_ij[ii] = scitbx::math::nearest_integer(h_f[ii]);
+            }
+            scitbx::vec3<double> d_h = h_f - h_ij;
+
+            double exponent = 0;
+            for (std::size_t ii=0; ii<3; ii++) {
+              exponent += std::pow(std::max(std::abs(d_h[ii]) - epsilon, 0.)/epsilon, 2);
+              exponent += std::pow(std::max(std::abs(h_ij[ii]) - delta, 0.),2);
+            }
+            exponent *= -2;
+            double l_ij = 1 - std::exp(exponent);
+            sum_l_ij += l_ij;
+            std::pair<Edge, bool> myPair = add_edge(i, j, G);
+            weight[myPair.first] = l_ij;
+
+            edge_to_h_ij.insert(
+              std::pair<pair_t, cctbx::miller::index<> >(pair_t(i, j), h_ij));
+            edge_to_h_ij.insert(
+              std::pair<pair_t, cctbx::miller::index<> >(pair_t(j, i), -h_ij));
+            edge_to_l_ij.insert(std::pair<pair_t, double>(pair_t(i, j), l_ij));
+            edge_to_l_ij.insert(std::pair<pair_t, double>(pair_t(j, i), l_ij));
+          }
+        }
+
+        //create a graph for the MST
+        Graph MST(reciprocal_space_points.size());
+        WeightMap weightMST = get(edge_weight, MST);
+
+        std::vector< Edge > spanning_tree;
+        kruskal_minimum_spanning_tree(G, std::back_inserter(spanning_tree));
+
+        for(size_t i = 0; i < spanning_tree.size(); ++i){
+          //get the edge
+          Edge e = spanning_tree[i];
+          //get the vertices
+          add_edge(source(e, G), target(e, G), MST);
+          weightMST[e] = weight[e];
+        }
+
+        // Get the connected components in case there is more than one tree
+        std::vector<int> component(num_vertices(MST));
+        connected_components(MST, &component[0]);
+
+        /*int num = connected_components(MST, &component[0]);*/
+        /*std::cout << "Total number of components: " << num << std::endl;*/
+
+        // Record the order of edges for a depth first search so we can walk
+        // the tree later
+        std::vector<Edge> ordered_edges;
+        record_dfs_order<Edge> vis(ordered_edges);
+        depth_first_search(MST, visitor(vis));
+
+        // Walk the tree(s), incrementing the subtree_id for each node if the
+        // edge weight l_ij >= l_min, or if we start a new component
+        std::size_t next_subtree = 0;
+        int last_component = -1;
+        af::shared<std::size_t> subtree_ids_(
+          reciprocal_space_points.size(), 0);
+        af::shared<cctbx::miller::index<> > hkl_ints_(
+          reciprocal_space_points.size());
+
+        for (std::vector<Edge>::iterator it = ordered_edges.begin() ;
+             it != ordered_edges.end(); ++it) {
+          Edge e = *it;
+          std::size_t i = source(e, MST);
+          std::size_t j = target(e, MST);
+          if (component[i] != last_component) {
+            subtree_ids_[i] = next_subtree;
+            next_subtree += 1;
+          }
+          last_component = component[i];
+          SCITBX_ASSERT(component[i] == component[j]);
+          cctbx::miller::index<> h_ij = edge_to_h_ij[pair_t(i, j)];
+          double l_ij = edge_to_l_ij[pair_t(i, j)];
+          hkl_ints_[j] = hkl_ints_[i] - h_ij;
+          if (l_ij < l_min) {
+            subtree_ids_[j] = subtree_ids_[i];
+          }
+          else {
+            subtree_ids_[j] = subtree_ids_[i] + 1;
+            next_subtree += 1;
+          }
+        }
+        /*hkl_ints.push_back(hkl_ints_);*/
+
+        std::set<std::size_t> unique_subtree_ids(
+          subtree_ids_.begin(), subtree_ids_.end());
+        std::size_t largest_subtree_id = 0;
+        std::size_t largest_subtree_size = 0;
+        for (std::set<std::size_t>::iterator it=unique_subtree_ids.begin();
+             it!=unique_subtree_ids.end(); ++it) {
+          std::size_t size = std::count(
+            subtree_ids_.begin(), subtree_ids_.end(), *it);
+          if (size > largest_subtree_size) {
+            largest_subtree_size = size;
+            largest_subtree_id = *it;
+          }
+        }
+
+        for (std::size_t i=0; i<reciprocal_space_points.size(); i++) {
+          if (subtree_ids_[i] != largest_subtree_id) {
             continue;
           }
-          scitbx::vec3<double>
-          d_r = reciprocal_space_points[i] - reciprocal_space_points[j];
-          scitbx::vec3<double> h_f = A_inv * d_r;
-          scitbx::vec3<double> h_ij;
-          for (std::size_t ii=0; ii<3; ii++) {
-            h_ij[ii] = scitbx::math::nearest_integer(h_f[ii]);
+          else if (crystal_ids_[i] == -2) {
+            continue;
           }
-          scitbx::vec3<double> d_h = h_f - h_ij;
-
-          double exponent = 0;
-          for (std::size_t ii=0; ii<3; ii++) {
-            exponent += std::pow(std::max(std::abs(d_h[ii]) - epsilon, 0.)/epsilon, 2);
-            exponent += std::pow(std::max(std::abs(h_ij[ii]) - delta, 0.),2);
+          else if (crystal_ids_[i] == -1) {
+            SCITBX_ASSERT(
+              miller_indices_[i] == cctbx::miller::index<>(0, 0, 0));
+            miller_indices_[i] = hkl_ints_[i];
+            crystal_ids_[i] = i_lattice;
           }
-          exponent *= -2;
-          double l_ij = 1 - std::exp(exponent);
-          sum_l_ij += l_ij;
-          std::pair<Edge, bool> myPair = add_edge(i, j, G);
-          weight[myPair.first] = l_ij;
-
-          edge_to_h_ij.insert(
-            std::pair<pair_t, cctbx::miller::index<> >(pair_t(i, j), h_ij));
-          edge_to_h_ij.insert(
-            std::pair<pair_t, cctbx::miller::index<> >(pair_t(j, i), -h_ij));
-          edge_to_l_ij.insert(std::pair<pair_t, double>(pair_t(i, j), l_ij));
-          edge_to_l_ij.insert(std::pair<pair_t, double>(pair_t(j, i), l_ij));
-        }
-      }
-
-      //create a graph for the MST
-      Graph MST(reciprocal_space_points.size());
-      WeightMap weightMST = get(edge_weight, MST);
-
-      std::vector< Edge > spanning_tree;
-      kruskal_minimum_spanning_tree(G, std::back_inserter(spanning_tree));
-
-      for(size_t i = 0; i < spanning_tree.size(); ++i){
-        //get the edge
-        Edge e = spanning_tree[i];
-        //get the vertices
-        add_edge(source(e, G), target(e, G), MST);
-        weightMST[e] = weight[e];
-      }
-
-      // Get the connected components in case there is more than one tree
-      std::vector<int> component(num_vertices(MST));
-      connected_components(MST, &component[0]);
-
-      /*int num = connected_components(MST, &component[0]);*/
-      /*std::cout << "Total number of components: " << num << std::endl;*/
-
-      // Record the order of edges for a depth first search so we can walk
-      // the tree later
-      std::vector<Edge> ordered_edges;
-      record_dfs_order<Edge> vis(ordered_edges);
-      depth_first_search(MST, visitor(vis));
-
-      // Walk the tree(s), incrementing the subtree_id for each node if the
-      // edge weight l_ij >= l_min, or if we start a new component
-      std::size_t next_subtree = 0;
-      int last_component = -1;
-      for (std::vector<Edge>::iterator it = ordered_edges.begin() ;
-           it != ordered_edges.end(); ++it) {
-        Edge e = *it;
-        std::size_t i = source(e, MST);
-        std::size_t j = target(e, MST);
-        if (component[i] != last_component) {
-          subtree_ids_[i] = next_subtree;
-          next_subtree += 1;
-        }
-        last_component = component[i];
-        SCITBX_ASSERT(component[i] == component[j]);
-        cctbx::miller::index<> h_ij = edge_to_h_ij[pair_t(i, j)];
-        double l_ij = edge_to_l_ij[pair_t(i, j)];
-        miller_indices_[j] = miller_indices_[i] - h_ij;
-        if (l_ij < l_min) {
-          subtree_ids_[j] = subtree_ids_[i];
-        }
-        else {
-          subtree_ids_[j] = subtree_ids_[i] + 1;
+          else {
+            crystal_ids_[i] = -2;
+            miller_indices_[i] = cctbx::miller::index<>(0, 0, 0);
+          }
         }
       }
 
@@ -317,10 +356,6 @@ namespace dials { namespace algorithms {
 
     af::shared<cctbx::miller::index<> > miller_indices() {
       return miller_indices_;
-    }
-
-    af::shared<std::size_t> subtree_ids() {
-      return subtree_ids_;
     }
 
     af::shared<int> crystal_ids() {
