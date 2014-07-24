@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #
-# dials.integrate.py
+# dials.reflection_viewer.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
-#  Author: James Parkhurst
+#  Author: James Parkhurst and Luis Fuentes-Montero (Luiso)
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
@@ -14,16 +14,17 @@ from dials.util.script import ScriptRunner
 
 help_message = '''
 
-This program is used to view the reflections on the diffraction images. It
-is called with an experiment list
-Examples:
+This program is used to view the reflections with debugging purposes.
+This program does not perform any calculation ... just visualizations
 
-TO DO
+Example for invoking from CLI:
+
+dials.reflection_viewer My_Reflections.pickle
 
 '''
 
 class Script(ScriptRunner):
-  ''' The integration program. '''
+  ''' The debugging visualization program. '''
 
   def __init__(self):
     '''Initialise the script.'''
@@ -37,20 +38,19 @@ class Script(ScriptRunner):
                           home_scope="integration")
 
   def main(self, params, options, args):
-    ''' Perform the integration. '''
+
+    ''' Show the reflections one by one in an interactive way '''
     from dials.util.command_line import Importer
     from dials.viewer.reflection_view import viewer_App
     from dials.array_family import flex
-
+    if len(args) == 0:
+      self.config().print_help()
+      return
 
     importer = Importer(args, include=["reflections", "experiments"])
-    print importer.unhandled_arguments
-    print importer.experiments
-    print importer.reflections
-
     my_tables = importer.reflections
-    print "len =", len(my_tables)
 
+    ''' opens and closes the viewer for each new reflection table '''
     for table in my_tables:
       My_app = viewer_App(redirect=False)
       My_app.table_in(table)
