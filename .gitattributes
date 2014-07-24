@@ -342,6 +342,7 @@ command_line/print_test_reflections.py -text
 command_line/process.py -text
 command_line/refine.py -text
 command_line/refine_bravais_settings.py -text
+command_line/reflection_viewer.py -text
 command_line/reindex.py -text
 command_line/show_extensions.py -text
 command_line/show_models.py -text
