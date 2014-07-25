@@ -21,7 +21,7 @@ namespace dials { namespace algorithms { namespace background {
   {
     class_<PlaneModel>("PlaneModel", no_init)
       .def(init<
-          const af::const_ref< int, af::c_grid<2> > &,
+          const af::const_ref< double, af::c_grid<2> > &,
           af::ref< int, af::c_grid<2> >,
           double,
           double>((

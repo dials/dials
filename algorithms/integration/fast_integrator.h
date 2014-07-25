@@ -17,6 +17,8 @@
 #include <dials/model/data/image.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/algorithms/integration/summation.h>
+#include <dials/algorithms/centroid/centroid.h>
+#include <dials/algorithms/background/plane.h>
 
 namespace dials { namespace algorithms {
 
@@ -94,7 +96,9 @@ namespace dials { namespace algorithms {
         bbox_(bbox.begin(), bbox.end()),
         offset_(last-first+1),
         intensity_(panel.size()),
-        variance_(panel.size()) {
+        variance_(panel.size()),
+        centroid_(panel.size()),
+        centroid_variance_(panel.size()){
 
       // Check input is valid
       DIALS_ASSERT(first_ < last_);
@@ -188,10 +192,26 @@ namespace dials { namespace algorithms {
           }
         }
 
+        // Mask the foreground and background
+
+
+        // Do the background subtraction
+        background::PlaneModel background(data, mask, 1.0, 3.0);
+        for (std::size_t j = 0; j < bgrd.accessor()[0]; ++j) {
+          for (std::size_t i = 0; i < bgrd.accessor()[1]; ++i) {
+            bgrd(j,i) = background.value(j, i);
+          }
+        }
+
         // Do the summation integration
         Summation<> summation(data, bgrd, mask);
         intensity_[ind] = summation.intensity();
         variance_[ind] = summation.variance();
+
+        // Compute the centroid
+        Centroid centroid(data, bgrd, mask);
+        centroid_[ind] = centroid.value();
+        centroid_variance_[ind] = centroid.variance();
       }
 
       // Increment the frame number
@@ -220,6 +240,8 @@ namespace dials { namespace algorithms {
     af::shared<std::size_t> offset_;
     af::shared<double> intensity_;
     af::shared<double> variance_;
+    af::shared< vec3<double> > centroid_;
+    af::shared< vec3<double> > centroid_variance_;
     af::shared<double> data_;
     af::shared<double> bgrd_;
     af::shared<int> mask_;

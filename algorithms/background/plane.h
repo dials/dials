@@ -38,11 +38,13 @@ namespace dials { namespace algorithms { namespace background {
      * @param fraction The fraction to use in initial estimate
      * @param nsigma The threshold for outliers
      */
-    PlaneModel(const af::const_ref<int, af::c_grid<2> > &data,
+    PlaneModel(const af::const_ref<double, af::c_grid<2> > &data,
                af::ref<int, af::c_grid<2> > mask,
                double fraction,
                double nsigma)
-        : a_(0.0),
+        : hx_(data.accessor()[1] / 2),
+          hy_(data.accessor()[0] / 2),
+          a_(0.0),
           b_(0.0),
           c_(0.0),
           rmsd_(0.0),
@@ -101,14 +103,20 @@ namespace dials { namespace algorithms { namespace background {
       return nbackground_;
     }
 
+    double value(std::size_t j, std::size_t i) {
+      double x = ((int)i - hx_);
+      double y = ((int)j - hy_);
+      return a_ * x + b_ * y + c_;
+    }
+
   private:
 
     /**
      * Compare index array by pixel value
      */
     struct compare_pixel_value {
-      af::const_ref<int> data_;
-      compare_pixel_value(const af::const_ref<int> &data)
+      af::const_ref<double> data_;
+      compare_pixel_value(const af::const_ref<double> &data)
         : data_(data) {}
       bool operator()(std::size_t a, std::size_t b) {
         return data_[a] < data_[b];
@@ -119,7 +127,7 @@ namespace dials { namespace algorithms { namespace background {
      * Compute the background.
      */
     void compute(
-        const af::const_ref<int, af::c_grid<2> > &data,
+        const af::const_ref<double, af::c_grid<2> > &data,
         af::ref<int, af::c_grid<2> > mask,
         double fraction, double nsigma) {
 
@@ -153,7 +161,7 @@ namespace dials { namespace algorithms { namespace background {
      * intensity and then update the mask for those pixels.
      */
     void compute_initial_mask(
-        const af::const_ref< int, af::c_grid<2> > &data,
+        const af::const_ref< double, af::c_grid<2> > &data,
         af::ref< int, af::c_grid<2> > mask,
         double fraction) {
       int code = Valid | Background;
@@ -179,7 +187,7 @@ namespace dials { namespace algorithms { namespace background {
      * Compute the background plane given shoebox data and mask
      */
     void compute_background(
-        const af::const_ref< int, af::c_grid<2> > &data,
+        const af::const_ref< double, af::c_grid<2> > &data,
         const af::const_ref< int, af::c_grid<2> > &mask) {
       std::vector<double> A(3*3, 0);
       std::vector<double> B(3, 0);
@@ -237,7 +245,7 @@ namespace dials { namespace algorithms { namespace background {
      * deviation of each point from the plane.
      */
     void compute_final_mask(
-        const af::const_ref< int, af::c_grid<2> > &data,
+        const af::const_ref< double, af::c_grid<2> > &data,
         af::ref< int, af::c_grid<2> > mask,
         double nsigma) {
       noutlier_ = 0;
@@ -270,7 +278,7 @@ namespace dials { namespace algorithms { namespace background {
      * Compute the deviation and rmsd
      */
     void compute_deviation(
-        const af::const_ref< int, af::c_grid<2> > &data,
+        const af::const_ref< double, af::c_grid<2> > &data,
         const af::const_ref< int, af::c_grid<2> > &mask) {
       rmsd_ = 0;
       maxdiff_ = 0;
@@ -294,6 +302,7 @@ namespace dials { namespace algorithms { namespace background {
       rmsd_ = std::sqrt(rmsd_ / nbackground_);
     }
 
+    std::size_t hx_, hy_;
     double a_, b_, c_;
     double rmsd_, maxdiff_;
     std::size_t noutlier_;
