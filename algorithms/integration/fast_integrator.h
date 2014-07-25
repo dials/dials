@@ -10,7 +10,8 @@ namespace dials { namespace algorithms {
   class FastIntegratorResult {
   public:
 
-    FastIntegratorResult() {
+    FastIntegratorResult() 
+      : index_(0) {
 
     }
 
@@ -40,6 +41,14 @@ namespace dials { namespace algorithms {
 
     FastIntegratorWorker() {
 
+    }
+
+    std::size_t first() const {
+      return 0;
+    }
+
+    std::size_t last() const {
+      return 0;
     }
 
     void next() {

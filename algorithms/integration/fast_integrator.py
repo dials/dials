@@ -27,7 +27,8 @@ class FastIntegrator(object):
         self.imageset = imageset
 
       def __call__(self, worker):
-        index0, index1 = worker.image_range()
+        index0 = worker.first()
+        index1 = worker.last()
         for index in range(index0, index1):
           worker.next(self.imageset[index])
         return worker.result()
