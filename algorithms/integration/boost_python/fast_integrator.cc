@@ -20,7 +20,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   class WorkerIterator {
   public:
 
-    typedef typename std::size_t base_iterator;
+    typedef std::size_t base_iterator;
     typedef ptrdiff_t difference_type;
     typedef std::forward_iterator_tag iterator_category;
     typedef FastIntegratorWorker value_type;
