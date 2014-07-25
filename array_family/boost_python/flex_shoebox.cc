@@ -579,7 +579,11 @@ namespace dials { namespace af { namespace boost_python {
           count += 1;
         }
       }
-      mean /= count;
+      if (count > 0) {
+        mean /= count;
+      } else {
+        mean = 0;
+      }
       result[i] = mean;
     }
     return result;
