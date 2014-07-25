@@ -77,6 +77,7 @@ class Test:
     assert(background_iface == BackgroundIface)
     assert(centroid_iface == CentroidIface)
 
+    registry.config().params().integration.intensity.algorithm="sum3d"
     centroid_ext = registry['integration.centroid']
     background_ext = registry['integration.background']
     integration_ext = registry['integration.intensity']
