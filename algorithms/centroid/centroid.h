@@ -22,7 +22,7 @@ namespace dials { namespace algorithms {
 
   class Centroid {
   public:
-    
+
     Centroid(const af::const_ref< double, af::c_grid<2> > &data,
              const af::const_ref< bool, af::c_grid<2> > &mask) {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
@@ -50,7 +50,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       init(data, background, mask);
     }
-    
+
     vec3<double> value() const {
       return value_;
     }
@@ -60,7 +60,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    
+
     void init(const af::const_ref< double, af::c_grid<2> > &data,
               const af::const_ref< bool, af::c_grid<2> > &mask) {
       CentroidMaskedImage2d<> centroider(data, mask);
@@ -73,7 +73,7 @@ namespace dials { namespace algorithms {
       variance_[1] = v[1];
       variance_[2] = 0;
     }
-  
+
     void init(const af::const_ref< double, af::c_grid<3> > &data,
               const af::const_ref< bool, af::c_grid<3> > &mask) {
       CentroidMaskedImage3d<> centroider(data, mask);
@@ -84,8 +84,8 @@ namespace dials { namespace algorithms {
     void init(const af::const_ref< double, af::c_grid<2> > &data,
               const af::const_ref< double, af::c_grid<2> > &background,
               const af::const_ref< int, af::c_grid<2> > &mask) {
-      af::versa< double, af::c_grid<2> > temp_data(data.accessor()); 
-      af::versa< bool, af::c_grid<2> > temp_mask(data.accessor()); 
+      af::versa< double, af::c_grid<2> > temp_data(data.accessor());
+      af::versa< bool, af::c_grid<2> > temp_mask(data.accessor());
       int fg_code = Valid | Foreground;
       for (std::size_t i = 0; i < temp_data.size(); ++i) {
         temp_data[i] = data[i] - background[i];
@@ -93,12 +93,12 @@ namespace dials { namespace algorithms {
       }
       init(temp_data.const_ref(), temp_mask.const_ref());
     }
-  
+
     void init(const af::const_ref< double, af::c_grid<3> > &data,
               const af::const_ref< double, af::c_grid<3> > &background,
               const af::const_ref< int, af::c_grid<3> > &mask) {
-      af::versa< double, af::c_grid<3> > temp_data(data.accessor()); 
-      af::versa< bool, af::c_grid<3> > temp_mask(data.accessor()); 
+      af::versa< double, af::c_grid<3> > temp_data(data.accessor());
+      af::versa< bool, af::c_grid<3> > temp_mask(data.accessor());
       int fg_code = Valid | Foreground;
       for (std::size_t i = 0; i < temp_data.size(); ++i) {
         temp_data[i] = data[i] - background[i];

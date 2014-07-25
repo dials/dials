@@ -44,6 +44,22 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     def("zeta_factor", &zeta_factor_array, (
       arg("m2"), arg("s0"), arg("s1")));
 
+    // Export coordinate system 2d
+    class_<CoordinateSystem2d>("CoordinateSystem2d", no_init)
+      .def(init<vec3<double>,
+                vec3<double> >((
+        arg("s0"),
+        arg("s1"))))
+      .def("s0", &CoordinateSystem2d::s0)
+      .def("s1", &CoordinateSystem2d::s1)
+      .def("p_star", &CoordinateSystem2d::p_star)
+      .def("e1_axis", &CoordinateSystem2d::e1_axis)
+      .def("e2_axis", &CoordinateSystem2d::e2_axis)
+      .def("from_beam_vector",
+        &CoordinateSystem2d::from_beam_vector)
+      .def("to_beam_vector",
+        &CoordinateSystem2d::to_beam_vector);
+
     // Export coordinate system
     class_<CoordinateSystem>("CoordinateSystem", no_init)
       .def(init<vec3<double>,

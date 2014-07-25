@@ -52,6 +52,97 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   /**
    * Class representing the local reflection coordinate system
    */
+  class CoordinateSystem2d {
+  public:
+
+    /**
+     * Initialise coordinate system. s0 should be the same length as s1.
+     * These quantities are not checked because this class will be created for
+     * each reflection and we want to maximize performance.
+     * @param m2 The rotation axis
+     * @param s0 The incident beam vector
+     * @param s1 The diffracted beam vector
+     * @param phi The rotation angle
+     */
+    CoordinateSystem2d(vec3<double> s0, vec3<double> s1)
+      : s0_(s0),
+        s1_(s1),
+        p_star_(s1 - s0),
+        e1_(s1.cross(s0).normalize()),
+        e2_(s1.cross(e1_).normalize()) {}
+
+    /** @returns the incident beam vector */
+    vec3<double> s0() const {
+      return s0_;
+    }
+
+    /** @returns the diffracted beam vector */
+    vec3<double> s1() const {
+      return s1_;
+    }
+
+    /** @returns the rotated reciprocal space vector */
+    vec3<double> p_star() const {
+      return p_star_;
+    }
+
+    /** @returns the e1 axis vector */
+    vec3<double> e1_axis() const {
+      return e1_;
+    }
+
+    /** @returns the e2 axis vector */
+    vec3<double> e2_axis() const {
+      return e2_;
+    }
+
+    /**
+     * Transform the beam vector to the reciprocal space coordinate system.
+     * @param s_dash The beam vector
+     * @returns The e1, e2 coordinates
+     */
+    vec2<double> from_beam_vector(const vec3<double> &s_dash) const {
+      double s1_length = s1_.length();
+      DIALS_ASSERT(s1_length > 0);
+      vec3<double> scaled_e1 = e1_ / s1_length;
+      vec3<double> scaled_e2 = e2_ / s1_length;
+      return vec2 <double> (
+        scaled_e1 * (s_dash - s1_),
+        scaled_e2 * (s_dash - s1_));
+    }
+
+    /**
+     * Transform the reciprocal space coordinate to get the beam vector.
+     * @param c12 The e1 and e2 coordinates.
+     * @returns The beam vector
+     */
+    vec3<double> to_beam_vector(const vec2<double> &c12) const {
+      double radius = s1_.length();
+      DIALS_ASSERT(radius > 0);
+      vec3<double> scaled_e1 = e1_ * radius;
+      vec3<double> scaled_e2 = e2_ * radius;
+      vec3<double> normalized_s1 = s1_ / radius;
+
+      vec3 <double> p = c12[0] * scaled_e1 + c12[1] * scaled_e2;
+      double b = radius * radius - p.length_sq();
+      DIALS_ASSERT(b >= 0);
+      double d = -(normalized_s1 * p) + std::sqrt(b);
+      return p + d * normalized_s1;
+    }
+
+  private:
+
+    vec3<double> s0_;
+    vec3<double> s1_;
+    vec3<double> p_star_;
+    vec3<double> e1_;
+    vec3<double> e2_;
+  };
+
+
+  /**
+   * Class representing the local reflection coordinate system
+   */
   class CoordinateSystem {
   public:
 
