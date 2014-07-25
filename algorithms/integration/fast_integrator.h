@@ -19,6 +19,7 @@
 #include <dials/algorithms/integration/summation.h>
 #include <dials/algorithms/centroid/centroid.h>
 #include <dials/algorithms/background/plane.h>
+#include <dials/algorithms/shoebox/mask_foreground_2d.h>
 
 namespace dials { namespace algorithms {
 
@@ -26,6 +27,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::int6;
   using model::Image;
   using model::Valid;
+  using shoebox::MaskForeground2d;
 
   /**
    * A class to contain results from the workers
@@ -193,7 +195,7 @@ namespace dials { namespace algorithms {
         }
 
         // Mask the foreground and background
-
+        /* profile_model_[id].apply(mask, bbox); */
 
         // Do the background subtraction
         background::PlaneModel background(data, mask, 1.0, 3.0);
