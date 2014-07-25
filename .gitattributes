@@ -224,6 +224,7 @@ algorithms/shoebox/boost_python/helpers.cc -text
 algorithms/shoebox/boost_python/mask_builder.cc -text svneol=unset#text/plain
 algorithms/shoebox/boost_python/mask_code.cc -text
 algorithms/shoebox/boost_python/mask_foreground.cc -text
+algorithms/shoebox/boost_python/mask_foreground_2d.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
 algorithms/shoebox/find_overlapping.h -text
@@ -231,6 +232,7 @@ algorithms/shoebox/helpers.h -text
 algorithms/shoebox/mask_builder.h -text svneol=unset#text/plain
 algorithms/shoebox/mask_code.h -text
 algorithms/shoebox/mask_foreground.h -text
+algorithms/shoebox/mask_foreground_2d.h -text
 algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.py -text
 algorithms/simulation/SConscript -text

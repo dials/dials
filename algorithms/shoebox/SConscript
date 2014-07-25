@@ -26,6 +26,7 @@ sources = [
     'boost_python/bbox_calculator.cc',
     'boost_python/find_overlapping.cc',
     'boost_python/mask_foreground.cc',
+    'boost_python/mask_foreground_2d.cc',
     'boost_python/mask_empirical.cc',
     'boost_python/mask_overlapping.cc',
     'boost_python/mask_builder.cc',
