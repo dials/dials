@@ -16,10 +16,14 @@ class FastIntegrator(object):
     self._imageset = imagesets[0]
     self._mp_method = mp_method
 
+    # Get the image range
+    image0, image1 = self._imageset.get_scan().get_image_range()
+
     # Create the integrator
     self._integrator = FastIntegratorInternal(
       predictions, 
-      len(self._imageset),
+      image0,
+      image1,
       num_proc)
 
   def integrate(self):
@@ -31,10 +35,11 @@ class FastIntegrator(object):
         self.imageset = imageset
 
       def __call__(self, worker):
+        from dials.model.data import Image
         index0 = worker.first()
         index1 = worker.last()
         for index in range(index0, index1):
-          worker.next()#self.imageset[index])
+          worker.next(Image(self.imageset[index]))
         return worker.result()
 
     # Perform the integration on multiple threads

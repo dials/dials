@@ -85,7 +85,9 @@ namespace dials { namespace algorithms { namespace boost_python {
     boost::python::tuple 
     getinitargs(const FastIntegratorResult &self) {
       return boost::python::make_tuple(
-          self.index()
+          self.index(),
+          self.intensity(),
+          self.variance()
           ); 
     }
   };
@@ -93,7 +95,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_fast_integrator()
   {
     class_<FastIntegratorResult>("FastIntegratorResult", no_init)
-      .def(init<std::size_t>())
+      .def(init<std::size_t,
+                const af::const_ref<double>&,
+                const af::const_ref<double>& >())
       .def_pickle(FastIntegratorResultPickleSuite())
       ;
 
@@ -108,7 +112,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<FastIntegrator>("FastIntegratorInternal", no_init)
       .def(init<af::reflection_table,
-                std::size_t,
+                int,
+                int,
                 std::size_t>())
       .def("__len__", &FastIntegrator::size)
       .def("finished", &FastIntegrator::finished)
