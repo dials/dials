@@ -15,12 +15,15 @@
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/model/data/image.h>
+#include <dials/model/data/shoebox.h>
+#include <dials/algorithms/integration/summation.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::af::int4;
   using scitbx::af::int6;
   using model::Image;
+  using model::Valid;
 
   /**
    * A class to contain results from the workers
@@ -181,10 +184,14 @@ namespace dials { namespace algorithms {
             int j = y - bbox[2];
             int i = x - bbox[0];
             data(j,i) = imdata(y,x);
-            mask(j,i) = immask(y,x);
+            mask(j,i) = immask(y,x) ? Valid : 0;
           }
         }
 
+        // Do the summation integration
+        Summation<> summation(data, bgrd, mask);
+        intensity_[ind] = summation.intensity();
+        variance_[ind] = summation.variance();
       }
 
       // Increment the frame number
