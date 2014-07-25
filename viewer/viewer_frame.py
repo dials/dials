@@ -225,10 +225,13 @@ class ReflectionFrame(wx.Frame):
       else:
         self.data_txt_02.SetLabel(" No Bbox Data")
 
+      try:
 
-      hkl_string = 'HKL:    ' + str(self.hkl_data[0]) + \
-                          '    ' + str(self.hkl_data[1]) + \
-                          '    ' + str(self.hkl_data[2]) + ' '
+        hkl_string = 'HKL:    ' + str(self.hkl_data[0]) + \
+                            '    ' + str(self.hkl_data[1]) + \
+                            '    ' + str(self.hkl_data[2]) + ' '
+      except:
+        hkl_string = ' No HKL data'
       self.data_txt_03.SetLabel(hkl_string)
 
     self.Layout()
