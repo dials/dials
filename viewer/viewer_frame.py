@@ -20,8 +20,8 @@ class ReflectionFrame(wx.Frame):
 
     #self.MaxImageSizeX = 280
     #self.MaxImageSizeY = 150
-    self.MaxImageSizeX = 14
-    self.MaxImageSizeY = 7
+    self.MaxImageSizeX = 320
+    self.MaxImageSizeY = 260
 
     nxt_ref = "Reflection -->"
     btn_nxt_refl = wx.Button(self, -1, nxt_ref)
