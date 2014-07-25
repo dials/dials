@@ -100,6 +100,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<FastIntegratorWorker>("FastIntegratorWorker", no_init)
       .def("first", &FastIntegratorWorker::first)
       .def("last", &FastIntegratorWorker::last)
+      .def("current", &FastIntegratorWorker::current)
       .def("next", &FastIntegratorWorker::next)
       .def("finished", &FastIntegratorWorker::finished)
       .def("result", &FastIntegratorWorker::result)
@@ -107,6 +108,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<FastIntegrator>("FastIntegratorInternal", no_init)
       .def(init<af::reflection_table,
+                std::size_t,
                 std::size_t>())
       .def("__len__", &FastIntegrator::size)
       .def("finished", &FastIntegrator::finished)

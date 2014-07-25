@@ -17,7 +17,10 @@ class FastIntegrator(object):
     self._mp_method = mp_method
 
     # Create the integrator
-    self._integrator = FastIntegratorInternal(predictions, num_proc)
+    self._integrator = FastIntegratorInternal(
+      predictions, 
+      len(self._imageset),
+      num_proc)
 
   def integrate(self):
     from libtbx import easy_mp
@@ -31,8 +34,7 @@ class FastIntegrator(object):
         index0 = worker.first()
         index1 = worker.last()
         for index in range(index0, index1):
-          worker.next(self.imageset[index])
-        assert(worker.finished())
+          worker.next()#self.imageset[index])
         return worker.result()
 
     # Perform the integration on multiple threads
