@@ -7,6 +7,7 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/algorithms/integration/profile/grid_sampler_2d.h>
+#include <dials/algorithms/integration/interpolate_profile2d.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -49,15 +50,19 @@ namespace dials { namespace algorithms {
         }
       }
 
+      // Interpolate shoeboxes to centre on pixel
+      for (std::size_t i = 0; i < sbox.size(); ++i) {
+        double x = xyz[i][0] - (floor(xyz[i][0]) + 0.5);
+        double y = xyz[i][1] - (floor(xyz[i][1]) + 0.5);
+        flattened_data[i] = interpolate_profile2d(
+            x, y, flattened_data[i].const_ref());
+      }
+
       // Create the grid
       int2 image_size(image_width, image_height);
       int2 grid_size(5, 5);
       GridSampler2D grid(image_size, grid_size);
 
-      // Interpolate shoeboxes to centre on pixel
-      for (std::size_t i = 0; i < sbox.size(); ++i) {
-        interpolate(xyz[i], flattened_data[i].ref());
-      }
 
       // Find the nearest grid point to each profile
       af::shared<std::size_t> profile_index(sbox.size());
@@ -77,22 +82,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
-    void interpolate(vec3<double> xyz, double2d_ref data) const {
-      double x = xyz[0] - floor(xyz[0]) - 0.5;
-      double y = xyz[1] - floor(xyz[1]) - 0.5;
-      std::size_t h = data.accessor()[0];
-      std::size_t w = data.accessor()[1];
-      for (std::size_t j = 0; j < h; ++j) {
-        for (std::size_t i = 0; i < w; ++i) {
-          double f00 = data(j,i);
-          double f10 = data(j+1,i);
-          double f01 = data(j,i+1);
-          double f11 = data(j+1,i+1);
-          //I = f00*(1-x)*(1-y)+f10*x(1-y)+f01*(1-x)+f11*x*y;
-        }
-      }
-    }
 
     af::shared<double> intensity_;
     af::shared<double> variance_;
