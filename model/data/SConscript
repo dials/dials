@@ -10,6 +10,7 @@ sources = [
     'boost_python/adjacency_list.cc',
     'boost_python/pixel_list.cc',
     'boost_python/ray.cc',
+    'boost_python/image.cc',
     'boost_python/data_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_model_data_ext', source=sources)

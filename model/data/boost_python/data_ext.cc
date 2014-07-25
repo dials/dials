@@ -23,6 +23,7 @@ namespace dials { namespace model { namespace boost_python {
   void export_adjacency_list();
   void export_pixel_list();
   void export_ray();
+  void export_image();
 
   BOOST_PYTHON_MODULE(dials_model_data_ext)
   {
@@ -34,6 +35,7 @@ namespace dials { namespace model { namespace boost_python {
     export_adjacency_list();
     export_pixel_list();
     export_ray();
+    export_image();
   }
 
 }}} // namespace = dials::model::boost_python

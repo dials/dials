@@ -455,6 +455,7 @@ model/data/__init__.py -text
 model/data/adjacency_list.h -text
 model/data/boost_python/adjacency_list.cc -text
 model/data/boost_python/data_ext.cc -text
+model/data/boost_python/image.cc -text
 model/data/boost_python/observation.cc -text
 model/data/boost_python/pickle.h -text
 model/data/boost_python/pixel_list.cc -text
@@ -464,6 +465,7 @@ model/data/boost_python/reflection.cc -text
 model/data/boost_python/shoebox.cc -text
 model/data/boost_python/table.cc -text
 model/data/boost_python/transformed_shoebox.cc -text
+model/data/image.h -text
 model/data/mask_code.h -text
 model/data/observation.h -text
 model/data/pixel_list.h -text
