@@ -7,9 +7,8 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package."
-
+from __future__ import division
 from dials.array_family import flex
-
 
 class table_s_navigator(object):
 
@@ -88,6 +87,12 @@ class table_s_navigator(object):
       print "No background data"
       #self.background_flex = None
 
+
+    try:
+      self.hkl_data = table_row['miller_index']
+    except:
+      print "No HKL data"
+
     try:
       self.mask_flex = table_row['shoebox'].mask
     except:
@@ -155,7 +160,8 @@ class table_s_navigator(object):
 
   def Get_xyz(self):
     return self.xyzcal_px
-
+  def Get_hkl(self):
+    return self.hkl_data
   def Get_ref_num(self):
     return self.row_pos
 

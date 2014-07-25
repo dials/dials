@@ -38,11 +38,11 @@ class np_to_bmp(object):
       plt.close(lc_fig)
     else:
       if Intst_max > 0:
-        plt.suptitle(title, fontsize = 18)
+        plt.suptitle(title, fontsize = 22)
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                    , vmax = Intst_max)
       else:
-        plt.suptitle(title, fontsize = 18)
+        plt.suptitle(title, fontsize = 22)
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = 10)
 
       if(xyz != None):

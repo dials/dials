@@ -185,6 +185,7 @@ class ReflectionFrame(wx.Frame):
       #box_lmt = self.tabl.Get_bbox()
       self.xyz_px = self.tabl.Get_xyz()
       self.bbox_px = self.tabl.Get_bbox()
+      self.hkl_data = self.tabl.Get_hkl()
       for indx in range(len(self.arr_img)):
         if( self.opt == 0 and indx == len(self.arr_img) - 1 ):
           Imax = 10
@@ -225,10 +226,13 @@ class ReflectionFrame(wx.Frame):
         self.data_txt_02.SetLabel(" No Bbox Data")
 
 
-      '''
-        self.data_txt_03.SetLabel(" No (x, y, z) Data ")
-        self.data_txt_03.SetLabel(my_str)
-      '''
+      hkl_string = 'HKL:    ' + str(self.hkl_data[0]) + \
+                          '    ' + str(self.hkl_data[1]) + \
+                          '    ' + str(self.hkl_data[2]) + ' '
+      self.data_txt_03.SetLabel(hkl_string)
+
+      print hkl_string
+
     self.Layout()
     self.Refresh()
 
