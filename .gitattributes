@@ -86,6 +86,7 @@ algorithms/indexing/refinement.py -text
 algorithms/indexing/symmetry.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
+algorithms/integration/boost_python/fast_integrator.cc -text
 algorithms/integration/boost_python/flattened_2d_profile_fitting.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/integrator_2d.cc -text
@@ -95,6 +96,8 @@ algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
 algorithms/integration/boost_python/shoebox_flattener.cc -text
 algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/call_mosflm_2d.py -text
+algorithms/integration/fast_integrator.h -text
+algorithms/integration/fast_integrator.py -text
 algorithms/integration/flatten_shoebox.py -text
 algorithms/integration/flattened_2d_profile_fitting.h -text
 algorithms/integration/integrator.py -text
