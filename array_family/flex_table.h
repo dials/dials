@@ -414,6 +414,12 @@ namespace dials { namespace af {
       resize(0);
     }
 
+    /** @returns Does the table contain the key. */
+    bool contains(const key_type &key) {
+      const_iterator it = find(key);
+      return it != end();
+    }
+
   private:
 
     boost::shared_ptr<map_type> table_;
