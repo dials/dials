@@ -18,8 +18,10 @@ class ReflectionFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
-    self.MaxImageSizeX = 280
-    self.MaxImageSizeY = 150
+    #self.MaxImageSizeX = 280
+    #self.MaxImageSizeY = 150
+    self.MaxImageSizeX = 14
+    self.MaxImageSizeY = 7
 
     nxt_ref = "Reflection -->"
     btn_nxt_refl = wx.Button(self, -1, nxt_ref)
