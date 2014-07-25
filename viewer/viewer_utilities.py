@@ -20,13 +20,12 @@ class np_to_bmp(object):
   def __init__(self):
     print "from init"
 
-  def __call__(self, np_img_2d, Intst_max, ofst, xyz):
+  def __call__(self, np_img_2d, Intst_max, ofst, xyz, title = 'Aaaaaaaaaa'):
     lc_fig = plt.figure()
 
     if( np_img_2d == None ):
 
       plt.imshow(np.asarray([[-1]]), interpolation = "nearest")
-
       lc_fig.canvas.draw()
       self.width, self.height = lc_fig.canvas.get_width_height()
       self.np_buf = np.fromstring ( lc_fig.canvas.tostring_rgb()
@@ -39,9 +38,11 @@ class np_to_bmp(object):
       plt.close(lc_fig)
     else:
       if Intst_max > 0:
+        plt.suptitle(title, fontsize = 18)
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
                    , vmax = Intst_max)
       else:
+        plt.suptitle(title, fontsize = 18)
         plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = 10)
 
       if(xyz != None):

@@ -11,7 +11,9 @@ mat2d[0:5, 2:6] = 50
 coords = [3.5,1.5]
 
 import matplotlib.pyplot as plt
+plt.suptitle('this is the figure title', fontsize=12)
 plt.imshow(numpy.transpose(mat2d), interpolation = "nearest")
+
 ini_x = ini_y = - 0.5
 end_y = xsize - 0.5
 end_x = ysize - 0.5

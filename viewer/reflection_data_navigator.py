@@ -25,18 +25,23 @@ class table_s_navigator(object):
   def __call__(self, opt = 0):
     self.get_dat_bkg_msk()
     np_lst = []
+    title_lst = []
     if( opt == 0 ):
       data2d = self.data_flex[self.z:self.z + 1, :, :]
       data2d.reshape(flex.grid(self.data_flex.all()[1:]))
       np_lst.append(data2d.as_numpy_array())
+      #title_lst.append("shoebox_data[z:z+1]")
+      title_lst.append("shoebox_data[" + str(self.z) + ":" + str(self.z+1) + "]")
 
       background2d = self.background_flex[self.z:self.z + 1, :, :]
       background2d.reshape(flex.grid(self.background_flex.all()[1:]))
       np_lst.append(background2d.as_numpy_array())
+      title_lst.append("shoebox_background[" + str(self.z) + ":" + str(self.z+1) + "]")
 
       mask2d = self.mask_flex[self.z:self.z + 1, :, :]
       mask2d.reshape(flex.grid(self.mask_flex.all()[1:]))
       np_lst.append(mask2d.as_numpy_array())
+      title_lst.append("shoebox_mask[" + str(self.z) + ":" + str(self.z+1) + "]")
 
     elif( opt == 1 or opt == 2 or opt == 3 ):
 
@@ -46,19 +51,25 @@ class table_s_navigator(object):
         if z_from >= 0 and z_to <=self.depth:
           if( opt == 1 ):
             data2d = self.data_flex[z_from:z_to, :, :]
+            title_lst.append("shoebox_data[" + str(z_from) + ":" + str(z_to) + "]")
           elif( opt == 2 ):
             data2d = self.background_flex[z_from:z_to, :, :]
+            title_lst.append("shoebox_background[" + str(z_from) + ":" + str(z_to) + "]")
           elif( opt == 3 ):
             data2d = self.mask_flex[z_from:z_to, :, :]
+            title_lst.append("shoebox_mask[" + str(z_from) + ":" + str(z_to) + "]")
           data2d.reshape(flex.grid(self.data_flex.all()[1:]))
           data2d_np = data2d.as_numpy_array()
           np_lst.append(data2d_np)
+
         else:
           np_lst.append(None)
+          title_lst.append(None)
     else:
       print "wrong option"
       np_lst = [None, None, None]
-    return np_lst
+      title_lst = [None, None, None]
+    return np_lst, title_lst
 
   def get_dat_bkg_msk(self):
     try:

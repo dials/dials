@@ -111,6 +111,7 @@ class ReflectionFrame(wx.Frame):
 
     self.bmp = np_to_bmp()
     self.arr_img = [None, None, None]
+    self.arr_ttl = [None, None, None]
     self.My_Img = [None, None, None]
     self.wx_Img = [None, None, None]
     wx.EVT_CLOSE(self, self._On_Close_Window)
@@ -179,7 +180,7 @@ class ReflectionFrame(wx.Frame):
   def _My_Update(self, request_new_data = True):
 
     if( request_new_data == True ):
-      self.arr_img = self.tabl(opt = self.opt)
+      self.arr_img, self.arr_ttl = self.tabl(opt = self.opt)
       ref_max = self.tabl.Get_Max(self.opt)
       #box_lmt = self.tabl.Get_bbox()
       self.xyz_px = self.tabl.Get_xyz()
@@ -191,7 +192,7 @@ class ReflectionFrame(wx.Frame):
           Imax = ref_max
         self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx]
                           , Intst_max = Imax, ofst = self.bbox_px
-                          , xyz = self.xyz_px)
+                          , xyz = self.xyz_px, title = self.arr_ttl[indx])
       self.text01.SetValue(str(self.tabl.Get_ref_num()))
 
     for indx in range(len(self.arr_img)):
