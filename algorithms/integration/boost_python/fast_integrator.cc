@@ -16,7 +16,7 @@
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
-  
+
   class WorkerIterator {
   public:
 
@@ -32,7 +32,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         it_(it) {}
 
     reference operator*() {
-      return self_.worker(it_); 
+      return self_.worker(it_);
     }
 
     WorkerIterator& operator++() {
@@ -58,7 +58,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     const FastIntegrator &self_;
     base_iterator it_;
   };
-  
+
   struct make_worker_iterator {
     static
     WorkerIterator begin(const FastIntegrator &self) {
@@ -78,20 +78,20 @@ namespace dials { namespace algorithms { namespace boost_python {
     }
   };
 
-  struct FastIntegratorResultPickleSuite : 
+  struct FastIntegratorResultPickleSuite :
       public boost::python::pickle_suite {
 
     static
-    boost::python::tuple 
+    boost::python::tuple
     getinitargs(const FastIntegratorResult &self) {
       return boost::python::make_tuple(
           self.index(),
           self.intensity(),
           self.variance()
-          ); 
+          );
     }
   };
-  
+
   void export_fast_integrator()
   {
     class_<FastIntegratorResult>("FastIntegratorResult", no_init)

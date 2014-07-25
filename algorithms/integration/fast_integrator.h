@@ -72,22 +72,62 @@ namespace dials { namespace algorithms {
   class FastIntegratorWorker {
   public:
 
+    /** Arbitrary constant to limit size of measurement box. */
+    static const std::size_t MAX_BOX_SIZE = 100;
+
     FastIntegratorWorker(
-          std::size_t index, 
-          std::size_t first, 
+          std::size_t index,
+          std::size_t first,
           std::size_t last,
           const af::const_ref<std::size_t> &panel,
           const af::const_ref<std::size_t> &frame,
-          const af::const_ref<int4> &bbox) 
+          const af::const_ref<int4> &bbox)
       : index_(index),
         first_(first),
         last_(last),
         current_(first),
+        panel_(panel.begin(), panel.end()),
+        frame_(frame.begin(), frame.end()),
+        bbox_(bbox.begin(), bbox.end()),
+        offset_(last-first+1),
         intensity_(panel.size()),
         variance_(panel.size()) {
+
+      // Check input is valid
       DIALS_ASSERT(first_ < last_);
+      DIALS_ASSERT(panel.size() > 0);
       DIALS_ASSERT(panel.size() == frame.size());
       DIALS_ASSERT(panel.size() == bbox.size());
+
+      // Check the frame numbers are in order and within the bounds.  Also
+      // create an array of offsets into the data for each frame.  Also compute
+      // the maximum buffer size needed to store the shoeboxes for each image.
+      std::size_t max_buffer_size = 0;
+      std::size_t i = 0;
+      offset_[0] = 0;
+      DIALS_ASSERT(frame.front() >= first_);
+      DIALS_ASSERT(frame.back() < last_);
+      DIALS_ASSERT(frame.front() <= frame.back());
+      for (std::size_t f = first_; f < last_; ++f) {
+        while (i < frame.size() && frame[i] == f) {
+          DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+          DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+          std::size_t xs = bbox[i][1] - bbox[i][0];
+          std::size_t ys = bbox[i][3] - bbox[i][2];
+          DIALS_ASSERT(xs < MAX_BOX_SIZE);
+          DIALS_ASSERT(ys < MAX_BOX_SIZE);
+          max_buffer_size = std::max(max_buffer_size, xs * ys);
+          i++;
+        }
+        offset_[f - first_ + 1] = i;
+      }
+      DIALS_ASSERT(i == frame.size());
+      DIALS_ASSERT(offset_.back() == frame.size());
+
+      // Allocate the buffers
+      data_.resize(max_buffer_size);
+      mask_.resize(max_buffer_size);
+      bgrd_.resize(max_buffer_size);
     }
 
     std::size_t first() const {
@@ -105,9 +145,49 @@ namespace dials { namespace algorithms {
     void next(const Image &image) {
       DIALS_ASSERT(!finished());
       std::cout << "Processing Image: " << current_ << std::endl;
-     
-      
 
+      // Loop through all the reflections
+      std::size_t index = current_ - first_;
+      for (std::size_t ind = offset_[index]; ind < offset_[index+1]; ++ind) {
+        DIALS_ASSERT(frame_[ind] == current_);
+
+        // Get the panel and bounding box
+        std::size_t panel = panel_[ind];
+        int4 bbox = bbox_[ind];
+
+        // Compute the grid size
+        af::c_grid<2> grid(bbox[3] - bbox[2], bbox[1] - bbox[0]);
+        DIALS_ASSERT(grid.size_1d() <= data_.size());
+
+        // Create the data, background and mask arrays
+        af::ref< double, af::c_grid<2> > data(&data_[0], grid);
+        af::ref< double, af::c_grid<2> > bgrd(&bgrd_[0], grid);
+        af::ref< int, af::c_grid<2> > mask(&mask_[0], grid);
+
+        // Get the data for the panel
+        Image::int_const_ref_type imdata = image.data(panel);
+        Image::bool_const_ref_type immask = image.mask(panel);
+
+        // Copy the image and data
+        int x0 = std::max(bbox[0], 0);
+        int y0 = std::max(bbox[2], 0);
+        int x1 = std::min(bbox[1], (int)imdata.accessor()[1]);
+        int y1 = std::min(bbox[3], (int)imdata.accessor()[0]);
+        std::fill(data.begin(), data.end(), 0);
+        std::fill(bgrd.begin(), bgrd.end(), 0);
+        std::fill(mask.begin(), mask.end(), 0);
+        for (int  y = y0; y < y1; ++y) {
+          for (int x = x0; x < x1; ++x) {
+            int j = y - bbox[2];
+            int i = x - bbox[0];
+            data(j,i) = imdata(y,x);
+            mask(j,i) = immask(y,x);
+          }
+        }
+
+      }
+
+      // Increment the frame number
       current_++;
     }
 
@@ -130,8 +210,12 @@ namespace dials { namespace algorithms {
     af::shared<std::size_t> panel_;
     af::shared<std::size_t> frame_;
     af::shared<int4> bbox_;
+    af::shared<std::size_t> offset_;
     af::shared<double> intensity_;
     af::shared<double> variance_;
+    af::shared<double> data_;
+    af::shared<double> bgrd_;
+    af::shared<int> mask_;
   };
 
   /**
@@ -153,8 +237,15 @@ namespace dials { namespace algorithms {
       }
     };
 
+    /**
+     * Initialise the book-keeping for the integration.
+     * @param predicted The predicted reflections.
+     * @param image0 The first image
+     * @param image1 The last image
+     * @param nproc The number of processors
+     */
     FastIntegrator(
-          af::reflection_table predicted, 
+          af::reflection_table predicted,
           int image0,
           int image1,
           std::size_t nproc)
@@ -164,8 +255,8 @@ namespace dials { namespace algorithms {
         nframes_(image1 - image0),
         nproc_(nproc),
         accumulated_(nproc, false) {
-      
-      // Check input is ok    
+
+      // Check input is ok
       DIALS_ASSERT(predicted.size() > 0);
       DIALS_ASSERT(predicted.contains("panel"));
       DIALS_ASSERT(predicted.contains("bbox"));
@@ -216,7 +307,7 @@ namespace dials { namespace algorithms {
       }
       DIALS_ASSERT(j1 == num_partial);
 
-      // Sort the indices by frame 
+      // Sort the indices by frame
       std::sort(indices_.begin(), indices_.end(), sort_by_frame(&frame_[0]));
 
       // Create the frame ranges
@@ -245,7 +336,7 @@ namespace dials { namespace algorithms {
     std::size_t size() const {
       return nproc_;
     }
-   
+
     /**
      * @returns is the processing finished.
      */
@@ -267,7 +358,7 @@ namespace dials { namespace algorithms {
      */
     FastIntegratorWorker worker(std::size_t index) const {
       DIALS_ASSERT(index < size());
-  
+
       // Get the frame range
       std::size_t first = frame_range_[index];
       std::size_t last = frame_range_[index+1];
@@ -289,9 +380,9 @@ namespace dials { namespace algorithms {
 
       // Create the fast integrator worker
       return FastIntegratorWorker(
-          index, first, last, 
-          panel.const_ref(), 
-          frame.const_ref(), 
+          index, first, last,
+          panel.const_ref(),
+          frame.const_ref(),
           bbox2.const_ref());
     }
 
@@ -305,7 +396,7 @@ namespace dials { namespace algorithms {
       std::size_t index = result.index();
       DIALS_ASSERT(index < size());
       DIALS_ASSERT(accumulated_[index] == false);
-      
+
       // Get the offset and number
       std::size_t off = offset_[index];
       std::size_t num = offset_[index+1] - off;
