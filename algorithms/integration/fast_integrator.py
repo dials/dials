@@ -4,7 +4,8 @@ import boost.python
 
 class FastIntegrator(object):
 
-  def __init__(self, exlist, predictions, num_proc=1, mp_method=None):
+  def __init__(self, exlist, predictions, 
+               num_proc=1, mp_method="multiprocessing"):
     from dials.algorithms.integration import FastIntegratorInternal
   
     # Get the imagesets and ensure only 1
@@ -31,15 +32,17 @@ class FastIntegrator(object):
         index1 = worker.last()
         for index in range(index0, index1):
           worker.next(self.imageset[index])
+        assert(worker.finished())
         return worker.result()
 
     # Perform the integration on multiple threads
-    if len(self._integrator) > 1:
+    num_proc = len(self._integrator)
+    if num_proc > 1:
       worker_results = easy_mp.parallel_map(
         func=Worker(self._imageset),
         iterable=list(self._integrator.workers()),
         processes=num_proc,
-        method=self.mp_method,
+        method=self._mp_method,
         preserve_order=True)
     else:
       worker = Worker(self._imageset)
@@ -54,7 +57,8 @@ class FastIntegrator(object):
     
 
 
-def integrate_quickly(exlist, predictions, num_proc=1, mp_method=None):
+def integrate_quickly(exlist, predictions, 
+                      num_proc=1, mp_method="multiprocessing"):
 
   integrator = FastIntegrator(exlist, predictions, num_proc, mp_method)
   return integrator.integrate()

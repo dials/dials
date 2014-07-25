@@ -10,8 +10,8 @@ namespace dials { namespace algorithms {
   class FastIntegratorResult {
   public:
 
-    FastIntegratorResult() 
-      : index_(0) {
+    FastIntegratorResult(std::size_t index) 
+      : index_(index) {
 
     }
 
@@ -39,7 +39,8 @@ namespace dials { namespace algorithms {
   class FastIntegratorWorker {
   public:
 
-    FastIntegratorWorker() {
+    FastIntegratorWorker(std::size_t index) 
+      : result_(index) {
 
     }
 
@@ -94,7 +95,8 @@ namespace dials { namespace algorithms {
     }
 
     FastIntegratorWorker worker(std::size_t index) const {
-      return FastIntegratorWorker();
+      DIALS_ASSERT(index < size());
+      return FastIntegratorWorker(index);
     }
 
     void accumulate(const FastIntegratorResult &result) {
