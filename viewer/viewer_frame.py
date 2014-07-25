@@ -231,8 +231,6 @@ class ReflectionFrame(wx.Frame):
                           '    ' + str(self.hkl_data[2]) + ' '
       self.data_txt_03.SetLabel(hkl_string)
 
-      print hkl_string
-
     self.Layout()
     self.Refresh()
 
