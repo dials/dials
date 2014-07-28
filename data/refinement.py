@@ -27,13 +27,15 @@ refinement
     beam
       .help = "beam parameters"
     {
-      fix = all *in_spindle_plane out_spindle_plane
+      fix = all *in_spindle_plane out_spindle_plane *wavelength
         .help = "Whether to fix beam parameters. By default,"
                 "in_spindle_plane is selected, and one of the two"
                 "parameters is fixed. If a goniometer is present"
                 "this leads to the beam orientation being restricted"
-                "to a direction in the initial spindle-beam plane"
-        .type = choice
+                "to a direction in the initial spindle-beam plane."
+                "Wavelength is also fixed by default, to allow refinement of"
+                "the unit cell volume."
+        .type = choice(multi=True)
 
       fix_list = None
         .type = ints(value_min=0)

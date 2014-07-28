@@ -1,5 +1,5 @@
 from __future__ import division
-from beam_parameters import BeamParameterisationOrientation # import dependency
+from beam_parameters import BeamParameterisation # import dependency
 from crystal_parameters import CrystalOrientationParameterisation # import dependency
 from crystal_parameters import CrystalUnitCellParameterisation # import dependency
 from detector_parameters import DetectorParameterisationSinglePanel # import dependency

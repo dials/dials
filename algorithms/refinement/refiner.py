@@ -328,17 +328,20 @@ class RefinerFactory(object):
       assert all(g is goniometer for g in assoc_gonios)
 
       # Parameterise, passing the goniometer (but accepts None)
-      beam_param = par.BeamParameterisationOrientation(beam, goniometer,
+      beam_param = par.BeamParameterisation(beam, goniometer,
                                                        experiment_ids=exp_ids)
       if beam_options.fix:
-        if beam_options.fix == "all":
-          beam_param.set_fixed([True, True])
-        elif beam_options.fix == "in_spindle_plane":
-          beam_param.set_fixed([True, False])
-        elif beam_options.fix == "out_spindle_plane":
-          beam_param.set_fixed([False, True])
-        else: # can only get here if refinement.phil is broken
-          raise RuntimeError("beam_options.fix value not recognised")
+        fix_list = [False, False, False]
+        print beam_options.fix
+        if "all" in beam_options.fix:
+          fix_list = [True, True, True]
+        if "in_spindle_plane" in beam_options.fix:
+          fix_list[0] = True
+        if "out_spindle_plane" in beam_options.fix:
+          fix_list[1] = True
+        if "wavelength" in beam_options.fix:
+          fix_list[2] = True
+        beam_param.set_fixed(fix_list)
 
       if beam_options.fix_list:
         to_fix = [True if i in beam_options.fix_list else False \
