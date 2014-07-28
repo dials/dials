@@ -332,7 +332,6 @@ class RefinerFactory(object):
                                                        experiment_ids=exp_ids)
       if beam_options.fix:
         fix_list = [False, False, False]
-        print beam_options.fix
         if "all" in beam_options.fix:
           fix_list = [True, True, True]
         if "in_spindle_plane" in beam_options.fix:
