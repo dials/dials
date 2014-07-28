@@ -138,7 +138,7 @@ def refine(beam, goniometer, crystal, detector, scan,
   from dials.algorithms.refinement.parameterisation.detector_parameters import \
       DetectorParameterisationSinglePanel
   from dials.algorithms.refinement.parameterisation.beam_parameters import \
-      BeamParameterisationOrientation
+      BeamParameterisation
   from dials.algorithms.refinement.parameterisation.crystal_parameters import \
       CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
@@ -196,8 +196,8 @@ def refine(beam, goniometer, crystal, detector, scan,
   xlo_param = CrystalOrientationParameterisation(crystal)
   xluc_param = CrystalUnitCellParameterisation(crystal)
 
-  # Fix beam to the X-Z plane (imgCIF geometry)
-  s0_param.set_fixed([True, False])
+  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+  s0_param.set_fixed([True, False, True])
 
   # Fix cell if requested
   if fix_cell:
@@ -295,7 +295,7 @@ def scan_varying_refine(
   from dials.algorithms.refinement.parameterisation.detector_parameters import \
       DetectorParameterisationSinglePanel
   from dials.algorithms.refinement.parameterisation.beam_parameters import \
-      BeamParameterisationOrientation
+      BeamParameterisation
   from dials.algorithms.refinement.parameterisation.\
       scan_varying_crystal_parameters import \
           ScanVaryingCrystalOrientationParameterisation, \
@@ -329,14 +329,14 @@ def scan_varying_refine(
   ###########################
 
   det_param = DetectorParameterisationSinglePanel(detector)
-  s0_param = BeamParameterisationOrientation(beam, goniometer)
+  s0_param = BeamParameterisation(beam, goniometer)
   xlo_param = ScanVaryingCrystalOrientationParameterisation(
           crystal, scan.get_array_range(), 5)
   xluc_param = ScanVaryingCrystalUnitCellParameterisation(
           crystal, scan.get_array_range(), 5)
 
-  # Fix beam to the X-Z plane (imgCIF geometry)
-  s0_param.set_fixed([True, False])
+  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+  s0_param.set_fixed([True, False, True])
 
   # Fix cell if requested
   if fix_cell:

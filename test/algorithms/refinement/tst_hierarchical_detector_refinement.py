@@ -148,15 +148,15 @@ def test1():
 
   # parameterise other models
   from dials.algorithms.refinement.parameterisation.beam_parameters import \
-      BeamParameterisationOrientation
+      BeamParameterisation
   from dials.algorithms.refinement.parameterisation.crystal_parameters import \
       CrystalOrientationParameterisation, CrystalUnitCellParameterisation
-  beam_param = BeamParameterisationOrientation(beam, goniometer)
+  beam_param = BeamParameterisation(beam, goniometer)
   xlo_param = CrystalOrientationParameterisation(crystal)
   xluc_param = CrystalUnitCellParameterisation(crystal)
 
   # fix beam
-  beam_param.set_fixed([True]*2)
+  beam_param.set_fixed([True]*3)
 
   # fix crystal
   xluc_param.set_fixed([True]*6)

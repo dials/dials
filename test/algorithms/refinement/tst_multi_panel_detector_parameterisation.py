@@ -45,7 +45,7 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel, DetectorParameterisationMultiPanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
-    BeamParameterisationOrientation
+    BeamParameterisation
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
@@ -150,14 +150,14 @@ if __name__ == '__main__':
   ###########################
 
   det_param = DetectorParameterisationSinglePanel(single_panel_detector)
-  s0_param = BeamParameterisationOrientation(mybeam, mygonio)
+  s0_param = BeamParameterisation(mybeam, mygonio)
   xlo_param = CrystalOrientationParameterisation(mycrystal)
   xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
   multi_det_param = DetectorParameterisationMultiPanel(multi_panel_detector, mybeam)
 
-  # Fix beam to the X-Z plane (imgCIF geometry)
-  s0_param.set_fixed([True, False])
+  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+  s0_param.set_fixed([True, False, True])
 
   # Fix crystal parameters
   #xluc_param.set_fixed([True, True, True, True, True, True])

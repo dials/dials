@@ -38,7 +38,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parame
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
-    BeamParameterisationOrientation
+    BeamParameterisation
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters import \
     ScanVaryingCrystalOrientationParameterisation, \
     ScanVaryingCrystalUnitCellParameterisation
@@ -76,7 +76,7 @@ myscan = sf.make_scan((1,360), 0.5, (0, 0.5), range(360))
 # scan-varying crystal parameterisations
 
 det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisationOrientation(mybeam, mygonio)
+s0_param = BeamParameterisation(mybeam, mygonio)
 xlo_param = ScanVaryingCrystalOrientationParameterisation(
         mycrystal, myscan.get_array_range(), 5)
 xluc_param = ScanVaryingCrystalUnitCellParameterisation(

@@ -34,7 +34,7 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
-    BeamParameterisationOrientation
+    BeamParameterisation
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
@@ -111,7 +111,7 @@ assert len(experiments.detectors()) == 1
 ##########################################################
 
 det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisationOrientation(mybeam, mygonio)
+s0_param = BeamParameterisation(mybeam, mygonio)
 xl1o_param = CrystalOrientationParameterisation(crystal1)
 xl1uc_param = CrystalUnitCellParameterisation(crystal1)
 xl2o_param = CrystalOrientationParameterisation(crystal2)

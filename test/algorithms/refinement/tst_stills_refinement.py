@@ -35,7 +35,7 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
-    BeamParameterisationOrientation
+    BeamParameterisation
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
@@ -104,12 +104,12 @@ scans_experiments.append(Experiment(
 ##########################################################
 
 det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisationOrientation(mybeam, goniometer=None)
+s0_param = BeamParameterisation(mybeam, goniometer=None)
 xlo_param = CrystalOrientationParameterisation(crystal)
 xluc_param = CrystalUnitCellParameterisation(crystal)
 
-# Fix beam to the X-Z plane (imgCIF geometry)
-s0_param.set_fixed([True, False])
+# Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+s0_param.set_fixed([True, False, True])
 
 ################################
 # Apply known parameter shifts #

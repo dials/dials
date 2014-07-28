@@ -27,7 +27,7 @@ from scitbx import matrix
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
-    BeamParameterisationOrientation
+    BeamParameterisation
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
@@ -65,12 +65,12 @@ def generate_reflections(experiment):
   ###########################
 
   det_param = DetectorParameterisationSinglePanel(detector)
-  s0_param = BeamParameterisationOrientation(beam, goniometer)
+  s0_param = BeamParameterisation(beam, goniometer)
   xlo_param = CrystalOrientationParameterisation(crystal)
   xluc_param = CrystalUnitCellParameterisation(crystal)
 
-  # Fix beam to the X-Z plane (imgCIF geometry)
-  s0_param.set_fixed([True, False])
+  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+  s0_param.set_fixed([True, False, True])
 
   ################################
   # Apply known parameter shifts #
