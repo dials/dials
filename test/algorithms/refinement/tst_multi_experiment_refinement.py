@@ -117,8 +117,8 @@ xl1uc_param = CrystalUnitCellParameterisation(crystal1)
 xl2o_param = CrystalOrientationParameterisation(crystal2)
 xl2uc_param = CrystalUnitCellParameterisation(crystal2)
 
-# Fix beam to the X-Z plane (imgCIF geometry)
-s0_param.set_fixed([True, False])
+# Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+s0_param.set_fixed([True, False, True])
 
 # Fix crystal parameters
 #xluc_param.set_fixed([True, True, True, True, True, True])
