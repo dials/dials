@@ -56,6 +56,47 @@ class SpotFrame(XrayFrame) :
         style=wx.CAPTION|wx.MINIMIZE_BOX, pos=(x_start, y_start))
     self.settings_frame.Show()
 
+  def show_filters(self):
+    from dials.algorithms.image.threshold import KabschDebug
+    from dials.array_family import flex
+
+    image = self.pyslip.tiles.raw_image
+    raw_data = image.get_raw_data()
+    detector = image.get_detector()
+
+    trange = [p.get_trusted_range() for p in detector]
+    mask = []
+    for tr, im in zip(trange, [raw_data]):
+      mask.append(im > int(tr[0]))
+
+    nsigma_b = self.settings.nsigma_b
+    nsigma_s = self.settings.nsigma_s
+    min_count = 2
+    size = self.settings.kernel_size
+    debug = KabschDebug(image.get_raw_data().as_double(),
+      mask[0], size, nsigma_b, nsigma_s, min_count)
+    mean = debug.mean()
+    variance = debug.variance()
+    cv = debug.coefficient_of_variation()
+    cv_mask = debug.cv_mask()
+    value_mask = debug.value_mask()
+    final_mask = debug.final_mask()
+    if self.settings.show_mean_filter:
+      self.pyslip.tiles.set_image_data(mean)
+    elif self.settings.show_variance_filter:
+      self.pyslip.tiles.set_image_data(variance)
+    elif self.settings.show_cv_filter:
+      self.pyslip.tiles.set_image_data(cv)
+    elif self.settings.show_threshold_map:
+      final_mask = final_mask.as_1d().as_double()
+      final_mask.reshape(mean.accessor())
+      self.pyslip.tiles.set_image_data(final_mask)
+    else:
+      self.pyslip.tiles.set_image_data(raw_data)
+    self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
+    self.update_statusbar() # XXX Not always working?
+    self.Layout()
+
   def update_settings(self, layout=True):
     super(SpotFrame, self).update_settings(layout=layout)
     if self.settings.show_dials_spotfinder_spots:
@@ -149,6 +190,7 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<vector_text_layer>',
           colour='#F62817')
+    self.show_filters()
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
@@ -357,6 +399,13 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_shoebox = True
     self.settings.show_predictions = True
     self.settings.show_miller_indices = False
+    self.settings.show_mean_filter = False
+    self.settings.show_variance_filter = False
+    self.settings.show_cv_filter = False
+    self.settings.show_threshold_map = False
+    self.settings.nsigma_b = 6
+    self.settings.nsigma_s = 3
+    self.settings.kernel_size = [3,3]
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
@@ -435,6 +484,56 @@ class SpotSettingsPanel (SettingsPanel) :
     #box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     #s.Add(box)
 
+    from wxtbx.segmentedctrl import SegmentedRadioControl
+    self.btn = SegmentedRadioControl(self)
+    self.btn.AddSegment("image")
+    self.btn.AddSegment("mean")
+    self.btn.AddSegment("variance")
+    self.btn.AddSegment("dispersion")
+    self.btn.AddSegment("threshold")
+    self.btn.SetSelection(0)
+
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnUpdateCM, self.btn)
+    self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
+
+    # Kabsch thresholding parameters
+    grid1 = wx.FlexGridSizer(cols=2, rows=3)
+    s.Add(grid1)
+
+    from wxtbx.phil_controls.floatctrl import FloatCtrl
+    txt1 = wx.StaticText(self, -1, "sigma_background")
+    grid1.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.nsigma_b_ctrl = FloatCtrl(
+      self, value=self.settings.nsigma_b, name="sigma_background")
+    self.nsigma_b_ctrl.SetMin(0)
+    grid1.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
+
+    txt2 = wx.StaticText(self, -1, "sigma_strong")
+    grid1.Add(txt2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.nsigma_s_ctrl = FloatCtrl(
+      self, value=self.settings.nsigma_s, name="sigma_strong")
+    self.nsigma_s_ctrl.SetMin(0)
+    grid1.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
+
+    self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdateCM,
+              self.nsigma_b_ctrl)
+    self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdateCM,
+              self.nsigma_s_ctrl)
+
+    from wxtbx.phil_controls.ints import IntsCtrl
+    txt3 = wx.StaticText(self, -1, "kernel_size")
+    grid1.Add(txt3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.kernel_size_ctrl = IntsCtrl(
+      self, value=[3, 3],
+      name="kernel_size")
+    self.kernel_size_ctrl.SetSize(2)
+    self.kernel_size_ctrl.SetMin(1)
+    grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
+
+    btn = wx.Button(self, -1, "Update display", pos=(400, 360))
+    self.GetSizer().Add(btn, 0, wx.ALL, 5)
+    self.Bind(wx.EVT_BUTTON, self.OnUpdateCM, btn)
+
     self.collect_values()
 
     # CONTROLS 3:  Bind events to actions
@@ -471,6 +570,13 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_predictions = self.predictions.GetValue()
       self.settings.show_miller_indices = self.miller_indices.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
+      self.settings.show_mean_filter = self.btn.values[1]
+      self.settings.show_variance_filter = self.btn.values[2]
+      self.settings.show_cv_filter = self.btn.values[3]
+      self.settings.show_threshold_map = self.btn.values[4]
+      self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
+      self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
+      self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
 
   def OnUpdateCM (self, event) :
     self.collect_values()
