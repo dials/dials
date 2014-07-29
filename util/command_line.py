@@ -278,7 +278,8 @@ class Importer(object):
 
   def __init__(self, args, include=None, exclude=None, verbose=False,
                check_format=True):
-    ''' Parse the arguments.
+    ''' Parse the arguments. Populates its instance attributes in an intelligent
+    way from the arguments in args.
 
     If include is set, only those items set will be tried. If not, then if
     exclude is set, then those items will not be tested.
@@ -294,6 +295,7 @@ class Importer(object):
       include types to try
       exclude types not to try
       verbose True/False print out some stuff
+
 
     Example:
       import = Importer(argv, include=['reflections'])
