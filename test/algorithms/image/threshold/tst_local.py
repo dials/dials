@@ -24,6 +24,7 @@ class Test:
     self.tst_gain()
     self.tst_kabsch()
     self.tst_kabsch_w_gain()
+    self.tst_kabsch_debug()
 
   def tst_niblack(self):
     from dials.algorithms.image.threshold import niblack
@@ -68,6 +69,16 @@ class Test:
     nsig_b = 3
     nsig_s = 3
     result = kabsch_w_gain(self.image, self.mask, self.gain, self.size, nsig_b, nsig_s, self.min_count)
+    print 'OK'
+
+  def tst_kabsch_debug(self):
+    from dials.algorithms.image.threshold import kabsch, KabschDebug
+    nsig_b = 3
+    nsig_s = 3
+    result1 = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
+    debug = KabschDebug(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
+    result2 = debug.final_mask()
+    assert(result1.all_eq(result2))
     print 'OK'
 
 if __name__ == '__main__':
