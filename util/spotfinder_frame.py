@@ -85,8 +85,16 @@ class SpotFrame(XrayFrame) :
       self.pyslip.tiles.set_image_data(mean)
     elif self.settings.show_variance_filter:
       self.pyslip.tiles.set_image_data(variance)
-    elif self.settings.show_cv_filter:
+    elif self.settings.show_dispersion:
       self.pyslip.tiles.set_image_data(cv)
+    elif self.settings.show_sigma_b_filter:
+      cv_mask = cv_mask.as_1d().as_double()
+      cv_mask.reshape(mean.accessor())
+      self.pyslip.tiles.set_image_data(cv_mask)
+    elif self.settings.show_sigma_s_filter:
+      value_mask = value_mask.as_1d().as_double()
+      value_mask.reshape(mean.accessor())
+      self.pyslip.tiles.set_image_data(value_mask)
     elif self.settings.show_threshold_map:
       final_mask = final_mask.as_1d().as_double()
       final_mask.reshape(mean.accessor())
@@ -401,7 +409,9 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_miller_indices = False
     self.settings.show_mean_filter = False
     self.settings.show_variance_filter = False
-    self.settings.show_cv_filter = False
+    self.settings.show_dispersion = False
+    self.settings.show_sigma_b_filter = False
+    self.settings.show_sigma_s_filter = False
     self.settings.show_threshold_map = False
     self.settings.nsigma_b = 6
     self.settings.nsigma_s = 3
@@ -484,18 +494,6 @@ class SpotSettingsPanel (SettingsPanel) :
     #box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     #s.Add(box)
 
-    from wxtbx.segmentedctrl import SegmentedRadioControl
-    self.btn = SegmentedRadioControl(self)
-    self.btn.AddSegment("image")
-    self.btn.AddSegment("mean")
-    self.btn.AddSegment("variance")
-    self.btn.AddSegment("dispersion")
-    self.btn.AddSegment("threshold")
-    self.btn.SetSelection(0)
-
-    self.Bind(wx.EVT_RADIOBUTTON, self.OnUpdateCM, self.btn)
-    self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
-
     # Kabsch thresholding parameters
     grid1 = wx.FlexGridSizer(cols=2, rows=3)
     s.Add(grid1)
@@ -529,6 +527,20 @@ class SpotSettingsPanel (SettingsPanel) :
     self.kernel_size_ctrl.SetSize(2)
     self.kernel_size_ctrl.SetMin(1)
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
+
+    from wxtbx.segmentedctrl import SegmentedRadioControl
+    self.btn = SegmentedRadioControl(self)
+    self.btn.AddSegment("image")
+    self.btn.AddSegment("mean")
+    self.btn.AddSegment("variance")
+    self.btn.AddSegment("dispersion")
+    self.btn.AddSegment("sigma_b")
+    self.btn.AddSegment("sigma_s ")
+    self.btn.AddSegment("threshold")
+    self.btn.SetSelection(0)
+
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnUpdateCM, self.btn)
+    self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
 
     btn = wx.Button(self, -1, "Update display", pos=(400, 360))
     self.GetSizer().Add(btn, 0, wx.ALL, 5)
@@ -572,8 +584,10 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.color_scheme = self.color_ctrl.GetSelection()
       self.settings.show_mean_filter = self.btn.values[1]
       self.settings.show_variance_filter = self.btn.values[2]
-      self.settings.show_cv_filter = self.btn.values[3]
-      self.settings.show_threshold_map = self.btn.values[4]
+      self.settings.show_dispersion = self.btn.values[3]
+      self.settings.show_sigma_b_filter = self.btn.values[4]
+      self.settings.show_sigma_s_filter = self.btn.values[5]
+      self.settings.show_threshold_map = self.btn.values[6]
       self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
       self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
       self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
