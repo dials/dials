@@ -257,35 +257,35 @@ class SpotFrame(XrayFrame) :
               ctr_mass_data.extend(lines)
             self.show_ctr_mass_timer.stop()
 
-    if ((ref_list.has_key('xyzcal.px') or ref_list.has_key('xyzcal.mm')) and
-        (self.settings.show_predictions or (
-          self.settings.show_miller_indices and ref_list.has_key('miller_index')))):
-      if ref_list.has_key('xyzcal.px'):
-        frame_numbers = ref_list['xyzcal.px'].parts()[2]
-      else:
-        phi = ref_list['xyzcal.mm'].parts()[2]
-        frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
-      n = 0 # buffer
-      frame_predictions_sel = (
-        (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
-      for reflection in ref_list.select(frame_predictions_sel):
-        if (self.settings.show_predictions and
-            reflection.has_key('xyzcal.px')):
-          x, y = map_coords(reflection['xyzcal.px'][0]+ 0.5,
-                            reflection['xyzcal.px'][1] + 0.5,
-                            reflection['panel'])
-          predictions_data.append((x, y))
-        elif (self.settings.show_predictions and
-              reflection.has_key('xyzcal.mm')):
-          x, y = detector[reflection['panel']].millimeter_to_pixel(
-            reflection['xyzcal.mm'][:2])
-          x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
-          predictions_data.append((x, y))
-        if (self.settings.show_miller_indices and
-            'miller_index' in reflection and
-            reflection['miller_index'] != (0,0,0)):
-          miller_indices_data.append((x, y, str(reflection['miller_index']),
-                                      {'placement':'ne'}))
+      if ((ref_list.has_key('xyzcal.px') or ref_list.has_key('xyzcal.mm')) and
+          (self.settings.show_predictions or (
+            self.settings.show_miller_indices and ref_list.has_key('miller_index')))):
+        if ref_list.has_key('xyzcal.px'):
+          frame_numbers = ref_list['xyzcal.px'].parts()[2]
+        else:
+          phi = ref_list['xyzcal.mm'].parts()[2]
+          frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
+        n = 0 # buffer
+        frame_predictions_sel = (
+          (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
+        for reflection in ref_list.select(frame_predictions_sel):
+          if (self.settings.show_predictions and
+              reflection.has_key('xyzcal.px')):
+            x, y = map_coords(reflection['xyzcal.px'][0]+ 0.5,
+                              reflection['xyzcal.px'][1] + 0.5,
+                              reflection['panel'])
+            predictions_data.append((x, y))
+          elif (self.settings.show_predictions and
+                reflection.has_key('xyzcal.mm')):
+            x, y = detector[reflection['panel']].millimeter_to_pixel(
+              reflection['xyzcal.mm'][:2])
+            x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
+            predictions_data.append((x, y))
+          if (self.settings.show_miller_indices and
+              'miller_index' in reflection and
+              reflection['miller_index'] != (0,0,0)):
+            miller_indices_data.append((x, y, str(reflection['miller_index']),
+                                        {'placement':'ne'}))
 
     if self.crystals is not None:
       from scitbx import matrix

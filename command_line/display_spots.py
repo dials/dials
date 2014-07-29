@@ -60,8 +60,12 @@ if __name__ == '__main__':
     raise RuntimeError("No imageset could be constructed")
   assert len(importer.unhandled_arguments) == 0
 
+  reflections = importer.reflections
+  if reflections is None:
+    reflections = []
+
   runner = ScriptRunner(
-      reflections=importer.reflections,
+      reflections=reflections,
       imagesets=imagesets,
       crystals=crystals)
 
