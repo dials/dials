@@ -188,7 +188,6 @@ algorithms/refinement/prediction/README -text
 algorithms/refinement/prediction/__init__.py -text
 algorithms/refinement/prediction/ap_indices.dat -text
 algorithms/refinement/prediction/managed_predictors.py -text
-algorithms/refinement/prediction/predictors.py -text
 algorithms/refinement/prediction/ra_indices.dat -text
 algorithms/refinement/prediction/rscript.R -text
 algorithms/refinement/refinement_helpers.py -text
@@ -514,6 +513,7 @@ scratch/dgw/plot_derivatives.py -text
 scratch/dgw/prediction/README -text
 scratch/dgw/prediction/__init__.py -text
 scratch/dgw/prediction/obsolete_predictors.py -text
+scratch/dgw/prediction/predictors.py -text
 scratch/dgw/prediction/tst.py -text
 scratch/dgw/refinement/__init__.py -text
 scratch/dgw/refinement/align_multipanel_detector.py -text
