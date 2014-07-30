@@ -51,11 +51,7 @@ class Test:
           assert(abs(a1 - a2) < eps)
           assert(all(abs(a - b) < eps for a, b in zip(s11, s12)))
         else:
-          try:
-            assert(count == 2)
-          except:
-            from dials.util.command_line import interactive_console; interactive_console()
-            1/0
+          assert(count == 2)
 
       print 'OK'
 
