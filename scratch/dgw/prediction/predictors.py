@@ -7,7 +7,8 @@
 #  included in the root directory of this package.
 #
 
-"""Deprecated - to be moved to spot_prediction.
+"""This is deprecated code that is now used only in a regression test comparing
+results to new versions of the calculations.
 
 * ScanVaryingReflectionPredictor performs prediction for a particular image with
   different setting matrices at beginning and end of the image
