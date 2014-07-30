@@ -79,7 +79,7 @@ class Test:
     return ub_beg, ub_end
 
   def predict_py(self, hkl, frame, A1, A2):
-    from dials.algorithms.refinement.prediction.predictors import \
+    from dials.scratch.dgw.prediction.obsolete_predictors import \
       ScanVaryingReflectionPredictor
     from dxtbx.model import Beam, Goniometer, Scan
     from dxtbx.model.crystal import crystal_model

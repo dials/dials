@@ -31,7 +31,7 @@ class Test(object):
     #self.tst_with_hkl_and_panel_list()
 
   def predict_old(self):
-    from dials.algorithms.refinement.prediction.predictors import \
+    from dials.scratch.dgw.prediction.obsolete_predictors import \
       ScanVaryingReflectionListGenerator
     dmin = self.experiments[0].detector.get_max_resolution(
       self.experiments[0].beam.get_s0())

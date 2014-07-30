@@ -50,9 +50,6 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
-# Import helper functions
-from dials.algorithms.refinement.refinement_helpers import print_model_geometry
-
 #############################
 # Setup experimental models #
 #############################

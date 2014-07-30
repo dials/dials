@@ -14,12 +14,6 @@ from math import sin, cos, sqrt
 from scitbx import matrix
 import random
 
-# flex is required before the boost python import to avoid an import error.
-# Ignore complaints by libtbx.find_clutter
-#from cctbx.array_family import flex
-#from dials_refinement_helpers_ext import *
-
-
 def dR_from_axis_and_angle(axis, angle, deg=False):
   """return the first derivative of a rotation matrix specified by its
   axis and angle"""
@@ -124,287 +118,288 @@ def print_grads(grad_list):
     print ("Param %02d. Gradients: "
            "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
 
-def refine(beam, goniometer, crystal, detector, scan,
-           reflections, verbosity = 0, fix_cell = False,
-           scan_varying=False, fix_detector=False, fix_beam=False, nref_per_degree = 50):
-
-  """Simple refinement interface for the centroid refinement sprint"""
-
-  # Reflection prediction
-  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
-  from dials.algorithms.refinement.prediction import ScansRayPredictor
-
-  # Model parameterisations
-  from dials.algorithms.refinement.parameterisation.detector_parameters import \
-      DetectorParameterisationSinglePanel
-  from dials.algorithms.refinement.parameterisation.beam_parameters import \
-      BeamParameterisation
-  from dials.algorithms.refinement.parameterisation.crystal_parameters import \
-      CrystalOrientationParameterisation, CrystalUnitCellParameterisation
-
-  # Symmetry constrained parameterisation for the unit cell
-  #from cctbx.uctbx import unit_cell
-  #from rstbx.symmetry.constraints.parameter_reduction import \
-  #    symmetrize_reduce_enlarge
-
-  # Parameterisation of the prediction equation
-  from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-      XYPhiPredictionParameterisation
-
-  # Imports for the target function
-  from dials.algorithms.refinement.target import \
-      LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
-
-  # Import the refinement engine
-  from dials.algorithms.refinement.engine import GaussNewtonIterations
-
-  # pull out data needed for refinement
-  #temp = [(ref.miller_index, ref.entering, ref.frame_number,
-  #         ref.rotation_angle, matrix.col(ref.beam_vector),
-  #         ref.panel_number, ref.image_coord_mm,
-  #         ref.centroid_variance) \
-  #            for ref in reflections]
-  #(hkls, enterings, frames, angles, svecs, panels, intersects,
-  #    variances) = zip(*temp)
-
-  # tease apart tuples to separate lists
-  #d1s, d2s = zip(*intersects)
-  #var_d1s, var_d2s, var_angles = zip(*variances)
-
-  # change variances to sigmas
-  #sig_d1s = [sqrt(e) for e in var_d1s]
-  #sig_d2s = [sqrt(e) for e in var_d2s]
-  #sig_angles = [sqrt(e) for e in var_angles]
-
-  #assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
-  #       len(sig_d2s) == len(angles) == len(sig_angles)
-
-  image_width = scan.get_oscillation(deg=False)[1]
-  sweep_range = scan.get_oscillation_range(deg=False)
-  experiments = ExperimentList()
-  experiments.append(Experiment(
-      beam=beam, detector=detector, goniometer=goniometer,
-      scan=scan, crystal=crystal, imageset=None))
-  ref_predictor = ScansRayPredictor(experiments)
-
-  ###########################
-  # Parameterise the models #
-  ###########################
-
-  det_param = DetectorParameterisationSinglePanel(detector)
-  s0_param = BeamParameterisationOrientation(beam, goniometer)
-  xlo_param = CrystalOrientationParameterisation(crystal)
-  xluc_param = CrystalUnitCellParameterisation(crystal)
-
-  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
-  s0_param.set_fixed([True, False, True])
-
-  # Fix cell if requested
-  if fix_cell:
-    xluc_param.set_fixed([True] * xluc_param.num_free())
-
-  if fix_beam:
-    s0_param.set_fixed([True, True])
-
-  if fix_detector:
-    det_param.set_fixed([True] * det_param.num_free())
-
-  ########################################################################
-  # Link model parameterisations together into a parameterisation of the #
-  # prediction equation                                                  #
-  ########################################################################
-
-  pred_param = XYPhiPredictionParameterisation(experiments,
-      [det_param], [s0_param], [xlo_param], [xluc_param])
-
-  if verbosity > 1:
-    print "Prediction equation parameterisation built\n"
-    print "Parameter order : name mapping"
-    for i, e in enumerate(pred_param.get_param_names()):
-      print "Parameter %03d : " % i + e
-    print
-
-  #####################################
-  # Select reflections for refinement #
-  #####################################
-
-  refman = ReflectionManager(reflections,
-                             experiments,
-                             nref_per_degree, verbosity=verbosity)
-
-  if verbosity > 1: print "Reflection manager built\n"
-
-  ##############################
-  # Set up the target function #
-  ##############################
-
-  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments, ref_predictor, refman, pred_param)
-
-  if verbosity > 1: print "Target function built\n"
-
-  ################################
-  # Set up the refinement engine #
-  ################################
-
-  refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
-                                  verbosity=verbosity)
-
-  if verbosity > 1: print "Refinement engine built\n"
-
-  ###################################
-  # Do refinement and return models #
-  ###################################
-
-  refiner.run()
-
-  #############################################################
-  # Do a second round of refinement with scan-varying models? #
-  #############################################################
-
-  if scan_varying:
-    return scan_varying_refine(
-        beam, goniometer, crystal, detector,
-        image_width, scan,
-        reflections,
-        verbosity,
-        fix_cell,
-        nref_per_degree)
-
-  # Return models (crystal not updated with scan-varying U, B)
-  else:
-    return (beam, goniometer, crystal, detector)
-
-def scan_varying_refine(
-            beam, goniometer, crystal, detector,
-            image_width, scan,
-            reflections,
-            verbosity = 0,
-            fix_cell = False,
-            nref_per_degree = None):
-
-  """experimental refinement function for scan-varying refinement"""
-
-  # Reflection prediction
-  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
-  from dials.algorithms.refinement.prediction import ScansRayPredictor
-  from dials.algorithms.refinement.prediction import \
-      ScanVaryingReflectionListGenerator
-
-  # Model parameterisations
-  from dials.algorithms.refinement.parameterisation.detector_parameters import \
-      DetectorParameterisationSinglePanel
-  from dials.algorithms.refinement.parameterisation.beam_parameters import \
-      BeamParameterisation
-  from dials.algorithms.refinement.parameterisation.\
-      scan_varying_crystal_parameters import \
-          ScanVaryingCrystalOrientationParameterisation, \
-          ScanVaryingCrystalUnitCellParameterisation
-
-  # Symmetry constrained parameterisation for the unit cell
-  #from cctbx.uctbx import unit_cell
-  #from rstbx.symmetry.constraints.parameter_reduction import \
-  #    symmetrize_reduce_enlarge
-
-  # Parameterisation of the prediction equation
-  from dials.algorithms.refinement.parameterisation.\
-      scan_varying_prediction_parameters \
-          import VaryingCrystalPredictionParameterisation
-
-  # Imports for the target function
-  from dials.algorithms.refinement.target import \
-      LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
-
-  # Import the refinement engine
-  from dials.algorithms.refinement.engine import GaussNewtonIterations
-
-  experiments = ExperimentList()
-  experiments.append(Experiment(
-      beam=beam, detector=detector, goniometer=goniometer,
-      scan=scan, crystal=crystal, imageset=None))
-  ref_predictor = ScansRayPredictor(experiments)
-
-  ###########################
-  # Parameterise the models #
-  ###########################
-
-  det_param = DetectorParameterisationSinglePanel(detector)
-  s0_param = BeamParameterisation(beam, goniometer)
-  xlo_param = ScanVaryingCrystalOrientationParameterisation(
-          crystal, scan.get_array_range(), 5)
-  xluc_param = ScanVaryingCrystalUnitCellParameterisation(
-          crystal, scan.get_array_range(), 5)
-
-  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
-  s0_param.set_fixed([True, False, True])
-
-  # Fix cell if requested
-  if fix_cell:
-    xluc_param.set_fixed([True] * xluc_param.num_free())
-
-  ########################################################################
-  # Link model parameterisations together into a parameterisation of the #
-  # prediction equation                                                  #
-  ########################################################################
-
-  pred_param = VaryingCrystalPredictionParameterisation(experiments,
-      [det_param], [s0_param], [xlo_param], [xluc_param])
-
-  if verbosity > 1:
-    print "Prediction equation parameterisation built\n"
-    print "Parameter order:name mapping"
-    for i, e in enumerate(pred_param.get_param_names()):
-      print "Parameter %03d : " % i + e
-    print
-
-  #####################################
-  # Select reflections for refinement #
-  #####################################
-
-  sweep_range = scan.get_oscillation_range(deg=False)
-  refman = ReflectionManager(reflections,
-                          experiments,
-                          nref_per_degree, verbosity=verbosity)
-
-  if verbosity > 1:
-    print "Reflection manager built\n"
-    print "Working set size = %d observations" % refman.get_sample_size()
-
-  ##############################
-  # Set up the target function #
-  ##############################
-
-  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-      ref_predictor, refman, pred_param)
-
-  if verbosity > 1: print "Target function built\n"
-
-  ################################
-  # Set up the refinement engine #
-  ################################
-
-  refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
-                                  verbosity=verbosity)
-
-  if verbosity > 1: print "Refinement engine built\n"
-
-  ###################################
-  # Do refinement and return models #
-  ###################################
-
-  refiner.run()
-
-  # NB scan-independent models set by side-effect, scan-varying
-  # crystal model not yet set at all
-
-  #####################################################################
-  # Return object to predict reflections using the scan-varying model #
-  #####################################################################
-
-  # resolution limit to corners of image
-  dmin = detector.get_max_resolution(beam.get_s0())
-
-  sv_predictor = ScanVaryingReflectionListGenerator(pred_param, beam,
-                                                    goniometer, scan, dmin)
-
-  return refman, sv_predictor
+#def refine(beam, goniometer, crystal, detector, scan,
+#           reflections, verbosity = 0, fix_cell = False,
+#           scan_varying=False, fix_detector=False, fix_beam=False, nref_per_degree = 50):
+#
+#  """Simple refinement interface for the centroid refinement sprint"""
+#
+#  # Reflection prediction
+#  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+#  from dials.algorithms.refinement.prediction import ScansRayPredictor
+#
+#  # Model parameterisations
+#  from dials.algorithms.refinement.parameterisation.detector_parameters import \
+#      DetectorParameterisationSinglePanel
+#  from dials.algorithms.refinement.parameterisation.beam_parameters import \
+#      BeamParameterisation
+#  from dials.algorithms.refinement.parameterisation.crystal_parameters import \
+#      CrystalOrientationParameterisation, CrystalUnitCellParameterisation
+#
+#  # Symmetry constrained parameterisation for the unit cell
+#  #from cctbx.uctbx import unit_cell
+#  #from rstbx.symmetry.constraints.parameter_reduction import \
+#  #    symmetrize_reduce_enlarge
+#
+#  # Parameterisation of the prediction equation
+#  from dials.algorithms.refinement.parameterisation.prediction_parameters import \
+#      XYPhiPredictionParameterisation
+#
+#  # Imports for the target function
+#  from dials.algorithms.refinement.target import \
+#      LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+#
+#  # Import the refinement engine
+#  from dials.algorithms.refinement.engine import GaussNewtonIterations
+#
+#  # pull out data needed for refinement
+#  #temp = [(ref.miller_index, ref.entering, ref.frame_number,
+#  #         ref.rotation_angle, matrix.col(ref.beam_vector),
+#  #         ref.panel_number, ref.image_coord_mm,
+#  #         ref.centroid_variance) \
+#  #            for ref in reflections]
+#  #(hkls, enterings, frames, angles, svecs, panels, intersects,
+#  #    variances) = zip(*temp)
+#
+#  # tease apart tuples to separate lists
+#  #d1s, d2s = zip(*intersects)
+#  #var_d1s, var_d2s, var_angles = zip(*variances)
+#
+#  # change variances to sigmas
+#  #sig_d1s = [sqrt(e) for e in var_d1s]
+#  #sig_d2s = [sqrt(e) for e in var_d2s]
+#  #sig_angles = [sqrt(e) for e in var_angles]
+#
+#  #assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
+#  #       len(sig_d2s) == len(angles) == len(sig_angles)
+#
+#  image_width = scan.get_oscillation(deg=False)[1]
+#  sweep_range = scan.get_oscillation_range(deg=False)
+#  experiments = ExperimentList()
+#  experiments.append(Experiment(
+#      beam=beam, detector=detector, goniometer=goniometer,
+#      scan=scan, crystal=crystal, imageset=None))
+#  ref_predictor = ScansRayPredictor(experiments)
+#
+#  ###########################
+#  # Parameterise the models #
+#  ###########################
+#
+#  det_param = DetectorParameterisationSinglePanel(detector)
+#  s0_param = BeamParameterisationOrientation(beam, goniometer)
+#  xlo_param = CrystalOrientationParameterisation(crystal)
+#  xluc_param = CrystalUnitCellParameterisation(crystal)
+#
+#  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+#  s0_param.set_fixed([True, False, True])
+#
+#  # Fix cell if requested
+#  if fix_cell:
+#    xluc_param.set_fixed([True] * xluc_param.num_free())
+#
+#  if fix_beam:
+#    s0_param.set_fixed([True, True])
+#
+#  if fix_detector:
+#    det_param.set_fixed([True] * det_param.num_free())
+#
+#  ########################################################################
+#  # Link model parameterisations together into a parameterisation of the #
+#  # prediction equation                                                  #
+#  ########################################################################
+#
+#  pred_param = XYPhiPredictionParameterisation(experiments,
+#      [det_param], [s0_param], [xlo_param], [xluc_param])
+#
+#  if verbosity > 1:
+#    print "Prediction equation parameterisation built\n"
+#    print "Parameter order : name mapping"
+#    for i, e in enumerate(pred_param.get_param_names()):
+#      print "Parameter %03d : " % i + e
+#    print
+#
+#  #####################################
+#  # Select reflections for refinement #
+#  #####################################
+#
+#  refman = ReflectionManager(reflections,
+#                             experiments,
+#                             nref_per_degree, verbosity=verbosity)
+#
+#  if verbosity > 1: print "Reflection manager built\n"
+#
+#  ##############################
+#  # Set up the target function #
+#  ##############################
+#
+#  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
+#      experiments, ref_predictor, refman, pred_param)
+#
+#  if verbosity > 1: print "Target function built\n"
+#
+#  ################################
+#  # Set up the refinement engine #
+#  ################################
+#
+#  refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
+#                                  verbosity=verbosity)
+#
+#  if verbosity > 1: print "Refinement engine built\n"
+#
+#  ###################################
+#  # Do refinement and return models #
+#  ###################################
+#
+#  refiner.run()
+#
+#  #############################################################
+#  # Do a second round of refinement with scan-varying models? #
+#  #############################################################
+#
+#  if scan_varying:
+#    return scan_varying_refine(
+#        beam, goniometer, crystal, detector,
+#        image_width, scan,
+#        reflections,
+#        verbosity,
+#        fix_cell,
+#        nref_per_degree)
+#
+#  # Return models (crystal not updated with scan-varying U, B)
+#  else:
+#    return (beam, goniometer, crystal, detector)
+#
+#def scan_varying_refine(
+#            beam, goniometer, crystal, detector,
+#            image_width, scan,
+#            reflections,
+#            verbosity = 0,
+#            fix_cell = False,
+#            nref_per_degree = None):
+#
+#  """experimental refinement function for scan-varying refinement"""
+#
+#  # Reflection prediction
+#  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+#  from dials.algorithms.refinement.prediction import ScansRayPredictor
+#  from dials.algorithms.refinement.prediction import \
+#      ScanVaryingReflectionListGenerator
+#
+#  # Model parameterisations
+#  from dials.algorithms.refinement.parameterisation.detector_parameters import \
+#      DetectorParameterisationSinglePanel
+#  from dials.algorithms.refinement.parameterisation.beam_parameters import \
+#      BeamParameterisation
+#  from dials.algorithms.refinement.parameterisation.\
+#      scan_varying_crystal_parameters import \
+#          ScanVaryingCrystalOrientationParameterisation, \
+#          ScanVaryingCrystalUnitCellParameterisation
+#
+#  # Symmetry constrained parameterisation for the unit cell
+#  #from cctbx.uctbx import unit_cell
+#  #from rstbx.symmetry.constraints.parameter_reduction import \
+#  #    symmetrize_reduce_enlarge
+#
+#  # Parameterisation of the prediction equation
+#  from dials.algorithms.refinement.parameterisation.\
+#      scan_varying_prediction_parameters \
+#          import VaryingCrystalPredictionParameterisation
+#
+#  # Imports for the target function
+#  from dials.algorithms.refinement.target import \
+#      LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+#
+#  # Import the refinement engine
+#  from dials.algorithms.refinement.engine import GaussNewtonIterations
+#
+#  experiments = ExperimentList()
+#  experiments.append(Experiment(
+#      beam=beam, detector=detector, goniometer=goniometer,
+#      scan=scan, crystal=crystal, imageset=None))
+#  ref_predictor = ScansRayPredictor(experiments)
+#
+#  ###########################
+#  # Parameterise the models #
+#  ###########################
+#
+#  det_param = DetectorParameterisationSinglePanel(detector)
+#  s0_param = BeamParameterisation(beam, goniometer)
+#  xlo_param = ScanVaryingCrystalOrientationParameterisation(
+#          crystal, scan.get_array_range(), 5)
+#  xluc_param = ScanVaryingCrystalUnitCellParameterisation(
+#          crystal, scan.get_array_range(), 5)
+#
+#  # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
+#  s0_param.set_fixed([True, False, True])
+#
+#  # Fix cell if requested
+#  if fix_cell:
+#    xluc_param.set_fixed([True] * xluc_param.num_free())
+#
+#  ########################################################################
+#  # Link model parameterisations together into a parameterisation of the #
+#  # prediction equation                                                  #
+#  ########################################################################
+#
+#  pred_param = VaryingCrystalPredictionParameterisation(experiments,
+#      [det_param], [s0_param], [xlo_param], [xluc_param])
+#
+#  if verbosity > 1:
+#    print "Prediction equation parameterisation built\n"
+#    print "Parameter order:name mapping"
+#    for i, e in enumerate(pred_param.get_param_names()):
+#      print "Parameter %03d : " % i + e
+#    print
+#
+#  #####################################
+#  # Select reflections for refinement #
+#  #####################################
+#
+#  sweep_range = scan.get_oscillation_range(deg=False)
+#  refman = ReflectionManager(reflections,
+#                          experiments,
+#                          nref_per_degree, verbosity=verbosity)
+#
+#  if verbosity > 1:
+#    print "Reflection manager built\n"
+#    print "Working set size = %d observations" % refman.get_sample_size()
+#
+#  ##############################
+#  # Set up the target function #
+#  ##############################
+#
+#  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
+#      ref_predictor, refman, pred_param)
+#
+#  if verbosity > 1: print "Target function built\n"
+#
+#  ################################
+#  # Set up the refinement engine #
+#  ################################
+#
+#  refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
+#                                  verbosity=verbosity)
+#
+#  if verbosity > 1: print "Refinement engine built\n"
+#
+#  ###################################
+#  # Do refinement and return models #
+#  ###################################
+#
+#  refiner.run()
+#
+#  # NB scan-independent models set by side-effect, scan-varying
+#  # crystal model not yet set at all
+#
+#  #####################################################################
+#  # Return object to predict reflections using the scan-varying model #
+#  #####################################################################
+#
+#  # resolution limit to corners of image
+#  dmin = detector.get_max_resolution(beam.get_s0())
+#
+#  sv_predictor = ScanVaryingReflectionListGenerator(pred_param, beam,
+#                                                    goniometer, scan, dmin)
+#
+#  return refman, sv_predictor
+#
