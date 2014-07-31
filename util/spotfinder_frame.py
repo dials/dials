@@ -69,12 +69,16 @@ class SpotFrame(XrayFrame) :
     for tr, im in zip(trange, [raw_data]):
       mask.append(im > int(tr[0]))
 
+    gain_value = self.settings.gain
+    assert gain_value > 0
+    gain_map = flex.double(raw_data.accessor(), gain_value)
+
     nsigma_b = self.settings.nsigma_b
     nsigma_s = self.settings.nsigma_s
     min_local = self.settings.min_local
     size = self.settings.kernel_size
     debug = KabschDebug(image.get_raw_data().as_double(),
-      mask[0], size, nsigma_b, nsigma_s, min_local)
+      mask[0], gain_map, size, nsigma_b, nsigma_s, min_local)
     mean = debug.mean()
     variance = debug.variance()
     cv = debug.coefficient_of_variation()
@@ -417,6 +421,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.nsigma_s = 3
     self.settings.kernel_size = [3,3]
     self.settings.min_local = 2
+    self.settings.gain = 1
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
@@ -496,7 +501,7 @@ class SpotSettingsPanel (SettingsPanel) :
     #s.Add(box)
 
     # Kabsch thresholding parameters
-    grid1 = wx.FlexGridSizer(cols=2, rows=4)
+    grid1 = wx.FlexGridSizer(cols=2, rows=5)
     s.Add(grid1)
 
     from wxtbx.phil_controls import EVT_PHIL_CONTROL
@@ -523,6 +528,13 @@ class SpotSettingsPanel (SettingsPanel) :
     self.min_local_ctrl.SetMin(0)
     grid1.Add(self.min_local_ctrl, 0, wx.ALL, 5)
 
+    txt4 = wx.StaticText(self, -1, "Gain")
+    grid1.Add(txt4, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.gain_ctrl = FloatCtrl(
+      self, value=self.settings.gain, name="gain")
+    self.gain_ctrl.SetMin(0)
+    grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
+
     from wxtbx.phil_controls.ints import IntsCtrl
     txt3 = wx.StaticText(self, -1, "Kernel size")
     grid1.Add(txt3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -537,6 +549,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_s_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.kernel_size_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.min_local_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.gain_ctrl)
 
     from wxtbx.segmentedctrl import SegmentedRadioControl, SEGBTN_VERTICAL
     self.btn = SegmentedRadioControl(self, style=SEGBTN_VERTICAL)
@@ -602,6 +615,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
       self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
       self.settings.min_local = self.min_local_ctrl.GetPhilValue()
+      self.settings.gain = self.gain_ctrl.GetPhilValue()
 
   def OnUpdateCM (self, event) :
     self.collect_values()
