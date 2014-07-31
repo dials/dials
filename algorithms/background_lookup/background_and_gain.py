@@ -62,13 +62,13 @@ class ComputeBackgroundAndGain(object):
 
   def _compute_gain_map(self, image, mask):
     '''Complete the gain map of a single image.'''
-    from dials.algorithms.image.filter import FanoFilterMasked
+    from dials.algorithms.image.filter import fano_filter
 
     # Need double image
     image = image.as_double()
 
     # Filter the image and return the mask
-    filteralg = FanoFilterMasked(image, mask, self._kernel_size, 0)
+    filteralg = fano_filter(image, mask, self._kernel_size, 0)
     filtered  = filteralg.fano()
     mask      = filteralg.mask()
     mean      = filteralg.mean()
@@ -98,19 +98,19 @@ class ComputeBackgroundAndGain(object):
 
   def gain(self):
     '''Compute the full gain map.'''
-    from dials.algorithms.image.filter import mean_filter_masked
+    from dials.algorithms.image.filter import mean_filter
     from scitbx.array_family import flex
     import numpy
 
     # Divide all gain values by count and smooth the gain
     self._gain /= self._count
     self._gain *= self._mask.as_double()
-    return mean_filter_masked(self._gain, self._mask, self._kernel_size, 0)
+    return mean_filter(self._gain, self._mask, self._kernel_size, 0)
 
   def background(self):
     '''Compute the full background map.'''
-    from dials.algorithms.image.filter import mean_filter_masked
+    from dials.algorithms.image.filter import mean_filter
     self._background /= self._count
     self._gain *= self._mask.as_double()
-    return mean_filter_masked(self._background, self._mask,
+    return mean_filter(self._background, self._mask,
         self._kernel_size, 0)
