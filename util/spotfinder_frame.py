@@ -498,6 +498,7 @@ class SpotSettingsPanel (SettingsPanel) :
     grid1 = wx.FlexGridSizer(cols=2, rows=3)
     s.Add(grid1)
 
+    from wxtbx.phil_controls import EVT_PHIL_CONTROL
     from wxtbx.phil_controls.floatctrl import FloatCtrl
     txt1 = wx.StaticText(self, -1, "sigma_background")
     grid1.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -513,11 +514,6 @@ class SpotSettingsPanel (SettingsPanel) :
     self.nsigma_s_ctrl.SetMin(0)
     grid1.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
 
-    self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdateCM,
-              self.nsigma_b_ctrl)
-    self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdateCM,
-              self.nsigma_s_ctrl)
-
     from wxtbx.phil_controls.ints import IntsCtrl
     txt3 = wx.StaticText(self, -1, "kernel_size")
     grid1.Add(txt3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -527,6 +523,10 @@ class SpotSettingsPanel (SettingsPanel) :
     self.kernel_size_ctrl.SetSize(2)
     self.kernel_size_ctrl.SetMin(1)
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
+
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_b_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_s_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.kernel_size_ctrl)
 
     from wxtbx.segmentedctrl import SegmentedRadioControl
     self.btn = SegmentedRadioControl(self)
