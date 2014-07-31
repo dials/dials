@@ -82,6 +82,16 @@ namespace dials { namespace algorithms { namespace boost_python {
                     arg("n_sigma_b"),
                     arg("n_sigma_s"),
                     arg("min_count"))))
+      .def(init<const af::const_ref<double, af::c_grid<2> > &,
+                const af::const_ref<bool, af::c_grid<2> > &,
+                const af::const_ref<double, af::c_grid<2> > &,
+                int2, double, double, int>((
+                    arg("image"),
+                    arg("mask"),
+                    arg("size"),
+                    arg("n_sigma_b"),
+                    arg("n_sigma_s"),
+                    arg("min_count"))))
       .def("mean", &KabschDebug::mean)
       .def("variance", &KabschDebug::variance)
       .def("coefficient_of_variation", &KabschDebug::coefficient_of_variation)

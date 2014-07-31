@@ -364,37 +364,27 @@ namespace dials { namespace algorithms {
                 double nsig_b,
                 double nsig_s,
                 int min_count) {
+      af::versa< double, af::c_grid<2> > gain(image.accessor(), 1.0);
+      init(image, mask, gain.const_ref(), size, nsig_b, nsig_s, min_count);
+    }
 
-      // Check the input
-      DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
-
-      // Copy the mask into a temp variable
-      af::versa< int, af::c_grid<2> > temp(mask.accessor());
-      for (std::size_t i = 0; i < temp.size(); ++i) {
-        temp[i] = mask[i] ? 1 : 0;
-      }
-
-      // Calculate the masked fano filtered image
-      FanoFilterMasked<double> filter(image, temp.const_ref(), size, min_count);
-      mean_ = filter.mean();
-      variance_ = filter.sample_variance();
-      cv_ = filter.fano();
-      af::versa< int, af::c_grid<2> > count = filter.count();
-      temp = filter.mask();
-
-      // Assign pixels to object or background
-      cv_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
-      value_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
-      final_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
-      for (std::size_t i = 0; i < image.size(); ++i) {
-        if (temp[i]) {
-          double bnd_b = 1.0 + nsig_b * std::sqrt(2.0 / (count[i] - 1));
-          double bnd_s = mean_[i] + nsig_s * std::sqrt(mean_[i]);
-          cv_mask_[i] = cv_[i] > bnd_b;
-          value_mask_[i] = image[i] > bnd_s;
-          final_mask_[i] = cv_mask_[i] && value_mask_[i];
-        }
-      }
+    /**
+     * Do the processing.
+     * @param image The image array
+     * @param mask The mask array
+     * @param size The size of the local window
+     * @param nsig_b The background threshold.
+     * @param nsig_s The strong pixel threshold
+     * @param min_count The minimum number of pixels in the local area
+     */
+    KabschDebug(const af::const_ref<double, af::c_grid<2> > &image,
+                const af::const_ref<bool, af::c_grid<2> > &mask,
+                const af::const_ref<double, af::c_grid<2> > &gain,
+                int2 size,
+                double nsig_b,
+                double nsig_s,
+                int min_count) {
+      init(image, mask, gain, size, nsig_b, nsig_s, min_count);
     }
 
     /** @returns The mean map */
@@ -428,6 +418,48 @@ namespace dials { namespace algorithms {
     }
 
   private:
+
+    void init(const af::const_ref<double, af::c_grid<2> > &image,
+              const af::const_ref<bool, af::c_grid<2> > &mask,
+              const af::const_ref<double, af::c_grid<2> > &gain,
+              int2 size,
+              double nsig_b,
+              double nsig_s,
+              int min_count) {
+
+      // Check the input
+      DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(image.accessor().all_eq(gain.accessor()));
+
+      // Copy the mask into a temp variable
+      af::versa< int, af::c_grid<2> > temp(mask.accessor());
+      for (std::size_t i = 0; i < temp.size(); ++i) {
+        temp[i] = mask[i] ? 1 : 0;
+      }
+
+      // Calculate the masked fano filtered image
+      FanoFilterMasked<double> filter(image, temp.const_ref(), size, min_count);
+      mean_ = filter.mean();
+      variance_ = filter.sample_variance();
+      cv_ = filter.fano();
+      af::versa< int, af::c_grid<2> > count = filter.count();
+      temp = filter.mask();
+
+      // Assign pixels to object or background
+      cv_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      value_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      final_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      for (std::size_t i = 0; i < image.size(); ++i) {
+        if (temp[i]) {
+          double bnd_b = gain[i] + nsig_b * gain[i] * std::sqrt(2.0 / (count[i] - 1));
+          double bnd_s = mean_[i] + nsig_s * std::sqrt(gain[i] * mean_[i]);
+          cv_mask_[i] = cv_[i] > bnd_b;
+          value_mask_[i] = image[i] > bnd_s;
+          final_mask_[i] = cv_mask_[i] && value_mask_[i];
+        }
+      }
+    }
 
     af::versa< double, af::c_grid<2> > mean_;
     af::versa< double, af::c_grid<2> > variance_;
