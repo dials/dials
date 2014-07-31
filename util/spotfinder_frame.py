@@ -223,7 +223,7 @@ class SpotFrame(XrayFrame) :
     imageset = self.image_chooser.GetClientData(
       self.image_chooser.GetSelection()).image_set
     if imageset.get_scan() is not None:
-      i_frame += imageset.get_array_range()[0]
+      i_frame += imageset.get_scan().get_array_range()[0]
     shoebox_data = []
     all_pix_data = []
     ctr_mass_data = []
