@@ -444,12 +444,14 @@ class indexer_base(object):
             and self.target_symmetry_primitive.unit_cell() is not None):
           # if a target cell is given make sure that we match any permutation
           # of the cell dimensions
-          for i_expt, expt in enumerate(experiments):
-            if i_expt >= n_lattices_previous_cycle:
-              expt.crystal, _ = self.apply_symmetry(
-                expt.crystal, self.target_symmetry_primitive,
+          for i_cryst, cryst in enumerate(experiments.crystals()):
+            if i_cryst >= n_lattices_previous_cycle:
+              new_cryst, _ = self.apply_symmetry(
+                cryst, self.target_symmetry_primitive,
                 return_primitive_setting=True,
                 cell_only=True)
+              experiments.crystals()[i_cryst].set_U(new_cryst.get_U())
+              experiments.crystals()[i_cryst].set_B(new_cryst.get_B())
 
         self.index_reflections(experiments)
 
@@ -459,7 +461,7 @@ class indexer_base(object):
           # need to make sure that the symmetrized orientation is similar to the P1 model
           for i_expt, expt in enumerate(experiments):
             if i_expt >= n_lattices_previous_cycle:
-              expt.crystal, cb_op_to_primitive = self.apply_symmetry(
+              new_cryst, cb_op_to_primitive = self.apply_symmetry(
                 expt.crystal, self.target_symmetry_primitive,
                 return_primitive_setting=True,
                 space_group_only=True)
@@ -470,12 +472,15 @@ class indexer_base(object):
                 self.reflections['miller_index'].set_selected(
                   self.reflections['id'] == i_expt, miller_indices)
               if self.cb_op_primitive_to_given is not None:
-                expt.crystal = expt.crystal.change_basis(self.cb_op_primitive_to_given)
+                new_cryst = new_cryst.change_basis(self.cb_op_primitive_to_given)
                 miller_indices = self.reflections['miller_index'].select(
                   self.reflections['id'] == i_expt)
                 miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
                 self.reflections['miller_index'].set_selected(
                   self.reflections['id'] == i_expt, miller_indices)
+              expt.crystal.set_U(new_cryst.get_U())
+              expt.crystal.set_B(new_cryst.get_B())
+              expt.crystal.set_space_group(new_cryst.get_space_group())
 
         if len(experiments) > 1:
           from dials.algorithms.indexing.compare_orientation_matrices \
