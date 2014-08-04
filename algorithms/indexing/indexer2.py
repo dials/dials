@@ -518,9 +518,9 @@ class indexer_base(object):
           isel = (lengths >= self.d_min).iselection()
           sel.set_selected(isel, True)
           sel.set_selected(self.reflections['id'] > -1, False)
-          unindexed = self.reflections.select(sel)
+          self.unindexed_reflections = self.reflections.select(sel)
           self.export_reflections(
-            unindexed, "unindexed.pickle")
+            self.unindexed_reflections, "unindexed.pickle")
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
