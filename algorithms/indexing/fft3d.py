@@ -85,7 +85,6 @@ class indexer_fft3d(indexer_base):
     return experiments
 
   def map_centroids_to_reciprocal_space_grid(self):
-    assert len(self.reciprocal_space_points) == len(self.reflections)
     wavelength = self.beam.get_wavelength()
     d_min = self.params.fft3d.reciprocal_space_grid.d_min
     d_max = self.params.fft3d.reciprocal_space_grid.d_max
@@ -107,7 +106,7 @@ class indexer_fft3d(indexer_base):
 
     from dials.algorithms.indexing import map_centroids_to_reciprocal_space_grid
     map_centroids_to_reciprocal_space_grid(
-      grid, self.reciprocal_space_points, selection,
+      grid, self.reflections['rlp'], selection,
       d_min, b_iso=self.params.b_iso)
     reflections_used_for_indexing = selection.iselection()
 
@@ -157,8 +156,7 @@ class indexer_fft3d(indexer_base):
     if self.params.optimise_initial_basis_vectors:
       sites_cart = flood_fill.centres_of_mass_cart().select(isel)
       sites_cart_optimised = optimise_basis_vectors(
-        #self.reciprocal_space_points,
-        self.reciprocal_space_points.select(self.reflections_used_for_indexing),
+        self.reflections['rlp'].select(self.reflections_used_for_indexing),
         sites_cart)
 
       self.sites = self.fft_cell.fractionalize(sites_cart_optimised)
@@ -580,7 +578,7 @@ class indexer_fft3d(indexer_base):
     dirty_map = self.grid_real.deep_copy()
     peaks = clean_3d(dirty_beam, dirty_map, n_peaks, gamma=gamma)
 
-    reciprocal_space_points = self.reciprocal_space_points.select(
+    reciprocal_lattice_points = self.reflections['rlp'].select(
       self.reflections_used_for_indexing)
     # optimise the peak position using a grid search around the starting peak position
     optimised_peaks = flex.vec3_double()
@@ -597,7 +595,7 @@ class indexer_fft3d(indexer_base):
             k_coord = peak[2] + k * grid_step
             v = self.fft_cell.orthogonalize(
               (i_coord/self.gridding[0], j_coord/self.gridding[1], k_coord/self.gridding[2]))
-            two_pi_S_dot_v = 2 * math.pi * reciprocal_space_points.dot(v)
+            two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_points.dot(v)
             f = flex.sum(flex.cos(two_pi_S_dot_v))
             if f > max_value:
               max_value = f

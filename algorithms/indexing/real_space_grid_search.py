@@ -45,16 +45,14 @@ class indexer_real_space_grid_search(indexer_base):
   def real_space_grid_search(self):
     d_min = self.params.refinement_protocol.d_min_start
 
-    reciprocal_space_points = self.reciprocal_space_points.select(
+    reciprocal_lattice_points = self.reflections['rlp'].select(
       (self.reflections['id'] == -1) &
-      (1/self.reciprocal_space_points.norms() > d_min))
-    #reciprocal_space_points = reciprocal_space_points.select(
-      #1/reciprocal_space_points.norms() > self.params.refinement_protocol.d_min_start)
+      (1/self.reflections['rlp'].norms() > d_min))
 
-    print "Indexing from %i reflections" %len(reciprocal_space_points)
+    print "Indexing from %i reflections" %len(reciprocal_lattice_points)
 
     def compute_functional(vector):
-      two_pi_S_dot_v = 2 * math.pi * reciprocal_space_points.dot(vector)
+      two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_points.dot(vector)
       return flex.sum(flex.cos(two_pi_S_dot_v))
 
     from rstbx.array_family import flex
@@ -107,7 +105,7 @@ class indexer_real_space_grid_search(indexer_base):
 
     if self.params.optimise_initial_basis_vectors:
       optimised_basis_vectors = optimise_basis_vectors(
-        reciprocal_space_points, basis_vectors)
+        reciprocal_lattice_points, basis_vectors)
       optimised_function_values = flex.double([
         compute_functional(v) for v in optimised_basis_vectors])
 

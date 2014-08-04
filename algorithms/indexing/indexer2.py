@@ -22,7 +22,7 @@ from dials.array_family import flex
 from cctbx import crystal, sgtbx, uctbx, xray
 
 from dxtbx.model.crystal import crystal_model as Crystal
-from dxtbx.model.experiment.experiment_list import ExperimentList
+from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 master_phil_scope = iotbx.phil.parse("""
 reference {
@@ -369,7 +369,7 @@ class indexer_base(object):
         self.reflections_input.select(sel),
         imageset.get_detector(), imageset.get_scan()))
     self.filter_reflections_by_scan_range()
-    self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+    self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
 
     if self.params.max_cell is libtbx.Auto:
@@ -386,7 +386,7 @@ class indexer_base(object):
         from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
         phi_deg = self.reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
         if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
-          NN = neighbor_analysis(self.reciprocal_space_points)
+          NN = neighbor_analysis(self.reflections['rlp'])
           self.params.max_cell = NN.max_cell
         else:
           phi_min = flex.min(phi_deg)
@@ -397,7 +397,7 @@ class indexer_base(object):
           max_cell = flex.double()
           for n in range(n_steps):
             sel = (phi_deg > (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
-            rlp = self.reciprocal_space_points.select(sel)
+            rlp = self.reflections['rlp'].select(sel)
             if len(rlp) == 0:
               continue
             NN = neighbor_analysis(rlp)
@@ -441,7 +441,7 @@ class indexer_base(object):
         break
       cutoff_fraction = \
         self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-      d_spacings = 1/self.reciprocal_space_points.norms()
+      d_spacings = 1/self.reflections['rlp'].norms()
       min_reflections_for_indexing = \
         cutoff_fraction * len(self.reflections.select(d_spacings > self.d_min))
       crystal_ids = self.reflections.select(d_spacings > self.d_min)['id']
@@ -483,7 +483,7 @@ class indexer_base(object):
                 return_primitive_setting=True,
                 cell_only=True)
 
-        self.index_reflections(experiments.crystals())
+        self.index_reflections(experiments)
 
         if (i_cycle == 0 and self.target_symmetry_primitive is not None
             and self.target_symmetry_primitive.space_group() is not None):
@@ -541,7 +541,7 @@ class indexer_base(object):
 
         if self.params.debug:
           sel = flex.bool(len(self.reflections), False)
-          lengths = 1/self.reciprocal_space_points.norms()
+          lengths = 1/self.reflections['rlp'].norms()
           isel = (lengths >= self.d_min).iselection()
           sel.set_selected(isel, True)
           sel.set_selected(self.reflections['id'] > -1, False)
@@ -595,7 +595,7 @@ class indexer_base(object):
                 and self.params.refinement.parameterisation.detector.fix == 'all'):
           # Experimental geometry may have changed - re-map centroids to
           # reciprocal space
-          self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+          self.map_centroids_to_reciprocal_space(
             self.reflections, self.detector, self.beam, self.goniometer)
 
         if self.d_min == self.params.refinement_protocol.d_min_final:
@@ -669,11 +669,10 @@ class indexer_base(object):
   @staticmethod
   def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
     if 's1' not in spots_mm: spots_mm['s1'] = flex.vec3_double(len(spots_mm))
+    spots_mm['rlp'] = flex.vec3_double(len(spots_mm))
     panel_numbers = flex.size_t(spots_mm['panel'])
-    reciprocal_space_points = flex.vec3_double()
     for i_panel in range(len(detector)):
       sel = (panel_numbers == i_panel)
-      isel = sel.iselection()
       spots_panel = spots_mm.select(panel_numbers == i_panel)
       x, y, rot_angle = spots_panel['xyzobs.mm.value'].parts()
       s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
@@ -681,12 +680,11 @@ class indexer_base(object):
       S = s1 - beam.get_s0()
       # XXX what about if goniometer fixed rotation is not identity?
       if goniometer is not None:
-        reciprocal_space_points.extend(S.rotate_around_origin(
+        spots_mm['rlp'].set_selected(sel, S.rotate_around_origin(
           goniometer.get_rotation_axis(),
           -rot_angle))
       else:
-        reciprocal_space_points.extend(S)
-    return reciprocal_space_points
+        spots_mm['rlp'].set_selected(sel, S)
 
   def discover_better_experimental_model(self, reflections, detector, beam,
                                          goniometer, scan):
@@ -888,31 +886,28 @@ class indexer_base(object):
           continue
 
       sel = ((self.reflections['id'] == -1) &
-             (1/self.reciprocal_space_points.norms() > self.d_min))
+             (1/self.reflections['rlp'].norms() > self.d_min))
       refl = self.reflections.select(sel)
-      reciprocal_space_points = self.reciprocal_space_points.select(sel)
-      if self.params.index_assignment.method == 'local':
-        params_local = self.params.index_assignment.local
-        from dials.algorithms.indexing import index_reflections_local
-        index_reflections_local(
-          refl, reciprocal_space_points,
-          [cm], self.d_min, epsilon=params_local.epsilon,
-          delta=params_local.delta, l_min=params_local.l_min,
-          nearest_neighbours=params_local.nearest_neighbours)
-      else:
-        params_simple = self.params.index_assignment.simple
-        from dials.algorithms.indexing import index_reflections
-        index_reflections(refl, reciprocal_space_points,
-                          [cm], self.d_min,
-                          tolerance=params_simple.hkl_tolerance)
-      n_indexed.append((refl['id'] > -1).count(True))
-      from dials.algorithms.refinement import RefinerFactory
-      from dxtbx.model.experiment.experiment_list import Experiment
       experiment = Experiment(beam=self.beam,
                               detector=self.detector,
                               goniometer=self.goniometer,
                               scan=self.imagesets[0].get_scan(),
                               crystal=cm)
+      if self.params.index_assignment.method == 'local':
+        params_local = self.params.index_assignment.local
+        from dials.algorithms.indexing import index_reflections_local
+        index_reflections_local(
+          refl, ExperimentList([experiment]),
+          self.d_min, epsilon=params_local.epsilon,
+          delta=params_local.delta, l_min=params_local.l_min,
+          nearest_neighbours=params_local.nearest_neighbours)
+      else:
+        params_simple = self.params.index_assignment.simple
+        from dials.algorithms.indexing import index_reflections
+        index_reflections(refl, ExperimentList([experiment]), self.d_min,
+                          tolerance=params_simple.hkl_tolerance)
+      n_indexed.append((refl['id'] > -1).count(True))
+      from dials.algorithms.refinement import RefinerFactory
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
@@ -1074,21 +1069,21 @@ class indexer_base(object):
       model = model.change_basis(cb_op_to_primitive)
     return model, cb_op_to_primitive
 
-  def index_reflections(self, crystal_models):
+  def index_reflections(self, experiments):
     if self.params.index_assignment.method == 'local':
       params_local = self.params.index_assignment.local
       from dials.algorithms.indexing import index_reflections_local
       index_reflections_local(
-        self.reflections, self.reciprocal_space_points,
-        crystal_models, self.d_min, epsilon=params_local.epsilon,
+        self.reflections,
+        experiments, self.d_min, epsilon=params_local.epsilon,
         delta=params_local.delta, l_min=params_local.l_min,
         nearest_neighbours=params_local.nearest_neighbours,
         verbosity=self.params.refinement_protocol.verbosity)
     else:
       params_simple = self.params.index_assignment.simple
       from dials.algorithms.indexing import index_reflections
-      index_reflections(self.reflections, self.reciprocal_space_points,
-                        crystal_models, self.d_min,
+      index_reflections(self.reflections,
+                        experiments, self.d_min,
                         tolerance=params_simple.hkl_tolerance,
                         verbosity=self.params.refinement_protocol.verbosity)
 
@@ -1152,7 +1147,7 @@ class indexer_base(object):
     from cctbx import crystal, xray
     cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
     xs = xray.structure(crystal_symmetry=cs)
-    for site in self.reciprocal_space_points:
+    for site in self.reflections['rlp']:
       xs.add_scatterer(xray.scatterer("C", site=site))
 
     xs.sites_mod_short()
@@ -1185,49 +1180,13 @@ class indexer_base(object):
   def find_lattices(self):
     raise NotImplementedError()
 
-  def find_candidate_basis_vectors_nks(self, vectors):
-    '''Find the candidate basis vectors from the Patterson peaks using code
-    from NKS which will search for the basis which best describes the list of
-    input spot positions. Based on using indexer.determine_basis_set.'''
-
-    from dials.algorithms.indexing import indexer
-
-    # hmm... conventionally the basis selection works on around 30 possible
-    # basis vectors, the code above appears to generate 200+ for one example
-
-    from rstbx.phil.phil_preferences import libtbx_defs,iotbx_defs
-    import iotbx.phil
-    hardcoded_phil = iotbx.phil.parse(
-      input_string=iotbx_defs+libtbx_defs).extract()
-
-    # do we really need all of these parameters? surely some of them seem
-    # a little ... redundant
-
-    triclinic_crystal = indexer.determine_basis_set(
-      candidate_basis_vectors_one_lattice=vectors,
-      spot_positions=self.reflections_raw,
-      detector=self.detector,
-      beam=self.beam,
-      goniometer=self.goniometer,
-      scan=self.scan,
-      rs_positions_xyz=self.reciprocal_space_points,
-      params=hardcoded_phil)
-
-    direct_matrix = triclinic_crystal[0].direct_matrix()
-    return [Crystal(direct_matrix[0:3],
-                    direct_matrix[3:6],
-                    direct_matrix[6:9],
-                    space_group_symbol="P 1")]
 
 
 
-
-
-
-def optimise_basis_vectors(reciprocal_space_points, vectors):
+def optimise_basis_vectors(reciprocal_lattice_points, vectors):
   optimised = flex.vec3_double()
   for vector in vectors:
-    minimised = basis_vector_minimser(reciprocal_space_points, vector)
+    minimised = basis_vector_minimser(reciprocal_lattice_points, vector)
     optimised.append(tuple(minimised.x))
   return optimised
 
@@ -1238,13 +1197,13 @@ from scitbx import lbfgs
 # Otwinowski et al, International Tables Vol. F, chapter 11.4 pp. 282-295
 class basis_vector_target(object):
 
-  def __init__(self, reciprocal_space_points):
-    self.reciprocal_space_points = reciprocal_space_points
-    self._xyz_parts = self.reciprocal_space_points.parts()
+  def __init__(self, reciprocal_lattice_points):
+    self.reciprocal_lattice_points = reciprocal_lattice_points
+    self._xyz_parts = self.reciprocal_lattice_points.parts()
 
   def compute_functional_and_gradients(self, vector):
     assert len(vector) == 3
-    two_pi_S_dot_v = 2 * math.pi * self.reciprocal_space_points.dot(vector)
+    two_pi_S_dot_v = 2 * math.pi * self.reciprocal_lattice_points.dot(vector)
     f = - flex.sum(flex.cos(two_pi_S_dot_v))
     sin_part = flex.sin(two_pi_S_dot_v)
     g = flex.double([flex.sum(2 * math.pi * self._xyz_parts[i] * sin_part)
@@ -1253,17 +1212,17 @@ class basis_vector_target(object):
 
 
 class basis_vector_minimser(object):
-  def __init__(self, reciprocal_space_points, vector,
+  def __init__(self, reciprocal_lattice_points, vector,
                lbfgs_termination_params=None,
                lbfgs_core_params=lbfgs.core_parameters(m=20)):
-    self.reciprocal_space_points = reciprocal_space_points
+    self.reciprocal_lattice_points = reciprocal_lattice_points
     if not isinstance(vector, flex.double):
       self.x = flex.double(vector)
     else:
       self.x = vector.deep_copy()
     self.n = len(self.x)
     assert self.n == 3
-    self.target = basis_vector_target(self.reciprocal_space_points)
+    self.target = basis_vector_target(self.reciprocal_lattice_points)
     self.minimizer = lbfgs.run(target_evaluator=self,
                                termination_params=lbfgs_termination_params,
                                core_params=lbfgs_core_params)

@@ -121,10 +121,10 @@ class better_experimental_model_discovery(object):
     trial_detector = dps_extended.get_new_detector(imageset.get_detector(), trial_origin_offset)
 
     from dials.algorithms.indexing.indexer2 import indexer_base
-    reciprocal_space_vectors = indexer_base.map_centroids_to_reciprocal_space(
+    indexer_base.map_centroids_to_reciprocal_space(
       spots_mm, trial_detector, imageset.get_beam(), imageset.get_goniometer())
 
-    return self.sum_score_detail(reciprocal_space_vectors, solutions)
+    return self.sum_score_detail(spots_mm['rlp'], solutions)
 
   def sum_score_detail(self, reciprocal_space_vectors, solutions, granularity=None, amax=None):
     """Evaluates the probability that the trial value of ( S0_vector | origin_offset ) is correct,

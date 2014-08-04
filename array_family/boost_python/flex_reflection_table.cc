@@ -116,6 +116,7 @@ namespace dials { namespace af { namespace boost_python {
       "  xyzobs.px.variance:     centroid pixel variance\n"
       "  xyzobs.mm.value:        centroid millimetre position\n"
       "  xyzobs.mm.variance:     centroid millimetre variance\n"
+      "  rlp:                    reciprocal lattice point\n"
       "  intensity.sum.value:    raw intensity value\n"
       "  intensity.sum.variance: raw intensity variance\n"
       "  intensity.prf.value:    profile fitted intensity value\n"

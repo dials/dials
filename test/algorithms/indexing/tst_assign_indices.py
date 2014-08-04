@@ -6,7 +6,7 @@ from cctbx import crystal, miller, sgtbx, uctbx
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
 from dxtbx.serialize import load
-from dxtbx.model.experiment.experiment_list import Experiment
+from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 from dxtbx.model.crystal import crystal_model
 from dials.array_family import flex
 
@@ -71,13 +71,13 @@ def run(space_group_info):
   predicted_reflections['xyzobs.mm.value'] = predicted_reflections['xyzcal.mm']
   predicted_reflections['id'] = flex.size_t(len(predicted_reflections), 0)
   from dials.algorithms.indexing.indexer2 import indexer_base
-  reciprocal_space_points = indexer_base.map_centroids_to_reciprocal_space(
+  indexer_base.map_centroids_to_reciprocal_space(
     predicted_reflections, sweep.get_detector(), sweep.get_beam(),
     sweep.get_goniometer())
 
 
   # check that local and global indexing worked equally well in absence of errors
-  result = compare_global_local(cryst_model, reciprocal_space_points,
+  result = compare_global_local(experiment, predicted_reflections,
                                 miller_indices)
   assert result.misindexed_local == 0
   assert result.misindexed_global == 0
@@ -89,8 +89,9 @@ def run(space_group_info):
   c *= (1+relative_error)
 
   cryst_model2 = crystal_model(a, b, c, space_group=space_group)
+  experiment.crystal = cryst_model2
 
-  result = compare_global_local(cryst_model2, reciprocal_space_points,
+  result = compare_global_local(experiment, predicted_reflections,
                                 miller_indices)
 
   # check that the local indexing did a better job given the errors in the basis vectors
@@ -109,8 +110,9 @@ def run(space_group_info):
                                direct_matrix[3:6],
                                direct_matrix[6:9],
                                space_group=space_group)
+  experiment.crystal = cryst_model2
 
-  result = compare_global_local(cryst_model2, reciprocal_space_points,
+  result = compare_global_local(experiment, predicted_reflections,
                                 miller_indices)
 
   # check that the local indexing did a better job given the errors in the basis vectors
@@ -126,17 +128,18 @@ def run(space_group_info):
 
 class compare_global_local(object):
 
-  def __init__(self, cryst_model, reciprocal_space_points,
+  def __init__(self, experiment, reflections,
                expected_miller_indices):
 
     from dials.algorithms.indexing \
          import index_reflections, index_reflections_local
+    import copy
 
     # index reflections using simple "global" method
-    self.reflections_global = flex.reflection_table(len(reciprocal_space_points))
+    self.reflections_global = copy.deepcopy(reflections)
     self.reflections_global['id'] = flex.int(len(self.reflections_global), -1)
-    index_reflections(self.reflections_global, reciprocal_space_points,
-                      [cryst_model])
+    index_reflections(
+      self.reflections_global, ExperimentList([experiment]))
     non_zero_sel = (self.reflections_global['miller_index'] != (0,0,0))
     assert self.reflections_global['id'].select(~non_zero_sel).all_eq(-1)
     self.misindexed_global = (
@@ -147,10 +150,10 @@ class compare_global_local(object):
 
 
     # index reflections using xds-style "local" method
-    self.reflections_local = flex.reflection_table(len(reciprocal_space_points))
+    self.reflections_local = copy.deepcopy(reflections)
     self.reflections_local['id'] = flex.int(len(self.reflections_local), -1)
-    index_reflections_local(self.reflections_local, reciprocal_space_points,
-                            [cryst_model])
+    index_reflections_local(
+      self.reflections_local, ExperimentList([experiment]))
     non_zero_sel = (self.reflections_local['miller_index'] != (0,0,0))
     assert self.reflections_local['id'].select(~non_zero_sel).all_eq(-1)
     self.misindexed_local = (

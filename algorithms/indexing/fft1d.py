@@ -32,7 +32,7 @@ class indexer_fft1d(indexer_base):
 
     reflections = self.reflections.select(
       (self.reflections['id'] == -1) &
-      (1/self.reciprocal_space_points.norms() > self.d_min))
+      (1/self.reflections['rlp'].norms() > self.d_min))
     solutions = candidate_basis_vectors_fft1d(
       reflections, self.detector, self.beam,
       self.goniometer, self.imagesets[0].get_scan(), hardcoded_phil,

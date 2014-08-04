@@ -78,9 +78,9 @@ def run_once(directory):
   else:
     spots_mm = indexer2.indexer_base.map_spots_pixel_to_mm_rad(
       strong_spots, detector, scan)
-    reciprocal_lattice_points = indexer2.indexer_base.map_centroids_to_reciprocal_space(
+    indexer2.indexer_base.map_centroids_to_reciprocal_space(
       spots_mm, detector, beam, goniometer)
-    d_spacings = 1/reciprocal_lattice_points.norms()
+    d_spacings = 1/spots_mm['rlp'].norms()
     perm = flex.sort_permutation(d_spacings, reverse=True)
     d_spacings_sorted = d_spacings.select(perm)
     percentile_99th = int(math.floor(0.99 * len(d_spacings)))
@@ -113,9 +113,9 @@ def run_once(directory):
       if len(spots_mm) == 0:
         d_min_indexed.append(0)
       else:
-        reciprocal_lattice_points = indexer2.indexer_base.map_centroids_to_reciprocal_space(
+        indexer2.indexer_base.map_centroids_to_reciprocal_space(
           spots_mm, detector, beam, goniometer)
-        d_spacings = 1/reciprocal_lattice_points.norms()
+        d_spacings = 1/spots_mm['rlp'].norms()
         perm = flex.sort_permutation(d_spacings, reverse=True)
         d_min_indexed.append(d_spacings[perm[-1]])
       try:

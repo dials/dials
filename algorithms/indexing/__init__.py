@@ -4,25 +4,26 @@ from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import *
 
 def index_reflections(
-    reflections, reciprocal_space_points, crystal_models, d_min=None,
+    reflections, experiments, d_min=None,
     tolerance=0.3, verbosity=0):
+  reciprocal_lattice_points = reflections['rlp']
   if 'miller_index' not in reflections:
     reflections['miller_index'] = flex.miller_index(len(reflections))
   if d_min is not None:
-    d_spacings = 1/reciprocal_space_points.norms()
+    d_spacings = 1/reciprocal_lattice_points.norms()
     inside_resolution_limit = d_spacings > d_min
   else:
-    inside_resolution_limit = flex.bool(reciprocal_space_points.size(), True)
+    inside_resolution_limit = flex.bool(reciprocal_lattice_points.size(), True)
   sel = inside_resolution_limit & (reflections['id'] == -1)
   isel = sel.iselection()
-  rlps = reciprocal_space_points.select(isel)
+  rlps = reciprocal_lattice_points.select(isel)
   refs = reflections.select(isel)
 
   diffs = []
   norms = []
   hkl_ints = []
 
-  UB_matrices = flex.mat3_double([cm.get_A() for cm in crystal_models])
+  UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
 
   if 1:
     # Use fast c++ version
@@ -100,38 +101,38 @@ def index_reflections(
             reflections['id'][i_ref] = -1
 
   if verbosity > 0:
-    for i_lattice, crystal_model in enumerate(crystal_models):
+    for i_expt, expt in enumerate(experiments):
       print "model %i (%i reflections):" %(
-        i_lattice+1, (reflections['id'] == i_lattice).count(True))
-      print crystal_model
+        i_expt+1, (reflections['id'] == i_expt).count(True))
+      print expt.crystal
       print
 
     print "%i unindexed reflections" %n_rejects
 
 
 def index_reflections_local(
-    reflections, reciprocal_space_points, crystal_models, d_min=None,
+    reflections, experiments, d_min=None,
     epsilon=0.05, delta=8, l_min=0.8, nearest_neighbours=20, verbosity=0):
   from scitbx import matrix
   from libtbx.math_utils import nearest_integer as nint
-
+  reciprocal_lattice_points = reflections['rlp']
   if 'miller_index' not in reflections:
     reflections['miller_index'] = flex.miller_index(len(reflections))
   if d_min is not None:
-    d_spacings = 1/reciprocal_space_points.norms()
+    d_spacings = 1/reciprocal_lattice_points.norms()
     inside_resolution_limit = d_spacings > d_min
   else:
-    inside_resolution_limit = flex.bool(reciprocal_space_points.size(), True)
+    inside_resolution_limit = flex.bool(reciprocal_lattice_points.size(), True)
   sel = inside_resolution_limit & (reflections['id'] == -1)
   isel = sel.iselection()
-  rlps = reciprocal_space_points.select(isel)
+  rlps = reciprocal_lattice_points.select(isel)
   refs = reflections.select(isel)
 
   diffs = []
   norms = []
   hkl_ints = []
 
-  UB_matrices = flex.mat3_double([cm.get_A() for cm in crystal_models])
+  UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
 
   result = AssignIndicesLocal(
     rlps, UB_matrices, epsilon=epsilon, delta=delta, l_min=l_min,
@@ -146,7 +147,7 @@ def index_reflections_local(
   for i_cryst in set(crystal_ids):
     if i_cryst < 0: continue
 
-    A = crystal_models[i_cryst].get_A()
+    A = experiments[i_cryst].crystal.get_A()
     A_inv = A.inverse()
 
     cryst_sel = crystal_ids == i_cryst
@@ -172,10 +173,10 @@ def index_reflections_local(
   reflections['id'].set_selected(isel, refs['id'])
 
   if verbosity > 0:
-    for i_lattice, crystal_model in enumerate(crystal_models):
+    for i_expt, expt in enumerate(experiments):
       print "model %i (%i reflections):" %(
-        i_lattice+1, (reflections['id'] == i_lattice).count(True))
-      print crystal_model
+        i_expt+1, (reflections['id'] == i_expt).count(True))
+      print expt.crystal
       print
 
     print "%i unindexed reflections" %n_rejects
