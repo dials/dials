@@ -453,7 +453,7 @@ class indexer_base(object):
               experiments.crystals()[i_cryst].set_U(new_cryst.get_U())
               experiments.crystals()[i_cryst].set_B(new_cryst.get_B())
 
-        self.index_reflections(experiments)
+        self.index_reflections(experiments, self.reflections)
 
         if (i_cycle == 0 and self.target_symmetry_primitive is not None
             and self.target_symmetry_primitive.space_group() is not None):
@@ -902,21 +902,8 @@ class indexer_base(object):
                               goniometer=self.goniometer,
                               scan=self.imagesets[0].get_scan(),
                               crystal=cm)
-      if self.params.index_assignment.method == 'local':
-        params_local = self.params.index_assignment.local
-        from dials.algorithms.indexing import index_reflections_local
-        index_reflections_local(
-          refl, ExperimentList([experiment]),
-          self.d_min, epsilon=params_local.epsilon,
-          delta=params_local.delta, l_min=params_local.l_min,
-          nearest_neighbours=params_local.nearest_neighbours)
-      else:
-        params_simple = self.params.index_assignment.simple
-        from dials.algorithms.indexing import index_reflections
-        index_reflections(refl, ExperimentList([experiment]), self.d_min,
-                          tolerance=params_simple.hkl_tolerance)
+      self.index_reflections(ExperimentList([experiment]), refl)
       n_indexed.append((refl['id'] > -1).count(True))
-      from dials.algorithms.refinement import RefinerFactory
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
@@ -934,6 +921,7 @@ class indexer_base(object):
           miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
           refl['miller_index'].set_selected(refl['id'] == 0, miller_indices)
 
+      from dials.algorithms.refinement import RefinerFactory
       refiner = RefinerFactory.from_parameters_data_experiments(
         params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
         verbosity=0)
@@ -1078,12 +1066,12 @@ class indexer_base(object):
       model = model.change_basis(cb_op_to_primitive)
     return model, cb_op_to_primitive
 
-  def index_reflections(self, experiments):
+  def index_reflections(self, experiments, reflections):
     if self.params.index_assignment.method == 'local':
       params_local = self.params.index_assignment.local
       from dials.algorithms.indexing import index_reflections_local
       index_reflections_local(
-        self.reflections,
+        reflections,
         experiments, self.d_min, epsilon=params_local.epsilon,
         delta=params_local.delta, l_min=params_local.l_min,
         nearest_neighbours=params_local.nearest_neighbours,
@@ -1091,7 +1079,7 @@ class indexer_base(object):
     else:
       params_simple = self.params.index_assignment.simple
       from dials.algorithms.indexing import index_reflections
-      index_reflections(self.reflections,
+      index_reflections(reflections,
                         experiments, self.d_min,
                         tolerance=params_simple.hkl_tolerance,
                         verbosity=self.params.refinement_protocol.verbosity)
