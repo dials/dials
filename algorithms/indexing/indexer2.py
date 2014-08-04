@@ -695,7 +695,8 @@ class indexer_base(object):
       else:
         spots_mm['rlp'].set_selected(sel, S)
 
-  def discover_better_experimental_model(self, reflections, detector, beam,
+  @staticmethod
+  def discover_better_experimental_model(reflections, detector, beam,
                                          goniometer, scan):
     from rstbx.phil.phil_preferences import indexing_api_defs
     import iotbx.phil
