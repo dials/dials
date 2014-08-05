@@ -75,46 +75,49 @@ class Script(ScriptRunner):
     if importer.experiments is None or len(importer.experiments) == 0:
       self.config().print_help()
       return
-    assert(len(importer.experiments) == 1)
 
-    if options.buffer_size > 0:
-      # Hack to make the predicter predict reflections outside of the range
-      # of the scan
-      scan = importer.experiments[0].scan
-      image_range = scan.get_image_range()
-      oscillation = scan.get_oscillation()
-      scan.set_image_range((image_range[0]-options.buffer_size,
-                            image_range[1]+options.buffer_size))
-      scan.set_oscillation((oscillation[0]-options.buffer_size*oscillation[1],
-                            oscillation[1]))
+    predicted_all = flex.reflection_table()
 
-    # Populate the reflection table with predictions
-    predicted = flex.reflection_table.from_predictions(
-      importer.experiments[0],
-      force_static=options.force_static,
-      dmin=options.dmin)
-    predicted['id'] = flex.size_t(len(predicted), 0)
+    for i_expt, expt in enumerate(importer.experiments):
+      if options.buffer_size > 0:
+        # Hack to make the predicter predict reflections outside of the range
+        # of the scan
+        scan = expt.scan
+        image_range = scan.get_image_range()
+        oscillation = scan.get_oscillation()
+        scan.set_image_range((image_range[0]-options.buffer_size,
+                              image_range[1]+options.buffer_size))
+        scan.set_oscillation((oscillation[0]-options.buffer_size*oscillation[1],
+                              oscillation[1]))
 
-    # Compute the bounding box
-    registry = Registry()
-    n_sigma = registry.params().integration.shoebox.n_sigma
-    sigma_b = registry.params().integration.shoebox.sigma_b
-    sigma_m = registry.params().integration.shoebox.sigma_m
-    if sigma_b is not None and sigma_m is not None:
-      import math
-      d2r = math.pi / 180.0
-      predicted.compute_bbox(
-        importer.experiments[-1],
-        nsigma=n_sigma,
-        sigma_d=sigma_b * d2r,
-        sigma_m=sigma_m * d2r)
+      # Populate the reflection table with predictions
+      predicted = flex.reflection_table.from_predictions(
+        expt,
+        force_static=options.force_static,
+        dmin=options.dmin)
+      predicted['id'] = flex.int(len(predicted), i_expt)
+
+      # Compute the bounding box
+      registry = Registry()
+      n_sigma = registry.params().integration.shoebox.n_sigma
+      sigma_b = registry.params().integration.shoebox.sigma_b
+      sigma_m = registry.params().integration.shoebox.sigma_m
+      if sigma_b is not None and sigma_m is not None:
+        import math
+        d2r = math.pi / 180.0
+        predicted.compute_bbox(
+          expt,
+          nsigma=n_sigma,
+          sigma_d=sigma_b * d2r,
+          sigma_m=sigma_m * d2r)
+      predicted_all.extend(predicted)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
-        len(predicted), options.output_filename))
-    predicted.as_pickle(options.output_filename)
+        len(predicted_all), options.output_filename))
+    predicted_all.as_pickle(options.output_filename)
     Command.end('Saved {0} reflections to {1}'.format(
-        len(predicted), options.output_filename))
+        len(predicted_all), options.output_filename))
 
 
 if __name__ == '__main__':
