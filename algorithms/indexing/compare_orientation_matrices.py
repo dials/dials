@@ -11,11 +11,17 @@ def difference_rotation_matrix_and_euler_angles(crystal_a, crystal_b):
   best_R_ab = None
   best_cb_op = None
   # iterate over space group ops to find smallest differences
-  for i_op, op in enumerate(space_group.all_ops()):
+  for i_op, op in enumerate(space_group.build_derived_laue_group().all_ops()):
+    if op.r().determinant() < 0:
+      continue
+    elif not op.t().is_zero():
+      continue
     cb_op = sgtbx.change_of_basis_op(op.inverse())
     crystal_b_sym = crystal_b.change_basis(cb_op)
     U_a = crystal_a.get_U()
     U_b = crystal_b_sym.get_U()
+    assert U_a.is_r3_rotation_matrix()
+    assert U_b.is_r3_rotation_matrix()
     # the rotation matrix to transform from U_a to U_b
     R_ab = U_b * U_a.transpose()
     euler_angles = euler.xyz_angles(R_ab)
