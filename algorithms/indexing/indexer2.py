@@ -141,7 +141,7 @@ refinement_protocol {
     maximum_phi_error = None
       .type = float(value_min=0)
       .help = "Reject reflections whose predicted and observed phi centroids "
-              "differ by more than the given value (degress)."
+              "differ by more than the given value (degrees)."
               "No outlier rejection is performed in the first macro cycle, and "
               "in the second macro cycle twice the given multiple is used."
   }
