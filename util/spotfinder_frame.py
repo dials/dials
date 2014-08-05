@@ -154,9 +154,9 @@ class SpotFrame(XrayFrame) :
           name='<miller_indices_layer>')
       if self.settings.show_predictions and len(predictions_data):
         self.predictions_layer = self.pyslip.AddPointLayer(
-          predictions_data, color="yellow", name="<predictions_layer>",
+          predictions_data, name="<predictions_layer>",
           radius=3,
-          renderer = self.pyslip.LightweightDrawPointLayer,
+          renderer = self.pyslip.DrawPointLayer,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
       if self.settings.show_all_pix:
         self.draw_all_pix_timer.start()
@@ -239,6 +239,13 @@ class SpotFrame(XrayFrame) :
     detector = self.pyslip.tiles.raw_image.get_detector()
     scan = self.pyslip.tiles.raw_image.get_scan()
     to_degrees = 180 / math.pi
+    prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                          "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                          "#cab2d6"] * 10
+    # alternative colour scheme
+    #prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
+                          #"#ff7f00", "#ffff33", "#a65628", "#f781bf",
+                          #"#999999"] * 10
     for ref_list in self.reflections:
       if ref_list.has_key('bbox'):
         bbox = ref_list['bbox']
@@ -320,26 +327,30 @@ class SpotFrame(XrayFrame) :
           phi = ref_list['xyzcal.mm'].parts()[2]
           frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
         n = 0 # buffer
-        frame_predictions_sel = (
-          (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
-        for reflection in ref_list.select(frame_predictions_sel):
-          if (self.settings.show_predictions and
-              reflection.has_key('xyzcal.px')):
-            x, y = map_coords(reflection['xyzcal.px'][0]+ 0.5,
-                              reflection['xyzcal.px'][1] + 0.5,
-                              reflection['panel'])
-            predictions_data.append((x, y))
-          elif (self.settings.show_predictions and
-                reflection.has_key('xyzcal.mm')):
-            x, y = detector[reflection['panel']].millimeter_to_pixel(
-              reflection['xyzcal.mm'][:2])
-            x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
-            predictions_data.append((x, y))
-          if (self.settings.show_miller_indices and
-              'miller_index' in reflection and
-              reflection['miller_index'] != (0,0,0)):
-            miller_indices_data.append((x, y, str(reflection['miller_index']),
-                                        {'placement':'ne'}))
+        for i_expt in range(flex.max(ref_list['id'])+1):
+          expt_sel = ref_list['id'] == i_expt
+          frame_predictions_sel = (
+            (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
+          for reflection in ref_list.select(frame_predictions_sel & expt_sel):
+            if (self.settings.show_predictions and
+                reflection.has_key('xyzcal.px')):
+              x, y = map_coords(reflection['xyzcal.px'][0]+ 0.5,
+                                reflection['xyzcal.px'][1] + 0.5,
+                                reflection['panel'])
+              predictions_data.append(
+                (x, y, {'colour':prediction_colours[i_expt]}))
+            elif (self.settings.show_predictions and
+                  reflection.has_key('xyzcal.mm')):
+              x, y = detector[reflection['panel']].millimeter_to_pixel(
+                reflection['xyzcal.mm'][:2])
+              x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
+              predictions_data.append(
+                (x, y, {'colour':prediction_colours[i_expt]}))
+            if (self.settings.show_miller_indices and
+                'miller_index' in reflection and
+                reflection['miller_index'] != (0,0,0)):
+              miller_indices_data.append((x, y, str(reflection['miller_index']),
+                                          {'placement':'ne'}))
 
     if self.crystals is not None:
       from scitbx import matrix
