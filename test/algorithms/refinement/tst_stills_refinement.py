@@ -10,7 +10,7 @@
 #
 
 """
-A simple test of stills refinement using fake data (that is not really still).
+A simple test of stills refinement using fake data.
 Only the crystal is perturbed while the beam and detector are known.
 
 """
@@ -75,17 +75,18 @@ mydetector = models.detector
 mygonio = models.goniometer
 mybeam = models.beam
 
-# Build a mock scan for a 3 degree image, which will later be treated as a still
+# Build a mock scan for a 1.5 degree wedge. Only used for generating indices near
+# the Ewald sphere
 sf = scan_factory()
 myscan = sf.make_scan(image_range = (1,1),
                       exposure_times = 0.1,
-                      oscillation = (0, 3.0),
+                      oscillation = (0, 1.5),
                       epochs = range(1),
                       deg = True)
 sweep_range = myscan.get_oscillation_range(deg=False)
 temp = myscan.get_oscillation(deg=False)
 im_width = temp[1] - temp[0]
-assert approx_equal(im_width, 3.0 * pi / 180.)
+assert approx_equal(im_width, 1.5 * pi / 180.)
 
 # Build experiment lists
 stills_experiments = ExperimentList()
@@ -100,32 +101,27 @@ scans_experiments.append(Experiment(
 # Parameterise the models (only for perturbing geometry) #
 ##########################################################
 
-det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisation(mybeam, goniometer=None)
 xlo_param = CrystalOrientationParameterisation(crystal)
 xluc_param = CrystalUnitCellParameterisation(crystal)
-
-# Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
-s0_param.set_fixed([True, False, True])
 
 ################################
 # Apply known parameter shifts #
 ################################
 
-# rotate crystal a bit (=5 mrad each rotation)
+# rotate crystal (=5 mrad each rotation)
 xlo_p_vals = []
 p_vals = xlo_param.get_param_vals()
 xlo_p_vals.append(p_vals)
 new_p_vals = [a + b for a, b in zip(p_vals, [5., 5., 5.])]
 xlo_param.set_param_vals(new_p_vals)
 
-# change unit cell a bit (=1.0 Angstrom length upsets, 0.5 degree of
+# change unit cell (=1.0 Angstrom length upsets, 0.5 degree of
 # gamma angle)
 xluc_p_vals = []
 p_vals = xluc_param.get_param_vals()
 xluc_p_vals.append(p_vals)
 cell_params = crystal.get_unit_cell().parameters()
-cell_params = [a + b for a, b in zip(cell_params, [1.0, 1.0, 1.0, 0.0,
+cell_params = [a + b for a, b in zip(cell_params, [1.0, 1.0, -1.0, 0.0,
                                                    0.0, 0.5])]
 new_uc = unit_cell(cell_params)
 newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
@@ -134,19 +130,23 @@ S.set_orientation(orientation=newB)
 X = tuple([e * 1.e5 for e in S.forward_independent_parameters()])
 xluc_param.set_param_vals(X)
 
+# keep track of the target crystal model to compare with refined
+from copy import deepcopy
+target_crystal = deepcopy(crystal)
+
 #############################
 # Generate some reflections #
 #############################
 
-# All indices in a 2.0 Angstrom sphere for crystal1
+# All indices in a 2.0 Angstrom sphere for crystal
 resolution = 2.0
 index_generator = IndexGenerator(crystal.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices = index_generator.to_array()
 
-# Build a reflection predictor
+# Build a ray predictor and predict rays close to the Ewald sphere by using
+# the narrow rotation scan
 ref_predictor = ScansRayPredictor(scans_experiments, sweep_range)
-
 obs_refs = ref_predictor.predict(indices, experiment_id=0)
 
 # Invent some variances for the centroid positions of the simulated data
@@ -156,21 +156,25 @@ var_x = (px_size[0] / 2.)**2
 var_y = (px_size[1] / 2.)**2
 var_phi = (im_width / 2.)**2
 
-obs_refs = ray_intersection(scans_experiments[0].detector, obs_refs)
 for ref in obs_refs:
-
-  # set the 'observed' centroids
-  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
 
   # set the centroid variance
   ref.centroid_variance = (var_x, var_y, var_phi)
 
-  # set the frame number, calculated from rotation angle
-  ref.frame_number = myscan.get_image_index_from_angle(
-      ref.rotation_angle, deg=False)
-
   # ensure the crystal number is set to zero (should be by default)
   ref.crystal = 0
+
+# Build a stills reflection predictor
+from dials.algorithms.refinement.prediction import ExperimentsPredictor
+stills_ref_predictor = ExperimentsPredictor(stills_experiments)
+
+obs_refs_stills = obs_refs.to_table(centroid_is_mm=True)
+stills_ref_predictor.update()
+obs_refs_stills = stills_ref_predictor.predict(obs_refs_stills)
+
+# set the calculated centroids as the 'observations'
+for iref, ref in enumerate(obs_refs_stills):
+  obs_refs_stills[iref] = {'xyzobs.mm.value': ref['xyzcal.mm']}
 
 ###############################
 # Undo known parameter shifts #
@@ -189,11 +193,22 @@ do_plot = False
 if do_plot: params.refinement.refinery.track_parameter_correlation=True
 
 from dials.algorithms.refinement.refiner import RefinerFactory
+# decrease bin_size_fraction to terminate on RMSD convergence
+params.refinement.target.bin_size_fraction=0.01
+params.refinement.parameterisation.beam.fix="all"
+params.refinement.parameterisation.detector.fix="all"
 refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs.to_table(centroid_is_mm=True), stills_experiments, verbosity=0)
+  obs_refs_stills, stills_experiments, verbosity=0)
 
 # run refinement
 history = refiner.run()
+
+# regression tests
+assert len(history.rmsd) == 9
+refined_crystal = refiner.get_experiments()[0].crystal
+uc1 = refined_crystal.get_unit_cell()
+uc2 = target_crystal.get_unit_cell()
+assert uc1.is_similar_to(uc2)
 
 if do_plot:
   plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
