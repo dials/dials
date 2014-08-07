@@ -56,6 +56,15 @@ def generate_phil_scope():
                 "accepted by the filtering algorithm."
         .type = float(value_min=0)
 
+      background_gradient {
+        filter = False
+          .type = bool
+        background_size = 2
+          .type = int(value_min=1)
+        gradient_cutoff = 4
+          .type = float(value_min=0)
+      }
+
       ice_rings {
         filter = False
           .type = bool
