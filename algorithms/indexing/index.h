@@ -109,7 +109,6 @@ namespace dials { namespace algorithms {
                 const std::size_t j_ref = i_same_hkl[j];
                 int crystal_i = crystal_ids_[i_ref];
                 int crystal_j = crystal_ids_[j_ref];
-                //DIALS_ASSERT(hkl_ints[crystal_i][i_ref] == hkl_ints[crystal_j][j_ref]);
                 if (crystal_i != crystal_j) { continue; }
                 else if (crystal_i == -1) { continue; }
                 if (lengths_sq[crystal_j][j_ref] < lengths_sq[crystal_i][i_ref]) {
@@ -207,8 +206,8 @@ namespace dials { namespace algorithms {
 
       typedef std::pair<const int, const int> pair_t;
 
-
       double sum_l_ij = 0;
+      const double one_over_epsilon = 1.0/epsilon;
 
       // loop over crystals and assign one hkl per crystal per reflection
       for (int i_lattice=0; i_lattice<UB_matrices.size(); i_lattice++) {
@@ -239,8 +238,10 @@ namespace dials { namespace algorithms {
 
             double exponent = 0;
             for (std::size_t ii=0; ii<3; ii++) {
-              exponent += std::pow(std::max(std::abs(d_h[ii]) - epsilon, 0.)/epsilon, 2);
-              exponent += std::pow(std::max(std::abs(h_ij[ii]) - delta, 0.),2);
+              exponent += std::pow(
+                std::max(std::abs(d_h[ii]) - epsilon, 0.) * one_over_epsilon, 2);
+              exponent += std::pow(
+                std::max(std::abs(h_ij[ii]) - delta, 0.),2);
             }
             exponent *= -2;
             double l_ij = 1 - std::exp(exponent);
@@ -304,7 +305,6 @@ namespace dials { namespace algorithms {
             next_subtree += 1;
           }
           last_component = component[i];
-          SCITBX_ASSERT(component[i] == component[j]);
           cctbx::miller::index<> h_ij = edge_to_h_ij[pair_t(i, j)];
           double l_ij = edge_to_l_ij[pair_t(i, j)];
           hkl_ints_[j] = hkl_ints_[i] - h_ij;
@@ -316,7 +316,6 @@ namespace dials { namespace algorithms {
             next_subtree += 1;
           }
         }
-        /*hkl_ints.push_back(hkl_ints_);*/
 
         std::set<std::size_t> unique_subtree_ids(
           subtree_ids_.begin(), subtree_ids_.end());
@@ -340,8 +339,6 @@ namespace dials { namespace algorithms {
             continue;
           }
           else if (crystal_ids_[i] == -1) {
-            SCITBX_ASSERT(
-              miller_indices_[i] == cctbx::miller::index<>(0, 0, 0));
             miller_indices_[i] = hkl_ints_[i];
             crystal_ids_[i] = i_lattice;
           }
