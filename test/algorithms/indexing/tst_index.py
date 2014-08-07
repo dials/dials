@@ -99,7 +99,7 @@ class run_one_indexing(object):
       reflections = reflections.select(mi != (0,0,0))
       self.rmsds = self.get_rmsds_obs_pred(reflections, experiment)
       for actual, expected in zip(self.rmsds, expected_rmsds):
-        assert actual <= expected
+        assert actual <= expected, "%s %s" %(self.rmsds, expected_rmsds)
     if 0:
       print self.calc_rmsds_timer.legend
       print unpickling_timer.report()
@@ -348,23 +348,24 @@ def exercise_10():
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
   extra_args = ["method=real_space_grid_search",
+                "d_min_start=3",
                 "use_all_reflections=True",
-                "max_cell=70",
                 "n_macro_cycles=3",
                 "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
                 "known_symmetry.space_group=P212121",
                 "scan_range=0,10",
                 "beam.fix=all",
                 "detector.fix=all",
-                "basis_vector_combinations.metric=n_indexed",
                 "maximum_spot_error=3",
                 "maximum_phi_error=2",
                 "recycle_unindexed_reflections=True",
                 "max_lattices=3", #XXX eventually this should not be needed
+                "index_assignment.method=local",
+                "nearest_neighbours=50",
                 ]
 
   expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.27, 0.24, 0.004)
+  expected_rmsds = (0.22, 0.26, 0.004)
   expected_hall_symbol = ' P 2ac 2ab'
   n_expected_lattices = 3
 
