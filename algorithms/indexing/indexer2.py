@@ -450,10 +450,11 @@ class indexer_base(object):
                 cryst, self.target_symmetry_primitive,
                 return_primitive_setting=True,
                 cell_only=True)
-              experiments.crystals()[i_cryst].set_U(new_cryst.get_U())
-              experiments.crystals()[i_cryst].set_B(new_cryst.get_B())
+              experiments.crystals()[i_cryst].update(new_cryst)
 
-        self.index_reflections(experiments, self.reflections)
+        self.index_reflections(
+          experiments, self.reflections,
+          verbosity=self.params.refinement_protocol.verbosity)
 
         if (i_cycle == 0 and self.target_symmetry_primitive is not None
             and self.target_symmetry_primitive.space_group() is not None):
@@ -478,9 +479,7 @@ class indexer_base(object):
                 miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
                 self.reflections['miller_index'].set_selected(
                   self.reflections['id'] == i_expt, miller_indices)
-              expt.crystal.set_U(new_cryst.get_U())
-              expt.crystal.set_B(new_cryst.get_B())
-              expt.crystal.set_space_group(new_cryst.get_space_group())
+              expt.crystal.update(new_cryst)
 
         if len(experiments) > 1:
           from dials.algorithms.indexing.compare_orientation_matrices \
@@ -535,9 +534,12 @@ class indexer_base(object):
           if maximum_phi_error is not None:
             maximum_phi_error *= 2
 
+        reflections_for_refinement = self.reflections.select(
+          self.indexed_reflections)
         try:
           refined_experiments, refined_reflections = self.refine(
-            experiments, maximum_spot_error=maximum_spot_error,
+            experiments, reflections_for_refinement,
+            maximum_spot_error=maximum_spot_error,
             maximum_phi_error=maximum_phi_error)
         except RuntimeError, e:
           s = str(e)
@@ -853,8 +855,6 @@ class indexer_base(object):
       solutions = SolutionTrackerSimple()
 
     n_indexed = flex.int()
-    min_likelihood = 0.3
-    best_likelihood = min_likelihood
 
     import copy
     params = copy.deepcopy(self.params)
@@ -876,6 +876,7 @@ class indexer_base(object):
             cryst_b, self.target_symmetry_primitive,
             return_primitive_setting=True,
             cell_only=True)
+          if cryst_b is None: continue
           cryst_b, cb_op_to_primitive = self.apply_symmetry(
             cryst_b, self.target_symmetry_primitive,
             return_primitive_setting=True,
@@ -940,8 +941,6 @@ class indexer_base(object):
       if self.params.debug:
         print "model_likelihood: %.2f" %model_likelihood
         print "n_indexed: %i" %n_indexed[-1]
-      if model_likelihood > best_likelihood:
-        best_likelihood = model_likelihood
 
     if len(solutions):
       best_solution = solutions.best_solution()
@@ -1067,7 +1066,7 @@ class indexer_base(object):
       model = model.change_basis(cb_op_to_primitive)
     return model, cb_op_to_primitive
 
-  def index_reflections(self, experiments, reflections):
+  def index_reflections(self, experiments, reflections, verbosity=0):
     if self.params.index_assignment.method == 'local':
       params_local = self.params.index_assignment.local
       from dials.algorithms.indexing import index_reflections_local
@@ -1076,29 +1075,26 @@ class indexer_base(object):
         experiments, self.d_min, epsilon=params_local.epsilon,
         delta=params_local.delta, l_min=params_local.l_min,
         nearest_neighbours=params_local.nearest_neighbours,
-        verbosity=self.params.refinement_protocol.verbosity)
+        verbosity=verbosity)
     else:
       params_simple = self.params.index_assignment.simple
       from dials.algorithms.indexing import index_reflections
       index_reflections(reflections,
                         experiments, self.d_min,
                         tolerance=params_simple.hkl_tolerance,
-                        verbosity=self.params.refinement_protocol.verbosity)
+                        verbosity=verbosity)
 
-  def refine(self, experiments, maximum_spot_error=None,
+  def refine(self, experiments, reflections, maximum_spot_error=None,
              maximum_phi_error=None):
     from dials.algorithms.indexing.refinement import refine
-    reflections_for_refinement = self.reflections.select(
-      self.indexed_reflections)
     refiner, refined, outliers = refine(
-      self.params, reflections_for_refinement, experiments,
+      self.params, reflections, experiments,
       maximum_spot_error=maximum_spot_error,
       maximum_phi_error=maximum_phi_error,
       verbosity=self.params.refinement_protocol.verbosity,
       debug_plots=self.params.debug_plots)
     if outliers is not None:
-      self.reflections['id'].set_selected(
-        self.indexed_reflections.iselection().select(outliers), -1)
+      reflections['id'].set_selected(outliers, -1)
     used_reflections = refiner.get_reflections()
     verbosity = self.params.refinement_protocol.verbosity
     matches = refiner.get_matches()

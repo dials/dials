@@ -7,8 +7,7 @@ def index_reflections(
     reflections, experiments, d_min=None,
     tolerance=0.3, verbosity=0):
   reciprocal_lattice_points = reflections['rlp']
-  if 'miller_index' not in reflections:
-    reflections['miller_index'] = flex.miller_index(len(reflections))
+  reflections['miller_index'] = flex.miller_index(len(reflections), (0,0,0))
   if d_min is not None:
     d_spacings = 1/reciprocal_lattice_points.norms()
     inside_resolution_limit = d_spacings > d_min
@@ -143,6 +142,7 @@ def index_reflections_local(
   hkl = miller_indices.as_vec3_double().iround()
 
   n_rejects = (crystal_ids < 0).count(True)
+  assert miller_indices.select(crystal_ids < 0).all_eq((0,0,0))
 
   for i_cryst in set(crystal_ids):
     if i_cryst < 0: continue
@@ -168,6 +168,10 @@ def index_reflections_local(
     refs['miller_index'].set_selected(
       cryst_sel, flex.miller_index(list(h.iround())))
     refs['id'].set_selected(cryst_sel, i_cryst)
+
+  crystal_ids.set_selected(crystal_ids < 0, -1)
+  refs['id'] = crystal_ids
+  refs['miller_index'].set_selected(crystal_ids < 0, (0,0,0))
 
   reflections['miller_index'].set_selected(isel, refs['miller_index'])
   reflections['id'].set_selected(isel, refs['id'])
