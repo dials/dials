@@ -283,6 +283,30 @@ class BackgroundGradientFilter(object):
     if sweep.get_scan() is not None:
       zoffset = sweep.get_scan().get_array_range()[0]
 
+    from libtbx.containers import OrderedDict
+    class image_data_cache(object):
+      def __init__(self, imageset, size=10):
+        self.imageset = imageset
+        self.size = size
+        self._image_data = OrderedDict()
+
+      def __getitem__(self, i):
+        image_data = self._image_data.get(i)
+        if image_data is None:
+          image_data = self.imageset[i]
+          if len(self._image_data) >= self.size:
+            # remove the oldest entry in the cache
+            del self._image_data[self._image_data.keys()[0]]
+          self._image_data[i] = image_data
+        return image_data
+
+    cache = image_data_cache(sweep)
+    #cache = sweep
+
+    # sort shoeboxes by centroid z
+    frame = shoeboxes.centroid_all().position_frame()
+    shoeboxes = shoeboxes.select(flex.sort_permutation(frame))
+
     for i, shoebox in enumerate(shoeboxes):
       print i
       if not flags[i]: continue
@@ -303,7 +327,7 @@ class BackgroundGradientFilter(object):
       data = flex.double(flex.grid((ez2-ez1, ey2-ey1, ex2-ex1)))
       mask = flex.bool(data.accessor(), False)
       for i_z, z in enumerate(range(ez1, ez2)):
-        image_data = sweep[z-zoffset]
+        image_data = cache[z-zoffset]
         for i_y, y in enumerate(range(ey1, ey2)):
           for i_x, x in enumerate(range(ex1, ex2)):
             value = image_data[y, x]
