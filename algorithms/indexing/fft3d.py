@@ -56,15 +56,18 @@ class indexer_fft3d(indexer_base):
       self.find_basis_vector_combinations_cluster_analysis()
       if self.params.debug:
         self.debug_show_candidate_basis_vectors()
+      if self.params.debug_plots:
+        self.debug_plot_candidate_basis_vectors()
       crystal_models = self.candidate_crystal_models
       if self.params.multiple_lattice_search.max_lattices is not None:
         crystal_models = \
           crystal_models[:self.params.multiple_lattice_search.max_lattices]
     else:
       self.find_candidate_basis_vectors()
-      # self.find_candidate_basis_vectors_nks()
       if self.params.debug:
         self.debug_show_candidate_basis_vectors()
+      if self.params.debug_plots:
+        self.debug_plot_candidate_basis_vectors()
       self.candidate_crystal_models = self.find_candidate_orientation_matrices(
         self.candidate_basis_vectors,
         max_combinations=self.params.basis_vector_combinations.max_try,

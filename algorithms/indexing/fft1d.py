@@ -40,6 +40,8 @@ class indexer_fft1d(indexer_base):
     self.candidate_basis_vectors = solutions[0]
     if self.params.debug:
       self.debug_show_candidate_basis_vectors()
+    if self.params.debug_plots:
+      self.debug_plot_candidate_basis_vectors()
     self.candidate_crystal_models = self.find_candidate_orientation_matrices(
       self.candidate_basis_vectors,
       max_combinations=self.params.basis_vector_combinations.max_try,

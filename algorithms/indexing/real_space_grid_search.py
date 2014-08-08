@@ -126,6 +126,8 @@ class indexer_real_space_grid_search(indexer_base):
     self.candidate_basis_vectors = unique_vectors
     if self.params.debug:
       self.debug_show_candidate_basis_vectors()
+    if self.params.debug_plots:
+      self.debug_plot_candidate_basis_vectors()
     candidate_orientation_matrices \
       = self.find_candidate_orientation_matrices(
         unique_vectors, max_combinations=30, apply_symmetry=False)
