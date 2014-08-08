@@ -165,11 +165,11 @@ class CentroidResolutionFilter(object):
 
 class PowderRingFilter(object):
 
-  def __init__(self, crystal_symmetry):
+  def __init__(self, crystal_symmetry, width=0.06):
     self.crystal_symmetry = crystal_symmetry
+    self.width = width
 
-  def run(self, flags, sweep=None, observations=None,
-          width=0.06, **kwargs):
+  def run(self, flags, sweep=None, observations=None, **kwargs):
     from cctbx import crystal, sgtbx, uctbx
 
     from dials.array_family import flex
@@ -186,7 +186,7 @@ class PowderRingFilter(object):
     two_thetas_obs = flex.double()
     wavelength = beam.get_wavelength()
 
-    half_width = 0.5 * width
+    half_width = 0.5 * self.width
     for i, centroid in enumerate(observations):
       if not flags[i]: continue
       x, y = centroid.centroid.px_xy
