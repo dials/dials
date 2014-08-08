@@ -239,13 +239,13 @@ class SpotFrame(XrayFrame) :
     detector = self.pyslip.tiles.raw_image.get_detector()
     scan = self.pyslip.tiles.raw_image.get_scan()
     to_degrees = 180 / math.pi
-    prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-                          "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-                          "#cab2d6"] * 10
+    #prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                          #"#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                          #"#cab2d6"] * 10
     # alternative colour scheme
-    #prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
-                          #"#ff7f00", "#ffff33", "#a65628", "#f781bf",
-                          #"#999999"] * 10
+    prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
+                          "#ff7f00", "#ffff33", "#a65628", "#f781bf",
+                          "#999999"] * 10
     for ref_list in self.reflections:
       if ref_list.has_key('bbox'):
         bbox = ref_list['bbox']
@@ -262,7 +262,7 @@ class SpotFrame(XrayFrame) :
             self.show_all_pix_timer.start()
             shoebox = reflection['shoebox']
             iz = i_frame - z0
-            print i_frame, z0, iz
+            #print i_frame, z0, iz
             for ix in range(nx):
               for iy in range(ny):
                 mask_value = shoebox.mask[iz, iy, ix]
