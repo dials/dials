@@ -305,11 +305,14 @@ class BackgroundGradientFilter(object):
 
     # sort shoeboxes by centroid z
     frame = shoeboxes.centroid_all().position_frame()
-    shoeboxes = shoeboxes.select(flex.sort_permutation(frame))
+    perm = flex.sort_permutation(frame)
+    shoeboxes = shoeboxes.select(perm)
+    buffer_size = 1
+    bg_plus_buffer = self.background_size + buffer_size
 
     for i, shoebox in enumerate(shoeboxes):
-      print i
-      if not flags[i]: continue
+      #print i
+      if not flags[perm[i]]: continue
       panel = detector[shoebox.panel]
       trusted_range = panel.get_trusted_range()
       panel_normal = matrix.col(panel.get_normal())
@@ -318,41 +321,41 @@ class BackgroundGradientFilter(object):
       x1, x2, y1, y2, z1, z2 = bbox
       # expand the bbox with a background region around the spotfinder shoebox
       # perhaps also should use a buffer zone between the shoebox and the background region
-      expanded_bbox = (max(0, x1-self.background_size),
-                       min(max_x, x2+self.background_size),
-                       max(0, y1-self.background_size),
-                       min(max_y, y2+self.background_size),
+      expanded_bbox = (max(0, x1-bg_plus_buffer),
+                       min(max_x, x2+bg_plus_buffer),
+                       max(0, y1-bg_plus_buffer),
+                       min(max_y, y2+bg_plus_buffer),
                        z1, z2)
       ex1, ex2, ey1, ey2, ez1, ez2 = expanded_bbox
-      data = flex.double(flex.grid((ez2-ez1, ey2-ey1, ex2-ex1)))
+      data = flex.double(flex.grid((1, ey2-ey1, ex2-ex1)))
       mask = flex.bool(data.accessor(), False)
       for i_z, z in enumerate(range(ez1, ez2)):
         image_data = cache[z-zoffset]
         for i_y, y in enumerate(range(ey1, ey2)):
           for i_x, x in enumerate(range(ex1, ex2)):
             value = image_data[y, x]
-            data[i_z, i_y, i_x] = value
-            if (z >= z1 and z < z2 and
-                y >= y1 and y < y2 and
-                x >= x1 and x < x2):
-              mask[i_z, i_y, i_x] = False # foreground
+            data[0, i_y, i_x] = value
+            if (z >= (z1-buffer_size) and z < (z2+buffer_size) and
+                y >= (y1-buffer_size) and y < (y2+buffer_size) and
+                x >= (x1-buffer_size) and x < (x2+buffer_size)):
+              mask[0, i_y, i_x] = False # foreground
             elif (value > trusted_range[0] and value < trusted_range[1]):
-              mask[i_z, i_y, i_x] = True # background
+              mask[0, i_y, i_x] = True # background
 
       model = modeller.create(data, mask)
-      for i_z in range(z2-z1):
-        d, a, b = model.params()[i_z*3:i_z*3+3]
-        #model = modeller.create(data[i_z:i_z+1,:,:], mask[i_z:i_z+1,:,:])
-        #d, a, b = model.params()[:+3]
-        c = -1
+      d, a, b = model.params()[:3]
+      c = -1
+      #print a, b, d
+
+      if abs(a) > self.gradient_cutoff or abs(b) > self.gradient_cutoff:
+        flags[perm[i]] = False
         #print a, b, d
 
-        if abs(a) > self.gradient_cutoff or abs(b) > self.gradient_cutoff:
-          flags[i] = False
+      #if abs(a) < self.gradient_cutoff and abs(b) < self.gradient_cutoff:
+        #flags[i] = False
 
-        #if abs(a) < self.gradient_cutoff and abs(b) < self.gradient_cutoff:
-          #flags[i] = False
-
+      #if x2-x1 > 10 or y2-y1 > 10:
+        #print a, b, d, flags[perm[i]]
         #bg = flex.double(data.accessor())
         #for x in range(ex2-ex1):
           #for y in range(ey2-ey1):
@@ -383,12 +386,12 @@ class BackgroundGradientFilter(object):
         ##pyplot.colorbar(im3)
         #pyplot.show()
 
-        #from matplotlib import pyplot
-        #fig, axes = pyplot.subplots(nrows=1, ncols=2)
-        #im0 = axes[0].imshow(data.as_numpy_array()[i_z,:,:], interpolation='none')
-        #im1 = axes[1].imshow(bg.as_numpy_array()[i_z,:,:], interpolation='none')
-        #pyplot.colorbar(im1)
-        #pyplot.show()
+      #from matplotlib import pyplot
+      #fig, axes = pyplot.subplots(nrows=1, ncols=2)
+      #im0 = axes[0].imshow(data.as_numpy_array()[i_z,:,:], interpolation='none')
+      #im1 = axes[1].imshow(bg.as_numpy_array()[i_z,:,:], interpolation='none')
+      #pyplot.colorbar(im1)
+      #pyplot.show()
 
     return flags
 
