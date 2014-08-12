@@ -28,12 +28,20 @@ Parameters:
     usage_message += s.getvalue()
     raise Usage(usage_message)
   importer = Importer(args, check_format=False)
-  if len(importer.datablocks) == 0:
-    print "No DataBlock could be constructed"
-    return
+  if importer.datablocks is None or len(importer.datablocks) == 0:
+    if importer.experiments is not None and len(importer.experiments):
+      imagesets = importer.experiments.imagesets()
+    else:
+      print "No DataBlock could be constructed"
+      return
   elif len(importer.datablocks) > 1:
     raise RuntimeError("Only one DataBlock can be processed at a time")
-  imagesets = importer.datablocks[0].extract_imagesets()
+  else:
+    imagesets = importer.datablocks[0].extract_imagesets()
+  if importer.experiments is not None and len(importer.experiments):
+    known_crystal_models = importer.experiments.crystals()
+  else:
+    known_crystal_models = None
   assert len(importer.reflections) == 1
   reflections = importer.reflections[0]
   args = importer.unhandled_arguments
@@ -42,15 +50,36 @@ Parameters:
   working_phil = cmd_line.process_and_fetch(args=args)
   working_phil.show()
 
+  #filenames = imagesets[0].paths()
+  #beam = imagesets[0].get_beam()
+  #detector = imagesets[0].get_detector()
+
+  #from dxtbx.imageset import ImageSet
+  #from dxtbx.imageset import NullReader
+  #reader = NullReader(filenames)
+  #imgset = ImageSet(reader)
+  #imgset.set_beam(beam)
+  #imgset.set_detector(detector)
+  #print imgset.get_beam()
+  #print imgset.get_detector()
+  #imagesets = [imgset]
+
   params = working_phil.extract()
-  if params.method == "fft3d":
-    from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
+  if known_crystal_models is not None:
+    from dials.algorithms.indexing.known_orientation \
+         import indexer_known_orientation
+    idxr = indexer_known_orientation(
+      reflections, imagesets, params, known_crystal_models)
+  elif params.method == "fft3d":
+    from dials.algorithms.indexing.fft3d import indexer_fft3d
+    idxr = indexer_fft3d(reflections, imagesets, params=params)
   elif params.method == "fft1d":
-    from dials.algorithms.indexing.fft1d import indexer_fft1d as indexer
+    from dials.algorithms.indexing.fft1d import indexer_fft1d
+    idxr = indexer_fft1d(reflections, imagesets, params=params)
   elif params.method == "real_space_grid_search":
     from dials.algorithms.indexing.real_space_grid_search \
-         import indexer_real_space_grid_search as indexer
-  idxr = indexer(reflections, imagesets, params=params)
+         import indexer_real_space_grid_search
+    idxr = real_space_grid_search(reflections, imagesets, params=params)
   idxr.index()
   refined_experiments = idxr.refined_experiments
   refined_reflections = idxr.refined_reflections
