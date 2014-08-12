@@ -79,7 +79,7 @@ Parameters:
   elif params.method == "real_space_grid_search":
     from dials.algorithms.indexing.real_space_grid_search \
          import indexer_real_space_grid_search
-    idxr = real_space_grid_search(reflections, imagesets, params=params)
+    idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
   idxr.index()
   refined_experiments = idxr.refined_experiments
   refined_reflections = idxr.refined_reflections
