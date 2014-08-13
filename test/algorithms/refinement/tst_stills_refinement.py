@@ -204,7 +204,18 @@ refiner = RefinerFactory.from_parameters_data_experiments(params,
 history = refiner.run()
 
 # regression tests
-assert len(history.rmsd) == 9
+try:
+  assert len(history.rmsd) == 9
+except AssertionError:
+  msg = """
+DEBUGGING INFORMATION
+If you are seeing this message for the first time, please copy it into an
+email and send to david.waterman@stfc.ac.uk to help debug this test.
+rsmds="""
+  msg += str(history.rmsd)
+  msg += "\nEND DEBUGGING INFORMATION"
+  raise AssertionError(msg)
+
 refined_crystal = refiner.get_experiments()[0].crystal
 uc1 = refined_crystal.get_unit_cell()
 uc2 = target_crystal.get_unit_cell()
