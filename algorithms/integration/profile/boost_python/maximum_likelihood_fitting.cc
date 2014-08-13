@@ -30,6 +30,15 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("S1", &MLPoisson2::S1)
       .def("S2", &MLPoisson2::S2)
       ;
+
+    class_<MLPoisson2Stepper>("MLPoisson2Stepper", no_init)
+      .def(init< const af::const_ref<double>&,
+                 const af::const_ref<double>&,
+                 const af::const_ref<double>&,
+                 vec2<double> >())
+      .def("step", &MLPoisson2Stepper::step)
+      .def("X", &MLPoisson2Stepper::X)
+      .def("B", &MLPoisson2Stepper::B);
   }
 
 }}} // namespace = dials::algorithms::boost_python

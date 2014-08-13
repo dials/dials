@@ -645,7 +645,13 @@ scratch/jmp/old/xds_subtractor.cc -text
 scratch/jmp/old/xds_subtractor.h -text
 scratch/jmp/sat_gpu/Makefile -text
 scratch/jmp/sat_gpu/main.cu -text
+scratch/jmp/weak/bfgs.py -text
 scratch/jmp/weak/test.py -text
+scratch/jmp/weak/test2.py -text
+scratch/jmp/weak/test3.py -text
+scratch/jmp/weak/test4.py -text
+scratch/jmp/weak/test5.py -text
+scratch/jmp/weak/test6.py -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain

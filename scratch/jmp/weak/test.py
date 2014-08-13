@@ -122,6 +122,7 @@ def ml_poisson2_step(c, b, s, B, S):
   DS = step * dlds
   B1 = B + DB
   S1 = S + DS
+  print B1, S1
   if B1 < 0:
     B1 = B / 2
   if S1 < 0:
@@ -136,22 +137,31 @@ def ml_poisson2_step(c, b, s, B, S):
 def iteration(c, b, s, B, S):
   from scitbx import matrix
 
+
+  K1 = 0
+  K2 = 0.05 / 0.1111111111
+
   eps = 1.0
   sum_b = sum(b)
   sum_s = sum(s)
   sum_sc = sum([cc*ss/(B*bb+S*ss) for cc, bb, ss in zip(c, b, s)])
   sum_bc = sum([cc*bb/(B*bb+S*ss) for cc, bb, ss in zip(c, b, s)])
-  dldb = sum_bc - sum_b
-  dlds = sum_sc - sum_s
+  lb = 1.0 / (B + K1*S) + K2 / (S + K2*B)
+  ls = K1 / (B + K1*S) + 1.0 / (S + K2*B)
+  dldb = sum_bc - sum_b + lb
+  dlds = sum_sc - sum_s + ls
   DB = eps * dldb
   DS = eps * dlds
   B1 = B + DB
   S1 = S + DS
-  if B1 < 0:
-    B1 = B / 2
-  if S1 < 0:
-    S1 = S / 2
   print B1, S1
+  # print ":", dldb, dlds
+  # exit(0)
+  # if B1 < 0:
+  #   B1 = B / 2
+  # if S1 < 0:
+  #   S1 = S / 2
+  # print B1, S1
   return B1, S1
 
 
@@ -170,8 +180,8 @@ def value(counts, background_shape, signal_shape):
   B = 1
   EPS = 1e-10
   print "Start"
-  SSS = []
-  BBB = []
+  SSS = [S]
+  BBB = [B]
   n = 0
   while(True):
     B1, S1 = iteration(counts, background_shape, signal_shape, B, S)
