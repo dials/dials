@@ -198,7 +198,7 @@ params.refinement.target.bin_size_fraction=0.01
 params.refinement.parameterisation.beam.fix="all"
 params.refinement.parameterisation.detector.fix="all"
 refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs_stills, stills_experiments, verbosity=0)
+  obs_refs_stills, stills_experiments, verbosity=1)
 
 # run refinement
 history = refiner.run()
