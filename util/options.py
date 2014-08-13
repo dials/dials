@@ -80,6 +80,10 @@ class OptionParser(optparse.OptionParser):
     from dials.framework.registry import Registry
     return Registry().config().system_phil(scope=self._scope)
 
+  def diff_phil(self):
+    ''' Get the diff phil. '''
+    return self.system_phil().fetch_diff(source=self.phil())
+
   def print_phil(self, attributes_level=0):
     '''Print the system and command line parameters.'''
     print self.phil().as_str(attributes_level=attributes_level)
@@ -87,6 +91,10 @@ class OptionParser(optparse.OptionParser):
   def print_system_phil(self, attributes_level=0):
     '''Print the system parameters.'''
     print self.system_phil.as_str(attributes_level=attributes_level)
+
+  def print_diff_phil(self, attributes_level=0):
+    ''' Print the diff parameters. '''
+    print phil.as_str(attributes_level=attributes_level)
 
   def format_epilog(self, formatter):
     ''' Don't do formatting on epilog. '''

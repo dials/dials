@@ -98,6 +98,14 @@ class Script(ScriptRunner):
       self.config().print_help()
       return
 
+    # Print the diff phil
+    diff_phil_str = self.config().diff_phil().as_str()
+    print 'Integrating with the following user specified parameters:\n'
+    if (diff_phil_str is not ''):
+      print diff_phil_str
+    else:
+      print 'All parameters set to defaults'
+
     # Load the experiment list
     exlist = self.load_experiments(args[0])
 
