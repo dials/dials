@@ -21,12 +21,14 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<ReekeIndexGenerator>("ReekeIndexGenerator", no_init)
       .def(init<mat3<double>,
                 mat3<double>,
+                cctbx::sgtbx::space_group_type const&,
                 vec3<double>,
                 vec3<double>,
                 double,
                 int>((
         arg("a_beg"),
         arg("a_end"),
+        arg("space_group_type"),
         arg("axis"),
         arg("s0"),
         arg("dmin"),

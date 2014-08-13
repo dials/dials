@@ -75,8 +75,10 @@ class Test:
 
   def generate_cpp(self, frame):
     from dials.algorithms.spot_prediction import ReekeIndexGenerator
+    from cctbx.sgtbx import space_group_info
+    space_group_type = space_group_info("P 1").group().type()
     ub_beg, ub_end = self.get_ub(frame)
-    r = ReekeIndexGenerator(ub_beg, ub_end, self.axis, self.s0, self.dmin, self.margin)
+    r = ReekeIndexGenerator(ub_beg, ub_end, space_group_type, self.axis, self.s0, self.dmin, self.margin)
     hkl = r.to_array()
     return sorted(list(hkl))
 

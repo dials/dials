@@ -64,6 +64,9 @@ class Test(object):
     """Use reeke_model to generate indices of reflections near to the Ewald
     sphere that might be observed on a still image. Build a reflection_table
     of these."""
+    from cctbx.sgtbx import space_group_info
+
+    space_group_type = space_group_info("P 1").group().type()
 
     # create a ReekeIndexGenerator
     UB = self.crystal.get_U() * self.crystal.get_B()
@@ -73,7 +76,7 @@ class Test(object):
     # use the same UB at the beginning and end - the margin parameter ensures
     # we still have indices close to the Ewald sphere generated
     from dials.algorithms.spot_prediction import ReekeIndexGenerator
-    r = ReekeIndexGenerator(UB, UB, axis, s0, dmin=1.5, margin=1)
+    r = ReekeIndexGenerator(UB, UB, space_group_type, axis, s0, dmin=1.5, margin=1)
 
     # generate indices
     hkl = r.to_array()

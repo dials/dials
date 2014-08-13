@@ -50,6 +50,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Detector&,
           const Goniometer&,
           const Scan&,
+          const cctbx::sgtbx::space_group_type&,
           double,
           std::size_t>())
       .def("for_ub", &Predictor::for_ub)

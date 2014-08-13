@@ -323,12 +323,14 @@ namespace dials { namespace algorithms {
         const Detector &detector,
         const Goniometer &goniometer,
         const Scan &scan,
+        const cctbx::sgtbx::space_group_type &space_group_type,
         double dmin,
         std::size_t margin)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
         scan_(scan),
+        space_group_type_(space_group_type),
         dmin_(dmin),
         margin_(margin),
         predict_rays_(
@@ -418,7 +420,7 @@ namespace dials { namespace algorithms {
       compute_setting_matrices(A1, A2, frame);
 
       // Construct the index generator and do the predictions for each index
-      ReekeIndexGenerator indices(A1, A2, m2, s0, dmin_, margin_);
+      ReekeIndexGenerator indices(A1, A2, space_group_type_, m2, s0, dmin_, margin_);
       for (;;) {
         miller_index h = indices.next();
         if (h.is_zero()) {
@@ -481,6 +483,7 @@ namespace dials { namespace algorithms {
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
+    cctbx::sgtbx::space_group_type space_group_type_;
     double dmin_;
     std::size_t margin_;
     ScanVaryingRayPredictor predict_rays_;

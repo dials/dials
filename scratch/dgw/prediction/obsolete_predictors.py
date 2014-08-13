@@ -286,13 +286,16 @@ class ScanVaryingReflectionListGenerator(object):
     return reflections
 
   def _search_on_image(self, t):
+    from cctbx.sgtbx import space_group_info
 
+    space_group_type = space_group_info("P 1").group().type()
     self._predictor.prepare(t)
 
     A1 = self._predictor.get_A1()
     A2 = self._predictor.get_A2()
 
-    index_generator = ReekeIndexGenerator(A1, A2, self._axis, self._s0,
+    index_generator = ReekeIndexGenerator(A1, A2, space_group_type,
+                                          self._axis, self._s0,
                                   self._dmin, margin = 1)
 
     indices = index_generator.to_array()

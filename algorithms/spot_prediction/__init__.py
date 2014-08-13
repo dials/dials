@@ -42,6 +42,7 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
     experiment.detector,
     experiment.goniometer,
     experiment.scan,
+    experiment.crystal.get_space_group().type(),
     dmin,
     margin)
 

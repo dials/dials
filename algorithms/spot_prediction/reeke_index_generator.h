@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <boost/optional.hpp>
 #include <cctbx/miller.h>
+#include <cctbx/sgtbx/space_group_type.h>
 #include <scitbx/array_family/simple_io.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/array_family/tiny.h>
@@ -629,15 +630,26 @@ namespace reeke_detail {
      */
     ReekeIndexGenerator(
         mat3<double> ub_beg, mat3<double> ub_end,
+        cctbx::sgtbx::space_group_type const& space_group_type,
         vec3<double> axis, vec3<double> s0,
         double dmin, int margin)
-    : model_(ub_beg, ub_end, axis, -s0, dmin, margin) {}
+    : model_(ub_beg, ub_end, axis, -s0, dmin, margin),
+      space_group_type_(space_group_type) {}
 
     /**
      * @returns The next miller index to be generated
      */
     cctbx::miller::index<> next() {
-      return model_.permutation() * next_pqr();
+      for (;;) {
+        cctbx::miller::index<> h = model_.permutation() * next_pqr();
+        if (h.is_zero()) {
+          break;
+        }
+        if (!space_group_type_.group().is_sys_absent(h)) {
+          return h;
+        }
+      }
+      return cctbx::miller::index<>(0, 0, 0);
     }
 
     /**
@@ -706,6 +718,7 @@ namespace reeke_detail {
     }
 
     ReekeModel model_;
+    cctbx::sgtbx::space_group_type space_group_type_;
   };
 
 }} // namespace dials::algorithms

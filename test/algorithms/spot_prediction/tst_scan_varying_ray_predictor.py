@@ -3,6 +3,7 @@ class Test:
 
   def __init__(self):
     from scitbx import matrix
+    from cctbx.sgtbx import space_group_info
     # cubic, 50A cell, 1A radiation, 1 deg osciillation, everything ideal
     a = 50.0
     self.ub = matrix.sqr((1.0 / a, 0.0, 0.0,
@@ -12,6 +13,7 @@ class Test:
     self.axis = matrix.col((0, 1, 0))
     self.s0 = matrix.col((0, 0, 1))
 
+    self.space_group_type = space_group_info("P 1").group().type()
     self.dmin = 1.5
     self.margin = 1
     self.image_range = (1, 10)
@@ -28,8 +30,8 @@ class Test:
       ub_beg, ub_end = self.get_ub(frame)
 
       # Get the miller indices
-      r = ReekeIndexGenerator(ub_beg, ub_end, self.axis,
-                              self.s0, self.dmin, self.margin)
+      r = ReekeIndexGenerator(ub_beg, ub_end, self.space_group_type,
+                              self.axis, self.s0, self.dmin, self.margin)
 
       hkl = r.to_array()
       py_rays = self.predict_py(hkl, frame, ub_beg, ub_end)

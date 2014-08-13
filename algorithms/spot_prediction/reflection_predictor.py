@@ -52,6 +52,7 @@ class ReflectionPredictor(object):
           lambda: predictor.for_ub(experiment.crystal.get_A()))
     else:
       predictor = StillsReflectionPredictor(experiment, **kwargs)
+
       predict = Predictor(
         "stills prediction",
         lambda: predictor.for_ub(experiment.crystal.get_A()))
@@ -77,4 +78,3 @@ class ReflectionPredictor(object):
   def predictor(self, index):
     ''' Get the predictor for the given experiment index. '''
     return self._predict[index]
-
