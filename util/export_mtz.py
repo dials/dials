@@ -218,7 +218,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
     d.add_column('SIGIPR', type_table['SIGI']).set_values(
       flex.sqrt(V_profile).as_float())
     # Trap negative variances
-    assert V_profile.all_ge(0)
+    assert V_profile.all_gt(0)
   if 'intensity.sum.value' in integrated_data:
     I_sum = integrated_data['intensity.sum.value'] * lp
     V_sum = integrated_data['intensity.sum.variance'] * lp
@@ -226,7 +226,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
     d.add_column('SIGI', type_table['SIGI']).set_values(
       flex.sqrt(V_sum).as_float())
     # Trap negative variances
-    assert V_sum.all_ge(0)
+    assert V_sum.all_gt(0)
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())
