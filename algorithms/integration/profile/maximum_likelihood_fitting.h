@@ -46,6 +46,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(c.all_ge(0));
       DIALS_ASSERT(s1.all_ge(0));
       DIALS_ASSERT(s2.all_ge(0));
+      DIALS_ASSERT(sum_s1_ > 0);
+      DIALS_ASSERT(sum_s2_ > 0);
       K11_ = 1.0;
       K12_ = 0.0;
       K21_ = 0.0;
@@ -80,8 +82,8 @@ namespace dials { namespace algorithms {
         double den = S1_*s1_[i]+S2_*s2_[i];
         DIALS_ASSERT(den > 0);
         double inv_den = 1.0 / den;
-        sum_s1c = c_[i]*s1_[i]*inv_den;
-        sum_s2c = c_[i]*s2_[i]*inv_den;
+        sum_s1c += c_[i]*s1_[i]*inv_den;
+        sum_s2c += c_[i]*s2_[i]*inv_den;
       }
       double dlds1 = sum_s1c - sum_s1_;
       double dlds2 = sum_s2c - sum_s2_;
@@ -91,28 +93,14 @@ namespace dials { namespace algorithms {
       double S2_new = S2_ + dS2;
       
       // Hack to make sure we obey the constraints
-      if (S1_new*K11_ + S2_new*K12_ <= 0) {
-        double num = S1_*S2_new-S2_*S1_new;
-        double den = K12_*(S1_-S1_new)-K11_*(S2_-S2_new);
-        DIALS_ASSERT(den != 0);
-        double frac = num / den;
-        double S1X = K11_*frac;
-        double S2X = K12_*frac;
-        S1_new = (S1X + S1_) / 2.0;
-        S2_new = (S2X + S2_) / 2.0;
+      if (K11_ * S1_new <= -K12_ * S2_new) {
+        S1_new = S1_ / 2.0;
       }
-      if (S1_new*K21_ + S2_new*K22_ <= 0) {
-        double num = S1_*S2_new-S2_*S1_new;
-        double den = K22_*(S1_-S1_new)-K21_*(S2_-S2_new);
-        DIALS_ASSERT(den != 0);
-        double frac = num / den;
-        double S1X = K21_*frac;
-        double S2X = K22_*frac;
-        S1_new = (S1X + S1_) / 2.0;
-        S2_new = (S2X + S2_) / 2.0;
+      if (K22_ * S2_new <= -K21_ * S1_new) {
+        S2_new = S2_ / 2.0;
       }
       S1_ = S1_new;
-      S2_ = S1_new;
+      S2_ = S2_new;
     }
     
     void solve(double eps) {
