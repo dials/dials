@@ -42,7 +42,8 @@ class refined_settings_list(list):
         'rmsd':item.rmsd,
         'nspots':item.Nmatches,
         'bravais':item['bravais'],
-        'unit_cell':uc.parameters()
+        'unit_cell':uc.parameters(),
+        'cb_op':item['cb_op_inp_best'].as_abc()
         }
 
     return result
@@ -54,7 +55,7 @@ class refined_settings_list(list):
       out = sys.stdout
 
     table_data = [["Solution","Metric fit","rmsd","#spots",
-                   "crystal_system","unit_cell","volume"]]
+                   "crystal_system","unit_cell","volume", "cb_op"]]
     for item in self:
       uc = item.refined_crystal.get_unit_cell()
       P = uc.parameters()
@@ -64,7 +65,8 @@ class refined_settings_list(list):
                          "%d"%item.Nmatches,
                          "%(system)s %(bravais)s"%item,
                          "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f"%P,
-                         "%.0f"%uc.volume()])
+                         "%.0f"%uc.volume(),
+                         "%s"%item['cb_op_inp_best'].as_abc()])
 
     print >> out, table_utils.format(
         table_data, has_header=1, justify='right', delim=' ')
