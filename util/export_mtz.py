@@ -207,20 +207,26 @@ def export_mtz(integrated_data, experiment_list, hklout):
     batch.as_double().as_float())
 
   lp = integrated_data['lp']
+  I_profile = None
+  V_profile = None
+  I_sum = None
+  V_sum = None
   if 'intensity.prf.value' in integrated_data:
-    I = integrated_data['intensity.prf.value'] * lp
-    V = integrated_data['intensity.prf.variance'] * lp
-  else:
-    I = integrated_data['intensity.sum.value'] * lp
-    V = integrated_data['intensity.sum.variance'] * lp
-
-  d.add_column('I', type_table['I']).set_values(I.as_float())
-
-  # Trap negative variances
-
-  assert ((V < 0).count(True) == 0)
-
-  d.add_column('SIGI', type_table['SIGI']).set_values(flex.sqrt(V).as_float())
+    I_profile = integrated_data['intensity.prf.value'] * lp
+    V_profile = integrated_data['intensity.prf.variance'] * lp
+    d.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
+    d.add_column('SIGIPR', type_table['SIGI']).set_values(
+      flex.sqrt(V_profile).as_float())
+    # Trap negative variances
+    assert V_profile.all_ge(0)
+  if 'intensity.sum.value' in integrated_data:
+    I_sum = integrated_data['intensity.sum.value'] * lp
+    V_sum = integrated_data['intensity.sum.variance'] * lp
+    d.add_column('I', type_table['I']).set_values(I_sum.as_float())
+    d.add_column('SIGI', type_table['SIGI']).set_values(
+      flex.sqrt(V_sum).as_float())
+    # Trap negative variances
+    assert V_sum.all_ge(0)
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())

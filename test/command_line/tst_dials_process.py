@@ -39,8 +39,9 @@ def exercise_1():
   reader = any_reflection_file('integrated.mtz')
   mtz_object = reader.file_content()
   assert mtz_object.column_labels() == [
-    'H', 'K', 'L', 'M_ISYM', 'BATCH', 'I', 'SIGI', 'FRACTIONCALC',
-    'XDET', 'YDET', 'ROT']
+    'H', 'K', 'L', 'M_ISYM', 'BATCH', 'IPR', 'SIGIPR', 'I', 'SIGI',
+    'FRACTIONCALC', 'XDET', 'YDET', 'ROT']
+
   assert len(mtz_object.batches()) == 84
   batch = mtz_object.batches()[0]
   expected_unit_cell = uctbx.unit_cell(
@@ -78,8 +79,8 @@ def exercise_2():
   reader = any_reflection_file('integrated.mtz')
   mtz_object = reader.file_content()
   assert mtz_object.column_labels() == [
-    'H', 'K', 'L', 'M_ISYM', 'BATCH', 'I', 'SIGI', 'FRACTIONCALC',
-    'XDET', 'YDET', 'ROT']
+    'H', 'K', 'L', 'M_ISYM', 'BATCH', 'IPR', 'SIGIPR', 'I', 'SIGI',
+    'FRACTIONCALC', 'XDET', 'YDET', 'ROT']
   assert len(mtz_object.batches()) == 45
   batch = mtz_object.batches()[0]
   expected_unit_cell = uctbx.unit_cell((78.07, 78.07, 78.07, 90, 90, 90))
