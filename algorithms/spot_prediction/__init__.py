@@ -14,6 +14,10 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
   if dmin is None:
     dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
 
+  # Only remove certain systematic absenses
+  space_group = experiment.crystal.get_space_group()
+  space_group = space_group.build_derived_patterson_group()
+
   # Create the reflection predictor
   return _ScanStaticReflectionPredictor(
     experiment.beam,
@@ -21,7 +25,7 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
     experiment.goniometer,
     experiment.scan,
     experiment.crystal.get_unit_cell(),
-    experiment.crystal.get_space_group().type(),
+    space_group.type(),
     dmin)
 
 
@@ -35,6 +39,10 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
   # Get dmin if it is not set
   if dmin is None:
     dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
+  
+  # Only remove certain systematic absenses
+  space_group = experiment.crystal.get_space_group()
+  space_group = space_group.build_derived_patterson_group()
 
   # Create the reflection predictor
   return _ScanVaryingReflectionPredictor(
@@ -42,7 +50,7 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
     experiment.detector,
     experiment.goniometer,
     experiment.scan,
-    experiment.crystal.get_space_group().type(),
+    space_group.type(),
     dmin,
     margin)
 
