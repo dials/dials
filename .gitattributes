@@ -104,6 +104,7 @@ algorithms/integration/flatten_shoebox.py -text
 algorithms/integration/flattened_2d_profile_fitting.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/integrator_2d.h -text
+algorithms/integration/interface.py -text
 algorithms/integration/interpolate_profile2d.h -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain
 algorithms/integration/lui_2d_integration.h -text svneol=unset#text/plain
@@ -645,6 +646,7 @@ scratch/jmp/old/xds_subtractor.cc -text
 scratch/jmp/old/xds_subtractor.h -text
 scratch/jmp/sat_gpu/Makefile -text
 scratch/jmp/sat_gpu/main.cu -text
+scratch/jmp/test_new_integrator.py -text
 scratch/jmp/weak/bfgs.py -text
 scratch/jmp/weak/test.py -text
 scratch/jmp/weak/test2.py -text
