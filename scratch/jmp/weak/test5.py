@@ -114,7 +114,7 @@ print minimize(f, x0, args=(c, b, s), method="SLSQP", constraints=con, jac=J)
 # for i in range(10):
 
 #   F = matrix.col((
-#     db(c,b,s,B,S), 
+#     db(c,b,s,B,S),
 #     ds(c,b,s,B,S)))
 
 #   FP = matrix.sqr((

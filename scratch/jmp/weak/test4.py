@@ -14,14 +14,14 @@ def dt1(c, b, s, t1, t2, mu0, mu1, mu2):
       assert(den > 0)
     except Exception, e:
       print "Den:"
-      print den 
+      print den
       print t1, t2
       print exp(t1), b[i]*mu0, s[i]*mu2
       print exp(t2), s[i]*mu0, b[i]*mu1
       raise e
     sum2 += c[i]*(b[i]*mu0-s[i]*mu2) / den
-  return exp(t1) * (sum2 - sumb + sums)   
-    
+  return exp(t1) * (sum2 - sumb + sums)
+
 def dt2(c, b, s, t1, t2, mu0, mu1, mu2):
   sumb = mu1 * sum(b)
   sums = mu0 * sum(s)
@@ -34,12 +34,12 @@ def dt2(c, b, s, t1, t2, mu0, mu1, mu2):
       assert(den > 0)
     except Exception, e:
       print "Den:"
-      print den 
+      print den
       print exp(t1), b[i]*mu0, s[i]*mu2
       print exp(t2), s[i]*mu0, b[i]*mu1
       raise e
     sum2 += c[i]*(s[i]*mu0-b[i]*mu1) / den
-  return exp(t2) * (sum2 - sums + sumb)   
+  return exp(t2) * (sum2 - sums + sumb)
 
 
 def iterate(c, b, s, t1, t2, mu0, mu1, mu2):
@@ -53,7 +53,7 @@ def solve(c, b, s, t1, t2, mu0, mu1, mu2):
     t1_new, t2_new = iterate(c, b, s, t1, t2, mu0, mu1, mu2)
     t1 = t1_new
     t2 = t2_new
-    
+
     x = mu0*exp(t1) - mu1*exp(t2)
     y = mu0*exp(t2) - mu2*exp(t1)
     print t1, t2, x, y

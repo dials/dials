@@ -148,7 +148,7 @@ namespace dials { namespace algorithms {
   class MLPoisson2Objective {
   public:
 
-    MLPoisson2Objective( 
+    MLPoisson2Objective(
           const af::const_ref<double> &c,
           const af::const_ref<double> &s1,
           const af::const_ref<double> &s2)
@@ -161,7 +161,7 @@ namespace dials { namespace algorithms {
       sums2_ = af::sum(s2);
       sumcfac_ = 0;
       for (std::size_t i = 0; i < c_.size(); ++i) {
-        sumcfac_ += lgamma(c_[i] + 1); 
+        sumcfac_ += lgamma(c_[i] + 1);
       }
       C1_ = 0.0;
       C2_ = 0.0;
@@ -203,7 +203,7 @@ namespace dials { namespace algorithms {
       }
       return sumcfac_ + x[0]*sums1_ + x[1]*sums2_ - sumclog;
     }
-    
+
     vec2<double> df(vec2<double> x) const {
       double sumcs1 = 0;
       double sumcs2 = 0;
@@ -264,7 +264,7 @@ namespace dials { namespace algorithms {
 
     void step() {
       const mat2<double> I(1.0, 0.0, 0.0, 1.0);
-      vec2<double> DF0 = obj_.df(X0_); 
+      vec2<double> DF0 = obj_.df(X0_);
       vec2<double> P = -B_*DF0;
       double cden1 = (P[0]+P[1]*obj_.C1());
       double cden2 = (obj_.C2()*P[0]+P[1]);
@@ -346,7 +346,7 @@ namespace dials { namespace algorithms {
       return alpha1;
     }
 
-    double zoom(vec2<double> P, double alpha0, double alpha1, 
+    double zoom(vec2<double> P, double alpha0, double alpha1,
         double f00, double d00, double f0) const {
       double c1 = 1e-4;
       double c2 = 0.9;
@@ -367,7 +367,7 @@ namespace dials { namespace algorithms {
         }
       }
     }
-    
+
     double lsf(vec2<double> P, double alpha) const {
       return obj_.lsf(X0_, P, alpha);
     }
@@ -375,7 +375,7 @@ namespace dials { namespace algorithms {
     double lsdf(vec2<double> P, double alpha) const {
       return obj_.lsdf(X0_, P, alpha);
     }
-    
+
     MLPoisson2Objective obj_;
     vec2<double> X0_;
     mat2<double> B_;

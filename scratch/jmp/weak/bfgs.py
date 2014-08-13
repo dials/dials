@@ -72,7 +72,7 @@ def show_image(c,b,s, BB=None, SS=None):
       S = -1.0 + i * 10.0 / N
       im[j,i], mask[j,i] = func(c,b,s,B,S)
       im[j,i] = -im[j,i]
-  
+
   masked_im = numpy.ma.array(
     # im.as_numpy_array(),
     flex.exp(im).as_numpy_array(),
@@ -95,17 +95,17 @@ def show_image(c,b,s, BB=None, SS=None):
   pylab.show()
 
   # pylab.plot(masked_im[11,:])
-  # pylab.show()     
+  # pylab.show()
   # exit(0)
 
 
 def linesearch(c, b, s, x0, p):
   c1 = 1e-4
   c2 = 0.5
-  
+
   def psi(alpha):
     return func(c, b, s, x0[0]+alpha*p[0], x0[1]+alpha*p[1])[0]
-  
+
   def dpsi(alpha):
     sums = sum(s)
     sumb = sum(b)
@@ -167,7 +167,7 @@ def linesearch(c, b, s, x0, p):
 def linesearch2(c, b, s, x0, p):
   def psi(alpha):
     return func(c, b, s, x0[0]+alpha*p[0], x0[1]+alpha*p[1])[0]
-  
+
   def dpsi(alpha):
     sums = sum(s)
     sumb = sum(b)
@@ -177,7 +177,7 @@ def linesearch2(c, b, s, x0, p):
       assert(den > 0)
       sumc += c[i]*(p[0]*b[i]+p[1]*s[i]) / den
     return -(sumc - p[0]*sumb - p[1]*sums)
-  
+
   def d2psi(alpha):
     sumc = 0
     for i in range(len(c)):
@@ -185,7 +185,7 @@ def linesearch2(c, b, s, x0, p):
       assert(den > 0)
       sumc += c[i]*(p[0]*b[i]+p[1]*s[i])**2 / den**2
     return (sumc)
-  
+
 
   f = psi(0)
   fp = dpsi(0)
@@ -221,7 +221,7 @@ def linesearch3(c, b, s, x0, p):
 
   def psi(alpha):
     return func(c, b, s, x0[0]+alpha*p[0], x0[1]+alpha*p[1])[0]
-  
+
   def dpsi(alpha):
     sums = sum(s)
     sumb = sum(b)
@@ -283,10 +283,10 @@ def linesearch4(c, b, s, x0, p):
 
   c1 = 1e-4
   c2 = 0.9
-  
+
   def psi(alpha):
     return func(c, b, s, x0[0]+alpha*p[0], x0[1]+alpha*p[1])[0]
-  
+
   def dpsi(alpha):
     sums = sum(s)
     sumb = sum(b)
@@ -311,7 +311,7 @@ def linesearch4(c, b, s, x0, p):
           alpha1 = alpha0
         alpha0 = alpha
 
-  
+
 
   max_iter = 10
   alpha0 = 0
@@ -320,7 +320,7 @@ def linesearch4(c, b, s, x0, p):
   f00 = psi(alpha0)
   f0 = f00
   d0 = d00
-  print d00 
+  print d00
   assert(d00 < 0)
   for i in range(max_iter):
     f1 = psi(alpha1)
@@ -361,8 +361,8 @@ from dials.algorithms.integration.profile import MLPoisson2Stepper
 from dials.array_family import flex
 
 stepper = MLPoisson2Stepper(
-  flex.double(c), 
-  flex.double(b), 
+  flex.double(c),
+  flex.double(b),
   flex.double(s), x0)
 
 # try:
@@ -386,7 +386,7 @@ try:
 
     den1 = (p[0]+p[1]*K1)
     den2 = (K2*p[0]+p[1])
-    alpha_max1 = -(x0[0] + x0[1]*K1) / den1 
+    alpha_max1 = -(x0[0] + x0[1]*K1) / den1
     alpha_max2 = -(K2*x0[0] + x0[1]) / den2
     print "Alpha Max: ", tuple(p), alpha_max1, alpha_max2
 
