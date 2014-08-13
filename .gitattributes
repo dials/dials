@@ -482,6 +482,7 @@ model/serialize/boost_python/serialize_ext.cc -text
 model/serialize/boost_python/shoebox_block_importer.cc -text
 model/serialize/boost_python/shoebox_file_exporter.cc -text
 model/serialize/boost_python/shoebox_file_importer.cc -text
+model/serialize/boost_python/simple_shoebox_extractor.cc -text
 model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text
@@ -491,6 +492,7 @@ model/serialize/shoebox_block_importer.h -text
 model/serialize/shoebox_file.h -text
 model/serialize/shoebox_file_exporter.h -text
 model/serialize/shoebox_file_importer.h -text
+model/serialize/simple_shoebox_extractor.h -text
 /run_tests.py -text
 scratch/__init__.py -text
 scratch/asb/dummy.phil -text
@@ -609,6 +611,7 @@ scratch/jmp/misc/line_clip.py -text
 scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/parallax_test.py -text
 scratch/jmp/misc/pixel_label.py -text
+scratch/jmp/misc/read.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
 scratch/jmp/misc/show_reference.py -text
 scratch/jmp/misc/simulate_intensity.py -text

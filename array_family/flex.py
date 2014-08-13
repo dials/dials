@@ -154,3 +154,24 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.compute_centroid(experiment)
     self.compute_intensity(experiment)
     self.correct_intensity(experiment)
+
+  def fill_shoeboxes(self, experiment, mask = None):
+    ''' Helper function to read a load of shoebox data. '''
+    from dials.model.serialize import SimpleShoeboxExtractor
+    from dials.model.data import Image
+    assert("shoebox" in self)
+    extractor = SimpleShoeboxExtractor(self['shoebox'])
+    imageset = experiment.imageset
+    if mask is None:
+      image = imageset[0]
+      if not isinstance(image, tuple):
+        image = (image,)
+      mask = []
+      for i in range(len(image)):
+        tr = experiment.detector[i].get_trusted_range()
+        mask.append(image[i].as_double() > tr[0])
+      mask = tuple(mask)
+    for image in imageset:
+      if not isinstance(image, tuple):
+        image = (image,)
+      extractor.next(Image(image, mask))
