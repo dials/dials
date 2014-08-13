@@ -8,7 +8,7 @@ if __name__ == '__main__':
   from dials.array_family import flex
   import sys
   from os.path import join
-  
+
   path = '/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data'
 
   experiment_list_filename = join(path, "experiments.json")
@@ -25,9 +25,7 @@ if __name__ == '__main__':
   rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
                      sigma_m=0.044*pi/180)
 
-  from dials.algorithms.integration.interface import Integrator
-  from dials.algorithms.integration.interface import IntegrationManager3D
+  from dials.algorithms.integration.interface import Integrator3D
 
-  manager = IntegrationManager3D(exlist, rlist, nproc)
-  integrator = Integrator(manager, max_proc=5)
+  integrator = Integrator3D(exlist, rlist, ntasks=nproc, max_proc=5)
   result = integrator.integrate()
