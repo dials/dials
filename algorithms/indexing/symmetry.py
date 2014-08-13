@@ -69,6 +69,11 @@ class refined_settings_list(list):
     print >> out, table_utils.format(
         table_data, has_header=1, justify='right', delim=' ')
 
+# Mapping of Bravais lattice type to corresponding lowest possible symmetry
+bravais_lattice_to_lowest_symmetry_spacegroup_number = {
+  'aP':1, 'mP':3, 'mC':5, 'oP':16, 'oC':20, 'oF':22, 'oI':23, 'tP':75,
+  'tI':79, 'hP':143, 'hR':146, 'cP':195, 'cF':196, 'cI':197
+}
 
 def refined_settings_factory_from_refined_triclinic(
   params, experiment, reflections, i_setting=None,
@@ -96,13 +101,16 @@ def refined_settings_factory_from_refined_triclinic(
   for j in xrange(Nset):  Lfat[j].setting_number = Nset-j
 
   from cctbx.crystal_orientation import crystal_orientation
+  from cctbx import sgtbx
   from scitbx import matrix
   for j in xrange(Nset):
     cb_op = Lfat[j]['cb_op_inp_best'].c().as_double_array()[0:9]
     orient = crystal_orientation(crystal.get_A(),True)
     orient_best = orient.change_basis(matrix.sqr(cb_op).transpose())
     constrain_orient = orient_best.constrain(Lfat[j]['system'])
-    space_group = Lfat[j]["best_group"].build_derived_acentric_group()
+    bravais = Lfat[j]["bravais"]
+    space_group = sgtbx.space_group_info(
+      number=bravais_lattice_to_lowest_symmetry_spacegroup_number[bravais]).group()
     Lfat[j].unrefined_crystal = dials_crystal_from_orientation(
       constrain_orient, space_group)
 
