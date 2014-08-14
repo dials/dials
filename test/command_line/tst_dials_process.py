@@ -21,7 +21,9 @@ def exercise_1():
   g = sorted(glob.glob(os.path.join(data_dir, "hg_*.mar1600")))
   assert len(g) == 84
   hall_symbol =  '-R 3 2"'
-  cmd = " ".join(["dials.process", "scan_varying=True", "--nproc=1",
+  cmd = " ".join(["dials.process",
+                  "refinement.parameterisation.crystal.scan_varying=True",
+                  "--nproc=1",
                   "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
@@ -48,7 +50,7 @@ def exercise_1():
     (58.373, 58.373, 155.939, 90, 90, 120))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
-  assert mtz_object.n_reflections() == 23912
+  assert approx_equal(mtz_object.n_reflections(), 22917, eps=1e2)
   os.chdir(cwd)
 
 
@@ -61,7 +63,9 @@ def exercise_2():
   g = sorted(glob.glob(os.path.join(data_dir, "insulin*.img")))
   assert len(g) == 45
   hall_symbol =  " I 2 2 3"
-  cmd = " ".join(["dials.process", "scan_varying=True", "--nproc=1",
+  cmd = " ".join(["dials.process",
+                  "refinement.parameterisation.crystal.scan_varying=True",
+                  "--nproc=1",
                   "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
@@ -86,8 +90,7 @@ def exercise_2():
   expected_unit_cell = uctbx.unit_cell((78.07, 78.07, 78.07, 90, 90, 90))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
-  assert (mtz_object.n_reflections() > 47000 and
-          mtz_object.n_reflections() < 49000)
+  assert approx_equal(mtz_object.n_reflections(), 39324, 1e2)
   os.chdir(cwd)
 
 
