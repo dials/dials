@@ -139,11 +139,13 @@ class Script(ScriptRunner):
 
     # Check the unhandled arguments
     if len(importer.unhandled_arguments) > 0:
-      print '-' * 80
-      print 'The following command line arguments weren\'t handled'
+      from libtbx.utils import Sorry
+      from cStringIO import StringIO
+      s = StringIO()
+      print >> s, 'The following command line arguments weren\'t understood:'
       for arg in importer.unhandled_arguments:
-        print '  ' + arg
-    print ''
+        print >> s, '  ' + arg
+      raise Sorry(s.getvalue())
 
     # Do the processing
     observed = self.find_spots(datablock)
