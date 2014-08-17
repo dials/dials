@@ -746,6 +746,7 @@ scratch/rjg/split_mtz.py -text
 scratch/rjg/total_counts_per_image.py -text
 scratch/rjg/unit_cell_refinement.py -text
 sphinx/Makefile -text
+sphinx/algorithms/dials.algorithms.indexing.rst -text
 sphinx/algorithms/dials.algorithms.refinement.rst -text
 sphinx/algorithms/index.rst -text
 sphinx/conf.py -text
