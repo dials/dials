@@ -655,8 +655,23 @@ class indexer_base(object):
 
   @staticmethod
   def map_spots_pixel_to_mm_rad(spots, detector, scan):
-    """Reflections that come from dials.spotfinder only have the centroid
-    position and variance set, """
+    """Map spot centroids from pixel/image number to mm/radian.
+
+    Used to convert spot centroids coming from e.g. dials.find_spots which are in
+    pixel/image number units to mm/radian units as required for indexing and refinement.
+
+    :param spots: a reflection table containing the columns 'xyzobs.px.value',
+                  'xyzobs.px.variance' and 'panel'
+    :type spots: dials.array_family.flex.reflection_table
+    :param detector: a dxtbx detector object
+    :type detector: dxtbx.model.detector.Detector
+    :param scan: a dxtbx scan object. May be None, e.g. for a still image
+    :type scan: dxtbx.model.scan.Scan
+    :returns: A copy of the input reflection table containing the additional keys
+              'xyzobs.mm.value' and 'xyzobs.mm.variance'
+    :rtype: dials.array_family.flex.reflection_table
+    """
+
     from dials.algorithms.centroid import centroid_px_to_mm_panel
     ## ideally don't copy, but have separate spot attributes for mm and pixel
     import copy
@@ -679,6 +694,24 @@ class indexer_base(object):
 
   @staticmethod
   def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
+    """Map mm/radian spot centroids to reciprocal space.
+
+    Used to convert spot centroids provided in mm/radian units to reciprocal space
+    as required for indexing. Adds the column 'rlp' to the reflection table, which
+    contains a :py:class:`.flex.vec3_double` array of the reciprocal lattice vectors.
+
+    :param spots_mm: a reflection table containing the column 'xyzobs.mm.value'
+    :type spots_mm: dials.array_family.flex.reflection_table
+    :param detector: a dxtbx detector object
+    :type detector: dxtbx.model.detector.Detector
+    :param beam: a dxtbx beam object
+    :type beam: dxtbx.model.beam.Beam
+    :param goniometer: a dxtbx goniometer object. May be None, e.g. for a still image
+    :type goniometer: dxtbx.model.goniometer.Goniometer
+    """
+
+    if 'imageset_id' not in spots_mm:
+      spots_mm['imageset_id'] = spots_mm['id']
     if 's1' not in spots_mm: spots_mm['s1'] = flex.vec3_double(len(spots_mm))
     spots_mm['rlp'] = flex.vec3_double(len(spots_mm))
     panel_numbers = flex.size_t(spots_mm['panel'])
