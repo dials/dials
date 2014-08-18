@@ -188,7 +188,7 @@ class Script(ScriptRunner):
     return observed
 
   def index(self, datablock, reflections, unhandled):
-    from dials.algorithms.indexing.indexer2 import master_phil_scope
+    from dials.algorithms.indexing.indexer import master_phil_scope
     from libtbx.phil import command_line, parse
     from time import time
     st = time()

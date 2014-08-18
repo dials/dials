@@ -65,7 +65,7 @@ def run_once(directory):
     n_unindexed_spots = 0
 
   # calculate estimated d_min for sweep based on 95th percentile
-  from dials.algorithms.indexing import indexer2
+  from dials.algorithms.indexing import indexer
   detector = sweep.get_detector()
   scan = sweep.get_scan()
   beam = sweep.get_beam()
@@ -76,9 +76,9 @@ def run_once(directory):
     d_strong_spots_50th_percentile = 0
     n_strong_spots_dmin_4 = 0
   else:
-    spots_mm = indexer2.indexer_base.map_spots_pixel_to_mm_rad(
+    spots_mm = indexer.indexer_base.map_spots_pixel_to_mm_rad(
       strong_spots, detector, scan)
-    indexer2.indexer_base.map_centroids_to_reciprocal_space(
+    indexer.indexer_base.map_centroids_to_reciprocal_space(
       spots_mm, detector, beam, goniometer)
     d_spacings = 1/spots_mm['rlp'].norms()
     perm = flex.sort_permutation(d_spacings, reverse=True)
@@ -113,7 +113,7 @@ def run_once(directory):
       if len(spots_mm) == 0:
         d_min_indexed.append(0)
       else:
-        indexer2.indexer_base.map_centroids_to_reciprocal_space(
+        indexer.indexer_base.map_centroids_to_reciprocal_space(
           spots_mm, detector, beam, goniometer)
         d_spacings = 1/spots_mm['rlp'].norms()
         perm = flex.sort_permutation(d_spacings, reverse=True)
@@ -145,7 +145,7 @@ def run_once(directory):
 
 def get_rmsds_obs_pred(observations, experiment):
   from dials.algorithms.spot_prediction import ray_intersection
-  from dials.algorithms.indexing.indexer2 import master_params
+  from dials.algorithms.indexing.indexer import master_params
   from dials.algorithms.refinement import RefinerFactory
   from dxtbx.model.experiment.experiment_list import ExperimentList
   master_params.refinement.reflections.close_to_spindle_cutoff = 0.001

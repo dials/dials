@@ -6,7 +6,7 @@ import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex
 from dials.util.command_line import Importer
-from dials.algorithms.indexing.indexer2 import indexer_base
+from dials.algorithms.indexing.indexer import indexer_base
 
 master_phil_scope = iotbx.phil.parse("""
 nproc = Auto
@@ -120,7 +120,7 @@ class better_experimental_model_discovery(object):
     from rstbx.indexing_api import dps_extended
     trial_detector = dps_extended.get_new_detector(imageset.get_detector(), trial_origin_offset)
 
-    from dials.algorithms.indexing.indexer2 import indexer_base
+    from dials.algorithms.indexing.indexer import indexer_base
     indexer_base.map_centroids_to_reciprocal_space(
       spots_mm, trial_detector, imageset.get_beam(), imageset.get_goniometer())
 
@@ -221,7 +221,7 @@ def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
   assert len(imagesets) == len(spot_lists)
   assert len(imagesets) > 0
   # XXX should check that all the detector and beam objects are the same
-  from dials.algorithms.indexing.indexer2 import indexer_base
+  from dials.algorithms.indexing.indexer import indexer_base
   spot_lists_mm = [
     indexer_base.map_spots_pixel_to_mm_rad(
       spots, imageset.get_detector(), imageset.get_scan())

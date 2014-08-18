@@ -220,7 +220,7 @@ class find_overlaps(object):
         xyzobs_px_value_orig = ref_table['xyzobs.px.value'].deep_copy()
 
         # map centroids pixels to mm
-        from dials.algorithms.indexing.indexer2 import indexer_base
+        from dials.algorithms.indexing.indexer import indexer_base
         ref_table['xyzobs.mm.value'] = flex.vec3_double(len(ref_table))
         ref_table['xyzobs.mm.variance'] = flex.vec3_double(len(ref_table))
         # some centroids are unobserved (0.0,0.0,0.0) so use xyzcal.px values instead

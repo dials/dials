@@ -12,7 +12,9 @@
 
 from __future__ import division
 
-from dials.algorithms.indexing.indexer2 import indexer_base
+import math
+from scitbx.array_family import flex
+from dials.algorithms.indexing.indexer import indexer_base
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 class indexer_fft1d(indexer_base):
@@ -22,8 +24,6 @@ class indexer_fft1d(indexer_base):
 
   def find_lattices(self):
     self.d_min = self.params.refinement_protocol.d_min_start
-
-    from dials.algorithms.indexing.indexer import candidate_basis_vectors_fft1d
 
     from rstbx.phil.phil_preferences import indexing_api_defs
     import iotbx.phil
@@ -68,7 +68,6 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
   # Spot_positions: Centroid positions for spotfinder spots, in pixels
   # Return value: Corrected for parallax, converted to mm
 
-  from dials.algorithms.indexing.indexer2 import indexer_base
   spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
     spots=spot_positions, detector=detector, scan=scan)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 #
-# dials.algorithms.indexing.indexer2.py
+# dials.algorithms.indexing.indexer.py
 #
 #  Copyright (C) 2014 Diamond Light Source
 #
@@ -1251,7 +1251,6 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   # Spot_positions: Centroid positions for spotfinder spots, in pixels
   # Return value: Corrected for parallax, converted to mm
 
-  from dials.algorithms.indexing.indexer2 import indexer_base
   spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
     spots=spot_positions, detector=detector, scan=scan)
 

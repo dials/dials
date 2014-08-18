@@ -10,7 +10,7 @@ except ImportError, e:
 
 from libtbx.phil import command_line
 from dials.util.command_line import Importer
-from dials.algorithms.indexing.indexer2 import master_phil_scope
+from dials.algorithms.indexing.indexer import master_phil_scope
 
 
 def run(args):

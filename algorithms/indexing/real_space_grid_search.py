@@ -16,9 +16,9 @@ import math
 
 from scitbx import matrix
 from scitbx.array_family import flex
-from dials.algorithms.indexing.indexer2 import \
+from dials.algorithms.indexing.indexer import \
      indexer_base, optimise_basis_vectors
-from dials.algorithms.indexing.indexer2 import \
+from dials.algorithms.indexing.indexer import \
      is_approximate_integer_multiple
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
