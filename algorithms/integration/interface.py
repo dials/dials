@@ -173,11 +173,6 @@ class IntegrationTask3D(IntegrationTask):
     self._reflections["shoebox"] = flex.shoebox(
       self._reflections["panel"],
       self._reflections["bbox"])
-    # sz = sum([reduce(operator.mul, b.size(), 1) for b in self._reflections["shoebox"]])
-    # print sz
-    # a1 = flex.double(int(1000000000/4),0)
-    # a2 = flex.double(sz)
-    # a3 = flex.int(sz)
     st = time()
     self._reflections["shoebox"].allocate()
     print time() - st
