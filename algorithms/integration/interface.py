@@ -102,6 +102,38 @@ class Integrator(object):
     return self._manager.result()
 
 
+class ReflectionPreprocessor(object):
+
+  def __init__(self, reflections):
+    pass
+
+  def summary(self):
+    format_string = (
+      'Preprocessing reflections:\n'
+      '\n'
+      ' Number of reflections:                  %d\n'
+      ' Number of strong reflections:           %d\n'
+      ' Number filtered with zeta lt %.2f:      %d (%.2f%%)\n'
+      ' Number of reflection to integrate:      %d (%.2f%%)\n'
+      ' Number overlapping (background):        %d (%.2f%%)\n'
+      ' Number overlapping (foreground):        %d (%.2f%%)\n'
+      ' Number recorded on ice rings:           %d (%.2f%%)\n'
+      ' Number clipped at task boundaries:      %d (%.2f%%)\n'
+      ' Number strong overlapping (background): %d (%.2f%%)\n'
+      ' Number strong overlapping (foreground): %d (%.2f%%)\n'
+      ' Number strong recorded on ice rings:    %d (%.2f%%)\n'
+      ' Number strong for reference creation:   %d (%.2f%%)\n'
+      ' Smallest measurement box size (x):      %d\n'
+      ' Smallest measurement box size (y):      %d\n'
+      ' Smallest measurement box size (z):      %d\n'
+      ' Largest measurement box size (x):       %d\n'
+      ' Largest measurement box size (y):       %d\n'
+      ' Largest measurement box size (z):       %d\n'
+    )
+    return format_string % (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+
 class IntegrationTask3D(IntegrationTask):
 
   def __init__(self, index, experiments, task):
@@ -138,6 +170,7 @@ class IntegrationManager3D(IntegrationManager):
       scan.get_array_range(),
       num_tasks,
       max_overlap)
+    self._preprocessing = ReflectionPreprocessor(reflections)
     self._print_summary(num_tasks, max_overlap)
 
   def task(self, index):
@@ -217,6 +250,7 @@ class IntegrationManager3D(IntegrationManager):
       '%s\n'
       '\n'
       'Beginning integration of the following experiments:\n'
+      '\n'
       ' Experiments: %d\n'
       ' Beams:       %d\n'
       ' Detectors:   %d\n'
@@ -225,10 +259,14 @@ class IntegrationManager3D(IntegrationManager):
       ' Crystals:    %d\n'
       '\n'
       'Computing tasks based on the following parameters:\n'
+      '\n'
       ' num_tasks:   %d\n'
       ' max_overlap: %d\n'
       '\n'
       'Integrating reflections in the following blocks of images:\n'
+      '\n'
+      '%s\n'
+      '\n'
       '%s\n'
     )
 
@@ -242,7 +280,9 @@ class IntegrationManager3D(IntegrationManager):
       len(self._experiments.crystals()),
       num_tasks,
       max_overlap,
-      tasks_string)
+      tasks_string,
+      self._preprocessing.summary())
+
 
 class Integrator3D(Integrator):
   ''' Top level integrator for 3D integration. '''
