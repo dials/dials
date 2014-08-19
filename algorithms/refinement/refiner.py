@@ -617,7 +617,6 @@ class RefinerFactory(object):
     if all(e.goniometer is not None for e in experiments):
       from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
       # check incompatible weighting strategy
-      print options.weighting_strategy.override
       assert options.weighting_strategy.override != "stills"
     elif all(e.goniometer is None for e in experiments):
       do_stills = True
