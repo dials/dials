@@ -48,10 +48,12 @@ class Journal(object):
     self._double_names.append(name)
 
   def remove_last_step(self):
+    assert self._step > 0
     for name in self._list_names:
       del getattr(name)[-1]
     for name in self._double_names:
       getattr(name).pop_back()
+    self._step -= 1
     return
 
 class Refinery(object):
@@ -691,6 +693,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         if nu >= 512:
           self.history.reason_for_termination = MAX_TRIAL_ITERATIONS
         self.step_backward()
+        self.history.remove_last_step()
         self.mu *= nu
         nu *= 2
 
