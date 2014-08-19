@@ -18,6 +18,20 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_preprocessor() {
 
+    class_<PowderRingFilter>("PowderRingFilter", no_init)
+      .def(init< cctbx::uctbx::unit_cell,
+                 cctbx::sgtbx::space_group,
+                 double,
+                 double >((
+        arg("unit_cell"),
+        arg("space_group"),
+        arg("d_min"),
+        arg("width"))))
+      .def("d_spacings", &PowderRingFilter::d_spacings)
+      .def("d_min", &PowderRingFilter::d_min)
+      .def("width", &PowderRingFilter::width)
+      ;
+
     class_<Preprocessor>("Preprocessor", no_init)
       .def(init<af::reflection_table>())
       .def("summary", &Preprocessor::summary)

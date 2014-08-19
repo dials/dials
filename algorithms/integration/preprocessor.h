@@ -33,8 +33,11 @@ namespace dials { namespace algorithms {
         cctbx::uctbx::unit_cell uc,
         cctbx::sgtbx::space_group sg,
         double d_min,
-        double d_max,
-        double width) {
+        double width)
+      : d_min_(d_min),
+        width_(width) {
+      DIALS_ASSERT(d_min > 0);
+      DIALS_ASSERT(width > 0);
 
       // Correct unit cell
       uc = sg.average_unit_cell(uc);
@@ -44,9 +47,8 @@ namespace dials { namespace algorithms {
       af::shared< cctbx::miller::index<> > indices = generator.to_array();
 
       // Calculate the d spacings
-      d_spacings_.resize(indices.size());
       for (std::size_t i = 0; i < indices.size(); ++i) {
-        d_spacings_[i] = uc.d(indices[i]);
+        d_spacings_.push_back(uc.d(indices[i]));
       }
 
       // Sort the d spacings by resolution
@@ -57,18 +59,36 @@ namespace dials { namespace algorithms {
      * @returns True if within powder ring.
      */
     bool operator()(double d) const {
+      double half_width = width_ / 2.0;
       for (std::size_t i = 0; i < d_spacings_.size(); ++i) {
-        if (std::abs(d - d_spacings_[i]) < width_) {
+        if (std::abs(d - d_spacings_[i]) < half_width) {
           return true;
         }
       }
       return false;
     }
 
+    /** @returns The d spacings used */
+    af::shared<double> d_spacings() const {
+      return d_spacings_;
+    }
+
+    /** @returns The width used */
+    double width() const {
+      return width_;
+    }
+
+    /** @returns The maximum resolution to filter at */
+    double d_min() const {
+      return d_min_;
+    }
+
   private:
 
-    af::shared<double> d_spacings_;
+    double d_min_;
+    double d_max_;
     double width_;
+    af::shared<double> d_spacings_;
   };
 
 
@@ -123,7 +143,7 @@ namespace dials { namespace algorithms {
 
         // Reset any filtering and decision flags
         flags[i] &= ~af::DontIntegrate;
-        flags[i] &= ~af::InIceRing;
+        flags[i] &= ~af::InPowderRing;
         flags[i] &= ~af::ReferenceSpot;
 
         // Filter the reflections by zeta
