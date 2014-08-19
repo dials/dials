@@ -228,6 +228,7 @@ class IntegrationManager3D(IntegrationManager):
     return len(self._data)
 
   def _print_summary(self, block_size):
+    ''' Print a summary of the integration stuff. '''
     from math import floor, log10
     from libtbx import table_utils
 

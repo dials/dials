@@ -36,7 +36,8 @@ namespace dials { namespace algorithms {
         af::reflection_table reflections,
         vec2<double> oscillation,
         vec2<int> array_range,
-        double block_size) {
+        double block_size)
+          : data_(reflections) {
 
       // Compute the blocks
       compute_blocks(oscillation, array_range, block_size);
@@ -54,8 +55,6 @@ namespace dials { namespace algorithms {
       // the block in which it is closest to the centre. If the reflection is
       // larger than block_size / 2, then it is not fully recorded in any block
       // and is unprocessed.
-      //
-      // FIXME This needs to be tidied and sped up etc.
       to_process_.resize(blocks_.size());
       to_include_.resize(blocks_.size());
       for (std::size_t i = 0; i < bbox.size(); ++i) {
@@ -64,7 +63,7 @@ namespace dials { namespace algorithms {
         std::size_t &f = flags[i];
         if (!(f & af::DontIntegrate)) {
           std::size_t jmin = 0;
-          std::vector<double> d(blocks_.size());
+          double dmin = 0;
           for (std::size_t j = 0; j < blocks_.size(); ++j) {
             int bz0 = blocks_[j][0];
             int bz1 = blocks_[j][1];
@@ -75,9 +74,10 @@ namespace dials { namespace algorithms {
             }
             double zc = (z1 + z0) / 2.0;
             double bc = (bz1 + bz0) / 2.0;
-            d[j] = (zc - bc)*(zc - bc);
-            if (d[j] < d[jmin]) {
+            double d = (zc - bc)*(zc - bc);
+            if (j == 0 || d < dmin) {
               jmin = j;
+              dmin = d;
             }
           }
           int bz0 = blocks_[jmin][0];
@@ -93,10 +93,8 @@ namespace dials { namespace algorithms {
           for (std::size_t j = 0; j < blocks_.size(); ++j) {
             int bz0 = blocks_[j][0];
             int bz1 = blocks_[j][1];
-            if (f & af::DontIntegrate) {
-              if (!(z1 <= bz0 || z0 >= bz1)) {
-                to_include_[j].push_back(i);
-              }
+            if (!(z1 <= bz0 || z0 >= bz1)) {
+              to_include_[j].push_back(i);
             }
           }
         }
@@ -166,36 +164,67 @@ namespace dials { namespace algorithms {
      * @returns The reflections for a particular block.
      */
     af::reflection_table split(std::size_t index) {
+
+      using namespace af::boost_python::flex_table_suite;
+
+      // Check the input
       DIALS_ASSERT(index < finished_.size());
-      DIALS_ASSERT(offset_.size() > 0);
-      DIALS_ASSERT(index < offset_.size() - 1);
-      std::size_t offset1 = offset_[index];
-      std::size_t offset2 = offset_[index+1];
-      DIALS_ASSERT(offset2 > offset1);
-      DIALS_ASSERT(offset2 <= indices_.size());
-      std::size_t num = offset2 - offset1;
-      af::const_ref<std::size_t> indices(&indices_[offset1], num);
-      return af::boost_python::flex_table_suite::select_rows_index(
-          data_, indices);
+
+      // Get the indices of reflections to select
+      std::vector<std::size_t> &process = to_process_[index];
+      std::vector<std::size_t> &include = to_include_[index];
+      af::shared<std::size_t> indices(process.size() + include.size());
+      std::copy(process.begin(), process.end(), indices.begin());
+      std::copy(include.begin(), include.end(), indices.begin() + process.size());
+
+      // Extract the reflection table
+      af::reflection_table result = select_rows_index(
+          data_, indices.const_ref());
+
+      // Extract the flags and set those reflections that are not to be
+      // processed.
+      af::ref<std::size_t> bk_id = result["bk_id"];
+      af::ref<std::size_t> flags = result["flags"];
+      for (std::size_t i = 0; i < bk_id.size(); ++i) {
+        bk_id[i] = i;
+      }
+      for (std::size_t i = process.size(); i < flags.size(); ++i) {
+        flags[i] |= af::DontIntegrate;
+      }
+
+      // Return the reflections
+      return result;
     }
 
     /**
      * Accumulate the results.
      */
     void accumulate(std::size_t index, af::reflection_table result) {
+
+      using namespace af::boost_python::flex_table_suite;
+
+      // Check the input
       DIALS_ASSERT(index < finished_.size());
-      DIALS_ASSERT(offset_.size() > 0);
-      DIALS_ASSERT(index < offset_.size() - 1);
       DIALS_ASSERT(finished_[index] == false);
-      std::size_t offset1 = offset_[index];
-      std::size_t offset2 = offset_[index+1];
-      DIALS_ASSERT(offset2 > offset1);
-      DIALS_ASSERT(offset2 <= indices_.size());
-      std::size_t num = offset2 - offset1;
-      DIALS_ASSERT(result.size() == num);
-      af::const_ref<std::size_t> indices(&indices_[offset1], num);
-      af::boost_python::flex_table_suite::set_selected_rows_index(
-          data_, indices, result);
+
+      // Get the indices of reflections to select
+      std::vector<std::size_t> &process = to_process_[index];
+      std::vector<std::size_t> &include = to_include_[index];
+      af::const_ref<std::size_t> indices(&process[0], process.size());
+
+      // Resize the input to only select those which should have been processed.
+      // Check that the book-keeping indices are as expected
+      DIALS_ASSERT(process.size() + include.size() == result.size());
+      result.resize(process.size());
+      af::const_ref<std::size_t> bk_id = result["bk_id"];
+      for (std::size_t i = 0; i < bk_id.size(); ++i) {
+        DIALS_ASSERT(bk_id[i] == i);
+      }
+
+      // Set the result
+      set_selected_rows_index(data_, indices, result);
+
+      // Set finished flag
       finished_[index] = true;
     }
 
@@ -244,8 +273,6 @@ namespace dials { namespace algorithms {
     af::shared< vec2<int> > blocks_;
     af::shared<bool> finished_;
     af::reflection_table data_;
-    af::shared<std::size_t> offset_;
-    af::shared<std::size_t> indices_;
     std::vector< std::vector<std::size_t> > to_process_;
     std::vector< std::vector<std::size_t> > to_include_;
     std::vector<std::size_t> to_not_process_;
