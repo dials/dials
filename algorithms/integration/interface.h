@@ -220,6 +220,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < bk_id.size(); ++i) {
         DIALS_ASSERT(bk_id[i] == i);
       }
+      result.erase("bk_id");
 
       // Set the result
       set_selected_rows_index(data_, indices, result);
