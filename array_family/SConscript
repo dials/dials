@@ -15,6 +15,7 @@ sources = [
     'boost_python/flex_pixel_list.cc',
     'boost_python/flex_reflection_table.cc',
     'boost_python/flex_transformed_shoebox.cc',
+    'boost_python/flex_unit_cell.cc',
     'boost_python/flex_ext.cc']
 
 env.SharedLibrary(

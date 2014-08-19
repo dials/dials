@@ -302,6 +302,7 @@ array_family/boost_python/flex_reflection_table.cc -text
 array_family/boost_python/flex_shoebox.cc -text
 array_family/boost_python/flex_table_suite.h -text
 array_family/boost_python/flex_transformed_shoebox.cc -text
+array_family/boost_python/flex_unit_cell.cc -text
 array_family/flex.py -text
 array_family/flex_table.h -text
 array_family/import_scitbx_af.h -text
