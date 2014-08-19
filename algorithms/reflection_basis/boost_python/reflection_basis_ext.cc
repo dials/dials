@@ -32,6 +32,26 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     return result;
   }
 
+  /**
+   * Helper function to calculate zeta for an array of s1 with experiment
+   * indices
+   */
+  af::shared<double> zeta_factor_array_multi(
+      const af::const_ref< vec3<double> > &m2,
+      const af::const_ref< vec3<double> > &s0,
+      const af::const_ref< vec3<double> > &s1,
+      const af::const_ref< std::size_t > &index) {
+    DIALS_ASSERT(m2.size() == s0.size());
+    DIALS_ASSERT(s1.size() == index.size());
+    af::shared<double> result(s1.size());
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      std::size_t j = index[i];
+      DIALS_ASSERT(j < m2.size());
+      result[i] = zeta_factor(m2[j], s0[j], s1[i]);
+    }
+    return result;
+  }
+
   void export_coordinate_system()
   {
     // Export zeta factor functions
@@ -43,6 +63,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       (arg("m2"), arg("e1")));
     def("zeta_factor", &zeta_factor_array, (
       arg("m2"), arg("s0"), arg("s1")));
+    def("zeta_factor", &zeta_factor_array_multi, (
+      arg("m2"), arg("s0"), arg("s1"), arg("index")));
 
     // Export coordinate system 2d
     class_<CoordinateSystem2d>("CoordinateSystem2d", no_init)

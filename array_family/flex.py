@@ -96,6 +96,16 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self['zeta'] = zeta_factor(m2, s0, self['s1'])
     return self['zeta']
 
+  def compute_zeta_multi(self, experiments):
+    from dials.algorithms.reflection_basis import zeta_factor
+    m2 = flex.vec3_double(len(experiments))
+    s0 = flex.vec3_double(len(experiments))
+    for i, e in enumerate(experiments):
+      m2[i] = e.goniometer.get_rotation_axis()
+      s0[i] = e.beam.get_s0()
+    self['zeta'] = zeta_factor(m2, s0, self['s1'], self['id'])
+    return self['zeta']
+
   def compute_bbox(self, experiment, nsigma, sigma_d=None, sigma_m=None,
                    sigma_d_multiplier=2.0):
     ''' Compute the bounding boxes. '''
