@@ -15,17 +15,9 @@ phil_scope = phil.parse('''
       .help = "The number of processes to use"
   }
 
-  tasks {
-
-    num_tasks = 1
-      .type = int(value_min=1)
-      .help = "The number of tasks"
-
-    max_overlap = 0
-      .type = int(value_min=0)
-      .help = "The maximum number of frames overlap between tasks"
-
-  }
+  block_size = 10
+    .type = float
+    .help = "The block size in rotation angle (degrees)."
 
   filter {
 
@@ -124,7 +116,9 @@ class Integrator(object):
       The integration results
 
     '''
+    from time import time
     from libtbx import easy_mp
+    start_time = time()
     num_proc = len(self._manager)
     if self._params.mp.max_procs > 0:
       num_proc = min(num_proc, self._params.mp.max_procs)
@@ -150,6 +144,8 @@ class Integrator(object):
       task_results = [task() for task in self._manager.tasks()]
     for result in task_results:
       self._manager.accumulate(result)
+    end_time = time()
+    print "Time taken: %.2f seconds" % (end_time - start_time)
     return self._manager.result()
 
 
@@ -168,6 +164,7 @@ class IntegrationTask3D(IntegrationTask):
     imageset = self._experiments[0].imageset
     for i in range(*self._task):
       print "Reading Image % i" % i
+      imageset[i]
 
     return IntegrationResult(self._index, None)
 
@@ -179,8 +176,7 @@ class IntegrationManager3D(IntegrationManager):
     from dials.algorithms.integration import Preprocessor
     from dials.algorithms.integration import MultiPowderRingFilter
     from dials.algorithms.integration import PowderRingFilter
-    num_tasks = params.tasks.num_tasks
-    max_overlap = params.tasks.max_overlap
+    block_size = params.block_size
     imagesets = experiments.imagesets()
     scans = experiments.scans()
     assert(len(imagesets) == 1)
@@ -189,31 +185,14 @@ class IntegrationManager3D(IntegrationManager):
     scan = scans[0]
     self._experiments = experiments
     self._reflections = reflections
-    self._finished = flex.bool(num_tasks, False)
     self._tasks = self._compute_tasks(
+      scan.get_oscillation(deg=True),
       scan.get_array_range(),
-      num_tasks,
-      max_overlap)
+      block_size)
+    self._finished = flex.bool(len(self._tasks), False)
     reflections.compute_zeta_multi(experiments)
     reflections.compute_d(experiments)
-    powder_ring_filter = MultiPowderRingFilter()
-    if params.filter.ice_rings.filter == True:
-      if params.filter.ice_rings.d_min > 0:
-        d_min = params.filter.ice_rings.d_min
-      else:
-        d_min = min([e.detector.get_max_resolution(e.beam.get_s0())
-                     for e in experiments])
-      powder_ring_filter.add(
-        PowderRingFilter(
-          params.filter.ice_rings.unit_cell,
-          params.filter.ice_rings.space_group.group(),
-          d_min,
-          params.filter.ice_rings.width))
-    self._preprocessing = Preprocessor(
-      reflections,
-      powder_ring_filter,
-      params.filter.min_zeta)
-    self._print_summary(num_tasks, max_overlap)
+    self._print_summary(block_size)
 
   def task(self, index):
     assert(0 <= index < len(self))
@@ -240,38 +219,36 @@ class IntegrationManager3D(IntegrationManager):
   def __len__(self):
     return len(self._finished)
 
-  def _compute_tasks(self, array_range, ntasks, max_overlap):
-    ''' Compute the number of tasks. '''
+  def _compute_tasks(self, oscillation, array_range, block_size):
+    ''' Compute the number of blocks. '''
     from math import ceil
+    phi0, dphi = oscillation
     frame0, frame1 = array_range
     nframes = frame1 - frame0
+    half_block_size = block_size / 2.0
     assert(nframes > 0)
-    assert(ntasks <= nframes)
-    task_length = int(ceil(nframes / ntasks))
-    assert(task_length > 0)
-    indices = [frame0]
-    for i in range(ntasks):
-      frame = frame0 + (i + 1) * task_length
+    assert(half_block_size >= dphi)
+    half_block_length = float(half_block_size) / dphi
+    nblocks = int(ceil(nframes / half_block_length))
+    assert(nblocks <= nframes)
+    half_block_length = int(ceil(nframes / nblocks))
+    blocks = [frame0]
+    for i in range(nblocks):
+      frame = frame0 + (i + 1) * half_block_length
       if frame > frame0+nframes:
         frame = frame0+nframes
-      indices.append(frame)
+      blocks.append(frame)
       if frame == frame0+nframes:
         break
-    assert(all(b > a for a, b in zip(indices, indices[1:])))
+    assert(all(b > a for a, b in zip(blocks, blocks[1:])))
     tasks = []
-    for i in range(len(indices)-1):
-      i0 = indices[i]
-      i1 = indices[i+1]
-      i0 = max(frame0, i0-max_overlap)
-      i1 = min(frame1, i1+max_overlap)
+    for i in range(len(blocks)-2):
+      i0 = blocks[i]
+      i1 = blocks[i+2]
       tasks.append((i0, i1))
-    for i in range(len(tasks)-1):
-      i00, i01 = tasks[i]
-      i10, i11 = tasks[i+1]
-      assert(i00 < i10 and i01 < i11)
     return tasks
 
-  def _print_summary(self, num_tasks, max_overlap):
+  def _print_summary(self, block_size):
     from math import floor, log10
     scans = self._experiments.scans()
     assert(len(scans) == 1)
@@ -299,16 +276,12 @@ class IntegrationManager3D(IntegrationManager):
       ' Scans:       %d\n'
       ' Crystals:    %d\n'
       '\n'
-      'Computing tasks based on the following parameters:\n'
-      '\n'
-      ' num_tasks:   %d\n'
-      ' max_overlap: %d\n'
-      '\n'
       'Integrating reflections in the following blocks of images:\n'
       '\n'
-      '%s\n'
+      ' block_size: %d degrees\n'
       '\n'
       '%s\n'
+      '\n'
     )
     print summary_format_str % (
       '=' * 80,
@@ -318,10 +291,9 @@ class IntegrationManager3D(IntegrationManager):
       len(self._experiments.goniometers()),
       len(self._experiments.scans()),
       len(self._experiments.crystals()),
-      num_tasks,
-      max_overlap,
-      tasks_string,
-      self._preprocessing.summary())
+      block_size,
+      tasks_string)
+
 
 class Integrator3D(Integrator):
   ''' Top level integrator for 3D integration. '''

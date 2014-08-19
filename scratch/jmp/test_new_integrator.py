@@ -9,7 +9,8 @@ if __name__ == '__main__':
   import sys
   from os.path import join
 
-  path = '/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data'
+  # path = '/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data'
+  path = '/home/upc86896/Data/Data/i04-BAG-training/dials_processed/'
 
   experiment_list_filename = join(path, "experiments.json")
 
@@ -31,10 +32,9 @@ if __name__ == '__main__':
   from libtbx import phil
 
   user_phil = phil.parse('''
-    mp.max_procs = 4
-    filter.ice_rings.filter=True
-    tasks.num_tasks = 2
-  ''')
+    mp.max_procs = %d
+    filter.ice_rings.filter=False
+  ''' % nproc)
 
   params = phil_scope.fetch(source=user_phil).extract()
 
