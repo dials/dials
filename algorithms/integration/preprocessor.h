@@ -7,11 +7,70 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <cctbx/miller/index_generator.h>
+#include <cctbx/uctbx.h>
+#include <cctbx/sgtbx/space_group.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 
 
 namespace dials { namespace algorithms {
+
+  /**
+   * A class to do powder ring filtering.
+   */
+  class PowderRingFilter {
+  public:
+
+    /**
+     * @param uc The unit cell
+     * @param sg The space group
+     * @param d_min The maximum resolution to filter at
+     * @param d_max The minimum resolution to filter at
+     * @param width The width of the filter
+     */
+    PowderRingFilter(
+        cctbx::uctbx::unit_cell uc,
+        cctbx::sgtbx::space_group sg,
+        double d_min,
+        double d_max,
+        double width) {
+
+      // Correct unit cell
+      uc = sg.average_unit_cell(uc);
+
+      // Generate a load of indices
+      cctbx::miller::index_generator generator(uc, sg.type(), false, d_min);
+      af::shared< cctbx::miller::index<> > indices = generator.to_array();
+
+      // Calculate the d spacings
+      d_spacings_.resize(indices.size());
+      for (std::size_t i = 0; i < indices.size(); ++i) {
+        d_spacings_[i] = uc.d(indices[i]);
+      }
+
+      // Sort the d spacings by resolution
+      std::sort(d_spacings_.begin(), d_spacings_.end());
+    }
+
+    /**
+     * @returns True if within powder ring.
+     */
+    bool operator()(double d) const {
+      for (std::size_t i = 0; i < d_spacings_.size(); ++i) {
+        if (std::abs(d - d_spacings_[i]) < width_) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+  private:
+
+    af::shared<double> d_spacings_;
+    double width_;
+  };
+
 
   class Preprocessor {
   public:
@@ -62,23 +121,29 @@ namespace dials { namespace algorithms {
       num_total_ = reflections.size();
       for (std::size_t i = 0; i < bbox.size(); ++i) {
 
+        // Reset any filtering and decision flags
+        flags[i] &= ~af::DontIntegrate;
+        flags[i] &= ~af::InIceRing;
+        flags[i] &= ~af::ReferenceSpot;
+
         // Filter the reflections by zeta
-        if (std::abs(zeta[i]) > 0.05) {
-          flags[i] |= af::DontProcess;
-          flags[i] &= ~af::ReferenceSpot;
+        if (std::abs(zeta[i]) < 0.05) {
+          flags[i] |= af::DontIntegrate;
         }
 
         // Check if reflections are predicted on ice rings
 
-
         // Check the flags
-        if (flags[i] & af::ReferenceSpot) {
+        if (flags[i] & af::Strong) {
           num_strong_++;
         }
-        if (flags[i] & af::DontProcess) {
+        if (flags[i] & af::DontIntegrate) {
           num_filtered_++;
         } else {
           num_integrate_++;
+        }
+        if (flags[i] & af::ReferenceSpot) {
+          nums_reference_++;
         }
 
         // Compute stuff about the bounding box
