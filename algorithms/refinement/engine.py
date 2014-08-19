@@ -26,35 +26,10 @@ RMSD_CONVERGED = "RMSD no longer decreasing"
 STEP_TOO_SMALL = "Step too small"
 OBJECTIVE_INCREASE = "Refinement failure: objective increased"
 MAX_ITERATIONS = "Reached maximum number of iterations"
-MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
 
 class Journal(object):
-  """Container in which to store information about refinement history.
-  Columns can be added, which are either Python lists or flex.doubles. These
-  can be appended to each step, and the last elements removed when stepping
-  'backwards' (relevant to lstbx algorithms)"""
-
-  _step = -1
-  reason_for_termination = None
-  _list_names = []
-  _double_names = []
-
-  def add_list_column(self, name):
-    setattr(self, name, [])
-    self._list_names.append(name)
-
-  def add_double_column(self, name):
-    setattr(self, name, flex.double())
-    self._double_names.append(name)
-
-  def remove_last_step(self):
-    assert self._step > 0
-    for name in self._list_names:
-      del getattr(self, name)[-1]
-    for name in self._double_names:
-      getattr(self, name).pop_back()
-    self._step -= 1
-    return
+  """Container in which to store information about refinement history"""
+  pass
 
 class Refinery(object):
   """Interface for Refinery objects. This should be subclassed and the run
@@ -105,22 +80,22 @@ class Refinery(object):
 
     self._max_iterations = max_iterations
 
-    # set history attributes for journalling functionality, based on lstbx's
+    # attributes for journalling functionality, based on lstbx's
     # journaled_non_linear_ls class
     self.history = Journal()
-    self.history.add_list_column("num_reflections")
-    self.history.add_double_column("objective")
-    if track_gradient:
-      self.history.add_list_column("gradient")
-    self.history.add_double_column("gradient_norm")
-    if track_parameter_correlation:
-      self.history.add_list_column("parameter_correlation")
-    if track_step:
-      self.history.add_list_column("solution")
-    self.history.add_double_column("solution_norm")
-    self.history.add_list_column("parameter_vector")
-    self.history.add_double_column("parameter_vector_norm")
-    self.history.add_list_column("rmsd")
+    self.history._step = -1
+    self.history.num_reflections = []
+    self.history.objective = flex.double()
+    self.history.gradient = [] if track_gradient else None
+    self.history.gradient_norm = flex.double()
+    self.history.parameter_correlation = [] if track_parameter_correlation \
+      else None
+    self.history.solution = [] if track_step else None
+    self.history.solution_norm = flex.double()
+    self.history.parameter_vector = []
+    self.history.parameter_vector_norm = flex.double()
+    self.history.rmsd = []
+    self.history.reason_for_termination = None
 
     self.prepare_for_step()
 
@@ -147,16 +122,12 @@ class Refinery(object):
     self.history.rmsd.append(self._target.rmsds())
     self.history.parameter_vector.append(self._parameters.get_param_vals())
     self.history.objective.append(self._f)
-    try:
+    if self.history.gradient is not None:
       self.history.gradient.append(self._g)
-    except AttributeError: # not tracking gradient
-      pass
-    try:
-      #note, self._jacobian could be None depending on the engine
-      self.history.parameter_correlation.append(
-        self._packed_corr_mat(self._jacobian))
-    except AttributeError: # not tracking parameter correlation
-      pass
+    if self.history.parameter_correlation is not None:
+      if self._jacobian is not None:
+        self.history.parameter_correlation.append(
+          self._packed_corr_mat(self._jacobian))
 
     return
 
@@ -182,10 +153,10 @@ class Refinery(object):
     the Jacobian that was stored in the journal at the given step number. If
     not available, return None"""
 
+    if self.history.parameter_correlation is None: return None
     try:
       packed = self.history.parameter_correlation[step]
-    except (AttributeError, IndexError):
-      # catch lack of parameter_correlation attribute or invalid requested step
+    except IndexError:
       return None
     nparam = len(self.x)
     corr_mat = flex.double(flex.grid(nparam, nparam))
@@ -523,7 +494,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
              max_iterations=max_iterations)
 
     # add an attribute to the journal
-    self.history.add_double_column("reduced_chi_squared")
+    self.history.reduced_chi_squared = flex.double()
 
     # adopt any overrides of the defaults above
     libtbx.adopt_optional_init_args(self, kwds)
@@ -556,10 +527,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         sys.stdout.flush()
 
       # extra journalling post solve
-      try:
+      if self.history.solution is not None:
         self.history.solution.append(self.actual.step().deep_copy())
-      except AttributeError: #not tracking solution
-        pass
       self.history.solution_norm.append(self.step().norm())
       self.history.reduced_chi_squared.append(self.chi_sq())
 
@@ -612,8 +581,9 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
   def run(self):
 
+
     # add an attribute to the journal
-    self.history.add_double_column("mu")
+    self.history.mu = flex.double()
 
     #FIXME need a much neater way of doing this stuff through
     #inheritance
@@ -658,15 +628,13 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         sys.stdout.flush()
 
       # extra journalling post solve
-      try:
+      if self.history.solution is not None:
         self.history.solution.append(self.actual.step().deep_copy())
-      except AttributeError: #not tracking solution
-        pass
       self.history.solution_norm.append(self.step().norm())
       self.history.reduced_chi_squared.append(self.chi_sq())
 
       if self.had_too_small_a_step():
-        self.history.reason_for_termination = STEP_TOO_SMALL
+        self.history.reason_for_termination = "Step too small"
         break
 
       h = self.step()
@@ -680,25 +648,23 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       if rho > 0:
         # test termination criteria
         if self.test_for_termination():
-          self.history.reason_for_termination = TARGET_ACHIEVED
+          self.history.reason_for_termination = "RMSD target achieved"
           break
 
         if self.test_rmsd_convergence():
-          self.history.reason_for_termination = RMSD_CONVERGED
+          self.history.reason_for_termination = "RMSD no longer decreasing"
           break
 
         self.mu *= max(1/3, 1 - (2*rho - 1)**3)
         nu = 2
       else:
-        if nu >= 512:
-          self.history.reason_for_termination = MAX_TRIAL_ITERATIONS
         self.step_backward()
-        self.history.remove_last_step()
         self.mu *= nu
         nu *= 2
 
       if self.n_iterations == self._max_iterations:
-        self.history.reason_for_termination = MAX_ITERATIONS
+        self.history.reason_for_termination = "Reached maximum number of " \
+            "iterations"
         break
 
       # prepare for next step
