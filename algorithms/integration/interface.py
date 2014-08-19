@@ -153,10 +153,11 @@ class Integrator(object):
 
 class IntegrationTask3D(IntegrationTask):
 
-  def __init__(self, index, experiments, task):
+  def __init__(self, index, task, experiments, reflections):
     self._index = index
-    self._experiments = experiments
     self._task = task
+    self._experiments = experiments
+    self._reflections = reflections
 
   def __call__(self):
     from dials.array_family import flex
@@ -169,7 +170,7 @@ class IntegrationTask3D(IntegrationTask):
       print "Reading Image % i" % i
       imageset[i]
 
-    return IntegrationResult(self._index, flex.reflection_table())
+    return IntegrationResult(self._index, self._reflections)
 
 
 class IntegrationManager3D(IntegrationManager):
@@ -199,11 +200,11 @@ class IntegrationManager3D(IntegrationManager):
 
   def task(self, index):
     ''' Get a task. '''
-    assert(0 <= index < len(self))
     return IntegrationTask3D(
       index,
+      self._data.block(index),
       self._experiments,
-      self._data.block(index))
+      self._data.split(index))
 
   def tasks(self):
     ''' Iterate through the tasks. '''
@@ -228,21 +229,30 @@ class IntegrationManager3D(IntegrationManager):
 
   def _print_summary(self, block_size):
     from math import floor, log10
-    tasks = [self._data.block(i) for i in range(len(self._data))]
+    from libtbx import table_utils
+
+    # Create a table of integration tasks
+    rows = [
+      ["Frame From", "Frame To",
+       "Angle From", "Angle To",
+       "# Process",  "# Include"]
+    ]
     scans = self._experiments.scans()
     assert(len(scans) == 1)
-    scan = scans[0]
-    npad1 = int(floor(log10(max([max(t) for t in tasks])))) + 1
-    npad2 = int(floor(log10(max(scan.get_oscillation_range())))) + 3
-    format_string = ' %%%dd -> %%%dd (%%%d.2f -> %%%d.2f degrees)'
-    format_string = format_string % (npad1, npad1, npad2, npad2)
-    tasks_string = []
-    for i in range(len(tasks)):
-      f0, f1 = tasks[i]
-      p0 = scan.get_angle_from_array_index(f0)
-      p1 = scan.get_angle_from_array_index(f1)
-      tasks_string.append(format_string % (f0, f1, p0, p1))
-    tasks_string = '\n'.join(tasks_string)
+    for i in range(len(self)):
+      f0, f1 = self._data.block(i)
+      p0 = scans[0].get_angle_from_array_index(f0)
+      p1 = scans[0].get_angle_from_array_index(f1)
+      n0 = len(self._data.to_process(i))
+      n1 = len(self._data.to_include(i))
+      rows.append([str(f0), str(f1), str(p0), str(p1), str(n0), str(n1)])
+    task_table = table_utils.format(
+      rows,
+      has_header=True,
+      justify="right",
+      prefix=" ")
+
+    # Create summary format
     summary_format_str = (
       '%s\n'
       '\n'
@@ -261,7 +271,10 @@ class IntegrationManager3D(IntegrationManager):
       '\n'
       '%s\n'
       '\n'
+      ' %d reflections overlapping blocks removed from integration\n'
     )
+
+    # Print the summary
     print summary_format_str % (
       '=' * 80,
       len(self._experiments),
@@ -271,7 +284,8 @@ class IntegrationManager3D(IntegrationManager):
       len(self._experiments.scans()),
       len(self._experiments.crystals()),
       block_size,
-      tasks_string)
+      task_table,
+      len(self._data.to_not_process()))
 
 
 class Integrator3D(Integrator):

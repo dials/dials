@@ -27,10 +27,13 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("oscillation"),
           arg("array_range"),
           arg("block_size"))))
-      .def("__getitem__", &IntegrationManagerData3D::operator[])
       .def("__len__", &IntegrationManagerData3D::size)
       .def("finished", &IntegrationManagerData3D::finished)
       .def("block", &IntegrationManagerData3D::block)
+      .def("to_process", &IntegrationManagerData3D::to_process)
+      .def("to_include", &IntegrationManagerData3D::to_include)
+      .def("to_not_process", &IntegrationManagerData3D::to_not_process)
+      .def("split", &IntegrationManagerData3D::split)
       .def("accumulate", &IntegrationManagerData3D::accumulate)
       .def("data", &IntegrationManagerData3D::data)
       ;
