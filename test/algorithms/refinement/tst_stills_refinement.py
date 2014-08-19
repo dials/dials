@@ -208,12 +208,15 @@ try:
   assert len(history.rmsd) == 9
 except AssertionError:
   msg = """
-DEBUGGING INFORMATION
+DEBUGGING INFORMATION 19-AUG-14
+!!!Not the same as the last message!!!
 If you are seeing this message for the first time, please copy it into an
 email and send to david.waterman@stfc.ac.uk to help debug this test.
-rsmds="""
+rmsds="""
   msg += str(history.rmsd)
-  msg += "\nEND DEBUGGING INFORMATION"
+  msg += "\nmu="
+  msg += str(list(history.mu))
+  msg += "\nEND DEBUGGING INFORMATION 19-AUG-14"
   raise AssertionError(msg)
 
 refined_crystal = refiner.get_experiments()[0].crystal
