@@ -637,6 +637,7 @@ class RefinerFactory(object):
             min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,
             iqr_multiplier=iqr_multiplier,
+            weighting_strategy_override=None,
             verbosity=verbosity)
 
   @staticmethod

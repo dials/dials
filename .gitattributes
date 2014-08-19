@@ -199,6 +199,7 @@ algorithms/refinement/reflection_manager.py -text
 algorithms/refinement/target.py -text
 algorithms/refinement/target_stills.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
+algorithms/refinement/weighting_strategies.py -text
 algorithms/reflection_basis/SConscript -text
 algorithms/reflection_basis/__init__.py -text
 algorithms/reflection_basis/beam_vector_map.h -text

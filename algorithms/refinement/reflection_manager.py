@@ -15,6 +15,7 @@ from math import pi
 
 from scitbx import matrix
 from dials.array_family import flex
+from dials.algorithms.refinement import weighting_strategies
 
 # constants
 RAD_TO_DEG = 180. / pi
@@ -54,6 +55,8 @@ class ReflectionManager(object):
   Then, prediction can be done, followed by outlier rejection and any random
   sampling to form the working subset."""
 
+  _weighting_strategy = weighting_strategies.StatisticalWeightingStrategy()
+
   def __init__(self, reflections,
                      experiments,
                      nref_per_degree=None,
@@ -62,6 +65,7 @@ class ReflectionManager(object):
                      min_sample_size=0,
                      close_to_spindle_cutoff=0.1,
                      iqr_multiplier=1.5,
+                     weighting_strategy_override=None,
                      verbosity=0):
 
     # set verbosity
@@ -107,7 +111,9 @@ class ReflectionManager(object):
     self._calculate_frame_numbers()
 
     # set weights for all reflections
-    self._calculate_weights()
+    if weighting_strategy_override is not None:
+      self._weighting_strategy = weighting_strategy_override
+    self._weighting_strategy.calculate_weights(self._reflections)
 
     # reset all use flags
     self.reset_accepted_reflections()
@@ -465,16 +471,7 @@ class StillsReflectionManager(ReflectionManager):
   reflections too close to the spindle, and reports only information
   about X, Y, DelPsi residuals"""
 
-  def _calculate_weights(self):
-    """Include weights for DeltaPsi, which we currently force to 10000"""
-
-    # call parent class method to set X and Y weights
-    super(StillsReflectionManager, self)._calculate_weights()
-
-    self._reflections['delpsical.weights'] = flex.double(
-        len(self._reflections), 10000)
-
-    return
+  _weighting_strategy = weighting_strategies.StillsWeightingStrategy()
 
   def print_stats_on_matches(self):
     """Print some basic statistics on the matches"""
