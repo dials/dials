@@ -21,7 +21,11 @@ namespace dials { namespace model { namespace serialize {
   void export_simple_shoebox_extractor()
   {
     class_<SimpleShoeboxExtractor>("SimpleShoeboxExtractor", no_init)
-      .def(init<const af::const_ref< Shoebox<> >&>())
+      .def(init<
+          const af::const_ref< Shoebox<> >&,
+          int,
+          int,
+          std::size_t>())
       .def("next", &SimpleShoeboxExtractor::next)
       ;
   }

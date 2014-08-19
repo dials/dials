@@ -9,14 +9,17 @@
 
 namespace dials { namespace model {
 
+  /**
+   * A class to extract shoeboxes from a sequence of images.
+   */
   class SimpleShoeboxExtractor {
   public:
 
     struct sort_by_frame_and_panel {
-      af::const_ref<std::size_t> f;
+      af::const_ref<int> f;
       af::const_ref<std::size_t> p;
       sort_by_frame_and_panel(
-          const af::const_ref<std::size_t> frame,
+          const af::const_ref<int> frame,
           const af::const_ref<std::size_t> panel)
         : f(frame), p(panel) {}
       bool operator()(std::size_t a, std::size_t b) const {
@@ -24,9 +27,26 @@ namespace dials { namespace model {
       }
     };
 
-    SimpleShoeboxExtractor(const af::const_ref< Shoebox<> > shoeboxes)
+    /**
+     * Initialise the extractor.
+     * @param shoeboxes The shoeboxes to extract
+     * @param frame0 The first frame
+     * @param frame1 The last frame
+     * @param numpanels The number of panels
+     */
+    SimpleShoeboxExtractor(
+          const af::const_ref< Shoebox<> > shoeboxes,
+          int frame0,
+          int frame1,
+          std::size_t numpanels)
       : shoeboxes_(shoeboxes.begin(), shoeboxes.end()),
-        frame_(0) {
+        frame0_(frame0),
+        frame1_(frame1),
+        frame_(frame0),
+        numframes_(frame1 - frame0),
+        numpanels_(numpanels) {
+      DIALS_ASSERT(frame1_ > frame0_);
+      DIALS_ASSERT(numpanels > 0);
 
       // Compute the number of indices
       std::size_t numpartial = 0;
@@ -34,23 +54,22 @@ namespace dials { namespace model {
         int z0 = shoeboxes[i].bbox[4];
         int z1 = shoeboxes[i].bbox[5];
         DIALS_ASSERT(z1 > z0);
-        DIALS_ASSERT(z0 >= 0);
         numpartial += (z1 - z0);
       }
 
-      // Find number of panels and frames
-      numpanels_ = 0;
-      numframes_ = 0;
+      // Check number of panels and frames
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
-        std::size_t p = shoeboxes[i].panel+1;
-        std::size_t z = shoeboxes[i].bbox[5];
-        numpanels_ = std::max(numpanels_, p);
-        numframes_ = std::max(numframes_, z);
+        std::size_t p = shoeboxes[i].panel;
+        int z0 = shoeboxes[i].bbox[4];
+        int z1 = shoeboxes[i].bbox[5];
+        DIALS_ASSERT(p < numpanels_);
+        DIALS_ASSERT(z0 >= frame0);
+        DIALS_ASSERT(z1 <= frame1);
       }
 
       // Create a set of partials
+      af::shared<int> frame(numpartial);
       af::shared<std::size_t> panel(numpartial);
-      af::shared<std::size_t> frame(numpartial);
       af::shared<std::size_t> partind(numpartial);
       af::shared<std::size_t> parent(numpartial);
       indices_.resize(numpartial);
@@ -82,33 +101,33 @@ namespace dials { namespace model {
       // Create the offsets
       offset_.resize(numframes_*numpanels_+1);
       offset_[0] = 0;
-      std::size_t f0 = 0;
+      int f0 = frame0_;
       std::size_t p0 = 0;
+      std::size_t k = 1;
       for (std::size_t i = 0; i < partind.size(); ++i) {
         std::size_t ii = partind[i];
-        std::size_t f1 = frame[ii];
         std::size_t p1 = panel[ii];
-        DIALS_ASSERT(f1 >= f0);
-        if (f1 == f0) {
-          DIALS_ASSERT(p1 >= p0);
-        }
+        int f1 = frame[ii];
+        DIALS_ASSERT(f1 >= f0 && (f1 != f0 || p1 >= p0));
         for (; f0 < f1; ++f0) {
           for (; p0 < numpanels_; ++p0) {
-            offset_[p0+f0*numpanels_+1] = i;
+            offset_[k++] = i;
           }
           p0 = 0;
         }
         for (; p0 < p1; ++p0) {
-          offset_[p0+f0*numpanels_+1] = i;
+          offset_[k++] = i;
         }
         DIALS_ASSERT(f0 == f1 && p0 == p1);
       }
       for (; f0 < numframes_; ++f0) {
         for (; p0 < numpanels_; ++p0) {
-          offset_[p0+f0*numpanels_+1] = indices_.size();
+          offset_[k++] = indices_.size();
         }
         p0 = 0;
       }
+
+      // Check the computed offsets
       for (std::size_t i = 1; i < offset_.size(); ++i) {
         DIALS_ASSERT(offset_[i] >= offset_[i-1]);
       }
@@ -130,7 +149,13 @@ namespace dials { namespace model {
       }
     }
 
+    /**
+     * Apply the next image.
+     * @param image The image to apply
+     */
     void next(const Image &image) {
+      DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
+      DIALS_ASSERT(image.npanels() == numpanels_);
       for (std::size_t p = 0; p < image.npanels(); ++p) {
         af::const_ref<std::size_t> ind = indices(frame_, p);
         af::const_ref< int, af::c_grid<2> > data = image.data(p);
@@ -168,11 +193,17 @@ namespace dials { namespace model {
 
   private:
 
-    af::const_ref<std::size_t> indices(std::size_t frame, std::size_t panel) const {
-      if (panel >= numpanels_ || frame_ >= numframes_) {
+    /**
+     * Get an array of indices for shoeboxes on a particular frame and panel.
+     * @param frame The frame number
+     * @param panel The panel number
+     * @returns The indices
+     */
+    af::const_ref<std::size_t> indices(int frame, std::size_t panel) const {
+      if (panel >= numpanels_ || frame < frame0_ || frame >= frame1_) {
         return af::const_ref<std::size_t>(0, 0);
       }
-      std::size_t j0 = panel+frame*numpanels_;
+      std::size_t j0 = panel+(frame-frame0_)*numpanels_;
       DIALS_ASSERT(j0 < offset_.size()-1);
       std::size_t i0 = offset_[j0];
       std::size_t i1 = offset_[j0+1];
@@ -184,9 +215,11 @@ namespace dials { namespace model {
     }
 
     af::shared< Shoebox<> > shoeboxes_;
-    std::size_t frame_;
-    std::size_t numpanels_;
+    int frame0_;
+    int frame1_;
+    int frame_;
     std::size_t numframes_;
+    std::size_t numpanels_;
     af::shared<std::size_t> indices_;
     af::shared<std::size_t> offset_;
   };
