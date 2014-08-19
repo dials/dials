@@ -1,4 +1,5 @@
 from __future__ import division
+from iotbx import phil
 import abc
 
 class IntegrationResult(object):
@@ -49,7 +50,21 @@ class IntegrationManager(object):
 class Integrator(object):
   ''' Integrator interface class. '''
 
-  def __init__(self, manager, mp_method='multiprocessing', max_procs=None):
+  phil_scope = phil.parse('''
+
+    mp {
+      method = '*multiprocessing sge'
+        .type = choice
+        .help = "The parallelism to use"
+
+      max_procs = 1
+        .type = int(value_min=0)
+        .help = "The number of processes to use"
+    }
+
+  ''')
+
+  def __init__(self, manager, params):
     ''' Initialise the integrator.
 
     The integrator requires a manager class implementing the IntegratorManager
@@ -58,13 +73,11 @@ class Integrator(object):
 
     Params:
       manager The integration manager
-      mp_method The multi processing method
-      max_procs The maximum number of processes
+      params The parameters
 
     '''
-    self._mp_method = mp_method
+    self._params = params
     self._manager = manager
-    self._max_procs = max_procs
 
   def integrate(self):
     ''' Do all the integration tasks.
@@ -75,8 +88,8 @@ class Integrator(object):
     '''
     from libtbx import easy_mp
     num_proc = len(self._manager)
-    if self._max_procs is not None:
-      num_proc = min(num_proc, self._max_procs)
+    if self._params.mp.max_procs > 0:
+      num_proc = min(num_proc, self._params.mp.max_procs)
     if num_proc > 1:
       def print_output(result):
         print result[1]
@@ -92,7 +105,7 @@ class Integrator(object):
         iterable=list(self._manager.tasks()),
         processes=num_proc,
         callback=print_output,
-        method=self._mp_method,
+        method=self._params.mp.method,
         preserve_order=True)
       task_results, output = zip(*task_results)
     else:
@@ -100,38 +113,6 @@ class Integrator(object):
     for result in task_results:
       self._manager.accumulate(result)
     return self._manager.result()
-
-
-# class ReflectionPreprocessor(object):
-
-#   def __init__(self, reflections):
-#     pass
-
-#   def summary(self):
-#     format_string = (
-#       'Preprocessing reflections:\n'
-#       '\n'
-#       ' Number of reflections:                  %d\n'
-#       ' Number of strong reflections:           %d\n'
-#       ' Number filtered with zeta lt %.2f:      %d (%.2f%%)\n'
-#       ' Number of reflection to integrate:      %d (%.2f%%)\n'
-#       ' Number overlapping (background):        %d (%.2f%%)\n'
-#       ' Number overlapping (foreground):        %d (%.2f%%)\n'
-#       ' Number recorded on ice rings:           %d (%.2f%%)\n'
-#       ' Number clipped at task boundaries:      %d (%.2f%%)\n'
-#       ' Number strong overlapping (background): %d (%.2f%%)\n'
-#       ' Number strong overlapping (foreground): %d (%.2f%%)\n'
-#       ' Number strong recorded on ice rings:    %d (%.2f%%)\n'
-#       ' Number strong for reference creation:   %d (%.2f%%)\n'
-#       ' Smallest measurement box size (x):      %d\n'
-#       ' Smallest measurement box size (y):      %d\n'
-#       ' Smallest measurement box size (z):      %d\n'
-#       ' Largest measurement box size (x):       %d\n'
-#       ' Largest measurement box size (y):       %d\n'
-#       ' Largest measurement box size (z):       %d\n'
-#     )
-#     return format_string % (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-#                             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 
 class IntegrationTask3D(IntegrationTask):
@@ -155,11 +136,54 @@ class IntegrationTask3D(IntegrationTask):
 
 class IntegrationManager3D(IntegrationManager):
 
-  def __init__(self, experiments, reflections, num_tasks=1, max_overlap=0):
+  phil_scope = phil.parse('''
+
+    tasks {
+
+      num_tasks = 1
+        .type = int(value_min=1)
+        .help = "The number of tasks"
+
+      max_overlap = 0
+        .type = int(value_min=0)
+        .help = "The maximum number of frames overlap between tasks"
+
+    }
+
+    filter {
+
+      min_zeta = 0.05
+        .help = "Filter the reflections by the value of zeta. A value of less"
+                "than or equal to zero indicates that this will not be used. A"
+                "positive value is used as the minimum permissable value."
+        .type = float
+
+      ice_rings {
+        filter = False
+          .type = bool
+        unit_cell = 4.498,4.498,7.338,90,90,120
+          .type = unit_cell
+          .help = "The unit cell to generate d_spacings for ice rings."
+        space_group = 194
+          .type = space_group
+          .help = "The space group used to generate d_spacings for ice rings."
+        d_min = 0
+          .type = int(value_min=0)
+          .help = "The minimum resolution to filter ice rings"
+        width = 0.06
+          .type = float(value_min=0.0)
+          .help = "The width of an ice ring (in d-spacing)."
+      }
+    }
+  ''')
+
+  def __init__(self, experiments, reflections, params):
     from dials.array_family import flex
     from dials.algorithms.integration import Preprocessor
     from dials.algorithms.integration import MultiPowderRingFilter
     from dials.algorithms.integration import PowderRingFilter
+    num_tasks = params.tasks.num_tasks
+    max_overlap = params.tasks.max_overlap
     imagesets = experiments.imagesets()
     scans = experiments.scans()
     assert(len(imagesets) == 1)
@@ -175,17 +199,23 @@ class IntegrationManager3D(IntegrationManager):
       max_overlap)
     reflections.compute_zeta_multi(experiments)
     reflections.compute_d(experiments)
-    filter = MultiPowderRingFilter()
-    from cctbx.uctbx import unit_cell
-    from cctbx.sgtbx import space_group_info
-    # filter.add(PowderRingFilter(
-    #   unit_cell((4.498,4.498,7.338,90,90,120)),
-    #   space_group_info(194).group(),
-    #   1,
-    #   0.01))
-    min_zeta = 0.05
-
-    self._preprocessing = Preprocessor(reflections, filter, min_zeta)
+    powder_ring_filter = MultiPowderRingFilter()
+    if params.filter.ice_rings.filter == True:
+      if params.filter.ice_rings.d_min > 0:
+        d_min = params.filter.ice_rings.d_min
+      else:
+        d_min = min([e.detector.get_max_resolution(e.beam.get_s0())
+                     for e in experiments])
+      powder_ring_filter.add(
+        PowderRingFilter(
+          params.filter.ice_rings.unit_cell,
+          params.filter.ice_rings.space_group.group(),
+          d_min,
+          params.filter.ice_rings.width))
+    self._preprocessing = Preprocessor(
+      reflections,
+      powder_ring_filter,
+      params.filter.min_zeta)
     self._print_summary(num_tasks, max_overlap)
 
   def task(self, index):
@@ -260,7 +290,6 @@ class IntegrationManager3D(IntegrationManager):
       p1 = scan.get_angle_from_array_index(f1)
       tasks_string.append(format_string % (f0, f1, p0, p1))
     tasks_string = '\n'.join(tasks_string)
-
     summary_format_str = (
       '%s\n'
       '\n'
@@ -284,7 +313,6 @@ class IntegrationManager3D(IntegrationManager):
       '\n'
       '%s\n'
     )
-
     print summary_format_str % (
       '=' * 80,
       len(self._experiments),
@@ -298,27 +326,21 @@ class IntegrationManager3D(IntegrationManager):
       tasks_string,
       self._preprocessing.summary())
 
+def integrator_3d_phil_scope():
+  phil_scope = phil.parse('')
+  phil_scope.adopt_scope(Integrator.phil_scope)
+  phil_scope.adopt_scope(IntegrationManager3D.phil_scope)
+  return phil_scope
 
 class Integrator3D(Integrator):
   ''' Top level integrator for 3D integration. '''
 
-  def __init__(self,
-               experiments,
-               reflections,
-               num_tasks=1,
-               max_overlap=0,
-               mp_method='multiprocessing',
-               max_procs=None):
+  phil_scope = integrator_3d_phil_scope()
+
+  def __init__(self, experiments, reflections, params):
 
     # The 3D Integration manager
-    manager = IntegrationManager3D(
-      experiments=experiments,
-      reflections=reflections,
-      num_tasks=num_tasks,
-      max_overlap=max_overlap)
+    manager = IntegrationManager3D(experiments, reflections, params)
 
     # Initialise the base integrator
-    super(Integrator3D, self).__init__(
-      manager=manager,
-      mp_method=mp_method,
-      max_procs=max_procs)
+    super(Integrator3D, self).__init__(manager, params)

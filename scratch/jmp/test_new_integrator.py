@@ -27,7 +27,15 @@ if __name__ == '__main__':
   print ""
 
   from dials.algorithms.integration.interface import Integrator3D
+  from libtbx import phil
+  user_phil = phil.parse('''
+    mp.max_procs = 4
+    filter.ice_rings.filter=True
+    mp.num_proces = 2
 
-  integrator = Integrator3D(exlist, rlist, num_tasks=nproc, max_procs=5,
-                            max_overlap=2)
+  ''')
+
+  params = Integrator3D.phil_scope.fetch(source=user_phil).extract()
+
+  integrator = Integrator3D(exlist, rlist, params)
   result = integrator.integrate()
