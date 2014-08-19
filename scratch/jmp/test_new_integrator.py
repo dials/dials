@@ -27,5 +27,5 @@ if __name__ == '__main__':
 
   from dials.algorithms.integration.interface import Integrator3D
 
-  integrator = Integrator3D(exlist, rlist, ntasks=nproc, max_proc=5)
+  integrator = Integrator3D(exlist, rlist, num_tasks=nproc, max_procs=5)
   result = integrator.integrate()
