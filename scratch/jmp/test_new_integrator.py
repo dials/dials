@@ -24,8 +24,10 @@ if __name__ == '__main__':
   rlist['id'] = flex.size_t(len(rlist), 0)
   rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
                      sigma_m=0.044*pi/180)
+  print ""
 
   from dials.algorithms.integration.interface import Integrator3D
 
-  integrator = Integrator3D(exlist, rlist, num_tasks=nproc, max_procs=5)
+  integrator = Integrator3D(exlist, rlist, num_tasks=nproc, max_procs=5,
+                            max_overlap=2)
   result = integrator.integrate()
