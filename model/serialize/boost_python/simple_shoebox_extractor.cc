@@ -27,6 +27,7 @@ namespace dials { namespace model { namespace serialize {
           int,
           std::size_t>())
       .def("next", &SimpleShoeboxExtractor::next)
+      .def("finished", &SimpleShoeboxExtractor::finished)
       ;
   }
 

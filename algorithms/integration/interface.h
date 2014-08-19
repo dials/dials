@@ -89,15 +89,15 @@ namespace dials { namespace algorithms {
             f |= af::DontIntegrate;
           }
         }
-        if (f & af::DontIntegrate) {
-          for (std::size_t j = 0; j < blocks_.size(); ++j) {
-            int bz0 = blocks_[j][0];
-            int bz1 = blocks_[j][1];
-            if (!(z1 <= bz0 || z0 >= bz1)) {
-              to_include_[j].push_back(i);
-            }
-          }
-        }
+        /* if (f & af::DontIntegrate) { */
+        /*   for (std::size_t j = 0; j < blocks_.size(); ++j) { */
+        /*     int bz0 = blocks_[j][0]; */
+        /*     int bz1 = blocks_[j][1]; */
+        /*     if (!(z1 <= bz0 || z0 >= bz1)) { */
+        /*       to_include_[j].push_back(i); */
+        /*     } */
+        /*   } */
+        /* } */
       }
     }
 

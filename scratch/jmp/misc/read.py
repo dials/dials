@@ -20,4 +20,4 @@ if __name__ == '__main__':
   rlist['shoebox'] = flex.shoebox(panel, bbox)
   rlist['shoebox'].allocate()
 
-  rlist.fill_shoeboxes(exlist[0])
+  rlist.fill_shoeboxes(exlist[0].imageset)

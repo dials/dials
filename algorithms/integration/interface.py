@@ -152,23 +152,30 @@ class Integrator(object):
 
 
 class IntegrationTask3D(IntegrationTask):
+  ''' A class to perform a 3D integration task. '''
 
   def __init__(self, index, task, experiments, reflections):
+    ''' Initialise the task. '''
     self._index = index
     self._task = task
     self._experiments = experiments
     self._reflections = reflections
 
   def __call__(self):
+    ''' Do the integration. '''
     from dials.array_family import flex
-
+    import sys
     print "=" * 80
     print ""
     print "Integrating task %d" % self._index
+    self._reflections["shoebox"] = flex.shoebox(
+      self._reflections["panel"],
+      self._reflections["bbox"])
+    self._reflections["shoebox"].allocate()
+    frame0, frame1 = self._task
     imageset = self._experiments[0].imageset
-    for i in range(*self._task):
-      print "Reading Image % i" % i
-      imageset[i]
+    self._reflections.fill_shoeboxes(imageset[frame0:frame1])
+    del self._reflections["shoebox"]
 
     return IntegrationResult(self._index, self._reflections)
 

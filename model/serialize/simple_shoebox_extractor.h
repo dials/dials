@@ -120,12 +120,13 @@ namespace dials { namespace model {
         }
         DIALS_ASSERT(f0 == f1 && p0 == p1);
       }
-      for (; f0 < numframes_; ++f0) {
+      for (; f0 < frame1_; ++f0) {
         for (; p0 < numpanels_; ++p0) {
           offset_[k++] = indices_.size();
         }
         p0 = 0;
       }
+      DIALS_ASSERT(k == offset_.size());
 
       // Check the computed offsets
       for (std::size_t i = 1; i < offset_.size(); ++i) {
@@ -134,6 +135,7 @@ namespace dials { namespace model {
       DIALS_ASSERT(offset_.back() == indices_.size());
       for (std::size_t f = 0; f < numframes_; ++f) {
         for (std::size_t p = 0; p < numpanels_; ++p) {
+          int f1 = (int)f + frame0_;
           std::size_t i = p + f *numpanels_;
           std::size_t i1 = offset_[i];
           std::size_t i2 = offset_[i+1];
@@ -142,7 +144,7 @@ namespace dials { namespace model {
             std::size_t j = indices_[i];
             std::size_t p2 = shoeboxes_[j].panel;
             int6 b = shoeboxes_[j].bbox;
-            DIALS_ASSERT(f >= b[4] && f < b[5]);
+            DIALS_ASSERT(f1 >= b[4] && f1 < b[5]);
             DIALS_ASSERT(p == p2);
           }
         }
@@ -189,6 +191,13 @@ namespace dials { namespace model {
         }
       }
       frame_++;
+    }
+
+    /**
+     * @returns Is the extraction finished.
+     */
+    bool finished() const {
+      return frame_ == frame1_;
     }
 
   private:
