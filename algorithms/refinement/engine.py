@@ -50,9 +50,9 @@ class Journal(object):
   def remove_last_step(self):
     assert self._step > 0
     for name in self._list_names:
-      del getattr(name)[-1]
+      del getattr(self, name)[-1]
     for name in self._double_names:
-      getattr(name).pop_back()
+      getattr(self, name).pop_back()
     self._step -= 1
     return
 
