@@ -27,7 +27,9 @@ if __name__ == '__main__':
   print ""
 
   from dials.algorithms.integration.interface import Integrator3D
+  from dials.algorithms.integration.interface import phil_scope
   from libtbx import phil
+
   user_phil = phil.parse('''
     mp.max_procs = 4
     filter.ice_rings.filter=True
@@ -35,7 +37,7 @@ if __name__ == '__main__':
 
   ''')
 
-  params = Integrator3D.phil_scope.fetch(source=user_phil).extract()
+  params = phil_scope.fetch(source=user_phil).extract()
 
   integrator = Integrator3D(exlist, rlist, params)
   result = integrator.integrate()

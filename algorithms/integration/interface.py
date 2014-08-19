@@ -2,6 +2,58 @@ from __future__ import division
 from iotbx import phil
 import abc
 
+# The integrator phil scope
+phil_scope = phil.parse('''
+
+  mp {
+    method = '*multiprocessing sge lsf pbs'
+      .type = choice
+      .help = "The multiprocessing method to use"
+
+    max_procs = 1
+      .type = int(value_min=0)
+      .help = "The number of processes to use"
+  }
+
+  tasks {
+
+    num_tasks = 1
+      .type = int(value_min=1)
+      .help = "The number of tasks"
+
+    max_overlap = 0
+      .type = int(value_min=0)
+      .help = "The maximum number of frames overlap between tasks"
+
+  }
+
+  filter {
+
+    min_zeta = 0.05
+      .help = "Filter the reflections by the value of zeta. A value of less"
+              "than or equal to zero indicates that this will not be used. A"
+              "positive value is used as the minimum permissable value."
+      .type = float
+
+    ice_rings {
+      filter = False
+        .type = bool
+      unit_cell = 4.498,4.498,7.338,90,90,120
+        .type = unit_cell
+        .help = "The unit cell to generate d_spacings for ice rings."
+      space_group = 194
+        .type = space_group
+        .help = "The space group used to generate d_spacings for ice rings."
+      d_min = 0
+        .type = int(value_min=0)
+        .help = "The minimum resolution to filter ice rings"
+      width = 0.06
+        .type = float(value_min=0.0)
+        .help = "The width of an ice ring (in d-spacing)."
+    }
+  }
+''')
+
 class IntegrationResult(object):
   ''' A class representing an integration result. '''
 
@@ -49,20 +101,6 @@ class IntegrationManager(object):
 
 class Integrator(object):
   ''' Integrator interface class. '''
-
-  phil_scope = phil.parse('''
-
-    mp {
-      method = '*multiprocessing sge'
-        .type = choice
-        .help = "The parallelism to use"
-
-      max_procs = 1
-        .type = int(value_min=0)
-        .help = "The number of processes to use"
-    }
-
-  ''')
 
   def __init__(self, manager, params):
     ''' Initialise the integrator.
@@ -135,47 +173,6 @@ class IntegrationTask3D(IntegrationTask):
 
 
 class IntegrationManager3D(IntegrationManager):
-
-  phil_scope = phil.parse('''
-
-    tasks {
-
-      num_tasks = 1
-        .type = int(value_min=1)
-        .help = "The number of tasks"
-
-      max_overlap = 0
-        .type = int(value_min=0)
-        .help = "The maximum number of frames overlap between tasks"
-
-    }
-
-    filter {
-
-      min_zeta = 0.05
-        .help = "Filter the reflections by the value of zeta. A value of less"
-                "than or equal to zero indicates that this will not be used. A"
-                "positive value is used as the minimum permissable value."
-        .type = float
-
-      ice_rings {
-        filter = False
-          .type = bool
-        unit_cell = 4.498,4.498,7.338,90,90,120
-          .type = unit_cell
-          .help = "The unit cell to generate d_spacings for ice rings."
-        space_group = 194
-          .type = space_group
-          .help = "The space group used to generate d_spacings for ice rings."
-        d_min = 0
-          .type = int(value_min=0)
-          .help = "The minimum resolution to filter ice rings"
-        width = 0.06
-          .type = float(value_min=0.0)
-          .help = "The width of an ice ring (in d-spacing)."
-      }
-    }
-  ''')
 
   def __init__(self, experiments, reflections, params):
     from dials.array_family import flex
@@ -326,21 +323,10 @@ class IntegrationManager3D(IntegrationManager):
       tasks_string,
       self._preprocessing.summary())
 
-def integrator_3d_phil_scope():
-  phil_scope = phil.parse('')
-  phil_scope.adopt_scope(Integrator.phil_scope)
-  phil_scope.adopt_scope(IntegrationManager3D.phil_scope)
-  return phil_scope
-
 class Integrator3D(Integrator):
   ''' Top level integrator for 3D integration. '''
 
-  phil_scope = integrator_3d_phil_scope()
-
   def __init__(self, experiments, reflections, params):
-
-    # The 3D Integration manager
+    ''' Initialise the manager and the integrator. '''
     manager = IntegrationManager3D(experiments, reflections, params)
-
-    # Initialise the base integrator
     super(Integrator3D, self).__init__(manager, params)
