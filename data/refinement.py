@@ -227,6 +227,26 @@ refinement
       .help = "The IQR multiplier used to detect outliers. A value of 1.5 gives"
               "Tukey's rule for outlier detection"
       .type = float(value_min = 0.)
+
+    weighting_strategy
+      .help = "Parameters to configure weighting strategy overrides"
+    {
+      override = statistical stills constant
+        .help = "selection of a strategy to override default weighting behaviour"
+        .type = choice
+
+      delpsi_constant = 10000
+        .help = "used by the stills strategy to choose absolute weight value"
+                "for the angular distance from Ewald sphere term of the target"
+                "function, whilst the X and Y parts use statistical weights"
+        .type = float(value_min = 0)
+
+      constants = 1.0 1.0 1.0
+        .help = "constant weights for three parts of the target function,"
+                "whether the case is for stills or scans. The default gives"
+                "unit weighting."
+        .type = floats(size = 3, value_min = 0)
+    }
   }
 }
 

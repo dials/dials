@@ -612,12 +612,19 @@ class RefinerFactory(object):
       if verbosity > 1:
         print "Random seed set to %d\n" % options.random_seed
 
+    # check whether we deal with stills or scans
+    do_stills = False
     if all(e.goniometer is not None for e in experiments):
       from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
+      # check incompatible weighting strategy
+      print options.weighting_strategy.override
+      assert options.weighting_strategy.override != "stills"
     elif all(e.goniometer is None for e in experiments):
+      do_stills = True
       from dials.algorithms.refinement.reflection_manager import \
           StillsReflectionManager as refman
-
+      # check incompatible weighting strategy
+      assert options.weighting_strategy.override != "statistical"
     else:
       raise NotImplementedError("ExperimentList contains a mixture of "
         "experiments with goniometers and those without. This is not currently "
@@ -629,6 +636,23 @@ class RefinerFactory(object):
     else:
       iqr_multiplier=None
 
+    # override default weighting strategy?
+    weighting_strategy = None
+    if options.weighting_strategy.override == "statistical":
+      from dials.algorithms.refinement.weighting_strategies \
+        import StatisticalWeightingStrategy
+      weighting_strategy = StatisticalWeightingStrategy()
+    elif options.weighting_strategy.override == "stills":
+      from dials.algorithms.refinement.weighting_strategies \
+        import StillsWeightingStrategy
+      weighting_strategy = StillsWeightingStrategy(
+        options.weighting_strategy.delpsi_constant)
+    elif options.weighting_strategy.override == "constant":
+      from dials.algorithms.refinement.weighting_strategies \
+        import ConstantWeightingStrategy
+      weighting_strategy = ConstantWeightingStrategy(
+        *options.weighting_strategy.constants, stills=do_stills)
+
     return refman(reflections=reflections,
             experiments=experiments,
             nref_per_degree=nref_per_degree,
@@ -637,7 +661,7 @@ class RefinerFactory(object):
             min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,
             iqr_multiplier=iqr_multiplier,
-            weighting_strategy_override=None,
+            weighting_strategy_override=weighting_strategy,
             verbosity=verbosity)
 
   @staticmethod
