@@ -20,7 +20,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # strip out negative variance reflections: these should not really be there
   # FIXME Doing select on summation results. Should do on profile result if
   # present? Yes
-  
+
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
