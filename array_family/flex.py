@@ -205,6 +205,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       extractor.next(Image(image, mask))
       sys.stdout.write(".")
       sys.stdout.flush()
+      del image
     sys.stdout.write("\n")
     sys.stdout.flush()
     assert(extractor.finished())
+

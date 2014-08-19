@@ -165,16 +165,27 @@ class IntegrationTask3D(IntegrationTask):
     ''' Do the integration. '''
     from dials.array_family import flex
     import sys
+    import operator
+    from time import time
     print "=" * 80
     print ""
     print "Integrating task %d" % self._index
     self._reflections["shoebox"] = flex.shoebox(
       self._reflections["panel"],
       self._reflections["bbox"])
+    # sz = sum([reduce(operator.mul, b.size(), 1) for b in self._reflections["shoebox"]])
+    # print sz
+    # a1 = flex.double(int(1000000000/4),0)
+    # a2 = flex.double(sz)
+    # a3 = flex.int(sz)
+    st = time()
     self._reflections["shoebox"].allocate()
+    print time() - st
     frame0, frame1 = self._task
     imageset = self._experiments[0].imageset
+    st = time()
     self._reflections.fill_shoeboxes(imageset[frame0:frame1])
+    print time() - st
     del self._reflections["shoebox"]
 
     return IntegrationResult(self._index, self._reflections)
@@ -280,6 +291,15 @@ class IntegrationManager3D(IntegrationManager):
       '%s\n'
       '\n'
       ' %d reflections overlapping blocks removed from integration\n'
+      '\n'
+      ' If you see poor performance, it may be because DIALS is using too\n'
+      ' much memory. This could be because you have specified too many\n'
+      ' processes on the same machine, in which case try setting the number\n'
+      ' of processes to a smaller number. It could also be because the block\n'
+      ' size is too large, in which case try setting the block size to a\n'
+      ' smaller value. Reflections not fully recorded in a block are not\n'
+      ' integrated so be sure to check that in reducing the block size you\n'
+      ' are not throwing away too many reflections.\n'
     )
 
     # Print the summary
