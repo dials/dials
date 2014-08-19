@@ -6,7 +6,7 @@ import abc
 phil_scope = phil.parse('''
 
   mp {
-    method = '*multiprocessing sge lsf pbs'
+    method = *multiprocessing sge lsf pbs
       .type = choice
       .help = "The multiprocessing method to use"
 

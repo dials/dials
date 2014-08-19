@@ -33,8 +33,7 @@ if __name__ == '__main__':
   user_phil = phil.parse('''
     mp.max_procs = 4
     filter.ice_rings.filter=True
-    mp.num_proces = 2
-
+    tasks.num_tasks = 2
   ''')
 
   params = phil_scope.fetch(source=user_phil).extract()
