@@ -243,6 +243,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   d.add_column('XDET', type_table['XDET']).set_values(xdet.as_float())
   d.add_column('YDET', type_table['YDET']).set_values(ydet.as_float())
   d.add_column('ROT', type_table['ROT']).set_values(rot.as_float())
+  d.add_column('LP', type_table['LP']).set_values(lp.as_float())
 
   m.write(hklout)
 

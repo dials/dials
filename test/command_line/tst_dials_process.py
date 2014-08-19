@@ -42,7 +42,7 @@ def exercise_1():
   mtz_object = reader.file_content()
   assert mtz_object.column_labels() == [
     'H', 'K', 'L', 'M_ISYM', 'BATCH', 'IPR', 'SIGIPR', 'I', 'SIGI',
-    'FRACTIONCALC', 'XDET', 'YDET', 'ROT']
+    'FRACTIONCALC', 'XDET', 'YDET', 'ROT', 'LP']
 
   assert len(mtz_object.batches()) == 84
   batch = mtz_object.batches()[0]
@@ -84,7 +84,7 @@ def exercise_2():
   mtz_object = reader.file_content()
   assert mtz_object.column_labels() == [
     'H', 'K', 'L', 'M_ISYM', 'BATCH', 'IPR', 'SIGIPR', 'I', 'SIGI',
-    'FRACTIONCALC', 'XDET', 'YDET', 'ROT']
+    'FRACTIONCALC', 'XDET', 'YDET', 'ROT', 'LP']
   assert len(mtz_object.batches()) == 45
   batch = mtz_object.batches()[0]
   expected_unit_cell = uctbx.unit_cell((78.07, 78.07, 78.07, 90, 90, 90))
