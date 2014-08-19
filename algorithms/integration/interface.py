@@ -158,6 +158,8 @@ class IntegrationManager3D(IntegrationManager):
   def __init__(self, experiments, reflections, num_tasks=1, max_overlap=0):
     from dials.array_family import flex
     from dials.algorithms.integration import Preprocessor
+    from dials.algorithms.integration import MultiPowderRingFilter
+    from dials.algorithms.integration import PowderRingFilter
     imagesets = experiments.imagesets()
     scans = experiments.scans()
     assert(len(imagesets) == 1)
@@ -172,7 +174,18 @@ class IntegrationManager3D(IntegrationManager):
       num_tasks,
       max_overlap)
     reflections.compute_zeta_multi(experiments)
-    self._preprocessing = Preprocessor(reflections)
+    reflections.compute_d(experiments)
+    filter = MultiPowderRingFilter()
+    from cctbx.uctbx import unit_cell
+    from cctbx.sgtbx import space_group_info
+    # filter.add(PowderRingFilter(
+    #   unit_cell((4.498,4.498,7.338,90,90,120)),
+    #   space_group_info(194).group(),
+    #   1,
+    #   0.01))
+    min_zeta = 0.05
+
+    self._preprocessing = Preprocessor(reflections, filter, min_zeta)
     self._print_summary(num_tasks, max_overlap)
 
   def task(self, index):

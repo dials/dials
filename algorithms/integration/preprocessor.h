@@ -35,7 +35,9 @@ namespace dials { namespace algorithms {
         double d_min,
         double width)
       : d_min_(d_min),
-        width_(width) {
+        width_(width),
+        unit_cell_(uc),
+        space_group_(sg) {
       DIALS_ASSERT(d_min > 0);
       DIALS_ASSERT(width > 0);
 
@@ -83,11 +85,23 @@ namespace dials { namespace algorithms {
       return d_min_;
     }
 
+    /** @returns The unit cell */
+    cctbx::uctbx::unit_cell unit_cell() const {
+      return unit_cell_;
+    }
+
+    /** @returns The space group */
+    cctbx::sgtbx::space_group space_group() const {
+      return space_group_;
+    }
+
   private:
 
     double d_min_;
     double d_max_;
     double width_;
+    cctbx::uctbx::unit_cell unit_cell_;
+    cctbx::sgtbx::space_group space_group_;
     af::shared<double> d_spacings_;
   };
 
@@ -145,9 +159,18 @@ namespace dials { namespace algorithms {
   };
 
 
+  /**
+   * Class to preprocess reflections for integration.
+   */
   class Preprocessor {
   public:
 
+    /**
+     * Setup and perform the preprocessing.
+     * @param reflections The reflections to process.
+     * @param filter The powder ring filter
+     * @param min_zeta The minimum allowed zeta
+     */
     Preprocessor(
             af::reflection_table reflections,
             const MultiPowderRingFilter &filter,
@@ -158,17 +181,19 @@ namespace dials { namespace algorithms {
           num_integrate_(0),
           num_overlap_bg_(0),
           num_overlap_fg_(0),
-          num_icering_(0),
+          num_inpowder_(0),
           nums_overlap_bg_(0),
           nums_overlap_fg_(0),
-          nums_icering_(0),
+          nums_inpowder_(0),
           nums_reference_(0),
           small_x_(0),
           small_y_(0),
           small_z_(0),
           large_x_(0),
           large_y_(0),
-          large_z_(0) {
+          large_z_(0),
+          filter_(filter),
+          min_zeta_(min_zeta) {
 
       // Check the input
       DIALS_ASSERT(min_zeta > 0);
@@ -189,8 +214,6 @@ namespace dials { namespace algorithms {
 
       // Get some arrays needed for preprocessing
       af::ref<std::size_t> flags = reflections["flags"];
-      af::const_ref<std::size_t> id = reflections["id"];
-      af::const_ref< vec3<double> > s1 = reflections["s1"];
       af::const_ref<int6> bbox = reflections["bbox"];
       af::const_ref<double> zeta = reflections["zeta"];
       af::const_ref<double> d = reflections["d"];
@@ -205,23 +228,33 @@ namespace dials { namespace algorithms {
         flags[i] &= ~af::ReferenceSpot;
 
         // Filter the reflections by zeta
-        if (std::abs(zeta[i]) < 0.05) {
+        if (std::abs(zeta[i]) < min_zeta) {
           flags[i] |= af::DontIntegrate;
         }
 
-        // Check if reflections are predicted on ice rings
+        // Check if reflections are predicted on powder rings
+        if (filter(d[i])) {
+          flags[i] |= af::InPowderRing;
+        }
 
-        // Check the flags
+        // If a spot is strong and neither of the bad flags are set
+        // then set the strong spot as a spot to use for reference profiles
         if (flags[i] & af::Strong) {
-          num_strong_++;
+          std::size_t code = af::DontIntegrate | af::InPowderRing;
+          if (!(flags[i] | code)) {
+            flags[i] |= af::ReferenceSpot;
+          }
         }
-        if (flags[i] & af::DontIntegrate) {
-          num_filtered_++;
+
+        // Update some counters
+        num_strong_ += flags[i] & af::Strong ? 1 : 0;
+        num_filtered_ += flags[i] & af::DontIntegrate ? 1 : 0;
+        num_inpowder_ += flags[i] & af::InPowderRing ? 1 : 0;
+        if (flags[i] & af::Strong) {
+          nums_inpowder_ += flags[i] & af::InPowderRing ? 1 : 0;
+          nums_reference_ += flags[i] & af::ReferenceSpot ? 1 : 0;
         } else {
-          num_integrate_++;
-        }
-        if (flags[i] & af::ReferenceSpot) {
-          nums_reference_++;
+          DIALS_ASSERT(!(flags[i] & af::ReferenceSpot));
         }
 
         // Compute stuff about the bounding box
@@ -242,8 +275,12 @@ namespace dials { namespace algorithms {
           large_z_ = std::max(large_z_, (std::size_t)(b[5] - b[4]));
         }
       }
+      num_integrate_ = num_total_ - num_filtered_;
     }
 
+    /**
+     * @returns a text summary of the preprocessing
+     */
     std::string summary() const {
 
       // Helper to print a percent
@@ -252,7 +289,7 @@ namespace dials { namespace algorithms {
         percent(double p) : p_(p) {}
         std::string s() const {
           std::stringstream ss;
-          ss << std::setprecision(2) << p_ << "%";
+          ss << std::fixed << std::setprecision(2) << p_ << "%";
           return ss.str();
         }
       };
@@ -263,9 +300,9 @@ namespace dials { namespace algorithms {
         number_and_percent(std::size_t t) : t_(t) {}
         std::string s(std::size_t n) const {
           DIALS_ASSERT(n >= 0 && n <= t_);
-          double p = t_ > 0 ? n / t_ : 0.0;
+          double p = t_ > 0 ? (double)n / (double)t_ : 0.0;
           std::stringstream ss;
-          ss << n << " (" << percent(p).s() << ") ";
+          ss << n << " (" << percent(100.0 * p).s() << ") ";
           return ss.str();
         }
       };
@@ -274,41 +311,77 @@ namespace dials { namespace algorithms {
       number_and_percent nt(num_total_);
       number_and_percent ns(num_strong_);
       std::stringstream ss;
-      ss <<
-        "Preprocessed reflections:\n"
-        "\n"
-        " Number of reflections:                  " << num_total_ << "\n"
-        " Number of strong reflections:           " << num_strong_ << "\n"
-        " Number filtered with zeta:              " << nt.s(num_filtered_) << "\n"
-        " Number of reflection to integrate:      " << nt.s(num_integrate_) << "\n"
-        " Number overlapping (background):        " << nt.s(num_overlap_bg_) << "\n"
-        " Number overlapping (foreground):        " << nt.s(num_overlap_fg_) << "\n"
-        " Number recorded on ice rings:           " << nt.s(num_icering_) << "\n"
-        " Number strong overlapping (background): " << ns.s(nums_overlap_bg_) << "\n"
-        " Number strong overlapping (foreground): " << ns.s(nums_overlap_fg_) << "\n"
-        " Number strong recorded on ice rings:    " << ns.s(nums_icering_) << "\n"
-        " Number strong for reference creation:   " << ns.s(nums_reference_) << "\n"
-        " Smallest measurement box size (x):      " << small_x_ << "\n"
-        " Smallest measurement box size (y):      " << small_y_ << "\n"
-        " Smallest measurement box size (z):      " << small_z_ << "\n"
-        " Largest measurement box size (x):       " << large_x_ << "\n"
-        " Largest measurement box size (y):       " << large_y_ << "\n"
-        " Largest measurement box size (z):       " << large_z_ << "\n"
+      ss
+        << "Preprocessed reflections:\n"
+        << "\n"
+        << filter_info_string()
+        << " Number of reflections:                  " << num_total_ << "\n"
+        << " Number of strong reflections:           " << num_strong_ << "\n"
+        << " Number filtered with zeta:              " << nt.s(num_filtered_) << "\n"
+        << " Number of reflections to integrate:     " << nt.s(num_integrate_) << "\n"
+        << " Number overlapping (background):        " << nt.s(num_overlap_bg_) << "\n"
+        << " Number overlapping (foreground):        " << nt.s(num_overlap_fg_) << "\n"
+        << " Number recorded on powder rings:        " << nt.s(num_inpowder_) << "\n"
+        << " Number strong overlapping (background): " << ns.s(nums_overlap_bg_) << "\n"
+        << " Number strong overlapping (foreground): " << ns.s(nums_overlap_fg_) << "\n"
+        << " Number strong recorded on powder rings: " << ns.s(nums_inpowder_) << "\n"
+        << " Number strong for reference creation:   " << ns.s(nums_reference_) << "\n"
+        << " Smallest measurement box size (x):      " << small_x_ << "\n"
+        << " Smallest measurement box size (y):      " << small_y_ << "\n"
+        << " Smallest measurement box size (z):      " << small_z_ << "\n"
+        << " Largest measurement box size (x):       " << large_x_ << "\n"
+        << " Largest measurement box size (y):       " << large_y_ << "\n"
+        << " Largest measurement box size (z):       " << large_z_ << "\n"
         ;
       return ss.str();
     }
 
   private:
+
+    /** @returns A summary of the input filters */
+    std::string filter_info_string() const {
+      std::stringstream ss_out;
+      for (std::size_t i = 0; i < filter_.size(); ++i) {
+        const PowderRingFilter &f = filter_[i];
+        std::stringstream ss;
+        ss << " Identified reflections on the following powder rings";
+        ss << "\n";
+        ss << "  Unit cell:   ";
+        af::double6 p = f.unit_cell().parameters();
+        ss << p[0];
+        for (std::size_t j = 1; j < p.size(); ++j) {
+          ss << ", " << p[j];
+        }
+        ss << "\n";
+        ss << "  Space group: " << f.space_group().type().number() << "\n";
+        ss << "  D min:       " << f.d_min() << "\n";
+        ss << "  D width:     " << f.width() << "\n";
+        ss << "  D spacings:  ";
+        af::shared<double> d = f.d_spacings();
+        for (std::size_t j = 0; j < d.size(); ++j) {
+          if (j % 6 == 0) {
+            ss << "\n";
+            ss << "   ";
+          }
+          ss << std::fixed << std::setprecision(5) << d[j] << " ";
+        }
+        ss << "\n";
+        ss << "\n";
+        ss_out << ss.str();
+      }
+      return ss_out.str();
+    }
+
     std::size_t num_total_;
     std::size_t num_strong_;
     std::size_t num_filtered_;
     std::size_t num_integrate_;
     std::size_t num_overlap_bg_;
     std::size_t num_overlap_fg_;
-    std::size_t num_icering_;
+    std::size_t num_inpowder_;
     std::size_t nums_overlap_bg_;
     std::size_t nums_overlap_fg_;
-    std::size_t nums_icering_;
+    std::size_t nums_inpowder_;
     std::size_t nums_reference_;
     std::size_t small_x_;
     std::size_t small_y_;
@@ -316,6 +389,8 @@ namespace dials { namespace algorithms {
     std::size_t large_x_;
     std::size_t large_y_;
     std::size_t large_z_;
+    MultiPowderRingFilter filter_;
+    double min_zeta_;
   };
 
 }}
