@@ -53,6 +53,7 @@ namespace dials { namespace af {
     UsedInRefinement = (1 << 3),
     ReferenceSpot    = (1 << 4),
     Integrated       = (1 << 5),
+    DontProcess      = (1 << 6),
   };
 
 }} // namespace dials::af
