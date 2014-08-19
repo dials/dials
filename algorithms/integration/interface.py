@@ -102,36 +102,36 @@ class Integrator(object):
     return self._manager.result()
 
 
-class ReflectionPreprocessor(object):
+# class ReflectionPreprocessor(object):
 
-  def __init__(self, reflections):
-    pass
+#   def __init__(self, reflections):
+#     pass
 
-  def summary(self):
-    format_string = (
-      'Preprocessing reflections:\n'
-      '\n'
-      ' Number of reflections:                  %d\n'
-      ' Number of strong reflections:           %d\n'
-      ' Number filtered with zeta lt %.2f:      %d (%.2f%%)\n'
-      ' Number of reflection to integrate:      %d (%.2f%%)\n'
-      ' Number overlapping (background):        %d (%.2f%%)\n'
-      ' Number overlapping (foreground):        %d (%.2f%%)\n'
-      ' Number recorded on ice rings:           %d (%.2f%%)\n'
-      ' Number clipped at task boundaries:      %d (%.2f%%)\n'
-      ' Number strong overlapping (background): %d (%.2f%%)\n'
-      ' Number strong overlapping (foreground): %d (%.2f%%)\n'
-      ' Number strong recorded on ice rings:    %d (%.2f%%)\n'
-      ' Number strong for reference creation:   %d (%.2f%%)\n'
-      ' Smallest measurement box size (x):      %d\n'
-      ' Smallest measurement box size (y):      %d\n'
-      ' Smallest measurement box size (z):      %d\n'
-      ' Largest measurement box size (x):       %d\n'
-      ' Largest measurement box size (y):       %d\n'
-      ' Largest measurement box size (z):       %d\n'
-    )
-    return format_string % (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+#   def summary(self):
+#     format_string = (
+#       'Preprocessing reflections:\n'
+#       '\n'
+#       ' Number of reflections:                  %d\n'
+#       ' Number of strong reflections:           %d\n'
+#       ' Number filtered with zeta lt %.2f:      %d (%.2f%%)\n'
+#       ' Number of reflection to integrate:      %d (%.2f%%)\n'
+#       ' Number overlapping (background):        %d (%.2f%%)\n'
+#       ' Number overlapping (foreground):        %d (%.2f%%)\n'
+#       ' Number recorded on ice rings:           %d (%.2f%%)\n'
+#       ' Number clipped at task boundaries:      %d (%.2f%%)\n'
+#       ' Number strong overlapping (background): %d (%.2f%%)\n'
+#       ' Number strong overlapping (foreground): %d (%.2f%%)\n'
+#       ' Number strong recorded on ice rings:    %d (%.2f%%)\n'
+#       ' Number strong for reference creation:   %d (%.2f%%)\n'
+#       ' Smallest measurement box size (x):      %d\n'
+#       ' Smallest measurement box size (y):      %d\n'
+#       ' Smallest measurement box size (z):      %d\n'
+#       ' Largest measurement box size (x):       %d\n'
+#       ' Largest measurement box size (y):       %d\n'
+#       ' Largest measurement box size (z):       %d\n'
+#     )
+#     return format_string % (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#                             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 
 class IntegrationTask3D(IntegrationTask):
@@ -157,6 +157,7 @@ class IntegrationManager3D(IntegrationManager):
 
   def __init__(self, experiments, reflections, num_tasks=1, max_overlap=0):
     from dials.array_family import flex
+    from dials.algorithms.integration import Preprocessor
     imagesets = experiments.imagesets()
     scans = experiments.scans()
     assert(len(imagesets) == 1)
@@ -170,7 +171,8 @@ class IntegrationManager3D(IntegrationManager):
       scan.get_array_range(),
       num_tasks,
       max_overlap)
-    self._preprocessing = ReflectionPreprocessor(reflections)
+    reflections.compute_zeta_multi(experiments)
+    self._preprocessing = Preprocessor(reflections)
     self._print_summary(num_tasks, max_overlap)
 
   def task(self, index):

@@ -10,6 +10,7 @@ sources = [
     'boost_python/interpolate_profile2d.cc',
     'boost_python/shoebox_flattener.cc',
     'boost_python/fast_integrator.cc',
+    'boost_python/preprocessor.cc',
     'boost_python/integration_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_integration_ext', 
