@@ -92,10 +92,66 @@ namespace dials { namespace algorithms {
   };
 
 
+  /**
+   * A class to encapsulate multiple powder ring filters
+   */
+  class MultiPowderRingFilter {
+  public:
+
+    MultiPowderRingFilter() {}
+
+    /**
+     * Add another powder ring filter.
+     */
+    void add(const PowderRingFilter &filter) {
+      filters_.push_back(filter);
+    }
+
+    /**
+     * @returns The powder ring filter at index
+     */
+    const PowderRingFilter& operator[](std::size_t index) const {
+      DIALS_ASSERT(index < filters_.size());
+      return filters_[index];
+    }
+
+    /**
+     * @returns The powder ring filter at index
+     */
+    PowderRingFilter& operator[](std::size_t index) {
+      DIALS_ASSERT(index < filters_.size());
+      return filters_[index];
+    }
+
+    /**
+     * @returns True if within powder ring.
+     */
+    bool operator()(double d) const {
+      for (std::size_t i = 0; i < filters_.size(); ++i) {
+        if (filters_[i](d)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /** @returns The number of filters */
+    std::size_t size() const {
+      return filters_.size();
+    }
+
+  private:
+    af::shared<PowderRingFilter> filters_;
+  };
+
+
   class Preprocessor {
   public:
 
-    Preprocessor(af::reflection_table reflections)
+    Preprocessor(
+            af::reflection_table reflections,
+            const MultiPowderRingFilter &filter,
+            double min_zeta)
         : num_total_(0),
           num_strong_(0),
           num_filtered_(0),
@@ -103,7 +159,6 @@ namespace dials { namespace algorithms {
           num_overlap_bg_(0),
           num_overlap_fg_(0),
           num_icering_(0),
-          num_clipped_(0),
           nums_overlap_bg_(0),
           nums_overlap_fg_(0),
           nums_icering_(0),
@@ -114,6 +169,9 @@ namespace dials { namespace algorithms {
           large_x_(0),
           large_y_(0),
           large_z_(0) {
+
+      // Check the input
+      DIALS_ASSERT(min_zeta > 0);
 
       // Check reflection table contains expected properties
       DIALS_ASSERT(reflections.is_consistent());
@@ -226,7 +284,6 @@ namespace dials { namespace algorithms {
         " Number overlapping (background):        " << nt.s(num_overlap_bg_) << "\n"
         " Number overlapping (foreground):        " << nt.s(num_overlap_fg_) << "\n"
         " Number recorded on ice rings:           " << nt.s(num_icering_) << "\n"
-        " Number clipped at task boundaries:      " << nt.s(num_clipped_) << "\n"
         " Number strong overlapping (background): " << ns.s(nums_overlap_bg_) << "\n"
         " Number strong overlapping (foreground): " << ns.s(nums_overlap_fg_) << "\n"
         " Number strong recorded on ice rings:    " << ns.s(nums_icering_) << "\n"
@@ -249,7 +306,6 @@ namespace dials { namespace algorithms {
     std::size_t num_overlap_bg_;
     std::size_t num_overlap_fg_;
     std::size_t num_icering_;
-    std::size_t num_clipped_;
     std::size_t nums_overlap_bg_;
     std::size_t nums_overlap_fg_;
     std::size_t nums_icering_;

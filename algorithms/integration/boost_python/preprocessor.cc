@@ -30,10 +30,20 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("d_spacings", &PowderRingFilter::d_spacings)
       .def("d_min", &PowderRingFilter::d_min)
       .def("width", &PowderRingFilter::width)
+      .def("__call__", &PowderRingFilter::operator())
+      ;
+
+    class_<MultiPowderRingFilter>("MultiPowderRingFilter")
+      .def("add", &MultiPowderRingFilter::add)
+      /* .def("__getitem__", &MultiPowderRingFilter::operator[]) */
+      .def("__call__", &MultiPowderRingFilter::operator())
+      .def("__len__", &MultiPowderRingFilter::size)
       ;
 
     class_<Preprocessor>("Preprocessor", no_init)
-      .def(init<af::reflection_table>())
+      .def(init<af::reflection_table,
+                const MultiPowderRingFilter&,
+                double>())
       .def("summary", &Preprocessor::summary)
       ;
   }
