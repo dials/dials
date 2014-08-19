@@ -272,7 +272,7 @@ namespace dials { namespace af { namespace boost_python {
         .value("reference_spot", ReferenceSpot)
         .value("integrated", Integrated)
         .value("dont_integrate", DontIntegrate)
-        .value("in_ice_ring", InIceRing)
+        .value("in_powder_ring", InPowderRing)
         ;
 
       // return the wrapped class

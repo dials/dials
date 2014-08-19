@@ -55,7 +55,7 @@ namespace dials { namespace af {
     ReferenceSpot    = (1 << 5),
     Integrated       = (1 << 6),
     DontIntegrate    = (1 << 7),
-    InIceRing        = (1 << 8),
+    InPowderRing     = (1 << 8),
   };
 
 }} // namespace dials::af
