@@ -15,9 +15,11 @@ phil_scope = phil.parse('''
       .help = "The number of processes to use"
   }
 
-  block_size = 10
+  block {
+    size = 10
     .type = float
     .help = "The block size in rotation angle (degrees)."
+  }
 
   filter {
 
@@ -157,6 +159,7 @@ class IntegrationTask3D(IntegrationTask):
     self._task = task
 
   def __call__(self):
+    from dials.array_family import flex
 
     print "=" * 80
     print ""
@@ -166,17 +169,17 @@ class IntegrationTask3D(IntegrationTask):
       print "Reading Image % i" % i
       imageset[i]
 
-    return IntegrationResult(self._index, None)
+    return IntegrationResult(self._index, flex.reflection_table())
 
 
 class IntegrationManager3D(IntegrationManager):
+  ''' An class to manage 3D integration. book-keeping '''
 
   def __init__(self, experiments, reflections, params):
+    ''' Initialise the manager. '''
+    from dials.algorithms.integration import IntegrationManagerData3D
     from dials.array_family import flex
-    from dials.algorithms.integration import Preprocessor
-    from dials.algorithms.integration import MultiPowderRingFilter
-    from dials.algorithms.integration import PowderRingFilter
-    block_size = params.block_size
+    block_size = params.block.size
     imagesets = experiments.imagesets()
     scans = experiments.scans()
     assert(len(imagesets) == 1)
@@ -185,81 +188,57 @@ class IntegrationManager3D(IntegrationManager):
     scan = scans[0]
     self._experiments = experiments
     self._reflections = reflections
-    self._tasks = self._compute_tasks(
+    reflections.compute_zeta_multi(experiments)
+    reflections.compute_d(experiments)
+    self._data = IntegrationManagerData3D(
+      self._reflections,
       scan.get_oscillation(deg=True),
       scan.get_array_range(),
       block_size)
-    self._finished = flex.bool(len(self._tasks), False)
-    reflections.compute_zeta_multi(experiments)
-    reflections.compute_d(experiments)
     self._print_summary(block_size)
 
   def task(self, index):
+    ''' Get a task. '''
     assert(0 <= index < len(self))
     return IntegrationTask3D(
       index,
       self._experiments,
-      self._tasks[index])
+      self._data.block(index))
 
   def tasks(self):
+    ''' Iterate through the tasks. '''
     for i in range(len(self)):
       yield self.task(i)
 
   def accumulate(self, result):
-    assert(0 <= result.index < len(self))
-    self._finished[result.index] = True
+    ''' Accumulate the results. '''
+    self._data.accumulate(result.index, result.reflections)
 
   def result(self):
-    assert(self.finished())
-    return self._reflections
+    ''' Return the result. '''
+    return self._data.data()
 
   def finished(self):
-    return self._finished.all_eq(True)
+    ''' Return if all tasks have finished. '''
+    return self._data.finished()
 
   def __len__(self):
-    return len(self._finished)
-
-  def _compute_tasks(self, oscillation, array_range, block_size):
-    ''' Compute the number of blocks. '''
-    from math import ceil
-    phi0, dphi = oscillation
-    frame0, frame1 = array_range
-    nframes = frame1 - frame0
-    half_block_size = block_size / 2.0
-    assert(nframes > 0)
-    assert(half_block_size >= dphi)
-    half_block_length = float(half_block_size) / dphi
-    nblocks = int(ceil(nframes / half_block_length))
-    assert(nblocks <= nframes)
-    half_block_length = int(ceil(nframes / nblocks))
-    blocks = [frame0]
-    for i in range(nblocks):
-      frame = frame0 + (i + 1) * half_block_length
-      if frame > frame0+nframes:
-        frame = frame0+nframes
-      blocks.append(frame)
-      if frame == frame0+nframes:
-        break
-    assert(all(b > a for a, b in zip(blocks, blocks[1:])))
-    tasks = []
-    for i in range(len(blocks)-2):
-      i0 = blocks[i]
-      i1 = blocks[i+2]
-      tasks.append((i0, i1))
-    return tasks
+    ''' Return the number of tasks. '''
+    return len(self._data)
 
   def _print_summary(self, block_size):
     from math import floor, log10
+    tasks = [self._data.block(i) for i in range(len(self._data))]
     scans = self._experiments.scans()
     assert(len(scans) == 1)
     scan = scans[0]
-    npad1 = int(floor(log10(max([max(t) for t in self._tasks])))) + 1
+    npad1 = int(floor(log10(max([max(t) for t in tasks])))) + 1
     npad2 = int(floor(log10(max(scan.get_oscillation_range())))) + 3
     format_string = ' %%%dd -> %%%dd (%%%d.2f -> %%%d.2f degrees)'
     format_string = format_string % (npad1, npad1, npad2, npad2)
     tasks_string = []
-    for i in range(len(self._tasks)):
-      f0, f1 = self._tasks[i]
+    for i in range(len(tasks)):
+      f0, f1 = tasks[i]
       p0 = scan.get_angle_from_array_index(f0)
       p1 = scan.get_angle_from_array_index(f1)
       tasks_string.append(format_string % (f0, f1, p0, p1))

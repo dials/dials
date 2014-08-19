@@ -24,6 +24,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_shoebox_flattener();
   void export_fast_integrator();
   void export_preprocessor();
+  void export_interface();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
@@ -36,6 +37,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_shoebox_flattener();
     export_fast_integrator();
     export_preprocessor();
+    export_interface();
   }
 
 }}} // namespace = dials::algorithms::boost_python
