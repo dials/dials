@@ -49,7 +49,7 @@ def show_isig_rmsd(integrated_data):
 if __name__ == '__main__':
   import sys
   if len(sys.argv) != 2:
-    raise RuntimeError, '%s integrated.pickle'
+    raise RuntimeError, '%s integrated.pickle' % sys.argv[0]
 
   import cPickle as pickle
   from dials.array_family import flex
