@@ -39,7 +39,7 @@ namespace dials { namespace af { namespace boost_python {
   template <typename T>
   T* make_from_observation_and_shoebox(
       const af::const_ref<Observation> &o,
-      const af::const_ref< Shoebox<double> > &s) {
+      const af::const_ref< Shoebox<> > &s) {
     // FIXME Should remove as we don't know whether intensity is summed or
     // profile fitted. In any case observation model should be deprecated.
     DIALS_ASSERT(o.size() == s.size());

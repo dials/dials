@@ -23,11 +23,11 @@ namespace dials { namespace algorithms {
    * @param reflections The reflection list
    * @param value The value to set the background pixels to
    */
-  inline
+  template <typename FloatType>
   void set_shoebox_background_value(
-      af::ref< Shoebox<> > shoeboxes, Shoebox<>::float_type value) {
+      af::ref< Shoebox<FloatType> > shoeboxes, FloatType value) {
     for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
-      af::ref< Shoebox<>::float_type, af::c_grid<3> > background =
+      af::ref< FloatType, af::c_grid<3> > background =
         shoeboxes[i].background.ref();
       for (std::size_t j = 0; j < background.size(); ++j) {
         background[j] = value;

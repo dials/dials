@@ -35,7 +35,7 @@ namespace dials { namespace algorithms {
   class ProfileFittingReciprocalSpace {
   public:
 
-    typedef Shoebox<>::float_type FloatType;
+    typedef double FloatType;
     typedef ReferenceLocator<FloatType, GridSampler> locator_type;
     //typedef ReferenceLocator<FloatType, XdsCircleSampler> locator_type;
 

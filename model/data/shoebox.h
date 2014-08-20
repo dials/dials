@@ -59,7 +59,7 @@ namespace dials { namespace model {
   /**
    * A class to hold shoebox information
    */
-  template <typename FloatType = double>
+  template <typename FloatType = float>
   struct Shoebox {
 
     typedef FloatType float_type;

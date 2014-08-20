@@ -19,7 +19,6 @@
 #include <scitbx/array_family/simple_tiny_io.h>
 #include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
-#include <dials/config.h>
 
 namespace dials { namespace model {
 
@@ -452,7 +451,7 @@ namespace dials { namespace model {
     int crystal_;
   };
 
-  typedef ReflectionBase2<ProfileFloatType> Reflection;
+  typedef ReflectionBase2<> Reflection;
 
   /** Print reflection to std::out */
   inline

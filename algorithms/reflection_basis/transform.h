@@ -176,10 +176,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
             //const af::const_ref< bool, af::c_grid<3> > &mask) {
       //init(spec, s1, phi, bbox);
       //call(image, mask);
-    //}
-
-    //Forward(const TransformSpec<FloatType> &spec,
-            //const vec3<double> &s1, double phi, int6 bbox,
             //const af::const_ref< FloatType, af::c_grid<3> > &image,
             //const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
             //const af::const_ref< bool, af::c_grid<3> > &mask) {
@@ -560,7 +556,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     Forward(const TransformSpec<FloatType> &spec,
             const vec3<double> &s1, double phi,
-            const Shoebox<FloatType> &shoebox) {
+            const Shoebox<> &shoebox) {
       init(spec, s1, phi, shoebox.bbox);
       call(shoebox);
     }
@@ -584,7 +580,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs,
-            const Shoebox<FloatType> &shoebox) {
+            const Shoebox<> &shoebox) {
       init(spec, cs, shoebox.bbox);
       call(shoebox);
     }
@@ -749,7 +745,13 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       for (std::size_t i = 0; i < mask_ref.size(); ++i) {
         mask_ref[i] = (temp_ref[i] & Valid && temp_ref[i] & Foreground);
       }
-      call(shoebox.data.const_ref(), shoebox.background.const_ref(), mask_ref);
+
+      af::versa< FloatType, af::c_grid<3> > data(shoebox.data.accessor());
+      af::versa< FloatType, af::c_grid<3> > bgrd(shoebox.background.accessor());
+      std::copy(shoebox.data.begin(), shoebox.data.end(), data.begin());
+      std::copy(shoebox.background.begin(), shoebox.background.end(), bgrd.begin());
+
+      call(data.const_ref(), bgrd.const_ref(), mask_ref);
     }
 
     /**

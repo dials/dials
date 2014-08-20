@@ -23,9 +23,14 @@ def getshoebox(self):
   result = []
   for r in self:
     sbox = Shoebox(r.bounding_box)
-    sbox.data = r.shoebox
-    sbox.mask = r.shoebox_mask
-    sbox.background = r.shoebox_background
+    if isinstance(sbox.data, flex.float):
+      sbox.data = r.shoebox.as_float()
+      sbox.mask = r.shoebox_mask
+      sbox.background = r.shoebox_background.as_float()
+    else:
+      sbox.data = r.shoebox
+      sbox.mask = r.shoebox_mask
+      sbox.background = r.shoebox_background
     result.append(sbox)
   return result
 
@@ -44,9 +49,14 @@ def setxyzcalpx(self, data):
 def setshoebox(self, data):
   assert(len(self) == len(data))
   for r, d in zip(self, data):
-    r.shoebox = d.data
-    r.shoebox_mask = d.mask
-    r.shoebox_background = d.background
+    if isinstance(d.data, flex.float):
+      r.shoebox = d.data.as_double()
+      r.shoebox_mask = d.mask
+      r.shoebox_background = d.background.as_double()
+    else:
+      r.shoebox = d.data
+      r.shoebox_mask = d.mask
+      r.shoebox_background = d.background
 
 def reflection_list_to_table(self, centroid_is_mm=False):
   ''' Convert a reflection list to a table. '''

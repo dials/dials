@@ -20,7 +20,7 @@ namespace dials { namespace algorithms { namespace background {
   void export_helpers()
   {
     def("set_shoebox_background_value",
-      &set_shoebox_background_value, (
+      &set_shoebox_background_value<float>, (
         arg("reflections"), arg("value")));
   }
 

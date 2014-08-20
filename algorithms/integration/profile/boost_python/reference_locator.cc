@@ -14,7 +14,6 @@
 #include <dials/algorithms/integration/profile/reference_locator.h>
 #include <dials/algorithms/integration/profile/grid_sampler.h>
 #include <dials/algorithms/integration/profile/xds_circle_sampler.h>
-#include <dials/config.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -92,9 +91,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_reference_locator()
   {
-    reference_locator_wrapper<ProfileFloatType, GridSampler>(
+    reference_locator_wrapper<double, GridSampler>(
       "GridReferenceLocator");
-    reference_locator_wrapper<ProfileFloatType, XdsCircleSampler>(
+    reference_locator_wrapper<double, XdsCircleSampler>(
       "XdsCircleReferenceLocator");
   }
 

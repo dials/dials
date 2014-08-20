@@ -11,7 +11,6 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/reflection_basis/map_frames.h>
-#include <dials/config.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
   namespace transform { namespace boost_python {
@@ -20,8 +19,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   void export_map_frames()
   {
-    typedef MapFramesForward<ProfileFloatType> MapFramesForwardType;
-    typedef MapFramesReverse<ProfileFloatType> MapFramesReverseType;
+    typedef MapFramesForward<> MapFramesForwardType;
+    typedef MapFramesReverse<> MapFramesReverseType;
 
     class_<MapFramesForwardType>(
         "MapFramesForward", no_init)

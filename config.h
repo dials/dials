@@ -3,7 +3,7 @@
 
 namespace dials {
 
-  typedef double ProfileFloatType;
+  typedef float ProfileFloatType;
 
 } // namespace dials
 

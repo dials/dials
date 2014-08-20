@@ -76,7 +76,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   }
 
   void export_transform() {
-    forward_wrapper<Shoebox<>::float_type>("Forward");
+    forward_wrapper<double>("Forward");
   }
 
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

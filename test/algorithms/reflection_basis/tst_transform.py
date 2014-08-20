@@ -14,9 +14,9 @@ def evaluate_gaussian(x, a, x0, sx):
 
 def gaussian(size, a, x0, sx):
 
-  from scitbx.array_family import flex
+  from dials.array_family import flex
 
-  result = flex.double(flex.grid(size))
+  result = flex.real(flex.grid(size))
   index = [0 for i in range(len(size))]
   while True:
     result[index[::-1]] = evaluate_gaussian(index[::-1], a, x0, sx)
@@ -81,7 +81,7 @@ class TestForward(object):
   def tst_conservation_of_counts(self):
 
     from scitbx import matrix
-    from random import uniform
+    from random import uniform, seed
     from dials.algorithms.reflection_basis import CoordinateSystem
     from dials.algorithms.reflection_basis import transform
     from scitbx.array_family import flex
@@ -144,7 +144,7 @@ class TestForward(object):
             mask[k,j,i] = inside
 
       # Transform the image to the grid
-      transformed = transform.Forward(self.spec, cs, bbox, image, mask)
+      transformed = transform.Forward(self.spec, cs, bbox, image.as_double(), mask)
       grid = transformed.profile()
 
       # Get the sums and ensure they're the same
@@ -329,7 +329,8 @@ class TestForward(object):
             mask[k,j,i] = inside
 
       # Transform the image to the grid
-      transformed = transform.Forward(self.spec, cs, bbox, image, background, mask)
+      transformed = transform.Forward(self.spec, cs, bbox, image.as_double(),
+                                      background.as_double(), mask)
       igrid = transformed.profile()
       bgrid = transformed.background()
 

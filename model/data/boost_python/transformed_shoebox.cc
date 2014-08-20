@@ -12,7 +12,6 @@
 #include <boost/python/def.hpp>
 #include <scitbx/array_family/flex_types.h>
 #include <dials/model/data/transformed_shoebox.h>
-#include <dials/config.h>
 
 namespace dials { namespace model { namespace boost_python {
 

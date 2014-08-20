@@ -30,8 +30,11 @@ namespace dials { namespace algorithms { namespace background {
   /**
    * Class to create background shoebox
    */
+  template <typename FloatType = float>
   class Creator {
   public:
+
+    typedef FloatType float_type;
 
     /**
      * Initialise with the desired modeller.
@@ -61,7 +64,7 @@ namespace dials { namespace algorithms { namespace background {
      * @return Success True/False per shoebox
      */
     af::shared<bool> operator()(
-        const af::const_ref< Shoebox<> > &shoeboxes,
+        const af::const_ref< Shoebox<FloatType> > &shoeboxes,
         af::ref<double> mse) const {
       af::shared<bool> result(shoeboxes.size(), true);
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
@@ -79,7 +82,7 @@ namespace dials { namespace algorithms { namespace background {
      * Create the background for the shoebox
      * @param shoebox The shoebox
      */
-    double operator()(Shoebox<> shoebox) const {
+    FloatType operator()(Shoebox<FloatType> shoebox) const {
       return this->operator()(
           shoebox.data.const_ref(),
           shoebox.mask.ref(),
@@ -92,14 +95,18 @@ namespace dials { namespace algorithms { namespace background {
      * @param mask The shoebox mask values
      * @param background The shoebox background
      */
-    double operator()(
-        const af::const_ref< double, af::c_grid<3> > &data,
+    FloatType operator()(
+        const af::const_ref< FloatType, af::c_grid<3> > &data_in,
         af::ref< int, af::c_grid<3> > mask,
-        af::ref< double, af::c_grid<3> > background) const {
+        af::ref< FloatType, af::c_grid<3> > background) const {
+
+      // Copy the array to a double
+      af::versa< double, af::c_grid<3> > data(data_in.accessor());
+      std::copy(data_in.begin(), data_in.end(), data.begin());
 
       // Do outlier rejection on the pixels
       if (rejector_) {
-        rejector_->mark(data, mask);
+        rejector_->mark(data.const_ref(), mask);
       } else {
         for (std::size_t k = 0; k < mask.accessor()[0]; ++k) {
           for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
@@ -120,8 +127,8 @@ namespace dials { namespace algorithms { namespace background {
       }
 
       // Create the background model
-      boost::shared_ptr<Model> model =
-        modeller_->create(data, bgmask.const_ref());
+      boost::shared_ptr<Model> model = modeller_->create(
+          data.const_ref(), bgmask.const_ref());
 
       // Populate the background shoebox
       double mse = 0.0;
