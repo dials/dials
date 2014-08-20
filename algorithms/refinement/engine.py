@@ -640,6 +640,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
     # add an attribute to the journal
     self.history.add_column("mu")
+    self.history.add_column("nu")
 
     #FIXME need a much neater way of doing this stuff through
     #inheritance
@@ -652,7 +653,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     self.build_up()
     a = self.normal_matrix_packed_u()
     self.mu = self.tau*flex.max(a.matrix_packed_u_diagonal())
-    #self.history.set_last_cell("mu", self.mu)
+
     while True:
 
       # set functional and gradients for the step
@@ -688,6 +689,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
       # extra journalling post solve
       self.history.set_last_cell("mu", self.mu)
+      self.history.set_last_cell("nu", nu)
       if self.history.has_key("solution"):
         self.history.set_last_cell("solution", self.actual.step().deep_copy())
       self.history.set_last_cell("solution_norm", self.step().norm())
