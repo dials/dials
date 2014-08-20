@@ -16,9 +16,10 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <dials/algorithms/filtering/index_generator.h>
+/* #include <cctbx/miller/index_generator.h> */
 #include <cctbx/uctbx.h>
 #include <cctbx/sgtbx/space_group.h>
+#include <cctbx/sgtbx/space_group_type.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 
@@ -54,16 +55,16 @@ namespace dials { namespace algorithms {
       uc = sg.average_unit_cell(uc);
 
       // Generate a load of indices
-      cctbx::miller::index_generator generator(uc, sg.type(), false, d_min);
-      af::shared< cctbx::miller::index<> > indices = generator.to_array();
+      /* cctbx::miller::index_generator generator(uc, sg.type(), false, d_min); */
+      /* af::shared< cctbx::miller::index<> > indices = generator.to_array(); */
 
-      // Calculate the d spacings
-      for (std::size_t i = 0; i < indices.size(); ++i) {
-        d_spacings_.push_back(uc.d(indices[i]));
-      }
+      /* // Calculate the d spacings */
+      /* for (std::size_t i = 0; i < indices.size(); ++i) { */
+      /*   d_spacings_.push_back(uc.d(indices[i])); */
+      /* } */
 
-      // Sort the d spacings by resolution
-      std::sort(d_spacings_.begin(), d_spacings_.end());
+      /* // Sort the d spacings by resolution */
+      /* std::sort(d_spacings_.begin(), d_spacings_.end()); */
     }
 
     /**
