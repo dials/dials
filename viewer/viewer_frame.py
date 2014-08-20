@@ -37,11 +37,8 @@ class ReflectionFrame(wx.Frame):
     radio4 = wx.RadioButton(self, -1, "3 layers of mask")
 
     img_tmp = wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (32, 32))
-
     btn_nxt_slice = wx.lib.buttons.GenBitmapTextButton(self
                    , label = 'prueba', bitmap = img_tmp)
-
-    #btn_nxt_slice = wx.BitmapButton(self, bitmap = img_tmp)
 
     btn_prv_slice = wx.Button(self, -1, "<--  slice")
 
