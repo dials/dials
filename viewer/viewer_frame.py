@@ -9,6 +9,7 @@
 #  included in the root directory of this package."
 
 import wx
+from wx.lib.buttons import GenBitmapTextButton
 from dials.viewer.viewer_utilities \
      import np_to_bmp
 
@@ -35,7 +36,13 @@ class ReflectionFrame(wx.Frame):
     radio3 = wx.RadioButton(self, -1, "3 layers of background")
     radio4 = wx.RadioButton(self, -1, "3 layers of mask")
 
-    btn_nxt_slice = wx.Button(self, -1, "slice  -->")
+    img_tmp = wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (32, 32))
+
+    btn_nxt_slice = wx.lib.buttons.GenBitmapTextButton(self
+                   , label = 'prueba', bitmap = img_tmp)
+
+    #btn_nxt_slice = wx.BitmapButton(self, bitmap = img_tmp)
+
     btn_prv_slice = wx.Button(self, -1, "<--  slice")
 
     self.data_txt_01 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
