@@ -36,7 +36,6 @@ class Journal(dict):
   while entering data to ensure the table remains consistent. Methods inherited
   from dict are not hidden for ease of use of this object when returned to the
   user."""
-  _step = -1
   reason_for_termination = None
   _nrows = 0
 
@@ -150,7 +149,7 @@ class Refinery(object):
     self.prepare_for_step()
 
   def get_num_steps(self):
-    return self.history._step
+    return self.history.get_nrows() - 1
 
   def prepare_for_step(self):
     """Update the parameterisation and prepare the target function"""
@@ -168,7 +167,6 @@ class Refinery(object):
 
     # add step quantities to journal
     self.history.add_row()
-    self.history._step += 1
     self.history.set_last_cell("num_reflections", self._target.get_num_matches())
     self.history.set_last_cell("rmsd", self._target.rmsds())
     self.history.set_last_cell("parameter_vector", self._parameters.get_param_vals())
@@ -337,7 +335,7 @@ class AdaptLbfgs(Refinery):
 
     self.update_journal()
     if self._verbosity > 0:
-      print self.history._step,
+      print self.history.get_nrows() - 1,
       sys.stdout.flush()
 
     if self.test_for_termination():
@@ -573,7 +571,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       # standard journalling
       self.update_journal()
       if self._verbosity > 0:
-        print self.history._step,
+        print self.history.get_nrows() - 1,
         sys.stdout.flush()
 
       # add cached items to the journal
@@ -675,7 +673,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       # standard journalling
       self.update_journal()
       if self._verbosity > 0:
-        print self.history._step,
+        print self.history.get_nrows() - 1,
         sys.stdout.flush()
 
       # add cached items to the journal
