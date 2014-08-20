@@ -24,10 +24,14 @@ class ReflectionFrame(wx.Frame):
     self.MaxImageSizeX = 320
     self.MaxImageSizeY = 260
 
-    nxt_ref = "Reflection -->"
-    btn_nxt_refl = wx.Button(self, -1, nxt_ref)
-    prv_ref = "<-- Reflection"
-    btn_prv_refl = wx.Button(self, -1, prv_ref)
+    lbl_ref = "Reflection"
+
+    img_tmp = wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (16, 16))
+    btn_nxt_refl = wx.lib.buttons.GenBitmapTextButton(self
+                   , label = lbl_ref, bitmap = img_tmp)
+    img_tmp = wx.ArtProvider.GetBitmap(wx.ART_GO_BACK, wx.ART_OTHER, (16, 16))
+    btn_prv_refl = wx.lib.buttons.GenBitmapTextButton(self
+                   , label = lbl_ref, bitmap = img_tmp)
     btn_read = wx.Button(self, -1, "Reflection #")
 
     radio1 = wx.RadioButton(self, -1, "data, background, mask"
@@ -36,11 +40,13 @@ class ReflectionFrame(wx.Frame):
     radio3 = wx.RadioButton(self, -1, "3 layers of background")
     radio4 = wx.RadioButton(self, -1, "3 layers of mask")
 
-    img_tmp = wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (32, 32))
+    img_tmp = wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (16, 16))
     btn_nxt_slice = wx.lib.buttons.GenBitmapTextButton(self
-                   , label = 'prueba', bitmap = img_tmp)
+                   , label = 'slice', bitmap = img_tmp)
 
-    btn_prv_slice = wx.Button(self, -1, "<--  slice")
+    img_tmp = wx.ArtProvider.GetBitmap(wx.ART_GO_BACK, wx.ART_OTHER, (16, 16))
+    btn_prv_slice = wx.lib.buttons.GenBitmapTextButton(self
+                   , label = 'slice', bitmap = img_tmp)
 
     self.data_txt_01 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
     self.data_txt_02 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
