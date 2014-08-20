@@ -11,6 +11,7 @@ tst_list = (
     "$D/test/framework/tst_config.py",
     "$D/test/command_line/tst_parameters.py",
     "$D/test/command_line/tst_import.py",
+    "$D/test/command_line/tst_dials_show_isig_rmsd.py",
     "$D/test/command_line/tst_integrate.py",
     "$D/test/command_line/tst_detector_max_resolution.py",
     "$D/test/command_line/tst_predict.py",
