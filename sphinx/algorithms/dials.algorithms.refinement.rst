@@ -9,6 +9,11 @@ dials.algorithms.refinement
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: dials.algorithms.refinement.weighting_strategies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: dials.algorithms.refinement.refiner
     :members:
     :undoc-members:
