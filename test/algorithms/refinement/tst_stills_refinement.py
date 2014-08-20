@@ -204,19 +204,7 @@ refiner = RefinerFactory.from_parameters_data_experiments(params,
 history = refiner.run()
 
 # regression tests
-try:
-  assert len(history["rmsd"]) == 9
-except AssertionError:
-  msg = """
-DEBUGGING INFORMATION 20-AUG-14
-rmsds="""
-  msg += str(history["rmsd"])
-  msg += "\nmu="
-  msg += str(list(history["mu"]))
-  msg += "\nnu="
-  msg += str(list(history["nu"]))
-  msg += "\nEND DEBUGGING INFORMATION 20-AUG-14"
-  raise AssertionError(msg)
+assert len(history["rmsd"]) == 9
 
 refined_crystal = refiner.get_experiments()[0].crystal
 uc1 = refined_crystal.get_unit_cell()
