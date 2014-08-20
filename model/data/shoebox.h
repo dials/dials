@@ -19,6 +19,7 @@
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
 #include <dials/algorithms/integration/summation.h>
 #include <dials/model/data/mask_code.h>
+#include <dials/config.h>
 #include <dials/error.h>
 
 namespace dials { namespace model {
@@ -59,7 +60,7 @@ namespace dials { namespace model {
   /**
    * A class to hold shoebox information
    */
-  template <typename FloatType = float>
+  template <typename FloatType = ProfileFloatType>
   struct Shoebox {
 
     typedef FloatType float_type;
