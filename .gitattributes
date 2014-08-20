@@ -357,6 +357,7 @@ command_line/refine_bravais_settings.py -text
 command_line/reflection_viewer.py -text
 command_line/reindex.py -text
 command_line/show_extensions.py -text
+command_line/show_isig_rmsd.py -text
 command_line/show_models.py -text
 command_line/show_profiles.py -text
 command_line/show_spots.py -text
