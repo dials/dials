@@ -576,11 +576,9 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     def fget(self):
       return self._mu
     def fset(self, value):
-      self.history.mu.append(value)
       self._mu = value
 
   def run(self):
-
 
     # add an attribute to the journal
     self.history.mu = flex.double()
@@ -596,6 +594,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     self.build_up()
     a = self.normal_matrix_packed_u()
     self.mu = self.tau*flex.max(a.matrix_packed_u_diagonal())
+    self.history.mu.append(value)
     while True:
 
       # set functional and gradients for the step
