@@ -280,7 +280,7 @@ refiner = RefinerFactory.from_parameters_data_experiments(params,
   obs_refs.to_table(centroid_is_mm=True), experiments, verbosity=0)
 
 history = refiner.run()
-#plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
+#plt = refiner.parameter_correlation_plot(len(history["parameter_correlation"])-1)
 #plt.show()
 
 #print "Refinement has completed with the following geometry:"

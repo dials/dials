@@ -28,9 +28,58 @@ OBJECTIVE_INCREASE = "Refinement failure: objective increased"
 MAX_ITERATIONS = "Reached maximum number of iterations"
 MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
 
-class Journal(object):
-  """Container in which to store information about refinement history"""
-  pass
+class Journal(dict):
+  """Container in which to store information about refinement history.
+
+  This is simply a dict but provides some extra methods for access that
+  maintain values as columns in a table. Refinery classes will use these methods
+  while entering data to ensure the table remains consistent. Methods inherited
+  from dict are not hidden for ease of use of this object when returned to the
+  user."""
+  _step = -1
+  reason_for_termination = None
+  _nrows = 0
+
+  def get_nrows(self):
+    return self._nrows
+
+  def add_column(self, key):
+    """Add a new column named by key"""
+    self[key] = [None] * self._nrows
+
+    return
+
+  def add_row(self):
+    """Add an element to the end of each of the columns. Fail if any columns
+    are the wrong length"""
+
+    for k in self.keys():
+      assert len(self[k]) == self._nrows
+      self[k].append(None)
+    self._nrows += 1
+
+    return
+
+  def del_last_row(self):
+    """Delete the last element from the each of the columns. Fail if any columns
+    are the wrong length"""
+
+    if self._nrows == 0: return None
+    for k in self.keys():
+      assert len(self[k]) == self._nrows
+      self[k].pop()
+    self._nrows -= 1
+
+    return
+
+  def set_last_cell(self, key, value):
+    """Set last cell in column given by key to value. Fail if the column is the
+    wrong length"""
+
+    assert len(self[key]) == self._nrows
+    self[key][-1] = value
+
+    return
 
 class Refinery(object):
   """Interface for Refinery objects. This should be subclassed and the run
@@ -84,19 +133,19 @@ class Refinery(object):
     # attributes for journalling functionality, based on lstbx's
     # journaled_non_linear_ls class
     self.history = Journal()
-    self.history._step = -1
-    self.history.num_reflections = []
-    self.history.objective = flex.double()
-    self.history.gradient = [] if track_gradient else None
-    self.history.gradient_norm = flex.double()
-    self.history.parameter_correlation = [] if track_parameter_correlation \
-      else None
-    self.history.solution = [] if track_step else None
-    self.history.solution_norm = flex.double()
-    self.history.parameter_vector = []
-    self.history.parameter_vector_norm = flex.double()
-    self.history.rmsd = []
-    self.history.reason_for_termination = None
+    self.history.add_column("num_reflections")
+    self.history.add_column("objective")#flex.double()
+    if track_gradient:
+      self.history.add_column("gradient")
+    self.history.add_column("gradient_norm")#flex.double()
+    if track_parameter_correlation:
+      self.history.add_column("parameter_correlation")
+    if track_step:
+      self.history.add_column("solution")
+    self.history.add_column("solution_norm")#flex.double()
+    self.history.add_column("parameter_vector")
+    self.history.add_column("parameter_vector_norm")#flex.double()
+    self.history.add_column("rmsd")
 
     self.prepare_for_step()
 
@@ -118,16 +167,17 @@ class Refinery(object):
     """Append latest step information to the journal attributes"""
 
     # add step quantities to journal
+    self.history.add_row()
     self.history._step += 1
-    self.history.num_reflections.append(self._target.get_num_matches())
-    self.history.rmsd.append(self._target.rmsds())
-    self.history.parameter_vector.append(self._parameters.get_param_vals())
-    self.history.objective.append(self._f)
-    if self.history.gradient is not None:
-      self.history.gradient.append(self._g)
-    if self.history.parameter_correlation is not None:
+    self.history.set_last_cell("num_reflections", self._target.get_num_matches())
+    self.history.set_last_cell("rmsd", self._target.rmsds())
+    self.history.set_last_cell("parameter_vector", self._parameters.get_param_vals())
+    self.history.set_last_cell("objective", self._f)
+    if self.history.has_key("gradient"):
+      self.history.set_last_cell("gradient", self._g)
+    if self.history.has_key("parameter_correlation"):
       if self._jacobian is not None:
-        self.history.parameter_correlation.append(
+        self.history.set_last_cell("parameter_correlation",
           self._packed_corr_mat(self._jacobian))
 
     return
@@ -154,11 +204,12 @@ class Refinery(object):
     the Jacobian that was stored in the journal at the given step number. If
     not available, return None"""
 
-    if self.history.parameter_correlation is None: return None
+    if self.history.has_key("parameter_correlation") is False: return None
     try:
-      packed = self.history.parameter_correlation[step]
+      packed = self.history["parameter_correlation"][step]
     except IndexError:
       return None
+    if packed is None: return None
     nparam = len(self.x)
     corr_mat = flex.double(flex.grid(nparam, nparam))
     i = 0
@@ -184,8 +235,8 @@ class Refinery(object):
     # http://en.wikipedia.org/wiki/
     # Non-linear_least_squares#Convergence_criteria
     try:
-      r1 = self.history.rmsd[-1]
-      r2 = self.history.rmsd[-2]
+      r1 = self.history["rmsd"][-1]
+      r2 = self.history["rmsd"][-2]
     except IndexError:
       return False
 
@@ -200,10 +251,10 @@ class Refinery(object):
     the same or reduced then this is a bad sign."""
 
     try:
-      l1 = self.history.objective[-1]
-      l2 = self.history.objective[-2]
-      n1 = self.history.num_reflections[-1]
-      n2 = self.history.num_reflections[-2]
+      l1 = self.history["objective"][-1]
+      l2 = self.history["objective"][-2]
+      n1 = self.history["num_reflections"][-1]
+      n2 = self.history["num_reflections"][-2]
     except IndexError:
       return False
 
@@ -233,10 +284,10 @@ class Refinery(object):
         header.append(name + "\n(" + units + ")")
 
     rows = []
-    for i in range(self.history._step + 1):
-      rmsds = [r*m for (r,m) in zip(self.history.rmsd[i], rmsd_multipliers)]
-      rows.append([str(i), str(self.history.num_reflections[i]),
-                   "%.5g" % self.history.objective[i]] + ["%.5g" % r for r in rmsds])
+    for i in range(self.history.get_nrows()):
+      rmsds = [r*m for (r,m) in zip(self.history["rmsd"][i], rmsd_multipliers)]
+      rows.append([str(i), str(self.history["num_reflections"][i]),
+                   "%.5g" % self.history["objective"][i]] + ["%.5g" % r for r in rmsds])
 
     st = simple_table(rows, header)
     print st.format()
@@ -449,7 +500,7 @@ class AdaptLstbx(
 
     # keep the estimated parameter variance-covariance matrix
     self.parameter_var_cov = \
-        self.history.reduced_chi_squared[-1] * nm_inv
+        self.history["reduced_chi_squared"][-1] * nm_inv
     # send this back to the models to calculate their uncertainties
     self._parameters.calculate_model_state_uncertainties(
       self.parameter_var_cov)
@@ -495,7 +546,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
              max_iterations=max_iterations)
 
     # add an attribute to the journal
-    self.history.reduced_chi_squared = flex.double()
+    self.history.add_column("reduced_chi_squared")#flex.double()
 
     # adopt any overrides of the defaults above
     libtbx.adopt_optional_init_args(self, kwds)
@@ -509,11 +560,9 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       self._f = self.objective()
       self._g = -self.opposite_of_gradient()
 
-      # extra journalling prior to solve
-      self.history.parameter_vector_norm.append(
-        self.parameter_vector_norm())
-      self.history.gradient_norm.append(
-        self.opposite_of_gradient().norm_inf())
+      # cache some items for the journal prior to solve
+      pvn = self.parameter_vector_norm()
+      gn = self.opposite_of_gradient().norm_inf()
 
       # debugging
       #if self._verbosity > 3: self._print_normal_matrix()
@@ -527,11 +576,15 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         print self.history._step,
         sys.stdout.flush()
 
+      # add cached items to the journal
+      self.history.set_last_cell("parameter_vector_norm", pvn)
+      self.history.set_last_cell("gradient_norm", gn)
+
       # extra journalling post solve
-      if self.history.solution is not None:
-        self.history.solution.append(self.actual.step().deep_copy())
-      self.history.solution_norm.append(self.step().norm())
-      self.history.reduced_chi_squared.append(self.chi_sq())
+      if self.history.has_key("solution"):
+        self.history.set_last_cell("solution", self.actual.step().deep_copy())
+      self.history.set_last_cell("solution_norm", self.step().norm())
+      self.history.set_last_cell("reduced_chi_squared", self.chi_sq())
 
       # test termination criteria
       if self.test_for_termination():
@@ -582,7 +635,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
   def run(self):
 
     # add an attribute to the journal
-    self.history.mu = flex.double()
+    self.history.add_column("mu")
 
     #FIXME need a much neater way of doing this stuff through
     #inheritance
@@ -595,18 +648,16 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     self.build_up()
     a = self.normal_matrix_packed_u()
     self.mu = self.tau*flex.max(a.matrix_packed_u_diagonal())
-    self.history.mu.append(value)
+    #self.history.set_last_cell("mu", self.mu)
     while True:
 
       # set functional and gradients for the step
       self._f = self.objective()
       self._g = -self.opposite_of_gradient()
 
-      # extra journalling prior to solve
-      self.history.parameter_vector_norm.append(
-          self.parameter_vector_norm())
-      self.history.gradient_norm.append(
-          self.opposite_of_gradient().norm_inf())
+      # cache some items for the journal prior to solve
+      pvn = self.parameter_vector_norm()
+      gn = self.opposite_of_gradient().norm_inf()
 
       # debugging
       #if self._verbosity > 3: self._print_normal_matrix()
@@ -627,11 +678,16 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         print self.history._step,
         sys.stdout.flush()
 
+      # add cached items to the journal
+      self.history.set_last_cell("parameter_vector_norm", pvn)
+      self.history.set_last_cell("gradient_norm", gn)
+
       # extra journalling post solve
-      if self.history.solution is not None:
-        self.history.solution.append(self.actual.step().deep_copy())
-      self.history.solution_norm.append(self.step().norm())
-      self.history.reduced_chi_squared.append(self.chi_sq())
+      self.history.set_last_cell("mu", self.mu)
+      if self.history.has_key("solution"):
+        self.history.set_last_cell("solution", self.actual.step().deep_copy())
+      self.history.set_last_cell("solution_norm", self.step().norm())
+      self.history.set_last_cell("reduced_chi_squared", self.chi_sq())
 
       if self.had_too_small_a_step():
         self.history.reason_for_termination = STEP_TOO_SMALL

@@ -205,7 +205,7 @@ history = refiner.run()
 
 # regression tests
 try:
-  assert len(history.rmsd) == 9
+  assert len(history["rmsd"]) == 9
 except AssertionError:
   msg = """
 DEBUGGING INFORMATION 19-AUG-14
@@ -213,9 +213,9 @@ DEBUGGING INFORMATION 19-AUG-14
 If you are seeing this message for the first time, please copy it into an
 email and send to david.waterman@stfc.ac.uk to help debug this test.
 rmsds="""
-  msg += str(history.rmsd)
+  msg += str(history["rmsd"])
   msg += "\nmu="
-  msg += str(list(history.mu))
+  msg += str(list(history["mu"]))
   msg += "\nEND DEBUGGING INFORMATION 19-AUG-14"
   raise AssertionError(msg)
 
@@ -225,7 +225,7 @@ uc2 = target_crystal.get_unit_cell()
 assert uc1.is_similar_to(uc2)
 
 if do_plot:
-  plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
+  plt = refiner.parameter_correlation_plot(len(history["parameter_correlation"])-1)
   plt.show()
 
 print "OK"

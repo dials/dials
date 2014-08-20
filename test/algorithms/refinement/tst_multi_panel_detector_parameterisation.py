@@ -320,12 +320,12 @@ if __name__ == '__main__':
   assert refiner.get_num_steps() == refiner2.get_num_steps()
 
   # same rmsds
-  for rmsd, rmsd2 in zip(refiner.history.rmsd, refiner2.history.rmsd):
+  for rmsd, rmsd2 in zip(refiner.history["rmsd"], refiner2.history["rmsd"]):
     assert approx_equal(rmsd, rmsd2)
 
   # same parameter values each step
-  for params, params2 in zip(refiner.history.parameter_vector,
-                             refiner.history.parameter_vector):
+  for params, params2 in zip(refiner.history["parameter_vector"],
+                             refiner.history["parameter_vector"]):
     assert approx_equal(params, params2)
 
   # if we got this far...
