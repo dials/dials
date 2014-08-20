@@ -16,7 +16,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <cctbx/miller/index_generator.h>
+#include <dials/algorithms/filtering/index_generator.h>
 #include <cctbx/uctbx.h>
 #include <cctbx/sgtbx/space_group.h>
 #include <dials/array_family/reflection_table.h>

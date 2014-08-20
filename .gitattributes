@@ -39,6 +39,7 @@ algorithms/filtering/SConscript -text
 algorithms/filtering/__init__.py -text
 algorithms/filtering/boost_python/filter_ext.cc -text
 algorithms/filtering/filter.h -text
+algorithms/filtering/index_generator.h -text
 algorithms/image/SConscript -text
 algorithms/image/__init__.py -text
 algorithms/image/centroid/SConscript -text
