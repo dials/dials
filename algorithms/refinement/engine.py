@@ -26,6 +26,7 @@ RMSD_CONVERGED = "RMSD no longer decreasing"
 STEP_TOO_SMALL = "Step too small"
 OBJECTIVE_INCREASE = "Refinement failure: objective increased"
 MAX_ITERATIONS = "Reached maximum number of iterations"
+MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
 
 class Journal(object):
   """Container in which to store information about refinement history"""
@@ -633,7 +634,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       self.history.reduced_chi_squared.append(self.chi_sq())
 
       if self.had_too_small_a_step():
-        self.history.reason_for_termination = "Step too small"
+        self.history.reason_for_termination = STEP_TOO_SMALL
         break
 
       h = self.step()
@@ -647,23 +648,25 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       if rho > 0:
         # test termination criteria
         if self.test_for_termination():
-          self.history.reason_for_termination = "RMSD target achieved"
+          self.history.reason_for_termination = TARGET_ACHIEVED
           break
 
         if self.test_rmsd_convergence():
-          self.history.reason_for_termination = "RMSD no longer decreasing"
+          self.history.reason_for_termination = RMSD_CONVERGED
           break
 
         self.mu *= max(1/3, 1 - (2*rho - 1)**3)
         nu = 2
       else:
         self.step_backward()
+        if nu >= 512:
+          self.history.reason_for_termination = MAX_TRIAL_ITERATIONS
+          break
         self.mu *= nu
         nu *= 2
 
       if self.n_iterations == self._max_iterations:
-        self.history.reason_for_termination = "Reached maximum number of " \
-            "iterations"
+        self.history.reason_for_termination = MAX_ITERATIONS
         break
 
       # prepare for next step
