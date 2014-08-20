@@ -491,6 +491,12 @@ class AdaptLstbx(
       print
       self.print_table()
 
+    # it is possible to get here with zero steps taken by the minimiser. For
+    # example by failing for the MAX_TRIAL_ITERATIONS reason before any forward
+    # steps are taken with the LevMar engine. If so the below is invalid,
+    # so return early
+    if self.history.get_nrows() == 0: return None
+
     # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
     cf_inv = self.cf.matrix_packed_u_as_upper_triangle().\
         matrix_inversion()
@@ -713,6 +719,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         nu = 2
       else:
         self.step_backward()
+        self.history.del_last_row()
         if nu >= 512:
           self.history.reason_for_termination = MAX_TRIAL_ITERATIONS
           break
