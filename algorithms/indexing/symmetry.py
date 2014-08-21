@@ -1,9 +1,12 @@
 from __future__ import division
 import copy
 import math
-from rstbx.symmetry.subgroup import MetricSubgroup
-from scitbx.matrix import col
 from libtbx import easy_mp
+from cctbx import crystal, sgtbx
+from scitbx.matrix import col
+from scitbx.array_family import flex
+from rstbx.symmetry.subgroup import MetricSubgroup
+
 
 
 def dials_crystal_from_orientation(crystal_orientation,space_group):
@@ -161,3 +164,76 @@ def refine_subgroup(args):
   subgroup.detector = refinery.get_detector()
   subgroup.refined_crystal = refinery.get_crystal()
   return subgroup
+
+
+def change_of_basis_op_to_best_cell(
+    unit_cell, target_unit_cell=None, target_space_group=None):
+  #print unit_cell
+  assert target_unit_cell is not None or target_space_group is not None
+  #if target_space_group is not None:
+    #assert not target_space_group.is_centric()
+  if target_space_group is None:
+    target_space_group  = sgtbx.space_group('P 1')
+
+  target_symm = crystal.symmetry(
+    unit_cell=target_unit_cell,
+    space_group=target_space_group)
+  # target symmetry change of basis given to primitive setting
+  cb_target_given_primitive \
+    = target_symm.change_of_basis_op_to_primitive_setting()
+  if target_unit_cell is not None:
+    target_symm_primitive = target_symm.change_basis(
+      cb_target_given_primitive)
+    # target symmetry change of basis given to minimum cell
+    cb_target_given_minimum \
+      = target_symm.change_of_basis_op_to_niggli_cell()
+    target_symm_minimum = target_symm.change_basis(cb_target_given_minimum)
+  else:
+    target_symm_primitive = target_symm.customized_copy(
+      space_group_info=target_symm.space_group_info().change_basis(
+        cb_target_given_primitive))
+    # target symmetry change of basis given to minimum cell
+    cb_target_given_minimum = cb_target_given_primitive
+    target_symm_minimum = target_symm_primitive
+
+  axes_perm = [sgtbx.change_of_basis_op(op) for op in (
+    'x,y,z', 'z,x,y', 'y,z,x', '-x,z,y', 'y,x,-z', 'z,-y,x')]
+
+  bmsds = flex.double()
+  for cb_op in axes_perm:
+    if target_unit_cell:
+      test_unit_cell = unit_cell.change_basis(cb_op).niggli_cell()
+    else:
+      test_unit_cell = unit_cell.change_basis(cb_op)
+
+    target_uc = target_symm_minimum.unit_cell()
+    if target_uc is None:
+      target_uc = test_unit_cell
+
+    target_symm = crystal.symmetry(
+      unit_cell=target_uc,
+      space_group=target_symm_minimum.space_group(),
+      assert_is_compatible_unit_cell=False)
+
+    bmsds.append(test_unit_cell.change_basis(
+      target_symm.change_of_basis_op_to_reference_setting())\
+      .bases_mean_square_difference(
+        target_symm.as_reference_setting().unit_cell()))
+
+  #print " ".join(["%.2f"] * len(bmsds)) %tuple(bmsds)
+  cb_op_best_cell = axes_perm[flex.min_index(bmsds)]
+  if target_unit_cell:
+    cb_op_best_minimum = unit_cell.change_basis(
+      cb_op_best_cell).change_of_basis_op_to_niggli_cell()
+  else:
+    cb_op_best_minimum = sgtbx.change_of_basis_op()
+
+  cb_op_best_cell = sgtbx.change_of_basis_op(
+    str(cb_op_best_cell),stop_chars='',r_den=144,t_den=144)
+  cb_op_best_minimum = sgtbx.change_of_basis_op(
+    str(cb_op_best_minimum),stop_chars='',r_den=144,t_den=144)
+
+  cb_op_inp_best_given \
+    = cb_target_given_minimum.inverse() * cb_op_best_minimum * cb_op_best_cell
+
+  return cb_op_inp_best_given

@@ -107,7 +107,7 @@ class run_one_indexing(object):
 
   def get_rmsds_obs_pred(self, observations, experiment):
     self.calc_rmsds_timer.start()
-    from dials.algorithms.indexing.indexer2 import master_params
+    from dials.algorithms.indexing.indexer import master_params
     from dials.algorithms.refinement import RefinerFactory
     from dxtbx.model.experiment.experiment_list import ExperimentList
     reflections = observations.select(observations.get_flags(
@@ -414,8 +414,6 @@ def exercise_11():
                 #"maximum_spot_error=3",
                 "maximum_spot_error=None",
                 "hkl_tolerance=0.5",
-                "recycle_unindexed_reflections=True",
-                "max_lattices=3", #XXX eventually this should not be needed
                 ]
 
   expected_unit_cell = uctbx.unit_cell((78, 78, 39, 90, 90, 90))
@@ -522,6 +520,7 @@ def exercise_14():
       "unit_cell='%s %s %s %s %s %s'" %expected_unit_cell.parameters())
     extra_args.append("space_group='Hall: %s'" %expected_hall_symbol)
     extra_args.append("method=%s" %method)
+    extra_args.append("basis_vector_combinations.metric=n_indexed")
 
 
     result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,

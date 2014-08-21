@@ -70,7 +70,7 @@ def run(space_group_info):
     crystal_symmetry, miller_indices, anomalous_flag=True)
   predicted_reflections['xyzobs.mm.value'] = predicted_reflections['xyzcal.mm']
   predicted_reflections['id'] = flex.size_t(len(predicted_reflections), 0)
-  from dials.algorithms.indexing.indexer2 import indexer_base
+  from dials.algorithms.indexing.indexer import indexer_base
   indexer_base.map_centroids_to_reciprocal_space(
     predicted_reflections, sweep.get_detector(), sweep.get_beam(),
     sweep.get_goniometer())

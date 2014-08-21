@@ -78,7 +78,7 @@ known_symmetry {
   relative_length_tolerance = 0.1
     .type = float
     .help = "Relative tolerance for unit cell lengths in unit cell comparision."
-  absolute_angle_tolerance = 10
+  absolute_angle_tolerance = 5
     .type = float
     .help = "Angular tolerance (in degrees) in unit cell comparison."
 }
@@ -776,7 +776,7 @@ class indexer_base(object):
           alpha = b.angle(c, deg=True)
           if alpha < 90:
             c = -c
-          beta = c.angle(a, deg=True)
+          #beta = c.angle(a, deg=True)
           if a_cross_b.dot(c) < 0:
             # we want right-handed basis set, therefore invert all vectors
             a = -a
@@ -792,20 +792,36 @@ class indexer_base(object):
           if (self.target_symmetry_centred is not None or
               self.target_symmetry_primitive is not None or
               self.target_symmetry_minimum_cell is not None):
-            symmetrized_model = None
+            cb_op_to_primitive = None
             if self.target_symmetry_minimum_cell is not None:
-              symmetrized_model, cb_op_to_primitive = self.apply_symmetry(
-              model, self.target_symmetry_minimum_cell,
-              return_primitive_setting=True)
-            if symmetrized_model is None and self.target_symmetry_primitive is not None:
-              symmetrized_model, cb_op_to_primitive = self.apply_symmetry(
-                model, self.target_symmetry_primitive,
-              return_primitive_setting=True)
-            if symmetrized_model is None and self.target_symmetry_centred is not None:
-              symmetrized_model, cb_op_to_primitive = self.apply_symmetry(
-              model, self.target_symmetry_centred,
-              return_primitive_setting=True)
-            if symmetrized_model is None:
+              from dials.algorithms.indexing.symmetry \
+                   import change_of_basis_op_to_best_cell
+              cb_op_to_best_cell = change_of_basis_op_to_best_cell(
+                uc,
+                target_unit_cell=self.target_symmetry_minimum_cell.unit_cell(),
+                target_space_group=self.target_symmetry_minimum_cell.space_group())
+              best_cell = uc.change_basis(cb_op_to_best_cell)
+              if best_cell.is_similar_to(
+                  self.target_symmetry_minimum_cell.unit_cell(),
+                  relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+                  absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
+                cb_op_to_primitive = cb_op_to_best_cell * self.cb_op_minimum_cell_to_primitive
+            if (cb_op_to_primitive is None and
+                self.target_symmetry_primitive is not None):
+              from dials.algorithms.indexing.symmetry \
+                   import change_of_basis_op_to_best_cell
+              cb_op_to_best_cell = change_of_basis_op_to_best_cell(
+                uc,
+                target_unit_cell=self.target_symmetry_primitive.unit_cell(),
+                target_space_group=self.target_symmetry_primitive.space_group())
+              best_cell = uc.change_basis(cb_op_to_best_cell)
+              if (self.target_symmetry_primitive.unit_cell() is None or
+                  best_cell.is_similar_to(
+                    self.target_symmetry_primitive.unit_cell(),
+                    relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+                    absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
+                cb_op_to_primitive = cb_op_to_best_cell
+            if cb_op_to_primitive is None:
               continue
             if apply_symmetry:
               model = symmetrized_model
@@ -899,35 +915,6 @@ class indexer_base(object):
     from dials.algorithms.indexing.compare_orientation_matrices \
          import difference_rotation_matrix_and_euler_angles
     for cm in candidate_orientation_matrices:
-      if (self.refined_experiments is not None and
-          len(self.refined_experiments) > 0):
-        orientation_too_similar = False
-        cryst_b = cm
-        if self.target_symmetry_primitive is not None:
-          cryst_b, cb_op_to_primitive = self.apply_symmetry(
-            cryst_b, self.target_symmetry_primitive,
-            return_primitive_setting=True,
-            cell_only=True)
-          if cryst_b is None: continue
-          cryst_b, cb_op_to_primitive = self.apply_symmetry(
-            cryst_b, self.target_symmetry_primitive,
-            return_primitive_setting=True,
-            space_group_only=True)
-          if self.cb_op_primitive_to_given is not None:
-            cryst_b = cryst_b.change_basis(self.cb_op_primitive_to_given)
-        for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
-          R_ab, euler_angles, cb_op_ab = \
-            difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
-          min_angle = self.params.multiple_lattice_search.minimum_angular_separation
-          #print euler_angles
-          if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
-            orientation_too_similar = True
-            break
-        if orientation_too_similar:
-          if params.debug:
-            print "skipping crystal: too similar to other crystals"
-          continue
-
       sel = ((self.reflections['id'] == -1) &
              (1/self.reflections['rlp'].norms() > self.d_min))
       refl = self.reflections.select(sel)
@@ -941,10 +928,13 @@ class indexer_base(object):
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
-        experiment.crystal, cb_op_to_primitive = self.apply_symmetry(
+        new_crystal, cb_op_to_primitive = self.apply_symmetry(
           experiment.crystal, self.target_symmetry_primitive,
           return_primitive_setting=True,
           space_group_only=True)
+        if new_crystal is None:
+          continue
+        experiment.crystal = new_crystal
         if not cb_op_to_primitive.is_identity_op():
           miller_indices = refl['miller_index'].select(refl['id'] == 0)
           miller_indices = cb_op_to_primitive.apply(miller_indices)
@@ -955,10 +945,28 @@ class indexer_base(object):
           miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
           refl['miller_index'].set_selected(refl['id'] == 0, miller_indices)
 
+      if (self.refined_experiments is not None and
+          len(self.refined_experiments) > 0):
+        orientation_too_similar = False
+        cryst_b = experiment.crystal
+        for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
+          R_ab, euler_angles, cb_op_ab = \
+            difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
+          min_angle = self.params.multiple_lattice_search.minimum_angular_separation
+          #print euler_angles
+          if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
+            orientation_too_similar = True
+            break
+        if orientation_too_similar:
+          if params.debug:
+            print "skipping crystal: too similar to other crystals"
+          continue
+
       from dials.algorithms.refinement import RefinerFactory
       refiner = RefinerFactory.from_parameters_data_experiments(
         params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
         verbosity=0)
+      #print experiment.crystal.get_unit_cell()
       refiner.run()
       rmsds = refiner.rmsds()
       xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
@@ -1001,54 +1009,9 @@ class indexer_base(object):
     real_space_b = A_inv[3:6]
     real_space_c = A_inv[6:9]
     basis_vectors = [real_space_a, real_space_b, real_space_c]
-    min_bmsd = 1e8
-    if space_group_only:
-      best_perm = (0,1,2)
-      best_sign = 1
-    else:
-      best_perm = None
-      # for non-cyclic permutations one axis needs inverting to keep system right-handed
-      for perm, sign in zip(
-          ((0,1,2), (1,2,0), (2,0,1), (1,0,2), (0,2,1), (2,1,0)),
-          (1, 1, 1, -1, -1, -1)):
-        a = matrix.col(basis_vectors[perm[0]])
-        b = matrix.col(basis_vectors[perm[1]])
-        c = matrix.col([i * sign for i in basis_vectors[perm[2]]])
-        unit_cell = uctbx.unit_cell((a.length(),
-                                     b.length(),
-                                     c.length(),
-                                     b.angle(c, deg=True),
-                                     c.angle(a, deg=True),
-                                     a.angle(b, deg=True)))
-        uc = target_unit_cell
-        if uc is None:
-          uc = unit_cell
-        # XXX what about permuting the target_unit_cell (if not None)?
-        symm_target_sg = crystal.symmetry(
-          unit_cell=uc,
-          space_group=target_space_group,
-          assert_is_compatible_unit_cell=False)
-        # this assumes that the initial basis vectors are good enough that
-        # we can tell which should be the unique axis - probably not a robust
-        # solution
-        if unit_cell.is_similar_to(
-          symm_target_sg.unit_cell(),
-          relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-          absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
-          bmsd = unit_cell.change_basis(
-            symm_target_sg.change_of_basis_op_to_reference_setting())\
-            .bases_mean_square_difference(
-              symm_target_sg.as_reference_setting().unit_cell())
-          eps = 1e-8
-          if (bmsd+eps) < min_bmsd:
-            min_bmsd = bmsd
-            best_perm = list(perm)
-            best_sign = sign
-      if best_perm is None:
-        return None, None
-    direct_matrix = matrix.sqr(
-      basis_vectors[best_perm[0]] + basis_vectors[best_perm[1]] +
-      tuple([i * best_sign for i in basis_vectors[best_perm[2]]]))
+
+    from libtbx.utils import flat_list
+    direct_matrix = matrix.sqr(flat_list(basis_vectors))
 
     from cctbx.crystal_orientation import crystal_orientation
     from rstbx import dps_core # import dependency
@@ -1056,37 +1019,60 @@ class indexer_base(object):
     from dials.algorithms.indexing.symmetry import dials_crystal_from_orientation
 
     orientation = crystal_orientation(direct_matrix.inverse(), True)
-    items = iotbx_converter(orientation.unit_cell(), max_delta=5.0)
+    items = iotbx_converter(
+      #orientation.unit_cell().minimum_cell(), max_delta=5.0)
+      orientation.unit_cell(), max_delta=5.0)
     target_sg_reference_setting \
       = target_space_group.info().reference_setting().group()
-    if target_space_group.crystal_system().lower() != 'triclinic':
-      for item in items:
-        if (target_space_group.crystal_system() !=
-            item['best_group'].crystal_system()):
-          continue
-        if (target_sg_reference_setting.conventional_centring_type_symbol() !=
-            item['best_group'].conventional_centring_type_symbol()):
-          continue
-        cb_op = item['cb_op_inp_best'].c().as_double_array()[0:9]
-        cb_op_inv = item['cb_op_inp_best'].inverse().c().as_double_array()[0:9]
-        orient = crystal_orientation(direct_matrix.inverse(), True)
-        orient_best = orient.change_basis(matrix.sqr(cb_op).transpose())
-        constrain_orient = orient_best.constrain(item['system'])
-        orientation = constrain_orient.change_basis(
-          matrix.sqr(cb_op_inv).transpose())
-        target_space_group = target_sg_reference_setting.change_basis(
-          item['cb_op_inp_best'].inverse())
-        break
+    min_bmsd = 1e8
+    best_orientation = None
+    for item in items:
+      if (target_space_group.crystal_system() !=
+          item['best_group'].crystal_system()):
+        continue
+      if (target_sg_reference_setting.conventional_centring_type_symbol() !=
+          item['best_group'].conventional_centring_type_symbol()):
+        continue
+      cb_op = item['cb_op_inp_best'].c().as_double_array()[0:9]
+      cb_op_inv = item['cb_op_inp_best'].inverse().c().as_double_array()[0:9]
+      orient = crystal_orientation(direct_matrix.inverse(), True)
+      orient_best = orient.change_basis(matrix.sqr(cb_op).transpose())
+      constrain_orient = orient_best.constrain(item['system'])
+      orientation = constrain_orient.change_basis(
+        matrix.sqr(cb_op_inv).transpose())
+      target_space_group = target_sg_reference_setting.change_basis(
+        item['cb_op_inp_best'].inverse())
+      uc = target_unit_cell
+      if uc is None:
+        uc = unit_cell
+      symm_target_sg = crystal.symmetry(
+        unit_cell=uc,
+        space_group=target_space_group,
+        assert_is_compatible_unit_cell=False)
+      if orientation.unit_cell().is_similar_to(
+        symm_target_sg.unit_cell(),
+        relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+        absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
+        bmsd = unit_cell.change_basis(
+          symm_target_sg.change_of_basis_op_to_reference_setting())\
+          .bases_mean_square_difference(
+            symm_target_sg.as_reference_setting().unit_cell())
+        eps = 1e-8
+        if (bmsd+eps) < min_bmsd:
+          min_bmsd = bmsd
+          best_orientation = orientation
 
-    direct_matrix = orientation.direct_matrix()
+    if best_orientation is None:
+      return None, None
+    direct_matrix = best_orientation.direct_matrix()
+
     a = matrix.col(direct_matrix[:3])
     b = matrix.col(direct_matrix[3:6])
     c = matrix.col(direct_matrix[6:9])
-    ## verify it is still right-handed basis set
-    #assert a.cross(b).dot(c) > 0
-    cb_op_to_primitive = None
     model = Crystal(
       a, b, c, space_group=target_space_group)
+
+    cb_op_to_primitive = None
     if return_primitive_setting:
       # for some reason I do not understand, it is necessary to go via the
       # reference setting to ensure we get the correct primitive setting

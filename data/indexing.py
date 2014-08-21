@@ -13,7 +13,7 @@ from __future__ import division
 def generate_phil_scope():
 
   from libtbx.phil import parse
-  from dials.algorithms.indexing.indexer2 import master_phil_scope
+  from dials.algorithms.indexing.indexer import master_phil_scope
 
   phil_scope = parse('''
 
