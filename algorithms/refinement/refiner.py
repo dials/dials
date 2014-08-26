@@ -941,6 +941,41 @@ class Refiner(object):
 
     return plt
 
+  def print_table(self):
+    """print useful output in the form of a simple table"""
+
+    from libtbx.table_utils import simple_table
+    print
+    print "Refinement steps"
+    print "----------------"
+
+    from math import pi
+    rad2deg = 180/pi
+
+    rmsd_multipliers = []
+    header = ["Step", "Nref", "Objective"]
+    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+      if units == "mm":
+        header.append(name + "\n(mm)")
+        rmsd_multipliers.append(1.0)
+      elif units == "rad": # convert radians to degrees for reporting
+        header.append(name + "\n(deg)")
+        rmsd_multipliers.append(rad2deg)
+      else: # leave unknown units alone
+        header.append(name + "\n(" + units + ")")
+
+    rows = []
+    for i in range(self._refinery.history.get_nrows()):
+      rmsds = [r*m for (r,m) in zip(self._refinery.history["rmsd"][i], rmsd_multipliers)]
+      rows.append([str(i), str(self._refinery.history["num_reflections"][i]),
+                   "%.5g" % self._refinery.history["objective"][i]] + ["%.5g" % r for r in rmsds])
+
+    st = simple_table(rows, header)
+    print st.format()
+    print self._refinery.history.reason_for_termination
+
+    return
+
   def run(self):
     """Run refinement"""
 
@@ -963,6 +998,10 @@ class Refiner(object):
       print "Running refinement"
       print "------------------"
     self._refinery.run()
+
+    if self._verbosity > 0:
+      print
+      self.print_table()
 
     # write scan varying setting matrices back to crystal models
     #FIXME tidy up

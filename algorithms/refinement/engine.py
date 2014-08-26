@@ -258,41 +258,6 @@ class Refinery(object):
 
     return l1 > l2 and n1 <= n2
 
-  def print_table(self):
-    """print useful output in the form of a simple table"""
-
-    from libtbx.table_utils import simple_table
-    print
-    print "Refinement steps"
-    print "----------------"
-
-    from math import pi
-    rad2deg = 180/pi
-
-    rmsd_multipliers = []
-    header = ["Step", "Nref", "Objective"]
-    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
-      if units == "mm":
-        header.append(name + "\n(mm)")
-        rmsd_multipliers.append(1.0)
-      elif units == "rad": # convert radians to degrees for reporting
-        header.append(name + "\n(deg)")
-        rmsd_multipliers.append(rad2deg)
-      else: # leave unknown units alone
-        header.append(name + "\n(" + units + ")")
-
-    rows = []
-    for i in range(self.history.get_nrows()):
-      rmsds = [r*m for (r,m) in zip(self.history["rmsd"][i], rmsd_multipliers)]
-      rows.append([str(i), str(self.history["num_reflections"][i]),
-                   "%.5g" % self.history["objective"][i]] + ["%.5g" % r for r in rmsds])
-
-    st = simple_table(rows, header)
-    print st.format()
-    print self.history.reason_for_termination
-
-    return
-
   def run(self):
     """
     To be implemented by derived class. It is expected that each step of
@@ -376,10 +341,6 @@ class AdaptLbfgs(Refinery):
 
     if self.minimizer.error:
       self.history.reason_for_termination = self.minimizer.error
-
-    if self._verbosity > 0:
-      print
-      self.print_table()
 
     return
 
@@ -485,11 +446,6 @@ class AdaptLstbx(
 
   def finalise(self):
     """perform various post-run tasks"""
-
-    # print output table
-    if self._verbosity > 0:
-      print
-      self.print_table()
 
     # it is possible to get here with zero steps taken by the minimiser. For
     # example by failing for the MAX_TRIAL_ITERATIONS reason before any forward
