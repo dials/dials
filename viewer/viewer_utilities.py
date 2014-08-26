@@ -40,7 +40,8 @@ class np_to_bmp(object):
                    , vmax = Intst_max)
       else:
         plt.suptitle(title, fontsize = 22)
-        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = 10)
+        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
+                                , vmax = 10)
 
       if(xyz != None):
         arr_w = np.shape(np_img_2d)[0]
@@ -112,7 +113,7 @@ class np_to_bmp(object):
 
     NewW = int(self.width * scale)
     NewH = int(self.height * scale)
-    wx_image = wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_HIGH)
+    wx_image = wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_NORMAL)
     wxBitmap = wx_image.ConvertToBitmap()
 
     if(empty == True):

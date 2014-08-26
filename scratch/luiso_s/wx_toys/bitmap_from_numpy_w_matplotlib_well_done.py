@@ -4,15 +4,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def GetBitmap_from_np_array(data2d):
-
   lc_fig = plt.figure()
 
-
   plt.imshow(data2d, interpolation = "nearest")
+
+  plt.axis('off')
+  #plt.axis('tight')
+
+  '''
+  plt.tight_layout(pad=0.0, h_pad=None, w_pad=None)
+  ax = lc_fig.add_subplot(1, 1, 1)
+  x_new_labl =[]
+  ax.xaxis.set_ticklabels(x_new_labl)
+  '''
+  #plt.annotate('arrowstyle', xy=(2, 3),  xycoords='data',
+  #              xytext=(-50, 30), textcoords='offset points')
+
+  print "len(data2d[:,1]) =", len(data2d[:,1])
+  print "len(data2d[1,:]) =", len(data2d[1,:])
+  for ypos in range(len(data2d[1,:])):
+    for xpos in range(len(data2d[:,1])):
+      print "[xpos,ypos] =", [xpos,ypos]
+      txt_dat = str(data2d[xpos,ypos])
+      #txt_dat = str(0.005)
+      plt.annotate(txt_dat, xy = (ypos-0.5, xpos+0.2), xycoords = 'data', color='green')
+
   lc_fig.canvas.draw()
   width, height = lc_fig.canvas.get_width_height()
-  np_buf = np.fromstring ( lc_fig.canvas.tostring_rgb()
-                             , dtype=np.uint8 )
+  np_buf = np.fromstring (lc_fig.canvas.tostring_rgb(), dtype=np.uint8)
   np_buf.shape = (width, height, 3)
   np_buf = np.roll(np_buf, 3, axis = 2)
   wx_image = wx.EmptyImage(width, height)
@@ -50,7 +69,7 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width=10, height=14)
+    data2d = build_np_img(width=4, height=3)
     bitmap = GetBitmap_from_np_array(data2d)
 
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
