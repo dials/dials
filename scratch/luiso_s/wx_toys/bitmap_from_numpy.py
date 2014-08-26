@@ -60,5 +60,4 @@ class MyFrame(wx.Frame):
 
 if(__name__ == "__main__"):
   app = MyApp(redirect=False)
-  app = MyApp(False)
   app.MainLoop()
