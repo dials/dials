@@ -722,7 +722,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       else:
         self.step_backward()
         self.history.del_last_row()
-        if nu >= 512:
+        if nu >= 8192:
           self.history.reason_for_termination = MAX_TRIAL_ITERATIONS
           break
         self.mu *= nu
