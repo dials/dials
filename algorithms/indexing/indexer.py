@@ -359,6 +359,9 @@ class indexer_base(object):
             self.cb_op_primitive_to_given).unit_cell().is_similar_to(
               self.params.known_symmetry.unit_cell)
 
+    # now actually do the indexing
+    self.index()
+
   def index(self):
     import libtbx
     self.reflections_input = self.reflections

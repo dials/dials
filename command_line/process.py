@@ -209,7 +209,6 @@ class Script(ScriptRunner):
       from dials.algorithms.indexing.real_space_grid_search \
            import indexer_real_space_grid_search as indexer
     idxr = indexer(reflections, imagesets, params=params)
-    idxr.index()
 
     from dials.array_family import flex
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
