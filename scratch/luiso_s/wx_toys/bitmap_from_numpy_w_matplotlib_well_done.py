@@ -1,25 +1,35 @@
 #import os, io, Image, PIL
 import wx
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
-
-#from cStringIO import StringIO
 
 def GetBitmap_from_np_array(data2d):
 
+  lc_fig = plt.figure()
+
+
   plt.imshow(data2d, interpolation = "nearest")
-  plt.savefig("/dev/shm/img_tmp.png", format = 'png')
-  wxBitmap = wx.Bitmap("/dev/shm/img_tmp.png")
+  lc_fig.canvas.draw()
+  width, height = lc_fig.canvas.get_width_height()
+  np_buf = np.fromstring ( lc_fig.canvas.tostring_rgb()
+                             , dtype=np.uint8 )
+  np_buf.shape = (width, height, 3)
+  np_buf = np.roll(np_buf, 3, axis = 2)
+  wx_image = wx.EmptyImage(width, height)
+  wx_image.SetData(np_buf )
+  wxBitmap = wx_image.ConvertToBitmap()
+
+  plt.close(lc_fig)
 
   return wxBitmap
 
 def build_np_img(width=64, height=64):
-  data2d = numpy.zeros( (width, height),'float')
+  data2d = np.zeros( (width, height),'float')
   print "width, height =", width, height
   for x in range(0, width):
     for y in range(0, height):
-      data2d[x,y] = numpy.sqrt(x*x + y*y)
-  data2d[width/4:width*3/4,height/4:height*3/4] = 0
+      data2d[x,y] = np.sqrt(x*x + y*y)
+  #data2d[width/4:width*3/4,height/4:height*3/4] = 0
   print "data2d.max =", data2d.max()
   return data2d
 
