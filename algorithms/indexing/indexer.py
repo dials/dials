@@ -749,8 +749,7 @@ class indexer_base(object):
     return opt_detector, opt_beam
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
-                                          max_combinations=1,
-                                          apply_symmetry=True):
+                                          max_combinations=1):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
 
@@ -823,10 +822,7 @@ class indexer_base(object):
                 cb_op_to_primitive = cb_op_to_best_cell
             if cb_op_to_primitive is None:
               continue
-            if apply_symmetry:
-              model = symmetrized_model
-              uc = model.get_unit_cell()
-            elif cb_op_to_primitive is not None:
+            else:
               model = model.change_basis(cb_op_to_primitive)
               uc = model.get_unit_cell()
 
