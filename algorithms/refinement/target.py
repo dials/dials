@@ -160,6 +160,13 @@ class Target(object):
     self.update_matches()
     return len(self._matches)
 
+  def get_num_matches_for_experiment(self, iexp=0):
+    """return the number of reflections currently used in the calculation"""
+
+    self.update_matches()
+    sel = self._matches['id'] == iexp
+    return sel.count(True)
+
   def update_matches(self, force=False):
     """ensure the observations matched to predictions are up to date"""
 
@@ -298,6 +305,12 @@ class Target(object):
     pass
 
   @abc.abstractmethod
+  def rmsds_for_experiment(self, iexp=0):
+    """calculate unweighted RMSDs for the selected experiment."""
+
+    pass
+
+  @abc.abstractmethod
   def achieved(self):
     """return True to terminate the refinement."""
 
@@ -382,6 +395,22 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
                    sqrt(resid_phi / n))
 
     return self._rmsds
+
+  def rmsds_for_experiment(self, iexp=0):
+    """calculate unweighted RMSDs for the selected experiment."""
+
+    self.update_matches()
+    sel = self._matches['id'] == iexp
+    resid_x = flex.sum(self._matches['x_resid2'].select(sel))
+    resid_y = flex.sum(self._matches['y_resid2'].select(sel))
+    resid_phi = flex.sum(self._matches['phi_resid2'].select(sel))
+
+    n = sel.count(True)
+    rmsds = (sqrt(resid_x / n),
+             sqrt(resid_y / n),
+             sqrt(resid_phi / n))
+
+    return rmsds
 
   def achieved(self):
     """RMSD criterion for target achieved """

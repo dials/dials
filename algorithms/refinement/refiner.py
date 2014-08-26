@@ -941,16 +941,16 @@ class Refiner(object):
 
     return plt
 
-  def print_table(self):
-    """print useful output in the form of a simple table"""
+  def print_step_table(self):
+    """print useful output about refinement steps in the form of a simple table"""
 
     from libtbx.table_utils import simple_table
+    from math import pi
+    rad2deg = 180/pi
+
     print
     print "Refinement steps"
     print "----------------"
-
-    from math import pi
-    rad2deg = 180/pi
 
     rmsd_multipliers = []
     header = ["Step", "Nref", "Objective"]
@@ -973,6 +973,73 @@ class Refiner(object):
     st = simple_table(rows, header)
     print st.format()
     print self._refinery.history.reason_for_termination
+
+    return
+
+  def print_exp_rmsd_table(self):
+    """print useful output about refinement steps in the form of a simple table"""
+
+    from libtbx.table_utils import simple_table
+    from math import pi
+    rad2deg = 180/pi
+
+    print
+    print "Final RMSDs by experiment"
+    print "-------------------------"
+
+    header = ["Exp", "Nref"]
+    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+      if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
+        header.append(name + "\n(px)")
+      elif name == "RMSD_Phi" and units == "rad": # convert radians to images for reporting of scans
+        header.append("RMSD_Z" + "\n(images)")
+      elif name == "RMSD_DeltaPsi" and units == "rad": # convert radians to degrees for reporting of stills
+        header.append(name + "\n(deg)")
+      else: # skip RMSDs that cannot be expressed in image/scan space
+        pass
+    rows = []
+    for iexp, exp in enumerate(self._experiments):
+      detector = exp.detector
+      px_sizes = [p.get_pixel_size() for p in detector]
+      it = iter(px_sizes)
+      px_size = next(it)
+      if not all(tst == px_size for tst in it):
+        print "The detector in experiment", iexp, "does not have the same pixel sizes on each panel. Skipping..."
+        continue
+      px_per_mm = [1./e for e in px_size]
+
+      scan = exp.scan
+      try:
+        temp = scan.get_oscillation(deg=False)
+        images_per_rad = 1./(temp[1] - temp[0])
+      except AttributeError:
+        images_per_rad = None
+
+      raw_rmsds = self._target.rmsds_for_experiment(iexp)
+      num = self._target.get_num_matches_for_experiment(iexp)
+      rmsds = []
+      for (name, units, rmsd) in zip(self._target.rmsd_names, self._target.rmsd_units, raw_rmsds):
+        if name == "RMSD_X" and units == "mm":
+          rmsds.append(rmsd * px_per_mm[0])
+        elif name == "RMSD_Y" and units == "mm":
+          rmsds.append(rmsd * px_per_mm[1])
+        elif name == "RMSD_Phi" and units == "rad":
+          rmsds.append(rmsd * images_per_rad)
+        elif name == "RMSD_DeltaPsi" and units == "rad":
+          rmsds.append(rmsd * rad2deg)
+      rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
+
+    if len(rows) > 0:
+      truncated = False
+      max_rows = 20
+      if self._verbosity < 2 and len(rows) > max_rows:
+        rows = rows[0:max_rows]
+        truncated = True
+      st = simple_table(rows, header)
+      print st.format()
+      if truncated:
+        print "Table truncated to show the first", max_rows, "experiments only"
+        print "Re-run with verbosity >= 2 to show all experiments"
 
     return
 
@@ -1001,7 +1068,8 @@ class Refiner(object):
 
     if self._verbosity > 0:
       print
-      self.print_table()
+      self.print_step_table()
+      self.print_exp_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
     #FIXME tidy up

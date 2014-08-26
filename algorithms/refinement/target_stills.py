@@ -138,6 +138,22 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     return self._rmsds
 
+  def rmsds_for_experiment(self, iexp=0):
+    """calculate unweighted RMSDs for the selected experiment."""
+
+    self.update_matches()
+    sel = self._matches['id'] == iexp
+    resid_x = flex.sum(self._matches['x_resid2'].select(sel))
+    resid_y = flex.sum(self._matches['y_resid2'].select(sel))
+    resid_z = flex.sum(self._matches['delpsical2'].select(sel))
+
+    n = sel.count(True)
+    rmsds = (sqrt(resid_x / n),
+             sqrt(resid_y / n),
+             sqrt(resid_z / n))
+
+    return rmsds
+
   def achieved(self):
     """RMSD criterion for target achieved """
     r = self._rmsds if self._rmsds else self.rmsds()
