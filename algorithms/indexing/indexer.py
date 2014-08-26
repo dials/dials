@@ -306,6 +306,13 @@ class indexer_base(object):
     self.params = params
     self.refined_experiments = None
 
+    self._setup_symmetry()
+
+    # now actually do the indexing
+    self.index()
+
+
+  def _setup_symmetry(self):
     self.target_symmetry_primitive = None
     self.target_symmetry_minimum_cell = None
     self.target_symmetry_centred = None
@@ -331,8 +338,10 @@ class indexer_base(object):
         space_group=space_group_primitive,
         assert_is_compatible_unit_cell=False)
       if is_centred and self.params.known_symmetry.unit_cell is not None:
+        # figure out whether the provided unit cell is primitive or centred
         if not self.target_symmetry_primitive.unit_cell().is_similar_to(
           self.params.known_symmetry.unit_cell):
+          # then the provided unit cell was the centred one
           self.target_symmetry_centred = crystal.symmetry(
             unit_cell=self.params.known_symmetry.unit_cell,
             space_group=self.params.known_symmetry.space_group.group())
@@ -342,6 +351,7 @@ class indexer_base(object):
             self.cb_op_centred_to_primitive)
           self.cb_op_primitive_to_given = self.cb_op_centred_to_primitive.inverse()
         else:
+          # the provided unit cell was the primitive one
           self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
             self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
           self.cb_op_centred_to_primitive \
@@ -359,8 +369,6 @@ class indexer_base(object):
             self.cb_op_primitive_to_given).unit_cell().is_similar_to(
               self.params.known_symmetry.unit_cell)
 
-    # now actually do the indexing
-    self.index()
 
   def index(self):
     import libtbx
