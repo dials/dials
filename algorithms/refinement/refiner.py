@@ -1011,7 +1011,7 @@ class Refiner(object):
       scan = exp.scan
       try:
         temp = scan.get_oscillation(deg=False)
-        images_per_rad = 1./(temp[1] - temp[0])
+        images_per_rad = abs(1./(temp[1] - temp[0]))
       except AttributeError:
         images_per_rad = None
 
