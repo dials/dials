@@ -334,8 +334,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     # the first Experiment only. If this is not appropriate for refinement over
     # all experiments then absolute cutoffs should be used instead.
     if experiments[0].scan:
-      temp = experiments[0].scan.get_oscillation(deg=False)
-      image_width_rad = temp[1] - temp[0]
+      image_width_rad = abs(experiments[0].scan.get_oscillation(deg=False)[1])
     else:
       image_width_rad = None
     detector = experiments[0].detector
