@@ -1,12 +1,15 @@
 #import os, io, Image, PIL
 import wx
 import numpy as np
+# set backend before importing pyplot
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 def GetBitmap_from_np_array(data2d):
   lc_fig = plt.figure()
 
-  plt.imshow(data2d, interpolation = "nearest")
+  plt.imshow(data2d, interpolation = "nearest", cmap = 'hot')
 
   plt.axis('off')
   #plt.axis('tight')
@@ -25,8 +28,11 @@ def GetBitmap_from_np_array(data2d):
   for ypos in range(len(data2d[1,:])):
     for xpos in range(len(data2d[:,1])):
       print "[xpos,ypos] =", [xpos,ypos]
-      txt_dat = str(data2d[xpos,ypos])
-      #txt_dat = str(0.005)
+      #txt_dat = str(data2d[xpos,ypos])
+
+      f_num = data2d[xpos,ypos]
+      g = float("{0:.2f}".format(f_num))
+      txt_dat = str(g)
       plt.annotate(txt_dat, xy = (ypos-0.5, xpos+0.2), xycoords = 'data', color='green')
 
   lc_fig.canvas.draw()
