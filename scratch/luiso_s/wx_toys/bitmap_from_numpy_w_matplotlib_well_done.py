@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 def GetBitmap_from_np_array(data2d):
   lc_fig = plt.figure()
-
-  plt.imshow(data2d, interpolation = "nearest", cmap = 'hot')
+  #data2d = np.transpose(data2d_in)
+  plt.imshow(np.transpose(data2d), interpolation = "nearest", cmap = 'hot')
 
   plt.axis('off')
   #plt.axis('tight')
@@ -25,15 +25,16 @@ def GetBitmap_from_np_array(data2d):
 
   print "len(data2d[:,1]) =", len(data2d[:,1])
   print "len(data2d[1,:]) =", len(data2d[1,:])
-  for ypos in range(len(data2d[1,:])):
-    for xpos in range(len(data2d[:,1])):
+  for xpos in range(len(data2d[:,1])):
+    for ypos in range(len(data2d[1,:])):
       print "[xpos,ypos] =", [xpos,ypos]
       #txt_dat = str(data2d[xpos,ypos])
 
       f_num = data2d[xpos,ypos]
       g = float("{0:.2f}".format(f_num))
       txt_dat = str(g)
-      plt.annotate(txt_dat, xy = (ypos-0.5, xpos+0.2), xycoords = 'data', color='green')
+      plt.annotate(txt_dat, xy = (xpos - 0.5, ypos + 0.4), xycoords = 'data'
+                   , color = 'green', size = 8.)
 
   lc_fig.canvas.draw()
   width, height = lc_fig.canvas.get_width_height()
@@ -75,7 +76,8 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width=4, height=3)
+    data2d = build_np_img(width=5, height=10)
+    print data2d
     bitmap = GetBitmap_from_np_array(data2d)
 
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
