@@ -127,6 +127,7 @@ def exercise_1():
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["n_macro_cycles=2",
                 "discover_better_experimental_model=True",
+                "bin_size_fraction=0.25",
                 "debug=True"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
@@ -170,6 +171,7 @@ def exercise_3():
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=2",
+                "bin_size_fraction=0.25",
                 "d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
@@ -333,7 +335,9 @@ def exercise_9():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["n_macro_cycles=2",
-                "method=fft1d"]
+                "method=fft1d",
+                "bin_size_fraction=0.25",
+                ]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.06, 0.05, 0.0005)
