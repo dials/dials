@@ -352,8 +352,11 @@ namespace dials { namespace algorithms {
 
       // Get the array range and loop through all the images
       vec2<int> array_range = scan_.get_array_range();
+      const int offset = array_range[0];
       for (int frame = array_range[0]; frame < array_range[1]; ++frame) {
-        append_for_image(predictions, frame, A[frame], A[frame+1]);
+        DIALS_ASSERT(frame-offset < A.size()-1);
+        append_for_image(
+          predictions, frame, A[frame-offset], A[frame-offset+1]);
       }
 
       // Return the reflection table
