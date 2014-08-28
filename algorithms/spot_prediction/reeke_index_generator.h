@@ -62,10 +62,15 @@ namespace reeke_detail {
         permutation(0, 0, 0, 0, 0, 0, 0, 0, 0) {
 
       // Extract the reciprocal lattice directions from the columns of UB
+      vec3<double> dir1(ub[0], ub[3], ub[6]);
+      vec3<double> dir2(ub[1], ub[4], ub[7]);
+      vec3<double> dir3(ub[2], ub[5], ub[8]);
+      DIALS_ASSERT(dir1.length() > 0.0);
+      DIALS_ASSERT(dir2.length() > 0.0);
+      DIALS_ASSERT(dir3.length() > 0.0);
+      // vec3.normalize will cause division by zero error if length is zero
       vec3<double> rl_dirs[3] = {
-        vec3<double>(ub[0], ub[3], ub[6]).normalize(),
-        vec3<double>(ub[1], ub[4], ub[7]).normalize(),
-        vec3<double>(ub[2], ub[5], ub[8]).normalize()
+        dir1.normalize(), dir2.normalize(), dir3.normalize()
       };
 
       // Find reciprocal lattice axis closest to source direction and swap the
