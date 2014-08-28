@@ -8,18 +8,29 @@ import matplotlib.pyplot as plt
 
 def GetBitmap_from_np_array(data2d):
   lc_fig = plt.figure()
+
+
+  #lc_fig.set_size_inches(1, 1)
+  ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
+  ax.set_axis_off()
+  lc_fig.add_axes(ax)
+
+
   #data2d = np.transpose(data2d_in)
   plt.imshow(np.transpose(data2d), interpolation = "nearest", cmap = 'hot')
-
+  '''
   plt.axis('off')
   #plt.axis('tight')
+  #plt.tight_layout(pad=0.0, h_pad=None, w_pad=None)
+  plt.tight_layout(pad=0.0)
+
+
+
+
 
   '''
-  plt.tight_layout(pad=0.0, h_pad=None, w_pad=None)
-  ax = lc_fig.add_subplot(1, 1, 1)
-  x_new_labl =[]
-  ax.xaxis.set_ticklabels(x_new_labl)
-  '''
+
+
 
   print "len(data2d[:,1]) =", len(data2d[:,1])
   print "len(data2d[1,:]) =", len(data2d[1,:])
@@ -74,7 +85,7 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width=5, height=10)
+    data2d = build_np_img(width=5, height=4)
     print data2d
     bitmap = GetBitmap_from_np_array(data2d)
 

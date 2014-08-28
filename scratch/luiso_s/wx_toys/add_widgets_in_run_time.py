@@ -20,7 +20,7 @@ class MyPanel(wx.Panel):
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.number_of_buttons = 0
+        self.number_of_img = 0
         self.frame = parent
 
         self.mainSizer = wx.BoxSizer(wx.VERTICAL)
@@ -41,12 +41,12 @@ class MyPanel(wx.Panel):
         self.SetSizer(self.mainSizer)
 
     def onAddWidget(self, event):
-        self.number_of_buttons += 1
-        label = "Button %s" %  self.number_of_buttons
-        name = "button%s" % self.number_of_buttons
+        self.number_of_img += 1
+        label = "Button %s" %  self.number_of_img
+        name = "button%s" % self.number_of_img
 
 
-        data2d = build_np_img(width=5, height=10)
+        data2d = build_np_img(width=5, height=8)
         bitmap = GetBitmap_from_np_array(data2d)
         bitmap_tmp = wx.StaticBitmap(self, bitmap=bitmap)
         self.widgetSizer.Add(bitmap_tmp, 0, wx.ALL, 5)
@@ -60,9 +60,9 @@ class MyPanel(wx.Panel):
 
     def onRemoveWidget(self, event):
         if self.widgetSizer.GetChildren():
-            self.widgetSizer.Hide(self.number_of_buttons-1)
-            self.widgetSizer.Remove(self.number_of_buttons-1)
-            self.number_of_buttons -= 1
+            self.widgetSizer.Hide(self.number_of_img-1)
+            self.widgetSizer.Remove(self.number_of_img-1)
+            self.number_of_img -= 1
             self.frame.fSizer.Layout()
             self.frame.Fit()
 
