@@ -20,8 +20,6 @@ def GetBitmap_from_np_array(data2d):
   x_new_labl =[]
   ax.xaxis.set_ticklabels(x_new_labl)
   '''
-  #plt.annotate('arrowstyle', xy=(2, 3),  xycoords='data',
-  #              xytext=(-50, 30), textcoords='offset points')
 
   print "len(data2d[:,1]) =", len(data2d[:,1])
   print "len(data2d[1,:]) =", len(data2d[1,:])
@@ -33,8 +31,8 @@ def GetBitmap_from_np_array(data2d):
       f_num = data2d[xpos,ypos]
       g = float("{0:.2f}".format(f_num))
       txt_dat = str(g)
-      plt.annotate(txt_dat, xy = (xpos - 0.5, ypos + 0.4), xycoords = 'data'
-                   , color = 'green', size = 8.)
+      plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
+                   , color = 'green', size = 12.)
 
   lc_fig.canvas.draw()
   width, height = lc_fig.canvas.get_width_height()

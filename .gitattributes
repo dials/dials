@@ -721,6 +721,7 @@ scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
 scratch/luiso_s/wx_toys/ArtProvider_tst.py -text
+scratch/luiso_s/wx_toys/add_widgets_in_run_time.py -text
 scratch/luiso_s/wx_toys/bitmap_01.py -text
 scratch/luiso_s/wx_toys/bitmap__w_sizers.py -text
 scratch/luiso_s/wx_toys/bitmap_from_numpy.py -text
