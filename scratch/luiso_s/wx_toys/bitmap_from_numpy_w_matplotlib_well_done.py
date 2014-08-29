@@ -17,15 +17,6 @@ def GetBitmap_from_np_array(data2d):
   vl_mid_low = vl_min + d / 3.0
   vl_mid_hig = vl_max - d / 3.0
 
-
-  print "vl_max =", vl_max
-  print "vl_min =", vl_min
-  print "d =", d
-  print "vl_mid_low =", vl_mid_low
-  print "vl_mid_hig =", vl_mid_hig
-
-
-
   #vl_md = (vl_max + vl_min) / 2.0
 
   lc_fig.set_size_inches(xmax * .6, ymax * .6)
@@ -47,7 +38,6 @@ def GetBitmap_from_np_array(data2d):
         clr_chr = 'yellow'
       elif(g > vl_mid_hig):
         clr_chr = 'black'
-        print "got black"
       else:
         clr_chr = 'blue'
       plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
