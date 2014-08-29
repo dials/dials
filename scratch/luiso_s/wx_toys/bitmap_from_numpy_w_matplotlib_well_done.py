@@ -9,32 +9,35 @@ import matplotlib.pyplot as plt
 def GetBitmap_from_np_array(data2d):
   lc_fig = plt.figure(frameon=False)
 
+  xmax = len(data2d[:,1])
+  ymax = len(data2d[1,:])
 
+  #new_way = '''
+
+  plt.imshow(np.transpose(data2d), interpolation = "nearest")
+  lc_fig.set_size_inches(xmax / 2.0, ymax / 2.0)
   ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
   ax.set_axis_off()
   lc_fig.add_axes(ax)
 
-  plt.axis('off')
-  #data2d = np.transpose(data2d_in)
+  ax.imshow(np.transpose(data2d), aspect = 'normal', interpolation = "nearest", cmap = 'hot')
+
+
+  old_way = '''
+
+  lc_fig.set_size_inches(xmax * .6, ymax * .6)
+  ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
+  ax.set_axis_off()
+  lc_fig.add_axes(ax)
+
   plt.imshow(np.transpose(data2d), interpolation = "nearest", cmap = 'hot')
-  '''
-
-  #plt.axis('tight')
-  #plt.tight_layout(pad=0.0, h_pad=None, w_pad=None)
-  plt.tight_layout(pad=0.0)
+  #'''
 
 
-
-
-
-  '''
-
-
-
-  print "len(data2d[:,1]) =", len(data2d[:,1])
-  print "len(data2d[1,:]) =", len(data2d[1,:])
-  for xpos in range(len(data2d[:,1])):
-    for ypos in range(len(data2d[1,:])):
+  print "xmax =", xmax
+  print "ymax =", ymax
+  for xpos in range(xmax):
+    for ypos in range(ymax):
       print "[xpos,ypos] =", [xpos,ypos]
       #txt_dat = str(data2d[xpos,ypos])
 
