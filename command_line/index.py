@@ -46,6 +46,13 @@ Parameters:
   reflections = importer.reflections[0]
   args = importer.unhandled_arguments
 
+  for imageset in imagesets:
+    if (imageset.get_goniometer() is not None and
+        imageset.get_scan() is not None and
+        imageset.get_scan().get_oscillation()[1] == 0):
+      imageset.set_goniometer(None)
+      imageset.set_scan(None)
+
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil = cmd_line.process_and_fetch(args=args)
   working_phil.show()
