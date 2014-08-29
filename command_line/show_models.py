@@ -25,7 +25,8 @@ def run(args):
     for datablock in importer.datablocks:
       imagesets = datablock.extract_imagesets()
       for imageset in imagesets:
-        print imageset.get_template()
+        try: print imageset.get_template()
+        except Exception: pass
         print imageset.get_detector()
         print imageset.get_beam()
         if imageset.get_scan() is not None:
