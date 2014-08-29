@@ -33,6 +33,14 @@ class indexer_fft3d(indexer_base):
     if self.params.fft3d.reciprocal_space_grid.d_min is libtbx.Auto:
       # rough calculation of suitable d_min based on max cell
       # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
+      # fft_cell should be greater than twice max_cell, so say:
+      #   fft_cell = 2.5 * max_cell
+      # then:
+      #   fft_cell = n_points * d_min/2
+      #   2.5 * max_cell = n_points * d_min/2
+      # a little bit of rearrangement:
+      #   d_min = 5 * max_cell/n_points
+
       self.params.fft3d.reciprocal_space_grid.d_min = (
         5 * self.params.max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
       print "Setting d_min: %s" %self.params.fft3d.reciprocal_space_grid.d_min

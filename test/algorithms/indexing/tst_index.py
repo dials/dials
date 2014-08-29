@@ -509,14 +509,14 @@ def exercise_14():
   args = ["dials.find_spots", datablock_json]
 
   command = " ".join(args)
-  #print command
+  print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
   pickle_path = os.path.join(tmp_dir, "strong.pickle")
   assert os.path.exists(pickle_path)
 
   expected_unit_cell = uctbx.unit_cell((78.184, 78.184, 78.184, 90.000, 90.000, 90.000))
   expected_hall_symbol = ' I 2 2 3'
-  expected_rmsds = (0.03, 0.04, 0.007)
+  expected_rmsds = (0.04, 0.05, 0.007)
 
   for method in ("fft3d", "fft1d", "real_space_grid_search"):
     extra_args = []

@@ -49,7 +49,7 @@ fft3d {
       .type = int(value_min=0)
     d_max = None
       .type = float(value_min=0)
-    d_min = 4
+    d_min = Auto
       .type = float(value_min=0)
       .help = "The high resolution limit in Angstrom for spots to include in "
               "the initial indexing."
@@ -119,7 +119,7 @@ include scope dials.data.refinement.phil_scope
 refinement_protocol {
   weight_outlier_n_sigma = 5
     .type = float(value_min=0)
-  n_macro_cycles = 3
+  n_macro_cycles = 5
     .type = int(value_min=0)
   d_min_step = 1.0
     .type = float(value_min=0.0)
