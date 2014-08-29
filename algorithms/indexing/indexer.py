@@ -83,7 +83,7 @@ known_symmetry {
     .help = "Angular tolerance (in degrees) in unit cell comparison."
 }
 basis_vector_combinations {
-  max_try = 30
+  max_try = 50
     .type = int(value_min=1)
   metric = *model_likelihood n_indexed
     .type = choice
