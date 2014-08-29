@@ -764,85 +764,99 @@ class indexer_base(object):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
 
-    min_angle = 20 # degrees, arbitrary cutoff
-    for i in range(len(vectors)):
-      a = vectors[i]
-      for j in range(i, len(vectors)):
-        b = vectors[j]
-        angle = a.angle(b, deg=True)
-        if angle < min_angle or (180-angle) < min_angle:
-          continue
-        a_cross_b = a.cross(b)
-        gamma = a.angle(b, deg=True)
-        if gamma < 90:
-          # all angles obtuse if possible please
-          b = -b
-          gamma = 180 - gamma
-          a_cross_b = -a_cross_b
-        for k in range(j, len(vectors)):
-          c = vectors[k]
-          if abs(90-a_cross_b.angle(c, deg=True)) < min_angle:
-            continue
-          alpha = b.angle(c, deg=True)
-          if alpha < 90:
-            c = -c
-          #beta = c.angle(a, deg=True)
-          if a_cross_b.dot(c) < 0:
-            # we want right-handed basis set, therefore invert all vectors
-            a = -a
-            b = -b
-            c = -c
-            #assert a.cross(b).dot(c) > 0
-          model = Crystal(a, b, c, space_group_symbol="P 1")
-          uc = model.get_unit_cell()
-          model_orig = model
-          cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
-          model = model.change_basis(cb_op_to_niggli)
-          uc = model.get_unit_cell()
-          if (self.target_symmetry_centred is not None or
-              self.target_symmetry_primitive is not None or
-              self.target_symmetry_minimum_cell is not None):
-            cb_op_to_primitive = None
-            if self.target_symmetry_minimum_cell is not None:
-              from dials.algorithms.indexing.symmetry \
-                   import change_of_basis_op_to_best_cell
-              cb_op_to_best_cell = change_of_basis_op_to_best_cell(
-                uc,
-                target_unit_cell=self.target_symmetry_minimum_cell.unit_cell(),
-                target_space_group=self.target_symmetry_minimum_cell.space_group())
-              best_cell = uc.change_basis(cb_op_to_best_cell)
-              if best_cell.is_similar_to(
-                  self.target_symmetry_minimum_cell.unit_cell(),
-                  relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-                  absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
-                cb_op_to_primitive = cb_op_to_best_cell * self.cb_op_minimum_cell_to_primitive
-            if (cb_op_to_primitive is None and
-                self.target_symmetry_primitive is not None):
-              from dials.algorithms.indexing.symmetry \
-                   import change_of_basis_op_to_best_cell
-              cb_op_to_best_cell = change_of_basis_op_to_best_cell(
-                uc,
-                target_unit_cell=self.target_symmetry_primitive.unit_cell(),
-                target_space_group=self.target_symmetry_primitive.space_group())
-              best_cell = uc.change_basis(cb_op_to_best_cell)
-              if (self.target_symmetry_primitive.unit_cell() is None or
-                  best_cell.is_similar_to(
-                    self.target_symmetry_primitive.unit_cell(),
-                    relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-                    absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
-                cb_op_to_primitive = cb_op_to_best_cell
-            if cb_op_to_primitive is None:
-              continue
-            else:
-              model = model.change_basis(cb_op_to_primitive)
-              uc = model.get_unit_cell()
+    # select unique combinations of input vectors to test
+    # the order of combinations is such that combinations comprising vectors
+    # nearer the beginning of the input list will appear before combinations
+    # comprising vectors towards the end of the list
+    n = len(vectors)
+    combinations = flex.vec3_int(flex.nested_loop((n,n,n)))
+    combinations = combinations.select(
+      flex.sort_permutation(combinations.as_vec3_double().norms()))
 
-          params = uc.parameters()
-          if uc.volume() > (params[0]*params[1]*params[2]/100):
-            # unit cell volume cutoff from labelit 2004 paper
-            candidate_crystal_models.append(model)
-            if len(candidate_crystal_models) == max_combinations:
-              return candidate_crystal_models
+    # select only those combinations where j > i and k > j
+    i, j, k = combinations.as_vec3_double().parts()
+    sel = flex.bool(len(combinations), True)
+    sel &= j > i
+    sel &= k > j
+    combinations = combinations.select(sel)
+
+    min_angle = 20 # degrees, arbitrary cutoff
+    for i, j, k in combinations:
+      a = vectors[i]
+      b = vectors[j]
+      angle = a.angle(b, deg=True)
+      if angle < min_angle or (180-angle) < min_angle:
+        continue
+      a_cross_b = a.cross(b)
+      gamma = a.angle(b, deg=True)
+      if gamma < 90:
+        # all angles obtuse if possible please
+        b = -b
+        gamma = 180 - gamma
+        a_cross_b = -a_cross_b
+      c = vectors[k]
+      if abs(90-a_cross_b.angle(c, deg=True)) < min_angle:
+        continue
+      alpha = b.angle(c, deg=True)
+      if alpha < 90:
+        c = -c
+      #beta = c.angle(a, deg=True)
+      if a_cross_b.dot(c) < 0:
+        # we want right-handed basis set, therefore invert all vectors
+        a = -a
+        b = -b
+        c = -c
+        #assert a.cross(b).dot(c) > 0
+      model = Crystal(a, b, c, space_group_symbol="P 1")
+      uc = model.get_unit_cell()
+      model_orig = model
+      cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
+      model = model.change_basis(cb_op_to_niggli)
+      uc = model.get_unit_cell()
+      if (self.target_symmetry_centred is not None or
+          self.target_symmetry_primitive is not None or
+          self.target_symmetry_minimum_cell is not None):
+        cb_op_to_primitive = None
+        if self.target_symmetry_minimum_cell is not None:
+          from dials.algorithms.indexing.symmetry \
+               import change_of_basis_op_to_best_cell
+          cb_op_to_best_cell = change_of_basis_op_to_best_cell(
+            uc,
+            target_unit_cell=self.target_symmetry_minimum_cell.unit_cell(),
+            target_space_group=self.target_symmetry_minimum_cell.space_group())
+          best_cell = uc.change_basis(cb_op_to_best_cell)
+          if best_cell.is_similar_to(
+              self.target_symmetry_minimum_cell.unit_cell(),
+              relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+              absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
+            cb_op_to_primitive = cb_op_to_best_cell * self.cb_op_minimum_cell_to_primitive
+        if (cb_op_to_primitive is None and
+            self.target_symmetry_primitive is not None):
+          from dials.algorithms.indexing.symmetry \
+               import change_of_basis_op_to_best_cell
+          cb_op_to_best_cell = change_of_basis_op_to_best_cell(
+            uc,
+            target_unit_cell=self.target_symmetry_primitive.unit_cell(),
+            target_space_group=self.target_symmetry_primitive.space_group())
+          best_cell = uc.change_basis(cb_op_to_best_cell)
+          if (self.target_symmetry_primitive.unit_cell() is None or
+              best_cell.is_similar_to(
+                self.target_symmetry_primitive.unit_cell(),
+                relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+                absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
+            cb_op_to_primitive = cb_op_to_best_cell
+        if cb_op_to_primitive is None:
+          continue
+        else:
+          model = model.change_basis(cb_op_to_primitive)
+          uc = model.get_unit_cell()
+
+      params = uc.parameters()
+      if uc.volume() > (params[0]*params[1]*params[2]/100):
+        # unit cell volume cutoff from labelit 2004 paper
+        candidate_crystal_models.append(model)
+        if len(candidate_crystal_models) == max_combinations:
+          return candidate_crystal_models
     return candidate_crystal_models
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
