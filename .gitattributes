@@ -734,7 +734,6 @@ scratch/luiso_s/wx_toys/radiobutton_test_simpl.py -text
 scratch/luiso_s/wx_toys/test_wx_text.py -text
 scratch/luiso_s/wx_toys/text_pyplot.py -text
 scratch/luiso_s/wx_toys/toilet_output.py -text
-scratch/luiso_s/wx_toys/wx_bitmaps_resize_w_jpg.py -text
 scratch/luiso_s/wx_toys/wx_h_world.py -text
 scratch/luiso_s/wx_toys/wx_h_world_01.py -text
 scratch/luiso_s/wx_toys/wx_sizers_and_np_arays.py -text
