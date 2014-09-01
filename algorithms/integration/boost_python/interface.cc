@@ -58,6 +58,24 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("finished", &IntegrationTask3DExecutor::finished)
       ;
 
+    class_<IntegrationManager3DExecutor>("IntegrationManager3DExecutor", no_init)
+      .def(init<af::reflection_table,
+                vec2<int>,
+                double,
+                std::size_t>((
+          arg("reflections"),
+          arg("array_range"),
+          arg("block_size"),
+          arg("num_tasks"))))
+      .def("__len__", &IntegrationManager3DExecutor::size)
+      .def("finished", &IntegrationManager3DExecutor::finished)
+      .def("task", &IntegrationManager3DExecutor::task)
+      .def("split", &IntegrationManager3DExecutor::split)
+      .def("accumulate", &IntegrationManager3DExecutor::accumulate)
+      .def("data", &IntegrationManager3DExecutor::data)
+      .def("jobs", &IntegrationManager3DExecutor::jobs);
+      ;
+
     class_<IntegrationManagerData3D>("IntegrationManagerData3D", no_init)
       .def(init<af::reflection_table,
                 vec2<double>,
