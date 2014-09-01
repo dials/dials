@@ -636,6 +636,9 @@ namespace dials { namespace algorithms {
   };
 
 
+  /**
+   * A class to do the integration management
+   */
   class IntegrationManager3DExecutor {
   public:
 
@@ -713,7 +716,13 @@ namespace dials { namespace algorithms {
     }
 
     void accumulate(std::size_t index, af::reflection_table result) {
-
+      using namespace dials::af::boost_python::flex_table_suite;
+      set_selected_rows_index_mask(
+          data_,
+          task_indices(index),
+          task_mask(index),
+          result);
+      finished_[index] = true;
     }
 
   private:
@@ -780,7 +789,7 @@ namespace dials { namespace algorithms {
       }
 
       // Get which reflections to process in which job and task
-      std::vector< std::vector<std::size_t> > tindices(tasks_.size());
+      std::vector<job_list_type> tindices(tasks_.size());
       std::vector<job_list_type> jindices(jobs_.size());
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         int z0 = bbox[i][4];
@@ -797,7 +806,7 @@ namespace dials { namespace algorithms {
             if (f & af::ReferenceSpot) {
               if (z0 >= jz0 && z1 <= jz1) {
                 if (!added[task]) {
-                  tindices[task].push_back(i);
+                  tindices[task].push_back(job_type(i, false));
                   added[task] = true;
                 }
                 DIALS_ASSERT(tindices[task].size() > 0);
@@ -817,11 +826,14 @@ namespace dials { namespace algorithms {
           int jz1 = jobs_[jmin][1];
           if (z0 >= jz0 && z1 <= jz1) {
             if (f &af::ReferenceSpot) {
+              std::size_t task = lookup[jmin];
               DIALS_ASSERT(jindices[jmin].size() > 0);
+              DIALS_ASSERT(tindices[task].size() > 0);
+              tindices[task].back().second=true;
               jindices[jmin].back().second=true;
             } else {
               std::size_t task = lookup[jmin];
-              tindices[task].push_back(i);
+              tindices[task].push_back(job_type(i, true));
               std::size_t t = tindices[task].size() - 1;
               jindices[jmin].push_back(job_type(t, true));
             }
@@ -845,11 +857,13 @@ namespace dials { namespace algorithms {
 
       // Compute the task indices
       task_indices_.resize(task_offset_.back());
+      task_mask_.resize(task_offset_.back());
       std::size_t k = 0;
       for (std::size_t i = 0; i < tindices.size(); ++i) {
-        const std::vector<std::size_t>& ind = tindices[i];
+        const job_list_type& ind = tindices[i];
         for (std::size_t j = 0; j < ind.size(); ++j, ++k) {
-          task_indices_[k] = ind[j];
+          task_indices_[k] = ind[j].first;
+          task_mask_[k] = ind[j].second;
         }
       }
       DIALS_ASSERT(k == task_indices_.size());
@@ -885,6 +899,17 @@ namespace dials { namespace algorithms {
       std::size_t tnum = ti1 - ti0;
       DIALS_ASSERT(toff + tnum <= task_indices_.size());
       return af::const_ref<std::size_t>(&task_indices_[toff], tnum);
+    }
+
+    af::const_ref<bool> task_mask(std::size_t index) const {
+      DIALS_ASSERT(index + 1 < task_offset_.size());
+      std::size_t ti0 = task_offset_[index];
+      std::size_t ti1 = task_offset_[index+1];
+      DIALS_ASSERT(ti1 > ti0);
+      std::size_t toff = ti0;
+      std::size_t tnum = ti1 - ti0;
+      DIALS_ASSERT(toff + tnum <= task_mask_.size());
+      return af::const_ref<bool>(&task_mask_[toff], tnum);
     }
 
     af::shared<std::size_t> job_offset(std::size_t index) const {
@@ -945,6 +970,7 @@ namespace dials { namespace algorithms {
     af::shared<bool> finished_;
     af::shared<std::size_t> task_offset_;
     af::shared<std::size_t> task_indices_;
+    af::shared<bool> task_mask_;
     af::shared<std::size_t> job_offset_;
     af::shared<std::size_t> job_indices_;
     af::shared<bool> job_mask_;

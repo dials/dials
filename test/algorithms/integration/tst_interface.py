@@ -175,6 +175,7 @@ class TestIntegrationManager3DExecutor(object):
     from random import randint, seed, choice
     seed(0)
     self.expected = [[], [], [], []]
+    self.processed = [[], [], [], []]
     self.lookup = [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3]
     for i in range(self.nrefl):
       x0 = randint(0, self.width-10)
@@ -183,6 +184,7 @@ class TestIntegrationManager3DExecutor(object):
       x1 = x0 + randint(2, 10)
       y1 = y0 + randint(2, 10)
       for k, j in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]):
+        m = k + i * 13
         t = self.lookup[k]
         pos = choice(["left", "right", "centre"])
         if pos == 'left':
@@ -191,14 +193,14 @@ class TestIntegrationManager3DExecutor(object):
           if k > 0:
             t2 = self.lookup[k-1]
             if t2 != t:
-              self.expected[t2].append(i)
+              self.expected[t2].append(m)
         elif pos == 'right':
           z0 = j
           z1 = j + zs
           if k < 12-1:
             t2 = self.lookup[k+1]
             if t2 != t:
-              self.expected[t2].append(i)
+              self.expected[t2].append(m)
         else:
           z0 = j - zs // 2
           z1 = j + zs // 2
@@ -208,11 +210,24 @@ class TestIntegrationManager3DExecutor(object):
           "bbox" : bbox,
           "flags" : flex.reflection_table.flags.reference_spot
         })
-        self.expected[t].append(i)
+        self.expected[t].append(m)
+        self.processed[t].append(m)
+
+      # Add reflection to ignore
+      zc = choice([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120])
+      z0 = zc - 11
+      z1 = zc + 11
+      bbox = (x0, x1, y0, y1, z0, z1)
+      self.reflections.append({
+        "panel" : randint(0,1),
+        "bbox" : bbox,
+        "flags" : flex.reflection_table.flags.reference_spot
+      })
 
 
   def run(self):
     from dials.algorithms.integration import IntegrationManager3DExecutor
+    from dials.array_family import flex
 
     # Create the executor
     executor = IntegrationManager3DExecutor(
@@ -285,13 +300,31 @@ class TestIntegrationManager3DExecutor(object):
     assert(len(spec1.data()) == len(self.expected[1]))
     assert(len(spec2.data()) == len(self.expected[2]))
     assert(len(spec3.data()) == len(self.expected[3]))
-    assert(len(executor.ignored()) == 0)
+    assert(len(executor.ignored()) == self.nrefl)
+
+    # Add some results
+    n1 = len(spec0.data())
+    n2 = len(spec1.data())
+    n3 = len(spec2.data())
+    n4 = len(spec3.data())
+    spec0.data()["data"] = flex.double(n1, 1)
+    spec1.data()["data"] = flex.double(n2, 2)
+    spec2.data()["data"] = flex.double(n3, 3)
+    spec3.data()["data"] = flex.double(n4, 4)
 
     # Accumulate the data again
     executor.accumulate(0, spec0.data())
     executor.accumulate(1, spec1.data())
     executor.accumulate(2, spec2.data())
     executor.accumulate(3, spec3.data())
+
+    # Get results and check they're as expected
+    data = executor.data()
+    result = data["data"]
+    bbox = data["bbox"]
+    for v, p in enumerate(self.processed):
+      for i in p:
+        assert(result[i] == v+1)
 
     # Test passed
     print 'OK'
