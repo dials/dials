@@ -138,7 +138,8 @@ class Integrator(object):
     if self._params.mp.max_procs > 0:
       num_proc = min(num_proc, self._params.mp.max_procs)
     if num_proc > 1:
-      def print_output(result):
+      def process_output(result):
+        self._manager.accumulate(result[0])
         print result[1]
       def execute_task(task):
         from cStringIO import StringIO
@@ -151,14 +152,14 @@ class Integrator(object):
         func=execute_task,
         iterable=list(self._manager.tasks()),
         processes=num_proc,
-        callback=print_output,
+        callback=process_output,
         method=self._params.mp.method,
         preserve_order=True)
       task_results, output = zip(*task_results)
     else:
       task_results = [task() for task in self._manager.tasks()]
-    for result in task_results:
-      self._manager.accumulate(result)
+      for result in task_results:
+        self._manager.accumulate(result)
     end_time = time()
     print "Time taken: %.2f seconds" % (end_time - start_time)
     return self._manager.result()
@@ -171,6 +172,7 @@ class IntegrationTaskExecutor3DAux(boost.python.injector,
   def execute(self, imageset, mask=None):
     ''' Passing in an imageset process all the images. '''
     from dials.model.data import Image
+    from time import time
     import sys
     detector = imageset.get_detector()
     frame00 = self.frame0()
@@ -178,6 +180,8 @@ class IntegrationTaskExecutor3DAux(boost.python.injector,
     frame01, frame11 = imageset.get_array_range()
     assert(frame00 == frame01)
     assert(frame10 == frame11)
+    self.image_read_time = 0
+    self.image_extract_time = 0
     if mask is None:
       image = imageset[0]
       if not isinstance(image, tuple):
@@ -188,10 +192,15 @@ class IntegrationTaskExecutor3DAux(boost.python.injector,
         mask.append(image[i].as_double() > tr[0])
       mask = tuple(mask)
     sys.stdout.write("Reading images: ")
-    for i, image in enumerate(imageset):
+    for i in range(len(imageset)):
+      st = time()
+      image = imageset[i]
+      self.image_read_time += time() - st
       if not isinstance(image, tuple):
         image = (image,)
+      st = time()
       self.next(Image(image, mask))
+      self.image_extract_time += time() - st
       sys.stdout.write(".")
       sys.stdout.flush()
       del image
@@ -236,7 +245,10 @@ class IntegrationTask3D(IntegrationTask):
 
     executor.execute(imageset)
 
-    return IntegrationResult(self._index, executor.data())
+    result = IntegrationResult(self._index, executor.data())
+    result.image_read_time = executor.image_read_time
+    result.image_extract_time = executor.image_extract_time
+    return result
 
 
 class IntegrationManager3D(IntegrationManager):
@@ -266,6 +278,8 @@ class IntegrationManager3D(IntegrationManager):
       block_size,
       params.mp.max_procs * params.mp.max_tasks,
       len(detector))
+    self.image_read_time = 0
+    self.image_extract_time = 0
 
   def task(self, index):
     ''' Get a task. '''
@@ -282,9 +296,13 @@ class IntegrationManager3D(IntegrationManager):
   def accumulate(self, result):
     ''' Accumulate the results. '''
     self._data.accumulate(result.index, result.reflections)
+    self.image_read_time += result.image_read_time
+    self.image_extract_time += result.image_extract_time
 
   def result(self):
     ''' Return the result. '''
+    print "Image Read: ", self.image_read_time
+    print "Image Extract: ", self.image_extract_time
     return self._data.data()
 
   def finished(self):
