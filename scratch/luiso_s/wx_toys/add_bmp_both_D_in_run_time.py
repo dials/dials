@@ -21,11 +21,12 @@ class MyPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self.number_of_img = 0
+        self.number_of_floors = 1
         self.frame = parent
 
         self.mainSizer = wx.BoxSizer(wx.VERTICAL)
         controlSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.widgetSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.widgetSizer = [wx.BoxSizer(wx.HORIZONTAL)]
 
         self.addButton = wx.Button(self, label="Add")
         self.addButton.Bind(wx.EVT_BUTTON, self.onAddWidget)
@@ -35,8 +36,12 @@ class MyPanel(wx.Panel):
         self.removeButton.Bind(wx.EVT_BUTTON, self.onRemoveWidget)
         controlSizer.Add(self.removeButton, 0, wx.CENTER|wx.ALL, 5)
 
+        self.V_addButton = wx.Button(self, label="Vertical add")
+        self.V_addButton.Bind(wx.EVT_BUTTON, self.on_V_add)
+        controlSizer.Add(self.V_addButton, 0, wx.CENTER|wx.ALL, 5)
+
         self.mainSizer.Add(controlSizer, 0, wx.CENTER)
-        self.mainSizer.Add(self.widgetSizer, 0, wx.CENTER|wx.ALL, 10)
+        self.mainSizer.Add(self.widgetSizer[0], 0, wx.CENTER|wx.ALL, 10)
 
         self.SetSizer(self.mainSizer)
 
@@ -49,19 +54,21 @@ class MyPanel(wx.Panel):
         data2d = build_np_img(width=5, height=8)
         bitmap = GetBitmap_from_np_array(data2d)
         bitmap_tmp = wx.StaticBitmap(self, bitmap=bitmap)
-        self.widgetSizer.Add(bitmap_tmp, 0, wx.ALL, 5)
+        self.widgetSizer[0].Add(bitmap_tmp, 0, wx.ALL, 5)
 
         self.frame.fSizer.Layout()
         self.frame.Fit()
 
     def onRemoveWidget(self, event):
-        if self.widgetSizer.GetChildren():
-            self.widgetSizer.Hide(self.number_of_img-1)
-            self.widgetSizer.Remove(self.number_of_img-1)
+        if self.widgetSizer[0].GetChildren():
+            self.widgetSizer[0].Hide(self.number_of_img-1)
+            self.widgetSizer[0].Remove(self.number_of_img-1)
             self.number_of_img -= 1
             self.frame.fSizer.Layout()
             self.frame.Fit()
             print "number_of_img =", self.number_of_img
+    def on_V_add(self, event):
+        print "from on_V_add"
 
 class MyFrame(wx.Frame):
     def __init__(self):

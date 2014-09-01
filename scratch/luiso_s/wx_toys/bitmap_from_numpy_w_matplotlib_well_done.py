@@ -17,8 +17,6 @@ def GetBitmap_from_np_array(data2d):
   vl_mid_low = vl_min + d / 3.0
   vl_mid_hig = vl_max - d / 3.0
 
-  #vl_md = (vl_max + vl_min) / 2.0
-
   lc_fig.set_size_inches(xmax * .6, ymax * .6)
   ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
   ax.set_axis_off()
@@ -29,8 +27,6 @@ def GetBitmap_from_np_array(data2d):
   print "ymax =", ymax
   for xpos in range(xmax):
     for ypos in range(ymax):
-      print "[xpos,ypos] =", [xpos,ypos]
-
       f_num = data2d[xpos,ypos]
       g = float("{0:.2f}".format(f_num))
       txt_dat = str(g)
@@ -59,9 +55,12 @@ def GetBitmap_from_np_array(data2d):
 def build_np_img(width=64, height=64):
   data2d = np.zeros( (width, height),'float')
   print "width, height =", width, height
+  tot_lng = np.sqrt(width**2. + height**2.)
   for x in range(0, width):
     for y in range(0, height):
-      data2d[x,y] = np.sqrt(x*x + y*y)
+      dx = float(width - x)
+      dy = float(height - y)
+      data2d[x,y] = tot_lng - np.sqrt(dx**2. + dy**2.)
 
   print "data2d.max =", data2d.max()
   return data2d
@@ -83,7 +82,7 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width=18, height=18)
+    data2d = build_np_img(width=8, height=4)
     print data2d
     bitmap = GetBitmap_from_np_array(data2d)
 
