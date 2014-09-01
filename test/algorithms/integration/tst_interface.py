@@ -308,13 +308,11 @@ class TestIntegrationManager3DExecutor(object):
     self.nrefl = 10000
     self.array_range = (0, 130)
     self.block_size = 20
-    self.num_tasks = 4
 
     from random import randint, seed, choice
     seed(0)
-    self.expected = [[], [], [], []]
-    self.processed = [[], [], [], []]
-    self.lookup = [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3]
+    self.expected = []
+    self.processed = []
     for i in range(self.nrefl):
       x0 = randint(0, self.width-10)
       y0 = randint(0, self.height-10)
@@ -323,22 +321,13 @@ class TestIntegrationManager3DExecutor(object):
       y1 = y0 + randint(2, 10)
       for k, j in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]):
         m = k + i * 13
-        t = self.lookup[k]
         pos = choice(["left", "right", "centre"])
         if pos == 'left':
           z0 = j - zs
           z1 = j
-          if k > 0:
-            t2 = self.lookup[k-1]
-            if t2 != t:
-              self.expected[t2].append(m)
         elif pos == 'right':
           z0 = j
           z1 = j + zs
-          if k < 12-1:
-            t2 = self.lookup[k+1]
-            if t2 != t:
-              self.expected[t2].append(m)
         else:
           z0 = j - zs // 2
           z1 = j + zs // 2
@@ -348,8 +337,8 @@ class TestIntegrationManager3DExecutor(object):
           "bbox" : bbox,
           "flags" : flex.reflection_table.flags.reference_spot
         })
-        self.expected[t].append(m)
-        self.processed[t].append(m)
+        self.expected.append(m)
+        self.processed.append(m)
 
       # Add reflection to ignore
       zc = choice([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120])
@@ -371,13 +360,11 @@ class TestIntegrationManager3DExecutor(object):
     executor = IntegrationManager3DExecutor(
       self.reflections,
       self.array_range,
-      self.block_size,
-      self.num_tasks,
-      self.npanels)
+      self.block_size)
 
     # Ensure the tasks make sense
     jobs = executor.jobs()
-    assert(len(executor) == 4)
+    assert(len(executor) == 1)
     assert(not executor.finished())
     assert(len(jobs) == 12)
     assert(jobs[0] == (0, 20))
@@ -392,77 +379,198 @@ class TestIntegrationManager3DExecutor(object):
     assert(jobs[9] == (90, 110))
     assert(jobs[10] == (100, 120))
     assert(jobs[11] == (110, 130))
-    assert(executor.task(0) == (0, 3))
-    assert(executor.task(1) == (3, 6))
-    assert(executor.task(2) == (6, 9))
-    assert(executor.task(3) == (9, 12))
 
     # Get the task specs
-    spec0 = executor.split(0)
-    spec1 = executor.split(1)
-    spec2 = executor.split(2)
-    spec3 = executor.split(3)
-    assert(spec0.npanels() == 2)
-    assert(spec1.npanels() == 2)
-    assert(spec2.npanels() == 2)
-    assert(spec3.npanels() == 2)
-    assert(spec0.njobs() == 3)
-    assert(spec1.njobs() == 3)
-    assert(spec2.njobs() == 3)
-    assert(spec3.njobs() == 3)
-    assert(spec0.frame0() == 0)
-    assert(spec0.frame1() == 40)
-    assert(spec0.nframes() == 40)
-    assert(spec1.frame0() == 30)
-    assert(spec1.frame1() == 70)
-    assert(spec1.nframes() == 40)
-    assert(spec2.frame0() == 60)
-    assert(spec2.frame1() == 100)
-    assert(spec2.nframes() == 40)
-    assert(spec3.frame0() == 90)
-    assert(spec3.frame1() == 130)
-    assert(spec3.nframes() == 40)
-    assert(spec0.job(0) == (0, 20))
-    assert(spec0.job(1) == (10, 30))
-    assert(spec0.job(2) == (20, 40))
-    assert(spec1.job(0) == (30, 50))
-    assert(spec1.job(1) == (40, 60))
-    assert(spec1.job(2) == (50, 70))
-    assert(spec2.job(0) == (60, 80))
-    assert(spec2.job(1) == (70, 90))
-    assert(spec2.job(2) == (80, 100))
-    assert(spec3.job(0) == (90, 110))
-    assert(spec3.job(1) == (100, 120))
-    assert(spec3.job(2) == (110, 130))
-    assert(len(spec0.data()) == len(self.expected[0]))
-    assert(len(spec1.data()) == len(self.expected[1]))
-    assert(len(spec2.data()) == len(self.expected[2]))
-    assert(len(spec3.data()) == len(self.expected[3]))
+    data = executor.split()
+    ignored = executor.ignored()
+    assert(len(data) == len(self.expected))
     assert(len(executor.ignored()) == self.nrefl)
+    assert(len(data) + len(executor.ignored()) == len(self.reflections))
 
     # Add some results
-    n1 = len(spec0.data())
-    n2 = len(spec1.data())
-    n3 = len(spec2.data())
-    n4 = len(spec3.data())
-    spec0.data()["data"] = flex.double(n1, 1)
-    spec1.data()["data"] = flex.double(n2, 2)
-    spec2.data()["data"] = flex.double(n3, 3)
-    spec3.data()["data"] = flex.double(n4, 4)
+    data["data"] = flex.double(len(data), 1)
 
     # Accumulate the data again
-    executor.accumulate(0, spec0.data())
-    executor.accumulate(1, spec1.data())
-    executor.accumulate(2, spec2.data())
-    executor.accumulate(3, spec3.data())
+    assert(not executor.finished())
+    executor.accumulate(data)
+    assert(executor.finished())
 
     # Get results and check they're as expected
     data = executor.data()
     result = data["data"]
     bbox = data["bbox"]
-    for v, p in enumerate(self.processed):
-      for i in p:
-        assert(result[i] == v+1)
+    for i in range(len(self.processed)):
+      assert(result[self.processed[i]] == 1)
+
+    # Test passed
+    print 'OK'
+
+
+class TestIntegrationManager3DExecutorMulti(object):
+
+  def __init__(self):
+    from dials.array_family import flex
+    from scitbx.array_family import shared
+    from random import shuffle
+
+    self.reflections = flex.reflection_table()
+    self.reflections['panel'] = flex.size_t()
+    self.reflections['bbox'] = flex.int6()
+    self.reflections['miller_index'] = flex.miller_index()
+    self.reflections['s1'] = flex.vec3_double()
+    self.reflections['xyzcal.px'] = flex.vec3_double()
+    self.reflections['xyzcal.mm'] = flex.vec3_double()
+    self.reflections['entering'] = flex.bool()
+    self.reflections['id'] = flex.size_t()
+    self.reflections["flags"] = flex.size_t()
+
+    self.npanels = 2
+    self.width = 1000
+    self.height = 1000
+    self.nrefl = 10000
+    self.array_range = (0, 130)
+    self.block_size = 20
+
+    from random import randint, seed, choice
+    seed(0)
+    self.expected = [[] for i in range(12)]
+    self.processed = [[] for i in range(12)]
+    for i in range(self.nrefl):
+      x0 = randint(0, self.width-10)
+      y0 = randint(0, self.height-10)
+      zs = randint(2, 9)
+      x1 = x0 + randint(2, 10)
+      y1 = y0 + randint(2, 10)
+      for k, j in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]):
+        m = k + i * 13
+        pos = choice(["left", "right", "centre"])
+        if pos == 'left':
+          z0 = j - zs
+          z1 = j
+          if k > 0:
+            self.expected[k-1].append(m)
+        elif pos == 'right':
+          z0 = j
+          z1 = j + zs
+          if k < 11:
+            self.expected[k+1].append(m)
+        else:
+          z0 = j - zs // 2
+          z1 = j + zs // 2
+        bbox = (x0, x1, y0, y1, z0, z1)
+        self.reflections.append({
+          "panel" : randint(0,1),
+          "bbox" : bbox,
+          "flags" : flex.reflection_table.flags.reference_spot
+        })
+        self.expected[k].append(m)
+        self.processed[k].append(m)
+
+      # Add reflection to ignore
+      zc = choice([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120])
+      z0 = zc - 11
+      z1 = zc + 11
+      bbox = (x0, x1, y0, y1, z0, z1)
+      self.reflections.append({
+        "panel" : randint(0,1),
+        "bbox" : bbox,
+        "flags" : flex.reflection_table.flags.reference_spot
+      })
+
+
+  def run(self):
+    from dials.algorithms.integration import IntegrationManager3DMultiExecutor
+    from dials.array_family import flex
+
+    # Create the executor
+    executor = IntegrationManager3DMultiExecutor(
+      self.reflections,
+      self.array_range,
+      self.block_size)
+
+    # Ensure the tasks make sense
+    jobs = [executor.jobs(i) for i in range(len(executor))]
+    assert(len(executor) == 12)
+    assert(not executor.finished())
+    assert(len(jobs) == 12)
+    assert(jobs[0] == (0, 20))
+    assert(jobs[1] == (10, 30))
+    assert(jobs[2] == (20, 40))
+    assert(jobs[3] == (30, 50))
+    assert(jobs[4] == (40, 60))
+    assert(jobs[5] == (50, 70))
+    assert(jobs[6] == (60, 80))
+    assert(jobs[7] == (70, 90))
+    assert(jobs[8] == (80, 100))
+    assert(jobs[9] == (90, 110))
+    assert(jobs[10] == (100, 120))
+    assert(jobs[11] == (110, 130))
+
+    # Get the task specs
+    data0 = executor.split(0)
+    data1 = executor.split(1)
+    data2 = executor.split(2)
+    data3 = executor.split(3)
+    data4 = executor.split(4)
+    data5 = executor.split(5)
+    data6 = executor.split(6)
+    data7 = executor.split(7)
+    data8 = executor.split(8)
+    data9 = executor.split(9)
+    data10 = executor.split(10)
+    data11 = executor.split(11)
+    ignored = executor.ignored()
+    assert(len(data0) == len(self.expected[0]))
+    assert(len(data1) == len(self.expected[1]))
+    assert(len(data2) == len(self.expected[2]))
+    assert(len(data3) == len(self.expected[3]))
+    assert(len(data4) == len(self.expected[4]))
+    assert(len(data5) == len(self.expected[5]))
+    assert(len(data6) == len(self.expected[6]))
+    assert(len(data7) == len(self.expected[7]))
+    assert(len(data8) == len(self.expected[8]))
+    assert(len(data9) == len(self.expected[9]))
+    assert(len(data10) == len(self.expected[10]))
+    assert(len(data11) == len(self.expected[11]))
+    assert(len(executor.ignored()) == self.nrefl)
+
+    # Add some results
+    data0["data"] = flex.double(len(data0), 1)
+    data1["data"] = flex.double(len(data1), 2)
+    data2["data"] = flex.double(len(data2), 3)
+    data3["data"] = flex.double(len(data3), 4)
+    data4["data"] = flex.double(len(data4), 5)
+    data5["data"] = flex.double(len(data5), 6)
+    data6["data"] = flex.double(len(data6), 7)
+    data7["data"] = flex.double(len(data7), 8)
+    data8["data"] = flex.double(len(data8), 9)
+    data9["data"] = flex.double(len(data9), 10)
+    data10["data"] = flex.double(len(data10), 11)
+    data11["data"] = flex.double(len(data11), 12)
+
+    # Accumulate the data again
+    assert(not executor.finished())
+    executor.accumulate(0, data0)
+    executor.accumulate(1, data1)
+    executor.accumulate(2, data2)
+    executor.accumulate(3, data3)
+    executor.accumulate(4, data4)
+    executor.accumulate(5, data5)
+    executor.accumulate(6, data6)
+    executor.accumulate(7, data7)
+    executor.accumulate(8, data8)
+    executor.accumulate(9, data9)
+    executor.accumulate(10, data10)
+    executor.accumulate(11, data11)
+    assert(executor.finished())
+
+    # Get results and check they're as expected
+    data = executor.data()
+    result = data["data"]
+    bbox = data["bbox"]
+    for i in range(len(self.processed)):
+      for j in range(len(self.processed[i])):
+        assert(result[self.processed[i][j]] == i+1)
 
     # Test passed
     print 'OK'
@@ -518,15 +626,15 @@ class Test(object):
   def __init__(self):
     self.test1 = TestIntegrationTask3DExecutor()
     self.test2 = TestIntegrationTask3DExecutorMulti()
-    # self.test3 = TestIntegrationManager3DExecutor()
-    # self.test4 = TestIntegrationManager3DExecutorMulti()
+    self.test3 = TestIntegrationManager3DExecutor()
+    self.test4 = TestIntegrationManager3DExecutorMulti()
     # self.test5= TestIntegrator3D()
 
   def run(self):
     # self.test1.run()
-    self.test2.run()
+    # self.test2.run()
     # self.test3.run()
-    # self.test4.run()
+    self.test4.run()
     # self.test5.run()
 
 if __name__ == '__main__':

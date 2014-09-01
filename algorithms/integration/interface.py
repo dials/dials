@@ -1,5 +1,6 @@
 from __future__ import division
 from dials.algorithms.integration import IntegrationTask3DExecutor
+from dials.algorithms.integration import IntegrationTask3DExecutorMulti
 import boost.python
 from iotbx import phil
 import abc
@@ -155,8 +156,9 @@ class Integrator(object):
     return self._manager.result()
 
 
-class IntegrationTaskExecutor3DAuxBase(boost.python.injector):
-  ''' A class to add aditional methods to the executor class '''
+class IntegrationTask3DExecutorAux(boost.python.injector,
+                                   IntegrationTask3DExecutor):
+  ''' Add additional methods. '''
 
   def execute(self, imageset, mask=None):
     ''' Passing in an imageset process all the images. '''
@@ -198,25 +200,68 @@ class IntegrationTaskExecutor3DAuxBase(boost.python.injector):
     assert(self.finished())
 
 
-class IntegrationTaskExecutor3DAux(
-    IntegrationTask3DExecutorBase,
-    IntegrationTask3DExecutor):
-  pass
+class IntegrationTask3DExecutorMultiAux(boost.python.injector,
+                                        IntegrationTask3DExecutorMulti):
+  ''' Add additional methods. '''
 
-class IntegrationTaskExecutor3DMultiAux(
-    IntegrationTask3DExecutorBase,
-    IntegrationTask3DExecutor):
-  pass
+  def __init__(self, data, jobs, npanels, callback):
+    from dials.array_family import flex
+    data["shoebox"] = flex.shoebox(data["panel"], data["bbox"])
+
+    super(IntegrationTask3DExecutorMulti).__init__(self, data, jobs, npanels)
+    self._callback = callback
+
+  def execute(self, imageset, mask=None):
+    ''' Passing in an imageset process all the images. '''
+    from dials.model.data import Image
+    from time import time
+    import sys
+    detector = imageset.get_detector()
+    frame00 = self.frame0()
+    frame10 = self.frame1()
+    frame01, frame11 = imageset.get_array_range()
+    assert(frame00 == frame01)
+    assert(frame10 == frame11)
+    self.image_read_time = 0
+    self.image_extract_time = 0
+    if mask is None:
+      image = imageset[0]
+      if not isinstance(image, tuple):
+        image = (image,)
+      mask = []
+      for i in range(len(image)):
+        tr = detector[i].get_trusted_range()
+        mask.append(image[i].as_double() > tr[0])
+      mask = tuple(mask)
+    sys.stdout.write("Reading images: ")
+    for i in range(len(imageset)):
+      st = time()
+      image = imageset[i]
+      self.image_read_time += time() - st
+      if not isinstance(image, tuple):
+        image = (image,)
+      st = time()
+      self.next(Image(image, mask))
+      self.image_extract_time += time() - st
+      sys.stdout.write(".")
+      sys.stdout.flush()
+      del image
+    self._callback(self.data())
+    del self.data()["shoebox"]
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+    assert(self.finished())
 
 
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
-  def __init__(self, index, experiments, spec):
+  def __init__(self, index, experiments, data, jobs):
     ''' Initialise the task. '''
     self._index = index
     self._experiments = experiments
-    self._spec = spec
+    self._data = data
+    self._jobs = jobs
     self._mask = None
 
   def __call__(self):
@@ -237,13 +282,14 @@ class IntegrationTask3D(IntegrationTask):
         return reflections
 
     process = Process()
-
-    executor = IntegrationTask3DExecutor(self._spec, process)
+    if len(self._jobs == 1):
+      executor = IntegrationTask3DExecutorMulti
+    else:
+      executor = IntegrationTask3DExecutor
+    executor = Executor(self._data, self._jobs, npanels, process)
     imageset = self._experiments[0].imageset
     imageset = imageset[executor.frame0():executor.frame1()]
-
     executor.execute(imageset)
-
     result = IntegrationResult(self._index, executor.data())
     result.image_read_time = executor.image_read_time
     result.image_extract_time = executor.image_extract_time

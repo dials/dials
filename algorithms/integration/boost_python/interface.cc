@@ -34,22 +34,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_interface() {
 
-    /* class_<IntegrationTask3DSpec>("IntegrationTask3DSpec", no_init) */
-    /*   .def(init< af::reflection_table, */
-    /*              std::size_t, */
-    /*              const af::const_ref< tiny<int,2> >&, */
-    /*              const af::const_ref< std::size_t >&, */
-    /*              const af::const_ref< std::size_t >&, */
-    /*              const af::const_ref< bool >&>()) */
-    /*   .def("data", &IntegrationTask3DSpec::data) */
-    /*   .def("job", &IntegrationTask3DSpec::job) */
-    /*   .def("frame0", &IntegrationTask3DSpec::frame0) */
-    /*   .def("frame1", &IntegrationTask3DSpec::frame1) */
-    /*   .def("nframes", &IntegrationTask3DSpec::nframes) */
-    /*   .def("njobs", &IntegrationTask3DSpec::njobs) */
-    /*   .def("npanels", &IntegrationTask3DSpec::npanels) */
-    /*   ; */
-
     class_<IntegrationTask3DExecutor>("IntegrationTask3DExecutor", no_init)
       .def("__init__", make_constructor(
             &make_integration_task_3d_executor))
@@ -76,23 +60,21 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("data", &IntegrationTask3DExecutorMulti::data)
       ;
 
-    /* class_<IntegrationManager3DExecutor>("IntegrationManager3DExecutor", no_init) */
-    /*   .def(init<af::reflection_table, */
-    /*             vec2<int>, */
-    /*             double, */
-    /*             std::size_t>(( */
-    /*       arg("reflections"), */
-    /*       arg("array_range"), */
-    /*       arg("block_size"), */
-    /*       arg("npanels")))) */
-    /*   .def("__len__", &IntegrationManager3DExecutor::size) */
-    /*   .def("finished", &IntegrationManager3DExecutor::finished) */
-    /*   .def("split", &IntegrationManager3DExecutor::split) */
-    /*   .def("accumulate", &IntegrationManager3DExecutor::accumulate) */
-    /*   .def("data", &IntegrationManager3DExecutor::data) */
-    /*   .def("jobs", &IntegrationManager3DExecutor::jobs) */
-    /*   .def("ignored", &IntegrationManager3DExecutor::ignored) */
-    /*   ; */
+    class_<IntegrationManager3DExecutor>("IntegrationManager3DExecutor", no_init)
+      .def(init<af::reflection_table,
+                vec2<int>,
+                double>((
+          arg("reflections"),
+          arg("array_range"),
+          arg("block_size"))))
+      .def("__len__", &IntegrationManager3DExecutor::size)
+      .def("finished", &IntegrationManager3DExecutor::finished)
+      .def("accumulate", &IntegrationManager3DExecutor::accumulate)
+      .def("split", &IntegrationManager3DExecutor::split)
+      .def("jobs", &IntegrationManager3DExecutor::jobs)
+      .def("data", &IntegrationManager3DExecutor::data)
+      .def("ignored", &IntegrationManager3DExecutor::ignored)
+      ;
 
     class_<IntegrationManager3DMultiExecutor>("IntegrationManager3DMultiExecutor", no_init)
       .def(init<af::reflection_table,
@@ -103,13 +85,11 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("block_size"))))
       .def("__len__", &IntegrationManager3DMultiExecutor::size)
       .def("finished", &IntegrationManager3DMultiExecutor::finished)
-      .def("block", &IntegrationManager3DMultiExecutor::block)
-      .def("to_process", &IntegrationManager3DMultiExecutor::to_process)
-      .def("to_include", &IntegrationManager3DMultiExecutor::to_include)
-      .def("to_not_process", &IntegrationManager3DMultiExecutor::to_not_process)
-      .def("split", &IntegrationManager3DMultiExecutor::split)
       .def("accumulate", &IntegrationManager3DMultiExecutor::accumulate)
+      .def("split", &IntegrationManager3DMultiExecutor::split)
+      .def("jobs", &IntegrationManager3DMultiExecutor::jobs)
       .def("data", &IntegrationManager3DMultiExecutor::data)
+      .def("ignored", &IntegrationManager3DMultiExecutor::ignored)
       ;
   }
 
