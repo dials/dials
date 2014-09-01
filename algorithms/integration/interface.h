@@ -133,6 +133,10 @@ namespace dials { namespace algorithms {
       return nframes_;
     }
 
+    std::size_t npanels() const {
+      return npanels_;
+    }
+
     std::size_t njobs() const {
       return jobs_.size();
     }
@@ -150,6 +154,98 @@ namespace dials { namespace algorithms {
   };
 
 
+  class IntegrationTask3DAllocator {
+  public:
+
+    IntegrationTask3DAllocator(const IntegrationTask3DSpec &spec) {
+
+      typedef std::pair<std::size_t,std::size_t> active_type;
+
+      std::vector<active_type> active(spec.data().size());
+      std::vector<bool> first(active.size(), true);
+
+      for (std::size_t i = 0; i < spec.njobs(); ++i) {
+        af::const_ref<std::size_t> ind = spec.indices(i);
+        for (std::size_t j = 0; j < ind.size(); ++j) {
+          std::size_t k = ind[j];
+          active_type &a = active[k];
+          if (first[k]) {
+            a.first  = i;
+            a.second = i;
+            first[k] = false;
+          } else {
+            if (i < a.first)  a.first  = i;
+            if (i > a.second) a.second = i;
+          }
+        }
+      }
+
+      std::vector<std::size_t> count1(spec.njobs(), 0);
+      std::vector<std::size_t> count2(spec.njobs(), 0);
+      std::vector<std::size_t> num1(spec.njobs(), 0);
+      std::vector<std::size_t> num2(spec.njobs(), 0);
+      for (std::size_t i = 0; i < active.size(); ++i) {
+        num1[active[i].first]++;
+        num2[active[i].second]++;
+      }
+      malloc_offset_.resize(spec.njobs() + 1);
+      malloc_indices_.resize(spec.data().size());
+      free_offset_.resize(spec.njobs() + 1);
+      free_indices_.resize(spec.data().size());
+      malloc_offset_[0] = 0;
+      free_offset_[0] = 0;
+      for (std::size_t i = 1; i < malloc_offset_.size(); ++i) {
+        malloc_offset_[i] = malloc_offset_[i-1] + num1[i-1];
+        free_offset_[i] = free_offset_[i-1] + num2[i-1];
+      }
+      DIALS_ASSERT(malloc_offset_.back() == malloc_indices_.size());
+      DIALS_ASSERT(free_offset_.back() == free_indices_.size());
+      for (std::size_t i = 0; i < active.size(); ++i) {
+        std::size_t i1 = active[i].first;
+        std::size_t i2 = active[i].second;
+        std::size_t k1 = malloc_offset_[i1] + count1[i1];
+        std::size_t k2 = malloc_offset_[i2] + count2[i2];
+        malloc_indices_[k1] = i;
+        free_indices_[k2] = i;
+        count1[i1]++;
+        count2[i2]++;
+      }
+      for (std::size_t i =0 ;i < count1.size(); ++i) {
+        DIALS_ASSERT(count1[i] == num1[i]);
+        DIALS_ASSERT(count2[i] == num2[i]);
+      }
+    }
+
+    af::const_ref<std::size_t> malloc(std::size_t index) const {
+      DIALS_ASSERT(index < malloc_offset_.size()-1);
+      std::size_t i0 = malloc_offset_[index];
+      std::size_t i1 = malloc_offset_[index+1];
+      DIALS_ASSERT(i1 >= i0);
+      std::size_t off = i0;
+      std::size_t num = i1 - i0;
+      DIALS_ASSERT(off + num <= malloc_indices_.size());
+      return af::const_ref<std::size_t> (&malloc_indices_[off], num);
+    }
+
+    af::const_ref<std::size_t> free(std::size_t index) const {
+      DIALS_ASSERT(index < free_offset_.size()-1);
+      std::size_t i0 = free_offset_[index];
+      std::size_t i1 = free_offset_[index+1];
+      DIALS_ASSERT(i1 >= i0);
+      std::size_t off = i0;
+      std::size_t num = i1 - i0;
+      DIALS_ASSERT(off + num <= free_indices_.size());
+      return af::const_ref<std::size_t> (&free_indices_[off], num);
+    }
+
+  private:
+
+    std::vector<std::size_t> malloc_offset_;
+    std::vector<std::size_t> malloc_indices_;
+    std::vector<std::size_t> free_offset_;
+    std::vector<std::size_t> free_indices_;
+  };
+
   class IntegrationTask3DExecutor {
   public:
 
@@ -157,78 +253,37 @@ namespace dials { namespace algorithms {
     typedef boost::function<rtable (rtable)> callback_type;
 
     IntegrationTask3DExecutor(
-            af::reflection_table data,
-            const af::const_ref< tiny<int,2> > &jobs,
-            std::size_t npanels,
+            const IntegrationTask3DSpec &spec,
             callback_type callback)
-        : data_(data),
-          jobs_(jobs.begin(), jobs.end()),
-          npanels_(npanels),
+        : spec_(spec),
+          allocator_(spec),
           process_(callback) {
 
-      // Check the jobs are valid. Jobs must be ordered in increasing frame
-      // number and can overlap but 1 jobs must not be fully contained in
-      // another. There must also be no gaps.
-      DIALS_ASSERT(jobs.size() > 0);
-      for (std::size_t i = 0; i < jobs.size()-1; ++i) {
-        DIALS_ASSERT(jobs[i][0] <  jobs[i][1]);
-        DIALS_ASSERT(jobs[i][0] <  jobs[i+1][0]);
-        DIALS_ASSERT(jobs[i][1] <  jobs[i+1][1]);
-        DIALS_ASSERT(jobs[i][1] >= jobs[i+1][0]);
-      }
-
-      // Get the range of frames
-      frame0_ = jobs_.front()[0];
-      frame1_ = jobs_.back()[1];
-      frame_ = frame0_;
-      DIALS_ASSERT(frame0_ < frame1_);
-      nframes_ = frame1_ - frame0_;
+      frame_ = spec.frame0();
 
       // Set the current active job
-      active_job_ = 0;
-
-      // Check the reflection table contains a few required fields
-      DIALS_ASSERT(data.is_consistent());
-      DIALS_ASSERT(data.contains("job_id"));
-      DIALS_ASSERT(data.contains("panel"));
-      DIALS_ASSERT(data.contains("bbox"));
-
-      // Get some data from the reflection table
-      af::const_ref< std::size_t > job_id = data["job_id"];
-      af::const_ref< std::size_t > panel = data["panel"];
-      af::const_ref< int6 > bbox = data["bbox"];
-
-      // Check the jobs ids are valid
-      for (std::size_t i = 0; i < bbox.size(); ++i) {
-        std::size_t j = job_id[i];
-        int z0 = bbox[i][4];
-        int z1 = bbox[i][5];
-        DIALS_ASSERT(z1 > z0);
-        DIALS_ASSERT(j < jobs.size());
-        int j0 = jobs[j][0];
-        int j1 = jobs[j][1];
-        DIALS_ASSERT(j1 > j0);
-        DIALS_ASSERT(z0 >= j0 && z1 <= j1);
-      }
+      begin_active_ = 0;
+      end_active_ = 0;
 
       // Initialise the shoeboxes
-      shoebox_ = data_["shoebox"];
+      af::const_ref< std::size_t > panel = spec_.data()["panel"];
+      af::const_ref< int6 > bbox = spec_.data()["bbox"];
+      shoebox_ = spec_.data()["shoebox"];
       for (std::size_t i = 0; i < shoebox_.size(); ++i) {
         shoebox_[i] = Shoebox<>(panel[i], bbox[i]);
       }
 
       // Initialise the offsets and indices for each frame/panel
       initialise_indices();
-      initialise_job_indices();
-      malloc(0);
+      /* malloc(0); */
     }
 
     int frame0() const {
-      return frame0_;
+      return spec_.frame0();
     }
 
     int frame1() const {
-      return frame1_;
+      return spec_.frame1();
     }
 
     int frame() const {
@@ -236,30 +291,32 @@ namespace dials { namespace algorithms {
     }
 
     std::size_t nframes() const {
-      return nframes_;
+      return spec_.nframes();
     }
 
-    std::size_t job() const {
-      return active_job_;
+    std::size_t npanels() const {
+      return spec_.npanels();
     }
 
     void next(const Image &image) {
       DIALS_ASSERT(!finished());
+      if (first_image_in_job()) {
+        begin_job();
+      }
       next_image(image);
-      if (ready()) {
-        merge(process_(split()));
-        next_job();
+      if (last_image_in_job()) {
+        end_job();
       }
     }
 
     af::reflection_table data() {
       DIALS_ASSERT(finished());
-      data_.erase("shoebox");
-      return data_;
+      spec_.data().erase("shoebox");
+      return spec_.data();
     }
 
     bool finished() const {
-      return frame_ == frame1_;
+      return frame_ == frame1();
     }
 
   private:
@@ -269,7 +326,7 @@ namespace dials { namespace algorithms {
       typedef list_type::iterator iterator;
 
       // Temporary index arrays
-      std::size_t num = nframes_ * npanels_;
+      std::size_t num = nframes() * npanels();
       std::size_t none = shoebox_.size();
       std::vector<iterator>  temp_off(num + 1);
       std::list<std::size_t> temp_ind;
@@ -283,7 +340,7 @@ namespace dials { namespace algorithms {
         std::size_t p = shoebox_[i].panel;
         int6 &b = shoebox_[i].bbox;
         for (int z = b[4]; z < b[5]; ++z) {
-          int j = p + (z - frame0_)*npanels_+1;
+          int j = p + (z - frame0())*npanels()+1;
           temp_ind.insert(temp_off[j], i);
         }
       }
@@ -300,34 +357,8 @@ namespace dials { namespace algorithms {
       std::copy(temp_ind.begin(), temp_ind.end(), indices_.begin());
     }
 
-    void initialise_job_indices() {
-
-      af::const_ref<std::size_t> job_id = data_["job_id"];
-
-      std::vector<std::size_t> num(jobs_.size(), 0);
-      std::vector<std::size_t> count(jobs_.size(), 0);
-      for (std::size_t i = 0; i < job_id.size(); ++i) {
-        num[job_id[i]]++;
-      }
-      job_offset_.resize(jobs_.size() + 1);
-      job_indices_.resize(job_id.size());
-      job_offset_[0] = 0;
-      for (std::size_t i = 1; i < job_offset_.size(); ++i) {
-        job_offset_[i] = job_offset_[i-1] + num[i-1];
-      }
-      for (std::size_t i = 0; i < job_id.size(); ++i) {
-        std::size_t j = job_id[i];
-        std::size_t k = job_offset_[j] + count[j];
-        job_indices_[k] = i;
-        count[j]++;
-      }
-      for (std::size_t i = 0; i < num.size(); ++i) {
-        DIALS_ASSERT(count[i] == num[i]);
-      }
-    }
-
     void next_image(const Image &image) {
-      DIALS_ASSERT(image.npanels() == npanels_);
+      DIALS_ASSERT(image.npanels() == npanels());
       for (std::size_t p = 0; p < image.npanels(); ++p) {
         af::const_ref<std::size_t> ind = indices(frame_, p);
         af::const_ref< int, af::c_grid<2> > data = image.data(p);
@@ -365,7 +396,7 @@ namespace dials { namespace algorithms {
     }
 
     af::const_ref<std::size_t> indices(int frame, std::size_t panel) const {
-      std::size_t j0 = panel+(frame-frame0_)*npanels_;
+      std::size_t j0 = panel+(frame-frame0())*npanels();
       DIALS_ASSERT(offset_.size() > 0);
       DIALS_ASSERT(j0 < offset_.size()-1);
       std::size_t i0 = offset_[j0];
@@ -377,76 +408,79 @@ namespace dials { namespace algorithms {
       return af::const_ref<std::size_t>(&indices_[off], num);
     }
 
-    bool ready() const {
-      DIALS_ASSERT(active_job_ < jobs_.size());
-      int j0 = jobs_[active_job_][0];
-      int j1 = jobs_[active_job_][1];
+    bool first_image_in_job() const {
+      if (begin_active_ < spec_.njobs()) {
+        int j0 = spec_.job(begin_active_)[0];
+        DIALS_ASSERT(frame_ <= j0);
+        return frame_ == j0;
+      }
+      return false;
+    }
+
+    bool last_image_in_job() const {
+      DIALS_ASSERT(end_active_ < spec_.njobs());
+      int j0 = spec_.job(end_active_)[0];
+      int j1 = spec_.job(end_active_)[1];
       DIALS_ASSERT(frame_ >= j0 && frame_ <= j1);
       return frame_ == j1;
     }
 
-    void next_job() {
-      free(active_job_);
-      active_job_++;
-      malloc(active_job_);
+    void begin_job() {
+      malloc(begin_active_);
+      begin_active_++;
+    }
+
+    void end_job() {
+      free(end_active_);
+      merge(process_(split(end_active_)), end_active_);
+      end_active_++;
     }
 
     void free(std::size_t job) {
-      af::const_ref<std::size_t> ind = job_indices(job);
+      af::const_ref<std::size_t> ind = allocator_.free(job);
       for (std::size_t i = 0; i < ind.size(); ++i) {
         shoebox_[ind[i]].deallocate();
       }
     }
 
     void malloc(std::size_t job) {
-      int z0 = jobs_[job][0];
-      int z1 = jobs_[job][1];
-      for (std::size_t j = job; j < jobs_.size(); ++j) {
-        int z2 = jobs_[j][0];
-        if (z2 < z1) {
-          af::const_ref<std::size_t> ind = job_indices(j);
-          for (std::size_t i = 0; i < ind.size(); ++i) {
-            shoebox_[ind[i]].allocate();
-          }
-        }
+      af::const_ref<std::size_t> ind = allocator_.malloc(job);
+      for (std::size_t i = 0; i < ind.size(); ++i) {
+        shoebox_[ind[i]].allocate();
       }
+      /* int z0 = spec_.job(job)[0]; */
+      /* int z1 = spec_.job(job)[1]; */
+      /* for (std::size_t j = job; j < njobs(); ++j) { */
+      /*   int z2 = spec_.job(j)[0]; */
+      /*   if (z2 < z1) { */
+      /*     af::const_ref<std::size_t> ind = free(job_indices(j); */
+      /*     for (std::size_t i = 0; i < ind.size(); ++i) { */
+      /*       shoebox_[ind[i]].allocate(); */
+      /*     } */
+      /*   } */
+      /* } */
     }
 
-    af::reflection_table split() const {
+    af::reflection_table split(std::size_t job) const {
       using namespace dials::af::boost_python::flex_table_suite;
-      return select_rows_index(data_, job_indices(active_job_));
+      return select_rows_index(spec_.data(), spec_.indices(job));
     }
 
-    void merge(af::reflection_table result) {
+    void merge(af::reflection_table result, std::size_t job) {
       using namespace dials::af::boost_python::flex_table_suite;
-      set_selected_rows_index(data_, job_indices(active_job_), result);
+      af::reflection_table data = spec_.data();
+      set_selected_rows_index(data, spec_.indices(job), result);
     }
 
-    af::const_ref<std::size_t> job_indices(std::size_t index) const {
-      DIALS_ASSERT(index < job_offset_.size()-1);
-      std::size_t i0 = job_offset_[index];
-      std::size_t i1 = job_offset_[index+1];
-      DIALS_ASSERT(i1 > i0);
-      std::size_t off = i0;
-      std::size_t num = i1 - i0;
-      DIALS_ASSERT(off + num <= job_indices_.size());
-      return af::const_ref<std::size_t> (&job_indices_[off], num);
-    }
-
-    af::reflection_table data_;
-    std::vector< tiny<int,2> > jobs_;
-    int frame0_;
-    int frame1_;
+    IntegrationTask3DSpec spec_;
+    IntegrationTask3DAllocator allocator_;
     int frame_;
-    std::size_t nframes_;
-    std::size_t npanels_;
-    std::size_t active_job_;
+    std::size_t begin_active_;
+    std::size_t end_active_;
     callback_type process_;
     af::shared< Shoebox<> > shoebox_;
     std::vector<std::size_t> offset_;
     std::vector<std::size_t> indices_;
-    std::vector<std::size_t> job_offset_;
-    std::vector<std::size_t> job_indices_;
   };
 
   /* /** */

@@ -27,9 +27,23 @@ class TestIntegrationTask3DExecutor(object):
     for i, j in enumerate(self.jobs):
       self.append_reflections(j, i)
 
-    indices = list(range(len(self.reflections)))
-    shuffle(indices)
-    self.reflections.reorder(flex.size_t(indices))
+    ind1 = flex.size_t(range(self.nrefl))
+    ind2 = ind1 + self.nrefl
+    ind3 = ind2 + self.nrefl
+    ind4 = ind3 + self.nrefl
+    self.indices = ind1
+    self.indices.extend(ind2)
+    self.indices.extend(ind3)
+    self.indices.extend(ind4)
+    off1 = self.nrefl
+    off2 = off1 + self.nrefl
+    off3 = off2 + self.nrefl
+    off4 = off3 + self.nrefl
+    self.offset = flex.size_t([0, off1, off2, off3, off4])
+
+    # indices = list(range(len(self.reflections)))
+    # shuffle(indices)
+    # self.reflections.reorder(flex.size_t(indices))
 
     self.images = [self.create_image(i) for i in range(10)]
 
@@ -60,6 +74,7 @@ class TestIntegrationTask3DExecutor(object):
   def run(self):
 
     from dials.algorithms.integration import IntegrationTask3DExecutor
+    from dials.algorithms.integration import IntegrationTask3DSpec
     from time import time
 
     # The processing callback
@@ -70,18 +85,21 @@ class TestIntegrationTask3DExecutor(object):
       def __call__(self, reflections):
         print reflections
         assert(len(reflections) == self.nrefl)
-        assert(reflections['job_id'].all_eq(self.ncallback))
         self.ncallback += 1
         return reflections
     callback = Callback(self.nrefl)
 
-    # Initialise the executor
+    # Create the task specification
     st = time()
-    executor = IntegrationTask3DExecutor(
+    spec = IntegrationTask3DSpec(
       self.reflections,
-      self.jobs,
       self.npanels,
-      callback)
+      self.jobs,
+      self.offset,
+      self.indices)
+
+    # Initialise the executor
+    executor = IntegrationTask3DExecutor(spec, callback)
     print time() - st
 
     # Check the initial state is correct
