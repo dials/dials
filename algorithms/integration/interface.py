@@ -236,7 +236,7 @@ class IntegrationManager3D(IntegrationManager):
     assert(len(imageset) == len(scan))
     self._experiments = experiments
     self._reflections = reflections
-    
+
     from math import floor, ceil
     max_procs = params.mp.max_procs
     max_tasks = params.mp.max_tasks
@@ -251,11 +251,11 @@ class IntegrationManager3D(IntegrationManager):
 
     print phi0, phi1, nblocks, mt, njobs_per_task
 
-    
-    
+
+
     exit(0)
 
-    
+
 
 
 

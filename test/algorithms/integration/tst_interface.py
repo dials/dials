@@ -12,7 +12,7 @@ class TestIntegrationTask3DExecutor(object):
     self.reflections['panel'] = flex.size_t()
     self.reflections['bbox'] = flex.int6()
     self.reflections['job_id'] = flex.size_t()
-    
+
     self.npanels = 2
     self.width = 1000
     self.height = 1000
@@ -23,7 +23,7 @@ class TestIntegrationTask3DExecutor(object):
       (2, 6),
       (4, 8),
       (6, 10)])
-    
+
     for i, j in enumerate(self.jobs):
       self.append_reflections(j, i)
 
@@ -44,7 +44,7 @@ class TestIntegrationTask3DExecutor(object):
       y1 = y0 + randint(1, 10)
       z1 = randint(z0+1, zrange[1])
       bbox = (x0, x1, y0, y1, z0, z1)
-      self.reflections.append({ 
+      self.reflections.append({
         "panel" : randint(0,1),
         "bbox" : bbox,
         "job_id" : job_id

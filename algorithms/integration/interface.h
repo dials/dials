@@ -34,6 +34,122 @@ namespace dials { namespace algorithms {
   using model::Image;
   using model::Shoebox;
 
+
+  class IntegrationTask3DSpec {
+  public:
+
+    IntegrationTask3DSpec(
+            af::reflection_table data,
+            std::size_t npanels,
+            const af::const_ref< tiny<int,2> > &jobs,
+            const af::const_ref< std::size_t > &off,
+            const af::const_ref< std::size_t > &ind)
+        : data_(data),
+          npanels_(npanels),
+          jobs_(jobs.begin(), jobs.end()),
+          offset_(off.begin(), off.end()),
+          indices_(ind.begin(), ind.end()) {
+
+      // Check some input
+      DIALS_ASSERT(data.size() > 0);
+      DIALS_ASSERT(jobs.size() > 0);
+      DIALS_ASSERT(off.size() > 0);
+      DIALS_ASSERT(ind.size() > 0);
+
+      // Check the jobs are valid. Jobs must be ordered in increasing frame
+      // number and can overlap but 1 jobs must not be fully contained in
+      // another. There must also be no gaps.
+      for (std::size_t i = 0; i < jobs.size()-1; ++i) {
+        DIALS_ASSERT(jobs[i][0] <  jobs[i][1]);
+        DIALS_ASSERT(jobs[i][0] <  jobs[i+1][0]);
+        DIALS_ASSERT(jobs[i][1] <  jobs[i+1][1]);
+        DIALS_ASSERT(jobs[i][1] >= jobs[i+1][0]);
+      }
+
+      // Get the range of frames
+      frame0_ = jobs_.front()[0];
+      frame1_ = jobs_.back()[1];
+      DIALS_ASSERT(frame0_ < frame1_);
+      nframes_ = frame1_ - frame0_;
+
+      // Check the reflection table contains a few required fields
+      DIALS_ASSERT(data.is_consistent());
+      DIALS_ASSERT(data.contains("panel"));
+      DIALS_ASSERT(data.contains("bbox"));
+
+      // Get some data from the reflection table
+      af::const_ref< std::size_t > panel = data["panel"];
+      af::const_ref< int6 > bbox = data["bbox"];
+
+      // Check the jobs ids are valid
+      DIALS_ASSERT(offset_.size() == njobs()+1);
+      DIALS_ASSERT(offset_.front() == 0);
+      DIALS_ASSERT(offset_.back() == indices_.size());
+      for (std::size_t i = 0; i < njobs(); ++i) {
+        af::const_ref<std::size_t> ind = indices(i);
+        for (std::size_t j = 0; j < ind.size(); ++j) {
+          std::size_t k = ind[j];
+          std::size_t p = panel[k];
+          int z0 = bbox[k][4];
+          int z1 = bbox[k][5];
+          DIALS_ASSERT(p < npanels_);
+          DIALS_ASSERT(z1 > z0);
+          int j0 = job(i)[0];
+          int j1 = job(i)[1];
+          DIALS_ASSERT(j1 > j0);
+          DIALS_ASSERT(z0 >= j0 && z1 <= j1);
+        }
+      }
+    }
+
+    af::reflection_table data() const {
+      return data_;
+    }
+
+    tiny<int,2> job(std::size_t index) const {
+      return jobs_[index];
+    }
+
+    af::const_ref<std::size_t> indices(std::size_t index) const {
+      DIALS_ASSERT(index < offset_.size()-1);
+      std::size_t i0 = offset_[index];
+      std::size_t i1 = offset_[index+1];
+      DIALS_ASSERT(i1 >= i0);
+      std::size_t off = i0;
+      std::size_t num = i1 - i0;
+      DIALS_ASSERT(off + num <= indices_.size());
+      return af::const_ref<std::size_t> (&indices_[off], num);
+    }
+
+    int frame0() const {
+      return frame0_;
+    }
+
+    int frame1() const {
+      return frame1_;
+    }
+
+    std::size_t nframes() const {
+      return nframes_;
+    }
+
+    std::size_t njobs() const {
+      return jobs_.size();
+    }
+
+  private:
+
+    af::reflection_table data_;
+    std::size_t npanels_;
+    std::vector< tiny<int,2> > jobs_;
+    std::vector< std::size_t > offset_;
+    std::vector< std::size_t > indices_;
+    int frame0_;
+    int frame1_;
+    std::size_t nframes_;
+  };
+
+
   class IntegrationTask3DExecutor {
   public:
 
@@ -44,15 +160,15 @@ namespace dials { namespace algorithms {
             af::reflection_table data,
             const af::const_ref< tiny<int,2> > &jobs,
             std::size_t npanels,
-            callback_type callback) 
+            callback_type callback)
         : data_(data),
           jobs_(jobs.begin(), jobs.end()),
           npanels_(npanels),
           process_(callback) {
-    
+
       // Check the jobs are valid. Jobs must be ordered in increasing frame
       // number and can overlap but 1 jobs must not be fully contained in
-      // another. There must also be no gaps.  
+      // another. There must also be no gaps.
       DIALS_ASSERT(jobs.size() > 0);
       for (std::size_t i = 0; i < jobs.size()-1; ++i) {
         DIALS_ASSERT(jobs[i][0] <  jobs[i][1]);
@@ -70,7 +186,7 @@ namespace dials { namespace algorithms {
 
       // Set the current active job
       active_job_ = 0;
-      
+
       // Check the reflection table contains a few required fields
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.contains("job_id"));
@@ -122,7 +238,7 @@ namespace dials { namespace algorithms {
     std::size_t nframes() const {
       return nframes_;
     }
-    
+
     std::size_t job() const {
       return active_job_;
     }
@@ -143,7 +259,7 @@ namespace dials { namespace algorithms {
     }
 
     bool finished() const {
-      return frame_ == frame1_; 
+      return frame_ == frame1_;
     }
 
   private:
@@ -185,9 +301,9 @@ namespace dials { namespace algorithms {
     }
 
     void initialise_job_indices() {
-      
+
       af::const_ref<std::size_t> job_id = data_["job_id"];
-     
+
       std::vector<std::size_t> num(jobs_.size(), 0);
       std::vector<std::size_t> count(jobs_.size(), 0);
       for (std::size_t i = 0; i < job_id.size(); ++i) {
@@ -307,13 +423,13 @@ namespace dials { namespace algorithms {
     }
 
     af::const_ref<std::size_t> job_indices(std::size_t index) const {
-      DIALS_ASSERT(index < job_offset_.size()-1); 
+      DIALS_ASSERT(index < job_offset_.size()-1);
       std::size_t i0 = job_offset_[index];
       std::size_t i1 = job_offset_[index+1];
       DIALS_ASSERT(i1 > i0);
       std::size_t off = i0;
       std::size_t num = i1 - i0;
-      DIALS_ASSERT(off + num <= indices_.size());
+      DIALS_ASSERT(off + num <= job_indices_.size());
       return af::const_ref<std::size_t> (&job_indices_[off], num);
     }
 

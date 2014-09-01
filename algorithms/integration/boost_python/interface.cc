@@ -15,7 +15,7 @@
 using namespace boost::python;
 
 namespace dials { namespace algorithms { namespace boost_python {
-  
+
   struct callback_helper {
     object obj_;
     callback_helper(object obj) : obj_(obj) {}
@@ -30,13 +30,27 @@ namespace dials { namespace algorithms { namespace boost_python {
       std::size_t npanels,
       object callback) {
     return new IntegrationTask3DExecutor(
-        reflections, 
-        jobs, 
+        reflections,
+        jobs,
         npanels,
         callback_helper(callback));
   }
 
   void export_interface() {
+
+    class_<IntegrationTask3DSpec>("IntegrationTask3DSpec", no_init)
+      .def(init< af::reflection_table,
+                 std::size_t,
+                 const af::const_ref< tiny<int,2> >&,
+                 const af::const_ref< std::size_t >&,
+                 const af::const_ref< std::size_t >& >())
+      .def("data", &IntegrationTask3DSpec::data)
+      .def("job", &IntegrationTask3DSpec::job)
+      .def("frame0", &IntegrationTask3DSpec::frame0)
+      .def("frame1", &IntegrationTask3DSpec::frame1)
+      .def("nframes", &IntegrationTask3DSpec::nframes)
+      .def("njobs", &IntegrationTask3DSpec::njobs)
+      ;
 
     class_<IntegrationTask3DExecutor>("IntegrationTask3DExecutor", no_init)
       .def("__init__", make_constructor(
