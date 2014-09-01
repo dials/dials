@@ -274,8 +274,11 @@ namespace dials { namespace algorithms {
       }
 
       // Initialise the offsets and indices for each frame/panel
+      clock_t st = clock();
       initialise_indices();
-      /* malloc(0); */
+      clock_t ft = clock();
+      double seconds = (double)(ft - st) / CLOCKS_PER_SEC;
+      std::cout << seconds << std::endl;
     }
 
     int frame0() const {
@@ -322,39 +325,39 @@ namespace dials { namespace algorithms {
   private:
 
     void initialise_indices() {
-      typedef std::list<std::size_t> list_type;
-      typedef list_type::iterator iterator;
-
-      // Temporary index arrays
-      std::size_t num = nframes() * npanels();
-      std::size_t none = shoebox_.size();
-      std::vector<iterator>  temp_off(num + 1);
-      std::list<std::size_t> temp_ind;
-      temp_off[0] = temp_ind.begin();
-      for (std::size_t i = 1; i < temp_off.size(); ++i) {
-        temp_off[i] = temp_ind.insert(temp_ind.end(), none);
-      }
-
-      // Insert all the partial indices
+      std::size_t size = nframes() * npanels();
+      std::vector<std::size_t> num(size, 0);
+      std::vector<std::size_t> count(size, 0);
       for (std::size_t i = 0; i < shoebox_.size(); ++i) {
         std::size_t p = shoebox_[i].panel;
         int6 &b = shoebox_[i].bbox;
         for (int z = b[4]; z < b[5]; ++z) {
-          int j = p + (z - frame0())*npanels()+1;
-          temp_ind.insert(temp_off[j], i);
+          std::size_t j = p + (z - frame0())*npanels();
+          DIALS_ASSERT(j < num.size());
+          num[j]++;
         }
       }
-
-      // Copy the temporary indices
-      offset_.resize(temp_off.size());
-      indices_.resize(temp_ind.size());
+      offset_.resize(size+1);
       offset_[0] = 0;
-      for (std::size_t i = 0; i < temp_off.size()-1; ++i) {
-        std::size_t num = std::distance(temp_off[i], temp_off[i+1]);
-        offset_[i+1] = offset_[i] + num;
+      for (std::size_t i = 1; i < offset_.size(); ++i) {
+        offset_[i] = offset_[i-1] + num[i-1];
       }
-      DIALS_ASSERT(offset_.back() == indices_.size());
-      std::copy(temp_ind.begin(), temp_ind.end(), indices_.begin());
+      indices_.resize(offset_.back());
+      for (std::size_t i = 0; i < shoebox_.size(); ++i) {
+        std::size_t p = shoebox_[i].panel;
+        int6 &b = shoebox_[i].bbox;
+        for (int z = b[4]; z < b[5]; ++z) {
+
+
+          std::size_t j = p + (z - frame0())*npanels();
+          std::size_t k = offset_[j] + count[j];
+          indices_[k] = i;
+          count[j]++;
+        }
+      }
+      for (std::size_t i = 0; i < count.size(); ++i) {
+        DIALS_ASSERT(count[i] == num[i]);
+      }
     }
 
     void next_image(const Image &image) {
@@ -401,9 +404,9 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(j0 < offset_.size()-1);
       std::size_t i0 = offset_[j0];
       std::size_t i1 = offset_[j0+1];
-      DIALS_ASSERT(i1 > i0);
+      DIALS_ASSERT(i1 >= i0);
       std::size_t off = i0;
-      std::size_t num = i1 - off - 1;
+      std::size_t num = i1 - off;
       DIALS_ASSERT(off + num <= indices_.size());
       return af::const_ref<std::size_t>(&indices_[off], num);
     }
@@ -431,8 +434,8 @@ namespace dials { namespace algorithms {
     }
 
     void end_job() {
-      free(end_active_);
       merge(process_(split(end_active_)), end_active_);
+      free(end_active_);
       end_active_++;
     }
 

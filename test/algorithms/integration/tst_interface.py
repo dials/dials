@@ -17,7 +17,7 @@ class TestIntegrationTask3DExecutor(object):
     self.width = 1000
     self.height = 1000
     self.nrefl = 10000
-    # self.nrefl = 100000
+    self.nrefl = 100000
 
     self.jobs = shared.tiny_int_2([
       (0, 16),
@@ -91,12 +91,13 @@ class TestIntegrationTask3DExecutor(object):
         self.nrefl = nrefl
       def __call__(self, reflections):
         print reflections
-        assert(len(reflections) == self.nrefl)
-        for sbox in reflections['shoebox']:
-          bbox = sbox.bbox
-          v1 = bbox[4]+1
-          for z in range(bbox[5]-bbox[4]):
-            assert(sbox.data[z:z+1,:,:].all_eq(v1+z))
+        # assert(len(reflections) == self.nrefl)
+        # for sbox in reflections['shoebox']:
+        #   assert(sbox.is_consistent())
+        #   bbox = sbox.bbox
+        #   v1 = bbox[4]+1
+        #   for z in range(bbox[5]-bbox[4]):
+        #     assert(sbox.data[z:z+1,:,:].all_eq(v1+z))
         self.ncallback += 1
         return reflections
     callback = Callback(self.nrefl)
@@ -111,8 +112,10 @@ class TestIntegrationTask3DExecutor(object):
       self.jobs,
       self.offset,
       self.indices)
+    print time() - st
 
     # Initialise the executor
+    st = time()
     executor = IntegrationTask3DExecutor(spec, callback)
     print time() - st
 
@@ -128,8 +131,8 @@ class TestIntegrationTask3DExecutor(object):
     # Loop through images
     st = time()
     for i in range(100):
-      data += 1
       executor.next(Image((data, data), (mask, mask)))
+      data += 1
     assert(executor.finished())
     assert(callback.ncallback == 4)
     print time() - st
