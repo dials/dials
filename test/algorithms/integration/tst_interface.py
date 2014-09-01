@@ -195,7 +195,8 @@ class TestIntegrationManager3DExecutor(object):
       self.reflections,
       self.array_range,
       self.block_size,
-      self.num_tasks)
+      self.num_tasks,
+      self.npanels)
 
     # Ensure the tasks make sense
     jobs = executor.jobs()
@@ -219,7 +220,53 @@ class TestIntegrationManager3DExecutor(object):
     assert(executor.task(2) == (6, 9))
     assert(executor.task(3) == (9, 12))
 
+    # Get the task specs
+    spec0 = executor.split(0)
+    spec1 = executor.split(1)
+    spec2 = executor.split(2)
+    spec3 = executor.split(3)
+    assert(spec0.npanels() == 2)
+    assert(spec1.npanels() == 2)
+    assert(spec2.npanels() == 2)
+    assert(spec3.npanels() == 2)
+    assert(spec0.njobs() == 3)
+    assert(spec1.njobs() == 3)
+    assert(spec2.njobs() == 3)
+    assert(spec3.njobs() == 3)
+    assert(spec0.frame0() == 0)
+    assert(spec0.frame1() == 40)
+    assert(spec0.nframes() == 40)
+    assert(spec1.frame0() == 30)
+    assert(spec1.frame1() == 70)
+    assert(spec1.nframes() == 40)
+    assert(spec2.frame0() == 60)
+    assert(spec2.frame1() == 100)
+    assert(spec2.nframes() == 40)
+    assert(spec3.frame0() == 90)
+    assert(spec3.frame1() == 130)
+    assert(spec3.nframes() == 40)
+    assert(spec0.job(0) == (0, 20))
+    assert(spec0.job(1) == (10, 30))
+    assert(spec0.job(2) == (20, 40))
+    assert(spec1.job(0) == (30, 50))
+    assert(spec1.job(1) == (40, 60))
+    assert(spec1.job(2) == (50, 70))
+    assert(spec2.job(0) == (60, 80))
+    assert(spec2.job(1) == (70, 90))
+    assert(spec2.job(2) == (80, 100))
+    assert(spec3.job(0) == (90, 110))
+    assert(spec3.job(1) == (100, 120))
+    assert(spec3.job(2) == (110, 130))
+
+    # Accumulate the data again
+    executor.accumulate(0, spec0.data())
+    executor.accumulate(1, spec1.data())
+    executor.accumulate(2, spec2.data())
+    executor.accumulate(3, spec3.data())
+
+    # Test passed
     print 'OK'
+
 
 class Test(object):
 
