@@ -25,6 +25,8 @@ if __name__ == '__main__':
   rlist['id'] = flex.size_t(len(rlist), 0)
   rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
                      sigma_m=0.044*pi/180)
+  rlist.compute_zeta_multi(exlist)
+  rlist.compute_d(exlist)
   print ""
 
   from dials.algorithms.integration.interface import Integrator3D
@@ -34,6 +36,7 @@ if __name__ == '__main__':
   user_phil = phil.parse('''
     mp.max_procs = %d
     block.size=5
+    mp.max_tasks = 4
     filter.ice_rings.filter=False
   ''' % nproc)
 

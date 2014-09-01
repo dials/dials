@@ -11,8 +11,19 @@ phil_scope = phil.parse('''
       .help = "The multiprocessing method to use"
 
     max_procs = 1
-      .type = int(value_min=0)
-      .help = "The number of processes to use"
+      .type = int(value_min=1)
+      .help = "The number of processes to use."
+
+    max_tasks = 1
+      .type = int(value_min=1)
+      .help = "The number of tasks to split the integration into. This number"
+              "is a multiple of the maximum number of processes. This"
+              "parameter controls how much the integration jobs (as specified"
+              "by block.size are split up. Splitting up the jobs into fewer"
+              "tasks makes the process more work efficient in terms of the"
+              "number of images that need to be read; however, splitting the"
+              "jobs into more tasks makes better use of the parallelism where"
+              "some jobs take longer than others."
   }
 
   block {
@@ -151,39 +162,62 @@ class Integrator(object):
     return self._manager.result()
 
 
+def extract_blocks():
+    extractor = IncrementalExtractor(
+      self._reflections,
+      self._jobs,
+      execute_job)
+    imageset = self._experiments[0].imageset
+    if self._mask is None:
+      image = imageset[0]
+      if not isinstance(image, tuple):
+        image = (image,)
+      mask = []
+      for i in range(len(image)):
+        tr = detector[i].get_trusted_range()
+        mask.append(image[i].as_double() > tr[0])
+      mask = tuple(mask)
+    sys.stdout.write("Reading images: ")
+    for i in range(*self._task):
+      image = imageset[i]
+      sys.stdout.write(".")
+      sys.stdout.flush()
+      extractor.next(Image(image))
+    assert(extractor.finished())
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
-  def __init__(self, index, task, experiments, reflections):
+  def __init__(self, index, jobs, experiments, reflections):
     ''' Initialise the task. '''
     self._index = index
-    self._task = task
+    self._jobs = jobs
     self._experiments = experiments
     self._reflections = reflections
+    self._mask = None
 
   def __call__(self):
     ''' Do the integration. '''
     from dials.array_family import flex
     import sys
-    import operator
-    from time import time
     print "=" * 80
     print ""
     print "Integrating task %d" % self._index
-    self._reflections["shoebox"] = flex.shoebox(
-      self._reflections["panel"],
-      self._reflections["bbox"])
-    st = time()
-    self._reflections["shoebox"].allocate()
-    print time() - st
-    frame0, frame1 = self._task
-    imageset = self._experiments[0].imageset
-    st = time()
-    self._reflections.fill_shoeboxes(imageset[frame0:frame1])
-    print time() - st
-    del self._reflections["shoebox"]
 
-    return IntegrationResult(self._index, self._reflections)
+    # self._reflections["shoebox"] = flex.shoebox(
+    #   self._reflections["panel"],
+    #   self._reflections["bbox"])
+    # def execute_job(reflections):
+    #   print reflections
+    # extract_blocks(
+    #   experiments=self._experiments,
+    #   reflections=self._reflections,
+    #   jobs=self._jobs,
+    #   callback=execute_job)
+    # del self._reflections["shoebox"]
+    # return IntegrationResult(self._index, self._reflections)
 
 
 class IntegrationManager3D(IntegrationManager):
@@ -193,23 +227,45 @@ class IntegrationManager3D(IntegrationManager):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManagerData3D
     from dials.array_family import flex
-    block_size = params.block.size
     imagesets = experiments.imagesets()
     scans = experiments.scans()
     assert(len(imagesets) == 1)
     assert(len(scans) == 1)
     imageset = imagesets[0]
     scan = scans[0]
+    assert(len(imageset) == len(scan))
     self._experiments = experiments
     self._reflections = reflections
-    reflections.compute_zeta_multi(experiments)
-    reflections.compute_d(experiments)
-    self._data = IntegrationManagerData3D(
-      self._reflections,
-      scan.get_oscillation(deg=True),
-      scan.get_array_range(),
-      block_size)
-    self._print_summary(block_size)
+    
+    from math import floor, ceil
+    max_procs = params.mp.max_procs
+    max_tasks = params.mp.max_tasks
+    block_size = params.block.size
+    phi0, dphi = scan.get_oscillation(deg=True)
+    z0, z1 = scan.get_array_range()
+    hb = block_size / 2.0
+    phi1 = phi0 + (z1 - z0)*dphi
+    nblocks = int(ceil((phi1 - phi0)*2.0 / block_size))
+    mt = max_tasks * max_procs
+    njobs_per_task = int(ceil(nblocks / mt))
+
+    print phi0, phi1, nblocks, mt, njobs_per_task
+
+    
+    
+    exit(0)
+
+    
+
+
+
+    # self._data = IntegrationManagerData3D(
+    #   self._reflections,
+    #   scan.get_oscillation(deg=True),
+    #   scan.get_array_range(),
+    #   params.block.size,
+    #   params.mp.max_procs,
+    #   params.mp.max_tasks)
 
   def task(self, index):
     ''' Get a task. '''
@@ -240,75 +296,165 @@ class IntegrationManager3D(IntegrationManager):
     ''' Return the number of tasks. '''
     return len(self._data)
 
-  def _print_summary(self, block_size):
-    ''' Print a summary of the integration stuff. '''
-    from math import floor, log10
-    from libtbx import table_utils
 
-    # Create a table of integration tasks
-    rows = [
-      ["Frame From", "Frame To",
-       "Angle From", "Angle To",
-       "# Process",  "# Include"]
-    ]
-    scans = self._experiments.scans()
-    assert(len(scans) == 1)
-    for i in range(len(self)):
-      f0, f1 = self._data.block(i)
-      p0 = scans[0].get_angle_from_array_index(f0)
-      p1 = scans[0].get_angle_from_array_index(f1)
-      n0 = len(self._data.to_process(i))
-      n1 = len(self._data.to_include(i))
-      rows.append([str(f0), str(f1), str(p0), str(p1), str(n0), str(n1)])
-    task_table = table_utils.format(
-      rows,
-      has_header=True,
-      justify="right",
-      prefix=" ")
+# class IntegrationTask3D(IntegrationTask):
+#   ''' A class to perform a 3D integration task. '''
 
-    # Create summary format
-    summary_format_str = (
-      '%s\n'
-      '\n'
-      'Beginning integration of the following experiments:\n'
-      '\n'
-      ' Experiments: %d\n'
-      ' Beams:       %d\n'
-      ' Detectors:   %d\n'
-      ' Goniometers: %d\n'
-      ' Scans:       %d\n'
-      ' Crystals:    %d\n'
-      '\n'
-      'Integrating reflections in the following blocks of images:\n'
-      '\n'
-      ' block_size: %d degrees\n'
-      '\n'
-      '%s\n'
-      '\n'
-      ' %d reflections overlapping blocks removed from integration\n'
-      '\n'
-      ' If you see poor performance, it may be because DIALS is using too\n'
-      ' much memory. This could be because you have specified too many\n'
-      ' processes on the same machine, in which case try setting the number\n'
-      ' of processes to a smaller number. It could also be because the block\n'
-      ' size is too large, in which case try setting the block size to a\n'
-      ' smaller value. Reflections not fully recorded in a block are not\n'
-      ' integrated so be sure to check that in reducing the block size you\n'
-      ' are not throwing away too many reflections.\n'
-    )
+#   def __init__(self, index, task, experiments, reflections):
+#     ''' Initialise the task. '''
+#     self._index = index
+#     self._task = task
+#     self._experiments = experiments
+#     self._reflections = reflections
 
-    # Print the summary
-    print summary_format_str % (
-      '=' * 80,
-      len(self._experiments),
-      len(self._experiments.beams()),
-      len(self._experiments.detectors()),
-      len(self._experiments.goniometers()),
-      len(self._experiments.scans()),
-      len(self._experiments.crystals()),
-      block_size,
-      task_table,
-      len(self._data.to_not_process()))
+#   def __call__(self):
+#     ''' Do the integration. '''
+#     from dials.array_family import flex
+#     import sys
+#     import operator
+#     from time import time
+#     print "=" * 80
+#     print ""
+#     print "Integrating task %d" % self._index
+#     self._reflections["shoebox"] = flex.shoebox(
+#       self._reflections["panel"],
+#       self._reflections["bbox"])
+#     st = time()
+#     self._reflections["shoebox"].allocate()
+#     print time() - st
+#     frame0, frame1 = self._task
+#     imageset = self._experiments[0].imageset
+#     st = time()
+#     self._reflections.fill_shoeboxes(imageset[frame0:frame1])
+#     print time() - st
+#     del self._reflections["shoebox"]
+
+#     return IntegrationResult(self._index, self._reflections)
+
+
+# class IntegrationManager3D(IntegrationManager):
+#   ''' An class to manage 3D integration. book-keeping '''
+
+#   def __init__(self, experiments, reflections, params):
+#     ''' Initialise the manager. '''
+#     from dials.algorithms.integration import IntegrationManagerData3D
+#     from dials.array_family import flex
+#     block_size = params.block.size
+#     imagesets = experiments.imagesets()
+#     scans = experiments.scans()
+#     assert(len(imagesets) == 1)
+#     assert(len(scans) == 1)
+#     imageset = imagesets[0]
+#     scan = scans[0]
+#     self._experiments = experiments
+#     self._reflections = reflections
+#     reflections.compute_zeta_multi(experiments)
+#     reflections.compute_d(experiments)
+#     self._data = IntegrationManagerData3D(
+#       self._reflections,
+#       scan.get_oscillation(deg=True),
+#       scan.get_array_range(),
+#       block_size)
+#     self._print_summary(block_size)
+
+#   def task(self, index):
+#     ''' Get a task. '''
+#     return IntegrationTask3D(
+#       index,
+#       self._data.block(index),
+#       self._experiments,
+#       self._data.split(index))
+
+#   def tasks(self):
+#     ''' Iterate through the tasks. '''
+#     for i in range(len(self)):
+#       yield self.task(i)
+
+#   def accumulate(self, result):
+#     ''' Accumulate the results. '''
+#     self._data.accumulate(result.index, result.reflections)
+
+#   def result(self):
+#     ''' Return the result. '''
+#     return self._data.data()
+
+#   def finished(self):
+#     ''' Return if all tasks have finished. '''
+#     return self._data.finished()
+
+#   def __len__(self):
+#     ''' Return the number of tasks. '''
+#     return len(self._data)
+
+#   def _print_summary(self, block_size):
+#     ''' Print a summary of the integration stuff. '''
+#     from math import floor, log10
+#     from libtbx import table_utils
+
+#     # Create a table of integration tasks
+#     rows = [
+#       ["Frame From", "Frame To",
+#        "Angle From", "Angle To",
+#        "# Process",  "# Include"]
+#     ]
+#     scans = self._experiments.scans()
+#     assert(len(scans) == 1)
+#     for i in range(len(self)):
+#       f0, f1 = self._data.block(i)
+#       p0 = scans[0].get_angle_from_array_index(f0)
+#       p1 = scans[0].get_angle_from_array_index(f1)
+#       n0 = len(self._data.to_process(i))
+#       n1 = len(self._data.to_include(i))
+#       rows.append([str(f0), str(f1), str(p0), str(p1), str(n0), str(n1)])
+#     task_table = table_utils.format(
+#       rows,
+#       has_header=True,
+#       justify="right",
+#       prefix=" ")
+
+#     # Create summary format
+#     summary_format_str = (
+#       '%s\n'
+#       '\n'
+#       'Beginning integration of the following experiments:\n'
+#       '\n'
+#       ' Experiments: %d\n'
+#       ' Beams:       %d\n'
+#       ' Detectors:   %d\n'
+#       ' Goniometers: %d\n'
+#       ' Scans:       %d\n'
+#       ' Crystals:    %d\n'
+#       '\n'
+#       'Integrating reflections in the following blocks of images:\n'
+#       '\n'
+#       ' block_size: %d degrees\n'
+#       '\n'
+#       '%s\n'
+#       '\n'
+#       ' %d reflections overlapping blocks removed from integration\n'
+#       '\n'
+#       ' If you see poor performance, it may be because DIALS is using too\n'
+#       ' much memory. This could be because you have specified too many\n'
+#       ' processes on the same machine, in which case try setting the number\n'
+#       ' of processes to a smaller number. It could also be because the block\n'
+#       ' size is too large, in which case try setting the block size to a\n'
+#       ' smaller value. Reflections not fully recorded in a block are not\n'
+#       ' integrated so be sure to check that in reducing the block size you\n'
+#       ' are not throwing away too many reflections.\n'
+#     )
+
+#     # Print the summary
+#     print summary_format_str % (
+#       '=' * 80,
+#       len(self._experiments),
+#       len(self._experiments.beams()),
+#       len(self._experiments.detectors()),
+#       len(self._experiments.goniometers()),
+#       len(self._experiments.scans()),
+#       len(self._experiments.crystals()),
+#       block_size,
+#       task_table,
+#       len(self._data.to_not_process()))
 
 
 class Integrator3D(Integrator):
