@@ -197,63 +197,72 @@ namespace dials { namespace algorithms {
   class IntegrationTask3DAllocator {
   public:
 
+    /**
+     * Initialise the allocator with the task spec
+     * @param spec The integration task specification
+     */
     IntegrationTask3DAllocator(const IntegrationTask3DSpec &spec) {
 
       typedef std::pair<std::size_t,std::size_t> active_type;
 
-      std::vector<active_type> active(spec.data().size());
-      std::vector<bool> first(active.size(), true);
-
+      // Determine the first and last job on which the reflections
+      // are active
+      active_type none(spec.njobs(), 0);
+      std::vector<active_type> active(spec.data().size(), none);
       for (std::size_t i = 0; i < spec.njobs(); ++i) {
         af::const_ref<std::size_t> ind = spec.indices(i);
         for (std::size_t j = 0; j < ind.size(); ++j) {
           std::size_t k = ind[j];
           active_type &a = active[k];
-          if (first[k]) {
-            a.first  = i;
-            a.second = i;
-            first[k] = false;
-          } else {
-            if (i < a.first)  a.first  = i;
-            if (i > a.second) a.second = i;
-          }
+          if (i < a.first)  a.first  = i;
+          if (i > a.second) a.second = i;
         }
       }
 
-      std::vector<std::size_t> count1(spec.njobs(), 0);
-      std::vector<std::size_t> count2(spec.njobs(), 0);
-      std::vector<std::size_t> num1(spec.njobs(), 0);
-      std::vector<std::size_t> num2(spec.njobs(), 0);
+      // Some helper arrays
+      std::vector<std::size_t> mcount(spec.njobs(), 0);
+      std::vector<std::size_t> fcount(spec.njobs(), 0);
+      std::vector<std::size_t> mnum(spec.njobs(), 0);
+      std::vector<std::size_t> fnum(spec.njobs(), 0);
+
+      // Determine the number of reflections that need to be allocated
+      // and free at the beginning and end of each job
       for (std::size_t i = 0; i < active.size(); ++i) {
-        num1[active[i].first]++;
-        num2[active[i].second]++;
+        mnum[active[i].first]++;
+        fnum[active[i].second]++;
       }
-      malloc_offset_.resize(spec.njobs() + 1);
-      malloc_indices_.resize(spec.data().size());
-      free_offset_.resize(spec.njobs() + 1);
-      free_indices_.resize(spec.data().size());
-      malloc_offset_[0] = 0;
-      free_offset_[0] = 0;
-      for (std::size_t i = 1; i < malloc_offset_.size(); ++i) {
-        malloc_offset_[i] = malloc_offset_[i-1] + num1[i-1];
-        free_offset_[i] = free_offset_[i-1] + num2[i-1];
-      }
-      DIALS_ASSERT(malloc_offset_.back() == malloc_indices_.size());
-      DIALS_ASSERT(free_offset_.back() == free_indices_.size());
+
+      // Resize the arrays
+      moffset_.resize(spec.njobs() + 1);
+      foffset_.resize(spec.njobs() + 1);
+      mindices_.resize(spec.data().size());
+      findices_.resize(spec.data().size());
+
+      // Compute the offsets
+      moffset_[0] = 0;
+      foffset_[0] = 0;
+      std::partial_sum(mnum.begin(), mnum.end(), moffset_.begin()+1);
+      std::partial_sum(fnum.begin(), fnum.end(), foffset_.begin()+1);
+
+      // Check the offsets are correct
+      DIALS_ASSERT(moffset_.back() == mindices_.size());
+      DIALS_ASSERT(foffset_.back() == findices_.size());
+
+      // Compute the indices
       for (std::size_t i = 0; i < active.size(); ++i) {
         std::size_t i1 = active[i].first;
         std::size_t i2 = active[i].second;
-        std::size_t k1 = malloc_offset_[i1] + count1[i1];
-        std::size_t k2 = malloc_offset_[i2] + count2[i2];
-        malloc_indices_[k1] = i;
-        free_indices_[k2] = i;
-        count1[i1]++;
-        count2[i2]++;
+        std::size_t k1 = moffset_[i1] + mcount[i1];
+        std::size_t k2 = foffset_[i2] + fcount[i2];
+        mindices_[k1] = i;
+        findices_[k2] = i;
+        mcount[i1]++;
+        fcount[i2]++;
       }
-      for (std::size_t i =0 ;i < count1.size(); ++i) {
-        DIALS_ASSERT(count1[i] == num1[i]);
-        DIALS_ASSERT(count2[i] == num2[i]);
-      }
+
+      // Check the counts are as expected
+      DIALS_ASSERT(mcount == mnum);
+      DIALS_ASSERT(fcount == fnum);
     }
 
     /**
@@ -261,14 +270,14 @@ namespace dials { namespace algorithms {
      * @returns The indices of reflections to allocate
      */
     af::const_ref<std::size_t> malloc(std::size_t index) const {
-      DIALS_ASSERT(index < malloc_offset_.size()-1);
-      std::size_t i0 = malloc_offset_[index];
-      std::size_t i1 = malloc_offset_[index+1];
+      DIALS_ASSERT(index < moffset_.size()-1);
+      std::size_t i0 = moffset_[index];
+      std::size_t i1 = moffset_[index+1];
       DIALS_ASSERT(i1 >= i0);
       std::size_t off = i0;
       std::size_t num = i1 - i0;
-      DIALS_ASSERT(off + num <= malloc_indices_.size());
-      return af::const_ref<std::size_t> (&malloc_indices_[off], num);
+      DIALS_ASSERT(off + num <= mindices_.size());
+      return af::const_ref<std::size_t> (&mindices_[off], num);
     }
 
     /**
@@ -276,22 +285,22 @@ namespace dials { namespace algorithms {
      * @returns The indices of reflections to free
      */
     af::const_ref<std::size_t> free(std::size_t index) const {
-      DIALS_ASSERT(index < free_offset_.size()-1);
-      std::size_t i0 = free_offset_[index];
-      std::size_t i1 = free_offset_[index+1];
+      DIALS_ASSERT(index < foffset_.size()-1);
+      std::size_t i0 = foffset_[index];
+      std::size_t i1 = foffset_[index+1];
       DIALS_ASSERT(i1 >= i0);
       std::size_t off = i0;
       std::size_t num = i1 - i0;
-      DIALS_ASSERT(off + num <= free_indices_.size());
-      return af::const_ref<std::size_t> (&free_indices_[off], num);
+      DIALS_ASSERT(off + num <= findices_.size());
+      return af::const_ref<std::size_t> (&findices_[off], num);
     }
 
   private:
 
-    std::vector<std::size_t> malloc_offset_;
-    std::vector<std::size_t> malloc_indices_;
-    std::vector<std::size_t> free_offset_;
-    std::vector<std::size_t> free_indices_;
+    std::vector<std::size_t> moffset_;
+    std::vector<std::size_t> foffset_;
+    std::vector<std::size_t> mindices_;
+    std::vector<std::size_t> findices_;
   };
 
 
@@ -442,45 +451,45 @@ namespace dials { namespace algorithms {
      * @param image The image to process
      */
     void next_image(const Image &image) {
-      /* typedef Shoebox<>::float_type float_type; */
-      /* typedef af::ref<float_type, af::c_grid<3> > sbox_data_type; */
-      /* typedef af::ref<int,        af::c_grid<3> > sbox_mask_type; */
-      /* DIALS_ASSERT(image.npanels() == npanels()); */
-      /* for (std::size_t p = 0; p < image.npanels(); ++p) { */
-      /*   af::const_ref<std::size_t> ind = indices(frame_, p); */
-      /*   af::const_ref< int, af::c_grid<2> > data = image.data(p); */
-      /*   af::const_ref< bool, af::c_grid<2> > mask = image.mask(p); */
-      /*   DIALS_ASSERT(data.accessor().all_eq(mask.accessor())); */
-      /*   for (std::size_t i = 0; i < ind.size(); ++i) { */
-      /*     DIALS_ASSERT(ind[i] < shoebox_.size()); */
-      /*     Shoebox<>& sbox = shoebox_[ind[i]]; */
-      /*     int6 b = sbox.bbox; */
-      /*     sbox_data_type sdata = sbox.data.ref(); */
-      /*     sbox_mask_type smask = sbox.mask.ref(); */
-      /*     DIALS_ASSERT(b[1] > b[0]); */
-      /*     DIALS_ASSERT(b[3] > b[2]); */
-      /*     DIALS_ASSERT(b[5] > b[4]); */
-      /*     DIALS_ASSERT(frame_ >= b[4] && frame_ < b[5]); */
-      /*     int x0 = b[0]; */
-      /*     int x1 = b[1]; */
-      /*     int y0 = b[2]; */
-      /*     int y1 = b[3]; */
-      /*     int z0 = b[4]; */
-      /*     std::size_t xs = x1 - x0; */
-      /*     std::size_t ys = y1 - y0; */
-      /*     std::size_t z = frame_ - z0; */
-      /*     DIALS_ASSERT(x0 >= 0 && y0 >= 0); */
-      /*     DIALS_ASSERT(y1 <= data.accessor()[0]); */
-      /*     DIALS_ASSERT(x1 <= data.accessor()[1]); */
-      /*     DIALS_ASSERT(sbox.is_consistent()); */
-      /*     for (std::size_t y = 0; y < ys; ++y) { */
-      /*       for (std::size_t x = 0; x < xs; ++x) { */
-      /*         sdata(z, y, x) = data(y+y0,x+x0); */
-      /*         smask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0; */
-      /*       } */
-      /*     } */
-      /*   } */
-      /* } */
+      typedef Shoebox<>::float_type float_type;
+      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
+      typedef af::ref<int,        af::c_grid<3> > sbox_mask_type;
+      DIALS_ASSERT(image.npanels() == npanels());
+      for (std::size_t p = 0; p < image.npanels(); ++p) {
+        af::const_ref<std::size_t> ind = indices(frame_, p);
+        af::const_ref< int, af::c_grid<2> > data = image.data(p);
+        af::const_ref< bool, af::c_grid<2> > mask = image.mask(p);
+        DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
+        for (std::size_t i = 0; i < ind.size(); ++i) {
+          DIALS_ASSERT(ind[i] < shoebox_.size());
+          Shoebox<>& sbox = shoebox_[ind[i]];
+          int6 b = sbox.bbox;
+          sbox_data_type sdata = sbox.data.ref();
+          sbox_mask_type smask = sbox.mask.ref();
+          DIALS_ASSERT(b[1] > b[0]);
+          DIALS_ASSERT(b[3] > b[2]);
+          DIALS_ASSERT(b[5] > b[4]);
+          DIALS_ASSERT(frame_ >= b[4] && frame_ < b[5]);
+          int x0 = b[0];
+          int x1 = b[1];
+          int y0 = b[2];
+          int y1 = b[3];
+          int z0 = b[4];
+          std::size_t xs = x1 - x0;
+          std::size_t ys = y1 - y0;
+          std::size_t z = frame_ - z0;
+          DIALS_ASSERT(x0 >= 0 && y0 >= 0);
+          DIALS_ASSERT(y1 <= data.accessor()[0]);
+          DIALS_ASSERT(x1 <= data.accessor()[1]);
+          DIALS_ASSERT(sbox.is_consistent());
+          for (std::size_t y = 0; y < ys; ++y) {
+            for (std::size_t x = 0; x < xs; ++x) {
+              sdata(z, y, x) = data(y+y0,x+x0);
+              smask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0;
+            }
+          }
+        }
+      }
       frame_++;
     }
 
