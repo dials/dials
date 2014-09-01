@@ -11,7 +11,13 @@ class TestIntegrationTask3DExecutor(object):
     self.reflections = flex.reflection_table()
     self.reflections['panel'] = flex.size_t()
     self.reflections['bbox'] = flex.int6()
-    self.reflections['job_id'] = flex.size_t()
+    self.reflections['miller_index'] = flex.miller_index()
+    self.reflections['s1'] = flex.vec3_double()
+    self.reflections['xyzcal.px'] = flex.vec3_double()
+    self.reflections['xyzcal.mm'] = flex.vec3_double()
+    self.reflections['entering'] = flex.bool()
+    self.reflections['id'] = flex.size_t()
+    self.reflections["flags"] = flex.size_t()
 
     self.npanels = 2
     self.width = 1000
@@ -32,7 +38,7 @@ class TestIntegrationTask3DExecutor(object):
       (80, 100)])
 
     for i, j in enumerate(self.jobs):
-      self.append_reflections(j, i)
+      self.append_reflections(j)
 
     ind1 = flex.size_t(range(self.nrefl))
     ind2 = ind1 + self.nrefl
@@ -47,12 +53,13 @@ class TestIntegrationTask3DExecutor(object):
     off3 = off2 + self.nrefl
     off4 = off3 + self.nrefl
     self.offset = flex.size_t([0, off1, off2, off3, off4])
+    self.mask = flex.bool(len(self.indices), True)
 
     # indices = list(range(len(self.reflections)))
     # shuffle(indices)
     # self.reflections.reorder(flex.size_t(indices))
 
-  def append_reflections(self, zrange, job_id):
+  def append_reflections(self, zrange):
     from random import randint, seed
     seed(0)
     for i in range(self.nrefl):
@@ -66,7 +73,6 @@ class TestIntegrationTask3DExecutor(object):
       self.reflections.append({
         "panel" : randint(0,1),
         "bbox" : bbox,
-        "job_id" : job_id
       })
 
   def create_image(self, value):
@@ -111,7 +117,8 @@ class TestIntegrationTask3DExecutor(object):
       self.npanels,
       self.jobs,
       self.offset,
-      self.indices)
+      self.indices,
+      self.mask)
     print time() - st
 
     # Initialise the executor

@@ -37,7 +37,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                  std::size_t,
                  const af::const_ref< tiny<int,2> >&,
                  const af::const_ref< std::size_t >&,
-                 const af::const_ref< std::size_t >& >())
+                 const af::const_ref< std::size_t >&,
+                 const af::const_ref< bool >&>())
       .def("data", &IntegrationTask3DSpec::data)
       .def("job", &IntegrationTask3DSpec::job)
       .def("frame0", &IntegrationTask3DSpec::frame0)

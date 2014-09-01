@@ -55,18 +55,21 @@ namespace dials { namespace algorithms {
             std::size_t npanels,
             const af::const_ref< tiny<int,2> > &jobs,
             const af::const_ref< std::size_t > &off,
-            const af::const_ref< std::size_t > &ind)
+            const af::const_ref< std::size_t > &ind,
+            const af::const_ref< bool > &mask)
         : data_(data),
           npanels_(npanels),
           jobs_(jobs.begin(), jobs.end()),
           offset_(off.begin(), off.end()),
-          indices_(ind.begin(), ind.end()) {
+          indices_(ind.begin(), ind.end()),
+          mask_(mask.begin(), mask.end()) {
 
       // Check some input
       DIALS_ASSERT(data.size() > 0);
       DIALS_ASSERT(jobs.size() > 0);
       DIALS_ASSERT(off.size() > 0);
       DIALS_ASSERT(ind.size() > 0);
+      DIALS_ASSERT(mask.size() == ind.size());
 
       // Check the jobs are valid. Jobs must be ordered in increasing frame
       // number and can overlap but 1 jobs must not be fully contained in
@@ -143,6 +146,17 @@ namespace dials { namespace algorithms {
       return af::const_ref<std::size_t> (&indices_[off], num);
     }
 
+    af::const_ref<bool> mask(std::size_t index) const {
+      DIALS_ASSERT(index < offset_.size()-1);
+      std::size_t i0 = offset_[index];
+      std::size_t i1 = offset_[index+1];
+      DIALS_ASSERT(i1 >= i0);
+      std::size_t off = i0;
+      std::size_t num = i1 - i0;
+      DIALS_ASSERT(off + num <= mask_.size());
+      return af::const_ref<bool> (&mask_[off], num);
+    }
+
     /**
      * @returns The first frame in the task.
      */
@@ -185,6 +199,7 @@ namespace dials { namespace algorithms {
     std::vector< tiny<int,2> > jobs_;
     std::vector< std::size_t > offset_;
     std::vector< std::size_t > indices_;
+    af::shared< bool > mask_;
     int frame0_;
     int frame1_;
     std::size_t nframes_;
@@ -193,6 +208,9 @@ namespace dials { namespace algorithms {
 
   /**
    * A class to help in allocating memory for 3D shoeboxes
+   *
+   * FIXME Add custom allocator for shoebox data and do a single
+   * allocation at the start of the process
    */
   class IntegrationTask3DAllocator {
   public:
@@ -580,7 +598,17 @@ namespace dials { namespace algorithms {
      */
     af::reflection_table split(std::size_t job) const {
       using namespace dials::af::boost_python::flex_table_suite;
-      return select_rows_index(spec_.data(), spec_.indices(job));
+      af::const_ref<bool> mask = spec_.mask(job);
+      af::reflection_table result = select_rows_index(
+          spec_.data(),
+          spec_.indices(job));
+      af::ref<std::size_t> flags = result["flags"];
+      for (std::size_t i = 0; i < flags.size(); ++i) {
+        if (!mask[i]) {
+          flags[i] |= af::DontIntegrate;
+        }
+      }
+      return result;
     }
 
     /**
@@ -589,7 +617,11 @@ namespace dials { namespace algorithms {
     void merge(af::reflection_table result, std::size_t job) {
       using namespace dials::af::boost_python::flex_table_suite;
       af::reflection_table data = spec_.data();
-      set_selected_rows_index(data, spec_.indices(job), result);
+      set_selected_rows_index_mask(
+          data,
+          spec_.indices(job),
+          spec_.mask(job),
+          result);
     }
 
     IntegrationTask3DSpec spec_;
@@ -597,10 +629,20 @@ namespace dials { namespace algorithms {
     int frame_;
     std::size_t begin_active_;
     std::size_t end_active_;
-    callback_type process_;
-    af::shared< Shoebox<> > shoebox_;
     std::vector<std::size_t> offset_;
     std::vector<std::size_t> indices_;
+    af::shared< Shoebox<> > shoebox_;
+    callback_type process_;
+  };
+
+
+  class IntegrationManager3DExecutor {
+  public:
+
+    IntegrationManager3DExecutor() {
+
+    }
+
   };
 
   /* /** */

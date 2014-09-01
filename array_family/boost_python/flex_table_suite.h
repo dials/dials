@@ -255,8 +255,8 @@ namespace flex_table_suite {
     af::const_ref<std::size_t> index;
 
     copy_to_indices_visitor(
-          T &result_,
-          typename T::key_type key_,
+        T &result_,
+        typename T::key_type key_,
           af::const_ref<std::size_t> index_)
       : result(result_),
         key(key_),
@@ -268,6 +268,39 @@ namespace flex_table_suite {
       DIALS_ASSERT(other_column.size() == index.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
         result_column[index[i]] = other_column[i];
+      }
+    }
+  };
+
+  /**
+   * Copy the selected rows from the input column to a output column.
+   */
+  template <typename T>
+  struct copy_to_indices_with_mask_visitor : public boost::static_visitor<void> {
+
+    T &result;
+    typename T::key_type key;
+    af::const_ref<std::size_t> index;
+    af::const_ref<bool> mask;
+
+    copy_to_indices_with_mask_visitor(
+        T &result_,
+        typename T::key_type key_,
+          af::const_ref<std::size_t> index_,
+          af::const_ref<bool> mask_)
+      : result(result_),
+        key(key_),
+        index(index_),
+        mask(mask_) {}
+
+    template <typename U>
+    void operator()(const U &other_column) {
+      U result_column = result[key];
+      DIALS_ASSERT(other_column.size() == index.size());
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        if (mask[i]) {
+          result_column[index[i]] = other_column[i];
+        }
       }
     }
   };
@@ -681,6 +714,27 @@ namespace flex_table_suite {
     DIALS_ASSERT(index.size() == other.nrows());
     for (iterator it = other.begin(); it != other.end(); ++it) {
       copy_to_indices_visitor<T> visitor(self, it->first, index);
+      it->second.apply_visitor(visitor);
+    }
+  }
+
+  /**
+   * Set the selected number of rows from the table via an index array
+   * @param self The current table
+   * @param index The index array
+   * @param mask The indices in other to use
+   * @param other The other table
+   */
+  template <typename T>
+  void set_selected_rows_index_mask(T &self,
+      const af::const_ref<std::size_t> &index,
+      const af::const_ref<bool> &mask,
+      const T &other) {
+    typedef typename T::const_iterator iterator;
+    DIALS_ASSERT(index.size() == other.nrows());
+    DIALS_ASSERT(index.size() == mask.size());
+    for (iterator it = other.begin(); it != other.end(); ++it) {
+      copy_to_indices_with_mask_visitor<T> visitor(self, it->first, index, mask);
       it->second.apply_visitor(visitor);
     }
   }
