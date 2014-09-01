@@ -147,6 +147,10 @@ namespace dials { namespace algorithms {
       return af::const_ref<std::size_t> (&indices_[off], num);
     }
 
+    /**
+     * @param index The index of the job
+     * @returns The mask of reflections on a job
+     */
     af::const_ref<bool> mask(std::size_t index) const {
       DIALS_ASSERT(index < offset_.size()-1);
       std::size_t i0 = offset_[index];
@@ -703,6 +707,7 @@ namespace dials { namespace algorithms {
   private:
     af::shared< tiny<int,2> > jobs_;
   };
+
 
   /**
    * A class to do the integration management
