@@ -228,8 +228,15 @@ class IntegrationTask3D(IntegrationTask):
 
     process = Process()
 
-    executor = IntegrationTask3DExecutor(self._spec, process)
+    print self._spec.data()
+    print self._spec.job(0)
+    print self._spec.frame0()
+    print self._spec.frame1()
+    print self._spec.nframes()
+    print self._spec.njobs()
+    print self._spec.npanels()
 
+    executor = IntegrationTask3DExecutor(self._spec, process)
     imageset = self._experiments[0].imageset
     imageset = imageset[executor.frame0():executor.frame1()]
 
@@ -266,13 +273,13 @@ class IntegrationManager3D(IntegrationManager):
       self._reflections,
       scan.get_array_range(),
       block_size,
-      params.mp.max_procs,
       len(detector))
     self.image_read_time = 0
     self.image_extract_time = 0
 
   def task(self, index):
     ''' Get a task. '''
+    print "Hello"
     return IntegrationTask3D(
       index,
       self._experiments,
@@ -330,10 +337,10 @@ class IntegrationTask3DMulti(IntegrationTask):
       self._data['panel'],
       self._data['bbox'])
     self._data['shoebox'].allocate()
-    self._data.fill_shoeboxes(imageset, self._mask)
+    rt, et = self._data.fill_shoeboxes(imageset, self._mask)
     result = IntegrationResult(self._index, self._data)
-    result.image_read_time =0# executor.image_read_time
-    result.image_extract_time =0# executor.image_extract_time
+    result.image_read_time = rt# executor.image_read_time
+    result.image_extract_time =et# executor.image_extract_time
     del self._data['shoebox']
     return result
 

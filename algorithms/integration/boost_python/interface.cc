@@ -64,16 +64,13 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<af::reflection_table,
                 vec2<int>,
                 double,
-                std::size_t,
                 std::size_t>((
           arg("reflections"),
           arg("array_range"),
           arg("block_size"),
-          arg("num_tasks"),
           arg("npanels"))))
       .def("__len__", &IntegrationManager3DExecutor::size)
       .def("finished", &IntegrationManager3DExecutor::finished)
-      .def("task", &IntegrationManager3DExecutor::task)
       .def("split", &IntegrationManager3DExecutor::split)
       .def("accumulate", &IntegrationManager3DExecutor::accumulate)
       .def("data", &IntegrationManager3DExecutor::data)

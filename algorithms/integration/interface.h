@@ -232,6 +232,7 @@ namespace dials { namespace algorithms {
         af::const_ref<std::size_t> ind = spec.indices(i);
         for (std::size_t j = 0; j < ind.size(); ++j) {
           std::size_t k = ind[j];
+          DIALS_ASSERT(k < active.size());
           active_type &a = active[k];
           if (i < a.first)  a.first  = i;
           if (i > a.second) a.second = i;
@@ -247,6 +248,8 @@ namespace dials { namespace algorithms {
       // Determine the number of reflections that need to be allocated
       // and free at the beginning and end of each job
       for (std::size_t i = 0; i < active.size(); ++i) {
+        DIALS_ASSERT(active[i].first < mnum.size());
+        DIALS_ASSERT(active[i].second < fnum.size());
         mnum[active[i].first]++;
         fnum[active[i].second]++;
       }
@@ -271,8 +274,12 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < active.size(); ++i) {
         std::size_t i1 = active[i].first;
         std::size_t i2 = active[i].second;
+        DIALS_ASSERT(i1 < moffset_.size());
+        DIALS_ASSERT(i2 < foffset_.size());
         std::size_t k1 = moffset_[i1] + mcount[i1];
         std::size_t k2 = foffset_[i2] + fcount[i2];
+        DIALS_ASSERT(k1 < mindices_.size());
+        DIALS_ASSERT(k2 < findices_.size());
         mindices_[k1] = i;
         findices_[k2] = i;
         mcount[i1]++;
@@ -637,138 +644,29 @@ namespace dials { namespace algorithms {
 
 
   /**
-   * A class to do the integration management
+   * A class to compute the integration jobs
    */
-  class IntegrationManager3DExecutor {
+  class IntegrationManager3DJobCalculator {
   public:
 
     /**
-     * Initialise the manager executor class.
-     * @param data The reflection data
-     * @param array_range The array range
-     * @param block_size The size of the blocks
-     * @param num_tasks The number of tasks to make
-     * @param npanels The number of panels
+     * Compute the integration jobs
+     * @param array_range The range of frames to process
+     * @param block_size The number of frames in a job
      */
-    IntegrationManager3DExecutor(
-        af::reflection_table data,
-        vec2<int> array_range,
-        double block_size,
-        std::size_t num_tasks,
-        std::size_t npanels)
-          : data_(data),
-            array_range_(array_range),
-            block_size_(block_size),
-            num_tasks_(num_tasks),
-            npanels_(npanels) {
-      DIALS_ASSERT(data.size() > 0);
-      DIALS_ASSERT(array_range[1] > array_range[0]);
-      DIALS_ASSERT(block_size > 0);
-      DIALS_ASSERT(num_tasks > 0);
-      DIALS_ASSERT(npanels > 0);
-      compute_jobs();
-      compute_indices();
-      finished_.assign(num_tasks_, false);
-    }
-
-    /**
-     * @returns The reflection data
-     */
-    af::reflection_table data() const {
-      DIALS_ASSERT(finished());
-      return data_;
-    }
-
-    /**
-     * @returns The number of tasks
-     */
-    std::size_t size() const {
-      return num_tasks_;
-    }
-
-    /**
-     * @returns Have all the tasks completed.
-     */
-    bool finished() const {
-      return finished_.all_eq(true);
-    }
-
-    /**
-     * @returns The list of jobs
-     */
-    af::shared< tiny<int,2> > jobs() const {
-      return jobs_;
-    }
-
-    /**
-     * @returns The requested task
-     */
-    tiny<int,2> task(std::size_t index) const {
-      DIALS_ASSERT(index < tasks_.size());
-      return tasks_[index];
-    }
-
-    /**
-     * @returns A list of ignored reflections
-     */
-    af::shared<std::size_t> ignored() const {
-      return af::shared<std::size_t>(ignored_);
-    }
-
-    /**
-     * Get the specification of the requested task
-     * @param index The task index
-     * @returns The task spec
-     */
-    IntegrationTask3DSpec split(std::size_t index) const {
-      using namespace dials::af::boost_python::flex_table_suite;
-      DIALS_ASSERT(index < tasks_.size());
-      int j0 = tasks_[index][0];
-      int j1 = tasks_[index][1];
-      DIALS_ASSERT(j1 > j0);
-      std::size_t off = j0;
-      std::size_t num = j1 - j0;
-      return IntegrationTask3DSpec(
-          select_rows_index(data_, task_indices(index)),
-          npanels_,
-          af::const_ref< tiny<int,2> >(&jobs_[off], num),
-          job_offset(index).const_ref(),
-          job_indices(index),
-          job_mask(index));
-    }
-
-    /**
-     * Accumulate the results from the separate tasks
-     * @param index The index of the task
-     * @param result The result of the task
-     */
-    void accumulate(std::size_t index, af::reflection_table result) {
-      using namespace dials::af::boost_python::flex_table_suite;
-      DIALS_ASSERT(index < finished_.size() && !finished_[index]);
-      set_selected_rows_index_mask(
-          data_,
-          task_indices(index),
-          task_mask(index),
-          result);
-      finished_[index] = true;
-    }
-
-  private:
-
-    /**
-     * Compute the jobs and tasks
-     */
-    void compute_jobs() {
-      int frame0 = array_range_[0];
-      int frame1 = array_range_[1];
+    IntegrationManager3DJobCalculator(
+        tiny<int,2> array_range,
+        double block_size) {
+      int frame0 = array_range[0];
+      int frame1 = array_range[1];
       DIALS_ASSERT(frame1 > frame0);
       int nframes = frame1 - frame0;
       DIALS_ASSERT(nframes >= 2);
-      if (block_size_ > nframes) {
-        block_size_ = nframes;
+      if (block_size > nframes) {
+        block_size = nframes;
       }
-      DIALS_ASSERT(block_size_ >= 2);
-      int nblocks = (int)std::ceil(2.0 * nframes / block_size_);
+      DIALS_ASSERT(block_size >= 2);
+      int nblocks = (int)std::ceil(2.0 * nframes / block_size);
       DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
       int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
       af::shared<int> indices;
@@ -792,19 +690,119 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(i2 > i1);
         jobs_.push_back(tiny<int,2>(i1, i2));
       }
-      int jobs_per_task = (int)std::ceil((double)jobs_.size()/num_tasks_);
-      DIALS_ASSERT(jobs_per_task <= jobs_.size());
-      for (std::size_t i = 0; i < num_tasks_; ++i) {
-        int j0 = i * jobs_per_task;
-        int j1 = std::min(j0 + jobs_per_task, (int)jobs_.size());
-        if (j1 <= j0) {
-          break;
-        }
-        tasks_.push_back(tiny<int,2>(j0, j1));
-      }
-      num_tasks_ = tasks_.size();
-      DIALS_ASSERT(num_tasks_ > 0);
+      DIALS_ASSERT(jobs_.size() > 0);
     }
+
+    /**
+     * @returns The jobs
+     */
+    af::shared< tiny<int,2> > jobs() const {
+      return jobs_;
+    }
+
+  private:
+    af::shared< tiny<int,2> > jobs_;
+  };
+
+  /**
+   * A class to do the integration management
+   */
+  class IntegrationManager3DExecutor {
+  public:
+
+    /**
+     * Initialise the manager executor class.
+     * @param data The reflection data
+     * @param array_range The array range
+     * @param block_size The size of the blocks
+     * @param num_tasks The number of tasks to make
+     * @param npanels The number of panels
+     */
+    IntegrationManager3DExecutor(
+        af::reflection_table data,
+        vec2<int> array_range,
+        double block_size,
+        std::size_t npanels)
+          : data_(data),
+            array_range_(array_range),
+            block_size_(block_size),
+            npanels_(npanels),
+            finished_(false) {
+      DIALS_ASSERT(data.size() > 0);
+      DIALS_ASSERT(array_range[1] > array_range[0]);
+      DIALS_ASSERT(block_size > 0);
+      DIALS_ASSERT(npanels > 0);
+      IntegrationManager3DJobCalculator job_calculator(array_range, block_size);
+      jobs_ = job_calculator.jobs();
+      compute_indices();
+    }
+
+    /**
+     * @returns The reflection data
+     */
+    af::reflection_table data() const {
+      DIALS_ASSERT(finished());
+      return data_;
+    }
+
+    /**
+     * @returns The number of tasks
+     */
+    std::size_t size() const {
+      return 1;
+    }
+
+    /**
+     * @returns Have all the tasks completed.
+     */
+    bool finished() const {
+      return finished_;
+    }
+
+    /**
+     * @returns The list of jobs
+     */
+    af::shared< tiny<int,2> > jobs() const {
+      return jobs_;
+    }
+
+    /**
+     * @returns A list of ignored reflections
+     */
+    af::shared<std::size_t> ignored() const {
+      return af::shared<std::size_t>(ignored_);
+    }
+
+    /**
+     * Get the specification of the requested task
+     * @param index The task index
+     * @returns The task spec
+     */
+    IntegrationTask3DSpec split(std::size_t index) const {
+      using namespace af::boost_python::flex_table_suite;
+      DIALS_ASSERT(index < 1);
+      return IntegrationTask3DSpec(
+          select_rows_index(data_, process_.const_ref()),
+          npanels_,
+          jobs_.const_ref(),
+          offset_.const_ref(),
+          indices_.const_ref(),
+          mask_.const_ref());
+    }
+
+    /**
+     * Accumulate the results from the separate tasks
+     * @param index The index of the task
+     * @param result The result of the task
+     */
+    void accumulate(std::size_t index, af::reflection_table result) {
+      using namespace af::boost_python::flex_table_suite;
+      DIALS_ASSERT(index < 1 && !finished_);
+      set_selected_rows_index(data_, process_.const_ref(), result);
+      finished_ = true;
+    }
+
+  private:
 
     /**
      * Compute the indices of the lookup tables
@@ -818,18 +816,9 @@ namespace dials { namespace algorithms {
       af::const_ref<int6> bbox = data_["bbox"];
       af::ref<std::size_t> flags = data_["flags"];
 
-      // Create a lookup of which tasks a job belongs in
-      std::vector<std::size_t> lookup(jobs_.size());
-      for (std::size_t i = 0; i < tasks_.size(); ++i) {
-        for (std::size_t j = tasks_[i][0]; j < tasks_[i][1]; ++j) {
-          DIALS_ASSERT(j < lookup.size());
-          lookup[j] = i;
-        }
-      }
-
       // Get which reflections to process in which job and task
-      std::vector<job_list_type> tindices(tasks_.size());
-      std::vector<job_list_type> jindices(jobs_.size());
+      std::vector<job_list_type> indices(jobs_.size());
+      std::size_t index = 0;
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         int z0 = bbox[i][4];
         int z1 = bbox[i][5];
@@ -837,20 +826,12 @@ namespace dials { namespace algorithms {
         if (!(f & af::DontIntegrate)) {
           std::size_t jmin = 0;
           double dmin = 0;
-          std::vector<bool> added(tasks_.size(), false);
           for (std::size_t j = 0; j < jobs_.size(); ++j) {
-            std::size_t task = lookup[j];
             int jz0 = jobs_[j][0];
             int jz1 = jobs_[j][1];
             if (f & af::ReferenceSpot) {
               if (z0 >= jz0 && z1 <= jz1) {
-                if (!added[task]) {
-                  tindices[task].push_back(job_type(i, false));
-                  added[task] = true;
-                }
-                DIALS_ASSERT(tindices[task].size() > 0);
-                std::size_t t = tindices[task].size() - 1;
-                jindices[j].push_back(job_type(t, false));
+                indices[j].push_back(job_type(index, false));
               }
             }
             double zc = (z1 + z0) / 2.0;
@@ -865,17 +846,14 @@ namespace dials { namespace algorithms {
           int jz1 = jobs_[jmin][1];
           if (z0 >= jz0 && z1 <= jz1) {
             if (f & af::ReferenceSpot) {
-              std::size_t task = lookup[jmin];
-              DIALS_ASSERT(jindices[jmin].size() > 0);
-              DIALS_ASSERT(tindices[task].size() > 0);
-              tindices[task].back().second=true;
-              jindices[jmin].back().second=true;
+              DIALS_ASSERT(indices[jmin].size() > 0);
+              DIALS_ASSERT(indices[jmin].back().first == index);
+              indices[jmin].back().second = true;
             } else {
-              std::size_t task = lookup[jmin];
-              tindices[task].push_back(job_type(i, true));
-              std::size_t t = tindices[task].size() - 1;
-              jindices[jmin].push_back(job_type(t, true));
+              indices[jmin].push_back(job_type(index, true));
             }
+            process_.push_back(i);
+            index++;
           } else {
             f |= af::DontIntegrate;
             ignored_.push_back(i);
@@ -883,136 +861,28 @@ namespace dials { namespace algorithms {
         }
       }
 
-      // Compute the number of reflections in each task
-      std::vector<std::size_t> num(size(), 0);
-      for (std::size_t i = 0; i < tasks_.size(); ++i) {
-        num[i] = tindices[i].size();
-      }
-
-      // Compute the task offsets
-      task_offset_.push_back(0);
-      std::partial_sum(num.begin(), num.end(),
-          std::back_inserter(task_offset_));
-
-      // Compute the task indices
-      task_indices_.resize(task_offset_.back());
-      task_mask_.resize(task_offset_.back());
-      std::size_t k = 0;
-      for (std::size_t i = 0; i < tindices.size(); ++i) {
-        const job_list_type& ind = tindices[i];
-        for (std::size_t j = 0; j < ind.size(); ++j, ++k) {
-          task_indices_[k] = ind[j].first;
-          task_mask_[k] = ind[j].second;
-        }
-      }
-      DIALS_ASSERT(k == task_indices_.size());
-
       std::vector<std::size_t> num2(jobs_.size(), 0);
       for (std::size_t i = 0; i < num2.size(); ++i) {
-        num2[i] = jindices[i].size();
+        num2[i] = indices[i].size();
       }
 
-      job_offset_.push_back(0);
+      offset_.push_back(0);
       std::partial_sum(num2.begin(), num2.end(),
-          std::back_inserter(job_offset_));
+          std::back_inserter(offset_));
 
-      job_indices_.resize(job_offset_.back());
-      job_mask_.resize(job_offset_.back());
-      k = 0;
-      for (std::size_t i = 0; i < jindices.size(); ++i) {
-        const job_list_type& ind = jindices[i];
+      indices_.resize(offset_.back());
+      mask_.resize(offset_.back());
+      std::size_t k = 0;
+      for (std::size_t i = 0; i < indices.size(); ++i) {
+        const job_list_type& ind = indices[i];
         for (std::size_t j = 0; j < ind.size(); ++j, ++k) {
-          job_indices_[k] = ind[j].first;
-          job_mask_[k] = ind[j].second;
+          DIALS_ASSERT(k < indices_.size());
+          indices_[k] = ind[j].first;
+          mask_[k] = ind[j].second;
+          DIALS_ASSERT(indices_[k] < process_.size());
         }
       }
-      DIALS_ASSERT(k == job_indices_.size());
-    }
-
-    /**
-     * Compute the offset and size into the task index array
-     */
-    void task_offset_and_size(std::size_t index,
-        std::size_t &off, std::size_t &num) const {
-      DIALS_ASSERT(index + 1 < task_offset_.size());
-      std::size_t ti0 = task_offset_[index];
-      std::size_t ti1 = task_offset_[index+1];
-      DIALS_ASSERT(ti1 > ti0);
-      off = ti0;
-      num = ti1 - ti0;
-    }
-
-    /**
-     * @returns The indices for a requested task
-     */
-    af::const_ref<std::size_t> task_indices(std::size_t index) const {
-      std::size_t off = 0, num = 0;
-      task_offset_and_size(index, off, num);
-      DIALS_ASSERT(off + num <= task_indices_.size());
-      return af::const_ref<std::size_t>(&task_indices_[off], num);
-    }
-
-    /**
-     * @returns The mask for a requested task
-     */
-    af::const_ref<bool> task_mask(std::size_t index) const {
-      std::size_t off = 0, num = 0;
-      task_offset_and_size(index, off, num);
-      DIALS_ASSERT(off + num <= task_mask_.size());
-      return af::const_ref<bool>(&task_mask_[off], num);
-    }
-
-    /**
-     * Compute the offset and size into the job index array
-     */
-    void job_offset_and_size(std::size_t index,
-        std::size_t &off, std::size_t &num) const {
-      DIALS_ASSERT(index < tasks_.size());
-      int j0 = tasks_[index][0];
-      int j1 = tasks_[index][1];
-      DIALS_ASSERT(j1 > j0 && j0 >= 0 && j1 < job_offset_.size());
-      std::size_t ji0 = job_offset_[j0];
-      std::size_t ji1 = job_offset_[j1];
-      DIALS_ASSERT(ji1 > ji0);
-      off = ji0;
-      num = ji1 - ji0;
-    }
-
-    /**
-     * @returns The job offsets for a requested task
-     */
-    af::shared<std::size_t> job_offset(std::size_t index) const {
-      std::size_t off = 0, num = 0;
-      job_offset_and_size(index, off, num);
-      int j0 = tasks_[index][0];
-      int j1 = tasks_[index][1];
-      DIALS_ASSERT(off + num <= job_indices_.size());
-      af::shared<std::size_t> offset(j1 - j0 + 1);
-      std::size_t zero = job_offset_[j0];
-      for (std::size_t i =0 ; i < offset.size(); ++i) {
-        offset[i] = job_offset_[i+j0] - zero;
-      }
-      return offset;
-    }
-
-    /**
-     * @returns The job indices for a requested task
-     */
-    af::const_ref<std::size_t> job_indices(std::size_t index) const {
-      std::size_t off = 0, num = 0;
-      job_offset_and_size(index, off, num);
-      DIALS_ASSERT(off + num <= job_indices_.size());
-      return af::const_ref<std::size_t>(&job_indices_[off], num);
-    }
-
-    /**
-     * @returns The job mask for a requested task
-     */
-    af::const_ref<bool> job_mask(std::size_t index) const {
-      std::size_t off = 0, num = 0;
-      job_offset_and_size(index, off, num);
-      DIALS_ASSERT(off + num <= job_indices_.size());
-      return af::const_ref<bool>(&job_mask_[off], num);
+      DIALS_ASSERT(k == indices_.size());
     }
 
     af::reflection_table data_;
@@ -1020,16 +890,13 @@ namespace dials { namespace algorithms {
     double block_size_;
     std::size_t num_tasks_;
     std::size_t npanels_;
+    bool finished_;
     af::shared< tiny<int,2> > jobs_;
-    af::shared< tiny<int,2> > tasks_;
-    af::shared<bool> finished_;
-    af::shared<std::size_t> task_offset_;
-    af::shared<std::size_t> task_indices_;
-    af::shared<bool> task_mask_;
-    af::shared<std::size_t> job_offset_;
-    af::shared<std::size_t> job_indices_;
-    af::shared<bool> job_mask_;
+    af::shared<std::size_t> offset_;
+    af::shared<std::size_t> indices_;
+    af::shared<bool> mask_;
     af::shared<std::size_t> ignored_;
+    af::shared<std::size_t> process_;
   };
 
 
@@ -1045,8 +912,10 @@ namespace dials { namespace algorithms {
         double block_size)
           : data_(reflections) {
 
+      IntegrationManager3DJobCalculator job_calculator(array_range, block_size);
+      blocks_ = job_calculator.jobs();
+
       // Compute the blocks
-      compute_blocks(array_range, block_size);
       finished_.assign(blocks_.size(), false);
 
       // Get the bounding boxes and flags
@@ -1237,49 +1106,7 @@ namespace dials { namespace algorithms {
 
   private:
 
-    /**
-     * Compute the blocks
-     */
-    void compute_blocks(
-        vec2<int> array_range,
-        double block_size) {
-      int frame0 = array_range[0];
-      int frame1 = array_range[1];
-      DIALS_ASSERT(frame1 > frame0);
-      int nframes = frame1 - frame0;
-      DIALS_ASSERT(nframes >= 2);
-      if (block_size > nframes) {
-        block_size = nframes;
-      }
-      DIALS_ASSERT(block_size >= 2);
-      int nblocks = (int)std::ceil(2.0 * nframes / block_size);
-      DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
-      int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
-      af::shared<int> indices;
-      indices.push_back(frame0);
-      for (int i = 0; i < nblocks; ++i) {
-        int frame = frame0 + (i + 1) * half_block_size;
-        if (frame > frame1) {
-          frame = frame1;
-        }
-        indices.push_back(frame);
-        if (frame == frame1) {
-          break;
-        }
-      }
-      DIALS_ASSERT(indices.front() == frame0);
-      DIALS_ASSERT(indices.back() == frame1);
-      DIALS_ASSERT(indices.size() > 2);
-      for (std::size_t i = 0; i < indices.size() - 2; ++i) {
-        int i1 = indices[i];
-        int i2 = indices[i+2];
-        DIALS_ASSERT(i2 > i1);
-        blocks_.push_back(tiny<int,2>(i1, i2));
-      }
-      DIALS_ASSERT(blocks_.size() > 0);
-    }
-
-    af::shared< vec2<int> > blocks_;
+    af::shared< tiny<int,2> > blocks_;
     af::shared<bool> finished_;
     af::reflection_table data_;
     std::vector< std::vector<std::size_t> > to_process_;
