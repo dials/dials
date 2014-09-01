@@ -16,13 +16,20 @@ class TestIntegrationTask3DExecutor(object):
     self.npanels = 2
     self.width = 1000
     self.height = 1000
-    self.nrefl = 20000
+    self.nrefl = 10000
+    # self.nrefl = 100000
 
     self.jobs = shared.tiny_int_2([
-      (0, 4),
-      (2, 6),
-      (4, 8),
-      (6, 10)])
+      (0, 16),
+      (8, 24),
+      (16, 32),
+      (24, 40)])
+
+    self.jobs = shared.tiny_int_2([
+      (0, 40),
+      (20, 60),
+      (40, 80),
+      (80, 100)])
 
     for i, j in enumerate(self.jobs):
       self.append_reflections(j, i)
@@ -44,8 +51,6 @@ class TestIntegrationTask3DExecutor(object):
     # indices = list(range(len(self.reflections)))
     # shuffle(indices)
     # self.reflections.reorder(flex.size_t(indices))
-
-    self.images = [self.create_image(i) for i in range(10)]
 
   def append_reflections(self, zrange, job_id):
     from random import randint, seed
@@ -75,6 +80,8 @@ class TestIntegrationTask3DExecutor(object):
 
     from dials.algorithms.integration import IntegrationTask3DExecutor
     from dials.algorithms.integration import IntegrationTask3DSpec
+    from dials.array_family import flex
+    from dials.model.data import Image
     from time import time
 
     # The processing callback
@@ -85,9 +92,16 @@ class TestIntegrationTask3DExecutor(object):
       def __call__(self, reflections):
         print reflections
         assert(len(reflections) == self.nrefl)
+        for sbox in reflections['shoebox']:
+          bbox = sbox.bbox
+          v1 = bbox[4]+1
+          for z in range(bbox[5]-bbox[4]):
+            assert(sbox.data[z:z+1,:,:].all_eq(v1+z))
         self.ncallback += 1
         return reflections
     callback = Callback(self.nrefl)
+
+    print len(self.reflections)
 
     # Create the task specification
     st = time()
@@ -104,13 +118,18 @@ class TestIntegrationTask3DExecutor(object):
 
     # Check the initial state is correct
     assert(executor.frame0() == 0)
-    assert(executor.frame1() == 10)
-    assert(executor.nframes() == 10)
+    assert(executor.frame1() == 100)
+    assert(executor.nframes() == 100)
+
+    # The data and mask
+    data = flex.int(flex.grid(self.height,self.width), 1)
+    mask = flex.bool(flex.grid(self.height,self.width), True)
 
     # Loop through images
     st = time()
-    for image in self.images:
-      executor.next(image)
+    for i in range(100):
+      data += 1
+      executor.next(Image((data, data), (mask, mask)))
     assert(executor.finished())
     assert(callback.ncallback == 4)
     print time() - st
