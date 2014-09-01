@@ -76,7 +76,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("split", &IntegrationManager3DExecutor::split)
       .def("accumulate", &IntegrationManager3DExecutor::accumulate)
       .def("data", &IntegrationManager3DExecutor::data)
-      .def("jobs", &IntegrationManager3DExecutor::jobs);
+      .def("jobs", &IntegrationManager3DExecutor::jobs)
+      .def("ignored", &IntegrationManager3DExecutor::ignored)
       ;
 
     class_<IntegrationManagerData3D>("IntegrationManagerData3D", no_init)

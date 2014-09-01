@@ -97,7 +97,6 @@ namespace dials { namespace algorithms {
       af::const_ref< int6 > bbox = data["bbox"];
 
       // Check the jobs ids are valid
-      std::cout << offset_.size() << ", " << offset_.back() << ", " << indices_.size() << std::endl;
       DIALS_ASSERT(offset_.size() == njobs()+1);
       DIALS_ASSERT(offset_.front() == 0);
       DIALS_ASSERT(offset_.back() == indices_.size());
@@ -105,6 +104,7 @@ namespace dials { namespace algorithms {
         af::const_ref<std::size_t> ind = indices(i);
         for (std::size_t j = 0; j < ind.size(); ++j) {
           std::size_t k = ind[j];
+          DIALS_ASSERT(k < panel.size());
           std::size_t p = panel[k];
           int z0 = bbox[k][4];
           int z1 = bbox[k][5];
@@ -682,7 +682,12 @@ namespace dials { namespace algorithms {
       return tasks_[index];
     }
 
+    af::shared<std::size_t> ignored() const {
+      return af::shared<std::size_t>(ignored_);
+    }
+
     IntegrationTask3DSpec split(std::size_t index) const {
+
       using namespace dials::af::boost_python::flex_table_suite;
 
       DIALS_ASSERT(index < size());
@@ -698,15 +703,13 @@ namespace dials { namespace algorithms {
       af::reflection_table data = select_rows_index(
           data_, task_indices(index));
 
-      af::shared<std::size_t> offset = job_offset(index);
-      af::const_ref<std::size_t> indices = job_indices(index);
-      af::const_ref<bool> mask = job_mask(index);
-
-
       // Return the integration task spec
+      af::shared<std::size_t> offset = job_offset(index);
       return IntegrationTask3DSpec(
           data, npanels_, jobs,
-          offset.const_ref(), indices, mask);
+          offset.const_ref(),
+          job_indices(index),
+          job_mask(index));
     }
 
     void accumulate(std::size_t index, af::reflection_table result) {

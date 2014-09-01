@@ -167,25 +167,49 @@ class TestIntegrationManager3DExecutor(object):
     self.npanels = 2
     self.width = 1000
     self.height = 1000
-    self.nrefl = 100000
+    self.nrefl = 10000
     self.array_range = (0, 130)
     self.block_size = 20
     self.num_tasks = 4
 
-    from random import randint, seed
+    from random import randint, seed, choice
     seed(0)
+    self.expected = [[], [], [], []]
+    self.lookup = [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3]
     for i in range(self.nrefl):
       x0 = randint(0, self.width-10)
       y0 = randint(0, self.height-10)
-      z0 = randint(self.array_range[0], self.array_range[1]-1)
-      x1 = x0 + randint(1, 10)
-      y1 = y0 + randint(1, 10)
-      z1 = randint(z0+1, min(self.array_range[1], z0+10))
-      bbox = (x0, x1, y0, y1, z0, z1)
-      self.reflections.append({
-        "panel" : randint(0,1),
-        "bbox" : bbox,
-      })
+      zs = randint(2, 9)
+      x1 = x0 + randint(2, 10)
+      y1 = y0 + randint(2, 10)
+      for k, j in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]):
+        t = self.lookup[k]
+        pos = choice(["left", "right", "centre"])
+        if pos == 'left':
+          z0 = j - zs
+          z1 = j
+          if k > 0:
+            t2 = self.lookup[k-1]
+            if t2 != t:
+              self.expected[t2].append(i)
+        elif pos == 'right':
+          z0 = j
+          z1 = j + zs
+          if k < 12-1:
+            t2 = self.lookup[k+1]
+            if t2 != t:
+              self.expected[t2].append(i)
+        else:
+          z0 = j - zs // 2
+          z1 = j + zs // 2
+        bbox = (x0, x1, y0, y1, z0, z1)
+        self.reflections.append({
+          "panel" : randint(0,1),
+          "bbox" : bbox,
+          "flags" : flex.reflection_table.flags.reference_spot
+        })
+        self.expected[t].append(i)
+
 
   def run(self):
     from dials.algorithms.integration import IntegrationManager3DExecutor
@@ -257,6 +281,11 @@ class TestIntegrationManager3DExecutor(object):
     assert(spec3.job(0) == (90, 110))
     assert(spec3.job(1) == (100, 120))
     assert(spec3.job(2) == (110, 130))
+    assert(len(spec0.data()) == len(self.expected[0]))
+    assert(len(spec1.data()) == len(self.expected[1]))
+    assert(len(spec2.data()) == len(self.expected[2]))
+    assert(len(spec3.data()) == len(self.expected[3]))
+    assert(len(executor.ignored()) == 0)
 
     # Accumulate the data again
     executor.accumulate(0, spec0.data())
