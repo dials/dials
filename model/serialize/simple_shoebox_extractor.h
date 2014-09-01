@@ -156,6 +156,9 @@ namespace dials { namespace model {
      * @param image The image to apply
      */
     void next(const Image &image) {
+      typedef Shoebox<>::float_type float_type;
+      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
+      typedef af::ref<int,        af::c_grid<3> > sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == numpanels_);
       for (std::size_t p = 0; p < image.npanels(); ++p) {
@@ -166,6 +169,8 @@ namespace dials { namespace model {
         for (std::size_t i = 0; i < ind.size(); ++i) {
           Shoebox<>& sbox = shoeboxes_[ind[i]];
           int6 b = sbox.bbox;
+          sbox_data_type sdata = sbox.data.ref();
+          sbox_mask_type smask = sbox.mask.ref();
           DIALS_ASSERT(b[1] > b[0]);
           DIALS_ASSERT(b[3] > b[2]);
           DIALS_ASSERT(b[5] > b[4]);
@@ -184,8 +189,8 @@ namespace dials { namespace model {
           DIALS_ASSERT(x1 <= data.accessor()[1]);
           for (std::size_t y = 0; y < ys; ++y) {
             for (std::size_t x = 0; x < xs; ++x) {
-              sbox.data(z, y, x) = data(y+y0,x+x0);
-              sbox.mask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0;
+              sdata(z, y, x) = data(y+y0,x+x0);
+              smask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0;
             }
           }
         }

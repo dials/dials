@@ -181,6 +181,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.model.serialize import SimpleShoeboxExtractor
     from dials.model.data import Image
     import sys
+    from time import time
     assert("shoebox" in self)
     detector = imageset.get_detector()
     frame0, frame1 = imageset.get_array_range()
@@ -199,14 +200,22 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         mask.append(image[i].as_double() > tr[0])
       mask = tuple(mask)
     sys.stdout.write("Reading images: ")
-    for image in imageset:
+    read_time = 0
+    extract_time = 0
+    for i in range(len(imageset)):
+      st = time()
+      image = imageset[i]
+      read_time += time() - st
       if not isinstance(image, tuple):
         image = (image,)
+      st = time()
       extractor.next(Image(image, mask))
+      extract_time += time() - st
       sys.stdout.write(".")
       sys.stdout.flush()
       del image
     sys.stdout.write("\n")
     sys.stdout.flush()
     assert(extractor.finished())
+    return read_time, extract_time
 
