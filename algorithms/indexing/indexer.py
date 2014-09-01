@@ -640,8 +640,11 @@ class indexer_base(object):
             rlp = self.reflections['rlp'].select(sel)
             if len(rlp) == 0:
               continue
-            NN = neighbor_analysis(rlp)
-            max_cell.append(NN.max_cell)
+            try:
+              NN = neighbor_analysis(rlp)
+              max_cell.append(NN.max_cell)
+            except AssertionError:
+              continue
             #print NN.max_cell
           self.params.max_cell = flex.mean(max_cell) # or max or median?
         print "Found max_cell: %.1f Angstrom" %(self.params.max_cell)
