@@ -36,7 +36,6 @@ if __name__ == '__main__':
   user_phil = phil.parse('''
     mp.max_procs = %d
     block.size=2.5
-    mp.max_tasks = 1
     filter.ice_rings.filter=False
   ''' % nproc)
 

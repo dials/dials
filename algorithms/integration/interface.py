@@ -15,17 +15,6 @@ phil_scope = phil.parse('''
     max_procs = 1
       .type = int(value_min=1)
       .help = "The number of processes to use."
-
-    max_tasks = 1
-      .type = int(value_min=1)
-      .help = "The number of tasks to split the integration into. This number"
-              "is a multiple of the maximum number of processes. This"
-              "parameter controls how much the integration jobs (as specified"
-              "by block.size are split up. Splitting up the jobs into fewer"
-              "tasks makes the process more work efficient in terms of the"
-              "number of images that need to be read; however, splitting the"
-              "jobs into more tasks makes better use of the parallelism where"
-              "some jobs take longer than others."
   }
 
   block {
@@ -154,7 +143,8 @@ class Integrator(object):
         processes=num_proc,
         callback=process_output,
         method=self._params.mp.method,
-        preserve_order=True)
+        preserve_order=True,
+        preserve_exception_message=True)
       task_results, output = zip(*task_results)
     else:
       task_results = [task() for task in self._manager.tasks()]
@@ -276,7 +266,7 @@ class IntegrationManager3D(IntegrationManager):
       self._reflections,
       scan.get_array_range(),
       block_size,
-      params.mp.max_procs * params.mp.max_tasks,
+      params.mp.max_procs,
       len(detector))
     self.image_read_time = 0
     self.image_extract_time = 0
@@ -312,6 +302,103 @@ class IntegrationManager3D(IntegrationManager):
   def __len__(self):
     ''' Return the number of tasks. '''
     return len(self._data)
+
+
+class IntegrationTask3DMulti(IntegrationTask):
+  ''' A class to perform a 3D integration task. '''
+
+  def __init__(self, index, experiments, data, job):
+    ''' Initialise the task. '''
+    self._index = index
+    self._experiments = experiments
+    self._data = data
+    self._job = job
+    self._mask = None
+
+  def __call__(self):
+    ''' Do the integration. '''
+    from dials.array_family import flex
+    import sys
+    from time import time
+    print "=" * 80
+    print ""
+    print "Integrating task %d" % self._index
+
+    imageset = self._experiments[0].imageset
+    imageset = imageset[self._job[0]: self._job[1]]
+    self._data['shoebox'] = flex.shoebox(
+      self._data['panel'],
+      self._data['bbox'])
+    self._data['shoebox'].allocate()
+    self._data.fill_shoeboxes(imageset, self._mask)
+    result = IntegrationResult(self._index, self._data)
+    result.image_read_time =0# executor.image_read_time
+    result.image_extract_time =0# executor.image_extract_time
+    del self._data['shoebox']
+    return result
+
+
+class IntegrationManager3DMulti(IntegrationManager):
+  ''' An class to manage 3D integration. book-keeping '''
+
+  def __init__(self, experiments, reflections, params):
+    ''' Initialise the manager. '''
+    from dials.algorithms.integration import IntegrationManager3DMultiExecutor
+    from dials.array_family import flex
+    imagesets = experiments.imagesets()
+    detectors = experiments.detectors()
+    scans = experiments.scans()
+    assert(len(imagesets) == 1)
+    assert(len(scans) == 1)
+    assert(len(detectors) == 1)
+    imageset = imagesets[0]
+    scan = scans[0]
+    detector = detectors[0]
+    assert(len(imageset) == len(scan))
+    self._experiments = experiments
+    self._reflections = reflections
+    phi0, dphi = scan.get_oscillation()
+    block_size = params.block.size / dphi
+    self._data = IntegrationManager3DMultiExecutor(
+      self._reflections,
+      scan.get_array_range(),
+      block_size)
+    self.image_read_time = 0
+    self.image_extract_time = 0
+
+  def task(self, index):
+    ''' Get a task. '''
+    return IntegrationTask3DMulti(
+      index,
+      self._experiments,
+      self._data.split(index),
+      self._data.block(index))
+
+  def tasks(self):
+    ''' Iterate through the tasks. '''
+    for i in range(len(self)):
+      yield self.task(i)
+
+  def accumulate(self, result):
+    ''' Accumulate the results. '''
+    self._data.accumulate(result.index, result.reflections)
+    self.image_read_time += result.image_read_time
+    self.image_extract_time += result.image_extract_time
+
+  def result(self):
+    ''' Return the result. '''
+    print "Image Read: ", self.image_read_time
+    print "Image Extract: ", self.image_extract_time
+    return self._data.data()
+
+  def finished(self):
+    ''' Return if all tasks have finished. '''
+    return self._data.finished()
+
+  def __len__(self):
+    ''' Return the number of tasks. '''
+    return len(self._data)
+
 
 
 # class IntegrationTask3D(IntegrationTask):
@@ -479,5 +566,9 @@ class Integrator3D(Integrator):
 
   def __init__(self, experiments, reflections, params):
     ''' Initialise the manager and the integrator. '''
-    manager = IntegrationManager3D(experiments, reflections, params)
+    if (params.mp.max_procs == 1):
+      Manager = IntegrationManager3D
+    else:
+      Manager = IntegrationManager3DMulti
+    manager = Manager(experiments, reflections, params)
     super(Integrator3D, self).__init__(manager, params)

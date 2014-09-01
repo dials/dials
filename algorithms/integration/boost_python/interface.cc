@@ -81,25 +81,23 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("ignored", &IntegrationManager3DExecutor::ignored)
       ;
 
-/*     class_<IntegrationManagerData3D>("IntegrationManagerData3D", no_init) */
-/*       .def(init<af::reflection_table, */
-/*                 vec2<double>, */
-/*                 vec2<int>, */
-/*                 double>(( */
-/*           arg("reflections"), */
-/*           arg("oscillation"), */
-/*           arg("array_range"), */
-/*           arg("block_size")))) */
-/*       .def("__len__", &IntegrationManagerData3D::size) */
-/*       .def("finished", &IntegrationManagerData3D::finished) */
-/*       .def("block", &IntegrationManagerData3D::block) */
-/*       .def("to_process", &IntegrationManagerData3D::to_process) */
-/*       .def("to_include", &IntegrationManagerData3D::to_include) */
-/*       .def("to_not_process", &IntegrationManagerData3D::to_not_process) */
-/*       .def("split", &IntegrationManagerData3D::split) */
-/*       .def("accumulate", &IntegrationManagerData3D::accumulate) */
-/*       .def("data", &IntegrationManagerData3D::data) */
-/*       ; */
+    class_<IntegrationManager3DMultiExecutor>("IntegrationManager3DMultiExecutor", no_init)
+      .def(init<af::reflection_table,
+                vec2<int>,
+                double>((
+          arg("reflections"),
+          arg("array_range"),
+          arg("block_size"))))
+      .def("__len__", &IntegrationManager3DMultiExecutor::size)
+      .def("finished", &IntegrationManager3DMultiExecutor::finished)
+      .def("block", &IntegrationManager3DMultiExecutor::block)
+      .def("to_process", &IntegrationManager3DMultiExecutor::to_process)
+      .def("to_include", &IntegrationManager3DMultiExecutor::to_include)
+      .def("to_not_process", &IntegrationManager3DMultiExecutor::to_not_process)
+      .def("split", &IntegrationManager3DMultiExecutor::split)
+      .def("accumulate", &IntegrationManager3DMultiExecutor::accumulate)
+      .def("data", &IntegrationManager3DMultiExecutor::data)
+      ;
   }
 
 }}} // namespace = dials::algorithms::boost_python
