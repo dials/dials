@@ -330,15 +330,62 @@ class TestIntegrationManager3DExecutor(object):
     print 'OK'
 
 
+class TestIntegrator3D(object):
+
+  def __init__(self):
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    import libtbx.load_env
+    from dials.array_family import flex
+    from os.path import join
+    from math import pi
+    try:
+      dials_regression = libtbx.env.dist_path('dials_regression')
+    except KeyError, e:
+      print 'FAIL: dials_regression not configured'
+      exit(0)
+
+    path = join(dials_regression, "centroid_test_data", "experiments.json")
+
+    exlist = ExperimentListFactory.from_json_file(path)
+
+    rlist = flex.reflection_table.from_predictions(exlist[0])
+    rlist['id'] = flex.size_t(len(rlist), 0)
+    rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
+                       sigma_m=0.044*pi/180)
+    rlist.compute_zeta_multi(exlist)
+    rlist.compute_d(exlist)
+    self.rlist = rlist
+    self.exlist = exlist
+
+  def run(self):
+    from dials.algorithms.integration.interface import Integrator3D
+    from dials.algorithms.integration.interface import phil_scope
+    from libtbx import phil
+
+    user_phil = phil.parse('''
+      mp.max_procs = 1
+      block.size=5
+      mp.max_tasks = 1
+      filter.ice_rings.filter=False
+    ''')
+
+    params = phil_scope.fetch(source=user_phil).extract()
+
+    integrator = Integrator3D(self.exlist, self.rlist, params)
+    result = integrator.integrate()
+
+
 class Test(object):
 
   def __init__(self):
     # self.test1 = TestIntegrationTask3DExecutor()
-    self.test2 = TestIntegrationManager3DExecutor()
+    # self.test2 = TestIntegrationManager3DExecutor()
+    self.test3 = TestIntegrator3D()
 
   def run(self):
     # self.test1.run()
-    self.test2.run()
+    # self.test2.run()
+    self.test3.run()
 
 if __name__ == '__main__':
   test = Test()

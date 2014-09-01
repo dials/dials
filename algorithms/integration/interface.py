@@ -1,4 +1,6 @@
 from __future__ import division
+from dials.algorithms.integration import IntegrationTask3DExecutor
+import boost.python
 from iotbx import phil
 import abc
 
@@ -162,13 +164,18 @@ class Integrator(object):
     return self._manager.result()
 
 
-def extract_blocks():
-    extractor = IncrementalExtractor(
-      self._reflections,
-      self._jobs,
-      execute_job)
-    imageset = self._experiments[0].imageset
-    if self._mask is None:
+class IntegrationTaskExecutor3DAux(boost.python.injector,
+                                   IntegrationTask3DExecutor):
+  ''' A class to add aditional methods to the executor class '''
+
+  def execute(self, imageset, mask=None):
+    ''' Passing in an imageset process all the images. '''
+    from dials.model.data import Image
+    import sys
+    detector = imageset.get_detector()
+    frame0 = self.frame0()
+    frame1 = self.frame1()
+    if mask is None:
       image = imageset[0]
       if not isinstance(image, tuple):
         image = (image,)
@@ -178,24 +185,26 @@ def extract_blocks():
         mask.append(image[i].as_double() > tr[0])
       mask = tuple(mask)
     sys.stdout.write("Reading images: ")
-    for i in range(*self._task):
-      image = imageset[i]
+    for image in imageset:
+      if not isinstance(image, tuple):
+        image = (image,)
+      self.next(Image(image, mask))
       sys.stdout.write(".")
       sys.stdout.flush()
-      extractor.next(Image(image))
-    assert(extractor.finished())
+      del image
     sys.stdout.write("\n")
     sys.stdout.flush()
+    assert(self.finished())
+
 
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
-  def __init__(self, index, jobs, experiments, reflections):
+  def __init__(self, index, experiments, spec):
     ''' Initialise the task. '''
     self._index = index
-    self._jobs = jobs
     self._experiments = experiments
-    self._reflections = reflections
+    self._spec = spec
     self._mask = None
 
   def __call__(self):
@@ -206,18 +215,23 @@ class IntegrationTask3D(IntegrationTask):
     print ""
     print "Integrating task %d" % self._index
 
-    # self._reflections["shoebox"] = flex.shoebox(
-    #   self._reflections["panel"],
-    #   self._reflections["bbox"])
-    # def execute_job(reflections):
-    #   print reflections
-    # extract_blocks(
-    #   experiments=self._experiments,
-    #   reflections=self._reflections,
-    #   jobs=self._jobs,
-    #   callback=execute_job)
-    # del self._reflections["shoebox"]
-    # return IntegrationResult(self._index, self._reflections)
+    class Process(object):
+
+      def __init__(self):
+        pass
+
+      def __call__(self, reflections):
+        print reflections
+        return reflections
+
+    process = Process()
+
+    imageset = self._experiments[0].imageset
+
+    executor = IntegrationTask3DExecutor(self._spec, process)
+    executor.execute(imageset)
+
+    return IntegrationResult(self._index, executor.data())
 
 
 class IntegrationManager3D(IntegrationManager):
@@ -225,53 +239,33 @@ class IntegrationManager3D(IntegrationManager):
 
   def __init__(self, experiments, reflections, params):
     ''' Initialise the manager. '''
-    from dials.algorithms.integration import IntegrationManagerData3D
+    from dials.algorithms.integration import IntegrationManager3DExecutor
     from dials.array_family import flex
     imagesets = experiments.imagesets()
+    detectors = experiments.detectors()
     scans = experiments.scans()
     assert(len(imagesets) == 1)
     assert(len(scans) == 1)
+    assert(len(detectors) == 1)
     imageset = imagesets[0]
     scan = scans[0]
+    detector = detectors[0]
     assert(len(imageset) == len(scan))
     self._experiments = experiments
     self._reflections = reflections
-
-    from math import floor, ceil
-    max_procs = params.mp.max_procs
-    max_tasks = params.mp.max_tasks
-    block_size = params.block.size
-    phi0, dphi = scan.get_oscillation(deg=True)
-    z0, z1 = scan.get_array_range()
-    hb = block_size / 2.0
-    phi1 = phi0 + (z1 - z0)*dphi
-    nblocks = int(ceil((phi1 - phi0)*2.0 / block_size))
-    mt = max_tasks * max_procs
-    njobs_per_task = int(ceil(nblocks / mt))
-
-    print phi0, phi1, nblocks, mt, njobs_per_task
-
-
-
-    exit(0)
-
-
-
-
-
-    # self._data = IntegrationManagerData3D(
-    #   self._reflections,
-    #   scan.get_oscillation(deg=True),
-    #   scan.get_array_range(),
-    #   params.block.size,
-    #   params.mp.max_procs,
-    #   params.mp.max_tasks)
+    phi0, dphi = scan.get_oscillation()
+    block_size = params.block.size / dphi
+    self._data = IntegrationManager3DExecutor(
+      self._reflections,
+      scan.get_array_range(),
+      block_size,
+      params.mp.max_procs * params.mp.max_tasks,
+      len(detector))
 
   def task(self, index):
     ''' Get a task. '''
     return IntegrationTask3D(
       index,
-      self._data.block(index),
       self._experiments,
       self._data.split(index))
 
