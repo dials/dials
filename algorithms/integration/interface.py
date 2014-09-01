@@ -173,8 +173,11 @@ class IntegrationTaskExecutor3DAux(boost.python.injector,
     from dials.model.data import Image
     import sys
     detector = imageset.get_detector()
-    frame0 = self.frame0()
-    frame1 = self.frame1()
+    frame00 = self.frame0()
+    frame10 = self.frame1()
+    frame01, frame11 = imageset.get_array_range()
+    assert(frame00 == frame01)
+    assert(frame10 == frame11)
     if mask is None:
       image = imageset[0]
       if not isinstance(image, tuple):
@@ -185,7 +188,7 @@ class IntegrationTaskExecutor3DAux(boost.python.injector,
         mask.append(image[i].as_double() > tr[0])
       mask = tuple(mask)
     sys.stdout.write("Reading images: ")
-    for image in imageset:
+    for i, image in enumerate(imageset):
       if not isinstance(image, tuple):
         image = (image,)
       self.next(Image(image, mask))
@@ -226,9 +229,11 @@ class IntegrationTask3D(IntegrationTask):
 
     process = Process()
 
-    imageset = self._experiments[0].imageset
-
     executor = IntegrationTask3DExecutor(self._spec, process)
+
+    imageset = self._experiments[0].imageset
+    imageset = imageset[executor.frame0():executor.frame1()]
+
     executor.execute(imageset)
 
     return IntegrationResult(self._index, executor.data())

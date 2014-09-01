@@ -660,8 +660,7 @@ namespace dials { namespace algorithms {
             array_range_(array_range),
             block_size_(block_size),
             num_tasks_(num_tasks),
-            npanels_(npanels),
-            finished_(num_tasks, false) {
+            npanels_(npanels) {
       DIALS_ASSERT(data.size() > 0);
       DIALS_ASSERT(array_range[1] > array_range[0]);
       DIALS_ASSERT(block_size > 0);
@@ -669,6 +668,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(npanels > 0);
       compute_jobs();
       compute_indices();
+      finished_.assign(num_tasks_, false);
     }
 
     /**
@@ -683,7 +683,7 @@ namespace dials { namespace algorithms {
      * @returns The number of tasks
      */
     std::size_t size() const {
-      return finished_.size();
+      return num_tasks_;
     }
 
     /**
@@ -792,16 +792,18 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(i2 > i1);
         jobs_.push_back(tiny<int,2>(i1, i2));
       }
-      DIALS_ASSERT(jobs_.size() >= num_tasks_);
       int jobs_per_task = (int)std::ceil((double)jobs_.size()/num_tasks_);
       DIALS_ASSERT(jobs_per_task <= jobs_.size());
-      tasks_.resize(num_tasks_);
-      for (std::size_t i = 0; i < tasks_.size(); ++i) {
+      for (std::size_t i = 0; i < num_tasks_; ++i) {
         int j0 = i * jobs_per_task;
         int j1 = std::min(j0 + jobs_per_task, (int)jobs_.size());
-        DIALS_ASSERT(j1 > j0);
-        tasks_[i] = tiny<int,2>(j0, j1);
+        if (j1 <= j0) {
+          break;
+        }
+        tasks_.push_back(tiny<int,2>(j0, j1));
       }
+      num_tasks_ = tasks_.size();
+      DIALS_ASSERT(num_tasks_ > 0);
     }
 
     /**
