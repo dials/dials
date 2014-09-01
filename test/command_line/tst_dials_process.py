@@ -73,7 +73,7 @@ def exercise_2():
                   ]
                 + ['"%s"' %p for p in g]
                  )
-  #print cmd
+  print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   for out_file in ['datablock.json', 'refined_experiments.json', 'shoebox.dat',
                    'integrated.mtz', 'integrated.pickle', 'strong.pickle']:
@@ -90,7 +90,7 @@ def exercise_2():
   expected_unit_cell = uctbx.unit_cell((78.07, 78.07, 78.07, 90, 90, 90))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
-  assert approx_equal(mtz_object.n_reflections(), 38502, 1e2)
+  assert approx_equal(mtz_object.n_reflections(), 38713, 1e2)
   os.chdir(cwd)
 
 

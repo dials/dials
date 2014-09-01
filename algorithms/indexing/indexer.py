@@ -885,19 +885,29 @@ class indexer_base(object):
         self.best_likelihood = max(
           s.model_likelihood for s in self.all_solutions)
         self.close_solutions = [
-        s for s in self.all_solutions
-        if s.model_likelihood >= (0.9 * self.best_likelihood)]
+          s for s in self.all_solutions
+          if s.model_likelihood >= (0.9 * self.best_likelihood)]
+
+        # filter by volume - prefer solutions with a smaller unit cell
         self.min_volume = min(s.crystal.get_unit_cell().volume()
                               for s in self.close_solutions)
         self.volume_filtered = [
           s for s in self.close_solutions
           if s.crystal.get_unit_cell().volume() < (1.25 * self.min_volume)]
-        self.best_volume_filtered_liklihood = max(
-          s.model_likelihood for s in self.volume_filtered)
+
+        # filter by number of indexed reflections - prefer solutions that
+        # account for more of the diffracted spots
+        self.max_n_indexed = max(s.n_indexed for s in self.volume_filtered)
+        self.n_indexed_filtered = [
+          s for s in self.volume_filtered
+          if s.n_indexed >= 0.9 * self.max_n_indexed]
+
+        self.best_filtered_liklihood = max(
+          s.model_likelihood for s in self.n_indexed_filtered)
 
       def best_solution(self):
-        solutions = [s for s in self.volume_filtered
-                    if s.model_likelihood == self.best_volume_filtered_liklihood]
+        solutions = [s for s in self.n_indexed_filtered
+                    if s.model_likelihood == self.best_filtered_liklihood]
         return solutions[0]
 
     # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
