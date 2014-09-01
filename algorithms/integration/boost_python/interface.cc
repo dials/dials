@@ -25,28 +25,30 @@ namespace dials { namespace algorithms { namespace boost_python {
   };
 
   IntegrationTask3DExecutor* make_integration_task_3d_executor(
-      const IntegrationTask3DSpec &spec,
+      af::reflection_table data,
+      const af::const_ref< tiny<int,2> > &jobs,
+      std::size_t npanels,
       object callback) {
-    return new IntegrationTask3DExecutor(spec, callback_helper(callback));
+    return new IntegrationTask3DExecutor(data, jobs, npanels, callback_helper(callback));
   }
 
   void export_interface() {
 
-    class_<IntegrationTask3DSpec>("IntegrationTask3DSpec", no_init)
-      .def(init< af::reflection_table,
-                 std::size_t,
-                 const af::const_ref< tiny<int,2> >&,
-                 const af::const_ref< std::size_t >&,
-                 const af::const_ref< std::size_t >&,
-                 const af::const_ref< bool >&>())
-      .def("data", &IntegrationTask3DSpec::data)
-      .def("job", &IntegrationTask3DSpec::job)
-      .def("frame0", &IntegrationTask3DSpec::frame0)
-      .def("frame1", &IntegrationTask3DSpec::frame1)
-      .def("nframes", &IntegrationTask3DSpec::nframes)
-      .def("njobs", &IntegrationTask3DSpec::njobs)
-      .def("npanels", &IntegrationTask3DSpec::npanels)
-      ;
+    /* class_<IntegrationTask3DSpec>("IntegrationTask3DSpec", no_init) */
+    /*   .def(init< af::reflection_table, */
+    /*              std::size_t, */
+    /*              const af::const_ref< tiny<int,2> >&, */
+    /*              const af::const_ref< std::size_t >&, */
+    /*              const af::const_ref< std::size_t >&, */
+    /*              const af::const_ref< bool >&>()) */
+    /*   .def("data", &IntegrationTask3DSpec::data) */
+    /*   .def("job", &IntegrationTask3DSpec::job) */
+    /*   .def("frame0", &IntegrationTask3DSpec::frame0) */
+    /*   .def("frame1", &IntegrationTask3DSpec::frame1) */
+    /*   .def("nframes", &IntegrationTask3DSpec::nframes) */
+    /*   .def("njobs", &IntegrationTask3DSpec::njobs) */
+    /*   .def("npanels", &IntegrationTask3DSpec::npanels) */
+    /*   ; */
 
     class_<IntegrationTask3DExecutor>("IntegrationTask3DExecutor", no_init)
       .def("__init__", make_constructor(
@@ -60,23 +62,38 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("data", &IntegrationTask3DExecutor::data)
       ;
 
-    class_<IntegrationManager3DExecutor>("IntegrationManager3DExecutor", no_init)
-      .def(init<af::reflection_table,
-                vec2<int>,
-                double,
-                std::size_t>((
-          arg("reflections"),
-          arg("array_range"),
-          arg("block_size"),
-          arg("npanels"))))
-      .def("__len__", &IntegrationManager3DExecutor::size)
-      .def("finished", &IntegrationManager3DExecutor::finished)
-      .def("split", &IntegrationManager3DExecutor::split)
-      .def("accumulate", &IntegrationManager3DExecutor::accumulate)
-      .def("data", &IntegrationManager3DExecutor::data)
-      .def("jobs", &IntegrationManager3DExecutor::jobs)
-      .def("ignored", &IntegrationManager3DExecutor::ignored)
+    class_<IntegrationTask3DExecutorMulti>("IntegrationTask3DExecutorMulti", no_init)
+      .def(init<
+          af::reflection_table,
+          int,
+          int,
+          std::size_t>())
+      .def("next", &IntegrationTask3DExecutorMulti::next)
+      .def("frame0", &IntegrationTask3DExecutorMulti::frame0)
+      .def("frame1", &IntegrationTask3DExecutorMulti::frame1)
+      .def("frame", &IntegrationTask3DExecutorMulti::frame)
+      .def("nframes", &IntegrationTask3DExecutorMulti::nframes)
+      .def("finished", &IntegrationTask3DExecutorMulti::finished)
+      .def("data", &IntegrationTask3DExecutorMulti::data)
       ;
+
+    /* class_<IntegrationManager3DExecutor>("IntegrationManager3DExecutor", no_init) */
+    /*   .def(init<af::reflection_table, */
+    /*             vec2<int>, */
+    /*             double, */
+    /*             std::size_t>(( */
+    /*       arg("reflections"), */
+    /*       arg("array_range"), */
+    /*       arg("block_size"), */
+    /*       arg("npanels")))) */
+    /*   .def("__len__", &IntegrationManager3DExecutor::size) */
+    /*   .def("finished", &IntegrationManager3DExecutor::finished) */
+    /*   .def("split", &IntegrationManager3DExecutor::split) */
+    /*   .def("accumulate", &IntegrationManager3DExecutor::accumulate) */
+    /*   .def("data", &IntegrationManager3DExecutor::data) */
+    /*   .def("jobs", &IntegrationManager3DExecutor::jobs) */
+    /*   .def("ignored", &IntegrationManager3DExecutor::ignored) */
+    /*   ; */
 
     class_<IntegrationManager3DMultiExecutor>("IntegrationManager3DMultiExecutor", no_init)
       .def(init<af::reflection_table,

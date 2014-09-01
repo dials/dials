@@ -25,17 +25,17 @@ class TestIntegrationTask3DExecutor(object):
     self.nrefl = 10000
     # self.nrefl = 100000
 
-    self.jobs = shared.tiny_int_2([
-      (0, 16),
-      (8, 24),
-      (16, 32),
-      (24, 40)])
+    # self.jobs = shared.tiny_int_2([
+    #   (0, 16),
+    #   (8, 24),
+    #   (16, 32),
+    #   (24, 40)])
 
     self.jobs = shared.tiny_int_2([
       (0, 40),
       (20, 60),
       (40, 80),
-      (80, 100)])
+      (60, 100)])
 
     for i, j in enumerate(self.jobs):
       self.append_reflections(j)
@@ -65,10 +65,13 @@ class TestIntegrationTask3DExecutor(object):
     for i in range(self.nrefl):
       x0 = randint(0, self.width-10)
       y0 = randint(0, self.height-10)
-      z0 = randint(zrange[0], zrange[1]-1)
+      zs = randint(1, (zrange[1] - zrange[0]) // 2)
       x1 = x0 + randint(1, 10)
       y1 = y0 + randint(1, 10)
-      z1 = randint(z0+1, zrange[1])
+      z0 = (zrange[1] + zrange[0]) // 2 - zs // 2
+      z1 = z0 + zs
+      assert(z1 > z0)
+      assert(z0 >= zrange[0] and z1 <= zrange[1])
       bbox = (x0, x1, y0, y1, z0, z1)
       self.reflections.append({
         "panel" : randint(0,1),
@@ -85,7 +88,6 @@ class TestIntegrationTask3DExecutor(object):
   def run(self):
 
     from dials.algorithms.integration import IntegrationTask3DExecutor
-    from dials.algorithms.integration import IntegrationTask3DSpec
     from dials.array_family import flex
     from dials.model.data import Image
     from time import time
@@ -96,7 +98,6 @@ class TestIntegrationTask3DExecutor(object):
         self.ncallback = 0
         self.nrefl = nrefl
       def __call__(self, reflections):
-        # print reflections, len(reflections)
         assert(len(reflections) == self.nrefl)
         for sbox in reflections['shoebox']:
           assert(sbox.is_consistent())
@@ -108,22 +109,13 @@ class TestIntegrationTask3DExecutor(object):
         return reflections
     callback = Callback(self.nrefl)
 
-    # print len(self.reflections)
-
-    # Create the task specification
-    st = time()
-    spec = IntegrationTask3DSpec(
-      self.reflections,
-      self.npanels,
-      self.jobs,
-      self.offset,
-      self.indices,
-      self.mask)
-    # print time() - st
-
     # Initialise the executor
     st = time()
-    executor = IntegrationTask3DExecutor(spec, callback)
+    executor = IntegrationTask3DExecutor(
+      self.reflections,
+      self.jobs,
+      self.npanels,
+      callback)
     # print time() - st
 
     # Check the initial state is correct
@@ -378,14 +370,18 @@ class TestIntegrator3D(object):
 class Test(object):
 
   def __init__(self):
-    # self.test1 = TestIntegrationTask3DExecutor()
-    # self.test2 = TestIntegrationManager3DExecutor()
-    self.test3 = TestIntegrator3D()
+    self.test1 = TestIntegrationTask3DExecutor()
+    # self.test2 = TestIntegrationTask3DExecutorMulti()
+    # self.test3 = TestIntegrationManager3DExecutor()
+    # self.test4 = TestIntegrationManager3DExecutorMulti()
+    # self.test5= TestIntegrator3D()
 
   def run(self):
-    # self.test1.run()
+    self.test1.run()
     # self.test2.run()
-    self.test3.run()
+    # self.test3.run()
+    # self.test4.run()
+    # self.test5.run()
 
 if __name__ == '__main__':
   test = Test()

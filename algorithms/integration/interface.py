@@ -155,8 +155,7 @@ class Integrator(object):
     return self._manager.result()
 
 
-class IntegrationTaskExecutor3DAux(boost.python.injector,
-                                   IntegrationTask3DExecutor):
+class IntegrationTaskExecutor3DAuxBase(boost.python.injector):
   ''' A class to add aditional methods to the executor class '''
 
   def execute(self, imageset, mask=None):
@@ -199,6 +198,17 @@ class IntegrationTaskExecutor3DAux(boost.python.injector,
     assert(self.finished())
 
 
+class IntegrationTaskExecutor3DAux(
+    IntegrationTask3DExecutorBase,
+    IntegrationTask3DExecutor):
+  pass
+
+class IntegrationTaskExecutor3DMultiAux(
+    IntegrationTask3DExecutorBase,
+    IntegrationTask3DExecutor):
+  pass
+
+
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
@@ -227,14 +237,6 @@ class IntegrationTask3D(IntegrationTask):
         return reflections
 
     process = Process()
-
-    print self._spec.data()
-    print self._spec.job(0)
-    print self._spec.frame0()
-    print self._spec.frame1()
-    print self._spec.nframes()
-    print self._spec.njobs()
-    print self._spec.npanels()
 
     executor = IntegrationTask3DExecutor(self._spec, process)
     imageset = self._experiments[0].imageset
