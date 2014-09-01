@@ -335,6 +335,137 @@ namespace dials { namespace algorithms {
 
 
   /**
+   * A class to extract shoebox pixels from images
+   */
+  class ShoeboxExtractor {
+  public:
+
+    ShoeboxExtractor() {}
+
+    /**
+     * Initialise the index array. Determine which reflections are recorded on
+     * each frame and panel ahead of time to enable quick lookup of the
+     * reflections to be written to when processing each image.
+     */
+    ShoeboxExtractor(af::reflection_table data,
+                     std::size_t npanels,
+                     int frame0,
+                     int frame1)
+        : npanels_(npanels),
+          frame0_(frame0),
+          frame1_(frame1),
+          shoebox_(data["shoebox"]) {
+      DIALS_ASSERT(frame0_ < frame1_);
+      DIALS_ASSERT(npanels_ > 0);
+      std::size_t nframes = frame1_ - frame0_;
+      af::const_ref<std::size_t> panel = data["panel"];
+      af::const_ref<int6> bbox = data["bbox"];
+      std::size_t size = nframes * npanels_;
+      std::vector<std::size_t> num(size, 0);
+      std::vector<std::size_t> count(size, 0);
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
+          std::size_t j = panel[i] + (z - frame0_)*npanels_;
+          DIALS_ASSERT(j < num.size());
+          num[j]++;
+        }
+      }
+      offset_.push_back(0);
+      std::partial_sum(num.begin(), num.end(), std::back_inserter(offset_));
+      indices_.resize(offset_.back());
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
+          std::size_t j = panel[i] + (z - frame0_)*npanels_;
+          std::size_t k = offset_[j] + count[j];
+          DIALS_ASSERT(j < count.size());
+          DIALS_ASSERT(k < indices_.size());
+          indices_[k] = i;
+          count[j]++;
+        }
+      }
+      DIALS_ASSERT(count == num);
+    }
+
+    /**
+     * Extract the pixels from the image and copy to the relevant shoeboxes.
+     * @param image The image to process
+     * @param frame The current image frame
+     */
+    void next(const Image &image, int frame) {
+      typedef Shoebox<>::float_type float_type;
+      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
+      typedef af::ref<int,        af::c_grid<3> > sbox_mask_type;
+      DIALS_ASSERT(frame >= frame0_ && frame < frame1_);
+      DIALS_ASSERT(image.npanels() == npanels_);
+      for (std::size_t p = 0; p < image.npanels(); ++p) {
+        af::const_ref<std::size_t> ind = indices(frame, p);
+        af::const_ref< int, af::c_grid<2> > data = image.data(p);
+        af::const_ref< bool, af::c_grid<2> > mask = image.mask(p);
+        DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
+        for (std::size_t i = 0; i < ind.size(); ++i) {
+          DIALS_ASSERT(ind[i] < shoebox_.size());
+          Shoebox<>& sbox = shoebox_[ind[i]];
+          int6 b = sbox.bbox;
+          sbox_data_type sdata = sbox.data.ref();
+          sbox_mask_type smask = sbox.mask.ref();
+          DIALS_ASSERT(b[1] > b[0]);
+          DIALS_ASSERT(b[3] > b[2]);
+          DIALS_ASSERT(b[5] > b[4]);
+          DIALS_ASSERT(frame >= b[4] && frame < b[5]);
+          int x0 = b[0];
+          int x1 = b[1];
+          int y0 = b[2];
+          int y1 = b[3];
+          int z0 = b[4];
+          std::size_t xs = x1 - x0;
+          std::size_t ys = y1 - y0;
+          std::size_t z = frame - z0;
+          DIALS_ASSERT(x0 >= 0 && y0 >= 0);
+          DIALS_ASSERT(y1 <= data.accessor()[0]);
+          DIALS_ASSERT(x1 <= data.accessor()[1]);
+          DIALS_ASSERT(sbox.is_consistent());
+          for (std::size_t y = 0; y < ys; ++y) {
+            for (std::size_t x = 0; x < xs; ++x) {
+              sdata(z, y, x) = data(y+y0,x+x0);
+              smask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0;
+            }
+          }
+        }
+      }
+    }
+
+  private:
+
+    /**
+     * Get an index array specifying which reflections are recorded on a given
+     * frame and panel.
+     * @param frame The frame number
+     * @param panel The panel number
+     * @returns An array of indices
+     */
+    af::const_ref<std::size_t> indices(int frame, std::size_t panel) const {
+      std::size_t j0 = panel+(frame-frame0_)*npanels_;
+      DIALS_ASSERT(offset_.size() > 0);
+      DIALS_ASSERT(j0 < offset_.size()-1);
+      std::size_t i0 = offset_[j0];
+      std::size_t i1 = offset_[j0+1];
+      DIALS_ASSERT(i1 >= i0);
+      std::size_t off = i0;
+      std::size_t num = i1 - off;
+      DIALS_ASSERT(off + num <= indices_.size());
+      return af::const_ref<std::size_t>(&indices_[off], num);
+    }
+
+    std::size_t npanels_;
+    int frame0_;
+    int frame1_;
+    af::shared< Shoebox<> > shoebox_;
+    std::vector<std::size_t> indices_;
+    std::vector<std::size_t> offset_;
+  };
+
+
+  /**
    * A class to execute an integration task
    */
   class IntegrationTask3DExecutor {
@@ -369,7 +500,7 @@ namespace dials { namespace algorithms {
       }
 
       // Initialise the offsets and indices for each frame/panel
-      initialise_indices();
+      extractor_ = ShoeboxExtractor(spec_.data(), npanels(), frame0(), frame1());
     }
 
     /**
@@ -441,105 +572,12 @@ namespace dials { namespace algorithms {
   private:
 
     /**
-     * Initialise the index array. Determine which reflections are recorded on
-     * each frame and panel ahead of time to enable quick lookup of the
-     * reflections to be written to when processing each image.
-     */
-    void initialise_indices() {
-      af::const_ref<std::size_t> panel = spec_.data()["panel"];
-      af::const_ref<int6> bbox = spec_.data()["bbox"];
-      std::size_t size = nframes() * npanels();
-      std::vector<std::size_t> num(size, 0);
-      std::vector<std::size_t> count(size, 0);
-      for (std::size_t i = 0; i < bbox.size(); ++i) {
-        for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
-          std::size_t j = panel[i] + (z - frame0())*npanels();
-          DIALS_ASSERT(j < num.size());
-          num[j]++;
-        }
-      }
-      offset_.resize(size+1);
-      offset_[0] = 0;
-      std::partial_sum(num.begin(), num.end(), offset_.begin()+1);
-      indices_.resize(offset_.back());
-      for (std::size_t i = 0; i < bbox.size(); ++i) {
-        for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
-          std::size_t j = panel[i] + (z - frame0())*npanels();
-          std::size_t k = offset_[j] + count[j];
-          DIALS_ASSERT(j < count.size());
-          DIALS_ASSERT(k < indices_.size());
-          indices_[k] = i;
-          count[j]++;
-        }
-      }
-      DIALS_ASSERT(count == num);
-    }
-
-    /**
      * Extract the pixels from the image and copy to the relevant shoeboxes.
      * @param image The image to process
      */
     void next_image(const Image &image) {
-      typedef Shoebox<>::float_type float_type;
-      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int,        af::c_grid<3> > sbox_mask_type;
-      DIALS_ASSERT(image.npanels() == npanels());
-      for (std::size_t p = 0; p < image.npanels(); ++p) {
-        af::const_ref<std::size_t> ind = indices(frame_, p);
-        af::const_ref< int, af::c_grid<2> > data = image.data(p);
-        af::const_ref< bool, af::c_grid<2> > mask = image.mask(p);
-        DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
-        for (std::size_t i = 0; i < ind.size(); ++i) {
-          DIALS_ASSERT(ind[i] < shoebox_.size());
-          Shoebox<>& sbox = shoebox_[ind[i]];
-          int6 b = sbox.bbox;
-          sbox_data_type sdata = sbox.data.ref();
-          sbox_mask_type smask = sbox.mask.ref();
-          DIALS_ASSERT(b[1] > b[0]);
-          DIALS_ASSERT(b[3] > b[2]);
-          DIALS_ASSERT(b[5] > b[4]);
-          DIALS_ASSERT(frame_ >= b[4] && frame_ < b[5]);
-          int x0 = b[0];
-          int x1 = b[1];
-          int y0 = b[2];
-          int y1 = b[3];
-          int z0 = b[4];
-          std::size_t xs = x1 - x0;
-          std::size_t ys = y1 - y0;
-          std::size_t z = frame_ - z0;
-          DIALS_ASSERT(x0 >= 0 && y0 >= 0);
-          DIALS_ASSERT(y1 <= data.accessor()[0]);
-          DIALS_ASSERT(x1 <= data.accessor()[1]);
-          DIALS_ASSERT(sbox.is_consistent());
-          for (std::size_t y = 0; y < ys; ++y) {
-            for (std::size_t x = 0; x < xs; ++x) {
-              sdata(z, y, x) = data(y+y0,x+x0);
-              smask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0;
-            }
-          }
-        }
-      }
+      extractor_.next(image, frame_);
       frame_++;
-    }
-
-    /**
-     * Get an index array specifying which reflections are recorded on a given
-     * frame and panel.
-     * @param frame The frame number
-     * @param panel The panel number
-     * @returns An array of indices
-     */
-    af::const_ref<std::size_t> indices(int frame, std::size_t panel) const {
-      std::size_t j0 = panel+(frame-frame0())*npanels();
-      DIALS_ASSERT(offset_.size() > 0);
-      DIALS_ASSERT(j0 < offset_.size()-1);
-      std::size_t i0 = offset_[j0];
-      std::size_t i1 = offset_[j0+1];
-      DIALS_ASSERT(i1 >= i0);
-      std::size_t off = i0;
-      std::size_t num = i1 - off;
-      DIALS_ASSERT(off + num <= indices_.size());
-      return af::const_ref<std::size_t>(&indices_[off], num);
     }
 
     /**
@@ -637,13 +675,244 @@ namespace dials { namespace algorithms {
 
     IntegrationTask3DSpec spec_;
     IntegrationTask3DAllocator allocator_;
+    ShoeboxExtractor extractor_;
     int frame_;
     std::size_t begin_active_;
     std::size_t end_active_;
-    std::vector<std::size_t> offset_;
-    std::vector<std::size_t> indices_;
+    /* std::vector<std::size_t> offset_; */
+    /* std::vector<std::size_t> indices_; */
     af::shared< Shoebox<> > shoebox_;
     callback_type process_;
+  };
+
+
+  /**
+   * A class to extract shoeboxes from a sequence of images.
+   */
+  class IntegrationTask3DExecutorMulti {
+  public:
+
+    struct sort_by_frame_and_panel {
+      af::const_ref<int> f;
+      af::const_ref<std::size_t> p;
+      sort_by_frame_and_panel(
+          const af::const_ref<int> frame,
+          const af::const_ref<std::size_t> panel)
+        : f(frame), p(panel) {}
+      bool operator()(std::size_t a, std::size_t b) const {
+        return (f[a] == f[b] ? p[a] < p[b] : f[a] < f[b]);
+      }
+    };
+
+    /**
+     * Initialise the extractor.
+     * @param shoeboxes The shoeboxes to extract
+     * @param frame0 The first frame
+     * @param frame1 The last frame
+     * @param numpanels The number of panels
+     */
+    IntegrationTask3DExecutorMulti(
+          const af::const_ref< Shoebox<> > shoeboxes,
+          int frame0,
+          int frame1,
+          std::size_t numpanels)
+      : shoeboxes_(shoeboxes.begin(), shoeboxes.end()),
+        frame0_(frame0),
+        frame1_(frame1),
+        frame_(frame0),
+        numframes_(frame1 - frame0),
+        numpanels_(numpanels) {
+      DIALS_ASSERT(frame1_ > frame0_);
+      DIALS_ASSERT(numpanels > 0);
+
+      // Compute the number of indices
+      std::size_t numpartial = 0;
+      for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+        int z0 = shoeboxes[i].bbox[4];
+        int z1 = shoeboxes[i].bbox[5];
+        DIALS_ASSERT(z1 > z0);
+        numpartial += (z1 - z0);
+      }
+
+      // Check number of panels and frames
+      for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+        std::size_t p = shoeboxes[i].panel;
+        int z0 = shoeboxes[i].bbox[4];
+        int z1 = shoeboxes[i].bbox[5];
+        DIALS_ASSERT(p < numpanels_);
+        DIALS_ASSERT(z0 >= frame0);
+        DIALS_ASSERT(z1 <= frame1);
+      }
+
+      // Create a set of partials
+      af::shared<int> frame(numpartial);
+      af::shared<std::size_t> panel(numpartial);
+      af::shared<std::size_t> partind(numpartial);
+      af::shared<std::size_t> parent(numpartial);
+      indices_.resize(numpartial);
+      std::size_t j = 0;
+      for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+        for (int z = shoeboxes[i].bbox[4]; z < shoeboxes[i].bbox[5]; ++z) {
+          DIALS_ASSERT(j < indices_.size());
+          panel[j] = shoeboxes[i].panel;
+          frame[j] = z;
+          partind[j] = j;
+          parent[j] = i;
+          j++;
+        }
+      }
+      DIALS_ASSERT(j == numpartial);
+
+      // Sort the indices by frame and panel
+      std::sort(partind.begin(), partind.end(),
+          sort_by_frame_and_panel(
+            frame.const_ref(),
+            panel.const_ref()));
+
+      // Reorder indices
+      indices_.resize(numpartial);
+      for (std::size_t i = 0; i < partind.size(); ++i) {
+        indices_[i] = parent[partind[i]];
+      }
+
+      // Create the offsets
+      offset_.resize(numframes_*numpanels_+1);
+      offset_[0] = 0;
+      int f0 = frame0_;
+      std::size_t p0 = 0;
+      std::size_t k = 1;
+      for (std::size_t i = 0; i < partind.size(); ++i) {
+        std::size_t ii = partind[i];
+        std::size_t p1 = panel[ii];
+        int f1 = frame[ii];
+        DIALS_ASSERT(f1 >= f0 && (f1 != f0 || p1 >= p0));
+        for (; f0 < f1; ++f0) {
+          for (; p0 < numpanels_; ++p0) {
+            offset_[k++] = i;
+          }
+          p0 = 0;
+        }
+        for (; p0 < p1; ++p0) {
+          offset_[k++] = i;
+        }
+        DIALS_ASSERT(f0 == f1 && p0 == p1);
+      }
+      for (; f0 < frame1_; ++f0) {
+        for (; p0 < numpanels_; ++p0) {
+          offset_[k++] = indices_.size();
+        }
+        p0 = 0;
+      }
+      DIALS_ASSERT(k == offset_.size());
+
+      // Check the computed offsets
+      for (std::size_t i = 1; i < offset_.size(); ++i) {
+        DIALS_ASSERT(offset_[i] >= offset_[i-1]);
+      }
+      DIALS_ASSERT(offset_.back() == indices_.size());
+      for (std::size_t f = 0; f < numframes_; ++f) {
+        for (std::size_t p = 0; p < numpanels_; ++p) {
+          int f1 = (int)f + frame0_;
+          std::size_t i = p + f *numpanels_;
+          std::size_t i1 = offset_[i];
+          std::size_t i2 = offset_[i+1];
+          DIALS_ASSERT(i2 >= i1);
+          for (std::size_t i = i1; i < i2; ++i) {
+            std::size_t j = indices_[i];
+            std::size_t p2 = shoeboxes_[j].panel;
+            int6 b = shoeboxes_[j].bbox;
+            DIALS_ASSERT(f1 >= b[4] && f1 < b[5]);
+            DIALS_ASSERT(p == p2);
+          }
+        }
+      }
+    }
+
+    /**
+     * Apply the next image.
+     * @param image The image to apply
+     */
+    void next(const Image &image) {
+      typedef Shoebox<>::float_type float_type;
+      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
+      typedef af::ref<int,        af::c_grid<3> > sbox_mask_type;
+      DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
+      DIALS_ASSERT(image.npanels() == numpanels_);
+      for (std::size_t p = 0; p < image.npanels(); ++p) {
+        af::const_ref<std::size_t> ind = indices(frame_, p);
+        af::const_ref< int, af::c_grid<2> > data = image.data(p);
+        af::const_ref< bool, af::c_grid<2> > mask = image.mask(p);
+        DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
+        for (std::size_t i = 0; i < ind.size(); ++i) {
+          Shoebox<>& sbox = shoeboxes_[ind[i]];
+          int6 b = sbox.bbox;
+          sbox_data_type sdata = sbox.data.ref();
+          sbox_mask_type smask = sbox.mask.ref();
+          DIALS_ASSERT(b[1] > b[0]);
+          DIALS_ASSERT(b[3] > b[2]);
+          DIALS_ASSERT(b[5] > b[4]);
+          DIALS_ASSERT(sbox.is_consistent());
+          DIALS_ASSERT(frame_ >= b[4] && frame_ < b[5]);
+          int x0 = b[0];
+          int x1 = b[1];
+          int y0 = b[2];
+          int y1 = b[3];
+          int z0 = b[4];
+          std::size_t xs = x1 - x0;
+          std::size_t ys = y1 - y0;
+          std::size_t z = frame_ - z0;
+          DIALS_ASSERT(x0 >= 0 && y0 >= 0);
+          DIALS_ASSERT(y1 <= data.accessor()[0]);
+          DIALS_ASSERT(x1 <= data.accessor()[1]);
+          for (std::size_t y = 0; y < ys; ++y) {
+            for (std::size_t x = 0; x < xs; ++x) {
+              sdata(z, y, x) = data(y+y0,x+x0);
+              smask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0;
+            }
+          }
+        }
+      }
+      frame_++;
+    }
+
+    /**
+     * @returns Is the extraction finished.
+     */
+    bool finished() const {
+      return frame_ == frame1_;
+    }
+
+  private:
+
+    /**
+     * Get an array of indices for shoeboxes on a particular frame and panel.
+     * @param frame The frame number
+     * @param panel The panel number
+     * @returns The indices
+     */
+    af::const_ref<std::size_t> indices(int frame, std::size_t panel) const {
+      if (panel >= numpanels_ || frame < frame0_ || frame >= frame1_) {
+        return af::const_ref<std::size_t>(0, 0);
+      }
+      std::size_t j0 = panel+(frame-frame0_)*numpanels_;
+      DIALS_ASSERT(j0 < offset_.size()-1);
+      std::size_t i0 = offset_[j0];
+      std::size_t i1 = offset_[j0+1];
+      DIALS_ASSERT(i1 >= i0);
+      std::size_t off = i0;
+      std::size_t num = i1 - off;
+      DIALS_ASSERT(off + num <= indices_.size());
+      return af::const_ref<std::size_t>(&indices_[off], num);
+    }
+
+    af::shared< Shoebox<> > shoeboxes_;
+    int frame0_;
+    int frame1_;
+    int frame_;
+    std::size_t numframes_;
+    std::size_t numpanels_;
+    af::shared<std::size_t> indices_;
+    af::shared<std::size_t> offset_;
   };
 
 
