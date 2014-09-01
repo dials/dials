@@ -179,7 +179,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to extract shoeboxes from a sequence of images.
    */
-  class IntegrationTask3DExecutorMulti {
+  class IntegrationTask3DMultiExecutor {
   public:
 
     /**
@@ -189,7 +189,7 @@ namespace dials { namespace algorithms {
      * @param frame1 The last frame
      * @param npanels The number of panels
      */
-    IntegrationTask3DExecutorMulti(
+    IntegrationTask3DMultiExecutor(
           af::reflection_table data,
           tiny<int,2> job,
           std::size_t npanels)
@@ -914,7 +914,8 @@ namespace dials { namespace algorithms {
     /**
      * @returns The list of jobs
      */
-    af::shared< tiny<int,2> > jobs() const {
+    af::shared< tiny<int,2> > job(std::size_t index) const {
+      DIALS_ASSERT(index == 0);
       return jobs_;
     }
 
@@ -930,8 +931,9 @@ namespace dials { namespace algorithms {
      * @param index The task index
      * @returns The task spec
      */
-    af::reflection_table split() const {
+    af::reflection_table split(std::size_t index) const {
       using namespace af::boost_python::flex_table_suite;
+      DIALS_ASSERT(index == 0);
       return select_rows_index(data_, process_.const_ref());
     }
 
@@ -940,8 +942,9 @@ namespace dials { namespace algorithms {
      * @param index The index of the task
      * @param result The result of the task
      */
-    void accumulate(af::reflection_table result) {
+    void accumulate(std::size_t index, af::reflection_table result) {
       using namespace af::boost_python::flex_table_suite;
+      DIALS_ASSERT(index == 0);
       DIALS_ASSERT(!finished_);
       DIALS_ASSERT(result.size() == process_.size());
       set_selected_rows_index(data_, process_.const_ref(), result);
@@ -1141,7 +1144,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The block indices
      */
-    vec2<int> jobs(std::size_t index) const {
+    vec2<int> job(std::size_t index) const {
       DIALS_ASSERT(index < jobs_.size());
       return jobs_[index];
     }

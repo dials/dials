@@ -225,7 +225,7 @@ class TestIntegrationTask3DExecutorMulti(object):
 
   def run(self):
 
-    from dials.algorithms.integration import IntegrationTask3DExecutorMulti
+    from dials.algorithms.integration import IntegrationTask3DMultiExecutorBase
     from dials.array_family import flex
     from dials.model.data import Image
     from time import time
@@ -255,7 +255,7 @@ class TestIntegrationTask3DExecutorMulti(object):
         reflections["panel"],
         reflections["bbox"])
       reflections["shoebox"].allocate()
-      executor = IntegrationTask3DExecutorMulti(
+      executor = IntegrationTask3DMultiExecutorBase(
         reflections,
         job,
         self.npanels)
@@ -363,7 +363,7 @@ class TestIntegrationManager3DExecutor(object):
       self.block_size)
 
     # Ensure the tasks make sense
-    jobs = executor.jobs()
+    jobs = executor.job(0)
     assert(len(executor) == 1)
     assert(not executor.finished())
     assert(len(jobs) == 12)
@@ -381,7 +381,7 @@ class TestIntegrationManager3DExecutor(object):
     assert(jobs[11] == (110, 130))
 
     # Get the task specs
-    data = executor.split()
+    data = executor.split(0)
     ignored = executor.ignored()
     assert(len(data) == len(self.expected))
     assert(len(executor.ignored()) == self.nrefl)
@@ -392,7 +392,7 @@ class TestIntegrationManager3DExecutor(object):
 
     # Accumulate the data again
     assert(not executor.finished())
-    executor.accumulate(data)
+    executor.accumulate(0, data)
     assert(executor.finished())
 
     # Get results and check they're as expected
@@ -489,7 +489,7 @@ class TestIntegrationManager3DExecutorMulti(object):
       self.block_size)
 
     # Ensure the tasks make sense
-    jobs = [executor.jobs(i) for i in range(len(executor))]
+    jobs = [executor.job(i) for i in range(len(executor))]
     assert(len(executor) == 12)
     assert(not executor.finished())
     assert(len(jobs) == 12)
@@ -578,7 +578,7 @@ class TestIntegrationManager3DExecutorMulti(object):
 
 class TestIntegrator3D(object):
 
-  def __init__(self):
+  def __init__(self, nproc):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     import libtbx.load_env
     from dials.array_family import flex
@@ -590,9 +590,12 @@ class TestIntegrator3D(object):
       print 'FAIL: dials_regression not configured'
       exit(0)
 
+
     path = join(dials_regression, "centroid_test_data", "experiments.json")
 
     exlist = ExperimentListFactory.from_json_file(path)
+
+    self.nproc = nproc
 
     rlist = flex.reflection_table.from_predictions(exlist[0])
     rlist['id'] = flex.size_t(len(rlist), 0)
@@ -609,16 +612,17 @@ class TestIntegrator3D(object):
     from libtbx import phil
 
     user_phil = phil.parse('''
-      mp.max_procs = 1
+      mp.max_procs = %d
       block.size=5
-      mp.max_tasks = 1
       filter.ice_rings.filter=False
-    ''')
+    ''' % self.nproc)
 
     params = phil_scope.fetch(source=user_phil).extract()
 
     integrator = Integrator3D(self.exlist, self.rlist, params)
     result = integrator.integrate()
+
+    print 'OK'
 
 
 class Test(object):
@@ -628,14 +632,16 @@ class Test(object):
     self.test2 = TestIntegrationTask3DExecutorMulti()
     self.test3 = TestIntegrationManager3DExecutor()
     self.test4 = TestIntegrationManager3DExecutorMulti()
-    # self.test5= TestIntegrator3D()
+    self.test5 = TestIntegrator3D(nproc=1)
+    self.test6 = TestIntegrator3D(nproc=2)
 
   def run(self):
-    # self.test1.run()
-    # self.test2.run()
-    # self.test3.run()
+    self.test1.run()
+    self.test2.run()
+    self.test3.run()
     self.test4.run()
-    # self.test5.run()
+    self.test5.run()
+    self.test6.run()
 
 if __name__ == '__main__':
   test = Test()

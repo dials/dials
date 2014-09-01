@@ -46,18 +46,18 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("data", &IntegrationTask3DExecutor::data)
       ;
 
-    class_<IntegrationTask3DExecutorMulti>("IntegrationTask3DExecutorMulti", no_init)
+    class_<IntegrationTask3DMultiExecutor>("IntegrationTask3DMultiExecutorBase", no_init)
       .def(init<
           af::reflection_table,
           tiny<int,2>,
           std::size_t>())
-      .def("next", &IntegrationTask3DExecutorMulti::next)
-      .def("frame0", &IntegrationTask3DExecutorMulti::frame0)
-      .def("frame1", &IntegrationTask3DExecutorMulti::frame1)
-      .def("frame", &IntegrationTask3DExecutorMulti::frame)
-      .def("nframes", &IntegrationTask3DExecutorMulti::nframes)
-      .def("finished", &IntegrationTask3DExecutorMulti::finished)
-      .def("data", &IntegrationTask3DExecutorMulti::data)
+      .def("next", &IntegrationTask3DMultiExecutor::next)
+      .def("frame0", &IntegrationTask3DMultiExecutor::frame0)
+      .def("frame1", &IntegrationTask3DMultiExecutor::frame1)
+      .def("frame", &IntegrationTask3DMultiExecutor::frame)
+      .def("nframes", &IntegrationTask3DMultiExecutor::nframes)
+      .def("finished", &IntegrationTask3DMultiExecutor::finished)
+      .def("data", &IntegrationTask3DMultiExecutor::data)
       ;
 
     class_<IntegrationManager3DExecutor>("IntegrationManager3DExecutor", no_init)
@@ -71,7 +71,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("finished", &IntegrationManager3DExecutor::finished)
       .def("accumulate", &IntegrationManager3DExecutor::accumulate)
       .def("split", &IntegrationManager3DExecutor::split)
-      .def("jobs", &IntegrationManager3DExecutor::jobs)
+      .def("job", &IntegrationManager3DExecutor::job)
       .def("data", &IntegrationManager3DExecutor::data)
       .def("ignored", &IntegrationManager3DExecutor::ignored)
       ;
@@ -87,7 +87,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("finished", &IntegrationManager3DMultiExecutor::finished)
       .def("accumulate", &IntegrationManager3DMultiExecutor::accumulate)
       .def("split", &IntegrationManager3DMultiExecutor::split)
-      .def("jobs", &IntegrationManager3DMultiExecutor::jobs)
+      .def("job", &IntegrationManager3DMultiExecutor::job)
       .def("data", &IntegrationManager3DMultiExecutor::data)
       .def("ignored", &IntegrationManager3DMultiExecutor::ignored)
       ;
