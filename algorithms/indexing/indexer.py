@@ -1035,6 +1035,7 @@ class indexer_base(object):
     direct_matrix = matrix.sqr(flat_list(basis_vectors))
 
     from cctbx.crystal_orientation import crystal_orientation
+    from cctbx.sgtbx.bravais_types import bravais_lattice
     from rstbx import dps_core # import dependency
     from rstbx.dps_core.lepage import iotbx_converter
     from dials.algorithms.indexing.symmetry import dials_crystal_from_orientation
@@ -1048,11 +1049,8 @@ class indexer_base(object):
     min_bmsd = 1e8
     best_orientation = None
     for item in items:
-      if (target_space_group.crystal_system() !=
-          item['best_group'].crystal_system()):
-        continue
-      if (target_sg_reference_setting.conventional_centring_type_symbol() !=
-          item['best_group'].conventional_centring_type_symbol()):
+      if (bravais_lattice(group=target_sg_reference_setting) !=
+          bravais_lattice(group=item['best_group'])):
         continue
       cb_op = item['cb_op_inp_best'].c().as_double_array()[0:9]
       cb_op_inv = item['cb_op_inp_best'].inverse().c().as_double_array()[0:9]
