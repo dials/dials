@@ -137,6 +137,152 @@ class TestIntegrationTask3DExecutor(object):
     assert(callback.ncallback == 4)
     print 'OK'
 
+class TestIntegrationTask3DExecutorMulti(object):
+
+  def __init__(self):
+    from dials.array_family import flex
+    from scitbx.array_family import shared
+    from random import shuffle
+
+    self.reflections = flex.reflection_table()
+    self.reflections['panel'] = flex.size_t()
+    self.reflections['bbox'] = flex.int6()
+    self.reflections['miller_index'] = flex.miller_index()
+    self.reflections['s1'] = flex.vec3_double()
+    self.reflections['xyzcal.px'] = flex.vec3_double()
+    self.reflections['xyzcal.mm'] = flex.vec3_double()
+    self.reflections['entering'] = flex.bool()
+    self.reflections['id'] = flex.size_t()
+    self.reflections["flags"] = flex.size_t()
+
+    self.npanels = 2
+    self.width = 1000
+    self.height = 1000
+    self.nrefl = 10000
+    # self.nrefl = 100000
+
+    # self.jobs = shared.tiny_int_2([
+    #   (0, 16),
+    #   (8, 24),
+    #   (16, 32),
+    #   (24, 40)])
+
+    self.jobs = shared.tiny_int_2([
+      (0, 40),
+      (20, 60),
+      (40, 80),
+      (60, 100)])
+
+    for i, j in enumerate(self.jobs):
+      self.append_reflections(j)
+
+    ind1 = flex.size_t(range(self.nrefl))
+    ind2 = ind1 + self.nrefl
+    ind3 = ind2 + self.nrefl
+    ind4 = ind3 + self.nrefl
+    self.indices = ind1
+    self.indices.extend(ind2)
+    self.indices.extend(ind3)
+    self.indices.extend(ind4)
+    off1 = self.nrefl
+    off2 = off1 + self.nrefl
+    off3 = off2 + self.nrefl
+    off4 = off3 + self.nrefl
+    self.offset = flex.size_t([0, off1, off2, off3, off4])
+    self.mask = flex.bool(len(self.indices), True)
+
+    # indices = list(range(len(self.reflections)))
+    # shuffle(indices)
+    # self.reflections.reorder(flex.size_t(indices))
+
+  def append_reflections(self, zrange):
+    from random import randint, seed
+    seed(0)
+    for i in range(self.nrefl):
+      x0 = randint(0, self.width-10)
+      y0 = randint(0, self.height-10)
+      zs = randint(1, (zrange[1] - zrange[0]) // 2)
+      x1 = x0 + randint(1, 10)
+      y1 = y0 + randint(1, 10)
+      z0 = (zrange[1] + zrange[0]) // 2 - zs // 2
+      z1 = z0 + zs
+      assert(x1 > x0)
+      assert(y1 > y0)
+      assert(z1 > z0)
+      assert(z0 >= zrange[0] and z1 <= zrange[1])
+      bbox = (x0, x1, y0, y1, z0, z1)
+      self.reflections.append({
+        "panel" : randint(0,1),
+        "bbox" : bbox,
+      })
+
+  def create_image(self, value):
+    from dials.array_family import flex
+    from dials.model.data import Image
+    data = flex.int(flex.grid(self.height,self.width), value)
+    mask = flex.bool(flex.grid(self.height,self.width), True)
+    return Image((data, data), (mask, mask))
+
+  def run(self):
+
+    from dials.algorithms.integration import IntegrationTask3DExecutorMulti
+    from dials.array_family import flex
+    from dials.model.data import Image
+    from time import time
+
+    # The processing callback
+    class Callback(object):
+      def __init__(self, nrefl):
+        self.ncallback = 0
+        self.nrefl = nrefl
+      def __call__(self, reflections):
+        assert(len(reflections) == self.nrefl)
+        for sbox in reflections['shoebox']:
+          assert(sbox.is_consistent())
+          bbox = sbox.bbox
+          v1 = bbox[4]+1
+          for z in range(bbox[5]-bbox[4]):
+            assert(sbox.data[z:z+1,:,:].all_eq(v1+z))
+        self.ncallback += 1
+        return reflections
+    callback = Callback(self.nrefl)
+
+    # Initialise the executor
+    for j, job in enumerate(self.jobs):
+      indices = flex.size_t(range(10000)) + 10000*j
+      reflections = self.reflections.select(indices)
+      reflections["shoebox"] = flex.shoebox(
+        reflections["panel"],
+        reflections["bbox"])
+      reflections["shoebox"].allocate()
+      executor = IntegrationTask3DExecutorMulti(
+        reflections,
+        job,
+        self.npanels)
+
+      # Check the initial state is correct
+      assert(executor.frame0() == job[0])
+      assert(executor.frame1() == job[1])
+      assert(executor.nframes() == job[1] - job[0])
+
+      # The data and mask
+      data = flex.int(flex.grid(self.height,self.width), job[0]+1)
+      mask = flex.bool(flex.grid(self.height,self.width), True)
+
+      # Loop through images
+      st = time()
+      for i in range(job[0], job[1]):
+        executor.next(Image((data, data), (mask, mask)))
+        data += 1
+      # print time() - st
+      assert(executor.finished())
+      callback(executor.data())
+
+      del reflections["shoebox"]
+
+    assert(callback.ncallback == 4)
+    print 'OK'
+
 
 class TestIntegrationManager3DExecutor(object):
 
@@ -371,14 +517,14 @@ class Test(object):
 
   def __init__(self):
     self.test1 = TestIntegrationTask3DExecutor()
-    # self.test2 = TestIntegrationTask3DExecutorMulti()
+    self.test2 = TestIntegrationTask3DExecutorMulti()
     # self.test3 = TestIntegrationManager3DExecutor()
     # self.test4 = TestIntegrationManager3DExecutorMulti()
     # self.test5= TestIntegrator3D()
 
   def run(self):
-    self.test1.run()
-    # self.test2.run()
+    # self.test1.run()
+    self.test2.run()
     # self.test3.run()
     # self.test4.run()
     # self.test5.run()

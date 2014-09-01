@@ -65,8 +65,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<IntegrationTask3DExecutorMulti>("IntegrationTask3DExecutorMulti", no_init)
       .def(init<
           af::reflection_table,
-          int,
-          int,
+          tiny<int,2>,
           std::size_t>())
       .def("next", &IntegrationTask3DExecutorMulti::next)
       .def("frame0", &IntegrationTask3DExecutorMulti::frame0)

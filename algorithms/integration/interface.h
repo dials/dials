@@ -56,10 +56,14 @@ namespace dials { namespace algorithms {
                        int frame1)
           : npanels_(npanels),
             frame0_(frame0),
-            frame1_(frame1),
-            shoebox_(data["shoebox"]) {
+            frame1_(frame1) {
         DIALS_ASSERT(frame0_ < frame1_);
         DIALS_ASSERT(npanels_ > 0);
+        DIALS_ASSERT(data.is_consistent());
+        DIALS_ASSERT(data.contains("panel"));
+        DIALS_ASSERT(data.contains("bbox"));
+        DIALS_ASSERT(data.contains("shoebox"));
+        shoebox_ = data["shoebox"];
         std::size_t nframes = frame1_ - frame0_;
         af::const_ref<std::size_t> panel = data["panel"];
         af::const_ref<int6> bbox = data["bbox"];
@@ -67,6 +71,9 @@ namespace dials { namespace algorithms {
         std::vector<std::size_t> num(size, 0);
         std::vector<std::size_t> count(size, 0);
         for (std::size_t i = 0; i < bbox.size(); ++i) {
+          DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+          DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+          DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
           for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
             std::size_t j = panel[i] + (z - frame0_)*npanels_;
             DIALS_ASSERT(j < num.size());
@@ -184,29 +191,17 @@ namespace dials { namespace algorithms {
      */
     IntegrationTask3DExecutorMulti(
           af::reflection_table data,
-          int frame0,
-          int frame1,
+          tiny<int,2> job,
           std::size_t npanels)
       : data_(data),
-        frame0_(frame0),
-        frame1_(frame1),
-        frame_(frame0),
-        nframes_(frame1 - frame0),
+        frame0_(job[0]),
+        frame1_(job[1]),
+        frame_(frame0_),
+        nframes_(frame1_ - frame0_),
         npanels_(npanels) {
       DIALS_ASSERT(frame1_ > frame0_);
       DIALS_ASSERT(npanels > 0);
-
-      // Initialise the shoeboxes
-      af::const_ref< std::size_t > panel = data["panel"];
-      af::const_ref< int6 > bbox = data["bbox"];
-      af::shared< Shoebox<> > shoebox = data["shoebox"];
-      for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        shoebox[i] = Shoebox<>(panel[i], bbox[i]);
-        shoebox[i].allocate();
-      }
-
-      // Initialise the offsets and indices for each frame/panel
-      extractor_ = detail::ShoeboxExtractor(data, npanels, frame0, frame1);
+      extractor_ = detail::ShoeboxExtractor(data, npanels, frame0_, frame1_);
     }
 
     /** @returns The first frame.  */
@@ -255,7 +250,6 @@ namespace dials { namespace algorithms {
      */
     af::reflection_table data() {
       DIALS_ASSERT(finished());
-      data_.erase("shoebox");
       return data_;
     }
 
