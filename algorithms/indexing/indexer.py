@@ -1013,6 +1013,7 @@ class indexer_base(object):
                  rmsds=rmsds,
                  n_indexed=n_indexed[-1]))
       if self.params.debug:
+        print "unit_cell:", cm.get_unit_cell()
         print "model_likelihood: %.2f" %model_likelihood
         print "n_indexed: %i" %n_indexed[-1]
 
