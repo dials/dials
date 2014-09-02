@@ -1056,8 +1056,7 @@ class indexer_base(object):
 
     orientation = crystal_orientation(direct_matrix.inverse(), True)
     items = iotbx_converter(
-      #orientation.unit_cell().minimum_cell(), max_delta=5.0)
-      orientation.unit_cell(), max_delta=5.0)
+      orientation.unit_cell(), max_delta=5.0, best_monoclinic_beta=False)
     target_sg_reference_setting \
       = target_space_group.info().reference_setting().group()
     min_bmsd = 1e8
