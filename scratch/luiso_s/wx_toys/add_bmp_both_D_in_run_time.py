@@ -70,6 +70,20 @@ class MyPanel(wx.Panel):
     def on_V_add(self, event):
         print "from on_V_add"
 
+        self.widgetSizer.append(wx.BoxSizer(wx.HORIZONTAL))
+        self.mainSizer.Add(self.widgetSizer[self.number_of_floors], 0, wx.CENTER|wx.ALL, 10)
+
+        for n_siz in range(self.number_of_img):
+            data2d = build_np_img(width=5, height=8)
+            bitmap = GetBitmap_from_np_array(data2d)
+            bitmap_tmp = wx.StaticBitmap(self, bitmap=bitmap)
+            self.widgetSizer[self.number_of_floors].Add(bitmap_tmp, 0, wx.ALL, 5)
+
+        self.number_of_floors += 1
+
+        self.frame.fSizer.Layout()
+        self.frame.Fit()
+
 class MyFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, title="Add / Remove Buttons")
