@@ -43,6 +43,17 @@ class MyPanel(wx.Panel):
         self.V_rmButton.Bind(wx.EVT_BUTTON, self.on_V_rm)
         controlSizer.Add(self.V_rmButton, 0, wx.CENTER|wx.ALL, 5)
 
+
+
+        #test button
+
+        self.test_mem = wx.Button(self, label="test")
+        self.test_mem.Bind(wx.EVT_BUTTON, self.on_test_mem)
+        controlSizer.Add(self.test_mem, 0, wx.CENTER|wx.ALL, 5)
+
+
+        #
+
         self.mainSizer.Add(controlSizer, 0, wx.CENTER)
         self.mainSizer.Add(self.widgetSizer[0], 0, wx.CENTER|wx.ALL, 10)
 
@@ -113,6 +124,41 @@ class MyPanel(wx.Panel):
 
         self.frame.fSizer.Layout()
         self.frame.Fit()
+
+
+    def on_test_mem(self, event):
+
+        for times in range(4):
+            self.onAddWidget(event)
+        self.tst_update()
+
+        for times in range(3):
+            self.on_V_add(event)
+        self.tst_update()
+
+        for times in range(4):
+            self.onRemoveWidget(event)
+        self.tst_update()
+
+        for times in range(3):
+            self.on_V_rm(event)
+        self.tst_update()
+
+        print "test Done"
+
+    def tst_update(self):
+        import time
+        # Wait for 5 seconds
+        time.sleep(1)
+        self.frame.fSizer.Layout()
+        self.frame.Fit()
+        self.frame.Refresh()
+        self.Layout()
+        self.Fit()
+        self.Refresh()
+        time.sleep(1)
+
+        #self.Layout()
 
 
 class MyFrame(wx.Frame):
