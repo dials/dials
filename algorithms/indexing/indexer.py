@@ -886,7 +886,7 @@ class indexer_base(object):
           s.model_likelihood for s in self.all_solutions)
         self.close_solutions = [
           s for s in self.all_solutions
-          if s.model_likelihood >= (0.9 * self.best_likelihood)]
+          if s.model_likelihood >= (0.85 * self.best_likelihood)]
 
         # filter by volume - prefer solutions with a smaller unit cell
         self.min_volume = min(s.crystal.get_unit_cell().volume()
