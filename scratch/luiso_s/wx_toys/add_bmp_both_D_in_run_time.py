@@ -12,7 +12,6 @@
 
 import wx
 
-
 from dials.scratch.luiso_s.wx_toys.bitmap_from_numpy_w_matplotlib_well_done \
      import GetBitmap_from_np_array, build_np_img
 
@@ -40,6 +39,10 @@ class MyPanel(wx.Panel):
         self.V_addButton.Bind(wx.EVT_BUTTON, self.on_V_add)
         controlSizer.Add(self.V_addButton, 0, wx.CENTER|wx.ALL, 5)
 
+        self.V_rmButton = wx.Button(self, label="Vertical remove")
+        self.V_rmButton.Bind(wx.EVT_BUTTON, self.on_V_rm)
+        controlSizer.Add(self.V_rmButton, 0, wx.CENTER|wx.ALL, 5)
+
         self.mainSizer.Add(controlSizer, 0, wx.CENTER)
         self.mainSizer.Add(self.widgetSizer[0], 0, wx.CENTER|wx.ALL, 10)
 
@@ -50,39 +53,67 @@ class MyPanel(wx.Panel):
         label = "Button %s" %  self.number_of_img
         name = "button%s" % self.number_of_img
 
-
-        data2d = build_np_img(width=5, height=8)
-        bitmap = GetBitmap_from_np_array(data2d)
-        bitmap_tmp = wx.StaticBitmap(self, bitmap=bitmap)
-        self.widgetSizer[0].Add(bitmap_tmp, 0, wx.ALL, 5)
+        for floor in range(self.number_of_floors):
+            data2d = build_np_img(width=5, height=3)
+            bitmap = GetBitmap_from_np_array(data2d)
+            bitmap_tmp = wx.StaticBitmap(self, bitmap=bitmap)
+            self.widgetSizer[floor].Add(bitmap_tmp, 0, wx.ALL, 5)
 
         self.frame.fSizer.Layout()
         self.frame.Fit()
 
     def onRemoveWidget(self, event):
         if self.widgetSizer[0].GetChildren():
-            self.widgetSizer[0].Hide(self.number_of_img-1)
-            self.widgetSizer[0].Remove(self.number_of_img-1)
+            for floor in range(self.number_of_floors):
+                self.widgetSizer[floor].Hide(self.number_of_img-1)
+                self.widgetSizer[floor].Remove(self.number_of_img-1)
+
             self.number_of_img -= 1
             self.frame.fSizer.Layout()
             self.frame.Fit()
             print "number_of_img =", self.number_of_img
+
     def on_V_add(self, event):
         print "from on_V_add"
-
         self.widgetSizer.append(wx.BoxSizer(wx.HORIZONTAL))
         self.mainSizer.Add(self.widgetSizer[self.number_of_floors], 0, wx.CENTER|wx.ALL, 10)
 
         for n_siz in range(self.number_of_img):
-            data2d = build_np_img(width=5, height=8)
+            data2d = build_np_img(width=5, height=3)
             bitmap = GetBitmap_from_np_array(data2d)
             bitmap_tmp = wx.StaticBitmap(self, bitmap=bitmap)
             self.widgetSizer[self.number_of_floors].Add(bitmap_tmp, 0, wx.ALL, 5)
 
         self.number_of_floors += 1
+        self.frame.fSizer.Layout()
+        self.frame.Fit()
+    def on_V_rm(self, event):
+
+        floor = self.number_of_floors - 1
+
+        '''
+        for floor in range(self.number_of_floors):
+                self.widgetSizer[floor].Hide(self.number_of_img-1)
+                self.widgetSizer[floor].Remove(self.number_of_img-1)
+        '''
+
+        for n_siz in range(self.number_of_img -1, -1, -1):
+
+            print "n_siz =", n_siz
+            self.widgetSizer[floor].Hide(n_siz)
+            self.widgetSizer[floor].Remove(n_siz)
+
+        self.mainSizer.Hide(self.widgetSizer[floor])
+        self.mainSizer.Remove(self.widgetSizer[floor])
+        del self.widgetSizer[floor]
+
+        self.number_of_floors = floor
+
+        print "from V_rmButton"
 
         self.frame.fSizer.Layout()
         self.frame.Fit()
+
 
 class MyFrame(wx.Frame):
     def __init__(self):
@@ -95,7 +126,6 @@ class MyFrame(wx.Frame):
         self.Fit()
         self.Show()
 
-#----------------------------------------------------------------------
 if __name__ == "__main__":
     app = wx.App(False)
     frame = MyFrame()
