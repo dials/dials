@@ -127,35 +127,40 @@ class MyPanel(wx.Panel):
 
 
     def on_test_mem(self, event):
+        for times_times in range(5):
+            for times in range(4):
+                self.onAddWidget(event)
+            self.tst_update()
 
-        for times in range(4):
-            self.onAddWidget(event)
-        self.tst_update()
+            for times in range(3):
+                self.on_V_add(event)
+            self.tst_update()
 
-        for times in range(3):
-            self.on_V_add(event)
-        self.tst_update()
+            for times in range(4):
+                self.onRemoveWidget(event)
+            self.tst_update()
 
-        for times in range(4):
-            self.onRemoveWidget(event)
-        self.tst_update()
-
-        for times in range(3):
-            self.on_V_rm(event)
-        self.tst_update()
+            for times in range(3):
+                self.on_V_rm(event)
+            self.tst_update()
 
         print "test Done"
 
     def tst_update(self):
         import time
         # Wait for 5 seconds
-        time.sleep(1)
+        #time.sleep(1)
         self.frame.fSizer.Layout()
-        self.frame.Fit()
+        #self.frame.Fit()
         self.frame.Refresh()
+        self.frame.Update()
+        wx.Yield()
+        time.sleep(1)
         self.Layout()
-        self.Fit()
+        #self.Fit()
         self.Refresh()
+        self.Update()
+        wx.Yield()
         time.sleep(1)
 
         #self.Layout()
