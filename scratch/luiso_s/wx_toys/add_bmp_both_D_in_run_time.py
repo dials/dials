@@ -127,7 +127,7 @@ class MyPanel(wx.Panel):
 
 
     def on_test_mem(self, event):
-        for times_times in range(5):
+        for times_times in range(50):
             for times in range(4):
                 self.onAddWidget(event)
             self.tst_update()
