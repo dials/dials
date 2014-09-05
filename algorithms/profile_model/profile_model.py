@@ -64,6 +64,26 @@ class ProfileModel(object):
       reflections['xyzcal.mm'].parts()[2],
       reflections['panel'])
 
+  def compute_partiality(self, experiment, reflections):
+    ''' Compute the partiality. '''
+    from dials.algorithms.shoebox import PartialityCalculator
+
+    # Compute the size in reciprocal space.
+    delta_m = self._n_sigma * self._sigma_m
+
+    # Create the partiality calculator
+    calculate = PartialityCalculator(
+      experiment.beam,
+      experiment.goniometer,
+      experiment.scan,
+      delta_m)
+
+    # Compute the partiality
+    reflections['partiality'] = calculate(
+      reflections['s1'],
+      reflections['xyzcal.mm'].parts()[2],
+      reflections['bbox'])
+
   def compute_mask(self, experiment, reflections):
     ''' Compute the shoebox mask. '''
     from dials.algorithms.shoebox import MaskForeground
@@ -160,6 +180,37 @@ class ProfileModelList(object):
       reflections['s1'],
       reflections['xyzcal.mm'].parts()[2],
       reflections['panel'])
+
+  def compute_partiality(self, experiments, reflections):
+    ''' Compute the partiality. '''
+    from dials.algorithms.shoebox import PartialityMultiCalculator
+    from dials.algorithms.shoebox import PartialityCalculator
+
+    # Check the input
+    assert(len(experiments) == len(self))
+
+    # The partiality calculator
+    calculate = PartialityMultiCalculator()
+
+    # Loop through the experiments and models
+    for experiment, model in zip(experiments, self):
+
+      # Compute the size in reciprocal space.
+      delta_m = model.n_sigma() * model.sigma_m(deg=False)
+
+      # Create the partiality calculator
+      calculate.append(PartialityCalculator(
+        experiment.beam,
+        experiment.goniometer,
+        experiment.scan,
+        delta_m))
+
+    # Compute the partiality
+    reflections['partiality'] = calculate(
+      reflections['id'],
+      reflections['s1'],
+      reflections['xyzcal.mm'].parts()[2],
+      reflections['bbox'])
 
   def compute_mask(self, experiments, reflections):
     ''' Compute the shoebox mask. '''

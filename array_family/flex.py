@@ -68,6 +68,17 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     return predict()
 
   @staticmethod
+  def from_predictions_multi(experiments, force_static=False, dmin=None):
+    ''' Construct a reflection table from predictions. '''
+    from scitbx.array_family import flex
+    result = reflection_table()
+    for i, e in enumerate(experiments):
+      rlist = reflection_table.from_predictions(e, force_static, dmin)
+      rlist['id'] = flex.size_t(len(rlist), i)
+      result.append(rlist)
+    return result
+
+  @staticmethod
   def from_observations(datablock):
     ''' Construct a reflection table from observations. '''
     from dials.algorithms.peak_finding.spotfinder_factory \
@@ -142,6 +153,24 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       i += 1
     return result
 
+  def match(self, other):
+    ''' Match reflections with another set of reflections. '''
+    from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
+    match = SpotMatcher(max_separation=1)
+    oind, sind = match(other, self)
+    return sind, oind
+
+  def match_with_reference(self, other):
+    ''' Match reflections with another set of reflections. '''
+    from dials.util.command_line import Command
+    Command.start("Matching reference spots with predicted reflections")
+    sind, oind = self.match(other)
+    h1 = self.select(sind)['miller_index']
+    h2 = other.select(oind)['miller_index']
+    mask = (h1 == h2)
+    self.set_flags(sind.select(mask), self.flags.reference_spot)
+    Command.end("Matched %d reference spots with predicted reflections" %
+                mask.count(True))
 
   #def is_bbox_inside_image_range(self, experiment):
     #''' Check if bbox is within image range. '''
@@ -180,13 +209,16 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self['d'] = uc.d(self['miller_index'], self['id'])
     return self['d']
 
-
   def compute_bbox(self, experiments, profile_model, sigma_b_multiplier=2.0):
     ''' Compute the bounding boxes. '''
     from dials.util.command_line import Command
     Command.start('Calculating bounding boxes')
     profile_model.compute_bbox(experiments, self, sigma_b_multiplier)
     Command.end('Calculated {0} bounding boxes'.format(len(self)))
+
+  def compute_partiality(self, experiments, profile_model):
+    ''' Compute the reflection partiality. '''
+    profile_model.compute_partiality(experiments, self)
 
   def compute_background(self, experiments):
     ''' Helper function to compute the background. '''

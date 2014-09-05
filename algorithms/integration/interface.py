@@ -164,10 +164,11 @@ class Integrator(object):
     num_proc = len(self._manager)
     if self._max_procs > 0:
       num_proc = min(num_proc, self._max_procs)
+    print ' Using %s with %d processes\n' % (self._mp_method, num_proc)
     if num_proc > 1:
       def process_output(result):
-        self._manager.accumulate(result[0])
         print result[1]
+        self._manager.accumulate(result[0])
       def execute_task(task):
         from cStringIO import StringIO
         import sys
@@ -194,7 +195,8 @@ class Integrator(object):
       ["Read time"   , "%.2f seconds" % (self._manager.read_time)   ],
       ["Extract time", "%.2f seconds" % (self._manager.extract_time)],
       ["Process time", "%.2f seconds" % (self._manager.process_time)],
-      ["Total time"  , "%.2f seconds" % (end_time - start_time)     ]
+      ["Total time"  , "%.2f seconds" % (self._manager.total_time)  ],
+      ["User time"   , "%.2f seconds" % (end_time - start_time)     ],
     ]
     print table(rows, justify='right', prefix=' ')
     return self._manager.result()
@@ -217,9 +219,21 @@ class IntegrationTask3D(IntegrationTask):
     ''' Do the integration. '''
     from dials.array_family import flex
     from time import time
+    from libtbx.table_utils import format as table
+    num_integrate = self._data.get_flags(self._data.flags.dont_integrate).count(False)
+    num_reference = self._data.get_flags(self._data.flags.reference_spot).count(True)
     print "=" * 80
     print ""
-    print "Integrating task %d" % self._index
+    print "Beginning integration of job %d" % self._index
+    print ""
+    print " Frames: %d -> %d" % self._job
+    print ""
+    print " Number of reflections"
+    print "  Integrate: %d" % num_integrate
+    print "  Reference: %d" % num_reference
+    print "  Total:     %d" % len(self._data)
+    print ""
+    start_time = time()
 
     # Get the sub imageset
     imagesets = self._experiments.imagesets()
@@ -252,9 +266,9 @@ class IntegrationTask3D(IntegrationTask):
       self._data['shoebox'].flatten()
 
     # Process the data
-    st = time()
+    process_start_time = time()
     self._process()
-    process_time = time() - st
+    process_time = time() - process_start_time
 
     # Delete the shoeboxes
     del self._data["shoebox"]
@@ -264,11 +278,11 @@ class IntegrationTask3D(IntegrationTask):
     result.read_time = read_time
     result.extract_time = extract_time
     result.process_time = process_time
+    result.total_time = time() - start_time
     return result
 
   def _process(self):
     ''' Process the data. '''
-    print "Process"
     self._data.compute_mask(self._experiments, self._profile_model)
     self._data.integrate(self._experiments, self._profile_model)
 
@@ -281,7 +295,6 @@ class IntegrationManager3D(IntegrationManager):
                profile_model,
                reflections,
                block_size=1,
-               max_procs=1,
                flatten=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
@@ -302,14 +315,16 @@ class IntegrationManager3D(IntegrationManager):
     self._profile_model = profile_model
     self._reflections = reflections
     phi0, dphi = scan.get_oscillation()
-    block_size = block_size / dphi
     self._manager = IntegrationManager3DExecutor(
       self._reflections,
       scan.get_array_range(),
-      block_size)
+      block_size / dphi)
     self.read_time = 0
     self.extract_time = 0
     self.process_time = 0
+    self.total_time = 0
+    self._print_summary(block_size)
+    self._preprocess(self._reflections)
 
   def task(self, index):
     ''' Get a task. '''
@@ -332,8 +347,9 @@ class IntegrationManager3D(IntegrationManager):
     self.read_time += result.read_time
     self.extract_time += result.extract_time
     self.process_time += result.process_time
+    self.total_time += result.total_time
     if self.finished():
-      self._post_process(self._manager.data())
+      self._postprocess(self._manager.data())
 
   def result(self):
     ''' Return the result. '''
@@ -347,9 +363,66 @@ class IntegrationManager3D(IntegrationManager):
     ''' Return the number of tasks. '''
     return len(self._manager)
 
-  def _post_process(self, data):
+  def _preprocess(self, data):
+    ''' Do some pre-processing. '''
+    data.compute_zeta_multi(self._experiments)
+    data.compute_d(self._experiments)
+    data.compute_bbox(self._experiments, self._profile_model)
+    data.compute_partiality(self._experiments, self._profile_model)
+
+  def _postprocess(self, data):
     ''' Do some post processing. '''
     data.compute_corrections(self._experiments)
+
+  def _print_summary(self, block_size):
+    ''' Print a summary of the integration stuff. '''
+    from libtbx.table_utils import format as table
+
+    # Create a table of integration tasks
+    rows = [["#", "Frame From", "Frame To", "Angle From", "Angle To"]]
+    scans = self._experiments.scans()
+    assert(len(scans) == 1)
+    for i in range(len(self)):
+      f0, f1 = self._manager.job(i)
+      p0 = scans[0].get_angle_from_array_index(f0)
+      p1 = scans[0].get_angle_from_array_index(f1)
+      rows.append([str(i), str(f0), str(f1), str(p0), str(p1)])
+    task_table = table(rows, has_header=True, justify="right", prefix=" ")
+
+    # Create summary format
+    summary_format_str = (
+      '%s\n'
+      '\n'
+      'Beginning integration of the following experiments:\n'
+      '\n'
+      ' Experiments: %d\n'
+      ' Beams:       %d\n'
+      ' Detectors:   %d\n'
+      ' Goniometers: %d\n'
+      ' Scans:       %d\n'
+      ' Crystals:    %d\n'
+      '\n'
+      'Integrating reflections in the following blocks of images:\n'
+      '\n'
+      ' block_size: %d degrees\n'
+      '\n'
+      '%s\n'
+      '\n'
+      ' %d reflections overlapping blocks removed from integration\n'
+    )
+
+    # Print the summary
+    print summary_format_str % (
+      '=' * 80,
+      len(self._experiments),
+      len(self._experiments.beams()),
+      len(self._experiments.detectors()),
+      len(self._experiments.goniometers()),
+      len(self._experiments.scans()),
+      len(self._experiments.crystals()),
+      block_size,
+      task_table,
+      len(self._manager.ignored()))
 
 
 class Integrator3D(Integrator):
@@ -369,8 +442,7 @@ class Integrator3D(Integrator):
       experiments,
       profile_model,
       reflections,
-      block_size,
-      max_procs)
+      block_size)
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, max_procs, mp_method)
@@ -394,7 +466,6 @@ class IntegratorFlat2D(Integrator):
       profile_model,
       reflections,
       block_size,
-      max_procs,
       flatten=True)
 
     # Initialise the integrator

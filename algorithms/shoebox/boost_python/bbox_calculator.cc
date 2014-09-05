@@ -54,14 +54,43 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("delta_divergence"),
         arg("delta_mosaicity"))))
       .def("__call__", calculate_single, (
-        arg("s1"), arg("phi")))
+        arg("s1"), arg("phi"), arg("panel")))
       .def("__call__", calculate_array, (
-        arg("s1"), arg("phi")));
+        arg("s1"), arg("phi"), arg("panel")));
 
     class_ <BBoxMultiCalculator>("BBoxMultiCalculator")
       .def("append", &BBoxMultiCalculator::push_back)
       .def("__len__", &BBoxMultiCalculator::size)
       .def("__call__", &BBoxMultiCalculator::operator())
+      ;
+
+    double (PartialityCalculator::*calculate_partiality_single)(
+      vec3 <double>, double, int6) const =
+        &PartialityCalculator::operator();
+    af::shared<double> (PartialityCalculator::*calculate_partiality_array) (
+      const af::const_ref< vec3<double> >&,
+      const af::const_ref<double> &,
+      const af::const_ref<int6>&) const =
+        &PartialityCalculator::operator();
+
+    class_ <PartialityCalculator> ("PartialityCalculator", no_init)
+      .def(init <const Beam&,
+                 const Goniometer&,
+                 const Scan&,
+                 double > ((
+        arg("beam"),
+        arg("goniometer"),
+        arg("scan"),
+        arg("delta_mosaicity"))))
+      .def("__call__", calculate_partiality_single, (
+        arg("s1"), arg("phi"), arg("bbox")))
+      .def("__call__", calculate_partiality_array, (
+        arg("s1"), arg("phi"), arg("bbox")));
+
+    class_ <PartialityMultiCalculator>("PartialityMultiCalculator")
+      .def("append", &PartialityMultiCalculator::push_back)
+      .def("__len__", &PartialityMultiCalculator::size)
+      .def("__call__", &PartialityMultiCalculator::operator())
       ;
   }
 
