@@ -315,8 +315,8 @@ class indexer_base(object):
   def _setup_symmetry(self):
     self.target_symmetry_primitive = None
     self.target_symmetry_minimum_cell = None
-    self.target_symmetry_centred = None
-    self.cb_op_centred_to_primitive = None
+    self.target_symmetry_best_cell = None
+    self.cb_op_best_to_primitive = None
     self.cb_op_minimum_cell_to_primitive = None
     self.cb_op_primitive_to_given = None
     if (self.params.known_symmetry.space_group is not None or
@@ -342,32 +342,69 @@ class indexer_base(object):
         if not self.target_symmetry_primitive.unit_cell().is_similar_to(
           self.params.known_symmetry.unit_cell):
           # then the provided unit cell was the centred one
-          self.target_symmetry_centred = crystal.symmetry(
+          target_symmetry_given = crystal.symmetry(
             unit_cell=self.params.known_symmetry.unit_cell,
             space_group=self.params.known_symmetry.space_group.group())
-          self.cb_op_centred_to_primitive \
-            = self.target_symmetry_centred.change_of_basis_op_to_primitive_setting()
-          self.target_symmetry_primitive = self.target_symmetry_centred.change_basis(
-            self.cb_op_centred_to_primitive)
-          self.cb_op_primitive_to_given = self.cb_op_centred_to_primitive.inverse()
+          cb_op_to_ref \
+            = target_symmetry_given.change_of_basis_op_to_reference_setting()
+          target_symmetry_reference = target_symmetry_given.change_basis(
+            cb_op_to_ref)
+          cb_op_ref_to_best = target_symmetry_reference.change_of_basis_op_to_best_cell()
+          self.target_symmetry_best_cell = target_symmetry_reference.change_basis(
+            cb_op_ref_to_best)
+          self.cb_op_best_to_primitive \
+            = self.target_symmetry_best_cell.change_of_basis_op_to_primitive_setting()
+          self.target_symmetry_primitive = self.target_symmetry_best_cell.change_basis(
+            self.cb_op_best_to_primitive)
+          self.cb_op_primitive_to_given = (
+            self.cb_op_best_to_primitive * cb_op_ref_to_best * cb_op_to_ref).inverse()
+          assert self.target_symmetry_primitive.is_similar_symmetry(
+            target_symmetry_given.change_basis(
+              self.cb_op_primitive_to_given.inverse()))
         else:
           # the provided unit cell was the primitive one
-          self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
-            self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
-          self.cb_op_centred_to_primitive \
-            = self.target_symmetry_centred.change_of_basis_op_to_primitive_setting()
-          self.cb_op_primitive_to_given = None # given symmetry was primitive
+          cb_op_given_to_ref \
+            = self.target_symmetry_primitive.change_of_basis_op_to_reference_setting()
+          target_symmetry_reference = self.target_symmetry_primitive.change_basis(cb_op_given_to_ref)
+          cb_op_ref_to_best = target_symmetry_reference.change_of_basis_op_to_best_cell()
+          self.target_symmetry_best_cell = target_symmetry_reference.change_basis(
+            cb_op_ref_to_best)
+          self.cb_op_best_to_primitive \
+            = self.target_symmetry_best_cell.change_of_basis_op_to_primitive_setting()
+          self.target_symmetry_primitive = self.target_symmetry_best_cell.change_basis(
+            self.cb_op_best_to_primitive)
+          self.cb_op_primitive_to_given = (
+            self.cb_op_best_to_primitive * cb_op_ref_to_best * cb_op_given_to_ref).inverse()
+      elif self.target_symmetry_primitive.unit_cell() is not None:
+        self.target_symmetry_best_cell = self.target_symmetry_primitive.best_cell()
+        self.cb_op_best_to_primitive = self.target_symmetry_best_cell.change_of_basis_op_to_primitive_setting()
+        self.target_symmetry_primitive \
+          = self.target_symmetry_best_cell.change_basis(self.cb_op_best_to_primitive)
       if self.params.known_symmetry.unit_cell is not None:
-        assert (self.target_symmetry_primitive.unit_cell().is_similar_to(
-          self.params.known_symmetry.unit_cell) or self.target_symmetry_centred.unit_cell().is_similar_to(
-          self.params.known_symmetry.unit_cell))
-        self.target_symmetry_minimum_cell = self.target_symmetry_primitive.minimum_cell()
+        cb_op_best_min \
+          = self.target_symmetry_best_cell.change_of_basis_op_to_minimum_cell()
+        self.target_symmetry_minimum_cell \
+          = self.target_symmetry_best_cell.change_basis(cb_op_best_min)
         self.cb_op_minimum_cell_to_primitive \
-          = self.target_symmetry_primitive.change_of_basis_op_to_minimum_cell().inverse()
+          = self.cb_op_best_to_primitive * cb_op_best_min.inverse()
         if self.cb_op_primitive_to_given is not None:
           assert self.target_symmetry_primitive.change_basis(
             self.cb_op_primitive_to_given).unit_cell().is_similar_to(
               self.params.known_symmetry.unit_cell)
+      if self.params.debug:
+        if self.target_symmetry_best_cell is not None:
+          print "Target symmetry (best cell):"
+          self.target_symmetry_best_cell.show_summary()
+        if self.target_symmetry_primitive is not None:
+          print "Target symmetry (primitive cell):"
+          self.target_symmetry_primitive.show_summary()
+        if self.target_symmetry_minimum_cell is not None:
+          print "Target symmetry (minimum cell):"
+          self.target_symmetry_minimum_cell.show_summary()
+        print "cb_op best->primitive:", self.cb_op_best_to_primitive
+        print "cb_op primitive->given:", self.cb_op_primitive_to_given
+        print "cb_op minimum->primitive:", self.cb_op_minimum_cell_to_primitive
+
 
 
   def index(self):
@@ -451,17 +488,17 @@ class indexer_base(object):
         # that a reflection doesn't belong to any lattice so far
         self.reflections['id'] = flex.int(len(self.reflections), -1)
 
-        if (i_cycle == 0 and self.target_symmetry_primitive is not None
-            and self.target_symmetry_primitive.unit_cell() is not None):
-          # if a target cell is given make sure that we match any permutation
-          # of the cell dimensions
-          for i_cryst, cryst in enumerate(experiments.crystals()):
-            if i_cryst >= n_lattices_previous_cycle:
-              new_cryst, _ = self.apply_symmetry(
-                cryst, self.target_symmetry_primitive,
-                return_primitive_setting=True,
-                cell_only=True)
-              experiments.crystals()[i_cryst].update(new_cryst)
+        #if (i_cycle == 0 and self.target_symmetry_primitive is not None
+            #and self.target_symmetry_primitive.unit_cell() is not None):
+          ## if a target cell is given make sure that we match any permutation
+          ## of the cell dimensions
+          #for i_cryst, cryst in enumerate(experiments.crystals()):
+            #if i_cryst >= n_lattices_previous_cycle:
+              #new_cryst, _ = self.apply_symmetry(
+                #cryst, self.target_symmetry_primitive,
+                #return_primitive_setting=True,
+                #cell_only=True)
+              #experiments.crystals()[i_cryst].update(new_cryst)
 
         self.index_reflections(
           experiments, self.reflections,
@@ -614,8 +651,8 @@ class indexer_base(object):
     import libtbx
     if self.params.max_cell is libtbx.Auto:
       if self.params.known_symmetry.unit_cell is not None:
-        reference = self.target_symmetry_primitive.as_reference_setting()
-        uc_params  = reference.unit_cell().parameters()
+        best_cell = self.target_symmetry_primitive.as_reference_setting().best_cell()
+        uc_params  = best_cell.unit_cell().parameters()
         self.params.max_cell = 1.5 * max(uc_params[:3])
       else:
         # The nearest neighbour analysis gets fooled when the same part of
@@ -813,51 +850,68 @@ class indexer_base(object):
       model = Crystal(a, b, c, space_group_symbol="P 1")
       uc = model.get_unit_cell()
       model_orig = model
+      best_model = None
+      min_bmsd = 1e8
       cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
-      model = model.change_basis(cb_op_to_niggli)
-      uc = model.get_unit_cell()
-      if (self.target_symmetry_centred is not None or
-          self.target_symmetry_primitive is not None or
-          self.target_symmetry_minimum_cell is not None):
-        cb_op_to_primitive = None
-        if self.target_symmetry_minimum_cell is not None:
-          from dials.algorithms.indexing.symmetry \
-               import change_of_basis_op_to_best_cell
-          cb_op_to_best_cell = change_of_basis_op_to_best_cell(
-            uc,
-            target_unit_cell=self.target_symmetry_minimum_cell.unit_cell(),
-            target_space_group=self.target_symmetry_minimum_cell.space_group())
-          best_cell = uc.change_basis(cb_op_to_best_cell)
-          if best_cell.is_similar_to(
-              self.target_symmetry_minimum_cell.unit_cell(),
-              relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-              absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
-            cb_op_to_primitive = cb_op_to_best_cell * self.cb_op_minimum_cell_to_primitive
-        if (cb_op_to_primitive is None and
-            self.target_symmetry_primitive is not None):
-          from dials.algorithms.indexing.symmetry \
-               import change_of_basis_op_to_best_cell
-          cb_op_to_best_cell = change_of_basis_op_to_best_cell(
-            uc,
-            target_unit_cell=self.target_symmetry_primitive.unit_cell(),
-            target_space_group=self.target_symmetry_primitive.space_group())
-          best_cell = uc.change_basis(cb_op_to_best_cell)
-          if (self.target_symmetry_primitive.unit_cell() is None or
-              best_cell.is_similar_to(
-                self.target_symmetry_primitive.unit_cell(),
+      for model in (model, model.change_basis(cb_op_to_niggli)):
+        uc = model.get_unit_cell()
+        if ((self.target_symmetry_primitive is not None and
+            self.target_symmetry_primitive.unit_cell() is not None) or
+            self.target_symmetry_minimum_cell is not None):
+          cb_op_to_primitive = None
+          if self.target_symmetry_minimum_cell is not None:
+            from dials.algorithms.indexing.symmetry \
+                 import change_of_basis_op_to_best_cell
+            try:
+              cb_op_to_matching_cell = change_of_basis_op_to_best_cell(
+                uc,
+                target_unit_cell=self.target_symmetry_minimum_cell.unit_cell(),
+                target_space_group=self.target_symmetry_minimum_cell.space_group())
+            except RuntimeError, e:
+              continue
+            matching_cell = uc.change_basis(cb_op_to_matching_cell)
+            if matching_cell.is_similar_to(
+                self.target_symmetry_minimum_cell.unit_cell(),
                 relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-                absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
-            cb_op_to_primitive = cb_op_to_best_cell
-        if cb_op_to_primitive is None:
-          continue
+                absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
+              cb_op_to_primitive = self.cb_op_minimum_cell_to_primitive * cb_op_to_matching_cell
+              bmsd = matching_cell.bases_mean_square_difference(
+                self.target_symmetry_minimum_cell.unit_cell())
+              eps = 1e-8
+              if (bmsd+eps) < min_bmsd:
+                min_bmsd = bmsd
+                best_model = model.change_basis(cb_op_to_primitive)
+          if self.target_symmetry_primitive is not None:
+            from dials.algorithms.indexing.symmetry \
+                 import change_of_basis_op_to_best_cell
+            cb_op_to_matching_cell = change_of_basis_op_to_best_cell(
+              uc,
+              target_unit_cell=self.target_symmetry_primitive.unit_cell(),
+              target_space_group=self.target_symmetry_primitive.space_group())
+            matching_cell = uc.change_basis(cb_op_to_matching_cell)
+            if (self.target_symmetry_primitive.unit_cell() is not None and
+                matching_cell.is_similar_to(
+                  self.target_symmetry_primitive.unit_cell(),
+                  relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+                  absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
+              cb_op_to_primitive = cb_op_to_matching_cell
+              bmsd = matching_cell.bases_mean_square_difference(
+                self.target_symmetry_primitive.unit_cell())
+              eps = 1e-8
+              if (bmsd+eps) < min_bmsd:
+                min_bmsd = bmsd
+                best_model = model.change_basis(cb_op_to_primitive)
         else:
-          model = model.change_basis(cb_op_to_primitive)
-          uc = model.get_unit_cell()
+          best_model = model
 
+      if best_model is None:
+        continue
+
+      uc = best_model.get_unit_cell()
       params = uc.parameters()
       if uc.volume() > (params[0]*params[1]*params[2]/100):
         # unit cell volume cutoff from labelit 2004 paper
-        candidate_crystal_models.append(model)
+        candidate_crystal_models.append(best_model)
         if len(candidate_crystal_models) == max_combinations:
           return candidate_crystal_models
     return candidate_crystal_models
@@ -1038,15 +1092,6 @@ class indexer_base(object):
     else:
       target_space_group = target_symmetry.space_group()
     A = crystal_model.get_A()
-    A_inv = A.inverse()
-    unit_cell_is_similar = False
-    real_space_a = A_inv[:3]
-    real_space_b = A_inv[3:6]
-    real_space_c = A_inv[6:9]
-    basis_vectors = [real_space_a, real_space_b, real_space_c]
-
-    from libtbx.utils import flat_list
-    direct_matrix = matrix.sqr(flat_list(basis_vectors))
 
     from cctbx.crystal_orientation import crystal_orientation
     from cctbx.sgtbx.bravais_types import bravais_lattice
@@ -1054,25 +1099,25 @@ class indexer_base(object):
     from rstbx.dps_core.lepage import iotbx_converter
     from dials.algorithms.indexing.symmetry import dials_crystal_from_orientation
 
-    orientation = crystal_orientation(direct_matrix.inverse(), True)
-    items = iotbx_converter(
-      orientation.unit_cell(), max_delta=5.0, best_monoclinic_beta=False)
-    target_sg_reference_setting \
-      = target_space_group.info().reference_setting().group()
+    items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=5.0)
+    if not cell_only and self.target_symmetry_best_cell is not None:
+      target_sg_best = self.target_symmetry_best_cell.space_group()
+    else:
+      target_sg_best = target_space_group.info().reference_setting().group()
     min_bmsd = 1e8
     best_orientation = None
     for item in items:
-      if (bravais_lattice(group=target_sg_reference_setting) !=
+      if (bravais_lattice(group=target_sg_best) !=
           bravais_lattice(group=item['best_group'])):
         continue
       cb_op = item['cb_op_inp_best'].c().as_double_array()[0:9]
       cb_op_inv = item['cb_op_inp_best'].inverse().c().as_double_array()[0:9]
-      orient = crystal_orientation(direct_matrix.inverse(), True)
+      orient = crystal_orientation(A, True)
       orient_best = orient.change_basis(matrix.sqr(cb_op).transpose())
       constrain_orient = orient_best.constrain(item['system'])
       orientation = constrain_orient.change_basis(
         matrix.sqr(cb_op_inv).transpose())
-      target_space_group = target_sg_reference_setting.change_basis(
+      target_space_group = target_sg_best.change_basis(
         item['cb_op_inp_best'].inverse())
       uc = target_unit_cell
       if uc is None:
@@ -1108,11 +1153,25 @@ class indexer_base(object):
     if return_primitive_setting:
       # for some reason I do not understand, it is necessary to go via the
       # reference setting to ensure we get the correct primitive setting
-      cb_op_to_reference \
-        = model.get_space_group().info().change_of_basis_op_to_reference_setting()
-      cb_op_to_primitive = cb_op_to_reference
-      cb_op_to_primitive.update(
-        model.get_space_group().info().reference_setting().change_of_basis_op_to_primitive_setting())
+      cs = crystal.symmetry(unit_cell=model.get_unit_cell(),
+                            space_group=model.get_space_group(),
+                            assert_is_compatible_unit_cell=False)
+      cb_op_min = cs.change_of_basis_op_to_minimum_cell()
+      min_sym = crystal.symmetry(
+        unit_cell=cs.unit_cell().change_basis(cb_op_min),
+        space_group=cs.space_group().change_basis(cb_op_min),
+        assert_is_compatible_unit_cell=False)
+      cb_op_min_ref = min_sym.change_of_basis_op_to_reference_setting()
+      ref_sym = crystal.symmetry(
+        unit_cell=min_sym.unit_cell().change_basis(cb_op_min_ref),
+        space_group=min_sym.space_group().change_basis(cb_op_min_ref),
+        assert_is_compatible_unit_cell=False)
+      cb_op_ref_to_best = ref_sym.change_of_basis_op_to_best_cell()
+      best_sym = crystal.symmetry(
+        unit_cell=ref_sym.unit_cell().change_basis(cb_op_ref_to_best),
+        space_group=ref_sym.space_group().change_basis(cb_op_ref_to_best))
+      cb_op_best_primitive = best_sym.change_of_basis_op_to_primitive_setting()
+      cb_op_to_primitive = cb_op_best_primitive * cb_op_ref_to_best * cb_op_min_ref * cb_op_min
       model = model.change_basis(cb_op_to_primitive)
     return model, cb_op_to_primitive
 
