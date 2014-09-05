@@ -69,12 +69,14 @@ class ScriptRunner(object):
   def _create_options(self, **kwargs):
     '''Create the generic options for the script.'''
     from dials.util.options import OptionParser
+    from dials.framework.registry import Registry
+    phil = Registry().config().system_phil(kwargs.get('home_scope',None))
 
     # Create the option parser
     self._config = OptionParser(
-        epilog     = kwargs.get('epilog', ''),
-        usage      = kwargs.get('usage', ''),
-        home_scope = kwargs.get('home_scope', ''))
+        epilog = kwargs.get('epilog', ''),
+        usage  = kwargs.get('usage', ''),
+        phil   = phil)
 
     # Add an option for verbosity
     self._config.add_option(
@@ -119,6 +121,8 @@ class ScriptRunner(object):
 
     # Parse the configuration parameters
     params, options, args = self._config.parse_args()
+    Registry().config()._phil = self._config._phil
+    Registry().config()._params = params
 
     # Configure the logging
     #self._configure_logging(self._config.phil())

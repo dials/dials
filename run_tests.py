@@ -91,6 +91,7 @@ tst_list = (
     "$D/test/algorithms/reflection_basis/tst_grid_index_generator.py",
     "$D/test/algorithms/reflection_basis/tst_transform.py",
     "$D/test/algorithms/shoebox/tst_bbox_calculator.py",
+    "$D/test/algorithms/shoebox/tst_partiality_calculator.py",
     "$D/test/algorithms/shoebox/tst_mask_foreground.py",
     "$D/test/algorithms/shoebox/tst_mask_overlapping.py",
     "$D/test/algorithms/shoebox/tst_helpers.py",

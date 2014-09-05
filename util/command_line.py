@@ -430,6 +430,20 @@ class Importer(object):
     return unhandled
 
 
+try:
+  import termcolor
+except ImportError:
+  termcolor = None
+
+def coloured(text, *args, **kwargs):
+  import sys
+  if not sys.stdout.isatty() or termcolor is None:
+    return text
+  return termcolor.colored(text, *args, **kwargs)
+
+def heading(text):
+  return coloured(text, attrs=['bold'])
+
 if __name__ == '__main__':
   import time
 

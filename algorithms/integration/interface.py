@@ -221,6 +221,7 @@ class IntegrationTask3D(IntegrationTask):
     from dials.array_family import flex
     from time import time
     from libtbx.table_utils import format as table
+    from dials.util.command_line import heading
     EPS = 1e-7
     fully_recorded = self._data['partiality'] > (1.0 - EPS)
     num_partial = fully_recorded.count(False)
@@ -230,7 +231,7 @@ class IntegrationTask3D(IntegrationTask):
     num_ice_ring = self._data.get_flags(self._data.flags.in_powder_ring).count(True)
     print "=" * 80
     print ""
-    print "Beginning integration of job %d" % self._index
+    print heading("Beginning integration job %d" % self._index)
     print ""
     print " Frames: %d -> %d" % self._job
     print ""
@@ -377,10 +378,11 @@ class IntegrationManager3D(IntegrationManager):
   def _preprocess(self, data, min_zeta):
     ''' Do some pre-processing. '''
     from dials.array_family import flex
+    from dials.util.command_line import heading
     from time import time
     print '=' * 80
     print ''
-    print 'Pre-processing reflections'
+    print heading('Pre-processing reflections')
     print ''
     st = time()
 
@@ -394,6 +396,21 @@ class IntegrationManager3D(IntegrationManager):
     mask = flex.abs(data['zeta']) < min_zeta
     num = mask.count(True)
     data.set_flags(mask, data.flags.dont_integrate)
+    EPS = 1e-7
+    fully_recorded = data['partiality'] > (1.0 - EPS)
+    num_partial = fully_recorded.count(False)
+    num_full = fully_recorded.count(True)
+    num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
+    num_reference = data.get_flags(data.flags.reference_spot).count(True)
+    num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
+    print ' Number of reflections'
+    print '  Partial:     %d' % num_partial
+    print '  Full:        %d' % num_full
+    print '  In ice ring: %d' % num_ice_ring
+    print '  Integrate:   %d' % num_integrate
+    print '  Reference:   %d' % num_reference
+    print '  Total:       %d' % len(data)
+    print ''
     print ' Filtered %d reflections by zeta = %0.3f' % (num, min_zeta)
     print ''
     print ' Time taken: %.2f seconds' % (time() - st)
@@ -401,11 +418,12 @@ class IntegrationManager3D(IntegrationManager):
 
   def _postprocess(self, data):
     ''' Do some post processing. '''
+    from dials.util.command_line import heading
     from time import time
     st = time()
     print '=' * 80
     print ''
-    print 'Post-processing reflections'
+    print heading('Post-processing reflections')
     print ''
     data.compute_corrections(self._experiments)
     print ''
@@ -418,6 +436,7 @@ class IntegrationManager3D(IntegrationManager):
   def _print_summary(self, block_size):
     ''' Print a summary of the integration stuff. '''
     from libtbx.table_utils import format as table
+    from dials.util.command_line import heading
 
     # Create a table of integration tasks
     rows = [["#", "Frame From", "Frame To", "Angle From", "Angle To"]]
@@ -434,7 +453,7 @@ class IntegrationManager3D(IntegrationManager):
     summary_format_str = (
       '%s\n'
       '\n'
-      'Beginning integration of the following experiments:\n'
+      + heading('Beginning integration of the following experiments:\n') +
       '\n'
       ' Experiments: %d\n'
       ' Beams:       %d\n'

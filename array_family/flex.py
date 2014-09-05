@@ -75,7 +75,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     for i, e in enumerate(experiments):
       rlist = reflection_table.from_predictions(e, force_static, dmin)
       rlist['id'] = flex.size_t(len(rlist), i)
-      result.append(rlist)
+      result.extend(rlist)
     return result
 
   @staticmethod

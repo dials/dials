@@ -250,7 +250,13 @@ class ProfileModelList(object):
   @classmethod
   def compute(cls, experiments, reflections, min_zeta=0.05):
     ''' Compute the profile models. '''
+    from dials.util.command_line import heading
     assert(len(experiments) > 0)
+
+    print "=" * 80
+    print ""
+    print heading("Computing Profile Model")
+    print ""
 
     # Split the reflections by experiment id
     if len(experiments) > 1:

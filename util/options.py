@@ -49,36 +49,35 @@ class OptionParser(optparse.OptionParser):
     '''Initialise the class.'''
 
     # Try to get the home scope
-    try:
-      self._scope = kwargs['home_scope']
-      del(kwargs['home_scope'])
-    except KeyError:
-      self._scope = None
+    self._system_phil = kwargs['phil']
+    self._phil = self._system_phil
+    del(kwargs['phil'])
 
     # Initialise the option parser
     optparse.OptionParser.__init__(self, **kwargs)
 
   def parse_args(self):
     '''Parse the command line arguments and get system configuration.'''
-    from dials.framework.registry import Registry
-    registry = Registry()
-
+    from dials.framework.config import CommandLineConfig
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.
     options, args = optparse.OptionParser.parse_args(self)
-    args = registry.config().try_parse(args, scope=self._scope)
-    return registry.params(), options, args
+
+    # Parse the command line phil parameters
+    config = CommandLineConfig(self.system_phil().command_line_argument_interpreter())
+    args, command_line_phil = config.parse(args)
+    self._phil = self.system_phil().fetch(sources=command_line_phil)
+    params = self._phil.extract()
+    return params, options, args
 
   def phil(self):
     '''Get the phil object'''
-    from dials.framework.registry import Registry
-    return Registry().config().phil(scope=self._scope)
+    return self._phil
 
   def system_phil(self):
     '''Get the system phil.'''
-    from dials.framework.registry import Registry
-    return Registry().config().system_phil(scope=self._scope)
+    return self._system_phil
 
   def diff_phil(self):
     ''' Get the diff phil. '''
@@ -90,22 +89,12 @@ class OptionParser(optparse.OptionParser):
 
   def print_system_phil(self, attributes_level=0):
     '''Print the system parameters.'''
-    print self.system_phil.as_str(attributes_level=attributes_level)
+    print self.system_phil().as_str(attributes_level=attributes_level)
 
   def print_diff_phil(self, attributes_level=0):
     ''' Print the diff parameters. '''
-    print phil.as_str(attributes_level=attributes_level)
+    print self.diff_phil().as_str(attributes_level=attributes_level)
 
   def format_epilog(self, formatter):
     ''' Don't do formatting on epilog. '''
     return self.epilog
-
-
-
-if __name__ == '__main__':
-
-  parser = OptionParser(home_scope='spotfinder')
-  parser.add_option('-a', dest='a', type='int', help='hello world')
-  print parser.parse_args()
-  parser.print_phil(attributes_level=1)
-  parser.print_system_phil()

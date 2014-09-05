@@ -59,3 +59,5 @@ if __name__ == '__main__':
   print "Integrating"
   integrator = IntegratorFactory.create(params, experiments, profile_model, rlist)
   result = integrator.integrate()
+
+  result.as_pickle("temp.pickle")
