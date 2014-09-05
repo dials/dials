@@ -332,6 +332,8 @@ class IntegrationManager3D(IntegrationManager):
     self.read_time += result.read_time
     self.extract_time += result.extract_time
     self.process_time += result.process_time
+    if self.finished():
+      self._post_process(self._manager.data())
 
   def result(self):
     ''' Return the result. '''
@@ -344,6 +346,10 @@ class IntegrationManager3D(IntegrationManager):
   def __len__(self):
     ''' Return the number of tasks. '''
     return len(self._manager)
+
+  def _post_process(self, data):
+    ''' Do some post processing. '''
+    data.compute_corrections(self._experiments)
 
 
 class Integrator3D(Integrator):

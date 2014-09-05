@@ -71,6 +71,7 @@ class ReflectionBlockIntegrator(object):
       print ''
     assert(len(result) > 0)
     result.sort('miller_index')
+    result.compute_corrections(self.experiments)
     return result
 
 

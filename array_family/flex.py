@@ -210,7 +210,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.compute_background(experiments)
     self.compute_centroid(experiments)
     self.compute_intensity(experiments, profile_model)
-    self.compute_corrections(experiments)
 
   def compute_mask(self, experiments, profile_model):
     ''' Apply a mask to the shoeboxes. '''

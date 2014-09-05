@@ -154,7 +154,8 @@ class ProfileFittingReciprocalSpace(object):
     reflections['intensity.prf.value'].set_selected(mask, I)
     reflections['intensity.prf.variance'].set_selected(mask, I_var)
     reflections['profile.correlation'].set_selected(mask, P_cor)
-    mask.set_selected(flex.size_t(len(mask)).select(mask).select(~mask2), False)
+    indices = flex.size_t(range(len(mask))).select(mask).select(~mask2)
+    mask.set_selected(indices, False)
     reflections.set_flags(mask, reflections.flags.integrated_prf)
     Command.end('Integrated {0} reflections'.format(mask.count(True)))
 
