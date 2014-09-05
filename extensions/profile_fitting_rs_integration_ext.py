@@ -51,3 +51,4 @@ class ProfileFittingRSIntegrationExt(IntensityIface, Integration3DMixin):
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
     self._algorithm(self._experiments, reflections)
+    del reflections['rs_shoebox']
