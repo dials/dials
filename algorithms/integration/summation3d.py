@@ -37,7 +37,10 @@ class Summation3d(object):
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
     indices = flex.size_t(range(len(reflections)))
-    mask = ~reflections.get_flags(reflections.flags.dont_integrate)
+    if "flags" in reflections:
+      mask = ~reflections.get_flags(reflections.flags.dont_integrate)
+    else:
+      mask = flex.bool(len(reflections), True)
     reflections.set_flags(mask, reflections.flags.integrated_sum)
     Command.end('Integrated {0} reflections'.format(mask.count(True)))
     return reflections

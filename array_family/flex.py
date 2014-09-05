@@ -232,8 +232,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
   def compute_corrections(self, experiments):
     ''' Helper function to correct the intensity. '''
-    from dials.algorithms.integration.lp_correction import correct_intensity
-    correct_intensity(experiments, self)
+    from dials.algorithms.integration import Corrections, CorrectionsMulti
+    from dials.util.command_line import Command
+    Command.start("Calculating lp correction")
+    compute = CorrectionsMulti()
+    for experiment in experiments:
+      compute.append(Corrections(
+        experiment.beam,
+        experiment.goniometer))
+    lp = compute.lp(self['id'], self['s1'])
+    self['lp'] = lp
+    Command.end("Calculated lp correction")
+    return lp
 
   def integrate(self, experiments, profile_model):
     ''' Helper function to integrate reflections. '''

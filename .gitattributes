@@ -87,6 +87,7 @@ algorithms/indexing/refinement.py -text
 algorithms/indexing/symmetry.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
+algorithms/integration/boost_python/corrections.cc -text
 algorithms/integration/boost_python/fast_integrator.cc -text
 algorithms/integration/boost_python/flattened_2d_profile_fitting.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
@@ -98,6 +99,7 @@ algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
 algorithms/integration/boost_python/shoebox_flattener.cc -text
 algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/call_mosflm_2d.py -text
+algorithms/integration/corrections.h -text
 algorithms/integration/fast_integrator.h -text
 algorithms/integration/fast_integrator.py -text
 algorithms/integration/flatten_shoebox.py -text
@@ -106,7 +108,6 @@ algorithms/integration/integrator.py -text
 algorithms/integration/interface.h -text
 algorithms/integration/interface.py -text
 algorithms/integration/interpolate_profile2d.h -text
-algorithms/integration/lp_correction.py -text svneol=unset#text/plain
 algorithms/integration/lui_2d_integration.h -text svneol=unset#text/plain
 algorithms/integration/mosflm_2D_profile.py -text
 algorithms/integration/mosflm_like.py -text svneol=unset#text/plain
@@ -805,6 +806,7 @@ test/algorithms/integration/profile/tst_reference_learner2d.py -text
 test/algorithms/integration/profile/tst_reference_locator.py -text
 test/algorithms/integration/profile/tst_xds_circle_sampler.py -text
 test/algorithms/integration/test_integration_summation_2d.py -text
+test/algorithms/integration/tst_corrections.py -text
 test/algorithms/integration/tst_interface.py -text
 test/algorithms/integration/tst_interpolate_profile2d.py -text
 test/algorithms/integration/tst_profile_fitting_rs.py -text

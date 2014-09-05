@@ -292,7 +292,10 @@ class ProfileModelList(object):
     # Compute the profile models
     profile_models = cls()
     for exp, ref in zip(experiments, reflections_split):
-      profile_models.append(ProfileModel.compute(exp, ref, min_zeta))
+      model = ProfileModel.compute(exp, ref, min_zeta)
+      print " Sigma_b: %.3f degrees" % model.sigma_b(deg=True)
+      print " Sigma_m: %.3f degrees" % model.sigma_m(deg=True)
+      profile_models.append(model)
 
     # Return the profile models
     return profile_models
