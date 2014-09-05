@@ -98,13 +98,6 @@ class MyPanel(wx.Panel):
         self.mid_sizer.Remove(0)
         print "here 02"
 
-        '''
-        for art in (wx.ART_ERROR, wx.ART_WARNING, wx.ART_INFORMATION,
-                    wx.ART_COPY, wx.ART_PASTE, wx.ART_CUT, wx.ART_CDROM,
-                    wx.ART_HARDDISK, wx.ART_FOLDER, wx.ART_FLOPPY):
-            bmp = wx.ArtProvider.GetBitmap(art)
-            self.il.AppendBitmap(bmp)
-        '''
 
         for times in range(5):
             data2d = build_np_img(width=5, height=3)
