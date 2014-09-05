@@ -114,8 +114,10 @@ def refined_settings_factory_from_refined_triclinic(
     orient_best = orient.change_basis(matrix.sqr(cb_op).transpose())
     constrain_orient = orient_best.constrain(Lfat[j]['system'])
     bravais = Lfat[j]["bravais"]
+    cb_op_best_ref = Lfat[j]['best_subsym'].change_of_basis_op_to_reference_setting()
     space_group = sgtbx.space_group_info(
       number=bravais_lattice_to_lowest_symmetry_spacegroup_number[bravais]).group()
+    space_group = space_group.change_basis(cb_op_best_ref.inverse())
     Lfat[j].unrefined_crystal = dials_crystal_from_orientation(
       constrain_orient, space_group)
 
