@@ -8,7 +8,6 @@ if __name__ == '__main__':
   from dials.array_family import flex
   import sys
   from os.path import join
-
   # path = '/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data'
   path = '/home/upc86896/Data/Data/i04-BAG-training/dials_processed/'
 
@@ -19,8 +18,11 @@ if __name__ == '__main__':
   else:
     nproc = 1
 
+  print "Reading Experiments"
   from math import pi
   exlist = ExperimentListFactory.from_json_file(experiment_list_filename)
+
+  print "Predicting Reflections"
   rlist = flex.reflection_table.from_predictions(exlist[0])
   rlist['id'] = flex.size_t(len(rlist), 0)
   rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
@@ -29,17 +31,25 @@ if __name__ == '__main__':
   rlist.compute_d(exlist)
   print ""
 
-  from dials.algorithms.integration.interface import Integrator3D
+  print "Creating params"
+  from dials.algorithms.integration.interface import IntegratorFactory
   from dials.algorithms.integration.interface import phil_scope
   from libtbx import phil
 
   user_phil = phil.parse('''
-    mp.max_procs = %d
-    block.size=5
-    filter.ice_rings.filter=False
+    integration {
+      mp.max_procs = %d
+      block.size=5
+      filter.ice_rings.filter=False
+      shoebox.sigma_b=0.024
+      shoebox.sigma_m=0.044
+      intensity.algorithm=sum3d
+    }
   ''' % nproc)
 
-  params = phil_scope.fetch(source=user_phil).extract()
+  working_phil = phil_scope.fetch(source=user_phil)
+  params = working_phil.extract()
 
-  integrator = Integrator3D(exlist, rlist, params)
+
+  integrator = IntegratorFactory.create(params, exlist, rlist)
   result = integrator.integrate()

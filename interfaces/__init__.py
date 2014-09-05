@@ -67,3 +67,18 @@ class IntensityIface(interface.Interface):
   @interface.abstractmethod
   def compute_intensity(self, reflections):
     pass
+
+
+class Integration3DMixin(object):
+  ''' A mixin to identify 3D integration algorithms. '''
+  pass
+
+
+class IntegrationFlat2DMixin(object):
+  ''' A mixin to identify flat 2D integration algorithms. '''
+  pass
+
+
+class Integration2DMixin(object):
+  ''' A mixin to identify 2D integration algorithms. '''
+  pass

@@ -89,14 +89,16 @@ class Interface(object):
           if len(names) > 0:
             names[default_index] = '*' + names[default_index]
           return names
-        algorithm = parse('''
-          algorithm = %s
-            .help = "The choice of algorithm"
-            .type = choice
-        ''' % ' '.join(ext_names(cls.extensions())))
-        main_scope.adopt_scope(algorithm)
-        for ext in cls.extensions():
-          main_scope.adopt_scope(ext.phil_scope())
+        exts = list(cls.extensions())
+        if len(list(exts)) > 0:
+          algorithm = parse('''
+            algorithm = %s
+              .help = "The choice of algorithm"
+              .type = choice
+          ''' % ' '.join(ext_names(exts)))
+          main_scope.adopt_scope(algorithm)
+          for ext in exts:
+            main_scope.adopt_scope(ext.phil_scope())
     else:
       if 'phil' in cls.__dict__:
         master_scope = parse('%s .help=%s {}' % (cls.name, cls.__doc__))

@@ -10,8 +10,7 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-from dials.interfaces import IntensityIface
-from dials.algorithms.integration.interface import Integration3DMixin
+from dials.interfaces import IntensityIface, Integration3DMixin
 
 class Summation3dIntegrationExt(IntensityIface, Integration3DMixin):
   ''' Extension class to provide 3d summation integration. '''

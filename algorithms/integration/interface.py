@@ -5,51 +5,84 @@ import boost.python
 from iotbx import phil
 import abc
 
-# The integrator phil scope
-phil_scope = phil.parse('''
+def generate_phil_scope():
+  ''' Generate the phil scope. '''
+  from dials.interfaces import BackgroundIface
+  from dials.interfaces import IntensityIface
 
-  mp {
-    method = *multiprocessing sge lsf pbs
-      .type = choice
-      .help = "The multiprocessing method to use"
+  phil_scope = phil.parse('''
 
-    max_procs = 1
-      .type = int(value_min=1)
-      .help = "The number of processes to use."
-  }
+    integration {
 
-  block {
-    size = 10
-    .type = float
-    .help = "The block size in rotation angle (degrees)."
-  }
+      include scope dials.data.lookup.phil_scope
 
-  filter {
+      mp {
+        method = *multiprocessing sge lsf pbs
+          .type = choice
+          .help = "The multiprocessing method to use"
 
-    min_zeta = 0.05
-      .help = "Filter the reflections by the value of zeta. A value of less"
-              "than or equal to zero indicates that this will not be used. A"
-              "positive value is used as the minimum permissable value."
-      .type = float
+        max_procs = 1
+          .type = int(value_min=1)
+          .help = "The number of processes to use."
+      }
 
-    ice_rings {
-      filter = False
-        .type = bool
-      unit_cell = 4.498,4.498,7.338,90,90,120
-        .type = unit_cell
-        .help = "The unit cell to generate d_spacings for ice rings."
-      space_group = 194
-        .type = space_group
-        .help = "The space group used to generate d_spacings for ice rings."
-      d_min = 0
-        .type = int(value_min=0)
-        .help = "The minimum resolution to filter ice rings"
-      width = 0.06
-        .type = float(value_min=0.0)
-        .help = "The width of an ice ring (in d-spacing)."
+      block {
+        size = 10
+          .type = float
+          .help = "The block size in rotation angle (degrees)."
+      }
+
+      shoebox {
+        n_sigma = 3
+          .help = "The number of standard deviations of the beam divergence and the"
+                  "mosaicity to use for the bounding box size."
+          .type = float
+
+        sigma_b = None
+          .help = "The E.S.D. of the beam divergence"
+          .type = float
+
+        sigma_m = None
+          .help = "The E.S.D. of the reflecting range"
+          .type = float
+      }
+
+      filter {
+
+        min_zeta = 0.05
+          .help = "Filter the reflections by the value of zeta. A value of less"
+                  "than or equal to zero indicates that this will not be used. A"
+                  "positive value is used as the minimum permissable value."
+          .type = float
+
+        ice_rings {
+          filter = False
+            .type = bool
+          unit_cell = 4.498,4.498,7.338,90,90,120
+            .type = unit_cell
+            .help = "The unit cell to generate d_spacings for ice rings."
+          space_group = 194
+            .type = space_group
+            .help = "The space group used to generate d_spacings for ice rings."
+          d_min = 0
+            .type = int(value_min=0)
+            .help = "The minimum resolution to filter ice rings"
+          width = 0.06
+            .type = float(value_min=0.0)
+            .help = "The width of an ice ring (in d-spacing)."
+        }
+      }
     }
-  }
-''')
+  ''', process_includes=True)
+  main_scope = phil_scope.get_without_substitution("integration")
+  assert(len(main_scope) == 1)
+  main_scope = main_scope[0]
+  main_scope.adopt_scope(BackgroundIface.phil_scope())
+  main_scope.adopt_scope(IntensityIface.phil_scope())
+  return phil_scope
+
+# The integration phil scope
+phil_scope = generate_phil_scope()
 
 
 class IntegrationResult(object):
@@ -100,7 +133,7 @@ class IntegrationManager(object):
 class Integrator(object):
   ''' Integrator interface class. '''
 
-  def __init__(self, manager, params):
+  def __init__(self, manager, max_procs=1, mp_method='multiprocessing'):
     ''' Initialise the integrator.
 
     The integrator requires a manager class implementing the IntegratorManager
@@ -109,11 +142,13 @@ class Integrator(object):
 
     Params:
       manager The integration manager
-      params The parameters
+      max_procs The number of processors
+      mp_method The multiprocessing method
 
     '''
-    self._params = params
     self._manager = manager
+    self._max_procs = max_procs
+    self._mp_method = mp_method
 
   def integrate(self):
     ''' Do all the integration tasks.
@@ -126,8 +161,8 @@ class Integrator(object):
     from libtbx import easy_mp
     start_time = time()
     num_proc = len(self._manager)
-    if self._params.mp.max_procs > 0:
-      num_proc = min(num_proc, self._params.mp.max_procs)
+    if self._max_procs > 0:
+      num_proc = min(num_proc, self._max_procs)
     if num_proc > 1:
       def process_output(result):
         self._manager.accumulate(result[0])
@@ -144,7 +179,7 @@ class Integrator(object):
         iterable=list(self._manager.tasks()),
         processes=num_proc,
         callback=process_output,
-        method=self._params.mp.method,
+        method=self._mp_method,
         preserve_order=True,
         preserve_exception_message=True)
       task_results, output = zip(*task_results)
@@ -157,25 +192,10 @@ class Integrator(object):
     return self._manager.result()
 
 
-class Integration3DMixin(object):
-  ''' A mixin to identify 3D integration algorithms. '''
-  pass
-
-
-class IntegrationFlat2DMixin(object):
-  ''' A mixin to identify flat 2D integration algorithms. '''
-  pass
-
-
-class Integration2DMixin(object):
-  ''' A mixin to indentify 2D integration algorithms. '''
-  pass
-
-
 class IntegrationProcessor3D(object):
   ''' A class to do the processing. '''
 
-  def __init__(self, 
+  def __init__(self,
                experiments,
                background_alg,
                intensity_alg):
@@ -190,6 +210,7 @@ class IntegrationProcessor3D(object):
 
   def __call__(self, reflections):
     ''' Perform all the processing for integration. '''
+    print "Process"
     self.compute_mask(reflections)
     self.compute_background(reflections)
     self.compute_intensity(reflections)
@@ -201,10 +222,12 @@ class IntegrationProcessor3D(object):
     pass
 
   def compute_background(self, reflections):
-    self._background_alg(self._experiments, reflections)
+    pass
+    # self._background_alg.compute_background(reflections)
 
   def compute_intensity(self, reflections):
-    self._intensity_alg(self._experiments, reflections)
+    pass
+    # self._intensity_alg.compute_intensity(reflections)
 
   def compute_centroid(self, reflections):
     pass
@@ -212,7 +235,6 @@ class IntegrationProcessor3D(object):
   def compute_correction(self, reflections):
     ''' Compute the correction to the intensity. '''
     pass
-    # reflections.correct_intensity_multi(self.experiments)
 
 
 
@@ -321,7 +343,7 @@ class IntegrationTask3DMultiExecutor(IntegrationTask3DMultiExecutorBase):
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
-  def __init__(self, index, experiments, data, jobs, 
+  def __init__(self, index, experiments, data, jobs,
                background_alg,
                intensity_alg):
     ''' Initialise the task. '''
@@ -341,12 +363,11 @@ class IntegrationTask3D(IntegrationTask):
     print "=" * 80
     print ""
     print "Integrating task %d" % self._index
-
     process = IntegrationProcessor3D(
       self._experiments,
       self._background_alg,
       self._intensity_alg)
-    
+
     if isinstance(self._jobs, shared.tiny_int_2):
       Executor = IntegrationTask3DExecutor
     else:
@@ -367,9 +388,13 @@ class IntegrationTask3D(IntegrationTask):
 class IntegrationManager3D(IntegrationManager):
   ''' An class to manage 3D integration. book-keeping '''
 
-  def __init__(self, experiments, reflections, params, 
+  def __init__(self,
+               experiments,
+               reflections,
                background_alg,
-               intensity_alg):
+               intensity_alg,
+               block_size=1,
+               max_procs=1):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
     from dials.algorithms.integration import IntegrationManager3DMultiExecutor
@@ -389,8 +414,8 @@ class IntegrationManager3D(IntegrationManager):
     self._experiments = experiments
     self._reflections = reflections
     phi0, dphi = scan.get_oscillation()
-    block_size = params.block.size / dphi
-    if params.mp.max_procs == 1:
+    block_size = block_size / dphi
+    if max_procs == 1:
       self._manager = IntegrationManager3DExecutor(
         self._reflections,
         scan.get_array_range(),
@@ -516,39 +541,107 @@ class IntegrationManager3D(IntegrationManager):
 class Integrator3D(Integrator):
   ''' Top level integrator for 3D integration. '''
 
-  def __init__(self, experiments, reflections, params, background_alg,
-               intensity_alg):
+  def __init__(self,
+               experiments,
+               reflections,
+               background_alg,
+               intensity_alg,
+               block_size=1,
+               max_procs=1,
+               mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
-    manager = IntegrationManager3D(experiments, reflections, params,
-                                   background_alg, intensity_alg)
-    super(Integrator3D, self).__init__(manager, params)
+
+    # Create the integration manager
+    manager = IntegrationManager3D(
+      experiments,
+      reflections,
+      background_alg,
+      intensity_alg,
+      block_size,
+      max_procs)
+
+    # Initialise the integrator
+    super(Integrator3D, self).__init__(manager, max_procs, mp_method)
+
+
+class IntegratorFlat2D(Integrator):
+  ''' Top level integrator for flat 2D integration. '''
+
+  def __init__(self,
+               experiments,
+               reflections,
+               background_alg,
+               intensity_alg,
+               block_size=1,
+               max_procs=1,
+               mp_method='multiprocessing'):
+    ''' Initialise the manager and the integrator. '''
+    raise RuntimeError("Not Implemented")
+
+
+class Integrator2D(Integrator):
+  ''' Top level integrator for 2D integration. '''
+
+  def __init__(self,
+               experiments,
+               reflections,
+               background_alg,
+               intensity_alg,
+               block_size=1,
+               max_procs=1,
+               mp_method='multiprocessing'):
+    ''' Initialise the manager and the integrator. '''
+    raise RuntimeError("Not Implemented")
 
 
 class IntegratorFactory(object):
-  
+  ''' A factory for creating integrators. '''
+
   @staticmethod
-  def create(params, experiments, reflections, background_alg, intensity_alg):
-    method = intensity_alg.type
-    if method is '3d':
-      IntegatorClass = Integrator3D
-    elif method is 'flat2d':
-      raise RuntimeError("Not Implemented")
-    elif method is '2d':
-      raise RuntimeError("Not Implemented")
+  def create(params, experiments, reflections):
+    ''' Create the integrator from the input configuration. '''
+    from dials.interfaces import IntensityIface
+    from dials.interfaces import BackgroundIface
+
+    # Initialise the background class
+    BackgroundAlgorithm = BackgroundIface.extension(
+      params.integration.background.algorithm)
+
+    # Initialise the intensity class
+    IntensityAlgorithm = IntensityIface.extension(
+      params.integration.intensity.algorithm)
+
+    # Initialise the background algorithm
+    background_algorithm = BackgroundAlgorithm(params, experiments)
+
+    # Initialise the intensity algorithm
+    intensity_algorithm = IntensityAlgorithm(params, experiments)
+
+    # Get the integrator class
+    IntegratorClass = IntegratorFactory.select_integrator(intensity_algorithm)
+
+    # Return an instantiation of the class
+    return IntegratorClass(
+      experiments=experiments,
+      reflections=reflections,
+      background_alg=background_algorithm,
+      intensity_alg=intensity_algorithm,
+      block_size=params.integration.block.size,
+      max_procs=params.integration.mp.max_procs,
+      mp_method=params.integration.mp.method)
+
+  @staticmethod
+  def select_integrator(alg):
+    ''' Select the integrator. '''
+    from dials.interfaces import Integration3DMixin
+    from dials.interfaces import IntegrationFlat2DMixin
+    from dials.interfaces import Integration2DMixin
+    if isinstance(alg, Integration3DMixin):
+      IntegratorClass = Integrator3D
+    elif isinstance(alg, IntegrationFlat2DMixin):
+      IntegratorClass = IntegratorFlat2D
+    elif isinstance(alg, Integration2DMixin):
+      IntegratorClass = Integrator2D
     else:
-      raise RuntimeError("Book-keeping method not found")
-    return IntegratorClass(params, experiments, reflections,
-                           background_alg, intensity_alg)
-
-
-class SummationIntegrator(Integrator3D):
-  ''' Integrator to do summation integration '''
-
-  def __init__(self, experiments, reflections, params, background_alg):
-
-    def intensity_alg(experiments, reflections):
-      print "Compute"
-
-    # Initialize the base class
-    super(SummationIntegrator, self).__init__(experiments, reflections, params,
-                                              background_alg, intensity_alg)
+      raise RuntimeError("Unknown integration type")
+    return IntegratorClass
