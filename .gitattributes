@@ -724,6 +724,7 @@ scratch/luiso_s/wx_toys/ArtProvider_tst.py -text
 scratch/luiso_s/wx_toys/__init__.py -text
 scratch/luiso_s/wx_toys/add_bmp_both_D_in_run_time.py -text
 scratch/luiso_s/wx_toys/add_bmp_in_run_time_wth_schroll.py -text
+scratch/luiso_s/wx_toys/add_bmp_in_run_time_wth_schroll_unstable.py -text
 scratch/luiso_s/wx_toys/add_widgets_in_run_time.py -text
 scratch/luiso_s/wx_toys/bitmap_01.py -text
 scratch/luiso_s/wx_toys/bitmap__w_sizers.py -text

@@ -170,6 +170,7 @@ class MyPanel(wx.Panel):
         self.Fit()
         self.Refresh()
         self.Update()
+        wx.Yield()
         '''
 
 
