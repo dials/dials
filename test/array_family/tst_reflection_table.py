@@ -708,6 +708,17 @@ class Test(object):
     assert(f4.count(True) == 1)
     print 'OK'
 
+    # Get where any are set
+    f1 = table.get_flags(table.flags.predicted, all=False)
+    f2 = table.get_flags(table.flags.observed, all=False)
+    f3 = table.get_flags(table.flags.integrated, all=False)
+    f4 = table.get_flags(table.flags.integrated | table.flags.predicted, all=False)
+    assert(f1.count(True) == 3)
+    assert(f2.count(True) == 3)
+    assert(f3.count(True) == 3)
+    assert(f4.count(True) == 5)
+    print 'OK'
+
   def tst_serialize(self):
 
     from dials.array_family import flex

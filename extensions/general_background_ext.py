@@ -139,4 +139,4 @@ class GeneralBackgroundExt(BackgroundIface):
       reflections['background.mse'])
     reflections['background.mean'] = reflections['shoebox'].mean_background()
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
-    Command.end('Calculated {0} background values'.format(len(reflections)))
+    Command.end('Calculated {0} background values'.format(success.count(True)))

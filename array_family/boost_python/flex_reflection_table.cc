@@ -155,12 +155,18 @@ namespace dials { namespace af { namespace boost_python {
    * Get where the flag value is set
    */
   template <typename T>
-  af::shared<bool> get_flags(const T &self, std::size_t value) {
+  af::shared<bool> get_flags(const T &self, std::size_t value, bool all) {
     af::shared<bool> result(self.nrows());
     af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
     DIALS_ASSERT(flags.size() == result.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = (flags[i] & value) == value;
+    if (all) {
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = (flags[i] & value) == value;
+      }
+    } else {
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = (flags[i] & value) != 0;
+      }
     }
     return result;
   }
@@ -250,7 +256,9 @@ namespace dials { namespace af { namespace boost_python {
         .def("compute_ray_intersections",
           &compute_ray_intersections<flex_table_type>)
         .def("get_flags",
-          &get_flags<flex_table_type>)
+          &get_flags<flex_table_type>, (
+            boost::python::arg("value"),
+            boost::python::arg("all") = true))
         .def("set_flags",
           &set_flags_by_mask<flex_table_type>)
         .def("set_flags",

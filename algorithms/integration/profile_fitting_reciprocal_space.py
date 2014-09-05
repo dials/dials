@@ -132,6 +132,7 @@ class ProfileFittingReciprocalSpace(object):
 
   def _integrate_intensities(self, learner, reflections):
     ''' Integrate the intensities. '''
+    from dials.array_family import flex
     from dials.util.command_line import Command
     from dials.algorithms.integration import ProfileFittingReciprocalSpaceAlgorithm
 
@@ -140,16 +141,21 @@ class ProfileFittingReciprocalSpace(object):
 
     # Perform the integration
     Command.start('Integrating reflections in reciprocal space')
-    profiles = reflections['rs_shoebox']
-    coords = reflections['xyzcal.px']
+    mask = ~reflections.get_flags(reflections.flags.dont_integrate)
+    profiles = reflections['rs_shoebox'].select(mask)
+    coords = reflections['xyzcal.px'].select(mask)
     intensity = integrate(profiles, coords)
     I, I_var, P_cor = intensity.parts()
-    mask = I_var > 0
-    I_var.set_selected(mask != True, 0.0)
-    reflections['intensity.prf.value'] = I
-    reflections['intensity.prf.variance'] = I_var
-    reflections['profile.correlation'] = P_cor
-    reflections.set_flags(mask, reflections.flags.integrated)
-    Command.end('Integrated {0} reflections'.format(len(reflections)))
+    mask2 = I_var > 0
+    I_var.set_selected(mask2 != True, 0.0)
+    reflections['intensity.prf.value'] = flex.double(len(reflections))
+    reflections['intensity.prf.variance'] = flex.double(len(reflections))
+    reflections['profile.correlation'] = flex.double(len(reflections))
+    reflections['intensity.prf.value'].set_selected(mask, I)
+    reflections['intensity.prf.variance'].set_selected(mask, I_var)
+    reflections['profile.correlation'].set_selected(mask, P_cor)
+    mask.set_selected(flex.size_t(len(mask)).select(mask).select(~mask2), False)
+    reflections.set_flags(mask, reflections.flags.integrated_prf)
+    Command.end('Integrated {0} reflections'.format(mask.count(True)))
 
     return reflections
