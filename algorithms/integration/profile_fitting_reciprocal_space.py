@@ -158,5 +158,5 @@ class ProfileFittingReciprocalSpace(object):
     mask.set_selected(indices, False)
     reflections.set_flags(mask, reflections.flags.integrated_prf)
     Command.end('Integrated {0} reflections'.format(mask.count(True)))
-
+    del reflections['rs_shoebox']
     return reflections
