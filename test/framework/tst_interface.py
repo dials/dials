@@ -67,23 +67,19 @@ class Test(object):
 
     # Check we have the expected number of extensions for each interface
     extensions = list(SpotFinderThresholdIface.extensions())
-    assert(len(extensions) == 2)
+    assert(len(extensions) == 1)
     extensions = list(CentroidIface.extensions())
     assert(len(extensions) == 1)
     extensions = list(BackgroundIface.extensions())
-    assert(len(extensions) == 5)
+    assert(len(extensions) == 2)
     extensions = list(IntensityIface.extensions())
-    assert(len(extensions) == 4)
+    assert(len(extensions) == 3)
 
     # Check the interface contain the expected extensions
     from dials.extensions import KabschSpotFinderThresholdExt
     from dials.extensions import SimpleCentroidExt
     from dials.extensions import NullBackgroundExt
-    from dials.extensions import FlatBackgroundExt
-    from dials.extensions import InclinedBackgroundExt
-    from dials.extensions import CurvedBackgroundExt
     from dials.extensions import GeneralBackgroundExt
-    from dials.extensions import Summation2dIntegrationExt
     from dials.extensions import Summation3dIntegrationExt
     from dials.extensions import ProfileFittingRSIntegrationExt
     from dials.extensions import ProfileFittingMosflmIntegrationExt
@@ -94,12 +90,8 @@ class Test(object):
     assert(SimpleCentroidExt in extensions)
     extensions = list(BackgroundIface.extensions())
     assert(NullBackgroundExt in extensions)
-    assert(FlatBackgroundExt in extensions)
-    assert(CurvedBackgroundExt in extensions)
-    assert(InclinedBackgroundExt in extensions)
     assert(GeneralBackgroundExt in extensions)
     extensions = list(IntensityIface.extensions())
-    assert(Summation2dIntegrationExt in extensions)
     assert(Summation3dIntegrationExt in extensions)
     assert(ProfileFittingRSIntegrationExt in extensions)
     assert(ProfileFittingMosflmIntegrationExt in extensions)
