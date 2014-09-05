@@ -214,7 +214,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     mask_profiles = Masker3DProfile(experiments[0], delta_b, delta_m)
     mask_profiles(self, None)
 
-  def extract_shoeboxes(self, imageset, mask=None, flatten=False):
+  def extract_shoeboxes(self, imageset, mask=None):
     ''' Helper function to read a load of shoebox data. '''
     from dials.model.data import Image
     import sys

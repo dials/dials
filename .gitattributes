@@ -90,7 +90,6 @@ algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/fast_integrator.cc -text
 algorithms/integration/boost_python/flattened_2d_profile_fitting.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
-algorithms/integration/boost_python/integrator_2d.cc -text
 algorithms/integration/boost_python/interface.cc -text
 algorithms/integration/boost_python/interpolate_profile2d.cc -text
 algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
@@ -104,7 +103,6 @@ algorithms/integration/fast_integrator.py -text
 algorithms/integration/flatten_shoebox.py -text
 algorithms/integration/flattened_2d_profile_fitting.h -text
 algorithms/integration/integrator.py -text
-algorithms/integration/integrator_2d.h -text
 algorithms/integration/interface.h -text
 algorithms/integration/interface.py -text
 algorithms/integration/interpolate_profile2d.h -text
@@ -128,7 +126,6 @@ algorithms/integration/profile/fitting.h -text
 algorithms/integration/profile/grid_sampler.h -text
 algorithms/integration/profile/grid_sampler_2d.h -text
 algorithms/integration/profile/maximum_likelihood_fitting.h -text
-algorithms/integration/profile/profile_allocator.h -text
 algorithms/integration/profile/reference_learner.h -text
 algorithms/integration/profile/reference_learner2d.h -text
 algorithms/integration/profile/reference_locator.h -text
@@ -491,7 +488,6 @@ model/serialize/boost_python/serialize_ext.cc -text
 model/serialize/boost_python/shoebox_block_importer.cc -text
 model/serialize/boost_python/shoebox_file_exporter.cc -text
 model/serialize/boost_python/shoebox_file_importer.cc -text
-model/serialize/boost_python/simple_shoebox_extractor.cc -text
 model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text
@@ -501,7 +497,6 @@ model/serialize/shoebox_block_importer.h -text
 model/serialize/shoebox_file.h -text
 model/serialize/shoebox_file_exporter.h -text
 model/serialize/shoebox_file_importer.h -text
-model/serialize/simple_shoebox_extractor.h -text
 /run_tests.py -text
 scratch/__init__.py -text
 scratch/asb/dummy.phil -text
@@ -604,6 +599,7 @@ scratch/jmp/find_strong_spots/divergence_and_mosaicity.py -text
 scratch/jmp/find_strong_spots/histogram_pixels.py -text
 scratch/jmp/find_strong_spots/select_spots.py -text
 scratch/jmp/find_strong_spots/thresholding.py -text
+scratch/jmp/interface.h-old -text
 scratch/jmp/misc/__init__.py -text
 scratch/jmp/misc/angle_test.py -text
 scratch/jmp/misc/area.py -text
@@ -642,6 +638,7 @@ scratch/jmp/misc/test_table.py -text
 scratch/jmp/misc/test_to_dict.py -text
 scratch/jmp/misc/test_transform.py -text
 scratch/jmp/new_extract/new_extract.py -text
+scratch/jmp/new_integrator/interface.cc -text
 scratch/jmp/new_integrator/interface.h -text
 scratch/jmp/new_integrator/interface.py -text
 scratch/jmp/old/fable_background_ext.py -text
@@ -654,8 +651,12 @@ scratch/jmp/old/poisson_discriminator.h -text
 scratch/jmp/old/xds_background_ext.py -text
 scratch/jmp/old/xds_subtractor.cc -text
 scratch/jmp/old/xds_subtractor.h -text
+scratch/jmp/profile/test.py -text
 scratch/jmp/sat_gpu/Makefile -text
 scratch/jmp/sat_gpu/main.cu -text
+scratch/jmp/sbox_h5/partial_writer.h -text
+scratch/jmp/test_fast.py -text
+scratch/jmp/test_memory.py -text
 scratch/jmp/test_new_integrator.py -text
 scratch/jmp/weak/bfgs.py -text
 scratch/jmp/weak/test.py -text
@@ -664,6 +665,8 @@ scratch/jmp/weak/test3.py -text
 scratch/jmp/weak/test4.py -text
 scratch/jmp/weak/test5.py -text
 scratch/jmp/weak/test6.py -text
+scratch/jmp/weak/test7.py -text
+scratch/jmp/weak/test8.py -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain
@@ -798,7 +801,6 @@ test/algorithms/indexing/tst_symmetry.py -text
 test/algorithms/integration/profile/__init__.py -text
 test/algorithms/integration/profile/tst_grid_sampler.py -text
 test/algorithms/integration/profile/tst_grid_sampler_2d.py -text
-test/algorithms/integration/profile/tst_profile_allocator.cc -text
 test/algorithms/integration/profile/tst_profile_fitting.py -text
 test/algorithms/integration/profile/tst_profile_helpers.py -text
 test/algorithms/integration/profile/tst_reference_learner.py -text

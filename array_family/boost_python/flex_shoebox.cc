@@ -48,11 +48,15 @@ namespace dials { namespace af { namespace boost_python {
   template <typename FloatType>
   typename af::flex< Shoebox<FloatType> >::type* from_panel_and_bbox(
       const af::const_ref<std::size_t> panel,
-      const af::const_ref<int6> bbox) {
+      const af::const_ref<int6> bbox,
+      bool allocate) {
     DIALS_ASSERT(panel.size() == bbox.size());
     af::shared< Shoebox<FloatType> > result(panel.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = Shoebox<FloatType>(panel[i], bbox[i]);
+      if (allocate) {
+        result[i].allocate();
+      }
     }
     return new typename af::flex< Shoebox<FloatType> >::type(
       result, af::flex_grid<>(result.size()));
@@ -736,7 +740,8 @@ namespace dials { namespace af { namespace boost_python {
           from_panel_and_bbox<FloatType>,
           default_call_policies(), (
             boost::python::arg("panel"),
-            boost::python::arg("bbox"))))
+            boost::python::arg("bbox"),
+            boost::python::arg("allocate")=false)))
         .def("allocate",
           &allocate<FloatType>)
         .def("allocate_with_value",

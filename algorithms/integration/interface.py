@@ -1,6 +1,4 @@
 from __future__ import division
-from dials.algorithms.integration import IntegrationTask3DExecutor
-from dials.algorithms.integration import IntegrationTask3DMultiExecutorBase
 import boost.python
 from iotbx import phil
 import abc
@@ -202,178 +200,81 @@ class Integrator(object):
     return self._manager.result()
 
 
-class IntegrationProcessor3D(object):
-  ''' A class to do the processing. '''
-
-  def __init__(self, experiments):
-    ''' Initialise the processor and set the algorithms. '''
-    from dials.framework.registry import Registry
-    params = Registry().params()
-
-    # Save the list of experiments
-    self._experiments = experiments
-    self._n_sigma = params.integration.shoebox.n_sigma
-    self._sigma_b = params.integration.shoebox.sigma_b
-    self._sigma_m = params.integration.shoebox.sigma_m
-    self.time = 0
-
-  def __call__(self, reflections):
-    ''' Perform all the processing for integration. '''
-    from time import time
-    print "Process"
-    st = time()
-
-    # Compute the shoebox mask
-    reflections.compute_mask(self._experiments,
-                             self._n_sigma,
-                             self._sigma_b,
-                             self._sigma_m)
-
-    # Integrate the reflections
-    # reflections.integrate(self._experiments)
-
-    self.time += time() - st
-    return reflections
-
-
-class IntegrationTask3DExecutorAux(boost.python.injector,
-                                   IntegrationTask3DExecutor):
-  ''' Add additional methods. '''
-
-  def execute(self, imageset, mask=None):
-    ''' Passing in an imageset process all the images. '''
-    from dials.model.data import Image
-    from time import time
-    import sys
-    detector = imageset.get_detector()
-    frame00 = self.frame0()
-    frame10 = self.frame1()
-    frame01, frame11 = imageset.get_array_range()
-    assert(frame00 == frame01)
-    assert(frame10 == frame11)
-    self.read_time = 0
-    self.extract_time = 0
-    if mask is None:
-      image = imageset[0]
-      if not isinstance(image, tuple):
-        image = (image,)
-      mask = []
-      for i in range(len(image)):
-        tr = detector[i].get_trusted_range()
-        mask.append(image[i].as_double() > tr[0])
-      mask = tuple(mask)
-    sys.stdout.write("Reading images: ")
-    for i in range(len(imageset)):
-      sys.stdout.write(".")
-      sys.stdout.flush()
-      st = time()
-      image = imageset[i]
-      self.read_time += time() - st
-      if not isinstance(image, tuple):
-        image = (image,)
-      st = time()
-      self.next(Image(image, mask))
-      self.extract_time += time() - st
-      del image
-    sys.stdout.write("\n")
-    sys.stdout.flush()
-    assert(self.finished())
-
-
-class IntegrationTask3DMultiExecutor(IntegrationTask3DMultiExecutorBase):
-  ''' Add additional methods. '''
-
-  def __init__(self, data, jobs, npanels, callback):
-    from dials.array_family import flex
-
-    # Allocate shoeboxes
-    data["shoebox"] = flex.shoebox(data["panel"], data["bbox"])
-    data["shoebox"].allocate()
-
-    # Set the callback
-    self._callback = callback
-
-    # Initialise the base class
-    super(IntegrationTask3DMultiExecutor, self).__init__(data, jobs, npanels)
-
-  def execute(self, imageset, mask=None):
-    ''' Passing in an imageset process all the images. '''
-    from dials.model.data import Image
-    from time import time
-    import sys
-    detector = imageset.get_detector()
-    frame00 = self.frame0()
-    frame10 = self.frame1()
-    frame01, frame11 = imageset.get_array_range()
-    assert(frame00 == frame01)
-    assert(frame10 == frame11)
-    self.read_time = 0
-    self.extract_time = 0
-    if mask is None:
-      image = imageset[0]
-      if not isinstance(image, tuple):
-        image = (image,)
-      mask = []
-      for i in range(len(image)):
-        tr = detector[i].get_trusted_range()
-        mask.append(image[i].as_double() > tr[0])
-      mask = tuple(mask)
-    sys.stdout.write("Reading images: ")
-    for i in range(len(imageset)):
-      st = time()
-      image = imageset[i]
-      self.read_time += time() - st
-      if not isinstance(image, tuple):
-        image = (image,)
-      st = time()
-      self.next(Image(image, mask))
-      self.extract_time += time() - st
-      sys.stdout.write(".")
-      sys.stdout.flush()
-      del image
-    self._callback(self.data())
-    del self.data()["shoebox"]
-    sys.stdout.write("\n")
-    sys.stdout.flush()
-    assert(self.finished())
-
-
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
-  def __init__(self, index, experiments, data, jobs):
+  def __init__(self, index, experiments, data, job):
     ''' Initialise the task. '''
     self._index = index
     self._experiments = experiments
     self._data = data
-    self._jobs = jobs
+    self._job = job
     self._mask = None
 
   def __call__(self):
     ''' Do the integration. '''
     from dials.array_family import flex
-    from scitbx.array_family import shared
-    import sys
+    from time import time
     print "=" * 80
     print ""
     print "Integrating task %d" % self._index
-    process = IntegrationProcessor3D(self._experiments)
 
-    if isinstance(self._jobs, shared.tiny_int_2):
-      Executor = IntegrationTask3DExecutor
-    else:
-      Executor = IntegrationTask3DMultiExecutor
-    detectors = self._experiments.detectors()
-    assert(len(detectors) == 1)
-    npanels = len(detectors[0])
-    executor = Executor(self._data, self._jobs, npanels, process)
-    imageset = self._experiments[0].imageset
-    imageset = imageset[executor.frame0():executor.frame1()]
-    executor.execute(imageset)
-    result = IntegrationResult(self._index, executor.data())
-    result.read_time = executor.read_time
-    result.extract_time = executor.extract_time
-    result.process_time = process.time
+    # Create the shoeboxes
+    self._data["shoebox"] = flex.shoebox(
+      self._data["panel"],
+      self._data["bbox"],
+      allocate=True)
+
+    # Get the sub imageset
+    imagesets = self._experiments.imagesets()
+    assert(len(imagesets) == 1)
+    imageset = imagesets[0]
+    frame00, frame01 = self._job
+    frame10, frame11 = imageset.get_array_range()
+    assert(frame00 < frame01)
+    assert(frame10 < frame11)
+    assert(frame00 >= frame10)
+    assert(frame01 <= frame11)
+    index0 = frame00 - frame10
+    index1 = index0 + (frame01 - frame00)
+    assert(index0 < index1)
+    assert(index0 >= 0)
+    assert(index1 <= len(imageset))
+    imageset = imageset[index0:index1]
+
+    # Extract the shoeboxes
+    read_time, extract_time = self._data.extract_shoeboxes(
+      imageset, self._mask)
+
+    # Get the profile parameters FIXME
+    from dials.framework.registry import Registry
+    params = Registry().params()
+    n_sigma = params.integration.shoebox.n_sigma
+    sigma_b = params.integration.shoebox.sigma_b
+    sigma_m = params.integration.shoebox.sigma_m
+
+    print "Process"
+    st = time()
+
+    # Compute the shoebox mask
+    self._data.compute_mask(self._experiments,
+                             n_sigma,
+                             sigma_b,
+                             sigma_m)
+
+    # Integrate the reflections
+    # self._data.integrate(self._experiments)
+
+    process_time = time() - st
+
+    # Delete the shoeboxes
+    del self._data["shoebox"]
+
+    # Return the result
+    result = IntegrationResult(self._index, self._data)
+    result.read_time = read_time
+    result.extract_time = extract_time
+    result.process_time = process_time
     return result
 
 
@@ -387,7 +288,6 @@ class IntegrationManager3D(IntegrationManager):
                max_procs=1):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
-    from dials.algorithms.integration import IntegrationManager3DMultiExecutor
     from dials.array_family import flex
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
@@ -403,16 +303,10 @@ class IntegrationManager3D(IntegrationManager):
     self._reflections = reflections
     phi0, dphi = scan.get_oscillation()
     block_size = block_size / dphi
-    if max_procs == 1:
-      self._manager = IntegrationManager3DExecutor(
-        self._reflections,
-        scan.get_array_range(),
-        block_size)
-    else:
-      self._manager = IntegrationManager3DMultiExecutor(
-        self._reflections,
-        scan.get_array_range(),
-        block_size)
+    self._manager = IntegrationManager3DExecutor(
+      self._reflections,
+      scan.get_array_range(),
+      block_size)
     self.read_time = 0
     self.extract_time = 0
     self.process_time = 0
@@ -448,80 +342,6 @@ class IntegrationManager3D(IntegrationManager):
   def __len__(self):
     ''' Return the number of tasks. '''
     return len(self._manager)
-
-
-
-
-
-#   def _print_summary(self, block_size):
-#     ''' Print a summary of the integration stuff. '''
-#     from math import floor, log10
-#     from libtbx import table_utils
-
-#     # Create a table of integration tasks
-#     rows = [
-#       ["Frame From", "Frame To",
-#        "Angle From", "Angle To",
-#        "# Process",  "# Include"]
-#     ]
-#     scans = self._experiments.scans()
-#     assert(len(scans) == 1)
-#     for i in range(len(self)):
-#       f0, f1 = self._data.block(i)
-#       p0 = scans[0].get_angle_from_array_index(f0)
-#       p1 = scans[0].get_angle_from_array_index(f1)
-#       n0 = len(self._data.to_process(i))
-#       n1 = len(self._data.to_include(i))
-#       rows.append([str(f0), str(f1), str(p0), str(p1), str(n0), str(n1)])
-#     task_table = table_utils.format(
-#       rows,
-#       has_header=True,
-#       justify="right",
-#       prefix=" ")
-
-#     # Create summary format
-#     summary_format_str = (
-#       '%s\n'
-#       '\n'
-#       'Beginning integration of the following experiments:\n'
-#       '\n'
-#       ' Experiments: %d\n'
-#       ' Beams:       %d\n'
-#       ' Detectors:   %d\n'
-#       ' Goniometers: %d\n'
-#       ' Scans:       %d\n'
-#       ' Crystals:    %d\n'
-#       '\n'
-#       'Integrating reflections in the following blocks of images:\n'
-#       '\n'
-#       ' block_size: %d degrees\n'
-#       '\n'
-#       '%s\n'
-#       '\n'
-#       ' %d reflections overlapping blocks removed from integration\n'
-#       '\n'
-#       ' If you see poor performance, it may be because DIALS is using too\n'
-#       ' much memory. This could be because you have specified too many\n'
-#       ' processes on the same machine, in which case try setting the number\n'
-#       ' of processes to a smaller number. It could also be because the block\n'
-#       ' size is too large, in which case try setting the block size to a\n'
-#       ' smaller value. Reflections not fully recorded in a block are not\n'
-#       ' integrated so be sure to check that in reducing the block size you\n'
-#       ' are not throwing away too many reflections.\n'
-#     )
-
-#     # Print the summary
-#     print summary_format_str % (
-#       '=' * 80,
-#       len(self._experiments),
-#       len(self._experiments.beams()),
-#       len(self._experiments.detectors()),
-#       len(self._experiments.goniometers()),
-#       len(self._experiments.scans()),
-#       len(self._experiments.crystals()),
-#       block_size,
-#       task_table,
-#       len(self._data.to_not_process()))
 
 
 class Integrator3D(Integrator):

@@ -49,7 +49,10 @@ if __name__ == '__main__':
 
   working_phil = phil_scope.fetch(source=user_phil)
   params = working_phil.extract()
+  from dials.framework.registry import Registry
+  Registry().params().integration.shoebox.sigma_b=0.024
+  Registry().params().integration.shoebox.sigma_m=0.044
 
-
+  print "Integrating"
   integrator = IntegratorFactory.create(params, exlist, rlist)
   result = integrator.integrate()
