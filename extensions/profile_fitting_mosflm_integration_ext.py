@@ -11,8 +11,9 @@
 from __future__ import division
 
 from dials.interfaces import IntensityIface
+from dials.algorithms.integration.interface import Integration3DMixin
 
-class ProfileFittingMosflmIntegrationExt(IntensityIface):
+class ProfileFittingMosflmIntegrationExt(IntensityIface, Integration3DMixin):
   ''' Extension class to provide mosflm profile fitting. '''
 
   name = 'mosflm'

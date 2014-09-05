@@ -11,8 +11,9 @@
 from __future__ import division
 
 from dials.interfaces import IntensityIface
+from dials.algorithms.integration.interface import Integration3DMixin
 
-class ProfileFittingRSIntegrationExt(IntensityIface):
+class ProfileFittingRSIntegrationExt(IntensityIface, Integration3DMixin):
   ''' Extension providing reciprocal space profile fitting. '''
 
   name = 'fitrs'

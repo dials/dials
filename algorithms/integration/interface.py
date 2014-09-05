@@ -51,6 +51,7 @@ phil_scope = phil.parse('''
   }
 ''')
 
+
 class IntegrationResult(object):
   ''' A class representing an integration result. '''
 
@@ -154,6 +155,65 @@ class Integrator(object):
     end_time = time()
     print "Time taken: %.2f seconds" % (end_time - start_time)
     return self._manager.result()
+
+
+class Integration3DMixin(object):
+  ''' A mixin to identify 3D integration algorithms. '''
+  pass
+
+
+class IntegrationFlat2DMixin(object):
+  ''' A mixin to identify flat 2D integration algorithms. '''
+  pass
+
+
+class Integration2DMixin(object):
+  ''' A mixin to indentify 2D integration algorithms. '''
+  pass
+
+
+class IntegrationProcessor3D(object):
+  ''' A class to do the processing. '''
+
+  def __init__(self, 
+               experiments,
+               background_alg,
+               intensity_alg):
+    ''' Initialise the processor and set the algorithms. '''
+
+    # Save the list of experiments
+    self._experiments = experiments
+
+    # Save the algorithm strategies
+    self._background_alg = background_alg
+    self._intensity_alg = intensity_alg
+
+  def __call__(self, reflections):
+    ''' Perform all the processing for integration. '''
+    self.compute_mask(reflections)
+    self.compute_background(reflections)
+    self.compute_intensity(reflections)
+    self.compute_centroid(reflections)
+    self.compute_correction(reflections)
+    return reflections
+
+  def compute_mask(self, reflections):
+    pass
+
+  def compute_background(self, reflections):
+    self._background_alg(self._experiments, reflections)
+
+  def compute_intensity(self, reflections):
+    self._intensity_alg(self._experiments, reflections)
+
+  def compute_centroid(self, reflections):
+    pass
+
+  def compute_correction(self, reflections):
+    ''' Compute the correction to the intensity. '''
+    pass
+    # reflections.correct_intensity_multi(self.experiments)
+
 
 
 class IntegrationTask3DExecutorAux(boost.python.injector,
@@ -261,13 +321,17 @@ class IntegrationTask3DMultiExecutor(IntegrationTask3DMultiExecutorBase):
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
-  def __init__(self, index, experiments, data, jobs):
+  def __init__(self, index, experiments, data, jobs, 
+               background_alg,
+               intensity_alg):
     ''' Initialise the task. '''
     self._index = index
     self._experiments = experiments
     self._data = data
     self._jobs = jobs
     self._mask = None
+    self._background_alg = background_alg
+    self._intensity_alg = intensity_alg
 
   def __call__(self):
     ''' Do the integration. '''
@@ -278,15 +342,11 @@ class IntegrationTask3D(IntegrationTask):
     print ""
     print "Integrating task %d" % self._index
 
-    class Process(object):
-
-      def __init__(self):
-        pass
-
-      def __call__(self, reflections):
-        print reflections
-        return reflections
-    process = Process()
+    process = IntegrationProcessor3D(
+      self._experiments,
+      self._background_alg,
+      self._intensity_alg)
+    
     if isinstance(self._jobs, shared.tiny_int_2):
       Executor = IntegrationTask3DExecutor
     else:
@@ -307,11 +367,15 @@ class IntegrationTask3D(IntegrationTask):
 class IntegrationManager3D(IntegrationManager):
   ''' An class to manage 3D integration. book-keeping '''
 
-  def __init__(self, experiments, reflections, params):
+  def __init__(self, experiments, reflections, params, 
+               background_alg,
+               intensity_alg):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
     from dials.algorithms.integration import IntegrationManager3DMultiExecutor
     from dials.array_family import flex
+    self._background_alg = background_alg
+    self._intensity_alg = intensity_alg
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
     scans = experiments.scans()
@@ -345,7 +409,9 @@ class IntegrationManager3D(IntegrationManager):
       index,
       self._experiments,
       self._manager.split(index),
-      self._manager.job(index))
+      self._manager.job(index),
+      self._background_alg,
+      self._intensity_alg)
 
   def tasks(self):
     ''' Iterate through the tasks. '''
@@ -450,7 +516,39 @@ class IntegrationManager3D(IntegrationManager):
 class Integrator3D(Integrator):
   ''' Top level integrator for 3D integration. '''
 
-  def __init__(self, experiments, reflections, params):
+  def __init__(self, experiments, reflections, params, background_alg,
+               intensity_alg):
     ''' Initialise the manager and the integrator. '''
-    manager = IntegrationManager3D(experiments, reflections, params)
+    manager = IntegrationManager3D(experiments, reflections, params,
+                                   background_alg, intensity_alg)
     super(Integrator3D, self).__init__(manager, params)
+
+
+class IntegratorFactory(object):
+  
+  @staticmethod
+  def create(params, experiments, reflections, background_alg, intensity_alg):
+    method = intensity_alg.type
+    if method is '3d':
+      IntegatorClass = Integrator3D
+    elif method is 'flat2d':
+      raise RuntimeError("Not Implemented")
+    elif method is '2d':
+      raise RuntimeError("Not Implemented")
+    else:
+      raise RuntimeError("Book-keeping method not found")
+    return IntegratorClass(params, experiments, reflections,
+                           background_alg, intensity_alg)
+
+
+class SummationIntegrator(Integrator3D):
+  ''' Integrator to do summation integration '''
+
+  def __init__(self, experiments, reflections, params, background_alg):
+
+    def intensity_alg(experiments, reflections):
+      print "Compute"
+
+    # Initialize the base class
+    super(SummationIntegrator, self).__init__(experiments, reflections, params,
+                                              background_alg, intensity_alg)
