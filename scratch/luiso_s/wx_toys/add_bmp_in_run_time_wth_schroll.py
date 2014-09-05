@@ -15,6 +15,8 @@
 import wx
 import wx.lib.scrolledpanel as scrolledpanel
 
+from dials.scratch.luiso_s.wx_toys.bitmap_from_numpy_w_matplotlib_well_done \
+     import GetBitmap_from_np_array, build_np_img
 class ImageListCtrl(scrolledpanel.ScrolledPanel):
     """Simple control to display a list of images"""
     def __init__(self, parent, bitmaps=list(),
@@ -75,23 +77,54 @@ class MyPanel(wx.Panel):
 
         # Layout
 
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(wx.StaticText(self, label="Image List:"), 0)
+        self.mid_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.mid_sizer.Add(self.il, 1, wx.EXPAND)
+        self.sizer.Add(self.mid_sizer, 1, wx.EXPAND)
 
+        self.addButton = wx.Button(self, label="new data")
+        self.addButton.Bind(wx.EVT_BUTTON, self.OnNew_data)
+        self.sizer.Add(self.addButton, 0, wx.CENTER|wx.ALL, 5)
 
+        self.SetSizer(self.sizer)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(wx.StaticText(self, label="Image List:"), 0)
-        sizer.Add(self.il, 1, wx.EXPAND)
+    def OnNew_data(self, event):
+        print "from OnNew_data"
+        self.il = ImageListCtrl(self)
 
+        print "here 01"
+        self.mid_sizer.Hide(0)
+        self.mid_sizer.Remove(0)
+        print "here 02"
 
-        self.addButton = wx.Button(self, label="Add")
-        self.addButton.Bind(wx.EVT_BUTTON, self.Clear_my_lst)
-        sizer.Add(self.addButton, 0, wx.CENTER|wx.ALL, 5)
+        '''
+        for art in (wx.ART_ERROR, wx.ART_WARNING, wx.ART_INFORMATION,
+                    wx.ART_COPY, wx.ART_PASTE, wx.ART_CUT, wx.ART_CDROM,
+                    wx.ART_HARDDISK, wx.ART_FOLDER, wx.ART_FLOPPY):
+            bmp = wx.ArtProvider.GetBitmap(art)
+            self.il.AppendBitmap(bmp)
+        '''
 
+        for times in range(5):
+            data2d = build_np_img(width=5, height=3)
+            my_bitmap = GetBitmap_from_np_array(data2d)
+            #bitmap_tmp = wx.StaticBitmap(self, bitmap=my_bitmap)
+            self.il.AppendBitmap(my_bitmap)
 
-        self.SetSizer(sizer)
+        self.mid_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.mid_sizer.Add(self.il, 1, wx.EXPAND)
 
-    def Clear_my_lst(self, event):
-        print "from Clear_my_lst"
+        print "here 03"
+        self.sizer.Add(self.il, 1, wx.EXPAND)
+        print "here 04"
+
+        self.Refresh()
+        self.Update()
+        self.Layout()
+        self.Fit()
+
+        wx.Yield()
 
 
 if __name__ == "__main__":

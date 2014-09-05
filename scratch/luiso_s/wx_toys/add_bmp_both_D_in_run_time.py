@@ -165,6 +165,13 @@ class MyPanel(wx.Panel):
 
         #self.Layout()
 
+        remember_to_find_out_the_differences = '''
+        self.Layout()
+        self.Fit()
+        self.Refresh()
+        self.Update()
+        '''
+
 
 class MyFrame(wx.Frame):
     def __init__(self):
