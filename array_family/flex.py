@@ -212,9 +212,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   def compute_bbox(self, experiments, profile_model, sigma_b_multiplier=2.0):
     ''' Compute the bounding boxes. '''
     from dials.util.command_line import Command
-    Command.start('Calculating bounding boxes')
     profile_model.compute_bbox(experiments, self, sigma_b_multiplier)
-    Command.end('Calculated {0} bounding boxes'.format(len(self)))
 
   def compute_partiality(self, experiments, profile_model):
     ''' Compute the reflection partiality. '''

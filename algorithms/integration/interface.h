@@ -92,7 +92,7 @@ namespace dials { namespace algorithms {
           }
           int jz0 = jobs_[jmin][0];
           int jz1 = jobs_[jmin][1];
-          if (z0 >= jz0 && z1 <= jz1) {
+          if (first == false && z0 >= jz0 && z1 <= jz1) {
             if (f & af::ReferenceSpot) {
               DIALS_ASSERT(indices[jmin].size() > 0);
               DIALS_ASSERT(indices[jmin].back().first == index);

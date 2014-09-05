@@ -198,6 +198,7 @@ class Integrator(object):
       ["Total time"  , "%.2f seconds" % (self._manager.total_time)  ],
       ["User time"   , "%.2f seconds" % (end_time - start_time)     ],
     ]
+    print ''
     print table(rows, justify='right', prefix=' ')
     return self._manager.result()
 
@@ -220,8 +221,13 @@ class IntegrationTask3D(IntegrationTask):
     from dials.array_family import flex
     from time import time
     from libtbx.table_utils import format as table
+    EPS = 1e-7
+    fully_recorded = self._data['partiality'] > (1.0 - EPS)
+    num_partial = fully_recorded.count(False)
+    num_full = fully_recorded.count(True)
     num_integrate = self._data.get_flags(self._data.flags.dont_integrate).count(False)
     num_reference = self._data.get_flags(self._data.flags.reference_spot).count(True)
+    num_ice_ring = self._data.get_flags(self._data.flags.in_powder_ring).count(True)
     print "=" * 80
     print ""
     print "Beginning integration of job %d" % self._index
@@ -229,9 +235,12 @@ class IntegrationTask3D(IntegrationTask):
     print " Frames: %d -> %d" % self._job
     print ""
     print " Number of reflections"
-    print "  Integrate: %d" % num_integrate
-    print "  Reference: %d" % num_reference
-    print "  Total:     %d" % len(self._data)
+    print "  Partial:     %d" % num_partial
+    print "  Full:        %d" % num_full
+    print "  In ice ring: %d" % num_ice_ring
+    print "  Integrate:   %d" % num_integrate
+    print "  Reference:   %d" % num_reference
+    print "  Total:       %d" % len(self._data)
     print ""
     start_time = time()
 
@@ -285,6 +294,7 @@ class IntegrationTask3D(IntegrationTask):
     ''' Process the data. '''
     self._data.compute_mask(self._experiments, self._profile_model)
     self._data.integrate(self._experiments, self._profile_model)
+    print ''
 
 
 class IntegrationManager3D(IntegrationManager):
@@ -295,6 +305,7 @@ class IntegrationManager3D(IntegrationManager):
                profile_model,
                reflections,
                block_size=1,
+               min_zeta=0.05,
                flatten=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
@@ -314,6 +325,7 @@ class IntegrationManager3D(IntegrationManager):
     self._experiments = experiments
     self._profile_model = profile_model
     self._reflections = reflections
+    self._preprocess(self._reflections, min_zeta)
     phi0, dphi = scan.get_oscillation()
     self._manager = IntegrationManager3DExecutor(
       self._reflections,
@@ -324,7 +336,6 @@ class IntegrationManager3D(IntegrationManager):
     self.process_time = 0
     self.total_time = 0
     self._print_summary(block_size)
-    self._preprocess(self._reflections)
 
   def task(self, index):
     ''' Get a task. '''
@@ -363,16 +374,46 @@ class IntegrationManager3D(IntegrationManager):
     ''' Return the number of tasks. '''
     return len(self._manager)
 
-  def _preprocess(self, data):
+  def _preprocess(self, data, min_zeta):
     ''' Do some pre-processing. '''
+    from dials.array_family import flex
+    from time import time
+    print '=' * 80
+    print ''
+    print 'Pre-processing reflections'
+    print ''
+    st = time()
+
+    # Compute some reflection properties
     data.compute_zeta_multi(self._experiments)
     data.compute_d(self._experiments)
     data.compute_bbox(self._experiments, self._profile_model)
     data.compute_partiality(self._experiments, self._profile_model)
 
+    # Filter the reflections by zeta
+    mask = flex.abs(data['zeta']) < min_zeta
+    num = mask.count(True)
+    data.set_flags(mask, data.flags.dont_integrate)
+    print ' Filtered %d reflections by zeta = %0.3f' % (num, min_zeta)
+    print ''
+    print ' Time taken: %.2f seconds' % (time() - st)
+    print ''
+
   def _postprocess(self, data):
     ''' Do some post processing. '''
+    from time import time
+    st = time()
+    print '=' * 80
+    print ''
+    print 'Post-processing reflections'
+    print ''
     data.compute_corrections(self._experiments)
+    print ''
+    num = data.get_flags(data.flags.integrated, all=False).count(True)
+    print ' Integrated %d reflections' % num
+    print ''
+    print ' Time taken: %.2f seconds' % (time() - st)
+    print ''
 
   def _print_summary(self, block_size):
     ''' Print a summary of the integration stuff. '''
@@ -433,6 +474,7 @@ class Integrator3D(Integrator):
                profile_model,
                reflections,
                block_size=1,
+               min_zeta=0.05,
                max_procs=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
@@ -442,7 +484,8 @@ class Integrator3D(Integrator):
       experiments,
       profile_model,
       reflections,
-      block_size)
+      block_size,
+      min_zeta,)
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, max_procs, mp_method)
@@ -456,6 +499,7 @@ class IntegratorFlat2D(Integrator):
                profile_model,
                reflections,
                block_size=1,
+               min_zeta=0.05,
                max_procs=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
@@ -466,6 +510,7 @@ class IntegratorFlat2D(Integrator):
       profile_model,
       reflections,
       block_size,
+      min_zeta,
       flatten=True)
 
     # Initialise the integrator
@@ -480,6 +525,7 @@ class Integrator2D(Integrator):
                profile_model,
                reflections,
                block_size=1,
+               min_zeta=0.05,
                max_procs=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
@@ -525,6 +571,7 @@ class IntegratorFactory(object):
       profile_model=profile_model,
       reflections=reflections,
       block_size=params.integration.block.size,
+      min_zeta=params.integration.filter.min_zeta,
       max_procs=params.integration.mp.max_procs,
       mp_method=params.integration.mp.method)
 
