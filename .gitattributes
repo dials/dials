@@ -642,6 +642,8 @@ scratch/jmp/misc/test_table.py -text
 scratch/jmp/misc/test_to_dict.py -text
 scratch/jmp/misc/test_transform.py -text
 scratch/jmp/new_extract/new_extract.py -text
+scratch/jmp/new_integrator/interface.h -text
+scratch/jmp/new_integrator/interface.py -text
 scratch/jmp/old/fable_background_ext.py -text
 scratch/jmp/old/fable_subtractor.cc -text
 scratch/jmp/old/fable_subtractor.h -text

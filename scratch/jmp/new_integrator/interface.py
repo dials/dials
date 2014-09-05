@@ -235,6 +235,9 @@ class IntegrationProcessor3D(object):
     self.time += time() - st
     return reflections
 
+  def compute_mask(self, reflections):
+    pass
+
 
 class IntegrationTask3DExecutorAux(boost.python.injector,
                                    IntegrationTask3DExecutor):
