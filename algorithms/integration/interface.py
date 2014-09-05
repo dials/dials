@@ -31,21 +31,6 @@ def generate_phil_scope():
           .help = "The block size in rotation angle (degrees)."
       }
 
-      shoebox {
-        n_sigma = 3
-          .help = "The number of standard deviations of the beam divergence and the"
-                  "mosaicity to use for the bounding box size."
-          .type = float
-
-        sigma_b = None
-          .help = "The E.S.D. of the beam divergence"
-          .type = float
-
-        sigma_m = None
-          .help = "The E.S.D. of the reflecting range"
-          .type = float
-      }
-
       filter {
 
         min_zeta = 0.05

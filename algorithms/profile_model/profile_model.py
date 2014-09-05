@@ -9,6 +9,27 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.phil import parse
+
+phil_scope = parse('''
+  profile
+    .multiple=True
+    .optional=False
+  {
+    n_sigma = 3
+      .help = "The number of standard deviations of the beam divergence and the"
+              "mosaicity to use for the bounding box size."
+      .type = float
+
+    sigma_b = 0
+      .help = "The E.S.D. of the beam divergence"
+      .type = float
+
+    sigma_m = 0
+      .help = "The E.S.D. of the reflecting range"
+      .type = float
+  }
+''')
 
 class ProfileModel(object):
   ''' A class to encapsulate the profile model. '''
@@ -18,6 +39,9 @@ class ProfileModel(object):
     self._n_sigma = n_sigma
     self._sigma_b = sigma_b
     self._sigma_m = sigma_m
+    assert(self._n_sigma > 0)
+    assert(self._sigma_b > 0)
+    assert(self._sigma_m > 0)
 
   def sigma_b(self, deg=True):
     ''' Return sigma_b. '''
@@ -272,3 +296,16 @@ class ProfileModelList(object):
 
     # Return the profile models
     return profile_models
+
+  @classmethod
+  def load(cls, params):
+    ''' Load from phil parameters. '''
+    from math import pi
+    assert(len(params.profile) > 1)
+    profile_model = cls()
+    for i in range(1, len(params.profile)):
+      profile_model.append(ProfileModel(
+        params.profile[i].n_sigma,
+        params.profile[i].sigma_b * pi / 180.0,
+        params.profile[i].sigma_m * pi / 180.0))
+    return profile_model

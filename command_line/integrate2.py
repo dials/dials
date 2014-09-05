@@ -81,9 +81,15 @@ class Script(object):
         reference = None
           .type = str
           .help = "The reference filename"
+
+        predicted = None
+          .type = str
+          .help = "The predicted filename"
       }
 
       include scope dials.algorithms.integration.interface.phil_scope
+      include scope dials.algorithms.profile_model.profile_model.phil_scope
+
     ''', process_includes=True)
     return new_phil_scope
 
@@ -127,6 +133,8 @@ class Script(object):
     # Load the data
     reference = self.load_reference(params.integration.reference)
     print ""
+    predicted = self.load_predicted(params.integration.predicted)
+    print ""
 
     # Initialise the integrator
     if None in experiments.goniometers():
@@ -141,14 +149,21 @@ class Script(object):
       # Predict the reflections
       # Match the predictions with the reference
       # Create the integrator
-      profile_model = ProfileModelList.compute(experiments, reference)
+      if len(params.profile) > 1:
+        assert(len(params.profile) == len(experiments) + 1)
+        profile_model = ProfileModelList.load(params)
+      else:
+        assert(reference is not None)
+        profile_model = ProfileModelList.compute(experiments, reference)
       print ""
       print "=" * 80
       print ""
       print heading("Predicting reflections")
       print ""
-      predicted = flex.reflection_table.from_predictions_multi(experiments)
-      predicted.match_with_reference(reference)
+      if predicted is None:
+        predicted = flex.reflection_table.from_predictions_multi(experiments)
+      if reference:
+        predicted.match_with_reference(reference)
       print ""
       integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
 
