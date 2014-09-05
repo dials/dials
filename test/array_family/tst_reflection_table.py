@@ -26,6 +26,7 @@ class Test(object):
     self.tst_del_selected()
     self.tst_flags()
     self.tst_copy()
+    self.tst_extract_shoeboxes()
 
   def tst_init(self):
     from dials.array_family import flex
@@ -757,6 +758,95 @@ class Test(object):
     assert(deep.is_consistent())
     print 'OK'
 
+  def tst_extract_shoeboxes(self):
+    from dials.array_family import flex
+    from random import randint, seed
+    import sys
+    seed(0)
+
+    reflections = flex.reflection_table()
+    reflections['panel'] = flex.size_t()
+    reflections['bbox'] = flex.int6()
+
+    npanels = 2
+    width = 1000
+    height = 1000
+    nrefl = 10000
+    frame0 = 10
+    frame1 = 100
+    nrefl = 1000
+
+    for i in range(nrefl):
+      x0 = randint(0, width-10)
+      y0 = randint(0, height-10)
+      z0 = randint(frame0, frame1-1)
+      x1 = x0 + randint(1, 10)
+      y1 = y0 + randint(1, 10)
+      z1 = min([z0 + randint(1, 10), frame1])
+      assert(x1 > x0)
+      assert(y1 > y0)
+      assert(z1 > z0)
+      assert(z0 >= frame0 and z1 <= frame1)
+      bbox = (x0, x1, y0, y1, z0, z1)
+      reflections.append({
+        "panel" : randint(0,1),
+        "bbox" : bbox,
+      })
+
+    reflections['shoebox'] = flex.shoebox(
+      reflections['panel'],
+      reflections['bbox'])
+    reflections['shoebox'].allocate()
+
+    class FakeImageSet(object):
+      def __init__(self):
+        from dials.array_family import flex
+        self.data = flex.int(range(height*width))
+        self.data.reshape(flex.grid(height,width))
+      def get_array_range(self):
+        return (frame0, frame1)
+      def get_detector(self):
+        class FakeDetector(object):
+          def __len__(self):
+            return npanels
+          def __getitem__(self, index):
+            class FakePanel(object):
+              def get_trusted_range(self):
+                return (-1, 1000000)
+            return FakePanel()
+        return FakeDetector()
+      def __len__(self):
+        return frame1 - frame0
+      def __getitem__(self, index):
+        f = frame0+index
+        return (self.data + f*1, self.data + f*2)
+
+    imageset = FakeImageSet()
+
+    stdout = sys.stdout
+    class DevNull(object):
+      def write(self, *args):
+        pass
+      def flush(self):
+        pass
+    sys.stdout = DevNull()
+    reflections.extract_shoeboxes(imageset)
+    sys.stdout = stdout
+
+    for i in range(len(reflections)):
+      sbox = reflections[i]["shoebox"]
+      data = sbox.data
+      bbox = sbox.bbox
+      panel = sbox.panel
+      x0, x1, y0, y1, z0, z1 = bbox
+      for z in range(z1 - z0):
+        for y in range(y1 - y0):
+          for x in range(x1 - x0):
+            v1 = data[z,y,x]
+            v2 = imageset.data[y+y0,x+x0] + (z+z0)*(panel+1)
+            assert(v1 == v2)
+
+    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

@@ -235,6 +235,7 @@ class Test(object):
     from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
     for shoebox, (XC, I) in self.random_shoeboxes(10, mask=True):
+      assert(not shoebox.flat)
       zs = shoebox.zsize()
       ys = shoebox.ysize()
       xs = shoebox.xsize()
@@ -253,6 +254,8 @@ class Test(object):
       max_diff = flex.max(flex.abs(diff))
       assert(max_diff < 1e-7)
       assert(expected_mask.all_eq(shoebox.mask))
+      assert(shoebox.flat)
+      assert(shoebox.is_consistent())
     print 'OK'
 
   def random_shoeboxes(self, num, mask=False):
@@ -272,7 +275,7 @@ class Test(object):
       yc = uniform(yc0 - 1, yc0 + 1)
       zc = uniform(zc0 - 1, zc0 + 1)
       centre = (xc, yc, zc)
-      intensity = randint(0, 10000)
+      intensity = randint(10, 10000)
       shoebox = self.generate_shoebox(bbox, centre, intensity, mask=mask)
       yield (shoebox, (centre, intensity))
 
