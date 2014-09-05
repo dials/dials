@@ -213,6 +213,56 @@ namespace dials { namespace algorithms { namespace shoebox {
     af::shared<double> delta_mosaicity_;
   };
 
+
+  /**
+   * Class to help compute bbox for multiple experiments.
+   */
+  class BBoxMultiCalculator {
+  public:
+
+    /**
+     * Add a bbox calculator to the list.
+     */
+    void push_back(const BBoxCalculator &obj) {
+      compute_.push_back(obj);
+    }
+
+    /**
+     * Get the number of calculators.
+     */
+    std::size_t size() const {
+      return compute_.size();
+    }
+
+    /**
+     * Calculate the rois for an array of reflections given by the array of
+     * diffracted beam vectors and rotation angles.
+     * @param id The experiment id
+     * @param s1 The array of diffracted beam vectors
+     * @param phi The array of rotation angles.
+     * @param panel The panel number
+     */
+    af::shared<int6> operator()(
+        const af::const_ref< std::size_t > &id,
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref<double> &phi,
+        const af::const_ref<std::size_t> &panel) const {
+      DIALS_ASSERT(s1.size() == id.size());
+      DIALS_ASSERT(s1.size() == phi.size());
+      DIALS_ASSERT(s1.size() == panel.size());
+      af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
+      for (std::size_t i = 0; i < s1.size(); ++i) {
+        DIALS_ASSERT(id[i] < size());
+        result[i] = compute_[id[i]](s1[i], phi[i], panel[i]);
+      }
+      return result;
+    }
+
+  private:
+
+    std::vector<BBoxCalculator> compute_;
+  };
+
 }}} // namespace dials::algorithms::shoebox
 
 #endif // DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H

@@ -27,6 +27,7 @@ class Test(object):
     self.tst_flags()
     self.tst_copy()
     self.tst_extract_shoeboxes()
+    self.tst_split_by_experiment_id()
 
   def tst_init(self):
     from dials.array_family import flex
@@ -756,6 +757,13 @@ class Test(object):
     assert(deep.ncols() == 3)
     assert(table.is_consistent())
     assert(deep.is_consistent())
+
+    table2 = table.copy()
+    table2['col3'] = flex.std_string(10)
+    assert(table.ncols() == 2)
+    assert(table2.ncols() == 3)
+    assert(table.is_consistent())
+    assert(table2.is_consistent())
     print 'OK'
 
   def tst_extract_shoeboxes(self):
@@ -846,6 +854,22 @@ class Test(object):
             v2 = imageset.data[y+y0,x+x0] + (z+z0)*(panel+1)
             assert(v1 == v2)
 
+    print 'OK'
+
+  def tst_split_by_experiment_id(self):
+    from dials.array_family import flex
+    r = flex.reflection_table()
+    r['id'] = flex.size_t()
+    for i in range(100):
+      r.append({"id" : 0})
+      r.append({"id" : 1})
+      r.append({"id" : 2})
+      r.append({"id" : 3})
+      r.append({"id" : 5})
+    result = r.split_by_experiment_id()
+    assert(len(result) == 5)
+    for res in result:
+      assert(len(res) == 100)
     print 'OK'
 
 if __name__ == '__main__':

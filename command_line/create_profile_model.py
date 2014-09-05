@@ -14,7 +14,7 @@ from __future__ import division
 if __name__ == '__main__':
   from dials.util.command_line import Importer
   from optparse import OptionParser
-  from dials.algorithms.profile_model.profile_model import ProfileModel
+  from dials.algorithms.profile_model.profile_model import ProfileModelList
   from math import pi
   from dials.util.command_line import Command
   from dials.array_family import flex
@@ -52,17 +52,19 @@ if __name__ == '__main__':
   Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
 
   # Create the profile model
-  profile_model = ProfileModel(experiments[0], reflections)
-  sigma_b = profile_model.sigma_b() * 180.0 / pi
-  sigma_m = profile_model.sigma_m() * 180.0 / pi
-  print 'Sigma B: %f' % sigma_b
-  print 'Sigma M: %f' % sigma_m
+  profile_model = ProfileModelList.compute(experiments, reflections)
+  for model in profile_model:
+    sigma_b = model.sigma_b(deg=True)
+    sigma_m = model.sigma_m(deg=True)
+    print 'Sigma B: %f' % sigma_b
+    print 'Sigma M: %f' % sigma_m
 
   # Write the parameters
   from dials.framework.registry import Registry
   registry = Registry()
 
   # Get the parameters
+  assert(len(profile_model) == 1)
   params = registry.config().params()
   params.integration.shoebox.sigma_b = sigma_b
   params.integration.shoebox.sigma_m = sigma_m

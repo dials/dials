@@ -1,3 +1,12 @@
+#
+# flex.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 from __future__ import division
 import boost.python
 from dials.model import data
@@ -17,8 +26,8 @@ def strategy(cls, params=None):
   ''' Wrap a class that takes params and experiments as a strategy. '''
   from functools import wraps
   @wraps(cls)
-  def call(self, experiments):
-    return cls(params, experiments)
+  def call(self, *args):
+    return cls(params, *args)
   return call
 
 def default_background_algorithm():
@@ -101,6 +110,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     handle.set_reflections(self)
     handle.close()
 
+  def copy(self):
+    ''' Copy everything. '''
+    from scitbx.array_family import flex
+    return self.select(flex.bool(len(self), True))
+
   def sort(self, name, reverse=False):
     ''' Sort the reflection table by a key. '''
     import __builtin__
@@ -110,6 +124,24 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       key=lambda x: column[x],
       reverse=reverse)
     self.reorder(flex.size_t(indices))
+
+  def split_by_experiment_id(self):
+    ''' Split the reflection table into multiple tables by experiment id. '''
+    from scitbx.array_family import flex
+    temp = self.select(flex.bool(len(self), True))
+    result = []
+    i = 0
+    while (True):
+      mask = temp['id'] == i
+      new_list = temp.select(mask)
+      temp.del_selected(mask)
+      if len(new_list) > 0:
+        result.append(new_list)
+      if len(temp) == 0:
+        break
+      i += 1
+    return result
+
 
   #def is_bbox_inside_image_range(self, experiment):
     #''' Check if bbox is within image range. '''
@@ -149,35 +181,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     return self['d']
 
 
-  def compute_bbox(self, experiment, nsigma, sigma_d=None, sigma_m=None,
-                   sigma_d_multiplier=2.0):
+  def compute_bbox(self, experiments, profile_model, sigma_b_multiplier=2.0):
     ''' Compute the bounding boxes. '''
-    from dials.algorithms.shoebox import BBoxCalculator
     from dials.util.command_line import Command
-    from dials.framework.registry import Registry
-    from math import pi
-
-    # Get the beam divergence and mosaicity
-    if sigma_d is None or sigma_m is None:
-      registry = Registry()
-      sigma_d = registry.params().integration.shoebox.sigma_b * pi / 180.0
-      sigma_m = registry.params().integration.shoebox.sigma_m * pi / 180.0
-
-    # Create the bbox calculator
-    # sigma_d_multiplier so as to include a region of background pixels
-    # in the shoebox
     Command.start('Calculating bounding boxes')
-    calculate = BBoxCalculator(
-      experiment.beam, experiment.detector,
-      experiment.goniometer, experiment.scan,
-      sigma_d_multiplier * nsigma * sigma_d,
-      nsigma * sigma_m)
-
-    # Calculate the bounding boxes of all the reflections
-    self['bbox'] = calculate(
-      self['s1'],
-      self['xyzcal.mm'].parts()[2],
-      self['panel'])
+    profile_model.compute_bbox(experiments, self, sigma_b_multiplier)
     Command.end('Calculated {0} bounding boxes'.format(len(self)))
 
   def compute_background(self, experiments):
@@ -188,30 +196,28 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     ''' Helper function to compute the centroid. '''
     self._centroid_algorithm(experiments).compute_centroid(self)
 
-  def compute_intensity(self, experiments):
+  def compute_intensity(self, experiments, profile_model):
     ''' Helper function to compute the intensity. '''
-    self._intensity_algorithm(experiments).compute_intensity(self)
+    self._intensity_algorithm(experiments, profile_model).compute_intensity(self)
 
   def compute_corrections(self, experiments):
     ''' Helper function to correct the intensity. '''
     from dials.algorithms.integration.lp_correction import correct_intensity
     correct_intensity(experiments, self)
 
-  def integrate(self, experiments):
+  def integrate(self, experiments, profile_model):
     ''' Helper function to integrate reflections. '''
     self.compute_background(experiments)
     self.compute_centroid(experiments)
-    self.compute_intensity(experiments)
+    self.compute_intensity(experiments, profile_model)
     self.compute_corrections(experiments)
 
-  def compute_mask(self, experiments, n_sigma, sigma_b, sigma_m):
+  def compute_mask(self, experiments, profile_model):
     ''' Apply a mask to the shoeboxes. '''
     from dials.algorithms.shoebox import Masker3DProfile
     from math import pi
     assert(len(experiments) == 1)
-    delta_b = n_sigma * sigma_b * pi / 180.0
-    delta_m = n_sigma * sigma_m * pi / 180.0
-    mask_profiles = Masker3DProfile(experiments[0], delta_b, delta_m)
+    mask_profiles = Masker3DProfile(experiments, profile_model)
     mask_profiles(self, None)
 
   def extract_shoeboxes(self, imageset, mask=None):

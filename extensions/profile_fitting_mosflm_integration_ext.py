@@ -23,7 +23,7 @@ class ProfileFittingMosflmIntegrationExt(IntensityIface, Integration3DMixin):
       .type = int
   '''
 
-  def __init__(self, params, experiments):
+  def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithhm. '''
     from dials.algorithms.integration.mosflm_like import MosflmProfileFitting
     self._algorithm = MosflmProfileFitting(experiments,

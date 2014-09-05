@@ -33,7 +33,7 @@ class CentroidIface(interface.Interface):
   scope = "integration"
   name = 'centroid'
 
-  def __init__(self, params, experiment):
+  def __init__(self, params, experiments):
     pass
 
   @interface.abstractmethod
@@ -47,7 +47,7 @@ class BackgroundIface(interface.Interface):
   scope = "integration"
   name = 'background'
 
-  def __init__(self, params, experiment):
+  def __init__(self, params, experiments):
     pass
 
   @interface.abstractmethod
@@ -61,7 +61,7 @@ class IntensityIface(interface.Interface):
   scope = "integration"
   name = 'intensity'
 
-  def __init__(self, params, experiment):
+  def __init__(self, params, experiments, profile_model):
     pass
 
   @interface.abstractmethod

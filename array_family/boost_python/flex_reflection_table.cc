@@ -268,11 +268,13 @@ namespace dials { namespace af { namespace boost_python {
         .value("observed", Observed)
         .value("indexed", Indexed)
         .value("used_in_refinement", UsedInRefinement)
+        .value("in_powder_ring", InPowderRing)
         .value("strong", Strong)
         .value("reference_spot", ReferenceSpot)
-        .value("integrated", Integrated)
         .value("dont_integrate", DontIntegrate)
-        .value("in_powder_ring", InPowderRing)
+        .value("integrated_sum", IntegratedSum)
+        .value("integrated_prf", IntegratedPrf)
+        .value("integrated", Integrated)
         ;
 
       // return the wrapped class

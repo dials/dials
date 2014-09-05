@@ -36,6 +36,12 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("delta_d"), arg("delta_m"))))
       .def("__call__", &MaskForeground::single)
       .def("__call__", &MaskForeground::array);
+
+    class_ <MaskMultiForeground>("MaskMultiForeground")
+      .def("append", &MaskMultiForeground::push_back)
+      .def("__len__", &MaskMultiForeground::size)
+      .def("__call__", &MaskMultiForeground::operator())
+      ;
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

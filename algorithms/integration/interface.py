@@ -159,6 +159,7 @@ class Integrator(object):
     '''
     from time import time
     from libtbx import easy_mp
+    from libtbx.table_utils import format as table
     start_time = time()
     num_proc = len(self._manager)
     if self._max_procs > 0:
@@ -189,26 +190,27 @@ class Integrator(object):
         self._manager.accumulate(result)
     assert(self._manager.finished())
     end_time = time()
-    read_time = self._manager.read_time
-    extract_time = self._manager.extract_time
-    process_time = self._manager.process_time
-    total_time = end_time - start_time
-    print "Time taken: reading images: %.2f seconds" % read_time
-    print "Time taken: extracting pixels: %.2f seconds" % extract_time
-    print "Time taken: processing data: %.2f seconds" % process_time
-    print "Time taken: total: %.2f seconds" % total_time
+    rows = [
+      ["Read time"   , "%.2f seconds" % (self._manager.read_time)   ],
+      ["Extract time", "%.2f seconds" % (self._manager.extract_time)],
+      ["Process time", "%.2f seconds" % (self._manager.process_time)],
+      ["Total time"  , "%.2f seconds" % (end_time - start_time)     ]
+    ]
+    print table(rows, justify='right', prefix=' ')
     return self._manager.result()
 
 
 class IntegrationTask3D(IntegrationTask):
   ''' A class to perform a 3D integration task. '''
 
-  def __init__(self, index, experiments, data, job):
+  def __init__(self, index, experiments, profile_model, data, job, flatten):
     ''' Initialise the task. '''
     self._index = index
     self._experiments = experiments
+    self._profile_model = profile_model
     self._data = data
     self._job = job
+    self._flatten = flatten
     self._mask = None
 
   def __call__(self):
@@ -218,12 +220,6 @@ class IntegrationTask3D(IntegrationTask):
     print "=" * 80
     print ""
     print "Integrating task %d" % self._index
-
-    # Create the shoeboxes
-    self._data["shoebox"] = flex.shoebox(
-      self._data["panel"],
-      self._data["bbox"],
-      allocate=True)
 
     # Get the sub imageset
     imagesets = self._experiments.imagesets()
@@ -242,29 +238,22 @@ class IntegrationTask3D(IntegrationTask):
     assert(index1 <= len(imageset))
     imageset = imageset[index0:index1]
 
+    # Create the shoeboxes
+    self._data["shoebox"] = flex.shoebox(
+      self._data["panel"],
+      self._data["bbox"],
+      allocate=True)
+
     # Extract the shoeboxes
-    read_time, extract_time = self._data.extract_shoeboxes(
-      imageset, self._mask)
+    read_time, extract_time = self._data.extract_shoeboxes(imageset, self._mask)
 
-    # Get the profile parameters FIXME
-    from dials.framework.registry import Registry
-    params = Registry().params()
-    n_sigma = params.integration.shoebox.n_sigma
-    sigma_b = params.integration.shoebox.sigma_b
-    sigma_m = params.integration.shoebox.sigma_m
+    # Optionally flatten the shoeboxes
+    if self._flatten:
+      self._data['shoebox'].flatten()
 
-    print "Process"
+    # Process the data
     st = time()
-
-    # Compute the shoebox mask
-    self._data.compute_mask(self._experiments,
-                             n_sigma,
-                             sigma_b,
-                             sigma_m)
-
-    # Integrate the reflections
-    # self._data.integrate(self._experiments)
-
+    self._process()
     process_time = time() - st
 
     # Delete the shoeboxes
@@ -277,21 +266,30 @@ class IntegrationTask3D(IntegrationTask):
     result.process_time = process_time
     return result
 
+  def _process(self):
+    ''' Process the data. '''
+    print "Process"
+    self._data.compute_mask(self._experiments, self._profile_model)
+    self._data.integrate(self._experiments, self._profile_model)
+
 
 class IntegrationManager3D(IntegrationManager):
   ''' An class to manage 3D integration. book-keeping '''
 
   def __init__(self,
                experiments,
+               profile_model,
                reflections,
                block_size=1,
-               max_procs=1):
+               max_procs=1,
+               flatten=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
     from dials.array_family import flex
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
     scans = experiments.scans()
+    assert(len(experiments) == len(profile_model))
     assert(len(imagesets) == 1)
     assert(len(scans) == 1)
     assert(len(detectors) == 1)
@@ -299,7 +297,9 @@ class IntegrationManager3D(IntegrationManager):
     scan = scans[0]
     detector = detectors[0]
     assert(len(imageset) == len(scan))
+    self._flatten = flatten
     self._experiments = experiments
+    self._profile_model = profile_model
     self._reflections = reflections
     phi0, dphi = scan.get_oscillation()
     block_size = block_size / dphi
@@ -316,8 +316,10 @@ class IntegrationManager3D(IntegrationManager):
     return IntegrationTask3D(
       index,
       self._experiments,
+      self._profile_model,
       self._manager.split(index),
-      self._manager.job(index))
+      self._manager.job(index),
+      self._flatten)
 
   def tasks(self):
     ''' Iterate through the tasks. '''
@@ -349,6 +351,7 @@ class Integrator3D(Integrator):
 
   def __init__(self,
                experiments,
+               profile_model,
                reflections,
                block_size=1,
                max_procs=1,
@@ -358,6 +361,7 @@ class Integrator3D(Integrator):
     # Create the integration manager
     manager = IntegrationManager3D(
       experiments,
+      profile_model,
       reflections,
       block_size,
       max_procs)
@@ -371,12 +375,24 @@ class IntegratorFlat2D(Integrator):
 
   def __init__(self,
                experiments,
+               profile_model,
                reflections,
                block_size=1,
                max_procs=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
-    raise RuntimeError("Not Implemented")
+
+    # Create the integration manager
+    manager = IntegrationManager3D(
+      experiments,
+      profile_model,
+      reflections,
+      block_size,
+      max_procs,
+      flatten=True)
+
+    # Initialise the integrator
+    super(Integrator3D, self).__init__(manager, max_procs, mp_method)
 
 
 class Integrator2D(Integrator):
@@ -384,6 +400,7 @@ class Integrator2D(Integrator):
 
   def __init__(self,
                experiments,
+               profile_model,
                reflections,
                block_size=1,
                max_procs=1,
@@ -396,12 +413,15 @@ class IntegratorFactory(object):
   ''' A factory for creating integrators. '''
 
   @staticmethod
-  def create(params, experiments, reflections):
+  def create(params, experiments, profile_model, reflections):
     ''' Create the integrator from the input configuration. '''
     from dials.interfaces import IntensityIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import CentroidIface
     from dials.array_family import flex
+
+    # Check the input
+    assert(len(experiments) == len(profile_model))
 
     # Initialise the strategy classes
     BackgroundAlgorithm = BackgroundIface.extension(
@@ -425,6 +445,7 @@ class IntegratorFactory(object):
     # Return an instantiation of the class
     return IntegratorClass(
       experiments=experiments,
+      profile_model=profile_model,
       reflections=reflections,
       block_size=params.integration.block.size,
       max_procs=params.integration.mp.max_procs,

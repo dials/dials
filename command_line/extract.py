@@ -51,9 +51,11 @@ class Script(ScriptRunner):
     from dials.model.serialize import load, dump
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
-    from dials.algorithms.shoebox import BBoxCalculator
     from dials.array_family import flex
     from dials.model.serialize import extract_shoeboxes_to_file
+    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.profile_model import ProfileModel
+    from math import pi
 
     # Check the unhandled arguments
     importer = Importer(args, include=['experiments'])
@@ -78,10 +80,14 @@ class Script(ScriptRunner):
     predicted['id'] = flex.size_t(len(predicted), 0)
 
     # Get the bbox nsigma
-    n_sigma = params.integration.shoebox.n_sigma
+    profile_model = ProfileModelList()
+    profile_model.append(ProfileModel(
+      params.integration.shoebox.n_sigma,
+      params.integration.shoebox.sigma_b * pi / 180.0,
+      params.integration.shoebox.sigma_m * pi / 180.0))
 
     # Calculate the bounding boxes
-    predicted.compute_bbox(importer.experiments[0], n_sigma)
+    predicted.compute_bbox(importer.experiments, profile_model)
 
     # TODO Need to save out reflections
     z = predicted['xyzcal.px'].parts()[2]

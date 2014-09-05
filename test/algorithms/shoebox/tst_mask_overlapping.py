@@ -159,6 +159,8 @@ class Test(object):
     from dials.model.data import ReflectionList
     from dxtbx.model.experiment.experiment_list import ExperimentList
     from dxtbx.model.experiment.experiment_list import Experiment
+    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.profile_model import ProfileModel
 
     # Get models from the sweep
     self.beam = self.sweep.get_beam()
@@ -178,8 +180,15 @@ class Test(object):
     sigma_b = exlist[0].beam.get_sigma_divergence(deg=False)
     sigma_m = exlist[0].crystal.get_mosaicity(deg=False)
 
+    profile_model = ProfileModelList()
+    profile_model.append(ProfileModel(
+      3,
+      sigma_b,
+      sigma_m))
+
     predicted = flex.reflection_table.from_predictions(exlist[0])
-    predicted.compute_bbox(exlist[0], 3, sigma_b, sigma_m)
+    predicted['id'] = flex.size_t(len(predicted), 0)
+    predicted.compute_bbox(exlist, profile_model)
 
 
     # Find overlapping reflections

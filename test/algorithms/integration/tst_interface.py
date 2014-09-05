@@ -175,6 +175,8 @@ class TestIntegrator3D(object):
 
   def __init__(self, nproc):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.profile_model import ProfileModel
     import libtbx.load_env
     from dials.array_family import flex
     from os.path import join
@@ -189,29 +191,32 @@ class TestIntegrator3D(object):
     path = join(dials_regression, "centroid_test_data", "experiments.json")
 
     exlist = ExperimentListFactory.from_json_file(path)
-
+    profile_model = ProfileModelList()
+    profile_model.append(ProfileModel(
+      n_sigma=3,
+      sigma_b=0.024*pi/180.0,
+      sigma_m=0.044*pi/180.0))
     self.nproc = nproc
 
     rlist = flex.reflection_table.from_predictions(exlist[0])
     rlist['id'] = flex.size_t(len(rlist), 0)
-    rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
-                       sigma_m=0.044*pi/180)
+    rlist.compute_bbox(exlist, profile_model)
     rlist.compute_zeta_multi(exlist)
     rlist.compute_d(exlist)
     self.rlist = rlist
     self.exlist = exlist
-
-    from dials.framework.registry import Registry
-    Registry().params().integration.shoebox.n_sigma=3
-    Registry().params().integration.shoebox.sigma_b=0.024
-    Registry().params().integration.shoebox.sigma_m=0.044
+    self.profile_model = profile_model
 
   def run(self):
     from dials.algorithms.integration.interface import Integrator3D
     from dials.algorithms.integration.interface import phil_scope
 
-    integrator = Integrator3D(self.exlist, self.rlist, block_size=5,
-                              max_procs=self.nproc)
+    integrator = Integrator3D(
+      self.exlist,
+      self.profile_model,
+      self.rlist,
+      block_size=5,
+      max_procs=self.nproc)
     result = integrator.integrate()
 
     print 'OK'

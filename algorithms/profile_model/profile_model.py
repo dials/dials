@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # profile_model.py
 #
@@ -8,277 +7,211 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-#
-# FIXME Mosaicity seems to be overestimated
-# FIXME Don't know how XDS REFLECTING_RANGE is calculated
-# FIXME Don't know what XDS REFLECTION_RANGE is used for
-# FIXME Don't know what XDS BEAM_DIVERGENCE is used for
-# FIXME Should maybe be scan varying
-# FIXME Don't know how XDS calculated the n_sigma
 
 from __future__ import division
 
-
-class ComputeEsdBeamDivergence(object):
-  '''Calculate the E.s.d of the beam divergence.'''
-
-  def __init__(self, detector, reflections):
-    ''' Calculate the E.s.d of the beam divergence.
-
-    Params:
-        detector The detector class
-        reflections The reflections
-
-    '''
-    from scitbx.array_family import flex
-    from math import sqrt
-
-    # Calculate the beam direction variances
-    variance = self._beam_direction_variance_list(detector, reflections)
-
-    # Calculate and return the e.s.d of the beam divergence
-    self._sigma = sqrt(flex.sum(variance) / len(variance))
-
-  def sigma(self):
-    ''' Return the E.S.D of the beam divergence. '''
-    return self._sigma
-
-  def _beam_direction_variance_list(self, detector, reflections):
-    '''Calculate the variance in beam direction for each spot.
-
-    Params:
-        reflections The list of reflections
-
-    Returns:
-        The list of variances
-
-    '''
-    from scitbx.array_family import flex
-    from scitbx import matrix
-
-    # Get the reflection columns
-    shoebox = reflections['shoebox']
-    bbox = reflections['bbox']
-    xyz = reflections['xyzobs.px.value']
-
-    # Loop through all the reflections
-    variance = []
-    for r in range(len(reflections)):
-
-      # Get the coordinates and values of valid shoebox pixels
-      mask = shoebox[r].mask != 0
-      coords = shoebox[r].coords(mask)
-      values = shoebox[r].values(mask)
-      s1 = shoebox[r].beam_vectors(detector, mask)
-
-      # Calculate the beam vector at the centroid
-      panel = shoebox[r].panel
-      s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
-      angles = s1.angle(s1_centroid, deg=False)
-      variance.append(flex.sum(values * (angles**2)) / (flex.sum(values) - 1))
-
-    # Return a list of variances
-    return flex.double(variance)
-
-
-class FractionOfObservedIntensity(object):
-  '''Calculate the fraction of observed intensity for different sigma_m.'''
-
-  def __init__(self, experiment, reflections):
-    '''Initialise the algorithm. Calculate the list of tau and zetas.
-
-    Params:
-        reflections The list of reflections
-        experiment The experiment object
-
-    '''
-
-    # Get the oscillation width
-    dphi2 = experiment.scan.get_oscillation(deg=False)[1] / 2.0
-
-    # Calculate a list of angles and zeta's
-    tau, zeta = self._calculate_tau_and_zeta(experiment, reflections)
-
-    # Calculate zeta * (tau +- dphi / 2)
-    self.e1 = (tau + dphi2) * zeta
-    self.e2 = (tau - dphi2) * zeta
-
-  def _calculate_tau_and_zeta(self, experiment, reflections):
-    '''Calculate the list of tau and zeta needed for the calculation.
-
-    Params:
-        reflections The list of reflections
-        experiment The experiment object.
-
-    Returns:
-        (list of tau, list of zeta)
-
-    '''
-    from scitbx.array_family import flex
-    from dials.algorithms.reflection_basis import zeta_factor
-
-    # Calculate the list of frames and z coords
-    bbox = reflections['bbox']
-    phi = reflections['xyzcal.mm'].parts()[2]
-
-    # Calculate the zeta list
-    zeta = reflections['zeta']
-
-    # Calculate the list of tau values
-    tau = []
-    zeta2 = []
-    scan = experiment.scan
-    xyzobs = reflections['xyzobs.mm.value']
-    for b, p, z, xyz in zip(bbox, phi, zeta, xyzobs):
-      for f in range(b[4], b[5]):
-        phi0 = scan.get_angle_from_array_index(int(f), deg=False)
-        phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
-        tau.append((phi1 + phi0) / 2.0 - p)
-        zeta2.append(z)
-
-    # Return the list of tau and zeta
-    return flex.double(tau), flex.double(zeta2)
-
-  def __call__(self, sigma_m):
-    '''Calculate the fraction of observed intensity for each observation.
-
-    Params:
-        sigma_m The mosaicity
-
-    Returns:
-        A list of log intensity fractions
-
-    '''
-    from math import sqrt
-    from scitbx.array_family import flex
-    import scitbx.math
-
-    # Tiny value
-    TINY = 1e-10
-    assert(sigma_m > TINY)
-
-    # Calculate the denominator to the fraction
-    den =  sqrt(2.0) * sigma_m
-
-    # Calculate the two components to the fraction
-    a = scitbx.math.erf(self.e1 / den)
-    b = scitbx.math.erf(self.e2 / den)
-
-    # Calculate the fraction of observed reflection intensity
-    R = (a - b) / 2.0
-
-    # Set any points <= 0 to 1e-10 (otherwise will get a floating
-    # point error in log calculation below).
-    R.set_selected(R < TINY, TINY)
-
-    # Return the logarithm of r
-    return flex.log(R)
-
-
-class ComputeEsdReflectingRange(object):
-  '''calculate the e.s.d of the reflecting range (mosaicity).'''
-
-
-  class Estimator(object):
-    '''Estimate E.s.d reflecting range by maximum likelihood estimation.'''
-
-    def __init__(self, experiment, reflections):
-      '''Initialise the optmization.'''
-      from scitbx import simplex
-      from scitbx.array_family import flex
-      from math import pi, exp
-      import random
-
-      # Initialise the function used in likelihood estimation.
-      self._R = FractionOfObservedIntensity(experiment, reflections)
-
-      # Set the starting values to try
-      start = random.random() * pi / 180
-      stop = random.random() * pi / 180
-      starting_simplex = [flex.double([start]), flex.double([stop])]
-
-      # Initialise the optimizer
-      optimizer = simplex.simplex_opt(
-        1,
-        matrix=starting_simplex,
-        evaluator=self,
-        tolerance=1e-7)
-
-      # Get the solution
-      self.sigma = exp(optimizer.get_solution()[0])
-
-    def target(self, log_sigma):
-      ''' The target for minimization. '''
-      from scitbx.array_family import flex
-      from math import exp
-      return -flex.sum(self._R(exp(log_sigma[0])))
-
-  def __init__(self, experiment, reflections):
-    '''initialise the algorithm with the scan.
-
-    params:
-        scan the scan object
-
-    '''
-
-    # Calculate sigma_m
-    estimator = ComputeEsdReflectingRange.Estimator(
-      experiment, reflections)
-
-    # Save the solution
-    self._sigma = estimator.sigma
-
-  def sigma(self):
-    ''' Return the E.S.D reflecting rang. '''
-    return self._sigma
-
-
 class ProfileModel(object):
-  ''' Class to help calculate the profile model. '''
+  ''' A class to encapsulate the profile model. '''
 
-  def __init__(self, experiment, reflections, min_zeta=0.05):
-    ''' Calculate the profile model. '''
-    from dials.util.command_line import Command
+  def __init__(self, n_sigma, sigma_b, sigma_m):
+    ''' Initialise with the parameters. '''
+    self._n_sigma = n_sigma
+    self._sigma_b = sigma_b
+    self._sigma_m = sigma_m
 
-    # Check input has what we want
-    assert(experiment is not None)
-    assert(reflections is not None)
-    assert("miller_index" in reflections)
-    assert("s1" in reflections)
-    assert("shoebox" in reflections)
-    assert("xyzobs.px.value" in reflections)
-    assert("xyzcal.mm" in reflections)
-
-    # Compute the zeta factory and filter based on zeta
-    zeta = reflections.compute_zeta(experiment)
-
-    # Filter based on zeta value
-    Command.start('Filtering reflections with zeta < %f' % min_zeta)
-
-    from scitbx.array_family import flex
-    mask = flex.abs(zeta) < min_zeta
-    reflections.del_selected(mask)
-    Command.end('Filtered %d reflections with zeta > %f' %
-      (len(reflections), min_zeta))
-
-    # Calculate the E.S.D of the beam divergence
-    Command.start('Calculating E.S.D Beam Divergence.')
-    beam_divergence = ComputeEsdBeamDivergence(experiment.detector, reflections)
-    Command.end('Calculated E.S.D Beam Divergence')
-
-    # Calculate the E.S.D of the reflecting range
-    Command.start('Calculating E.S.D Reflecting Range.')
-    reflecting_range = ComputeEsdReflectingRange(experiment, reflections)
-    Command.end('Calculated E.S.D Reflecting Range.')
-
-    # Set the sigmas
-    self._sigma_b = beam_divergence.sigma()
-    self._sigma_m = reflecting_range.sigma()
-
-  def sigma_b(self):
-    ''' Return the E.S.D beam divergence. '''
+  def sigma_b(self, deg=True):
+    ''' Return sigma_b. '''
+    from math import pi
+    if deg == True:
+      return self._sigma_b * 180.0 / pi
     return self._sigma_b
 
-  def sigma_m(self):
-    ''' Return the E.S.D reflecting range. '''
+  def sigma_m(self, deg=True):
+    ''' Return sigma_m. '''
+    from math import pi
+    if deg == True:
+      return self._sigma_m * 180.0 / pi
     return self._sigma_m
+
+  def n_sigma(self):
+    ''' The number of sigmas. '''
+    return self._n_sigma
+
+  def compute_bbox(self, experiment, reflections, sigma_b_multiplier=2.0):
+    ''' Compute the bounding box. '''
+    from dials.algorithms.shoebox import BBoxCalculator
+
+    # Check the input
+    assert(sigma_b_multiplier >= 1.0)
+
+    # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
+    # the region of background in the shoebox
+    delta_b = self._n_sigma * self._sigma_b * sigma_b_multiplier
+    delta_m = self._n_sigma * self._sigma_m
+
+    # Create the bbox calculator
+    calculate = BBoxCalculator(
+      experiment.beam,
+      experiment.detector,
+      experiment.goniometer,
+      experiment.scan,
+      delta_b,
+      delta_m)
+
+    # Calculate the bounding boxes of all the reflections
+    reflections['bbox'] = calculate(
+      reflections['s1'],
+      reflections['xyzcal.mm'].parts()[2],
+      reflections['panel'])
+
+  def compute_mask(self, experiment, reflections):
+    ''' Compute the shoebox mask. '''
+    from dials.algorithms.shoebox import MaskForeground
+
+    # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
+    # the region of background in the shoebox
+    delta_b = self._n_sigma * self._sigma_b
+    delta_m = self._n_sigma * self._sigma_m
+
+    # Create the mask calculator
+    mask_foreground = MaskForeground(
+      experiment.beam,
+      experiment.detector,
+      experiment.goniometer,
+      experiment.scan,
+      delta_d,
+      delta_m)
+
+    # Mask the foreground region
+    mask_foreground(
+      reflections['shoebox'],
+      reflections['s1'],
+      reflections['xyzcal.px'].parts()[2],
+      reflections['panel'])
+
+  @classmethod
+  def compute(cls, experiment, reflections, min_zeta=0.05):
+    ''' Compute the profile model. '''
+    from dials.algorithms.profile_model.profile_model_calculator \
+      import ProfileModelCalculator
+    calculator = ProfileModelCalculator(experiment, reflections, min_zeta)
+    n_sigma = 3
+    sigma_b = calculator.sigma_b()
+    sigma_m = calculator.sigma_m()
+    return cls(n_sigma, sigma_b, sigma_m)
+
+
+class ProfileModelList(object):
+  ''' A class to represent multiple profile models. '''
+
+  def __init__(self):
+    ''' Initialise the model list. '''
+    self._models = []
+
+  def __getitem__(self, index):
+    ''' Get a profile model. '''
+    return self._models[index]
+
+  def __len__(self):
+    ''' Return the number of models. '''
+    return len(self._models)
+
+  def __iter__(self):
+    ''' Iterate through the models. '''
+    for i in range(len(self)):
+      yield self[i]
+
+  def append(self, model):
+    ''' Add another model. '''
+    self._models.append(model)
+
+  def compute_bbox(self, experiments, reflections, sigma_b_multiplier=2.0):
+    ''' Compute the bounding boxes. '''
+    from dials.algorithms.shoebox import BBoxMultiCalculator
+    from dials.algorithms.shoebox import BBoxCalculator
+
+    # Check the input
+    assert(sigma_b_multiplier >= 1.0)
+    assert(len(experiments) == len(self))
+
+    # The class to do the calculation
+    calculate = BBoxMultiCalculator()
+
+    # Loop through the experiments and models
+    for experiment, model in zip(experiments, self):
+
+      # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
+      # the region of background in the shoebox
+      delta_b = model.n_sigma() * model.sigma_b(deg=False) * sigma_b_multiplier
+      delta_m = model.n_sigma() * model.sigma_m(deg=False)
+
+      # Create the bbox calculator
+      calculate.append(BBoxCalculator(
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
+        experiment.scan,
+        delta_b,
+        delta_m))
+
+    # Calculate the bounding boxes of all the reflections
+    reflections['bbox'] = calculate(
+      reflections['id'],
+      reflections['s1'],
+      reflections['xyzcal.mm'].parts()[2],
+      reflections['panel'])
+
+  def compute_mask(self, experiments, reflections):
+    ''' Compute the shoebox mask. '''
+    from dials.algorithms.shoebox import MaskMultiForeground
+    from dials.algorithms.shoebox import MaskForeground
+
+    # Check the input
+    assert(len(experiments) == len(self))
+
+    # The class to do the calculation
+    mask_foreground = MaskMultiForeground()
+
+    # Loop through the experiments and models
+    for experiment, model in zip(experiments, self):
+
+      # Compute the size in reciprocal space.
+      delta_b = model.n_sigma() * model.sigma_b(deg=False)
+      delta_m = model.n_sigma() * model.sigma_m(deg=False)
+
+      # Create the mask calculator
+      mask_foreground.append(MaskForeground(
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
+        experiment.scan,
+        delta_b,
+        delta_m))
+
+    # Mask the foreground region
+    mask_foreground(
+      reflections['id'],
+      reflections['shoebox'],
+      reflections['s1'],
+      reflections['xyzcal.px'].parts()[2],
+      reflections['panel'])
+
+  @classmethod
+  def compute(cls, experiments, reflections, min_zeta=0.05):
+    ''' Compute the profile models. '''
+    assert(len(experiments) > 0)
+
+    # Split the reflections by experiment id
+    if len(experiments) > 1:
+      reflections_split = reflections.split_by_experiment_id()
+      assert(len(reflections_split) == len(experiments))
+    else:
+      reflections_split = [reflections]
+
+    # Compute the profile models
+    profile_models = cls()
+    for exp, ref in zip(experiments, reflections_split):
+      profile_models.append(ProfileModel.compute(exp, ref, min_zeta))
+
+    # Return the profile models
+    return profile_models

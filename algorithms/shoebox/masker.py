@@ -54,7 +54,7 @@ class MaskerBase(object):
 class Masker3DProfile(MaskerBase):
   '''A class to perform 3D profile masking'''
 
-  def __init__(self, experiment, delta_d, delta_m):
+  def __init__(self, experiments, profile_model):
     ''' Initialise the masking algorithms
 
     Params:
@@ -63,15 +63,11 @@ class Masker3DProfile(MaskerBase):
         delta_m The extent of the reflection in reciprocal space
 
     '''
-    super(Masker3DProfile, self).__init__(experiment)
-
-    from dials.algorithms.shoebox import MaskForeground
-
-    # Construct the foreground pixel mask
-    self.mask_foreground = MaskForeground(
-        experiment.beam, experiment.detector,
-        experiment.goniometer, experiment.scan,
-        delta_d, delta_m)
+    assert(len(experiments) == len(profile_model))
+    assert(len(experiments) == 1)
+    super(Masker3DProfile, self).__init__(experiments[0])
+    self._experiments = experiments
+    self._profile_model = profile_model
 
   def __call__(self, reflections, adjacency_list=None):
     ''' Mask the given reflections.
@@ -88,15 +84,11 @@ class Masker3DProfile(MaskerBase):
 
     from dials.util.command_line import Command
 
-    if self.mask_foreground:
-      # Mask the foreground region
-      Command.start('Masking foreground pixels')
-      self.mask_foreground(
-        reflections['shoebox'],
-        reflections['s1'],
-        reflections['xyzcal.px'].parts()[2])
-      Command.end('Masked foreground pixels for {0} reflections'.format(
-        len(reflections)))
+    # Mask the foreground region
+    Command.start('Masking foreground pixels')
+    self._profile_model.compute_mask(self._experiments, reflections)
+    Command.end('Masked foreground pixels for {0} reflections'.format(
+      len(reflections)))
 
     # Return the reflections
     return reflections

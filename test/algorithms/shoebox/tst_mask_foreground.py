@@ -7,7 +7,7 @@ class Test(object):
     import libtbx.load_env
     from dxtbx.serialize.load import crystal as load_crystal
     from dials.model.serialize import load
-    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.algorithms.profile_model.profile_model import ProfileModel
     from dials.algorithms.shoebox import MaskForeground
     from dxtbx.model.experiment.experiment_list import Experiment
 
@@ -40,6 +40,12 @@ class Test(object):
     self.delta_d = 3 * self.beam.get_sigma_divergence(deg=False)
     self.delta_m = 3 * self.crystal.get_mosaicity(deg=False)
     self.nsigma = 3
+
+    self.profile_model = ProfileModel(
+      self.nsigma,
+      self.beam.get_sigma_divergence(deg=False),
+      self.crystal.get_mosaicity(deg=False))
+
     assert(len(self.detector) == 1)
 
     # Get the function object to mask the foreground
@@ -68,7 +74,8 @@ class Test(object):
     self.mask_foreground(
       reflections['shoebox'],
       reflections['s1'],
-      reflections['xyzcal.px'].parts()[2])
+      reflections['xyzcal.px'].parts()[2],
+      reflections['panel'])
 
     # Loop through all the reflections and check the mask values
     shoebox = reflections['shoebox']
@@ -174,7 +181,7 @@ class Test(object):
     rlist['panel'] = panel
     rlist['xyzcal.px'] = xyzcal_px
     rlist['xyzcal.mm'] = xyzcal_mm
-    rlist.compute_bbox(self.experiment, self.nsigma, sigma_b, sigma_m)
+    rlist.compute_bbox(self.experiment, self.profile_model)
     index = []
     image_size = self.experiment.detector[0].get_image_size()
     array_range = self.experiment.scan.get_array_range()

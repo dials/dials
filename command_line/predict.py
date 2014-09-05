@@ -61,6 +61,7 @@ class Script(ScriptRunner):
     from dials.util.command_line import Importer
     from dials.array_family import flex
     from dials.framework.registry import Registry
+    from dials.algorithms.profile_model.profile_model import ProfileModel
 
     # Check the unhandled arguments
     importer = Importer(args, include=['experiments'], check_format=False)
@@ -105,11 +106,8 @@ class Script(ScriptRunner):
       if sigma_b is not None and sigma_m is not None:
         import math
         d2r = math.pi / 180.0
-        predicted.compute_bbox(
-          expt,
-          nsigma=n_sigma,
-          sigma_d=sigma_b * d2r,
-          sigma_m=sigma_m * d2r)
+        profile_model = ProfileModel(n_sigma, sigma_b*d2r, sigma_m*d2r)
+        predicted.compute_bbox(expt, profile_model)
       predicted_all.extend(predicted)
 
     # Save the reflections to file

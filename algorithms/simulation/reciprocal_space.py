@@ -163,7 +163,14 @@ class Simulator(object):
     from dials.algorithms.reflection_basis import CoordinateSystem
     from dials.algorithms import filtering
     from dials.algorithms.shoebox import MaskCode
+    from dials.algorithms.profile_model.profile_model import ProfileModel
     import random
+
+    # Set the profile model
+    profile_model = ProfileModel(
+      self.n_sigma,
+      self.sigma_b,
+      self.sigma_m)
 
     # Generate a list of reflections
     refl = flex.reflection_table.from_predictions(self.experiment)
@@ -179,7 +186,7 @@ class Simulator(object):
     Command.end('Filtered %d reflections by zeta >= %f' % (len(refl), zeta))
 
     # Compute the bounding box
-    refl.compute_bbox(self.experiment, self.n_sigma, self.sigma_b, self.sigma_m)
+    refl.compute_bbox(self.experiment, profile_model)
     index = []
     image_size = self.experiment.detector[0].get_image_size()
     array_range = self.experiment.scan.get_array_range()

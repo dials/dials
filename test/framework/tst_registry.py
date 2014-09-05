@@ -101,7 +101,7 @@ class Test:
     from dials.framework.registry import init_ext
     algorithm1 = init_ext("integration.centroid", None)
     algorithm2 = init_ext("integration.background", None)
-    algorithm3 = init_ext("integration.intensity", None)
+    algorithm3 = init_ext("integration.intensity", None, None)
 
     assert(isinstance(algorithm1, CentroidIface))
     assert(isinstance(algorithm2, BackgroundIface))

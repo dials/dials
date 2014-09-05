@@ -51,11 +51,13 @@ namespace dials { namespace af {
     Observed         = (1 << 1),
     Indexed          = (1 << 2),
     UsedInRefinement = (1 << 3),
-    Strong           = (1 << 4),
-    ReferenceSpot    = (1 << 5),
-    Integrated       = (1 << 6),
+    InPowderRing     = (1 << 4),
+    Strong           = (1 << 5),
+    ReferenceSpot    = (1 << 6),
     DontIntegrate    = (1 << 7),
-    InPowderRing     = (1 << 8),
+    IntegratedSum    = (1 << 8),
+    IntegratedPrf    = (1 << 9),
+    Integrated       = IntegratedSum | IntegratedPrf,
   };
 
 }} // namespace dials::af

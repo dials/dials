@@ -57,6 +57,12 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("s1"), arg("phi")))
       .def("__call__", calculate_array, (
         arg("s1"), arg("phi")));
+
+    class_ <BBoxMultiCalculator>("BBoxMultiCalculator")
+      .def("append", &BBoxMultiCalculator::push_back)
+      .def("__len__", &BBoxMultiCalculator::size)
+      .def("__call__", &BBoxMultiCalculator::operator())
+      ;
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

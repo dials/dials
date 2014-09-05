@@ -5,6 +5,8 @@
 if __name__ == '__main__':
 
   from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  from dials.algorithms.profile_model.profile_model import ProfileModelList
+  from dials.algorithms.profile_model.profile_model import ProfileModel
   from dials.array_family import flex
   import sys
   from os.path import join
@@ -20,15 +22,21 @@ if __name__ == '__main__':
 
   print "Reading Experiments"
   from math import pi
-  exlist = ExperimentListFactory.from_json_file(experiment_list_filename)
+  experiments = ExperimentListFactory.from_json_file(experiment_list_filename)
+
+  profile_model = ProfileModelList()
+  profile_model.append(ProfileModel(
+    n_sigma=3,
+    sigma_b=0.024*pi/180,
+    sigma_m=0.044*pi/180))
+
 
   print "Predicting Reflections"
-  rlist = flex.reflection_table.from_predictions(exlist[0])
+  rlist = flex.reflection_table.from_predictions(experiments[0])
   rlist['id'] = flex.size_t(len(rlist), 0)
-  rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
-                     sigma_m=0.044*pi/180)
-  rlist.compute_zeta_multi(exlist)
-  rlist.compute_d(exlist)
+  rlist.compute_bbox(experiments, profile_model)
+  rlist.compute_zeta_multi(experiments)
+  rlist.compute_d(experiments)
   print ""
 
   print "Creating params"
@@ -41,18 +49,13 @@ if __name__ == '__main__':
       mp.max_procs = %d
       block.size=5
       filter.ice_rings.filter=False
-      shoebox.sigma_b=0.024
-      shoebox.sigma_m=0.044
       intensity.algorithm=sum3d
     }
   ''' % nproc)
 
   working_phil = phil_scope.fetch(source=user_phil)
   params = working_phil.extract()
-  from dials.framework.registry import Registry
-  Registry().params().integration.shoebox.sigma_b=0.024
-  Registry().params().integration.shoebox.sigma_m=0.044
 
   print "Integrating"
-  integrator = IntegratorFactory.create(params, exlist, rlist)
+  integrator = IntegratorFactory.create(params, experiments, profile_model, rlist)
   result = integrator.integrate()

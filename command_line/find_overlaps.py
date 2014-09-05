@@ -281,34 +281,33 @@ class find_overlaps(object):
     return reflection_table
 
   def _compute_shoebox_mask(self, experiments, reflections, n_sigma=3):
+    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.profile_model import ProfileModel
     assert reflections.has_key('xyzcal.mm')
     assert reflections.has_key('id')
-    reflection_table = flex.reflection_table()
+    reflection_table = reflections.copy()
 
+    # Create the profile model
+    profile_model = ProfileModelList()
     for i_lattice, expt in enumerate(experiments):
-      ref_table = reflections.select(reflections['id'] == i_lattice)
+      profile_model.append(ProfileModel(
+        n_sigma,
+        expt.beam.get_sigma_divergence(deg=False),
+        expt.crystal.get_mosaicity(deg=False)))
 
-      # Calculate the bounding boxes
-      ref_table.compute_bbox(
-        expt, n_sigma,
-        sigma_d=expt.beam.get_sigma_divergence(deg=False),
-        sigma_m=expt.crystal.get_mosaicity(deg=False),
-        sigma_d_multiplier=1.0) # don't include background region in bbox
+    # Compute the bounding boxes
+    reflection_table.compute_bbox(experiments, profile_model, sigma_b_multiplier=1.0)
 
-      # Allocate the shoeboxes
-      from dials.algorithms.shoebox import MaskCode
-      ref_table['shoebox'] = flex.shoebox(ref_table['panel'], ref_table['bbox'])
-      ref_table['shoebox'].allocate_with_value(MaskCode.Valid)
+    # Allocate the shoeboxes
+    reflection_table['shoebox'] = flex.shoebox(
+      reflection_table['panel'],
+      reflection_table['bbox'])
+    reflection_table['shoebox'].allocate_with_value(MaskCode.Valid)
 
-      delta_d = n_sigma * expt.beam.get_sigma_divergence(deg=False)
-      delta_m = n_sigma * expt.crystal.get_mosaicity(deg=False)
+    # Create the function to mask the shoebox profiles
+    reflection_table.compute_mask(experiments, profile_model)
 
-      # Create the function to mask the shoebox profiles
-      from dials.algorithms import shoebox
-      mask_profiles = shoebox.Masker3DProfile(expt, delta_d, delta_m)
-      mask_profiles(ref_table, None)
-      reflection_table.extend(ref_table)
-
+    # Return reflection table
     return reflection_table
 
 
