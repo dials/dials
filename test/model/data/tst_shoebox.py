@@ -16,6 +16,7 @@ class Test(object):
     self.tst_centroid_all()
     self.tst_centroid_masked()
     self.tst_summed_intensity()
+    self.tst_flatten()
 
   def tst_allocate(self):
     from random import randint
@@ -88,7 +89,7 @@ class Test(object):
   def tst_consistent(self):
     from random import randint
     from dials.model.data import Shoebox
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     for i in range(1000):
 
@@ -98,13 +99,12 @@ class Test(object):
       x1 = randint(1, 10) + x0
       y1 = randint(1, 10) + y0
       z1 = randint(1, 10) + z0
-
       try:
         shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
         assert(shoebox.is_consistent() == False)
         shoebox.allocate()
         assert(shoebox.is_consistent() == True)
-        shoebox.data = flex.double(flex.grid(20,20, 20))
+        shoebox.data = flex.real(flex.grid(20,20, 20))
         assert(shoebox.is_consistent() == False)
         shoebox.deallocate()
         assert(shoebox.is_consistent() == False)
@@ -223,12 +223,36 @@ class Test(object):
     print 'OK'
 
   def tst_summed_intensity(self):
-
+    from dials.array_family import flex
     for shoebox, (XC, I) in self.random_shoeboxes(10):
       intensity = shoebox.summed_intensity()
       assert(shoebox.is_consistent())
-      assert(abs(intensity.observed.value - I) < 1e-7)
+      assert(abs(intensity.observed.value - I) < 1e-1)
 
+    print 'OK'
+
+  def tst_flatten(self):
+    from dials.array_family import flex
+    from dials.algorithms.shoebox import MaskCode
+    for shoebox, (XC, I) in self.random_shoeboxes(10, mask=True):
+      zs = shoebox.zsize()
+      ys = shoebox.ysize()
+      xs = shoebox.xsize()
+      expected_data = flex.real(flex.grid(1, ys, xs), 0)
+      expected_mask = flex.int(flex.grid(1, ys, xs), 0)
+      for k in range(zs):
+        for j in range(ys):
+          for i in range(xs):
+            expected_data[0, j, i] += shoebox.data[k,j,i]
+            expected_mask[0, j, i] |= shoebox.mask[k,j,i]
+            if (not (expected_mask[0,j,i] & MaskCode.Valid) or
+                not (shoebox.mask[k,j,i] & MaskCode.Valid)):
+              expected_mask[0,j,i] &= ~MaskCode.Valid
+      shoebox.flatten()
+      diff = expected_data.as_double() - shoebox.data.as_double()
+      max_diff = flex.max(flex.abs(diff))
+      assert(max_diff < 1e-7)
+      assert(expected_mask.all_eq(shoebox.mask))
     print 'OK'
 
   def random_shoeboxes(self, num, mask=False):
@@ -254,12 +278,13 @@ class Test(object):
 
   def generate_shoebox(self, bbox, centre, intensity, mask=False):
     from dials.model.data import Shoebox
+    from dials.algorithms.shoebox import MaskCode
     from scitbx.array_family import flex
     shoebox = Shoebox()
     shoebox.bbox = bbox
     shoebox.allocate()
     for i in range(len(shoebox.mask)):
-      shoebox.mask[i] = 1
+      shoebox.mask[i] = MaskCode.Valid | MaskCode.Foreground
     shoebox.data = self.gaussian(
         shoebox.size(), 1.0,
         [c - o for c, o in zip(centre[::-1], shoebox.offset())],
@@ -268,8 +293,12 @@ class Test(object):
       shoebox.mask = self.create_mask(
           shoebox.size(),
           [c - o for c, o in zip(centre[::-1], shoebox.offset())],
-          (1 << 0))
-    tot = flex.sum(shoebox.data * shoebox.mask.as_double())
+          MaskCode.Valid | MaskCode.Foreground)
+    tot = 0
+    mask_code = MaskCode.Valid | MaskCode.Foreground
+    for i in range(len(shoebox.data)):
+      if (shoebox.mask[i] & mask_code == mask_code):
+        tot += shoebox.data[i]
     if tot > 0:
       shoebox.data *= intensity / tot
     return shoebox
@@ -282,7 +311,7 @@ class Test(object):
     for k in range(size[0]):
       for j in range(size[1]):
         for i in range(size[2]):
-          d = sqrt((k - x0[0])**2 + (j - x0[1])**2 + (i - x0[2])**2)
+          d = sqrt((j - x0[1])**2 + (i - x0[2])**2)
           if d < rad:
             mask[k,j,i] = value
     return mask
@@ -302,9 +331,9 @@ class Test(object):
 
   def gaussian(self, size, a, x0, sx):
 
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
-    result = flex.double(flex.grid(size))
+    result = flex.real(flex.grid(size))
 
     index = [0] * len(size)
     while True:

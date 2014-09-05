@@ -67,6 +67,7 @@ namespace dials { namespace model {
 
     std::size_t panel;                                ///< The detector panel
     int6 bbox;                                        ///< The bounding box
+    bool flat;                                        ///< Is the shoebox flat
     af::versa< FloatType, af::c_grid<3> > data;       ///< The shoebox data
     af::versa< int, af::c_grid<3> > mask;             ///< The shoebox mask
     af::versa< FloatType, af::c_grid<3> > background; ///< The shoebox background
@@ -77,6 +78,7 @@ namespace dials { namespace model {
     Shoebox()
       : panel(0),
         bbox(0, 0, 0, 0, 0, 0),
+        flat(false),
         data(af::c_grid<3>(0, 0, 0)),
         mask(af::c_grid<3>(0, 0, 0)),
         background(af::c_grid<3>(0, 0, 0)) {}
@@ -88,6 +90,7 @@ namespace dials { namespace model {
     Shoebox(const int6 &bbox_)
       : panel(0),
         bbox(bbox_),
+        flat(false),
         data(af::c_grid<3>(0, 0, 0)),
         mask(af::c_grid<3>(0, 0, 0)),
         background(af::c_grid<3>(0, 0, 0)) {}
@@ -100,6 +103,21 @@ namespace dials { namespace model {
     Shoebox(std::size_t panel_, const int6 &bbox_)
       : panel(panel_),
         bbox(bbox_),
+        flat(false),
+        data(af::c_grid<3>(0, 0, 0)),
+        mask(af::c_grid<3>(0, 0, 0)),
+        background(af::c_grid<3>(0, 0, 0)) {}
+
+    /**
+     * Initialise the shoebox
+     * @param panel_ The panel number
+     * @param bbox_ The bounding box to initialise with
+     * @param flat_ The shoebix is flat
+     */
+    Shoebox(std::size_t panel_, const int6 &bbox_, bool flat_)
+      : panel(panel_),
+        bbox(bbox_),
+        flat(flat_),
         data(af::c_grid<3>(0, 0, 0)),
         mask(af::c_grid<3>(0, 0, 0)),
         background(af::c_grid<3>(0, 0, 0)) {}
@@ -108,7 +126,8 @@ namespace dials { namespace model {
      * Allocate the mask and data from the bounding box
      */
     void allocate_with_value(int maskcode) {
-      af::c_grid<3> accessor(zsize(), ysize(), xsize());
+      std::size_t zs = flat ? 1 : zsize();
+      af::c_grid<3> accessor(zs, ysize(), xsize());
       data = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
       mask = af::versa< int, af::c_grid<3> >(accessor, maskcode);
       background = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
@@ -174,12 +193,23 @@ namespace dials { namespace model {
       return int3(zsize(), ysize(), xsize());
     }
 
+    /** @returns The flat size */
+    int3 size_flat() const {
+      return int3(1, ysize(), xsize());
+    }
+
     /** @return True/False whether the array and bbox sizes are consistent */
     bool is_consistent() const {
       bool result = true;
-      result = result && (data.accessor().all_eq(size()));
-      result = result && (mask.accessor().all_eq(size()));
-      result = result && (background.accessor().all_eq(size()));
+      if (flat) {
+        result = result && (data.accessor().all_eq(size_flat()));
+        result = result && (mask.accessor().all_eq(size_flat()));
+        result = result && (background.accessor().all_eq(size_flat()));
+      } else {
+        result = result && (data.accessor().all_eq(size()));
+        result = result && (mask.accessor().all_eq(size()));
+        result = result && (background.accessor().all_eq(size()));
+      }
       return result;
     }
 
@@ -262,7 +292,8 @@ namespace dials { namespace model {
 
       // Calculate the centroid
       Centroider centroid(data.const_ref(), foreground_mask);
-      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+      int zoff = flat ? (bbox[5] + bbox[4]) / 2 : bbox[4];
+      vec3<double> offset(bbox[0], bbox[2], zoff);
       return extract_centroid_object(centroid, offset);
     }
 
@@ -308,7 +339,8 @@ namespace dials { namespace model {
 
       // Calculate the centroid
       Centroider centroid(foreground_data);
-      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+      int zoff = flat ? (bbox[5] + bbox[4]) / 2 : bbox[4];
+      vec3<double> offset(bbox[0], bbox[2], zoff);
       return extract_centroid_object(centroid, offset);
     }
 
@@ -334,7 +366,8 @@ namespace dials { namespace model {
 
       // Calculate the centroid
       Centroider centroid(foreground_data, foreground_mask);
-      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+      int zoff = flat ? (bbox[5] + bbox[4]) / 2 : bbox[4];
+      vec3<double> offset(bbox[0], bbox[2], zoff);
       return extract_centroid_object(centroid, offset);
     }
 
@@ -368,7 +401,6 @@ namespace dials { namespace model {
      */
     Intensity summed_intensity() const {
 
-
       // Do the intengration
       Summation<FloatType> summation(
         data.const_ref(),
@@ -401,6 +433,33 @@ namespace dials { namespace model {
      */
     bool operator!=(const Shoebox &rhs) const {
       return !(*this == rhs);
+    }
+
+    /**
+     * Flatten the shoebox
+     */
+    void flatten() {
+      DIALS_ASSERT(is_consistent());
+      if (flat == false) {
+        for (std::size_t k = 1; k < zsize(); ++k) {
+          for (std::size_t j = 0; j < ysize(); ++j) {
+            for (std::size_t i = 0; i < xsize(); ++i) {
+              data(0,j,i) += data(k,j,i);
+              mask(0,j,i) |= mask(k,j,i);
+              bool valid = (mask(0,j,i) & Valid) && (mask(0,j,i) & Valid);
+              if (!valid) {
+                mask(0,j,i) &= ~Valid;
+              }
+            }
+          }
+        }
+        af::c_grid<3> accessor(1, ysize(), xsize());
+        data.resize(accessor);
+        mask.resize(accessor);
+        background.resize(accessor);
+      }
+      flat = true;
+      DIALS_ASSERT(is_consistent());
     }
   };
 

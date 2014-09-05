@@ -190,6 +190,7 @@ namespace dials { namespace model { namespace boost_python {
         make_setter(&shoebox_type::bbox,
           return_value_policy<return_by_value>()))
       .def_readwrite("panel", &shoebox_type::panel)
+      .def_readwrite("flat", &shoebox_type::flat)
       .def("allocate", &shoebox_type::allocate)
       .def("allocate", &shoebox_type::allocate_with_value)
       .def("deallocate", &shoebox_type::deallocate)
@@ -201,6 +202,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("ysize", &shoebox_type::ysize)
       .def("zsize", &shoebox_type::zsize)
       .def("size", &shoebox_type::size)
+      .def("size_flat", &shoebox_type::size_flat)
       .def("is_consistent", &shoebox_type::is_consistent)
       .def("is_bbox_within_image_volume",
         &shoebox_type::is_bbox_within_image_volume, (
@@ -232,6 +234,7 @@ namespace dials { namespace model { namespace boost_python {
         &shoebox_type::centroid_strong_minus_background)
       .def("summed_intensity",
         &shoebox_type::summed_intensity)
+      .def("flatten", &shoebox_type::flatten)
       .def("coords", &coords<shoebox_type>)
       .def("coords", &coords_with_mask<shoebox_type>)
       .def("values", &values<shoebox_type>)

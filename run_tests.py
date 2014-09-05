@@ -29,6 +29,7 @@ tst_list = (
     "$D/test/model/data/tst_reflection_pickle.py",
     "$D/test/model/data/tst_prediction.py",
     "$D/test/model/data/tst_observation.py",
+    "$D/test/model/data/tst_shoebox.py",
     "$D/test/model/data/tst_reflection_list.py",
     "$D/test/model/serialize/tst_shoebox_file.py",
     "$D/test/algorithms/spot_prediction/tst_index_generator.py",

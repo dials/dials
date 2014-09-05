@@ -197,27 +197,32 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.algorithms.integration.lp_correction import correct_intensity
     correct_intensity(experiments, self)
 
-  def integrate(self, experiments, save_profiles=False):
+  def integrate(self, experiments):
     ''' Helper function to integrate reflections. '''
     self.compute_background(experiments)
     self.compute_centroid(experiments)
     self.compute_intensity(experiments)
     self.compute_corrections(experiments)
 
-  def fill_shoeboxes(self, imageset, mask=None):
+  def compute_mask(self, experiments, n_sigma, sigma_b, sigma_m):
+    ''' Apply a mask to the shoeboxes. '''
+    from dials.algorithms.shoebox import Masker3DProfile
+    from math import pi
+    assert(len(experiments) == 1)
+    delta_b = n_sigma * sigma_b * pi / 180.0
+    delta_m = n_sigma * sigma_m * pi / 180.0
+    mask_profiles = Masker3DProfile(experiments[0], delta_b, delta_m)
+    mask_profiles(self, None)
+
+  def extract_shoeboxes(self, imageset, mask=None, flatten=False):
     ''' Helper function to read a load of shoebox data. '''
-    from dials.model.serialize import SimpleShoeboxExtractor
     from dials.model.data import Image
     import sys
     from time import time
     assert("shoebox" in self)
     detector = imageset.get_detector()
     frame0, frame1 = imageset.get_array_range()
-    extractor = SimpleShoeboxExtractor(
-      self['shoebox'],
-      frame0,
-      frame1,
-      len(detector))
+    extractor = ShoeboxExtractor(self, len(detector), frame0, frame1)
     if mask is None:
       image = imageset[0]
       if not isinstance(image, tuple):
@@ -246,4 +251,3 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     sys.stdout.flush()
     assert(extractor.finished())
     return read_time, extract_time
-

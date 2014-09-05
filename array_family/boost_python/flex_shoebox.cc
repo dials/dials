@@ -590,6 +590,16 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Flatten the shoeboxes
+   */
+  template <typename FloatType>
+  void flatten(ref< Shoebox<FloatType> > self) {
+    for (std::size_t i = 0; i < self.size(); ++i) {
+      self[i].flatten();
+    }
+  }
+
+  /**
    * A class to convert the shoebox class to a string for pickling
    */
   template <typename FloatType>
@@ -774,6 +784,7 @@ namespace dials { namespace af { namespace boost_python {
           &summed_intensity<FloatType>)
         .def("mean_background",
           &mean_background<FloatType>)
+        .def("flatten", &flatten<FloatType>)
         .def_pickle(flex_pickle_double_buffered<shoebox_type,
           shoebox_to_string<FloatType>,
           shoebox_from_string<FloatType> >());
