@@ -29,7 +29,7 @@ class ProfileFittingReciprocalSpace(object):
     self.sigma_b = kwargs['sigma_b'] * pi / 180
     self.sigma_m = kwargs['sigma_m'] * pi / 180
 
-  def __call__(self, experiment, reflections):
+  def __call__(self, experiments, reflections):
     ''' Do the integration.
 
     Transform the profiles to reciprocal space. Select the reflections
@@ -38,6 +38,8 @@ class ProfileFittingReciprocalSpace(object):
 
     '''
     from dials.model.serialize import dump
+    assert(len(experiments) == 1)
+    experiment = experiments[0]
     assert("flags" in reflections)
     assert(len(experiment.detector) == 1)
     self._integrate_by_summation(experiment, reflections)
@@ -52,7 +54,7 @@ class ProfileFittingReciprocalSpace(object):
     ''' Integrate the reflections by summation. '''
     from dials.algorithms.integration import Summation3d
     algorithm = Summation3d()
-    algorithm(experiment, reflections)
+    algorithm(reflections)
 
   def _transform_profiles(self, experiment, reflections):
     ''' Transform the reflection profiles to reciprocal space. '''

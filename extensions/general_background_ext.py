@@ -70,8 +70,9 @@ class GeneralBackgroundExt(BackgroundIface):
 
   default=True
 
-  def __init__(self, params, experiment):
+  def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
+    from libtbx.phil import parse
     from dials.algorithms.background import Creator
     from dials.algorithms.background import TruncatedOutlierRejector
     from dials.algorithms.background import NSigmaOutlierRejector
@@ -80,6 +81,17 @@ class GeneralBackgroundExt(BackgroundIface):
     from dials.algorithms.background import Constant3dModeller
     from dials.algorithms.background import Linear2dModeller
     from dials.algorithms.background import Linear3dModeller
+
+    if params is None:
+      phil = '''
+        integration {
+          background {
+            general {
+              %s
+            }
+          }
+        }''' % self.phil
+      params = parse(phil).extract()
 
     def select_modeller():
       model = params.integration.background.general.model

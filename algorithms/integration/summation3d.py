@@ -17,7 +17,7 @@ class Summation3d(object):
     '''Initialise algorithm.'''
     pass
 
-  def __call__(self, experiment, reflections, reference=None):
+  def __call__(self, reflections):
     '''Process the reflections.
 
     Params:

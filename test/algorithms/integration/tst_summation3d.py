@@ -90,7 +90,7 @@ class Test(object):
 
     # Integrate
     integration = Summation3d()
-    integration(None, refl)
+    integration(refl)
     I_cal = refl['intensity.sum.value']
     I_var = refl['intensity.sum.variance']
 

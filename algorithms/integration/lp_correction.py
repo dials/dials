@@ -1,11 +1,14 @@
 from __future__ import division
-def correct_intensity(experiment, reflections):
+def correct_intensity(experiments, reflections):
   from dials.util.command_line import Command
   from dials.array_family import flex
+  for e in experiments:
+    if e.goniometer is None:
+      return
   Command.start('Performing LP-correction')
   lp = flex.double(
-    [LP_calculations(experiment, s1)
-     for s1 in reflections['s1']])
+    [LP_calculations(experiments[i], s1)
+     for i, s1 in zip(reflections['id'], reflections['s1'])])
   reflections['lp'] = lp
   Command.end('Performed LP-correction on {0} reflections'.format(len(lp)))
   return lp

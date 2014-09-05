@@ -17,13 +17,12 @@ class Summation3dIntegrationExt(IntensityIface, Integration3DMixin):
 
   name = 'sum3d'
 
-  def __init__(self, params, experiment):
+  def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
     from dials.algorithms.integration import Summation3d
     self._algorithm = Summation3d()
-    self._experiment = experiment
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
-    self._algorithm(self._experiment, reflections)
+    self._algorithm(reflections)
 

@@ -37,7 +37,7 @@ class ProfileFittingRSIntegrationExt(IntensityIface, Integration3DMixin):
   def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
     from dials.algorithms.integration import ProfileFittingReciprocalSpace
-    self._experiment = experiments
+    self._experiments = experiments
     self._algorithm = ProfileFittingReciprocalSpace(
       n_sigma = params.integration.shoebox.n_sigma,
       sigma_b = params.integration.shoebox.sigma_b,
@@ -48,4 +48,4 @@ class ProfileFittingRSIntegrationExt(IntensityIface, Integration3DMixin):
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
-    self._algorithm(self._experiment, reflections)
+    self._algorithm(self._experiments, reflections)

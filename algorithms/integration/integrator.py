@@ -43,10 +43,19 @@ class ReflectionBlockIntegrator(object):
     ''' Integrate all the reflections. '''
     from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
+    from dials.framework.registry import Registry
     result = flex.reflection_table()
+    registry = Registry()
+    params = registry.params()
+    flex.reflection_table._background_algorithm = flex.strategy(
+      registry["integration.background"], params)
+    flex.reflection_table._intensity_algorithm = flex.strategy(
+      registry["integration.intensity"], params)
+    flex.reflection_table._centroid_algorithm = flex.strategy(
+      registry["integration.centroid"], params)
     for indices, reflections in self.extractor:
       self._mask_profiles(reflections, None)
-      reflections.integrate(self.experiments[0])
+      reflections.integrate(self.experiments)
       bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
       fg_code = MaskCode.Valid | MaskCode.Foreground
       n_bg = reflections['shoebox'].count_mask_values(bg_code)

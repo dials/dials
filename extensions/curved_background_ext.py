@@ -18,7 +18,7 @@ class CurvedBackgroundExt(BackgroundIface):
 
   name = 'curved'
 
-  def __init__(self, params, experiment):
+  def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
     from dials.algorithms.background import CurvedSubtractor
 

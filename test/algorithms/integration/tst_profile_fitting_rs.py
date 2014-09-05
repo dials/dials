@@ -61,7 +61,7 @@ class Test(object):
     experiments = ExperimentListFactory.from_json_file(expr_filename,
                                                        check_format=False)
     assert(len(experiments) == 1)
-    self.experiment = experiments[0]
+    self.experiments = experiments
 
     # Load the reference spots
     from dials.array_family import flex
@@ -106,7 +106,7 @@ class Test(object):
     )
 
     # Integrate the reference profiles
-    integration(self.experiment, self.reference)
+    integration(self.experiments, self.reference)
     locator = integration.learner.locate()
     # Check the reference profiles and spots are ok
     #self.check_profiles(integration.learner)
@@ -261,7 +261,7 @@ class Test(object):
 
     old_size = len(refl)
     refl.extend(self.reference)
-    integration(self.experiment, refl)
+    integration(self.experiments, refl)
     reference = refl[-len(self.reference):]
     refl = refl[:len(self.reference)]
     assert(len(refl) == old_size)

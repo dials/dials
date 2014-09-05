@@ -13,9 +13,41 @@ elif get_real_type() == "double":
 else:
   raise TypeError('unknown "real" type')
 
+def strategy(cls, params=None):
+  ''' Wrap a class that takes params and experiments as a strategy. '''
+  from functools import wraps
+  @wraps(cls)
+  def call(self, experiments):
+    return cls(params, experiments)
+  return call
+
+def default_background_algorithm():
+  ''' Get the default background algorithm. '''
+  from dials.extensions import GeneralBackgroundExt
+  return strategy(GeneralBackgroundExt)
+
+def default_intensity_algorithm():
+  ''' Get the default intensity algorithm. '''
+  from dials.extensions import Summation3dIntegrationExt
+  return strategy(Summation3dIntegrationExt)
+
+def default_centroid_algorithm():
+  ''' Get the default centroid algorithm. '''
+  from dials.extensions import SimpleCentroidExt
+  return strategy(SimpleCentroidExt)
+
 
 class reflection_table_aux(boost.python.injector, reflection_table):
   ''' An injector class to add additional methods to the reflection table. '''
+
+  # Set the default algorithms. These are set as class variables so that if they
+  # are changed in the class, all new instances of reflection table will have
+  # the modified algorithms. If these are modified on the instance level, then
+  # only the instance will have the modified algorithms and new instances will
+  # have the defaults
+  _background_algorithm = default_background_algorithm()
+  _intensity_algorithm = default_intensity_algorithm()
+  _centroid_algorithm = default_centroid_algorithm()
 
   @staticmethod
   def from_predictions(experiment, force_static=False, dmin=None):
@@ -148,33 +180,29 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       self['panel'])
     Command.end('Calculated {0} bounding boxes'.format(len(self)))
 
-  def compute_background(self, experiment):
+  def compute_background(self, experiments):
     ''' Helper function to compute the background. '''
-    from dials.framework.registry import init_ext
-    init_ext("integration.background", experiment).compute_background(self)
+    self._background_algorithm(experiments).compute_background(self)
 
-  def compute_centroid(self, experiment):
+  def compute_centroid(self, experiments):
     ''' Helper function to compute the centroid. '''
-    from dials.framework.registry import init_ext
-    init_ext("integration.centroid", experiment).compute_centroid(self)
+    self._centroid_algorithm(experiments).compute_centroid(self)
 
-  def compute_intensity(self, experiment):
+  def compute_intensity(self, experiments):
     ''' Helper function to compute the intensity. '''
-    from dials.framework.registry import init_ext
-    init_ext("integration.intensity", experiment).compute_intensity(self)
+    self._intensity_algorithm(experiments).compute_intensity(self)
 
-  def correct_intensity(self, experiment):
+  def compute_corrections(self, experiments):
     ''' Helper function to correct the intensity. '''
-    if experiment.goniometer is not None:
-      from dials.algorithms.integration.lp_correction import correct_intensity
-      correct_intensity(experiment, self)
+    from dials.algorithms.integration.lp_correction import correct_intensity
+    correct_intensity(experiments, self)
 
-  def integrate(self, experiment, save_profiles=False):
+  def integrate(self, experiments, save_profiles=False):
     ''' Helper function to integrate reflections. '''
-    self.compute_background(experiment)
-    self.compute_centroid(experiment)
-    self.compute_intensity(experiment)
-    self.correct_intensity(experiment)
+    self.compute_background(experiments)
+    self.compute_centroid(experiments)
+    self.compute_intensity(experiments)
+    self.compute_corrections(experiments)
 
   def fill_shoeboxes(self, imageset, mask=None):
     ''' Helper function to read a load of shoebox data. '''
