@@ -22,7 +22,7 @@ class GeneralBackgroundExt(BackgroundIface):
     outlier
       .help = "Outlier rejection prior to background fit"
     {
-      algorithm = null *nsigma truncated normal
+      algorithm = null *nsigma truncated normal mosflm
         .help = "The outlier rejection algorithm."
         .type = choice
 
@@ -56,6 +56,21 @@ class GeneralBackgroundExt(BackgroundIface):
                   "background intensity."
           .type = int
       }
+
+      mosflm
+        .help = "Parameters for mosflm-like outlier rejector. This algorithm"
+                "is mainly used in conjunction with a linear 2d background."
+      {
+        fraction = 1.0
+          .help = "The fraction of pixels to use in determining the initial
+                  "plane used for outlier rejection."
+          .type = float
+
+        n_sigma = 4.0
+          .help = "The number of standard deviations above the threshold plane"
+                  "to use in rejecting outliers from background calculation."
+          .type = float
+      }
     }
 
     model
@@ -73,15 +88,9 @@ class GeneralBackgroundExt(BackgroundIface):
   def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
     from libtbx.phil import parse
-    from dials.algorithms.background import Creator
-    from dials.algorithms.background import TruncatedOutlierRejector
-    from dials.algorithms.background import NSigmaOutlierRejector
-    from dials.algorithms.background import NormalOutlierRejector
-    from dials.algorithms.background import Constant2dModeller
-    from dials.algorithms.background import Constant3dModeller
-    from dials.algorithms.background import Linear2dModeller
-    from dials.algorithms.background import Linear3dModeller
+    from dials.algorithms.background.general import General
 
+    # Create some default parameters
     if params is None:
       phil = '''
         integration {
@@ -93,50 +102,34 @@ class GeneralBackgroundExt(BackgroundIface):
         }''' % self.phil
       params = parse(phil).extract()
 
-    def select_modeller():
-      model = params.integration.background.general.model
-      if model.algorithm == 'constant2d':
-        return Constant2dModeller()
-      elif model.algorithm == 'constant3d':
-        return Constant3dModeller()
-      elif model.algorithm == 'linear2d':
-        return Linear2dModeller()
-      elif model.algorithm == 'linear3d':
-        return Linear3dModeller()
-      raise RuntimeError("Unexpected background model %s" % model.algorithm)
+    # Get the model and outlier algorithms
+    model = params.integration.background.general.model
+    outlier = params.integration.background.general.outlier
+    
+    # Create some keyword parameters
+    kwargs = {
+      kwargs['model'] = model.algorithm
+      kwargs['outlier'] = outlier.algorithm
+    }
 
-    def select_rejector():
-      outlier = params.integration.background.general.outlier
-      if outlier.algorithm == 'null':
-        return None
-      elif outlier.algorithm == 'truncated':
-        return TruncatedOutlierRejector(
-          outlier.truncated.lower,
-          outlier.truncated.upper)
-      elif outlier.algorithm == 'nsigma':
-        return NSigmaOutlierRejector(
-          outlier.nsigma.lower,
-          outlier.nsigma.upper)
-      elif outlier.algorithm == 'normal':
-        return NormalOutlierRejector(
-          outlier.normal.min_pixels)
-      raise RuntimeError("Unexpected outlier rejector %s" % outlier.algorithm)
+    # Create all the keyword parameters
+    if outlier.algorithm == 'null':
+      pass
+    elif outlier.algorithm == 'truncated':
+      kwargs['lower'] = outlier.truncated.lower
+      kwargs['upper'] = outlier.truncated.upper
+    elif outlier.algorithm == 'nsigma':
+      kwargs['lower'] = outlier.nsigma.lower
+      kwargs['upper'] = outlier.nsigma.upper
+    elif outlier.algorithm == 'normal':
+      kwargs['min_pixels'] = outlier.normal.min_pixels
+    elif outlier.algorithm == 'mosflm':
+      kwargs['fraction'] = outlier.mosflm.fraction
+      kwargs['n_sigma'] = outlier.mosflm.n_sigma
 
-    modeller = select_modeller()
-    rejector = select_rejector()
-    self._creator = Creator(modeller, rejector)
+    # Create the algorithm
+    self._algorithm = General(**kwargs)
 
   def compute_background(self, reflections):
     ''' Compute the backgrond. '''
-    from dials.util.command_line import Command
-    from dials.array_family import flex
-
-    # Do the background subtraction
-    Command.start('Calculating reflection background')
-    reflections['background.mse'] = flex.double(len(reflections))
-    success = self._creator(
-      reflections['shoebox'],
-      reflections['background.mse'])
-    reflections['background.mean'] = reflections['shoebox'].mean_background()
-    reflections.set_flags(success != True, reflections.flags.dont_integrate)
-    Command.end('Calculated {0} background values'.format(success.count(True)))
+    self.algorithm.compute_background(reflections)

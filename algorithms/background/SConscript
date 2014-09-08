@@ -3,11 +3,9 @@ Import('env')
 
 sources = [
     'boost_python/helpers.cc',
+    'boost_python/outlier_rejector.cc',
     'boost_python/modeller.cc',
     'boost_python/creator.cc',
-    'boost_python/plane.cc',
-    'boost_python/outlier_rejector.cc',
-    'boost_python/lui_2d_background.cc',
     'boost_python/background_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_background_ext', 

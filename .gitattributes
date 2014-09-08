@@ -9,21 +9,16 @@ algorithms/background/background_subtraction_2d.py -text svneol=unset#text/plain
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/creator.cc -text
 algorithms/background/boost_python/helpers.cc -text
-algorithms/background/boost_python/lui_2d_background.cc -text svneol=unset#text/plain
 algorithms/background/boost_python/modeller.cc -text
 algorithms/background/boost_python/outlier_rejector.cc -text
-algorithms/background/boost_python/plane.cc -text
 algorithms/background/creator.h -text
-algorithms/background/curved_background_subtractor.py -text svneol=unset#text/plain
-algorithms/background/flat_background_subtractor.py -text svneol=unset#text/plain
+algorithms/background/general.py -text
 algorithms/background/helpers.h -text
-algorithms/background/inclined_background_subtractor.py -text svneol=unset#text/plain
-algorithms/background/lui_2d_background.h -text svneol=unset#text/plain
 algorithms/background/modeller.h -text
+algorithms/background/mosflm_outlier_rejector.h -text
 algorithms/background/normal_outlier_rejector.h -text
 algorithms/background/nsigma_outlier_rejector.h -text
 algorithms/background/outlier_rejector.h -text
-algorithms/background/plane.h -text
 algorithms/background/truncated_outlier_rejector.h -text
 algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text
@@ -776,9 +771,9 @@ test/algorithms/background/simulate.py -text
 test/algorithms/background/tst_background_subtraction.py -text
 test/algorithms/background/tst_creator.py -text
 test/algorithms/background/tst_modeller.py -text
+test/algorithms/background/tst_mosflm_outlier_rejector.py -text
 test/algorithms/background/tst_normal_discriminator.py -text
 test/algorithms/background/tst_outlier_rejector.py -text
-test/algorithms/background/tst_plane.py -text
 test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text

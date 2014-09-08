@@ -536,6 +536,21 @@ class Integrator2D(Integrator):
     raise RuntimeError("Not Implemented")
 
 
+class IntegratorStills(Integrator):
+  ''' Top level integrator for still image integration. '''
+
+  def __init__(self,
+               experiments,
+               profile_model,
+               reflections,
+               block_size=1,
+               min_zeta=0.05,
+               max_procs=1,
+               mp_method='multiprocessing'):
+    ''' Initialise the manager and the integrator. '''
+    raise RuntimeError("Not Implemented")
+
+
 class IntegratorFactory(object):
   ''' A factory for creating integrators. '''
 

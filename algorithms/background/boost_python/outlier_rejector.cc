@@ -14,6 +14,7 @@
 #include <dials/algorithms/background/normal_outlier_rejector.h>
 #include <dials/algorithms/background/truncated_outlier_rejector.h>
 #include <dials/algorithms/background/nsigma_outlier_rejector.h>
+#include <dials/algorithms/background/mosflm_outlier_rejector.h>
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {
@@ -81,6 +82,12 @@ namespace dials { namespace algorithms { namespace background {
         "NormalOutlierRejector", no_init)
       .def(init<std::size_t>((
         arg("min_data") = 10)));
+
+    class_<MosflmOutlierRejector, bases<OutlierRejector> >(
+        "MosflmOutlierRejector", no_init)
+      .def(init<double, double>((
+        arg("fraction")=1.0,
+        arg("n_sigma")=3)));
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python

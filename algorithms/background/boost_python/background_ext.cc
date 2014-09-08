@@ -17,20 +17,16 @@ namespace dials { namespace algorithms { namespace background {
   using namespace boost::python;
 
   void export_helpers();
-  void export_lui_2d_background();
+  void export_outlier_rejector();
   void export_modeller();
   void export_creator();
-  void export_plane();
-  void export_outlier_rejector();
 
   BOOST_PYTHON_MODULE(dials_algorithms_background_ext)
   {
     export_helpers();
-    export_lui_2d_background();
+    export_outlier_rejector();
     export_modeller();
     export_creator();
-    export_plane();
-    export_outlier_rejector();
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python

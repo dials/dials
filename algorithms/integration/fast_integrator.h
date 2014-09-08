@@ -18,7 +18,6 @@
 #include <dials/model/data/shoebox.h>
 #include <dials/algorithms/integration/summation.h>
 #include <dials/algorithms/centroid/centroid.h>
-#include <dials/algorithms/background/plane.h>
 #include <dials/algorithms/shoebox/mask_foreground_2d.h>
 
 namespace dials { namespace algorithms {
@@ -198,12 +197,12 @@ namespace dials { namespace algorithms {
         /* profile_model_[id].apply(mask, bbox); */
 
         // Do the background subtraction
-        background::PlaneModel background(data, mask, 1.0, 3.0);
-        for (std::size_t j = 0; j < bgrd.accessor()[0]; ++j) {
-          for (std::size_t i = 0; i < bgrd.accessor()[1]; ++i) {
-            bgrd(j,i) = background.value(j, i);
-          }
-        }
+        /* background::PlaneModel background(data, mask, 1.0, 3.0); */
+        /* for (std::size_t j = 0; j < bgrd.accessor()[0]; ++j) { */
+        /*   for (std::size_t i = 0; i < bgrd.accessor()[1]; ++i) { */
+        /*     bgrd(j,i) = background.value(j, i); */
+        /*   } */
+        /* } */
 
         // Do the summation integration
         Summation<> summation(data, bgrd, mask);
