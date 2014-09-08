@@ -650,6 +650,7 @@ scratch/jmp/sbox_h5/partial_writer.h -text
 scratch/jmp/test_fast.py -text
 scratch/jmp/test_memory.py -text
 scratch/jmp/test_new_integrator.py -text
+scratch/jmp/viewer_suggestions.py -text
 scratch/jmp/weak/bfgs.py -text
 scratch/jmp/weak/test.py -text
 scratch/jmp/weak/test2.py -text
