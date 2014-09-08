@@ -62,7 +62,7 @@ class GeneralBackgroundExt(BackgroundIface):
                 "is mainly used in conjunction with a linear 2d background."
       {
         fraction = 1.0
-          .help = "The fraction of pixels to use in determining the initial
+          .help = "The fraction of pixels to use in determining the initial"
                   "plane used for outlier rejection."
           .type = float
 
@@ -105,11 +105,11 @@ class GeneralBackgroundExt(BackgroundIface):
     # Get the model and outlier algorithms
     model = params.integration.background.general.model
     outlier = params.integration.background.general.outlier
-    
+
     # Create some keyword parameters
     kwargs = {
-      kwargs['model'] = model.algorithm
-      kwargs['outlier'] = outlier.algorithm
+      'model' : model.algorithm,
+      'outlier' : outlier.algorithm
     }
 
     # Create all the keyword parameters
@@ -128,8 +128,8 @@ class GeneralBackgroundExt(BackgroundIface):
       kwargs['n_sigma'] = outlier.mosflm.n_sigma
 
     # Create the algorithm
-    self._algorithm = General(**kwargs)
+    self._algorithm = General(experiments, **kwargs)
 
   def compute_background(self, reflections):
     ''' Compute the backgrond. '''
-    self.algorithm.compute_background(reflections)
+    self._algorithm.compute_background(reflections)
