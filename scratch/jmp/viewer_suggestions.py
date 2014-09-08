@@ -35,9 +35,7 @@ class ReflectionFrame(wx.Frame):
   Display information for a single reflection. Display each slice of the
   reflection in it's own ImageFrame instance and toggle higher-level items on
   and off, such as reflection centroid. Give frame a slider to allow moving
-  through slices of reflection shoebox. Maybe add a table that can be toggled to
-  show any other information available in the reflection table.
-
+  through slices of reflection shoebox.
   '''
   pass
 
@@ -49,7 +47,6 @@ frame.show_centroid = True     # Display the centroid on each frame
 frame.overlay_mask = True      # Show mask contours on data
 frame.display_mode = 'data'    # ('data' | 'mask' | 'background')
 frame.slice_mode = 'xy'        # ('xy' | 'xz' | 'yz')
-frame.show_info = True         # Show a box or table with any info in rtable
 
 
 def view_reflection(reflection, **kwargs):
