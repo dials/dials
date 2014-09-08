@@ -64,8 +64,8 @@ class Script(object):
     # Add an option to show configuration parameters
     self.parser.add_option(
       '-c',
-      action='store_true',
-      default=False,
+      action='count',
+      default=0,
       dest='show_config',
       help='Show the configuration parameters.')
 
@@ -74,17 +74,22 @@ class Script(object):
     from libtbx.phil import parse
     new_phil_scope = parse('''
       integration {
-        output = 'integrated.pickle'
+
+        profile_model = 'profile_model.phil'
           .type = str
-          .help = "The output filename"
+          .help = "The profile parameters output filename"
+
+        integrated = 'integrated.pickle'
+          .type = str
+          .help = "The integrated output filename"
 
         reference = None
           .type = str
-          .help = "The reference filename"
+          .help = "The indexed reference spots input filename"
 
         predicted = None
           .type = str
-          .help = "The predicted filename"
+          .help = "The predicted reflections input filename"
       }
 
       include scope dials.algorithms.integration.interface.phil_scope
@@ -104,14 +109,14 @@ class Script(object):
     # Parse the command line
     params, options, args = self.parser.parse_args()
 
+    # Show config
+    if options.show_config > 0:
+      self.parser.print_phil(attributes_level=options.show_config-1)
+      return
+
     # Check the number of command line arguments
     if len(args) != 1:
       self.parser.print_help()
-      return
-
-    # Show config
-    if options.show_config:
-      self.parser.print_phil()
       return
 
     print "=" * 80
@@ -171,7 +176,8 @@ class Script(object):
     reflections = integrator.integrate()
 
     # Save the reflections
-    self.save_reflections(reflections, params.integration.output)
+    self.save_reflections(reflections, params.integration.integrated)
+    self.save_profile_model(profile_model, params.integration.profile_model)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time
@@ -223,6 +229,14 @@ class Script(object):
     Command.start('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
     Command.end('Saved %d reflections to %s' % (len(reflections), filename))
+
+  def save_profile_model(self, profile_model, filename):
+    ''' Save the profile model parameters. '''
+    from dials.util.command_line import Command
+    Command.start('Saving the profile model parameters to %s' % filename)
+    with open(filename, "w") as outfile:
+      outfile.write(profile_model.dump().as_str())
+    Command.end('Saved the profile model parameters to %s' % filename)
 
 
 if __name__ == '__main__':

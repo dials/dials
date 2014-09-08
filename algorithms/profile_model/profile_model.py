@@ -312,3 +312,19 @@ class ProfileModelList(object):
         params.profile[i].sigma_b * pi / 180.0,
         params.profile[i].sigma_m * pi / 180.0))
     return profile_model
+
+  def dump(self):
+    ''' Dump the profile model to phil parameters. '''
+    params = phil_scope.extract()
+    phil_str = '\n'.join([
+      '''
+      profile {
+        n_sigma=%g
+        sigma_b=%g
+        sigma_m=%g
+      }
+      ''' % (
+        m.n_sigma(),
+        m.sigma_b(deg=True),
+        m.sigma_m(deg=True)) for m in self])
+    return parse(phil_str)

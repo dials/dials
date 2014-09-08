@@ -5,7 +5,6 @@ algorithms/SConscript -text
 algorithms/__init__.py -text
 algorithms/background/SConscript -text
 algorithms/background/__init__.py -text
-algorithms/background/background_subtraction_2d.py -text svneol=unset#text/plain
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/creator.cc -text
 algorithms/background/boost_python/helpers.cc -text
@@ -810,6 +809,7 @@ test/algorithms/integration/tst_summation3d.py -text
 test/algorithms/peak_finding/tst_merge_spot_lists.py -text
 test/algorithms/polygon/clip/tst_clipping.py -text
 test/algorithms/polygon/tst_spatial_interpolation.py -text
+test/algorithms/profile_model/tst_profile_model.py -text
 test/algorithms/refinement/__init__.py -text
 test/algorithms/refinement/params.py -text
 test/algorithms/refinement/run_tests.py -text
