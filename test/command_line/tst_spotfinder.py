@@ -15,7 +15,7 @@ def exercise_spotfinder():
     relative_path="dials_regression/centroid_test_data",
     test=os.path.isdir)
   template = os.path.join(data_dir, "centroid*.cbf")
-  args = ["dials.find_spots", template, "-o spotfinder.pickle", "--nproc=1",
+  args = ["dials.find_spots", template, "output=spotfinder.pickle",
           "save_shoeboxes=True"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
@@ -32,7 +32,7 @@ def exercise_spotfinder():
 
   # now with a resolution filter
   args = ["dials.find_spots", "d_min=2", "d_max=15",
-          template, "-o spotfinder.pickle", "--nproc=1", "save_shoeboxes=False"]
+          template, "output=spotfinder.pickle", "save_shoeboxes=False"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
@@ -45,7 +45,7 @@ def exercise_spotfinder():
   # now with more generous parameters
   args = ["dials.find_spots", "min_spot_size=3",
           "max_separation=3",
-          template, "-o spotfinder.pickle", "--nproc=1"]
+          template, "output=spotfinder.pickle"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
@@ -58,7 +58,7 @@ def exercise_spotfinder():
     relative_path="dials_regression/spotfinding_test_data",
     test=os.path.isdir)
   template = os.path.join(data_dir, "idx-s00-20131106040302615.cbf")
-  args = ["dials.find_spots", template, "-o spotfinder.pickle", "--nproc=1"]
+  args = ["dials.find_spots", template, "output=spotfinder.pickle"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:

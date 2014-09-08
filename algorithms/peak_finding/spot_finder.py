@@ -94,7 +94,8 @@ class ProgressUpdater(object):
 class ExtractSpots(object):
   ''' Class to find spots in an image and extract them into shoeboxes. '''
 
-  def __init__(self, threshold_image, mask=None):
+  def __init__(self, threshold_image, mask=None,
+               mp_method='multiprocessing', max_procs=1):
     ''' Initialise the class with the strategy
 
     Params:
@@ -104,6 +105,8 @@ class ExtractSpots(object):
     # Set the required strategies
     self.threshold_image = threshold_image
     self.mask = mask
+    self.mp_method = mp_method
+    self.max_procs = max_procs
 
   def __call__(self, imageset):
     ''' Find the spots in the imageset
@@ -120,10 +123,9 @@ class ExtractSpots(object):
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from libtbx import easy_mp
-    from dials.util import mp
 
     # Change the number of processors if necessary
-    nproc = mp.nproc
+    nproc = self.max_procs
     if nproc > len(imageset):
       nproc = len(imageset)
 
@@ -133,7 +135,7 @@ class ExtractSpots(object):
       func=Extract(imageset, self.threshold_image, self.mask),
       iterable=self._calculate_blocks(imageset, nproc),
       processes=nproc,
-      method=mp.method,
+      method=self.mp_method,
       preserve_order=True,
       asynchronous=False)
     Command.end("Extracted strong pixels from images")

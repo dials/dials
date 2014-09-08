@@ -100,11 +100,6 @@ class Script(object):
       self.parser.print_phil(attributes_level=options.show_config-1)
       return
 
-    # Check the number of command line arguments
-    if len(args) != 1:
-      self.parser.print_help()
-      return
-
     # Try importing the command line arguments
     importer = Importer(args, include=['images', 'datablocks'])
 

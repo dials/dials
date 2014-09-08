@@ -23,6 +23,16 @@ def generate_phil_scope():
   {
     include scope dials.data.lookup.phil_scope
 
+    mp {
+      method = *multiprocessing sge lsf pbs
+        .type = choice
+        .help = "The multiprocessing method to use"
+
+      max_procs = 1
+        .type = int(value_min=1)
+        .help = "The number of processes to use."
+    }
+
     scan_range = None
       .help = "The range of images to use in finding spots. Number of arguments"
               "must be a factor of two. Specifying \"0 0\" will use all images"
@@ -557,7 +567,9 @@ class SpotFinderFactory(object):
 
     # Setup the spot finder
     return ExtractSpots(threshold_image=threshold,
-                        mask=params.spotfinder.lookup.mask)
+                        mask=params.spotfinder.lookup.mask,
+                        mp_method=params.spotfinder.mp.method,
+                        max_procs=params.spotfinder.mp.max_procs)
 
   @staticmethod
   def configure_threshold(params):
