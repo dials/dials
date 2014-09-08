@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
 help_message = '''
 
@@ -154,8 +153,8 @@ class Script(object):
       # Predict the reflections
       # Match the predictions with the reference
       # Create the integrator
-      if len(params.profile) > 1:
-        assert(len(params.profile) == len(experiments) + 1)
+      if len(params.profile) > 0:
+        assert(len(params.profile) == len(experiments))
         profile_model = ProfileModelList.load(params)
       else:
         assert(reference is not None)

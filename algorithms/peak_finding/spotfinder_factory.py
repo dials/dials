@@ -11,6 +11,102 @@
 
 from __future__ import division
 
+def generate_phil_scope():
+  from iotbx.phil import parse
+  import dials.extensions
+  from dials.interfaces import SpotFinderThresholdIface
+
+  phil_scope = parse('''
+
+  spotfinder
+    .help = "Parameters used in the spot finding algorithm."
+  {
+    include scope dials.data.lookup.phil_scope
+
+    scan_range = None
+      .help = "The range of images to use in finding spots. Number of arguments"
+              "must be a factor of two. Specifying \"0 0\" will use all images"
+              "by default. The given range follows C conventions"
+              "(e.g. j0 <= j < j1)."
+              "For sweeps the scan range is interpreted as the literal scan"
+              "range. Whereas for imagesets the scan range is interpreted as"
+              "the image number in the imageset"
+      .type = ints(size=2)
+      .multiple = True
+
+    filter
+      .help = "Parameters used in the spot finding filter strategy."
+
+    {
+      min_spot_size = 6
+        .help = "The minimum number of contiguous pixels for a spot"
+                "to be accepted by the filtering algorithm."
+        .type = int(value_min=0)
+
+      max_separation = 2
+        .help = "The maximum peak-to-centroid separation (in pixels)"
+                "for a spot to be accepted by the filtering algorithm."
+        .type = float(value_min=0)
+
+      d_min = None
+        .help = "The high resolution limit in Angstrom for a spot to be"
+                "accepted by the filtering algorithm."
+        .type = float(value_min=0)
+
+      d_max = None
+        .help = "The low resolution limit in Angstrom for a spot to be"
+                "accepted by the filtering algorithm."
+        .type = float(value_min=0)
+
+      background_gradient {
+        filter = False
+          .type = bool
+        background_size = 2
+          .type = int(value_min=1)
+        gradient_cutoff = 4
+          .type = float(value_min=0)
+      }
+
+      ice_rings {
+        filter = False
+          .type = bool
+        unit_cell = 4.498,4.498,7.338,90,90,120
+          .type = unit_cell
+          .help = "The unit cell to generate d_spacings for powder rings."
+        space_group = 194
+          .type = space_group
+          .help = "The space group used to generate d_spacings for powder rings."
+        width = 0.06
+          .type = float(value_min=0.0)
+          .help = "The width of an ice ring (in d-spacing)."
+      }
+
+      untrusted_polygon = None
+        .multiple = True
+        .type = ints(value_min=0)
+        .help = "The pixel coordinates (fast, slow) that define the corners "
+                "of the untrusted polygon. Spots whose centroids fall within "
+                "the bounds of the untrusted polygon will be rejected."
+
+      #untrusted_ellipse = None
+      #  .multiple = True
+      #  .type = ints(size=4, value_min=0)
+
+      #untrusted_rectangle = None
+      #  .multiple = True
+      #  .type = ints(size=4, value_min=0)
+    }
+  }
+
+  ''', process_includes=True)
+
+  main_scope = phil_scope.get_without_substitution("spotfinder")
+  assert(len(main_scope) == 1)
+  main_scope = main_scope[0]
+  main_scope.adopt_scope(SpotFinderThresholdIface.phil_scope())
+  return phil_scope
+
+phil_scope = generate_phil_scope()
 
 class FilterRunner(object):
   ''' A class to run multiple filters in succession. '''
@@ -410,7 +506,7 @@ class SpotFinderFactory(object):
   ''' Factory class to create spot finders '''
 
   @staticmethod
-  def from_parameters(params):
+  def from_parameters(params=None):
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -421,6 +517,10 @@ class SpotFinderFactory(object):
 
     '''
     from dials.algorithms.peak_finding import SpotFinder
+    from libtbx.phil import parse
+
+    if params is None:
+      params = phil_scope.fetch(source=parse("")).extract()
 
     # Read in the lookup files
     gain_map = SpotFinderFactory.load_image(params.spotfinder.lookup.gain_map)
@@ -429,9 +529,6 @@ class SpotFinderFactory(object):
     params.spotfinder.lookup.gain_map = gain_map
     params.spotfinder.lookup.dark_map = dark_map
     params.spotfinder.lookup.mask = mask
-    from dials.framework.registry import Registry
-    registry = Registry()
-    registry.params().spotfinder = params.spotfinder
 
     # Configure the algorithm and wrap it up
     find_spots = SpotFinderFactory.configure_algorithm(params)
@@ -456,17 +553,19 @@ class SpotFinderFactory(object):
     from dials.algorithms.peak_finding.spot_finder import ExtractSpots
 
     # Create the threshold strategy
-    threshold = SpotFinderFactory.configure_threshold()
+    threshold = SpotFinderFactory.configure_threshold(params)
 
     # Setup the spot finder
     return ExtractSpots(threshold_image=threshold,
                         mask=params.spotfinder.lookup.mask)
 
   @staticmethod
-  def configure_threshold():
+  def configure_threshold(params):
     ''' Get the threshold strategy'''
-    from dials.framework.registry import init_ext
-    return init_ext('spotfinder.threshold')
+    from dials.interfaces import SpotFinderThresholdIface
+    Algorithm = SpotFinderThresholdIface.extension(
+      params.spotfinder.threshold.algorithm)
+    return Algorithm(params)
 
   @staticmethod
   def configure_filter(params):

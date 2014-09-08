@@ -14,7 +14,6 @@ from libtbx.phil import parse
 phil_scope = parse('''
   profile
     .multiple=True
-    .optional=False
   {
     n_sigma = 3
       .help = "The number of standard deviations of the beam divergence and the"
@@ -304,9 +303,9 @@ class ProfileModelList(object):
   def load(cls, params):
     ''' Load from phil parameters. '''
     from math import pi
-    assert(len(params.profile) > 1)
+    assert(len(params.profile) > 0)
     profile_model = cls()
-    for i in range(1, len(params.profile)):
+    for i in range(len(params.profile)):
       profile_model.append(ProfileModel(
         params.profile[i].n_sigma,
         params.profile[i].sigma_b * pi / 180.0,
@@ -315,7 +314,6 @@ class ProfileModelList(object):
 
   def dump(self):
     ''' Dump the profile model to phil parameters. '''
-    params = phil_scope.extract()
     phil_str = '\n'.join([
       '''
       profile {
@@ -327,4 +325,4 @@ class ProfileModelList(object):
         m.n_sigma(),
         m.sigma_b(deg=True),
         m.sigma_m(deg=True)) for m in self])
-    return parse(phil_str)
+    return phil_scope.fetch(source=parse(phil_str))

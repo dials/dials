@@ -41,36 +41,81 @@ Examples:
 '''
 
 
-class Script(ScriptRunner):
+class Script(object):
   '''A class for running the script.'''
 
   def __init__(self):
     '''Initialise the script.'''
+    from dials.util.options import OptionParser
 
     # The script usage
     usage = "usage: %prog [options] [param.phil] "\
             "{datablock.json | image1.file [image2.file ...]}"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage,
-                          epilog=help_message,
-                          home_scope="spotfinder")
+    self.parser = OptionParser(
+      usage=usage,
+      phil=self.phil_scope(),
+      epilog=help_message)
 
-    # Output filename option
-    self.config().add_option(
-        '-o', '--output-filename',
-        dest = 'output_filename',
-        type = 'string', default = 'strong.pickle',
-        help = 'Set the filename for found strong spots.')
+    # Add an option to show configuration parameters
+    self.parser.add_option(
+      '-c',
+      action='count',
+      default=0,
+      dest='show_config',
+      help='Show the configuration parameters.')
 
-  def main(self, params, options, args):
+  def phil_scope(self):
+    ''' Get the phil scope. '''
+    from libtbx.phil import parse
+    new_phil_scope = parse('''
+      spotfinder {
+
+        output = 'strong.pickle'
+          .type = str
+          .help = "The output filename"
+
+        save_shoeboxes = True
+          .type = bool
+          .help = "Save the raw pixel values inside the reflection shoeboxes."
+      }
+
+      include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
+
+    ''', process_includes=True)
+    return new_phil_scope
+
+  def run(self):
     '''Execute the script.'''
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
     from dials.array_family import flex
 
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
+
+    # Show config
+    if options.show_config > 0:
+      self.parser.print_phil(attributes_level=options.show_config-1)
+      return
+
+    # Check the number of command line arguments
+    if len(args) != 1:
+      self.parser.print_help()
+      return
+
     # Try importing the command line arguments
     importer = Importer(args, include=['images', 'datablocks'])
+
+    # Print the diff phil
+    diff_phil_str = self.parser.diff_phil().as_str()
+    print 'Finding spots with the following user specified parameters:\n'
+    if (diff_phil_str is not ''):
+      print diff_phil_str
+      print ''
+    else:
+      print 'All parameters set to defaults\n'
 
     # Check the unhandled arguments
     if len(importer.unhandled_arguments) > 0:
@@ -90,7 +135,7 @@ class Script(ScriptRunner):
 
     # Loop through all the imagesets and find the strong spots
     reflections = flex.reflection_table.from_observations(
-      importer.datablocks[0])
+      importer.datablocks[0], params)
 
     # Delete the shoeboxes
     if not params.spotfinder.save_shoeboxes:
@@ -99,10 +144,10 @@ class Script(ScriptRunner):
     # Save the reflections to file
     print '\n' + '-' * 80
     Command.start('Saving {0} reflections to {1}'.format(
-        len(reflections), options.output_filename))
-    reflections.as_pickle(options.output_filename)
+        len(reflections), params.spotfinder.output))
+    reflections.as_pickle(params.spotfinder.output)
     Command.end('Saved {0} reflections to {1}'.format(
-        len(reflections), options.output_filename))
+        len(reflections), params.spotfinder.output))
 
 
 if __name__ == '__main__':

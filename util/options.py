@@ -47,10 +47,11 @@ class OptionParser(optparse.OptionParser):
 
   def __init__(self, **kwargs):
     '''Initialise the class.'''
+    from libtbx.phil import parse
 
     # Try to get the home scope
     self._system_phil = kwargs['phil']
-    self._phil = self._system_phil
+    self._phil = self._system_phil.fetch(source=parse(""))
     del(kwargs['phil'])
 
     # Initialise the option parser

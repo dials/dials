@@ -222,7 +222,7 @@ class SpotFinder(object):
       max_scan_range = (0, len(imageset))
 
     # Get list of scan ranges
-    if not self.scan_range:
+    if not self.scan_range or self.scan_range[0] is None:
       scan_range = [max_scan_range]
     else:
       scan_range = self.scan_range

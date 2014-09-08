@@ -79,15 +79,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     return result
 
   @staticmethod
-  def from_observations(datablock):
+  def from_observations(datablock, params=None):
     ''' Construct a reflection table from observations. '''
     from dials.algorithms.peak_finding.spotfinder_factory \
       import SpotFinderFactory
 
     # Get the integrator from the input parameters
     print 'Configuring spot finder from input parameters'
-    from dials.framework.registry import Registry
-    find_spots = SpotFinderFactory.from_parameters(Registry().params())
+    find_spots = SpotFinderFactory.from_parameters(params)
 
     # Find the spots
     return find_spots(datablock)

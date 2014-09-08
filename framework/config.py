@@ -64,7 +64,7 @@ class Config(object):
       include scope dials.data.indexing.phil_scope
     ''', process_includes=True)
 
-    self._phil = self._system_phil
+    self._phil = self._system_phil.fetch(source=parse(""))
     self._params = self._phil.extract()
 
   def system_phil(self, scope=None):
