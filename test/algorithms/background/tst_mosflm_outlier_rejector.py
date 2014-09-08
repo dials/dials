@@ -53,7 +53,6 @@ class Test(object):
     VAR2 = []
     DIFF = []
     for i in range(len(rtable)):
-      from dials.algorithms.background import PlaneModel
       xdet, ydet = rtable[i]["xy"]
       nx = rtable[i]['nx']
       ny = rtable[i]['ny']
