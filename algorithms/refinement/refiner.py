@@ -375,8 +375,8 @@ class RefinerFactory(object):
         if crystal_options.num_intervals == "fixed_width":
           sweep_range_deg = scan.get_oscillation_range(deg=True)
           deg_per_interval = crystal_options.interval_width_degrees
-          n_intervals = int(
-            abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval)
+          n_intervals = max(int(
+            abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
         else:
           n_intervals = crystal_options.absolute_num_intervals
 
