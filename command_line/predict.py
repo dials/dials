@@ -55,7 +55,6 @@ class Script(object):
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
     from dials.array_family import flex
-    from dials.framework.registry import Registry
     from dials.algorithms.profile_model.profile_model import ProfileModelList
 
     # Parse the command line

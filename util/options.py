@@ -13,6 +13,41 @@ from __future__ import division
 from dials.util import HalError
 import optparse
 
+class CommandLineConfig(object):
+  '''A class to read the commandline configuration.'''
+
+  def __init__(self, interpretor):
+    '''Set the command line interpretor.'''
+    self._interpretor = interpretor
+
+  def parse(self, argv):
+    '''Get the configuration.'''
+    import os
+
+    phils, positionals = self._interpretor.process_and_fetch(
+      argv, custom_processor="collect_remaining")
+    # Return positional arguments and phils
+    return positionals, [phils]
+
+
+class ConfigWriter(object):
+  '''Class to write configuration to file.'''
+
+  def __init__(self, master_phil):
+    '''Initialise with the master phil.'''
+    self._master_phil = master_phil
+
+  def write(self, params, filename):
+    '''Write the configuration to file.'''
+    # Get the modified phil
+    modified_phil = self._master_phil.format(python_object=params)
+
+    # Get the phil as text
+    text = modified_phil.as_str()
+
+    # Write the text to file
+    with open(filename, 'w') as f:
+      f.write(text)
 
 class PhilToDict(object):
   '''Get a dictionary from the phil objects.'''
@@ -81,7 +116,6 @@ class OptionParser(optparse.OptionParser):
 
   def parse_args(self, show_diff_phil=False):
     '''Parse the command line arguments and get system configuration.'''
-    from dials.framework.config import CommandLineConfig
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.

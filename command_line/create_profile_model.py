@@ -59,24 +59,9 @@ if __name__ == '__main__':
     print 'Sigma B: %f' % sigma_b
     print 'Sigma M: %f' % sigma_m
 
-  # Write the parameters
-  from dials.framework.registry import Registry
-  registry = Registry()
-
-  # Get the parameters
-  assert(len(profile_model) == 1)
-  params = registry.config().params()
-  params.integration.shoebox.sigma_b = sigma_b
-  params.integration.shoebox.sigma_m = sigma_m
-
-  # Get the diff phil to save
-  master_phil = registry.config().phil()
-  modified_phil = master_phil.format(python_object=params)
-  diff_phil = master_phil.fetch_diff(source=modified_phil)
-
   # Wrtie the parameters
   filename = options.output_filename
   Command.start("Writing profile model to %s" % filename)
   with open(filename, "w") as outfile:
-    outfile.write(diff_phil.as_str())
+    outfile.write(profile_model.dump())
   Command.end("Wrote profile model to %s" % filename)

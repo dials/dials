@@ -7,8 +7,6 @@ tst_list = (
     ["$D/test/command_line/tst_dials_process.py", "2"],
     "$D/test/command_line/tst_reindex.py",
     "$D/test/framework/tst_interface.py",
-    "$D/test/framework/tst_registry.py",
-    "$D/test/framework/tst_config.py",
     "$D/test/command_line/tst_import.py",
     "$D/test/command_line/tst_dials_show_isig_rmsd.py",
     "$D/test/command_line/tst_integrate.py",

@@ -12,7 +12,8 @@ from __future__ import division
 
 if __name__ == '__main__':
   from optparse import OptionParser
-  from dials.framework.registry import Registry
+  import dials.extensions
+  from dials.interfaces import *
 
   usage = "usage: %prog [options] /path/to/image/files"
   parser = OptionParser(usage)
@@ -34,11 +35,16 @@ if __name__ == '__main__':
   # Parse the command line arguments
   options, args = parser.parse_args()
 
-  # Get the registry
-  registry = Registry()
+  # Create the list of interfaces
+  interfaces = [
+    BackgroundIface,
+    CentroidIface,
+    IntensityIface,
+    SpotFinderThresholdIface
+  ]
 
   # Loop through all the interfaces
-  for iface in registry.interfaces():
+  for iface in interfaces:
     print '-' * 80
     print 'Interface: %s' % iface.__name__
 
