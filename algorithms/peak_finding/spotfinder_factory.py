@@ -416,12 +416,13 @@ class BackgroundGradientFilter(object):
     buffer_size = 1
     bg_plus_buffer = self.background_size + buffer_size
 
+    import time
+    t0 = time.time()
     for i, shoebox in enumerate(shoeboxes):
       #print i
       if not flags[perm[i]]: continue
       panel = detector[shoebox.panel]
       trusted_range = panel.get_trusted_range()
-      panel_normal = matrix.col(panel.get_normal())
       max_x, max_y = panel.get_image_size()
       bbox = shoebox.bbox
       x1, x2, y1, y2, z1, z2 = bbox
@@ -432,23 +433,43 @@ class BackgroundGradientFilter(object):
                        max(0, y1-bg_plus_buffer),
                        min(max_y, y2+bg_plus_buffer),
                        z1, z2)
-      ex1, ex2, ey1, ey2, ez1, ez2 = expanded_bbox
-      data = flex.double(flex.grid((1, ey2-ey1, ex2-ex1)))
-      mask = flex.bool(data.accessor(), False)
-      for i_z, z in enumerate(range(ez1, ez2)):
-        image_data = cache[z-zoffset]
-        for i_y, y in enumerate(range(ey1, ey2)):
-          for i_x, x in enumerate(range(ex1, ex2)):
-            value = image_data[y, x]
-            data[0, i_y, i_x] = value
-            if (z >= (z1-buffer_size) and z < (z2+buffer_size) and
-                y >= (y1-buffer_size) and y < (y2+buffer_size) and
-                x >= (x1-buffer_size) and x < (x2+buffer_size)):
-              mask[0, i_y, i_x] = False # foreground
-            elif (value > trusted_range[0] and value < trusted_range[1]):
-              mask[0, i_y, i_x] = True # background
+      shoebox.bbox = expanded_bbox
+    t1 = time.time()
+    print "Time expand_shoebox: %s" %(t1-t0)
 
-      model = modeller.create(data, mask)
+    rlist = flex.reflection_table()
+    rlist['shoebox'] = shoeboxes
+    rlist['shoebox'].allocate()
+    rlist['panel'] = shoeboxes.panels()
+    rlist['bbox'] = shoeboxes.bounding_boxes()
+
+    t0 = time.time()
+    rlist.extract_shoeboxes(sweep)
+    t1 = time.time()
+    #print "Time extract_shoeboxes: %s" %(t1-t0)
+
+    shoeboxes = rlist['shoebox']
+    shoeboxes.flatten()
+
+    t0 = time.time()
+    for i, shoebox in enumerate(shoeboxes):
+      if not flags[perm[i]]: continue
+      panel = detector[shoebox.panel]
+      trusted_range = panel.get_trusted_range()
+      max_x, max_y = panel.get_image_size()
+      ex1, ex2, ey1, ey2, ez1, ez2 = shoebox.bbox
+      data = shoebox.data
+      mask = flex.bool(data.accessor(), False)
+      for i_y, y in enumerate(range(ey1, ey2)):
+        for i_x, x in enumerate(range(ex1, ex2)):
+          value = data[0, i_y, i_x]
+          if (y >= (ey1+buffer_size) and y < (ey2-buffer_size) and
+              x >= (ex1+buffer_size) and x < (ex2-buffer_size)):
+            mask[0, i_y, i_x] = False # foreground
+          elif (value > trusted_range[0] and value < trusted_range[1]):
+            mask[0, i_y, i_x] = True # background
+
+      model = modeller.create(data.as_double(), mask)
       d, a, b = model.params()[:3]
       c = -1
       #print a, b, d
@@ -498,6 +519,9 @@ class BackgroundGradientFilter(object):
       #im1 = axes[1].imshow(bg.as_numpy_array()[i_z,:,:], interpolation='none')
       #pyplot.colorbar(im1)
       #pyplot.show()
+
+    t1 = time.time()
+    #print "Time fit_bg: %s" %(t1-t0)
 
     return flags
 
