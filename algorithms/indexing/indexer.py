@@ -192,6 +192,10 @@ multiple_lattice_search {
       .type = float(value_min=0.0, value_max=1.0)
   }
 }
+real_space_grid_search {
+  characteristic_grid = 0.02
+    .type = float(value_min=0)
+}
 output {
   experiments = experiments.json
     .type = path

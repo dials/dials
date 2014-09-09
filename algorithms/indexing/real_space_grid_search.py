@@ -59,7 +59,8 @@ class indexer_real_space_grid_search(indexer_base):
     from rstbx.dps_core import SimpleSamplerTool
     assert self.target_symmetry_primitive is not None
     assert self.target_symmetry_primitive.unit_cell() is not None
-    SST = SimpleSamplerTool(0.020)
+    SST = SimpleSamplerTool(
+      self.params.real_space_grid_search.characteristic_grid)
     SST.construct_hemisphere_grid(SST.incr)
     cell_dimensions = self.target_symmetry_primitive.unit_cell().parameters()[:3]
     unique_cell_dimensions = set(cell_dimensions)
