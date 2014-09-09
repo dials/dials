@@ -102,7 +102,7 @@ class GaussianSmoother(object):
     # the values are actually held by ScanVaryingParameterSet classes, but
     # we need the positions
     if self._nvalues == 2:
-      self._positions = [1.0, 2.0]
+      self._positions = [0.0, 1.0]
     if self._nvalues == 3:
       self._positions = [0.0, 1.0, 2.0]
     else:
