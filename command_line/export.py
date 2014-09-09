@@ -11,33 +11,6 @@
 #
 from __future__ import division
 
-class ScriptRunner(object):
-  '''Run the script.'''
-
-  def __init__(self, **kwargs):
-    '''Set the input and output filenames.'''
-
-    self.pickle_filename = kwargs['pickle_filename']
-    self.nexus_filename = kwargs['nexus_filename']
-
-  def run(self):
-    '''Load reflections from pickle file and save to HDF5 file.'''
-
-    from dials.model.data import Reflection, ReflectionList
-    from dials.util.nexus import NexusFile
-    import cPickle as pickle
-
-    # Load the reflections from the pickle file
-    print 'Loading reflections from {0}'.format(self.pickle_filename)
-    reflections = pickle.load(open(self.pickle_filename, 'rb'))
-
-    print 'Saving {0} reflection to {1}'.format(
-        len(reflections), self.nexus_filename)
-    nexus = NexusFile(self.nexus_filename, 'w')
-    nexus.set_reflections(reflections)
-    nexus.close()
-
-
 if __name__ == '__main__':
   from dials.array_family import flex
   from optparse import OptionParser

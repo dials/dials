@@ -11,7 +11,7 @@
 
 from __future__ import division
 
-class ScriptRunner(object):
+class Script(object):
   '''Class to run background lookup table script.'''
 
   def __init__(self, sweep_filenames):
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser.print_help()
   else:
     # Initialise the script runner
-    runner = ScriptRunner(sweep_filenames=args[0:])
+    runner = Script(sweep_filenames=args[0:])
 
     # Run the script
     runner()

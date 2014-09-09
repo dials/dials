@@ -11,62 +11,64 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 from dials.util.command_line import Importer
 from dxtbx.model.experiment.experiment_list import \
   ExperimentList, ExperimentListDumper
 
-class Script(ScriptRunner):
+class Script(object):
   '''A class for running the script.'''
 
   def __init__(self):
     '''Initialise the script.'''
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
 
     # The script usage
     usage  = "usage: %prog [options] [param.phil] " \
              "experiments.json reflections.pickle"
 
-    # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage, home_scope="refinement",
-                          num_threads_option=False)
+    # The phil scope
+    phil_scope = parse('''
+      include scope dials.data.refinement.phil_scope
+    ''', process_includes=True)
+
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope)
 
     # Output experiments filename option
-    self.config().add_option(
+    self.parser.add_option(
         '--output-experiments-filename',
         dest = 'output_experiments_filename',
         type = 'string', default = 'refined_experiments.json',
         help = 'Set the filename for refined experimental models.')
 
-    self.config().add_option(
+    self.parser.add_option(
         '--output-centroids-filename',
         dest = 'output_centroids_filename',
         type = 'string',
         help = 'Set the filename for the table of centroids at the end of refinement.')
 
-    self.config().add_option(
+    self.parser.add_option(
         '--output-parameters-filename',
         dest = 'output_parameters_filename',
         type = 'string',
         help = 'Set the filename for the table of scan varying parameter values'
                ' at the end of refinement.')
 
-    self.config().add_option(
+    self.parser.add_option(
         '--output-correlation-plot-filename',
         dest = 'output_corrplot_filename',
         type = 'string',
         help = 'Set the filename for output of a plot of parameter correlations.')
 
-    self.config().add_option(
+    self.parser.add_option(
         '--output-reflections-filename',
         dest = 'output_reflections_filename',
         type = 'string',
         help = 'Set the filename for output of refined reflections.')
 
-    # Add a verbosity option
-    #self.config().add_option(
-    #    "-v", "--verbosity",
-    #    action="count", default=0,
-    #    help="set verbosity level; -vv gives verbosity level 2.")
 
   def write_centroids_table(self, refiner, filename):
 
@@ -91,14 +93,17 @@ class Script(ScriptRunner):
     f.close()
     return
 
-  def main(self, params, options, args):
+  def run(self):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
     import cPickle as pickle
 
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
+
     # Check the number of arguments
     if len(args) < 2:
-      self.config().print_help()
+      self.parser.print_help()
       return
 
     importer = Importer(args, check_format=False, verbose=False)

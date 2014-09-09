@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
 help_message = '''
 
@@ -44,7 +43,7 @@ Examples:
 
 '''
 
-class Script(ScriptRunner):
+class Script(object):
   ''' The integration program. '''
 
   def __init__(self):
@@ -53,49 +52,66 @@ class Script(ScriptRunner):
     # The script usage
     usage  = "usage: %prog [options] experiment.json"
 
-    # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage,
-                          epilog=help_message,
-                          home_scope="integration")
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=self.phil_scope(),
+      epilog=help_message)
 
-    # Output filename option
-    self.config().add_option(
-      '-o', '--output',
-      dest = 'output',
-      type = 'string', default = 'integrated.pickle',
-      help = 'Set the filename for integrated reflections.')
+    # Add an option to show configuration parameters
+    self.parser.add_option(
+      '-c',
+      action='count',
+      default=0,
+      dest='show_config',
+      help='Show the configuration parameters.')
 
-    # The predicted reflections to integrate
-    self.config().add_option(
-      '-p', '--predicted',
-      dest = 'predicted',
-      type = 'string', default = None,
-      help = 'Specify predicted reflections.')
+  def phil_scope(self):
+    ''' Get the phil scope. '''
+    from libtbx.phil import parse
+    new_phil_scope = parse('''
+      integration {
 
-    # The intermediate shoebox data
-    self.config().add_option(
-      '-r', '--reference',
-      dest = 'reference',
-      type = 'string', default = None,
-      help = 'Specify reference reflections.')
+        profile_model = 'profile_model.phil'
+          .type = str
+          .help = "The profile parameters output filename"
 
-    # The intermediate shoebox data
-    self.config().add_option(
-      '-s', '--shoeboxes',
-      dest = 'shoeboxes',
-      type = 'string', default = None,
-      help = 'Specify shoeboxes to integrate.')
+        integrated = 'integrated.pickle'
+          .type = str
+          .help = "The integrated output filename"
 
-  def main(self, params, options, args):
+        reference = None
+          .type = str
+          .help = "The indexed reference spots input filename"
+
+        predicted = None
+          .type = str
+          .help = "The predicted reflections input filename"
+
+        shoeboxes = None
+          .type = str
+          .help = "The shoebox input filename"
+      }
+
+      include scope dials.algorithms.integration.interface.phil_scope
+      include scope dials.algorithms.profile_model.profile_model.phil_scope
+
+    ''', process_includes=True)
+    return new_phil_scope
+
+  def run(self):
     ''' Perform the integration. '''
     from time import time
 
     # Check the number of arguments is correct
     start_time = time()
 
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
+
     # Check the number of command line arguments
     if len(args) != 1:
-      self.config().print_help()
+      self.parser.print_help()
       return
 
     # Print the diff phil
@@ -113,12 +129,12 @@ class Script(ScriptRunner):
 
     shoeboxes = reference = predicted = None
 
-    if options.shoeboxes:
-      shoeboxes = options.shoeboxes
-    if options.reference:
-      reference = self.load_reference(options.reference)
-    if options.predicted:
-      predicted = self.load_predicted(options.predicted)
+    if params.shoeboxes:
+      shoeboxes = params.shoeboxes
+    if params.reference:
+      reference = self.load_reference(params.reference)
+    if params.predicted:
+      predicted = self.load_predicted(params.predicted)
 
     # Initialise the integrator
     if None in exlist.goniometers():
@@ -132,7 +148,7 @@ class Script(ScriptRunner):
     reflections = integrator.integrate()
 
     # Save the reflections
-    self.save_reflections(reflections, options.output)
+    self.save_reflections(reflections, params.output)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time

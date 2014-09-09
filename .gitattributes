@@ -337,11 +337,9 @@ command_line/import.py -text
 command_line/import_xds.py -text
 command_line/import_xds_gain.py -text
 command_line/index.py -text
-command_line/inspect_output.py -text
 command_line/integrate.py -text
 command_line/integrate2.py -text
 command_line/merge_reflection_lists.py -text
-command_line/parameters.py -text
 command_line/plot_reflections.py -text
 command_line/plot_scan_varying_crystal.py -text
 command_line/predict.py -text
@@ -886,6 +884,7 @@ test/command_line/tst_predict.py -text
 test/command_line/tst_refine.py -text
 test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_reindex.py -text
+test/command_line/tst_sort_reflections.py -text
 test/command_line/tst_spotfinder.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
@@ -914,7 +913,6 @@ util/options.py -text
 util/picklez.py -text
 util/pprint.py -text
 util/pycbf_extra.py -text
-util/script.py -text
 util/show_version.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text

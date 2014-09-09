@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
 help_message = '''
 
@@ -23,7 +22,7 @@ dials.reflection_viewer My_Reflections.pickle
 
 '''
 
-class Script(ScriptRunner):
+class Script(object):
   ''' The debugging visualization program. '''
 
   def __init__(self):
@@ -32,19 +31,22 @@ class Script(ScriptRunner):
     # The script usage
     usage  = "usage: %prog [options] experiment.json"
 
-    # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage,
-                          epilog=help_message,
-                          home_scope="integration")
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      epilog=help_message)
 
-  def main(self, params, options, args):
+  def run(self):
 
     ''' Show the reflections one by one in an interactive way '''
     from dials.util.command_line import Importer
     from dials.viewer.reflection_view import viewer_App
     from dials.array_family import flex
+
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
     if len(args) == 0:
-      self.config().print_help()
+      self.parser.print_help()
       return
 
     importer = Importer(args, include=["reflections", "experiments"])

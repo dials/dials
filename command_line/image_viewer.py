@@ -14,7 +14,7 @@ from __future__ import division
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 
-class ScriptRunner(object):
+class Script(object):
   '''Class to run script.'''
 
   def __init__(self, imagesets, reflections, crystals=None):
@@ -64,7 +64,7 @@ if __name__ == '__main__':
   if reflections is None:
     reflections = []
 
-  runner = ScriptRunner(
+  runner = Script(
       reflections=reflections,
       imagesets=imagesets,
       crystals=crystals)

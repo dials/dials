@@ -12,7 +12,7 @@
 from __future__ import division
 
 
-class ScriptRunner(object):
+class Script(object):
   '''Class to run script.'''
 
   def __init__(self, crystals):
@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
   assert len(importer.unhandled_arguments) == 0
 
-  runner = ScriptRunner(
+  runner = Script(
       crystals=crystals)
 
   # Run the script

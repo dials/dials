@@ -10,137 +10,95 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from operator import attrgetter
-from dials.util.script import ScriptRunner
 
-class Sort(ScriptRunner):
+class Sort(object):
   '''A class for running the script.'''
 
   def __init__(self):
     '''Initialise the script.'''
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
+
+    phil_scope = parse('''
+
+      key = 'miller_index'
+        .type = str
+        .help = "The chosen sort key. This should be an attribute of "
+                "the Reflection object."
+
+      reverse = False
+        .type = bool
+        .help = "Reverse the sort direction"
+
+      output = None
+        .type = str
+        .help = "The output reflection filename"
+
+    ''')
 
     # The script usage
-    usage  = """usage: %prog [options] reflections.pickle
+    usage  = """
+      usage: %prog [options] reflections.pickle
 
-Example: %prog -k "miller_index:2,1,0" -o sorted.pickle"""
+      Example: %prog key=miller_index output=sorted.pickle
+    """
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage)
+    self.parser = OptionParser(usage=usage, phil=phil_scope)
 
-    # Output filename option
-    self.config().add_option(
-        '-o', '--output-reflections-filename',
-        dest = 'output_reflections_filename',
-        type = 'string', default = None,
-        help = 'Set the filename for reflections predicted by the refined '
-               'model.')
-
-    # Reverse sort option
-    self.config().add_option(
-        '-r', '--reverse',
-        dest = 'reverse_sort',
-        action = "store_true",
-        default = False,
-        help = 'Whether to reverse the sort direction.')
-
-    # Sort key option
-    self.config().add_option(
-        '-k', '--key',
-        dest = 'key',
-        type = 'string', default = 'hkl',
-        help = ('The chosen sort key. This should be an attribute of '
-                'the Reflection object. Array-like attributes may have a sort '
-                'order specified, using this format "miller_index:0,1,2"'))
+    # Add an option to show configuration parameters
+    self.parser.add_option(
+      '-c',
+      action='count',
+      default=0,
+      dest='show_config',
+      help='Show the configuration parameters.')
 
     # Verbosity option
-    self.config().add_option(
-        '-v', '--verbose',
+    self.parser.add_option(
+        '-v',
         dest = 'verbose',
-        action = "store_true",
-        default = False,
-        help = 'Whether to print any output.')
+        action = "count",
+        default = 0,
+        help = 'Set the verbosity.')
 
-  @staticmethod
-  def sort_refs_by_attr(reflections, attr, reverse=False):
-    return sorted(reflections, key=attrgetter(attr), reverse=reverse)
-
-  @staticmethod
-  def sort_refs_by_attr_elems(reflections, attr, order, reverse=False):
-    refs_sorted = reflections
-    for i in order:
-      refs_sorted = sorted(refs_sorted,
-                           key=lambda x: attrgetter(attr)(x)[i],
-                           reverse=reverse)
-    return refs_sorted
-
-  def main(self, params, options, args):
+  def run(self):
     '''Execute the script.'''
-    import string
-    from dials.model.serialize import load
-    from cctbx.array_family import flex # import dependency
-    import cPickle as pickle
+    from dials.array_family import flex # import dependency
+
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
+
+    # Show config
+    if options.show_config > 0:
+      self.parser.print_phil(attributes_level=options.show_config-1)
+      return
 
     # Check the number of arguments is correct
     if len(args) != 1:
-      self.config().print_help()
+      self.parser.print_help()
       return
 
-    reflections = pickle.load(open(args[0], 'rb'))
+    # Load the reflections
+    reflections = flex.reflection_table.from_pickle(args[0])
 
-    # Process input string to get attribute and optional order
-    (attr, _, order) = options.key.partition(":")
-    order = order.split(",")
-    try:
-      order = map(int, order)
-    except ValueError:
-      order = None
+    # Check the key is valid
+    assert(params.key in reflections)
 
-    # Is the requested attribute valid?
-    try:
-      val = attrgetter(attr)(reflections[0])
-    except AttributeError as e:
-      print "Please check your sort key."
-      raise
+    # Sort the reflections
+    print "Sorting by %s with reverse=%r" % (params.key, params.reverse)
+    reflections.sort(params.key, params.reverse)
 
-    # Try to get a default order, e.g. (0,1,2) for array-like attributes
-    if order is None:
-      try:
-        order = range(len(val))
-      except TypeError:
-        pass
-
-    if order:
-      if options.verbose:
-        if options.reverse_sort:
-          msg = "Sorting by " + attr + " elements " + str(order) + \
-                " with sorts descending"
-        else:
-          msg = "Sorting by " + attr + " by elements " + str(order) + \
-                " with sorts ascending"
-        print msg
-      rlist = Sort.sort_refs_by_attr_elems(reflections, attr, order,
-                                           options.reverse_sort)
-    else:
-      if options.verbose:
-        if options.reverse_sort:
-          msg = "Sorting by " + attr + " with sorts descending"
-        else:
-          msg = "Sorting by " + attr + " with sorts ascending"
-        print msg
-      rlist = Sort.sort_refs_by_attr(reflections, attr, options.reverse_sort)
-
-    if options.verbose:
+    if options.verbose > 0:
       print "Head of sorted list " + attr + ":"
-      n = min(len(rlist), 10)
+      n = min(len(reflections), 10)
       for i in range(10):
-        print attrgetter(attr)(rlist[i])
+        print (reflections[i][attr])
 
     # Save sorted reflections to file
-    output_reflections_filename = options.output_reflections_filename
-    if output_reflections_filename:
-      print "Saving reflections to {0}".format(output_reflections_filename)
-      pickle.dump(rlist, open(output_reflections_filename, 'wb'),
-          pickle.HIGHEST_PROTOCOL)
+    if params.output:
+      print "Saving reflections to {0}".format(params.output)
+      reflections.as_pickle(params.output)
 
     return
 

@@ -10,51 +10,44 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
-class Script(ScriptRunner):
+class Script(object):
   '''A class for running the script.'''
 
   def __init__(self):
     '''Initialise the script.'''
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
 
     # The script usage
     usage = "usage: %prog [options] [param.phil] "\
             "{sweep.json | image1.file [image2.file ...]}"
 
-    # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage, home_scope='integration')
+    phil_scope = parse('''
+      output = predicted.pickle
+        .type = str
+        .help = "The filename for the predicted reflections"
 
-    # Output filename option
-    self.config().add_option(
-        '-o', '--output-filename',
-        dest = 'output_filename',
-        type = 'string', default = 'predicted.pickle',
-        help = 'Set the filename for the predicted spots.')
+      force_static = False
+        .type = bool
+        .help = "For a scan varying model, force static prediction"
 
-    # Output filename option
-    self.config().add_option(
-        '--force-static',
-        dest = 'force_static',
-        action = "store_true", default = False,
-        help = 'For a scan varying model force static prediction.')
+      buffer_size = 0
+        .type = int
+        .help = "Calculate predictions within a buffer zone of n images either"
+                "size of the scan"
 
-    # buffer size option
-    self.config().add_option(
-        '-b', '--buffer-size',
-        dest = 'buffer_size',
-        type = 'int', default = 0,
-        help = 'Calculate predictions within a buffer zone of n images either '
-               'side of the scan.')
+      dmin = None
+        .type = float
+        .help = "Minimum d-spacing of predicted reflections"
+    ''')
 
-    self.config().add_option(
-        '--dmin',
-        dest = 'dmin',
-        type = 'int', default = None,
-        help = 'Minimum d-spacing of predicted reflections.')
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=self.phil_scope())
 
-
-  def main(self, params, options, args):
+  def run(self):
     '''Execute the script.'''
     from dials.model.serialize import load, dump
     from dials.util.command_line import Command
@@ -62,6 +55,9 @@ class Script(ScriptRunner):
     from dials.array_family import flex
     from dials.framework.registry import Registry
     from dials.algorithms.profile_model.profile_model import ProfileModel
+
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
 
     # Check the unhandled arguments
     importer = Importer(args, include=['experiments'], check_format=False)
@@ -80,22 +76,22 @@ class Script(ScriptRunner):
     predicted_all = flex.reflection_table()
 
     for i_expt, expt in enumerate(importer.experiments):
-      if options.buffer_size > 0:
+      if params.buffer_size > 0:
         # Hack to make the predicter predict reflections outside of the range
         # of the scan
         scan = expt.scan
         image_range = scan.get_image_range()
         oscillation = scan.get_oscillation()
-        scan.set_image_range((image_range[0]-options.buffer_size,
-                              image_range[1]+options.buffer_size))
-        scan.set_oscillation((oscillation[0]-options.buffer_size*oscillation[1],
+        scan.set_image_range((image_range[0]-params.buffer_size,
+                              image_range[1]+params.buffer_size))
+        scan.set_oscillation((oscillation[0]-params.buffer_size*oscillation[1],
                               oscillation[1]))
 
       # Populate the reflection table with predictions
       predicted = flex.reflection_table.from_predictions(
         expt,
-        force_static=options.force_static,
-        dmin=options.dmin)
+        force_static=params.force_static,
+        dmin=params.dmin)
       predicted['id'] = flex.int(len(predicted), i_expt)
 
       # Compute the bounding box
@@ -112,10 +108,10 @@ class Script(ScriptRunner):
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
-        len(predicted_all), options.output_filename))
-    predicted_all.as_pickle(options.output_filename)
+        len(predicted_all), params.output))
+    predicted_all.as_pickle(params.output)
     Command.end('Saved {0} reflections to {1}'.format(
-        len(predicted_all), options.output_filename))
+        len(predicted_all), params.output))
 
 
 if __name__ == '__main__':

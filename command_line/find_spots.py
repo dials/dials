@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
 help_message = '''
 

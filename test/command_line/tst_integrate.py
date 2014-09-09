@@ -18,6 +18,7 @@ class Test(object):
   def run(self):
     self.test1()
     self.test2()
+    self.test3()
 
   def test1(self):
     from os.path import abspath, join, exists
@@ -31,6 +32,37 @@ class Test(object):
 
     assert exists(join(self.path, 'experiments.json'))
     assert exists(join(self.path, 'profile.phil'))
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.integrate',
+      join(self.path, 'experiments.json'),
+      join(self.path, 'profile.phil'),
+      'intensity.algorithm=sum3d',
+    ]).raise_if_errors()
+
+    import cPickle as pickle
+    table = pickle.load(open('integrated.pickle', 'rb'))
+    mask = table.get_flags(table.flags.integrated,all=False)
+    assert(len(table) == 1996)
+    assert(mask.count(True) == 1995)
+
+    # assert(len(table) == 764)
+    assert('id' in table)
+    for row in table:
+      assert(row['id'] == 0)
+    self.table = table
+    print 'OK'
+
+  def test2(self):
+    from os.path import abspath, join
+    from libtbx import easy_run
+    import os
+    from uuid import uuid4
+
+    dirname ='tmp_%s' % uuid4().hex
+    os.mkdir(dirname)
+    os.chdir(dirname)
 
     # Call dials.integrate
     easy_run.fully_buffered([
@@ -53,7 +85,7 @@ class Test(object):
     self.table = table
     print 'OK'
 
-  def test2(self):
+  def test3(self):
     from os.path import abspath, join
     from libtbx import easy_run
     import os

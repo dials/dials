@@ -10,43 +10,38 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
-class Script(ScriptRunner):
+class Script(object):
   '''A class for running the script.'''
 
   def __init__(self):
     '''Initialise the script.'''
+    from dials.util.options import OptionParser
 
     # The script usage
     usage = "usage: %prog [options] [param.phil] "\
             "{sweep.json | image1.file [image2.file ...]}"
 
-    # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage, home_scope="integration")
+    phil_scope = parse('''
+      output = predicted.pickle
+        .type = str
+        .help = "The filename for the predicted reflections"
 
-    # The block length
-    self.config().add_option(
-        '-n', '--num-blocks',
-        dest = 'num_blocks',
-        type = 'int', default = 1,
-        help = 'Set the number of blocks')
+      force_static = False
+        .type = bool
+        .help = "For a scan varying model, force static prediction"
 
-    # Output filename option
-    self.config().add_option(
-        '-o', '--output-filename',
-        dest = 'output_filename',
-        type = 'string', default = 'shoebox.dat',
-        help = 'Set the filename for the extracted spots.')
+      dmin = None
+        .type = float
+        .help = "Minimum d-spacing of predicted reflections"
+    ''')
 
-    # Output filename option
-    self.config().add_option(
-        '--force-static',
-        dest = 'force_static',
-        action = "store_true", default = False,
-        help = 'For a scan varying model force static prediction.')
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=self.phil_scope())
 
-  def main(self, params, options, args):
+  def run(self):
     '''Execute the script.'''
     from dials.model.serialize import load, dump
     from dials.util.command_line import Command
@@ -56,6 +51,9 @@ class Script(ScriptRunner):
     from dials.algorithms.profile_model.profile_model import ProfileModelList
     from dials.algorithms.profile_model.profile_model import ProfileModel
     from math import pi
+
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
 
     # Check the unhandled arguments
     importer = Importer(args, include=['experiments'])
@@ -76,7 +74,8 @@ class Script(ScriptRunner):
     # Populate the reflection table with predictions
     predicted = flex.reflection_table.from_predictions(
       importer.experiments[0],
-      force_static=options.force_static)
+      force_static=params.force_static,
+      dmin=params.dmin)
     predicted['id'] = flex.size_t(len(predicted), 0)
 
     # Get the bbox nsigma
@@ -96,7 +95,7 @@ class Script(ScriptRunner):
 
     # Extract the shoeboxes to file
     extract_shoeboxes_to_file(
-      options.output_filename,
+      params.output,
       importer.experiments[0].imageset,
       predicted)
 

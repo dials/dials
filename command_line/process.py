@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
 help_message = '''
 
@@ -46,7 +45,7 @@ This program will do the following:
 
 '''
 
-class Script(ScriptRunner):
+class Script(object):
   '''A class for running the script.'''
 
   def __init__(self):
@@ -55,11 +54,14 @@ class Script(ScriptRunner):
     # The script usage
     usage = "usage: %prog [options] [param.phil] datablock.json"
 
-    # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage, epilog=help_message)
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=self.phil_scope(),
+      epilog=help_message)
 
     # read image files from stdin
-    self.config().add_option(
+    self.parser.add_option(
       "-i", "--stdin",
       dest = "stdin",
       action = "store_true",
@@ -67,20 +69,22 @@ class Script(ScriptRunner):
       help = "Read filenames from standard input rather than command-line")
 
     # Add an options for spot finder output
-    self.config().add_option(
+    self.parser.add_option(
       "--strong-filename",
       dest="strong_filename",
       type="str", default=None,
       help="The output filename for found spots")
 
-    return
 
-  def main(self, params, options, args):
+  def run(self):
     '''Execute the script.'''
     from dials.util.command_line import Importer
     from dials.util.command_line import Command
     from time import time
     import sys
+
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
 
     # Save the options
     self.options = options
@@ -94,7 +98,7 @@ class Script(ScriptRunner):
       args.extend([l.strip() for l in sys.stdin.readlines()])
 
     if len(args) == 0:
-      self.config().print_help()
+      self.parser.print_help()
       return
 
     st = time()

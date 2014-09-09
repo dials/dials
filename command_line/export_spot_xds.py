@@ -11,7 +11,7 @@
 
 from __future__ import division
 
-class ScriptRunner(object):
+class Script(object):
   '''Class to run script.'''
 
   def __init__(self, reflections_filename, output_filename):
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     parser.print_help()
   else:
     # Initialise the script runner
-    runner = ScriptRunner(
+    runner = Script(
         reflections_filename=args[0],
         output_filename=options.output_file)
 

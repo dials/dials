@@ -8,27 +8,26 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.script import ScriptRunner
 
-class Script(ScriptRunner):
+class Script(object):
 
   def __init__(self):
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
 
     usage  = "usage: %prog [options] [param.phil] " \
              "sweep.json crystal.json intensities.mtz"
 
-    ScriptRunner.__init__(self, usage=usage)
+    phil_scope = parse('''
+      output = predicted.pickle
+        .type = str
+        .help = "The filename for the simulated reflections"
+    ''')
 
-    self.config().add_option(
-        '--output',
-        dest = 'output',
-        type = 'string', default = 'simulation.pickle',
-        help = 'Set the filename for simulated reflection file.')
-
-    self.config().add_option(
-        "-v", "--verbosity",
-        action="count", default=0,
-        help="set verbosity level; -vv gives verbosity level 2.")
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=self.phil_scope())
 
   @staticmethod
   def map_to_image_space(refl, d, dhs, dks, dls):
@@ -51,13 +50,16 @@ class Script(ScriptRunner):
 
     return
 
-  def main(self, params, options, args):
+  def main(self):
     # FIXME import simulation code
     from dials.model.serialize import load, dump
     import cPickle as pickle
     import math
     from dials.util.command_line import Importer
     from dials.algorithms.integration import ReflectionPredictor
+
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
 
     importer = Importer(args)
     if len(importer.imagesets) == 0 and len(importer.crystals) == 0:
@@ -107,8 +109,6 @@ class Script(ScriptRunner):
         continue
 
     from dials.algorithms.simulation.utils import build_prediction_matrix
-
-    # FIXME should this not be handled by magic by the ScriptRunner?
 
     from dials.algorithms.simulation.generate_test_reflections import \
      master_phil
