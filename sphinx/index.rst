@@ -9,6 +9,10 @@ DIALS
 
    installation
    algorithms/index
+   extensions/index
+   framework/index
+   interfaces/index
+   util/index
 
 
 Installation
