@@ -38,7 +38,7 @@ class np_to_bmp(object):
         plt.suptitle(title, fontsize = 22)
         #plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
         #           , vmax = Intst_max)
-        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", cmap = 'hot')
+        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", cmap = 'hot', vmin = 0, vmax = Intst_max)
 
         xmax = len(np_img_2d[:,1])
         ymax = len(np_img_2d[1,:])
