@@ -63,5 +63,5 @@ if __name__ == '__main__':
   filename = options.output_filename
   Command.start("Writing profile model to %s" % filename)
   with open(filename, "w") as outfile:
-    outfile.write(profile_model.dump())
+    outfile.write(profile_model.dump().as_str())
   Command.end("Wrote profile model to %s" % filename)

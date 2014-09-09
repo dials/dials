@@ -77,7 +77,7 @@ class Script(object):
           .help = "The shoebox input filename"
       }
 
-      include scope dials.algorithms.integrator.phil_scope
+      include scope dials.algorithms.integration.integrator.phil_scope
       include scope dials.algorithms.profile_model.profile_model.phil_scope
 
     ''', process_includes=True)

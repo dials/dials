@@ -184,9 +184,9 @@ xlo_param.set_param_vals(xlo_p_vals[0])
 xluc_param.set_param_vals(xluc_p_vals[0])
 
 # make a refiner
-from dials.framework.registry import Registry
-sysconfig = Registry().config()
-params = sysconfig.params()
+from dials.algorithms.refinement.refiner import phil_scope
+from libtbx.phil import parse
+params = phil_scope.fetch(source=parse('')).extract()
 
 # Change this to get a plot
 do_plot = False

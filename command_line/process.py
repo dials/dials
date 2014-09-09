@@ -56,7 +56,9 @@ class Script(object):
     phil_scope = parse('''
 
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
-      include scope dials.algorithms.indexing.indexer.master_phil_scope
+      indexing {
+        include scope dials.algorithms.indexing.indexer.master_phil_scope
+      }
       include scope dials.algorithms.refinement.refiner.phil_scope
       include scope dials.algorithms.integration.integrator.phil_scope
 
