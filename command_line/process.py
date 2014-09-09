@@ -83,26 +83,6 @@ class Script(object):
     from time import time
     import sys
 
-    # Parse the command line
-    params, options, args = self.parser.parse_args()
-
-    # Save the options
-    self.options = options
-    self.params = params
-
-    # if options.stdin, add in extra images from the standard input (to work
-    # around limits in number of command-line arguments)
-
-    if options.stdin:
-      import sys
-      args.extend([l.strip() for l in sys.stdin.readlines()])
-
-    if len(args) == 0:
-      self.parser.print_help()
-      return
-
-    st = time()
-
     # Preamble stuff
     print '*' * 80
     print ''
@@ -129,6 +109,26 @@ class Script(object):
     print ''
     print '*' * 80
     print ''
+
+    # Parse the command line
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
+
+    # Save the options
+    self.options = options
+    self.params = params
+
+    # if options.stdin, add in extra images from the standard input (to work
+    # around limits in number of command-line arguments)
+
+    if options.stdin:
+      import sys
+      args.extend([l.strip() for l in sys.stdin.readlines()])
+
+    if len(args) == 0:
+      self.parser.print_help()
+      return
+
+    st = time()
 
     # Import stuff
     Command.start('Importing datablocks')

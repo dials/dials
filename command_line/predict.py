@@ -57,7 +57,7 @@ class Script(object):
     from dials.algorithms.profile_model.profile_model import ProfileModel
 
     # Parse the command line
-    params, options, args = self.parser.parse_args()
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
 
     # Check the unhandled arguments
     importer = Importer(args, include=['experiments'], check_format=False)

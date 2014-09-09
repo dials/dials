@@ -44,7 +44,7 @@ class Script(object):
     from dials.array_family import flex
 
     # Parse the command line
-    params, options, args = self.parser.parse_args()
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
     if len(args) == 0:
       self.parser.print_help()
       return

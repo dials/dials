@@ -48,28 +48,12 @@ class Script(object):
 
   def __init__(self):
     '''Initialise the script.'''
-
-    # The script usage
-    usage  = "usage: %prog [options] experiment.json"
-
-    # Create the parser
-    self.parser = OptionParser(
-      usage=usage,
-      phil=self.phil_scope(),
-      epilog=help_message)
-
-    # Add an option to show configuration parameters
-    self.parser.add_option(
-      '-c',
-      action='count',
-      default=0,
-      dest='show_config',
-      help='Show the configuration parameters.')
-
-  def phil_scope(self):
-    ''' Get the phil scope. '''
+    from dials.util.options import OptionParser
     from libtbx.phil import parse
-    new_phil_scope = parse('''
+
+    # Set the phil scope
+    phil_scope = '''
+
       integration {
 
         profile_model = 'profile_model.phil'
@@ -97,7 +81,15 @@ class Script(object):
       include scope dials.algorithms.profile_model.profile_model.phil_scope
 
     ''', process_includes=True)
-    return new_phil_scope
+
+    # The script usage
+    usage  = "usage: %prog [options] experiment.json"
+
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      epilog=help_message)
 
   def run(self):
     ''' Perform the integration. '''
@@ -107,20 +99,12 @@ class Script(object):
     start_time = time()
 
     # Parse the command line
-    params, options, args = self.parser.parse_args()
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
 
     # Check the number of command line arguments
     if len(args) != 1:
       self.parser.print_help()
       return
-
-    # Print the diff phil
-    diff_phil_str = self.config().diff_phil().as_str()
-    print 'Integrating with the following user specified parameters:\n'
-    if (diff_phil_str is not ''):
-      print diff_phil_str
-    else:
-      print 'All parameters set to defaults'
 
     # Load the experiment list
     exlist = self.load_experiments(args[0])

@@ -99,7 +99,7 @@ class Script(object):
     import cPickle as pickle
 
     # Parse the command line
-    params, options, args = self.parser.parse_args()
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
 
     # Check the number of arguments
     if len(args) < 2:

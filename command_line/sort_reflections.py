@@ -46,33 +46,12 @@ class Sort(object):
     # Initialise the base class
     self.parser = OptionParser(usage=usage, phil=phil_scope)
 
-    # Add an option to show configuration parameters
-    self.parser.add_option(
-      '-c',
-      action='count',
-      default=0,
-      dest='show_config',
-      help='Show the configuration parameters.')
-
-    # Verbosity option
-    self.parser.add_option(
-        '-v',
-        dest = 'verbose',
-        action = "count",
-        default = 0,
-        help = 'Set the verbosity.')
-
   def run(self):
     '''Execute the script.'''
     from dials.array_family import flex # import dependency
 
     # Parse the command line
-    params, options, args = self.parser.parse_args()
-
-    # Show config
-    if options.show_config > 0:
-      self.parser.print_phil(attributes_level=options.show_config-1)
-      return
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
 
     # Check the number of arguments is correct
     if len(args) != 1:

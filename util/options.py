@@ -49,15 +49,36 @@ class OptionParser(optparse.OptionParser):
     '''Initialise the class.'''
     from libtbx.phil import parse
 
-    # Try to get the home scope
-    self._system_phil = kwargs['phil']
+    # Set the system phil scope
+    self._system_phil = kwargs.get('phil', parse(""))
+
+    # Set the working phil scope
     self._phil = self._system_phil.fetch(source=parse(""))
-    del(kwargs['phil'])
+
+    # Delete the phil keyword from the keyword arguments
+    del kwargs['phil']
 
     # Initialise the option parser
     optparse.OptionParser.__init__(self, **kwargs)
 
-  def parse_args(self):
+    # Add an option to show configuration parameters
+    if self._system_phil.as_str() != '':
+      self.parser.add_option(
+        '-c',
+        action='count',
+        default=0,
+        dest='show_config',
+        help='Show the configuration parameters.')
+
+    # Set a verbosity parameter
+    self.parser.add_option(
+      '-v',
+      action='count',
+      default=0,
+      dest='verbose',
+      help='Set the verbosity')
+
+  def parse_args(self, show_diff_phil=False):
     '''Parse the command line arguments and get system configuration.'''
     from dials.framework.config import CommandLineConfig
     # Parse the command line arguments, this will separate out
@@ -70,6 +91,20 @@ class OptionParser(optparse.OptionParser):
     args, command_line_phil = config.parse(args)
     self._phil = self.system_phil().fetch(sources=command_line_phil)
     params = self._phil.extract()
+
+    # Show config
+    if options.show_config > 0:
+      self.print_phil(attributes_level=options.show_config-1)
+      exit(0)
+
+    # Print the diff phil
+    if show_diff_phil:
+      diff_phil_str = self.diff_phil().as_str()
+      if (diff_phil_str is not ''):
+        print 'The following parameters have been modified:\n'
+        print diff_phil_str
+
+    # Return the parameters
     return params, options, args
 
   def phil(self):

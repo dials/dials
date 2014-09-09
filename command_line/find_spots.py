@@ -46,29 +46,11 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-
-    # The script usage
-    usage = "usage: %prog [options] [param.phil] "\
-            "{datablock.json | image1.file [image2.file ...]}"
-
-    # Initialise the base class
-    self.parser = OptionParser(
-      usage=usage,
-      phil=self.phil_scope(),
-      epilog=help_message)
-
-    # Add an option to show configuration parameters
-    self.parser.add_option(
-      '-c',
-      action='count',
-      default=0,
-      dest='show_config',
-      help='Show the configuration parameters.')
-
-  def phil_scope(self):
-    ''' Get the phil scope. '''
     from libtbx.phil import parse
-    new_phil_scope = parse('''
+
+    # Set the phil scope
+    phil_scope = parse('''
+
       spotfinder {
 
         output = 'strong.pickle'
@@ -83,7 +65,16 @@ class Script(object):
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
 
     ''', process_includes=True)
-    return new_phil_scope
+
+    # The script usage
+    usage = "usage: %prog [options] [param.phil] "\
+            "{datablock.json | image1.file [image2.file ...]}"
+
+    # Initialise the base class
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      epilog=help_message)
 
   def run(self):
     '''Execute the script.'''
@@ -92,24 +83,10 @@ class Script(object):
     from dials.array_family import flex
 
     # Parse the command line
-    params, options, args = self.parser.parse_args()
-
-    # Show config
-    if options.show_config > 0:
-      self.parser.print_phil(attributes_level=options.show_config-1)
-      return
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
 
     # Try importing the command line arguments
     importer = Importer(args, include=['images', 'datablocks'])
-
-    # Print the diff phil
-    diff_phil_str = self.parser.diff_phil().as_str()
-    print 'Finding spots with the following user specified parameters:\n'
-    if (diff_phil_str is not ''):
-      print diff_phil_str
-      print ''
-    else:
-      print 'All parameters set to defaults\n'
 
     # Check the unhandled arguments
     if len(importer.unhandled_arguments) > 0:

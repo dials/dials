@@ -19,7 +19,7 @@ class Script(object):
              "sweep.json crystal.json intensities.mtz"
 
     phil_scope = parse('''
-      output = predicted.pickle
+      output = simulated.pickle
         .type = str
         .help = "The filename for the simulated reflections"
     ''')
