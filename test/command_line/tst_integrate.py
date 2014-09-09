@@ -20,7 +20,7 @@ class Test(object):
     self.test2()
 
   def test1(self):
-    from os.path import abspath, join
+    from os.path import abspath, join, exists
     from libtbx import easy_run
     import os
     from uuid import uuid4
@@ -29,6 +29,9 @@ class Test(object):
     os.mkdir(dirname)
     os.chdir(dirname)
 
+    assert exists(join(self.path, 'experiments.json'))
+    assert exists(join(self.path, 'profile.phil'))
+    
     # Call dials.integrate
     easy_run.fully_buffered([
       'dials.integrate2',
