@@ -72,7 +72,7 @@ for ypos in range(n_y):
       #tmp_2d_fl_shoebox = flex.double(np_shoebox)
       #tmp_2d_fl_shoebox.reshape(flex.grid(1, ncol, nrow))
 
-      fl_shoebox = flex.double(np_shoebox)
+      fl_shoebox = flex.float(np_shoebox)
       fl_shoebox.reshape(flex.grid(1, ncol, nrow))
 
       to_use_soon = '''

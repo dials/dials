@@ -31,7 +31,7 @@ class Test(object):
 
     assert exists(join(self.path, 'experiments.json'))
     assert exists(join(self.path, 'profile.phil'))
-    
+
     # Call dials.integrate
     easy_run.fully_buffered([
       'dials.integrate2',
