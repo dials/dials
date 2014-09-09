@@ -51,6 +51,16 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
+    from libtbx.phil import parse
+
+    phil_scope = parse('''
+
+      include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
+      include scope dials.algorithms.indexing.indexer.master_phil_scope
+      include scope dials.algorithms.refinement.refiner.phil_scope
+      include scope dials.algorithms.integration.integrator.phil_scope
+
+    ''', process_includes=True)
 
     # The script usage
     usage = "usage: %prog [options] [param.phil] datablock.json"
@@ -58,6 +68,7 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
+      phil=phil_scope,
       epilog=help_message)
 
     # read image files from stdin

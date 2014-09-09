@@ -7,7 +7,7 @@ from dials.util.command_line import Importer
 from dials.array_family import flex
 
 master_phil_scope = iotbx.phil.parse("""
-include scope dials.data.refinement.phil_scope
+include scope dials.algorithms.refinement.refiner.phil_scope
 lepage_max_delta = 5
   .type = float
 verbosity = 0

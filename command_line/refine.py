@@ -29,7 +29,7 @@ class Script(object):
 
     # The phil scope
     phil_scope = parse('''
-      include scope dials.data.refinement.phil_scope
+      include scope dials.algorithms.refinement.refiner.phil_scope
     ''', process_includes=True)
 
     # Create the parser

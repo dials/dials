@@ -361,12 +361,7 @@ command_line/stereographic_projection.py -text
 /config.h -text
 data/__init__.py -text
 data/completion_template.txt -text
-data/indexing.py -text
-data/integration.py -text
-data/logging.py -text
 data/lookup.py -text
-data/refinement.py -text
-data/spotfinding.py -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.py -text
