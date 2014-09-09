@@ -369,8 +369,7 @@ class indexer_base(object):
         self.cb_op_inp_ref = cb_op_best_ref * cb_op_inp_best
         self.target_symmetry_reference_setting = crystal.symmetry(
           unit_cell=target_unit_cell.change_basis(self.cb_op_inp_ref),
-          space_group=self.params.known_symmetry.space_group.group().change_basis(
-            self.cb_op_inp_ref))
+          space_group=self.params.known_symmetry.space_group.as_reference_setting().group())
 
       elif target_unit_cell is not None:
         self.target_symmetry_reference_setting = crystal.symmetry(
