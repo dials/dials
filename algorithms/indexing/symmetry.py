@@ -153,89 +153,140 @@ def refine_subgroup(args):
   from dials.algorithms.indexing.refinement import refine
   from dxtbx.model.experiment.experiment_list import ExperimentList
   experiments = ExperimentList([experiment])
-  refinery, refined, outliers = refine(
-    params, used_reflections, experiments, verbosity=refiner_verbosity)
-
-  dall = refinery.rmsds()
-  dx = dall[0]; dy = dall[1]
-  subgroup.rmsd = math.sqrt(dx*dx + dy*dy)
-  subgroup.Nmatches = len(refinery.get_matches())
-  subgroup.scan = refinery.get_scan()
-  subgroup.goniometer = refinery.get_goniometer()
-  subgroup.beam = refinery.get_beam()
-  subgroup.detector = refinery.get_detector()
-  subgroup.refined_crystal = refinery.get_crystal()
+  try:
+    refinery, refined, outliers = refine(
+      params, used_reflections, experiments, verbosity=refiner_verbosity)
+  except RuntimeError, e:
+    if (str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0." or
+        str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."):
+      subgroup.refined_crystal = None
+      subgroup.rmsd = None
+      subgroup.Nmatches = None
+      subgroup.scan = None
+      subgroup.goniometer = None
+      subgroup.beam = None
+      subgroup.detector = None
+    else: raise
+  else:
+    dall = refinery.rmsds()
+    dx = dall[0]; dy = dall[1]
+    subgroup.rmsd = math.sqrt(dx*dx + dy*dy)
+    subgroup.Nmatches = len(refinery.get_matches())
+    subgroup.scan = refinery.get_scan()
+    subgroup.goniometer = refinery.get_goniometer()
+    subgroup.beam = refinery.get_beam()
+    subgroup.detector = refinery.get_detector()
+    subgroup.refined_crystal = refinery.get_crystal()
   return subgroup
 
+from cctbx.sgtbx import subgroups
+from cctbx.sgtbx import lattice_symmetry
+from cctbx.sgtbx import bravais_types
+from cctbx.sgtbx import change_of_basis_op
+find_max_delta = sgtbx.lattice_symmetry_find_max_delta
 
-def change_of_basis_op_to_best_cell(
-    unit_cell, target_unit_cell=None, target_space_group=None):
-  #print unit_cell
-  assert target_unit_cell is not None or target_space_group is not None
-  #if target_space_group is not None:
-    #assert not target_space_group.is_centric()
-  if target_space_group is None:
-    target_space_group  = sgtbx.space_group('P 1')
+def metric_supergroup(group):
+  return sgtbx.space_group_info(group=group).type(
+    ).expand_addl_generators_of_euclidean_normalizer(True,True
+    ).build_derived_acentric_group()
 
-  target_symm = crystal.symmetry(
-    unit_cell=target_unit_cell,
-    space_group=target_space_group)
-  # target symmetry change of basis given to primitive setting
-  cb_target_given_primitive \
-    = target_symm.change_of_basis_op_to_primitive_setting()
-  if target_unit_cell is not None:
-    target_symm_primitive = target_symm.change_basis(
-      cb_target_given_primitive)
-    # target symmetry change of basis given to minimum cell
-    cb_target_given_minimum \
-      = target_symm.change_of_basis_op_to_niggli_cell()
-    target_symm_minimum = target_symm.change_basis(cb_target_given_minimum)
-  else:
-    target_symm_primitive = target_symm.customized_copy(
-      space_group_info=target_symm.space_group_info().change_basis(
-        cb_target_given_primitive))
-    # target symmetry change of basis given to minimum cell
-    cb_target_given_minimum = cb_target_given_primitive
-    target_symm_minimum = target_symm_primitive
+def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
+  cs = crystal.symmetry(unit_cell=unit_cell, space_group=sgtbx.space_group())
+  target_bravais_t = bravais_types.bravais_lattice(
+    group=target_space_group.info().reference_setting().group())
+  best_subgroup = None
+  best_angular_difference = 1e8
 
-  axes_perm = [sgtbx.change_of_basis_op(op) for op in (
-    'x,y,z', 'z,x,y', 'y,z,x', '-x,z,y', 'y,x,-z', 'z,-y,x')]
+  # code based on cctbx/sgtbx/lattice_symmetry.py but optimised to only
+  # look at subgroups with the correct bravais type
 
-  bmsds = flex.double()
-  for cb_op in axes_perm:
-    if target_unit_cell:
-      test_unit_cell = unit_cell.change_basis(cb_op).niggli_cell()
-    else:
-      test_unit_cell = unit_cell.change_basis(cb_op)
+  input_symmetry = cs
+  # Get cell reduction operator
+  cb_op_inp_minimum = input_symmetry.change_of_basis_op_to_minimum_cell()
 
-    target_uc = target_symm_minimum.unit_cell()
-    if target_uc is None:
-      target_uc = test_unit_cell
+  # New symmetry object with changed basis
+  minimum_symmetry = input_symmetry.change_basis(cb_op_inp_minimum)
 
-    target_symm = crystal.symmetry(
-      unit_cell=target_uc,
-      space_group=target_symm_minimum.space_group(),
+  # Get highest symmetry compatible with lattice
+  lattice_group = sgtbx.lattice_symmetry_group(
+    minimum_symmetry.unit_cell(),
+    max_delta=max_delta,
+    enforce_max_delta_for_generated_two_folds=True)
+
+  # Get list of sub-spacegroups
+  subgrs = subgroups.subgroups(lattice_group.info()).groups_parent_setting()
+
+  # Order sub-groups
+  sort_values = flex.double()
+  for group in subgrs:
+    order_z = group.order_z()
+    space_group_number = sgtbx.space_group_type(group, False).number()
+    assert 1 <= space_group_number <= 230
+    sort_values.append(order_z*1000+space_group_number)
+  perm = flex.sort_permutation(sort_values, True)
+
+  for i_subgr in perm:
+    acentric_subgroup = subgrs[i_subgr]
+    acentric_supergroup = metric_supergroup(acentric_subgroup)
+    ## Add centre of inversion to acentric lattice symmetry
+    #centric_group = sgtbx.space_group(acentric_subgroup)
+    #centric_group.expand_inv(sgtbx.tr_vec((0,0,0)))
+    # Make symmetry object: unit-cell + space-group
+    # The unit cell is potentially modified to be exactly compatible
+    # with the space group symmetry.
+    subsym = crystal.symmetry(
+      unit_cell=minimum_symmetry.unit_cell(),
+      space_group=acentric_subgroup,
       assert_is_compatible_unit_cell=False)
+    #supersym = crystal.symmetry(
+      #unit_cell=minimum_symmetry.unit_cell(),
+      #space_group=acentric_supergroup,
+      #assert_is_compatible_unit_cell=False)
+    # Convert subgroup to reference setting
+    cb_op_minimum_ref = subsym.space_group_info().type().cb_op()
+    ref_subsym = subsym.change_basis(cb_op_minimum_ref)
+    # Ignore unwanted groups
+    bravais_t = bravais_types.bravais_lattice(
+      group=ref_subsym.space_group())
+    if bravais_t != target_bravais_t:
+      continue
 
-    bmsds.append(test_unit_cell.change_basis(
-      target_symm.change_of_basis_op_to_reference_setting())\
-      .bases_mean_square_difference(
-        target_symm.as_reference_setting().unit_cell()))
+    # Choose best setting for monoclinic and orthorhombic systems
+    cb_op_best_cell = ref_subsym.change_of_basis_op_to_best_cell(
+      best_monoclinic_beta=True)
 
-  #print " ".join(["%.2f"] * len(bmsds)) %tuple(bmsds)
-  cb_op_best_cell = axes_perm[flex.min_index(bmsds)]
-  if target_unit_cell:
-    cb_op_best_minimum = unit_cell.change_basis(
-      cb_op_best_cell).change_of_basis_op_to_niggli_cell()
-  else:
-    cb_op_best_minimum = sgtbx.change_of_basis_op()
+    best_subsym = ref_subsym.change_basis(cb_op_best_cell)
+    # Total basis transformation
+    cb_op_best_cell = change_of_basis_op(str(cb_op_best_cell),stop_chars='',r_den=144,t_den=144)
+    cb_op_minimum_ref=change_of_basis_op(str(cb_op_minimum_ref),stop_chars='',r_den=144,t_den=144)
+    cb_op_inp_minimum=change_of_basis_op(str(cb_op_inp_minimum),stop_chars='',r_den=144,t_den=144)
+    cb_op_inp_best = cb_op_best_cell * cb_op_minimum_ref * cb_op_inp_minimum
+    # Use identity change-of-basis operator if possible
+    if (best_subsym.unit_cell().is_similar_to(input_symmetry.unit_cell())):
+      cb_op_corr = cb_op_inp_best.inverse()
+      try:
+        best_subsym_corr = best_subsym.change_basis(cb_op_corr)
+      except RuntimeError, e:
+        if (str(e).find("Unsuitable value for rational rotation matrix.") < 0):
+          raise
+      else:
+        if (best_subsym_corr.space_group() == best_subsym.space_group()):
+          cb_op_inp_best = cb_op_corr * cb_op_inp_best
 
-  cb_op_best_cell = sgtbx.change_of_basis_op(
-    str(cb_op_best_cell),stop_chars='',r_den=144,t_den=144)
-  cb_op_best_minimum = sgtbx.change_of_basis_op(
-    str(cb_op_best_minimum),stop_chars='',r_den=144,t_den=144)
+    max_angular_difference = find_max_delta(
+      reduced_cell=minimum_symmetry.unit_cell(),
+      space_group=acentric_supergroup)
 
-  cb_op_inp_best_given \
-    = cb_target_given_minimum.inverse() * cb_op_best_minimum * cb_op_best_cell
+    if max_angular_difference < best_angular_difference:
+      #best_subgroup = subgroup
+      best_angular_difference = max_angular_difference
+      best_subgroup = {'subsym':subsym,
+                       #'supersym':supersym,
+                       'ref_subsym':ref_subsym,
+                       'best_subsym':best_subsym,
+                       'cb_op_inp_best':cb_op_inp_best,
+                       'max_angular_difference':max_angular_difference
+                       }
 
-  return cb_op_inp_best_given
+  if best_subgroup is not None:
+    return best_subgroup

@@ -131,7 +131,8 @@ class indexer_real_space_grid_search(indexer_base):
       self.debug_plot_candidate_basis_vectors()
     candidate_orientation_matrices \
       = self.find_candidate_orientation_matrices(
-        unique_vectors, max_combinations=30)
+        unique_vectors,
+        max_combinations=self.params.basis_vector_combinations.max_try)
     crystal_model, n_indexed = self.choose_best_orientation_matrix(
       candidate_orientation_matrices)
     if crystal_model is not None:

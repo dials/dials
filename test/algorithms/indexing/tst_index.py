@@ -469,7 +469,8 @@ def exercise_13():
   hall_symbol = '-R 3 2"'
 
   for uc, hall in ((unit_cell, hall_symbol), (None, hall_symbol)):
-    extra_args = ["bin_size_fraction=0.25"]
+    extra_args = ["bin_size_fraction=0.25",
+                  "use_all_reflections=True"]
     if uc is not None:
       extra_args.append("unit_cell='%s %s %s %s %s %s'" %unit_cell.parameters())
     if hall is not None:
