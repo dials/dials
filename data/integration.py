@@ -11,7 +11,7 @@
 from __future__ import division
 
 def generate_phil_scope():
-
+  import dials.extensions
   from libtbx.phil import parse
   from dials.interfaces import CentroidIface
   from dials.interfaces import BackgroundIface

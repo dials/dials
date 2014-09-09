@@ -25,8 +25,7 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.extract',
       join(self.path, 'experiments.json'),
-      'shoebox.sigma_b=0.058',
-      'shoebox.sigma_m=0.157',
+      join(self.path, 'profile.phil'),
     ]).raise_if_errors()
 
     assert(exists("shoebox.dat"))

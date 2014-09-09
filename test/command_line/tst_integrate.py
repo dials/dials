@@ -43,9 +43,7 @@ class Test(object):
 
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
-    mask = table.get_flags(table.flags.integrated,all=False)
-    assert(len(table) == 1996)
-    assert(mask.count(True) == 1995)
+    assert(len(table) == 764)
 
     # assert(len(table) == 764)
     assert('id' in table)

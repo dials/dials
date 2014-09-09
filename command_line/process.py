@@ -50,6 +50,7 @@ class Script(object):
 
   def __init__(self):
     '''Initialise the script.'''
+    from dials.util.options import OptionParser
 
     # The script usage
     usage = "usage: %prog [options] [param.phil] datablock.json"
@@ -57,7 +58,6 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=self.phil_scope(),
       epilog=help_message)
 
     # read image files from stdin

@@ -52,7 +52,7 @@ class Script(object):
     from libtbx.phil import parse
 
     # Set the phil scope
-    phil_scope = '''
+    phil_scope = parse('''
 
       integration {
 
@@ -77,7 +77,7 @@ class Script(object):
           .help = "The shoebox input filename"
       }
 
-      include scope dials.algorithms.integration.interface.phil_scope
+      include scope dials.data.integration.phil_scope
       include scope dials.algorithms.profile_model.profile_model.phil_scope
 
     ''', process_includes=True)
@@ -113,12 +113,12 @@ class Script(object):
 
     shoeboxes = reference = predicted = None
 
-    if params.shoeboxes:
-      shoeboxes = params.shoeboxes
-    if params.reference:
-      reference = self.load_reference(params.reference)
-    if params.predicted:
-      predicted = self.load_predicted(params.predicted)
+    if params.integration.shoeboxes:
+      shoeboxes = params.integration.shoeboxes
+    if params.integration.reference:
+      reference = self.load_reference(params.integration.reference)
+    if params.integration.predicted:
+      predicted = self.load_predicted(params.integration.predicted)
 
     # Initialise the integrator
     if None in exlist.goniometers():
@@ -132,7 +132,7 @@ class Script(object):
     reflections = integrator.integrate()
 
     # Save the reflections
-    self.save_reflections(reflections, params.output)
+    self.save_reflections(reflections, params.integration.integrated)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time

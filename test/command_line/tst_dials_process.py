@@ -23,7 +23,6 @@ def exercise_1():
   hall_symbol =  '-R 3 2"'
   cmd = " ".join(["dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
-                  "--nproc=1",
                   "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
@@ -65,7 +64,6 @@ def exercise_2():
   hall_symbol =  " I 2 2 3"
   cmd = " ".join(["dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
-                  "--nproc=1",
                   "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",

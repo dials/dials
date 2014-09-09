@@ -56,14 +56,15 @@ class OptionParser(optparse.OptionParser):
     self._phil = self._system_phil.fetch(source=parse(""))
 
     # Delete the phil keyword from the keyword arguments
-    del kwargs['phil']
+    if 'phil' in kwargs:
+      del kwargs['phil']
 
     # Initialise the option parser
     optparse.OptionParser.__init__(self, **kwargs)
 
     # Add an option to show configuration parameters
     if self._system_phil.as_str() != '':
-      self.parser.add_option(
+      self.add_option(
         '-c',
         action='count',
         default=0,
@@ -71,7 +72,7 @@ class OptionParser(optparse.OptionParser):
         help='Show the configuration parameters.')
 
     # Set a verbosity parameter
-    self.parser.add_option(
+    self.add_option(
       '-v',
       action='count',
       default=0,
@@ -93,7 +94,7 @@ class OptionParser(optparse.OptionParser):
     params = self._phil.extract()
 
     # Show config
-    if options.show_config > 0:
+    if hasattr(options, 'show_config') and options.show_config > 0:
       self.print_phil(attributes_level=options.show_config-1)
       exit(0)
 

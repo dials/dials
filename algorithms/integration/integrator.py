@@ -14,11 +14,8 @@ from __future__ import division
 class ReflectionBlockIntegrator(object):
   ''' A class to perform the integration. '''
 
-  def __init__(self, params, experiments, extractor=None):
+  def __init__(self, params, experiments, profile_model, extractor=None):
     ''' Initialise the integrator. '''
-    from math import pi
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
-    from dials.algorithms.profile_model.profile_model import ProfileModel
 
     # Ensure we have 1 experiment at the moment
     assert(len(experiments) == 1)
@@ -28,34 +25,25 @@ class ReflectionBlockIntegrator(object):
     self.params = params
     self.experiments = experiments
     self.extractor = extractor
-
-    # Create the shoebox masker
-    n_sigma = params.integration.shoebox.n_sigma
-    sigma_b = params.integration.shoebox.sigma_b
-    sigma_m = params.integration.shoebox.sigma_m
-    assert(n_sigma > 0)
-    assert(sigma_b > 0)
-    assert(sigma_m > 0)
-    self.profile_model = ProfileModelList()
-    self.profile_model.append(ProfileModel(
-      n_sigma,
-      sigma_b * pi / 180.0,
-      sigma_m * pi / 180.0))
+    self.profile_model = profile_model
 
   def integrate(self):
     ''' Integrate all the reflections. '''
     from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
-    from dials.framework.registry import Registry
+    from dials.interfaces import BackgroundIface
+    from dials.interfaces import IntensityIface
+    from dials.interfaces import CentroidIface
     result = flex.reflection_table()
-    registry = Registry()
-    params = registry.params()
     flex.reflection_table._background_algorithm = flex.strategy(
-      registry["integration.background"], params)
+      BackgroundIface.extension(self.params.integration.background.algorithm),
+      self.params)
     flex.reflection_table._intensity_algorithm = flex.strategy(
-      registry["integration.intensity"], params)
+      IntensityIface.extension(self.params.integration.intensity.algorithm),
+      self.params)
     flex.reflection_table._centroid_algorithm = flex.strategy(
-      registry["integration.centroid"], params)
+      CentroidIface.extension(self.params.integration.centroid.algorithm),
+      self.params)
     for indices, reflections in self.extractor:
       reflections.compute_mask(self.experiments, self.profile_model)
       reflections.integrate(self.experiments, self.profile_model)
@@ -81,10 +69,13 @@ class Integrator(object):
   def __init__(self, params, exlist, reference=None,
                predicted=None, shoeboxes=None):
     '''Initialise the script.'''
+    from dials.algorithms.profile_model.profile_model import ProfileModelList
 
     # Load the reference spots and compute the profile parameters
     if reference:
       self._compute_profile_model(params, exlist, reference)
+    else:
+      self.profile_model = ProfileModelList.load(params)
 
     # Load the extractor based on the input
     if shoeboxes is not None:
@@ -98,7 +89,8 @@ class Integrator(object):
       extractor = self._create_extractor(params, exlist, predicted)
 
     # Initialise the integrator
-    self._integrator = ReflectionBlockIntegrator(params, exlist, extractor)
+    self._integrator = ReflectionBlockIntegrator(
+      params, exlist, self.profile_model, extractor)
 
   def integrate(self):
     ''' Integrate the reflections. '''
@@ -144,37 +136,17 @@ class Integrator(object):
   def _compute_profile_model(self, params, experiments, reference):
     ''' Compute the profile model. '''
     from dials.algorithms.profile_model.profile_model import ProfileModel
-    from math import pi
-    if (params.integration.shoebox.sigma_b is None or
-        params.integration.shoebox.sigma_m is None):
-      assert(reference is not None)
-      assert(len(experiments) == 1)
-      profile_model = ProfileModel.compute(experiments[0], reference)
-      params.integration.shoebox.sigma_b = profile_model.sigma_b(deg=True)
-      params.integration.shoebox.sigma_m = profile_model.sigma_m(deg=True)
-      print 'Sigma B: %f' % params.integration.shoebox.sigma_b
-      print 'Sigma M: %f' % params.integration.shoebox.sigma_m
+    self.profile_model = ProfileModel.compute(experiments[0], reference)
+    for model in self.profile_model:
+      print 'Sigma B: %f' % model.sigma_b(deg=True)
+      print 'Sigma M: %f' % model.sigma_m(deg=True)
 
   def _predict_reflections(self, params, experiments):
     ''' Predict all the reflections. '''
     from dials.array_family import flex
     from dials.algorithms.profile_model.profile_model import ProfileModelList
-    from dials.algorithms.profile_model.profile_model import ProfileModel
-    from math import pi
-    n_sigma = params.integration.shoebox.n_sigma
-    sigma_b = params.integration.shoebox.sigma_b * pi / 180.0
-    sigma_m = params.integration.shoebox.sigma_m * pi / 180.0
-    profile_model = ProfileModelList()
-    profile_model.append(ProfileModel(
-      n_sigma,
-      sigma_b,
-      sigma_m))
-    result = flex.reflection_table()
-    for i, experiment in enumerate(experiments):
-      predicted = flex.reflection_table.from_predictions(experiment)
-      predicted['id'] = flex.size_t(len(predicted), i)
-      result.extend(predicted)
-    result.compute_bbox(experiments, profile_model)
+    result = flex.reflection_table.from_predictions_multi(experiments)
+    result.compute_bbox(experiments, self.profile_model)
     return result
 
   def _filter_reflections(self, params, experiments, reflections):

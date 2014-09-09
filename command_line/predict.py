@@ -40,12 +40,14 @@ class Script(object):
       dmin = None
         .type = float
         .help = "Minimum d-spacing of predicted reflections"
-    ''')
+
+        include scope dials.algorithms.profile_model.profile_model.phil_scope
+    ''', process_includes=True)
 
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=self.phil_scope())
+      phil=phil_scope)
 
   def run(self):
     '''Execute the script.'''
@@ -54,7 +56,7 @@ class Script(object):
     from dials.util.command_line import Importer
     from dials.array_family import flex
     from dials.framework.registry import Registry
-    from dials.algorithms.profile_model.profile_model import ProfileModel
+    from dials.algorithms.profile_model.profile_model import ProfileModelList
 
     # Parse the command line
     params, options, args = self.parser.parse_args(show_diff_phil=True)
@@ -93,18 +95,10 @@ class Script(object):
         force_static=params.force_static,
         dmin=params.dmin)
       predicted['id'] = flex.int(len(predicted), i_expt)
-
-      # Compute the bounding box
-      registry = Registry()
-      n_sigma = registry.params().integration.shoebox.n_sigma
-      sigma_b = registry.params().integration.shoebox.sigma_b
-      sigma_m = registry.params().integration.shoebox.sigma_m
-      if sigma_b is not None and sigma_m is not None:
-        import math
-        d2r = math.pi / 180.0
-        profile_model = ProfileModel(n_sigma, sigma_b*d2r, sigma_m*d2r)
-        predicted.compute_bbox(expt, profile_model)
       predicted_all.extend(predicted)
+    if len(params.profile) > 0:
+      profile_model = ProfileModelList.load(params)
+      predicted_all.compute_bbox(importer.experiments, profile_model)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(

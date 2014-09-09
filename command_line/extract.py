@@ -17,15 +17,16 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
+    from libtbx.phil import parse
 
     # The script usage
     usage = "usage: %prog [options] [param.phil] "\
             "{sweep.json | image1.file [image2.file ...]}"
 
     phil_scope = parse('''
-      output = predicted.pickle
+      output = shoebox.dat
         .type = str
-        .help = "The filename for the predicted reflections"
+        .help = "The filename for the shoebox output"
 
       force_static = False
         .type = bool
@@ -34,12 +35,14 @@ class Script(object):
       dmin = None
         .type = float
         .help = "Minimum d-spacing of predicted reflections"
-    ''')
+
+        include scope dials.algorithms.profile_model.profile_model.phil_scope
+    ''', process_includes=True)
 
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=self.phil_scope())
+      phil=phil_scope)
 
   def run(self):
     '''Execute the script.'''
@@ -49,7 +52,6 @@ class Script(object):
     from dials.array_family import flex
     from dials.model.serialize import extract_shoeboxes_to_file
     from dials.algorithms.profile_model.profile_model import ProfileModelList
-    from dials.algorithms.profile_model.profile_model import ProfileModel
     from math import pi
 
     # Parse the command line
@@ -79,11 +81,7 @@ class Script(object):
     predicted['id'] = flex.size_t(len(predicted), 0)
 
     # Get the bbox nsigma
-    profile_model = ProfileModelList()
-    profile_model.append(ProfileModel(
-      params.integration.shoebox.n_sigma,
-      params.integration.shoebox.sigma_b * pi / 180.0,
-      params.integration.shoebox.sigma_m * pi / 180.0))
+    profile_model = ProfileModelList.load(params)
 
     # Calculate the bounding boxes
     predicted.compute_bbox(importer.experiments, profile_model)
