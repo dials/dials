@@ -187,5 +187,9 @@ class Script(object):
 
 
 if __name__ == '__main__':
-  script = Script()
-  script.run()
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

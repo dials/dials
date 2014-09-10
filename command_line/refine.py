@@ -22,52 +22,41 @@ class Script(object):
     from dials.util.options import OptionParser
     from libtbx.phil import parse
 
+    # The phil scope
+    phil_scope = parse('''
+
+      output_experiments_filename = refined_experiments.json
+        .type = str
+        .help = "The filename for refined experimental models"
+
+      output_centroids_filename = None
+        .type = str
+        .help = "The filename for the table of centroids at the end of"
+                "refinement"
+
+      output_parameters_filename = None
+        .type = str
+        .help = "The filename for the table of scan varying parameter values"
+
+      output_correlation_plot_filename = None
+        .type = str
+        .help = "The filename of output of a plot of parameter correlations"
+
+      output_reflections_filename = None
+        .type = str
+        .help = "The filename for output of refined reflections"
+
+      include scope dials.algorithms.refinement.refiner.phil_scope
+    ''', process_includes=True)
+
     # The script usage
     usage  = "usage: %prog [options] [param.phil] " \
              "experiments.json reflections.pickle"
-
-    # The phil scope
-    phil_scope = parse('''
-      include scope dials.algorithms.refinement.refiner.phil_scope
-    ''', process_includes=True)
 
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope)
-
-    # Output experiments filename option
-    self.parser.add_option(
-        '--output-experiments-filename',
-        dest = 'output_experiments_filename',
-        type = 'string', default = 'refined_experiments.json',
-        help = 'Set the filename for refined experimental models.')
-
-    self.parser.add_option(
-        '--output-centroids-filename',
-        dest = 'output_centroids_filename',
-        type = 'string',
-        help = 'Set the filename for the table of centroids at the end of refinement.')
-
-    self.parser.add_option(
-        '--output-parameters-filename',
-        dest = 'output_parameters_filename',
-        type = 'string',
-        help = 'Set the filename for the table of scan varying parameter values'
-               ' at the end of refinement.')
-
-    self.parser.add_option(
-        '--output-correlation-plot-filename',
-        dest = 'output_corrplot_filename',
-        type = 'string',
-        help = 'Set the filename for output of a plot of parameter correlations.')
-
-    self.parser.add_option(
-        '--output-reflections-filename',
-        dest = 'output_reflections_filename',
-        type = 'string',
-        help = 'Set the filename for output of refined reflections.')
-
 
   def write_centroids_table(self, refiner, filename):
 
@@ -128,21 +117,21 @@ class Script(object):
     # Refine and get the refinement history
     refined = refiner.run()
 
-    if options.output_centroids_filename:
+    if params.output_centroids_filename:
       print "Writing table of centroids to '{0}'".format(
-        options.output_centroids_filename)
-      self.write_centroids_table(refiner, options.output_centroids_filename)
+        params.output_centroids_filename)
+      self.write_centroids_table(refiner, params.output_centroids_filename)
 
     # Write scan-varying parameters to file, if there were any
-    if options.output_parameters_filename:
+    if params.output_parameters_filename:
       scan = refiner.get_scan()
       if scan:
         text = refiner.get_param_reporter().varying_params_vs_image_number(
             scan.get_array_range())
         if text:
           print "Writing scan-varying parameter table to '{0}'".format(
-            options.output_parameters_filename)
-          f = open(options.output_parameters_filename,"w")
+            params.output_parameters_filename)
+          f = open(params.output_parameters_filename,"w")
           f.write(text)
           f.close()
         else:
@@ -152,23 +141,23 @@ class Script(object):
     experiments = refiner.get_experiments()
 
     # Save the refined experiments to file
-    output_experiments_filename = options.output_experiments_filename
+    output_experiments_filename = params.output_experiments_filename
     print 'Saving refined experiments to {0}'.format(output_experiments_filename)
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 
     # Write out refined reflections, if requested
-    if options.output_reflections_filename:
+    if params.output_reflections_filename:
       matches = refiner.get_matches()
       print 'Saving refined reflections to {0}'.format(
-        options.output_reflections_filename)
-      matches.as_pickle(options.output_reflections_filename)
+        params.output_reflections_filename)
+      matches.as_pickle(params.output_reflections_filename)
 
-    if options.output_corrplot_filename:
+    if params.output_corrplot_filename:
       if refined.parameter_correlation:
         plt = refiner.parameter_correlation_plot(len(refined.parameter_correlation)-1)
         plt.tight_layout()
-        plt.savefig(options.output_corrplot_filename)
+        plt.savefig(params.output_corrplot_filename)
       else:
         print "Sorry, no parameter correlations were tracked. Please set " \
               "track_parameter_correlation=True"
@@ -176,5 +165,9 @@ class Script(object):
     return
 
 if __name__ == '__main__':
-  script = Script()
-  script.run()
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

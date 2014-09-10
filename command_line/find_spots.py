@@ -81,6 +81,8 @@ class Script(object):
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
     from dials.array_family import flex
+    from time import time
+    start_time = time()
 
     # Parse the command line
     params, options, args = self.parser.parse_args(show_diff_phil=True)
@@ -120,12 +122,14 @@ class Script(object):
     Command.end('Saved {0} reflections to {1}'.format(
         len(reflections), params.spotfinder.output))
 
+    # Print the time
+    print time() - start_time
+
 
 if __name__ == '__main__':
-  from time import time
-  start_time = time()
-
-  script = Script()
-  script.run()
-
-  print "Total time: ", time() - start_time
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

@@ -38,8 +38,9 @@ Examples:
 class ImageFileImporter(object):
   ''' Import a data block from files. '''
 
-  def __init__(self, options):
+  def __init__(self, params, options):
     ''' Initialise with the options'''
+    self.params = params
     self.options = options
 
   def __call__(self, args):
@@ -47,7 +48,7 @@ class ImageFileImporter(object):
 
     # Check we have some filenames
     if len(args) == 0 and not self.options.stdin:
-      self.parser.print_help()
+      self.print_help()
       exit(0)
 
     # Try reading from stdin as well
@@ -55,7 +56,7 @@ class ImageFileImporter(object):
       args.extend([l.strip() for l in sys.stdin.readlines()])
 
     # Sort arguments
-    if self.options.sort:
+    if self.params.sort:
       args = sorted(args)
 
     # Get the data blocks from the input files
@@ -104,40 +105,41 @@ class ImageFileImporter(object):
           print sweep.get_scan()
 
     # Write the datablock to a JSON or pickle file
-    if self.options.output:
+    if self.params.output:
       print "-" * 80
-      print 'Writing datablocks to %s' % self.options.output
+      print 'Writing datablocks to %s' % self.params.output
       dump = DataBlockDumper(datablocks)
-      dump.as_file(self.options.output, compact=options.compact)
+      dump.as_file(self.params.output, compact=self.params.compact)
 
 
-class ParseOptions(object):
+class Script(object):
   ''' Class to parse the command line options. '''
-  from optparse import OptionParser
-
-  class Parser(OptionParser):
-    def format_epilog(self, formatter):
-      return self.epilog
 
   def __init__(self):
     ''' Set the expected options. '''
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
 
+    # Create the phil parameters
+    phil_scope = parse('''
+
+      output = datablock.json
+        .type = str
+        .help = "The output JSON or pickle file"
+
+      compact = False
+        .type = bool
+        .help = "For JSON output use compact representation"
+
+      sort = False
+        .type = bool
+        .help = "Sort input files"
+
+    ''')
+
+    # Create the option parser
     usage = "usage: %prog [options] /path/to/image/files"
-    self.parser = ParseOptions.Parser(usage, epilog=help_message)
-
-    # Print verbose output
-    self.parser.add_option(
-      "-v", "--verbose",
-      dest = "verbose",
-      action = "count", default = 0,
-      help = "Set the verbosity level (-vv gives a verbosity level of 2)")
-
-    # Write the datablock to JSON or Pickle
-    self.parser.add_option(
-      "-o", "--output",
-      dest = "output",
-      type = "string", default = "datablock.json",
-      help = "The output JSON or pickle file (filename.json | filename.pickle)")
+    self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
 
     # Standard input read files, rather than from the command-line
     self.parser.add_option(
@@ -147,38 +149,28 @@ class ParseOptions(object):
       default = False,
       help = "Read filenames from standard input rather than command-line")
 
-    # Write the datablock to JSON or Pickle
-    self.parser.add_option(
-      "-c", "--compact",
-      dest = "compact",
-      action = "store_true", default = False,
-      help = "For JSON output, use compact representation")
-
-    # Don't sort input filenames
-    self.parser.add_option(
-      "-n", "--no-sort",
-      dest = "sort",
-      action = "store_false", default = True,
-      help = "Don't sort input files (default is True)")
-
-  def __call__(self):
+  def run(self):
     ''' Parse the options. '''
+
     # Parse the command line arguments
-    (options, args) = self.parser.parse_args()
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
 
-    # Return the options and args
-    return options, args
+    # Define the help function
+    def print_help():
+      self.parser.print_help()
+      exit(0)
 
+    # Choose the importer to use
+    importer = ImageFileImporter(params, options)
+    importer.print_help = print_help
+
+    # Import the data
+    importer(args)
 
 if __name__ == '__main__':
-
-  # Parse the command line options
-  parse = ParseOptions()
-  (options, args) = parse()
-
-  # Choose the importer to use
-  importer = ImageFileImporter(options)
-  importer.parser = parse.parser
-
-  # Import the data
-  importer(args)
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

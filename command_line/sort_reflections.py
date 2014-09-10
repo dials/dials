@@ -82,5 +82,9 @@ class Sort(object):
     return
 
 if __name__ == '__main__':
-  script = Sort()
-  script.run()
+  from dials.util import halraiser
+  try:
+    script = Sort()
+    script.run()
+  except Exception as e:
+    halraiser(e)

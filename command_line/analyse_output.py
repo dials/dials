@@ -748,34 +748,54 @@ class Analyser(object):
       analyse(deepcopy(rlist))
 
 
+class Script(object):
+  ''' A class to encapsulate the script. '''
+
+  def __init__(self):
+    ''' Initialise the script. '''
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
+
+    # Create the phil parameters
+    phil_scope = parse('''
+      directory = .
+        .type = str
+        .help = "The directory to store the results"
+    ''')
+
+    # Create the parser
+    usage = "usage: %prog [options] reflections.pickle"
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope)
+
+  def run(self):
+    ''' Run the script. '''
+    from dials.array_family import flex
+    from dials.util.command_line import Command
+
+    # Parse the command line arguments
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
+
+    # Shoe the help
+    if len(args) != 1:
+      self.parser.print_help()
+      exit(0)
+
+    # Read the reflections
+    Command.start("Loading reflections")
+    rlist = flex.reflection_table.from_pickle(args[0])
+    Command.end("Loaded %d reflections" % len(rlist))
+
+    # Analyse the reflections
+    analyse = Analyser(params.directory)
+    analyse(rlist)
+
+
 if __name__ == '__main__':
-
-  from dials.array_family import flex
-  from optparse import OptionParser
-  from dials.util.command_line import Command
-  usage = "usage: %prog [options] reflections.pickle"
-  parser = OptionParser(usage)
-
-  # The directory to store output
-  parser.add_option(
-    "-d", "--dir",
-    dest = "dir",
-    type = "string", default = ".",
-    help = "The directory to store results")
-
-  # Parse the command line arguments
-  options, args = parser.parse_args()
-
-  # Shoe the help
-  if len(args) != 1:
-    parser.print_help()
-    exit(0)
-
-  # Read the reflections
-  Command.start("Loading reflections")
-  rlist = flex.reflection_table.from_pickle(args[0])
-  Command.end("Loaded %d reflections" % len(rlist))
-
-  # Analyse the reflections
-  analyse = Analyser(options.dir)
-  analyse(rlist)
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

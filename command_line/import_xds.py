@@ -16,7 +16,7 @@ class SpotXDSImporter(object):
   def __init__(self, spot_xds):
     self._spot_xds = spot_xds
 
-  def __call__(self, options):
+  def __call__(self, params, options):
     ''' Import the spot.xds file. '''
     from iotbx.xds import spot_xds
     from dials.util.command_line import Command
@@ -47,16 +47,16 @@ class SpotXDSImporter(object):
 
     # Remove invalid reflections
     Command.start('Removing invalid reflections')
-    if miller_index and options.remove_invalid:
+    if miller_index and params.remove_invalid:
       flags = flex.bool([h != (0, 0, 0) for h in table['miller_index']])
       table = table.select(flags)
     Command.end('Removed invalid reflections, %d remaining' % len(table))
 
     # Output the table to pickle file
-    if options.output is None: options.output = 'spot_xds.pickle'
-    Command.start('Saving reflection table to %s' % options.output)
-    table.as_pickle(options.output)
-    Command.end('Saved reflection table to %s' % options.output)
+    if params.output is None: params.output = 'spot_xds.pickle'
+    Command.start('Saving reflection table to %s' % params.output)
+    table.as_pickle(params.output)
+    Command.end('Saved reflection table to %s' % params.output)
 
 
 class IntegrateHKLImporter(object):
@@ -66,7 +66,7 @@ class IntegrateHKLImporter(object):
     self._integrate_hkl = integrate_hkl
     self._experiment = experiment
 
-  def __call__(self, options):
+  def __call__(self, params, options):
     ''' Import the integrate.hkl file. '''
 
     from iotbx.xds import integrate_hkl
@@ -117,10 +117,10 @@ class IntegrateHKLImporter(object):
     Command.end('Created table with {0} reflections'.format(len(table)))
 
     # Output the table to pickle file
-    if options.output is None: options.output = 'integrate_hkl.pickle'
-    Command.start('Saving reflection table to %s' % options.output)
-    table.as_pickle(options.output)
-    Command.end('Saved reflection table to %s' % options.output)
+    if params.output is None: params.output = 'integrate_hkl.pickle'
+    Command.start('Saving reflection table to %s' % params.output)
+    table.as_pickle(params.output)
+    Command.end('Saved reflection table to %s' % params.output)
 
   def derive_reindex_matrix(self, handle):
     '''Derive a reindexing matrix to go from the orientation matrix used
@@ -155,16 +155,16 @@ class XDSFileImporter(object):
     ''' Initialise with the options'''
     self.args = args
 
-  def __call__(self, options):
+  def __call__(self, params, options):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     import os
     # Get the XDS.INP file
     xds_inp = os.path.join(self.args[0], 'XDS.INP')
-    if options.xds_file is None:
+    if params.xds_file is None:
       xds_file = XDSFileImporter.find_best_xds_file(self.args[0])
     else:
-      xds_file = os.path.join(self.args[0], options.xds_file)
+      xds_file = os.path.join(self.args[0], params.xds_file)
 
     # Check a file is given
     if xds_file is None:
@@ -210,19 +210,19 @@ class XDSFileImporter(object):
         else:              print "no crystal!"
 
     # Write the experiment list to a JSON or pickle file
-    if options.output is None:
-      options.output = 'experiments.json'
+    if params.output is None:
+      params.output = 'experiments.json'
     print "-" * 80
-    print 'Writing experiments to %s' % options.output
+    print 'Writing experiments to %s' % params.output
     dump = ExperimentListDumper(experiments)
-    dump.as_file(options.output)
+    dump.as_file(params.output)
 
     # Optionally save as a data block
-    if options.xds_datablock:
+    if params.xds_datablock:
       print "-" * 80
-      print "Writing data block to %s" % options.xds_datablock
+      print "Writing data block to %s" % params.xds_datablock
       dump = DataBlockDumper(experiments.to_datablocks())
-      dump.as_file(options.xds_datablock)
+      dump.as_file(params.xds_datablock)
 
   @staticmethod
   def find_best_xds_file(xds_dir):
@@ -244,87 +244,82 @@ class XDSFileImporter(object):
     return None
 
 
-def select_importer(args):
-  from os.path import split
-  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-  import libtbx.load_env
-  path, filename = split(args[0])
-  if filename == 'SPOT.XDS':
-    return SpotXDSImporter(args[0])
-  elif filename == 'INTEGRATE.HKL':
-    assert(len(args) == 2)
-    experiments = ExperimentListFactory.from_json_file(args[1])
-    assert(len(experiments) == 1)
-    return IntegrateHKLImporter(args[0], experiments[0])
-  else:
-    raise RuntimeError('expected (SPOT.XDS|INTEGRATE.HKL), got %s' % filename)
+class Script(object):
+  ''' A class to encapsulate the script. '''
+
+  def __init__(self):
+    ''' Initialise the script. '''
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
+
+    # Create the phil parameters
+    phil_scope = parse('''
+      input = *experiment reflections
+        .type = choice
+        .help = "The input method"
+
+      output = None
+        .type = str
+        .help = "The output file"
+
+      xds_file = None
+        .type = str
+        .help = "Explicitly specify the file to use"
+
+      xds_datablock = None
+        .type = str
+        .help = "Output filename of data block with xds"
+
+      remove_invalid = False
+        .type = bool
+        .help = "Remove non-index reflections (if miller indices are present)"
+    ''')
+
+    # The option parser
+    usage = "usage: %prog [options] (SPOT.XDS|INTEGRATE.HKL)"
+    self.parser = OptionParser(usage=usage, phil=phil_scope)
+
+  def run(self):
+    ''' Run the script. '''
+
+    # Parse the command line arguments
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
+
+    # Check number of arguments
+    if len(args) == 0:
+      self.parser.print_help()
+      exit(0)
+
+    # Select the importer class
+    if params.input == 'experiment':
+      importer = XDSFileImporter(args)
+      pass
+    else:
+      importer = self.select_importer(args)
+
+    # Import the XDS data
+    importer(params, options)
+
+  def select_importer(self, args):
+    from os.path import split
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    import libtbx.load_env
+    path, filename = split(args[0])
+    if filename == 'SPOT.XDS':
+      return SpotXDSImporter(args[0])
+    elif filename == 'INTEGRATE.HKL':
+      assert(len(args) == 2)
+      experiments = ExperimentListFactory.from_json_file(args[1])
+      assert(len(experiments) == 1)
+      return IntegrateHKLImporter(args[0], experiments[0])
+    else:
+      raise RuntimeError('expected (SPOT.XDS|INTEGRATE.HKL), got %s' % filename)
 
 
 if __name__ == '__main__':
-
-  from optparse import OptionParser
-
-  # The option parser
-  usage = "usage: %prog [options] (SPOT.XDS|INTEGRATE.HKL)"
-  parser = OptionParser(usage)
-
-  # The thing to import
-  parser.add_option(
-    "-i", "--input",
-    dest = "input",
-    type = "choice", choices=["experiment", "reflections"],
-    default = "experiment",
-    help = "The input method")
-
-  # Write the datablock to JSON or Pickle
-  parser.add_option(
-    "-o", "--output",
-    dest = "output",
-    type = "string", default = None,
-    help = "The output file")
-
-  # Specify the file to use
-  parser.add_option(
-    '--xds-file',
-    dest = 'xds_file',
-    type = 'string', default = None,
-    help = 'Explicitly specify file to use (fname=xds_dir/xds_file)')
-
-  # Add an option to output a datablock with xds as well.
-  parser.add_option(
-    '--xds-datablock',
-    dest = 'xds_datablock',
-    type = 'string', default = None,
-    help = 'Output filename of data block with xds')
-
-  # Remove invalid reflections
-  parser.add_option(
-    "-r", "--remove-invalid",
-    dest = "remove_invalid",
-    action = "store_true", default = False,
-    help = "Remove non-index reflections (if miller indices are present)")
-
-  # Print verbose output
-  parser.add_option(
-    "-v", "--verbose",
-    dest = "verbose",
-    action = "count", default = 0,
-    help = "Set the verbosity level (-vv gives a verbosity level of 2)")
-
-  # Parse the command line arguments
-  (options, args) = parser.parse_args()
-
-  # Check number of arguments
-  if len(args) == 0:
-    parser.print_help()
-    exit(0)
-
-  # Select the importer class
-  if options.input == 'experiment':
-    importer = XDSFileImporter(args)
-    pass
-  else:
-    importer = select_importer(args)
-
-  # Import the XDS data
-  importer(options)
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

@@ -55,6 +55,10 @@ class Script(object):
 
     phil_scope = parse('''
 
+      strong_filename = None
+        .type = str
+        .help = "The filename for strong reflections from spot finder output."
+
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
       indexing {
         include scope dials.algorithms.indexing.indexer.master_phil_scope
@@ -80,14 +84,6 @@ class Script(object):
       action = "store_true",
       default = False,
       help = "Read filenames from standard input rather than command-line")
-
-    # Add an options for spot finder output
-    self.parser.add_option(
-      "--strong-filename",
-      dest="strong_filename",
-      type="str", default=None,
-      help="The output filename for found spots")
-
 
   def run(self):
     '''Execute the script.'''
@@ -191,12 +187,12 @@ class Script(object):
 
     # Save the reflections to file
     print '\n' + '-' * 80
-    if self.options.strong_filename:
+    if self.params.strong_filename:
       Command.start('Saving {0} reflections to {1}'.format(
-          len(observed), self.options.strong_filename))
-      observed.as_pickle(self.options.strong_filename)
+          len(observed), self.params.strong_filename))
+      observed.as_pickle(self.params.strong_filename)
       Command.end('Saved {0} observed to {1}'.format(
-          len(observed), self.options.strong_filename))
+          len(observed), self.params.strong_filename))
 
     observed.as_pickle("strong.pickle")
 
@@ -315,5 +311,9 @@ class Script(object):
     return m
 
 if __name__ == '__main__':
-  script = Script()
-  script.run()
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

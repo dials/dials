@@ -66,53 +66,55 @@ class MaskGenerator(object):
     return tuple(masks)
 
 
+class Script(object):
+  ''' A class to encapsulate the script. '''
+
+  def __init__(self):
+    ''' Initialise the script. '''
+    from dials.util.options import OptionParser
+    from libtbx.phil import parse
+
+    # Create the phil scope
+    phil_scope = parse(MaskGenerator.phil)
+
+    # Create the parser
+    usage = "usage: %prog [options] datablock.json"
+    self.parser = OptionParser(usage=usage, phil=phil_scope)
+
+  def run(self):
+    ''' Run the script. '''
+    from dxtbx.datablock import DataBlockFactory
+    import cPickle as pickle
+
+    # Parse the command line arguments
+    params, options, args = self.parser.parse_args(show_diff_phil=True)
+
+    # Check number of args
+    if len(args) == 0:
+      self.parser.print_help()
+      exit(0)
+
+    # Load the data block
+    datablocks = []
+    for arg in args:
+      datablocks.extend(DataBlockFactory.from_json_file(arg))
+    assert(len(datablocks) == 1)
+    datablock = datablocks[0]
+    imagesets = datablock.extract_imagesets()
+    assert(len(imagesets) == 1)
+    imageset = imagesets[0]
+
+    # Generate the mask
+    generator = MaskGenerator(params)
+    mask = generator.generate(imageset)
+
+    # Save the mask to file
+    pickle.dump(mask, open("mask.p", "w"))
+
 if __name__ == '__main__':
-
-  from libtbx.phil import parse
-  from libtbx.phil import command_line
-  from optparse import OptionParser
-  from dxtbx.datablock import DataBlockFactory
-  import cPickle as pickle
-
-  usage = "usage: %prog [options] datablock.json"
-  parser = OptionParser(usage)
-
-  # Parse the command line arguments
-  (options, args) = parser.parse_args()
-
-  # Get phil parameters
-  master_phil = parse(MaskGenerator.phil)
-
-  # Process the command line arguments
-  cmd = command_line.argument_interpreter(master_params = master_phil)
-  working_phils = []
-  unhandled = []
-  for arg in args:
-    try:
-      working_phils.append(cmd.process_arg(arg))
-    except Exception:
-      unhandled.append(arg)
-  working_phil = master_phil.fetch(sources=working_phils)
-  params = working_phil.extract()
-
-  # Check number of args
-  if len(unhandled) == 0:
-    parser.print_help()
-    exit(0)
-
-  # Load the data block
-  datablocks = []
-  for arg in unhandled:
-    datablocks.extend(DataBlockFactory.from_json_file(arg))
-  assert(len(datablocks) == 1)
-  datablock = datablocks[0]
-  imagesets = datablock.extract_imagesets()
-  assert(len(imagesets) == 1)
-  imageset = imagesets[0]
-
-  # Generate the mask
-  generator = MaskGenerator(params)
-  mask = generator.generate(imageset)
-
-  # Save the mask to file
-  pickle.dump(mask, open("mask.p", "w"))
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

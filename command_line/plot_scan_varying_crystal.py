@@ -15,16 +15,33 @@ from __future__ import division
 class Script(object):
   '''Class to run script.'''
 
-  def __init__(self, crystals):
+  def __init__(self):
     '''Setup the script.'''
+    from dials.util.options import OptionParser
 
-    # Filename data
-    self.crystals = crystals
+    # The option parser
+    self.parser = OptionParser()
 
-  def __call__(self):
+  def run(self):
     '''Run the script.'''
+    from dials.util.command_line import Importer
 
-    for icrystal, crystal in enumerate(self.crystals):
+    # Parse the command line
+    params, options, args = self.parser.parse_args()
+    if len(args) == 0:
+      self.parser.print_help()
+      exit(0)
+
+    importer = Importer(args, check_format=False)
+    try:
+      crystals = importer.experiments.crystals()
+    except AttributeError:
+      print "No crystals found in the input"
+      raise
+
+    assert len(importer.unhandled_arguments) == 0
+
+    for icrystal, crystal in enumerate(crystals):
 
       if crystal.num_scan_points == 0:
         print "Ignoring scan-static crystal"
@@ -107,20 +124,9 @@ class Script(object):
     plt.savefig("sv_crystal.pdf")
 
 if __name__ == '__main__':
-  import sys
-  from dials.util.command_line import Importer
-  args = sys.argv[1:]
-  importer = Importer(args, check_format=False)
+  from dials.util import halraiser
   try:
-    crystals = importer.experiments.crystals()
-  except AttributeError:
-    print "No crystals found in the input"
-    raise
-
-  assert len(importer.unhandled_arguments) == 0
-
-  runner = Script(
-      crystals=crystals)
-
-  # Run the script
-  runner()
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)

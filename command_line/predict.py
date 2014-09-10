@@ -70,7 +70,7 @@ class Script(object):
 
     # Check the number of experiments
     if importer.experiments is None or len(importer.experiments) == 0:
-      self.config().print_help()
+      self.parser.print_help()
       return
 
     predicted_all = flex.reflection_table()
@@ -107,5 +107,9 @@ class Script(object):
 
 
 if __name__ == '__main__':
-  script = Script()
-  script.run()
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)
