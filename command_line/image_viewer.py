@@ -27,7 +27,7 @@ class Script(object):
 
   def __call__(self):
     '''Run the script.'''
-    from dials.model.data import ReflectionList # import dependency
+    from dials.array_family import flex # import dependency
 
     self.view()
 

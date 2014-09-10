@@ -71,7 +71,7 @@ def integrate_mtz_to_unit_cell(integrate_mtz):
   raise RuntimeError, 'unit cell not found'
 
 def pull_calculated(integrate_pkl):
-  from dials.model.data import ReflectionList # import dependency
+  from dials.array_family import flex # import dependency
   import cPickle as pickle
   #import cPickle as pickle
   import math

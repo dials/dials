@@ -3,7 +3,7 @@ import os
 import cPickle as pickle
 import libtbx.load_env
 from libtbx import easy_run
-from dials.model.data import ReflectionList # import dependency
+from dials.array_family import flex # import dependency
 
 def exercise_merge_spot_lists():
   if not libtbx.env.has_module("dials_regression"):

@@ -6,8 +6,6 @@ import cPickle as pickle
 from libtbx.test_utils import open_tmp_directory, show_diff
 from libtbx import easy_run
 
-from dials.model.data import ReflectionList # import dependency
-
 def exercise_spots_xds():
   txt = """\
  2411.40 1000.70 25.00 16384. 0 0 0

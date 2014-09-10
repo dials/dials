@@ -25,7 +25,7 @@ class Script(object):
     '''Run the script.'''
     import cPickle as pickle
     from iotbx.xds import spot_xds
-    from dials.model.data import ReflectionList # import dependency
+    from dials.array_family import flex # import dependency
     from dials.util.command_line import Command
 
     # Read the pickle file

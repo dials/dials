@@ -43,7 +43,7 @@ def print_refl(row):
 if __name__ == '__main__':
   import cPickle as pickle
   import sys
-  from dials.model.data import ReflectionList # implicit import
+  from dials.array_family import flex # import dependency
   table = pickle.load(open(sys.argv[1]))
 
 

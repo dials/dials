@@ -108,7 +108,7 @@ def integrate_hkl_to_unit_cell(integrate_hkl):
   raise RuntimeError, 'unit cell not found'
 
 def pull_calculated(integrate_pkl):
-  from dials.model.data import ReflectionList # implicit import
+  from dials.array_family import flex # import dependency
   import cPickle as pickle
   import math
 

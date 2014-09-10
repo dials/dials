@@ -1,10 +1,10 @@
 from __future__ import division
 import os
+from dials.array_family import flex # import dependency
 import cPickle as pickle
 import libtbx.load_env
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
-from dials.model.data import ReflectionList # import dependency
 
 def exercise_spotfinder():
   if not libtbx.env.has_module("dials_regression"):
