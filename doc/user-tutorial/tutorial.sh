@@ -52,7 +52,7 @@ dials.refine experiments.json indexed.pickle \
 # profile parameters...
 
 dials.integrate outlier.algorithm=null intensity.algorithm=fitrs \
-  refined_experiments.json -r indexed.pickle
+  refined_experiments.json reference=indexed.pickle
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
