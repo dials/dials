@@ -51,7 +51,6 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
-    from dials.model.serialize import load, dump
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
     from dials.array_family import flex

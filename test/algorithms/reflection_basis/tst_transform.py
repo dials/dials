@@ -81,11 +81,10 @@ class TestForward(object):
   def tst_conservation_of_counts(self):
 
     from scitbx import matrix
-    from random import uniform, seed
+    from random import uniform
     from dials.algorithms.reflection_basis import CoordinateSystem
     from dials.algorithms.reflection_basis import transform
     from scitbx.array_family import flex
-    from time import time
 
     assert(len(self.detector) == 1)
 
@@ -270,7 +269,6 @@ class TestForward(object):
     from dials.algorithms.reflection_basis import CoordinateSystem
     from dials.algorithms.reflection_basis import transform
     from scitbx.array_family import flex
-    from time import time
     assert(len(self.detector) == 1)
     s0 = self.beam.get_s0()
     m2 = self.gonio.get_rotation_axis()

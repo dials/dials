@@ -25,7 +25,6 @@ class ReflectionPredictor(object):
 
     '''
     from cctbx import sgtbx
-    from dials.util.command_line import Command
     from dials.algorithms.spot_prediction import IndexGenerator
     from dials.algorithms.spot_prediction import RayPredictor
 
@@ -78,9 +77,6 @@ class ReflectionPredictor(object):
     from dials.util.command_line import Command
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
-    from dials.algorithms import shoebox
-    from dials.algorithms import filtering
-    from math import sqrt
 
     # Get models from the sweep
     detector = sweep.get_detector()

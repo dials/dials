@@ -19,7 +19,7 @@ import iotbx.phil
 from scitbx import matrix
 
 from dials.array_family import flex
-from cctbx import crystal, sgtbx, uctbx, xray
+from cctbx import crystal, sgtbx, xray
 
 from dxtbx.model.crystal import crystal_model as Crystal
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
@@ -407,7 +407,6 @@ class indexer_base(object):
         print "cb_op primitive->input:", self.cb_op_primitive_inp
 
   def index(self):
-    import libtbx
     self.reflections_input = self.reflections
     self.reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
@@ -1068,7 +1067,6 @@ class indexer_base(object):
     from cctbx.sgtbx.bravais_types import bravais_lattice
     from rstbx import dps_core # import dependency
     from rstbx.dps_core.lepage import iotbx_converter
-    from dials.algorithms.indexing.symmetry import dials_crystal_from_orientation
 
     items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=5.0)
     target_sg_ref = target_space_group.info().reference_setting().group()

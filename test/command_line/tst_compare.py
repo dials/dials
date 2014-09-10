@@ -5,7 +5,6 @@ class Test(object):
 
   def __init__(self):
     from os.path import join
-    from dials.array_family import flex
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -16,7 +15,7 @@ class Test(object):
     self.path = join(dials_regression, "integration_test_data/i04-weak-data")
 
   def run(self):
-    from os.path import abspath, join
+    from os.path import join
     from libtbx import easy_run
 
     # Call dials.compare_mosflm_dials

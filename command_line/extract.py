@@ -46,13 +46,10 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
-    from dials.model.serialize import load, dump
-    from dials.util.command_line import Command
     from dials.util.command_line import Importer
     from dials.array_family import flex
     from dials.model.serialize import extract_shoeboxes_to_file
     from dials.algorithms.profile_model.profile_model import ProfileModelList
-    from math import pi
 
     # Parse the command line
     params, options, args = self.parser.parse_args(show_diff_phil=True)

@@ -7,7 +7,6 @@ if __name__ == '__main__':
     raise RuntimeError, '%s integrated.pickle'
 
   import cPickle as pickle
-  from dials.array_family import flex
 
   integrated_data = pickle.load(open(sys.argv[1], 'rb'))
   export_text(integrated_data)

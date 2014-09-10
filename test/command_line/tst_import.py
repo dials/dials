@@ -18,7 +18,6 @@ class Test(object):
   def tst_from_image_files(self):
     from subprocess import call
     from glob import glob
-    import difflib
     from os.path import join, exists
 
     # Find the image files

@@ -13,7 +13,7 @@ from __future__ import division
 
 def generate_phil_scope():
   from iotbx.phil import parse
-  import dials.extensions
+  import dials.extensions # import dependency
   from dials.interfaces import SpotFinderThresholdIface
 
   phil_scope = parse('''
@@ -276,10 +276,9 @@ class PowderRingFilter(object):
     self.width = width
 
   def run(self, flags, sweep=None, observations=None, **kwargs):
-    from cctbx import crystal, sgtbx, uctbx
+    from cctbx import uctbx
 
     from dials.array_family import flex
-    from dials.model.data import ReflectionList
     from dxtbx import imageset
     detector = sweep.get_detector()
     beam = sweep.get_beam()
@@ -371,12 +370,9 @@ class BackgroundGradientFilter(object):
     self.gradient_cutoff = gradient_cutoff
 
   def run(self, flags, sweep=None, shoeboxes=None, **kwargs):
-    from scitbx import matrix
     from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
     from dials.algorithms.background import Linear2dModeller
-    from dials.algorithms.integration.flatten_shoebox import flatten_shoebox
-
     bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
     fg_code = MaskCode.Valid | MaskCode.Foreground
     strong_code = MaskCode.Valid | MaskCode.Strong
@@ -550,7 +546,7 @@ class SpotFinderFactory(object):
         The spot finder instance
 
     '''
-    from dials.algorithms.peak_finding import SpotFinder
+    from dials.algorithms.peak_finding.spot_finder import SpotFinder
     from libtbx.phil import parse
 
     if params is None:
@@ -583,7 +579,6 @@ class SpotFinderFactory(object):
         The spot finder instance
 
     '''
-    from dials.util.command_line import Command
     from dials.algorithms.peak_finding.spot_finder import ExtractSpots
 
     # Create the threshold strategy

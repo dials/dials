@@ -7,7 +7,6 @@ class Test(object):
   def __init__(self):
     from os.path import join
     from libtbx import easy_run
-    from dials.array_family import flex
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -16,7 +15,7 @@ class Test(object):
       exit(0)
 
     try:
-      import h5py
+      import h5py # implicit import
     except ImportError:
       print "Skipping: can't import module h5py"
       exit(0)
@@ -32,7 +31,6 @@ class Test(object):
     ]).raise_if_errors()
 
   def run(self):
-    from os.path import abspath, join
     from libtbx import easy_run
     from dials.array_family import flex
     from dials.model.data import Shoebox

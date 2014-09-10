@@ -9,7 +9,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 
 class Extract(object):
@@ -119,7 +118,6 @@ class ExtractSpots(object):
 
     '''
     from dials.util.command_line import Command
-    from dials.model.data import PixelList
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from libtbx import easy_mp

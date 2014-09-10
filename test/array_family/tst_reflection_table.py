@@ -585,7 +585,6 @@ class Test(object):
   def tst_del_selected(self):
 
     from dials.array_family import flex
-    from copy import deepcopy
 
     # The columns as lists
     c1 = list(range(10))

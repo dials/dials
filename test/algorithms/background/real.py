@@ -38,14 +38,11 @@ def display2(xyz1, xyz2, xyz3):
 
 if __name__ == '__main__':
 
-  from dials.model.data import ReflectionList
-  from dials.algorithms.image.centroid import CentroidImage3d
   from dials.algorithms.image.centroid import CentroidMaskedImage3d
   from scitbx import matrix
   from scitbx.array_family import flex
   import pickle
   from dials.algorithms.background import NormalDiscriminator
-  from dials.algorithms.background import PoissonDiscriminator
   from dials.algorithms.background import MeanSubtractor
 
   filename = "/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data/integrate_hkl.pickle"

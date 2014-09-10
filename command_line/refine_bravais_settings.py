@@ -57,7 +57,6 @@ Parameters:
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic
 
-  from dxtbx.model.crystal import crystal_model
   cb_op_to_primitive = experiment.crystal.get_space_group().info()\
     .change_of_basis_op_to_primitive_setting()
   if experiment.crystal.get_space_group().n_ltr() > 1:

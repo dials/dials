@@ -10,7 +10,6 @@
 #### Python and general cctbx imports
 
 from __future__ import division
-from scitbx import matrix
 
 #### DIALS imports
 

@@ -801,7 +801,7 @@ class RefinerFactory(object):
     # Shorten parameter path
     options = params.refinement.refinery
 
-    import dials.algorithms.refinement.engine as engine
+    import dials.algorithms.refinement.engine as engine # implicit import
 
     if options.engine == "SimpleLBFGS":
       from engine import SimpleLBFGS as refinery
@@ -1083,7 +1083,6 @@ class Refiner(object):
     """Return a copy of the detector model"""
 
     from copy import deepcopy
-    from dxtbx.model import Detector
     return deepcopy(self._detector)
 
   def get_goniometer(self):
@@ -1389,7 +1388,6 @@ class Refiner(object):
     #FIXME only works for a single crystal
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.model.data import ReflectionList
-    from math import pi
     from dials.algorithms.refinement.prediction.predictors import \
             ScanVaryingReflectionListGenerator
 

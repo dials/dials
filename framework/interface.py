@@ -9,7 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod # implicit import
 
 
 class InterfaceMeta(ABCMeta):

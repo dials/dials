@@ -44,7 +44,6 @@ def display_reference_profiles(reference_pickle_file, profile_number,
     matplotlib.use('Agg') # use a non-interactive backend
 
     from matplotlib import pyplot
-    from matplotlib.colors import LogNorm
 
     # try and make a square-ish grid
     ncols = size_z//int(round(math.sqrt(size_z)))

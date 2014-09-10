@@ -67,12 +67,8 @@ class Test(object):
   def test_for_reflections(self, refl):
     from dials.algorithms.integration import Summation3d
     from dials.array_family import flex
-    from dials.algorithms.shoebox import MaskCode
     from dials.algorithms.statistics import \
       kolmogorov_smirnov_test_standard_normal
-    from math import erf, sqrt
-    from copy import deepcopy
-    from dials.algorithms.simulation.reciprocal_space import Simulator
 
     # Get the calculated background and simulated background
     B_sim = refl['background.sim.a'].as_double()

@@ -188,8 +188,6 @@ class TestPoisson(object):
   def tst_constant2d_modeller(self):
     from dials.algorithms.background import Constant2dModeller
     from dials.array_family import flex
-    from dials.algorithms.statistics import \
-      kolmogorov_smirnov_test_standard_normal
     modeller = Constant2dModeller()
     ma = 10
     sboxes, masks = self.generate_background(self.size, 1000, ma, 0, 0, 0)

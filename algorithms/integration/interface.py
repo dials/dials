@@ -1,5 +1,4 @@
 from __future__ import division
-import boost.python
 from iotbx import phil
 import abc
 
@@ -205,7 +204,6 @@ class IntegrationTask3D(IntegrationTask):
     ''' Do the integration. '''
     from dials.array_family import flex
     from time import time
-    from libtbx.table_utils import format as table
     from dials.util.command_line import heading
     EPS = 1e-7
     fully_recorded = self._data['partiality'] > (1.0 - EPS)
@@ -295,7 +293,6 @@ class IntegrationManager3D(IntegrationManager):
                flatten=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
-    from dials.array_family import flex
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
     scans = experiments.scans()

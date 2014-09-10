@@ -87,13 +87,7 @@ class Test(object):
   def test_for_reference(self):
     from dials.algorithms.integration import ProfileFittingReciprocalSpace
     from dials.array_family import flex
-    from dials.algorithms.shoebox import MaskCode
-    from dials.algorithms.statistics import \
-      kolmogorov_smirnov_test_standard_normal
-    from math import erf, sqrt, pi
-    from copy import deepcopy
-    from dials.algorithms.simulation.reciprocal_space import Simulator
-    from os.path import basename
+    from math import sqrt, pi
 
     # Integrate
     integration = ProfileFittingReciprocalSpace(
@@ -206,8 +200,8 @@ class Test(object):
     Z_var = mv.unweighted_sample_variance()
     print "Z: mean: %f, var: %f, sig: %f" % (Z_mean, Z_var, sqrt(Z_var))
 
-    from matplotlib import pylab
-    from mpl_toolkits.mplot3d import Axes3D
+    # from matplotlib import pylab
+    # from mpl_toolkits.mplot3d import Axes3D
     #fig = pylab.figure()
     #ax = fig.add_subplot(111, projection='3d')
     #ax.scatter(X_pos, Y_pos, P_cor)
@@ -225,12 +219,8 @@ class Test(object):
   def test_for_reflections(self, refl, filename):
     from dials.algorithms.integration import ProfileFittingReciprocalSpace
     from dials.array_family import flex
-    from dials.algorithms.shoebox import MaskCode
     from dials.algorithms.statistics import \
       kolmogorov_smirnov_test_standard_normal
-    from math import erf, sqrt, pi
-    from copy import deepcopy
-    from dials.algorithms.simulation.reciprocal_space import Simulator
     from os.path import basename
     print basename(filename)
 
@@ -396,7 +386,6 @@ class Test(object):
     step_size = n_sigma2 / (grid_size + 0.5)
     eps = 1e-7
     for i in range(len(profiles)):
-      import numpy
       data = profiles[i].data
       #dmax = flex.max(data)
       #data = 100 * data / dmax

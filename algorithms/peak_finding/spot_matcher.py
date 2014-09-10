@@ -32,8 +32,6 @@ class SpotMatcher(object):
     :returns: The list of matched reflections
 
     '''
-    from dials.model.data import ReflectionList
-    from dials.util.command_line import Command
     from dials.array_family import flex
 
     # Find the nearest neighbours and distances
@@ -65,9 +63,7 @@ class SpotMatcher(object):
     :returns: (nearest neighbours, distance)
 
     '''
-    from annlib_ext import AnnAdaptor
     from scitbx.array_family import flex
-    from math import sqrt
 
     # Get the predicted coordinates
     predicted_panel = predicted['panel']
@@ -105,7 +101,6 @@ class SpotMatcher(object):
     '''
     from annlib_ext import AnnAdaptor
     from scitbx.array_family import flex
-    from math import sqrt
 
     # Create the KD Tree
     ann = AnnAdaptor(pxyz.as_double().as_1d(), 3)

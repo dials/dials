@@ -12,8 +12,8 @@
 from __future__ import division
 
 # Import to give access from here
-from dxtbx.serialize.load import imageset as sweep
-from dxtbx.serialize.load import datablock
+from dxtbx.serialize.load import imageset as sweep # implicit import
+from dxtbx.serialize.load import datablock # implicit import
 
 
 def reflections(infile):

@@ -35,7 +35,7 @@ class Test(object):
   def run(self):
     from dials.array_family import flex
     import cPickle as pickle
-    from math import floor, ceil, sqrt
+    from math import sqrt
     from dials.algorithms.shoebox import MaskCode
 
     # Read the data

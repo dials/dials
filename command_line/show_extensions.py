@@ -12,7 +12,7 @@ from __future__ import division
 
 if __name__ == '__main__':
   from optparse import OptionParser
-  import dials.extensions
+  import dials.extensions # import dependency
   from dials.interfaces import *
 
   usage = "usage: %prog [options] /path/to/image/files"

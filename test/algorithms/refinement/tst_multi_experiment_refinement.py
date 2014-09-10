@@ -51,11 +51,11 @@ from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-    XYPhiPredictionParameterisation
+    XYPhiPredictionParameterisation # implicit import
 
 # Imports for the target function
 from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff
+    LeastSquaresPositionalResidualWithRmsdCutoff # implicit import
 
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 

@@ -23,19 +23,19 @@ if have_dials_regression:
 
 # check optional dependencies of multi-lattice search
 try:
-  import scipy
+  import scipy # implicit import
   have_scipy = True
 except ImportError:
   have_scipy = False
 
 try:
-  import sklearn
+  import sklearn # implicit import
   have_sklearn = True
 except ImportError:
   have_sklearn = False
 
 try:
-  import networkx
+  import networkx # implicit import
   have_networkx = True
 except ImportError:
   have_networkx = False

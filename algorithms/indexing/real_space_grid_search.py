@@ -11,7 +11,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-import copy
 import math
 
 from scitbx import matrix

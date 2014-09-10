@@ -12,10 +12,8 @@ principally Target and ReflectionManager."""
 
 # python and cctbx imports
 from __future__ import division
-from scitbx import matrix
-from math import pi, sqrt, ceil
+from math import pi, sqrt
 from cctbx.array_family import flex
-import random
 import abc
 
 # constants

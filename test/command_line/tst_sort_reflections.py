@@ -5,7 +5,6 @@ class Test(object):
 
   def __init__(self):
     from os.path import join
-    from dials.array_family import flex
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -16,10 +15,8 @@ class Test(object):
     self.path = join(dials_regression, "centroid_test_data")
 
   def run(self):
-    from os.path import abspath, join, exists
+    from os.path import join, exists
     from libtbx import easy_run
-    import os
-    import shutil
     from dials.array_family import flex
 
 

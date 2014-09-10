@@ -67,7 +67,6 @@ class ReflectionPredictor(object):
       A reflection table
 
     '''
-    from dials.array_family import flex
     from dials.util.command_line import Command
     print ' Prediction type: %s' % self._predict.name
     Command.start('Predicting reflections')

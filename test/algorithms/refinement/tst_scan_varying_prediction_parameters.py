@@ -14,8 +14,6 @@ from __future__ import division
 #### Python and general cctbx imports
 
 import sys
-import random
-from scitbx import matrix
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 from libtbx.phil import parse

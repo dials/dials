@@ -31,7 +31,6 @@ class Script(object):
 
   @staticmethod
   def map_to_image_space(refl, d, dhs, dks, dls):
-    import math
     from scitbx.array_family import flex
     d_elems = d.elems
     bb = refl.bounding_box
@@ -52,7 +51,6 @@ class Script(object):
 
   def main(self):
     # FIXME import simulation code
-    from dials.model.serialize import load, dump
     import cPickle as pickle
     import math
     from dials.util.command_line import Importer
@@ -188,8 +186,6 @@ class Script(object):
     from dials.algorithms import shoebox
     shoebox.allocate(useful)
 
-    import random
-
     from dials.util.command_line import ProgressBar
     p = ProgressBar(title = 'Generating shoeboxes')
 
@@ -198,7 +194,6 @@ class Script(object):
       p.update(j * 100.0 / len(useful))
       d = d_matrices[j]
 
-      from scitbx.array_family import flex
       from scitbx.random import variate, normal_distribution
       g = variate(normal_distribution(mean = 0, sigma = node_size))
       counts = counts_database[refl.miller_index]

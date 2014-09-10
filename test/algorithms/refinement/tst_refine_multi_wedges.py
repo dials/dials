@@ -19,7 +19,6 @@ from __future__ import division
 import os
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
-from libtbx.test_utils import approx_equal
 
 def test1():
 
@@ -50,7 +49,6 @@ def run():
   test1()
 
 if __name__ == '__main__':
-  import sys
   from libtbx.utils import show_times_at_exit
   show_times_at_exit()
   run()

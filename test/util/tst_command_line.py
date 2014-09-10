@@ -18,7 +18,6 @@ class TestImporter:
 
   def create_data(self):
     from dials.array_family import flex
-    from dials.model.data import ReflectionList
     import cPickle as pickle
     table = flex.reflection_table()
     table['col1'] = flex.int(10)

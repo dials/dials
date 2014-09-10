@@ -77,7 +77,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   from iotbx import mtz
 
   from scitbx.array_family import flex
-  from math import floor, sin, sqrt
+  from math import floor, sqrt
 
   m = mtz.object()
   m.set_title('from dials.export_mtz')
@@ -161,8 +161,8 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # H K L M/ISYM BATCH I SIGI IPR SIGIPR FRACTIONCALC XDET YDET ROT WIDTH
   # LP MPART FLAG BGPKRATIOS
 
-  from cctbx.array_family import flex as cflex
-  from cctbx.miller import map_to_asu_isym
+  from cctbx.array_family import flex as cflex # implicit import
+  from cctbx.miller import map_to_asu_isym # implicit import
 
   # gather the required information for the reflection file
 

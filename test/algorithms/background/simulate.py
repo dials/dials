@@ -57,9 +57,7 @@ if __name__ == '__main__':
   grid = background + spot
 
   from dials.algorithms.background import NormalDiscriminator
-  from dials.algorithms.background import PoissonDiscriminator
   from dials.algorithms.background import IndexOfDispersionDiscriminator
-  from dials.algorithms.background import MeanSubtractor
   from dials.algorithms.background import normal_expected_n_sigma
 
   print normal_expected_n_sigma(30 * 30)
@@ -80,7 +78,7 @@ if __name__ == '__main__':
 
   line = grid.as_numpy_array()[15,:]
 
-  from matplotlib import pylab, cm
+  from matplotlib import pylab
   pylab.subplot2grid((3, 3), (0, 0))
   pylab.hist(all_pixels, bins=20)
   pylab.subplot2grid((3, 3), (0, 1))

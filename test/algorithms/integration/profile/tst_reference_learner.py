@@ -57,11 +57,9 @@ class Test(object):
     print 'OK'
 
   def tst_with_systematically_offset_profiles(self):
-    from tst_profile_helpers import gaussian
     from dials.algorithms.integration.profile import XdsCircleReferenceLearner
     from dials.algorithms.image.centroid import centroid_image
     from scitbx import matrix
-    from math import sqrt, pi, cos
     from scitbx.array_family import flex
 
     # Generate identical non-negative profiles
@@ -162,7 +160,6 @@ class Test(object):
 
   def generate_single_central_non_negative_profiles(self):
     from dials.array_family import flex
-    from random import uniform
     from tst_profile_helpers import gaussian
     rlist = flex.reflection_table(1)
 

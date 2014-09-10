@@ -42,7 +42,6 @@ def exercise_find_matching_symmetry():
   sgi = sgtbx.space_group_info(symbol="I2")
   cs = crystal.symmetry(unit_cell=uc, space_group_info=sgi)
   uc_inp = uc.minimum_cell()
-  from cctbx.sgtbx import lattice_symmetry
   cs_min = crystal.symmetry(
     unit_cell=cs.minimum_cell().unit_cell(), space_group=sgtbx.space_group())
 

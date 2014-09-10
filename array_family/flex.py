@@ -253,7 +253,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   def compute_mask(self, experiments, profile_model):
     ''' Apply a mask to the shoeboxes. '''
     from dials.algorithms.shoebox import Masker3DProfile
-    from math import pi
     assert(len(experiments) == 1)
     mask_profiles = Masker3DProfile(experiments, profile_model)
     mask_profiles(self, None)

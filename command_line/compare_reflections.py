@@ -11,7 +11,6 @@ class CompareReflections(object):
   def intensities(self):
     ''' Compare the intensities. '''
     from dials.array_family import flex
-    from collections import defaultdict
 
     # Sort by resolution
     d = self.refl1['d']
@@ -77,7 +76,6 @@ if __name__ == '__main__':
   from dials.util.command_line import Command
   from dials.array_family import flex
   from annlib_ext import AnnAdaptor as ann_adaptor
-  from scitbx import matrix
 
   usage = "usage: %prog [options] reflections1.pickle reflections2.pickle"
   parser = OptionParser(usage)

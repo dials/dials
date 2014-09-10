@@ -238,7 +238,6 @@ class BackgroundAnalyser(object):
 
   def mean_hist(self, rlist):
     ''' Analyse the background RMSD. '''
-    from dials.array_family import flex
     from os.path import join
     MEAN = rlist['background.mean']
     pylab.title("Background Model mean histogram")
@@ -250,7 +249,6 @@ class BackgroundAnalyser(object):
 
   def mean_vs_xy(self, rlist):
     ''' Plot I/Sigma vs X/Y '''
-    from dials.array_family import flex
     from os.path import join
     MEAN = rlist['background.mean']
     x, y, z = rlist['xyzcal.px'].parts()
@@ -265,7 +263,6 @@ class BackgroundAnalyser(object):
 
   def mean_vs_z(self, rlist):
     ''' Plot I/Sigma vs Z. '''
-    from dials.array_family import flex
     from os.path import join
     MEAN = rlist['background.mean']
     x, y, z = rlist['xyzcal.px'].parts()
@@ -477,7 +474,6 @@ class IntensityAnalyser(object):
 
   def num_background_hist(self, rlist):
     ''' Analyse the number of background pixels. '''
-    from dials.array_family import flex
     from os.path import join
     N = rlist['n_background']
     pylab.title("Num Background Pixel Histogram")
@@ -489,7 +485,6 @@ class IntensityAnalyser(object):
 
   def num_foreground_hist(self, rlist):
     ''' Analyse the number of foreground pixels. '''
-    from dials.array_family import flex
     from os.path import join
     N = rlist['n_foreground']
     pylab.title("Num Foreground Pixel Histogram")
@@ -580,7 +575,6 @@ class ReferenceProfileAnalyser(object):
 
   def reference_xy(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
-    from dials.array_family import flex
     from os.path import join
     mask = rlist.get_flags(rlist.flags.reference_spot)
     rlist = rlist.select(mask)
@@ -596,7 +590,6 @@ class ReferenceProfileAnalyser(object):
 
   def reference_z(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
@@ -609,7 +602,6 @@ class ReferenceProfileAnalyser(object):
 
   def reflection_corr_hist(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['profile.correlation']
     pylab.title("Reflection correlations histogram")
@@ -621,7 +613,6 @@ class ReferenceProfileAnalyser(object):
 
   def reflection_corr_vs_xy(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
@@ -636,7 +627,6 @@ class ReferenceProfileAnalyser(object):
 
   def reflection_corr_vs_z(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
@@ -675,7 +665,6 @@ class ReferenceProfileAnalyser(object):
 
   def ideal_reflection_corr_hist(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['correlation.ideal.profile']
     pylab.title("Reflection correlations histogram")
@@ -687,7 +676,6 @@ class ReferenceProfileAnalyser(object):
 
   def ideal_reflection_corr_vs_xy(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['correlation.ideal.profile']
     x, y, z = rlist['xyzcal.px'].parts()
@@ -702,7 +690,6 @@ class ReferenceProfileAnalyser(object):
 
   def ideal_reflection_corr_vs_z(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['correlation.ideal.profile']
     x, y, z = rlist['xyzcal.px'].parts()

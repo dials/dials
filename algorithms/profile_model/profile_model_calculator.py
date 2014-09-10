@@ -54,7 +54,6 @@ class ComputeEsdBeamDivergence(object):
 
     '''
     from scitbx.array_family import flex
-    from scitbx import matrix
 
     # Get the reflection columns
     shoebox = reflections['shoebox']
@@ -115,7 +114,6 @@ class FractionOfObservedIntensity(object):
 
     '''
     from scitbx.array_family import flex
-    from dials.algorithms.reflection_basis import zeta_factor
 
     # Calculate the list of frames and z coords
     bbox = reflections['bbox']

@@ -1,12 +1,12 @@
 
 from __future__ import division
+from dials.array_family import flex # import dependency
 
 
 class Test(object):
 
   def __init__(self):
     from os.path import join
-    from dials.array_family import flex
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -22,7 +22,7 @@ class Test(object):
     self.tst_scan_varying_prediction()
 
   def tst_static_prediction(self):
-    from os.path import abspath, join
+    from os.path import join
     from libtbx import easy_run
 
     # Call dials.predict
@@ -48,7 +48,7 @@ class Test(object):
     print 'OK'
 
   def tst_scan_varying_prediction(self):
-    from os.path import abspath, join
+    from os.path import join
     from libtbx import easy_run
 
     # Call dials.predict

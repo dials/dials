@@ -5,8 +5,6 @@ class TestIntegrationManager3DExecutor(object):
 
   def __init__(self):
     from dials.array_family import flex
-    from scitbx.array_family import shared
-    from random import shuffle
 
     self.reflections = flex.reflection_table()
     self.reflections['panel'] = flex.size_t()
@@ -209,7 +207,6 @@ class TestIntegrator3D(object):
 
   def run(self):
     from dials.algorithms.integration.interface import Integrator3D
-    from dials.algorithms.integration.interface import phil_scope
 
     integrator = Integrator3D(
       self.exlist,

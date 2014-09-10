@@ -6,7 +6,6 @@ class Test(object):
 
   def __init__(self):
     from os.path import join
-    from dials.array_family import flex
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -22,8 +21,8 @@ class Test(object):
     self.tst_from_xds_files()
 
   def tst_import_integrate_hkl(self):
-
-    from os.path import abspath, join
+    from dials.array_family import flex # import dependency
+    from os.path import join
     from libtbx import easy_run
 
     # Call dials.import_xds
@@ -48,7 +47,7 @@ class Test(object):
     print 'OK'
 
   def tst_import_spot_xds(self):
-    from os.path import abspath, join
+    from os.path import join
     from libtbx import easy_run
 
     # Call dials.import_xds
@@ -91,8 +90,7 @@ class Test(object):
 
   def tst_from_xds_files(self):
     from subprocess import call
-    import difflib
-    from os.path import join, abspath, exists
+    from os.path import abspath, exists
     from os import chdir
 
     # Import from the image files

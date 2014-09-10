@@ -4,7 +4,6 @@ from dials.algorithms.reflection_basis.transform import beam_vector_map
 class Test(object):
 
   def __init__(self):
-    from math import pi
     from dials.model.serialize import load
 
     import libtbx.load_env

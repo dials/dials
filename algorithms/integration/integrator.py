@@ -11,7 +11,7 @@
 from __future__ import division
 
 def generate_phil_scope():
-  import dials.extensions
+  import dials.extensions # import dependency
   from libtbx.phil import parse
   from dials.interfaces import CentroidIface
   from dials.interfaces import BackgroundIface
@@ -206,7 +206,6 @@ class Integrator(object):
   def _predict_reflections(self, params, experiments):
     ''' Predict all the reflections. '''
     from dials.array_family import flex
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
     result = flex.reflection_table.from_predictions_multi(experiments)
     result.compute_bbox(experiments, self.profile_model)
     return result

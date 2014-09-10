@@ -50,7 +50,6 @@ class Test(object):
   def tst_add_image(self):
     from dials.model.data import PixelList
     from scitbx.array_family import flex
-    from random import randint
     size = (2000, 2000)
     sf = 10
     pl = PixelList(size, sf)
@@ -70,7 +69,6 @@ class Test(object):
   def tst_labels_3d(self):
     from dials.model.data import PixelList
     from scitbx.array_family import flex
-    from random import randint
     size = (500, 500)
     sf = 0
     pl = PixelList(size, sf)
@@ -119,7 +117,6 @@ class Test(object):
   def tst_labels_2d(self):
     from dials.model.data import PixelList
     from scitbx.array_family import flex
-    from random import randint
     size = (500, 500)
     sf = 0
     pl = PixelList(size, sf)

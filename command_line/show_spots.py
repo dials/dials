@@ -33,7 +33,6 @@ if __name__ == '__main__':
     raise RuntimeError, '%s strong.pickle'
 
   import cPickle as pickle
-  from dials.array_family import flex
 
   strong_spots = pickle.load(open(sys.argv[1], 'rb'))
   show_spots(strong_spots)

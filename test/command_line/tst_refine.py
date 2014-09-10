@@ -25,7 +25,6 @@ import os
 import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
-from libtbx.test_utils import approx_equal
 from libtbx.test_utils import open_tmp_directory
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 
@@ -83,7 +82,6 @@ def run():
 if __name__ == '__main__':
   from dials.test import cd_auto
   with cd_auto(__file__):
-    import sys
     from libtbx.utils import show_times_at_exit
     show_times_at_exit()
     run()

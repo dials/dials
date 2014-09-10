@@ -142,7 +142,7 @@ class Test(object):
 
   def tst_bounding_boxes(self):
     from dials.model.data import Shoebox
-    from random import randint, sample
+    from random import randint
     from dials.array_family import flex
 
     shoebox = flex.shoebox(10)

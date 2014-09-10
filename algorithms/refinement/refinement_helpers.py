@@ -10,7 +10,7 @@
 """Auxiliary functions for the refinement package"""
 
 from __future__ import division
-from math import sin, cos, sqrt
+from math import sin, cos
 from scitbx import matrix
 import random
 

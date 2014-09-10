@@ -47,12 +47,12 @@ def show_isig_rmsd(integrated_data):
     print '%d %d %.3f %3f' % (b, n, flex.sum(i_s) / n, flex.sum(rmsd) / n)
 
 if __name__ == '__main__':
+  from dials.array_family import flex # import dependency
   import sys
   if len(sys.argv) != 2:
     raise RuntimeError, '%s integrated.pickle' % sys.argv[0]
 
   import cPickle as pickle
-  from dials.array_family import flex
 
   integrated_data = pickle.load(open(sys.argv[1], 'rb'))
   show_isig_rmsd(integrated_data)

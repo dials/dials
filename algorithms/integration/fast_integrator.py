@@ -1,6 +1,5 @@
 
 from __future__ import division
-import boost.python
 
 class FastIntegrator(object):
 

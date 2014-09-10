@@ -2,9 +2,8 @@ from __future__ import division
 
 import os
 import libtbx.load_env
-from cctbx import crystal, miller, sgtbx, uctbx
+from cctbx import crystal, miller, sgtbx
 from scitbx import matrix
-from libtbx.test_utils import approx_equal
 from dxtbx.serialize import load
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 from dxtbx.model.crystal import crystal_model

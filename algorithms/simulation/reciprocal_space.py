@@ -58,16 +58,11 @@ class Simulator(object):
 
   def with_individual_given_intensity(self, N, I, Ba, Bb, Bc, Bd):
     ''' Generate reflections with given intensity and background. '''
-    from dials.algorithms.shoebox import MaskForeground
     from dials.array_family import flex
-    from dials.util.command_line import Command, ProgressBar
-    from dials.algorithms.reflection_basis import CoordinateSystem
-    from scitbx.random import variate, poisson_distribution
+    from dials.util.command_line import ProgressBar
     from dials.algorithms.simulation import simulate_reciprocal_space_gaussian
-    from dials.algorithms.simulation import integrate_reciprocal_space_gaussian
     from dials.algorithms.simulation.generate_test_reflections import \
       random_background_plane2
-    import random
 
     # Check the lengths
     assert(N == len(I))
@@ -160,7 +155,6 @@ class Simulator(object):
     from dials.algorithms.shoebox import MaskForeground
     from dials.array_family import flex
     from dials.util.command_line import Command
-    from dials.algorithms.reflection_basis import CoordinateSystem
     from dials.algorithms import filtering
     from dials.algorithms.shoebox import MaskCode
     from dials.algorithms.profile_model.profile_model import ProfileModel

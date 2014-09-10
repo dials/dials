@@ -12,8 +12,7 @@
 
 from __future__ import division
 from dials.util.command_line import Importer
-from dxtbx.model.experiment.experiment_list import \
-  ExperimentList, ExperimentListDumper
+from dxtbx.model.experiment.experiment_list import ExperimentListDumper
 
 class Script(object):
   '''A class for running the script.'''
@@ -96,7 +95,6 @@ class Script(object):
   def run(self):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
-    import cPickle as pickle
 
     # Parse the command line
     params, options, args = self.parser.parse_args(show_diff_phil=True)

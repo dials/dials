@@ -21,7 +21,6 @@ class SpotXDSImporter(object):
     from iotbx.xds import spot_xds
     from dials.util.command_line import Command
     from dials.array_family import flex
-    import dxtbx
 
     # Read the SPOT.XDS file
     Command.start('Reading SPOT.XDS')
@@ -73,9 +72,6 @@ class IntegrateHKLImporter(object):
     from iotbx.xds import integrate_hkl
     from dials.array_family import flex
     from dials.util.command_line import Command
-    import dxtbx
-    from math import pi
-    from scitbx import matrix
     from cctbx import sgtbx
 
     # Get the unit cell to calculate the resolution

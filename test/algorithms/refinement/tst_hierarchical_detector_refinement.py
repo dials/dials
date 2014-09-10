@@ -17,9 +17,7 @@ Test hierarchical detector refinement.
 # python imports
 from __future__ import division
 import os
-import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
-from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from math import pi
 #from libtbx.test_utils import open_tmp_directory
@@ -247,7 +245,6 @@ def run():
   test1()
 
 if __name__ == '__main__':
-  import sys
   from libtbx.utils import show_times_at_exit
   show_times_at_exit()
   run()

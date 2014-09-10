@@ -205,8 +205,6 @@ class Script(object):
     return observed
 
   def index(self, datablock, reflections, unhandled):
-    from dials.algorithms.indexing.indexer import master_phil_scope
-    from libtbx.phil import command_line, parse
     from time import time
     st = time()
 
@@ -227,8 +225,6 @@ class Script(object):
            import indexer_real_space_grid_search as indexer
     idxr = indexer(reflections, imagesets, params=params)
 
-    from dials.array_family import flex
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments
 

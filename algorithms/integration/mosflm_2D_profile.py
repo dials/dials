@@ -179,7 +179,7 @@ def fit_profile_2d(reflection_pointers, ref_table
               tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
               bt_lf_average = arr_proff[bt_lf_pos[0]][bt_lf_pos[1]][0]
               bt_rg_average = arr_proff[bt_rg_pos[0]][bt_rg_pos[1]][0]
-            except:
+            except Exception:
               from dials.util.command_line import interactive_console; interactive_console()
               break
           if ( tp_lf_average != 0 and tp_rg_average != 0 and
@@ -316,7 +316,7 @@ def fit_profile_2d(reflection_pointers, ref_table
           try:
             x_mat = a_mat.inverse() * b_mat
             k_abc_vec = x_mat.as_flex_double_matrix()
-          except:
+          except Exception:
             print "fail to do profile fitting  <<<<<<<<"
             k_abc_vec=(0,0,0,0)
 

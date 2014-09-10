@@ -199,7 +199,7 @@ class TestRegridIrregularToRegular(object):
   def tst_conservation_of_counts(self):
     from scitbx.array_family import flex
     from scitbx import matrix
-    from math import sin, cos, pi, sqrt
+    from math import sin, cos, pi
     from random import uniform
 
     # Set the size of the grid
@@ -431,7 +431,7 @@ class TestRegridRegularToIrregular(object):
   def tst_conservation_of_counts(self):
     from scitbx.array_family import flex
     from scitbx import matrix
-    from math import sin, cos, pi, sqrt
+    from math import sin, cos, pi
     from random import uniform
 
     # Set the size of the grid

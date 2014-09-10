@@ -180,7 +180,6 @@ def refine_subgroup(args):
   return subgroup
 
 from cctbx.sgtbx import subgroups
-from cctbx.sgtbx import lattice_symmetry
 from cctbx.sgtbx import bravais_types
 from cctbx.sgtbx import change_of_basis_op
 find_max_delta = sgtbx.lattice_symmetry_find_max_delta

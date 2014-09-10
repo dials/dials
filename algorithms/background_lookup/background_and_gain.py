@@ -99,8 +99,6 @@ class ComputeBackgroundAndGain(object):
   def gain(self):
     '''Compute the full gain map.'''
     from dials.algorithms.image.filter import mean_filter
-    from scitbx.array_family import flex
-    import numpy
 
     # Divide all gain values by count and smooth the gain
     self._gain /= self._count

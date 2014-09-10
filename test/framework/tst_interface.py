@@ -29,7 +29,7 @@ class Test(object):
     print 'OK'
 
   def tst_after_import_interfaces(self):
-    import dials.interfaces
+    import dials.interfaces # import dependency
 
     # Should have three interfaces
     interfaces = list(Interface.interfaces())
@@ -55,7 +55,7 @@ class Test(object):
     print 'OK'
 
   def tst_after_import_extensions(self):
-    import dials.extensions
+    import dials.extensions # import dependency
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface

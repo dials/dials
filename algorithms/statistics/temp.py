@@ -1,7 +1,6 @@
 from __future__ import division
 
 #from scipy.stats.distributions import ksone
-from math import floor, log
 
 #v1 = []
 #v2 = []

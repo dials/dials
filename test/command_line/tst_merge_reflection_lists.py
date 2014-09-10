@@ -8,7 +8,6 @@ class Test(object):
     from os.path import join
     from dials.array_family import flex
     import libtbx.load_env
-    from libtbx import easy_run
     from dials.array_family import flex
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -25,7 +24,6 @@ class Test(object):
     table.as_pickle("temp.pickle")
 
   def run(self):
-    from os.path import abspath, join
     from libtbx import easy_run
     from dials.array_family import flex
 

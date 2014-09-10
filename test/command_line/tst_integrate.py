@@ -1,11 +1,11 @@
 from __future__ import division
+from dials.array_family import flex # import dependency
 
 
 class Test(object):
 
   def __init__(self):
     from os.path import join
-    from dials.array_family import flex
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -21,7 +21,7 @@ class Test(object):
     self.test3()
 
   def test1(self):
-    from os.path import abspath, join, exists
+    from os.path import join, exists
     from libtbx import easy_run
     import os
     from uuid import uuid4
@@ -53,7 +53,7 @@ class Test(object):
     print 'OK'
 
   def test2(self):
-    from os.path import abspath, join
+    from os.path import join
     from libtbx import easy_run
     import os
     from uuid import uuid4
@@ -84,13 +84,10 @@ class Test(object):
     print 'OK'
 
   def test3(self):
-    from os.path import abspath, join
+    from os.path import join
     from libtbx import easy_run
-    import os
-    from uuid import uuid4
     import shutil
     from os.path import join
-    from dials.array_family import flex
     shutil.copyfile(join(self.path, "experiments.json"), "experiments.json")
     shutil.copyfile(join(self.path, "profile.phil"), "profile.phil")
     for i in range(1, 10):

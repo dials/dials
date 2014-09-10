@@ -11,7 +11,6 @@
 from __future__ import division
 from math import pi, sqrt
 from cctbx.array_family import flex
-import random
 
 # dials imports
 from dials.algorithms.refinement.target import Target, SparseGradientsMixin

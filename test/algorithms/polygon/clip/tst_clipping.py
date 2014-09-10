@@ -187,7 +187,6 @@ class TestTriangleWithTriangle(object):
 
   def tst_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
     for i in range(10000):
 
       # Generate intersecting polygons
@@ -207,7 +206,6 @@ class TestTriangleWithTriangle(object):
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
 
     for i in range(10000):
 
@@ -234,7 +232,6 @@ class TestTriangleWithConvexQuad(object):
 
   def tst_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
     for i in range(10000):
 
       # Generate intersecting polygons
@@ -254,7 +251,6 @@ class TestTriangleWithConvexQuad(object):
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
 
     for i in range(10000):
 
@@ -281,7 +277,6 @@ class TestQuadWithTriangle(object):
 
   def tst_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
     for i in range(10000):
 
       # Generate intersecting polygons
@@ -301,7 +296,6 @@ class TestQuadWithTriangle(object):
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
 
     for i in range(10000):
 
@@ -328,7 +322,6 @@ class TestQuadWithConvexQuad(object):
 
   def tst_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
     for i in range(10000):
 
       # Generate intersecting polygons
@@ -348,7 +341,6 @@ class TestQuadWithConvexQuad(object):
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
-    from scitbx.array_family import flex
 
     for i in range(10000):
 

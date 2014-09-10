@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util import HalError
 import optparse
 
 class CommandLineConfig(object):
@@ -22,7 +21,6 @@ class CommandLineConfig(object):
 
   def parse(self, argv):
     '''Get the configuration.'''
-    import os
 
     phils, positionals = self._interpretor.process_and_fetch(
       argv, custom_processor="collect_remaining")

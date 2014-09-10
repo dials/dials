@@ -3,7 +3,6 @@ from __future__ import division
 def import_xds_gain(sweep_filename, in_filename, out_filename):
   from dials.util import image
   from dials.model.serialize import load
-  from scitbx.array_family import flex
   from math import ceil
 
   # Read the sweep

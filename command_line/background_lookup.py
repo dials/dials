@@ -26,7 +26,6 @@ class Script(object):
     from dials.util.command_line import Command, ProgressBar
     from dials.algorithms.background_lookup import ComputeDetectorNoise
     from dials.algorithms.background_lookup import ComputeBackgroundAndGain
-    from scitbx.array_family import flex
 
     # Set the print output
     print 'Running {0}\n'.format(__file__)

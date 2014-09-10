@@ -7,7 +7,7 @@ class Test(object):
     from dials.algorithms.reflection_basis import CoordinateSystem
     import os
     import libtbx.load_env
-    from math import pi, floor
+    from math import floor
     from scitbx import matrix
     from dials.model.serialize import load
     from random import uniform
@@ -68,9 +68,7 @@ class Test(object):
         self.s1_map)
 
   def run(self):
-    from dials.algorithms import reflection_basis
     from scitbx import matrix
-    from random import uniform, randint
 
     for j in range(0, 20):
       for i in range(0, 20):

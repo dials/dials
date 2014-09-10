@@ -8,7 +8,7 @@ class TestRayPredictor:
     from iotbx.xds import xparm, integrate_hkl
     from dials.util import ioutil
     from math import ceil
-    from os.path import realpath, dirname, join
+    from os.path import join
     import dxtbx
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter

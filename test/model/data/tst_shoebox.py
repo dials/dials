@@ -223,7 +223,6 @@ class Test(object):
     print 'OK'
 
   def tst_summed_intensity(self):
-    from dials.array_family import flex
     for shoebox, (XC, I) in self.random_shoeboxes(10):
       intensity = shoebox.summed_intensity()
       assert(shoebox.is_consistent())
@@ -282,7 +281,6 @@ class Test(object):
   def generate_shoebox(self, bbox, centre, intensity, mask=False):
     from dials.model.data import Shoebox
     from dials.algorithms.shoebox import MaskCode
-    from scitbx.array_family import flex
     shoebox = Shoebox()
     shoebox.bbox = bbox
     shoebox.allocate()

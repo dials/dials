@@ -278,7 +278,6 @@ class TestMapForwardReverse(object):
     from scitbx import matrix
     from random import uniform
     from dials.algorithms.reflection_basis import CoordinateSystem
-    from scitbx.array_family import flex
 
     s0 = self.beam.get_s0()
     m2 = self.gonio.get_rotation_axis()

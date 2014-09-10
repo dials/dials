@@ -20,7 +20,7 @@ def pickle_then_unpickle(obj):
 def generate_profile(flex_type):
   '''Generate a profile array'''
   from scitbx.array_family import flex
-  from random import randint, uniform, choice
+  from random import randint
   shape = randint(0, 10), randint(1, 10), randint(1, 10)
   p = flex_type(flex.grid(shape))
   for i in range(len(p)):

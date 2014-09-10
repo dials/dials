@@ -10,8 +10,6 @@
 #  included in the root directory of this package.
 from __future__ import division
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
-from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment.experiment_list import ExperimentListDumper
 
 help_message = '''
 

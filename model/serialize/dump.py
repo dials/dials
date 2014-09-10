@@ -12,9 +12,9 @@
 from __future__ import division
 
 # Import to give access from here
-from dxtbx.serialize.dump import imageset as sweep
-from dxtbx.serialize.dump import imageset_to_string as sweep_to_string
-from dxtbx.serialize.dump import datablock
+from dxtbx.serialize.dump import imageset as sweep # implicit import
+from dxtbx.serialize.dump import imageset_to_string as sweep_to_string # implicit import
+from dxtbx.serialize.dump import datablock # implicit import
 
 
 def reflections(obj, outfile):

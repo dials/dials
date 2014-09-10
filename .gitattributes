@@ -25,10 +25,6 @@ algorithms/background_lookup/detector_noise.py -text
 algorithms/centroid/__init__.py -text
 algorithms/centroid/centroid.h -text
 algorithms/centroid/centroid_px_to_mm.py -text
-algorithms/centroid/filtered_centroid.py -text
-algorithms/centroid/toy_centroid.py -text
-algorithms/centroid/toy_centroid_Lui.py -text svneol=unset#text/plain
-algorithms/centroid/toy_centroid_helpers.py -text
 algorithms/filtering/SConscript -text
 algorithms/filtering/__init__.py -text
 algorithms/filtering/boost_python/filter_ext.cc -text
@@ -135,17 +131,8 @@ algorithms/integration/summation2d.py -text svneol=unset#text/plain
 algorithms/integration/summation3d.py -text
 algorithms/peak_finding/SConscript -text
 algorithms/peak_finding/__init__.py -text svneol=unset#text/plain
-algorithms/peak_finding/boost_python/lui_find_peak_masking.cc -text
-algorithms/peak_finding/boost_python/lui_find_peak_smoothing.cc -text svneol=unset#text/plain
-algorithms/peak_finding/boost_python/lui_find_peak_smothing.cc -text svneol=unset#text/plain
-algorithms/peak_finding/boost_python/lui_integrate_helper.cc -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/peak_finding_ext.cc -text
-algorithms/peak_finding/lui_find_peak.py -text svneol=unset#text/plain
-algorithms/peak_finding/lui_find_peak_masking.h -text
-algorithms/peak_finding/lui_find_peak_smoothing.h -text svneol=unset#text/plain
-algorithms/peak_finding/lui_integrate_helper.h -text svneol=unset#text/plain
 algorithms/peak_finding/spot_finder.py -text
-algorithms/peak_finding/spot_finder_lui.py -text svneol=unset#text/plain
 algorithms/peak_finding/spot_matcher.py -text
 algorithms/peak_finding/spotfinder_factory.py -text
 algorithms/peak_finding/threshold.py -text
@@ -433,8 +420,6 @@ framework/dftbx/dftbx.h -text
 framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
 framework/interface.py -text
-framework/toplevel.py -text
-framework/toplevel_example.py -text
 interfaces/__init__.py -text
 /libtbx_config -text
 /libtbx_refresh.py -text
@@ -776,10 +761,6 @@ test/algorithms/background/tst_modeller.py -text
 test/algorithms/background/tst_mosflm_outlier_rejector.py -text
 test/algorithms/background/tst_normal_discriminator.py -text
 test/algorithms/background/tst_outlier_rejector.py -text
-test/algorithms/centroid/tst_filtered_centroid.py -text
-test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
-test/algorithms/centroid/tst_toy_centroid.py -text
-test/algorithms/centroid/tst_toy_centroid_helpers.py -text
 test/algorithms/generate_test_reflections/__init__.py -text
 test/algorithms/generate_test_reflections/tst_generate_test_refl.py -text
 test/algorithms/image/connected_components/tst_connected_components.py -text

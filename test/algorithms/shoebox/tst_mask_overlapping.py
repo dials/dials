@@ -69,7 +69,6 @@ class Test(object):
 
   def tst_non_overlapping(self, reflections, non_overlapping, image_size):
     '''Ensure non-overlapping reflections have all their values 1.'''
-    import numpy
     from dials.algorithms import shoebox
 
     # Check that all elements in non_overlapping masks are 1
@@ -152,11 +151,7 @@ class Test(object):
 
   def predict_reflections(self):
     from dials.algorithms import shoebox
-    from dials.algorithms import filtering
-    from cctbx import sgtbx
-    from math import sqrt
     from dials.array_family import flex
-    from dials.model.data import ReflectionList
     from dxtbx.model.experiment.experiment_list import ExperimentList
     from dxtbx.model.experiment.experiment_list import Experiment
     from dials.algorithms.profile_model.profile_model import ProfileModelList

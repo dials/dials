@@ -19,7 +19,6 @@ class General(object):
                model='constant3d',
                **kwargs):
     ''' Initialise the algorithm. '''
-    from libtbx.phil import parse
     from dials.algorithms.background import Creator
     from dials.algorithms.background import TruncatedOutlierRejector
     from dials.algorithms.background import NSigmaOutlierRejector

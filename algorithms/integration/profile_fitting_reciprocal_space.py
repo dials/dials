@@ -18,7 +18,6 @@ class ProfileFittingReciprocalSpace(object):
 
   def __init__(self, **kwargs):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
     from math import pi
 
     # Set the parameters
@@ -87,9 +86,8 @@ class ProfileFittingReciprocalSpace(object):
     ''' Learn the reference profiles. '''
     from dials.algorithms.integration.profile import GridSampler
     from dials.algorithms.integration.profile import GridReferenceLearner
-    from dials.algorithms.integration.profile import XdsCircleSampler
-    from dials.algorithms.integration.profile import XdsCircleReferenceLearner
-    from dials.array_family import flex
+    # from dials.algorithms.integration.profile import XdsCircleSampler
+    # from dials.algorithms.integration.profile import XdsCircleReferenceLearner
 
     # Match the predictions with the strong spots
     #sind, pind = self.match(strong, reflections)

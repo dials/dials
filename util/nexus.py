@@ -33,7 +33,6 @@ class ReflectionListEncoder(H5PYEncoder):
 
   def encode(self, reflections, handle):
     '''Encode the reflection data.'''
-    import numpy
 
     # Create the reflection data group
     group = handle.create_group('entry/data_processing')

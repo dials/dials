@@ -59,11 +59,9 @@ class Test(object):
     print 'OK'
 
   def tst_with_systematically_offset_profiles(self):
-    from tst_profile_helpers import gaussian
     from dials.algorithms.integration.profile import ReferenceLearner2D
     from dials.algorithms.image.centroid import centroid_image
     from scitbx import matrix
-    from math import sqrt, pi, cos
     from scitbx.array_family import flex
     from dials.algorithms.shoebox import MaskCode
 
@@ -171,7 +169,6 @@ class Test(object):
 
   def generate_single_central_non_negative_profiles(self):
     from dials.array_family import flex
-    from random import uniform
     from tst_profile_helpers import gaussian
 
     profile = gaussian((9, 9), 1000, (4, 4), (1.5, 1.5))

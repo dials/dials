@@ -4,7 +4,6 @@ class Test(object):
 
   def __init__(self):
     ''' Create the maps and reflection list'''
-    from scitbx.array_family import flex
 
     # Generate some reflections
     self.reflections = self.generate_reflections(1000)

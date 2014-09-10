@@ -44,7 +44,6 @@ class Test(object):
 
   def tst_detector_area(self):
     from dials.algorithms.integration.profile import XdsCircleSampler
-    from math import sin, cos, pi
     from scitbx.array_family import flex
     width = 1000
     height = 1000
@@ -189,7 +188,6 @@ class Test(object):
     print 'OK'
 
   def tst_weights(self):
-    from math import sqrt, atan2, pi, floor
     from dials.algorithms.integration.profile import XdsCircleSampler
     from math import exp, log
     from scitbx import matrix
@@ -251,8 +249,6 @@ class Test(object):
     print 'OK'
 
   def tst_z_index(self):
-    from math import sqrt, atan2, pi, floor
-    from random import randint
     from dials.algorithms.integration.profile import XdsCircleSampler
     width = 1000
     height = 1000

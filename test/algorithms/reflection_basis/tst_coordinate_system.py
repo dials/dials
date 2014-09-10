@@ -222,7 +222,6 @@ class TestFromRotationAngle(object):
 
   def test_e3_coordinate_approximation(self):
 
-    from scitbx import matrix
     from math import pi
     import random
 
@@ -281,7 +280,6 @@ class TestToBeamVector(object):
     """Test some large coordinates, 1 valid and the other invalid. (i.e.
     a coordinate that cannot be mapped onto the ewald sphere)."""
 
-    from scitbx import matrix
 
     eps = 1e-7
 
@@ -386,7 +384,6 @@ class TestToRotationAngle(object):
 
   def test_forward_and_backward(self):
 
-    from scitbx import matrix
     from math import pi
     import random
     eps = 1e-7
@@ -426,8 +423,6 @@ class TestToRotationAngle(object):
     """Test some large coordinates, 1 valid and the other invalid. (i.e.
     a coordinate that cannot be mapped onto the ewald sphere)."""
 
-    from scitbx import matrix
-    from math import pi
     eps = 1e-7
 
     # Get the limits
@@ -468,7 +463,6 @@ class TestToRotationAngle(object):
 
   def test_e3_coordinate_approximation(self):
 
-    from scitbx import matrix
     from math import pi
     import random
 
