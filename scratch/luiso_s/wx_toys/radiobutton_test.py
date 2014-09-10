@@ -24,8 +24,16 @@ class RdButtonFrm(wx.Frame):
     text = self.texts[radioSelected.GetLabel()]
     text.Enable(True)
     self.selectedText = text
+  def tst(self, a):
+    print "from tst"
+    print a
+    return 2*a
 
 if __name__ == '__main__':
   app = wx.PySimpleApp()
-  RdButtonFrm().Show()
+  frst = RdButtonFrm()
+  frst.Show()
+  scnd = RdButtonFrm()
+  scnd.Show()
+  dos_veses = frst.tst(5)
   app.MainLoop()
