@@ -1,3 +1,14 @@
+#
+#  DIALS Image Utilities
+#
+#  Copyright (C) 2014 Diamond Light Source
+#
+#  Author: Luis Fuentes-Montero (Luiso)
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package."
+#
+#
 from __future__ import division
 import wx
 import numpy as np
@@ -5,7 +16,6 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
 def GetBitmap_from_np_array(data2d):
   lc_fig = plt.figure(frameon=False)
 
@@ -52,45 +62,3 @@ def GetBitmap_from_np_array(data2d):
   plt.close(lc_fig)
 
   return wxBitmap
-
-def build_np_img(width=64, height=64):
-  data2d = np.zeros( (width, height),'float')
-  print "width, height =", width, height
-  tot_lng = np.sqrt(width**2. + height**2.)
-  for x in range(0, width):
-    for y in range(0, height):
-      dx = float(width - x)
-      dy = float(height - y)
-      data2d[x,y] = tot_lng - np.sqrt(dx**2. + dy**2.)
-
-  print "data2d.max =", data2d.max()
-  return data2d
-
-class MyApp(wx.App):
-  def OnInit(self):
-    self.frame = MyFrame(None, title="Bitmaps")
-    self.SetTopWindow(self.frame)
-    self.frame.Show()
-    return True
-
-class MyFrame(wx.Frame):
-  def __init__(self, parent, id=wx.ID_ANY, title="",
-               pos=wx.DefaultPosition, size=wx.DefaultSize,
-               style=wx.DEFAULT_FRAME_STYLE,
-               name="MyFrame"):
-    super(MyFrame, self).__init__(parent, id, title,
-                                  pos, size, style, name)
-    # Attributes
-    self.panel = wx.Panel(self)
-
-    data2d = build_np_img(width=8, height=4)
-    print data2d
-    bitmap = GetBitmap_from_np_array(data2d)
-
-    self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
-
-
-if(__name__ == "__main__"):
-  app = MyApp(redirect=False)
-  app.MainLoop()
-

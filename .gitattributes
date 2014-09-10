@@ -713,6 +713,7 @@ scratch/luiso_s/wx_toys/radiobutton_test.py -text
 scratch/luiso_s/wx_toys/radiobutton_test_simpl.py -text
 scratch/luiso_s/wx_toys/single_reflection_bmp_wth_schroll.py -text
 scratch/luiso_s/wx_toys/table_wx_toy.py -text
+scratch/luiso_s/wx_toys/test_show_reflection.py -text
 scratch/luiso_s/wx_toys/test_wx_text.py -text
 scratch/luiso_s/wx_toys/text_pyplot.py -text
 scratch/luiso_s/wx_toys/toilet_output.py -text
@@ -897,10 +898,13 @@ util/show_version.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text
 viewer/__init__.py -text
+viewer/image_frame.py -text
+viewer/img_utilities.py -text
 viewer/pickle_to_viewer.py -text
 viewer/reflection_data_navigator.py -text
 viewer/reflection_view.py -text
 viewer/reflection_view_old.py -text
 viewer/reflection_view_tester.py -text
+viewer/tools.py -text
 viewer/viewer_frame.py -text
 viewer/viewer_utilities.py -text
