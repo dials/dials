@@ -93,7 +93,8 @@ namespace dials { namespace af {
      * @param image The image to process
      * @param frame The current image frame
      */
-    void next(const Image &image) {
+    template <typename T>
+    void next(const Image<T> &image) {
       typedef Shoebox<>::float_type float_type;
       typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
       typedef af::ref<int,        af::c_grid<3> > sbox_mask_type;
@@ -101,7 +102,7 @@ namespace dials { namespace af {
       DIALS_ASSERT(image.npanels() == npanels_);
       for (std::size_t p = 0; p < image.npanels(); ++p) {
         af::const_ref<std::size_t> ind = indices(frame_, p);
-        af::const_ref< int, af::c_grid<2> > data = image.data(p);
+        af::const_ref< T, af::c_grid<2> > data = image.data(p);
         af::const_ref< bool, af::c_grid<2> > mask = image.mask(p);
         DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
         for (std::size_t i = 0; i < ind.size(); ++i) {

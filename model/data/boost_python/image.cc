@@ -19,12 +19,14 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  boost::shared_ptr<Image>
-  make_from_single(af::flex_int data, af::flex_bool mask) {
+  template <typename T>
+  boost::shared_ptr< Image<T> >
+  make_from_single(typename af::flex<T>::type data,
+                   typename af::flex<bool>::type mask) {
     DIALS_ASSERT(data.accessor().all().size() == 2);
     DIALS_ASSERT(mask.accessor().all().size() == 2);
-    return boost::make_shared<Image>(
-        af::versa<int, af::c_grid<2> >(
+    return boost::make_shared< Image<T> >(
+        af::versa<T, af::c_grid<2> >(
           data.handle(),
           af::c_grid<2>(data.accessor())),
         af::versa<bool, af::c_grid<2> >(
@@ -32,34 +34,60 @@ namespace dials { namespace model { namespace boost_python {
           af::c_grid<2>(data.accessor())));
   }
 
-  boost::shared_ptr<Image>
+  template <typename T>
+  boost::shared_ptr< Image<T> >
   make_from_tuple(boost::python::tuple data, boost::python::tuple mask) {
     DIALS_ASSERT(len(data) == len(mask));
-    af::shared<Image::int_type> d(boost::python::len(data));
-    af::shared<Image::bool_type> m(boost::python::len(mask));
+    af::shared<typename Image<T>::data_type> d(boost::python::len(data));
+    af::shared<typename Image<T>::bool_type> m(boost::python::len(mask));
     for (std::size_t i = 0; i < d.size(); ++i) {
-      af::flex_int dd = boost::python::extract<af::flex_int>(data[i]);
+      typename af::flex<T>::type dd = boost::python::extract<typename af::flex<T>::type>(data[i]);
       DIALS_ASSERT(dd.accessor().all().size() == 2);
-      d[i] = af::versa<int, af::c_grid<2> >(
+      d[i] = af::versa<T, af::c_grid<2> >(
               dd.handle(),
               af::c_grid<2>(dd.accessor()));
-      af::flex_bool mm = boost::python::extract<af::flex_bool>(mask[i]);
+      typename af::flex_bool mm = boost::python::extract<typename af::flex<bool>::type>(mask[i]);
       DIALS_ASSERT(mm.accessor().all().size() == 2);
       m[i] = af::versa<bool, af::c_grid<2> >(
               mm.handle(),
               af::c_grid<2>(mm.accessor()));
 
     }
-    return boost::make_shared<Image>(d.const_ref(), m.const_ref());
+    return boost::make_shared< Image<T> >(d.const_ref(), m.const_ref());
+  }
+
+  object make_from_tuple2(boost::python::tuple data, boost::python::tuple mask) {
+    DIALS_ASSERT(len(data) > 0);
+    extract<typename af::flex<int>::type> get_int(data[0]);
+    extract<typename af::flex<double>::type> get_double(data[0]);
+    object result;
+    if (get_int.check()) {
+      result = object(make_from_tuple<int>(data, mask));
+    } else if (get_double.check()) {
+      result = object(make_from_tuple<double>(data, mask));
+    } else {
+      DIALS_ERROR("Unknown Image Data Type");
+    }
+    return result;
+  }
+
+  template <typename T>
+  void wrap_image(const char *name) {
+    class_< Image<T>, boost::shared_ptr< Image<T> > >(name, no_init)
+      .def("__init__", make_constructor(make_from_single<T>))
+      .def("__init__", make_constructor(make_from_tuple<T>))
+      .def("__len__", &Image<T>::npanels)
+      ;
   }
 
   void export_image() {
 
-    class_<Image>("Image", no_init)
-      .def("__init__", make_constructor(make_from_single))
-      .def("__init__", make_constructor(make_from_tuple))
-      .def("__len__", &Image::npanels)
-      ;
+    wrap_image<int>("ImageInt");
+    wrap_image<double>("ImageDouble");
+
+    def("make_image", &make_from_single<int>);
+    def("make_image", &make_from_single<double>);
+    def("make_image", &make_from_tuple2);
   }
 
 }}} // namespace dials::model::boost_python

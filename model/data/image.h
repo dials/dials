@@ -20,18 +20,21 @@ namespace dials { namespace model {
   /**
    * A class to pass multi panel images from python to c++
    */
+  template <typename T>
   class Image {
   public:
+
+    typedef T value_type;
 
     typedef af::versa< bool, af::c_grid<2> > bool_type;
     typedef af::ref< bool, af::c_grid<2> > bool_ref_type;
     typedef af::const_ref< bool, af::c_grid<2> > bool_const_ref_type;
 
-    typedef af::versa< int, af::c_grid<2> > int_type;
-    typedef af::ref< int, af::c_grid<2> > int_ref_type;
-    typedef af::const_ref< int, af::c_grid<2> > int_const_ref_type;
+    typedef af::versa< T, af::c_grid<2> > data_type;
+    typedef af::ref< T, af::c_grid<2> > data_ref_type;
+    typedef af::const_ref< T, af::c_grid<2> > data_const_ref_type;
 
-    Image(int_type data, bool_type mask)
+    Image(data_type data, bool_type mask)
       : data_(1),
         mask_(1) {
       data_[0] = data;
@@ -39,7 +42,7 @@ namespace dials { namespace model {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
     }
 
-    Image(const af::const_ref<int_type> &data,
+    Image(const af::const_ref<data_type> &data,
           const af::const_ref<bool_type> &mask)
       : data_(data.begin(), data.end()),
         mask_(mask.begin(), mask.end()) {
@@ -53,7 +56,7 @@ namespace dials { namespace model {
       return data_.size();
     }
 
-    int_const_ref_type data(std::size_t panel) const {
+    data_const_ref_type data(std::size_t panel) const {
       return data_[panel].const_ref();
     }
 
@@ -63,7 +66,7 @@ namespace dials { namespace model {
 
   private:
 
-    af::shared<int_type> data_;
+    af::shared<data_type> data_;
     af::shared<bool_type> mask_;
   };
 

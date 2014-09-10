@@ -27,7 +27,9 @@ namespace dials { namespace af { namespace boost_python {
           boost::python::arg("npanels"),
           boost::python::arg("frame0"),
           boost::python::arg("frame1"))))
-      .def("next", &ShoeboxExtractor::next)
+      .def("next", &ShoeboxExtractor::next<int>)
+      .def("next", &ShoeboxExtractor::next<float>)
+      .def("next", &ShoeboxExtractor::next<double>)
       .def("finished", &ShoeboxExtractor::finished)
       .def("frame0", &ShoeboxExtractor::frame0)
       .def("frame1", &ShoeboxExtractor::frame1)
