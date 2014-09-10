@@ -336,8 +336,8 @@ def background_inclined(rlist):
   return
 
 def integrate_3d_summation(rlist):
-  from dials.algorithms.integration import Summation3d
-  integration = Summation3d()
+  from dials.algorithms.integration import Summation
+  integration = Summation()
   integration(rlist)
   return
 

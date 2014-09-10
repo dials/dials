@@ -51,8 +51,8 @@ class ProfileFittingReciprocalSpace(object):
 
   def _integrate_by_summation(self, experiment, reflections):
     ''' Integrate the reflections by summation. '''
-    from dials.algorithms.integration import Summation3d
-    algorithm = Summation3d()
+    from dials.algorithms.integration import Summation
+    algorithm = Summation()
     algorithm(reflections)
 
   def _transform_profiles(self, experiment, reflections):

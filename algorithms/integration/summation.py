@@ -1,5 +1,5 @@
 #
-# summation3d.py
+# summation.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -10,7 +10,7 @@
 
 from __future__ import division
 
-class Summation3d(object):
+class Summation(object):
   '''A class to perform 3D summation integration'''
 
   def __init__(self, **kwargs):

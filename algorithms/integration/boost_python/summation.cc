@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     typedef Summation<FloatType> SummationType;
 
-    class_ <SummationType> ("Summation", no_init)
+    class_ <SummationType> (name, no_init)
       .def(init <const af::const_ref<FloatType>&,
                  const af::const_ref<FloatType>&,
                  const af::const_ref<int>&>((

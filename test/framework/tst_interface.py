@@ -80,7 +80,7 @@ class Test(object):
     from dials.extensions import SimpleCentroidExt
     from dials.extensions import NullBackgroundExt
     from dials.extensions import GeneralBackgroundExt
-    from dials.extensions import Summation3dIntegrationExt
+    from dials.extensions import SummationIntegrationExt
     from dials.extensions import ProfileFittingRSIntegrationExt
     from dials.extensions import ProfileFittingMosflmIntegrationExt
 
@@ -92,7 +92,7 @@ class Test(object):
     assert(NullBackgroundExt in extensions)
     assert(GeneralBackgroundExt in extensions)
     extensions = list(IntensityIface.extensions())
-    assert(Summation3dIntegrationExt in extensions)
+    assert(SummationIntegrationExt in extensions)
     assert(ProfileFittingRSIntegrationExt in extensions)
     assert(ProfileFittingMosflmIntegrationExt in extensions)
 

@@ -37,8 +37,8 @@ def default_background_algorithm():
 
 def default_intensity_algorithm():
   ''' Get the default intensity algorithm. '''
-  from dials.extensions import Summation3dIntegrationExt
-  return strategy(Summation3dIntegrationExt)
+  from dials.extensions import SummationIntegrationExt
+  return strategy(SummationIntegrationExt)
 
 def default_centroid_algorithm():
   ''' Get the default centroid algorithm. '''
