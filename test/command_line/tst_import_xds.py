@@ -28,7 +28,7 @@ class Test(object):
     # Call dials.import_xds
     easy_run.fully_buffered([
       'dials.import_xds',
-      '-i', 'reflections',
+      'input=reflections',
       join(self.path, 'INTEGRATE.HKL'),
       join(self.path, "experiments.json")
     ]).raise_if_errors()
@@ -53,7 +53,7 @@ class Test(object):
     # Call dials.import_xds
     easy_run.fully_buffered([
       'dials.import_xds',
-      '-i', 'reflections',
+      'input=reflections',
       join(self.path, 'SPOT.XDS'),
     ]).raise_if_errors()
 
@@ -71,9 +71,9 @@ class Test(object):
     # Call dials.import_xds
     easy_run.fully_buffered([
       'dials.import_xds',
-      '-i', 'reflections',
+      'input=reflections',
       join(self.path, 'SPOT.XDS'),
-      '-r',
+      'remove_invalid=True',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -96,7 +96,7 @@ class Test(object):
     # Import from the image files
     path = abspath(self.path)
     chdir(path)
-    call('dials.import_xds ./ -o import_experiments.json > /dev/null', shell=True)
+    call('dials.import_xds ./ output=import_experiments.json > /dev/null', shell=True)
 
     assert(exists("import_experiments.json"))
 

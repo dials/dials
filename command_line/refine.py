@@ -153,11 +153,11 @@ class Script(object):
         params.output_reflections_filename)
       matches.as_pickle(params.output_reflections_filename)
 
-    if params.output_corrplot_filename:
+    if params.output_correlation_plot_filename:
       if refined.parameter_correlation:
         plt = refiner.parameter_correlation_plot(len(refined.parameter_correlation)-1)
         plt.tight_layout()
-        plt.savefig(params.output_corrplot_filename)
+        plt.savefig(params.output_correlation_plot_filename)
       else:
         print "Sorry, no parameter correlations were tracked. Please set " \
               "track_parameter_correlation=True"

@@ -32,7 +32,7 @@ class Test(object):
       'dials.merge_reflection_lists',
       'temp.pickle',
       'temp.pickle',
-      '-m', 'update'
+      'method=update'
     ]).raise_if_errors()
 
     table = flex.reflection_table.from_pickle('merged.pickle')
@@ -44,7 +44,7 @@ class Test(object):
       'dials.merge_reflection_lists',
       'temp.pickle',
       'temp.pickle',
-      '-m', 'extend'
+      'method=extend'
     ]).raise_if_errors()
 
     table = flex.reflection_table.from_pickle('merged.pickle')

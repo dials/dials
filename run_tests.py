@@ -55,7 +55,7 @@ tst_list = (
     "$D/test/algorithms/integration/profile/tst_reference_learner2d.py",
     "$D/test/algorithms/integration/profile/tst_profile_fitting.py",
     "$D/test/algorithms/integration/tst_interface.py",
-    "$D/test/algorithms/integration/tst_summation3d.py",
+    "$D/test/algorithms/integration/tst_summation.py",
     "$D/test/algorithms/integration/tst_profile_fitting_rs.py",
     "$D/test/algorithms/integration/tst_interpolate_profile2d.py",
     "$D/test/algorithms/integration/tst_shoebox_flattener.py",

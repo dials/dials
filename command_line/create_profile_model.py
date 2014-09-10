@@ -68,11 +68,10 @@ class Script(object):
       print 'Sigma M: %f' % sigma_m
 
     # Wrtie the parameters
-    filename = options.output_filename
-    Command.start("Writing profile model to %s" % filename)
-    with open(filename, "w") as outfile:
+    Command.start("Writing profile model to %s" % params.output)
+    with open(params.output, "w") as outfile:
       outfile.write(profile_model.dump().as_str())
-    Command.end("Wrote profile model to %s" % filename)
+    Command.end("Wrote profile model to %s" % params.output)
 
 
 if __name__ == '__main__':

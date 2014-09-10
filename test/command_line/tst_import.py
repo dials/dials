@@ -25,7 +25,7 @@ class Test(object):
     image_files = ' '.join(image_files)
 
     # Import from the image files
-    call('dials.import %s -o import_datablock.json > /dev/null' % image_files, shell=True)
+    call('dials.import %s output=import_datablock.json > /dev/null' % image_files, shell=True)
 
     # Get the expected output
     #expected = self.expected_import_from_image_files()

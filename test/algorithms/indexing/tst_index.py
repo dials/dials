@@ -388,7 +388,7 @@ def exercise_11():
   print tmp_dir
 
   args = ["dials.import", image_path,
-          "--output=datablock.json"]
+          "output=datablock.json"]
   command = " ".join(args)
   #print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
@@ -500,7 +500,7 @@ def exercise_14():
       os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
 
   args = ["dials.import", os.path.join(tmp_dir, "image_00*.img"),
-          "--output=datablock.json"]
+          "output=datablock.json"]
   command = " ".join(args)
   #print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
