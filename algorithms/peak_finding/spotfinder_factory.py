@@ -28,7 +28,7 @@ def generate_phil_scope():
         .type = choice
         .help = "The multiprocessing method to use"
 
-      max_procs = 1
+      nproc = 1
         .type = int(value_min=1)
         .help = "The number of processes to use."
     }
@@ -588,7 +588,7 @@ class SpotFinderFactory(object):
     return ExtractSpots(threshold_image=threshold,
                         mask=params.spotfinder.lookup.mask,
                         mp_method=params.spotfinder.mp.method,
-                        max_procs=params.spotfinder.mp.max_procs)
+                        nproc=params.spotfinder.mp.nproc)
 
   @staticmethod
   def configure_threshold(params):

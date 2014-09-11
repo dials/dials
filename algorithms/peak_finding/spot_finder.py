@@ -94,7 +94,7 @@ class ExtractSpots(object):
   ''' Class to find spots in an image and extract them into shoeboxes. '''
 
   def __init__(self, threshold_image, mask=None,
-               mp_method='multiprocessing', max_procs=1):
+               mp_method='multiprocessing', nproc=1):
     ''' Initialise the class with the strategy
 
     Params:
@@ -105,7 +105,7 @@ class ExtractSpots(object):
     self.threshold_image = threshold_image
     self.mask = mask
     self.mp_method = mp_method
-    self.max_procs = max_procs
+    self.nproc = nproc
 
   def __call__(self, imageset):
     ''' Find the spots in the imageset
@@ -123,7 +123,7 @@ class ExtractSpots(object):
     from libtbx import easy_mp
 
     # Change the number of processors if necessary
-    nproc = self.max_procs
+    nproc = self.nproc
     if nproc > len(imageset):
       nproc = len(imageset)
 

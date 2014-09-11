@@ -19,7 +19,7 @@ def generate_phil_scope():
           .type = choice
           .help = "The multiprocessing method to use"
 
-        max_procs = 1
+        nproc = 1
           .type = int(value_min=1)
           .help = "The number of processes to use."
       }
@@ -117,7 +117,7 @@ class IntegrationManager(object):
 class Integrator(object):
   ''' Integrator interface class. '''
 
-  def __init__(self, manager, max_procs=1, mp_method='multiprocessing'):
+  def __init__(self, manager, nproc=1, mp_method='multiprocessing'):
     ''' Initialise the integrator.
 
     The integrator requires a manager class implementing the IntegratorManager
@@ -126,12 +126,12 @@ class Integrator(object):
 
     Params:
       manager The integration manager
-      max_procs The number of processors
+      nproc The number of processors
       mp_method The multiprocessing method
 
     '''
     self._manager = manager
-    self._max_procs = max_procs
+    self._nproc = nproc
     self._mp_method = mp_method
 
   def integrate(self):
@@ -146,8 +146,8 @@ class Integrator(object):
     from libtbx.table_utils import format as table
     start_time = time()
     num_proc = len(self._manager)
-    if self._max_procs > 0:
-      num_proc = min(num_proc, self._max_procs)
+    if self._nproc > 0:
+      num_proc = min(num_proc, self._nproc)
     print ' Using %s with %d processes\n' % (self._mp_method, num_proc)
     if num_proc > 1:
       def process_output(result):
@@ -476,7 +476,7 @@ class Integrator3D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
-               max_procs=1,
+               nproc=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
 
@@ -489,7 +489,7 @@ class Integrator3D(Integrator):
       min_zeta,)
 
     # Initialise the integrator
-    super(Integrator3D, self).__init__(manager, max_procs, mp_method)
+    super(Integrator3D, self).__init__(manager, nproc, mp_method)
 
 
 class IntegratorFlat2D(Integrator):
@@ -501,7 +501,7 @@ class IntegratorFlat2D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
-               max_procs=1,
+               nproc=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
 
@@ -515,7 +515,7 @@ class IntegratorFlat2D(Integrator):
       flatten=True)
 
     # Initialise the integrator
-    super(Integrator3D, self).__init__(manager, max_procs, mp_method)
+    super(Integrator3D, self).__init__(manager, nproc, mp_method)
 
 
 class Integrator2D(Integrator):
@@ -527,7 +527,7 @@ class Integrator2D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
-               max_procs=1,
+               nproc=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
     raise RuntimeError("Not Implemented")
@@ -542,7 +542,7 @@ class IntegratorStills(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
-               max_procs=1,
+               nproc=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
     raise RuntimeError("Not Implemented")
@@ -588,7 +588,7 @@ class IntegratorFactory(object):
       reflections=reflections,
       block_size=params.integration.block.size,
       min_zeta=params.integration.filter.min_zeta,
-      max_procs=params.integration.mp.max_procs,
+      nproc=params.integration.mp.nproc,
       mp_method=params.integration.mp.method)
 
   @staticmethod
