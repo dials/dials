@@ -347,6 +347,7 @@ command_line/stereographic_projection.py -text
 data/__init__.py -text
 data/completion_template.txt -text
 data/lookup.py -text
+data/multiprocessing.py -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.py -text

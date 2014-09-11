@@ -22,16 +22,7 @@ def generate_phil_scope():
     .help = "Parameters used in the spot finding algorithm."
   {
     include scope dials.data.lookup.phil_scope
-
-    mp {
-      method = *multiprocessing sge lsf pbs
-        .type = choice
-        .help = "The multiprocessing method to use"
-
-      nproc = 1
-        .type = int(value_min=1)
-        .help = "The number of processes to use."
-    }
+    include scope dials.data.multiprocessing.phil_scope
 
     scan_range = None
       .help = "The range of images to use in finding spots. Number of arguments"
