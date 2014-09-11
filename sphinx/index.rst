@@ -10,6 +10,7 @@ DIALS
    installation
    beginners_tutorial
    advanced_tutorial
+   conventions
    library_reference
 
 Contact

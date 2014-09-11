@@ -623,7 +623,7 @@ step in here to allow e.g. scan varying refinement as here.
 
   dials.refine scan_varying=true experiments.json indexed.pickle
 
-This one on the other hand would probably stand to be \emph{more} verbose!
+This one on the other hand would probably stand to be *more* verbose!
 
 ::
 
@@ -1054,7 +1054,7 @@ unlikely to really have enough measurements to do this!)
 
   dials.refine experiments.json indexed.pickle
 
-This one on the other hand would probably stand to be \emph{more} verbose!
+This one on the other hand would probably stand to be *more* verbose!
 
 ::
 
