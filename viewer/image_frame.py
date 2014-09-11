@@ -10,10 +10,8 @@
 #
 from __future__ import division
 import wx
-#from dials.scratch.luiso_s.wx_toys.bitmap_from_numpy_w_matplotlib_well_done \
-#     import GetBitmap_from_np_array
 
-from dials.viewer.img_utilities import GetBitmap_from_np_array
+from dials.viewer.img_utilities import GetBitmap_from_np_array, ImageListCtrl
 
 from dials.array_family import flex
 
@@ -24,35 +22,37 @@ class ImageFrame(wx.Frame):
                name="ImageFrame"):
     super(ImageFrame, self).__init__(parent, id, title,
                                   pos, size, style, name)
-    print refl
 
     dat_flex = refl['shoebox'].data
 
-    data2d_flex = dat_flex[0:1, :, :]
-    data2d_flex.reshape(flex.grid(dat_flex.all()[1:]))
 
-    # Attributes
-    data2d = data2d_flex.as_numpy_array()
+    n_fr = dat_flex.all()[0]
+    self.ImgLst = ImageListCtrl(self)
+    for fr in range(n_fr):
+      data2d_flex = dat_flex[fr:fr + 1, :, :]
+      data2d_flex.reshape(flex.grid(dat_flex.all()[1:]))
+      data2d = data2d_flex.as_numpy_array()
+      bitmap = GetBitmap_from_np_array(data2d)
+      self.ImgLst.AppendBitmap(bitmap)
 
-    print "data2d ="
-    print data2d
-
-    bitmap = GetBitmap_from_np_array(data2d)
-
-    self.panel = wx.Panel(self)
-    self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
-
-  '''
-  @property
-  def image(self):
-    return self._image
-
-  @image.setter
-  def image(self, value):
-
-      #Value is a 2d flex array
+    #self.panel = wx.Panel(self)
+    #self.bitmap = wx.StaticBitmap(self.panel, bitmap = bitmap)
+    self.mid_sizer = wx.BoxSizer(wx.VERTICAL)
+    self.mid_sizer.Add(self.ImgLst, 1, wx.EXPAND)
+    self.SetSizer(self.mid_sizer)
 
 
-    #return self._image = value
-    pass
-  '''
+'''
+@property
+def image(self):
+  return self._image
+
+@image.setter
+def image(self, value):
+
+    #Value is a 2d flex array
+
+
+  #return self._image = value
+  pass
+'''

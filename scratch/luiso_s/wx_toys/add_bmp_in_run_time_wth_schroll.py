@@ -16,7 +16,9 @@ import wx
 import wx.lib.scrolledpanel as scrolledpanel
 
 from dials.scratch.luiso_s.wx_toys.bitmap_from_numpy_w_matplotlib_well_done \
-     import GetBitmap_from_np_array, build_np_img
+     import build_np_img
+
+from dials.viewer.img_utilities import GetBitmap_from_np_array
 class ImageListCtrl(scrolledpanel.ScrolledPanel):
     """Simple control to display a list of images"""
     def __init__(self, parent, bitmaps=list(),

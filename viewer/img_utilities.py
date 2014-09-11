@@ -11,6 +11,7 @@
 #
 from __future__ import division
 import wx
+import wx.lib.scrolledpanel as scroll_pan
 import numpy as np
 # set backend before importing pyplot
 import matplotlib
@@ -62,3 +63,26 @@ def GetBitmap_from_np_array(data2d):
   plt.close(lc_fig)
 
   return wxBitmap
+
+class ImageListCtrl(scroll_pan.ScrolledPanel):
+    """Simple control to display a list of images"""
+    def __init__(self, parent, bitmaps=list(),
+                 style=wx.TAB_TRAVERSAL|wx.BORDER_SUNKEN):
+        super(ImageListCtrl, self).__init__(parent,
+                                            style=style)
+
+        # Attributes
+        self.images = list()
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Setup
+        for bmp in bitmaps:
+            self.AppendBitmap(bmp)
+        self.SetSizer(self.sizer)
+
+    def AppendBitmap(self, bmp):
+        """Add another bitmap to the control"""
+        self.images.append(bmp)
+        sbmp = wx.StaticBitmap(self, bitmap=bmp)
+        self.sizer.Add(sbmp, 0, wx.EXPAND|wx.TOP, 5)
+        self.SetupScrolling()
