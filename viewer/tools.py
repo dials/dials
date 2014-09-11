@@ -17,8 +17,8 @@ def show_reflection(reflection, **kwargs):
 
   class RefViewApp(wx.App):
     def OnInit(self):
-      from dials.viewer.image_frame import ImageFrame
-      self.frame = ImageFrame(None, refl = reflection, title = "Reflection")
+      from dials.viewer.shoebox_view_frame import ShoeboxView
+      self.frame = ShoeboxView(None, refl = reflection, title = "Shoebox Viewer")
       self.SetTopWindow(self.frame)
       self.frame.Show()
       return True

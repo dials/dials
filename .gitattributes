@@ -903,6 +903,7 @@ viewer/reflection_data_navigator.py -text
 viewer/reflection_view.py -text
 viewer/reflection_view_old.py -text
 viewer/reflection_view_tester.py -text
+viewer/shoebox_view_frame.py -text
 viewer/tools.py -text
 viewer/viewer_frame.py -text
 viewer/viewer_utilities.py -text

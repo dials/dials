@@ -34,8 +34,6 @@ class ShoeboxView(wx.Frame):
       bitmap = GetBitmap_from_np_array(data2d)
       self.ImgLst.AppendBitmap(bitmap)
 
-    #self.panel = wx.Panel(self)
-    #self.bitmap = wx.StaticBitmap(self.panel, bitmap = bitmap)
     self.mid_sizer = wx.BoxSizer(wx.VERTICAL)
     self.mid_sizer.Add(self.ImgLst, 1, wx.EXPAND)
     self.SetSizer(self.mid_sizer)
