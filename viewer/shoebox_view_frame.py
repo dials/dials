@@ -34,21 +34,26 @@ class ShoeboxView(wx.Frame):
       bitmap = GetBitmap_from_np_array(data2d)
       self.ImgLst.AppendBitmap(bitmap)
 
+
+    self.top_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+    self.TstButton = wx.Button(self, label="Tst")
+    self.TstButton.Bind(wx.EVT_BUTTON, self.OnTstBut)
+    self.top_sizer.Add(self.TstButton)
+
+    self.Tst_01_Button = wx.Button(self, label="Tst_01_")
+    self.Tst_01_Button.Bind(wx.EVT_BUTTON, self.OnTst_01_But)
+    self.top_sizer.Add(self.Tst_01_Button)
+
     self.mid_sizer = wx.BoxSizer(wx.VERTICAL)
+    self.mid_sizer.Add(self.top_sizer)
     self.mid_sizer.Add(self.ImgLst, 1, wx.EXPAND)
+
     self.SetSizer(self.mid_sizer)
 
-'''
-@property
-def image(self):
-  return self._image
-
-@image.setter
-def image(self, value):
-
-    #Value is a 2d flex array
+  def OnTstBut(self, event):
+    print "OnTstBut"
 
 
-  #return self._image = value
-  pass
-'''
+  def OnTst_01_But(self, event):
+    print "OnTst_01_But"
