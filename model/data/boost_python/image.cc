@@ -58,8 +58,8 @@ namespace dials { namespace model { namespace boost_python {
 
   object make_from_tuple2(boost::python::tuple data, boost::python::tuple mask) {
     DIALS_ASSERT(len(data) > 0);
-    extract<typename af::flex<int>::type> get_int(data[0]);
-    extract<typename af::flex<double>::type> get_double(data[0]);
+    extract<af::flex<int>::type> get_int(data[0]);
+    extract<af::flex<double>::type> get_double(data[0]);
     object result;
     if (get_int.check()) {
       result = object(make_from_tuple<int>(data, mask));
