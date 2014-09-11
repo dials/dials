@@ -12,6 +12,19 @@ if __name__ == '__main__':
   from dials.array_family import flex
   from dials.viewer.tools import show_reflection
 
+  from os.path import join
+  import libtbx.load_env
+  try:
+    dials_regression = libtbx.env.dist_path('dials_regression')
+  except KeyError, e:
+    print 'FAIL: dials_regression not configured'
+    exit(0)
+  path = join(dials_regression, "centroid_test_data")
+  import sys
+  assert(len(sys.argv) == 1)
+  sys.argv.append(join(path, "experiments.json"))
+  sys.argv.append(join(path, "profile.phil"))
+
   parser = OptionParser(phil=phil_scope)
   params, options, args = parser.parse_args()
   assert(len(args) == 1)
