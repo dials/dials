@@ -31,15 +31,13 @@ directly to integrating the reflections.
 
 Examples:
 
-  dials.integrate experiments.json -r indexed.pickle
+  dials.integrate experiments.json reference=indexed.pickle
 
-  dials.integrate experiments.json -r indexed.pickle -o integrated.pickle
+  dials.integrate experiments.json reference=indexed.pickle integrated=integrated.pickle
 
-  dials.integrate experiments.json shoebox.sigma_b=0.024 shoebox.sigma_m=0.044
+  dials.integrate experiments.json profile.phil
 
-  dials.integrate experiments.json -p predicted.pickle -r indexed.pickle
-
-  dials.integrate experiments.json -s shoeboxes.dat
+  dials.integrate experiments.json predicted=predicted.pickle reference=indexed.pickle
 
 '''
 
@@ -54,24 +52,22 @@ class Script(object):
 
     # Create the phil scope
     phil_scope = parse('''
-      integration {
 
-        profile_model = 'profile_model.phil'
-          .type = str
-          .help = "The profile parameters output filename"
+      profile_model = 'profile_model.phil'
+        .type = str
+        .help = "The profile parameters output filename"
 
-        integrated = 'integrated.pickle'
-          .type = str
-          .help = "The integrated output filename"
+      integrated = 'integrated.pickle'
+        .type = str
+        .help = "The integrated output filename"
 
-        reference = None
-          .type = str
-          .help = "The indexed reference spots input filename"
+      reference = None
+        .type = str
+        .help = "The indexed reference spots input filename"
 
-        predicted = None
-          .type = str
-          .help = "The predicted reflections input filename"
-      }
+      predicted = None
+        .type = str
+        .help = "The predicted reflections input filename"
 
       include scope dials.algorithms.integration.interface.phil_scope
       include scope dials.algorithms.profile_model.profile_model.phil_scope
@@ -112,9 +108,9 @@ class Script(object):
     experiments = self.load_experiments(args[0])
 
     # Load the data
-    reference = self.load_reference(params.integration.reference)
+    reference = self.load_reference(params.reference)
     print ""
-    predicted = self.load_predicted(params.integration.predicted)
+    predicted = self.load_predicted(params.predicted)
     print ""
 
     # Initialise the integrator
@@ -152,8 +148,8 @@ class Script(object):
     reflections = integrator.integrate()
 
     # Save the reflections
-    self.save_reflections(reflections, params.integration.integrated)
-    self.save_profile_model(profile_model, params.integration.profile_model)
+    self.save_reflections(reflections, params.integrated)
+    self.save_profile_model(profile_model, params.profile_model)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time

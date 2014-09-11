@@ -31,15 +31,15 @@ directly to integrating the reflections.
 
 Examples:
 
-  dials.integrate experiments.json -r indexed.pickle
+  dials.integrate experiments.json reference=indexed.pickle
 
-  dials.integrate experiments.json -r indexed.pickle -o integrated.pickle
+  dials.integrate experiments.json reference=indexed.pickle integrated=integrated.pickle
 
-  dials.integrate experiments.json shoebox.sigma_b=0.024 shoebox.sigma_m=0.044
+  dials.integrate experiments.json profile.phil
 
-  dials.integrate experiments.json -p predicted.pickle -r indexed.pickle
+  dials.integrate experiments.json predicted=predicted.pickle reference=indexed.pickle
 
-  dials.integrate experiments.json -s shoeboxes.dat
+  dials.integrate experiments.json shoeboxes=shoeboxes.dat
 
 '''
 
@@ -54,28 +54,25 @@ class Script(object):
     # Set the phil scope
     phil_scope = parse('''
 
-      integration {
+      profile_model = 'profile_model.phil'
+        .type = str
+        .help = "The profile parameters output filename"
 
-        profile_model = 'profile_model.phil'
-          .type = str
-          .help = "The profile parameters output filename"
+      integrated = 'integrated.pickle'
+        .type = str
+        .help = "The integrated output filename"
 
-        integrated = 'integrated.pickle'
-          .type = str
-          .help = "The integrated output filename"
+      reference = None
+        .type = str
+        .help = "The indexed reference spots input filename"
 
-        reference = None
-          .type = str
-          .help = "The indexed reference spots input filename"
+      predicted = None
+        .type = str
+        .help = "The predicted reflections input filename"
 
-        predicted = None
-          .type = str
-          .help = "The predicted reflections input filename"
-
-        shoeboxes = None
-          .type = str
-          .help = "The shoebox input filename"
-      }
+      shoeboxes = None
+        .type = str
+        .help = "The shoebox input filename"
 
       include scope dials.algorithms.integration.integrator.phil_scope
       include scope dials.algorithms.profile_model.profile_model.phil_scope
@@ -113,12 +110,12 @@ class Script(object):
 
     shoeboxes = reference = predicted = None
 
-    if params.integration.shoeboxes:
-      shoeboxes = params.integration.shoeboxes
-    if params.integration.reference:
-      reference = self.load_reference(params.integration.reference)
-    if params.integration.predicted:
-      predicted = self.load_predicted(params.integration.predicted)
+    if params.shoeboxes:
+      shoeboxes = params.shoeboxes
+    if params.reference:
+      reference = self.load_reference(params.reference)
+    if params.predicted:
+      predicted = self.load_predicted(params.predicted)
 
     # Initialise the integrator
     if None in exlist.goniometers():
@@ -132,7 +129,7 @@ class Script(object):
     reflections = integrator.integrate()
 
     # Save the reflections
-    self.save_reflections(reflections, params.integration.integrated)
+    self.save_reflections(reflections, params.integrated)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time

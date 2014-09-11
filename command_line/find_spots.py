@@ -35,7 +35,7 @@ Examples:
 
   dials.find_spots datablock.json
 
-  dials.find_spots datablock.json -o strong.pickle
+  dials.find_spots datablock.json output=strong.pickle
 
 '''
 
@@ -51,16 +51,13 @@ class Script(object):
     # Set the phil scope
     phil_scope = parse('''
 
-      spotfinder {
+      output = 'strong.pickle'
+        .type = str
+        .help = "The output filename"
 
-        output = 'strong.pickle'
-          .type = str
-          .help = "The output filename"
-
-        save_shoeboxes = True
-          .type = bool
-          .help = "Save the raw pixel values inside the reflection shoeboxes."
-      }
+      save_shoeboxes = True
+        .type = bool
+        .help = "Save the raw pixel values inside the reflection shoeboxes."
 
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
 
@@ -111,16 +108,16 @@ class Script(object):
       importer.datablocks[0], params)
 
     # Delete the shoeboxes
-    if not params.spotfinder.save_shoeboxes:
+    if not params.save_shoeboxes:
       del reflections['shoebox']
 
     # Save the reflections to file
     print '\n' + '-' * 80
     Command.start('Saving {0} reflections to {1}'.format(
-        len(reflections), params.spotfinder.output))
-    reflections.as_pickle(params.spotfinder.output)
+        len(reflections), params.output))
+    reflections.as_pickle(params.output)
     Command.end('Saved {0} reflections to {1}'.format(
-        len(reflections), params.spotfinder.output))
+        len(reflections), params.output))
 
     # Print the time
     print time() - start_time
