@@ -305,9 +305,4 @@ This should cover almost all use cases.
 
 .. bibliography:: dials.bib
    :cited:
-   :list: enumerated
-   :encoding: latex+latin
-
-.. \bibliographystyle{plainnat}
-.. \bibliography{../dials}
 

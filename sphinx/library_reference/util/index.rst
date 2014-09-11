@@ -1,7 +1,8 @@
 Util
 =============
 
-.. contents:: Table of Contents
+.. toctree::
+   :maxdepth: 2
 
 .. automodule:: dials.util.command_line
     :members:

@@ -11,7 +11,7 @@ DIALS
    beginners_tutorial
    advanced_tutorial
    conventions
-   library_reference
+   library_reference/index
 
 Contact
 =======
