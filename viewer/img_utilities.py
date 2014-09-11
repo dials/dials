@@ -65,24 +65,33 @@ def GetBitmap_from_np_array(data2d):
   return wxBitmap
 
 class ImageListCtrl(scroll_pan.ScrolledPanel):
-    """Simple control to display a list of images"""
-    def __init__(self, parent, bitmaps=list(),
-                 style=wx.TAB_TRAVERSAL|wx.BORDER_SUNKEN):
-        super(ImageListCtrl, self).__init__(parent,
-                                            style=style)
+  """Simple control to display a list of images"""
+  def __init__(self, parent, orient, bitmaps=list(),
+               style=wx.TAB_TRAVERSAL|wx.BORDER_SUNKEN):
+    super(ImageListCtrl, self).__init__(parent,
+                                        style = style)
 
-        # Attributes
-        self.images = list()
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
+    # Attributes
+    self.images = list()
+    self.orient = orient.lower()
+    if( self.orient  == "portrait" ):
+      self.sizer = wx.BoxSizer(wx.VERTICAL)
+    else:
+      self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        # Setup
-        for bmp in bitmaps:
-            self.AppendBitmap(bmp)
-        self.SetSizer(self.sizer)
+    # Setup
+    for bmp in bitmaps:
+        self.AppendBitmap(bmp)
+    self.SetSizer(self.sizer)
 
-    def AppendBitmap(self, bmp):
-        """Add another bitmap to the control"""
-        self.images.append(bmp)
-        sbmp = wx.StaticBitmap(self, bitmap=bmp)
-        self.sizer.Add(sbmp, 0, wx.EXPAND|wx.TOP, 5)
-        self.SetupScrolling()
+  def AppendBitmap(self, bmp):
+    """Add another bitmap to the control"""
+    self.images.append(bmp)
+    sbmp = wx.StaticBitmap(self, bitmap = bmp)
+    #self.sizer.Add(sbmp, 0, wx.EXPAND|wx.TOP, 5)
+    if( self.orient  == "portrait" ):
+      self.sizer.Add(sbmp, 5, wx.EXPAND|wx.TOP, 5)
+    else:
+      self.sizer.Add(sbmp, 5, wx.EXPAND|wx.LEFT, 5)
+
+    self.SetupScrolling()

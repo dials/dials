@@ -42,5 +42,6 @@ if __name__ == '__main__':
 
   rlist.extract_shoeboxes(exlist[0].imageset)
 
-
   show_reflection(rlist[len(rlist)//2])
+  #show_reflection(rlist[len(rlist)//2], orient = "porTrait")
+  #show_reflection(rlist[len(rlist)//2], orient = "lanDscape")

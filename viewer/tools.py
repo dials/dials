@@ -10,7 +10,7 @@
 
 from __future__ import division
 
-def show_reflection(reflection, **kwargs):
+def show_reflection(reflection, orient = "landscape"):
   ''' Display a single reflection. '''
   import wx
   print "Show Reflection"
@@ -18,7 +18,8 @@ def show_reflection(reflection, **kwargs):
   class RefViewApp(wx.App):
     def OnInit(self):
       from dials.viewer.shoebox_view_frame import ShoeboxView
-      self.frame = ShoeboxView(None, refl = reflection, title = "Shoebox Viewer")
+      self.frame = ShoeboxView(None, orient = orient, refl = reflection
+                               , title = "Shoebox Viewer")
       self.SetTopWindow(self.frame)
       self.frame.Show()
       return True
