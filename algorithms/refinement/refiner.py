@@ -115,6 +115,13 @@ refinement
               "during development - should be automatic when the trade-offs are well"
               "understood"
       .type = bool
+
+    treat_single_image_as_still = True
+      .help = "A single image scan (with no observed phi centroid information)"
+              "will be treated as a still by default. Set this to False to"
+              "override that behaviour - but this is not usually recommended!"
+      .type = bool
+      .expert_level = 1
   }
 
   refinery
@@ -481,9 +488,32 @@ class RefinerFactory(object):
     reflections.unset_flags(flex.size_t_range(len(reflections)),
         reflection_table.flags.used_in_refinement)
 
+    # Currently a refinement job can only have one parameterisation of the
+    # prediction equation. This can either be of the XYDelPsi (stills) type, the
+    # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
+    # model
+    single_as_still = params.refinement.parameterisation.treat_single_image_as_still
+    exps_are_stills = []
+    for exp in experiments:
+      if exp.scan is None:
+        exps_are_stills.append(True)
+      elif exp.scan.get_num_images() == 1 and single_as_still:
+        exps_are_stills.append(True)
+      else:
+        try:
+          assert exp.scan.get_oscillation()[1] > 0.0
+        except AssertionError:
+          print "Cannot refine a zero-width scan"
+          raise
+        exps_are_stills.append(False)
+
+    # check experiment types are consistent
+    assert all(exps_are_stills[0] == e for e in exps_are_stills)
+    do_stills = exps_are_stills[0]
+
     # create parameterisations
     pred_param, param_reporter = \
-            cls.config_parameterisation(params, experiments)
+            cls.config_parameterisation(params, experiments, do_stills)
 
     if verbosity > 1:
       print "Prediction equation parameterisation built\n"
@@ -498,7 +528,7 @@ class RefinerFactory(object):
              % len(reflections))
 
     # create reflection manager
-    refman = cls.config_refman(params, reflections, experiments, verbosity)
+    refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
 
     if verbosity > 1:
       print ("Number of observations that pass initial inclusion criteria = %d"
@@ -511,7 +541,7 @@ class RefinerFactory(object):
     if verbosity > 1: print "Building target function"
 
     # create target function
-    target = cls.config_target(params, experiments, refman, pred_param)
+    target = cls.config_target(params, experiments, refman, pred_param, do_stills)
 
     if verbosity > 1: print "Target function built\n"
 
@@ -528,7 +558,7 @@ class RefinerFactory(object):
                     verbosity=verbosity)
 
   @staticmethod
-  def config_parameterisation(params, experiments):
+  def config_parameterisation(params, experiments, do_stills):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
@@ -550,14 +580,8 @@ class RefinerFactory(object):
     # Shorten paths
     import dials.algorithms.refinement.parameterisation as par
 
-    # Currently a refinement job can only have one parameterisation of the
-    # prediction equation. This can either be of the XYDelPsi (stills) type, the
-    # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
-    # model
-
     # Parameterise unique Beams
-    beam_params_stills = []
-    beam_params_scans = []
+    beam_params = []
     for beam in experiments.beams():
       # The Beam is parameterised with reference to a goniometer axis (or None).
       # Therefore this Beam must always be found alongside the same Goniometer
@@ -588,16 +612,11 @@ class RefinerFactory(object):
                   for i in range(beam_param.num_total())]
         beam_param.set_fixed(to_fix)
 
-      if goniometer is None:
-        beam_params_stills.append(beam_param)
-      else:
-        beam_params_scans.append(beam_param)
+      beam_params.append(beam_param)
 
     # Parameterise unique Crystals
-    xl_ori_params_stills = []
-    xl_ori_params_scans = []
-    xl_uc_params_stills = []
-    xl_uc_params_scans = []
+    xl_ori_params = []
+    xl_uc_params = []
     for crystal in experiments.crystals():
       # This crystal can only ever appear either in scans or in stills
       # (otherwise it requires a different crystal model)
@@ -659,12 +678,8 @@ class RefinerFactory(object):
                   for i in range(xl_ori_param.num_total())]
         xl_ori_param.set_fixed(to_fix)
 
-      if goniometer is None:
-        xl_ori_params_stills.append(xl_ori_param)
-        xl_uc_params_stills.append(xl_uc_param)
-      else:
-        xl_ori_params_scans.append(xl_ori_param)
-        xl_uc_params_scans.append(xl_uc_param)
+      xl_ori_params.append(xl_ori_param)
+      xl_uc_params.append(xl_uc_param)
 
     # Parameterise unique Detectors
     det_params = []
@@ -717,32 +732,19 @@ class RefinerFactory(object):
 
       det_params.append(det_param)
 
-    # Determine whether this is a parameterisation for scans or for stills
-    if beam_params_stills == []:
-      # we expect scans
-      assert xl_ori_params_stills == []
-      assert xl_uc_params_stills == []
-      assert beam_params_scans != []
-      assert xl_ori_params_scans != []
-      assert xl_uc_params_scans != []
-      beam_params = beam_params_scans
-      xl_ori_params = xl_ori_params_scans
-      xl_uc_params = xl_uc_params_scans
-      param_type = "scans"
-    else:
-      # we expect stills
-      assert beam_params_scans == []
-      assert xl_ori_params_scans == []
-      assert xl_uc_params_scans == []
-      assert xl_ori_params_stills != []
-      assert xl_uc_params_stills != []
-      beam_params = beam_params_stills
-      xl_ori_params = xl_ori_params_stills
-      xl_uc_params = xl_uc_params_stills
-      param_type = "stills"
-
     # Prediction equation parameterisation
-    if param_type is "scans":
+    if do_stills: # doing stills
+      if sparse:
+        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+            import StillsPredictionParameterisationSparse as StillsPredictionParameterisation
+      else:
+        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+            import StillsPredictionParameterisation
+      pred_param = StillsPredictionParameterisation(
+          experiments,
+          det_params, beam_params, xl_ori_params, xl_uc_params)
+
+    else: # doing scans
       if crystal_options.scan_varying:
         if crystal_options.UB_model_per == "reflection":
           from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
@@ -765,20 +767,7 @@ class RefinerFactory(object):
             import XYPhiPredictionParameterisation as PredParam
         pred_param = PredParam(
             experiments,
-            det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
-    else:
-      assert param_type is "stills"
-      # FIXME temporary user choice for sparse matrix version
-      # currently only using the sparse version for stills.
-      if sparse:
-        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-            import StillsPredictionParameterisationSparse as StillsPredictionParameterisation
-      else:
-        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-            import StillsPredictionParameterisation
-      pred_param = StillsPredictionParameterisation(
-          experiments,
-          det_params, beam_params, xl_ori_params, xl_uc_params)
+            det_params, beam_params, xl_ori_params, xl_uc_params)
 
     # Parameter reporting
     param_reporter = par.ParameterReporter(det_params, beam_params,
@@ -827,7 +816,7 @@ class RefinerFactory(object):
             max_iterations = options.max_iterations)
 
   @staticmethod
-  def config_refman(params, reflections, experiments, verbosity):
+  def config_refman(params, reflections, experiments, do_stills, verbosity):
     """Given a set of parameters and models, build a reflection manager
 
     Params:
@@ -855,21 +844,15 @@ class RefinerFactory(object):
         print "Random seed set to %d\n" % options.random_seed
 
     # check whether we deal with stills or scans
-    do_stills = False
-    if all(e.goniometer is not None for e in experiments):
-      from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
-      # check incompatible weighting strategy
-      assert options.weighting_strategy.override != "stills"
-    elif all(e.goniometer is None for e in experiments):
-      do_stills = True
+    if do_stills:
       from dials.algorithms.refinement.reflection_manager import \
           StillsReflectionManager as refman
       # check incompatible weighting strategy
       assert options.weighting_strategy.override != "statistical"
     else:
-      raise NotImplementedError("ExperimentList contains a mixture of "
-        "experiments with goniometers and those without. This is not currently "
-        "supported.")
+      from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
+      # check incompatible weighting strategy
+      assert options.weighting_strategy.override != "stills"
 
     # do outlier rejection?
     if options.do_outlier_rejection:
@@ -906,7 +889,7 @@ class RefinerFactory(object):
             verbosity=verbosity)
 
   @staticmethod
-  def config_target(params, experiments, refman, pred_param):
+  def config_target(params, experiments, refman, pred_param, do_stills):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -935,17 +918,10 @@ class RefinerFactory(object):
 
     # build managed reflection predictors
     from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    ref_predictor = ExperimentsPredictor(experiments)
+    ref_predictor = ExperimentsPredictor(experiments, do_stills)
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
-    if all(e.goniometer is not None for e in experiments):
-      if sparse:
-        from dials.algorithms.refinement.target \
-          import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
-      else:
-        from dials.algorithms.refinement.target \
-          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
-    elif all(e.goniometer is None for e in experiments):
+    if do_stills:
       if sparse:
         from dials.algorithms.refinement.target_stills \
           import LeastSquaresStillsResidualWithRmsdCutoffSparse as targ
@@ -953,9 +929,12 @@ class RefinerFactory(object):
         from dials.algorithms.refinement.target_stills \
           import LeastSquaresStillsResidualWithRmsdCutoff as targ
     else:
-      raise NotImplementedError("ExperimentList contains a mixture of "
-        "experiments with goniometers and those without. This is not currently "
-        "supported.")
+      if sparse:
+        from dials.algorithms.refinement.target \
+          import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
+      else:
+        from dials.algorithms.refinement.target \
+          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
     target = targ(experiments, ref_predictor, refman, pred_param,
                     options.bin_size_fraction, absolute_cutoffs,
