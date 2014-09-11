@@ -112,12 +112,12 @@ class OptionParser(optparse.OptionParser):
       dest='verbose',
       help='Set the verbosity')
 
-  def parse_args(self, show_diff_phil=False):
+  def parse_args(self, args=None, show_diff_phil=False):
     '''Parse the command line arguments and get system configuration.'''
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.
-    options, args = optparse.OptionParser.parse_args(self)
+    options, args = optparse.OptionParser.parse_args(self, args=args)
 
     # Parse the command line phil parameters
     config = CommandLineConfig(self.system_phil().command_line_argument_interpreter())
