@@ -79,7 +79,7 @@ def work(image_filename, sensor_thickness_mm, energy_ev=None):
     max(xds_parallax_x), max(xds_parallax_y)
   dials_parallax_x, dials_parallax_y = generate_dials_corrections(
     image_filename, sensor_thickness_mm, energy_ev,
-    method=compute_absolute_offset_xds)
+    method=compute_absolute_offset)
   print min(dials_parallax_x), min(dials_parallax_y), \
     max(dials_parallax_x), max(dials_parallax_y)
   dx = xds_parallax_x - dials_parallax_x
