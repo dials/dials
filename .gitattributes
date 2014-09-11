@@ -896,7 +896,6 @@ util/show_version.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text
 viewer/__init__.py -text
-viewer/image_frame.py -text
 viewer/img_utilities.py -text
 viewer/pickle_to_viewer.py -text
 viewer/reflection_data_navigator.py -text
