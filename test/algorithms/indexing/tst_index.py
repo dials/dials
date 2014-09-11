@@ -526,6 +526,7 @@ def exercise_14():
     extra_args.append("space_group='Hall: %s'" %expected_hall_symbol)
     extra_args.append("method=%s" %method)
     extra_args.append("basis_vector_combinations.metric=n_indexed")
+    extra_args.append("treat_single_image_as_still=False")
 
 
     result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
