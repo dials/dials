@@ -400,7 +400,6 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tif
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 doc/user-tutorial/tutorial.sh -text
 doc/user-tutorial/tutorial.txt -text
-doc/user/figures/E4.png -text
 doc/user/manual.tex -text
 /error.h -text
 extensions/__init__.py -text
@@ -737,6 +736,7 @@ scratch/rjg/split_mtz.py -text
 scratch/rjg/total_counts_per_image.py -text
 scratch/rjg/unit_cell_refinement.py -text
 sphinx/Makefile -text
+sphinx/advanced_tutorial.rst -text
 sphinx/algorithms/dials.algorithms.background.rst -text
 sphinx/algorithms/dials.algorithms.indexing.rst -text
 sphinx/algorithms/dials.algorithms.integration.rst -text
@@ -745,11 +745,15 @@ sphinx/algorithms/dials.algorithms.profile_model.rst -text
 sphinx/algorithms/dials.algorithms.refinement.rst -text
 sphinx/algorithms/dials.algorithms.spot_prediction.rst -text
 sphinx/algorithms/index.rst -text
+sphinx/beginners_tutorial.rst -text
 sphinx/conf.py -text
 sphinx/extensions/index.rst -text
+sphinx/figures/E4.png -text
 sphinx/framework/index.rst -text
 sphinx/index.rst -text
+sphinx/installation.rst -text
 sphinx/interfaces/index.rst -text
+sphinx/library_reference.rst -text
 sphinx/util/index.rst -text
 test/SConscript -text
 test/__init__.py -text

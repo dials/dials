@@ -8,21 +8,9 @@ DIALS
    :maxdepth: 1
 
    installation
-   algorithms/index
-   extensions/index
-   framework/index
-   interfaces/index
-   util/index
-
-
-Installation
-============
-
-Links
-=====
-
-Acknowledgments
-===============
+   beginners_tutorial
+   advanced_tutorial
+   library_reference
 
 Contact
 =======
