@@ -426,6 +426,12 @@ class OptionParser(OptionParserBase):
     return self._phil_parser.diff_phil
 
 
+def flatten_reflections(filename_object_list):
+  result = []
+  for i in range(len(filename_object_list)):
+    result.extend(filename_object_list[i].data)
+  return result
+
 def flatten_datablocks(filename_object_list):
   result = []
   for i in range(len(filename_object_list)):

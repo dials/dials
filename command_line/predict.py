@@ -47,7 +47,8 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope)
+      phil=phil_scope,
+      read_experiments=True)
 
   def run(self):
     '''Execute the script.'''
@@ -55,27 +56,20 @@ class Script(object):
     from dials.util.command_line import Importer
     from dials.array_family import flex
     from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.util.options import flatten_experiments
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-
-    # Check the unhandled arguments
-    importer = Importer(args, include=['experiments'], check_format=False)
-    if len(importer.unhandled_arguments) > 0:
-      print '-' * 80
-      print 'The following command line arguments weren\'t handled'
-      for arg in importer.unhandled_arguments:
-        print '  ' + arg
-      exit(1)
+    params, options = self.parser.parse_args(show_diff_phil=True)
 
     # Check the number of experiments
-    if importer.experiments is None or len(importer.experiments) == 0:
+    experiments = flatten_experiments(params.input.experiments)
+    if len(experiments) == 0:
       self.parser.print_help()
       return
 
     predicted_all = flex.reflection_table()
 
-    for i_expt, expt in enumerate(importer.experiments):
+    for i_expt, expt in enumerate(experiments):
       if params.buffer_size > 0:
         # Hack to make the predicter predict reflections outside of the range
         # of the scan
@@ -96,7 +90,7 @@ class Script(object):
       predicted_all.extend(predicted)
     if len(params.profile) > 0:
       profile_model = ProfileModelList.load(params)
-      predicted_all.compute_bbox(importer.experiments, profile_model)
+      predicted_all.compute_bbox(experiments, profile_model)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
