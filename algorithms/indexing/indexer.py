@@ -38,6 +38,9 @@ discover_better_experimental_model = False
 min_cell = 20
   .type = float(value_min=0)
   .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
+nearest_neighbor_percentile = 0.05
+  .type = float(value_min=0)
+  .help = "Percentile of NN histogram to use for min cell determination."
 max_cell = Auto
   .type = float(value_min=0)
   .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
@@ -661,7 +664,8 @@ class indexer_base(object):
         from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
         phi_deg = self.reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
         if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
-          NN = neighbor_analysis(self.reflections['rlp'])
+          NN = neighbor_analysis(self.reflections['rlp'],
+                                 percentile=self.params.nearest_neighbor_percentile)
           self.params.max_cell = NN.max_cell
         else:
           phi_min = flex.min(phi_deg)
@@ -676,7 +680,8 @@ class indexer_base(object):
             if len(rlp) == 0:
               continue
             try:
-              NN = neighbor_analysis(rlp)
+              NN = neighbor_analysis(
+                rlp, percentile=self.params.nearest_neighbor_percentile)
               max_cell.append(NN.max_cell)
             except AssertionError:
               continue
