@@ -27,17 +27,24 @@ class DataBlockConverters(object):
 
   cache = {}
 
+  def __init__(self, check_format=True):
+    self._check_format = check_format
+
   def __str__(self):
     return self.phil_type
 
-  def from_words(self, words, master):
+  def from_string(self, s):
     from dxtbx.datablock import DataBlockFactory
-    s = libtbx.phil.str_from_words(words=words)
     if (s is None):
       return None
     if s not in self.cache:
-      self.cache[s] = FilenameDataWrapper(s, DataBlockFactory.from_json_file(s))
+      self.cache[s] = FilenameDataWrapper(s,
+        DataBlockFactory.from_json_file(s,
+          check_format=self._check_format))
     return self.cache[s]
+
+  def from_words(self, words, master):
+    return self.from_string(libtbx.phil.str_from_words(words=words))
 
   def as_words(self, python_object, master):
     if (python_object is None):
@@ -54,17 +61,24 @@ class ExperimentListConverters(object):
 
   cache = {}
 
+  def __init__(self, check_format=True):
+    self._check_format = check_format
+
   def __str__(self):
     return self.phil_type
 
-  def from_words(self, words, master):
+  def from_string(self, s):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    s = libtbx.phil.str_from_words(words=words)
     if (s is None):
       return None
     if s not in self.cache:
-      self.cache[s] = FilenameDataWrapper(s, ExperimentListFactory.from_json_file(s))
+      self.cache[s] = FilenameDataWrapper(s,
+        ExperimentListFactory.from_json_file(s,
+          check_format=self._check_format))
     return self.cache[s]
+
+  def from_words(self, words, master):
+    return self.from_string(libtbx.phil.str_from_words(words=words))
 
   def as_words(self, python_object, master):
     if (python_object is None):
@@ -84,14 +98,16 @@ class ReflectionTableConverters(object):
   def __str__(self):
     return self.phil_type
 
-  def from_words(self, words, master):
+  def from_string(self, s):
     from dials.array_family import flex
-    s = libtbx.phil.str_from_words(words=words)
     if (s is None):
       return None
     if s not in self.cache:
       self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_pickle(s))
     return self.cache[s]
+
+  def from_words(self, words, master):
+    return self.from_string(libtbx.phil.str_from_words(words=words))
 
   def as_words(self, python_object, master):
     if (python_object is None):
