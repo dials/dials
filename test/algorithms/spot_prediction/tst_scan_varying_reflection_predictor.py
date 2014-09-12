@@ -25,42 +25,10 @@ class Test(object):
            self.experiments[0].scan.get_num_images() + 1)
 
   def run(self):
-    self.tst_vs_old()
     self.tst_regression()
     #self.tst_with_hkl()
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
-
-  def predict_old(self):
-    from dials.scratch.dgw.prediction.obsolete_predictors import \
-      ScanVaryingReflectionListGenerator
-    dmin = self.experiments[0].detector.get_max_resolution(
-      self.experiments[0].beam.get_s0())
-    predict = ScanVaryingReflectionListGenerator(
-      self.experiments[0].crystal,
-      self.experiments[0].beam,
-      self.experiments[0].goniometer,
-      self.experiments[0].scan,
-      dmin)
-    from time import time
-    st = time()
-    result = predict()
-    #print "Old Time: ", time() - st
-    from dials.model.data import ReflectionList
-    from dials.array_family import flex
-    result = ReflectionList(result).to_table()
-
-    s1 = result['s1']
-    xyz = result['xyzcal.mm']
-    ind = flex.size_t()
-    for i in range(len(result)):
-      try:
-        coord = self.experiments[0].detector.get_ray_intersection(s1[i])
-        xyz[i] = coord[1] + (xyz[i][2],)
-      except Exception:
-        ind.append(i)
-    result.del_selected(ind)
-    return result
 
   def predict_new(self, hkl=None, frame=None, panel=None):
     from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
@@ -82,21 +50,14 @@ class Test(object):
     return result
 
   def tst_regression(self):
+    from libtbx.test_utils import approx_equal
     r_new = self.predict_new()
-    from dials.util.command_line import interactive_console; interactive_console()
-
-  def tst_vs_old(self):
-    r_old = self.predict_old()
-    r_new = self.predict_new()
-    assert(len(r_old) == len(r_new))
-    eps = 1e-7
-    for r1, r2 in zip(r_old.rows(), r_new.rows()):
-      assert(r1['miller_index'] == r2['miller_index'])
-      assert(r1['panel'] == r2['panel'])
-      assert(r1['entering'] == r2['entering'])
-      assert(all(abs(a-b) < eps for a, b in zip(r1['s1'], r2['s1'])))
-      assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.mm'], r2['xyzcal.mm'])))
-    print 'OK'
+    assert len(r_new) == 1934
+    assert r_new[0]['miller_index'] == (-8, -30, -23)
+    assert approx_equal(r_new[0]['xyzcal.px'],
+      (75.33831543451907, 2327.55737978813, 0.2548567552525226))
+    print "OK"
+    return
 
   #def tst_with_hkl(self):
     #from dials.algorithms.spot_prediction import ReekeIndexGenerator
