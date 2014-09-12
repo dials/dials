@@ -12,21 +12,6 @@
 from __future__ import division
 import optparse
 
-class CommandLineConfig(object):
-  '''A class to read the commandline configuration.'''
-
-  def __init__(self, interpretor):
-    '''Set the command line interpretor.'''
-    self._interpretor = interpretor
-
-  def parse(self, argv):
-    '''Get the configuration.'''
-
-    phils, positionals = self._interpretor.process_and_fetch(
-      argv, custom_processor="collect_remaining")
-    # Return positional arguments and phils
-    return positionals, [phils]
-
 
 class ConfigWriter(object):
   '''Class to write configuration to file.'''
@@ -146,9 +131,10 @@ class OptionParser(optparse.OptionParser):
       args.extend([l.strip() for l in sys.stdin.readlines()])
 
     # Parse the command line phil parameters
-    config = CommandLineConfig(self.system_phil().command_line_argument_interpreter())
-    args, command_line_phil = config.parse(args)
-    self._phil = self.system_phil().fetch(sources=command_line_phil)
+    interpretor = self.system_phil().command_line_argument_interpreter()
+    command_line_phil, args = interpretor.process_and_fetch(args,
+      custom_processor="collect_remaining")
+    self._phil = self.system_phil().fetch(source=command_line_phil)
     params = self._phil.extract()
 
     # Show config
