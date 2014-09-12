@@ -25,26 +25,28 @@ class Script(object):
     # The phil scope
     phil_scope = parse('''
 
-      output_experiments_filename = refined_experiments.json
-        .type = str
-        .help = "The filename for refined experimental models"
+      output {
+        experiments_filename = refined_experiments.json
+          .type = str
+          .help = "The filename for refined experimental models"
 
-      output_centroids_filename = None
-        .type = str
-        .help = "The filename for the table of centroids at the end of"
-                "refinement"
+        centroids_filename = None
+          .type = str
+          .help = "The filename for the table of centroids at the end of"
+                  "refinement"
 
-      output_parameters_filename = None
-        .type = str
-        .help = "The filename for the table of scan varying parameter values"
+        parameters_filename = None
+          .type = str
+          .help = "The filename for the table of scan varying parameter values"
 
-      output_correlation_plot_filename = None
-        .type = str
-        .help = "The filename of output of a plot of parameter correlations"
+        correlation_plot_filename = None
+          .type = str
+          .help = "The filename of output of a plot of parameter correlations"
 
-      output_reflections_filename = None
-        .type = str
-        .help = "The filename for output of refined reflections"
+        reflections_filename = None
+          .type = str
+          .help = "The filename for output of refined reflections"
+      }
 
       include scope dials.algorithms.refinement.refiner.phil_scope
     ''', process_includes=True)
@@ -56,7 +58,10 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope)
+      phil=phil_scope,
+      read_reflections=True,
+      read_experiments=True,
+      check_format=False)
 
   def write_centroids_table(self, refiner, filename):
 
@@ -84,27 +89,21 @@ class Script(object):
   def run(self):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
+    from dials.util.options import flatten_reflections, flatten_experiments
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-
-    # Check the number of arguments
-    if len(args) < 2:
-      self.parser.print_help()
-      return
-
-    importer = Importer(args, check_format=False, verbose=False)
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
 
     # Try to load the models and data
-    experiments = importer.experiments
-    if experiments is None:
+    if len(experiments) == 0:
       raise RuntimeError("No Experiments found in the input")
-    reflections = importer.reflections
-    if reflections is None:
+    if len(reflections) == 0:
       raise RuntimeError("No reflection data found in the input")
     if len(reflections) > 1:
       raise RuntimeError("Only one reflections list can be imported at present")
-    reflections = importer.reflections[0]
+    reflections = reflections[0]
 
     # Get the refiner
     print 'Configuring refiner'
@@ -117,21 +116,21 @@ class Script(object):
     # Refine and get the refinement history
     refined = refiner.run()
 
-    if params.output_centroids_filename:
+    if params.output.centroids_filename:
       print "Writing table of centroids to '{0}'".format(
-        params.output_centroids_filename)
-      self.write_centroids_table(refiner, params.output_centroids_filename)
+        params.output.centroids_filename)
+      self.write_centroids_table(refiner, params.output.centroids_filename)
 
     # Write scan-varying parameters to file, if there were any
-    if params.output_parameters_filename:
+    if params.output.parameters_filename:
       scan = refiner.get_scan()
       if scan:
         text = refiner.get_param_reporter().varying_params_vs_image_number(
             scan.get_array_range())
         if text:
           print "Writing scan-varying parameter table to '{0}'".format(
-            params.output_parameters_filename)
-          f = open(params.output_parameters_filename,"w")
+            params.output.parameters_filename)
+          f = open(params.output.parameters_filename,"w")
           f.write(text)
           f.close()
         else:
@@ -141,23 +140,23 @@ class Script(object):
     experiments = refiner.get_experiments()
 
     # Save the refined experiments to file
-    output_experiments_filename = params.output_experiments_filename
+    output_experiments_filename = params.output.experiments_filename
     print 'Saving refined experiments to {0}'.format(output_experiments_filename)
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 
     # Write out refined reflections, if requested
-    if params.output_reflections_filename:
+    if params.output.reflections_filename:
       matches = refiner.get_matches()
       print 'Saving refined reflections to {0}'.format(
-        params.output_reflections_filename)
+        params.output.reflections_filename)
       matches.as_pickle(params.output_reflections_filename)
 
-    if params.output_correlation_plot_filename:
+    if params.output.correlation_plot_filename:
       if refined.parameter_correlation:
         plt = refiner.parameter_correlation_plot(len(refined.parameter_correlation)-1)
         plt.tight_layout()
-        plt.savefig(params.output_correlation_plot_filename)
+        plt.savefig(params.output.correlation_plot_filename)
       else:
         print "Sorry, no parameter correlations were tracked. Please set " \
               "track_parameter_correlation=True"

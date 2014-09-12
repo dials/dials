@@ -35,7 +35,7 @@ Examples:
 
   dials.find_spots datablock.json
 
-  dials.find_spots datablock.json output=strong.pickle
+  dials.find_spots datablock.json output.reflections=strong.pickle
 
 '''
 
@@ -51,13 +51,15 @@ class Script(object):
     # Set the phil scope
     phil_scope = parse('''
 
-      output = 'strong.pickle'
-        .type = str
-        .help = "The output filename"
+      output {
+        reflections = 'strong.pickle'
+          .type = str
+          .help = "The output filename"
 
-      save_shoeboxes = True
-        .type = bool
-        .help = "Save the raw pixel values inside the reflection shoeboxes."
+        shoeboxes = True
+          .type = bool
+          .help = "Save the raw pixel values inside the reflection shoeboxes."
+      }
 
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
 
@@ -71,53 +73,42 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      epilog=help_message)
+      epilog=help_message,
+      read_datablocks=True,
+      read_datablocks_from_images=True)
 
   def run(self):
     '''Execute the script.'''
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
     from dials.array_family import flex
+    from dials.util.options import flatten_datablocks
     from time import time
     start_time = time()
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-
-    # Try importing the command line arguments
-    importer = Importer(args, include=['images', 'datablocks'])
-
-    # Check the unhandled arguments
-    if len(importer.unhandled_arguments) > 0:
-      print '-' * 80
-      print 'The following command line arguments weren\'t handled'
-      for arg in importer.unhandled_arguments:
-        print '  ' + arg
-      exit(1)
+    params, options = self.parser.parse_args(show_diff_phil=True)
 
     # Ensure we have a data block
-    if not importer.datablocks:
-      self.config().print_help()
-      exit(1)
-
-    if len(importer.datablocks) != 1:
+    datablocks = flatten_datablocks(params.input.datablock)
+    if len(datablocks) != 1:
       raise RuntimeError('only 1 datablock can be processed at a time')
 
     # Loop through all the imagesets and find the strong spots
     reflections = flex.reflection_table.from_observations(
-      importer.datablocks[0], params)
+      datablocks[0], params)
 
     # Delete the shoeboxes
-    if not params.save_shoeboxes:
+    if not params.output.shoeboxes:
       del reflections['shoebox']
 
     # Save the reflections to file
     print '\n' + '-' * 80
     Command.start('Saving {0} reflections to {1}'.format(
-        len(reflections), params.output))
-    reflections.as_pickle(params.output)
+        len(reflections), params.output.reflections))
+    reflections.as_pickle(params.output.reflections)
     Command.end('Saved {0} reflections to {1}'.format(
-        len(reflections), params.output))
+        len(reflections), params.output.reflections))
 
     # Print the time
     print time() - start_time

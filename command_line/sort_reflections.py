@@ -44,22 +44,21 @@ class Sort(object):
     """
 
     # Initialise the base class
-    self.parser = OptionParser(usage=usage, phil=phil_scope)
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      read_reflections=True)
 
   def run(self):
     '''Execute the script.'''
     from dials.array_family import flex # import dependency
+    from dials.util.options import flatten_reflections
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-
-    # Check the number of arguments is correct
-    if len(args) != 1:
-      self.parser.print_help()
-      return
-
-    # Load the reflections
-    reflections = flex.reflection_table.from_pickle(args[0])
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    reflections = flatten_reflections(params.input.reflections)
+    assert(len(reflections) == 1)
+    reflections = reflections[0]
 
     # Check the key is valid
     assert(params.key in reflections)

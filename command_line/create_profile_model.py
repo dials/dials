@@ -29,7 +29,12 @@ class Script(object):
 
     # The script usage
     usage  = "usage: %prog [options] experiments.json spots.pickle"
-    self.parser = OptionParser(usage=usage, phil=phil_scope)
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      read_reflections=True,
+      read_experiments=True,
+      check_format=False)
 
   def run(self):
     ''' Run the script. '''
@@ -37,20 +42,15 @@ class Script(object):
     from dials.algorithms.profile_model.profile_model import ProfileModelList
     from dials.util.command_line import Command
     from dials.array_family import flex
+    from dials.util.options import flatten_reflections, flatten_experiments
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-
-    # Import the items
-    importer = Importer(args, check_format=False)
-    experiments = importer.experiments
-    if experiments is None or len(experiments) != 1:
-      self.parser.print_help()
-      exit(0)
-    if importer.reflections is None or len(importer.reflections) != 1:
-      self.parser.print_help()
-      exit(0)
-    reflections = importer.reflections[0]
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
+    assert(len(reflections) == 1)
+    reflections = reflections[0]
+    assert(len(experiments) > 0)
 
     from dials.array_family import flex
     Command.start('Removing invalid coordinates')
