@@ -25,18 +25,21 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
               "given as a box of size (2 * nx + 1, 2 * ny + 1) centred"
               "at the pixel."
       .type = ints(size=2)
+      .expert_level = 1
 
     sigma_background = 6
       .help = "The number of standard deviations of the coefficient of"
               "variation (variance / mean) in the local area below"
               "which the pixel will be classified as background."
       .type = float
+      .expert_level = 1
 
     sigma_strong = 3
       .help = "The number of standard deviations above the mean in the"
               "local area above which the pixel will be classified as"
               "strong."
       .type = float
+      .expert_level = 1
 
     min_local=2
       .help = "The number of pixels in the local area of each pixel needed"
@@ -44,6 +47,7 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
               "the pixels under the kernel are needed. The minimum allowable"
               "number is 2"
       .type = int
+      .expert_level = 1
   '''
 
   default = True

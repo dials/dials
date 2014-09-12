@@ -103,6 +103,12 @@ class OptionParser(optparse.OptionParser):
         default=0,
         dest='show_config',
         help='Show the configuration parameters.')
+      self.add_option(
+        '-e',
+        action='count',
+        default=0,
+        dest='expert_level',
+        help='Set the expert level for print configuration parameters')
 
     # Set a verbosity parameter
     self.add_option(
@@ -127,7 +133,9 @@ class OptionParser(optparse.OptionParser):
 
     # Show config
     if hasattr(options, 'show_config') and options.show_config > 0:
-      self.print_phil(attributes_level=options.show_config-1)
+      self.print_phil(
+        expert_level=options.expert_level,
+        attributes_level=options.show_config-1)
       exit(0)
 
     # Print the diff phil
@@ -152,17 +160,23 @@ class OptionParser(optparse.OptionParser):
     ''' Get the diff phil. '''
     return self.system_phil().fetch_diff(source=self.phil())
 
-  def print_phil(self, attributes_level=0):
+  def print_phil(self, attributes_level=0, expert_level=None):
     '''Print the system and command line parameters.'''
-    print self.phil().as_str(attributes_level=attributes_level)
+    print self.phil().as_str(
+      attributes_level=attributes_level,
+      expert_level=expert_level)
 
-  def print_system_phil(self, attributes_level=0):
+  def print_system_phil(self, attributes_level=0, expert_level=None):
     '''Print the system parameters.'''
-    print self.system_phil().as_str(attributes_level=attributes_level)
+    print self.system_phil().as_str(
+      attributes_level=attributes_level,
+      expert_level=expert_level)
 
-  def print_diff_phil(self, attributes_level=0):
+  def print_diff_phil(self, attributes_level=0, expert_level=None):
     ''' Print the diff parameters. '''
-    print self.diff_phil().as_str(attributes_level=attributes_level)
+    print self.diff_phil().as_str(
+      attributes_level=attributes_level,
+      expert_level=expert_level)
 
   def format_epilog(self, formatter):
     ''' Don't do formatting on epilog. '''

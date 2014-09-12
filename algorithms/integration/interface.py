@@ -21,7 +21,9 @@ def generate_phil_scope():
           .help = "The block size in rotation angle (degrees)."
       }
 
-      filter {
+      filter
+        .expert_level = 1
+      {
 
         min_zeta = 0.05
           .help = "Filter the reflections by the value of zeta. A value of less"

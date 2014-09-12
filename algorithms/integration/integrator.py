@@ -34,6 +34,7 @@ def generate_phil_scope():
 
     filter
       .help = "Parameters for filtering reflections"
+      .expert_level = 1
     {
       by_bbox = False
         .help = "Filter the reflections by the volume of the bounding box."

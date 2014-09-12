@@ -28,6 +28,7 @@ class GeneralBackgroundExt(BackgroundIface):
 
       nsigma
         .help = "Parameters for nsigma outlier rejector"
+        .expert_level = 1
       {
         lower = 3
           .help = "Lower n sigma"
@@ -39,6 +40,7 @@ class GeneralBackgroundExt(BackgroundIface):
 
       truncated
         .help = "Parameters for truncated outlier rejector"
+        .expert_level = 1
       {
         lower = 0.01
           .help = "Lower bound"
@@ -50,6 +52,7 @@ class GeneralBackgroundExt(BackgroundIface):
 
       normal
         .help = "Parameters for normal outlier rejector"
+        .expert_level = 1
       {
         min_pixels = 10
           .help = "The minimum number of pixels to use in calculating the"
@@ -60,6 +63,7 @@ class GeneralBackgroundExt(BackgroundIface):
       mosflm
         .help = "Parameters for mosflm-like outlier rejector. This algorithm"
                 "is mainly used in conjunction with a linear 2d background."
+        .expert_level = 1
       {
         fraction = 1.0
           .help = "The fraction of pixels to use in determining the initial"

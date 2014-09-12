@@ -37,6 +37,7 @@ def generate_phil_scope():
 
     filter
       .help = "Parameters used in the spot finding filter strategy."
+      .expert_level = 1
 
     {
       min_spot_size = 6
