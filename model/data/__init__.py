@@ -79,7 +79,7 @@ class injector1(object):
             def new_init(self, *args, **kwargs):
               import warnings
               import inspect
-              _called = 'Called from: %s (%s:%d)' % \
+              _called = 'Called from: "%s" (%s:%d)' % \
                         (inspect.stack()[2][3], inspect.stack()[2][1],
                          inspect.stack()[2][2])
               warnings.simplefilter('always', DeprecationWarning)
