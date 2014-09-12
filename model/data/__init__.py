@@ -78,8 +78,13 @@ class injector1(object):
             old_init = ReflectionList.__init__
             def new_init(self, *args, **kwargs):
               import warnings
+              import inspect
+              _called = 'Called from: %s (%s:%d)' % \
+                        (inspect.stack()[2][3], inspect.stack()[2][1],
+                         inspect.stack()[2][2])
               warnings.simplefilter('always', DeprecationWarning)
-              warnings.warn(_warning_string, DeprecationWarning)
+              warnings.warn(_warning_string + _called, DeprecationWarning)
+
               old_init(self, *args, **kwargs)
             ReflectionList.__init__ = new_init
             return type.__init__(self, name, bases, dict)
@@ -94,8 +99,12 @@ class injector2(object):
             old_init = Reflection.__init__
             def new_init(self, *args, **kwargs):
               import warnings
+              import inspect
+              _called = 'Called from: "%s" (%s:%d)' % \
+                        (inspect.stack()[2][3], inspect.stack()[2][1],
+                         inspect.stack()[2][2])
               warnings.simplefilter('always', DeprecationWarning)
-              warnings.warn(_warning_string, DeprecationWarning)
+              warnings.warn(_warning_string + _called, DeprecationWarning)
               old_init(self, *args, **kwargs)
             Reflection.__init__ = new_init
             return type.__init__(self, name, bases, dict)
