@@ -92,7 +92,8 @@ class run_one_indexing(object):
         relative_length_tolerance=relative_length_tolerance,
         absolute_angle_tolerance=absolute_angle_tolerance)
       sg = self.crystal_model.get_space_group()
-      assert sg.type().hall_symbol() == expected_hall_symbol
+      assert sg.type().hall_symbol() == expected_hall_symbol, (
+        sg.type().hall_symbol(), expected_hall_symbol)
       reflections = indexed_reflections.select(indexed_reflections['id'] == i)
       mi = reflections['miller_index']
       assert (mi != (0,0,0)).count(False) == 0
@@ -106,19 +107,15 @@ class run_one_indexing(object):
       print self.calc_rmsds_timer.report()
 
   def get_rmsds_obs_pred(self, observations, experiment):
-    self.calc_rmsds_timer.start()
-    from dials.algorithms.indexing.indexer import master_params
-    from dials.algorithms.refinement import RefinerFactory
-    from dxtbx.model.experiment.experiment_list import ExperimentList
     reflections = observations.select(observations.get_flags(
       observations.flags.used_in_refinement))
     assert len(reflections) > 0
-    # XXX hack to make it work for a single lattice
-    reflections['id'] = flex.int(len(reflections), 0)
-    refine = RefinerFactory.from_parameters_data_experiments(
-      master_params, reflections, ExperimentList([experiment]), verbosity=0)
-    self.calc_rmsds_timer.stop()
-    return refine.rmsds()
+    obs_x, obs_y, obs_z = reflections['xyzobs.mm.value'].parts()
+    calc_x, calc_y, calc_z = reflections['xyzcal.mm'].parts()
+    rmsd_x = flex.mean(flex.pow2(obs_x-calc_x))**0.5
+    rmsd_y = flex.mean(flex.pow2(obs_y-calc_y))**0.5
+    rmsd_z = flex.mean(flex.pow2(obs_z-calc_z))**0.5
+    return (rmsd_x, rmsd_y, rmsd_z)
 
 def exercise_1():
   # thaumatin
