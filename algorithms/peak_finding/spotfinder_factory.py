@@ -59,13 +59,22 @@ def generate_phil_scope():
                 "accepted by the filtering algorithm."
         .type = float(value_min=0)
 
-      background_gradient {
+      background_gradient
+        .expert_level=2
+      {
         filter = False
           .type = bool
         background_size = 2
           .type = int(value_min=1)
         gradient_cutoff = 4
           .type = float(value_min=0)
+      }
+
+      spot_density
+        .expert_level=2
+      {
+        filter = False
+          .type = bool
       }
 
       ice_rings {
@@ -523,6 +532,101 @@ class BackgroundGradientFilter(object):
     return flags
 
 
+class SpotDensityFilter(object):
+
+  def __init__(self, nbins=50, gradient_cutoff=0.002):
+    self.nbins = nbins
+    self.gradient_cutoff = gradient_cutoff
+
+  def run(self, flags, sweep=None, observations=None, **kwargs):
+    obs_x, obs_y = observations.centroids().px_position_xy().parts()
+
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(
+      obs_x.as_numpy_array(), obs_y.as_numpy_array(),bins=self.nbins)
+
+    from scitbx.array_family import flex
+    H_flex = flex.double(H.flatten().astype(np.float64))
+    n_slots = min(int(flex.max(H_flex)), 30)
+    #print "n_slots: %s" %n_slots
+    hist = flex.histogram(H_flex, n_slots=n_slots)
+    #hist.show()
+
+    slots = hist.slots()
+    cumulative_hist = flex.long(len(slots))
+    for i in range(len(slots)):
+      cumulative_hist[i] = slots[i]
+      if i > 0:
+        cumulative_hist[i] += cumulative_hist[i-1]
+
+    cumulative_hist = cumulative_hist.as_double()/flex.max(cumulative_hist.as_double())
+
+    cutoff = None
+    gradients = flex.double()
+    for i in range(len(slots)-1):
+      x1 = cumulative_hist[i]
+      x2 = cumulative_hist[i+1]
+      g = (x2 - x1)/hist.slot_width()
+      gradients.append(g)
+      if (cutoff is None and  i > 0 and
+          g < self.gradient_cutoff and gradients[i-1] < self.gradient_cutoff):
+        cutoff = hist.slot_centers()[i-1]-0.5*hist.slot_width()
+    #print list(gradients)
+
+    H_flex = flex.double(np.ascontiguousarray(H))
+    isel = (H_flex > cutoff).iselection()
+    sel = np.column_stack(np.where(H > cutoff))
+    for (ix, iy) in sel:
+      flags.set_selected(
+        ((obs_x > xedges[ix]) & (obs_x < xedges[ix+1]) &
+         (obs_y > yedges[iy]) & (obs_y < yedges[iy+1])), False)
+
+    if 0:
+      from matplotlib import pyplot
+      fig, ax1 = pyplot.subplots()
+      extent = [yedges[0], yedges[-1], xedges[0], xedges[-1]]
+      plot1 = ax1.imshow(H, extent=extent, interpolation="nearest")
+      pyplot.xlim((0, pyplot.xlim()[1]))
+      pyplot.ylim((0, pyplot.ylim()[1]))
+      pyplot.gca().invert_yaxis()
+      cbar1 = pyplot.colorbar(plot1)
+      pyplot.axes().set_aspect('equal')
+      pyplot.show()
+
+      fig, ax1 = pyplot.subplots()
+      ax2 = ax1.twinx()
+      ax1.scatter(hist.slot_centers()-0.5*hist.slot_width(), cumulative_hist)
+      ax1.set_ylim(0, 1)
+      ax2.plot(hist.slot_centers()[:-1]-0.5*hist.slot_width(), gradients)
+      ymin, ymax = pyplot.ylim()
+      pyplot.vlines(cutoff, ymin, ymax, color='r')
+      pyplot.show()
+
+      H2 = H.copy()
+      if cutoff is not None:
+        H2[np.where(H2 >= cutoff)] = 0
+      fig, ax1 = pyplot.subplots()
+      plot1 = ax1.pcolormesh(xedges, yedges, H2)
+      pyplot.xlim((0, pyplot.xlim()[1]))
+      pyplot.ylim((0, pyplot.ylim()[1]))
+      pyplot.gca().invert_yaxis()
+      cbar1 = pyplot.colorbar(plot1)
+      pyplot.axes().set_aspect('equal')
+      pyplot.show()
+
+    return flags
+
+  def __call__(self, flags, **kwargs):
+    ''' Call the filter and print information. '''
+    from dials.util.command_line import Command
+    Command.start('Filtering {0} spots by spot density'.format(
+        flags.count(True)))
+    flags = self.run(flags, **kwargs)
+    Command.end('Filtered {0} spots by spot density'.format(
+        flags.count(True)))
+    return flags
+
+
 class SpotFinderFactory(object):
   ''' Factory class to create spot finders '''
 
@@ -623,6 +727,7 @@ class SpotFinderFactory(object):
       filters.append(
         PowderRingFilter(crystal_symmetry,
                          width=params.spotfinder.filter.ice_rings.width))
+
     if len(params.spotfinder.filter.untrusted_polygon):
       polygons = []
       for vertices in params.spotfinder.filter.untrusted_polygon:
@@ -632,11 +737,15 @@ class SpotFinderFactory(object):
           polygons.append(polygon(vertices))
       if len(polygons):
         filters.append(UntrustedPolygonFilter(polygons))
+
     if params.spotfinder.filter.background_gradient.filter:
       bg_filter_params = params.spotfinder.filter.background_gradient
       filters.append(BackgroundGradientFilter(
         background_size=bg_filter_params.background_size,
         gradient_cutoff=bg_filter_params.gradient_cutoff))
+
+    if params.spotfinder.filter.spot_density.filter:
+      filters.append(SpotDensityFilter())
 
     # Return the filter runner with the list of filters
     return FilterRunner(filters)
