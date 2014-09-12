@@ -73,6 +73,8 @@ class Test(object):
     extensions = list(BackgroundIface.extensions())
     assert(len(extensions) == 2)
     extensions = list(IntensityIface.extensions())
+    if len(extensions) != 3:
+      raise RuntimeError, 'len(extensions) = %d not 3' % len(extensions)
     assert(len(extensions) == 3)
 
     # Check the interface contain the expected extensions
