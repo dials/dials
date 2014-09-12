@@ -662,7 +662,8 @@ class indexer_base(object):
         # random differences in position between reflections measured twice.
         # Therefore repeat the nearest neighbour analysis several times in small
         # wedges where there shouldn't be any overlap in reciprocal space
-        from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
+        #from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
+        from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
         phi_deg = self.reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
         if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
           NN = neighbor_analysis(self.reflections['rlp'],

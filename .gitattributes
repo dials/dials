@@ -72,6 +72,7 @@ algorithms/indexing/fft3d.py -text
 algorithms/indexing/index.h -text
 algorithms/indexing/indexer.py -text
 algorithms/indexing/known_orientation.py -text
+algorithms/indexing/nearest_neighbor.py -text
 algorithms/indexing/real_space_grid_search.py -text
 algorithms/indexing/refinement.py -text
 algorithms/indexing/symmetry.py -text

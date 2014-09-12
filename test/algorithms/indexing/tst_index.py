@@ -122,13 +122,14 @@ def exercise_1():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["n_macro_cycles=2",
+  extra_args = ["n_macro_cycles=3",
+                "use_all_reflections=True",
                 "discover_better_experimental_model=True",
                 "bin_size_fraction=0.25",
                 "debug=True"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.04, 0.04, 0.0003)
+  expected_rmsds = (0.05, 0.04, 0.0003)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,

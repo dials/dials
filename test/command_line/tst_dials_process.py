@@ -68,6 +68,7 @@ def exercise_2():
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
+                  "indexing.refinement.reflections.use_all_reflections=True",
                   ]
                 + ['"%s"' %p for p in g]
                  )
@@ -88,7 +89,7 @@ def exercise_2():
   expected_unit_cell = uctbx.unit_cell((78.07, 78.07, 78.07, 90, 90, 90))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
-  assert approx_equal(mtz_object.n_reflections(), 38713, 1e2)
+  assert approx_equal(mtz_object.n_reflections(), 38867, 1e2)
   os.chdir(cwd)
 
 
