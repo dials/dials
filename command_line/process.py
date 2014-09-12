@@ -74,14 +74,16 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      read_stdin=True,
+      stdin_options=True,
       phil=phil_scope,
-      epilog=help_message)
+      epilog=help_message,
+      read_datablocks=True,
+      read_datablocks_from_images=True)
 
   def run(self):
     '''Execute the script.'''
-    from dials.util.command_line import Importer
     from dials.util.command_line import Command
+    from dials.util.options import flatten_datablocks
     from time import time
     import sys
 
@@ -113,42 +115,26 @@ class Script(object):
     print ''
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    datablocks = flatten_datablocks(params.input.datablock)
 
     # Save the options
     self.options = options
     self.params = params
 
-    if len(args) == 0:
-      self.parser.print_help()
-      return
-
     st = time()
 
     # Import stuff
-    Command.start('Importing datablocks')
-    importer = Importer(args, include=["images", "datablocks"])
-    assert(len(importer.datablocks) == 1)
-    datablock = importer.datablocks[0]
-    Command.end('Imported datablocks')
+    assert(len(datablocks) == 1)
+    datablock = datablocks[0]
 
     from dxtbx.datablock import DataBlockDumper
     dump = DataBlockDumper(datablock)
     dump.as_json("datablock.json")
 
-    # Check the unhandled arguments
-    if len(importer.unhandled_arguments) > 0:
-      from libtbx.utils import Sorry
-      from cStringIO import StringIO
-      s = StringIO()
-      print >> s, 'The following command line arguments weren\'t understood:'
-      for arg in importer.unhandled_arguments:
-        print >> s, '  ' + arg
-      raise Sorry(s.getvalue())
-
     # Do the processing
     observed = self.find_spots(datablock)
-    experiments, indexed = self.index(datablock, observed,importer.unhandled_arguments)
+    experiments, indexed = self.index(datablock, observed)
     experiments = self.refine(experiments, indexed)
     integrated = self.integrate(experiments, indexed)
     mtz = self.mtz(integrated, experiments)
@@ -186,7 +172,7 @@ class Script(object):
     print 'Time Taken = %f seconds' % (time() - st)
     return observed
 
-  def index(self, datablock, reflections, unhandled):
+  def index(self, datablock, reflections):
     from time import time
     st = time()
 

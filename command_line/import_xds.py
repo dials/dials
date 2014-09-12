@@ -53,10 +53,11 @@ class SpotXDSImporter(object):
     Command.end('Removed invalid reflections, %d remaining' % len(table))
 
     # Output the table to pickle file
-    if params.output is None: params.output = 'spot_xds.pickle'
-    Command.start('Saving reflection table to %s' % params.output)
-    table.as_pickle(params.output)
-    Command.end('Saved reflection table to %s' % params.output)
+    if params.output.filename is None:
+      params.output.filename = 'spot_xds.pickle'
+    Command.start('Saving reflection table to %s' % params.output.filename)
+    table.as_pickle(params.output.filename)
+    Command.end('Saved reflection table to %s' % params.output.filename)
 
 
 class IntegrateHKLImporter(object):
@@ -117,10 +118,11 @@ class IntegrateHKLImporter(object):
     Command.end('Created table with {0} reflections'.format(len(table)))
 
     # Output the table to pickle file
-    if params.output is None: params.output = 'integrate_hkl.pickle'
-    Command.start('Saving reflection table to %s' % params.output)
-    table.as_pickle(params.output)
-    Command.end('Saved reflection table to %s' % params.output)
+    if params.output.filename is None:
+      params.output.filename = 'integrate_hkl.pickle'
+    Command.start('Saving reflection table to %s' % params.output.filename)
+    table.as_pickle(params.output.filename)
+    Command.end('Saved reflection table to %s' % params.output.filename)
 
   def derive_reindex_matrix(self, handle):
     '''Derive a reindexing matrix to go from the orientation matrix used
@@ -161,7 +163,7 @@ class XDSFileImporter(object):
     import os
     # Get the XDS.INP file
     xds_inp = os.path.join(self.args[0], 'XDS.INP')
-    if params.xds_file is None:
+    if params.input.xds_file is None:
       xds_file = XDSFileImporter.find_best_xds_file(self.args[0])
     else:
       xds_file = os.path.join(self.args[0], params.xds_file)
@@ -210,19 +212,19 @@ class XDSFileImporter(object):
         else:              print "no crystal!"
 
     # Write the experiment list to a JSON or pickle file
-    if params.output is None:
-      params.output = 'experiments.json'
+    if params.output.filename is None:
+      params.output.filename = 'experiments.json'
     print "-" * 80
-    print 'Writing experiments to %s' % params.output
+    print 'Writing experiments to %s' % params.output.filename
     dump = ExperimentListDumper(experiments)
-    dump.as_file(params.output)
+    dump.as_file(params.output.filename)
 
     # Optionally save as a data block
-    if params.xds_datablock:
+    if params.output.xds_datablock:
       print "-" * 80
-      print "Writing data block to %s" % params.xds_datablock
+      print "Writing data block to %s" % params.output.xds_datablock
       dump = DataBlockDumper(experiments.to_datablocks())
-      dump.as_file(params.xds_datablock)
+      dump.as_file(params.output.xds_datablock)
 
   @staticmethod
   def find_best_xds_file(xds_dir):
@@ -254,21 +256,25 @@ class Script(object):
 
     # Create the phil parameters
     phil_scope = parse('''
-      input = *experiment reflections
-        .type = choice
-        .help = "The input method"
+      input {
+        method = *experiment reflections
+          .type = choice
+          .help = "The input method"
 
-      output = None
-        .type = str
-        .help = "The output file"
+        xds_file = None
+          .type = str
+          .help = "Explicitly specify the file to use"
+      }
 
-      xds_file = None
-        .type = str
-        .help = "Explicitly specify the file to use"
+      output {
+        filename = None
+          .type = str
+          .help = "The output file"
 
-      xds_datablock = None
-        .type = str
-        .help = "Output filename of data block with xds"
+        xds_datablock = None
+          .type = str
+          .help = "Output filename of data block with xds"
+      }
 
       remove_invalid = False
         .type = bool
@@ -277,13 +283,16 @@ class Script(object):
 
     # The option parser
     usage = "usage: %prog [options] (SPOT.XDS|INTEGRATE.HKL)"
-    self.parser = OptionParser(usage=usage, phil=phil_scope)
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope)
 
   def run(self):
     ''' Run the script. '''
 
     # Parse the command line arguments
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
+    params, options, args = self.parser.parse_args(show_diff_phil=True,
+                                                   return_unhandled=True)
 
     # Check number of arguments
     if len(args) == 0:
@@ -291,7 +300,7 @@ class Script(object):
       exit(0)
 
     # Select the importer class
-    if params.input == 'experiment':
+    if params.input.method == 'experiment':
       importer = XDSFileImporter(args)
       pass
     else:

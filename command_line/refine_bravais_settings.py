@@ -3,7 +3,10 @@ from __future__ import division
 from libtbx.phil import command_line
 from libtbx.utils import Sorry
 import iotbx.phil
-from dials.util.command_line import Importer
+# from dials.util.command_line import Importer
+from dials.util.options import OptionParser
+from dials.util.options import flatten_reflections
+from dials.util.options import flatten_experiments
 from dials.array_family import flex
 
 master_phil_scope = iotbx.phil.parse("""
@@ -35,24 +38,42 @@ Parameters:
     master_phil_scope.show(out=s)
     usage_message += s.getvalue()
     raise Usage(usage_message)
-  importer = Importer(args, check_format=False)
-  args = importer.unhandled_arguments
-  cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  working_phil = cmd_line.process_and_fetch(args=args)
-  working_phil.show()
-  params = working_phil.extract()
-  if len(importer.experiments) == 0:
+
+  parser = OptionParser(
+    phil=master_phil_scope,
+    read_experiments=True,
+    read_reflections=True,
+    check_format=False)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+  experiments = flatten_experiments(params.input.experiments)
+  reflections = flatten_reflections(params.input.reflections)
+  if len(experiments) == 0:
     print "No ExperimentList could be constructed"
     return
-  elif len(importer.experiments) > 1 and params.experiment_id is None:
+  elif len(experiments) > 1 and params.experiment_id is None:
     raise Sorry("More than one experiment present: set experiment_id to choose experiment.")
-  experiments = importer.experiments
+
+  # importer = Importer(args, check_format=False)
+  # args = importer.unhandled_arguments
+  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
+  # working_phil = cmd_line.process_and_fetch(args=args)
+  # working_phil.show()
+  # params = working_phil.extract()
+  # if len(importer.experiments) == 0:
+  #   print "No ExperimentList could be constructed"
+  #   return
+  # elif len(importer.experiments) > 1 and params.experiment_id is None:
+  #   raise Sorry("More than one experiment present: set experiment_id to choose experiment.")
+  # experiments = importer.experiments
   if params.experiment_id is None:
     params.experiment_id = 0
   assert params.experiment_id < len(experiments)
   experiment = experiments[params.experiment_id]
-  assert len(importer.reflections) == 1
-  reflections = importer.reflections[0]
+  assert(len(reflections) == 1)
+  reflections = reflections[0]
+  # assert len(importer.reflections) == 1
+  # reflections = importer.reflections[0]
 
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic

@@ -18,7 +18,9 @@ import iotbx.phil
 from cctbx import sgtbx
 from dxtbx.model.crystal import crystal_model
 from dxtbx.serialize import dump
-from dials.util.command_line import Importer
+# from dials.util.command_line import Importer
+from dials.util.options import OptionParser
+from dials.util.options import flatten_reflections, flatten_experiments
 
 master_phil_scope = iotbx.phil.parse("""
 change_of_basis_op = None
@@ -34,21 +36,41 @@ master_params = master_phil_scope.fetch().extract()
 
 
 def run(args):
-  importer = Importer(args, check_format=False)
-  if len(importer.experiments) == 0:
+
+  parser = OptionParser(
+    phil=master_phil_scope,
+    read_reflections=True,
+    read_experiments=True,
+    check_format=False)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+
+  reflections = flatten_reflections(params.input.reflections)
+  experiments = flatten_experiments(params.input.experiments)
+  if len(experiments) == 0:
     print "No ExperimentList could be constructed"
     return
-  elif len(importer.experiments) > 1:
+  elif len(experiments) > 1:
     raise RuntimeError("Only one Experiment can be processed at a time")
-  experiments = importer.experiments
+
+  # importer = Importer(args, check_format=False)
+  # if len(importer.experiments) == 0:
+  #   print "No ExperimentList could be constructed"
+  #   return
+  # elif len(importer.experiments) > 1:
+  #   raise RuntimeError("Only one Experiment can be processed at a time")
+  # experiments = importer.experiments
   experiment = experiments[0]
-  assert len(importer.reflections) == 1
-  reflections = importer.reflections[0]
-  args = importer.unhandled_arguments
-  cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  working_phil = cmd_line.process_and_fetch(args=args)
-  working_phil.show()
-  params = working_phil.extract()
+  assert(len(reflections) == 1)
+  reflections = reflections[0]
+  # assert len(importer.reflections) == 1
+  # reflections = importer.reflections[0]
+  # args = importer.unhandled_arguments
+  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
+  # working_phil = cmd_line.process_and_fetch(args=args)
+  # working_phil.show()
+  # params = working_phil.extract()
+  parser.phil.show()
   assert params.change_of_basis_op is not None
 
   change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)

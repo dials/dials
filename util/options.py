@@ -192,7 +192,7 @@ class PhilCommandParser(object):
     ''' Get the diff phil. '''
     return self.system_phil.fetch_diff(source=self.phil)
 
-  def parse_args(self, args, verbose=False):
+  def parse_args(self, args, verbose=False, return_unhandled=True):
     ''' Parse the command line arguments. '''
 
     # Try to import everything
@@ -216,8 +216,13 @@ class PhilCommandParser(object):
 
     # Parse the command line phil parameters
     interpretor = self.system_phil.command_line_argument_interpreter()
-    self._phil = interpretor.process_and_fetch(args)
-    return self.phil.extract()
+    if return_unhandled:
+      self._phil, args = interpretor.process_and_fetch(args,
+        custom_processor="collect_remaining")
+    else:
+      self._phil = interpretor.process_and_fetch(args)
+      args = []
+    return self.phil.extract(), args
 
   def _generate_input_scope(self):
     ''' Generate the required input scope. '''
@@ -375,7 +380,7 @@ class OptionParser(OptionParserBase):
       config_options=self.system_phil.as_str() != '',
       **kwargs)
 
-  def parse_args(self, args=None, show_diff_phil=False):
+  def parse_args(self, args=None, show_diff_phil=False, return_unhandled=False):
     '''Parse the command line arguments and get system configuration.'''
     import sys
 
@@ -398,7 +403,9 @@ class OptionParser(OptionParserBase):
       exit(0)
 
     # Parse the phil parameters
-    params = self._phil_parser.parse_args(args, options.verbose > 0)
+    params, args = self._phil_parser.parse_args(
+      args, options.verbose > 0,
+      return_unhandled=True)
 
     # Print the diff phil
     if show_diff_phil:
@@ -408,6 +415,10 @@ class OptionParser(OptionParserBase):
         print diff_phil_str
 
     # Return the parameters
+    if return_unhandled:
+      return params, options, args
+    else:
+      assert(len(args) == 0)
     return params, options
 
   @property

@@ -13,18 +13,22 @@ from __future__ import division
 
 def run(args):
   import os
-  from dials.util.command_line import Importer
   from dxtbx.serialize import xds
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_experiments, flatten_reflections
 
-  importer = Importer(args)
-  experiments = importer.experiments
-  reflections = importer.reflections
-  if reflections is not None:
+  parser = OptionParser(
+    read_experiments=True,
+    read_reflections=True,
+    check_format=False)
+  params, options = parser.parse_args(show_diff_phil=True)
+  reflections = flatten_reflections(params.input.reflections)
+  experiments = flatten_experiments(params.input.experiments)
+  if len(reflections) > 0:
     assert len(reflections) == 1
     reflections = reflections[0]
-  args = importer.unhandled_arguments
 
-  if experiments is not None:
+  if len(experiments) > 0:
     assert len(experiments) > 0
 
     for i in range(len(experiments)):

@@ -5,7 +5,9 @@ from libtbx.phil import command_line
 import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex
-from dials.util.command_line import Importer
+# from dials.util.command_line import Importer
+from dials.util.options import OptionParser
+from dials.util.options import flatten_datablocks, flatten_reflections
 from dials.algorithms.indexing.indexer import indexer_base
 
 master_phil_scope = iotbx.phil.parse("""
@@ -278,22 +280,39 @@ Parameters:
     master_phil_scope.show(out=s)
     usage_message += s.getvalue()
     raise Usage(usage_message)
-  importer = Importer(args, check_format=False)
-  if len(importer.datablocks) == 0:
+
+  parser = OptionParser(
+    phil=master_phil_scope,
+    read_datablocks=True,
+    read_reflections=True,
+    check_format=False)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+  datablocks = flatten_datablocks(params.input.datablock)
+  reflections = flatten_reflections(params.input.reflections)
+  if len(datablocks) == 0:
     print "No DataBlock could be constructed"
     return
   imagesets = []
-  for datablock in importer.datablocks:
+  for datablock in datablocks:
     imagesets.extend(datablock.extract_imagesets())
-  assert len(imagesets) > 0
-  reflections = importer.reflections
-  assert len(reflections) == len(imagesets)
-  args = importer.unhandled_arguments
 
-  cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  working_phil = cmd_line.process_and_fetch(args=args)
-  working_phil.show()
-  params = working_phil.extract()
+  # importer = Importer(args, check_format=False)
+  # if len(importer.datablocks) == 0:
+  #   print "No DataBlock could be constructed"
+  #   return
+  # imagesets = []
+  # for datablock in importer.datablocks:
+  #   imagesets.extend(datablock.extract_imagesets())
+  assert len(imagesets) > 0
+  # reflections = importer.reflections
+  assert len(reflections) == len(imagesets)
+  # args = importer.unhandled_arguments
+
+  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
+  # working_phil = cmd_line.process_and_fetch(args=args)
+  # working_phil.show()
+  # params = working_phil.extract()
 
   from rstbx.phil.phil_preferences import indexing_api_defs
   import iotbx.phil

@@ -43,32 +43,61 @@ Parameters:
     master_phil_scope.show(out=s)
     usage_message += s.getvalue()
     raise Usage(usage_message)
-  from dials.util.command_line import Importer
+  # from dials.util.command_line import Importer
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
+  from dials.util.options import flatten_reflections
   from scitbx.array_family import flex
   from scitbx import matrix
   from libtbx.phil import command_line
-  importer = Importer(args, check_format=False)
-  #assert len(importer.datablocks) == 1
-  reflections = importer.reflections
-  if importer.datablocks is not None and len(importer.datablocks) == 1:
-    imageset = importer.datablocks[0].extract_imagesets()[0]
-  elif importer.datablocks is not None and len(importer.datablocks) > 1:
+  parser = OptionParser(
+    phil=master_phil_scope,
+    read_datablocks=True,
+    read_experiments=True,
+    read_reflections=True,
+    check_format=False)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+  datablocks = flatten_datablocks(params.input.datablock)
+  reflections = flatten_reflections(params.input.reflections)
+  experiments = flatten_experiments(params.input.experiments)
+  if len(datablocks) == 1:
+    imageset = datablocks[0].extract_imagesets()[0]
+  elif len(datablocks) > 1:
     raise RuntimeError("Only one DataBlock can be processed at a time")
-  elif len(importer.experiments.imagesets()) > 0:
-    imageset = importer.experiments.imagesets()[0]
-    imageset.set_detector(importer.experiments[0].detector)
-    imageset.set_beam(importer.experiments[0].beam)
-    imageset.set_goniometer(importer.experiments[0].goniometer)
+  elif len(experiments.imagesets()) > 0:
+    imageset = experiments.imagesets()[0]
+    imageset.set_detector(experiments[0].detector)
+    imageset.set_beam(experiments[0].beam)
+    imageset.set_goniometer(experiments[0].goniometer)
   else:
     raise RuntimeError("No imageset could be constructed")
+
+
+
+  # importer = Importer(args, check_format=False)
+  #assert len(importer.datablocks) == 1
+  # reflections = importer.reflections
+  # if importer.datablocks is not None and len(importer.datablocks) == 1:
+  #   imageset = importer.datablocks[0].extract_imagesets()[0]
+  # elif importer.datablocks is not None and len(importer.datablocks) > 1:
+  #   raise RuntimeError("Only one DataBlock can be processed at a time")
+  # elif len(importer.experiments.imagesets()) > 0:
+  #   imageset = importer.experiments.imagesets()[0]
+  #   imageset.set_detector(importer.experiments[0].detector)
+  #   imageset.set_beam(importer.experiments[0].beam)
+  #   imageset.set_goniometer(importer.experiments[0].goniometer)
+  # else:
+  #   raise RuntimeError("No imageset could be constructed")
   #imageset = imagesets[0]
   #imageset = importer.datablocks[0].extract_imagesets()[0]
   detector = imageset.get_detector()
   scan = imageset.get_scan()
-  args = importer.unhandled_arguments
-  cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  working_phil = cmd_line.process_and_fetch(args=args)
-  params = working_phil.extract()
+  # args = importer.unhandled_arguments
+  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
+  # working_phil = cmd_line.process_and_fetch(args=args)
+  # params = working_phil.extract()
   panel_origin_shifts = {0: (0,0,0)}
   try:
     hierarchy = detector.hierarchy()

@@ -27,8 +27,8 @@ def exercise_spots_xds():
 
   output_pickle = "%s.pickle" %f.name[:-4]
   args = ["dials.import_xds", f.name, #xparm_file,
-          "input=reflections",
-          "output='%s'" %output_pickle,
+          "input.method=reflections",
+          "output.filename='%s'" %output_pickle,
           "remove_invalid=True"]
   command = " ".join(args)
   print command

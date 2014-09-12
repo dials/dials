@@ -132,7 +132,7 @@ class Script(object):
     usage = "usage: %prog [options] /path/to/image/files"
     self.parser = OptionParser(
       usage=usage,
-      read_stdin=True,
+      stdin_options=True,
       phil=phil_scope,
       epilog=help_message)
 
@@ -140,7 +140,9 @@ class Script(object):
     ''' Parse the options. '''
 
     # Parse the command line arguments
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
+    params, options, args = self.parser.parse_args(
+      show_diff_phil=True,
+      return_unhandled=True)
 
     # Check we have some filenames
     if len(args) == 0:
