@@ -213,7 +213,7 @@ class TestIntegrator3D(object):
       self.profile_model,
       self.rlist,
       block_size=5,
-      max_procs=self.nproc)
+      nproc=self.nproc)
     result = integrator.integrate()
 
     print 'OK'
