@@ -38,7 +38,6 @@ class Script(object):
 
   def run(self):
     ''' Run the script. '''
-    from dials.util.command_line import Importer
     from dials.algorithms.profile_model.profile_model import ProfileModelList
     from dials.util.command_line import Command
     from dials.array_family import flex
