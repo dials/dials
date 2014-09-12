@@ -463,6 +463,7 @@ model/serialize/shoebox_block_importer.h -text
 model/serialize/shoebox_file.h -text
 model/serialize/shoebox_file_exporter.h -text
 model/serialize/shoebox_file_importer.h -text
+/phil.py -text
 /run_tests.py -text
 scratch/__init__.py -text
 scratch/asb/dummy.phil -text
