@@ -33,7 +33,10 @@ class Script(object):
 
     # The script usage
     usage = "usage: %prog [options] /path/to/image/reflection/files"
-    self.parser = OptionParser(usage=usage, phil=phil_scope)
+    self.parser = OptionParser(
+      usage=usage, 
+      phil=phil_scope,
+      read_reflections=True)
 
   def run(self):
     ''' Run the script. '''
@@ -41,23 +44,10 @@ class Script(object):
     from dials.util.command_line import Command
 
     # Parse the command line arguments
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-    if len(args) == 0:
-      self.parser.print_help()
-      exit(0)
-
-    # Load the reflection lists
-    tables = []
-    for filename in args:
-      Command.start('Loading reflection list from %s' % filename)
-      t = flex.reflection_table.from_pickle(filename)
-      Command.end('Loaded %d reflections from %s' % (len(t), filename))
-      tables.append(t)
-
-    # Check the number of tables
-    if len(tables) < 2:
-      raise RuntimeError('Need atleast 2 tables to merge, got %d' % len(tables))
-
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    assert(len(params.input.reflections) > 1)
+    tables = [p.data for p in params.input.reflections]
+    
     # Get the number of rows and columns
     nrows = [t.nrows() for t in tables]
     ncols = [t.ncols() for t in tables]

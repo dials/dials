@@ -53,26 +53,22 @@ class Script(object):
 
     # Set the phil scope
     phil_scope = parse('''
+      
+      output {
+        profile_model = 'profile_model.phil'
+          .type = str
+          .help = "The profile parameters output filename"
 
-      profile_model = 'profile_model.phil'
-        .type = str
-        .help = "The profile parameters output filename"
+        reflections = 'integrated.pickle'
+          .type = str
+          .help = "The integrated output filename"
+      }
 
-      integrated = 'integrated.pickle'
-        .type = str
-        .help = "The integrated output filename"
-
-      reference = None
-        .type = str
-        .help = "The indexed reference spots input filename"
-
-      predicted = None
-        .type = str
-        .help = "The predicted reflections input filename"
-
-      shoeboxes = None
-        .type = str
-        .help = "The shoebox input filename"
+      input {
+        shoeboxes = None
+          .type = str
+          .help = "The shoebox input filename"
+      }
 
       include scope dials.algorithms.integration.integrator.phil_scope
       include scope dials.algorithms.profile_model.profile_model.phil_scope
@@ -86,7 +82,9 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      epilog=help_message)
+      epilog=help_message,
+      read_reflections=True,
+      read_experiments=True)
 
   def run(self):
     ''' Perform the integration. '''
@@ -96,76 +94,43 @@ class Script(object):
     start_time = time()
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-
-    # Check the number of command line arguments
-    if len(args) != 1:
-      self.parser.print_help()
-      return
-
-    # Load the experiment list
-    exlist = self.load_experiments(args[0])
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    
+    # Get the expected data
+    assert(len(params.input.experiments) == 1)
+    exlist = params.input.experiments[0].data
+    assert(len(exlist) == 1)
+    if len(params.input.reflections) > 0:
+      assert(len(params.input.reflections) == 1)
+      reference = self.process_reference(params.input.reflections[0].data)
+    else:
+      reference = None
 
     # Load the data
-
-    shoeboxes = reference = predicted = None
-
-    if params.shoeboxes:
-      shoeboxes = params.shoeboxes
-    if params.reference:
-      reference = self.load_reference(params.reference)
-    if params.predicted:
-      predicted = self.load_predicted(params.predicted)
+    shoeboxes = None
 
     # Initialise the integrator
     if None in exlist.goniometers():
       from dials.algorithms.integration import IntegratorStills
-      integrator = IntegratorStills(params, exlist, reference, predicted, shoeboxes)
+      integrator = IntegratorStills(params, exlist, reference, None, shoeboxes)
     else:
       from dials.algorithms.integration import Integrator
-      integrator = Integrator(params, exlist, reference, predicted, shoeboxes)
+      integrator = Integrator(params, exlist, reference, None, shoeboxes)
 
     # Integrate the reflections
     reflections = integrator.integrate()
 
     # Save the reflections
-    self.save_reflections(reflections, params.integrated)
+    self.save_reflections(reflections, params.output.reflections)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time
 
-  def load_predicted(self, filename):
-    ''' Load the predicted reflections. '''
-    from dials.array_family import flex
-    if filename is not None:
-      return flex.reflection_table.from_pickle(filename)
-    return None
-
-  def load_experiments(self, filename):
-    ''' Load the experiment list. '''
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dials.util.command_line import Command
-    Command.start('Loading experiments from %s' % filename)
-    exlist = ExperimentListFactory.from_json_file(filename)
-    Command.end('Loaded experiments from %s' % filename)
-    if len(exlist) == 0:
-      raise RuntimeError('experiment list is empty')
-    elif len(exlist.imagesets()) > 1 or len(exlist.detectors()) > 1:
-      raise RuntimeError('experiment list contains > 1 imageset or detector')
-    return exlist
-
-  def load_reference(self, filename):
+  def process_reference(self, reference):
     ''' Load the reference spots. '''
     from dials.util.command_line import Command
     from dials.array_family import flex
-
-    if not filename:
-      return None
-
-    Command.start('Loading reference spots from %s' % filename)
-    reference = flex.reflection_table.from_pickle(filename)
     assert("miller_index" in reference)
-    Command.end('Loaded reference spots from %s' % filename)
     Command.start('Removing reference spots with invalid coordinates')
     mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
     reference.del_selected(mask)

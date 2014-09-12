@@ -21,7 +21,8 @@ class Test(object):
     table['hkl'] = flex.miller_index(360)
     table['id'] = flex.size_t(360)
     table['intensity.sum.value'] = flex.double(360)
-    table.as_pickle("temp.pickle")
+    table.as_pickle("temp1.pickle")
+    table.as_pickle("temp2.pickle")
 
   def run(self):
     from libtbx import easy_run
@@ -30,8 +31,8 @@ class Test(object):
     # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
       'dials.merge_reflection_lists',
-      'temp.pickle',
-      'temp.pickle',
+      'temp1.pickle',
+      'temp2.pickle',
       'method=update'
     ]).raise_if_errors()
 
@@ -42,8 +43,8 @@ class Test(object):
     # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
       'dials.merge_reflection_lists',
-      'temp.pickle',
-      'temp.pickle',
+      'temp1.pickle',
+      'temp2.pickle',
       'method=extend'
     ]).raise_if_errors()
 

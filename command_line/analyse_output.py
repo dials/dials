@@ -62,6 +62,7 @@ class CentroidAnalyser(object):
 
   def __call__(self, rlist):
     ''' Analyse the reflection centroids. '''
+    from dials.util.command_line import Command
 
     # Check we have the required fields
     print "Analysing reflection centroids"
@@ -758,16 +759,19 @@ class Script(object):
 
     # Create the phil parameters
     phil_scope = parse('''
-      directory = .
-        .type = str
-        .help = "The directory to store the results"
+      output {
+        directory = .
+          .type = str
+          .help = "The directory to store the results"
+      }
     ''')
 
     # Create the parser
     usage = "usage: %prog [options] reflections.pickle"
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope)
+      phil=phil_scope,
+      read_reflections=True)
 
   def run(self):
     ''' Run the script. '''
@@ -775,21 +779,16 @@ class Script(object):
     from dials.util.command_line import Command
 
     # Parse the command line arguments
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=True)
 
     # Shoe the help
-    if len(args) != 1:
+    if len(params.input.reflections) != 1:
       self.parser.print_help()
       exit(0)
 
-    # Read the reflections
-    Command.start("Loading reflections")
-    rlist = flex.reflection_table.from_pickle(args[0])
-    Command.end("Loaded %d reflections" % len(rlist))
-
     # Analyse the reflections
-    analyse = Analyser(params.directory)
-    analyse(rlist)
+    analyse = Analyser(params.output.directory)
+    analyse(params.input.reflections[0].data)
 
 
 if __name__ == '__main__':
