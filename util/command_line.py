@@ -272,6 +272,175 @@ class Command(object):
     stdout.write(string)
     stdout.flush()
 
+_warning_string = '''
+
+=========================================================
+The Importer class is deprecated!
+  Instances should be removed as soon as possible to use
+  the dials.util.options.OptionsParser class instead
+=========================================================
+
+'''
+
+class Importer(object):
+  ''' A class to import the command line arguments. '''
+
+  def __init__(self, args, include=None, exclude=None, verbose=False,
+               check_format=True):
+    ''' Parse the arguments. Populates its instance attributes in an intelligent
+    way from the arguments in args.
+
+    If include is set, only those items set will be tried. If not, then if
+    exclude is set, then those items will not be tested.
+
+    These are the types we can import:
+     - images: a list of images
+     - reflections : a list of reflections
+     - datablocks : a list of datablocks
+     - experiments: a list of experiments
+
+    Params:
+      args The arguments to parse
+      include types to try
+      exclude types not to try
+      verbose True/False print out some stuff
+
+
+    Example:
+      import = Importer(argv, include=['reflections'])
+
+    '''
+    import warnings
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn(_warning_string, DeprecationWarning)
+
+    # Check the format in data block and experiment list
+    self._check_format = check_format
+
+    # Initialise output
+    self.datablocks = None
+    self.experiments = None
+    self.reflections = None
+
+    # Get the list of items to try
+    totry = ['pickle', 'images', 'datablocks',
+             'experiments', 'reflections']
+    if include is not None:
+      for item in include:
+        assert(item in totry)
+      totry = include
+    elif exclude is not None:
+      for item in exclude:
+        totry.remove(item)
+
+    # Try to import the items
+    unhandled = args
+    for item in totry:
+      if verbose: print 'Try import as %s' % item
+      unhandled = self.try_import(unhandled, item, verbose)
+    self.unhandled_arguments = unhandled
+
+  def try_import_pickle(self, args, verbose, pickle_ext=('.pickle', '.pkl')):
+    import os
+    from libtbx import easy_pickle
+    unhandled = []
+    for i, arg in enumerate(args):
+      if isinstance(arg, basestring) and os.path.splitext(arg)[1] in pickle_ext:
+        try:
+          from dials.array_family import flex
+          obj = easy_pickle.load(arg)
+          unhandled.append(obj)
+        except Exception:
+          unhandled.append(arg)
+      else:
+        unhandled.append(arg)
+    return unhandled
+
+  def try_import(self, args, item, verbose):
+    ''' Try to import with the given item. '''
+    return getattr(self, "try_import_%s" % item)(args, verbose)
+
+  def try_import_images(self, args, verbose):
+    ''' Try to import images. '''
+    from dxtbx.datablock import DataBlockFactory
+    unhandled = []
+    datablocks = DataBlockFactory.from_args(
+      args, verbose=verbose, unhandled=unhandled)
+    if len(datablocks) > 0:
+      if self.datablocks == None:
+        self.datablocks = datablocks
+      else:
+        self.datablocks.extend(datablocks)
+    return unhandled
+
+  def try_import_datablocks(self, args, verbose):
+    ''' Try to import imagesets. '''
+    from dxtbx.datablock import DataBlockFactory, DataBlock
+    from os.path import abspath
+    unhandled = []
+    for argument in args:
+      if isinstance(argument, DataBlock):
+        if self.datablocks == None:
+          self.datablocks = [argument]
+        else:
+          self.datablocks.append(argument)
+        continue
+      try:
+        abs_argument = abspath(argument)
+        datablocks = DataBlockFactory.from_serialized_format(
+          abs_argument, self._check_format)
+        if verbose: print 'Loaded %s as datablock list' % abs_argument
+        if self.datablocks == None:
+          self.datablocks = datablocks
+        else:
+          self.datablocks.extend(datablocks)
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
+  def try_import_experiments(self, args, verbose):
+    ''' Try to import experiments. '''
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from os.path import abspath
+    unhandled = []
+    for argument in args:
+      try:
+        abs_argument = abspath(argument)
+        experiments = ExperimentListFactory.from_serialized_format(
+          abs_argument, self._check_format)
+        if verbose: print 'Loaded %s as experiment list' % abs_argument
+        if self.experiments == None:
+          self.experiments = experiments
+        else:
+          self.experiments.extend(experiments)
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
+  def try_import_reflections(self, args, verbose):
+    ''' Try to import reflections. '''
+    from dials.array_family import flex
+    import cPickle as pickle
+    unhandled = []
+    for argument in args:
+      try:
+        if isinstance(argument, flex.reflection_table):
+          obj = argument
+        else:
+          with open(argument, 'rb') as inputfile:
+            obj = pickle.load(inputfile)
+            if not isinstance(obj, flex.reflection_table):
+              continue
+        if verbose:
+          print 'Loaded %s as reflection table' % argument
+        if self.reflections is None:
+          self.reflections = [obj]
+        else:
+          self.reflections.append(obj)
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
 
 try:
   import termcolor

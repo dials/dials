@@ -34,7 +34,7 @@ class Script(object):
     # The script usage
     usage = "usage: %prog [options] /path/to/image/reflection/files"
     self.parser = OptionParser(
-      usage=usage, 
+      usage=usage,
       phil=phil_scope,
       read_reflections=True)
 
@@ -47,7 +47,7 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=True)
     assert(len(params.input.reflections) > 1)
     tables = [p.data for p in params.input.reflections]
-    
+
     # Get the number of rows and columns
     nrows = [t.nrows() for t in tables]
     ncols = [t.ncols() for t in tables]

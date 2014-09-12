@@ -53,7 +53,7 @@ class Script(object):
 
     # Set the phil scope
     phil_scope = parse('''
-      
+
       output {
         profile_model = 'profile_model.phil'
           .type = str
@@ -95,7 +95,7 @@ class Script(object):
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
-    
+
     # Get the expected data
     assert(len(params.input.experiments) == 1)
     exlist = params.input.experiments[0].data
