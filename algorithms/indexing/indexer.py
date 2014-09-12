@@ -622,13 +622,14 @@ class indexer_base(object):
           self.map_centroids_to_reciprocal_space(
             self.reflections, self.detector, self.beam, self.goniometer)
 
-        if self.d_min == self.params.refinement_protocol.d_min_final:
-          print "Target d_min_final reached: finished with refinement"
-          break
-
         # update for next cycle
         experiments = refined_experiments
         self.refined_experiments = refined_experiments
+
+        if (i_cycle >=2 and
+            self.d_min == self.params.refinement_protocol.d_min_final):
+          print "Target d_min_final reached: finished with refinement"
+          break
 
       if not self.params.multiple_lattice_search.recycle_unindexed_reflections:
         break
