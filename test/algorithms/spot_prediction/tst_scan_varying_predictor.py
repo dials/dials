@@ -19,6 +19,7 @@ from __future__ import division
 import sys
 from math import pi
 from scitbx import matrix
+from scitbx.array_family import flex
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
@@ -31,102 +32,130 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
+from dials.algorithms.spot_prediction import ray_intersection
+from dials.algorithms.spot_prediction import reflection_frames
 from dials.algorithms.refinement.prediction import ScansRayPredictor
-from dials.scratch.dgw.prediction.obsolete_predictors import \
-    ScanVaryingReflectionListGenerator
 from cctbx.sgtbx import space_group, space_group_symbols
 
-#############################
-# Setup experimental models #
-#############################
+def setup_models(args):
+  # Setup experimental models
+  master_phil = parse("""
+      include scope dials.test.algorithms.refinement.geometry_phil
+      """, process_includes=True)
 
-args = sys.argv[1:]
-master_phil = parse("""
-    include scope dials.test.algorithms.refinement.geometry_phil
-    """, process_includes=True)
+  models = setup_geometry.Extract(master_phil, cmdline_args = args)
 
-models = setup_geometry.Extract(master_phil, cmdline_args = args)
+  detector = models.detector
+  goniometer = models.goniometer
+  crystal = models.crystal
+  beam = models.beam
 
-mydetector = models.detector
-mygonio = models.goniometer
-mycrystal = models.crystal
-mybeam = models.beam
+  # Build a mock scan for a 180 degree sweep
+  sf = scan_factory()
+  scan = sf.make_scan(image_range = (1,180),
+                        exposure_times = 0.1,
+                        oscillation = (0, 1.0),
+                        epochs = range(180),
+                        deg = True)
+  sweep_range = scan.get_oscillation_range(deg=False)
+  temp = scan.get_oscillation(deg=False)
+  im_width = temp[1] - temp[0]
+  assert sweep_range == (0., pi)
+  assert approx_equal(im_width, 1.0 * pi / 180.)
 
-class DummyPredictionParameterisation(object):
-  """Provides get_UB(image_number) for scan-varying prediction"""
+  experiments = ExperimentList()
+  experiments.append(Experiment(
+        beam=beam, detector=detector, goniometer=goniometer,
+        scan=scan, crystal=crystal, imageset=None))
 
-  def __init__(self, crystal):
+  return experiments
 
-    self._crystal = crystal
+def ref_gen_static(experiments):
 
-  def get_UB(self, image_number):
+  """Generate some reflections using the static predictor"""
 
-    UB = matrix.sqr(self._crystal.get_U()) * \
-         matrix.sqr(self._crystal.get_B())
-    return UB
+  beam = experiments[0].beam
+  crystal = experiments[0].crystal
+  goniometer = experiments[0].goniometer
+  detector = experiments[0].detector
+  scan = experiments[0].scan
 
-pred_param = DummyPredictionParameterisation(mycrystal)
+  # All indices in a 2.0 Angstrom sphere
+  resolution = 2.0
+  index_generator = IndexGenerator(crystal.get_unit_cell(),
+                  space_group(space_group_symbols(1).hall()).type(), resolution)
+  indices = index_generator.to_array()
 
-#############################
-# Generate some reflections #
-#############################
+  # Build a reflection predictor
+  sweep_range = scan.get_oscillation_range(deg=False)
+  ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
-# All indices in a 2.0 Angstrom sphere
-resolution = 2.0
-index_generator = IndexGenerator(mycrystal.get_unit_cell(),
-                space_group(space_group_symbols(1).hall()).type(), resolution)
-indices = index_generator.to_array()
+  refs = ref_predictor.predict(indices)
+  # Calculate the intersection of the detector and reflection frames
+  refs = ray_intersection(detector, refs)
+  refs = reflection_frames(scan, refs)
+  refs = refs.to_table()
 
-# Build a mock scan for a 180 degree sweep
-sf = scan_factory()
-myscan = sf.make_scan(image_range = (1,180),
-                      exposure_times = 0.1,
-                      oscillation = (0, 1.0),
-                      epochs = range(180),
-                      deg = True)
-sweep_range = myscan.get_oscillation_range(deg=False)
-temp = myscan.get_oscillation(deg=False)
-im_width = temp[1] - temp[0]
-assert sweep_range == (0., pi)
-assert approx_equal(im_width, 1.0 * pi / 180.)
+  return refs
 
-# Build a reflection predictor
-experiments = ExperimentList()
-experiments.append(Experiment(
-      beam=mybeam, detector=mydetector, goniometer=mygonio,
-      scan=myscan, crystal=mycrystal, imageset=None))
-ref_predictor = ScansRayPredictor(experiments, sweep_range)
+def ref_gen_varying(experiments):
 
-ar_range = myscan.get_array_range()
-# We need a UB matrix at the beginning of every image, and at the end of the
-# last image.
-UBlist = [pred_param.get_UB(t) for t in range(ar_range[0], ar_range[1]+1)]
-mycrystal.set_A_at_scan_points(UBlist)
-dmin = mydetector.get_max_resolution(mybeam.get_s0())
-sv_predictor = ScanVaryingReflectionListGenerator(mycrystal, mybeam,
-                                            mygonio, myscan, resolution)
-refs1 = ref_predictor.predict(indices)
-refs2 = sv_predictor()
+  """Generate some reflections using the scan varying predictor"""
 
-assert len(refs1) == len(refs2)
-print "OK"
+  beam = experiments[0].beam
+  crystal = experiments[0].crystal
+  goniometer = experiments[0].goniometer
+  detector = experiments[0].detector
+  scan = experiments[0].scan
+
+  # We need a UB matrix at the beginning of every image, and at the end of the
+  # last image. These are all the same - we want to compare the scan-varying
+  # predictor with the scan-static one for a flat scan.
+  ar_range = scan.get_array_range()
+  UBlist = [crystal.get_A() for t in range(ar_range[0], ar_range[1]+1)]
+  dmin = detector.get_max_resolution(beam.get_s0())
+
+  from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
+  sv_predictor = ScanVaryingReflectionPredictor(experiments[0])
+  refs = sv_predictor.for_ub(flex.mat3_double(UBlist))
+
+  return refs
 
 def sort_refs(reflections):
 
   """Sort reflections by Miller index and entering flag"""
-  refs_sorted = sorted(reflections, key=lambda x: x.entering)
-  refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[2])
-  refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[1])
-  refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[0])
+  refs_sorted = sorted(reflections, key=lambda x: x['entering'])
+  refs_sorted = sorted(refs_sorted, key=lambda x: x['miller_index'][2])
+  refs_sorted = sorted(refs_sorted, key=lambda x: x['miller_index'][1])
+  refs_sorted = sorted(refs_sorted, key=lambda x: x['miller_index'][0])
 
   return refs_sorted
 
-refs1_sorted = sort_refs(refs1)
-refs2_sorted = sort_refs(refs2)
 
-for (r1, r2) in zip(refs1_sorted, refs2_sorted):
-  assert r1.miller_index == r2.miller_index
-  dphi = r1.rotation_angle - r2.rotation_angle
-  assert abs(dphi) < 0.01 * im_width
+def run_tst(args):
 
-print "OK"
+  experiments = setup_models(args)
+  refs1 = ref_gen_static(experiments)
+  refs2 = ref_gen_varying(experiments)
+
+  refs1_sorted = sort_refs(refs1)
+  refs2_sorted = sort_refs(refs2)
+
+  # FIXME WHY ARE THESE NOT THE SAME?
+  print len(refs1_sorted)
+  print len(refs2_sorted)
+
+  assert len(refs1_sorted) == len(refs2_sorted)
+  print "OK"
+
+  for (r1, r2) in zip(refs1_sorted, refs2_sorted):
+    assert r1['miller_index'] == r2['miller_index']
+    dz = r1['xyzcal.px'] - r2['xyzcal.px']
+    assert abs(dphi) < 0.01
+
+  print "OK"
+
+  return
+
+if __name__ == '__main__':
+  run_tst(sys.argv[1:])
