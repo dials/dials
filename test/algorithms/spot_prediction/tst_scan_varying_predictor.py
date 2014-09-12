@@ -38,6 +38,8 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 def setup_models(args):
+  """setup the experimental models"""
+
   # Setup experimental models
   master_phil = parse("""
       include scope dials.test.algorithms.refinement.geometry_phil
@@ -71,7 +73,6 @@ def setup_models(args):
   return experiments
 
 def ref_gen_static(experiments):
-
   """Generate some reflections using the static predictor"""
 
   beam = experiments[0].beam
@@ -80,10 +81,10 @@ def ref_gen_static(experiments):
   detector = experiments[0].detector
   scan = experiments[0].scan
 
-  # All indices in a 2.0 Angstrom sphere
-  resolution = 2.0
+  # All indices to the detector max resolution
+  dmin = detector.get_max_resolution(beam.get_s0())
   index_generator = IndexGenerator(crystal.get_unit_cell(),
-                  space_group(space_group_symbols(1).hall()).type(), resolution)
+                  space_group(space_group_symbols(1).hall()).type(), dmin)
   indices = index_generator.to_array()
 
   # Build a reflection predictor
@@ -99,7 +100,6 @@ def ref_gen_static(experiments):
   return refs
 
 def ref_gen_varying(experiments):
-
   """Generate some reflections using the scan varying predictor"""
 
   beam = experiments[0].beam
@@ -116,14 +116,15 @@ def ref_gen_varying(experiments):
   dmin = detector.get_max_resolution(beam.get_s0())
 
   from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
-  sv_predictor = ScanVaryingReflectionPredictor(experiments[0])
+  sv_predictor = ScanVaryingReflectionPredictor(experiments[0],
+                                                dmin=dmin)
   refs = sv_predictor.for_ub(flex.mat3_double(UBlist))
 
   return refs
 
 def sort_refs(reflections):
-
   """Sort reflections by Miller index and entering flag"""
+
   refs_sorted = sorted(reflections, key=lambda x: x['entering'])
   refs_sorted = sorted(refs_sorted, key=lambda x: x['miller_index'][2])
   refs_sorted = sorted(refs_sorted, key=lambda x: x['miller_index'][1])
@@ -141,18 +142,13 @@ def run_tst(args):
   refs1_sorted = sort_refs(refs1)
   refs2_sorted = sort_refs(refs2)
 
-  # FIXME WHY ARE THESE NOT THE SAME?
-  print len(refs1_sorted)
-  print len(refs2_sorted)
-
   assert len(refs1_sorted) == len(refs2_sorted)
   print "OK"
 
   for (r1, r2) in zip(refs1_sorted, refs2_sorted):
     assert r1['miller_index'] == r2['miller_index']
-    dz = r1['xyzcal.px'] - r2['xyzcal.px']
-    assert abs(dphi) < 0.01
-
+    dz = r1['xyzcal.px'][2] - r2['xyzcal.px'][2]
+    assert abs(dz) < 0.01
   print "OK"
 
   return
