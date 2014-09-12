@@ -350,12 +350,12 @@ class OptionParser(OptionParserBase):
 
   def __init__(self,
                phil=None,
-               read_datablocks=True,
-               read_experiments=True,
-               read_reflections=True,
-               read_datablocks_from_images=True,
+               read_datablocks=False,
+               read_experiments=False,
+               read_reflections=False,
+               read_datablocks_from_images=False,
                check_format=True,
-               stdin_options = True,
+               stdin_options = False,
                **kwargs):
     '''Initialise the class.'''
     from dials.phil import parse
@@ -424,3 +424,18 @@ class OptionParser(OptionParserBase):
   def diff_phil(self):
     ''' Get the diff phil. '''
     return self._phil_parser.diff_phil
+
+
+def flatten_datablocks(filename_object_list):
+  result = []
+  for i in range(len(filename_object_list)):
+    result.extend(filename_object_list[i].data)
+  return result
+
+def flatten_experiments(filename_object_list):
+  from dxtbx.model.experiment.experiment_list import ExperimentList
+  result = ExperimentList()
+  for i in range(len(filename_object_list)):
+    result.extend(filename_object_list[i].data)
+  return result
+
