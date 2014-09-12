@@ -32,76 +32,279 @@ class ConfigWriter(object):
     with open(filename, 'w') as f:
       f.write(text)
 
-class PhilToDict(object):
-  '''Get a dictionary from the phil objects.'''
 
-  def __init__(self):
-    '''Init the class'''
-    pass
+class Importer(object):
+  ''' A class to import the command line arguments. '''
 
-  def __call__(self, phil):
-    '''Recursively get the dictionary objects.'''
+  def __init__(self, args,
+               read_datablocks=False,
+               read_experiments=False,
+               read_reflections=False,
+               read_datablocks_from_images=False,
+               check_format=True,
+               verbose=False):
+    ''' Parse the arguments. Populates its instance attributes in an intelligent
+    way from the arguments in args.
 
-    d = {}
-    for obj in phil.objects:
-      if obj.is_scope:
-        d[obj.name] = self.__call__(obj)
-      else:
-        if obj.multiple:
-          try:
-            d[obj.name] = d[obj.name] + [obj.extract()]
-          except Exception:
-            d[obj.name] = [obj.extract()]
-        else:
-          d[obj.name] = obj.extract()
+    If include is set, only those items set will be tried. If not, then if
+    exclude is set, then those items will not be tested.
 
-    return d
+    These are the types we can import:
+     - images: a list of images
+     - reflections : a list of reflections
+     - datablocks : a list of datablocks
+     - experiments: a list of experiments
+
+    Params:
+      args The arguments to parse
+      read_datablocks Try to read the datablocks
+      read_experiments Try to read the experiments
+      read_reflections Try to read the reflections
+      read_datablocks_from_images Try to read the datablocks from images
+      check_format Check the format when reading images
+      verbose True/False print out some stuff
+
+    '''
+
+    # Initialise output
+    self.datablocks = []
+    self.experiments = []
+    self.reflections = []
+    self.unhandled = args
+
+    # First try to read image files
+    if read_datablocks_from_images:
+      self.unhandled = self.try_read_datablocks_from_images(
+        self.unhandled, verbose)
+
+    # Second try to read data block files
+    if read_datablocks:
+      self.unhandled = self.try_read_datablocks(
+        self.unhandled, check_format, verbose)
+
+    # Third try to read experiment files
+    if read_experiments:
+      self.unhandled = self.try_read_experiments(
+        self.unhandled, check_format, verbose)
+
+    # Fourth try to read reflection files
+    if read_reflections:
+      self.unhandled = self.try_read_reflections(
+        self.unhandled, verbose)
+
+  def try_read_datablocks_from_images(self, args, verbose):
+    ''' Try to import images. '''
+    from dxtbx.datablock import DataBlockFactory
+    from dials.phil import FilenameDataWrapper, DataBlockConverters
+    unhandled = []
+    datablocks = DataBlockFactory.from_filenames(
+      args, verbose=verbose, unhandled=unhandled)
+    if len(datablocks) > 0:
+      filename = "<image files>"
+      obj = FilenameDataWrapper(filename, datablocks)
+      DataBlockConverters.cache[filename] = obj
+      self.datablocks.append(obj)
+    return unhandled
+
+  def try_read_datablocks(self, args, check_format, verbose):
+    ''' Try to import imagesets. '''
+    from dials.phil import DataBlockConverters
+    converter = DataBlockConverters(check_format)
+    unhandled = []
+    for argument in args:
+      try:
+        self.datablocks.append(converter.from_string(argument))
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
+  def try_read_experiments(self, args, check_format, verbose):
+    ''' Try to import experiments. '''
+    from dials.phil import ExperimentListConverters
+    converter = ExperimentListConverters(check_format)
+    unhandled = []
+    for argument in args:
+      try:
+        self.experiments.append(converter.from_string(argument))
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
+  def try_read_reflections(self, args, verbose):
+    ''' Try to import reflections. '''
+    from dials.phil import ReflectionTableConverters
+    converter = ReflectionTableConverters()
+    unhandled = []
+    for argument in args:
+      try:
+        self.reflections.append(converter.from_string(argument))
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
 
 
-class OptionParser(optparse.OptionParser):
-  '''A class to parse command line options and get the system configuration.
-  The class extends optparse.OptionParser to include the reading of phil
-  parameters.'''
+class PhilCommandParser(object):
+  ''' A class to parse phil parameters from positional arguments '''
 
-  def __init__(self, **kwargs):
-    '''Initialise the class.'''
-    from libtbx.phil import parse
-
-    # Check if we want to read stdin
-    self._read_stdin = kwargs.get("read_stdin", False)
+  def __init__(self,
+               phil=None,
+               read_datablocks=False,
+               read_experiments=False,
+               read_reflections=False,
+               read_datablocks_from_images=False,
+               check_format=True):
+    ''' Initialise the class. '''
+    from dials.phil import parse
 
     # Set the system phil scope
-    self._system_phil = kwargs.get('phil', parse(""))
+    if phil is None:
+      self._system_phil = parse("")
+    else:
+      self._system_phil = phil
+
+    # Set the flags
+    self._read_datablocks = read_datablocks
+    self._read_experiments = read_experiments
+    self._read_reflections = read_reflections
+    self._read_datablocks_from_images = read_datablocks_from_images
+    self._check_format = check_format
+
+    # Adopt the input scope
+    input_phil_scope = self._generate_input_scope()
+    if input_phil_scope is not None:
+      self.system_phil.adopt_scope(input_phil_scope)
 
     # Set the working phil scope
-    self._phil = self._system_phil.fetch(source=parse(""))
+    self._phil = self.system_phil.fetch(source=parse(""))
 
-    # Delete the phil keyword from the keyword arguments
-    if 'phil' in kwargs:
-      del kwargs['phil']
-    if 'read_stdin' in kwargs:
-      del kwargs['read_stdin']
+  @property
+  def phil(self):
+    '''Get the phil object'''
+    return self._phil
+
+  @property
+  def system_phil(self):
+    '''Get the system phil.'''
+    return self._system_phil
+
+  @property
+  def diff_phil(self):
+    ''' Get the diff phil. '''
+    return self.system_phil.fetch_diff(source=self.phil)
+
+  def parse_args(self, args, verbose=False):
+    ''' Parse the command line arguments. '''
+
+    # Try to import everything
+    importer = Importer(
+      args,
+      read_datablocks=self._read_datablocks,
+      read_experiments=self._read_experiments,
+      read_reflections=self._read_reflections,
+      read_datablocks_from_images=self._read_datablocks_from_images,
+      check_format=self._check_format,
+      verbose=verbose)
+
+    # Add the cached arguments
+    args = importer.unhandled
+    for obj in importer.datablocks:
+      args.append("input.datablock=%s" % obj.filename)
+    for obj in importer.experiments:
+      args.append("input.experiments=%s" % obj.filename)
+    for obj in importer.reflections:
+      args.append("input.reflections=%s" % obj.filename)
+
+    # Parse the command line phil parameters
+    interpretor = self.system_phil.command_line_argument_interpreter()
+    self._phil = interpretor.process_and_fetch(args)
+    return self.phil.extract()
+
+  def _generate_input_scope(self):
+    ''' Generate the required input scope. '''
+    from dials.phil import parse
+
+    # Create the input scope
+    require_input_scope = (
+      self._read_datablocks or
+      self._read_experiments or
+      self._read_reflections or
+      self._read_datablocks_from_images)
+    if not require_input_scope:
+      return None
+    input_phil_scope = parse('input {}')
+    main_scope = input_phil_scope.get_without_substitution("input")
+    assert(len(main_scope) == 1)
+    main_scope = main_scope[0]
+
+    # Add the datablock phil scope
+    if self._read_datablocks or self._read_datablocks_from_images:
+      phil_scope = parse('''
+        datablock = None
+          .type = datablock(check_format=%r)
+          .multiple = True
+          .help = "The datablock file path"
+      ''' % self._check_format)
+      main_scope.adopt_scope(phil_scope)
+
+    # Add the experiments phil scope
+    if self._read_experiments:
+      phil_scope = parse('''
+        experiments = None
+          .type = experiment_list(check_format=%r)
+          .multiple = True
+          .help = "The experiment list file path"
+      ''' % self._check_format)
+      main_scope.adopt_scope(phil_scope)
+
+    # Add the reflections scope
+    if self._read_reflections:
+      phil_scope = parse('''
+        reflections = None
+          .type = reflection_table
+          .multiple = True
+          .help = "The reflection table file path"
+      ''')
+      main_scope.adopt_scope(phil_scope)
+
+    # Return the input scope
+    return input_phil_scope
+
+
+class OptionParserBase(optparse.OptionParser, object):
+  ''' The base class for the option parser. '''
+
+  def __init__(self,
+               stdin_options=False,
+               config_options=False,
+               **kwargs):
+    '''Initialise the class.'''
 
     # Initialise the option parser
-    optparse.OptionParser.__init__(self, **kwargs)
+    super(OptionParserBase, self).__init__(**kwargs)
 
     # Add an option to show configuration parameters
-    if self._system_phil.as_str() != '':
+    if config_options:
       self.add_option(
-        '-c',
-        action='count',
-        default=0,
+        '-c', '--show-config',
+        action='store_true',
+        default=False,
         dest='show_config',
         help='Show the configuration parameters.')
       self.add_option(
-        '-e',
-        action='count',
+        '-a', '--attributes-level',
+        default=0,
+        type='int',
+        dest='attributes_level',
+        help='Set the attributes level for showing configuration parameters')
+      self.add_option(
+        '-e', '--expert-level',
+        type='int',
         default=0,
         dest='expert_level',
-        help='Set the expert level for print configuration parameters')
+        help='Set the expert level for showing configuration parameters')
 
     # Add a stdin option
-    if self._read_stdin:
+    if stdin_options:
       self.add_option(
         '-i', '--stdin',
         action='store_true',
@@ -117,72 +320,21 @@ class OptionParser(optparse.OptionParser):
       dest='verbose',
       help='Set the verbosity')
 
-  def parse_args(self, args=None, show_diff_phil=False):
+  def parse_args(self, args=None):
     '''Parse the command line arguments and get system configuration.'''
     import sys
 
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.
-    options, args = optparse.OptionParser.parse_args(self, args=args)
+    options, args = super(OptionParserBase, self).parse_args(args=args)
 
     # Maybe read stdin
-    if self._read_stdin and options.read_stdin:
+    if hasattr(options, "read_stdin") and options.read_stdin:
       args.extend([l.strip() for l in sys.stdin.readlines()])
 
-    # Parse the command line phil parameters
-    interpretor = self.system_phil().command_line_argument_interpreter()
-    command_line_phil, args = interpretor.process_and_fetch(args,
-      custom_processor="collect_remaining")
-    self._phil = self.system_phil().fetch(source=command_line_phil)
-    params = self._phil.extract()
-
-    # Show config
-    if hasattr(options, 'show_config') and options.show_config > 0:
-      self.print_phil(
-        expert_level=options.expert_level,
-        attributes_level=options.show_config-1)
-      exit(0)
-
-    # Print the diff phil
-    if show_diff_phil:
-      diff_phil_str = self.diff_phil().as_str()
-      if (diff_phil_str is not ''):
-        print 'The following parameters have been modified:\n'
-        print diff_phil_str
-
     # Return the parameters
-    return params, options, args
-
-  def phil(self):
-    '''Get the phil object'''
-    return self._phil
-
-  def system_phil(self):
-    '''Get the system phil.'''
-    return self._system_phil
-
-  def diff_phil(self):
-    ''' Get the diff phil. '''
-    return self.system_phil().fetch_diff(source=self.phil())
-
-  def print_phil(self, attributes_level=0, expert_level=None):
-    '''Print the system and command line parameters.'''
-    print self.phil().as_str(
-      attributes_level=attributes_level,
-      expert_level=expert_level)
-
-  def print_system_phil(self, attributes_level=0, expert_level=None):
-    '''Print the system parameters.'''
-    print self.system_phil().as_str(
-      attributes_level=attributes_level,
-      expert_level=expert_level)
-
-  def print_diff_phil(self, attributes_level=0, expert_level=None):
-    ''' Print the diff parameters. '''
-    print self.diff_phil().as_str(
-      attributes_level=attributes_level,
-      expert_level=expert_level)
+    return options, args
 
   def format_epilog(self, formatter):
     ''' Don't do formatting on epilog. '''
@@ -190,3 +342,85 @@ class OptionParser(optparse.OptionParser):
       return ''
     return self.epilog
 
+
+class OptionParser(OptionParserBase):
+  '''A class to parse command line options and get the system configuration.
+  The class extends optparse.OptionParser to include the reading of phil
+  parameters.'''
+
+  def __init__(self,
+               phil=None,
+               read_datablocks=True,
+               read_experiments=True,
+               read_reflections=True,
+               read_datablocks_from_images=True,
+               check_format=True,
+               stdin_options = True,
+               **kwargs):
+    '''Initialise the class.'''
+    from dials.phil import parse
+
+    # Create the phil parser
+    self._phil_parser = PhilCommandParser(
+      phil=phil,
+      read_datablocks=read_datablocks,
+      read_experiments=read_experiments,
+      read_reflections=read_reflections,
+      read_datablocks_from_images=read_datablocks_from_images,
+      check_format=check_format)
+
+    # Initialise the option parser
+    super(OptionParser, self).__init__(
+      stdin_options=stdin_options,
+      config_options=self.system_phil.as_str() != '',
+      **kwargs)
+
+  def parse_args(self, args=None, show_diff_phil=False):
+    '''Parse the command line arguments and get system configuration.'''
+    import sys
+
+    # Parse the command line arguments, this will separate out
+    # options (e.g. -o, --option) and positional arguments, in
+    # which phil options will be included.
+    options, args = super(OptionParser, self).parse_args(args=args)
+
+    # Show config
+    if hasattr(options, 'show_config') and options.show_config:
+      print (
+        'Showing configuration parameters with:\n'
+        '  attributes_level = %d\n'
+        '  expert_level = %d\n' % (
+          options.attributes_level,
+          options.expert_level))
+      print self.phil.as_str(
+        expert_level=options.expert_level,
+        attributes_level=options.attributes_level)
+      exit(0)
+
+    # Parse the phil parameters
+    params = self._phil_parser.parse_args(args, options.verbose > 0)
+
+    # Print the diff phil
+    if show_diff_phil:
+      diff_phil_str = self.diff_phil.as_str()
+      if (diff_phil_str is not ''):
+        print 'The following parameters have been modified:\n'
+        print diff_phil_str
+
+    # Return the parameters
+    return params, options
+
+  @property
+  def phil(self):
+    '''Get the phil object'''
+    return self._phil_parser.phil
+
+  @property
+  def system_phil(self):
+    '''Get the system phil.'''
+    return self._phil_parser.system_phil
+
+  @property
+  def diff_phil(self):
+    ''' Get the diff phil. '''
+    return self._phil_parser.diff_phil
