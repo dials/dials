@@ -48,17 +48,27 @@ Parameters:
   from scitbx import matrix
   from libtbx.phil import command_line
   importer = Importer(args, check_format=False)
-  assert len(importer.datablocks) == 1
+  #assert len(importer.datablocks) == 1
   reflections = importer.reflections
-  imageset = importer.datablocks[0].extract_imagesets()[0]
+  if importer.datablocks is not None and len(importer.datablocks) == 1:
+    imageset = importer.datablocks[0].extract_imagesets()[0]
+  elif importer.datablocks is not None and len(importer.datablocks) > 1:
+    raise RuntimeError("Only one DataBlock can be processed at a time")
+  elif len(importer.experiments.imagesets()) > 0:
+    imageset = importer.experiments.imagesets()[0]
+    imageset.set_detector(importer.experiments[0].detector)
+    imageset.set_beam(importer.experiments[0].beam)
+    imageset.set_goniometer(importer.experiments[0].goniometer)
+  else:
+    raise RuntimeError("No imageset could be constructed")
+  #imageset = imagesets[0]
+  #imageset = importer.datablocks[0].extract_imagesets()[0]
   detector = imageset.get_detector()
   scan = imageset.get_scan()
   args = importer.unhandled_arguments
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil = cmd_line.process_and_fetch(args=args)
   params = working_phil.extract()
-  observed_xy = flex.vec2_double()
-  predicted_xy = flex.vec2_double()
   panel_origin_shifts = {0: (0,0,0)}
   try:
     hierarchy = detector.hierarchy()
@@ -69,22 +79,34 @@ Parameters:
       - matrix.col(detector[i_panel].get_origin())
     panel_origin_shifts[i_panel] = origin_shift
 
-  # FIXME ReflectionList has been deprecated - please use reflection table
-  # directly...
-
-  from dials.model.data import ReflectionList
-  reflections = [
-    ReflectionList.from_table(ref_table) for ref_table in reflections]
+  observed_xyz = flex.vec3_double()
+  predicted_xyz = flex.vec3_double()
 
   for reflection_list in reflections:
+    xyzcal_px = None
+    xyzcal_px = None
+    xyzobs_mm = None
+    xyzcal_mm = None
+
+    if 'xyzcal.px' in reflection_list:
+      xyzcal_px = reflection_list['xyzcal.px']
+    if 'xyzobs.px.value' in reflection_list:
+      xyzobs_px = reflection_list['xyzobs.px.value']
+    if 'xyzcal.mm' in reflection_list:
+      xyzcal_mm = reflection_list['xyzcal.px']
+    if 'xyzobs.mm.value' in reflection_list:
+      xyzobs_mm = reflection_list['xyzobs.mm.value']
+
     if len(params.scan_range):
-      sel = flex.bool(reflection_list.size(), False)
-      centroid_positions = reflection_list.centroid_position()
-      if (centroid_positions.norms().all_eq(0) or
-          not reflection_list.miller_index().all_eq((0,0,0))):
-        centroids_frame = reflection_list.frame_number()
+      sel = flex.bool(len(reflection_list), False)
+
+      if xyzcal_px is not None and not xyzcal_px.norms().all_eq(0):
+        centroids_frame = xyzcal_px.parts()[2]
+      elif xyzobs_px is not None and not xyzobs_px.norms().all_eq(0):
+        centroids_frame = xyzobs_px.parts()[2]
       else:
-        centroids_frame = centroid_positions.parts()[2]
+        raise Sorry("No pixel coordinates given in input reflections.")
+
       reflections_in_range = False
       for scan_range in params.scan_range:
         if scan_range is None: continue
@@ -96,42 +118,31 @@ Parameters:
       centroids_frame = centroid_positions.parts()[2]
       perm = flex.sort_permutation(centroids_frame)
       perm = perm[:min(reflection_list.size(), params.first_n_reflections)]
-      #print flex.max(centroids_frame.select(perm))
       reflection_list = reflection_list.select(perm)
     if params.crystal_id is not None:
       reflection_list = reflection_list.select(
         reflection_list.crystal() == params.crystal_id)
 
-    for refl in reflection_list:
-      centroid_position = refl.centroid_position
-      centroid_variance = refl.centroid_variance
-      if centroid_position != (0,0,0):
-        if refl.miller_index is not None and refl.image_coord_mm != (0,0):
-          x, y = refl.image_coord_mm
-        else:
-          # just a quick check for now that the reflections haven't come from
-          # somewhere else
-          assert refl.image_coord_mm == (0,0)
-          # this assumes the centroids are given in pixel coordinates
-          from dials.algorithms.centroid import centroid_px_to_mm_panel
-          centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-            detector[refl.panel_number], scan,
-            centroid_position,
-            centroid_variance,
-            (1,1,1))
-          if refl.panel_number > 0:
-            s1 = detector[refl.panel_number].get_lab_coord(centroid_position[:2])
-            if hierarchy is not None:
-              centroid_position = hierarchy.get_ray_intersection(s1)
-            else:
-              centroid_position = detector[0].get_ray_intersection(s1)
-          x, y = centroid_position[:2]
-        observed_xy.append((x,y))
-      if refl.image_coord_mm != (0, 0):
-        x, y = refl.image_coord_mm
-        predicted_xy.append((x,y))
-  obs_x, obs_y = observed_xy.parts()
-  pred_x, pred_y = predicted_xy.parts()
+    panel_ids = reflection_list['panel']
+    if xyzobs_mm is None and xyzobs_px is not None:
+      xyzobs_mm = flex.vec3_double()
+      for i_panel in range(len(detector)):
+        refls = reflection_list.select(panel_ids == i_panel)
+
+        from dials.algorithms.centroid import centroid_px_to_mm_panel
+        xyzobs_mm_panel, _, _ = centroid_px_to_mm_panel(
+          detector[i_panel], scan, xyzobs_px,
+          flex.vec3_double(xyzobs_px.size()),
+          flex.vec3_double(xyzobs_px.size()))
+        xyzobs_mm.extend(xyzobs_mm_panel)
+
+    if xyzobs_mm is not None:
+      observed_xyz.extend(xyzobs_mm)
+    if xyzcal_mm is not None:
+      predicted_xyz.extend(xyzcal_mm)
+
+  obs_x, obs_y, _ = observed_xyz.parts()
+  pred_x, pred_y, _ = predicted_xyz.parts()
 
   try:
     import matplotlib
