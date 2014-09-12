@@ -82,6 +82,9 @@ class OptionParser(optparse.OptionParser):
     '''Initialise the class.'''
     from libtbx.phil import parse
 
+    # Check if we want to read stdin
+    self._read_stdin = kwargs.get("read_stdin", False)
+
     # Set the system phil scope
     self._system_phil = kwargs.get('phil', parse(""))
 
@@ -91,6 +94,8 @@ class OptionParser(optparse.OptionParser):
     # Delete the phil keyword from the keyword arguments
     if 'phil' in kwargs:
       del kwargs['phil']
+    if 'read_stdin' in kwargs:
+      del kwargs['read_stdin']
 
     # Initialise the option parser
     optparse.OptionParser.__init__(self, **kwargs)
@@ -110,6 +115,15 @@ class OptionParser(optparse.OptionParser):
         dest='expert_level',
         help='Set the expert level for print configuration parameters')
 
+    # Add a stdin option
+    if self._read_stdin:
+      self.add_option(
+        '-i', '--stdin',
+        action='store_true',
+        dest='read_stdin',
+        default=False,
+        help='Read arguments from standard input')
+
     # Set a verbosity parameter
     self.add_option(
       '-v',
@@ -120,10 +134,16 @@ class OptionParser(optparse.OptionParser):
 
   def parse_args(self, args=None, show_diff_phil=False):
     '''Parse the command line arguments and get system configuration.'''
+    import sys
+
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.
     options, args = optparse.OptionParser.parse_args(self, args=args)
+
+    # Maybe read stdin
+    if self._read_stdin and options.read_stdin:
+      args.extend([l.strip() for l in sys.stdin.readlines()])
 
     # Parse the command line phil parameters
     config = CommandLineConfig(self.system_phil().command_line_argument_interpreter())

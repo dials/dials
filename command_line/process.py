@@ -74,16 +74,9 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
+      read_stdin=True,
       phil=phil_scope,
       epilog=help_message)
-
-    # read image files from stdin
-    self.parser.add_option(
-      "-i", "--stdin",
-      dest = "stdin",
-      action = "store_true",
-      default = False,
-      help = "Read filenames from standard input rather than command-line")
 
   def run(self):
     '''Execute the script.'''
@@ -125,13 +118,6 @@ class Script(object):
     # Save the options
     self.options = options
     self.params = params
-
-    # if options.stdin, add in extra images from the standard input (to work
-    # around limits in number of command-line arguments)
-
-    if options.stdin:
-      import sys
-      args.extend([l.strip() for l in sys.stdin.readlines()])
 
     if len(args) == 0:
       self.parser.print_help()

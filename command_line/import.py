@@ -46,15 +46,6 @@ class ImageFileImporter(object):
   def __call__(self, args):
     import sys
 
-    # Check we have some filenames
-    if len(args) == 0 and not self.options.stdin:
-      self.print_help()
-      exit(0)
-
-    # Try reading from stdin as well
-    if self.options.stdin:
-      args.extend([l.strip() for l in sys.stdin.readlines()])
-
     # Sort arguments
     if self.params.sort:
       args = sorted(args)
@@ -139,15 +130,11 @@ class Script(object):
 
     # Create the option parser
     usage = "usage: %prog [options] /path/to/image/files"
-    self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
-
-    # Standard input read files, rather than from the command-line
-    self.parser.add_option(
-      "-i", "--stdin",
-      dest = "stdin",
-      action = "store_true",
-      default = False,
-      help = "Read filenames from standard input rather than command-line")
+    self.parser = OptionParser(
+      usage=usage,
+      read_stdin=True,
+      phil=phil_scope,
+      epilog=help_message)
 
   def run(self):
     ''' Parse the options. '''
@@ -155,14 +142,13 @@ class Script(object):
     # Parse the command line arguments
     params, options, args = self.parser.parse_args(show_diff_phil=True)
 
-    # Define the help function
-    def print_help():
+    # Check we have some filenames
+    if len(args) == 0:
       self.parser.print_help()
       exit(0)
 
     # Choose the importer to use
     importer = ImageFileImporter(params, options)
-    importer.print_help = print_help
 
     # Import the data
     importer(args)
