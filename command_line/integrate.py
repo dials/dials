@@ -89,20 +89,19 @@ class Script(object):
   def run(self):
     ''' Perform the integration. '''
     from time import time
+    from dials.util.options import flatten_experiments, flatten_reflections
 
     # Check the number of arguments is correct
     start_time = time()
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
-
-    # Get the expected data
-    assert(len(params.input.experiments) == 1)
-    exlist = params.input.experiments[0].data
-    assert(len(exlist) == 1)
-    if len(params.input.reflections) > 0:
-      assert(len(params.input.reflections) == 1)
-      reference = self.process_reference(params.input.reflections[0].data)
+    experiments = flatten_experiments(params.input.experiments)
+    reference = flatten_reflections(params.input.reflections)
+    assert(len(experiments) == 1)
+    if len(reference) > 0:
+      assert(len(reference) == 1)
+      reference = self.process_reference(reference[0])
     else:
       reference = None
 
@@ -110,12 +109,12 @@ class Script(object):
     shoeboxes = None
 
     # Initialise the integrator
-    if None in exlist.goniometers():
+    if None in experiments.goniometers():
       from dials.algorithms.integration import IntegratorStills
-      integrator = IntegratorStills(params, exlist, reference, None, shoeboxes)
+      integrator = IntegratorStills(params, experiments, reference, None, shoeboxes)
     else:
       from dials.algorithms.integration import Integrator
-      integrator = Integrator(params, exlist, reference, None, shoeboxes)
+      integrator = Integrator(params, experiments, reference, None, shoeboxes)
 
     # Integrate the reflections
     reflections = integrator.integrate()
