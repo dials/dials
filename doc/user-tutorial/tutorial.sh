@@ -28,7 +28,7 @@ dials.import ${data_directory}/th_8_2_0*.cbf
 # available for DIALS)
 
 dials.find_spots min_spot_size=3 datablock.json \
-  max_procs=$((`libtbx.show_number_of_processors` / 2))
+  nproc=$((`libtbx.show_number_of_processors` / 2))
 
 # index these found spots - in this case the crystal is thaumatin which is known
 # to be tetragonal, so impose appropriate lattice constraints in the indexing
@@ -54,7 +54,7 @@ dials.refine experiments.json indexed.pickle \
 
 dials.integrate2 outlier.algorithm=null intensity.algorithm=fitrs \
   refined_experiments.json reference=indexed.pickle \
-  max_proc=$((`libtbx.show_number_of_processors` / 2))
+  nproc=$((`libtbx.show_number_of_processors` / 2))
 
 
 # finally export the integrated measurements in an MTZ file - this should be
