@@ -25,6 +25,8 @@ class DataBlockConverters(object):
 
   phil_type = "datablock"
 
+  cache = {}
+
   def __str__(self):
     return self.phil_type
 
@@ -33,7 +35,9 @@ class DataBlockConverters(object):
     s = libtbx.phil.str_from_words(words=words)
     if (s is None):
       return None
-    return FilenameDataWrapper(s, DataBlockFactory.from_json_file(s))
+    if s not in self.cache:
+      self.cache[s] = FilenameDataWrapper(s, DataBlockFactory.from_json_file(s))
+    return self.cache[s]
 
   def as_words(self, python_object, master):
     if (python_object is None):
@@ -42,10 +46,13 @@ class DataBlockConverters(object):
       value = python_object.filename
     return [libtbx.phil.tokenizer.word(value=value)]
 
+
 class ExperimentListConverters(object):
   ''' A phil converter for the experiment list class. '''
 
   phil_type = "experiment_list"
+
+  cache = {}
 
   def __str__(self):
     return self.phil_type
@@ -55,7 +62,9 @@ class ExperimentListConverters(object):
     s = libtbx.phil.str_from_words(words=words)
     if (s is None):
       return None
-    return FilenameDataWrapper(s, ExperimentListFactory.from_json_file(s))
+    if s not in self.cache:
+      self.cache[s] = FilenameDataWrapper(s, ExperimentListFactory.from_json_file(s))
+    return self.cache[s]
 
   def as_words(self, python_object, master):
     if (python_object is None):
@@ -70,6 +79,8 @@ class ReflectionTableConverters(object):
 
   phil_type = "reflection_table"
 
+  cache = {}
+
   def __str__(self):
     return self.phil_type
 
@@ -78,7 +89,9 @@ class ReflectionTableConverters(object):
     s = libtbx.phil.str_from_words(words=words)
     if (s is None):
       return None
-    return FilenameDataWrapper(s, flex.reflection_table.from_pickle(s))
+    if s not in self.cache:
+      self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_pickle(s))
+    return self.cache[s]
 
   def as_words(self, python_object, master):
     if (python_object is None):

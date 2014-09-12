@@ -96,7 +96,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     ''' Read the reflection table from pickle file. '''
     import cPickle as pickle
     with open(filename, 'rb') as infile:
-      return pickle.load(infile)
+      result = pickle.load(infile)
+      assert(isinstance(result, reflection_table))
+      return result
 
   @staticmethod
   def from_h5(filename):

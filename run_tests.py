@@ -5,6 +5,7 @@ import libtbx.load_env
 tst_list = (
     ["$D/test/command_line/tst_dials_process.py", "1"],
     ["$D/test/command_line/tst_dials_process.py", "2"],
+    "$D/test/tst_phil.py",
     "$D/test/command_line/tst_reindex.py",
     "$D/test/framework/tst_interface.py",
     "$D/test/command_line/tst_import.py",
