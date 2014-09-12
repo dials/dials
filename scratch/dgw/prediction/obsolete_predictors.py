@@ -241,13 +241,11 @@ class ScanVaryingReflectionListGenerator(object):
     predictions list"""
 
     from libtbx import easy_mp
-    from dials.util import mp
-
-
+    #from dials.util import mp
     n_images = self._scan.get_num_images()
 
     # Change the number of processors if necessary
-    nproc = mp.nproc
+    nproc = 1
     if nproc > n_images:
       nproc = n_images
 
@@ -257,7 +255,7 @@ class ScanVaryingReflectionListGenerator(object):
         func=self._search_on_image_range,
         iterable=iterable,
         processes=nproc,
-        method=mp.method,
+        method="multiprocessing",
         preserve_order=True)
 
     self._reflections = [e for l in ref_list_of_list for e in l]

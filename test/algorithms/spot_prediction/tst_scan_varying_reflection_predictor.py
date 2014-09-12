@@ -26,6 +26,7 @@ class Test(object):
 
   def run(self):
     self.tst_vs_old()
+    self.tst_regression()
     #self.tst_with_hkl()
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
@@ -79,6 +80,10 @@ class Test(object):
 
     #print "New Time: ", time() - st
     return result
+
+  def tst_regression(self):
+    r_new = self.predict_new()
+    from dials.util.command_line import interactive_console; interactive_console()
 
   def tst_vs_old(self):
     r_old = self.predict_old()
