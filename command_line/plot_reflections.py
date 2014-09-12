@@ -68,6 +68,10 @@ Parameters:
     origin_shift = matrix.col(detector[0].get_origin()) \
       - matrix.col(detector[i_panel].get_origin())
     panel_origin_shifts[i_panel] = origin_shift
+
+  # FIXME ReflectionList has been deprecated - please use reflection table
+  # directly...
+
   from dials.model.data import ReflectionList
   reflections = [
     ReflectionList.from_table(ref_table) for ref_table in reflections]
