@@ -13,7 +13,7 @@
 import wx
 
 
-from bitmap_from_numpy_w_matplotlib_well_done \
+from bitmap_from_numpy \
      import GetBitmap_from_np_array, build_np_img
 
 class MyPanel(wx.Panel):
