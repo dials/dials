@@ -4,6 +4,10 @@ DIALS
 +++++++++++++++++++++++++++++++++++++
 
 .. _introduction:
+
+.. warning:: This documentation is a work in progress (much like the software).
+   It may, therefore be neither complete nor correct!
+
 .. toctree::
    :maxdepth: 1
 
