@@ -283,6 +283,157 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Split the reflection table where the blocks are given.
+   */
+  template <typename T>
+  void split_blocks(T self, const af::const_ref< tiny<int,2> > &blocks) {
+
+    // Check the input
+    DIALS_ASSERT(self.is_consistent());
+    DIALS_ASSERT(self.contains("bbox"));
+    DIALS_ASSERT(blocks.size() > 0);
+    DIALS_ASSERT(self.size() > 0);
+
+    // Get the bounding boxes
+    af::const_ref<int6> bbox = self["bbox"];
+
+    // Check blocks are valid (can be overlapping)
+    DIALS_ASSERT(blocks[0][1] > blocks[0][0]);
+    for (std::size_t i = 1; i < blocks.size(); ++i) {
+      DIALS_ASSERT(blocks[i][1] > blocks[i][0]);
+      DIALS_ASSERT(blocks[i][0] > blocks[i-1][0]);
+      DIALS_ASSERT(blocks[i][1] > blocks[i-1][1]);
+      DIALS_ASSERT(blocks[i][0] <= blocks[i-1][1]);
+    }
+
+    // Check all the reflections are in range
+    int frame0 = blocks.front()[0];
+    int frame1 = blocks.back()[1];
+    DIALS_ASSERT(frame1 > frame0);
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+      DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+      DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+      DIALS_ASSERT(bbox[i][4] >= frame0);
+      DIALS_ASSERT(bbox[i][5] <= frame1);
+    }
+
+    // Create the lookups
+    std::vector<std::size_t> lookup0(frame1 - frame0);
+    std::vector<std::size_t> lookup1(frame1 - frame0);
+    int frame = frame0;
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+      tiny<int,2> b = blocks[i];
+      DIALS_ASSERT(frame >= b[0]);
+      for (; frame < b[1]; ++frame) {
+        lookup0[frame-frame0] = i;
+      }
+    }
+    DIALS_ASSERT(frame == frame1);
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+      std::size_t j = blocks.size() - i - 1;
+      tiny<int,2> b = blocks[j];
+      DIALS_ASSERT(frame <= b[1]);
+      for (; frame > b[0]; --frame) {
+        lookup1[frame-frame0-1] = j;
+      }
+    }
+    DIALS_ASSERT(frame == frame0);
+
+    // Check the lookups
+    for (std::size_t i = 1; i < lookup0.size(); ++i) {
+      DIALS_ASSERT(lookup0[i] >= lookup0[i-1]);
+      DIALS_ASSERT(lookup1[i] >= lookup1[i-1]);
+    }
+
+    // Split the reflections
+    af::shared<int6> bbox_new;
+    af::shared<std::size_t> indices;
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      int z0 = bbox[i][4];
+      int z1 = bbox[i][5];
+      std::size_t j0 = lookup0[z0-frame0];
+      std::size_t j1 = lookup1[z1-frame0-1];
+      DIALS_ASSERT(j0 < blocks.size());
+      DIALS_ASSERT(j1 < blocks.size());
+      DIALS_ASSERT(j1 >= j0);
+      DIALS_ASSERT(z0 >= blocks[j0][0]);
+      DIALS_ASSERT(z1 <= blocks[j1][1]);
+      bool inside = false;
+      for (std::size_t j = j0; j <= j1; ++j) {
+        int jz0 = blocks[j][0];
+        int jz1 = blocks[j][1];
+        if (z0 >= jz0 && z1 <= jz1) {
+          inside = true;
+          break;
+        }
+      }
+      if (inside) {
+        bbox_new.push_back(bbox[i]);
+        indices.push_back(i);
+      } else {
+        int6 b = bbox[i];
+        std::vector<int> divisions;
+        for (std::size_t j = j0; j <= j1; ++j) {
+          divisions.push_back(blocks[j][0]);
+          divisions.push_back(blocks[j][1]);
+        }
+        std::size_t k = 1;
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          if (divisions[j] > divisions[j-1]) {
+            divisions[k] = divisions[j];
+            k++;
+          } else if (divisions[j] == divisions[j-1]) {
+            continue;
+          } else {
+            int a = divisions[j];
+            int b = divisions[j-1];
+            int c = (a + b) / 2;
+            DIALS_ASSERT(c >= a);
+            DIALS_ASSERT(c < b);
+            divisions[k] = c;
+          }
+        }
+        divisions.resize(k);
+        divisions[0] = b[4];
+        k = 1;
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          if (divisions[j] >= b[5]) {
+            break;
+          } else if (divisions[j] > divisions[j-1]) {
+            k++;
+          } else {
+            continue;
+          }
+        }
+        divisions[k++] = b[5];
+        divisions.resize(k);
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          DIALS_ASSERT(divisions[j] > divisions[j-1]);
+        }
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          b[5] = divisions[j];
+          DIALS_ASSERT(b[5] > b[4]);
+          bbox_new.push_back(b);
+          indices.push_back(i);
+          b[4] = b[5];
+        }
+      }
+    }
+
+    // Resize the reflection table
+    DIALS_ASSERT(bbox_new.size() == indices.size());
+    self.resize(bbox_new.size());
+
+    // Reorder the reflections
+    flex_table_suite::reorder(self, indices.const_ref());
+
+    // Set the new bounding boxes
+    flex_table_suite::setitem_column(self, "bbox", bbox_new.const_ref());
+    flex_table_suite::setitem_column(self, "partial_id", indices.const_ref());
+  }
+
+  /**
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
@@ -324,6 +475,8 @@ namespace dials { namespace af { namespace boost_python {
           &unset_flags_by_index<flex_table_type>)
         .def("split_partials",
           &split_partials<flex_table_type>)
+        .def("split_blocks",
+          &split_blocks<flex_table_type>)
         ;
 
       // Create the flags enum in the reflection table scope
