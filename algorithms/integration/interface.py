@@ -4,6 +4,7 @@ import abc
 
 def generate_phil_scope():
   ''' Generate the phil scope. '''
+  import dials.extensions
   from dials.interfaces import BackgroundIface
   from dials.interfaces import IntensityIface
   from dials.interfaces import CentroidIface
@@ -540,7 +541,7 @@ class IntegratorFlat2D(Integrator):
       flatten=True)
 
     # Initialise the integrator
-    super(Integrator3D, self).__init__(manager, nproc, mp_method)
+    super(IntegratorFlat2D, self).__init__(manager, nproc, mp_method)
 
 
 class Integrator2D(Integrator):
@@ -566,7 +567,7 @@ class Integrator2D(Integrator):
       partials=True)
 
     # Initialise the integrator
-    super(Integrator3D, self).__init__(manager, nproc, mp_method)
+    super(Integrator2D, self).__init__(manager, nproc, mp_method)
 
 
 class IntegratorStills(Integrator):
@@ -596,7 +597,7 @@ class IntegratorStills(Integrator):
       block_size_units='frames')
 
     # Initialise the integrator
-    super(Integrator3D, self).__init__(manager, nproc, mp_method)
+    super(IntegratorStills, self).__init__(manager, nproc, mp_method)
 
 
 class IntegratorFactory(object):
@@ -630,7 +631,8 @@ class IntegratorFactory(object):
       flex.strategy(CentroidAlgorithm, params)
 
     # Get the integrator class
-    IntegratorClass = IntegratorFactory.select_integrator(IntensityAlgorithm)
+    IntegratorClass = IntegratorFactory.select_integrator(
+      IntensityAlgorithm.type(params, experiments))
 
     # Return an instantiation of the class
     return IntegratorClass(
@@ -643,19 +645,15 @@ class IntegratorFactory(object):
       mp_method=params.integration.mp.method)
 
   @staticmethod
-  def select_integrator(cls):
+  def select_integrator(integrator_type):
     ''' Select the integrator. '''
-    from dials.interfaces import Integration3DMixin
-    from dials.interfaces import IntegrationFlat2DMixin
-    from dials.interfaces import Integration2DMixin
-    from dials.interfaces import IntegrationStillsMixin
-    if issubclass(cls, Integration3DMixin):
+    if integrator_type == '3d':
       IntegratorClass = Integrator3D
-    elif issubclass(cls, IntegrationFlat2DMixin):
+    elif integrator_type == 'flat2d':
       IntegratorClass = IntegratorFlat2D
-    elif issubclass(cls, Integration2DMixin):
+    elif integrator_type == '2d':
       IntegratorClass = Integrator2D
-    elif issubclass(cls, IntegrationStillsMixin):
+    elif integrator_type == 'still':
       IntegratorClass = IntegratorStills
     else:
       raise RuntimeError("Unknown integration type")

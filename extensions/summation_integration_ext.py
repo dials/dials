@@ -10,12 +10,21 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-from dials.interfaces import IntensityIface, Integration3DMixin
+from dials.interfaces import IntensityIface
 
-class SummationIntegrationExt(IntensityIface, Integration3DMixin):
+class SummationIntegrationExt(IntensityIface):
   ''' Extension class to provide 3d summation integration. '''
 
   name = 'sum'
+
+  phil = '''
+
+    integrator = 3d flat2d 2d *still
+      .type = choice
+      .help = "The integrator to use."
+      .expert_level=3
+
+  '''
 
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
@@ -26,3 +35,7 @@ class SummationIntegrationExt(IntensityIface, Integration3DMixin):
     ''' Compute the intensity. '''
     self._algorithm(reflections)
 
+  @classmethod
+  def type(cls, params, experiments):
+    ''' Return the type of the integrator. '''
+    return params.integration.intensity.sum.integrator

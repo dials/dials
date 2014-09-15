@@ -10,9 +10,9 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-from dials.interfaces import IntensityIface, Integration3DMixin
+from dials.interfaces import IntensityIface
 
-class ProfileFittingMosflmIntegrationExt(IntensityIface, Integration3DMixin):
+class ProfileFittingMosflmIntegrationExt(IntensityIface):
   ''' Extension class to provide mosflm profile fitting. '''
 
   name = 'mosflm'
@@ -29,7 +29,11 @@ class ProfileFittingMosflmIntegrationExt(IntensityIface, Integration3DMixin):
     self._algorithm = MosflmProfileFitting(experiments,
         nblocks = params.integration.intensity.mosflm.nblocks)
 
-
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
     self._algorithm(reflections)
+
+  @classmethod
+  def type(cls, params, experiments):
+    ''' Return the type of the integrator. '''
+    return '3d'

@@ -10,9 +10,9 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-from dials.interfaces import IntensityIface, Integration3DMixin
+from dials.interfaces import IntensityIface
 
-class ProfileFittingRSIntegrationExt(IntensityIface, Integration3DMixin):
+class ProfileFittingRSIntegrationExt(IntensityIface):
   ''' Extension providing reciprocal space profile fitting. '''
 
   name = 'fitrs'
@@ -55,3 +55,8 @@ class ProfileFittingRSIntegrationExt(IntensityIface, Integration3DMixin):
     ''' Compute the intensity. '''
     self._algorithm(self._experiments, reflections)
     del reflections['rs_shoebox']
+
+  @classmethod
+  def type(cls, params, experiments):
+    ''' Return the type of the integrator. '''
+    return '3d'
