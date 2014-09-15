@@ -291,6 +291,7 @@ class IntegrationManagerDefault(IntegrationManager):
                block_size_units='degrees'):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManagerExecutor
+    from dials.algorithms.integration import IntegrationJobCalculator
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
     scans = experiments.scans()
@@ -306,18 +307,20 @@ class IntegrationManagerDefault(IntegrationManager):
     self._experiments = experiments
     self._profile_model = profile_model
     self._reflections = reflections
-    self._preprocess(self._reflections, min_zeta)
     if block_size_units == 'degrees':
       phi0, dphi = scan.get_oscillation()
-      block_size = block_size / dphi
+      block_size_frames = block_size / dphi
     elif block_size_units == 'frames':
-      pass
+      block_size_frames = block_size
     else:
       raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
-    self._manager = IntegrationManagerExecutor(
-      self._reflections,
+    jobcalculator = IntegrationJobCalculator(
       scan.get_array_range(),
-      block_size)
+      block_size_frames)
+    self._preprocess(self._reflections, min_zeta, jobcalculator.jobs())
+    self._manager = IntegrationManagerExecutor(
+      jobcalculator,
+      self._reflections)
     self.read_time = 0
     self.extract_time = 0
     self.preprocess_time = 0
@@ -363,7 +366,7 @@ class IntegrationManagerDefault(IntegrationManager):
     ''' Return the number of tasks. '''
     return len(self._manager)
 
-  def _preprocess(self, data, min_zeta):
+  def _preprocess(self, data, min_zeta, jobs):
     ''' Do some pre-processing. '''
     from dials.array_family import flex
     from dials.util.command_line import heading
@@ -389,13 +392,21 @@ class IntegrationManagerDefault(IntegrationManager):
         print ' Split %d reflections into %d partial reflections\n' % (
           num_full,
           num_partial)
+    else:
+      num_full = len(data)
+      data.split_blocks(jobs)
+      num_partial = len(data)
+      assert(num_partial >= num_full)
+      if (num_partial > num_full):
+        num_split = num_partial - num_full
+        print ' Split %d reflections overlapping job boundaries\n' % num_split
 
     # Compute the partiality
     data.compute_partiality(self._experiments, self._profile_model)
 
     # Filter the reflections by zeta
     mask = flex.abs(data['zeta']) < min_zeta
-    num = mask.count(True)
+    num_ignore = mask.count(True)
     data.set_flags(mask, data.flags.dont_integrate)
     EPS = 1e-7
     fully_recorded = data['partiality'] > (1.0 - EPS)
@@ -411,9 +422,10 @@ class IntegrationManagerDefault(IntegrationManager):
     print '  In ice ring: %d' % num_ice_ring
     print '  Integrate:   %d' % num_integrate
     print '  Reference:   %d' % num_reference
+    print '  Ignore:      %d' % num_ignore
     print '  Total:       %d' % len(data)
     print ''
-    print ' Filtered %d reflections by zeta = %0.3f' % (num, min_zeta)
+    print ' Filtered %d reflections by zeta = %0.3f' % (num_ignore, min_zeta)
     print ''
     print ' Time taken: %.2f seconds' % self.preprocess_time
     print ''
@@ -473,8 +485,6 @@ class IntegrationManagerDefault(IntegrationManager):
       ' block_size: %d %s\n'
       '\n'
       '%s\n'
-      '\n'
-      ' %d reflections overlapping blocks removed from integration\n'
     )
 
     # Print the summary
@@ -488,8 +498,7 @@ class IntegrationManagerDefault(IntegrationManager):
       len(self._experiments.crystals()),
       block_size,
       block_size_units,
-      task_table,
-      len(self._manager.ignored()))
+      task_table)
 
 
 class Integrator3D(Integrator):

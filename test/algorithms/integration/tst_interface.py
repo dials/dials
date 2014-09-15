@@ -258,8 +258,8 @@ class TestSummation(object):
 
     phil_scope = parse('''
       integration.intensity.algorithm=sum
-      integration.intensity.sum.integrator=single2d
-      mp.nprocs=auto
+      integration.intensity.sum.integrator=3d
+      integration.block.size=0.5
     ''')
 
     params = master_phil_scope.fetch(source=phil_scope).extract()

@@ -18,13 +18,18 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_interface() {
 
-    class_<IntegrationManagerExecutor>("IntegrationManagerExecutor", no_init)
-      .def(init<af::reflection_table,
-                vec2<int>,
-                double>((
-          arg("reflections"),
+    class_<IntegrationJobCalculator>("IntegrationJobCalculator", no_init)
+      .def(init< vec2<int>, double >((
           arg("array_range"),
           arg("block_size"))))
+      .def("jobs", &IntegrationJobCalculator::jobs)
+      ;
+
+    class_<IntegrationManagerExecutor>("IntegrationManagerExecutor", no_init)
+      .def(init<const IntegrationJobCalculator&,
+                af::reflection_table>((
+          arg("jobcalculator"),
+          arg("reflections"))))
       .def("__len__", &IntegrationManagerExecutor::size)
       .def("finished", &IntegrationManagerExecutor::finished)
       .def("accumulate", &IntegrationManagerExecutor::accumulate)

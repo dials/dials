@@ -31,19 +31,85 @@ namespace dials { namespace algorithms {
   using model::Shoebox;
 
   /**
+   * A class to compute integration jobs.
+   */
+  class IntegrationJobCalculator {
+  public:
+
+    /**
+     * Compute the integration jobs
+     * @param array_range The range of frames to process
+     * @param block_size The number of frames in a job
+     */
+    IntegrationJobCalculator(
+        vec2<int> array_range,
+        double block_size) {
+      int frame0 = array_range[0];
+      int frame1 = array_range[1];
+      DIALS_ASSERT(frame1 > frame0);
+      int nframes = frame1 - frame0;
+      DIALS_ASSERT(nframes > 0);
+      if (block_size > nframes) {
+        block_size = nframes;
+      }
+      DIALS_ASSERT(block_size > 0);
+      if (block_size == 1) {
+        for (int f = frame0; f < frame1; ++f) {
+          jobs_.push_back(tiny<int,2>(f, f+1));
+        }
+      } else {
+        int nblocks = (int)std::ceil(2.0 * nframes / block_size);
+        DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
+        int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
+        af::shared<int> indices;
+        indices.push_back(frame0);
+        for (int i = 0; i < nblocks; ++i) {
+          int frame = frame0 + (i + 1) * half_block_size;
+          if (frame > frame1) {
+            frame = frame1;
+          }
+          indices.push_back(frame);
+          if (frame == frame1) {
+            break;
+          }
+        }
+        DIALS_ASSERT(indices.front() == frame0);
+        DIALS_ASSERT(indices.back() == frame1);
+        DIALS_ASSERT(indices.size() > 2);
+        for (std::size_t i = 0; i < indices.size() - 2; ++i) {
+          int i1 = indices[i];
+          int i2 = indices[i+2];
+          DIALS_ASSERT(i2 > i1);
+          jobs_.push_back(tiny<int,2>(i1, i2));
+        }
+        DIALS_ASSERT(jobs_.size() > 0);
+      }
+    }
+
+    /**
+     * @returns The list of jobs.
+     */
+    af::shared< tiny<int,2> > jobs() const {
+      return af::shared< tiny<int,2> >(&jobs_[0], &jobs_[0] + jobs_.size());
+    }
+
+  private:
+    std::vector< tiny<int,2> > jobs_;
+  };
+
+
+  /**
    * A class to managing spliting and mergin data
    */
   class IntegrationManagerExecutor {
   public:
 
     IntegrationManagerExecutor(
-        af::reflection_table reflections,
-        vec2<int> array_range,
-        double block_size)
-          : data_(reflections) {
-
-      // Compute the list of jobs
-      compute_jobs(array_range, block_size);
+        const IntegrationJobCalculator &jobcalculator,
+        af::reflection_table reflections)
+          : jobs_(jobcalculator.jobs()),
+            data_(reflections) {
+      DIALS_ASSERT(jobs_.size() > 0);
 
       // Set all the finished flags to false
       finished_.assign(jobs_.size(), false);
@@ -224,56 +290,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
-    /**
-     * Compute the integration jobs
-     * @param array_range The range of frames to process
-     * @param block_size The number of frames in a job
-     */
-    void compute_jobs(tiny<int,2> array_range, double block_size) {
-      DIALS_ASSERT(jobs_.size() == 0);
-      int frame0 = array_range[0];
-      int frame1 = array_range[1];
-      DIALS_ASSERT(frame1 > frame0);
-      int nframes = frame1 - frame0;
-      DIALS_ASSERT(nframes > 0);
-      if (block_size > nframes) {
-        block_size = nframes;
-      }
-      DIALS_ASSERT(block_size > 0);
-      if (block_size == 1) {
-        for (int f = frame0; f < frame1; ++f) {
-          jobs_.push_back(tiny<int,2>(f, f+1));
-        }
-      } else {
-        int nblocks = (int)std::ceil(2.0 * nframes / block_size);
-        DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
-        int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
-        af::shared<int> indices;
-        indices.push_back(frame0);
-        for (int i = 0; i < nblocks; ++i) {
-          int frame = frame0 + (i + 1) * half_block_size;
-          if (frame > frame1) {
-            frame = frame1;
-          }
-          indices.push_back(frame);
-          if (frame == frame1) {
-            break;
-          }
-        }
-        DIALS_ASSERT(indices.front() == frame0);
-        DIALS_ASSERT(indices.back() == frame1);
-        DIALS_ASSERT(indices.size() > 2);
-        for (std::size_t i = 0; i < indices.size() - 2; ++i) {
-          int i1 = indices[i];
-          int i2 = indices[i+2];
-          DIALS_ASSERT(i2 > i1);
-          jobs_.push_back(tiny<int,2>(i1, i2));
-        }
-        DIALS_ASSERT(jobs_.size() > 0);
-      }
-    }
-
 
     /**
      * Get the indices for each job
