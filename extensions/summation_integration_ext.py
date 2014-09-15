@@ -19,7 +19,7 @@ class SummationIntegrationExt(IntensityIface):
 
   phil = '''
 
-    integrator = 3d flat3d 2d *single2d
+    integrator = *3d flat3d 2d single2d
       .type = choice
       .help = "The integrator to use."
       .expert_level=3

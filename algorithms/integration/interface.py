@@ -300,7 +300,6 @@ class IntegrationManagerDefault(IntegrationManager):
     assert(len(detectors) == 1)
     imageset = imagesets[0]
     scan = scans[0]
-    detector = detectors[0]
     assert(len(imageset) == len(scan))
     self._flatten = flatten
     self._partials = partials
@@ -653,7 +652,7 @@ class IntegratorFactory(object):
       IntegratorClass = IntegratorFlat3D
     elif integrator_type == '2d':
       IntegratorClass = Integrator2D
-    elif integrator_type == 'single':
+    elif integrator_type == 'single2d':
       IntegratorClass = IntegratorSingle2D
     else:
       raise RuntimeError("Unknown integration type")

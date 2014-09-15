@@ -133,7 +133,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         int z = (int)floor(frame);
         DIALS_ASSERT(z >= index0_);
         DIALS_ASSERT(z < index1_);
-        DIALS_ASSERT(z >= z0 && z < z1);
+        /* DIALS_ASSERT(z >= z0 && z < z1); */
         double delta_b_r2 = delta_b_r_[z-index0_] * delta_b_r_[z-index0_];
         double delta_m_r2 = delta_m_r_[z-index0_] * delta_m_r_[z-index0_];
 
