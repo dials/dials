@@ -169,11 +169,13 @@ class Integrator(object):
     assert(self._manager.finished())
     end_time = time()
     rows = [
-      ["Read time"   , "%.2f seconds" % (self._manager.read_time)   ],
-      ["Extract time", "%.2f seconds" % (self._manager.extract_time)],
-      ["Process time", "%.2f seconds" % (self._manager.process_time)],
-      ["Total time"  , "%.2f seconds" % (self._manager.total_time)  ],
-      ["User time"   , "%.2f seconds" % (end_time - start_time)     ],
+      ["Read time"        , "%.2f seconds" % (self._manager.read_time)       ],
+      ["Extract time"     , "%.2f seconds" % (self._manager.extract_time)    ],
+      ["Pre-process time" , "%.2f seconds" % (self._manager.preprocess_time) ],
+      ["Process time"     , "%.2f seconds" % (self._manager.process_time)    ],
+      ["Post-process time", "%.2f seconds" % (self._manager.postprocess_time)],
+      ["Total time"       , "%.2f seconds" % (self._manager.total_time)      ],
+      ["User time"        , "%.2f seconds" % (end_time - start_time)         ],
     ]
     print ''
     print table(rows, justify='right', prefix=' ')
@@ -318,9 +320,11 @@ class IntegrationManager3D(IntegrationManager):
       block_size)
     self.read_time = 0
     self.extract_time = 0
+    self.preprocess_time = 0
     self.process_time = 0
+    self.postprocess_time = 0
     self.total_time = 0
-    self._print_summary(block_size)
+    self._print_summary(block_size, block_size_units)
 
   def task(self, index):
     ''' Get a task. '''
@@ -400,6 +404,7 @@ class IntegrationManager3D(IntegrationManager):
     num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
     num_reference = data.get_flags(data.flags.reference_spot).count(True)
     num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
+    self.preprocess_time = time() - st
     print ' Number of reflections'
     print '  Partial:     %d' % num_partial
     print '  Full:        %d' % num_full
@@ -410,7 +415,7 @@ class IntegrationManager3D(IntegrationManager):
     print ''
     print ' Filtered %d reflections by zeta = %0.3f' % (num, min_zeta)
     print ''
-    print ' Time taken: %.2f seconds' % (time() - st)
+    print ' Time taken: %.2f seconds' % self.preprocess_time
     print ''
 
   def _postprocess(self, data):
@@ -428,12 +433,13 @@ class IntegrationManager3D(IntegrationManager):
 
     print ''
     num = data.get_flags(data.flags.integrated, all=False).count(True)
+    self.postprocess_time = time() - st
     print ' Integrated %d reflections' % num
     print ''
-    print ' Time taken: %.2f seconds' % (time() - st)
+    print ' Time taken: %.2f seconds' % self.postprocess_time
     print ''
 
-  def _print_summary(self, block_size):
+  def _print_summary(self, block_size, block_size_units):
     ''' Print a summary of the integration stuff. '''
     from libtbx.table_utils import format as table
     from dials.util.command_line import heading
@@ -464,7 +470,7 @@ class IntegrationManager3D(IntegrationManager):
       '\n'
       'Integrating reflections in the following blocks of images:\n'
       '\n'
-      ' block_size: %d degrees\n'
+      ' block_size: %d %s\n'
       '\n'
       '%s\n'
       '\n'
@@ -481,6 +487,7 @@ class IntegrationManager3D(IntegrationManager):
       len(self._experiments.scans()),
       len(self._experiments.crystals()),
       block_size,
+      block_size_units,
       task_table,
       len(self._manager.ignored()))
 
@@ -576,7 +583,7 @@ class IntegratorStills(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Override block size
-    block_size = 0
+    block_size = 1
 
     # Create the integration manager
     manager = IntegrationManager3D(
@@ -586,7 +593,7 @@ class IntegratorStills(Integrator):
       block_size,
       min_zeta,
       partials=True,
-      block_size_units='images')
+      block_size_units='frames')
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, nproc, mp_method)
