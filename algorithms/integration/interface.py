@@ -633,12 +633,15 @@ class IntegratorFactory(object):
     from dials.interfaces import Integration3DMixin
     from dials.interfaces import IntegrationFlat2DMixin
     from dials.interfaces import Integration2DMixin
+    from dials.interfaces import IntegrationStillsMixin
     if issubclass(cls, Integration3DMixin):
       IntegratorClass = Integrator3D
     elif issubclass(cls, IntegrationFlat2DMixin):
       IntegratorClass = IntegratorFlat2D
     elif issubclass(cls, Integration2DMixin):
       IntegratorClass = Integrator2D
+    elif issubclass(cls, IntegrationStillsMixin):
+      IntegratorClass = IntegratorStills
     else:
       raise RuntimeError("Unknown integration type")
     return IntegratorClass

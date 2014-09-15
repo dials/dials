@@ -82,3 +82,8 @@ class IntegrationFlat2DMixin(object):
 class Integration2DMixin(object):
   ''' A mixin to identify 2D integration algorithms. '''
   pass
+
+
+class IntegrationStillsMixin(object):
+  ''' A mixin to identify 2D stills integration algorithms. '''
+  pass
