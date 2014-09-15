@@ -36,11 +36,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       af::small<Ray,2> rays = self(h[i], UB);
       for (std::size_t j = 0; j < rays.size(); ++j) {
         hkl.push_back(h[i]);
-        s1.push_back(rays[i].s1);
-        entering.push_back(rays[i].entering);
-        phi.push_back(rays[i].angle);
+        s1.push_back(rays[j].s1);
+        entering.push_back(rays[j].entering);
+        phi.push_back(rays[j].angle);
       }
     }
+    DIALS_ASSERT(result.is_consistent());
     return result;
   }
 
