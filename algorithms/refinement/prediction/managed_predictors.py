@@ -20,7 +20,7 @@ from __future__ import division
 
 from math import pi
 from scitbx import matrix
-from dials.algorithms.spot_prediction import RayPredictor
+from dials.algorithms.spot_prediction import RayPredictor, ScanStaticRayPredictor
 
 from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
 from dials.algorithms.spot_prediction import StillsReflectionPredictor
@@ -49,6 +49,10 @@ class ScansRayPredictor(object):
                               e.beam.get_s0(),
                               e.goniometer.get_rotation_axis(),
                               self._sweep_range) for e in self._experiments]
+    self._new_ray_predictors = [ScanStaticRayPredictor(
+                                  e.beam.get_s0(),
+                                  e.goniometer.get_rotation_axis(),
+                                  self._sweep_range) for e in self._experiments]
     self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
 
   def predict(self, hkl, experiment_id=0, UB=None):
@@ -61,7 +65,11 @@ class ScansRayPredictor(object):
 
     UB_ = UB if UB else self._UBs[experiment_id]
 
-    return self._ray_predictors[experiment_id](hkl, UB_)
+    old = self._ray_predictors[experiment_id](hkl, UB_)
+    new = self._new_ray_predictors[experiment_id](hkl, UB_)
+
+    from dials.util.command_line import interactive_console; interactive_console()
+    return old
 
 class ExperimentsPredictor(object):
   """
