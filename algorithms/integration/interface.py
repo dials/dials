@@ -373,9 +373,11 @@ class IntegrationManager3D(IntegrationManager):
       num_full = len(data)
       data.split_partials()
       num_partial = len(data)
-      print ' Split %d reflections into %d partial reflections\n' % (
-        num_full,
-        num_partial)
+      assert(num_partial >= num_full)
+      if (num_partial > num_full):
+        print ' Split %d reflections into %d partial reflections\n' % (
+          num_full,
+          num_partial)
 
     # Compute the partiality
     data.compute_partiality(self._experiments, self._profile_model)
@@ -565,7 +567,21 @@ class IntegratorStills(Integrator):
                nproc=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
-    raise RuntimeError("Not Implemented")
+
+    # Override block size
+    block_size = 1
+
+    # Create the integration manager
+    manager = IntegrationManager3D(
+      experiments,
+      profile_model,
+      reflections,
+      block_size,
+      min_zeta,
+      partials=True)
+
+    # Initialise the integrator
+    super(Integrator3D, self).__init__(manager, nproc, mp_method)
 
 
 class IntegratorFactory(object):

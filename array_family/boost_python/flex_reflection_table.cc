@@ -249,6 +249,11 @@ namespace dials { namespace af { namespace boost_python {
     }
     DIALS_ASSERT(num_partial >= num_full);
 
+    // If num partial is the same as num full exit early
+    if (num_partial == num_full) {
+      return;
+    }
+
     // Create the new bounding boxes and indices
     af::shared<int6> bbox_new(num_partial);
     af::shared<std::size_t> indices(num_partial);
