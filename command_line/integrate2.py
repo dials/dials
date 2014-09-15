@@ -154,6 +154,7 @@ class Script(object):
   def process_reference(self, reference):
     ''' Load the reference spots. '''
     from dials.util.command_line import Command
+    from dials.array_family import flex
     if reference is None:
       return None
     assert("miller_index" in reference)
