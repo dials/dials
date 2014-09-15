@@ -418,7 +418,8 @@ class OptionParser(OptionParserBase):
     if return_unhandled:
       return params, options, args
     else:
-      assert(len(args) == 0)
+      if args:
+        raise RuntimeError, 'Unhandled arguments: %s' % (' '.join(args))
     return params, options
 
   @property
