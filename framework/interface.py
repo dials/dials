@@ -13,7 +13,12 @@ from abc import ABCMeta, abstractmethod # implicit import
 
 
 class InterfaceMeta(ABCMeta):
-  ''' The interface meta class. '''
+  ''' The interface meta class.
+
+  This class adds some definition-time checking to the Interface base class to
+  make sure that interfaces have the required fields.
+
+  '''
 
   def __init__(self, name, bases, attrs):
     ''' Check each class has the name attribute. '''
@@ -25,7 +30,12 @@ class InterfaceMeta(ABCMeta):
 
 
 class Interface(object):
-  ''' The main interface class. '''
+  ''' The interface base class.
+
+  Interfaces can be defined for automatic registration by inheriting from this
+  class.
+
+  '''
 
   __metaclass__ = InterfaceMeta
 
@@ -34,13 +44,22 @@ class Interface(object):
 
   @classmethod
   def extension(cls, name):
-    ''' Get the requested extension class by name. '''
+    ''' Get the requested extension class by name.
+
+    :param name: The name of the extension
+    :returns: The extension class
+
+    '''
     choices = dict((ex.name, ex) for ex in cls.extensions())
     return choices[name]
 
   @classmethod
   def extensions(cls):
-    ''' Iterate through the extensions '''
+    ''' Iterate through the extensions
+
+    :returns: An iterator which loops through the list of extensions.
+
+    '''
 
     # Check the given class is an interface
     if cls == Interface:
@@ -57,13 +76,21 @@ class Interface(object):
 
   @staticmethod
   def interfaces():
-    ''' Iterate through the interfaces. '''
+    ''' Iterate through the interfaces.
+
+    :returns: An iterator which loops through all the defined interfaces.
+
+    '''
     for iface in Interface.__subclasses__():
       yield iface
 
   @classmethod
   def phil_scope(cls):
-    ''' Get the phil scope for the interface or extension. '''
+    ''' Get the phil scope for the interface or extension.
+
+    :returns: The phil scope for the interface or extension
+
+    '''
     from libtbx.phil import parse
     if cls == Interface:
       raise RuntimeError('"Interface has no phil parameters"')
