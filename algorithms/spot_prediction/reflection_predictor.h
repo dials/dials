@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <scitbx/math/r3_rotation.h>
+#include <scitbx/constants.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
@@ -31,6 +32,7 @@ namespace dials { namespace algorithms {
 
   using boost::shared_ptr;
   using scitbx::math::r3_rotation::axis_and_angle_as_matrix;
+  using scitbx::constants::two_pi;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
@@ -102,7 +104,7 @@ namespace dials { namespace algorithms {
         predict_rays_(
             beam.get_s0(),
             goniometer.get_rotation_axis(),
-            scan.get_oscillation_range()){}
+            vec2<double>(0.0, two_pi)){}
 
 
     /**
