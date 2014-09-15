@@ -33,10 +33,10 @@ namespace dials { namespace algorithms {
   /**
    * A class to managing spliting and mergin data
    */
-  class IntegrationManager3DExecutor {
+  class IntegrationManagerExecutor {
   public:
 
-    IntegrationManager3DExecutor(
+    IntegrationManagerExecutor(
         af::reflection_table reflections,
         vec2<int> array_range,
         double block_size)

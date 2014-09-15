@@ -183,8 +183,8 @@ class Integrator(object):
     return self._manager.result()
 
 
-class IntegrationTask3D(IntegrationTask):
-  ''' A class to perform a 3D integration task. '''
+class IntegrationTaskDefault(IntegrationTask):
+  ''' A class to perform an integration task. '''
 
   def __init__(self, index, experiments, profile_model, data, job, flatten):
     ''' Initialise the task. '''
@@ -277,8 +277,8 @@ class IntegrationTask3D(IntegrationTask):
     print ''
 
 
-class IntegrationManager3D(IntegrationManager):
-  ''' An class to manage 3D integration. book-keeping '''
+class IntegrationManagerDefault(IntegrationManager):
+  ''' An class to manage integration book-keeping '''
 
   def __init__(self,
                experiments,
@@ -290,7 +290,7 @@ class IntegrationManager3D(IntegrationManager):
                partials=False,
                block_size_units='degrees'):
     ''' Initialise the manager. '''
-    from dials.algorithms.integration import IntegrationManager3DExecutor
+    from dials.algorithms.integration import IntegrationManagerExecutor
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
     scans = experiments.scans()
@@ -315,7 +315,7 @@ class IntegrationManager3D(IntegrationManager):
       pass
     else:
       raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
-    self._manager = IntegrationManager3DExecutor(
+    self._manager = IntegrationManagerExecutor(
       self._reflections,
       scan.get_array_range(),
       block_size)
@@ -329,7 +329,7 @@ class IntegrationManager3D(IntegrationManager):
 
   def task(self, index):
     ''' Get a task. '''
-    return IntegrationTask3D(
+    return IntegrationTaskDefault(
       index,
       self._experiments,
       self._profile_model,
@@ -507,7 +507,7 @@ class Integrator3D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManager3D(
+    manager = IntegrationManagerDefault(
       experiments,
       profile_model,
       reflections,
@@ -518,7 +518,7 @@ class Integrator3D(Integrator):
     super(Integrator3D, self).__init__(manager, nproc, mp_method)
 
 
-class IntegratorFlat2D(Integrator):
+class IntegratorFlat3D(Integrator):
   ''' Top level integrator for flat 2D integration. '''
 
   def __init__(self,
@@ -532,7 +532,7 @@ class IntegratorFlat2D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManager3D(
+    manager = IntegrationManagerDefault(
       experiments,
       profile_model,
       reflections,
@@ -541,7 +541,7 @@ class IntegratorFlat2D(Integrator):
       flatten=True)
 
     # Initialise the integrator
-    super(IntegratorFlat2D, self).__init__(manager, nproc, mp_method)
+    super(IntegratorFlat3D, self).__init__(manager, nproc, mp_method)
 
 
 class Integrator2D(Integrator):
@@ -558,7 +558,7 @@ class Integrator2D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManager3D(
+    manager = IntegrationManagerDefault(
       experiments,
       profile_model,
       reflections,
@@ -570,7 +570,7 @@ class Integrator2D(Integrator):
     super(Integrator2D, self).__init__(manager, nproc, mp_method)
 
 
-class IntegratorStills(Integrator):
+class IntegratorSingle2D(Integrator):
   ''' Top level integrator for still image integration. '''
 
   def __init__(self,
@@ -587,7 +587,7 @@ class IntegratorStills(Integrator):
     block_size = 1
 
     # Create the integration manager
-    manager = IntegrationManager3D(
+    manager = IntegrationManagerDefault(
       experiments,
       profile_model,
       reflections,
@@ -597,7 +597,7 @@ class IntegratorStills(Integrator):
       block_size_units='frames')
 
     # Initialise the integrator
-    super(IntegratorStills, self).__init__(manager, nproc, mp_method)
+    super(IntegratorSingle2D, self).__init__(manager, nproc, mp_method)
 
 
 class IntegratorFactory(object):
@@ -649,12 +649,12 @@ class IntegratorFactory(object):
     ''' Select the integrator. '''
     if integrator_type == '3d':
       IntegratorClass = Integrator3D
-    elif integrator_type == 'flat2d':
-      IntegratorClass = IntegratorFlat2D
+    elif integrator_type == 'flat3d':
+      IntegratorClass = IntegratorFlat3D
     elif integrator_type == '2d':
       IntegratorClass = Integrator2D
-    elif integrator_type == 'still':
-      IntegratorClass = IntegratorStills
+    elif integrator_type == 'single':
+      IntegratorClass = IntegratorSingle2D
     else:
       raise RuntimeError("Unknown integration type")
     return IntegratorClass

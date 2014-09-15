@@ -1,7 +1,7 @@
 
 from __future__ import division
 
-class TestIntegrationManager3DExecutor(object):
+class TestIntegrationManagerExecutor(object):
 
   def __init__(self):
     from dials.array_family import flex
@@ -72,11 +72,11 @@ class TestIntegrationManager3DExecutor(object):
 
 
   def run(self):
-    from dials.algorithms.integration import IntegrationManager3DExecutor
+    from dials.algorithms.integration import IntegrationManagerExecutor
     from dials.array_family import flex
 
     # Create the executor
-    executor = IntegrationManager3DExecutor(
+    executor = IntegrationManagerExecutor(
       self.reflections,
       self.array_range,
       self.block_size)
@@ -219,17 +219,72 @@ class TestIntegrator3D(object):
     print 'OK'
 
 
+class TestSummation(object):
+
+  def __init__(self):
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.profile_model import ProfileModel
+    import libtbx.load_env
+    from dials.array_family import flex
+    from os.path import join
+    from math import pi
+    try:
+      dials_regression = libtbx.env.dist_path('dials_regression')
+    except KeyError, e:
+      print 'FAIL: dials_regression not configured'
+      exit(0)
+
+
+    path = join(dials_regression, "centroid_test_data", "experiments.json")
+
+    exlist = ExperimentListFactory.from_json_file(path)
+    profile_model = ProfileModelList()
+    profile_model.append(ProfileModel(
+      n_sigma=3,
+      sigma_b=0.024*pi/180.0,
+      sigma_m=0.044*pi/180.0))
+
+    rlist = flex.reflection_table.from_predictions(exlist[0])
+    rlist['id'] = flex.size_t(len(rlist), 0)
+    self.rlist = rlist
+    self.exlist = exlist
+    self.profile_model = profile_model
+
+  def run(self):
+    from dials.algorithms.integration.interface import IntegratorFactory
+    from dials.algorithms.integration.interface import phil_scope as master_phil_scope
+    from libtbx.phil import parse
+
+    phil_scope = parse('''
+      integration.intensity.algorithm=sum
+      integration.intensity.sum.integrator=2d
+    ''')
+
+    params = master_phil_scope.fetch(source=phil_scope).extract()
+
+    integrator = IntegratorFactory.create(
+      params,
+      self.exlist,
+      self.profile_model,
+      self.rlist)
+
+    result1 = integrator.integrate()
+
+
 class Test(object):
 
   def __init__(self):
-    self.test1 = TestIntegrationManager3DExecutor()
+    self.test1 = TestIntegrationManagerExecutor()
     self.test2 = TestIntegrator3D(nproc=1)
     self.test3 = TestIntegrator3D(nproc=2)
+    self.test4 = TestSummation()
 
   def run(self):
-    self.test1.run()
-    self.test2.run()
-    self.test3.run()
+    # self.test1.run()
+    # self.test2.run()
+    # self.test3.run()
+    self.test4.run()
 
 if __name__ == '__main__':
   test = Test()

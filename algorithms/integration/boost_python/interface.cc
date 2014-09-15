@@ -18,20 +18,20 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_interface() {
 
-    class_<IntegrationManager3DExecutor>("IntegrationManager3DExecutor", no_init)
+    class_<IntegrationManagerExecutor>("IntegrationManagerExecutor", no_init)
       .def(init<af::reflection_table,
                 vec2<int>,
                 double>((
           arg("reflections"),
           arg("array_range"),
           arg("block_size"))))
-      .def("__len__", &IntegrationManager3DExecutor::size)
-      .def("finished", &IntegrationManager3DExecutor::finished)
-      .def("accumulate", &IntegrationManager3DExecutor::accumulate)
-      .def("split", &IntegrationManager3DExecutor::split)
-      .def("job", &IntegrationManager3DExecutor::job)
-      .def("data", &IntegrationManager3DExecutor::data)
-      .def("ignored", &IntegrationManager3DExecutor::ignored)
+      .def("__len__", &IntegrationManagerExecutor::size)
+      .def("finished", &IntegrationManagerExecutor::finished)
+      .def("accumulate", &IntegrationManagerExecutor::accumulate)
+      .def("split", &IntegrationManagerExecutor::split)
+      .def("job", &IntegrationManagerExecutor::job)
+      .def("data", &IntegrationManagerExecutor::data)
+      .def("ignored", &IntegrationManagerExecutor::ignored)
       ;
   }
 
