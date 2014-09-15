@@ -129,6 +129,55 @@ namespace dials { namespace algorithms {
       af::const_ref<int6> bbox = data_["bbox"];
       af::ref<std::size_t> flags = data_["flags"];
 
+      // Check blocks are valid (can be overlapping)
+      DIALS_ASSERT(jobs_[0][1] > jobs_[0][0]);
+      for (std::size_t i = 1; i < jobs_.size(); ++i) {
+        DIALS_ASSERT(jobs_[i][1] > jobs_[i][0]);
+        DIALS_ASSERT(jobs_[i][0] > jobs_[i-1][0]);
+        DIALS_ASSERT(jobs_[i][1] > jobs_[i-1][1]);
+        DIALS_ASSERT(jobs_[i][0] <= jobs_[i-1][1]);
+      }
+
+      // Check all the reflections are in range
+      int frame0 = jobs_.front()[0];
+      int frame1 = jobs_.back()[1];
+      DIALS_ASSERT(frame1 > frame0);
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+        DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+        DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+        DIALS_ASSERT(bbox[i][4] >= frame0);
+        DIALS_ASSERT(bbox[i][5] <= frame1);
+      }
+
+      // Create the lookups
+      std::vector<std::size_t> lookup0(frame1 - frame0);
+      std::vector<std::size_t> lookup1(frame1 - frame0);
+      int frame = frame0;
+      for (std::size_t i = 0; i < jobs_.size(); ++i) {
+        tiny<int,2> b = jobs_[i];
+        DIALS_ASSERT(frame >= b[0]);
+        for (; frame < b[1]; ++frame) {
+          lookup0[frame-frame0] = i;
+        }
+      }
+      DIALS_ASSERT(frame == frame1);
+      for (std::size_t i = 0; i < jobs_.size(); ++i) {
+        std::size_t j = jobs_.size() - i - 1;
+        tiny<int,2> b = jobs_[j];
+        DIALS_ASSERT(frame <= b[1]);
+        for (; frame > b[0]; --frame) {
+          lookup1[frame-frame0-1] = j;
+        }
+      }
+      DIALS_ASSERT(frame == frame0);
+
+      // Check the lookups
+      for (std::size_t i = 1; i < lookup0.size(); ++i) {
+        DIALS_ASSERT(lookup0[i] >= lookup0[i-1]);
+        DIALS_ASSERT(lookup1[i] >= lookup1[i-1]);
+      }
+
       // Get which reflections to process in which job and task
       std::vector<job_list_type> indices(jobs_.size());
       for (std::size_t index = 0; index < bbox.size(); ++index) {
@@ -136,10 +185,17 @@ namespace dials { namespace algorithms {
         int z1 = bbox[index][5];
         std::size_t &f = flags[index];
         if (!(f & af::DontIntegrate)) {
+          std::size_t j0 = lookup0[z0-frame0];
+          std::size_t j1 = lookup1[z1-frame0-1];
+          DIALS_ASSERT(j0 < jobs_.size());
+          DIALS_ASSERT(j1 < jobs_.size());
+          DIALS_ASSERT(j1 >= j0);
+          DIALS_ASSERT(z0 >= jobs_[j0][0]);
+          DIALS_ASSERT(z1 <= jobs_[j1][1]);
           std::size_t jmin = 0;
           double dmin = 0;
-          bool first = true;
-          for (std::size_t j = 0; j < jobs_.size(); ++j) {
+          bool inside = false;
+          for (std::size_t j = j0; j <= j1; ++j) {
             int jz0 = jobs_[j][0];
             int jz1 = jobs_[j][1];
             if (z0 >= jz0 && z1 <= jz1) {
@@ -149,26 +205,23 @@ namespace dials { namespace algorithms {
               double zc = (z1 + z0) / 2.0;
               double jc = (jz1 + jz0) / 2.0;
               double d = std::abs(zc - jc);
-              if (first || d < dmin) {
+              if (!inside || d < dmin) {
                 jmin = j;
                 dmin = d;
-                first = false;
+                inside = true;
               }
             }
           }
           int jz0 = jobs_[jmin][0];
           int jz1 = jobs_[jmin][1];
-          if (first == false && z0 >= jz0 && z1 <= jz1) {
-            if (f & af::ReferenceSpot) {
-              DIALS_ASSERT(indices[jmin].size() > 0);
-              DIALS_ASSERT(indices[jmin].back().first == index);
-              indices[jmin].back().second = true;
-            } else {
-              indices[jmin].push_back(job_type(index, true));
-            }
+          DIALS_ASSERT(inside == true);
+          DIALS_ASSERT(z0 >= jz0 && z1 <= jz1);
+          if (f & af::ReferenceSpot) {
+            DIALS_ASSERT(indices[jmin].size() > 0);
+            DIALS_ASSERT(indices[jmin].back().first == index);
+            indices[jmin].back().second = true;
           } else {
-            f |= af::DontIntegrate;
-            ignored_.push_back(index);
+            indices[jmin].push_back(job_type(index, true));
           }
         } else {
           ignored_.push_back(index);
