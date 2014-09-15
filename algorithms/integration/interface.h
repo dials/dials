@@ -231,40 +231,47 @@ namespace dials { namespace algorithms {
      * @param block_size The number of frames in a job
      */
     void compute_jobs(tiny<int,2> array_range, double block_size) {
+      DIALS_ASSERT(jobs_.size() == 0);
       int frame0 = array_range[0];
       int frame1 = array_range[1];
       DIALS_ASSERT(frame1 > frame0);
       int nframes = frame1 - frame0;
-      DIALS_ASSERT(nframes >= 2);
+      DIALS_ASSERT(nframes > 0);
       if (block_size > nframes) {
         block_size = nframes;
       }
-      DIALS_ASSERT(block_size >= 2);
-      int nblocks = (int)std::ceil(2.0 * nframes / block_size);
-      DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
-      int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
-      af::shared<int> indices;
-      indices.push_back(frame0);
-      for (int i = 0; i < nblocks; ++i) {
-        int frame = frame0 + (i + 1) * half_block_size;
-        if (frame > frame1) {
-          frame = frame1;
+      DIALS_ASSERT(block_size > 0);
+      if (block_size == 1) {
+        for (int f = frame0; f < frame1; ++f) {
+          jobs_.push_back(tiny<int,2>(f, f+1));
         }
-        indices.push_back(frame);
-        if (frame == frame1) {
-          break;
+      } else {
+        int nblocks = (int)std::ceil(2.0 * nframes / block_size);
+        DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
+        int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
+        af::shared<int> indices;
+        indices.push_back(frame0);
+        for (int i = 0; i < nblocks; ++i) {
+          int frame = frame0 + (i + 1) * half_block_size;
+          if (frame > frame1) {
+            frame = frame1;
+          }
+          indices.push_back(frame);
+          if (frame == frame1) {
+            break;
+          }
         }
+        DIALS_ASSERT(indices.front() == frame0);
+        DIALS_ASSERT(indices.back() == frame1);
+        DIALS_ASSERT(indices.size() > 2);
+        for (std::size_t i = 0; i < indices.size() - 2; ++i) {
+          int i1 = indices[i];
+          int i2 = indices[i+2];
+          DIALS_ASSERT(i2 > i1);
+          jobs_.push_back(tiny<int,2>(i1, i2));
+        }
+        DIALS_ASSERT(jobs_.size() > 0);
       }
-      DIALS_ASSERT(indices.front() == frame0);
-      DIALS_ASSERT(indices.back() == frame1);
-      DIALS_ASSERT(indices.size() > 2);
-      for (std::size_t i = 0; i < indices.size() - 2; ++i) {
-        int i1 = indices[i];
-        int i2 = indices[i+2];
-        DIALS_ASSERT(i2 > i1);
-        jobs_.push_back(tiny<int,2>(i1, i2));
-      }
-      DIALS_ASSERT(jobs_.size() > 0);
     }
 
 
