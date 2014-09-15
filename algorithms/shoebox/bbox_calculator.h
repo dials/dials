@@ -307,8 +307,6 @@ namespace dials { namespace algorithms { namespace shoebox {
       // Compute the angles
       double phi1 = scan_.get_angle_from_array_index(bbox[4]);
       double phi2 = scan_.get_angle_from_array_index(bbox[5]);
-      DIALS_ASSERT(phi > std::min(phi1, phi2));
-      DIALS_ASSERT(phi < std::max(phi1, phi2));
 
       // Compute the coords
       double c1 = xcs.from_rotation_angle(phi1);
