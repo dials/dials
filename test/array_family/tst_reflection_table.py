@@ -913,7 +913,8 @@ class Test(object):
           'value1' : v1,
           'value2' : v2,
           'value3' : v3,
-          'bbox' : (x0, x1, y0, y1, z, z+1)
+          'bbox' : (x0, x1, y0, y1, z, z+1),
+          'partial_id' : i,
         })
 
     r.split_partials()
@@ -924,6 +925,7 @@ class Test(object):
       assert(r1['value2'] == r2['value2'])
       assert(abs(r1['value3'] - r2['value3']) < EPS)
       assert(r1['bbox'] == r2['bbox'])
+      assert(r1['partial_id'] == r2['partial_id'])
 
     print 'OK'
 

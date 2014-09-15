@@ -279,6 +279,7 @@ namespace dials { namespace af { namespace boost_python {
 
     // Set the new bounding boxes
     flex_table_suite::setitem_column(self, "bbox", bbox_new.const_ref());
+    flex_table_suite::setitem_column(self, "partial_id", indices.const_ref());
   }
 
   /**
