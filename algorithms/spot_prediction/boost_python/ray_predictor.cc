@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/spot_prediction/ray_predictor.h>
 #include <dxtbx/model/scan.h>
 #include <dxtbx/model/beam.h>
@@ -20,6 +21,28 @@
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
+
+  static
+  af::reflection_table call_with_miller_index_array(
+      const ScanStaticRayPredictor &self,
+      const af::const_ref< cctbx::miller::index<> > &h,
+      const mat3<double> &UB) {
+    af::reflection_table result;
+    af::shared< cctbx::miller::index<> > hkl = result["miller_index"];
+    af::shared< vec3<double> > s1 = result["s1"];
+    af::shared< bool > entering = result["entering"];
+    af::shared< double > phi = result["phi"];
+    for (std::size_t i = 0; i < h.size(); ++i) {
+      af::small<Ray,2> rays = self(h[i], UB);
+      for (std::size_t j = 0; j < rays.size(); ++j) {
+        hkl.push_back(h[i]);
+        s1.push_back(rays[i].s1);
+        entering.push_back(rays[i].entering);
+        phi.push_back(rays[i].angle);
+      }
+    }
+    return result;
+  }
 
   void export_ray_predictor()
   {
@@ -60,7 +83,8 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("dphi"))))
       .def("__call__", &ScanStaticRayPredictor::operator(), (
         arg("miller_index"),
-        arg("UB")));
+        arg("UB")))
+      .def("__call__", &call_with_miller_index_array);
   }
 
 }}} // namespace = dials::spot_prediction::boost_python
