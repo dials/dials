@@ -281,10 +281,11 @@ class IntegrationManager3D(IntegrationManager):
                experiments,
                profile_model,
                reflections,
-               block_size=1,
+               block_size=10,
                min_zeta=0.05,
                flatten=False,
-               partials=False):
+               partials=False,
+               block_size_units='degrees'):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
     imagesets = experiments.imagesets()
@@ -304,11 +305,17 @@ class IntegrationManager3D(IntegrationManager):
     self._profile_model = profile_model
     self._reflections = reflections
     self._preprocess(self._reflections, min_zeta)
-    phi0, dphi = scan.get_oscillation()
+    if block_size_units == 'degrees':
+      phi0, dphi = scan.get_oscillation()
+      block_size = block_size / dphi
+    elif block_size_units == 'frames':
+      pass
+    else:
+      raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
     self._manager = IntegrationManager3DExecutor(
       self._reflections,
       scan.get_array_range(),
-      block_size / dphi)
+      block_size)
     self.read_time = 0
     self.extract_time = 0
     self.process_time = 0
@@ -569,7 +576,7 @@ class IntegratorStills(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Override block size
-    block_size = 1
+    block_size = 0
 
     # Create the integration manager
     manager = IntegrationManager3D(
@@ -578,7 +585,8 @@ class IntegratorStills(Integrator):
       reflections,
       block_size,
       min_zeta,
-      partials=True)
+      partials=True,
+      block_size_units='images')
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, nproc, mp_method)
