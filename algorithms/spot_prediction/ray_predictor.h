@@ -95,9 +95,9 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
         // Check that the angles are within the rotation range
-        //if (!is_angle_in_range(dphi_, phi[i])) {
-          //continue;
-        //}
+        if (!is_angle_in_range(dphi_, phi[i])) {
+          continue;
+        }
 
         // Calculate the reciprocal space vector and diffracted beam vector
         vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
