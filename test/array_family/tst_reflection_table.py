@@ -28,6 +28,7 @@ class Test(object):
     self.tst_copy()
     self.tst_extract_shoeboxes()
     self.tst_split_by_experiment_id()
+    self.tst_split_partials()
 
   def tst_init(self):
     from dials.array_family import flex
@@ -880,6 +881,50 @@ class Test(object):
     assert(len(result) == 5)
     for res in result:
       assert(len(res) == 100)
+    print 'OK'
+
+  def tst_split_partials(self):
+    from dials.array_family import flex
+    from random import randint, uniform
+    r = flex.reflection_table()
+    r['value1'] = flex.double()
+    r['value2'] = flex.int()
+    r['value3'] = flex.double()
+    r['bbox'] = flex.int6()
+    expected = []
+    for i in range(100):
+      x0 = randint(0, 100)
+      x1 = x0 + randint(1, 10)
+      y0 = randint(0, 100)
+      y1 = y0 + randint(1, 10)
+      z0 = randint(0, 100)
+      z1 = z0 + randint(1, 10)
+      v1 = uniform(0, 100)
+      v2 = randint(0, 100)
+      v3 = uniform(0, 100)
+      r.append({
+        'value1' : v1,
+        'value2' : v2,
+        'value3' : v3,
+        'bbox' : (x0, x1, y0, y1, z0, z1)
+      })
+      for z in range(z0, z1):
+        expected.append({
+          'value1' : v1,
+          'value2' : v2,
+          'value3' : v3,
+          'bbox' : (x0, x1, y0, y1, z, z+1)
+        })
+
+    r.split_partials()
+    assert(len(r) == len(expected))
+    EPS = 1e-7
+    for r1, r2 in zip(r, expected):
+      assert(abs(r1['value1'] - r2['value1']) < EPS)
+      assert(r1['value2'] == r2['value2'])
+      assert(abs(r1['value3'] - r2['value3']) < EPS)
+      assert(r1['bbox'] == r2['bbox'])
+
     print 'OK'
 
 if __name__ == '__main__':

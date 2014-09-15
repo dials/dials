@@ -228,6 +228,55 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Split the reflection table in partials.
+   */
+  template <typename T>
+  void split_partials(T self) {
+
+    // Check the input
+    DIALS_ASSERT(self.is_consistent());
+    DIALS_ASSERT(self.contains("bbox"));
+
+    // Compute the number of partials
+    af::const_ref<int6> bbox = self["bbox"];
+    std::size_t num_full = bbox.size();
+    std::size_t num_partial = 0;
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+      DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+      DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+      num_partial += (bbox[i][5] - bbox[i][4]);
+    }
+    DIALS_ASSERT(num_partial >= num_full);
+
+    // Create the new bounding boxes and indices
+    af::shared<int6> bbox_new(num_partial);
+    af::shared<std::size_t> indices(num_partial);
+    std::size_t j = 0;
+    for (std::size_t i = 0; i < num_full; ++i) {
+      int6 b = bbox[i];
+      for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
+        DIALS_ASSERT(j < num_partial);
+        bbox_new[j] = b;
+        bbox_new[j][4] = z;
+        bbox_new[j][5] = z + 1;
+        indices[j] = i;
+        j++;
+      }
+    }
+    DIALS_ASSERT(j == num_partial);
+
+    // Resize the reflection table
+    self.resize(num_partial);
+
+    // Reorder the reflections
+    flex_table_suite::reorder(self, indices.const_ref());
+
+    // Set the new bounding boxes
+    flex_table_suite::setitem_column(self, "bbox", bbox_new.const_ref());
+  }
+
+  /**
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
@@ -267,6 +316,8 @@ namespace dials { namespace af { namespace boost_python {
           &unset_flags_by_mask<flex_table_type>)
         .def("unset_flags",
           &unset_flags_by_index<flex_table_type>)
+        .def("split_partials",
+          &split_partials<flex_table_type>)
         ;
 
       // Create the flags enum in the reflection table scope
