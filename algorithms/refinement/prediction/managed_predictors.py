@@ -68,7 +68,10 @@ class ScansRayPredictor(object):
     old = self._ray_predictors[experiment_id](hkl, UB_)
     new = self._new_ray_predictors[experiment_id](hkl, UB_)
 
-    from dials.util.command_line import interactive_console; interactive_console()
+    #from dials.util.command_line import interactive_console; interactive_console()
+
+    # currently continue to use old class until there is a replacement for
+    # ray_intersection
     return old
 
 class ExperimentsPredictor(object):
