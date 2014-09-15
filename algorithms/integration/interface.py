@@ -283,7 +283,8 @@ class IntegrationManager3D(IntegrationManager):
                reflections,
                block_size=1,
                min_zeta=0.05,
-               flatten=False):
+               flatten=False,
+               partials=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManager3DExecutor
     imagesets = experiments.imagesets()
@@ -298,6 +299,7 @@ class IntegrationManager3D(IntegrationManager):
     detector = detectors[0]
     assert(len(imageset) == len(scan))
     self._flatten = flatten
+    self._partials = partials
     self._experiments = experiments
     self._profile_model = profile_model
     self._reflections = reflections
@@ -365,6 +367,17 @@ class IntegrationManager3D(IntegrationManager):
     data.compute_zeta_multi(self._experiments)
     data.compute_d(self._experiments)
     data.compute_bbox(self._experiments, self._profile_model)
+
+    # Optionally split the reflection table into partials
+    if self._partials:
+      num_full = len(data)
+      data.split_partials()
+      num_partial = len(data)
+      print ' Split %d reflections into %d partial reflections\n' % (
+        num_full,
+        num_partial)
+
+    # Compute the partiality
     data.compute_partiality(self._experiments, self._profile_model)
 
     # Filter the reflections by zeta
@@ -400,7 +413,10 @@ class IntegrationManager3D(IntegrationManager):
     print ''
     print heading('Post-processing reflections')
     print ''
+
+    # Compute the corrections
     data.compute_corrections(self._experiments)
+
     print ''
     num = data.get_flags(data.flags.integrated, all=False).count(True)
     print ' Integrated %d reflections' % num
@@ -523,7 +539,18 @@ class Integrator2D(Integrator):
                nproc=1,
                mp_method='multiprocessing'):
     ''' Initialise the manager and the integrator. '''
-    raise RuntimeError("Not Implemented")
+
+    # Create the integration manager
+    manager = IntegrationManager3D(
+      experiments,
+      profile_model,
+      reflections,
+      block_size,
+      min_zeta,
+      partials=True)
+
+    # Initialise the integrator
+    super(Integrator3D, self).__init__(manager, nproc, mp_method)
 
 
 class IntegratorStills(Integrator):
