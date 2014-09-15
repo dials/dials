@@ -65,13 +65,13 @@ of the laboratory frame determine the rotation matrix :math:`\mathbf{R}`.
 Orthogonalisation convention
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Following :cite:`Busing1967diffractometers` we may decompose the setting matrix
-:math:`\mathbf{A}` into the product of two matrices, conventionally labelled
-:math:`\mathbf{U}` and :math:`\mathbf{B}`. We name :math:`\mathbf{U}` the
-*orientation matrix* and :math:`\mathbf{B}` the *reciprocal space
-orthogonalisation matrix*. These names are in common, but not universal use. In
-particular, some texts (for example :cite:`Paciorek1999geometry` refer to the
-product (i.e. our setting matrix) as the "orientation matrix".
+Following [Busing1967]_ we may decompose the setting matrix :math:`\mathbf{A}`
+into the product of two matrices, conventionally labelled :math:`\mathbf{U}` and
+:math:`\mathbf{B}`. We name :math:`\mathbf{U}` the *orientation matrix* and
+:math:`\mathbf{B}` the *reciprocal space orthogonalisation matrix*. These names
+are in common, but not universal use. In particular, some texts (for example
+[Paciorek1999]_ refer to the product (i.e. our setting matrix) as the
+"orientation matrix".
 
 Of these two matrices, :math:`\mathbf{U}` is a pure rotation matrix and is
 dependent on the definition of the lab frame, whilst :math:`\mathbf{B}` is not
@@ -84,17 +84,17 @@ There are infinitely many ways that :math:`\mathbf{A}` may be decomposed into a
 pair :math:`\mathbf{U} \mathbf{B}`. The symbolic expression of
 :math:`\mathbf{B}` is simplest when the crystal-fixed Cartesian system is chosen
 to be aligned with crystal real or reciprocal space axes. For example,
-:cite:`Busing1967diffractometers` use a frame in which the basis vector
-:math:`\vec{i}` is parallel to reciprocal lattice vector :math:`\vec{a^*}`,
-while :math:`\vec{j}` is chosen to lie in the plane of :math:`\vec{a^*}` and
-:math:`\vec{b^*}`. Unfortunately, this convention is then disconnected from the
-standard *real space* orthogonalisation convention, usually called the *PDB
-convention* :cite:`PDB1992atomic`. This standard is essentially universal in
-crystallographic software for the transformation of fractional crystallographic
-coordinates to positions in orthogonal space, with units of :math:`\AA`. In
-particular, it is the convention used in the cctbx
-:cite:`GrosseKunstleve2002cctbx`. The convention states that the orthogonal
-coordinate :math:`x` is determined from a fractional coordinate :math:`u` by
+[Busing1967]_ use a frame in which the basis vector :math:`\vec{i}` is parallel
+to reciprocal lattice vector :math:`\vec{a^*}`, while :math:`\vec{j}` is chosen
+to lie in the plane of :math:`\vec{a^*}` and :math:`\vec{b^*}`. Unfortunately,
+this convention is then disconnected from the standard *real space*
+orthogonalisation convention, usually called the *PDB convention* [PDB1992]_.
+This standard is essentially universal in crystallographic software for the
+transformation of fractional crystallographic coordinates to positions in
+orthogonal space, with units of :math:`\AA`. In particular, it is the convention
+used in the cctbx [GrosseKunstleve2002]_. The convention states that the
+orthogonal coordinate :math:`x` is determined from a fractional coordinate
+:math:`u` by
 
 .. math::
    :label: realspaceortho
@@ -118,9 +118,9 @@ plane. The elements of this matrix made explicit in a compact form are
    \end{pmatrix}
 
 It is desirable to specify our *reciprocal space* orthogonalisation convention
-in terms of this real space orthogonalisation convention.
-:cite:`giacovazzo2002fundamentals` derives relationships between real and
-reciprocal space. Of particular interest from that text we have
+in terms of this real space orthogonalisation convention.  [Giacovazzo2002]_
+derives relationships between real and reciprocal space. Of particular interest
+from that text we have
 
 .. math::
    :label: realreciprocaltransforms
@@ -148,8 +148,7 @@ matrix*.  This is easily obtained in cctbx by a method of a
 A symbolic expansion of :math:`\mathbf{B}` in terms of the real space unit cell
 parameters will be required for the calculation of the derivatives of
 :math:`\mathbf{B}` wrt these parameters. An expression for :math:`\mathbf{F}` is
-given by :cite:`ruppwebb_transformation` from which we derive :math:`\mathbf{B}`
-simply:
+given by [RuppWeb]_ from which we derive :math:`\mathbf{B}` simply:
 
 .. math::
    :label: recipspaceorthomatrix
@@ -228,7 +227,7 @@ software and for an agreed definition of what the laboratory consists of
 be either fixed to the detector, or to the rotation axis and beam).
 
 In the interests of standardisation, we choose to adopt the Image CIF (imgCIF)
-reference frame :cite:`Berstein2006imagedata`, :cite:`Hammersley2006imgCIF`.
+reference frame [Bernstein2006]_, [Hammersley2006]_.
 
 FIXME Some expansion of that here.
 
@@ -303,6 +302,12 @@ This should cover almost all use cases.
 
 .. rubric:: References
 
-.. bibliography:: dials.bib
-   :cited:
+.. [Bernstein2006] Bernstein, H. J. in Int. Tables Crystallogr. 199–205 (IUCr, 2006). at <http://it.iucr.org/Ga/ch3o7v0001/>
+.. [Busing1967] Busing, W. R. & Levy, H. A. Angle calculations for 3- and 4-circle X-ray and neutron diffractometers. Acta Crystallogr. 22, 457–464 (1967).
+.. [Giacovazzo2002] Giacovazzo, C. Fundamentals of Crystallography. (Oxofrd University Press, USA, 2002).
+.. [GrosseKunstleve2002] Grosse-Kunstleve, R. W., Sauter, N. K., Moriarty, N. W. & Adams, P. D. The Computational Crystallography Toolbox: crystallographic algorithms in a reusable software framework. J. Appl. Crystallogr. 35, 126–136 (2002).
+.. [Hammersley2006] Hammersley, A. P., Bernstein, H. J. & Westbrook, D. in Int. Tables Crystallogr. 444–458 (IUCr, 2006). at <http://it.iucr.org/Ga/ch4o6v0001/>
+.. [Paciorek1999] Paciorek, W. A., Meyer, M. & Chapuis, G. On the geometry of a modern imaging diffractometer. Acta Crystallogr. Sect. A Found. Crystallogr. 55, 543–557 (1999).
+.. [PDB1992] PDB. Atomic Coordinate and Bibliographic Entry Format Description. Brookhaven Natl. Lab. (1992). at <http://www.wwpdb.org/documentation/PDB_format_1992.pdf>
+.. [RuppWeb] Rupp, B. Coordinate system transformation. at <http://www.ruppweb.org/xray/tutorial/Coordinate system transformation.htm>
 
