@@ -30,6 +30,14 @@ namespace dials { namespace algorithms { namespace boost_python {
     af::shared<Reflection> (*ray_intersection_array_w_panel)(const Detector&,
       const af::const_ref<Reflection>&, std::size_t) = &ray_intersection;
 
+    af::shared<bool>(*ray_intersection_table)(
+        const Detector&,
+        af::reflection_table) = &ray_intersection;
+    af::shared<bool>(*ray_intersection_table_w_panel)(
+        const Detector&,
+        af::reflection_table,
+        std::size_t panel) = &ray_intersection;
+
     //init<
       //const Detector&,
       //const af::const_ref< vec3<double> >&
@@ -61,6 +69,10 @@ namespace dials { namespace algorithms { namespace boost_python {
       (arg("detector"), arg("reflection_list")));
     def("ray_intersection", ray_intersection_array_w_panel,
       (arg("detector"), arg("reflection_list"), arg("panel")));
+    def("ray_intersection", ray_intersection_table,
+      (arg("detector"), arg("reflection_table")));
+    def("ray_intersection", ray_intersection_table_w_panel,
+      (arg("detector"), arg("reflection_table"), arg("panel")));
   }
 
 }}} // namespace = dials::spot_prediction::boost_python
