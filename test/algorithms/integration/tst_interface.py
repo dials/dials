@@ -252,25 +252,123 @@ class TestSummation(object):
     self.profile_model = profile_model
 
   def run(self):
+    from libtbx.test_utils import approx_equal
+    from dials.array_family import flex
+
+    def approx_equal_dict(a, b, k):
+      return approx_equal(a[k], b[k])
+
+    # Do summation by all different methods
+    result1 = self.integrate("3d")
+    # result2 = self.integrate("flat3d")
+    result3 = self.integrate("2d")
+    result4 = self.integrate("single2d")
+    assert(len(result1) >= len(self.rlist))
+    # assert(len(result2) >= len(self.rlist))
+    assert(len(result3) >= len(self.rlist))
+    assert(len(result4) >= len(self.rlist))
+
+    # Ensure we get equivalent results
+
+    # result3 and result4 should be the same
+    assert(len(result3) == len(result4))
+    for r3, r4 in zip(result3, result4):
+      assert(r3['partial_id'] == r4['partial_id'])
+      assert(r3['bbox'] == r4['bbox'])
+      assert(r3['entering'] == r4['entering'])
+      assert(r3['flags'] == r4['flags'])
+      assert(r3['id'] == r4['id'])
+      assert(r3['miller_index'] == r4['miller_index'])
+      assert(r3['panel'] == r4['panel'])
+      assert(approx_equal_dict(r3, r4, 'd'))
+      assert(approx_equal_dict(r3, r4, 'intensity.sum.value'))
+      assert(approx_equal_dict(r3, r4, 'intensity.sum.variance'))
+      assert(approx_equal_dict(r3, r4, 'lp'))
+      assert(approx_equal_dict(r3, r4, 'partiality'))
+      assert(approx_equal_dict(r3, r4, 's1'))
+      assert(approx_equal_dict(r3, r4, 'xyzcal.mm'))
+      assert(approx_equal_dict(r3, r4, 'xyzcal.px'))
+      assert(approx_equal_dict(r3, r4, 'xyzobs.px.value'))
+      assert(approx_equal_dict(r3, r4, 'xyzobs.px.variance'))
+      assert(approx_equal_dict(r3, r4, 'zeta'))
+
+    # result3 should add up to result1
+    assert(len(result3) >= len(result1))
+    expected1 = self.rlist.copy()
+    expected1['intensity.sum.value'] = flex.double(len(self.rlist), 0)
+    expected1['intensity.sum.variance'] = flex.double(len(self.rlist), 0)
+    for r1 in result1:
+      pid = r1['partial_id']
+      r2 = expected1[pid]
+      assert(r1['entering'] == r2['entering'])
+      assert(r1['id'] == r2['id'])
+      assert(r1['miller_index'] == r2['miller_index'])
+      assert(r1['panel'] == r2['panel'])
+      assert(approx_equal_dict(r1, r2, 's1'))
+      assert(approx_equal_dict(r1, r2, 'xyzcal.mm'))
+      assert(approx_equal_dict(r1, r2, 'xyzcal.px'))
+      expected1['intensity.sum.value'][pid] += r1['intensity.sum.value']
+      expected1['intensity.sum.variance'][pid] += r1['intensity.sum.variance']
+    expected3 = self.rlist.copy()
+    expected3['intensity.sum.value'] = flex.double(len(self.rlist), 0)
+    expected3['intensity.sum.variance'] = flex.double(len(self.rlist), 0)
+    for r1 in result3:
+      pid = r1['partial_id']
+      r2 = expected3[pid]
+      assert(r1['entering'] == r2['entering'])
+      assert(r1['id'] == r2['id'])
+      assert(r1['miller_index'] == r2['miller_index'])
+      assert(r1['panel'] == r2['panel'])
+      assert(approx_equal_dict(r1, r2, 's1'))
+      assert(approx_equal_dict(r1, r2, 'xyzcal.mm'))
+      assert(approx_equal_dict(r1, r2, 'xyzcal.px'))
+      expected3['intensity.sum.value'][pid] += r1['intensity.sum.value']
+      expected3['intensity.sum.variance'][pid] += r1['intensity.sum.variance']
+    for r1, r3, in zip(expected1, expected3):
+      assert(approx_equal_dict(r1, r3, 'intensity.sum.value'))
+      assert(approx_equal_dict(r1, r3, 'intensity.sum.variance'))
+
+
+    print 'OK'
+
+
+  def integrate(self, integrator_type):
     from dials.algorithms.integration.interface import IntegratorFactory
     from dials.algorithms.integration.interface import phil_scope as master_phil_scope
     from libtbx.phil import parse
+    import sys
+    import StringIO
 
-    phil_scope = parse('''
-      integration.intensity.algorithm=sum
-      integration.intensity.sum.integrator=3d
-      integration.block.size=0.5
-    ''')
+    rlist = self.rlist.copy()
 
-    params = master_phil_scope.fetch(source=phil_scope).extract()
+    output = StringIO.StringIO()
+    stdout = sys.stdout
+    sys.stdout = output
 
-    integrator = IntegratorFactory.create(
-      params,
-      self.exlist,
-      self.profile_model,
-      self.rlist)
+    try:
+      phil_scope = parse('''
+        integration.background.algorithm=null
+        integration.intensity.algorithm=sum
+        integration.intensity.sum.integrator=%s
+        integration.block.size=0.5
+      ''' % integrator_type)
 
-    result1 = integrator.integrate()
+      params = master_phil_scope.fetch(source=phil_scope).extract()
+
+      integrator = IntegratorFactory.create(
+        params,
+        self.exlist,
+        self.profile_model,
+        rlist)
+
+      result = integrator.integrate()
+    except Exception:
+      print output
+      raise
+
+    sys.stdout = stdout
+
+    return result
 
 
 class Test(object):
