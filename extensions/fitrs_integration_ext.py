@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# profile_fitting_rs_integration_ext.py
+# fitrs_integration_ext.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -12,7 +12,7 @@ from __future__ import division
 
 from dials.interfaces import IntensityIface
 
-class ProfileFittingRSIntegrationExt(IntensityIface):
+class FitrsIntegrationExt(IntensityIface):
   ''' Extension providing reciprocal space profile fitting. '''
 
   name = 'fitrs'
@@ -39,11 +39,11 @@ class ProfileFittingRSIntegrationExt(IntensityIface):
 
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.integration import ProfileFittingReciprocalSpace
+    from dials.algorithms.integration.fitrs import IntegrationAlgorithm
     self._experiments = experiments
     assert(len(experiments) == 1)
     assert(len(profile_model) == 1)
-    self._algorithm = ProfileFittingReciprocalSpace(
+    self._algorithm = IntegrationAlgorithm(
       n_sigma = profile_model[0].n_sigma(),
       sigma_b = profile_model[0].sigma_b(deg=True),
       sigma_m = profile_model[0].sigma_m(deg=True),

@@ -28,8 +28,8 @@ class SummationIntegrationExt(IntensityIface):
 
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.integration import Summation
-    self._algorithm = Summation()
+    from dials.algorithms.integration.sum import IntegrationAlgorithm
+    self._algorithm = IntegrationAlgorithm()
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''

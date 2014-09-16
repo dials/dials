@@ -1,5 +1,5 @@
 /*
- * interpolate_profile2d.cc
+ * integration_ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,16 +10,16 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <boost/python/iterator.hpp>
-#include <dials/algorithms/integration/interpolate_profile2d.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_interpolate_profile2d()
+  void export_profile_fitting_reciprocal_space();
+
+  BOOST_PYTHON_MODULE(dials_algorithms_integration_fitrs_ext)
   {
-    def("interpolate_profile2d", &interpolate_profile2d);
+    export_profile_fitting_reciprocal_space();
   }
 
 }}} // namespace = dials::algorithms::boost_python

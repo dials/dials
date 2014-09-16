@@ -1,5 +1,5 @@
 /*
- * flattened_2d_profile_fitting.cc
+ * integration_ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,21 +10,16 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <boost/python/iterator.hpp>
-#include <dials/algorithms/integration/flattened_2d_profile_fitting.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_flattened_2d_profile_fitting()
+  void export_summation();
+
+  BOOST_PYTHON_MODULE(dials_algorithms_integration_sum_ext)
   {
-    class_<Flattened2DProfileFitting>(
-        "Flattened2DProfileFitting", no_init)
-      .def("intensity", &Flattened2DProfileFitting::intensity)
-      .def("variance", &Flattened2DProfileFitting::variance )
-      ;
+    export_summation();
   }
 
 }}} // namespace = dials::algorithms::boost_python
-

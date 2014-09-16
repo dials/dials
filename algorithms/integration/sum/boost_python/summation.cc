@@ -10,7 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/integration/summation.h>
+#include <dials/algorithms/integration/sum/summation.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 
 using namespace boost::python;

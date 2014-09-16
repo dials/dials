@@ -17,7 +17,7 @@
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/image/centroid/centroid_image.h>
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
-#include <dials/algorithms/integration/summation.h>
+#include <dials/algorithms/integration/sum/summation.h>
 #include <dials/model/data/mask_code.h>
 #include <dials/config.h>
 #include <dials/error.h>

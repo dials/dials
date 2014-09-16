@@ -1,5 +1,5 @@
 /*
- * profile_fitting_reciprocal_space.cc
+ * fitrs.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_RECIPROCAL_SPACE_H
-#define DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_RECIPROCAL_SPACE_H
+#ifndef DIALS_ALGORITHMS_INTEGRATION_FITRS_FITRS_H
+#define DIALS_ALGORITHMS_INTEGRATION_FITRS_FITRS_H
 
 #include <omptbx/omp_or_stubs.h>
 #include <boost/shared_ptr.hpp>
@@ -101,4 +101,4 @@ namespace dials { namespace algorithms {
 
 }} // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_RECIPROCAL_SPACE_H
+#endif // DIALS_ALGORITHMS_INTEGRATION_FITRS_FITRS_H

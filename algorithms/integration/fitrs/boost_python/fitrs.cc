@@ -11,7 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/iterator.hpp>
-#include <dials/algorithms/integration/profile_fitting_reciprocal_space.h>
+#include <dials/algorithms/integration/fitrs/fitrs.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 

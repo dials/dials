@@ -92,7 +92,7 @@ class SimpleBackgroundExt(BackgroundIface):
   def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
     from libtbx.phil import parse
-    from dials.algorithms.background.simple import BackgroundCreator
+    from dials.algorithms.background.simple import BackgroundAlgorithm
 
     # Create some default parameters
     if params is None:
@@ -132,7 +132,7 @@ class SimpleBackgroundExt(BackgroundIface):
       kwargs['n_sigma'] = outlier.mosflm.n_sigma
 
     # Create the algorithm
-    self._algorithm = BackgroundCreator(experiments, **kwargs)
+    self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
 
   def compute_background(self, reflections):
     ''' Compute the backgrond. '''

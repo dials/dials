@@ -1,5 +1,5 @@
 #
-# profile_fitting_reciprocal_space.py
+# algorithm.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -11,7 +11,7 @@
 from __future__ import division
 
 
-class ProfileFittingReciprocalSpace(object):
+class IntegrationAlgorithm(object):
   ''' Class to do reciprocal space profile fitting. '''
 
   reference_counter = 0

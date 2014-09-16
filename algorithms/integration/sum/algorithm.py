@@ -10,7 +10,7 @@
 
 from __future__ import division
 
-class Summation(object):
+class IntegrationAlgorithm(object):
   '''A class to perform 3D summation integration'''
 
   def __init__(self, **kwargs):
