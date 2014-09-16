@@ -19,27 +19,19 @@ class Script(object):
     '''Setup the script.'''
     from dials.util.options import OptionParser
 
-    # The option parser
-    self.parser = OptionParser()
+    self.parser = OptionParser(
+      read_experiments=True,
+      check_format=False)
 
   def run(self):
     '''Run the script.'''
-    from dials.util.command_line import Importer
+    from dials.util.options import flatten_experiments
 
-    # Parse the command line
-    params, options, args = self.parser.parse_args()
-    if len(args) == 0:
+    params, options = self.parser.parse_args()
+    if len(params.input.experiments) == 0:
       self.parser.print_help()
-      exit(0)
-
-    importer = Importer(args, check_format=False)
-    try:
-      crystals = importer.experiments.crystals()
-    except AttributeError:
-      print "No crystals found in the input"
-      raise
-
-    assert len(importer.unhandled_arguments) == 0
+    experiments = flatten_experiments(params.input.experiments)
+    crystals = experiments.crystals()
 
     for icrystal, crystal in enumerate(crystals):
 

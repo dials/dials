@@ -216,7 +216,7 @@ class PhilCommandParser(object):
 
     # Parse the command line phil parameters
     interpretor = self.system_phil.command_line_argument_interpreter()
-    if return_unhandled:
+    if return_unhandled is True:
       self._phil, args = interpretor.process_and_fetch(args,
         custom_processor="collect_remaining")
     else:
@@ -405,7 +405,7 @@ class OptionParser(OptionParserBase):
     # Parse the phil parameters
     params, args = self._phil_parser.parse_args(
       args, options.verbose > 0,
-      return_unhandled=True)
+      return_unhandled=return_unhandled)
 
     # Print the diff phil
     if show_diff_phil:
@@ -419,7 +419,9 @@ class OptionParser(OptionParserBase):
       return params, options, args
     else:
       if args:
-        raise RuntimeError, 'Unhandled arguments: %s' % (' '.join(args))
+        raise RuntimeError((
+          'This should not be reached!\n'
+          'Unhandled arguments: %s') % (' '.join(args)))
     return params, options
 
   @property
