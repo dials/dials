@@ -38,16 +38,19 @@ namespace dials { namespace model {
     struct IntensityData {
       double value;
       double variance;
+      bool success;
 
       /** Default construct */
       IntensityData()
         : value(0.0),
-          variance(0.0) {}
+          variance(0.0),
+          success(false) {}
 
       /** Construct with values */
-      IntensityData(double value_, double variance_)
+      IntensityData(double value_, double variance_, bool success_)
         : value(value_),
-          variance(variance_) {}
+          variance(variance_),
+          success(success_) {}
 
       /**
        * Test to see if intensity contain the same data
@@ -57,7 +60,8 @@ namespace dials { namespace model {
       bool operator==(const IntensityData &rhs) const {
         const double eps = 1e-7;
         return (std::abs(value - rhs.value) < eps &&
-                std::abs(variance - rhs.variance) < eps);
+                std::abs(variance - rhs.variance) < eps &&
+                success == rhs.success);
       }
 
       /**
@@ -77,14 +81,14 @@ namespace dials { namespace model {
     Intensity() {}
 
     /** Construct with observed */
-    Intensity(double observed_value, double observed_variance)
-      : observed(observed_value, observed_variance) {}
+    Intensity(double observed_value, double observed_variance, bool observed_success)
+      : observed(observed_value, observed_variance, observed_success) {}
 
     /** Construct with observed and corrected */
-    Intensity(double observed_value, double observed_variance,
-              double corrected_value, double corrected_variance)
-      : observed(observed_value, observed_variance),
-        corrected(corrected_value, corrected_variance) {}
+    Intensity(double observed_value, double observed_variance, bool observed_success,
+              double corrected_value, double corrected_variance, bool corrected_success)
+      : observed(observed_value, observed_variance, observed_success),
+        corrected(corrected_value, corrected_variance, corrected_success) {}
 
     /** Construct with observed */
     Intensity(const IntensityData &observed_)

@@ -73,23 +73,28 @@ namespace dials { namespace model { namespace boost_python {
   void export_observation()
   {
     class_<Intensity::IntensityData>("IntensityData")
-      .def(init<double, double>((
+      .def(init<double, double, bool>((
         arg("value"),
-        arg("variance"))))
+        arg("variance"),
+        arg("success"))))
       .def_readwrite("value", &Intensity::IntensityData::value)
       .def_readwrite("variance", &Intensity::IntensityData::variance)
+      .def_readwrite("success", &Intensity::IntensityData::success)
       .def("__eq__", &Intensity::IntensityData::operator==)
       .def("__ne__", &Intensity::IntensityData::operator!=);
 
     class_<Intensity>("Intensity")
-      .def(init<double, double>((
-        arg("observed_value"),
-        arg("observed_variance"))))
-      .def(init<double, double, double, double>((
+      .def(init<double, double, bool>((
         arg("observed_value"),
         arg("observed_variance"),
+        arg("observed_success"))))
+      .def(init<double, double, bool, double, double, bool>((
+        arg("observed_value"),
+        arg("observed_variance"),
+        arg("observed_success"),
         arg("corrected_value"),
-        arg("corrected_variance"))))
+        arg("corrected_variance"),
+        arg("corrected_success"))))
       .def(init<const Intensity::IntensityData&>((
         arg("observed"))))
       .def(init<

@@ -103,6 +103,13 @@ namespace dials { namespace algorithms {
       return n_signal_;
     }
 
+    /**
+     * @returns Was the algorithm successful
+     */
+    bool success() const {
+      return success_;
+    }
+
   private:
 
     /**
@@ -120,17 +127,21 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(signal.size() == mask.size());
 
       // Calculate the signal and background intensity
-      int fg_code = Valid | Foreground;
       int bg_code = Valid | Background | BackgroundUsed;
+      success_ = true;
       n_background_ = 0;
       n_signal_ = 0;
       sum_p_ = 0.0;
       sum_b_ = 0.0;
       for (std::size_t i = 0; i < signal.size(); ++i) {
-        if ((mask[i] & fg_code) == fg_code) {
-          sum_p_ += signal[i];
-          sum_b_ += background[i];
-          n_signal_++;
+        if ((mask[i] & Foreground) == Foreground) {
+          if ((mask[i] & Valid) == Valid) {
+            sum_p_ += signal[i];
+            sum_b_ += background[i];
+            n_signal_++;
+          } else {
+            success_ = false;
+          }
         } else if ((mask[i] & bg_code) == bg_code) {
           n_background_++;
         }
@@ -141,6 +152,7 @@ namespace dials { namespace algorithms {
     FloatType sum_b_;
     std::size_t n_background_;
     std::size_t n_signal_;
+    bool success_;
   };
 
 }}

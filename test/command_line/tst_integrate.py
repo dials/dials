@@ -74,7 +74,7 @@ class Test(object):
     table = pickle.load(open('integrated.pickle', 'rb'))
     mask = table.get_flags(table.flags.integrated,all=False)
     assert(len(table) == 1996)
-    assert(mask.count(True) == 1995)
+    assert(mask.count(True) == 1684)
 
     # assert(len(table) == 764)
     assert('id' in table)
@@ -134,7 +134,7 @@ class Test(object):
     table = pickle.load(open('integrated.pickle', 'rb'))
     mask = table.get_flags(table.flags.integrated,all=False)
     assert(len(table) == 1996)
-    assert(mask.count(True) == 1995)
+    assert(mask.count(True) == 1684)
     Cal_Z1 = table['xyzcal.px'].parts()[2]
     Cal_Z2 = self.table['xyzcal.px'].parts()[2]
     Obs_Z1 = table['xyzobs.px.value'].parts()[2]

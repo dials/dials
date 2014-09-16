@@ -51,6 +51,17 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
+  /** @returns An array of success values */
+  static
+  af::shared<bool> intensity_observed_success(
+      const af::const_ref<Intensity> &obj) {
+    af::shared<bool> result(obj.size(), af::init_functor_null<bool>());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = obj[i].observed.success;
+    }
+    return result;
+  }
+
   /** @returns An array of corrected intensity values */
   static
   af::shared<double> intensity_corrected_value(
@@ -81,6 +92,8 @@ namespace dials { namespace af { namespace boost_python {
         &intensity_observed_value)
       .def("observed_variance",
         &intensity_observed_variance)
+      .def("observed_success",
+        &intensity_observed_success)
       .def("corrected_value",
         &intensity_corrected_value)
       .def("corrected_variance",

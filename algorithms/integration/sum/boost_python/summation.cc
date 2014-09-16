@@ -48,7 +48,10 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("standard_deviation",
         &SummationType::standard_deviation)
       .def("n_signal",
-        &SummationType::n_signal);
+        &SummationType::n_signal)
+      .def("success",
+        &SummationType::success)
+      ;
   }
 
 

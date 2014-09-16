@@ -36,11 +36,7 @@ class IntegrationAlgorithm(object):
     intensity = reflections['shoebox'].summed_intensity()
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
-    indices = flex.size_t(range(len(reflections)))
-    if "flags" in reflections:
-      mask = ~reflections.get_flags(reflections.flags.dont_integrate)
-    else:
-      mask = flex.bool(len(reflections), True)
-    reflections.set_flags(mask, reflections.flags.integrated_sum)
-    Command.end('Integrated {0} reflections'.format(mask.count(True)))
+    success = intensity.observed_success()
+    reflections.set_flags(success, reflections.flags.integrated_sum)
+    Command.end('Integrated {0} reflections'.format(success.count(True)))
     return reflections

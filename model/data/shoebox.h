@@ -411,6 +411,7 @@ namespace dials { namespace model {
       Intensity result;
       result.observed.value = summation.intensity();
       result.observed.variance = summation.variance();
+      result.observed.success = summation.success();
       return result;
     }
 
