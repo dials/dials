@@ -47,11 +47,11 @@ class TestConstant2d(object):
         exit(0)
 
   def run(self):
-    from dials.algorithms.background import Creator
-    from dials.algorithms.background import Constant2dModeller
-    from dials.algorithms.background import TruncatedOutlierRejector
-    from dials.algorithms.background import NSigmaOutlierRejector
-    from dials.algorithms.background import NormalOutlierRejector
+    from dials.algorithms.background.simple import Creator
+    from dials.algorithms.background.simple import Constant2dModeller
+    from dials.algorithms.background.simple import TruncatedOutlierRejector
+    from dials.algorithms.background.simple import NSigmaOutlierRejector
+    from dials.algorithms.background.simple import NormalOutlierRejector
 
     modeller = Constant2dModeller()
 
@@ -141,11 +141,11 @@ class TestConstant3d(object):
         exit(0)
 
   def run(self):
-    from dials.algorithms.background import Creator
-    from dials.algorithms.background import Constant3dModeller
-    from dials.algorithms.background import TruncatedOutlierRejector
-    from dials.algorithms.background import NSigmaOutlierRejector
-    from dials.algorithms.background import NormalOutlierRejector
+    from dials.algorithms.background.simple import Creator
+    from dials.algorithms.background.simple import Constant3dModeller
+    from dials.algorithms.background.simple import TruncatedOutlierRejector
+    from dials.algorithms.background.simple import NSigmaOutlierRejector
+    from dials.algorithms.background.simple import NormalOutlierRejector
 
     modeller = Constant3dModeller()
 
@@ -236,11 +236,11 @@ class TestLinear2d(object):
         exit(0)
 
   def run(self):
-    from dials.algorithms.background import Creator
-    from dials.algorithms.background import Linear2dModeller
-    from dials.algorithms.background import TruncatedOutlierRejector
-    from dials.algorithms.background import NSigmaOutlierRejector
-    from dials.algorithms.background import NormalOutlierRejector
+    from dials.algorithms.background.simple import Creator
+    from dials.algorithms.background.simple import Linear2dModeller
+    from dials.algorithms.background.simple import TruncatedOutlierRejector
+    from dials.algorithms.background.simple import NSigmaOutlierRejector
+    from dials.algorithms.background.simple import NormalOutlierRejector
 
     modeller = Linear2dModeller()
 
@@ -331,11 +331,11 @@ class TestLinear3d(object):
         exit(0)
 
   def run(self):
-    from dials.algorithms.background import Creator
-    from dials.algorithms.background import Linear3dModeller
-    from dials.algorithms.background import TruncatedOutlierRejector
-    from dials.algorithms.background import NSigmaOutlierRejector
-    from dials.algorithms.background import NormalOutlierRejector
+    from dials.algorithms.background.simple import Creator
+    from dials.algorithms.background.simple import Linear3dModeller
+    from dials.algorithms.background.simple import TruncatedOutlierRejector
+    from dials.algorithms.background.simple import NSigmaOutlierRejector
+    from dials.algorithms.background.simple import NormalOutlierRejector
 
     modeller = Linear3dModeller()
 

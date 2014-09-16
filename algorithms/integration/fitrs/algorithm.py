@@ -44,14 +44,14 @@ class IntegrationAlgorithm(object):
     self._integrate_by_summation(experiment, reflections)
     self._transform_profiles(experiment, reflections)
     self.learner = self._learn_references(experiment, reflections)
-    counter = ProfileFittingReciprocalSpace.reference_counter
+    counter = IntegrationAlgorithm.reference_counter
     dump.reference(self.learner.locate(), "reference_%d.pickle" % counter)
-    ProfileFittingReciprocalSpace.reference_counter += 1
+    IntegrationAlgorithm.reference_counter += 1
     return self._integrate_intensities(self.learner, reflections)
 
   def _integrate_by_summation(self, experiment, reflections):
     ''' Integrate the reflections by summation. '''
-    from dials.algorithms.integration import Summation
+    from dials.algorithms.integration.sum import IntegrationAlgorithm as Summation
     algorithm = Summation()
     algorithm(reflections)
 
@@ -132,7 +132,7 @@ class IntegrationAlgorithm(object):
     ''' Integrate the intensities. '''
     from dials.array_family import flex
     from dials.util.command_line import Command
-    from dials.algorithms.integration import ProfileFittingReciprocalSpaceAlgorithm
+    from dials.algorithms.integration.fitrs import ProfileFittingReciprocalSpaceAlgorithm
 
     # Configure the integration algorithm with the locator class
     integrate = ProfileFittingReciprocalSpaceAlgorithm(learner.locate())

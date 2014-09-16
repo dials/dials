@@ -65,7 +65,7 @@ class Test(object):
       return (g32 * erf(srx2) - srx2 * exp(-x2)) / g32
 
   def test_for_reflections(self, refl):
-    from dials.algorithms.integration import Summation
+    from dials.algorithms.integration.sum import IntegrationAlgorithm
     from dials.array_family import flex
     from dials.algorithms.statistics import \
       kolmogorov_smirnov_test_standard_normal
@@ -85,7 +85,7 @@ class Test(object):
 
 
     # Integrate
-    integration = Summation()
+    integration = IntegrationAlgorithm()
     integration(refl)
     I_cal = refl['intensity.sum.value']
     I_var = refl['intensity.sum.variance']

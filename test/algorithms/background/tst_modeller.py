@@ -12,7 +12,7 @@ class TestExact(object):
     self.tst_linear3d_modeller()
 
   def tst_constant2d_modeller(self):
-    from dials.algorithms.background import Constant2dModeller
+    from dials.algorithms.background.simple import Constant2dModeller
     modeller = Constant2dModeller()
     eps = 1e-7
     for i in range(10):
@@ -24,7 +24,7 @@ class TestExact(object):
     print 'OK'
 
   def tst_constant3d_modeller(self):
-    from dials.algorithms.background import Constant3dModeller
+    from dials.algorithms.background.simple import Constant3dModeller
     modeller = Constant3dModeller()
     eps = 1e-7
     for i in range(10):
@@ -36,7 +36,7 @@ class TestExact(object):
     print 'OK'
 
   def tst_linear2d_modeller(self):
-    from dials.algorithms.background import Linear2dModeller
+    from dials.algorithms.background.simple import Linear2dModeller
     modeller = Linear2dModeller()
     eps = 1e-7
     for i in range(10):
@@ -49,7 +49,7 @@ class TestExact(object):
     print 'OK'
 
   def tst_linear3d_modeller(self):
-    from dials.algorithms.background import Linear3dModeller
+    from dials.algorithms.background.simple import Linear3dModeller
     modeller = Linear3dModeller()
     eps = 1e-7
     for i in range(10):
@@ -186,7 +186,7 @@ class TestPoisson(object):
     self.tst_linear3d_modeller()
 
   def tst_constant2d_modeller(self):
-    from dials.algorithms.background import Constant2dModeller
+    from dials.algorithms.background.simple import Constant2dModeller
     from dials.array_family import flex
     modeller = Constant2dModeller()
     ma = 10
@@ -208,7 +208,7 @@ class TestPoisson(object):
     print 'OK'
 
   def tst_constant3d_modeller(self):
-    from dials.algorithms.background import Constant3dModeller
+    from dials.algorithms.background.simple import Constant3dModeller
     from dials.array_family import flex
     modeller = Constant3dModeller()
 
@@ -231,7 +231,7 @@ class TestPoisson(object):
     print 'OK'
 
   def tst_linear2d_modeller(self):
-    from dials.algorithms.background import Linear2dModeller
+    from dials.algorithms.background.simple import Linear2dModeller
     from dials.array_family import flex
     modeller = Linear2dModeller()
 
@@ -267,7 +267,7 @@ class TestPoisson(object):
     print 'OK'
 
   def tst_linear3d_modeller(self):
-    from dials.algorithms.background import Linear3dModeller
+    from dials.algorithms.background.simple import Linear3dModeller
     from dials.array_family import flex
     modeller = Linear3dModeller()
 

@@ -3,9 +3,9 @@ from __future__ import division
 class Test(object):
 
   def __init__(self):
-    from dials.algorithms.background import Creator
-    from dials.algorithms.background import MosflmOutlierRejector
-    from dials.algorithms.background import Linear2dModeller
+    from dials.algorithms.background.simple import Creator
+    from dials.algorithms.background.simple import MosflmOutlierRejector
+    from dials.algorithms.background.simple import Linear2dModeller
     from os.path import join
     import libtbx.load_env
     try:
@@ -132,7 +132,7 @@ class Test(object):
       # intensity in MOSFLM. Therefore ignore these. There also appears to be a
       # some discrepancy with very low <= 0 reflections where an extra 0.5 is
       # added. Not sure why this is so ignore these reflections as well.
-      from dials.algorithms.integration import integrate_by_summation
+      from dials.algorithms.integration.sum import integrate_by_summation
       intensity = integrate_by_summation(data.as_double(), background, mask)
       I2 = intensity.intensity()
       Ivar2 = intensity.variance()

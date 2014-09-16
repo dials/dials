@@ -19,15 +19,15 @@ class BackgroundAlgorithm(object):
                model='constant3d',
                **kwargs):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.background import Creator
-    from dials.algorithms.background import TruncatedOutlierRejector
-    from dials.algorithms.background import NSigmaOutlierRejector
-    from dials.algorithms.background import NormalOutlierRejector
-    from dials.algorithms.background import MosflmOutlierRejector
-    from dials.algorithms.background import Constant2dModeller
-    from dials.algorithms.background import Constant3dModeller
-    from dials.algorithms.background import Linear2dModeller
-    from dials.algorithms.background import Linear3dModeller
+    from dials.algorithms.background.simple import Creator
+    from dials.algorithms.background.simple import TruncatedOutlierRejector
+    from dials.algorithms.background.simple import NSigmaOutlierRejector
+    from dials.algorithms.background.simple import NormalOutlierRejector
+    from dials.algorithms.background.simple import MosflmOutlierRejector
+    from dials.algorithms.background.simple import Constant2dModeller
+    from dials.algorithms.background.simple import Constant3dModeller
+    from dials.algorithms.background.simple import Linear2dModeller
+    from dials.algorithms.background.simple import Linear3dModeller
 
     def select_modeller():
       if model == 'constant2d':

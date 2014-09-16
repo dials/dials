@@ -43,7 +43,7 @@ def assert_basic_mask_is_correct(mask, ninvalid, nforeground):
 class TestTruncated(object):
 
   def __init__(self):
-    from dials.algorithms.background import TruncatedOutlierRejector
+    from dials.algorithms.background.simple import TruncatedOutlierRejector
     self.lower = 0.01
     self.upper = 0.01
     self.reject = TruncatedOutlierRejector(self.lower, self.upper)
@@ -79,7 +79,7 @@ class TestTruncated(object):
 class TestNSigma(object):
 
   def __init__(self):
-    from dials.algorithms.background import NSigmaOutlierRejector
+    from dials.algorithms.background.simple import NSigmaOutlierRejector
     self.lower = 3.0
     self.upper = 3.0
     self.reject = NSigmaOutlierRejector(self.lower, self.upper)
@@ -118,7 +118,7 @@ class TestNSigma(object):
 class TestNormal(object):
 
   def __init__(self):
-    from dials.algorithms.background import NormalOutlierRejector
+    from dials.algorithms.background.simple import NormalOutlierRejector
     min_data = 10
     self.reject = NormalOutlierRejector(min_data)
     self.size = (9,9,9)

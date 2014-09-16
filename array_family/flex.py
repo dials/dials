@@ -32,8 +32,8 @@ def strategy(cls, params=None):
 
 def default_background_algorithm():
   ''' Get the default background algorithm. '''
-  from dials.extensions import GeneralBackgroundExt
-  return strategy(GeneralBackgroundExt)
+  from dials.extensions import SimpleBackgroundExt
+  return strategy(SimpleBackgroundExt)
 
 def default_intensity_algorithm():
   ''' Get the default intensity algorithm. '''

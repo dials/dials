@@ -85,12 +85,12 @@ class Test(object):
       return (g32 * erf(srx2) - srx2 * exp(-x2)) / g32
 
   def test_for_reference(self):
-    from dials.algorithms.integration import ProfileFittingReciprocalSpace
+    from dials.algorithms.integration.fitrs import IntegrationAlgorithm
     from dials.array_family import flex
     from math import sqrt, pi
 
     # Integrate
-    integration = ProfileFittingReciprocalSpace(
+    integration = IntegrationAlgorithm(
       grid_size=4,
       threshold=0.02,
       frame_interval=100,
@@ -217,7 +217,7 @@ class Test(object):
     #pylab.show()
 
   def test_for_reflections(self, refl, filename):
-    from dials.algorithms.integration import ProfileFittingReciprocalSpace
+    from dials.algorithms.integration.fitrs import IntegrationAlgorithm
     from dials.array_family import flex
     from dials.algorithms.statistics import \
       kolmogorov_smirnov_test_standard_normal
@@ -240,7 +240,7 @@ class Test(object):
         bg[j] = B_sim[i]
 
     # Integrate
-    integration = ProfileFittingReciprocalSpace(
+    integration = IntegrationAlgorithm(
       grid_size=4,
       threshold=0.00,
       frame_interval=0,

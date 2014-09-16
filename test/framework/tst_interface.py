@@ -81,9 +81,9 @@ class Test(object):
     from dials.extensions import KabschSpotFinderThresholdExt
     from dials.extensions import SimpleCentroidExt
     from dials.extensions import NullBackgroundExt
-    from dials.extensions import GeneralBackgroundExt
+    from dials.extensions import SimpleBackgroundExt
     from dials.extensions import SummationIntegrationExt
-    from dials.extensions import ProfileFittingRSIntegrationExt
+    from dials.extensions import FitrsIntegrationExt
     from dials.extensions import ProfileFittingMosflmIntegrationExt
 
     extensions = list(SpotFinderThresholdIface.extensions())
@@ -92,10 +92,10 @@ class Test(object):
     assert(SimpleCentroidExt in extensions)
     extensions = list(BackgroundIface.extensions())
     assert(NullBackgroundExt in extensions)
-    assert(GeneralBackgroundExt in extensions)
+    assert(SimpleBackgroundExt in extensions)
     extensions = list(IntensityIface.extensions())
     assert(SummationIntegrationExt in extensions)
-    assert(ProfileFittingRSIntegrationExt in extensions)
+    assert(FitrsIntegrationExt in extensions)
     assert(ProfileFittingMosflmIntegrationExt in extensions)
 
     # Test passed
@@ -108,8 +108,13 @@ if __name__ == '__main__':
     with cd_auto(__file__):
       test = Test()
       test.run()
-  except Exception:
-    print '=' * 80
-    print 'Try deleting old *.pyc files from dials/extensions'
-    print '=' * 80
+  except Exception, e:
+
+    message = '''
+    ====================================================
+      Try deleting old *.pyc files from dials/extensions
+    ====================================================
+    '''
+
+    e.args = (str(e.args) + '\n' + message,)
     raise
