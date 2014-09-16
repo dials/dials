@@ -11,20 +11,26 @@ class Test(object):
       return
 
     import os
-    from dials.util.command_line import Importer
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     path = os.path.join(
       dials_regression,
       'centroid_test_data',
       'experiments.json')
 
-    importer = Importer([path])
-    assert(importer.experiments is not None)
-    self.experiments = importer.experiments
+    self.experiments = ExperimentListFactory.from_json_file(path)
     assert(len(self.experiments) == 1)
     self.experiments[0].imageset.set_beam(self.experiments[0].beam)
     self.experiments[0].imageset.set_detector(self.experiments[0].detector)
     self.experiments[0].imageset.set_goniometer(self.experiments[0].goniometer)
     self.experiments[0].imageset.set_scan(self.experiments[0].scan)
+
+    reflection_filename = os.path.join(
+      dials_regression,
+      'prediction_test_data',
+      'expected_reflections.pickle')
+
+    from dials.array_family import flex
+    self.reflections = flex.reflection_table.from_pickle(reflection_filename)
 
   def run(self):
     self.tst_vs_old()
@@ -32,14 +38,6 @@ class Test(object):
     #self.tst_with_hkl()
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
-
-  def predict_old(self):
-    from dials.algorithms.integration.reflection_extractor import \
-      ReflectionPredictor
-    predict = ReflectionPredictor()
-    imageset = self.experiments[0].imageset
-    crystal = self.experiments[0].crystal
-    return predict(imageset, crystal).to_table()
 
   def predict_new(self, hkl=None, panel=None):
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
@@ -53,7 +51,7 @@ class Test(object):
         return predict(hkl, panel)
 
   def tst_vs_old(self):
-    r_old = self.predict_old()
+    r_old = self.reflections
     r_new = self.predict_new()
     assert(len(r_old) == len(r_new))
     eps = 1e-7
@@ -69,7 +67,7 @@ class Test(object):
   def tst_with_reflection_table(self):
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
     from dials.array_family import flex
-    r_old = self.predict_old()
+    r_old = self.reflections
     r_new = flex.reflection_table()
     r_new['miller_index'] = r_old['miller_index']
     r_new['panel'] = r_old['panel']

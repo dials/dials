@@ -108,19 +108,19 @@ class Test(object):
             e61, e62, e63 = rs_coord(x0 + i + 1, y0 + j,     z0 + k + 1)
             e71, e72, e73 = rs_coord(x0 + i,     y0 + j + 1, z0 + k + 1)
             e81, e82, e83 = rs_coord(x0 + i + 1, y0 + j + 1, z0 + k + 1)
-            de1 = (e11/self.delta_d)**2+(e12/self.delta_d)**2+(e13/self.delta_m)**2
-            de2 = (e21/self.delta_d)**2+(e22/self.delta_d)**2+(e23/self.delta_m)**2
-            de3 = (e31/self.delta_d)**2+(e32/self.delta_d)**2+(e33/self.delta_m)**2
-            de4 = (e41/self.delta_d)**2+(e42/self.delta_d)**2+(e43/self.delta_m)**2
-            de5 = (e51/self.delta_d)**2+(e52/self.delta_d)**2+(e53/self.delta_m)**2
-            de6 = (e61/self.delta_d)**2+(e62/self.delta_d)**2+(e63/self.delta_m)**2
-            de7 = (e71/self.delta_d)**2+(e72/self.delta_d)**2+(e73/self.delta_m)**2
-            de8 = (e81/self.delta_d)**2+(e82/self.delta_d)**2+(e83/self.delta_m)**2
+            de1 = (e11/self.delta_d)**2+(e12/self.delta_d)**2#+(e13/self.delta_m)**2
+            de2 = (e21/self.delta_d)**2+(e22/self.delta_d)**2#+(e23/self.delta_m)**2
+            de3 = (e31/self.delta_d)**2+(e32/self.delta_d)**2#+(e33/self.delta_m)**2
+            de4 = (e41/self.delta_d)**2+(e42/self.delta_d)**2#+(e43/self.delta_m)**2
+            de5 = (e51/self.delta_d)**2+(e52/self.delta_d)**2#+(e53/self.delta_m)**2
+            de6 = (e61/self.delta_d)**2+(e62/self.delta_d)**2#+(e63/self.delta_m)**2
+            de7 = (e71/self.delta_d)**2+(e72/self.delta_d)**2#+(e73/self.delta_m)**2
+            de8 = (e81/self.delta_d)**2+(e82/self.delta_d)**2#+(e83/self.delta_m)**2
             de = sqrt(min([de1, de2, de3, de4, de5, de6, de7, de8]))
             gx = min([e11, e21, e31, e41, e51, e61, e71, e81])
             gy = min([e12, e22, e32, e42, e52, e62, e72, e82])
             gz = min([e13, e23, e33, e43, e53, e63, e73, e83])
-            dee = (gx/self.delta_d)**2 + (gy/self.delta_d)**2 + (gz/self.delta_m)**2
+            dee = (gx/self.delta_d)**2 + (gy/self.delta_d)**2# + (gz/self.delta_m)**2
             #print sqrt(dee), de
             if (x0 + i < 0 or y0 + j < 0 or
                 x0 + i >= width or y0 + j >= height or
