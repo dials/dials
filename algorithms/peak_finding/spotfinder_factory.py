@@ -373,7 +373,7 @@ class BackgroundGradientFilter(object):
   def run(self, flags, sweep=None, shoeboxes=None, **kwargs):
     from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
-    from dials.algorithms.background import Linear2dModeller
+    from dials.algorithms.background.simple import Linear2dModeller
     bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
     fg_code = MaskCode.Valid | MaskCode.Foreground
     strong_code = MaskCode.Valid | MaskCode.Strong
