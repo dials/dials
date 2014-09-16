@@ -35,7 +35,7 @@ class TestIntegrationManagerExecutor(object):
       x1 = x0 + randint(2, 10)
       y1 = y0 + randint(2, 10)
       for k, j in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]):
-        m = k + i * 13
+        m = k + i * 12
         pos = choice(["left", "right", "centre"])
         if pos == 'left':
           z0 = j - zs
@@ -60,26 +60,30 @@ class TestIntegrationManagerExecutor(object):
         self.processed[k].append(m)
 
       # Add reflection to ignore
-      zc = choice([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120])
-      z0 = zc - 11
-      z1 = zc + 11
-      bbox = (x0, x1, y0, y1, z0, z1)
-      self.reflections.append({
-        "panel" : randint(0,1),
-        "bbox" : bbox,
-        "flags" : flex.reflection_table.flags.reference_spot
-      })
+      # zc = choice([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120])
+      # z0 = zc - 11
+      # z1 = zc + 11
+      # bbox = (x0, x1, y0, y1, z0, z1)
+      # self.reflections.append({
+      #   "panel" : randint(0,1),
+      #   "bbox" : bbox,
+      #   "flags" : flex.reflection_table.flags.reference_spot
+      # })
 
 
   def run(self):
     from dials.algorithms.integration import IntegrationManagerExecutor
+    from dials.algorithms.integration import IntegrationJobCalculator
     from dials.array_family import flex
+
+    jobcalculator = IntegrationJobCalculator(
+      self.array_range,
+      self.block_size)
 
     # Create the executor
     executor = IntegrationManagerExecutor(
-      self.reflections,
-      self.array_range,
-      self.block_size)
+      jobcalculator,
+      self.reflections)
 
     # Ensure the tasks make sense
     jobs = [executor.job(i) for i in range(len(executor))]
@@ -125,7 +129,7 @@ class TestIntegrationManagerExecutor(object):
     assert(len(data9) == len(self.expected[9]))
     assert(len(data10) == len(self.expected[10]))
     assert(len(data11) == len(self.expected[11]))
-    assert(len(executor.ignored()) == self.nrefl)
+    assert(len(executor.ignored()) == 0)
 
     # Add some results
     data0["data"] = flex.double(len(data0), 1)
@@ -207,17 +211,28 @@ class TestIntegrator3D(object):
 
   def run(self):
     from dials.algorithms.integration.interface import Integrator3D
+    import StringIO
+    import sys
 
-    integrator = Integrator3D(
-      self.exlist,
-      self.profile_model,
-      self.rlist,
-      block_size=5,
-      nproc=self.nproc)
-    result = integrator.integrate()
+    output = StringIO.StringIO()
+    stdout = sys.stdout
+    sys.stdout = output
+
+    try:
+      integrator = Integrator3D(
+        self.exlist,
+        self.profile_model,
+        self.rlist,
+        block_size=5,
+        nproc=self.nproc)
+      result = integrator.integrate()
+    except Exception:
+      print output
+      raise
+
+    sys.stdout = stdout
 
     print 'OK'
-
 
 class TestSummation(object):
 
@@ -398,9 +413,9 @@ class Test(object):
     self.test4 = TestSummation()
 
   def run(self):
-    # self.test1.run()
-    # self.test2.run()
-    # self.test3.run()
+    self.test1.run()
+    self.test2.run()
+    self.test3.run()
     self.test4.run()
 
 if __name__ == '__main__':
