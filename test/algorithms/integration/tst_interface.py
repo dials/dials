@@ -260,15 +260,34 @@ class TestSummation(object):
 
     # Do summation by all different methods
     result1 = self.integrate("3d")
-    # result2 = self.integrate("flat3d")
+    result2 = self.integrate("flat3d")
     result3 = self.integrate("2d")
     result4 = self.integrate("single2d")
     assert(len(result1) >= len(self.rlist))
-    # assert(len(result2) >= len(self.rlist))
+    assert(len(result2) >= len(self.rlist))
     assert(len(result3) >= len(self.rlist))
     assert(len(result4) >= len(self.rlist))
 
-    # Ensure we get equivalent results
+    # result1 and result2 should be the same
+    assert(len(result1) == len(result2))
+    for r1, r2 in zip(result1, result2):
+      assert(r1['partial_id'] == r2['partial_id'])
+      assert(r1['bbox'] == r2['bbox'])
+      assert(r1['entering'] == r2['entering'])
+      assert(r1['flags'] == r2['flags'])
+      assert(r1['id'] == r2['id'])
+      assert(r1['miller_index'] == r2['miller_index'])
+      assert(r1['panel'] == r2['panel'])
+      assert(approx_equal_dict(r1, r2, 'd'))
+      assert(approx_equal_dict(r1, r2, 'intensity.sum.value'))
+      assert(approx_equal_dict(r1, r2, 'intensity.sum.variance'))
+      assert(approx_equal_dict(r1, r2, 'lp'))
+      assert(approx_equal_dict(r1, r2, 'partiality'))
+      assert(approx_equal_dict(r1, r2, 's1'))
+      assert(approx_equal_dict(r1, r2, 'xyzcal.mm'))
+      assert(approx_equal_dict(r1, r2, 'xyzcal.px'))
+      assert(approx_equal_dict(r1, r2, 'zeta'))
+    print 'OK'
 
     # result3 and result4 should be the same
     assert(len(result3) == len(result4))
@@ -291,6 +310,7 @@ class TestSummation(object):
       assert(approx_equal_dict(r3, r4, 'xyzobs.px.value'))
       assert(approx_equal_dict(r3, r4, 'xyzobs.px.variance'))
       assert(approx_equal_dict(r3, r4, 'zeta'))
+    print 'OK'
 
     # result3 should add up to result1
     assert(len(result3) >= len(result1))
@@ -327,8 +347,6 @@ class TestSummation(object):
     for r1, r3, in zip(expected1, expected3):
       assert(approx_equal_dict(r1, r3, 'intensity.sum.value'))
       assert(approx_equal_dict(r1, r3, 'intensity.sum.variance'))
-
-
     print 'OK'
 
 
