@@ -150,7 +150,7 @@ class Script(object):
       matches = refiner.get_matches()
       print 'Saving refined reflections to {0}'.format(
         params.output.reflections_filename)
-      matches.as_pickle(params.output_reflections_filename)
+      matches.as_pickle(params.output.reflections_filename)
 
     if params.output.correlation_plot_filename:
       if refined.parameter_correlation:
