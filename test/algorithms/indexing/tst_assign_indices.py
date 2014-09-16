@@ -9,6 +9,15 @@ from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 from dxtbx.model.crystal import crystal_model
 from dials.array_family import flex
 
+# set random seeds so tests more reliable
+
+seed = 54321
+
+import random
+random.seed(seed)
+import scitbx.random
+scitbx.random.set_random_seed(seed)
+
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
   dials_regression = libtbx.env.find_in_repositories(

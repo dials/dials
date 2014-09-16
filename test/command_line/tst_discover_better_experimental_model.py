@@ -6,6 +6,10 @@ from libtbx.test_utils import approx_equal
 from libtbx.test_utils import open_tmp_directory
 from scitbx import matrix
 
+# apply a random seed to avoid this randomly crashing... I hope
+import random
+random.seed(12345)
+
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
   dials_regression = libtbx.env.find_in_repositories(
