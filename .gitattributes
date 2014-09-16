@@ -79,29 +79,17 @@ algorithms/indexing/symmetry.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/corrections.cc -text
-algorithms/integration/boost_python/fast_integrator.cc -text
 algorithms/integration/boost_python/flattened_2d_profile_fitting.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/interface.cc -text
 algorithms/integration/boost_python/interpolate_profile2d.cc -text
-algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
 algorithms/integration/boost_python/preprocessor.cc -text
 algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
-algorithms/integration/boost_python/shoebox_flattener.cc -text
 algorithms/integration/boost_python/summation.cc -text
-algorithms/integration/call_mosflm_2d.py -text
 algorithms/integration/corrections.h -text
-algorithms/integration/fast_integrator.h -text
-algorithms/integration/fast_integrator.py -text
-algorithms/integration/flatten_shoebox.py -text
-algorithms/integration/flattened_2d_profile_fitting.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/interface.h -text
 algorithms/integration/interface.py -text
-algorithms/integration/interpolate_profile2d.h -text
-algorithms/integration/lui_2d_integration.h -text svneol=unset#text/plain
-algorithms/integration/mosflm_2D_profile.py -text
-algorithms/integration/mosflm_like.py -text svneol=unset#text/plain
 algorithms/integration/preprocessor.h -text
 algorithms/integration/profile/SConscript -text
 algorithms/integration/profile/__init__.py -text
@@ -124,9 +112,6 @@ algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/profile_fitting_reciprocal_space.py -text
-algorithms/integration/projection_from_3d_to_2d.py -text
-algorithms/integration/reflection_extractor.py -text
-algorithms/integration/shoebox_flattener.h -text
 algorithms/integration/summation.h -text
 algorithms/integration/summation.py -text
 algorithms/peak_finding/SConscript -text

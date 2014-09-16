@@ -3,12 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/summation.cc',
-    'boost_python/lui_2d_integration.cc',
     'boost_python/profile_fitting_reciprocal_space.cc',
-    'boost_python/flattened_2d_profile_fitting.cc',
-    'boost_python/interpolate_profile2d.cc',
-    'boost_python/shoebox_flattener.cc',
-    'boost_python/fast_integrator.cc',
     'boost_python/preprocessor.cc',
     'boost_python/interface.cc',
     'boost_python/corrections.cc',
