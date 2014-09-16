@@ -14,8 +14,8 @@
 #include <cmath>
 #include <boost/shared_ptr.hpp>
 #include <dials/array_family/scitbx_shared_and_versa.h>
-#include <dials/algorithms/background/outlier_rejector.h>
-#include <dials/algorithms/background/modeller.h>
+#include <dials/algorithms/background/simple/outlier_rejector.h>
+#include <dials/algorithms/background/simple/modeller.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/error.h>
 

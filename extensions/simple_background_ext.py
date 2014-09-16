@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# general_background_ext.py
+# simple_background_ext.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -13,10 +13,10 @@ from __future__ import division
 from dials.interfaces import BackgroundIface
 
 
-class GeneralBackgroundExt(BackgroundIface):
+class SimpleBackgroundExt(BackgroundIface):
   ''' An extension class implementing XDS background subtraction. '''
 
-  name = 'general'
+  name = 'simple'
 
   phil = '''
     outlier
@@ -92,14 +92,14 @@ class GeneralBackgroundExt(BackgroundIface):
   def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''
     from libtbx.phil import parse
-    from dials.algorithms.background.general import General
+    from dials.algorithms.background.simple import BackgroundCreator
 
     # Create some default parameters
     if params is None:
       phil = '''
         integration {
           background {
-            general {
+            simple {
               %s
             }
           }
@@ -107,8 +107,8 @@ class GeneralBackgroundExt(BackgroundIface):
       params = parse(phil).extract()
 
     # Get the model and outlier algorithms
-    model = params.integration.background.general.model
-    outlier = params.integration.background.general.outlier
+    model = params.integration.background.simple.model
+    outlier = params.integration.background.simple.outlier
 
     # Create some keyword parameters
     kwargs = {
@@ -132,7 +132,7 @@ class GeneralBackgroundExt(BackgroundIface):
       kwargs['n_sigma'] = outlier.mosflm.n_sigma
 
     # Create the algorithm
-    self._algorithm = General(experiments, **kwargs)
+    self._algorithm = BackgroundCreator(experiments, **kwargs)
 
   def compute_background(self, reflections):
     ''' Compute the backgrond. '''

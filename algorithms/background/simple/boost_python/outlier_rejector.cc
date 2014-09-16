@@ -10,11 +10,11 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/background/outlier_rejector.h>
-#include <dials/algorithms/background/normal_outlier_rejector.h>
-#include <dials/algorithms/background/truncated_outlier_rejector.h>
-#include <dials/algorithms/background/nsigma_outlier_rejector.h>
-#include <dials/algorithms/background/mosflm_outlier_rejector.h>
+#include <dials/algorithms/background/simple/outlier_rejector.h>
+#include <dials/algorithms/background/simple/normal_outlier_rejector.h>
+#include <dials/algorithms/background/simple/truncated_outlier_rejector.h>
+#include <dials/algorithms/background/simple/nsigma_outlier_rejector.h>
+#include <dials/algorithms/background/simple/mosflm_outlier_rejector.h>
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {

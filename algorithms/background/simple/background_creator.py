@@ -11,7 +11,7 @@
 
 from __future__ import division
 
-class General(object):
+class BackgroundCreator(object):
   ''' Class to do background subtraction. '''
 
   def __init__(self, experiments,

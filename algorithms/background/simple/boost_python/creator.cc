@@ -10,7 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/background/creator.h>
+#include <dials/algorithms/background/simple/creator.h>
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {
