@@ -22,7 +22,7 @@ tst_list = (
     "$D/test/command_line/tst_refine.py",
     "$D/test/command_line/tst_create_profile_model.py",
     "$D/test/command_line/tst_sort_reflections.py",
-    "$D/test/command_line/tst_ploy_scan_varying_crystal.py",
+    "$D/test/command_line/tst_plot_scan_varying_crystal.py",
     "$D/test/util/tst_command_line.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_reflection_table.py",
