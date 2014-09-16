@@ -49,7 +49,7 @@ def exercise_1():
     (58.373, 58.373, 155.939, 90, 90, 120))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
-  assert approx_equal(mtz_object.n_reflections(), 22875, eps=1e2)
+  assert approx_equal(mtz_object.n_reflections(), 22875, eps=2e3)
   os.chdir(cwd)
 
 
