@@ -68,6 +68,7 @@ class Test(object):
       join(self.path, 'experiments.json'),
       join(self.path, 'profile.phil'),
       'intensity.algorithm=sum',
+      'intensity.sum.integrator=3d',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -98,25 +99,38 @@ class Test(object):
     lines = infile.readlines()
     inscan = False
     inimagerange = False
+    inoscillation = False
     count = 0
-    done = False
+    done1 = False
+    done2 = False
     for i, line in enumerate(lines):
       if not inscan:
         if line.strip().startswith('"scan": ['):
           inscan = True
       else:
-        if not inimagerange:
+        if not inimagerange and not inoscillation:
           if line.strip().startswith('"image_range": ['):
             inimagerange = True
-        else:
+          if line.strip().startswith('"oscillation": ['):
+            inoscillation = True
+        elif inimagerange:
           if count == 0:
             lines[i] = '11,'
             count += 1
           elif count == 1:
             lines[i] = '19'
-            done = True
+            done1 = True
+            inimagerange = False
+            count = 0
+        elif inoscillation:
+          if count == 0:
+            lines[i] = '360.0,'
+            done2 = True
+            inoscillation = False
+            inscan = False
             break
-    assert(done == True)
+    assert(done1 == True)
+    assert(done2 == True)
     infile.close()
     outfile = open("experiments.json", "w")
     outfile.write('\n'.join(lines))
@@ -128,23 +142,37 @@ class Test(object):
       'experiments.json',
       'profile.phil',
       'intensity.algorithm=sum',
+      'intensity.sum.integrator=3d',
     ]).raise_if_errors()
 
+    from math import pi
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
-    mask = table.get_flags(table.flags.integrated,all=False)
+    mask1 = table.get_flags(table.flags.integrated,all=False)
     assert(len(table) == 1996)
-    assert(mask.count(True) == 1684)
-    Cal_Z1 = table['xyzcal.px'].parts()[2]
-    Cal_Z2 = self.table['xyzcal.px'].parts()[2]
-    Obs_Z1 = table['xyzobs.px.value'].parts()[2]
-    Obs_Z2 = self.table['xyzobs.px.value'].parts()[2]
-    diff_I = table['intensity.sum.value'] - self.table['intensity.sum.value']
-    diff_Cal_Z = Cal_Z1 - Cal_Z2
-    diff_Obs_Z = Obs_Z1 - Obs_Z2
-    assert((flex.abs(diff_I)     - 10).all_lt(1e-7))
-    assert((flex.abs(diff_Cal_Z) - 10).all_lt(1e-7))
-    assert((flex.abs(diff_Obs_Z) - 10).all_lt(1e-7))
+    assert(mask1.count(True) == 1684)
+    mask2 = self.table.get_flags(table.flags.integrated,all=False)
+    assert(mask1.all_eq(mask2))
+    t1 = table.select(mask1)
+    t2 = self.table.select(mask1)
+    Cal_P1 = t1['xyzcal.mm'].parts()[2]
+    Cal_Z1 = t1['xyzcal.px'].parts()[2]
+    Obs_Z1 = t1['xyzobs.px.value'].parts()[2]
+    # Obs_P1 = t1['xyzobs.mm.value'].parts()[2]
+    Cal_Z2 = t2['xyzcal.px'].parts()[2]
+    Cal_P2 = t2['xyzcal.mm'].parts()[2]
+    Obs_Z2 = t2['xyzobs.px.value'].parts()[2]
+    # Obs_P2 = t2['xyzobs.mm.value'].parts()[2]
+    diff_I = t1['intensity.sum.value'] - t2['intensity.sum.value']
+    diff_Cal_Z = Cal_Z1 - (Cal_Z2 + 10)
+    diff_Obs_Z = Obs_Z1 - (Obs_Z2 + 10)
+    diff_Cal_P = Cal_P1 - (Cal_P2 + 2*pi)
+    # diff_Obs_P = Obs_P1 - (Obs_P2 + 2*pi)
+    assert(flex.abs(diff_I).all_lt(1e-7))
+    assert(flex.abs(diff_Cal_Z).all_lt(1e-7))
+    assert(flex.abs(diff_Cal_P).all_lt(1e-7))
+    assert(flex.abs(diff_Obs_Z).all_lt(1e-7))
+    # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
 
     print 'OK'
 

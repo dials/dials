@@ -418,15 +418,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<Centroid> result(a.size(), Centroid());
     #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
-      try {
-        result[i] = a[i].centroid_masked(code);
-      } catch (dials::error e) {
-        // do nothing: flag result as nonsense.
-        // FIXME_HACK
-        result[i].px.position = vec3<double>(0,0,0);
-        result[i].px.variance = vec3<double>(-1,-1,-1);
-        result[i].px.std_err_sq = vec3<double>(-1,-1,-1);
-      }
+      result[i] = a[i].centroid_masked(code);
     }
     return result;
   }
@@ -440,15 +432,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<Centroid> result(a.size(), Centroid());
     #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
-      try {
-        result[i] = a[i].centroid_valid();
-      } catch (dials::error e) {
-        // do nothing: flag result as nonsense.
-        // FIXME_HACK
-        result[i].px.position = vec3<double>(0,0,0);
-        result[i].px.variance = vec3<double>(-1,-1,-1);
-        result[i].px.std_err_sq = vec3<double>(-1,-1,-1);
-      }
+      result[i] = a[i].centroid_valid();
     }
     return result;
   }

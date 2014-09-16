@@ -287,14 +287,25 @@ namespace dials { namespace model {
       af::versa< bool, af::c_grid<3> > fg_mask_arr(mask.accessor());
       af::ref< bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        foreground_mask[i] = (mask[i] & code) != 0;
+        foreground_mask[i] = (mask[i] & code) == code;
       }
 
       // Calculate the centroid
-      Centroider centroid(data.const_ref(), foreground_mask);
       int zoff = flat ? (bbox[5] + bbox[4]) / 2 : bbox[4];
       vec3<double> offset(bbox[0], bbox[2], zoff);
-      return extract_centroid_object(centroid, offset);
+      Centroid result;
+      try {
+        Centroider centroid(data.const_ref(), foreground_mask);
+        result = extract_centroid_object(centroid, offset);
+      } catch (dials::error) {
+        double xmid = (bbox[1] + bbox[0]) / 2.0;
+        double ymid = (bbox[3] + bbox[2]) / 2.0;
+        double zmid = (bbox[5] + bbox[4]) / 2.0;
+        result.px.position = vec3<double>(xmid, ymid, zmid);
+        result.px.variance = vec3<double>(0, 0, 0);
+        result.px.std_err_sq = vec3<double>(0, 0, 0);
+      }
+      return result;
     }
 
     /**
@@ -360,7 +371,7 @@ namespace dials { namespace model {
       af::ref< FloatType, af::c_grid<3> > foreground_data = fg_data_arr.ref();
       af::ref< bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        foreground_mask[i] = (mask[i] & code) != 0;
+        foreground_mask[i] = (mask[i] & code) != code;
         foreground_data[i] = data[i] - background[i];
       }
 
