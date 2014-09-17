@@ -10,7 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/shoebox/bbox_calculator.h>
+#include <dials/algorithms/profile_model/gaussian_rs/bbox_calculator.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
   namespace boost_python {

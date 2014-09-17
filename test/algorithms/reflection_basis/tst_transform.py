@@ -32,7 +32,7 @@ class TestForward(object):
   def __init__(self, filename):
     from dials.model.serialize import load
     from dials.algorithms.reflection_basis import transform
-    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
     from math import pi
 
     # Load the sweep
@@ -352,7 +352,7 @@ class TestForward(object):
 #    def __init__(self, filename):
 #        from dials.model.serialize import load
 #        from dials.algorithms.reflection_basis import transform
-#        from dials.algorithms.shoebox import BBoxCalculator
+#        from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
 #        from math import pi
 
 #        # Load the sweep

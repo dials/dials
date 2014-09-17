@@ -66,7 +66,7 @@ class ProfileModel(ProfileModelIface):
 
   def compute_bbox(self, experiment, reflections, sigma_b_multiplier=2.0):
     ''' Compute the bounding box. '''
-    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
 
     # Check the input
     assert(sigma_b_multiplier >= 1.0)
@@ -93,7 +93,7 @@ class ProfileModel(ProfileModelIface):
 
   def compute_partiality(self, experiment, reflections):
     ''' Compute the partiality. '''
-    from dials.algorithms.shoebox import PartialityCalculator
+    from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
     # Compute the size in reciprocal space.
     delta_m = self._n_sigma * self._sigma_m
@@ -113,7 +113,7 @@ class ProfileModel(ProfileModelIface):
 
   def compute_mask(self, experiment, reflections):
     ''' Compute the shoebox mask. '''
-    from dials.algorithms.shoebox import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
 
     # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
     # the region of background in the shoebox
@@ -174,8 +174,8 @@ class ProfileModelList(ProfileModelListIface):
 
   def compute_bbox(self, experiments, reflections, sigma_b_multiplier=2.0):
     ''' Compute the bounding boxes. '''
-    from dials.algorithms.shoebox import BBoxMultiCalculator
-    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxMultiCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
 
     # Check the input
     assert(sigma_b_multiplier >= 1.0)
@@ -210,8 +210,8 @@ class ProfileModelList(ProfileModelListIface):
 
   def compute_partiality(self, experiments, reflections):
     ''' Compute the partiality. '''
-    from dials.algorithms.shoebox import PartialityMultiCalculator
-    from dials.algorithms.shoebox import PartialityCalculator
+    from dials.algorithms.profile_model.gaussian_rs import PartialityMultiCalculator
+    from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
     # Check the input
     assert(len(experiments) == len(self))
@@ -241,8 +241,8 @@ class ProfileModelList(ProfileModelListIface):
 
   def compute_mask(self, experiments, reflections):
     ''' Compute the shoebox mask. '''
-    from dials.algorithms.shoebox import MaskMultiForeground
-    from dials.algorithms.shoebox import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskMultiForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
 
     # Check the input
     assert(len(experiments) == len(self))

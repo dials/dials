@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H
-#define DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H
+#ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H
+#define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H
 
 #include <cmath>
 #include <scitbx/constants.h>
@@ -395,4 +395,4 @@ namespace dials { namespace algorithms { namespace shoebox {
 
 }}} // namespace dials::algorithms::shoebox
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H
+#endif // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H

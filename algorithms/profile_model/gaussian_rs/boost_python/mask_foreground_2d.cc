@@ -10,7 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/shoebox/mask_foreground_2d.h>
+#include <dials/algorithms/profile_model/gaussian_rs/mask_foreground_2d.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
   namespace boost_python {

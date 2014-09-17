@@ -140,10 +140,18 @@ algorithms/polygon/clip/cohen_sutherland.h -text
 algorithms/polygon/clip/sutherland_hodgman.h -text
 algorithms/polygon/spatial_interpolation.h -text
 algorithms/polygon/spatial_interpolation.py -text
+algorithms/profile_model/SConscript -text
 algorithms/profile_model/__init__.py -text
 algorithms/profile_model/factory.py -text
 algorithms/profile_model/gaussian_rs/__init__.py -text
+algorithms/profile_model/gaussian_rs/bbox_calculator.h -text
+algorithms/profile_model/gaussian_rs/boost_python/bbox_calculator.cc -text
+algorithms/profile_model/gaussian_rs/boost_python/gaussian_rs_ext.cc -text
+algorithms/profile_model/gaussian_rs/boost_python/mask_foreground.cc -text
+algorithms/profile_model/gaussian_rs/boost_python/mask_foreground_2d.cc -text
 algorithms/profile_model/gaussian_rs/calculator.py -text
+algorithms/profile_model/gaussian_rs/mask_foreground.h -text
+algorithms/profile_model/gaussian_rs/mask_foreground_2d.h -text
 algorithms/profile_model/gaussian_rs/model.py -text
 algorithms/profile_model/interface.py -text
 algorithms/refinement/README -text
@@ -196,22 +204,16 @@ algorithms/reflection_basis/transform.h -text
 algorithms/reflection_basis/transform.py -text
 algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
-algorithms/shoebox/bbox_calculator.h -text
-algorithms/shoebox/boost_python/bbox_calculator.cc -text
 algorithms/shoebox/boost_python/find_overlapping.cc -text
 algorithms/shoebox/boost_python/helpers.cc -text
 algorithms/shoebox/boost_python/mask_builder.cc -text svneol=unset#text/plain
 algorithms/shoebox/boost_python/mask_code.cc -text
-algorithms/shoebox/boost_python/mask_foreground.cc -text
-algorithms/shoebox/boost_python/mask_foreground_2d.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
 algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/helpers.h -text
 algorithms/shoebox/mask_builder.h -text svneol=unset#text/plain
 algorithms/shoebox/mask_code.h -text
-algorithms/shoebox/mask_foreground.h -text
-algorithms/shoebox/mask_foreground_2d.h -text
 algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.py -text
 algorithms/simulation/SConscript -text

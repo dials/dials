@@ -8,7 +8,7 @@ class Test(object):
     from dxtbx.serialize.load import crystal as load_crystal
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
-    from dials.algorithms.shoebox import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
     from dxtbx.model.experiment.experiment_list import Experiment
 
     try:

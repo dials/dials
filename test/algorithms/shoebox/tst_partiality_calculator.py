@@ -32,7 +32,7 @@ class Test(object):
     self.profile_model = ProfileModel(self.n_sigma, self.sigma_b, self.sigma_m)
 
   def run(self):
-    from dials.algorithms.shoebox import PartialityCalculator
+    from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
     from dials.array_family import flex
 
     calculator = PartialityCalculator(

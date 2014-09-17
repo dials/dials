@@ -1,5 +1,5 @@
 /*
- * shoebox_ext.cc
+ * gaussian_rs_ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -16,21 +16,15 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   using namespace boost::python;
 
-  void export_mask_code();
-  void export_find_overlapping();
-  void export_mask_empirical();
-  void export_mask_overlapping();
-  void export_mask_builder();
-  void export_helpers();
+  void export_bbox_calculator();
+  void export_mask_foreground();
+  void export_mask_foreground_2d();
 
-  BOOST_PYTHON_MODULE(dials_algorithms_shoebox_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_ext)
   {
-    export_mask_code();
-    export_find_overlapping();
-    export_mask_empirical();
-    export_mask_overlapping();
-    export_mask_builder();
-    export_helpers();
+    export_bbox_calculator();
+    export_mask_foreground();
+    export_mask_foreground_2d();
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

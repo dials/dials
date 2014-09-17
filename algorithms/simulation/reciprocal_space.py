@@ -152,12 +152,12 @@ class Simulator(object):
 
   def generate_predictions(self, N):
     ''' Generate some reflections. '''
-    from dials.algorithms.shoebox import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dials.algorithms import filtering
     from dials.algorithms.shoebox import MaskCode
-    from dials.algorithms.profile_model.profile_model import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     import random
 
     # Set the profile model

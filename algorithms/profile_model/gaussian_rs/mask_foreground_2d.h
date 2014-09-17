@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_SHOEBOX_MASK_FOREGROUND_2D_H
-#define DIALS_ALGORITHMS_SHOEBOX_MASK_FOREGROUND_2D_H
+#ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MASK_FOREGROUND_2D_H
+#define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MASK_FOREGROUND_2D_H
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
@@ -114,4 +114,4 @@ namespace dials { namespace algorithms { namespace shoebox {
 
 }}} // namespace dials::algorithms::shoebox
 
-#endif /* DIALS_ALGORITHMS_SHOEBOX_MASK_FOREGROUND_2D_H */
+#endif /* DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MASK_FOREGROUND_2D_H */

@@ -3,7 +3,7 @@ from __future__ import division
 class Test(object):
 
   def __init__(self):
-    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
     from dials.model.serialize import load
     from math import pi
 
