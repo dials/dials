@@ -123,12 +123,19 @@ namespace dials { namespace af {
           std::size_t xs = x1 - x0;
           std::size_t ys = y1 - y0;
           std::size_t z = frame_ - z0;
-          DIALS_ASSERT(x0 >= 0 && y0 >= 0);
-          DIALS_ASSERT(y1 <= data.accessor()[0]);
-          DIALS_ASSERT(x1 <= data.accessor()[1]);
+          std::size_t yi = data.accessor()[0];
+          std::size_t xi = data.accessor()[1];
+          int xb = x0 >= 0 ? 0 : std::abs(x0);
+          int yb = y0 >= 0 ? 0 : std::abs(y0);
+          int xe = x1 <= xi ? xs : xs-(x1-(int)xi);
+          int ye = y1 <= yi ? ys : ys-(y1-(int)yi);
+          DIALS_ASSERT(ye > yb && yb >= 0 && ye <= ys);
+          DIALS_ASSERT(xe > xb && xb >= 0 && xe <= xs);
+          DIALS_ASSERT(yb + y0 >= 0 && ye + y0 <= yi);
+          DIALS_ASSERT(xb + x0 >= 0 && xe + x0 <= xi);
           DIALS_ASSERT(sbox.is_consistent());
-          for (std::size_t y = 0; y < ys; ++y) {
-            for (std::size_t x = 0; x < xs; ++x) {
+          for (std::size_t y = yb; y < ye; ++y) {
+            for (std::size_t x = xb; x < xe; ++x) {
               sdata(z, y, x) = data(y+y0,x+x0);
               smask(z, y, x) = mask(y+y0,x+x0) ? Valid : 0;
             }

@@ -783,6 +783,7 @@ class Test(object):
   def tst_extract_shoeboxes(self):
     from dials.array_family import flex
     from random import randint, seed
+    from dials.algorithms.shoebox import MaskCode
     import sys
     seed(0)
 
@@ -799,11 +800,13 @@ class Test(object):
     nrefl = 1000
 
     for i in range(nrefl):
-      x0 = randint(0, width-10)
-      y0 = randint(0, height-10)
+      xs = randint(5, 10)
+      ys = randint(5, 10)
+      x0 = randint(-xs+1, width-1)
+      y0 = randint(-ys+1, height-1)
       z0 = randint(frame0, frame1-1)
-      x1 = x0 + randint(1, 10)
-      y1 = y0 + randint(1, 10)
+      x1 = x0 + xs
+      y1 = y0 + ys
       z1 = min([z0 + randint(1, 10), frame1])
       assert(x1 > x0)
       assert(y1 > y0)
@@ -857,6 +860,8 @@ class Test(object):
 
     for i in range(len(reflections)):
       sbox = reflections[i]["shoebox"]
+      assert(sbox.is_consistent())
+      mask = sbox.mask
       data = sbox.data
       bbox = sbox.bbox
       panel = sbox.panel
@@ -865,8 +870,16 @@ class Test(object):
         for y in range(y1 - y0):
           for x in range(x1 - x0):
             v1 = data[z,y,x]
-            v2 = imageset.data[y+y0,x+x0] + (z+z0)*(panel+1)
-            assert(v1 == v2)
+            m1 = mask[z,y,x]
+            if (x0 + x >= 0 and y0 + y >= 0 and
+                x0 + x < width and y0 + y < height):
+              v2 = imageset.data[y+y0,x+x0] + (z+z0)*(panel+1)
+              m2 = MaskCode.Valid
+              assert(v1 == v2)
+              assert(m1 == m2)
+            else:
+              assert(v1 == 0)
+              assert(m1 == 0)
 
     print 'OK'
 
