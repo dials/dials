@@ -33,18 +33,6 @@ namespace dials { namespace algorithms { namespace shoebox {
                  const Detector&,
                  const Goniometer&,
                  const Scan&,
-                 const af::const_ref<double>&,
-                 const af::const_ref<double>&> ((
-        arg("beam"),
-        arg("detector"),
-        arg("goniometer"),
-        arg("scan"),
-        arg("delta_divergence"),
-        arg("delta_mosaicity"))))
-      .def(init <const Beam&,
-                 const Detector&,
-                 const Goniometer&,
-                 const Scan&,
                  double,
                  double > ((
         arg("beam"),

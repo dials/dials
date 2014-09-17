@@ -46,28 +46,6 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   public:
 
-    BBoxCalculator(const Beam &beam,
-                   const Detector &detector,
-                   const Goniometer &gonio,
-                   const Scan &scan,
-                   const af::const_ref<double> &delta_divergence,
-                   const af::const_ref<double> &delta_mosaicity)
-      : s0_(beam.get_s0()),
-        m2_(gonio.get_rotation_axis()),
-        detector_(detector),
-        scan_(scan),
-        delta_divergence_(
-          delta_divergence.begin(),
-          delta_divergence.end()),
-        delta_mosaicity_(
-          delta_mosaicity.begin(),
-          delta_mosaicity.end()) {
-      DIALS_ASSERT(delta_divergence.size() == delta_mosaicity.size());
-      DIALS_ASSERT(delta_divergence.size() == scan_.get_num_images());
-      DIALS_ASSERT(delta_divergence.all_gt(0.0));
-      DIALS_ASSERT(delta_mosaicity.all_gt(0.0));
-    }
-
     /**
      * Initialise the bounding box calculation.
      * @param beam The beam parameters
@@ -86,8 +64,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         m2_(gonio.get_rotation_axis()),
         detector_(detector),
         scan_(scan),
-        delta_divergence_(scan.get_num_images(), delta_divergence),
-        delta_mosaicity_(scan.get_num_images(), delta_mosaicity) {
+        delta_divergence_(delta_divergence),
+        delta_mosaicity_(delta_mosaicity) {
       DIALS_ASSERT(delta_divergence > 0.0);
       DIALS_ASSERT(delta_mosaicity > 0.0);
     }
@@ -121,18 +99,8 @@ namespace dials { namespace algorithms { namespace shoebox {
       reflection_basis::CoordinateSystem xcs(m2_, s0_, s1, phi);
 
       // Get the divergence and mosaicity for this point
-      int z0 = (int)floor(scan_.get_array_index_from_angle(phi));
-      double delta_d = 0, delta_m = 0;
-      if (z0 < 0) {
-        delta_d = delta_divergence_.front();
-        delta_m = delta_mosaicity_.front();
-      } else if (z0 >= delta_divergence_.size()) {
-        delta_d = delta_divergence_.back();
-        delta_m = delta_mosaicity_.back();
-      } else {
-        delta_d = delta_divergence_[z0];
-        delta_m = delta_mosaicity_[z0];
-      }
+      double delta_d = delta_divergence_;
+      double delta_m = delta_mosaicity_;
 
       // Calculate the beam vectors at the following xds coordinates:
       //   (-delta_d, -delta_d, 0)
@@ -209,8 +177,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     vec3<double> m2_;
     Detector detector_;
     Scan scan_;
-    af::shared<double> delta_divergence_;
-    af::shared<double> delta_mosaicity_;
+    double delta_divergence_;
+    double delta_mosaicity_;
   };
 
 
