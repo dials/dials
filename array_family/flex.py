@@ -109,6 +109,42 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     handle.close()
     return self
 
+  @staticmethod
+  def empty_standard(nrows):
+    ''' Create an empty table of specified number of rows with most of the
+    standard keys'''
+
+    assert nrows > 0
+    table = reflection_table(nrows)
+
+    # General properties
+    table['flags'] = flex.size_t(nrows, 0)
+    table['id'] = flex.double(nrows, 0)
+    table['panel'] = flex.size_t(nrows, 0)
+
+    # Predicted properties
+    table['miller_index'] = flex.miller_index(nrows)
+    table['entering'] = flex.bool(nrows)
+    table['s1'] = flex.vec3_double(nrows, (0, 0, 0))
+    table['xyzcal.mm'] = flex.vec3_double(nrows, (0, 0, 0))
+    table['xyzcal.px'] = flex.vec3_double(nrows, (0, 0, 0))
+    #table['ub_matrix'] = flex.mat3_double(nrows, (0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+    # Observed properties
+    table['xyzobs.px.value'] = flex.vec3_double(nrows, (0, 0, 0))
+    table['xyzobs.px.variance'] = flex.vec3_double(nrows, (0, 0, 0))
+    table['xyzobs.mm.value'] = flex.vec3_double(nrows, (0, 0, 0))
+    table['xyzobs.mm.variance'] = flex.vec3_double(nrows, (0, 0, 0))
+    table['rlp'] = flex.vec3_double(nrows, (0, 0, 0))
+    table['intensity.sum.value'] = flex.double(nrows, 0)
+    table['intensity.sum.variance'] = flex.double(nrows, 0)
+    table['intensity.prf.value'] = flex.double(nrows, 0)
+    table['intensity.prf.variance'] = flex.double(nrows, 0)
+    table['lp'] = flex.double(nrows, 0)
+    table['profile.correlation'] = flex.double(nrows, 0)
+
+    return table
+
   def as_pickle(self, filename):
     ''' Write the reflection table as a pickle file. '''
     import cPickle as pickle
