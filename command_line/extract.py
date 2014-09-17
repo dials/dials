@@ -35,7 +35,7 @@ class Script(object):
         .type = float
         .help = "Minimum d-spacing of predicted reflections"
 
-        include scope dials.algorithms.profile_model.profile_model.phil_scope
+        include scope dials.algorithms.profile_model.factory.phil_scope
     ''', process_includes=True)
 
     # Create the parser
@@ -48,7 +48,7 @@ class Script(object):
     '''Execute the script.'''
     from dials.array_family import flex
     from dials.model.serialize import extract_shoeboxes_to_file
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.util.options import flatten_experiments
 
     # Parse the command line
@@ -71,7 +71,7 @@ class Script(object):
     predicted['id'] = flex.size_t(len(predicted), 0)
 
     # Get the bbox nsigma
-    profile_model = ProfileModelList.load(params)
+    profile_model = ProfileModelFactory.load(params)
 
     # Calculate the bounding boxes
     predicted.compute_bbox(experiments, profile_model)

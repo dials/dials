@@ -113,7 +113,7 @@ class Test(object):
     print 'OK'
 
     # Only select variances greater than zero
-    mask = self.reference.get_flags(self.reference.flags.integrated)
+    mask = self.reference.get_flags(self.reference.flags.integrated, all=False)
     assert(mask.count(True) > 0)
     I_cal = self.reference['intensity.prf.value']
     I_var = self.reference['intensity.prf.variance']
@@ -275,7 +275,7 @@ class Test(object):
       #print p
 
     # Only select variances greater than zero
-    mask = refl.get_flags(refl.flags.integrated)
+    mask = refl.get_flags(refl.flags.integrated, all=False)
     assert(mask.count(True) > 0)
     I_cal = I_cal.select(mask)
     I_var = I_var.select(mask)

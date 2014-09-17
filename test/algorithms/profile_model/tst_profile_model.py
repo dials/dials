@@ -10,17 +10,17 @@ class Test(object):
     self.tst_load_and_dump()
 
   def tst_load_and_dump(self):
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
-    from dials.algorithms.profile_model.profile_model import phil_scope
+    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    from dials.algorithms.profile_model.gaussian_rs import phil_scope
     from libtbx.phil import parse
 
     user_phil = parse('''
-      profile {
+      gaussian_rs {
         n_sigma = 3
         sigma_b = 1
         sigma_m = 2
         }
-      profile {
+      gaussian_rs {
         n_sigma = 2
         sigma_b = 4
         sigma_m = 5

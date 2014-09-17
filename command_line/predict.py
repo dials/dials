@@ -41,7 +41,7 @@ class Script(object):
         .type = float
         .help = "Minimum d-spacing of predicted reflections"
 
-        include scope dials.algorithms.profile_model.profile_model.phil_scope
+        include scope dials.algorithms.profile_model.factory.phil_scope
     ''', process_includes=True)
 
     # Create the parser
@@ -54,7 +54,7 @@ class Script(object):
     '''Execute the script.'''
     from dials.util.command_line import Command
     from dials.array_family import flex
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.util.options import flatten_experiments
 
     # Parse the command line
@@ -87,9 +87,12 @@ class Script(object):
         dmin=params.dmin)
       predicted['id'] = flex.int(len(predicted), i_expt)
       predicted_all.extend(predicted)
-    if len(params.profile) > 0:
-      profile_model = ProfileModelList.load(params)
+
+    try:
+      profile_model = ProfileModelFactory.load(params)
       predicted_all.compute_bbox(experiments, profile_model)
+    except Exception:
+      pass
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(

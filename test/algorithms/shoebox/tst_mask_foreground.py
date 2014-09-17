@@ -7,7 +7,7 @@ class Test(object):
     import libtbx.load_env
     from dxtbx.serialize.load import crystal as load_crystal
     from dials.model.serialize import load
-    from dials.algorithms.profile_model.profile_model import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     from dials.algorithms.shoebox import MaskForeground
     from dxtbx.model.experiment.experiment_list import Experiment
 

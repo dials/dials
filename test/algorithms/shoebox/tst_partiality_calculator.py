@@ -28,7 +28,7 @@ class Test(object):
     self.sigma_m = 0.154 * pi / 180
     self.delta_m = self.n_sigma * self.sigma_m
 
-    from dials.algorithms.profile_model.profile_model import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     self.profile_model = ProfileModel(self.n_sigma, self.sigma_b, self.sigma_m)
 
   def run(self):

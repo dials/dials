@@ -25,7 +25,9 @@ class Script(object):
       output = profile.phil
         .type = str
         .help = "The filename for the profile parameters"
-    ''')
+
+      include scope dials.algorithms.profile_model.factory.phil_scope
+    ''', process_includes=True)
 
     # The script usage
     usage  = "usage: %prog [options] experiments.json spots.pickle"
@@ -38,7 +40,7 @@ class Script(object):
 
   def run(self):
     ''' Run the script. '''
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.util.command_line import Command
     from dials.array_family import flex
     from dials.util.options import flatten_reflections, flatten_experiments
@@ -59,7 +61,7 @@ class Script(object):
     Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
 
     # Create the profile model
-    profile_model = ProfileModelList.compute(experiments, reflections)
+    profile_model = ProfileModelFactory.compute(params, experiments, reflections)
     for model in profile_model:
       sigma_b = model.sigma_b(deg=True)
       sigma_m = model.sigma_m(deg=True)

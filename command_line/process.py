@@ -65,6 +65,7 @@ class Script(object):
       }
       include scope dials.algorithms.refinement.refiner.phil_scope
       include scope dials.algorithms.integration.integrator.phil_scope
+      include scope dials.algorithms.profile_model.factory.phil_scope
 
     ''', process_includes=True)
 
