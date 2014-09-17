@@ -109,6 +109,9 @@ namespace dials { namespace algorithms { namespace filter {
 
     def("by_resolution_at_centroid",
       &by_resolution_at_centroid);
+
+    def("by_shoebox_mask",
+      &by_shoebox_mask);
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_filter_ext)

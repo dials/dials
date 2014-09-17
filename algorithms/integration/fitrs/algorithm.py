@@ -41,12 +41,29 @@ class IntegrationAlgorithm(object):
     experiment = experiments[0]
     assert("flags" in reflections)
     assert(len(experiment.detector) == 1)
-    self._transform_profiles(experiment, reflections)
-    self.learner = self._learn_references(experiment, reflections)
+    self._filter_reflections(reflections)
+
+    mask1 = ~reflections.get_flags(reflections.flags.dont_integrate)
+    mask2 = reflections.get_flags(reflections.flags.reference_spot)
+    mask3 = mask1 | mask2
+    reflections2 = reflections.select(mask3)
+
+    self._transform_profiles(experiment, reflections2)
+    self.learner = self._learn_references(experiment, reflections2)
     counter = IntegrationAlgorithm.reference_counter
     dump.reference(self.learner.locate(), "reference_%d.pickle" % counter)
     IntegrationAlgorithm.reference_counter += 1
-    return self._integrate_intensities(self.learner, reflections)
+    reflections2 = self._integrate_intensities(self.learner, reflections2)
+
+    reflections.set_selected(mask3, reflections2)
+
+  def _filter_reflections(self, reflections):
+    from dials.algorithms.filtering import by_shoebox_mask
+    mask = by_shoebox_mask(reflections['shoebox'])
+    print "Filtering %d reflections with invalid foreground pixels" % (
+      mask.count(False))
+    reflections.set_flags(~mask, reflections.flags.dont_integrate)
+    reflections.unset_flags(~mask, reflections.flags.reference_spot)
 
   def _transform_profiles(self, experiment, reflections):
     ''' Transform the reflection profiles to reciprocal space. '''

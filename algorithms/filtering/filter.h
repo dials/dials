@@ -20,6 +20,7 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
+#include <dials/model/data/shoebox.h>
 #include <dials/algorithms/image/threshold/unimodal.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 #include <dials/model/data/reflection.h>
@@ -36,6 +37,9 @@ namespace dials { namespace algorithms { namespace filter {
   using dxtbx::model::Detector;
   using dials::algorithms::reflection_basis::CoordinateSystem;
   using dials::algorithms::reflection_basis::zeta_factor;
+  using dials::model::Valid;
+  using dials::model::Foreground;
+  using dials::model::Shoebox;
 
   /**
    * Calculate the zeta factor and check its absolute value is above the
@@ -488,6 +492,25 @@ namespace dials { namespace algorithms { namespace filter {
           s0, vec2<double>(xyz[i][0], xyz[i][1]));
       if (resolution < d_min || resolution > d_max) {
         result[i] = false;
+      }
+    }
+    return result;
+  }
+
+  inline
+  af::shared<bool> by_shoebox_mask(
+      const af::const_ref< Shoebox<> > shoeboxes) {
+    af::shared<bool> result(shoeboxes.size(), true);
+    for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+      Shoebox<> sbox = shoeboxes[i];
+      DIALS_ASSERT(sbox.is_consistent());
+      for (std::size_t j = 0; j < sbox.mask.size(); ++j) {
+        if (sbox.mask[j] & Foreground) {
+          if (!(sbox.mask[j] & Valid)) {
+            result[i] = false;
+            break;
+          }
+        }
       }
     }
     return result;
