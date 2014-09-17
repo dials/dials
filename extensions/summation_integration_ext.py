@@ -13,7 +13,12 @@ from __future__ import division
 from dials.interfaces import IntensityIface
 
 class SummationIntegrationExt(IntensityIface):
-  ''' Extension class to provide 3d summation integration. '''
+  ''' Extension class to provide 3d summation integration.
+
+  Summation integration should be performed anyway so this extension is just a
+  placeholder to give some options for when we only want to do summation.
+
+  '''
 
   name = 'sum'
 
@@ -27,13 +32,12 @@ class SummationIntegrationExt(IntensityIface):
   '''
 
   def __init__(self, params, experiments, profile_model):
-    ''' Initialise the algorithm. '''
-    from dials.algorithms.integration.sum import IntegrationAlgorithm
-    self._algorithm = IntegrationAlgorithm()
+    ''' Do nothing. This algorithm is a placeholder. '''
+    pass
 
   def compute_intensity(self, reflections):
-    ''' Compute the intensity. '''
-    self._algorithm(reflections)
+    ''' Do nothing. This algorithm is a placeholder '''
+    pass
 
   @classmethod
   def type(cls, params, experiments):

@@ -41,19 +41,12 @@ class IntegrationAlgorithm(object):
     experiment = experiments[0]
     assert("flags" in reflections)
     assert(len(experiment.detector) == 1)
-    self._integrate_by_summation(experiment, reflections)
     self._transform_profiles(experiment, reflections)
     self.learner = self._learn_references(experiment, reflections)
     counter = IntegrationAlgorithm.reference_counter
     dump.reference(self.learner.locate(), "reference_%d.pickle" % counter)
     IntegrationAlgorithm.reference_counter += 1
     return self._integrate_intensities(self.learner, reflections)
-
-  def _integrate_by_summation(self, experiment, reflections):
-    ''' Integrate the reflections by summation. '''
-    from dials.algorithms.integration.sum import IntegrationAlgorithm as Summation
-    algorithm = Summation()
-    algorithm(reflections)
 
   def _transform_profiles(self, experiment, reflections):
     ''' Transform the reflection profiles to reciprocal space. '''

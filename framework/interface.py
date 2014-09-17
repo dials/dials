@@ -128,7 +128,8 @@ class Interface(object):
             main_scope.adopt_scope(ext.phil_scope())
     else:
       if 'phil' in cls.__dict__:
-        master_scope = parse('%s .help=%s {}' % (cls.name, cls.__doc__))
+        help_str = '\n'.join(['"%s"' % line for line in cls.__doc__.split()])
+        master_scope = parse('%s .help=%s {}' % (cls.name, help_str))
         main_scope = master_scope.get_without_substitution(cls.name)
         assert(len(main_scope) == 1)
         main_scope = main_scope[0]

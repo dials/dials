@@ -231,6 +231,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     ''' Helper function to compute the intensity. '''
     self._intensity_algorithm(experiments, profile_model).compute_intensity(self)
 
+  def compute_summed_intensity(self):
+    ''' Compute intensity via summation integration. '''
+    from dials.algorithms.integration.sum import IntegrationAlgorithm
+    algorithm = IntegrationAlgorithm()
+    algorithm(self)
+
   def compute_corrections(self, experiments):
     ''' Helper function to correct the intensity. '''
     from dials.algorithms.integration import Corrections, CorrectionsMulti
@@ -250,6 +256,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     ''' Helper function to integrate reflections. '''
     self.compute_background(experiments)
     self.compute_centroid(experiments)
+    self.compute_summed_intensity()
     self.compute_intensity(experiments, profile_model)
 
   def compute_mask(self, experiments, profile_model):
