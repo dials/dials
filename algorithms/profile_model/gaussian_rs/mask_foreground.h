@@ -29,12 +29,14 @@ namespace dials { namespace algorithms { namespace shoebox {
   using scitbx::vec3;
   using scitbx::af::int6;
   using dxtbx::model::Beam;
+  using dxtbx::model::Panel;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using dials::model::Shoebox;
   using dials::algorithms::reflection_basis::CoordinateSystem;
   using dials::algorithms::reflection_basis::transform::beam_vector_map;
+
 
   /**
    * A class to mask foreground/background pixels
@@ -54,7 +56,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     MaskForeground(const Beam &beam, const Detector &detector,
                    const Goniometer &gonio, const Scan &scan,
                    double delta_b, double delta_m)
-      : m2_(gonio.get_rotation_axis()),
+      : detector_(detector),
+        m2_(gonio.get_rotation_axis()),
         s0_(beam.get_s0()),
         phi0_(scan.get_oscillation()[0]),
         dphi_(scan.get_oscillation()[1]),
@@ -62,9 +65,6 @@ namespace dials { namespace algorithms { namespace shoebox {
         index1_(scan.get_array_range()[1]){
       DIALS_ASSERT(delta_b > 0.0);
       DIALS_ASSERT(delta_m > 0.0);
-      for (std::size_t i = 0; i < detector.size(); ++i) {
-        s1_map_.push_back(beam_vector_map(detector[i], beam, true));
-      }
       delta_b_r_ = 1.0 / delta_b;
       delta_m_r_ = 1.0 / delta_m;
     }
@@ -114,7 +114,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param frame The frame number
      * @param panel The panel number
      */
-    void single_normal(Shoebox<> &shoebox, vec3<double> s1, double frame, std::size_t panel) const {
+    void single_normal(Shoebox<> &shoebox, vec3<double> s1, double frame, std::size_t panel_number) const {
 
       // Ensure the shoebox is valid
       //if (shoebox.is_valid()) {
@@ -134,9 +134,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         double delta_b_r2 = delta_b_r_ * delta_b_r_;
         /* double delta_m_r2 = delta_m_r_ * delta_m_r_; */
 
-        // Get the beam vector map
-        DIALS_ASSERT(panel < s1_map_.size());
-        af::const_ref< vec3<double>, af::c_grid<2> > s1_map = s1_map_[panel].const_ref();
+        // Get the panel
+        const Panel& panel = detector_[panel_number];
 
         // Check the size of the mask
         DIALS_ASSERT(mask.accessor()[0] == zsize);
@@ -145,10 +144,7 @@ namespace dials { namespace algorithms { namespace shoebox {
 
         // Create the coordinate system and generators
         CoordinateSystem cs(m2_, s0_, s1, phi);
-
-        // Get the size of the image
-        std::size_t width = s1_map.accessor()[1];
-        std::size_t height = s1_map.accessor()[0];
+        double s0_length = s0_.length();
 
         // Loop through all the pixels in the shoebox, transform the point
         // to the reciprocal space coordinate system and check that it is
@@ -158,27 +154,28 @@ namespace dials { namespace algorithms { namespace shoebox {
         // Background.
         for (int j = 0; j < ysize; ++j) {
           for (int i = 0; i < xsize; ++i) {
-            if (x0 + i >= 0 && y0 + j >= 0 &&
-                x0 + i < width && y0 + j < height) {
-              vec2<double> gxy1 = cs.from_beam_vector(s1_map(y0 + j, x0 + i));
-              vec2<double> gxy2 = cs.from_beam_vector(s1_map(y0 + j + 1, x0 + i));
-              vec2<double> gxy3 = cs.from_beam_vector(s1_map(y0 + j, x0 + i + 1));
-              vec2<double> gxy4 = cs.from_beam_vector(s1_map(y0 + j + 1, x0 + i + 1));
-              double dxy1 = (gxy1[0]*gxy1[0] + gxy1[1]*gxy1[1]) * delta_b_r2;
-              double dxy2 = (gxy2[0]*gxy2[0] + gxy2[1]*gxy2[1]) * delta_b_r2;
-              double dxy3 = (gxy3[0]*gxy3[0] + gxy3[1]*gxy3[1]) * delta_b_r2;
-              double dxy4 = (gxy4[0]*gxy4[0] + gxy4[1]*gxy4[1]) * delta_b_r2;
-              double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
-              for (std::size_t k = 0; k < zsize; ++k) {
-                if (z0 + k >= index0_ && z0 + k < index1_) {
-                  /* double gz1 = cs.from_rotation_angle_fast(phi0_ + (z0 + k - index0_) * dphi_); */
-                  /* double gz2 = cs.from_rotation_angle_fast(phi0_ + (z0 + k + 1 - index0_) * dphi_); */
-                  /* double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2; */
-                  /* double gzc2 = gz*gz*delta_m_r2; */
-                  /* int mask_value = (dxy + gzc2 <= 1.0) ? Foreground : Background; */
-                  int mask_value = (dxy <= 1.0) ? Foreground : Background;
-                  mask(k, j, i) |= mask_value;
-                }
+            vec2<double> gxy1 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
+            vec2<double> gxy2 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j+1)).normalize() * s0_length);
+            vec2<double> gxy3 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j)).normalize() * s0_length);
+            vec2<double> gxy4 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j+1)).normalize() * s0_length);
+            double dxy1 = (gxy1[0]*gxy1[0] + gxy1[1]*gxy1[1]) * delta_b_r2;
+            double dxy2 = (gxy2[0]*gxy2[0] + gxy2[1]*gxy2[1]) * delta_b_r2;
+            double dxy3 = (gxy3[0]*gxy3[0] + gxy3[1]*gxy3[1]) * delta_b_r2;
+            double dxy4 = (gxy4[0]*gxy4[0] + gxy4[1]*gxy4[1]) * delta_b_r2;
+            double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
+            for (std::size_t k = 0; k < zsize; ++k) {
+              if (z0 + k >= index0_ && z0 + k < index1_) {
+                /* double gz1 = cs.from_rotation_angle_fast(phi0_ + (z0 + k - index0_) * dphi_); */
+                /* double gz2 = cs.from_rotation_angle_fast(phi0_ + (z0 + k + 1 - index0_) * dphi_); */
+                /* double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2; */
+                /* double gzc2 = gz*gz*delta_m_r2; */
+                /* int mask_value = (dxy + gzc2 <= 1.0) ? Foreground : Background; */
+                int mask_value = (dxy <= 1.0) ? Foreground : Background;
+                mask(k, j, i) |= mask_value;
               }
             }
           }
@@ -193,7 +190,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param frame The frame number
      * @param panel The panel number
      */
-    void single_flat(Shoebox<> &shoebox, vec3<double> s1, double frame, std::size_t panel) const {
+    void single_flat(Shoebox<> &shoebox, vec3<double> s1, double frame, std::size_t panel_number) const {
 
       // Ensure the shoebox is valid
       //if (shoebox.is_valid()) {
@@ -213,9 +210,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         double delta_b_r2 = delta_b_r_ * delta_b_r_;
         /* double delta_m_r2 = delta_m_r_[z-index0_] * delta_m_r_[z-index0_]; */
 
-        // Get the beam vector map
-        DIALS_ASSERT(panel < s1_map_.size());
-        af::const_ref< vec3<double>, af::c_grid<2> > s1_map = s1_map_[panel].const_ref();
+        // Get the panel
+        const Panel& panel = detector_[panel_number];
 
         // Check the size of the mask
         DIALS_ASSERT(mask.accessor()[0] == 1);
@@ -226,9 +222,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         // Create the coordinate system and generators
         CoordinateSystem cs(m2_, s0_, s1, phi);
 
-        // Get the size of the image
-        std::size_t width = s1_map.accessor()[1];
-        std::size_t height = s1_map.accessor()[0];
+        double s0_length = s0_.length();
 
         // Loop through all the pixels in the shoebox, transform the point
         // to the reciprocal space coordinate system and check that it is
@@ -238,26 +232,27 @@ namespace dials { namespace algorithms { namespace shoebox {
         // Background.
         for (int j = 0; j < ysize; ++j) {
           for (int i = 0; i < xsize; ++i) {
-            if (x0 + i >= 0 && y0 + j >= 0 &&
-                x0 + i < width && y0 + j < height) {
-              vec2<double> gxy1 = cs.from_beam_vector(s1_map(y0 + j, x0 + i));
-              vec2<double> gxy2 = cs.from_beam_vector(s1_map(y0 + j + 1, x0 + i));
-              vec2<double> gxy3 = cs.from_beam_vector(s1_map(y0 + j, x0 + i + 1));
-              vec2<double> gxy4 = cs.from_beam_vector(s1_map(y0 + j + 1, x0 + i + 1));
-              double dxy1 = (gxy1[0]*gxy1[0] + gxy1[1]*gxy1[1]) * delta_b_r2;
-              double dxy2 = (gxy2[0]*gxy2[0] + gxy2[1]*gxy2[1]) * delta_b_r2;
-              double dxy3 = (gxy3[0]*gxy3[0] + gxy3[1]*gxy3[1]) * delta_b_r2;
-              double dxy4 = (gxy4[0]*gxy4[0] + gxy4[1]*gxy4[1]) * delta_b_r2;
-              double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
-              int mask_value = (dxy <= 1.0) ? Foreground : Background;
-              mask(0, j, i) |= mask_value;
-            }
+            vec2<double> gxy1 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
+            vec2<double> gxy2 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j+1)).normalize() * s0_length);
+            vec2<double> gxy3 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j)).normalize() * s0_length);
+            vec2<double> gxy4 = cs.from_beam_vector(
+                panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j+1)).normalize() * s0_length);
+            double dxy1 = (gxy1[0]*gxy1[0] + gxy1[1]*gxy1[1]) * delta_b_r2;
+            double dxy2 = (gxy2[0]*gxy2[0] + gxy2[1]*gxy2[1]) * delta_b_r2;
+            double dxy3 = (gxy3[0]*gxy3[0] + gxy3[1]*gxy3[1]) * delta_b_r2;
+            double dxy4 = (gxy4[0]*gxy4[0] + gxy4[1]*gxy4[1]) * delta_b_r2;
+            double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
+            int mask_value = (dxy <= 1.0) ? Foreground : Background;
+            mask(0, j, i) |= mask_value;
           }
         }
       //}
     }
 
-    std::vector< af::versa< vec3<double>, af::c_grid<2> > > s1_map_;
+    Detector detector_;
     vec3<double> m2_;
     vec3<double> s0_;
     double phi0_;

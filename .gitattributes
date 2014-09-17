@@ -309,7 +309,6 @@ command_line/export_mtz.py -text
 command_line/export_spot_xds.py -text
 command_line/export_text.py -text
 command_line/export_xds.py -text
-command_line/extract.py -text
 command_line/find_overlaps.py -text
 command_line/find_spots.py -text
 command_line/generate_mask.py -text
@@ -867,7 +866,6 @@ test/command_line/tst_dials_show_isig_rmsd.py -text
 test/command_line/tst_discover_better_experimental_model.py -text
 test/command_line/tst_export.py -text
 test/command_line/tst_export_xds.py -text
-test/command_line/tst_extract.py -text
 test/command_line/tst_import.py -text
 test/command_line/tst_import_xds.py -text
 test/command_line/tst_integrate.py -text

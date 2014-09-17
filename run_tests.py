@@ -13,7 +13,6 @@ tst_list = (
     "$D/test/command_line/tst_integrate.py",
     "$D/test/command_line/tst_detector_max_resolution.py",
     "$D/test/command_line/tst_predict.py",
-    "$D/test/command_line/tst_extract.py",
     "$D/test/command_line/tst_import_xds.py",
     "$D/test/command_line/tst_merge_reflection_lists.py",
     "$D/test/command_line/tst_spotfinder.py",

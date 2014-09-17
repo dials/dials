@@ -43,7 +43,7 @@ class Test(object):
 
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
-    assert(len(table) == 764)
+    assert(len(table) == 751)
 
     # assert(len(table) == 764)
     assert('id' in table)
@@ -75,7 +75,7 @@ class Test(object):
     table = pickle.load(open('integrated.pickle', 'rb'))
     mask = table.get_flags(table.flags.integrated,all=False)
     assert(len(table) == 1996)
-    assert(mask.count(True) == 1684)
+    assert(mask.count(True) == 1666)
 
     # assert(len(table) == 764)
     assert('id' in table)
@@ -150,7 +150,7 @@ class Test(object):
     table = pickle.load(open('integrated.pickle', 'rb'))
     mask1 = table.get_flags(table.flags.integrated,all=False)
     assert(len(table) == 1996)
-    assert(mask1.count(True) == 1684)
+    assert(mask1.count(True) == 1666)
     mask2 = self.table.get_flags(table.flags.integrated,all=False)
     assert(mask1.all_eq(mask2))
     t1 = table.select(mask1)
