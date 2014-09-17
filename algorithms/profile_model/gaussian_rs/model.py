@@ -10,10 +10,13 @@
 
 from __future__ import division
 from libtbx.phil import parse
+from dials.algorithms.profile_model.interface import ProfileModelIface
+from dials.algorithms.profile_model.interface import ProfileModelListIface
 
 phil_scope = parse('''
-  profile
-    .multiple=True
+
+  gaussian_rs
+    .multiple = True
   {
     n_sigma = 3
       .help = "The number of standard deviations of the beam divergence and the"
@@ -28,9 +31,10 @@ phil_scope = parse('''
       .help = "The E.S.D. of the reflecting range"
       .type = float
   }
+
 ''')
 
-class ProfileModel(object):
+class ProfileModel(ProfileModelIface):
   ''' A class to encapsulate the profile model. '''
 
   def __init__(self, n_sigma, sigma_b, sigma_m):
@@ -135,7 +139,7 @@ class ProfileModel(object):
   @classmethod
   def compute(cls, experiment, reflections, min_zeta=0.05):
     ''' Compute the profile model. '''
-    from dials.algorithms.profile_model.profile_model_calculator \
+    from dials.algorithms.profile_model.gaussian_rs.calculator \
       import ProfileModelCalculator
     calculator = ProfileModelCalculator(experiment, reflections, min_zeta)
     n_sigma = 3
@@ -144,7 +148,7 @@ class ProfileModel(object):
     return cls(n_sigma, sigma_b, sigma_m)
 
 
-class ProfileModelList(object):
+class ProfileModelList(ProfileModelListIface):
   ''' A class to represent multiple profile models. '''
 
   def __init__(self):
@@ -303,20 +307,20 @@ class ProfileModelList(object):
   def load(cls, params):
     ''' Load from phil parameters. '''
     from math import pi
-    assert(len(params.profile) > 0)
+    assert(len(params.gaussian_rs) > 0)
     profile_model = cls()
-    for i in range(len(params.profile)):
+    for i in range(len(params.gaussian_rs)):
       profile_model.append(ProfileModel(
-        params.profile[i].n_sigma,
-        params.profile[i].sigma_b * pi / 180.0,
-        params.profile[i].sigma_m * pi / 180.0))
+        params.gaussian_rs[i].n_sigma,
+        params.gaussian_rs[i].sigma_b * pi / 180.0,
+        params.gaussian_rs[i].sigma_m * pi / 180.0))
     return profile_model
 
   def dump(self):
     ''' Dump the profile model to phil parameters. '''
     phil_str = '\n'.join([
       '''
-      profile {
+      gaussian_rs {
         n_sigma=%g
         sigma_b=%g
         sigma_m=%g

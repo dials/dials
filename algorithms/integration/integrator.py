@@ -132,13 +132,13 @@ class Integrator(object):
   def __init__(self, params, exlist, reference=None,
                predicted=None, shoeboxes=None):
     '''Initialise the script.'''
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
 
     # Load the reference spots and compute the profile parameters
     if reference:
       self._compute_profile_model(params, exlist, reference)
     else:
-      self.profile_model = ProfileModelList.load(params)
+      self.profile_model = ProfileModelFactory.load(params)
 
     # Load the extractor based on the input
     if shoeboxes is not None:
@@ -198,8 +198,8 @@ class Integrator(object):
 
   def _compute_profile_model(self, params, experiments, reference):
     ''' Compute the profile model. '''
-    from dials.algorithms.profile_model.profile_model import ProfileModelList
-    self.profile_model = ProfileModelList.compute(experiments, reference)
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
+    self.profile_model = ProfileModelFactory.compute(params, experiments, reference)
     for model in self.profile_model:
       print 'Sigma B: %f' % model.sigma_b(deg=True)
       print 'Sigma M: %f' % model.sigma_m(deg=True)

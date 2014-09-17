@@ -141,8 +141,8 @@ algorithms/polygon/clip/sutherland_hodgman.h -text
 algorithms/polygon/spatial_interpolation.h -text
 algorithms/polygon/spatial_interpolation.py -text
 algorithms/profile_model/__init__.py -text
-algorithms/profile_model/profile_model.py -text
-algorithms/profile_model/profile_model_calculator.py -text
+algorithms/profile_model/gaussian_rs/calculator.py -text
+algorithms/profile_model/gaussian_rs/model.py -text
 algorithms/refinement/README -text
 algorithms/refinement/SConscript -text
 algorithms/refinement/__init__.py -text

@@ -71,7 +71,7 @@ class Script(object):
       }
 
       include scope dials.algorithms.integration.integrator.phil_scope
-      include scope dials.algorithms.profile_model.profile_model.phil_scope
+      include scope dials.algorithms.profile_model.factory.phil_scope
 
     ''', process_includes=True)
 

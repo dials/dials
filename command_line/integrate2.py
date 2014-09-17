@@ -64,7 +64,7 @@ class Script(object):
       }
 
       include scope dials.algorithms.integration.interface.phil_scope
-      include scope dials.algorithms.profile_model.profile_model.phil_scope
+      include scope dials.algorithms.profile_model.factory.phil_scope
 
     ''', process_includes=True)
 
@@ -116,7 +116,7 @@ class Script(object):
       from dials.algorithms.integration import IntegratorStills
       integrator = IntegratorStills(params, experiments, reference, None, None)
     else:
-      from dials.algorithms.profile_model.profile_model import ProfileModelList
+      from dials.algorithms.profile_model.factory import ProfileModelFactory
       from dials.algorithms.integration.interface import IntegratorFactory
       from dials.array_family import flex
 
@@ -124,12 +124,7 @@ class Script(object):
       # Predict the reflections
       # Match the predictions with the reference
       # Create the integrator
-      if len(params.profile) > 0:
-        assert(len(params.profile) == len(experiments))
-        profile_model = ProfileModelList.load(params)
-      else:
-        assert(reference is not None)
-        profile_model = ProfileModelList.compute(experiments, reference)
+      profile_model = ProfileModelFactory.create(params, experiments, reference)
       print ""
       print "=" * 80
       print ""
