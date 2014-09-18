@@ -18,6 +18,7 @@ from math import pi
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 from libtbx.phil import parse
+from scitbx.array_family import flex
 
 ##### Import model builder
 
@@ -25,9 +26,10 @@ from setup_geometry import Extract
 
 ##### Imports for reflection prediction
 
-from dials.algorithms.spot_prediction import IndexGenerator
+from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  ExperimentsPredictor
 
 #### Import model parameterisations
 
@@ -94,23 +96,41 @@ pred_param = XYPhiPredictionParameterisation(experiments,
                xl_orientation_parameterisations = [xlo_param],
                xl_unit_cell_parameterisations = [xluc_param])
 
-# Create a ScansRayPredictor
-ref_predictor = ScansRayPredictor(experiments, sweep_range)
-
 # Generate reflections
 resolution = 2.0
 index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                       space_group(space_group_symbols(1).hall()).type(),
                       resolution)
 indices = index_generator.to_array()
-ref_list = ref_predictor.predict(indices)
 
-# make a reflection_table
-reflections = ref_list.to_table(centroid_is_mm=True)
+# Predict rays within the sweep range
+ray_predictor = ScansRayPredictor(experiments, sweep_range)
+obs_refs = ray_predictor.predict(indices)
+
+# Take only those rays that intersect the detector
+intersects = ray_intersection(mydetector, obs_refs)
+obs_refs = obs_refs.select(intersects)
+
+# Make a reflection predictor and re-predict for all these reflections. The
+# result is the same, but we gain also the flags and xyzcal.px columns
+ref_predictor = ExperimentsPredictor(experiments)
+obs_refs['id'] = flex.size_t(len(obs_refs), 0)
+obs_refs = ref_predictor.predict(obs_refs)
+
+# Set 'observed' centroids from the predicted ones
+obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
+
+# Invent some variances for the centroid positions of the simulated data
+im_width = 0.1 * pi / 180.
+px_size = mydetector[0].get_pixel_size()
+var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
+var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
+var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
+obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
 # use a ReflectionManager to exclude reflections too close to the spindle
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
-refman = ReflectionManager(reflections, experiments, iqr_multiplier=None)
+refman = ReflectionManager(obs_refs, experiments, iqr_multiplier=None)
 
 # Redefine the reflection predictor to use the type expected by the Target class
 from dials.algorithms.refinement.prediction import ExperimentsPredictor

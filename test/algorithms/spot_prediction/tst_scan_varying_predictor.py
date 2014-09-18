@@ -34,7 +34,8 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.spot_prediction import ray_intersection
 from dials.algorithms.spot_prediction import reflection_frames
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  ExperimentsPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 def setup_models(args):
@@ -87,15 +88,20 @@ def ref_gen_static(experiments):
                   space_group(space_group_symbols(1).hall()).type(), dmin)
   indices = index_generator.to_array()
 
-  # Build a reflection predictor
+  # Predict rays within the sweep range
   sweep_range = scan.get_oscillation_range(deg=False)
-  ref_predictor = ScansRayPredictor(experiments, sweep_range)
+  ray_predictor = ScansRayPredictor(experiments, sweep_range)
+  refs = ray_predictor.predict(indices)
 
-  refs = ref_predictor.predict(indices)
-  # Calculate the intersection of the detector and reflection frames
-  refs = ray_intersection(detector, refs)
-  refs = reflection_frames(scan, refs)
-  refs = refs.to_table()
+  # Take only those rays that intersect the detector
+  intersects = ray_intersection(detector, refs)
+  refs = refs.select(intersects)
+
+  # Make a reflection predictor and re-predict for these reflections. The
+  # result is the same, but we gain also the flags and xyzcal.px columns
+  ref_predictor = ExperimentsPredictor(experiments)
+  refs['id'] = flex.size_t(len(refs), 0)
+  refs = ref_predictor.predict(refs)
 
   return refs
 

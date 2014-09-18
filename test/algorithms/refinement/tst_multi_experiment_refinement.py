@@ -19,6 +19,7 @@ from __future__ import division
 import sys
 from math import pi
 from scitbx import matrix
+from scitbx.array_family import flex
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
@@ -45,7 +46,8 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  ExperimentsPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -194,59 +196,47 @@ index_generator = IndexGenerator(crystal2.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices2 = index_generator.to_array()
 
-# Build a reflection predictor
-ref_predictor = ScansRayPredictor(experiments, sweep_range)
+# Predict rays within the sweep range. Set experiment IDs
+ray_predictor = ScansRayPredictor(experiments, sweep_range)
+obs_refs1 = ray_predictor.predict(indices1, experiment_id=0)
+obs_refs1['id'] = flex.size_t(len(obs_refs1), 0)
+obs_refs2 = ray_predictor.predict(indices1, experiment_id=1)
+obs_refs2['id'] = flex.size_t(len(obs_refs2), 1)
 
-obs_refs1 = ref_predictor.predict(indices1, experiment_id=0)
-obs_refs2 = ref_predictor.predict(indices1, experiment_id=1)
+# Take only those rays that intersect the detector
+intersects = ray_intersection(mydetector, obs_refs1)
+obs_refs1 = obs_refs1.select(intersects)
+intersects = ray_intersection(mydetector, obs_refs2)
+obs_refs2 = obs_refs2.select(intersects)
 
-#print "Total number of reflections excited for crystal1", len(obs_refs1)
-#print "Total number of reflections excited for crystal2", len(obs_refs2)
+# Make a reflection predictor and re-predict for all these reflections. The
+# result is the same, but we gain also the flags and xyzcal.px columns
+ref_predictor = ExperimentsPredictor(experiments)
+obs_refs1 = ref_predictor.predict(obs_refs1)
+obs_refs2 = ref_predictor.predict(obs_refs2)
+
+# Set 'observed' centroids from the predicted ones
+obs_refs1['xyzobs.mm.value'] = obs_refs1['xyzcal.mm']
+obs_refs2['xyzobs.mm.value'] = obs_refs2['xyzcal.mm']
 
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
 px_size = mydetector[0].get_pixel_size()
-var_x = (px_size[0] / 2.)**2
-var_y = (px_size[1] / 2.)**2
-var_phi = (im_width / 2.)**2
+var_x = flex.double(len(obs_refs1), (px_size[0] / 2.)**2)
+var_y = flex.double(len(obs_refs1), (px_size[1] / 2.)**2)
+var_phi = flex.double(len(obs_refs1), (im_width / 2.)**2)
+obs_refs1['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
+var_x = flex.double(len(obs_refs2), (px_size[0] / 2.)**2)
+var_y = flex.double(len(obs_refs2), (px_size[1] / 2.)**2)
+var_phi = flex.double(len(obs_refs2), (im_width / 2.)**2)
+obs_refs2['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
-obs_refs1 = ray_intersection(experiments[0].detector, obs_refs1)
-obs_refs2 = ray_intersection(experiments[1].detector, obs_refs2)
-for ref in obs_refs1:
-
-  # set the 'observed' centroids
-  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-
-  # set the centroid variance
-  ref.centroid_variance = (var_x, var_y, var_phi)
-
-  # set the frame number, calculated from rotation angle
-  ref.frame_number = myscan.get_image_index_from_angle(
-      ref.rotation_angle, deg=False)
-
-  # ensure the crystal number is set to zero (should be by default)
-  ref.crystal = 0
-
-for ref in obs_refs2:
-
-  # set the 'observed' centroids
-  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-
-  # set the centroid variance
-  ref.centroid_variance = (var_x, var_y, var_phi)
-
-  # set the frame number, calculated from rotation angle
-  ref.frame_number = myscan.get_image_index_from_angle(
-      ref.rotation_angle, deg=False)
-
-  # ensure the crystal number is set to one
-  ref.crystal = 1
-
-#print "Total number of observations made for crystal1", len(obs_refs1)
-#print "Total number of observations made for crystal2", len(obs_refs2)
+#print "Total number of reflections excited for crystal1", len(obs_refs1)
+#print "Total number of reflections excited for crystal2", len(obs_refs2)
 
 # concatenate reflection lists
-obs_refs = obs_refs1.concatenate(obs_refs2)
+obs_refs1.extend(obs_refs2)
+obs_refs = obs_refs1
 
 ###############################
 # Undo known parameter shifts #
@@ -276,8 +266,8 @@ params.refinement.refinery.track_parameter_correlation=True
 #params.refinement.parameterisation.crystal.scan_varying=True
 
 from dials.algorithms.refinement.refiner import RefinerFactory
-refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs.to_table(centroid_is_mm=True), experiments, verbosity=0)
+refiner = RefinerFactory.from_parameters_data_experiments(params, obs_refs,
+  experiments, verbosity=0)
 
 history = refiner.run()
 #plt = refiner.parameter_correlation_plot(len(history["parameter_correlation"])-1)

@@ -23,6 +23,9 @@ from scitbx import matrix
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
+# Import for surgery on reflection_tables
+from dials.array_family import flex
+
 # Get modules to build models and minimiser using PHIL
 import setup_geometry
 import setup_minimiser
@@ -46,7 +49,8 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  ExperimentsPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -149,32 +153,30 @@ indices = index_generator.to_array()
 ref_predictor = ScansRayPredictor(scans_experiments, sweep_range)
 obs_refs = ref_predictor.predict(indices, experiment_id=0)
 
+# Take only those rays that intersect the detector
+intersects = ray_intersection(mydetector, obs_refs)
+obs_refs = obs_refs.select(intersects)
+
+# Add in flags and ID columns by copying into standard reflection table
+tmp = flex.reflection_table.empty_standard(len(obs_refs))
+tmp.update(obs_refs)
+obs_refs = tmp
+
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
 px_size = mydetector[0].get_pixel_size()
-var_x = (px_size[0] / 2.)**2
-var_y = (px_size[1] / 2.)**2
-var_phi = (im_width / 2.)**2
+var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
+var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
+var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
+obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
-for ref in obs_refs:
-
-  # set the centroid variance
-  ref.centroid_variance = (var_x, var_y, var_phi)
-
-  # ensure the crystal number is set to zero (should be by default)
-  ref.crystal = 0
-
-# Build a stills reflection predictor
-from dials.algorithms.refinement.prediction import ExperimentsPredictor
+# Re-predict using the stills reflection predictor
 stills_ref_predictor = ExperimentsPredictor(stills_experiments)
-
-obs_refs_stills = obs_refs.to_table(centroid_is_mm=True)
 stills_ref_predictor.update()
-obs_refs_stills = stills_ref_predictor.predict(obs_refs_stills)
+obs_refs_stills = stills_ref_predictor.predict(obs_refs)
 
-# set the calculated centroids as the 'observations'
-for iref, ref in enumerate(obs_refs_stills):
-  obs_refs_stills[iref] = {'xyzobs.mm.value': ref['xyzcal.mm']}
+# Set 'observed' centroids from the predicted ones
+obs_refs_stills['xyzobs.mm.value'] = obs_refs_stills['xyzcal.mm']
 
 ###############################
 # Undo known parameter shifts #

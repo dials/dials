@@ -22,6 +22,7 @@ from math import pi
 from libtbx.phil import parse
 from libtbx.test_utils import not_approx_equal
 from scitbx import matrix
+from scitbx.array_family import flex
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -38,7 +39,8 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  ExperimentsPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -120,37 +122,37 @@ def generate_reflections(experiment):
                   space_group(space_group_symbols(1).hall()).type(), resolution)
   indices = index_generator.to_array()
 
-  # Build a reflection predictor
-  ref_predictor = ScansRayPredictor(experiments,
-                                    scan.get_oscillation_range(deg=False))
-
-  obs_refs = ref_predictor.predict(indices)
+  # Predict rays within the sweep range
+  ray_predictor = ScansRayPredictor(experiments,
+    scan.get_oscillation_range(deg=False))
+  obs_refs = ray_predictor.predict(indices)
 
   print "Total number of reflections excited", len(obs_refs)
 
+  # Take only those rays that intersect the detector
+  intersects = ray_intersection(detector, obs_refs)
+  obs_refs = obs_refs.select(intersects)
+
+  # Make a reflection predictor and re-predict for all these reflections. The
+  # result is the same, but we gain also the flags and xyzcal.px columns
+  ref_predictor = ExperimentsPredictor(experiments)
+  obs_refs['id'] = flex.size_t(len(obs_refs), 0)
+  obs_refs = ref_predictor.predict(obs_refs)
+
+  # Set 'observed' centroids from the predicted ones
+  obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
+
   # Invent some variances for the centroid positions of the simulated data
-  im_width = 0.1 * pi / 180.
+  im_width = scan.get_oscillation()[1] * pi / 180.
   px_size = detector[0].get_pixel_size()
-  var_x = (px_size[0] / 2.)**2
-  var_y = (px_size[1] / 2.)**2
-  var_phi = (im_width / 2.)**2
-
-  obs_refs = ray_intersection(detector, obs_refs)
-  for ref in obs_refs:
-
-    # set the 'observed' centroids
-    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y ,var_phi)
-
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = scan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
+  var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
+  var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
+  var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
+  obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
   print "Total number of observations made", len(obs_refs)
 
-  return obs_refs.to_table(centroid_is_mm=True)
+  return obs_refs
 
 
 if __name__ == "__main__":
@@ -177,7 +179,7 @@ if __name__ == "__main__":
     print usage
     raise
 
-  from dials.data.refinement import phil_scope as master_phil
+  from dials.algorithms.refinement.refiner import phil_scope as master_phil
   interp = master_phil.command_line_argument_interpreter(
     home_scope="refinement")
   cmdline_phils = interp.process_args(args)

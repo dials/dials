@@ -19,6 +19,7 @@ from math import pi
 from libtbx.phil import parse
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
+from scitbx.array_family import flex
 
 # Building experimental models
 from setup_geometry import Extract
@@ -26,7 +27,8 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  ExperimentsPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # We will set up a mock scan
@@ -81,33 +83,15 @@ experiments.append(Experiment(
 
 # Select those that are excited in a 30 degree sweep and get angles
 UB = mycrystal.get_U() * mycrystal.get_B()
-ref_predictor = ScansRayPredictor(experiments, sweep_range)
+ray_predictor = ScansRayPredictor(experiments, sweep_range)
+obs_refs = ray_predictor.predict(indices)
 
-obs_refs = ref_predictor.predict(indices)
+# Set the experiment number
+obs_refs['id'] = flex.size_t(len(obs_refs), 0)
 
-# Invent some variances for the centroid positions of the simulated data
-im_width = 0.1 * pi / 180.
-px_size = mydetector[0].get_pixel_size()
-var_x = (px_size[0] / 2.)**2
-var_y = (px_size[1] / 2.)**2
-var_phi = (im_width / 2.)**2
-
-for ref in obs_refs:
-
-  # calc and set the impact position, assuming all reflections
-  # intersect panel 0.
-  impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
-  ref.image_coord_mm = impacts
-
-  # set the 'observed' centroids
-  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-
-  # set the centroid variance
-  ref.centroid_variance = (var_x, var_y ,var_phi)
-
-  # set the frame number, calculated from rotation angle
-  ref.frame_number = myscan.get_image_index_from_angle(
-      ref.rotation_angle, deg=False)
+# Calculate intersections
+ref_predictor = ExperimentsPredictor(experiments)
+obs_refs = ref_predictor.predict(obs_refs)
 
 print "Total number of observations made", len(obs_refs)
 
@@ -117,14 +101,14 @@ spindle = matrix.col(mygonio.get_rotation_axis())
 
 for ref in obs_refs:
 
-  # get the s vector of this reflection
-  s = matrix.col(ref.beam_vector)
+  # get the s1 vector of this reflection
+  s1 = matrix.col(ref['s1'])
 
-  r = s - s0
+  r = s1 - s0
   r_orig = r.rotate(spindle, -1., deg=True)
 
   # is it outside the Ewald sphere (i.e. entering)?
   test = (s0 + r_orig).length() > s0.length()
-  assert(ref.entering == test)
+  assert(ref['entering'] == test)
 
 print "OK"

@@ -17,6 +17,9 @@ import sys
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.phil import parse
 
+#### dials imports
+from dials.array_family import flex
+
 ##### Import model builder
 
 from setup_geometry import Extract
@@ -98,18 +101,19 @@ stills_experiments.append(Experiment(
 #### Unit tests
 
 # Create a ScansRayPredictor
-ref_predictor = ScansRayPredictor(experiments, sweep_range)
+ray_predictor = ScansRayPredictor(experiments, sweep_range)
 
-# Generate reflections
+# Generate rays
 resolution = 2.0
 index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                       space_group(space_group_symbols(1).hall()).type(),
                       resolution)
 indices = index_generator.to_array()
-ref_list = ref_predictor.predict(indices)
+rays = ray_predictor.predict(indices)
 
-# make a reflection_table
-reflections = ref_list.to_table(centroid_is_mm=True)
+# Make a standard reflection_table and copy in the ray data
+reflections = flex.reflection_table.empty_standard(len(rays))
+reflections.update(rays)
 
 # Build a prediction parameterisation
 pred_param = StillsPredictionParameterisation(stills_experiments,

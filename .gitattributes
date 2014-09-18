@@ -501,7 +501,6 @@ scratch/dgw/detector_model_old/detector.py -text
 scratch/dgw/enter_interactive_session.py -text
 scratch/dgw/goniometer_model/__init__.py -text
 scratch/dgw/goniometer_model/gonio.py -text
-scratch/dgw/plot_derivatives.py -text
 scratch/dgw/prediction/README -text
 scratch/dgw/prediction/__init__.py -text
 scratch/dgw/prediction/obsolete_predictors.py -text
@@ -514,7 +513,6 @@ scratch/dgw/refinement/explore_model_quality_vs_nref.py -text
 scratch/dgw/refinement/infer_scattering_vectors.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
 scratch/dgw/refinement/perturb_reflection_phi.py -text
-scratch/dgw/refinement/plot_derivatives.py -text
 scratch/dgw/rotation_decomposition.py -text
 scratch/dgw/source_model/__init__.py -text
 scratch/dgw/source_model/source.py -text

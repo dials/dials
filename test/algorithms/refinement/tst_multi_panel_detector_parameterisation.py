@@ -27,6 +27,7 @@ from __future__ import division
 import sys
 from math import pi
 from scitbx import matrix
+from dials.array_family import flex
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
@@ -231,36 +232,37 @@ if __name__ == '__main__':
   obs_refs = ref_predictor.predict(indices)
   obs_refs2 = ref_predictor.predict(indices)
   for r1, r2 in zip(obs_refs, obs_refs2):
-    assert r1.beam_vector == r2.beam_vector
+    assert r1['s1'] == r2['s1']
 
   # get the panel intersections
-  obs_refs = ray_intersection(single_panel_detector, obs_refs)
-  obs_refs2 = ray_intersection(multi_panel_detector, obs_refs2)
+  sel = ray_intersection(single_panel_detector, obs_refs)
+  obs_refs = obs_refs.select(sel)
+  sel = ray_intersection(multi_panel_detector, obs_refs2)
+  obs_refs2 = obs_refs2.select(sel)
+  assert len(obs_refs) == len(obs_refs2)
+
+  # Set 'observed' centroids from the predicted ones
+  obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
+  obs_refs2['xyzobs.mm.value'] = obs_refs2['xyzcal.mm']
 
   # Invent some variances for the centroid positions of the simulated data
   im_width = 0.1 * pi / 180.
   px_size = single_panel_detector[0].get_pixel_size()
-  var_x = (px_size[0] / 2.)**2
-  var_y = (px_size[1] / 2.)**2
-  var_phi = (im_width / 2.)**2
+  var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
+  var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
+  var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
 
   # set the variances and frame numbers
-  assert len(obs_refs) == len(obs_refs2)
-  for ref, ref2 in zip(obs_refs, obs_refs2):
+  obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
+  obs_refs2['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
-    # set the 'observed' centroids
-    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-    ref2.centroid_position = ref2.image_coord_mm + (ref2.rotation_angle, )
-
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y, var_phi)
-    ref2.centroid_variance = (var_x, var_y, var_phi)
-
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = myscan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
-    ref2.frame_number = myscan.get_image_index_from_angle(
-        ref2.rotation_angle, deg=False)
+  # Add in flags and ID columns by copying into standard reflection tables
+  tmp = flex.reflection_table.empty_standard(len(obs_refs))
+  tmp.update(obs_refs)
+  obs_refs = tmp
+  tmp = flex.reflection_table.empty_standard(len(obs_refs2))
+  tmp.update(obs_refs2)
+  obs_refs2 = tmp
 
   ###############################
   # Undo known parameter shifts #
@@ -276,10 +278,8 @@ if __name__ == '__main__':
   # Select reflections for refinement #
   #####################################
 
-  refman = ReflectionManager(obs_refs.to_table(centroid_is_mm=True),
-                             experiments_single_panel)
-  refman2 = ReflectionManager(obs_refs.to_table(centroid_is_mm=True),
-                              experiments_multi_panel)
+  refman = ReflectionManager(obs_refs, experiments_single_panel)
+  refman2 = ReflectionManager(obs_refs, experiments_multi_panel)
 
   ###############################
   # Set up the target functions #

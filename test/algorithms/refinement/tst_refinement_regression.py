@@ -19,6 +19,7 @@ parameters using generated reflection positions from ideal geometry.
 from __future__ import division
 from math import pi
 from scitbx import matrix
+from scitbx.array_family import flex
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
@@ -44,8 +45,9 @@ from rstbx.symmetry.constraints.parameter_reduction import \
     symmetrize_reduce_enlarge
 
 # Reflection prediction
-from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
+from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  ExperimentsPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
@@ -184,32 +186,30 @@ im_width = temp[1] - temp[0]
 assert sweep_range == (0., pi)
 assert approx_equal(im_width, 0.1 * pi / 180.)
 
-# Build a reflection predictor
-ref_predictor = ScansRayPredictor(experiments, sweep_range)
-obs_refs = ref_predictor.predict(indices)
+# Predict rays within the sweep range
+ray_predictor = ScansRayPredictor(experiments, sweep_range)
+obs_refs = ray_predictor.predict(indices)
+
+# Take only those rays that intersect the detector
+intersects = ray_intersection(mydetector, obs_refs)
+obs_refs = obs_refs.select(intersects)
+
+# Make a reflection predictor and re-predict for all these reflections. The
+# result is the same, but we gain also the flags and xyzcal.px columns
+ref_predictor = ExperimentsPredictor(experiments)
+obs_refs['id'] = flex.size_t(len(obs_refs), 0)
+obs_refs = ref_predictor.predict(obs_refs)
+
+# Set 'observed' centroids from the predicted ones
+obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
 
 # Invent some variances for the centroid positions of the simulated data
-assert(len(mydetector) == 1)
 im_width = 0.1 * pi / 180.
 px_size = mydetector[0].get_pixel_size()
-var_x = (px_size[0] / 2.)**2
-var_y = (px_size[1] / 2.)**2
-var_phi = (im_width / 2.)**2
-
-for ref in obs_refs:
-
-  # calc and set the observed impact position, assuming all reflections
-  # intersect panel 0.
-  impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
-  ref.image_coord_mm = impacts
-  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-
-  # set the centroid variance
-  ref.centroid_variance = (var_x, var_y ,var_phi)
-
-  # set the frame number, calculated from rotation angle
-  ref.frame_number = myscan.get_image_index_from_angle(
-      ref.rotation_angle, deg=False)
+var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
+var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
+var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
+obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
 # The total number of observations should be 1128
 assert len(obs_refs) == 1128
@@ -227,16 +227,11 @@ xluc_param.set_param_vals(xluc_p_vals)
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(obs_refs.to_table(centroid_is_mm=True), experiments,
-                           iqr_multiplier=None)
+refman = ReflectionManager(obs_refs, experiments, iqr_multiplier=None)
 
 ##############################
 # Set up the target function #
 ##############################
-
-# redefine the reflection predictor for refinement
-from dials.algorithms.refinement.prediction import ExperimentsPredictor
-ref_predictor = ExperimentsPredictor(experiments)
 
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up

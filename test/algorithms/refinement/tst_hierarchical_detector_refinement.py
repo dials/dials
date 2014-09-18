@@ -29,8 +29,8 @@ def generate_reflections(experiments):
     ScansRayPredictor, ExperimentsPredictor
   from dials.algorithms.spot_prediction import ray_intersection
   from cctbx.sgtbx import space_group, space_group_symbols
+  from scitbx.array_family import flex
 
-  #beam = experiments[0].beam
   detector = experiments[0].detector
   crystal = experiments[0].crystal
 
@@ -40,37 +40,34 @@ def generate_reflections(experiments):
                   space_group(space_group_symbols(1).hall()).type(), resolution)
   indices = index_generator.to_array()
 
-  # Build a reflection predictor
+  # Predict rays within the sweep range
   scan = experiments[0].scan
   sweep_range = scan.get_oscillation_range(deg=False)
-  ref_predictor = ScansRayPredictor(experiments, sweep_range)
+  ray_predictor = ScansRayPredictor(experiments, sweep_range)
+  obs_refs = ray_predictor.predict(indices)
 
-  obs_refs = ref_predictor.predict(indices)
+  # Take only those rays that intersect the detector
+  intersects = ray_intersection(detector, obs_refs)
+  obs_refs = obs_refs.select(intersects)
+
+  # Make a reflection predictor and re-predict for all these reflections. The
+  # result is the same, but we gain also the flags and xyzcal.px columns
+  ref_predictor = ExperimentsPredictor(experiments)
+  obs_refs['id'] = flex.size_t(len(obs_refs), 0)
+  obs_refs = ref_predictor.predict(obs_refs)
+
+  # Set 'observed' centroids from the predicted ones
+  obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
 
   # Invent some variances for the centroid positions of the simulated data
   im_width = 0.1 * pi / 180.
   px_size = detector[0].get_pixel_size()
-  var_x = (px_size[0] / 2.)**2
-  var_y = (px_size[1] / 2.)**2
-  var_phi = (im_width / 2.)**2
+  var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
+  var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
+  var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
+  obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
-  obs_refs = ray_intersection(detector, obs_refs)
-  for ref in obs_refs:
-
-    # set the 'observed' centroids
-    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y ,var_phi)
-
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = scan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
-
-  # redefine the reflection predictor to use the ExperimentsPredictor class
-  ref_predictor = ExperimentsPredictor(experiments)
-
-  return obs_refs.to_table(centroid_is_mm=True), ref_predictor
+  return obs_refs, ref_predictor
 
 def test1():
 
@@ -207,21 +204,10 @@ def test1():
   history = refiner.run()
   assert history.reason_for_termination == "RMSD target achieved"
 
-  #from dials.util.command_line import interactive_console; interactive_console()
-  #f=open("temp2.dat","w")
-  #for ref in refs:
-  #  p = ref['panel']
-  #  impact = ref['xyzobs.mm.value'][0:2]
-  #  coord = detector[p].get_lab_coord(impact)
-  #  #f.write("{0}\n".format(ref['panel']))
-  #  f.write("{0} {1} {2}\n".format(*coord))
-  #f.close()
-
   #compare detector with original detector
   orig_det = im_set.get_detector()
   refined_det = refiner.get_experiments()[0].detector
 
-  #from dials.util.command_line import interactive_console; interactive_console()
   from scitbx import matrix
   import math
   for op, rp in zip(orig_det, refined_det):
