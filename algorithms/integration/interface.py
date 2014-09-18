@@ -582,6 +582,14 @@ class ManagerOsc(Manager):
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
+    # Ensure we have the correct type of data
+    if not experiments.all_sweeps():
+      raise RuntimeError('''
+        An inappropriate integration algorithm may have been selected!
+         Trying to perform rotation integration when not all experiments
+         are indicated as rotation experiments.
+      ''')
+
     # Create the pre-processor
     preprocess = PreProcessorOsc(
       experiments,
@@ -614,6 +622,14 @@ class ManagerStills(Manager):
                reflections,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
+
+    # Ensure we have the correct type of data
+    if not experiments.all_stills():
+      raise RuntimeError('''
+        An inappropriate integration algorithm may have been selected!
+         Trying to perform stills integration when not all experiments
+         are indicated as stills experiments.
+      ''')
 
     # Create the pre-processor
     preprocess = PreProcessorStills(

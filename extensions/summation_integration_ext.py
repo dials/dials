@@ -51,9 +51,4 @@ class SummationIntegrationExt(IntensityIface):
         integrator_type = '3d'
       else:
         raise RuntimeError("Experiments must be all sweeps or all stills.")
-    else:
-      if integrator_type == 'stills':
-        assert(experiments.all_stills())
-      else:
-        assert(experiments.all_sweeps())
     return integrator_type
