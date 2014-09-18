@@ -24,7 +24,7 @@ class SummationIntegrationExt(IntensityIface):
 
   phil = '''
 
-    integrator = *3d flat3d 2d single2d stills
+    integrator = *auto 3d flat3d 2d single2d stills
       .type = choice
       .help = "The integrator to use."
       .expert_level=3
@@ -42,4 +42,18 @@ class SummationIntegrationExt(IntensityIface):
   @classmethod
   def type(cls, params, experiments):
     ''' Return the type of the integrator. '''
-    return params.integration.intensity.sum.integrator
+    from libtbx import Auto
+    integrator_type = params.integration.intensity.sum.integrator
+    if integrator_type == Auto:
+      if experiments.all_stills():
+        integrator_type = 'stills'
+      elif experiments.all_sweeps():
+        integrator_type = '3d'
+      else:
+        raise RuntimeError("Experiments must be all sweeps or all stills.")
+    else:
+      if integrator_type == 'stills':
+        assert(experiments.all_stills())
+      else:
+        assert(experiments.all_sweeps())
+    return integrator_type
