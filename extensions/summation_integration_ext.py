@@ -44,7 +44,7 @@ class SummationIntegrationExt(IntensityIface):
     ''' Return the type of the integrator. '''
     from libtbx import Auto
     integrator_type = params.integration.intensity.sum.integrator
-    if integrator_type == Auto:
+    if integrator_type == Auto or integrator_type == 'auto':
       if experiments.all_stills():
         integrator_type = 'stills'
       elif experiments.all_sweeps():
