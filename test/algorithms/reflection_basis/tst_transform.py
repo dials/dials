@@ -32,7 +32,7 @@ class TestForward(object):
   def __init__(self, filename):
     from dials.model.serialize import load
     from dials.algorithms.reflection_basis import transform
-    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
     from math import pi
 
     # Load the sweep
@@ -62,7 +62,7 @@ class TestForward(object):
     self.delta_mosaicity = self.n_sigma * self.mosaicity
 
     # Create the bounding box calculator
-    self.calculate_bbox = BBoxCalculator(
+    self.calculate_bbox = BBoxCalculator3D(
         self.beam, self.detector, self.gonio, self.scan,
         self.delta_divergence2,
         self.delta_mosaicity)
@@ -109,7 +109,7 @@ class TestForward(object):
       panel = 0
 
       # Calculate the bounding box
-      bbox = self.calculate_bbox(s1, phi, panel)
+      bbox = self.calculate_bbox(s1, z, panel)
       x0, x1, y0, y1, z0, z1 = bbox
 
       # Create the coordinate system
@@ -183,7 +183,7 @@ class TestForward(object):
 #        panel = 0
 
 #        # Calculate the bounding box
-#        bbox = self.calculate_bbox(s1, phi, panel)
+#        bbox = self.calculate_bbox(s1, z, panel)
 #        x0, x1, y0, y1, z0, z1 = bbox
 
 #        # Create the coordinate system
@@ -291,7 +291,7 @@ class TestForward(object):
       panel = 0
 
       # Calculate the bounding box
-      bbox = self.calculate_bbox(s1, phi, panel)
+      bbox = self.calculate_bbox(s1, z, panel)
       x0, x1, y0, y1, z0, z1 = bbox
 
       # Create the coordinate system
@@ -352,7 +352,7 @@ class TestForward(object):
 #    def __init__(self, filename):
 #        from dials.model.serialize import load
 #        from dials.algorithms.reflection_basis import transform
-#        from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
+#        from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 #        from math import pi
 
 #        # Load the sweep
@@ -376,7 +376,7 @@ class TestForward(object):
 #        self.delta_mosaicity = self.n_sigma * self.mosaicity
 
 #        # Create the bounding box calculator
-#        self.calculate_bbox = BBoxCalculator(
+#        self.calculate_bbox = BBoxCalculator3D(
 #            self.beam, self.detector, self.gonio, self.scan,
 #            self.delta_divergence2,
 #            self.delta_mosaicity)
@@ -419,7 +419,7 @@ class TestForward(object):
 #            panel = 0
 
 #            # Calculate the bounding box
-#            bbox = self.calculate_bbox(s1, phi, panel)
+#            bbox = self.calculate_bbox(s1, z, panel)
 #            x0, x1, y0, y1, z0, z1 = bbox
 
 #            # Create the coordinate system

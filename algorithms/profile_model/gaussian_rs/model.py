@@ -77,18 +77,12 @@ class ProfileModel(ProfileModelIface):
     delta_m = self._n_sigma * self._sigma_m
 
     # Create the bbox calculator
-    calculate = BBoxCalculator(
-      experiment.beam,
-      experiment.detector,
-      experiment.goniometer,
-      experiment.scan,
-      delta_b,
-      delta_m)
+    calculate = BBoxCalculator(experiment, delta_b, delta_m)
 
     # Calculate the bounding boxes of all the reflections
     reflections['bbox'] = calculate(
       reflections['s1'],
-      reflections['xyzcal.mm'].parts()[2],
+      reflections['xyzcal.px'].parts()[2],
       reflections['panel'])
 
   def compute_partiality(self, experiment, reflections):
@@ -193,19 +187,13 @@ class ProfileModelList(ProfileModelListIface):
       delta_m = model.n_sigma() * model.sigma_m(deg=False)
 
       # Create the bbox calculator
-      calculate.append(BBoxCalculator(
-        experiment.beam,
-        experiment.detector,
-        experiment.goniometer,
-        experiment.scan,
-        delta_b,
-        delta_m))
+      calculate.append(BBoxCalculator(experiment, delta_b, delta_m))
 
     # Calculate the bounding boxes of all the reflections
     reflections['bbox'] = calculate(
       reflections['id'],
       reflections['s1'],
-      reflections['xyzcal.mm'].parts()[2],
+      reflections['xyzcal.px'].parts()[2],
       reflections['panel'])
 
   def compute_partiality(self, experiments, reflections):

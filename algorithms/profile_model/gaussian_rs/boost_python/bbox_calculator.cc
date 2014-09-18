@@ -19,16 +19,20 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   void export_bbox_calculator()
   {
-    int6 (BBoxCalculator::*calculate_single)(
-      vec3 <double>, double, std::size_t) const =
-        &BBoxCalculator::operator();
-    af::shared<int6> (BBoxCalculator::*calculate_array) (
-      const af::const_ref< vec3<double> >&,
-      const af::const_ref<double> &,
-      const af::const_ref<std::size_t>&) const =
-        &BBoxCalculator::operator();
+    class_ <BBoxCalculatorIface, boost::noncopyable>(
+        "BBoxCalculatorIface", no_init)
+      .def("__call__", &BBoxCalculatorIface::single, (
+        arg("s1"),
+        arg("frame"),
+        arg("panel")))
+      .def("__call__", &BBoxCalculatorIface::array, (
+        arg("s1"),
+        arg("frame"),
+        arg("panel")))
+      ;
 
-    class_ <BBoxCalculator> ("BBoxCalculator", no_init)
+    class_ <BBoxCalculator3D, bases<BBoxCalculatorIface> >(
+        "BBoxCalculator3D", no_init)
       .def(init <const Beam&,
                  const Detector&,
                  const Goniometer&,
@@ -41,10 +45,20 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("scan"),
         arg("delta_divergence"),
         arg("delta_mosaicity"))))
-      .def("__call__", calculate_single, (
-        arg("s1"), arg("phi"), arg("panel")))
-      .def("__call__", calculate_array, (
-        arg("s1"), arg("phi"), arg("panel")));
+      ;
+
+    class_ <BBoxCalculator2D, bases<BBoxCalculatorIface> >(
+        "BBoxCalculator2D", no_init)
+      .def(init <const Beam&,
+                 const Detector&,
+                 double,
+                 double > ((
+        arg("beam"),
+        arg("detector"),
+        arg("delta_divergence"),
+        arg("delta_mosaicity"))))
+      ;
+
 
     class_ <BBoxMultiCalculator>("BBoxMultiCalculator")
       .def("append", &BBoxMultiCalculator::push_back)

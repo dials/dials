@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H
 
 #include <cmath>
+#include <boost/shared_ptr.hpp>
 #include <scitbx/constants.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
@@ -41,8 +42,28 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
 
+
+  /**
+   * Interface for bounding box calculator.
+   */
+  class BBoxCalculatorIface {
+  public:
+
+    virtual int6 single(
+        vec3 <double> s1,
+        double frame,
+        std::size_t panel) const  = 0;
+
+    virtual
+    af::shared<int6> array(
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref<double> &frame,
+        const af::const_ref<std::size_t> &panel) const = 0;
+  };
+
+
   /** Calculate the bounding box for each reflection */
-  class BBoxCalculator {
+  class BBoxCalculator3D : public BBoxCalculatorIface {
 
   public:
 
@@ -54,12 +75,12 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param delta_divergence The xds delta_divergence parameter
      * @param delta_mosaicity The xds delta_mosaicity parameter
      */
-    BBoxCalculator(const Beam &beam,
-                   const Detector &detector,
-                   const Goniometer &gonio,
-                   const Scan &scan,
-                   double delta_divergence,
-                   double delta_mosaicity)
+    BBoxCalculator3D(const Beam &beam,
+                     const Detector &detector,
+                     const Goniometer &gonio,
+                     const Scan &scan,
+                     double delta_divergence,
+                     double delta_mosaicity)
       : s0_(beam.get_s0()),
         m2_(gonio.get_rotation_axis()),
         detector_(detector),
@@ -87,13 +108,17 @@ namespace dials { namespace algorithms { namespace shoebox {
      * for the x, y, z image volume coordinates.
      *
      * @param s1 The diffracted beam vector
-     * @param phi The rotation angle
+     * @param frame The predicted frame number
      * @returns A 6 element array: (minx, maxx, miny, maxy, minz, maxz)
      */
-    int6 operator()(vec3 <double> s1, double phi, std::size_t panel) const {
+    virtual
+    int6 single(vec3 <double> s1, double frame, std::size_t panel) const {
 
       // Ensure our values are ok
       DIALS_ASSERT(s1.length_sq() > 0);
+
+      // Get the rotation angle
+      double phi = scan_.get_angle_from_array_index(frame);
 
       // Create the coordinate system for the reflection
       reflection_basis::CoordinateSystem xcs(m2_, s0_, s1, phi);
@@ -139,6 +164,7 @@ namespace dials { namespace algorithms { namespace shoebox {
                 (int)floor(min(z)), (int)ceil(max(z)));
 
       vec2<int> array_range = scan_.get_array_range();
+      DIALS_ASSERT(bbox[4] <= frame && frame < bbox[5]);
       bbox[4] = std::max(bbox[4], array_range[0]);
       bbox[5] = std::min(bbox[5], array_range[1]);
       DIALS_ASSERT(bbox[1] > bbox[0]);
@@ -151,17 +177,18 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Calculate the rois for an array of reflections given by the array of
      * diffracted beam vectors and rotation angles.
      * @param s1 The array of diffracted beam vectors
-     * @param phi The array of rotation angles.
+     * @param frame The array of frame numbers.
      */
-    af::shared<int6> operator()(
+    virtual
+    af::shared<int6> array(
         const af::const_ref< vec3<double> > &s1,
-        const af::const_ref<double> &phi,
+        const af::const_ref<double> &frame,
         const af::const_ref<std::size_t> &panel) const {
-      DIALS_ASSERT(s1.size() == phi.size());
+      DIALS_ASSERT(s1.size() == frame.size());
       DIALS_ASSERT(s1.size() == panel.size());
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
       for (std::size_t i = 0; i < s1.size(); ++i) {
-        result[i] = operator()(s1[i], phi[i], panel[i]);
+        result[i] = single(s1[i], frame[i], panel[i]);
       }
       return result;
     }
@@ -177,6 +204,119 @@ namespace dials { namespace algorithms { namespace shoebox {
   };
 
 
+  /** Calculate the bounding box for each reflection */
+  class BBoxCalculator2D : public BBoxCalculatorIface {
+
+  public:
+
+    /**
+     * Initialise the bounding box calculation.
+     * @param beam The beam parameters
+     * @param detector The detector parameters
+     * @param delta_divergence The xds delta_divergence parameter
+     * @param delta_mosaicity The xds delta_mosaicity parameter
+     */
+    BBoxCalculator2D(const Beam &beam,
+                     const Detector &detector,
+                     double delta_divergence,
+                     double delta_mosaicity)
+      : s0_(beam.get_s0()),
+        detector_(detector),
+        delta_divergence_(delta_divergence) {
+      DIALS_ASSERT(delta_divergence > 0.0);
+      DIALS_ASSERT(delta_mosaicity > 0.0);
+    }
+
+    /**
+     * Calculate the bbox on the detector image volume for the reflection.
+     *
+     * The roi is calculated using the parameters delta_divergence and
+     * delta_mosaicity. The reflection mask comprises all pixels where:
+     *  |e1| <= delta_d, |e2| <= delta_d, |e3| <= delta_m
+     *
+     * We transform the coordinates of the box
+     *   (-delta_d, -delta_d, 0)
+     *   (+delta_d, -delta_d, 0)
+     *   (-delta_d, +delta_d, 0)
+     *   (+delta_d, +delta_d, 0)
+     *
+     * to the detector image volume and return the minimum and maximum values
+     * for the x, y, z image volume coordinates.
+     *
+     * @param s1 The diffracted beam vector
+     * @param frame The predicted frame number
+     * @returns A 6 element array: (minx, maxx, miny, maxy, minz, maxz)
+     */
+    virtual
+    int6 single(vec3 <double> s1, double frame, std::size_t panel) const {
+
+      // Ensure our values are ok
+      DIALS_ASSERT(s1.length_sq() > 0);
+
+      // Create the coordinate system for the reflection
+      reflection_basis::CoordinateSystem2d xcs(s0_, s1);
+
+      // Get the divergence and mosaicity for this point
+      double delta_d = delta_divergence_;
+
+      // Calculate the beam vectors at the following xds coordinates:
+      //   (-delta_d, -delta_d, 0)
+      //   (+delta_d, -delta_d, 0)
+      //   (-delta_d, +delta_d, 0)
+      //   (+delta_d, +delta_d, 0)
+      double point = delta_d;
+      double3 sdash1 = xcs.to_beam_vector(double2(-point, -point));
+      double3 sdash2 = xcs.to_beam_vector(double2(+point, -point));
+      double3 sdash3 = xcs.to_beam_vector(double2(-point, +point));
+      double3 sdash4 = xcs.to_beam_vector(double2(+point, +point));
+
+      // Get the detector coordinates (px) at the ray intersections
+      double2 xy1 = detector_[panel].get_ray_intersection_px(sdash1);
+      double2 xy2 = detector_[panel].get_ray_intersection_px(sdash2);
+      double2 xy3 = detector_[panel].get_ray_intersection_px(sdash3);
+      double2 xy4 = detector_[panel].get_ray_intersection_px(sdash4);
+
+      // Return the roi in the following form:
+      // (minx, maxx, miny, maxy, minz, maxz)
+      // Min's are rounded down to the nearest integer, Max's are rounded up
+      double4 x(xy1[0], xy2[0], xy3[0], xy4[0]);
+      double4 y(xy1[1], xy2[1], xy3[1], xy4[1]);
+      int6 bbox((int)floor(min(x)), (int)ceil(max(x)),
+                (int)floor(min(y)), (int)ceil(max(y)),
+                (int)floor(frame),      (int)floor(frame)+1);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+      return bbox;
+    }
+
+    /**
+     * Calculate the rois for an array of reflections given by the array of
+     * diffracted beam vectors and rotation angles.
+     * @param s1 The array of diffracted beam vectors
+     * @param phi The array of rotation angles.
+     */
+    virtual
+    af::shared<int6> array(
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref<double> &frame,
+        const af::const_ref<std::size_t> &panel) const {
+      DIALS_ASSERT(s1.size() == frame.size());
+      DIALS_ASSERT(s1.size() == panel.size());
+      af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
+      for (std::size_t i = 0; i < s1.size(); ++i) {
+        result[i] = single(s1[i], frame[i], panel[i]);
+      }
+      return result;
+    }
+
+  private:
+
+    vec3<double> s0_;
+    Detector detector_;
+    double delta_divergence_;
+  };
+
   /**
    * Class to help compute bbox for multiple experiments.
    */
@@ -186,7 +326,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     /**
      * Add a bbox calculator to the list.
      */
-    void push_back(const BBoxCalculator &obj) {
+    void push_back(boost::shared_ptr<BBoxCalculatorIface> obj) {
       compute_.push_back(obj);
     }
 
@@ -216,14 +356,14 @@ namespace dials { namespace algorithms { namespace shoebox {
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
       for (std::size_t i = 0; i < s1.size(); ++i) {
         DIALS_ASSERT(id[i] < size());
-        result[i] = compute_[id[i]](s1[i], phi[i], panel[i]);
+        result[i] = compute_[id[i]]->single(s1[i], phi[i], panel[i]);
       }
       return result;
     }
 
   private:
 
-    std::vector<BBoxCalculator> compute_;
+    std::vector< boost::shared_ptr<BBoxCalculatorIface> > compute_;
   };
 
   /** Calculate the partiality for each reflection */

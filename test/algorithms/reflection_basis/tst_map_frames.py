@@ -7,7 +7,7 @@ class TestMapFramesForward(object):
     from math import pi
     from dials.model.serialize import load
     from dials.algorithms.reflection_basis.transform import MapFramesForward
-    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     # Load the sweep
     self.sweep = load.sweep(filename)
@@ -37,7 +37,7 @@ class TestMapFramesForward(object):
         self.grid_size[2])
 
     # Create the bounding box calculator
-    self.calculate_bbox = BBoxCalculator(
+    self.calculate_bbox = BBoxCalculator3D(
         self.beam, self.detector, self.gonio, self.scan,
         self.delta_divergence,
         self.delta_mosaicity)
@@ -67,7 +67,7 @@ class TestMapFramesForward(object):
       panel = 0
 
       # Calculate the bounding box
-      bbox = self.calculate_bbox(s1, phi, panel)
+      bbox = self.calculate_bbox(s1, z, panel)
       x1, x2 = bbox[0], bbox[1]
       y1, y2 = bbox[2], bbox[3]
       z1, z2 = bbox[4], bbox[5]
@@ -116,7 +116,7 @@ class TestMapFramesReverse(object):
     from math import pi
     from dials.model.serialize import load
     from dials.algorithms.reflection_basis.transform import MapFramesReverse
-    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     # Load the sweep
     self.sweep = load.sweep(filename)
@@ -146,7 +146,7 @@ class TestMapFramesReverse(object):
         self.grid_size[2])
 
     # Create the bounding box calculator
-    self.calculate_bbox = BBoxCalculator(
+    self.calculate_bbox = BBoxCalculator3D(
         self.beam, self.detector, self.gonio, self.scan,
         self.delta_divergence,
         self.delta_mosaicity)
@@ -230,7 +230,7 @@ class TestMapForwardReverse(object):
     from dials.model.serialize import load
     from dials.algorithms.reflection_basis.transform import MapFramesReverse
     from dials.algorithms.reflection_basis.transform import MapFramesForward
-    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
+    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     # Load the sweep
     self.sweep = load.sweep(filename)
@@ -268,7 +268,7 @@ class TestMapForwardReverse(object):
         self.grid_size[2])
 
     # Create the bounding box calculator
-    self.calculate_bbox = BBoxCalculator(
+    self.calculate_bbox = BBoxCalculator3D(
         self.beam, self.detector, self.gonio, self.scan,
         self.delta_divergence,
         self.delta_mosaicity)
