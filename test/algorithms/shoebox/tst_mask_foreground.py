@@ -8,7 +8,7 @@ class Test(object):
     from dxtbx.serialize.load import crystal as load_crystal
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
-    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
     from dxtbx.model.experiment.experiment_list import Experiment
 
     try:
@@ -49,7 +49,7 @@ class Test(object):
     assert(len(self.detector) == 1)
 
     # Get the function object to mask the foreground
-    self.mask_foreground = MaskForeground(self.beam, self.detector,
+    self.mask_foreground = MaskCalculator3D(self.beam, self.detector,
         self.goniometer, self.scan, self.delta_d, self.delta_m)
 
 

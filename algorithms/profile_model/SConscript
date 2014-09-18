@@ -8,7 +8,6 @@ env.SharedLibrary(
     source=[
       'gaussian_rs/boost_python/bbox_calculator.cc',
       'gaussian_rs/boost_python/partiality_calculator.cc',
-      'gaussian_rs/boost_python/mask_foreground.cc',
-      'gaussian_rs/boost_python/mask_foreground_2d.cc',
+      'gaussian_rs/boost_python/mask_calculator.cc',
       'gaussian_rs/boost_python/gaussian_rs_ext.cc'
     ])

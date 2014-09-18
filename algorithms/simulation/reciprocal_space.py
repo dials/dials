@@ -152,7 +152,7 @@ class Simulator(object):
 
   def generate_predictions(self, N):
     ''' Generate some reflections. '''
-    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dials.algorithms import filtering
@@ -206,7 +206,7 @@ class Simulator(object):
 
     # Get the function object to mask the foreground
     Command.start('Masking Foreground for %d reflections' % len(refl))
-    mask_foreground = MaskForeground(
+    mask_foreground = MaskCalculator3D(
       self.experiment.beam,
       self.experiment.detector,
       self.experiment.goniometer,

@@ -103,7 +103,7 @@ class ProfileModel(ProfileModelIface):
 
   def compute_mask(self, experiment, reflections):
     ''' Compute the shoebox mask. '''
-    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskCalculator
 
     # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
     # the region of background in the shoebox
@@ -111,13 +111,7 @@ class ProfileModel(ProfileModelIface):
     delta_m = self._n_sigma * self._sigma_m
 
     # Create the mask calculator
-    mask_foreground = MaskForeground(
-      experiment.beam,
-      experiment.detector,
-      experiment.goniometer,
-      experiment.scan,
-      delta_d,
-      delta_m)
+    mask_foreground = MaskCalculator(experiment, delta_b, delta_m)
 
     # Mask the foreground region
     mask_foreground(
@@ -221,14 +215,14 @@ class ProfileModelList(ProfileModelListIface):
 
   def compute_mask(self, experiments, reflections):
     ''' Compute the shoebox mask. '''
-    from dials.algorithms.profile_model.gaussian_rs import MaskMultiForeground
-    from dials.algorithms.profile_model.gaussian_rs import MaskForeground
+    from dials.algorithms.profile_model.gaussian_rs import MaskMultiCalculator
+    from dials.algorithms.profile_model.gaussian_rs import MaskCalculator
 
     # Check the input
     assert(len(experiments) == len(self))
 
     # The class to do the calculation
-    mask_foreground = MaskMultiForeground()
+    mask_foreground = MaskMultiCalculator()
 
     # Loop through the experiments and models
     for experiment, model in zip(experiments, self):
@@ -238,13 +232,7 @@ class ProfileModelList(ProfileModelListIface):
       delta_m = model.n_sigma() * model.sigma_m(deg=False)
 
       # Create the mask calculator
-      mask_foreground.append(MaskForeground(
-        experiment.beam,
-        experiment.detector,
-        experiment.goniometer,
-        experiment.scan,
-        delta_b,
-        delta_m))
+      mask_foreground.append(MaskCalculator(experiment, delta_b, delta_m))
 
     # Mask the foreground region
     mask_foreground(
