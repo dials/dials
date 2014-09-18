@@ -83,11 +83,14 @@ class SpotMatcher(object):
       oind = observed_panel == panel
       pxyz = predicted_xyz.select(pind)
       oxyz = observed_xyz.select(oind)
-      nn, d = self._find_nearest_neighbours_single(oxyz, pxyz)
-      indices = flex.size_t(range(len(pind))).select(pind)
-      indices = indices.select(flex.size_t(list(nn)))
-      nn_all.extend(indices)
-      dd_all.extend(d)
+      try:
+        nn, d = self._find_nearest_neighbours_single(oxyz, pxyz)
+        indices = flex.size_t(range(len(pind))).select(pind)
+        indices = indices.select(flex.size_t(list(nn)))
+        nn_all.extend(indices)
+        dd_all.extend(d)
+      except Exception:
+        print "Unable to match spots on panel %d" % panel
     return nn_all, dd_all
 
   def _find_nearest_neighbours_single(self, oxyz, pxyz):

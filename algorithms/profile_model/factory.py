@@ -36,8 +36,8 @@ class ProfileModelFactory(object):
         assert(len(params.profile.gaussian_rs) == len(experiments))
         model = ProfileModelFactory.load(params)
       else:
-        assert(reference is not None)
-        model = ProfileModelFactory.compute(params, experiment, reflections)
+        assert(reflections is not None)
+        model = ProfileModelFactory.compute(params, experiments, reflections)
     else:
       raise RuntimeError(
         'Unknown profile algorithm %s' % (

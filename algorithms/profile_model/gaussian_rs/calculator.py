@@ -248,30 +248,38 @@ class ProfileModelCalculator(object):
     assert("xyzcal.mm" in reflections)
 
     # Compute the zeta factory and filter based on zeta
-    zeta = reflections.compute_zeta(experiment)
+    if experiment.goniometer is not None:
+      zeta = reflections.compute_zeta(experiment)
 
-    # Filter based on zeta value
-    Command.start('Filtering reflections with zeta < %f' % min_zeta)
+      # Filter based on zeta value
+      Command.start('Filtering reflections with zeta < %f' % min_zeta)
 
-    from scitbx.array_family import flex
-    mask = flex.abs(zeta) < min_zeta
-    reflections.del_selected(mask)
-    Command.end('Filtered %d reflections with zeta > %f' %
-      (len(reflections), min_zeta))
+      from scitbx.array_family import flex
+      mask = flex.abs(zeta) < min_zeta
+      reflections.del_selected(mask)
+      Command.end('Filtered %d reflections with zeta > %f' %
+        (len(reflections), min_zeta))
 
     # Calculate the E.S.D of the beam divergence
     Command.start('Calculating E.S.D Beam Divergence.')
     beam_divergence = ComputeEsdBeamDivergence(experiment.detector, reflections)
     Command.end('Calculated E.S.D Beam Divergence')
 
-    # Calculate the E.S.D of the reflecting range
-    Command.start('Calculating E.S.D Reflecting Range.')
-    reflecting_range = ComputeEsdReflectingRange(experiment, reflections)
-    Command.end('Calculated E.S.D Reflecting Range.')
-
-    # Set the sigmas
+    # Set the sigma b
     self._sigma_b = beam_divergence.sigma()
-    self._sigma_m = reflecting_range.sigma()
+
+    # FIXME Calculate properly
+    if experiment.goniometer is None or experiment.scan is None:
+      self._sigma_m = 0.00001
+    else:
+
+      # Calculate the E.S.D of the reflecting range
+      Command.start('Calculating E.S.D Reflecting Range.')
+      reflecting_range = ComputeEsdReflectingRange(experiment, reflections)
+      Command.end('Calculated E.S.D Reflecting Range.')
+
+      # Set the sigmas
+      self._sigma_m = reflecting_range.sigma()
 
   def sigma_b(self):
     ''' Return the E.S.D beam divergence. '''

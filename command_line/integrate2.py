@@ -112,10 +112,11 @@ class Script(object):
     print ""
 
     # Initialise the integrator
-    if None in experiments.goniometers():
-      from dials.algorithms.integration import IntegratorStills
-      integrator = IntegratorStills(params, experiments, reference, None, None)
-    else:
+    # if None in experiments.goniometers():
+    #   from dials.algorithms.integration import IntegratorStills
+    #   integrator = IntegratorStills(params, experiments, reference, None, None)
+    # else:
+    if (True):
       from dials.algorithms.profile_model.factory import ProfileModelFactory
       from dials.algorithms.integration.interface import IntegratorFactory
       from dials.array_family import flex

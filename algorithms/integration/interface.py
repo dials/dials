@@ -297,11 +297,15 @@ class IntegrationManagerDefault(IntegrationManager):
     scans = experiments.scans()
     assert(len(experiments) == len(profile_model))
     assert(len(imagesets) == 1)
-    assert(len(scans) == 1)
     assert(len(detectors) == 1)
     imageset = imagesets[0]
-    scan = scans[0]
-    assert(len(imageset) == len(scan))
+    array_range = (0, len(imageset))
+    if len(scans) != 0:
+      assert(len(scans) == 1)
+      scan = scans[0]
+      if scan is not None:
+        assert(len(imageset) == len(scan))
+        array_range = scan.get_srray_range()
     self._flatten = flatten
     self._partials = partials
     self._experiments = experiments
@@ -315,7 +319,7 @@ class IntegrationManagerDefault(IntegrationManager):
     else:
       raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
     jobcalculator = IntegrationJobCalculator(
-      scan.get_array_range(),
+      array_range,
       block_size_frames)
     self._preprocess(self._reflections, min_zeta, jobcalculator.jobs())
     self._manager = IntegrationManagerExecutor(
