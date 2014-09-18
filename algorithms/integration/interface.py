@@ -1,6 +1,5 @@
 from __future__ import division
 from iotbx import phil
-import abc
 
 def generate_phil_scope():
   ''' Generate the phil scope. '''
@@ -61,51 +60,6 @@ def generate_phil_scope():
 
 # The integration phil scope
 phil_scope = generate_phil_scope()
-
-
-class IntegrationResult(object):
-  ''' A class representing an integration result. '''
-
-  def __init__(self, index, reflections):
-    ''' Initialise the data. '''
-    self.index = index
-    self.reflections = reflections
-
-
-class IntegrationTask(object):
-  ''' The integration task interface. '''
-
-  __metaclass__ = abc.ABCMeta
-
-  @abc.abstractmethod
-  def __call__(self):
-    pass
-
-
-class IntegrationManager(object):
-  ''' The integration manager interface. '''
-
-  __metaclass__ = abc.ABCMeta
-
-  @abc.abstractmethod
-  def task(self, index):
-    pass
-
-  @abc.abstractmethod
-  def tasks(self):
-    pass
-
-  @abc.abstractmethod
-  def accumulate(self, result):
-    pass
-
-  @abc.abstractmethod
-  def finished(self):
-    pass
-
-  @abc.abstractmethod
-  def __len__(self):
-    pass
 
 
 class Integrator(object):
@@ -183,7 +137,16 @@ class Integrator(object):
     return self._manager.result()
 
 
-class IntegrationTaskDefault(IntegrationTask):
+class Result(object):
+  ''' A class representing an integration result. '''
+
+  def __init__(self, index, reflections):
+    ''' Initialise the data. '''
+    self.index = index
+    self.reflections = reflections
+
+
+class Task(object):
   ''' A class to perform an integration task. '''
 
   def __init__(self, index, experiments, profile_model, data, job, flatten):
@@ -266,7 +229,7 @@ class IntegrationTaskDefault(IntegrationTask):
     del self._data["shoebox"]
 
     # Return the result
-    result = IntegrationResult(self._index, self._data)
+    result = Result(self._index, self._data)
     result.read_time = read_time
     result.extract_time = extract_time
     result.process_time = process_time
@@ -280,7 +243,7 @@ class IntegrationTaskDefault(IntegrationTask):
     print ''
 
 
-class IntegrationManagerDefault(IntegrationManager):
+class Manager(object):
   ''' An class to manage integration book-keeping '''
 
   def __init__(self,
@@ -338,7 +301,7 @@ class IntegrationManagerDefault(IntegrationManager):
 
   def task(self, index):
     ''' Get a task. '''
-    return IntegrationTaskDefault(
+    return Task(
       index,
       self._experiments,
       self._profile_model,
@@ -603,7 +566,7 @@ class PostProcessorStills(object):
     pass
 
 
-class IntegrationManagerOsc(IntegrationManagerDefault):
+class ManagerOsc(Manager):
   ''' Specialize the manager for oscillation data using the oscillation pre and
   post processors. '''
 
@@ -630,7 +593,7 @@ class IntegrationManagerOsc(IntegrationManagerDefault):
     postprocess = PostProcessorOsc(experiments)
 
     # Initialise the manager
-    super(IntegrationManagerOsc, self).__init__(
+    super(ManagerOsc, self).__init__(
       preprocess,
       postprocess,
       experiments,
@@ -641,7 +604,7 @@ class IntegrationManagerOsc(IntegrationManagerDefault):
       flatten=flatten)
 
 
-class IntegrationManagerStills(IntegrationManagerDefault):
+class ManagerStills(Manager):
   ''' Specialize the manager for stills data using the stills pre and post
   processors. '''
 
@@ -661,7 +624,7 @@ class IntegrationManagerStills(IntegrationManagerDefault):
     postprocess = PostProcessorStills(experiments)
 
     # Initialise the manager
-    super(IntegrationManagerStills, self).__init__(
+    super(ManagerStills, self).__init__(
       preprocess,
       postprocess,
       experiments,
@@ -686,7 +649,7 @@ class Integrator3D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManagerOsc(
+    manager = ManagerOsc(
       experiments,
       profile_model,
       reflections,
@@ -711,7 +674,7 @@ class IntegratorFlat3D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManagerOsc(
+    manager = ManagerOsc(
       experiments,
       profile_model,
       reflections,
@@ -737,7 +700,7 @@ class Integrator2D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManagerOsc(
+    manager = ManagerOsc(
       experiments,
       profile_model,
       reflections,
@@ -766,7 +729,7 @@ class IntegratorSingle2D(Integrator):
     block_size = 1
 
     # Create the integration manager
-    manager = IntegrationManagerOsc(
+    manager = ManagerOsc(
       experiments,
       profile_model,
       reflections,
@@ -793,7 +756,7 @@ class IntegratorStills(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManagerStills(
+    manager = ManagerStills(
       experiments,
       profile_model,
       reflections)
