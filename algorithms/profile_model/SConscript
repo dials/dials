@@ -7,6 +7,7 @@ env.SharedLibrary(
     target='#/lib/dials_algorithms_profile_model_gaussian_rs_ext',
     source=[
       'gaussian_rs/boost_python/bbox_calculator.cc',
+      'gaussian_rs/boost_python/partiality_calculator.cc',
       'gaussian_rs/boost_python/mask_foreground.cc',
       'gaussian_rs/boost_python/mask_foreground_2d.cc',
       'gaussian_rs/boost_python/gaussian_rs_ext.cc'

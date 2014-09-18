@@ -17,12 +17,14 @@ namespace dials { namespace algorithms { namespace shoebox {
   using namespace boost::python;
 
   void export_bbox_calculator();
+  void export_partiality_calculator();
   void export_mask_foreground();
   void export_mask_foreground_2d();
 
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_ext)
   {
     export_bbox_calculator();
+    export_partiality_calculator();
     export_mask_foreground();
     export_mask_foreground_2d();
   }

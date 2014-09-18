@@ -93,16 +93,12 @@ class ProfileModel(ProfileModelIface):
     delta_m = self._n_sigma * self._sigma_m
 
     # Create the partiality calculator
-    calculate = PartialityCalculator(
-      experiment.beam,
-      experiment.goniometer,
-      experiment.scan,
-      delta_m)
+    calculate = PartialityCalculator(experiment, delta_m)
 
     # Compute the partiality
     reflections['partiality'] = calculate(
       reflections['s1'],
-      reflections['xyzcal.mm'].parts()[2],
+      reflections['xyzcal.px'].parts()[2],
       reflections['bbox'])
 
   def compute_mask(self, experiment, reflections):
@@ -214,17 +210,13 @@ class ProfileModelList(ProfileModelListIface):
       delta_m = model.n_sigma() * model.sigma_m(deg=False)
 
       # Create the partiality calculator
-      calculate.append(PartialityCalculator(
-        experiment.beam,
-        experiment.goniometer,
-        experiment.scan,
-        delta_m))
+      calculate.append(PartialityCalculator(experiment, delta_m))
 
     # Compute the partiality
     reflections['partiality'] = calculate(
       reflections['id'],
       reflections['s1'],
-      reflections['xyzcal.mm'].parts()[2],
+      reflections['xyzcal.px'].parts()[2],
       reflections['bbox'])
 
   def compute_mask(self, experiments, reflections):

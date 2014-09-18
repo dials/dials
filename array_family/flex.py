@@ -309,7 +309,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from time import time
     assert("shoebox" in self)
     detector = imageset.get_detector()
-    frame0, frame1 = imageset.get_array_range()
+    try:
+      frame0, frame1 = imageset.get_array_range()
+    except Exception:
+      frame0, frame1 = (0, len(imageset))
     extractor = ShoeboxExtractor(self, len(detector), frame0, frame1)
     if mask is None:
       image = imageset[0]

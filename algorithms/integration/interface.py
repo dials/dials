@@ -229,7 +229,10 @@ class IntegrationTaskDefault(IntegrationTask):
     assert(len(imagesets) == 1)
     imageset = imagesets[0]
     frame00, frame01 = self._job
-    frame10, frame11 = imageset.get_array_range()
+    try:
+      frame10, frame11 = imageset.get_array_range()
+    except Exception:
+      frame10, frame11 = (0, len(imageset))
     assert(frame00 < frame01)
     assert(frame10 < frame11)
     assert(frame00 >= frame10)
@@ -377,14 +380,20 @@ class IntegrationManagerDefault(IntegrationManager):
     from dials.util.command_line import heading
 
     # Create a table of integration tasks
-    rows = [["#", "Frame From", "Frame To", "Angle From", "Angle To"]]
     scans = self._experiments.scans()
     assert(len(scans) == 1)
-    for i in range(len(self)):
-      f0, f1 = self._manager.job(i)
-      p0 = scans[0].get_angle_from_array_index(f0)
-      p1 = scans[0].get_angle_from_array_index(f1)
-      rows.append([str(i), str(f0), str(f1), str(p0), str(p1)])
+    if scans[0] is None:
+      rows = [["#", "Frame From", "Frame To"]]
+      for i in range(len(self)):
+        f0, f1 = self._manager.job(i)
+        rows.append([str(i), str(f0), str(f1)])
+    else:
+      rows = [["#", "Frame From", "Frame To", "Angle From", "Angle To"]]
+      for i in range(len(self)):
+        f0, f1 = self._manager.job(i)
+        p0 = scans[0].get_angle_from_array_index(f0)
+        p1 = scans[0].get_angle_from_array_index(f1)
+        rows.append([str(i), str(f0), str(f1), str(p0), str(p1)])
     task_table = table(rows, has_header=True, justify="right", prefix=" ")
 
     # Create summary format

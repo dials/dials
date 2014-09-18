@@ -32,10 +32,11 @@ class Test(object):
     self.profile_model = ProfileModel(self.n_sigma, self.sigma_b, self.sigma_m)
 
   def run(self):
-    from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
+    from dials.algorithms.profile_model.gaussian_rs import \
+      PartialityCalculator3D
     from dials.array_family import flex
 
-    calculator = PartialityCalculator(
+    calculator = PartialityCalculator3D(
       self.experiment.beam,
       self.experiment.goniometer,
       self.experiment.scan,
@@ -52,7 +53,7 @@ class Test(object):
     # Compute partiality
     partiality = calculator(
       predicted['s1'],
-      predicted['xyzcal.mm'].parts()[2],
+      predicted['xyzcal.px'].parts()[2],
       predicted['bbox'])
 
     # Should have all fully recorded
@@ -70,7 +71,7 @@ class Test(object):
     # Compute partiality
     partiality = calculator(
       predicted['s1'],
-      predicted['xyzcal.mm'].parts()[2],
+      predicted['xyzcal.px'].parts()[2],
       predicted['bbox'])
 
     # Should have all partials

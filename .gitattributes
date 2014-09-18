@@ -149,10 +149,12 @@ algorithms/profile_model/gaussian_rs/boost_python/bbox_calculator.cc -text
 algorithms/profile_model/gaussian_rs/boost_python/gaussian_rs_ext.cc -text
 algorithms/profile_model/gaussian_rs/boost_python/mask_foreground.cc -text
 algorithms/profile_model/gaussian_rs/boost_python/mask_foreground_2d.cc -text
+algorithms/profile_model/gaussian_rs/boost_python/partiality_calculator.cc -text
 algorithms/profile_model/gaussian_rs/calculator.py -text
 algorithms/profile_model/gaussian_rs/mask_foreground.h -text
 algorithms/profile_model/gaussian_rs/mask_foreground_2d.h -text
 algorithms/profile_model/gaussian_rs/model.py -text
+algorithms/profile_model/gaussian_rs/partiality_calculator.h -text
 algorithms/profile_model/interface.py -text
 algorithms/refinement/README -text
 algorithms/refinement/SConscript -text
