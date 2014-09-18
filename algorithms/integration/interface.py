@@ -281,14 +281,14 @@ class IntegrationManagerDefault(IntegrationManager):
   ''' An class to manage integration book-keeping '''
 
   def __init__(self,
+               preprocess,
+               postprocess,
                experiments,
                profile_model,
                reflections,
                block_size=10,
-               min_zeta=0.05,
-               flatten=False,
-               partials=False,
-               block_size_units='degrees'):
+               block_size_units='degrees',
+               flatten=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManagerExecutor
     from dials.algorithms.integration import IntegrationJobCalculator
@@ -305,9 +305,10 @@ class IntegrationManagerDefault(IntegrationManager):
       scan = scans[0]
       if scan is not None:
         assert(len(imageset) == len(scan))
-        array_range = scan.get_srray_range()
+        array_range = scan.get_array_range()
     self._flatten = flatten
-    self._partials = partials
+    self._preprocess = preprocess
+    self._postprocess = postprocess
     self._experiments = experiments
     self._profile_model = profile_model
     self._reflections = reflections
@@ -321,15 +322,14 @@ class IntegrationManagerDefault(IntegrationManager):
     jobcalculator = IntegrationJobCalculator(
       array_range,
       block_size_frames)
-    self._preprocess(self._reflections, min_zeta, jobcalculator.jobs())
+    self._preprocess(self._reflections, jobcalculator.jobs())
     self._manager = IntegrationManagerExecutor(
       jobcalculator,
       self._reflections)
     self.read_time = 0
     self.extract_time = 0
-    self.preprocess_time = 0
+    self.preprocess_time = self._preprocess.time
     self.process_time = 0
-    self.postprocess_time = 0
     self.total_time = 0
     self._print_summary(block_size, block_size_units)
 
@@ -357,6 +357,7 @@ class IntegrationManagerDefault(IntegrationManager):
     self.total_time += result.total_time
     if self.finished():
       self._postprocess(self._manager.data())
+      self.postprocess_time = self._postprocess.time
 
   def result(self):
     ''' Return the result. '''
@@ -369,91 +370,6 @@ class IntegrationManagerDefault(IntegrationManager):
   def __len__(self):
     ''' Return the number of tasks. '''
     return len(self._manager)
-
-  def _preprocess(self, data, min_zeta, jobs):
-    ''' Do some pre-processing. '''
-    from dials.array_family import flex
-    from dials.util.command_line import heading
-    from time import time
-    print '=' * 80
-    print ''
-    print heading('Pre-processing reflections')
-    print ''
-    st = time()
-
-    # Compute some reflection properties
-    data.compute_zeta_multi(self._experiments)
-    data.compute_d(self._experiments)
-    data.compute_bbox(self._experiments, self._profile_model)
-
-    # Optionally split the reflection table into partials
-    if self._partials:
-      num_full = len(data)
-      data.split_partials()
-      num_partial = len(data)
-      assert(num_partial >= num_full)
-      if (num_partial > num_full):
-        print ' Split %d reflections into %d partial reflections\n' % (
-          num_full,
-          num_partial)
-    else:
-      num_full = len(data)
-      data.split_blocks(jobs)
-      num_partial = len(data)
-      assert(num_partial >= num_full)
-      if (num_partial > num_full):
-        num_split = num_partial - num_full
-        print ' Split %d reflections overlapping job boundaries\n' % num_split
-
-    # Compute the partiality
-    data.compute_partiality(self._experiments, self._profile_model)
-
-    # Filter the reflections by zeta
-    mask = flex.abs(data['zeta']) < min_zeta
-    num_ignore = mask.count(True)
-    data.set_flags(mask, data.flags.dont_integrate)
-    EPS = 1e-7
-    fully_recorded = data['partiality'] > (1.0 - EPS)
-    num_partial = fully_recorded.count(False)
-    num_full = fully_recorded.count(True)
-    num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
-    num_reference = data.get_flags(data.flags.reference_spot).count(True)
-    num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
-    self.preprocess_time = time() - st
-    print ' Number of reflections'
-    print '  Partial:     %d' % num_partial
-    print '  Full:        %d' % num_full
-    print '  In ice ring: %d' % num_ice_ring
-    print '  Integrate:   %d' % num_integrate
-    print '  Reference:   %d' % num_reference
-    print '  Ignore:      %d' % num_ignore
-    print '  Total:       %d' % len(data)
-    print ''
-    print ' Filtered %d reflections by zeta = %0.3f' % (num_ignore, min_zeta)
-    print ''
-    print ' Time taken: %.2f seconds' % self.preprocess_time
-    print ''
-
-  def _postprocess(self, data):
-    ''' Do some post processing. '''
-    from dials.util.command_line import heading
-    from time import time
-    st = time()
-    print '=' * 80
-    print ''
-    print heading('Post-processing reflections')
-    print ''
-
-    # Compute the corrections
-    data.compute_corrections(self._experiments)
-
-    print ''
-    num = data.get_flags(data.flags.integrated, all=False).count(True)
-    self.postprocess_time = time() - st
-    print ' Integrated %d reflections' % num
-    print ''
-    print ' Time taken: %.2f seconds' % self.postprocess_time
-    print ''
 
   def _print_summary(self, block_size, block_size_units):
     ''' Print a summary of the integration stuff. '''
@@ -505,6 +421,248 @@ class IntegrationManagerDefault(IntegrationManager):
       task_table)
 
 
+class PreProcessorOsc(object):
+  ''' A pre-processing class for oscillation data. '''
+
+  def __init__(self, experiments, profile_model, min_zeta, partials, **kwargs):
+    ''' Initialise the pre-processor. '''
+    self.experiments = experiments
+    self.profile_model = profile_model
+    self.min_zeta = min_zeta
+    self.partials = partials
+    self.time = 0
+
+  def __call__(self, data, jobs):
+    ''' Do some pre-processing. '''
+    from dials.array_family import flex
+    from dials.util.command_line import heading
+    from time import time
+    print '=' * 80
+    print ''
+    print heading('Pre-processing reflections')
+    print ''
+    st = time()
+
+    # Compute some reflection properties
+    data.compute_zeta_multi(self.experiments)
+    data.compute_d(self.experiments)
+    data.compute_bbox(self.experiments, self.profile_model)
+
+    # Optionally split the reflection table into partials
+    if self.partials:
+      num_full = len(data)
+      data.split_partials()
+      num_partial = len(data)
+      assert(num_partial >= num_full)
+      if (num_partial > num_full):
+        print ' Split %d reflections into %d partial reflections\n' % (
+          num_full,
+          num_partial)
+    else:
+      num_full = len(data)
+      data.split_blocks(jobs)
+      num_partial = len(data)
+      assert(num_partial >= num_full)
+      if (num_partial > num_full):
+        num_split = num_partial - num_full
+        print ' Split %d reflections overlapping job boundaries\n' % num_split
+
+    # Compute the partiality
+    data.compute_partiality(self.experiments, self.profile_model)
+
+    # Filter the reflections by zeta
+    mask = flex.abs(data['zeta']) < self.min_zeta
+    num_ignore = mask.count(True)
+    data.set_flags(mask, data.flags.dont_integrate)
+    EPS = 1e-7
+    fully_recorded = data['partiality'] > (1.0 - EPS)
+    num_partial = fully_recorded.count(False)
+    num_full = fully_recorded.count(True)
+    num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
+    num_reference = data.get_flags(data.flags.reference_spot).count(True)
+    num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
+    self.time = time() - st
+    print ' Number of reflections'
+    print '  Partial:     %d' % num_partial
+    print '  Full:        %d' % num_full
+    print '  In ice ring: %d' % num_ice_ring
+    print '  Integrate:   %d' % num_integrate
+    print '  Reference:   %d' % num_reference
+    print '  Ignore:      %d' % num_ignore
+    print '  Total:       %d' % len(data)
+    print ''
+    print ' Filtered %d reflections by zeta = %0.3f' % (num_ignore, self.min_zeta)
+    print ''
+    print ' Time taken: %.2f seconds' % self.time
+    print ''
+
+
+class PreProcessorStills(object):
+  ''' A pre-processing class for stills data. '''
+
+  def __init__(self, experiments, profile_model, **kwargs):
+    ''' Initialise the pre-processor. '''
+    self.experiments = experiments
+    self.profile_model = profile_model
+    self.time = 0
+
+  def __call__(self, data, jobs):
+    ''' Do some pre-processing. '''
+    from dials.array_family import flex
+    from dials.util.command_line import heading
+    from time import time
+    print '=' * 80
+    print ''
+    print heading('Pre-processing reflections')
+    print ''
+    st = time()
+
+    # Compute some reflection properties
+    data.compute_d(self.experiments)
+    data.compute_bbox(self.experiments, self.profile_model)
+
+    # Check the bounding boxes are all 1 frame in width
+    z0, z1 = data['bbox'].parts()[4:6]
+    assert((z1 - z0).all_eq(1))
+
+    # Compute the partiality
+    data.compute_partiality(self.experiments, self.profile_model)
+
+    # Print out the pre-processing summary
+    num_ignore = 0
+    EPS = 1e-7
+    fully_recorded = data['partiality'] > (1.0 - EPS)
+    num_partial = fully_recorded.count(False)
+    num_full = fully_recorded.count(True)
+    num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
+    num_reference = data.get_flags(data.flags.reference_spot).count(True)
+    num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
+    self.time = time() - st
+    print ' Number of reflections'
+    print '  Partial:     %d' % num_partial
+    print '  Full:        %d' % num_full
+    print '  In ice ring: %d' % num_ice_ring
+    print '  Integrate:   %d' % num_integrate
+    print '  Reference:   %d' % num_reference
+    print '  Ignore:      %d' % num_ignore
+    print '  Total:       %d' % len(data)
+    print ''
+    print ' Time taken: %.2f seconds' % self.time
+    print ''
+
+
+class PostProcessorOsc(object):
+  ''' A post-processing class for oscillation data. '''
+
+  def __init__(self, experiments):
+    ''' Initialise the post processor. '''
+    self.experiments = experiments
+    self.time = 0
+
+  def __call__(self, data):
+    ''' Do some post processing. '''
+    from dials.util.command_line import heading
+    from time import time
+    st = time()
+    print '=' * 80
+    print ''
+    print heading('Post-processing reflections')
+    print ''
+
+    # Compute the corrections
+    data.compute_corrections(self.experiments)
+
+    print ''
+    num = data.get_flags(data.flags.integrated, all=False).count(True)
+    self.time = time() - st
+    print ' Integrated %d reflections' % num
+    print ''
+    print ' Time taken: %.2f seconds' % self.time
+    print ''
+
+
+class PostProcessorStills(object):
+  ''' A post-processing class for stills data. '''
+
+  def __init__(self, experiments):
+    ''' Initialise the post processor. '''
+    self.experiments = experiments
+    self.time = 0
+
+  def __call__(self, data):
+    ''' Do some post processing. '''
+    pass
+
+
+class IntegrationManagerOsc(IntegrationManagerDefault):
+  ''' Specialize the manager for oscillation data using the oscillation pre and
+  post processors. '''
+
+  def __init__(self,
+               experiments,
+               profile_model,
+               reflections,
+               block_size=10,
+               block_size_units='degrees',
+               min_zeta=0.05,
+               flatten=False,
+               partials=False,
+               **kwargs):
+    ''' Initialise the pre-processor, post-processor and manager. '''
+
+    # Create the pre-processor
+    preprocess = PreProcessorOsc(
+      experiments,
+      profile_model,
+      min_zeta=min_zeta,
+      partials=partials)
+
+    # Create the post-processor
+    postprocess = PostProcessorOsc(experiments)
+
+    # Initialise the manager
+    super(IntegrationManagerOsc, self).__init__(
+      preprocess,
+      postprocess,
+      experiments,
+      profile_model,
+      reflections,
+      block_size=block_size,
+      block_size_units=block_size_units,
+      flatten=flatten)
+
+
+class IntegrationManagerStills(IntegrationManagerDefault):
+  ''' Specialize the manager for stills data using the stills pre and post
+  processors. '''
+
+  def __init__(self,
+               experiments,
+               profile_model,
+               reflections,
+               **kwargs):
+    ''' Initialise the pre-processor, post-processor and manager. '''
+
+    # Create the pre-processor
+    preprocess = PreProcessorStills(
+      experiments,
+      profile_model)
+
+    # Create the post-processor
+    postprocess = PostProcessorStills(experiments)
+
+    # Initialise the manager
+    super(IntegrationManagerStills, self).__init__(
+      preprocess,
+      postprocess,
+      experiments,
+      profile_model,
+      reflections,
+      block_size=1,
+      block_size_units='frames',
+      flatten=False)
+
+
 class Integrator3D(Integrator):
   ''' Top level integrator for 3D integration. '''
 
@@ -519,12 +677,12 @@ class Integrator3D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManagerDefault(
+    manager = IntegrationManagerOsc(
       experiments,
       profile_model,
       reflections,
-      block_size,
-      min_zeta,)
+      block_size=block_size,
+      min_zeta=min_zeta)
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, nproc, mp_method)
@@ -544,12 +702,12 @@ class IntegratorFlat3D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManagerDefault(
+    manager = IntegrationManagerOsc(
       experiments,
       profile_model,
       reflections,
-      block_size,
-      min_zeta,
+      block_size=block_size,
+      min_zeta=min_zeta,
       flatten=True)
 
     # Initialise the integrator
@@ -570,12 +728,12 @@ class Integrator2D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = IntegrationManagerDefault(
+    manager = IntegrationManagerOsc(
       experiments,
       profile_model,
       reflections,
-      block_size,
-      min_zeta,
+      block_size=block_size,
+      min_zeta=min_zeta,
       partials=True)
 
     # Initialise the integrator
@@ -599,17 +757,40 @@ class IntegratorSingle2D(Integrator):
     block_size = 1
 
     # Create the integration manager
-    manager = IntegrationManagerDefault(
+    manager = IntegrationManagerOsc(
       experiments,
       profile_model,
       reflections,
-      block_size,
-      min_zeta,
-      partials=True,
-      block_size_units='frames')
+      block_size=block_size,
+      block_size_units='frames',
+      min_zeta=min_zeta,
+      partials=True)
 
     # Initialise the integrator
     super(IntegratorSingle2D, self).__init__(manager, nproc, mp_method)
+
+
+class IntegratorStills(Integrator):
+  ''' Top level integrator for still image integration. '''
+
+  def __init__(self,
+               experiments,
+               profile_model,
+               reflections,
+               block_size=1,
+               min_zeta=0.05,
+               nproc=1,
+               mp_method='multiprocessing'):
+    ''' Initialise the manager and the integrator. '''
+
+    # Create the integration manager
+    manager = IntegrationManagerStills(
+      experiments,
+      profile_model,
+      reflections)
+
+    # Initialise the integrator
+    super(IntegratorStills, self).__init__(manager, nproc, mp_method)
 
 
 class IntegratorFactory(object):
@@ -667,6 +848,8 @@ class IntegratorFactory(object):
       IntegratorClass = Integrator2D
     elif integrator_type == 'single2d':
       IntegratorClass = IntegratorSingle2D
+    elif integrator_type == 'stills':
+      IntegratorClass = IntegratorStills
     else:
       raise RuntimeError("Unknown integration type")
     return IntegratorClass
