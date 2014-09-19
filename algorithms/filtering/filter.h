@@ -499,11 +499,17 @@ namespace dials { namespace algorithms { namespace filter {
 
   inline
   af::shared<bool> by_shoebox_mask(
-      const af::const_ref< Shoebox<> > shoeboxes) {
+      const af::const_ref< Shoebox<> > shoeboxes,
+      int2 image_size,
+      int2 scan_range) {
     af::shared<bool> result(shoeboxes.size(), true);
     for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
       Shoebox<> sbox = shoeboxes[i];
       DIALS_ASSERT(sbox.is_consistent());
+      if (is_bbox_outside_image_range(sbox.bbox, image_size, scan_range)) {
+        result[i] = false;
+        continue;
+      }
       for (std::size_t j = 0; j < sbox.mask.size(); ++j) {
         if (sbox.mask[j] & Foreground) {
           if (!(sbox.mask[j] & Valid)) {

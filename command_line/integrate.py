@@ -39,9 +39,8 @@ Examples:
 
   dials.integrate experiments.json predicted=predicted.pickle reference=indexed.pickle
 
-  dials.integrate experiments.json shoeboxes=shoeboxes.dat
-
 '''
+
 
 class Script(object):
   ''' The integration program. '''
@@ -51,7 +50,7 @@ class Script(object):
     from dials.util.options import OptionParser
     from libtbx.phil import parse
 
-    # Set the phil scope
+    # Create the phil scope
     phil_scope = parse('''
 
       output {
@@ -64,14 +63,9 @@ class Script(object):
           .help = "The integrated output filename"
       }
 
-      input {
-        shoeboxes = None
-          .type = str
-          .help = "The shoebox input filename"
-      }
-
-      include scope dials.algorithms.integration.integrator.phil_scope
+      include scope dials.algorithms.integration.interface.phil_scope
       include scope dials.algorithms.profile_model.factory.phil_scope
+      include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
     ''', process_includes=True)
 
@@ -83,44 +77,78 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      read_reflections=True,
-      read_experiments=True)
+      read_experiments=True,
+      read_reflections=True)
 
   def run(self):
     ''' Perform the integration. '''
+    from dials.util.command_line import heading
+    from dials.util.options import flatten_reflections, flatten_experiments
     from time import time
-    from dials.util.options import flatten_experiments, flatten_reflections
 
     # Check the number of arguments is correct
     start_time = time()
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
-    experiments = flatten_experiments(params.input.experiments)
     reference = flatten_reflections(params.input.reflections)
-    assert(len(experiments) == 1)
-    if len(reference) > 0:
-      assert(len(reference) == 1)
-      reference = self.process_reference(reference[0])
-    else:
+    experiments = flatten_experiments(params.input.experiments)
+    if len(reference) == 0:
       reference = None
+    else:
+      assert(len(reference) == 1)
+      reference = reference[0]
+    if len(experiments) == 0:
+      raise RuntimeError('experiment list is empty')
+    elif len(experiments.imagesets()) > 1 or len(experiments.detectors()) > 1:
+      raise RuntimeError('experiment list contains > 1 imageset or detector')
+
+    print "=" * 80
+    print ""
+    print heading("Initialising")
+    print ""
 
     # Load the data
-    shoeboxes = None
+    reference = self.process_reference(reference)
+    print ""
 
     # Initialise the integrator
-    if None in experiments.goniometers():
-      from dials.algorithms.integration import IntegratorStills
-      integrator = IntegratorStills(params, experiments, reference, None, shoeboxes)
-    else:
-      from dials.algorithms.integration import Integrator
-      integrator = Integrator(params, experiments, reference, None, shoeboxes)
+    # if None in experiments.goniometers():
+    #   from dials.algorithms.integration import IntegratorStills
+    #   integrator = IntegratorStills(params, experiments, reference, None, None)
+    # else:
+    if (True):
+      from dials.algorithms.profile_model.factory import ProfileModelFactory
+      from dials.algorithms.integration.interface import IntegratorFactory
+      from dials.array_family import flex
+
+      # Compute the profile model
+      # Predict the reflections
+      # Match the predictions with the reference
+      # Create the integrator
+      profile_model = ProfileModelFactory.create(params, experiments, reference)
+      print ""
+      print "=" * 80
+      print ""
+      print heading("Predicting reflections")
+      print ""
+      predicted = flex.reflection_table.from_predictions_multi(
+        experiments,
+        dmin=params.prediction.dmin,
+        dmax=params.prediction.dmax,
+        margin=params.prediction.margin,
+        force_static=params.prediction.force_static)
+      if reference:
+        predicted.match_with_reference(reference)
+      print ""
+      integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
 
     # Integrate the reflections
     reflections = integrator.integrate()
 
     # Save the reflections
     self.save_reflections(reflections, params.output.reflections)
+    self.save_profile_model(profile_model, params.output.profile_model)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time
@@ -129,6 +157,8 @@ class Script(object):
     ''' Load the reference spots. '''
     from dials.util.command_line import Command
     from dials.array_family import flex
+    if reference is None:
+      return None
     assert("miller_index" in reference)
     Command.start('Removing reference spots with invalid coordinates')
     mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
@@ -145,6 +175,14 @@ class Script(object):
     Command.start('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
     Command.end('Saved %d reflections to %s' % (len(reflections), filename))
+
+  def save_profile_model(self, profile_model, filename):
+    ''' Save the profile model parameters. '''
+    from dials.util.command_line import Command
+    Command.start('Saving the profile model parameters to %s' % filename)
+    with open(filename, "w") as outfile:
+      outfile.write(profile_model.dump().as_str())
+    Command.end('Saved the profile model parameters to %s' % filename)
 
 
 if __name__ == '__main__':

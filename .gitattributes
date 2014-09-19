@@ -321,7 +321,6 @@ command_line/import.py -text
 command_line/import_xds.py -text
 command_line/index.py -text
 command_line/integrate.py -text
-command_line/integrate2.py -text
 command_line/merge_reflection_lists.py -text
 command_line/plot_reflections.py -text
 command_line/plot_scan_varying_crystal.py -text

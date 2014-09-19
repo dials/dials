@@ -59,19 +59,20 @@ class IntegrationAlgorithm(object):
 
   def _filter_reflections(self, experiments, reflections):
 
-    mode = 'new'
+    mode = 'old'
 
     assert(len(experiments) == 1)
     assert(len(experiments[0].detector) == 1)
-    tr = experiments[0].detector[0].get_trusted_range()
+    image_size = experiments[0].detector[0].get_image_size()[::-1]
     scan_range = experiments[0].scan.get_array_range()
-    mask = experiments[0].imageset[0] > int(tr[0])
 
     if mode == 'old':
       from dials.algorithms.filtering import by_shoebox_mask
-      mask = by_shoebox_mask(reflections['shoebox'])
+      mask = by_shoebox_mask(reflections['shoebox'], image_size, scan_range)
     else:
       from dials.algorithms.filtering import by_detector_mask
+      tr = experiments[0].detector[0].get_trusted_range()
+      mask = experiments[0].imageset[0] > int(tr[0])
       mask = by_detector_mask(reflections['bbox'], mask, scan_range)
 
     print "Filtering %d reflections outside image range" % mask.count(False)

@@ -24,11 +24,5 @@ env.SharedLibrary(
     'fitrs/boost_python/integration_fitrs_ext.cc'
   ])
 
-env.SharedLibrary(
-  target='#/lib/dials_algorithms_integration_fit_image_ext', 
-  source=[
-    'fit_image/boost_python/fit_image_ext.cc',
-  ])
-
 env.SConscript('profile/SConscript', exports={ 'env' : env })
 

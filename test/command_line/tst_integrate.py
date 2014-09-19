@@ -16,7 +16,7 @@ class Test(object):
     self.path = join(dials_regression, "centroid_test_data")
 
   def run(self):
-    self.test1()
+    # self.test1()
     self.test2()
     self.test3()
 
@@ -43,6 +43,7 @@ class Test(object):
 
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
+    print len(table)
     assert(len(table) == 751)
 
     # assert(len(table) == 764)
@@ -64,7 +65,7 @@ class Test(object):
 
     # Call dials.integrate
     easy_run.fully_buffered([
-      'dials.integrate2',
+      'dials.integrate',
       join(self.path, 'experiments.json'),
       join(self.path, 'profile.phil'),
       'intensity.algorithm=sum',
@@ -138,7 +139,7 @@ class Test(object):
 
     # Call dials.integrate
     easy_run.fully_buffered([
-      'dials.integrate2',
+      'dials.integrate',
       'experiments.json',
       'profile.phil',
       'intensity.algorithm=sum',
