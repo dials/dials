@@ -20,6 +20,7 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/integration/profile/fitting.h>
+#include <dials/algorithms/reflection_basis/coordinate_system.h>
 
 
 namespace dials { namespace algorithms {
@@ -35,6 +36,8 @@ namespace dials { namespace algorithms {
   using dials::model::Shoebox;
   using dials::model::Valid;
   using dials::model::Foreground;
+  using dials::algorithms::reflection_basis::CoordinateSystem;
+
 
   /**
    * A class to specify the experiments input
@@ -102,27 +105,66 @@ namespace dials { namespace algorithms {
 
     typedef FloatType float_type;
     typedef af::versa< FloatType, af::c_grid<3> > profile_type;
-    typedef af::versa< bool, af::c_grid<3> > mask_type;
+    typedef af::versa< int, af::c_grid<3> > mask_type;
 
+    /**
+     * Initialise the reference learner.
+     * @param spec The experiment spec
+     * @param grid_size The size of the reference grid
+     */
     SingleProfileLearner(const Spec spec,
                          int3 grid_size)
-      : spec_(spec),
-        reference_data_(af::c_grid<3>(
-              2 * grid_size[0] + 1,
-              2 * grid_size[1] + 1,
-              2 * grid_size[2] + 1)),
-        reference_mask_(af::c_grid<3>(
-              2 * grid_size[0] + 1,
-              2 * grid_size[1] + 1,
-              2 * grid_size[2] + 1)) {}
+        : m2_(spec.goniometer().get_rotation_axis()),
+          s0_(spec.beam().get_s0()),
+          delta_b_(spec.delta_b()),
+          delta_m_(spec.delta_m()),
+          data_(af::c_grid<3>(
+                2 * grid_size[0] + 1,
+                2 * grid_size[1] + 1,
+                2 * grid_size[2] + 1), 0.0),
+          mask_(af::c_grid<3>(
+                2 * grid_size[0] + 1,
+                2 * grid_size[1] + 1,
+                2 * grid_size[2] + 1), 0) {
+      DIALS_ASSERT(grid_size[0] > 0);
+      DIALS_ASSERT(grid_size[1] > 0);
+      DIALS_ASSERT(grid_size[2] > 0);
+    }
 
-    void add(const Shoebox<> &sbox, const vec3<double> &xyz) {
+    void add(const Shoebox<> &sbox, const vec3<double> &s1, double phi) {
 
+      // Check the input
+      DIALS_ASSERT(sbox.is_consistent());
+
+      // Compute the grid step and offset
+      double xoff = -delta_b_;
+      double yoff = -delta_b_;
+      double zoff = -delta_m_;
+      double xstep = (2.0 * delta_b_) / data_.accessor()[2];
+      double ystep = (2.0 * delta_b_) / data_.accessor()[1];
+
+      // Create the coordinate system
+      CoordinateSystem cs(m2_, s0_, s1, phi);
+
+      // Loop through all the pixels in the reference profile and for each pixel
+      // in the grid, compute the polygon on the detector which is covered. Then
+      // compute the frame range covered by each z range in the grid.
+      for (std::size_t j = 0; j < data_.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i < data_.accessor()[2]; ++i) {
+          double c1 = xoff + i * xstep;
+          double c2 = yoff + j * ystep;
+          vec3<double> s1p = cs.to_beam_vector(vec2<double>(c1,c2));
+          for (std::size_t k = 0; k < data_.accessor()[0]; ++k) {
+            mask_(k,j,i)++;
+          }
+        }
+      }
     }
 
     profile_type get(
         std::size_t panel,
-        vec3<double> xyz,
+        const vec3<double> &s1,
+        double phi,
         int6 bbox) const {
       DIALS_ASSERT(bbox[1] > bbox[0]);
       DIALS_ASSERT(bbox[3] > bbox[2]);
@@ -136,9 +178,12 @@ namespace dials { namespace algorithms {
 
   private:
 
-    Spec spec_;
-    profile_type reference_data_;
-    mask_type reference_mask_;
+    vec3<double> m2_;
+    vec3<double> s0_;
+    double delta_b_;
+    double delta_m_;
+    profile_type data_;
+    mask_type mask_;
   };
 
 
@@ -175,17 +220,27 @@ namespace dials { namespace algorithms {
               int3(grid_size, grid_size, grid_size)));
       }
 
+      // Check the input contains expected fields
+      DIALS_ASSERT(data.size() > 0);
+      DIALS_ASSERT(data.is_consistent());
+      DIALS_ASSERT(data.contains("id"));
+      DIALS_ASSERT(data.contains("shoebox"));
+      DIALS_ASSERT(data.contains("s1"));
+      DIALS_ASSERT(data.contains("xyzcal.mm"));
+      DIALS_ASSERT(data.contains("flags"));
+
       // Get the data we need
       af::const_ref<std::size_t>    id      = data["id"];
       af::const_ref< Shoebox<> >    shoebox = data["shoebox"];
-      af::const_ref< vec3<double> > xyzcal  = data["xyzcal.px"];
+      af::const_ref< vec3<double> > s1      = data["s1"];
+      af::const_ref< vec3<double> > xyzcal  = data["xyzcal.mm"];
       af::ref<std::size_t>          flags   = data["flags"];
 
       // Loop through all the reflections
       for (std::size_t i = 0; i < data.size(); ++i) {
         DIALS_ASSERT(id[i] < learner_.size());
         if (flags[i] & ReferenceSpot) {
-          learner_[id[i]].add(shoebox[i], xyzcal[i]);
+          learner_[id[i]].add(shoebox[i], s1[i], xyzcal[i][2]);
         }
       }
     }
@@ -201,10 +256,11 @@ namespace dials { namespace algorithms {
     profile_type get(
         std::size_t id,
         std::size_t panel,
-        vec3<double> xyz,
+        const vec3<double> &s1,
+        double phi,
         int6 bbox) const {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].get(panel, xyz, bbox);
+      return learner_[id].get(panel, s1, phi, bbox);
     }
 
   private:
@@ -252,7 +308,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.contains("id"));
       DIALS_ASSERT(data.contains("shoebox"));
-      DIALS_ASSERT(data.contains("xyzcal.px"));
+      DIALS_ASSERT(data.contains("s1"));
+      DIALS_ASSERT(data.contains("xyzcal.mm"));
       DIALS_ASSERT(data.contains("flags"));
 
       // Compute the reference profile
@@ -261,7 +318,8 @@ namespace dials { namespace algorithms {
       // Get the data we need
       af::const_ref<std::size_t>    id      = data["id"];
       af::const_ref< Shoebox<> >    shoebox = data["shoebox"];
-      af::const_ref< vec3<double> > xyzcal  = data["xyzcal.px"];
+      af::const_ref< vec3<double> > s1      = data["s1"];
+      af::const_ref< vec3<double> > xyzcal  = data["xyzcal.mm"];
       af::ref<std::size_t>          flags   = data["flags"];
 
       // Get the new columns to set
@@ -289,7 +347,8 @@ namespace dials { namespace algorithms {
           profile_type profile = reference.get(
               id[i],
               sbox.panel,
-              xyzcal[i],
+              s1[i],
+              xyzcal[i][2],
               sbox.bbox);
 
           // Compute the integration mask
