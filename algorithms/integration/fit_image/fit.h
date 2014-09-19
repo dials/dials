@@ -12,6 +12,7 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_FIT_IMAGE_FIT_H
 #define DIALS_ALGORITHMS_INTEGRATION_FIT_IMAGE_FIT_H
 
+#include <scitbx/array_family/tiny_types.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
@@ -23,6 +24,7 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::af::int3;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
@@ -43,11 +45,18 @@ namespace dials { namespace algorithms {
     Spec(const Beam &beam,
          const Detector &detector,
          const Goniometer &goniometer,
-         const Scan &scan)
+         const Scan &scan,
+         double delta_b,
+         double delta_m)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
-        scan_(scan) {}
+        scan_(scan),
+        delta_b_(delta_b),
+        delta_m_(delta_m) {
+      DIALS_ASSERT(delta_b_ > 0);
+      DIALS_ASSERT(delta_m_ > 0);
+    }
 
     const Beam& beam() const {
       return beam_;
@@ -65,12 +74,22 @@ namespace dials { namespace algorithms {
       return scan_;
     }
 
+    const double delta_b() const {
+      return delta_b_;
+    }
+
+    const double delta_m() const {
+      return delta_m_;
+    }
+
   private:
 
     Beam beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
+    double delta_b_;
+    double delta_m_;
   };
 
 
@@ -83,9 +102,19 @@ namespace dials { namespace algorithms {
 
     typedef FloatType float_type;
     typedef af::versa< FloatType, af::c_grid<3> > profile_type;
+    typedef af::versa< bool, af::c_grid<3> > mask_type;
 
-    SingleProfileLearner(const Spec spec)
-      : spec_(spec) {}
+    SingleProfileLearner(const Spec spec,
+                         int3 grid_size)
+      : spec_(spec),
+        reference_data_(af::c_grid<3>(
+              2 * grid_size[0] + 1,
+              2 * grid_size[1] + 1,
+              2 * grid_size[2] + 1)),
+        reference_mask_(af::c_grid<3>(
+              2 * grid_size[0] + 1,
+              2 * grid_size[1] + 1,
+              2 * grid_size[2] + 1)) {}
 
     void add(const Shoebox<> &sbox, const vec3<double> &xyz) {
 
@@ -108,6 +137,8 @@ namespace dials { namespace algorithms {
   private:
 
     Spec spec_;
+    profile_type reference_data_;
+    mask_type reference_mask_;
   };
 
 
@@ -129,16 +160,19 @@ namespace dials { namespace algorithms {
      */
     MultiExpSingleProfileLearner(
         af::const_ref<Spec> spec,
-        af::reflection_table data) {
+        af::reflection_table data,
+        std::size_t grid_size) {
 
       // Check the input
       DIALS_ASSERT(spec.size() > 0);
       DIALS_ASSERT(data.size() > 0);
+      DIALS_ASSERT(grid_size > 0);
 
       // Create the array of learners
       learner_.reserve(spec.size());
       for (std::size_t i = 0; i < spec.size(); ++i) {
-        learner_.push_back(learner_type(spec[i]));
+        learner_.push_back(learner_type(spec[i],
+              int3(grid_size, grid_size, grid_size)));
       }
 
       // Get the data we need
@@ -191,7 +225,10 @@ namespace dials { namespace algorithms {
     typedef af::versa< bool, af::c_grid<3> > mask_type;
     typedef ProfileFitting<float_type> fitting_type;
 
-    ImageSpaceProfileFitting() {}
+    ImageSpaceProfileFitting(std::size_t grid_size)
+        : grid_size_(grid_size) {
+      DIALS_ASSERT(grid_size > 0);
+    }
 
     /**
      * Add some experiment data
@@ -219,7 +256,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.contains("flags"));
 
       // Compute the reference profile
-      reference_learner_type reference(spec_.const_ref(), data);
+      reference_learner_type reference(spec_.const_ref(), data, grid_size_);
 
       // Get the data we need
       af::const_ref<std::size_t>    id      = data["id"];
@@ -246,6 +283,7 @@ namespace dials { namespace algorithms {
 
           // Get the shoebox
           const Shoebox<> &sbox = shoebox[i];
+          DIALS_ASSERT(sbox.is_consistent());
 
           // Get the profile for a given reflection
           profile_type profile = reference.get(
@@ -258,8 +296,9 @@ namespace dials { namespace algorithms {
           mask_type mask(sbox.mask.accessor(), false);
           std::size_t mask_code = Valid | Foreground;
           std::size_t mask_count = 0;
+          DIALS_ASSERT(profile.accessor().all_eq(sbox.mask.accessor()));
           for (std::size_t j = 0; j < sbox.mask.size(); ++j) {
-            if ((sbox.mask[j] & mask_code) == mask_code) {
+            if ((sbox.mask[j] & mask_code) == mask_code && profile[j] >= 0.0) {
               mask[j] = true;
               mask_count++;
             }
@@ -288,6 +327,7 @@ namespace dials { namespace algorithms {
   private:
 
     af::shared<Spec> spec_;
+    std::size_t grid_size_;
   };
 
 }} // namespace dials::algorithms

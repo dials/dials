@@ -22,10 +22,13 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init< const Beam&,
                  const Detector&,
                  const Goniometer&,
-                 const Scan& >())
+                 const Scan&,
+                 double,
+                 double >())
       ;
 
-    class_<ImageSpaceProfileFitting>("ImageSpaceProfileFitting")
+    class_<ImageSpaceProfileFitting>("ImageSpaceProfileFitting", no_init)
+      .def(init< std::size_t >())
       .def("add", &ImageSpaceProfileFitting::add)
       .def("execute", &ImageSpaceProfileFitting::execute)
       ;

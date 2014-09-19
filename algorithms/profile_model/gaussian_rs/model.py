@@ -64,6 +64,14 @@ class ProfileModel(ProfileModelIface):
     ''' The number of sigmas. '''
     return self._n_sigma
 
+  def delta_b(self, deg=True):
+    ''' Return delta_b. '''
+    return self.sigma_b(deg) * self.n_sigma()
+
+  def delta_m(self, deg=True):
+    ''' Return delta_m. '''
+    return self.sigma_m(deg) * self.n_sigma()
+
   def compute_bbox(self, experiment, reflections, sigma_b_multiplier=2.0):
     ''' Compute the bounding box. '''
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator

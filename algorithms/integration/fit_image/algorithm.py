@@ -13,9 +13,12 @@ from __future__ import division
 class IntegrationAlgorithm(object):
   ''' A class to perform profile fitting '''
 
-  def __init__(self, experiments, **kwargs):
+  def __init__(self, experiments, profile_model, grid_size=5, **kwargs):
     '''Initialise algorithm.'''
+    assert(len(experiments) == len(profile_model))
     self._experiments = experiments
+    self._profile_model = profile_model
+    self._grid_size = grid_size
 
   def __call__(self, reflections):
     '''Process the reflections.
@@ -30,27 +33,32 @@ class IntegrationAlgorithm(object):
     from dials.algorithms.integration.fit_image import ImageSpaceProfileFitting
     from dials.algorithms.integration.fit_image import Spec
     from dials.array_family import flex
+    from dials.util.command_line import Command
 
     # Get the flags
     flags = flex.reflection_table.flags
 
     # Create the algorithm
-    algorithm = ImageSpaceProfileFitting()
+    algorithm = ImageSpaceProfileFitting(self._grid_size)
 
     # Add the specs
-    for experiment in self._experiments:
+    for experiment, model in zip(self._experiments, self._profile_model):
       algorithm.add(Spec(
         experiment.beam,
         experiment.detector,
         experiment.goniometer,
-        experiment.scan))
+        experiment.scan,
+        model.delta_b(deg=False),
+        model.delta_m(deg=False)))
 
     # Perform the integration
     algorithm.execute(reflections)
 
     # Print the number integrated
+    num = reflections.get_flags(flags.dont_integrate).count(False)
+    Command.start('Integrating %d reflections with profile fitting' % num)
     num = reflections.get_flags(flags.integrated_prf).count(True)
-    print 'Integated %d reflections with profile fitting' % num
+    Command.end('Integrated %d reflections with profile fitting' % num)
 
     # Return the reflections
     return reflections

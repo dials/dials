@@ -29,7 +29,7 @@ class FitImageIntegrationExt(IntensityIface):
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
     from dials.algorithms.integration.fit_image import IntegrationAlgorithm
-    self._algorithm = IntegrationAlgorithm(experiments)
+    self._algorithm = IntegrationAlgorithm(experiments, profile_model)
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
