@@ -30,9 +30,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       ;
 
     class_<reference_learner_type>("ReferenceLearner", no_init)
-      .def("get",  &reference_learner_type::get)
+      .def("get", &reference_learner_type::get)
       .def("data", &reference_learner_type::data)
-      .def("mask", &reference_learner_type::mask)
+      .def("count", &reference_learner_type::count)
       .def("__len__", &reference_learner_type::size)
       ;
 

@@ -62,6 +62,8 @@ class IntegrationAlgorithm(object):
 
     import numpy
     numpy.set_printoptions(threshold='nan')
+    from dials.util import pprint
+    print pprint.profile3d(profiles.data(0))
     for i in range(len(profiles)):
       data = profiles.data(i)
       vmax = flex.max(data)

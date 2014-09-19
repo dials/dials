@@ -142,10 +142,6 @@ namespace dials { namespace algorithms {
                 2 * grid_size[0] + 1,
                 2 * grid_size[1] + 1,
                 2 * grid_size[2] + 1), 0.0),
-          mask_(af::c_grid<3>(
-                2 * grid_size[0] + 1,
-                2 * grid_size[1] + 1,
-                2 * grid_size[2] + 1), 0),
           finalized_(false),
           count_(0) {
       DIALS_ASSERT(grid_size[0] > 0);
@@ -153,7 +149,15 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(grid_size[2] > 0);
     }
 
-    bool add(const Shoebox<> &sbox, const vec3<double> &s1, double phi) {
+    /**
+     * Add a reflection to the reference profile.
+     * @param sbox The shoebox
+     * @param s1 The diffracted beam vector.
+     * @param phi The rotation angle.
+     */
+    bool add(const Shoebox<> &sbox, vec3<double> s1, double phi) {
+
+      // FIXME Offset along e2 axis
 
       // Check the input
       DIALS_ASSERT(sbox.is_consistent());
@@ -288,39 +292,137 @@ namespace dials { namespace algorithms {
      */
     void finalize() {
       DIALS_ASSERT(!finalized_);
-      std::cout << "COUNT: " << count_ << std::endl;
-      /* for (std::size_t i = 0; i < data_.size(); ++i) { */
-      /*   if (mask_[i] > 0) { */
-      /*     data_[i] /= mask_[i]; */
-      /*   } else { */
-      /*     data_[i] = 0; */
-      /*   } */
-      /* } */
       finalized_ = true;
     }
 
+    /**
+     * @returns The profile.
+     */
     profile_type data() const {
       return data_;
     }
 
-    mask_type mask() const {
-      return mask_;
+    /**
+     * @returns The number of reflections used to compute the profile.
+     */
+    std::size_t count() const {
+      return count_;
     }
 
     profile_type get(
-        std::size_t panel,
+        std::size_t panel_number,
         const vec3<double> &s1,
         double phi,
         int6 bbox) const {
+
+      // Check the input
       DIALS_ASSERT(finalized_);
       DIALS_ASSERT(bbox[1] > bbox[0]);
       DIALS_ASSERT(bbox[3] > bbox[2]);
       DIALS_ASSERT(bbox[5] > bbox[4]);
-      std::size_t xsize = bbox[1] - bbox[0];
-      std::size_t ysize = bbox[3] - bbox[2];
-      std::size_t zsize = bbox[5] - bbox[4];
-      af::c_grid<3> accessor(zsize, ysize, xsize);
-      return profile_type(accessor, 1);
+
+      // Create the profile array
+      std::size_t xs = bbox[1] - bbox[0];
+      std::size_t ys = bbox[3] - bbox[2];
+      std::size_t zs = bbox[5] - bbox[4];
+      profile_type profile(af::c_grid<3>(zs, ys, xs), 1);
+
+      // Compute the grid step and offset
+      double xoff = -delta_b_;
+      double yoff = -delta_b_;
+      double zoff = -delta_m_;
+      double xstep = (2.0 * delta_b_) / data_.accessor()[2];
+      double ystep = (2.0 * delta_b_) / data_.accessor()[1];
+      double zstep = (2.0 * delta_m_) / data_.accessor()[0];
+
+      // Create the coordinate system
+      CoordinateSystem cs(m2_, s0_, s1, phi);
+
+      // Get the panel
+      const Panel &panel = detector_[panel_number];
+
+      // Compute the detector coordinates of each point on the grid
+      af::versa< vec2<double>, af::c_grid<2> > xy(af::c_grid<2>(
+            data_.accessor()[1] + 1,
+            data_.accessor()[2] + 1));
+      for (std::size_t j = 0; j <= data_.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i <= data_.accessor()[2]; ++i) {
+          double c1 = xoff + i * xstep;
+          double c2 = yoff + j * ystep;
+          vec3<double> s1p = cs.to_beam_vector(vec2<double>(c1,c2));
+          vec2<double> xyp = panel.get_ray_intersection_px(s1p);
+          xyp[0] -= bbox[0];
+          xyp[1] -= bbox[2];
+          xy(j,i) = xyp;
+        }
+      }
+
+      // Compute the frame numbers of each slice on the grid
+      af::shared<double> z(data_.accessor()[0]+1);
+      for (std::size_t k = 0; k <= data_.accessor()[0]; ++k) {
+        double c3 = zoff + k * zstep;
+        double phip = cs.to_rotation_angle_fast(c3);
+        z[k] = scan_.get_array_index_from_angle(phip) - bbox[4];
+      }
+
+      // Get a list of pairs of overlapping polygons
+      for (std::size_t j = 0; j < data_.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i < data_.accessor()[2]; ++i) {
+          vec2<double> xy00 = xy(j,i);
+          vec2<double> xy01 = xy(j,i+1);
+          vec2<double> xy11 = xy(j+1,i+1);
+          vec2<double> xy10 = xy(j+1,i);
+          int x0 = std::floor(min4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int x1 = std::ceil (max4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int y0 = std::floor(min4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          int y1 = std::ceil (max4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          DIALS_ASSERT(x0 < x1);
+          DIALS_ASSERT(y0 < y1);
+          DIALS_ASSERT(x0 >= 0 && x1 <= xs);
+          DIALS_ASSERT(y0 >= 0 && y1 <= ys);
+          vert4 p1(xy00, xy01, xy11, xy10);
+          double p1_area = simple_area(p1);
+          DIALS_ASSERT(p1_area > 0);
+          reverse_quad_inplace_if_backward(p1);
+          for (std::size_t jj = y0; jj < y1; ++jj) {
+            for (std::size_t ii = x0; ii < x1; ++ii) {
+              vec2<double> xy200(ii,jj);
+              vec2<double> xy201(ii,jj+1);
+              vec2<double> xy211(ii+1,jj+1);
+              vec2<double> xy210(ii+1,jj);
+              vert4 p2(xy200, xy201, xy211, xy210);
+              reverse_quad_inplace_if_backward(p2);
+              vert8 p3 = quad_with_convex_quad(p1, p2);
+              double area = simple_area(p3);
+              area /= p1_area;
+              const double EPS = 1e-7;
+              DIALS_ASSERT(0.0 <= area && area <= (1.0+EPS));
+              if (area > 0) {
+                for (std::size_t k = 0; k < data_.accessor()[0]; ++k) {
+                  double f00 = std::min(z[k], z[k+1]);
+                  double f01 = std::max(z[k], z[k+1]);
+                  DIALS_ASSERT(f01 > f00);
+                  double fr = f01 - f00;
+                  int z0 = std::max((int)0, (int)std::floor(f00));
+                  int z1 = std::min((int)zs, (int)std::ceil(f01));
+                  DIALS_ASSERT(z0 >= 0 && z1 <= (int)zs);
+                  for (int kk = z0; kk < z1; ++kk) {
+                    std::size_t f10 = kk;
+                    std::size_t f11 = kk+1;
+                    double fraction = std::min(1.0, (f11 - f10) / fr);
+                    DIALS_ASSERT(fraction >= 0.0);
+                    double value = fraction * area * data_(k,j,i);
+                    profile(kk,jj,ii) += value;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Return the profile
+      return profile;
     }
 
   private:
@@ -332,7 +434,6 @@ namespace dials { namespace algorithms {
     double delta_b_;
     double delta_m_;
     profile_type data_;
-    mask_type mask_;
     bool finalized_;
     std::size_t count_;
   };
@@ -431,13 +532,13 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Get the reference profile mask.
+     * Get the number of profiles used
      * @param id The experiment ID
-     * @returns The reference profile mask.
+     * @returns The number of profiles used.
      */
-    mask_type mask(std::size_t id) {
+    std::size_t count(std::size_t id) {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].mask();
+      return learner_[id].count();
     }
 
     /**
