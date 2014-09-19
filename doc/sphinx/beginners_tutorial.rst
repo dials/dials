@@ -120,7 +120,7 @@ actual algorithm to be used for peak integration e.g. sum3d or fft3d.
 .. code-block:: none
 
   dials.integrate outlier.algorithm=null intensity.algorithm=fitrs \
-    refined_experiments.json reference=indexed.pickle
+    refined_experiments.json indexed.pickle
 
 This reads the indexed reflections to determine strong reflections for profile
 fitting and integrates the data in refined_experiments.json, using the default
