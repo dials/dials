@@ -28,6 +28,10 @@ class FitImageIntegrationExt(IntensityIface):
       .help = "The integrator to use."
       .expert_level=3
 
+    debug = False
+      .type = bool
+      .help = "Save the reference profiles and other debug info."
+
   '''
 
   def __init__(self, params, experiments, profile_model):
@@ -36,7 +40,8 @@ class FitImageIntegrationExt(IntensityIface):
     self._algorithm = IntegrationAlgorithm(
       experiments,
       profile_model,
-      grid_size=params.integration.intensity.fit_image.grid_size)
+      grid_size=params.integration.intensity.fit_image.grid_size,
+      debug=params.integration.intensity.fit_image.debug)
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''

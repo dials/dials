@@ -1,6 +1,15 @@
 from __future__ import division
 from iotbx import phil
 
+class JobId(object):
+  def __init__(self):
+    self.value = None
+  def __call__(self):
+    return self.value
+
+job_id = JobId()
+
+
 def generate_phil_scope():
   ''' Generate the phil scope. '''
   import dials.extensions
@@ -164,6 +173,11 @@ class Task(object):
     from dials.array_family import flex
     from time import time
     from dials.util.command_line import heading
+
+    # Set the global process ID
+    job_id.value = self._index
+
+    # Print out some info
     EPS = 1e-7
     fully_recorded = self._data['partiality'] > (1.0 - EPS)
     num_partial = fully_recorded.count(False)

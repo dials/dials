@@ -13,12 +13,17 @@ from __future__ import division
 class IntegrationAlgorithm(object):
   ''' A class to perform profile fitting '''
 
-  def __init__(self, experiments, profile_model, grid_size=5, **kwargs):
+  def __init__(self,
+               experiments,
+               profile_model,
+               grid_size=5,
+               debug=False):
     '''Initialise algorithm.'''
     assert(len(experiments) == len(profile_model))
     self._experiments = experiments
     self._profile_model = profile_model
     self._grid_size = grid_size
+    self._debug = debug
 
   def __call__(self, reflections):
     '''Process the reflections.
@@ -32,6 +37,7 @@ class IntegrationAlgorithm(object):
     '''
     from dials.algorithms.integration.fit_image import ImageSpaceProfileFitting
     from dials.algorithms.integration.fit_image import Spec
+    from dials.algorithms.integration.interface import job_id
     from dials.array_family import flex
     from dials.util.command_line import Command
 
@@ -60,19 +66,45 @@ class IntegrationAlgorithm(object):
     num = reflections.get_flags(flags.integrated_prf).count(True)
     Command.end('Integrated %d reflections with profile fitting' % num)
 
-    import numpy
-    numpy.set_printoptions(threshold='nan')
-    from dials.util import pprint
-    print pprint.profile3d(profiles.data(0))
-    for i in range(len(profiles)):
-      data = profiles.data(i)
-      vmax = flex.max(data)
-      data = data.as_numpy_array()
-      from matplotlib import pylab
-      for k in range(data.shape[0]):
-        pylab.subplot(1, data.shape[0],  k+1)
-        pylab.imshow(data[k,:,:], interpolation='none', vmin=0, vmax=vmax)
-      pylab.show()
+    # Output the reference profiles
+    if self._debug:
+      import cPickle as pickle
+      filename = 'debug_%d.pickle' % job_id()
+      print 'Saving debugging information to %s' % filename
+      reference = [profiles.data(i) for i in range(len(profiles))]
+      rprofiles = []
+      for r in reflections:
+        rprofiles.append(profiles.get(
+          r['id'],
+          r['panel'],
+          r['s1'],
+          r['xyzcal.mm'][2],
+          r['bbox']))
+      output = {
+        'reflections' : reflections,
+        'experiments' : self._experiments,
+        'profile_model' : self._profile_model,
+        'reference' : reference,
+        'profiles' : rprofiles
+      }
+      with open(filename, 'wb') as outfile:
+        pickle.dump(output, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+
+    # import numpy
+    # numpy.set_printoptions(threshold='nan')
+    # from dials.util import pprint
+    # print pprint.profile3d(profiles.data(0))
+    # for i in range(len(profiles)):
+    #   data = profiles.data(i)
+    #   vmax = flex.max(data)
+    #   data = data.as_numpy_array()
+    #   from matplotlib import pylab
+    #   for k in range(data.shape[0]):
+    #     pylab.subplot(1, data.shape[0],  k+1)
+    #     pylab.imshow(data[k,:,:], interpolation='none', vmin=0, vmax=vmax)
+    #   pylab.show()
 
     # Return the reflections
     return reflections
