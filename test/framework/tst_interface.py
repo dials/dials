@@ -73,9 +73,9 @@ class Test(object):
     extensions = list(BackgroundIface.extensions())
     assert(len(extensions) == 2)
     extensions = list(IntensityIface.extensions())
-    if len(extensions) != 3:
-      raise RuntimeError, 'len(extensions) = %d not 3' % len(extensions)
-    assert(len(extensions) == 3)
+    if len(extensions) != 2:
+      raise RuntimeError, 'len(extensions) = %d not 2' % len(extensions)
+    assert(len(extensions) == 2)
 
     # Check the interface contain the expected extensions
     from dials.extensions import KabschSpotFinderThresholdExt
@@ -84,7 +84,6 @@ class Test(object):
     from dials.extensions import SimpleBackgroundExt
     from dials.extensions import SummationIntegrationExt
     from dials.extensions import FitrsIntegrationExt
-    from dials.extensions import FitImageIntegrationExt
 
     extensions = list(SpotFinderThresholdIface.extensions())
     assert(KabschSpotFinderThresholdExt in extensions)
@@ -96,7 +95,6 @@ class Test(object):
     extensions = list(IntensityIface.extensions())
     assert(SummationIntegrationExt in extensions)
     assert(FitrsIntegrationExt in extensions)
-    assert(FitImageIntegrationExt in extensions)
 
     # Test passed
     print 'OK'
