@@ -87,6 +87,8 @@ algorithms/integration/boost_python/preprocessor.cc -text
 algorithms/integration/corrections.h -text
 algorithms/integration/fit/__init__.py -text
 algorithms/integration/fit/algorithm.py -text
+algorithms/integration/fit/boost_python/fit_ext.cc -text
+algorithms/integration/fit/fit.h -text
 algorithms/integration/fitrs/__init__.py -text
 algorithms/integration/fitrs/algorithm.py -text
 algorithms/integration/fitrs/boost_python/fitrs.cc -text
