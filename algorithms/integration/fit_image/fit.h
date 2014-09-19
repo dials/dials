@@ -145,7 +145,8 @@ namespace dials { namespace algorithms {
           mask_(af::c_grid<3>(
                 2 * grid_size[0] + 1,
                 2 * grid_size[1] + 1,
-                2 * grid_size[2] + 1), 0) {
+                2 * grid_size[2] + 1), 0),
+          finalized_(false) {
       DIALS_ASSERT(grid_size[0] > 0);
       DIALS_ASSERT(grid_size[1] > 0);
       DIALS_ASSERT(grid_size[2] > 0);
@@ -159,6 +160,7 @@ namespace dials { namespace algorithms {
       // Get the bbox size
       std::size_t xs = sbox.xsize();
       std::size_t ys = sbox.ysize();
+      std::size_t zs = sbox.zsize();
 
       // Compute the grid step and offset
       double xoff = -delta_b_;
@@ -194,8 +196,11 @@ namespace dials { namespace algorithms {
       for (std::size_t k = 0; k <= data_.accessor()[0]; ++k) {
         double c3 = zoff + k * ystep;
         double phip = cs.to_rotation_angle_fast(c3);
-        z[k] = scan_.get_array_index_from_angle(phip);
+        z[k] = scan_.get_array_index_from_angle(phip) - sbox.bbox[4];
       }
+
+      // Set the mask code
+      std::size_t mask_code = Valid | Foreground;
 
       // Get a list of pairs of overlapping polygons
       for (std::size_t j = 0; j < data_.accessor()[1]; ++j) {
@@ -224,17 +229,57 @@ namespace dials { namespace algorithms {
               reverse_quad_inplace_if_backward(p2);
               vert8 p3 = quad_with_convex_quad(p1, p2);
               double area = simple_area(p3);
+              DIALS_ASSERT(0.0 <= area && area <= 1.0);
               if (area > 0) {
-
+                for (std::size_t k = 0; k < data_.accessor()[0]; ++k) {
+                  double f00 = std::min(z[k], z[k+1]);
+                  double f01 = std::max(z[k], z[k+1]);
+                  DIALS_ASSERT(f01 > f00);
+                  double fr = f01 - f00;
+                  int z0 = std::max((int)0, (int)std::floor(f00));
+                  int z1 = std::min((int)zs, (int)std::ceil(f01));
+                  DIALS_ASSERT(z0 >= 0 && z1 <= (int)zs);
+                  for (int kk = z0; kk < z1; ++kk) {
+                    if ((sbox.mask(kk,jj,ii) & mask_code) == mask_code) {
+                      std::size_t f10 = kk;
+                      std::size_t f11 = kk+1;
+                      double fraction = (f11 - f10) / fr;
+                      double s = sbox.data(kk,jj,ii);
+                      double b = sbox.data(kk,jj,ii);
+                      double value = fraction * area * (s - b);
+                      data_(k,j,i) += value;
+                      mask_(k,j,i) += 1;
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
+    }
 
-      // Loop through all the pixels in the reference profile and for each pixel
-      // in the grid, compute the polygon on the detector which is covered. Then
-      // compute the frame range covered by each z range in the grid.
+    /**
+     * Finialize the profile.
+     */
+    void finalize() {
+      DIALS_ASSERT(!finalized_);
+      for (std::size_t i = 0; i < data_.size(); ++i) {
+        if (mask_[i] > 0) {
+          data_[i] /= mask_[i];
+        } else {
+          data_[i] = 0;
+        }
+      }
+      finalized_ = true;
+    }
+
+    profile_type data() const {
+      return data_;
+    }
+
+    mask_type mask() const {
+      return mask_;
     }
 
     profile_type get(
@@ -242,6 +287,7 @@ namespace dials { namespace algorithms {
         const vec3<double> &s1,
         double phi,
         int6 bbox) const {
+      DIALS_ASSERT(finalized_);
       DIALS_ASSERT(bbox[1] > bbox[0]);
       DIALS_ASSERT(bbox[3] > bbox[2]);
       DIALS_ASSERT(bbox[5] > bbox[4]);
@@ -262,6 +308,7 @@ namespace dials { namespace algorithms {
     double delta_m_;
     profile_type data_;
     mask_type mask_;
+    bool finalized_;
   };
 
 
@@ -275,6 +322,7 @@ namespace dials { namespace algorithms {
     typedef FloatType float_type;
     typedef SingleProfileLearner<FloatType> learner_type;
     typedef typename learner_type::profile_type profile_type;
+    typedef typename learner_type::mask_type mask_type;
 
     /**
      * Compute the reference profiles.
@@ -321,6 +369,11 @@ namespace dials { namespace algorithms {
           learner_[id[i]].add(shoebox[i], s1[i], xyzcal[i][2]);
         }
       }
+
+      // Finalize the profiles
+      for (std::size_t i = 0; i < learner_.size(); ++i) {
+        learner_[i].finalize();
+      }
     }
 
     /**
@@ -339,6 +392,33 @@ namespace dials { namespace algorithms {
         int6 bbox) const {
       DIALS_ASSERT(id < learner_.size());
       return learner_[id].get(panel, s1, phi, bbox);
+    }
+
+    /**
+     * Get the reference profile.
+     * @param id The experiment ID
+     * @returns The reference profile.
+     */
+    profile_type data(std::size_t id) {
+      DIALS_ASSERT(id < learner_.size());
+      return learner_[id].data();
+    }
+
+    /**
+     * Get the reference profile mask.
+     * @param id The experiment ID
+     * @returns The reference profile mask.
+     */
+    mask_type mask(std::size_t id) {
+      DIALS_ASSERT(id < learner_.size());
+      return learner_[id].mask();
+    }
+
+    /**
+     * Return the number of references.
+     */
+    std::size_t size() const {
+      return learner_.size();
     }
 
   private:
@@ -376,7 +456,8 @@ namespace dials { namespace algorithms {
      * Perform the profile fitting on the input data
      * @param data The reflection data
      */
-    void execute(af::reflection_table data) const {
+    reference_learner_type
+    execute(af::reflection_table data) const {
 
       // Check we have experimental setup data
       DIALS_ASSERT(spec_.size() > 0);
@@ -459,6 +540,9 @@ namespace dials { namespace algorithms {
           }
         }
       }
+
+      // Return the reference learner
+      return reference;
     }
 
   private:

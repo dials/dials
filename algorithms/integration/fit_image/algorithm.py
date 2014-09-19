@@ -52,13 +52,18 @@ class IntegrationAlgorithm(object):
         model.delta_m(deg=False)))
 
     # Perform the integration
-    algorithm.execute(reflections)
-
-    # Print the number integrated
     num = reflections.get_flags(flags.dont_integrate).count(False)
     Command.start('Integrating %d reflections with profile fitting' % num)
+    profiles = algorithm.execute(reflections)
+
+    # Print the number integrated
     num = reflections.get_flags(flags.integrated_prf).count(True)
     Command.end('Integrated %d reflections with profile fitting' % num)
+
+    import numpy
+    numpy.set_printoptions(threshold='nan')
+    for i in range(len(profiles)):
+      print profiles.data(i).as_numpy_array()
 
     # Return the reflections
     return reflections

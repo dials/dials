@@ -18,6 +18,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_fit_image_ext)
   {
+    typedef ImageSpaceProfileFitting::reference_learner_type reference_learner_type;
+
     class_<Spec>("Spec", no_init)
       .def(init< const Beam&,
                  const Detector&,
@@ -25,6 +27,13 @@ namespace dials { namespace algorithms { namespace boost_python {
                  const Scan&,
                  double,
                  double >())
+      ;
+
+    class_<reference_learner_type>("ReferenceLearner", no_init)
+      .def("get",  &reference_learner_type::get)
+      .def("data", &reference_learner_type::data)
+      .def("mask", &reference_learner_type::mask)
+      .def("__len__", &reference_learner_type::size)
       ;
 
     class_<ImageSpaceProfileFitting>("ImageSpaceProfileFitting", no_init)
