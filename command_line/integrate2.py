@@ -65,6 +65,7 @@ class Script(object):
 
       include scope dials.algorithms.integration.interface.phil_scope
       include scope dials.algorithms.profile_model.factory.phil_scope
+      include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
     ''', process_includes=True)
 
@@ -131,7 +132,12 @@ class Script(object):
       print ""
       print heading("Predicting reflections")
       print ""
-      predicted = flex.reflection_table.from_predictions_multi(experiments)
+      predicted = flex.reflection_table.from_predictions_multi(
+        experiments,
+        dmin=params.prediction.dmin,
+        dmax=params.prediction.dmax,
+        margin=params.prediction.margin,
+        force_static=params.prediction.force_static)
       if reference:
         predicted.match_with_reference(reference)
       print ""

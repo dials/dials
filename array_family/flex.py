@@ -59,21 +59,38 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   _centroid_algorithm = default_centroid_algorithm()
 
   @staticmethod
-  def from_predictions(experiment, force_static=False, dmin=None):
+  def from_predictions(experiment,
+                       dmin=None,
+                       dmax=None,
+                       margin=1,
+                       force_static=False):
     ''' Construct a reflection table from predictions. '''
     from dials.algorithms.spot_prediction.reflection_predictor \
       import ReflectionPredictor
     predict = ReflectionPredictor(
-      experiment, force_static=force_static, dmin=dmin)
+      experiment,
+      dmin=dmin,
+      dmax=dmax,
+      margin=margin,
+      force_static=force_static)
     return predict()
 
   @staticmethod
-  def from_predictions_multi(experiments, force_static=False, dmin=None):
+  def from_predictions_multi(experiments,
+                             dmin=None,
+                             dmax=None,
+                             margin=1,
+                             force_static=False):
     ''' Construct a reflection table from predictions. '''
     from scitbx.array_family import flex
     result = reflection_table()
     for i, e in enumerate(experiments):
-      rlist = reflection_table.from_predictions(e, force_static, dmin)
+      rlist = reflection_table.from_predictions(
+        e,
+        dmin=dmin,
+        dmax=dmax,
+        margin=margin,
+        force_static=force_static)
       rlist['id'] = flex.size_t(len(rlist), i)
       result.extend(rlist)
     return result
@@ -236,6 +253,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       s0[i] = e.beam.get_s0()
     self['zeta'] = zeta_factor(m2, s0, self['s1'], self['id'])
     return self['zeta']
+
+  def compute_d_single(self, experiment):
+    ''' Compute the resolution for each reflection. '''
+    from dials.array_family import flex
+    uc = flex.unit_cell(1)
+    uc[0] = experiment.crystal.get_unit_cell()
+    self['d'] = uc.d(self['miller_index'], flex.size_t(len(self), 0))
+    return self['d']
 
   def compute_d(self, experiments):
     ''' Compute the resolution for each reflection. '''

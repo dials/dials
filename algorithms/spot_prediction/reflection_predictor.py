@@ -10,13 +10,44 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.phil import parse
+
+# The phil parameters
+phil_scope = parse('''
+
+  prediction {
+
+    dmin = None
+      .type = float
+      .help = "The maximum resolution limit"
+
+    dmax = None
+      .type = float
+      .help = "The minimum resolution limit"
+
+    margin = 1
+      .type = int
+      .help = "The margin to use to scan varying prediction"
+
+    force_static = False
+      .type = bool
+      .help = "For scan-varying prediction for scan-static"
+
+  }
+
+''')
 
 
 class ReflectionPredictor(object):
   ''' A reflection predictor that takes a number of experiments and does the
   proper prediction for each type of experiment. '''
 
-  def __init__(self, experiment, **kwargs):
+  def __init__(self,
+               experiment,
+               dmin=None,
+               dmax=None,
+               margin=1,
+               force_static=False):
     ''' Initialise a predictor for each experiment. '''
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
     from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
@@ -29,29 +60,39 @@ class ReflectionPredictor(object):
         self.name = name
         self.func = func
       def __call__(self):
-        return self.func()
-
-    # Get the force static flag
-    force_static = kwargs.get("force_static", False)
+        result = self.func()
+        if dmax is not None:
+          assert(dmax > 0)
+          result.compute_d_single(experiment)
+          mask = result['d'] > dmax
+          result.del_selected(mask)
+        return result
 
     # Select the predictor class
     if isinstance(experiment.imageset, ImageSweep):
       nsp = experiment.crystal.num_scan_points
       nim = experiment.scan.get_num_images()
       if not force_static and nsp == nim + 1:
-        predictor = ScanVaryingReflectionPredictor(experiment, **kwargs)
+        predictor = ScanVaryingReflectionPredictor(
+          experiment,
+          dmin=dmin,
+          margin=margin)
         A = [experiment.crystal.get_A_at_scan_point(i) for i in
                range(experiment.crystal.num_scan_points)]
         predict = Predictor(
           "scan varying prediction",
           lambda: predictor.for_ub(flex.mat3_double(A)))
       else:
-        predictor = ScanStaticReflectionPredictor(experiment, **kwargs)
+        predictor = ScanStaticReflectionPredictor(
+          experiment,
+          dmin=dmin)
         predict = Predictor(
           "scan static prediction",
           lambda: predictor.for_ub(experiment.crystal.get_A()))
     else:
-      predictor = StillsReflectionPredictor(experiment, **kwargs)
+      predictor = StillsReflectionPredictor(
+        experiment,
+        dmin=dmin)
 
       predict = Predictor(
         "stills prediction",

@@ -426,7 +426,6 @@ extensions/fit_image_integation_ext.py -text
 extensions/fitrs_integration_ext.py -text
 extensions/kabsch_spotfinder_threshold_ext.py -text
 extensions/null_background_ext.py -text
-extensions/profile_fitting_mosflm_integration_ext.py -text
 extensions/simple_background_ext.py -text
 extensions/simple_centroid_ext.py -text
 extensions/summation_integration_ext.py -text

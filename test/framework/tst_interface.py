@@ -84,7 +84,7 @@ class Test(object):
     from dials.extensions import SimpleBackgroundExt
     from dials.extensions import SummationIntegrationExt
     from dials.extensions import FitrsIntegrationExt
-    from dials.extensions import ProfileFittingMosflmIntegrationExt
+    from dials.extensions import FitImageIntegrationExt
 
     extensions = list(SpotFinderThresholdIface.extensions())
     assert(KabschSpotFinderThresholdExt in extensions)
@@ -96,7 +96,7 @@ class Test(object):
     extensions = list(IntensityIface.extensions())
     assert(SummationIntegrationExt in extensions)
     assert(FitrsIntegrationExt in extensions)
-    assert(ProfileFittingMosflmIntegrationExt in extensions)
+    assert(FitImageIntegrationExt in extensions)
 
     # Test passed
     print 'OK'
