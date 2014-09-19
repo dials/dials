@@ -14,19 +14,30 @@ def do_work(path):
 
   print "Preparing to index", basename
 
-  easy_run.call("dials.import %s --output %s"%(path,datablock))
-  easy_run.call("dials.find_spots %s threshold.xds.sigma_strong=15 min_spot_size=2 -o %s"%(datablock, spots))
-  easy_run.call("dials.index %s %s method=fft1d beam.fix=all detector.fix=all known_symmetry.unit_cell=93,93,130,90,90,120 known_symmetry.space_group=P6122 n_macro_cycles=5 d_min_final=0.5 experiments=%s reflections=%s"%(spots, datablock, experiments, reflections))
-  easy_run.call("dials.integrate %s -r %s -o %s"%(experiments, reflections, integrated))
+  cmd = "dials.import %s output=%s"%(path,datablock)
+  print cmd
+  easy_run.call(cmd)
+  if not os.path.exists(datablock): return
 
-  if os.path.exists(integrated):
-    assert os.path.exists(reflections)
-    assert os.path.exists(experiments)
-    print basename, "indexed succesfully"
+  cmd = "dials.find_spots input.datablock=%s threshold.xds.sigma_strong=15 min_spot_size=3 output.reflections=%s"%(datablock, spots)
+  print cmd
+  easy_run.call(cmd)
+  if not os.path.exists(spots): return
 
-    results.append((reflections,experiments))
-  else:
-    print basename, "failed to index"
+  cmd = "dials.index input.reflections=%s input.datablock=%s method=fft1d beam.fix=all detector.fix=all known_symmetry.unit_cell=93,93,130,90,90,120 known_symmetry.space_group=P6122 n_macro_cycles=5 d_min_final=0.5 output.experiments=%s output.reflections=%s"%(spots, datablock, experiments, reflections)
+  print cmd
+  easy_run.call(cmd)
+  if not os.path.exists(experiments): return
+  if not os.path.exists(reflections): return
+
+  cmd = "dials.integrate outlier.algorithm=null %s %s output.reflections=%s"%(experiments, reflections, integrated)
+  print cmd
+  easy_run.call(cmd)
+  if not os.path.exists(integrated): return
+
+  print basename, "indexed succesfully"
+
+  results.append((reflections,experiments))
 
 if num_procs > 1:
   from multiprocessing import Manager, Process
@@ -63,16 +74,17 @@ else:
   for path in sys.argv[1:]:
     do_work(path)
 
+if len(results) > 0:
+  print "Writing phil input to metrology refiner..."
 
-print "Writing phil input to metrology refiner..."
-
-f = open("all.phil", 'w')
-for (indexed, experiments) in results:
-  f.write("input {\n")
-  f.write("  experiments = %s\n"%experiments)
-  f.write("  reflections = %s\n"%indexed)
-  f.write("}\n")
-f.close()
+  f = open("all.phil", 'w')
+  for (indexed, experiments) in results:
+    f.write("input {\n")
+    f.write("  experiments = %s\n"%experiments)
+    f.write("  reflections = %s\n"%indexed)
+    f.write("}\n")
+  f.close()
+else:
+  print "Nothing indexed"
 
 print "Done"
-
