@@ -63,7 +63,14 @@ class IntegrationAlgorithm(object):
     import numpy
     numpy.set_printoptions(threshold='nan')
     for i in range(len(profiles)):
-      print profiles.data(i).as_numpy_array()
+      data = profiles.data(i)
+      vmax = flex.max(data)
+      data = data.as_numpy_array()
+      from matplotlib import pylab
+      for k in range(data.shape[0]):
+        pylab.subplot(1, data.shape[0],  k+1)
+        pylab.imshow(data[k,:,:], interpolation='none', vmin=0, vmax=vmax)
+      pylab.show()
 
     # Return the reflections
     return reflections

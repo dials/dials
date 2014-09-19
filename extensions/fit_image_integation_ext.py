@@ -19,6 +19,10 @@ class FitImageIntegrationExt(IntensityIface):
 
   phil = '''
 
+    grid_size = 5
+      .type = int
+      .help = "The size of the profile grid."
+
     integrator = *auto 3d flat3d 2d single2d
       .type = choice
       .help = "The integrator to use."
@@ -29,7 +33,10 @@ class FitImageIntegrationExt(IntensityIface):
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
     from dials.algorithms.integration.fit_image import IntegrationAlgorithm
-    self._algorithm = IntegrationAlgorithm(experiments, profile_model)
+    self._algorithm = IntegrationAlgorithm(
+      experiments,
+      profile_model,
+      grid_size=params.integration.intensity.fit_image.grid_size)
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
@@ -39,7 +46,7 @@ class FitImageIntegrationExt(IntensityIface):
   def type(cls, params, experiments):
     ''' Return the type of the integrator. '''
     from libtbx import Auto
-    integrator_type = params.integration.intensity.sum.integrator
+    integrator_type = params.integration.intensity.fit_image.integrator
     if integrator_type == Auto or integrator_type == 'auto':
       integrator_type = '3d'
     return integrator_type

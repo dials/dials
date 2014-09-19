@@ -146,13 +146,14 @@ namespace dials { namespace algorithms {
                 2 * grid_size[0] + 1,
                 2 * grid_size[1] + 1,
                 2 * grid_size[2] + 1), 0),
-          finalized_(false) {
+          finalized_(false),
+          count_(0) {
       DIALS_ASSERT(grid_size[0] > 0);
       DIALS_ASSERT(grid_size[1] > 0);
       DIALS_ASSERT(grid_size[2] > 0);
     }
 
-    void add(const Shoebox<> &sbox, const vec3<double> &s1, double phi) {
+    bool add(const Shoebox<> &sbox, const vec3<double> &s1, double phi) {
 
       // Check the input
       DIALS_ASSERT(sbox.is_consistent());
@@ -168,6 +169,7 @@ namespace dials { namespace algorithms {
       double zoff = -delta_m_;
       double xstep = (2.0 * delta_b_) / data_.accessor()[2];
       double ystep = (2.0 * delta_b_) / data_.accessor()[1];
+      double zstep = (2.0 * delta_m_) / data_.accessor()[0];
 
       // Create the coordinate system
       CoordinateSystem cs(m2_, s0_, s1, phi);
@@ -194,13 +196,34 @@ namespace dials { namespace algorithms {
       // Compute the frame numbers of each slice on the grid
       af::shared<double> z(data_.accessor()[0]+1);
       for (std::size_t k = 0; k <= data_.accessor()[0]; ++k) {
-        double c3 = zoff + k * ystep;
+        double c3 = zoff + k * zstep;
         double phip = cs.to_rotation_angle_fast(c3);
         z[k] = scan_.get_array_index_from_angle(phip) - sbox.bbox[4];
+        if (!(z[k] >= 0 && z[k] <= zs)) {
+          return false;
+        }
       }
 
       // Set the mask code
       std::size_t mask_code = Valid | Foreground;
+
+      // Compute the normalized signal in the foreground region
+      af::versa< double, af::c_grid<3> > signal(sbox.data.accessor(), 0);
+      double total_signal = 0.0;
+      for (std::size_t i = 0; i < signal.size(); ++i) {
+        std::size_t m = sbox.mask[i];
+        if (m & Foreground) {
+          if (!(m & Valid)) {
+            return false;
+          }
+          signal[i] = sbox.data[i] - sbox.background[i];
+          total_signal += signal[i];
+        }
+      }
+      DIALS_ASSERT(total_signal > 0);
+      for (std::size_t i = 0; i < signal.size(); ++i) {
+        signal[i] /= total_signal;
+      }
 
       // Get a list of pairs of overlapping polygons
       for (std::size_t j = 0; j < data_.accessor()[1]; ++j) {
@@ -229,7 +252,8 @@ namespace dials { namespace algorithms {
               reverse_quad_inplace_if_backward(p2);
               vert8 p3 = quad_with_convex_quad(p1, p2);
               double area = simple_area(p3);
-              DIALS_ASSERT(0.0 <= area && area <= 1.0);
+              const double EPS = 1e-7;
+              DIALS_ASSERT(0.0 <= area && area <= (1.0+EPS));
               if (area > 0) {
                 for (std::size_t k = 0; k < data_.accessor()[0]; ++k) {
                   double f00 = std::min(z[k], z[k+1]);
@@ -243,12 +267,10 @@ namespace dials { namespace algorithms {
                     if ((sbox.mask(kk,jj,ii) & mask_code) == mask_code) {
                       std::size_t f10 = kk;
                       std::size_t f11 = kk+1;
-                      double fraction = (f11 - f10) / fr;
-                      double s = sbox.data(kk,jj,ii);
-                      double b = sbox.data(kk,jj,ii);
-                      double value = fraction * area * (s - b);
+                      double fraction = std::min(1.0, (f11 - f10) / fr);
+                      DIALS_ASSERT(fraction >= 0.0);
+                      double value = fraction * area * signal(kk,jj,ii);
                       data_(k,j,i) += value;
-                      mask_(k,j,i) += 1;
                     }
                   }
                 }
@@ -257,6 +279,8 @@ namespace dials { namespace algorithms {
           }
         }
       }
+      count_++;
+      return true;
     }
 
     /**
@@ -264,13 +288,14 @@ namespace dials { namespace algorithms {
      */
     void finalize() {
       DIALS_ASSERT(!finalized_);
-      for (std::size_t i = 0; i < data_.size(); ++i) {
-        if (mask_[i] > 0) {
-          data_[i] /= mask_[i];
-        } else {
-          data_[i] = 0;
-        }
-      }
+      std::cout << "COUNT: " << count_ << std::endl;
+      /* for (std::size_t i = 0; i < data_.size(); ++i) { */
+      /*   if (mask_[i] > 0) { */
+      /*     data_[i] /= mask_[i]; */
+      /*   } else { */
+      /*     data_[i] = 0; */
+      /*   } */
+      /* } */
       finalized_ = true;
     }
 
@@ -309,6 +334,7 @@ namespace dials { namespace algorithms {
     profile_type data_;
     mask_type mask_;
     bool finalized_;
+    std::size_t count_;
   };
 
 
