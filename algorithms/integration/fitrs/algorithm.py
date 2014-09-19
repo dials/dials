@@ -41,7 +41,7 @@ class IntegrationAlgorithm(object):
     experiment = experiments[0]
     assert("flags" in reflections)
     assert(len(experiment.detector) == 1)
-    self._filter_reflections(reflections)
+    self._filter_reflections(experiments, reflections)
 
     mask1 = ~reflections.get_flags(reflections.flags.dont_integrate)
     mask2 = reflections.get_flags(reflections.flags.reference_spot)
@@ -57,11 +57,19 @@ class IntegrationAlgorithm(object):
 
     reflections.set_selected(mask3, reflections2)
 
-  def _filter_reflections(self, reflections):
-    from dials.algorithms.filtering import by_shoebox_mask
-    mask = by_shoebox_mask(reflections['shoebox'])
-    print "Filtering %d reflections with invalid foreground pixels" % (
-      mask.count(False))
+  def _filter_reflections(self, experiments, reflections):
+    # from dials.algorithms.filtering import by_shoebox_mask
+    from dials.algorithms.filtering import by_detector_mask
+    assert(len(experiments) == 1)
+    assert(len(experiments[0].detector) == 1)
+    tr = experiments[0].detector[0].get_trusted_range()
+    scan_range = experiments[0].scan.get_array_range()
+    mask = experiments[0].imageset[0] > int(tr[0])
+    mask = by_detector_mask(reflections['bbox'], mask, scan_range)
+    # mask = by_shoebox_mask(reflections['shoebox'])
+    print "Filtering %d reflections outside image range" % mask.count(False)
+    # print "Filtering %d reflections with invalid foreground pixels" % (
+    #   mask.count(False))
     reflections.set_flags(~mask, reflections.flags.dont_integrate)
     reflections.unset_flags(~mask, reflections.flags.reference_spot)
 
