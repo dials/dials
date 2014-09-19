@@ -21,6 +21,9 @@
 #include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/integration/profile/fitting.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/polygon/clip/clip.h>
+#include <dials/algorithms/polygon/spatial_interpolation.h>
+#include <dials/algorithms/polygon/area.h>
 
 
 namespace dials { namespace algorithms {
@@ -30,6 +33,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
+  using dxtbx::model::Panel;
   using dials::af::ReferenceSpot;
   using dials::af::DontIntegrate;
   using dials::af::IntegratedPrf;
@@ -37,7 +41,21 @@ namespace dials { namespace algorithms {
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::algorithms::reflection_basis::CoordinateSystem;
+  using dials::algorithms::polygon::simple_area;
+  using dials::algorithms::polygon::clip::vert4;
+  using dials::algorithms::polygon::clip::vert8;
+  using dials::algorithms::polygon::clip::quad_with_convex_quad;
+  using dials::algorithms::polygon::spatial_interpolation::reverse_quad_inplace_if_backward;
 
+  template <typename T>
+  T min4(T a, T b, T c, T d) {
+    return std::min(std::min(a,b), std::min(c,d));
+  }
+
+  template <typename T>
+  T max4(T a, T b, T c, T d) {
+    return std::max(std::max(a,b), std::max(c,d));
+  }
 
   /**
    * A class to specify the experiments input
@@ -114,7 +132,9 @@ namespace dials { namespace algorithms {
      */
     SingleProfileLearner(const Spec spec,
                          int3 grid_size)
-        : m2_(spec.goniometer().get_rotation_axis()),
+        : detector_(spec.detector()),
+          scan_(spec.scan()),
+          m2_(spec.goniometer().get_rotation_axis()),
           s0_(spec.beam().get_s0()),
           delta_b_(spec.delta_b()),
           delta_m_(spec.delta_m()),
@@ -136,6 +156,10 @@ namespace dials { namespace algorithms {
       // Check the input
       DIALS_ASSERT(sbox.is_consistent());
 
+      // Get the bbox size
+      std::size_t xs = sbox.xsize();
+      std::size_t ys = sbox.ysize();
+
       // Compute the grid step and offset
       double xoff = -delta_b_;
       double yoff = -delta_b_;
@@ -146,19 +170,71 @@ namespace dials { namespace algorithms {
       // Create the coordinate system
       CoordinateSystem cs(m2_, s0_, s1, phi);
 
-      // Loop through all the pixels in the reference profile and for each pixel
-      // in the grid, compute the polygon on the detector which is covered. Then
-      // compute the frame range covered by each z range in the grid.
-      for (std::size_t j = 0; j < data_.accessor()[1]; ++j) {
-        for (std::size_t i = 0; i < data_.accessor()[2]; ++i) {
+      // Get the panel
+      const Panel &panel = detector_[sbox.panel];
+
+      // Compute the detector coordinates of each point on the grid
+      af::versa< vec2<double>, af::c_grid<2> > xy(af::c_grid<2>(
+            data_.accessor()[1] + 1,
+            data_.accessor()[2] + 1));
+      for (std::size_t j = 0; j <= data_.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i <= data_.accessor()[2]; ++i) {
           double c1 = xoff + i * xstep;
           double c2 = yoff + j * ystep;
           vec3<double> s1p = cs.to_beam_vector(vec2<double>(c1,c2));
-          for (std::size_t k = 0; k < data_.accessor()[0]; ++k) {
-            mask_(k,j,i)++;
+          vec2<double> xyp = panel.get_ray_intersection_px(s1p);
+          xyp[0] -= sbox.bbox[0];
+          xyp[1] -= sbox.bbox[2];
+          xy(j,i) = xyp;
+        }
+      }
+
+      // Compute the frame numbers of each slice on the grid
+      af::shared<double> z(data_.accessor()[0]+1);
+      for (std::size_t k = 0; k <= data_.accessor()[0]; ++k) {
+        double c3 = zoff + k * ystep;
+        double phip = cs.to_rotation_angle_fast(c3);
+        z[k] = scan_.get_array_index_from_angle(phip);
+      }
+
+      // Get a list of pairs of overlapping polygons
+      for (std::size_t j = 0; j < data_.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i < data_.accessor()[2]; ++i) {
+          vec2<double> xy00 = xy(j,i);
+          vec2<double> xy01 = xy(j,i+1);
+          vec2<double> xy11 = xy(j+1,i+1);
+          vec2<double> xy10 = xy(j+1,i);
+          int x0 = std::floor(min4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int x1 = std::ceil (max4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int y0 = std::floor(min4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          int y1 = std::ceil (max4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          DIALS_ASSERT(x0 < x1);
+          DIALS_ASSERT(y0 < y1);
+          DIALS_ASSERT(x0 >= 0 && x1 <= xs);
+          DIALS_ASSERT(y0 >= 0 && y1 <= ys);
+          vert4 p1(xy00, xy01, xy11, xy10);
+          reverse_quad_inplace_if_backward(p1);
+          for (std::size_t jj = y0; jj < y1; ++jj) {
+            for (std::size_t ii = x0; ii < x1; ++ii) {
+              vec2<double> xy200(ii,jj);
+              vec2<double> xy201(ii,jj+1);
+              vec2<double> xy211(ii+1,jj+1);
+              vec2<double> xy210(ii+1,jj);
+              vert4 p2(xy200, xy201, xy211, xy210);
+              reverse_quad_inplace_if_backward(p2);
+              vert8 p3 = quad_with_convex_quad(p1, p2);
+              double area = simple_area(p3);
+              if (area > 0) {
+
+              }
+            }
           }
         }
       }
+
+      // Loop through all the pixels in the reference profile and for each pixel
+      // in the grid, compute the polygon on the detector which is covered. Then
+      // compute the frame range covered by each z range in the grid.
     }
 
     profile_type get(
@@ -178,6 +254,8 @@ namespace dials { namespace algorithms {
 
   private:
 
+    Detector detector_;
+    Scan scan_;
     vec3<double> m2_;
     vec3<double> s0_;
     double delta_b_;
