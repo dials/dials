@@ -180,8 +180,11 @@ namespace dials { namespace algorithms {
           sdy2 += dy*dy;
         }
       }
-      DIALS_ASSERT(sdx2 > 0.0 && sdy2 > 0.0);
-      return sdxdy / (std::sqrt(sdx2) * std::sqrt(sdy2));
+      double result = 0.0;
+      if (sdx2 > 0.0 && sdy2 > 0.0) {
+        result = sdxdy / (std::sqrt(sdx2) * std::sqrt(sdy2));
+      }
+      return result;
     }
 
     double intensity_;

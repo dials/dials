@@ -1,0 +1,34 @@
+/*
+ * fit_ext.cc
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
+#include <dials/algorithms/integration/fit_image/fit.h>
+
+namespace dials { namespace algorithms { namespace boost_python {
+
+  using namespace boost::python;
+
+  BOOST_PYTHON_MODULE(dials_algorithms_integration_fit_image_ext)
+  {
+    class_<Spec>("Spec", no_init)
+      .def(init< const Beam&,
+                 const Detector&,
+                 const Goniometer&,
+                 const Scan& >())
+      ;
+
+    class_<ImageSpaceProfileFitting>("ImageSpaceProfileFitting")
+      .def("add", &ImageSpaceProfileFitting::add)
+      .def("execute", &ImageSpaceProfileFitting::execute)
+      ;
+  }
+
+}}} // namespace = dials::algorithms::boost_python

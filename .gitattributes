@@ -85,10 +85,10 @@ algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/interface.cc -text
 algorithms/integration/boost_python/preprocessor.cc -text
 algorithms/integration/corrections.h -text
-algorithms/integration/fit/__init__.py -text
-algorithms/integration/fit/algorithm.py -text
-algorithms/integration/fit/boost_python/fit_ext.cc -text
-algorithms/integration/fit/fit.h -text
+algorithms/integration/fit_image/__init__.py -text
+algorithms/integration/fit_image/algorithm.py -text
+algorithms/integration/fit_image/boost_python/fit_image_ext.cc -text
+algorithms/integration/fit_image/fit.h -text
 algorithms/integration/fitrs/__init__.py -text
 algorithms/integration/fitrs/algorithm.py -text
 algorithms/integration/fitrs/boost_python/fitrs.cc -text
@@ -422,6 +422,7 @@ doc/user-tutorial/tutorial.txt -text
 doc/user/manual.tex -text
 /error.h -text
 extensions/__init__.py -text
+extensions/fit_image_integation_ext.py -text
 extensions/fitrs_integration_ext.py -text
 extensions/kabsch_spotfinder_threshold_ext.py -text
 extensions/null_background_ext.py -text
