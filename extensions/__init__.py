@@ -12,20 +12,29 @@
 from __future__ import division
 
 
-def import_sub_modules():
+def import_sub_modules(paths):
   ''' Import all sub modules. '''
   from pkgutil import walk_packages
-  from os.path import dirname
 
   # Create a generator to walk through the sub packages
-  path = dirname(__file__)
-  walker = walk_packages(path=[path], onerror=lambda x: None)
+  walker = walk_packages(path=paths, onerror=lambda x: None)
 
   # Walk through, importing the packages
   modules = []
   for importer, modname, ispkg in walker:
-    modules.append(__import__(modname, globals()))
+    loader = importer.find_module(modname)
+    modules.append(loader.load_module(modname))
   return modules
+
+def import_extensions():
+  from dials.framework import env
+  from os.path import dirname
+
+  # Get the paths to import from
+  paths = [dirname(__file__)] + env.cache.paths()
+
+  # Import the sub modules
+  return import_sub_modules(paths)
 
 def grab_extensions(modules):
   ''' Get a list of extensions. '''
@@ -40,7 +49,7 @@ def grab_extensions(modules):
 
 
 # Import sub modules
-_modules = import_sub_modules()
+_modules = import_extensions()
 
 # Add this extensions to the current namespace
 for name, obj in grab_extensions(_modules):

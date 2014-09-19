@@ -24,3 +24,9 @@ try:
       os.remove(filename)
 except Exception, e:
   pass
+
+try:
+  from dials.framework import env
+  env.cache.wipe()
+except Exception:
+  pass

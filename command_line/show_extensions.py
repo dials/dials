@@ -39,7 +39,7 @@ class Script(object):
     from dials.interfaces import SpotFinderThresholdIface
 
     # Parse the command line arguments
-    params, options, args = self.parser.parse_args()
+    params, options = self.parser.parse_args()
 
     # Create the list of interfaces
     interfaces = [
