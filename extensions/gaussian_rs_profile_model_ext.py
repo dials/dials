@@ -10,10 +10,10 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-from dials.interfaces import ProfileModelIface
+from dials.interfaces import ProfileModelCreatorIface
 
 
-class GaussianRSProfileModelExt(ProfileModelIface):
+class GaussianRSProfileModelExt(ProfileModelCreatorIface):
   ''' An extension class implementing a reciprocal space gaussian profile model. '''
 
   name = 'gaussian_rs'
@@ -28,18 +28,6 @@ class GaussianRSProfileModelExt(ProfileModelIface):
   def __init__(self):
     from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
     self._model = ProfileModelList()
-
-  def compute_bbox(self, experiments, reflections, **kwargs):
-    return self._model.compute_bbox(experiments, reflections, **kwargs)
-
-  def compute_partiality(self, experiments, reflections, **kwargs):
-    return self._compute_partiality(experiments, reflections, **kwargs)
-
-  def compute_mask(self, experiments, reflections, **kwargs):
-    return self._model.compute_partiality(experiments, reflections, **kwargs)
-
-  def dump(self):
-    return self.dump()
 
   @classmethod
   def create(cls, params, experiments, reflections):

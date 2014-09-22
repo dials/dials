@@ -12,8 +12,8 @@ from libtbx.phil import parse
 
 def generate_phil_scope():
   import dials.extensions
-  from dials.interfaces import ProfileModelIface
-  phil_scope = ProfileModelIface.phil_scope()
+  from dials.interfaces import ProfileModelCreatorIface
+  phil_scope = ProfileModelCreatorIface.phil_scope()
   return phil_scope
 
 phil_scope = generate_phil_scope()
@@ -24,6 +24,6 @@ class ProfileModelFactory(object):
   @classmethod
   def create(cls, params, experiments, reflections=None):
     ''' Compute or load the profile model. '''
-    from dials.interfaces import ProfileModelIface
-    Algorithm = ProfileModelIface.extension(params.profile.algorithm)
+    from dials.interfaces import ProfileModelCreatorIface
+    Algorithm = ProfileModelCreatorIface.extension(params.profile.algorithm)
     return Algorithm.create(params, experiments, reflections)

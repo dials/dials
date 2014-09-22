@@ -43,39 +43,10 @@ class SpotFinderThresholdIface(interface.Interface):
     pass
 
 
-class ProfileModelIface(interface.Interface):
-  ''' The interface definition for a list of profile models. '''
+class ProfileModelCreatorIface(interface.Interface):
+  ''' The interface definition for a generating a list of profile models. '''
 
   name = 'profile'
-
-  @interface.abstractmethod
-  def compute_bbox(self, experiments, reflections, **kwargs):
-    ''' Given a list of experiments and list of reflections, compute the
-    bounding box of the reflections on the detector (and image frames).
-
-    '''
-    pass
-
-  @interface.abstractmethod
-  def compute_partiality(self, experiments, reflections, **kwargs):
-    ''' Given a list of experiments and list of reflections, compute the
-    partiality of the reflections
-
-    '''
-    pass
-
-  @interface.abstractmethod
-  def compute_mask(self, experiments, reflections, **kwargs):
-    ''' Given a list of experiments and list of reflections, compute the
-    foreground/background mask of the reflections.
-
-    '''
-    pass
-
-  @interface.abstractmethod
-  def dump(self):
-    ''' Dump and return the profile model to a phil scope object. '''
-    pass
 
   @interface.abstractmethod
   def create(cls, params, experiments, reflections=None):

@@ -36,13 +36,13 @@ class Test(object):
     assert(len(interfaces) == 5)
 
     # Ensure all the interfaces we expect are there
-    from dials.interfaces import ProfileModelIface
+    from dials.interfaces import ProfileModelCreatorIface
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import IntensityIface
 
-    assert(ProfileModelIface in interfaces)
+    assert(ProfileModelCreatorIface in interfaces)
     assert(SpotFinderThresholdIface in interfaces)
     assert(CentroidIface in interfaces)
     assert(BackgroundIface in interfaces)
@@ -58,7 +58,7 @@ class Test(object):
 
   def tst_after_import_extensions(self):
     import dials.extensions # import dependency
-    from dials.interfaces import ProfileModelIface
+    from dials.interfaces import ProfileModelCreatorIface
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
@@ -69,7 +69,7 @@ class Test(object):
     assert(len(interfaces) == 5)
 
     # Check we have the expected number of extensions for each interface
-    extensions = list(ProfileModelIface.extensions())
+    extensions = list(ProfileModelCreatorIface.extensions())
     assert(len(extensions) > 0)
     extensions = list(SpotFinderThresholdIface.extensions())
     assert(len(extensions) > 0)
@@ -89,7 +89,7 @@ class Test(object):
     from dials.extensions import SummationIntegrationExt
     from dials.extensions import FitrsIntegrationExt
 
-    extensions = list(ProfileModelIface.extensions())
+    extensions = list(ProfileModelCreatorIface.extensions())
     assert(GaussianRSProfileModelExt in extensions)
     extensions = list(SpotFinderThresholdIface.extensions())
     assert(KabschSpotFinderThresholdExt in extensions)
