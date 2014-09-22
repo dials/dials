@@ -22,14 +22,17 @@ class SummationIntegrationExt(IntensityIface):
 
   name = 'sum'
 
-  phil = '''
+  @classmethod
+  def phil(cls):
+    phil = '''
 
-    integrator = *auto 3d flat3d 2d single2d stills
-      .type = choice
-      .help = "The integrator to use."
-      .expert_level=3
+      integrator = *auto 3d flat3d 2d single2d stills
+        .type = choice
+        .help = "The integrator to use."
+        .expert_level=3
 
-  '''
+    '''
+    return phil
 
   def __init__(self, params, experiments, profile_model):
     ''' Do nothing. This algorithm is a placeholder. '''

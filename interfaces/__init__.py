@@ -43,6 +43,58 @@ class SpotFinderThresholdIface(interface.Interface):
     pass
 
 
+class ProfileModelIface(interface.Interface):
+  ''' The interface definition for a list of profile models. '''
+
+  name = 'profile'
+
+  @interface.abstractmethod
+  def compute_bbox(self, experiments, reflections, **kwargs):
+    ''' Given a list of experiments and list of reflections, compute the
+    bounding box of the reflections on the detector (and image frames).
+
+    '''
+    pass
+
+  @interface.abstractmethod
+  def compute_partiality(self, experiments, reflections, **kwargs):
+    ''' Given a list of experiments and list of reflections, compute the
+    partiality of the reflections
+
+    '''
+    pass
+
+  @interface.abstractmethod
+  def compute_mask(self, experiments, reflections, **kwargs):
+    ''' Given a list of experiments and list of reflections, compute the
+    foreground/background mask of the reflections.
+
+    '''
+    pass
+
+  @interface.abstractmethod
+  def compute(cls, experiments, reflections, **kwargs):
+    ''' Given a list of experiments and a list of reflections, compute the
+    profile models.
+
+    This method should be a @classmethod and return an instance of the
+    profile model list class. '''
+    pass
+
+  @interface.abstractmethod
+  def load(cls, params):
+    ''' Given a set of extracted phil parameters, load the profile model.
+
+    This method should be a @classmethod and return an instance of the
+    profile model list class. '''
+    pass
+
+  @interface.abstractmethod
+  def dump(self):
+    ''' Dump and return the profile model to a phil scope object. '''
+    pass
+
+
 class CentroidIface(interface.Interface):
   ''' Interface for centroid algorithms. '''
 
@@ -120,6 +172,7 @@ class IntensityIface(interface.Interface):
      - flat3d - shoeboxes will be read in 3D and summed across all frames.
      - 2d - shoeboxes will be read as single frame partials.
      - single2d - shoeboxes will be read for a single frame at a time.
+     - stills - shoeboxes will be read for a single frame at a time for stills
 
     :param params: The input phil parameters
     :param experiments: The experiment list

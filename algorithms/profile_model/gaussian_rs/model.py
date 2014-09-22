@@ -10,8 +10,6 @@
 
 from __future__ import division
 from libtbx.phil import parse
-from dials.algorithms.profile_model.interface import ProfileModelIface
-from dials.algorithms.profile_model.interface import ProfileModelListIface
 
 phil_scope = parse('''
 
@@ -34,7 +32,7 @@ phil_scope = parse('''
 
 ''')
 
-class ProfileModel(ProfileModelIface):
+class ProfileModel(object):
   ''' A class to encapsulate the profile model. '''
 
   def __init__(self, n_sigma, sigma_b, sigma_m):
@@ -140,7 +138,7 @@ class ProfileModel(ProfileModelIface):
     return cls(n_sigma, sigma_b, sigma_m)
 
 
-class ProfileModelList(ProfileModelListIface):
+class ProfileModelList(object):
   ''' A class to represent multiple profile models. '''
 
   def __init__(self):

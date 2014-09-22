@@ -18,76 +18,79 @@ class SimpleBackgroundExt(BackgroundIface):
 
   name = 'simple'
 
-  phil = '''
-    outlier
-      .help = "Outlier rejection prior to background fit"
-    {
-      algorithm = null *nsigma truncated normal mosflm
-        .help = "The outlier rejection algorithm."
-        .type = choice
+  default = True
 
-      nsigma
-        .help = "Parameters for nsigma outlier rejector"
-        .expert_level = 1
+  @classmethod
+  def phil(cls):
+    phil = '''
+      outlier
+        .help = "Outlier rejection prior to background fit"
       {
-        lower = 3
-          .help = "Lower n sigma"
-          .type = float
-        upper = 3
-          .help = "Upper n sigma"
-          .type = float
+        algorithm = null *nsigma truncated normal mosflm
+          .help = "The outlier rejection algorithm."
+          .type = choice
+
+        nsigma
+          .help = "Parameters for nsigma outlier rejector"
+          .expert_level = 1
+        {
+          lower = 3
+            .help = "Lower n sigma"
+            .type = float
+          upper = 3
+            .help = "Upper n sigma"
+            .type = float
+        }
+
+        truncated
+          .help = "Parameters for truncated outlier rejector"
+          .expert_level = 1
+        {
+          lower = 0.01
+            .help = "Lower bound"
+            .type = float
+          upper = 0.01
+            .help = "Upper bound"
+            .type = float
+        }
+
+        normal
+          .help = "Parameters for normal outlier rejector"
+          .expert_level = 1
+        {
+          min_pixels = 10
+            .help = "The minimum number of pixels to use in calculating the"
+                    "background intensity."
+            .type = int
+        }
+
+        mosflm
+          .help = "Parameters for mosflm-like outlier rejector. This algorithm"
+                  "is mainly used in conjunction with a linear 2d background."
+          .expert_level = 1
+        {
+          fraction = 1.0
+            .help = "The fraction of pixels to use in determining the initial"
+                    "plane used for outlier rejection."
+            .type = float
+
+          n_sigma = 4.0
+            .help = "The number of standard deviations above the threshold plane"
+                    "to use in rejecting outliers from background calculation."
+            .type = float
+        }
       }
 
-      truncated
-        .help = "Parameters for truncated outlier rejector"
-        .expert_level = 1
+      model
+        .help = "Background model"
       {
-        lower = 0.01
-          .help = "Lower bound"
-          .type = float
-        upper = 0.01
-          .help = "Upper bound"
-          .type = float
+        algorithm = constant2d *constant3d linear2d linear3d
+          .help = "The choice of background model"
+          .type = choice
       }
 
-      normal
-        .help = "Parameters for normal outlier rejector"
-        .expert_level = 1
-      {
-        min_pixels = 10
-          .help = "The minimum number of pixels to use in calculating the"
-                  "background intensity."
-          .type = int
-      }
-
-      mosflm
-        .help = "Parameters for mosflm-like outlier rejector. This algorithm"
-                "is mainly used in conjunction with a linear 2d background."
-        .expert_level = 1
-      {
-        fraction = 1.0
-          .help = "The fraction of pixels to use in determining the initial"
-                  "plane used for outlier rejection."
-          .type = float
-
-        n_sigma = 4.0
-          .help = "The number of standard deviations above the threshold plane"
-                  "to use in rejecting outliers from background calculation."
-          .type = float
-      }
-    }
-
-    model
-      .help = "Background model"
-    {
-      algorithm = constant2d *constant3d linear2d linear3d
-        .help = "The choice of background model"
-        .type = choice
-    }
-
-  '''
-
-  default=True
+    '''
+    return phil
 
   def __init__(self, params, experiments):
     ''' Initialise the algorithm. '''

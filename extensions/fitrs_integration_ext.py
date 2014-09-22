@@ -17,25 +17,28 @@ class FitrsIntegrationExt(IntensityIface):
 
   name = 'fitrs'
 
-  phil = '''
-    grid_size = 5
-      .help = "The size of the reciprocal space grid for each reflection."
-              "The size is the same in each dimensions"
-      .type = int
-      .expert_level = 1
-
-    reference_frame_interval = 10
-      .help = "The oscillation at which to learn new reference profiles"
-      .type = int
-      .expert_level = 1
-
-    reference_signal_threshold = 0.02
-      .help = "The threshold to use in reference profile"
-      .type = float
-      .expert_level = 1
-  '''
-
   default = True
+
+  @classmethod
+  def phil(cls):
+    phil = '''
+      grid_size = 5
+        .help = "The size of the reciprocal space grid for each reflection."
+                "The size is the same in each dimensions"
+        .type = int
+        .expert_level = 1
+
+      reference_frame_interval = 10
+        .help = "The oscillation at which to learn new reference profiles"
+        .type = int
+        .expert_level = 1
+
+      reference_signal_threshold = 0.02
+        .help = "The threshold to use in reference profile"
+        .type = float
+        .expert_level = 1
+    '''
+    return phil
 
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
