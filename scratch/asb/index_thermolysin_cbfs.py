@@ -30,7 +30,7 @@ def do_work(path):
   if not os.path.exists(experiments): return
   if not os.path.exists(reflections): return
 
-  cmd = "dials.integrate outlier.algorithm=null %s %s output.reflections=%s"%(experiments, reflections, integrated)
+  cmd = "dials.integrate outlier.algorithm=null integration.intensity.algorithm=sum %s %s output.reflections=%s"%(experiments, reflections, integrated)
   print cmd
   easy_run.call(cmd)
   if not os.path.exists(integrated): return
