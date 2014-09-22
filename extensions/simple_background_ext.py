@@ -100,40 +100,30 @@ class SimpleBackgroundExt(BackgroundIface):
 
     # Create some default parameters
     if params is None:
-      phil = '''
-        integration {
-          background {
-            simple {
-              %s
-            }
-          }
-        }''' % self.phil().as_str(attributes_level=10)
-      params = parse(phil).extract()
-
-    # Get the model and outlier algorithms
-    model = params.integration.background.simple.model
-    outlier = params.integration.background.simple.outlier
+      params = self.phil().fetch(parse('')).extract()
+    else:
+      params = params.integration.background.simple
 
     # Create some keyword parameters
     kwargs = {
-      'model' : model.algorithm,
-      'outlier' : outlier.algorithm
+      'model' : params.model.algorithm,
+      'outlier' : params.outlier.algorithm
     }
 
     # Create all the keyword parameters
-    if outlier.algorithm == 'null':
+    if params.outlier.algorithm == 'null':
       pass
-    elif outlier.algorithm == 'truncated':
-      kwargs['lower'] = outlier.truncated.lower
-      kwargs['upper'] = outlier.truncated.upper
-    elif outlier.algorithm == 'nsigma':
-      kwargs['lower'] = outlier.nsigma.lower
-      kwargs['upper'] = outlier.nsigma.upper
-    elif outlier.algorithm == 'normal':
-      kwargs['min_pixels'] = outlier.normal.min_pixels
-    elif outlier.algorithm == 'mosflm':
-      kwargs['fraction'] = outlier.mosflm.fraction
-      kwargs['n_sigma'] = outlier.mosflm.n_sigma
+    elif params.outlier.algorithm == 'truncated':
+      kwargs['lower'] = params.outlier.truncated.lower
+      kwargs['upper'] = params.outlier.truncated.upper
+    elif params.outlier.algorithm == 'nsigma':
+      kwargs['lower'] = params.outlier.nsigma.lower
+      kwargs['upper'] = params.outlier.nsigma.upper
+    elif params.outlier.algorithm == 'normal':
+      kwargs['min_pixels'] = params.outlier.normal.min_pixels
+    elif params.outlier.algorithm == 'mosflm':
+      kwargs['fraction'] = params.outlier.mosflm.fraction
+      kwargs['n_sigma'] = params.outlier.mosflm.n_sigma
 
     # Create the algorithm
     self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
