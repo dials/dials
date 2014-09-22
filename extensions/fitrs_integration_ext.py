@@ -21,7 +21,8 @@ class FitrsIntegrationExt(IntensityIface):
 
   @classmethod
   def phil(cls):
-    phil = '''
+    from libtbx.phil import parse
+    phil = parse('''
       grid_size = 5
         .help = "The size of the reciprocal space grid for each reflection."
                 "The size is the same in each dimensions"
@@ -37,7 +38,7 @@ class FitrsIntegrationExt(IntensityIface):
         .help = "The threshold to use in reference profile"
         .type = float
         .expert_level = 1
-    '''
+    ''')
     return phil
 
   def __init__(self, params, experiments, profile_model):

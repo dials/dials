@@ -102,7 +102,7 @@ class Interface(object):
       assert(len(main_scope) == 1)
       main_scope = main_scope[0]
       if 'phil' in cls.__dict__:
-        main_scope.adopt_scope(parse(cls.phil()))
+        main_scope.adopt_scope(cls.phil())
       if Interface in cls.__bases__:
         def ext_names(extensions):
           names = []
@@ -133,7 +133,7 @@ class Interface(object):
         main_scope = master_scope.get_without_substitution(cls.name)
         assert(len(main_scope) == 1)
         main_scope = main_scope[0]
-        main_scope.adopt_scope(parse(cls.phil()))
+        main_scope.adopt_scope(cls.phil())
       else:
         master_scope = parse('')
     return master_scope

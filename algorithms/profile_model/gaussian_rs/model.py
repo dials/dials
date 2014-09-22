@@ -14,20 +14,30 @@ from libtbx.phil import parse
 phil_scope = parse('''
 
   gaussian_rs
-    .multiple = True
   {
-    n_sigma = 3
-      .help = "The number of standard deviations of the beam divergence and the"
-              "mosaicity to use for the bounding box size."
-      .type = float
+    filter
+    {
+      min_zeta = 0.05
+        .type = float
+        .help = "Filter reflections by min zeta"
+    }
 
-    sigma_b = 0
-      .help = "The E.S.D. of the beam divergence"
-      .type = float
+    model
+      .multiple = True
+    {
+      n_sigma = 3
+        .help = "The number of standard deviations of the beam divergence and the"
+                "mosaicity to use for the bounding box size."
+        .type = float
 
-    sigma_m = 0
-      .help = "The E.S.D. of the reflecting range"
-      .type = float
+      sigma_b = 0
+        .help = "The E.S.D. of the beam divergence"
+        .type = float
+
+      sigma_m = 0
+        .help = "The E.S.D. of the reflecting range"
+        .type = float
+    }
   }
 
 ''')
@@ -249,7 +259,7 @@ class ProfileModelList(object):
       reflections['panel'])
 
   @classmethod
-  def compute(cls, experiments, reflections, min_zeta=0.05):
+  def compute(cls, params, experiments, reflections):
     ''' Compute the profile models. '''
     from dials.util.command_line import heading
     assert(len(experiments) > 0)
@@ -267,6 +277,7 @@ class ProfileModelList(object):
       reflections_split = [reflections]
 
     # Compute the profile models
+    min_zeta = params.gaussian_rs.filter.min_zeta
     profile_models = cls()
     for exp, ref in zip(experiments, reflections_split):
       model = ProfileModel.compute(exp, ref, min_zeta)
@@ -281,23 +292,36 @@ class ProfileModelList(object):
   def load(cls, params):
     ''' Load from phil parameters. '''
     from math import pi
-    assert(len(params.gaussian_rs) > 0)
+    assert(len(params.gaussian_rs.model) > 0)
     profile_model = cls()
-    for i in range(len(params.gaussian_rs)):
+    for i in range(len(params.gaussian_rs.model)):
       profile_model.append(ProfileModel(
-        params.gaussian_rs[i].n_sigma,
-        params.gaussian_rs[i].sigma_b * pi / 180.0,
-        params.gaussian_rs[i].sigma_m * pi / 180.0))
+        params.gaussian_rs.model[i].n_sigma,
+        params.gaussian_rs.model[i].sigma_b * pi / 180.0,
+        params.gaussian_rs.model[i].sigma_m * pi / 180.0))
     return profile_model
+
+  @classmethod
+  def create(cls, params, experiments, reflections=None):
+    ''' Create the profile model. '''
+    if len(params.profile.gaussian_rs.model) > 0:
+      assert(len(params.profile.gaussian_rs.model) == len(experiments))
+      model = ProfileModelList.load(params.profile)
+    else:
+      assert(reflections is not None)
+      model = ProfileModelList.compute(params.profile, experiments, reflections)
+    return model
 
   def dump(self):
     ''' Dump the profile model to phil parameters. '''
     phil_str = '\n'.join([
       '''
       gaussian_rs {
-        n_sigma=%g
-        sigma_b=%g
-        sigma_m=%g
+        model {
+          n_sigma=%g
+          sigma_b=%g
+          sigma_m=%g
+        }
       }
       ''' % (
         m.n_sigma(),

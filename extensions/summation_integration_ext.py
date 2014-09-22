@@ -24,14 +24,15 @@ class SummationIntegrationExt(IntensityIface):
 
   @classmethod
   def phil(cls):
-    phil = '''
+    from libtbx.phil import parse
+    phil = parse('''
 
       integrator = *auto 3d flat3d 2d single2d stills
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
 
-    '''
+    ''')
     return phil
 
   def __init__(self, params, experiments, profile_model):

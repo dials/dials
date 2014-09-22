@@ -10,73 +10,20 @@
 from __future__ import division
 from libtbx.phil import parse
 
-phil_scope = parse('''
-  profile {
+def generate_phil_scope():
+  import dials.extensions
+  from dials.interfaces import ProfileModelIface
+  phil_scope = ProfileModelIface.phil_scope()
+  return phil_scope
 
-    algorithm = *gaussian_rs
-      .type = choice
-      .help = "The profile model to use"
-
-    include scope dials.algorithms.profile_model.gaussian_rs.phil_scope
-
-  }
-''', process_includes=True)
-
+phil_scope = generate_phil_scope()
 
 class ProfileModelFactory(object):
   ''' Factory for creating profile models '''
 
   @classmethod
-  def create(cls, params, experiments, reflections, **kwargs):
+  def create(cls, params, experiments, reflections):
     ''' Compute or load the profile model. '''
-
-    # Select the algorithm and get the profile model
-    if params.profile.algorithm == 'gaussian_rs':
-      if len(params.profile.gaussian_rs) > 0:
-        assert(len(params.profile.gaussian_rs) == len(experiments))
-        model = ProfileModelFactory.load(params)
-      else:
-        assert(reflections is not None)
-        model = ProfileModelFactory.compute(params, experiments, reflections)
-    else:
-      raise RuntimeError(
-        'Unknown profile algorithm %s' % (
-          params.profile.algorithm))
-
-    # Return the model
-    return model
-
-  @classmethod
-  def compute(cls, params, experiments, reflections, **kwargs):
-    ''' Compute the profile model. '''
-    from dials.algorithms.profile_model import gaussian_rs
-
-    # Select the algorithm and compute the profile model
-    if params.profile.algorithm == 'gaussian_rs':
-      model = gaussian_rs.ProfileModelList.compute(
-        experiments,
-        reflections)
-    else:
-      raise RuntimeError(
-        'Unknown profile algorithm %s' % (
-          params.profile.algorithm))
-
-    # Return the profile model
-    return model
-
-  @classmethod
-  def load(cls, params):
-    ''' Load the profile model. '''
-    from dials.algorithms.profile_model import gaussian_rs
-
-    # Select the algorithm and compute the profile model
-    if params.profile.algorithm == 'gaussian_rs':
-      model = gaussian_rs.ProfileModelList.load(
-        params.profile)
-    else:
-      raise RuntimeError(
-        'Unknown profile algorithm %s' % (
-          params.profile.algorithm))
-
-    # Return the profile model
-    return model
+    from dials.interfaces import ProfileModelIface
+    Algorithm = ProfileModelIface.extension(params.profile.algorithm)
+    return Algorithm.create(params, experiments, reflections)

@@ -22,7 +22,8 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
 
   @classmethod
   def phil(cls):
-    phil = '''
+    from libtbx.phil import parse
+    phil = parse('''
       kernel_size = 3 3
         .help = "The size of the local area around the spot in which"
                 "to calculate the mean and variance. The kernel is"
@@ -52,7 +53,7 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
                 "number is 2"
         .type = int
         .expert_level = 1
-    '''
+    ''')
     return phil
 
   def __init__(self, params):

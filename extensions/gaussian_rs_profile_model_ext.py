@@ -23,7 +23,7 @@ class GaussianRSProfileModelExt(ProfileModelIface):
   @classmethod
   def phil(cls):
     from dials.algorithms.profile_model.gaussian_rs import phil_scope
-    return phil_scope.as_str()
+    return phil_scope
 
   def __init__(self):
     from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
@@ -38,13 +38,11 @@ class GaussianRSProfileModelExt(ProfileModelIface):
   def compute_mask(self, experiments, reflections, **kwargs):
     return self._model.compute_partiality(experiments, reflections, **kwargs)
 
-  @classmethod
-  def compute(cls, experiments, reflections, **kwargs):
-    return ProfileModelList.compute(experiments, reflections, **kwargs)
-
-  @classmethod
-  def load(cls, params):
-    return ProfileModelList.load(params)
-
   def dump(self):
     return self.dump()
+
+  @classmethod
+  def create(cls, params, experiments, reflections):
+    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    return ProfileModelList.create(params, experiments, reflections)
+

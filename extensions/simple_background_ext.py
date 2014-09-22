@@ -22,7 +22,8 @@ class SimpleBackgroundExt(BackgroundIface):
 
   @classmethod
   def phil(cls):
-    phil = '''
+    from libtbx.phil import parse
+    phil = parse('''
       outlier
         .help = "Outlier rejection prior to background fit"
       {
@@ -89,7 +90,7 @@ class SimpleBackgroundExt(BackgroundIface):
           .type = choice
       }
 
-    '''
+    ''')
     return phil
 
   def __init__(self, params, experiments):

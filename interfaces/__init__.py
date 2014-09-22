@@ -73,25 +73,17 @@ class ProfileModelIface(interface.Interface):
     pass
 
   @interface.abstractmethod
-  def compute(cls, experiments, reflections, **kwargs):
+  def dump(self):
+    ''' Dump and return the profile model to a phil scope object. '''
+    pass
+
+  @interface.abstractmethod
+  def create(cls, params, experiments, reflections):
     ''' Given a list of experiments and a list of reflections, compute the
     profile models.
 
     This method should be a @classmethod and return an instance of the
     profile model list class. '''
-    pass
-
-  @interface.abstractmethod
-  def load(cls, params):
-    ''' Given a set of extracted phil parameters, load the profile model.
-
-    This method should be a @classmethod and return an instance of the
-    profile model list class. '''
-    pass
-
-  @interface.abstractmethod
-  def dump(self):
-    ''' Dump and return the profile model to a phil scope object. '''
     pass
 
 
