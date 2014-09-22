@@ -16,15 +16,20 @@ class Test(object):
 
     user_phil = parse('''
       gaussian_rs {
-        n_sigma = 3
-        sigma_b = 1
-        sigma_m = 2
+        filter {
+          min_zeta = 0.05
         }
-      gaussian_rs {
-        n_sigma = 2
-        sigma_b = 4
-        sigma_m = 5
+        model {
+          n_sigma = 3
+          sigma_b = 1
+          sigma_m = 2
         }
+        model {
+          n_sigma = 2
+          sigma_b = 4
+          sigma_m = 5
+        }
+      }
       ''')
     params = phil_scope.fetch(source=user_phil).extract()
     model = ProfileModelList.load(params)
