@@ -14,6 +14,7 @@ DIALS
    installation
    beginners_tutorial
    advanced_tutorial
+   developer_tutorial
    conventions
    library_reference/index
 

@@ -396,6 +396,7 @@ doc/sphinx/advanced_tutorial.rst -text
 doc/sphinx/beginners_tutorial.rst -text
 doc/sphinx/conf.py -text
 doc/sphinx/conventions.rst -text
+doc/sphinx/developer_tutorial.rst -text
 doc/sphinx/figures/E4.png -text
 doc/sphinx/index.rst -text
 doc/sphinx/installation.rst -text
