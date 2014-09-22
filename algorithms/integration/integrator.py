@@ -199,7 +199,7 @@ class Integrator(object):
   def _compute_profile_model(self, params, experiments, reference):
     ''' Compute the profile model. '''
     from dials.algorithms.profile_model.factory import ProfileModelFactory
-    self.profile_model = ProfileModelFactory.compute(params, experiments, reference)
+    self.profile_model = ProfileModelFactory.create(params, experiments, reference)
     for model in self.profile_model:
       print 'Sigma B: %f' % model.sigma_b(deg=True)
       print 'Sigma M: %f' % model.sigma_m(deg=True)

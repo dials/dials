@@ -61,7 +61,7 @@ class Script(object):
     Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
 
     # Create the profile model
-    profile_model = ProfileModelFactory.compute(params, experiments, reflections)
+    profile_model = ProfileModelFactory.create(params, experiments, reflections)
     for model in profile_model:
       sigma_b = model.sigma_b(deg=True)
       sigma_m = model.sigma_m(deg=True)
