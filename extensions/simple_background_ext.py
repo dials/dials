@@ -107,7 +107,7 @@ class SimpleBackgroundExt(BackgroundIface):
               %s
             }
           }
-        }''' % self.phil
+        }''' % self.phil().as_str(attributes_level=10)
       params = parse(phil).extract()
 
     # Get the model and outlier algorithms
