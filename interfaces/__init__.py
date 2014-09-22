@@ -78,7 +78,7 @@ class ProfileModelIface(interface.Interface):
     pass
 
   @interface.abstractmethod
-  def create(cls, params, experiments, reflections):
+  def create(cls, params, experiments, reflections=None):
     ''' Given a list of experiments and a list of reflections, compute the
     profile models.
 

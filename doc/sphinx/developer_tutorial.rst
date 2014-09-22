@@ -34,7 +34,54 @@ pixels are background.
 Profile Modelling
 -----------------
 
-FIXME
+.. warning:: The profile modelling framework is not very mature and may be
+   changed. I'll try and keep the documentation up-to-date.
+
+Algorithms for computing the profile model should implement the following
+interface. An example can be found under
+"dials/extensions/gaussian_rs_profile_model_ext.py".
+
+.. code-block:: python
+
+  class ProfileModelIface(interface.Interface):
+
+    @interface.abstractmethod
+    def compute_bbox(self, experiments, reflections, **kwargs):
+      pass
+
+    @interface.abstractmethod
+    def compute_partiality(self, experiments, reflections, **kwargs):
+      pass
+
+    @interface.abstractmethod
+    def compute_mask(self, experiments, reflections, **kwargs):
+      pass
+
+    @interface.abstractmethod
+    def dump(self):
+      pass
+
+    @interface.abstractmethod
+    def create(cls, params, experiments, reflections=None):
+      pass
+
+The profile model should be able to handle multiple experiments. The
+implementation may choose to handle this as a list of single experiment profile
+models. The profile model should have methods for computing the bounding box of
+reflections for a number of experiments, computing the partiality of reflections
+and computing the foreground/background mask. Of these the bounding box and mask
+methods are crucial for integration to work; partiality is currently only used
+in reporting and can be a placeholder.
+
+The extention should have the ability to dump the profile model to phil
+parameters so that it can be input via a profile.phil file to, for example,
+re-run integration with the same profile parameters. 
+
+Finally the profile algorithm should have a "create" method that is given phil
+parameters, experiments and (optionally) reflections. In the absence of
+reflections, the profile model should be constructable from phil parameters.
+When reflections are present, the create method should be able to construct the
+model from the input reflections and experiments.
 
 Indexing
 --------

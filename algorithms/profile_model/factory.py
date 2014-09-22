@@ -22,7 +22,7 @@ class ProfileModelFactory(object):
   ''' Factory for creating profile models '''
 
   @classmethod
-  def create(cls, params, experiments, reflections):
+  def create(cls, params, experiments, reflections=None):
     ''' Compute or load the profile model. '''
     from dials.interfaces import ProfileModelIface
     Algorithm = ProfileModelIface.extension(params.profile.algorithm)
