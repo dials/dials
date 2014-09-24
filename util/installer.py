@@ -24,7 +24,7 @@ class installer (install_distribution.installer) :
   configure_modules = install_distribution.installer.configure_modules + \
     ['dials', 'cbflib', 'annlib_adaptbx', 'wxtbx', "gltbx"]
   include_gui_packages = True
-  base_package_options = ['--dials']
+  base_package_options = ['--dials', "--pyopengl"]
   source_packages = [ "cctbx_bundle" ] + ['dials', 'cbflib', 'annlib', 'annlib_adaptbx']
   #
 
