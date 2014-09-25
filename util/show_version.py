@@ -11,9 +11,9 @@ from __future__ import division
 import datetime
 # XXX TO CHANGE THE DIALS VERSION NAME, EDIT BASE_VERSION
 BASE_VERSION = "dev"
-# this is when the first DIALS installer was created
-start_date = datetime.date(2014, 7, 9)
-today = datetime.date.today()
+# this is when the first DIALS installer was created (UTC time)
+start_date = datetime.date(2014, 7, 10)
+today = datetime.datetime.utcnow().date()
 delta = today - start_date
 n_days = abs(delta.days) + 1
 print "%s-%d" % (BASE_VERSION, n_days)
