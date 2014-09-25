@@ -733,6 +733,7 @@ scratch/luiso_s/wx_toys/radiobutton_test.py -text
 scratch/luiso_s/wx_toys/radiobutton_test_simpl.py -text
 scratch/luiso_s/wx_toys/reusability_test/add_widgets_tst_02.py -text
 scratch/luiso_s/wx_toys/reusability_test/bitmap_from_numpy.py -text
+scratch/luiso_s/wx_toys/reusability_test/wx_py_init.py -text
 scratch/luiso_s/wx_toys/single_reflection_bmp_wth_schroll.py -text
 scratch/luiso_s/wx_toys/table_wx_toy.py -text
 scratch/luiso_s/wx_toys/test_show_reflection.py -text
