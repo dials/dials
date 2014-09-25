@@ -900,6 +900,7 @@ util/export_text.py -text
 util/image.py -text
 util/installer.py -text
 util/ioutil.py -text
+util/log.py -text
 util/nexus.py -text
 util/options.py -text
 util/picklez.py -text
