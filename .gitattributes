@@ -864,6 +864,7 @@ test/command_line/tst_dials_show_isig_rmsd.py -text
 test/command_line/tst_discover_better_experimental_model.py -text
 test/command_line/tst_export.py -text
 test/command_line/tst_export_xds.py -text
+test/command_line/tst_generate_mask.py -text
 test/command_line/tst_import.py -text
 test/command_line/tst_import_xds.py -text
 test/command_line/tst_integrate.py -text
@@ -873,6 +874,7 @@ test/command_line/tst_predict.py -text
 test/command_line/tst_refine.py -text
 test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_reindex.py -text
+test/command_line/tst_show_extensions.py -text
 test/command_line/tst_sort_reflections.py -text
 test/command_line/tst_spotfinder.py -text
 test/data/sim_mx/GXPARM.XDS -text
