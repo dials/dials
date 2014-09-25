@@ -104,7 +104,6 @@ class MyPanel(wx.Panel):
         for times in range(5):
             data2d = build_np_img(width=5, height=3)
             my_bitmap = GetBitmap_from_np_array(data2d)
-            #bitmap_tmp = wx.StaticBitmap(self, bitmap=my_bitmap)
             self.il.AppendBitmap(my_bitmap)
 
         self.mid_sizer = wx.BoxSizer(wx.VERTICAL)

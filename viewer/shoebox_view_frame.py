@@ -16,8 +16,8 @@ from dials.viewer.img_utilities import GetBitmap_from_np_array, ImageListCtrl
 from dials.array_family import flex
 
 class ShoeboxView(wx.Frame):
-  def __init__(self, parent, refl, orient = "portrait", id = wx.ID_ANY, title = "",
-               pos = wx.DefaultPosition, size = wx.DefaultSize,
+  def __init__(self, parent, refl, orient = "portrait", id = wx.ID_ANY,
+               title = "", pos = wx.DefaultPosition, size = wx.DefaultSize,
                style = wx.DEFAULT_FRAME_STYLE,
                name="ShoeboxView"):
     super(ShoeboxView, self).__init__(parent, id, title,

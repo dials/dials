@@ -29,6 +29,8 @@ def GetBitmap_from_np_array(data2d):
   vl_mid_hig = vl_max - d / 3.0
 
   lc_fig.set_size_inches(xmax * .6, ymax * .6)
+  #lc_fig.set_size_inches(xmax * .2, ymax * .2)
+
   ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
   ax.set_axis_off()
   lc_fig.add_axes(ax)
@@ -48,8 +50,8 @@ def GetBitmap_from_np_array(data2d):
         clr_chr = 'black'
       else:
         clr_chr = 'blue'
-      plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
-                   , color = clr_chr, size = 12.)
+      #plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
+      #             , color = clr_chr, size = 12.)
 
   lc_fig.canvas.draw()
   width, height = lc_fig.canvas.get_width_height()
