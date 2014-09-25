@@ -45,6 +45,9 @@ class Script(object):
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
+    if len(params.input.reflections) == 0:
+      self.parser.print_help()
+      return
     assert(len(params.input.reflections) > 1)
     tables = [p.data for p in params.input.reflections]
 

@@ -57,6 +57,9 @@ class Sort(object):
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
+    if len(reflections) == 0:
+      self.parser.print_help()
+      return
     assert(len(reflections) == 1)
     reflections = reflections[0]
 

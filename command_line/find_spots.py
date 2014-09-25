@@ -90,7 +90,10 @@ class Script(object):
 
     # Ensure we have a data block
     datablocks = flatten_datablocks(params.input.datablock)
-    if len(datablocks) != 1:
+    if len(datablocks) == 0:
+      self.parser.print_help()
+      return
+    elif len(datablocks) != 1:
       raise RuntimeError('only 1 datablock can be processed at a time')
 
     # Loop through all the imagesets and find the strong spots

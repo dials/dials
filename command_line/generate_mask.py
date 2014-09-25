@@ -79,25 +79,26 @@ class Script(object):
 
     # Create the parser
     usage = "usage: %prog [options] datablock.json"
-    self.parser = OptionParser(usage=usage, phil=phil_scope)
+    self.parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      read_datablocks=True)
 
   def run(self):
     ''' Run the script. '''
     from dxtbx.datablock import DataBlockFactory
+    from dials.util.options import flatten_datablocks
     import cPickle as pickle
 
     # Parse the command line arguments
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    datablocks = flatten_datablocks(params.input.datablock)
 
     # Check number of args
-    if len(args) == 0:
+    if len(datablocks) == 0:
       self.parser.print_help()
-      exit(0)
+      return
 
-    # Load the data block
-    datablocks = []
-    for arg in args:
-      datablocks.extend(DataBlockFactory.from_json_file(arg))
     assert(len(datablocks) == 1)
     datablock = datablocks[0]
     imagesets = datablock.extract_imagesets()

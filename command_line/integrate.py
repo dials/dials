@@ -99,7 +99,8 @@ class Script(object):
       assert(len(reference) == 1)
       reference = reference[0]
     if len(experiments) == 0:
-      raise RuntimeError('experiment list is empty')
+      self.parser.print_help()
+      return
     elif len(experiments.imagesets()) > 1 or len(experiments.detectors()) > 1:
       raise RuntimeError('experiment list contains > 1 imageset or detector')
 
