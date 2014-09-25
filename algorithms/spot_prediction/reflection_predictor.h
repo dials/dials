@@ -555,7 +555,7 @@ namespace dials { namespace algorithms {
         Ray ray;
         ray = predict_ray_(h, ub);
         double delpsi = std::abs(predict_ray_.get_delpsi());
-        if(delpsi < 0.001)
+        if(delpsi < 0.0015)
           append_for_index(predictions, ub, h);
       }
 
