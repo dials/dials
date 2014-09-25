@@ -57,6 +57,12 @@ def generate_phil_scope():
             .help = "The width of an ice ring (in d-spacing)."
         }
       }
+
+      debug {
+        save_shoeboxes = False
+          .type = bool
+          .help = "Save shoeboxes after each integration task."
+      }
     }
   ''', process_includes=True)
   main_scope = phil_scope.get_without_substitution("integration")
@@ -158,7 +164,14 @@ class Result(object):
 class Task(object):
   ''' A class to perform an integration task. '''
 
-  def __init__(self, index, experiments, profile_model, data, job, flatten):
+  def __init__(self,
+               index,
+               experiments,
+               profile_model,
+               data,
+               job,
+               flatten=False,
+               save_shoeboxes=False):
     ''' Initialise the task. '''
     self._index = index
     self._experiments = experiments
@@ -166,6 +179,7 @@ class Task(object):
     self._data = data
     self._job = job
     self._flatten = flatten
+    self._save_shoeboxes = save_shoeboxes
     self._mask = None
 
   def __call__(self):
@@ -239,6 +253,12 @@ class Task(object):
     self._process()
     process_time = time() - process_start_time
 
+    # Optionally save the shoeboxes
+    if self._save_shoeboxes:
+      filename = 'shoeboxes_%d.pickle' % self._index
+      print 'Saving shoeboxes to %s\n' % filename
+      self._data.as_pickle(filename)
+
     # Delete the shoeboxes
     del self._data["shoebox"]
 
@@ -268,7 +288,8 @@ class Manager(object):
                reflections,
                block_size=10,
                block_size_units='degrees',
-               flatten=False):
+               flatten=False,
+               save_shoeboxes=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import IntegrationManagerExecutor
     from dials.algorithms.integration import IntegrationJobCalculator
@@ -287,6 +308,7 @@ class Manager(object):
         assert(len(imageset) == len(scan))
         array_range = scan.get_array_range()
     self._flatten = flatten
+    self._save_shoeboxes = save_shoeboxes
     self._preprocess = preprocess
     self._postprocess = postprocess
     self._experiments = experiments
@@ -321,7 +343,8 @@ class Manager(object):
       self._profile_model,
       self._manager.split(index),
       self._manager.job(index),
-      self._flatten)
+      self._flatten,
+      self._save_shoeboxes)
 
   def tasks(self):
     ''' Iterate through the tasks. '''
@@ -593,6 +616,7 @@ class ManagerOsc(Manager):
                min_zeta=0.05,
                flatten=False,
                partials=False,
+               save_shoeboxes=False,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -623,7 +647,8 @@ class ManagerOsc(Manager):
       reflections,
       block_size=block_size,
       block_size_units=block_size_units,
-      flatten=flatten)
+      flatten=flatten,
+      save_shoeboxes=save_shoeboxes)
 
 
 class ManagerStills(Manager):
@@ -634,6 +659,7 @@ class ManagerStills(Manager):
                experiments,
                profile_model,
                reflections,
+               save_shoeboxes=False,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -662,7 +688,8 @@ class ManagerStills(Manager):
       reflections,
       block_size=1,
       block_size_units='frames',
-      flatten=False)
+      flatten=False,
+      save_shoeboxes=save_shoeboxes)
 
 
 class Integrator3D(Integrator):
@@ -675,7 +702,8 @@ class Integrator3D(Integrator):
                block_size=1,
                min_zeta=0.05,
                nproc=1,
-               mp_method='multiprocessing'):
+               mp_method='multiprocessing',
+               save_shoeboxes=False):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -684,7 +712,8 @@ class Integrator3D(Integrator):
       profile_model,
       reflections,
       block_size=block_size,
-      min_zeta=min_zeta)
+      min_zeta=min_zeta,
+      save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, nproc, mp_method)
@@ -700,7 +729,8 @@ class IntegratorFlat3D(Integrator):
                block_size=1,
                min_zeta=0.05,
                nproc=1,
-               mp_method='multiprocessing'):
+               mp_method='multiprocessing',
+               save_shoeboxes=False):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -710,7 +740,8 @@ class IntegratorFlat3D(Integrator):
       reflections,
       block_size=block_size,
       min_zeta=min_zeta,
-      flatten=True)
+      flatten=True,
+      save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
     super(IntegratorFlat3D, self).__init__(manager, nproc, mp_method)
@@ -726,7 +757,8 @@ class Integrator2D(Integrator):
                block_size=1,
                min_zeta=0.05,
                nproc=1,
-               mp_method='multiprocessing'):
+               mp_method='multiprocessing',
+               save_shoeboxes=False):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -736,7 +768,8 @@ class Integrator2D(Integrator):
       reflections,
       block_size=block_size,
       min_zeta=min_zeta,
-      partials=True)
+      partials=True,
+      save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
     super(Integrator2D, self).__init__(manager, nproc, mp_method)
@@ -752,7 +785,8 @@ class IntegratorSingle2D(Integrator):
                block_size=1,
                min_zeta=0.05,
                nproc=1,
-               mp_method='multiprocessing'):
+               mp_method='multiprocessing',
+               save_shoeboxes=False):
     ''' Initialise the manager and the integrator. '''
 
     # Override block size
@@ -766,7 +800,8 @@ class IntegratorSingle2D(Integrator):
       block_size=block_size,
       block_size_units='frames',
       min_zeta=min_zeta,
-      partials=True)
+      partials=True,
+      save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
     super(IntegratorSingle2D, self).__init__(manager, nproc, mp_method)
@@ -782,14 +817,16 @@ class IntegratorStills(Integrator):
                block_size=1,
                min_zeta=0.05,
                nproc=1,
-               mp_method='multiprocessing'):
+               mp_method='multiprocessing',
+               save_shoeboxes=False):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
     manager = ManagerStills(
       experiments,
       profile_model,
-      reflections)
+      reflections,
+      save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
     super(IntegratorStills, self).__init__(manager, nproc, mp_method)
@@ -837,7 +874,8 @@ class IntegratorFactory(object):
       block_size=params.integration.block.size,
       min_zeta=params.integration.filter.min_zeta,
       nproc=params.integration.mp.nproc,
-      mp_method=params.integration.mp.method)
+      mp_method=params.integration.mp.method,
+      save_shoeboxes=params.integration.debug.save_shoeboxes)
 
   @staticmethod
   def select_integrator(integrator_type):
