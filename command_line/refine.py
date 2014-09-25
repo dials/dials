@@ -69,19 +69,30 @@ class Script(object):
 
     f = open(filename,"w")
     header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
-        "Y_calc\tPhi_calc\n")
+        "Y_calc\tPhi_calc")
+    msg_temp = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t%9.6f")
+    has_del_psi = matches.has_key('delpsical.rad')
+    if has_del_psi:
+      header += "\tDelta_Psi"
+      msg_temp += "\t%9.6f"
+    header += "\n"
+    msg_temp += "\n"
     f.write(header)
 
     for m in matches:
-      msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t"
-            "%9.6f\n")
       (h, k, l) = m['miller_index']
       frame = m['xyzobs.px.value'][2]
       x_obs, y_obs, phi_obs = m['xyzobs.mm.value']
       x_calc, y_calc, phi_calc = m['xyzcal.mm']
-      msg = msg % (h, k, l,
-                   frame, x_obs, y_obs, phi_obs,
-                   x_calc, y_calc, phi_calc)
+      if has_del_psi:
+        del_psi = m['delpsical.rad']
+        msg = msg_temp % (h, k, l,
+                          frame, x_obs, y_obs, phi_obs,
+                     x_calc, y_calc, phi_calc, del_psi)
+      else:
+        msg = msg_temp % (h, k, l,
+                          frame, x_obs, y_obs, phi_obs,
+                          x_calc, y_calc, phi_calc)
       f.write(msg)
     f.close()
     return
