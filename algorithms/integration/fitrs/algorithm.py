@@ -181,5 +181,6 @@ class IntegrationAlgorithm(object):
     indices = flex.size_t(range(len(mask))).select(mask).select(~mask2)
     mask.set_selected(indices, False)
     reflections.set_flags(mask, reflections.flags.integrated_prf)
+    reflections['intensity.prf.variance'].set_selected(~mask, -1)
     Command.end('Integrated {0} reflections'.format(mask.count(True)))
     return reflections
