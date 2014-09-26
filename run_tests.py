@@ -42,7 +42,6 @@ tst_list = (
     "$D/test/algorithms/spot_prediction/tst_scan_static_reflection_predictor.py",
     "$D/test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py",
     "$D/test/algorithms/spot_prediction/tst_stills_reflection_predictor.py",
-    "$D/test/algorithms/spot_prediction/tst_scan_varying_ray_predictor.py",
     "$D/test/algorithms/profile_model/tst_profile_model.py",
     "$D/test/algorithms/background/tst_modeller.py",
     "$D/test/algorithms/background/tst_outlier_rejector.py",
