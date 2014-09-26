@@ -11,6 +11,8 @@
 
 from __future__ import division
 
+import matplotlib
+matplotlib.use('Agg')
 
 class Script(object):
   '''Class to run script.'''
