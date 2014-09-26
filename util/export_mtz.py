@@ -1,4 +1,5 @@
 from __future__ import division
+
 def export_mtz(integrated_data, experiment_list, hklout):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
@@ -33,6 +34,12 @@ def export_mtz(integrated_data, experiment_list, hklout):
       integrated_data.del_selected(selection)
       print 'Removing %d profile reflections with negative variance' % \
             selection.count(True)
+
+  selection = integrated_data['partiality'] < 0.99
+  if selection.count(True) > 0:
+    integrated_data.del_selected(selection)
+    print 'Removing %d incomplete reflections' % \
+          selection.count(True)
 
   # FIXME TODO for more than one experiment into an MTZ file:
   #
