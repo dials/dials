@@ -15,6 +15,9 @@ Various deprecated classes that I still want to keep a visible record of
 
 from __future__ import division
 
+raise RuntimeError("This module is out of date. Do not use it. It captures "
+  "some useful knowledge though, so please do not delete either!")
+
 from math import pi, sqrt, acos, atan2, fabs
 from scitbx import matrix
 import scitbx.math
