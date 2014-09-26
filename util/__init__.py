@@ -16,7 +16,7 @@ class UsefulError(RuntimeError):
 
   def __init__(self, message=''):
     if message:
-      text = 'Error: "%s" - please report this to dials-dev@cci.lbl.gov' % message
+      text = 'Error: "%s" - please report this to dials-support@lists.sourceforge.net' % message
     else:
       text = 'An error has occurred with no message'
 
@@ -26,7 +26,7 @@ class UsefulError(RuntimeError):
 def usefulraiser(e):
   ''' Function to re-raise an exception with a useful message. '''
 
-  text = 'Please report this error to dials-dev@cci.lbl.gov:'
+  text = 'Please report this error to dials-support@lists.sourceforge.net:'
 
   if len(e.args) == 0:
     e.args = (text,)
