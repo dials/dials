@@ -112,7 +112,7 @@ class Script(object):
     plt.title('Cell volume')
 
     #plt.show()
-    gs.tight_layout(fig)
+    # gs.tight_layout(fig)
     plt.savefig("sv_crystal.pdf")
 
 if __name__ == '__main__':
