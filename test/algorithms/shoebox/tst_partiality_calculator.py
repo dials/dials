@@ -26,7 +26,6 @@ class Test(object):
     self.n_sigma = 5
     self.sigma_b = 0.060 * pi / 180
     self.sigma_m = 0.154 * pi / 180
-    self.delta_m = self.n_sigma * self.sigma_m
 
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     self.profile_model = ProfileModel(self.n_sigma, self.sigma_b, self.sigma_m)
@@ -40,7 +39,7 @@ class Test(object):
       self.experiment.beam,
       self.experiment.goniometer,
       self.experiment.scan,
-      self.delta_m)
+      self.sigma_m)
 
     predicted = flex.reflection_table.from_predictions(self.experiment)
     predicted.compute_bbox(self.experiment, self.profile_model)
@@ -58,7 +57,9 @@ class Test(object):
 
     # Should have all fully recorded
     assert(len(partiality) == len(predicted))
-    assert(partiality.all_gt(1.0 - 1e-7))
+    from math import sqrt, erf
+    three_sigma = 0.5 * (erf(3.0 / sqrt(2.0)) - erf(-3.0 / sqrt(2.0)))
+    assert(partiality.all_gt(three_sigma))
 
     # Trim bounding boxes
     x0, x1, y0, y1, z0, z1 = predicted['bbox'].parts()

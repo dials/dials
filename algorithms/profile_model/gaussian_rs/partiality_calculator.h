@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include <boost/shared_ptr.hpp>
+#include <boost/math/special_functions/erf.hpp>
 #include <scitbx/constants.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
@@ -29,6 +30,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   // Use a load of stuff from other namespaces
   using std::floor;
   using std::ceil;
+  using boost::math::erf;
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::min;
@@ -72,18 +74,18 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param beam The beam parameters
      * @param goniometer The goniometer parameters
      * @param scan The scan parameters
-     * @param delta_mosaicity The xds delta_mosaicity parameter
+     * @param sigma_mosaicity The xds sigma_mosaicity parameter
      */
     PartialityCalculator3D(
           const Beam &beam,
           const Goniometer &gonio,
           const Scan &scan,
-          double delta_m)
+          double sigma_m)
       : s0_(beam.get_s0()),
         m2_(gonio.get_rotation_axis()),
         scan_(scan),
-        delta_m_(delta_m) {
-      DIALS_ASSERT(delta_m > 0.0);
+        sigma_m_(sigma_m) {
+      DIALS_ASSERT(sigma_m > 0.0);
     }
 
     /**
@@ -103,20 +105,15 @@ namespace dials { namespace algorithms { namespace shoebox {
 
       // Get the rotation angle
       double phi = scan_.get_angle_from_array_index(frame);
+      double phia = scan_.get_angle_from_array_index(bbox[4]);
+      double phib = scan_.get_angle_from_array_index(bbox[5]);
 
-      // Create the coordinate system for the reflection
-      reflection_basis::CoordinateSystem xcs(m2_, s0_, s1, phi);
-
-      // Compute the angles
-      double phi1 = scan_.get_angle_from_array_index(bbox[4]);
-      double phi2 = scan_.get_angle_from_array_index(bbox[5]);
-
-      // Compute the coords
-      double c1 = xcs.from_rotation_angle(phi1);
-      double c2 = xcs.from_rotation_angle(phi2);
-
-      // Return the fraction recorded
-      return std::min(std::abs(c2 - c1) / (2 * delta_m_), 1.0);
+      // Compute the partiality
+      double zeta = reflection_basis::zeta_factor(m2_.normalize(), s0_, s1);
+      double c = std::abs(zeta) / (sqrt(2.0) * sigma_m_);
+      double p = 0.5 * (erf(c * (phib - phi)) - erf(c * (phia - phi)));
+      DIALS_ASSERT(p >= 0.0 && p <= 1.0);
+      return p;
     }
 
     /**
@@ -144,7 +141,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     vec3<double> s0_;
     vec3<double> m2_;
     Scan scan_;
-    double delta_m_;
+    double sigma_m_;
   };
 
 
@@ -156,14 +153,14 @@ namespace dials { namespace algorithms { namespace shoebox {
     /**
      * Initialise the partiality calculation.
      * @param beam The beam parameters
-     * @param delta_mosaicity The xds delta_mosaicity parameter
+     * @param sigma_mosaicity The xds sigma_mosaicity parameter
      */
     PartialityCalculator2D(
           const Beam &beam,
-          double delta_m)
+          double sigma_m)
       : s0_(beam.get_s0()),
-        delta_m_(delta_m) {
-      DIALS_ASSERT(delta_m > 0.0);
+        sigma_m_(sigma_m) {
+      DIALS_ASSERT(sigma_m > 0.0);
     }
 
     /**
@@ -212,7 +209,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     vec3<double> s0_;
     vec3<double> m2_;
     Scan scan_;
-    double delta_m_;
+    double sigma_m_;
   };
 
 

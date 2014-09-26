@@ -26,19 +26,19 @@ def BBoxCalculator(experiment, delta_b, delta_m):
   return algorithm
 
 
-def PartialityCalculator(experiment, delta_m):
+def PartialityCalculator(experiment, sigma_m):
   ''' Return the relavent partiality calculator. '''
   if experiment.goniometer is None or experiment.scan is None:
     print "WARNING: Stills partiality is currently a placeholder"
     algorithm = PartialityCalculator2D(
       experiment.beam,
-      delta_m)
+      sigma_m)
   else:
     algorithm = PartialityCalculator3D(
       experiment.beam,
       experiment.goniometer,
       experiment.scan,
-      delta_m)
+      sigma_m)
   return algorithm
 
 

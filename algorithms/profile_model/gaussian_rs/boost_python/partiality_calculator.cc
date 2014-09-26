@@ -40,7 +40,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("beam"),
         arg("goniometer"),
         arg("scan"),
-        arg("delta_mosaicity"))))
+        arg("delta_m"))))
       ;
 
     class_ <PartialityCalculator2D, bases<PartialityCalculatorIface> >(
@@ -48,7 +48,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       .def(init <const Beam&,
                  double > ((
         arg("beam"),
-        arg("delta_mosaicity"))))
+        arg("delta_m"))))
       ;
 
 

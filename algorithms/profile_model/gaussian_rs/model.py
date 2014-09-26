@@ -106,11 +106,8 @@ class ProfileModel(object):
     ''' Compute the partiality. '''
     from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
-    # Compute the size in reciprocal space.
-    delta_m = self._n_sigma * self._sigma_m
-
     # Create the partiality calculator
-    calculate = PartialityCalculator(experiment, delta_m)
+    calculate = PartialityCalculator(experiment, sigma_m(deg=False))
 
     # Compute the partiality
     reflections['partiality'] = calculate(
@@ -215,13 +212,9 @@ class ProfileModelList(ProfileModelIface):
     calculate = PartialityMultiCalculator()
 
     # Loop through the experiments and models
+    # Create the partiality calculator
     for experiment, model in zip(experiments, self):
-
-      # Compute the size in reciprocal space.
-      delta_m = model.n_sigma() * model.sigma_m(deg=False)
-
-      # Create the partiality calculator
-      calculate.append(PartialityCalculator(experiment, delta_m))
+      calculate.append(PartialityCalculator(experiment, model.sigma_m(deg=False)))
 
     # Compute the partiality
     reflections['partiality'] = calculate(
