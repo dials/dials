@@ -33,7 +33,6 @@ from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.spot_prediction import ray_intersection
-from dials.algorithms.spot_prediction import reflection_frames
 from dials.algorithms.refinement.prediction import ScansRayPredictor, \
   ExperimentsPredictor
 from cctbx.sgtbx import space_group, space_group_symbols

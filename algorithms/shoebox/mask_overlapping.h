@@ -13,7 +13,6 @@
 
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
-#include <dials/model/data/reflection.h>
 #include <dials/model/data/adjacency_list.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>

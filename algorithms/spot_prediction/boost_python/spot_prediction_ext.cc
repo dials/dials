@@ -26,7 +26,6 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_scan_varying_ray_predictor();
   void export_stills_ray_predictor();
   void export_ray_intersection();
-  void export_reflection_frames();
   void export_reflection_predictor();
   void export_pixel_labeller();
 
@@ -42,7 +41,6 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_scan_varying_ray_predictor();
     export_stills_ray_predictor();
     export_ray_intersection();
-    export_reflection_frames();
     export_reflection_predictor();
     export_pixel_labeller();
   }

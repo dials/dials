@@ -4,9 +4,8 @@ class TestSpotPredictor:
 
   def __init__(self):
     from dials.algorithms.spot_prediction import IndexGenerator
-    from dials.algorithms.spot_prediction import RayPredictor
+    from dials.algorithms.spot_prediction import ScanStaticRayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
-    from dials.algorithms.spot_prediction import reflection_frames
     from iotbx.xds import xparm, integrate_hkl
     from dials.util import ioutil
     from math import ceil
@@ -68,15 +67,15 @@ class TestSpotPredictor:
     dphi = self.scan.get_oscillation_range(deg=False)
 
     # Create the ray predictor
-    self.predict_rays = RayPredictor(s0, m2, dphi)
+    self.predict_rays = ScanStaticRayPredictor(s0, m2, dphi)
 
     # Predict the spot locations
     self.reflections = self.predict_rays(
                                     generate_indices.to_array(), UB)
 
     # Calculate the intersection of the detector and reflection frames
-    self.reflections = ray_intersection(self.detector, self.reflections)
-    self.reflections = reflection_frames(self.scan, self.reflections)
+    success = ray_intersection(self.detector, self.reflections)
+    self.reflections.select(success)
 
   def test_dmin(self):
     """Ensure calculated d_min < d_min in integrate file"""
@@ -89,7 +88,7 @@ class TestSpotPredictor:
     """Ensure we have the whole set of miller indices"""
     gen_hkl = {}
     for r in self.reflections:
-      gen_hkl[r.miller_index] = True
+      gen_hkl[r['miller_index']] = True
     for hkl in self.integrate_handle.hkl:
       assert(gen_hkl[hkl] == True)
 
@@ -101,8 +100,8 @@ class TestSpotPredictor:
     # Create a dict of lists of xy for each hkl
     gen_phi = {}
     for r in self.reflections:
-      hkl = r.miller_index
-      phi = r.rotation_angle
+      hkl = r['miller_index']
+      phi = r['phi']
       try:
         a = gen_phi[hkl]
         a.append(phi)
@@ -139,7 +138,7 @@ class TestSpotPredictor:
     from scitbx import matrix
     s0_length = matrix.col(self.beam.get_s0()).length()
     for r in self.reflections:
-      s1 = r.beam_vector
+      s1 = r['s1']
       s1_length = matrix.col(s1).length()
       assert(abs(s0_length - s1_length) < 1e-7)
 
@@ -152,8 +151,9 @@ class TestSpotPredictor:
     # Create a dict of lists of xy for each hkl
     gen_xy = {}
     for r in self.reflections:
-      hkl = r.miller_index
-      xy  = r.image_coord_px
+      hkl = r['miller_index']
+      xy  = r['xyzcal.mm'][0:2]
+      xy = self.detector[0].millimeter_to_pixel(xy)
       try:
         a = gen_xy[hkl]
         a.append(xy)

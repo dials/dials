@@ -971,8 +971,6 @@ class Refiner(object):
     * get_matches exposes the function of the same name from the privately
       stored reflection manager
     * The return value of selection_used_for_refinement is a flex.bool
-    * predict_reflections does so for all observable reflections, not just the
-      set passed into the refiner
 
     """
 
@@ -1357,57 +1355,3 @@ class Refiner(object):
     # delegate to the target object, which has access to the predictor
     return self._target.predict_for_reflection_table(reflections)
 
-  def predict_reflections(self):
-    """Predict all reflection positions after refinement"""
-
-    #FIXME
-    raise NotImplementedError("predict_reflections is broken and to be deprecated")
-    # code left here as a template for use of e.g. ScanVaryingReflectionListGenerator
-
-    #FIXME only works for a single crystal
-    from dials.algorithms.spot_prediction import ray_intersection
-    from dials.model.data import ReflectionList
-    from dials.algorithms.refinement.prediction.predictors import \
-            ScanVaryingReflectionListGenerator
-
-    if any([self._scan, self._goniometer]) is None:
-        raise TypeError("Prediction can only be done when a scan and "
-                        "goniometer are provided")
-
-    s0 = self._beam.get_s0()
-    dmin = self._detector.get_max_resolution(s0)
-
-    # Test whether prediction is scan-varying or not (try-except duck-typing
-    # fails because scan-varying prediction is done in multiple processes).
-    from dials.algorithms.refinement.parameterisation import \
-      VaryingCrystalPredictionParameterisation
-    if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
-
-      sv_predictor = ScanVaryingReflectionListGenerator(self._crystal,
-                            self._beam, self._goniometer, self._scan, dmin)
-      refs = ReflectionList(sv_predictor())
-      new_reflections = ray_intersection(self._detector, refs)
-
-    else: # prediction seems to be scan-static
-      from dials.algorithms.spot_prediction import IndexGenerator
-      from cctbx.sgtbx import space_group_type
-      from dials.algorithms.spot_prediction import RayPredictor
-      from dials.algorithms.spot_prediction import reflection_frames
-
-      # Create an index generator
-      generate_hkl = IndexGenerator(self._crystal.get_unit_cell(),
-                        space_group_type(self._crystal.get_space_group()),
-                        dmin)
-
-      # Create a spot predictor
-      predict_rays = RayPredictor(s0,
-                                  self._goniometer.get_rotation_axis(),
-                                  self._scan.get_oscillation_range(deg=False))
-
-      # predict
-      miller_indices = generate_hkl.to_array()
-      new_reflections = predict_rays(miller_indices, self._crystal.get_A())
-      new_reflections = ray_intersection(self._detector, new_reflections)
-      new_reflections = reflection_frames(self._scan, new_reflections)
-
-    return new_reflections

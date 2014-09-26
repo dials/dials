@@ -15,7 +15,6 @@
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/detector.h>
-#include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 

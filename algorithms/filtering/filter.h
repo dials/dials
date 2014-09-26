@@ -23,7 +23,6 @@
 #include <dials/model/data/shoebox.h>
 #include <dials/algorithms/image/threshold/unimodal.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
-#include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms { namespace filter {
 

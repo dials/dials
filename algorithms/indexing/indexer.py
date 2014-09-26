@@ -261,9 +261,6 @@ deg_to_radians = math.pi/180
 class indexer_base(object):
 
   def __init__(self, reflections, imagesets, params=None):
-    # XXX should use ReflectionTable internally instead of ReflectionList
-    from dials.model.data import ReflectionList
-
     self.reflections = reflections
     self.imagesets = imagesets
     for imageset in imagesets[1:]:

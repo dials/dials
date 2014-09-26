@@ -11,7 +11,6 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dxtbx/model/detector.h>
-#include <dials/model/data/reflection.h>
 #include <dials/algorithms/spot_prediction/ray_intersection.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
@@ -20,16 +19,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_ray_intersection()
   {
-    // Pointers to function overloads
-    Reflection (*ray_intersection_single)(const Detector&, const Reflection&)
-      = &ray_intersection;
-    af::shared<Reflection> (*ray_intersection_array)(const Detector&,
-      const af::const_ref<Reflection>&) = &ray_intersection;
-    Reflection (*ray_intersection_single_w_panel)(const Detector&,
-      const Reflection&, std::size_t) = &ray_intersection;
-    af::shared<Reflection> (*ray_intersection_array_w_panel)(const Detector&,
-      const af::const_ref<Reflection>&, std::size_t) = &ray_intersection;
-
     af::shared<bool>(*ray_intersection_table)(
         const Detector&,
         af::reflection_table) = &ray_intersection;
@@ -61,14 +50,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       //.def(from_s1_panel_array);
 
     // Export all the ray intersection functions
-    def("ray_intersection", ray_intersection_single,
-      (arg("detector"), arg("reflection")));
-    def("ray_intersection", ray_intersection_single_w_panel,
-      (arg("detector"), arg("reflection"), arg("panel")));
-    def("ray_intersection", ray_intersection_array,
-      (arg("detector"), arg("reflection_list")));
-    def("ray_intersection", ray_intersection_array_w_panel,
-      (arg("detector"), arg("reflection_list"), arg("panel")));
     def("ray_intersection", ray_intersection_table,
       (arg("detector"), arg("reflection_table")));
     def("ray_intersection", ray_intersection_table_w_panel,

@@ -203,13 +203,11 @@ algorithms/reflection_basis/transform.py -text
 algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
 algorithms/shoebox/boost_python/find_overlapping.cc -text
-algorithms/shoebox/boost_python/helpers.cc -text
 algorithms/shoebox/boost_python/mask_builder.cc -text svneol=unset#text/plain
 algorithms/shoebox/boost_python/mask_code.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
 algorithms/shoebox/find_overlapping.h -text
-algorithms/shoebox/helpers.h -text
 algorithms/shoebox/mask_builder.h -text svneol=unset#text/plain
 algorithms/shoebox/mask_code.h -text
 algorithms/shoebox/mask_overlapping.h -text
@@ -237,7 +235,6 @@ algorithms/spot_prediction/boost_python/pixel_labeller.cc -text
 algorithms/spot_prediction/boost_python/ray_intersection.cc -text
 algorithms/spot_prediction/boost_python/ray_predictor.cc -text
 algorithms/spot_prediction/boost_python/reeke_index_generator.cc -text
-algorithms/spot_prediction/boost_python/reflection_frames.cc -text
 algorithms/spot_prediction/boost_python/reflection_predictor.cc -text
 algorithms/spot_prediction/boost_python/rotation_angles.cc -text
 algorithms/spot_prediction/boost_python/scan_varying_helpers.cc -text
@@ -250,7 +247,6 @@ algorithms/spot_prediction/ray_intersection.h -text
 algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/reeke.py -text
 algorithms/spot_prediction/reeke_index_generator.h -text
-algorithms/spot_prediction/reflection_frames.h -text
 algorithms/spot_prediction/reflection_predictor.h -text
 algorithms/spot_prediction/reflection_predictor.py -text
 algorithms/spot_prediction/rotation_angles.h -text
@@ -451,7 +447,6 @@ model/data/boost_python/pickle.h -text
 model/data/boost_python/pixel_list.cc -text
 model/data/boost_python/prediction.cc -text
 model/data/boost_python/ray.cc -text
-model/data/boost_python/reflection.cc -text
 model/data/boost_python/shoebox.cc -text
 model/data/boost_python/table.cc -text
 model/data/boost_python/transformed_shoebox.cc -text
@@ -461,7 +456,6 @@ model/data/observation.h -text
 model/data/pixel_list.h -text
 model/data/prediction.h -text
 model/data/ray.h -text
-model/data/reflection.h -text
 model/data/shoebox.h -text
 model/data/transformed_shoebox.h -text
 model/serialize/SConscript -text
@@ -851,7 +845,6 @@ test/algorithms/spot_prediction/tst_reeke_model.cc -text
 test/algorithms/spot_prediction/tst_rotation_angles.py -text
 test/algorithms/spot_prediction/tst_scan_static_reflection_predictor.py -text
 test/algorithms/spot_prediction/tst_scan_varying_predictor.py -text
-test/algorithms/spot_prediction/tst_scan_varying_ray_predictor.py -text
 test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
 test/algorithms/spot_prediction/tst_stills_reflection_predictor.py -text
@@ -885,8 +878,6 @@ test/framework/tst_interface.py -text
 test/model/data/tst_observation.py -text
 test/model/data/tst_pixel_list.py -text
 test/model/data/tst_prediction.py -text
-test/model/data/tst_reflection_list.py -text
-test/model/data/tst_reflection_pickle.py -text
 test/model/data/tst_shoebox.py -text
 test/model/serialize/tst_shoebox_file.py -text
 test/tst_phil.py -text

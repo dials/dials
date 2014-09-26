@@ -3,8 +3,8 @@ from __future__ import division
 class TestRayPredictor:
 
   def __init__(self):
-    from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import IndexGenerator
+    from dials.algorithms.spot_prediction import ScanStaticRayPredictor
     from iotbx.xds import xparm, integrate_hkl
     from dials.util import ioutil
     from math import ceil
@@ -73,7 +73,7 @@ class TestRayPredictor:
     dphi = self.scan.get_oscillation_range(deg=False)
 
     # Create the ray predictor
-    self.predict_rays = RayPredictor(s0, m2, dphi)
+    self.predict_rays = ScanStaticRayPredictor(s0, m2, dphi)
 
     # Predict the spot locations
     self.reflections = self.predict_rays(
@@ -84,7 +84,7 @@ class TestRayPredictor:
     gen_hkl = {}
     #print len(self.reflections)
     for r in self.reflections:
-      gen_hkl[r.miller_index] = True
+      gen_hkl[r['miller_index']] = True
     for hkl in self.integrate_handle.hkl:
       assert(gen_hkl[hkl] == True)
 
@@ -94,8 +94,8 @@ class TestRayPredictor:
     # Create a dict of lists of xy for each hkl
     gen_phi = {}
     for r in self.reflections:
-      hkl = r.miller_index
-      phi = r.rotation_angle
+      hkl = r['miller_index']
+      phi = r['phi']
       try:
         a = gen_phi[hkl]
         a.append(phi)
@@ -135,7 +135,7 @@ class TestRayPredictor:
     from scitbx import matrix
     s0_length = matrix.col(self.beam.get_s0()).length()
     for r in self.reflections:
-      s1 = r.beam_vector
+      s1 = r['s1']
       s1_length = matrix.col(s1).length()
       assert(abs(s0_length - s1_length) < 1e-7)
 
@@ -168,9 +168,9 @@ class TestRayPredictor:
     eps = 1e-7
     assert(len(self.reflections) == len(self.reflections2))
     for r1, r2 in zip(self.reflections, self.reflections2):
-      assert(all(abs(a - b) < eps for a, b in zip(r1.beam_vector, r2.s1)))
-      assert(abs(r1.rotation_angle - r2.angle) < eps)
-      assert(r1.entering == r2.entering)
+      assert(all(abs(a - b) < eps for a, b in zip(r1['s1'], r2.s1)))
+      assert(abs(r1['phi'] - r2.angle) < eps)
+      assert(r1['entering'] == r2.entering)
     print 'OK'
 
   def test_new_from_array(self):
@@ -199,9 +199,9 @@ class TestRayPredictor:
     eps = 1e-7
     assert(len(self.reflections) == len(self.reflections3))
     for r1, r2 in zip(self.reflections, self.reflections3):
-      assert(all(abs(a - b) < eps for a, b in zip(r1.beam_vector, r2['s1'])))
-      assert(abs(r1.rotation_angle - r2['phi']) < eps)
-      assert(r1.entering == r2['entering'])
+      assert(all(abs(a - b) < eps for a, b in zip(r1['s1'], r2['s1'])))
+      assert(abs(r1['phi'] - r2['phi']) < eps)
+      assert(r1['entering'] == r2['entering'])
     print 'OK'
 
   def run(self):

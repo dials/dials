@@ -22,11 +22,8 @@ from math import pi, sqrt, acos, atan2, fabs
 from scitbx import matrix
 import scitbx.math
 from cctbx.array_family import flex
-from dials.algorithms.spot_prediction import RayPredictor
 from rstbx.diffraction import reflection_prediction
 from rstbx.diffraction import rotation_angles
-
-from dials.model.data import Reflection, ReflectionList
 
 from dials.algorithms.spot_prediction.reeke import solve_quad
 from dials.algorithms.spot_prediction import ReekeIndexGenerator

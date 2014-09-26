@@ -6,7 +6,6 @@ sources = [
     'boost_python/transformed_shoebox.cc',
     'boost_python/observation.cc',
     'boost_python/prediction.cc',
-    'boost_python/reflection.cc',
     'boost_python/adjacency_list.cc',
     'boost_python/pixel_list.cc',
     'boost_python/ray.cc',
