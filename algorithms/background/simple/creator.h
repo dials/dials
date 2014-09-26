@@ -73,6 +73,9 @@ namespace dials { namespace algorithms { namespace background {
         } catch (dials::error) {
           result[i] = false;
           mse[i] = 0.0;
+        } catch (std::runtime_error) {
+          result[i] = false;
+          mse[i] = 0.0;
         }
       }
       return result;
