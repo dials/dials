@@ -35,11 +35,12 @@ def export_mtz(integrated_data, experiment_list, hklout):
       print 'Removing %d profile reflections with negative variance' % \
             selection.count(True)
 
-  selection = integrated_data['partiality'] < 0.99
-  if selection.count(True) > 0:
-    integrated_data.del_selected(selection)
-    print 'Removing %d incomplete reflections' % \
-          selection.count(True)
+  if 'partiality' in integrated_data:
+    selection = integrated_data['partiality'] < 0.99
+    if selection.count(True) > 0:
+      integrated_data.del_selected(selection)
+      print 'Removing %d incomplete reflections' % \
+        selection.count(True)
 
   # FIXME TODO for more than one experiment into an MTZ file:
   #
