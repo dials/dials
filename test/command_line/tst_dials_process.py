@@ -32,7 +32,7 @@ def exercise_1():
                  )
   #print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  for out_file in ['datablock.json', 'refined_experiments.json', 'shoebox.dat',
+  for out_file in ['datablock.json', 'refined_experiments.json',
                    'integrated.mtz', 'integrated.pickle', 'strong.pickle']:
     assert os.path.exists(out_file)
 
@@ -75,7 +75,7 @@ def exercise_2():
                  )
   print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  for out_file in ['datablock.json', 'refined_experiments.json', 'shoebox.dat',
+  for out_file in ['datablock.json', 'refined_experiments.json',
                    'integrated.mtz', 'integrated.pickle', 'strong.pickle']:
     assert os.path.exists(out_file)
 

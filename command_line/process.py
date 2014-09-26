@@ -64,8 +64,9 @@ class Script(object):
         include scope dials.algorithms.indexing.indexer.master_phil_scope
       }
       include scope dials.algorithms.refinement.refiner.phil_scope
-      include scope dials.algorithms.integration.integrator.phil_scope
+      include scope dials.algorithms.integration.interface.phil_scope
       include scope dials.algorithms.profile_model.factory.phil_scope
+      include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
     ''', process_includes=True)
 
@@ -248,24 +249,37 @@ class Script(object):
 
     # Get the integrator from the input parameters
     print 'Configurating integrator from input parameters'
-    if None in experiments.goniometers():
-      from dials.algorithms.integration import IntegratorStills
-      integrator = IntegratorStills(
-        self.params,
-        experiments,
-        reference=indexed)
-    else:
-      from dials.algorithms.integration import Integrator
-      integrator = Integrator(
-        self.params,
-        experiments,
-        reference=indexed)
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
+    from dials.algorithms.integration.interface import IntegratorFactory
+    from dials.array_family import flex
 
-    # Integrate the sweep's reflections
-    print 'Integrating reflections'
+    # Compute the profile model
+    # Predict the reflections
+    # Match the predictions with the reference
+    # Create the integrator
+    profile_model = ProfileModelFactory.create(self.params, experiments, indexed)
+    print ""
+    print "=" * 80
+    print ""
+    print "Predicting reflections"
+    print ""
+    predicted = flex.reflection_table.from_predictions_multi(
+      experiments,
+      dmin=self.params.prediction.dmin,
+      dmax=self.params.prediction.dmax,
+      margin=self.params.prediction.margin,
+      force_static=self.params.prediction.force_static)
+    predicted.match_with_reference(indexed)
+    print ""
+    integrator = IntegratorFactory.create(self.params, experiments, profile_model, predicted)
+
+    # Integrate the reflections
     reflections = integrator.integrate()
 
+    # Save the reflections
     reflections.as_pickle("integrated.pickle")
+    with open("profile.phil", "w") as outfile:
+      outfile.write(profile_model.dump().as_str())
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
