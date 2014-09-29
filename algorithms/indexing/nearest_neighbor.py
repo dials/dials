@@ -25,9 +25,12 @@ class neighbor_analysis(object):
     direct = flex.double()
     for i in xrange(len(rs_vectors)):
       direct.append(1.0/math.sqrt(IS_adapt.distances[i]))
+    # reject top 1% of longest distances to hopefully get rid of any outliers
+    direct = direct.select(
+      flex.sort_permutation(direct)[:int(math.floor(0.99*len(direct)))])
 
     # determine the most probable nearest neighbor distance (direct space)
-    hst = flex.histogram(direct, n_slots=int(len(rs_vectors)/self.NNBIN))
+    hst = flex.histogram(direct, n_slots=int(len(direct)/self.NNBIN))
     centers = hst.slot_centers()
     islot = hst.slots()
     highest_bin_height = flex.max(islot)
