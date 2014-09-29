@@ -1111,13 +1111,14 @@ class Refiner(object):
 
     return self._param_report
 
-  def parameter_correlation_plot(self, step):
+  def parameter_correlation_plot(self, step, col_select=None):
     """Create a correlation matrix plot between columns of the Jacobian at
     the specified refinement step. Inspired by R's corrplot and
     https://github.com/louridas/corrplot/blob/master/corrplot.py"""
 
     corrmat = self._refinery.get_correlation_matrix_for_step(step)
     if corrmat is None: return None
+    assert corrmat.is_square_matrix()
 
     from math import pi, sqrt
     try:
@@ -1127,15 +1128,23 @@ class Refiner(object):
       print "matplotlib modules not available", e
       return None
 
+    if col_select is None:
+      col_select = range(corrmat.all()[0])
+
     labels = self._pred_param.get_param_names()
+    try:
+      labels = [labels[e] for e in col_select]
+    except IndexError:
+      print "Invalid selection of columns for correlation plot. No plot will be produced"
+      return None
+    num_cols = num_rows = len(labels)
+
     plt.figure(1)
     ax = plt.subplot(1, 1, 1, aspect='equal')
-    width, height = corrmat.all()
-    num_cols, num_rows = width, height
     poscm = cm.get_cmap('Blues')
     negcm = cm.get_cmap('Reds')
-    for x in xrange(width):
-      for y in xrange(height):
+    for x in col_select:
+      for y in col_select:
         d = corrmat[x, y]
         clrmap = poscm if d >= 0 else negcm
         d_abs = abs(d)

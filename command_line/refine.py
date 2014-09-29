@@ -39,9 +39,26 @@ class Script(object):
           .type = str
           .help = "The filename for the table of scan varying parameter values"
 
-        correlation_plot_filename = None
-          .type = str
-          .help = "The filename of output of a plot of parameter correlations"
+        correlation_plot {
+          filename = None
+            .type = str
+            .help = "The base filename for output of plots of parameter"
+                    "correlations. A file extension may be added to control"
+                    "the type of output file, if it is one of matplotlib's"
+                    "supported types"
+
+          col_select = None
+            .type = ints(value_min=0)
+            .help = "Specific columns to include in the plots of parameter"
+                    "correlations. Defaults to all columns. This option is"
+                    "useful when there is a large number of parameters"
+
+          steps = None
+            .type = ints(value_min=0)
+            .help = "Steps for which to make correlation plots. By default only"
+                    "the final step is plotted. Uses zero-based numbering, so"
+                    "the first step is numbered 0."
+        }
 
         reflections_filename = None
           .type = str
@@ -163,15 +180,29 @@ class Script(object):
         params.output.reflections_filename)
       matches.as_pickle(params.output.reflections_filename)
 
-    if params.output.correlation_plot_filename:
-      # plot for the final step only
-      plt = refiner.parameter_correlation_plot(refined.get_nrows()-1)
-      if plt is not None:
-        plt.tight_layout()
-        plt.savefig(params.output.correlation_plot_filename)
-      else:
-        print "Sorry, no parameter correlations were tracked. Please set " \
-              "track_parameter_correlation=True"
+    if params.output.correlation_plot.filename is not None:
+      from os.path import splitext
+      root, ext = splitext(params.output.correlation_plot.filename)
+      if not ext: ext = ".pdf"
+
+      steps = params.output.correlation_plot.steps
+      if steps is None: steps = [refined.get_nrows()-1]
+
+      col_select = params.output.correlation_plot.col_select
+
+      num_plots = 0
+      for step in steps:
+        fname = root + "_step%02d_" % step + ext
+
+        plt = refiner.parameter_correlation_plot(step, col_select)
+        if plt is not None:
+          plt.tight_layout()
+          plt.savefig(fname)
+          num_plots += 1
+      if num_plots == 0:
+        print "Sorry, no parameter correlation plots were produced. Please set " \
+              "track_parameter_correlation=True to ensure correlations are " \
+              "tracked, and make sure correlation_plot.col_select is valid."
 
     return
 
