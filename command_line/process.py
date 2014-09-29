@@ -89,6 +89,24 @@ class Script(object):
     from time import time
     import sys
 
+    # Parse the command line
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    datablocks = flatten_datablocks(params.input.datablock)
+
+    # Save the options
+    self.options = options
+    self.params = params
+
+    st = time()
+
+    # Import stuff
+    if len(datablocks) == 0:
+      self.parser.print_help()
+      return
+    elif len(datablocks) > 1:
+      raise RuntimeError('Only 1 datablock can be processed at a time.')
+    datablock = datablocks[0]
+
     # Preamble stuff
     print '*' * 80
     print ''
@@ -115,20 +133,6 @@ class Script(object):
     print ''
     print '*' * 80
     print ''
-
-    # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
-    datablocks = flatten_datablocks(params.input.datablock)
-
-    # Save the options
-    self.options = options
-    self.params = params
-
-    st = time()
-
-    # Import stuff
-    assert(len(datablocks) == 1)
-    datablock = datablocks[0]
 
     from dxtbx.datablock import DataBlockDumper
     dump = DataBlockDumper(datablock)
