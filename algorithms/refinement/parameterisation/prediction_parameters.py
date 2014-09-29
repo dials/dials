@@ -604,7 +604,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
-      for exp_id in xlop.get_experiment_ids():
+      for exp_id in xlucp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
 
       # Get required data from those reflections
