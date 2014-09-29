@@ -77,7 +77,7 @@ class Test(object):
 
     # Should have all partials
     assert(len(partiality) == len(predicted))
-    assert(partiality.all_lt(1.0) and partiality.all_gt(0))
+    assert(partiality.all_le(1.0) and partiality.all_gt(0))
 
     print 'OK'
 
