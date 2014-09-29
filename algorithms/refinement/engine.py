@@ -185,6 +185,10 @@ class Refinery(object):
     """Return a 1D flex array containing the upper diagonal values of the
     correlation matrix calculated between columns of 2D matrix m"""
 
+    try: # convert matrices of type scitbx_sparse_ext.matrix
+      m = m.as_dense_matrix()
+    except AttributeError:
+      pass
     ncol = m.all()[1]
     packed_len = (ncol*(ncol + 1)) // 2
     i = 0
