@@ -164,8 +164,9 @@ class Script(object):
       matches.as_pickle(params.output.reflections_filename)
 
     if params.output.correlation_plot_filename:
-      if refined.parameter_correlation:
-        plt = refiner.parameter_correlation_plot(len(refined.parameter_correlation)-1)
+      # plot for the final step only
+      plt = refiner.parameter_correlation_plot(refined.get_nrows()-1)
+      if plt is not None:
         plt.tight_layout()
         plt.savefig(params.output.correlation_plot_filename)
       else:

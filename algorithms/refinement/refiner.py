@@ -1137,15 +1137,14 @@ class Refiner(object):
     for x in xrange(width):
       for y in xrange(height):
         d = corrmat[x, y]
-        rotate = -45 if d > 0 else +45
         clrmap = poscm if d >= 0 else negcm
         d_abs = abs(d)
-        circ = plt.Circle((x, y),radius=sqrt(d_abs/pi))
+        circ = plt.Circle((x, y),radius=0.9*sqrt(d_abs)/2)
         circ.set_edgecolor('white')
         circ.set_facecolor(clrmap(d_abs))
         ax.add_artist(circ)
-    ax.set_xlim(-1, num_cols)
-    ax.set_ylim(-1, num_rows)
+    ax.set_xlim(-0.5, num_cols-0.5)
+    ax.set_ylim(-0.5, num_rows-0.5)
 
     ax.xaxis.tick_top()
     xtickslocs = range(len(labels))
@@ -1157,6 +1156,16 @@ class Refiner(object):
     ax.set_yticks(ytickslocs)
     ax.set_yticklabels(labels, fontsize='small')
 
+    xtickslocs = [e + 0.5 for e in range(len(labels))]
+    ax.set_xticks(xtickslocs, minor=True)
+    ytickslocs = [e + 0.5 for e in range(len(labels))]
+    ax.set_yticks(ytickslocs, minor=True)
+    plt.grid(color='0.8', which='minor', linestyle='-')
+
+    # suppress major tick marks
+    ax.tick_params(which='major', width=0)
+
+    # FIXME should this also have a colorbar as legend?
     return plt
 
   def print_step_table(self):
