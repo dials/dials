@@ -75,6 +75,7 @@ tst_list = (
     "$D/test/algorithms/refinement/tst_multi_panel_detector_parameterisation.py",
     "$D/test/algorithms/refinement/tst_refine_multi_wedges.py",
     "$D/test/algorithms/refinement/tst_stills_refinement.py",
+    "$D/test/algorithms/refinement/tst_refine_multi_stills.py",
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/image/filter/tst_summed_area.py",
     "$D/test/algorithms/image/filter/tst_mean_and_variance.py",
