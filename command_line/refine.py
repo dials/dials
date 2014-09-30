@@ -11,8 +11,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.util.command_line import Importer
-from dxtbx.model.experiment.experiment_list import ExperimentListDumper
 
 class Script(object):
   '''A class for running the script.'''
@@ -170,6 +168,7 @@ class Script(object):
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments_filename
     print 'Saving refined experiments to {0}'.format(output_experiments_filename)
+    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 
