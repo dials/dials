@@ -90,7 +90,7 @@ class Script(object):
           .type = str
           .help = "The filename for combined experimental models"
 
-        reflections_filename = combined_reflections.json
+        reflections_filename = combined_reflections.pickle
           .type = str
           .help = "The filename for combined reflections"
       }

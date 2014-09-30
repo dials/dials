@@ -1,0 +1,163 @@
+#!/usr/bin/env cctbx.python
+
+#
+#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
+#
+#  Author: David Waterman.
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+#
+
+"""
+Test combination of multiple experiments and reflections files.
+
+"""
+
+# python imports
+from __future__ import division
+import os
+import shutil
+import libtbx.load_env # required for libtbx.env.find_in_repositories
+from libtbx import easy_run
+from libtbx.test_utils import open_tmp_directory
+from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from dials.array_family import flex
+
+phil_input = """experiments={0}/data/sweep_002/experiments.json \
+  reflections={0}/data/sweep_002/reflections.pickle \
+  experiments={0}/data/sweep_003/experiments.json \
+  reflections={0}/data/sweep_003/reflections.pickle \
+  experiments={0}/data/sweep_004/experiments.json \
+  reflections={0}/data/sweep_004/reflections.pickle \
+  experiments={0}/data/sweep_005/experiments.json \
+  reflections={0}/data/sweep_005/reflections.pickle \
+  experiments={0}/data/sweep_006/experiments.json \
+  reflections={0}/data/sweep_006/reflections.pickle \
+  experiments={0}/data/sweep_007/experiments.json \
+  reflections={0}/data/sweep_007/reflections.pickle \
+  experiments={0}/data/sweep_009/experiments.json \
+  reflections={0}/data/sweep_009/reflections.pickle \
+  experiments={0}/data/sweep_011/experiments.json \
+  reflections={0}/data/sweep_011/reflections.pickle \
+  experiments={0}/data/sweep_012/experiments.json \
+  reflections={0}/data/sweep_012/reflections.pickle \
+  experiments={0}/data/sweep_013/experiments.json \
+  reflections={0}/data/sweep_013/reflections.pickle \
+  experiments={0}/data/sweep_014/experiments.json \
+  reflections={0}/data/sweep_014/reflections.pickle \
+  experiments={0}/data/sweep_017/experiments.json \
+  reflections={0}/data/sweep_017/reflections.pickle \
+  experiments={0}/data/sweep_018/experiments.json \
+  reflections={0}/data/sweep_018/reflections.pickle \
+  experiments={0}/data/sweep_019/experiments.json \
+  reflections={0}/data/sweep_019/reflections.pickle \
+  experiments={0}/data/sweep_020/experiments.json \
+  reflections={0}/data/sweep_020/reflections.pickle \
+  experiments={0}/data/sweep_021/experiments.json \
+  reflections={0}/data/sweep_021/reflections.pickle \
+  experiments={0}/data/sweep_022/experiments.json \
+  reflections={0}/data/sweep_022/reflections.pickle \
+  experiments={0}/data/sweep_023/experiments.json \
+  reflections={0}/data/sweep_023/reflections.pickle \
+  experiments={0}/data/sweep_024/experiments.json \
+  reflections={0}/data/sweep_024/reflections.pickle \
+  experiments={0}/data/sweep_025/experiments.json \
+  reflections={0}/data/sweep_025/reflections.pickle \
+  experiments={0}/data/sweep_026/experiments.json \
+  reflections={0}/data/sweep_026/reflections.pickle \
+  experiments={0}/data/sweep_027/experiments.json \
+  reflections={0}/data/sweep_027/reflections.pickle \
+  experiments={0}/data/sweep_028/experiments.json \
+  reflections={0}/data/sweep_028/reflections.pickle \
+  experiments={0}/data/sweep_029/experiments.json \
+  reflections={0}/data/sweep_029/reflections.pickle \
+  experiments={0}/data/sweep_030/experiments.json \
+  reflections={0}/data/sweep_030/reflections.pickle \
+  experiments={0}/data/sweep_031/experiments.json \
+  reflections={0}/data/sweep_031/reflections.pickle \
+  experiments={0}/data/sweep_032/experiments.json \
+  reflections={0}/data/sweep_032/reflections.pickle \
+  experiments={0}/data/sweep_033/experiments.json \
+  reflections={0}/data/sweep_033/reflections.pickle \
+  experiments={0}/data/sweep_035/experiments.json \
+  reflections={0}/data/sweep_035/reflections.pickle \
+  experiments={0}/data/sweep_036/experiments.json \
+  reflections={0}/data/sweep_036/reflections.pickle \
+  experiments={0}/data/sweep_037/experiments.json \
+  reflections={0}/data/sweep_037/reflections.pickle \
+  experiments={0}/data/sweep_038/experiments.json \
+  reflections={0}/data/sweep_038/reflections.pickle \
+  experiments={0}/data/sweep_040/experiments.json \
+  reflections={0}/data/sweep_040/reflections.pickle \
+  experiments={0}/data/sweep_041/experiments.json \
+  reflections={0}/data/sweep_041/reflections.pickle \
+  experiments={0}/data/sweep_042/experiments.json \
+  reflections={0}/data/sweep_042/reflections.pickle \
+  experiments={0}/data/sweep_043/experiments.json \
+  reflections={0}/data/sweep_043/reflections.pickle \
+  experiments={0}/data/sweep_044/experiments.json \
+  reflections={0}/data/sweep_044/reflections.pickle \
+  experiments={0}/data/sweep_046/experiments.json \
+  reflections={0}/data/sweep_046/reflections.pickle \
+  experiments={0}/data/sweep_047/experiments.json \
+  reflections={0}/data/sweep_047/reflections.pickle \
+  experiments={0}/data/sweep_048/experiments.json \
+  reflections={0}/data/sweep_048/reflections.pickle"""
+
+def test1():
+
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+
+  data_dir = os.path.join(dials_regression, "refinement_test_data",
+                          "multi_narrow_wedges")
+
+  # work in a temporary directory
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = open_tmp_directory(suffix="tst_combine_experiments_and_reflections")
+  os.chdir(tmp_dir)
+  cmd = "dials.combine_experiments_and_reflections " + phil_input.format(
+    data_dir) + " reference_from_experiment.beam=0 " + \
+    "reference_from_experiment.scan=0 reference_from_experiment.goniometer=0"+ \
+    " reference_from_experiment.detector=0"
+  #print cmd
+
+  try:
+    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    # load results
+    exp = ExperimentListFactory.from_json_file("combined_experiments.json",
+                check_format=False)
+    ref = flex.reflection_table.from_pickle("combined_reflections.pickle")
+  finally:
+    os.chdir(cwd)
+    # clean up tmp dir
+    shutil.rmtree(tmp_dir)
+  print "OK"
+
+  # test the experiments
+  assert len(exp) == 103
+  assert len(exp.crystals()) == 103
+  assert len(exp.beams()) == 1
+  assert len(exp.scans()) == 1
+  assert len(exp.detectors()) == 1
+  assert len(exp.goniometers()) == 1
+
+  # test the reflections
+  assert len(ref) == 11689
+  print "OK"
+
+  return
+
+def run():
+  if not libtbx.env.has_module("dials_regression"):
+    print "Skipping tests in " + __file__ + " as dials_regression not present"
+    return
+
+  test1()
+
+if __name__ == '__main__':
+  from libtbx.utils import show_times_at_exit
+  show_times_at_exit()
+  run()
