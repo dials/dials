@@ -684,8 +684,11 @@ class indexer_base(object):
               max_cell.append(NN.max_cell)
             except AssertionError:
               continue
-            #print NN.max_cell
-          self.params.max_cell = flex.mean(max_cell) # or max or median?
+            if self.params.debug: print phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell
+          if self.params.debug:
+            print list(max_cell)
+            print flex.median(max_cell), flex.mean(max_cell)
+          self.params.max_cell = flex.median(max_cell) # mean or max or median?
         print "Found max_cell: %.1f Angstrom" %(self.params.max_cell)
 
   def filter_reflections_by_scan_range(self):
