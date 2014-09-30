@@ -1143,12 +1143,12 @@ class Refiner(object):
     ax = plt.subplot(1, 1, 1, aspect='equal')
     poscm = cm.get_cmap('Blues')
     negcm = cm.get_cmap('Reds')
-    for x in col_select:
-      for y in col_select:
+    for (i, x) in enumerate(col_select):
+      for (j, y) in enumerate(col_select):
         d = corrmat[x, y]
         clrmap = poscm if d >= 0 else negcm
         d_abs = abs(d)
-        circ = plt.Circle((x, y),radius=0.9*sqrt(d_abs)/2)
+        circ = plt.Circle((i, j),radius=0.9*sqrt(d_abs)/2)
         circ.set_edgecolor('white')
         circ.set_facecolor(clrmap(d_abs))
         ax.add_artist(circ)
