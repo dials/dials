@@ -1122,6 +1122,8 @@ class Refiner(object):
 
     from math import pi, sqrt
     try:
+      import matplotlib
+      matplotlib.use('Agg')
       import matplotlib.pyplot as plt
       import matplotlib.cm as cm
     except ImportError as e:
