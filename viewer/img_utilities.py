@@ -36,8 +36,8 @@ def GetBitmap_from_np_array(data2d):
   lc_fig.add_axes(ax)
   plt.imshow(np.transpose(data2d), interpolation = "nearest", cmap = 'hot')
 
-  print "xmax =", xmax
-  print "ymax =", ymax
+  #print "xmax =", xmax
+  #print "ymax =", ymax
   for xpos in range(xmax):
     for ypos in range(ymax):
       f_num = data2d[xpos,ypos]

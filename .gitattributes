@@ -906,6 +906,10 @@ util/spotfinder_wrap.py -text
 viewer/__init__.py -text
 viewer/img_utilities.py -text
 viewer/new_reflection_view_tester.py -text
+viewer/next_gen_viewer/__init__.py -text
+viewer/next_gen_viewer/bitmap_from_numpy_w_matplotlib.py -text
+viewer/next_gen_viewer/flex_array_in_test.py -text
+viewer/next_gen_viewer/from_flex_to_wxbitmap.py -text
 viewer/pickle_to_viewer.py -text
 viewer/reflection_data_navigator.py -text
 viewer/reflection_view.py -text

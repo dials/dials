@@ -20,6 +20,8 @@ class np_to_bmp(object):
   def __call__(self, np_img_2d, Intst_max, ofst, xyz, title = 'Aaaaaaaaaa'):
     lc_fig = plt.figure()
 
+    print Intst_max
+    Intst_max = 21
     if( np_img_2d == None ):
 
       plt.imshow(np.asarray([[-1]]), interpolation = "nearest")
@@ -35,10 +37,11 @@ class np_to_bmp(object):
       plt.close(lc_fig)
     else:
       if Intst_max > 0:
-        plt.suptitle(title, fontsize = 22)
+        plt.suptitle(title, fontsize = 18)
         #plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
         #           , vmax = Intst_max)
-        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", cmap = 'hot', vmin = 0, vmax = Intst_max)
+        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest"
+                   , cmap = 'hot', vmin = 0, vmax = Intst_max)
 
         xmax = len(np_img_2d[:,1])
         ymax = len(np_img_2d[1,:])
@@ -60,8 +63,8 @@ class np_to_bmp(object):
                 clr_chr = 'black'
               else:
                 clr_chr = 'blue'
-              plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
-                           , color = clr_chr, size = 22.)
+              plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3)
+                           , xycoords = 'data', color = clr_chr, size = 22.)
 
 
       else:
