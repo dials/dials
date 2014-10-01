@@ -1032,8 +1032,13 @@ class indexer_base(object):
       refiner = RefinerFactory.from_parameters_data_experiments(
         params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
         verbosity=0)
-      #print experiment.crystal.get_unit_cell()
-      refiner.run()
+      if (refl['id'] > -1).count(True) <= len(refiner.get_param_reporter()):
+        continue
+      try:
+        refiner.run()
+      except RuntimeError, e:
+        print e
+        continue
       rmsds = refiner.rmsds()
       xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
       model_likelihood = 1.0 - xy_rmsds
