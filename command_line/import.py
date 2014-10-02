@@ -35,72 +35,72 @@ Examples:
 '''
 
 
-class ImageFileImporter(object):
-  ''' Import a data block from files. '''
+#class ImageFileImporter(object):
+  #''' Import a data block from files. '''
 
-  def __init__(self, params, options):
-    ''' Initialise with the options'''
-    self.params = params
-    self.options = options
+  #def __init__(self, params, options):
+    #''' Initialise with the options'''
+    #self.params = params
+    #self.options = options
 
-  def __call__(self, args):
-    import sys
+  #def __call__(self, args):
+    #import sys
 
-    # Sort arguments
-    if self.params.sort:
-      args = sorted(args)
+    ## Sort arguments
+    #if self.params.sort:
+      #args = sorted(args)
 
-    # Get the data blocks from the input files
-    # We've set verbose to print out files as they're tested.
-    unhandled = []
-    datablocks = DataBlockFactory.from_args(args,
-      verbose=self.options.verbose, unhandled=unhandled)
+    ## Get the data blocks from the input files
+    ## We've set verbose to print out files as they're tested.
+    #unhandled = []
+    #datablocks = DataBlockFactory.from_args(args,
+      #verbose=self.options.verbose, unhandled=unhandled)
 
-    # Print out any unhandled files
-    if len(unhandled) > 0:
-      print '-' * 80
-      print 'The following command line arguments were not handled:'
-      for filename in unhandled:
-        print '  %s' % filename
+    ## Print out any unhandled files
+    #if len(unhandled) > 0:
+      #print '-' * 80
+      #print 'The following command line arguments were not handled:'
+      #for filename in unhandled:
+        #print '  %s' % filename
 
-    # Loop through the data blocks
-    for i, datablock in enumerate(datablocks):
+    ## Loop through the data blocks
+    #for i, datablock in enumerate(datablocks):
 
-      # Extract any sweeps
-      sweeps = datablock.extract_sweeps()
+      ## Extract any sweeps
+      #sweeps = datablock.extract_sweeps()
 
-      # Extract any stills
-      stills = datablock.extract_stills()
-      if not stills:
-        num_stills = 0
-      else:
-        num_stills = len(stills)
+      ## Extract any stills
+      #stills = datablock.extract_stills()
+      #if not stills:
+        #num_stills = 0
+      #else:
+        #num_stills = len(stills)
 
-      # Print some data block info
-      print "-" * 80
-      print "DataBlock %d" % i
-      print "  format: %s" % str(datablock.format_class())
-      print "  num images: %d" % datablock.num_images()
-      print "  num sweeps: %d" % len(sweeps)
-      print "  num stills: %d" % num_stills
+      ## Print some data block info
+      #print "-" * 80
+      #print "DataBlock %d" % i
+      #print "  format: %s" % str(datablock.format_class())
+      #print "  num images: %d" % datablock.num_images()
+      #print "  num sweeps: %d" % len(sweeps)
+      #print "  num stills: %d" % num_stills
 
-      # Loop through all the sweeps
-      if self.options.verbose > 1:
-        for j, sweep in enumerate(sweeps):
-          print ""
-          print "Sweep %d" % j
-          print "  length %d" % len(sweep)
-          print sweep.get_beam()
-          print sweep.get_goniometer()
-          print sweep.get_detector()
-          print sweep.get_scan()
+      ## Loop through all the sweeps
+      #if self.options.verbose > 1:
+        #for j, sweep in enumerate(sweeps):
+          #print ""
+          #print "Sweep %d" % j
+          #print "  length %d" % len(sweep)
+          #print sweep.get_beam()
+          #print sweep.get_goniometer()
+          #print sweep.get_detector()
+          #print sweep.get_scan()
 
-    # Write the datablock to a JSON or pickle file
-    if self.params.output:
-      print "-" * 80
-      print 'Writing datablocks to %s' % self.params.output
-      dump = DataBlockDumper(datablocks)
-      dump.as_file(self.params.output, compact=self.params.compact)
+    ## Write the datablock to a JSON or pickle file
+    #if self.params.output:
+      #print "-" * 80
+      #print 'Writing datablocks to %s' % self.params.output
+      #dump = DataBlockDumper(datablocks)
+      #dump.as_file(self.params.output, compact=self.params.compact)
 
 
 class Script(object):
@@ -134,6 +134,7 @@ class Script(object):
       usage=usage,
       stdin_options=True,
       phil=phil_scope,
+      read_datablocks_from_images=True,
       epilog=help_message)
 
   def run(self):
@@ -144,16 +145,64 @@ class Script(object):
       show_diff_phil=True,
       return_unhandled=True)
 
+    datablocks = [datablock.data[0] for datablock in params.input.datablock]
+
     # Check we have some filenames
-    if len(args) == 0:
+    if len(datablocks) == 0:
       self.parser.print_help()
       exit(0)
 
-    # Choose the importer to use
-    importer = ImageFileImporter(params, options)
+    # Print out any unhandled arguments
+    if len(args) > 0:
+      print '-' * 80
+      print 'The following command line arguments were not handled:'
+      for filename in args:
+        print '  %s' % filename
 
-    # Import the data
-    importer(args)
+    # Loop through the data blocks
+    for i, datablock in enumerate(datablocks):
+
+      # Extract any sweeps
+      sweeps = datablock.extract_sweeps()
+
+      # Extract any stills
+      stills = datablock.extract_stills()
+      if not stills:
+        num_stills = 0
+      else:
+        num_stills = len(stills)
+
+      # Print some data block info
+      print "-" * 80
+      print "DataBlock %d" % i
+      print "  format: %s" % str(datablock.format_class())
+      print "  num images: %d" % datablock.num_images()
+      print "  num sweeps: %d" % len(sweeps)
+      print "  num stills: %d" % num_stills
+
+      # Loop through all the sweeps
+      if options.verbose > 1:
+        for j, sweep in enumerate(sweeps):
+          print ""
+          print "Sweep %d" % j
+          print "  length %d" % len(sweep)
+          print sweep.get_beam()
+          print sweep.get_goniometer()
+          print sweep.get_detector()
+          print sweep.get_scan()
+
+    # Write the datablock to a JSON or pickle file
+    if params.output:
+      print "-" * 80
+      print 'Writing datablocks to %s' % params.output
+      dump = DataBlockDumper(datablocks)
+      dump.as_file(params.output, compact=params.compact)
+
+    ## Choose the importer to use
+    #importer = ImageFileImporter(params, options)
+
+    ## Import the data
+    #importer(args)
 
 if __name__ == '__main__':
   from dials.util import halraiser
