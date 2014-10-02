@@ -32,7 +32,7 @@ def test1():
   data_dir = os.path.join(dials_regression, "refinement_test_data",
                           "multi_stills")
   experiments_path = os.path.join(data_dir, "combined_experiments.json")
-  reflections_path = os.path.join(data_dir, "combined_reflections.json")
+  reflections_path = os.path.join(data_dir, "combined_reflections.pickle")
   cmd = "dials.refine " + experiments_path + " " + reflections_path
   print cmd
 
