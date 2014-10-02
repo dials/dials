@@ -342,7 +342,7 @@ class OptionParserBase(optparse.OptionParser, object):
     return options, args
 
   def format_epilog(self, formatter):
-    ''' Don't do formatting on epilog. '''
+    '''Don not do formatting on epilog.'''
     if self.epilog is None:
       return ''
     return self.epilog
