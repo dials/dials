@@ -27,6 +27,7 @@ STEP_TOO_SMALL = "Step too small"
 OBJECTIVE_INCREASE = "Refinement failure: objective increased"
 MAX_ITERATIONS = "Reached maximum number of iterations"
 MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
+DOF_TOO_LOW = "Not enough degrees of freedom to refine"
 
 class Journal(dict):
   """Container in which to store information about refinement history.
@@ -517,8 +518,16 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
   def run(self):
     self.n_iterations = 0
+
+    # prepare for first step
+    self.build_up()
+
+    # return early if refinement is not possible
+    if self.dof < 1:
+      self.history.reason_for_termination = DOF_TOO_LOW
+      return
+
     while True:
-      self.build_up()
 
       # set functional and gradients for the step (to add to the history)
       self._f = self.objective()
@@ -577,6 +586,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       # prepare for next step
       self.step_forward()
       self.n_iterations += 1
+      self.build_up()
 
     self.cf = self.step_equations().cholesky_factor_packed_u()
     self.finalise()
@@ -611,6 +621,12 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     self.n_iterations = 0
     nu = 2
     self.build_up()
+
+    # return early if refinement is not possible
+    if self.dof < 1:
+      self.history.reason_for_termination = DOF_TOO_LOW
+      return
+
     a = self.normal_matrix_packed_u()
     self.mu = self.tau*flex.max(a.matrix_packed_u_diagonal())
 
