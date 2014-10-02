@@ -27,8 +27,8 @@ class wxbmp_from_np_array(object):
 
     xmax = len(data2d_in[0:1, :, 0:1])
     ymax = len(data2d_in[0:1, 0:1, :])
-    xmax = 3
-    ymax = 3
+
+    print data2d.shape()
     print "xmax, ymax =", xmax, ymax
 
     data2d = np.zeros( (xmax, ymax),'double')
