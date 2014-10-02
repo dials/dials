@@ -36,6 +36,22 @@ def __stupid_but_swig_safe__deepcopy__(self, memo):
   pass
 cbf_wrapper.__deepcopy__ = __stupid_but_swig_safe__deepcopy__
 
+def process_reference(reference):
+    ''' Load the reference spots. '''
+    from dials.util.command_line import Command
+    from dials.array_family import flex
+    if reference is None:
+      return None
+    assert("miller_index" in reference)
+    Command.start('Removing reference spots with invalid coordinates')
+    mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
+    reference.del_selected(mask)
+    mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
+    reference.del_selected(mask)
+    Command.end('Removed reference spots with invalid coordinates, %d remaining' %
+                len(reference))
+    return reference
+
 def run():
   parser = OptionParser(
     phil = phil_scope)
@@ -95,6 +111,8 @@ def run():
   # Match the predictions with the reference
   # Create the integrator
   reference = indexed
+
+  reference = process_reference(reference)
   profile_model = ProfileModelFactory.create(params, refined_experiments, reference)
   predicted = flex.reflection_table.from_predictions_multi(
     refined_experiments,
