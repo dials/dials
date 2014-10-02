@@ -43,16 +43,16 @@ class MyFrame(wx.Frame):
     self.bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_in)
 
 if(__name__ == "__main__"):
-
-  data2d = flex.double(flex.grid(1, 3, 3),15)
+  size_xy = 5
+  data2d = flex.double(flex.grid(1, size_xy, size_xy),15)
   data2d[0, 1, 1] = 50
 
-  for row in range(3):
-    for col in range(3):
+  for row in range(size_xy):
+    for col in range(size_xy):
       data2d[0,row, col] += row * 2
       data2d[0,row, col] += col * 2
 
-  mask2d = flex.int(flex.grid(1, 3, 3),3)
+  mask2d = flex.int(flex.grid(1, size_xy, size_xy),size_xy)
   mask2d[0, 1, 1] = 5
 
   #testing wxbitmap_convert as a class
@@ -61,23 +61,23 @@ if(__name__ == "__main__"):
   print a.__doc__
 
 
-  data3d = flex.double(flex.grid(3, 3, 3),15)
-  data3d[1, 1, 1] = 50
+  datasize_xyd = flex.double(flex.grid(size_xy, size_xy, size_xy),15)
+  datasize_xyd[1, 1, 1] = 50
 
-  for frm in range(3):
-    for row in range(3):
-      for col in range(3):
-        data3d[frm, row, col] += (row * 2 + col * 2 + frm * 2)
-        #data3d[0,row, col] += col * 2
+  for frm in range(size_xy):
+    for row in range(size_xy):
+      for col in range(size_xy):
+        datasize_xyd[frm, row, col] += (row * 2 + col * 2 + frm * 2)
+        #datasize_xyd[0,row, col] += col * 2
 
-  mask3d = flex.int(flex.grid(3, 3, 3),3)
-  mask3d[0, 1, 1] = 5
+  masksize_xyd = flex.int(flex.grid(size_xy, size_xy, size_xy),size_xy)
+  masksize_xyd[0, 1, 1] = 5
 
   #testing wxbitmap_convert as a function
-  print wxbitmap_convert(data3d).get_np_lst()
+  print wxbitmap_convert(datasize_xyd).get_np_lst()
   #print "calling obj", b.get_np_lst()
-  #print wxbitmap_convert(data3d).get_wxbitmap_lst()
+  #print wxbitmap_convert(datasize_xyd).get_wxbitmap_lst()
 
   app = MyApp(redirect=False)
-  app.in_lst(wxbitmap_convert(data3d).get_wxbitmap_lst())
+  app.in_lst(wxbitmap_convert(datasize_xyd).get_wxbitmap_lst())
   app.MainLoop()
