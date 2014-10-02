@@ -13,7 +13,6 @@ from __future__ import division
 from dials.array_family import flex
 from from_flex_to_wxbitmap import wxbitmap_convert
 import wx
-import numpy as np
 
 
 class MyApp(wx.App):
@@ -23,7 +22,7 @@ class MyApp(wx.App):
 
 
   def in_lst(self, lst):
-    self.frame.set_bmp(lst[0])
+    self.frame.set_bmp(lst[2])
     print "in_lst"
     self.SetTopWindow(self.frame)
     self.frame.Show()
@@ -63,13 +62,13 @@ if(__name__ == "__main__"):
 
 
   data3d = flex.double(flex.grid(3, 3, 3),15)
-  data3d[0, 1, 1] = 50
+  data3d[1, 1, 1] = 50
 
   for frm in range(3):
     for row in range(3):
       for col in range(3):
-        data3d[0,row, col] += row * 2
-        data3d[0,row, col] += col * 2
+        data3d[frm, row, col] += (row * 2 + col * 2 + frm * 2)
+        #data3d[0,row, col] += col * 2
 
   mask3d = flex.int(flex.grid(3, 3, 3),3)
   mask3d[0, 1, 1] = 5
