@@ -480,6 +480,7 @@ scratch/__init__.py -text
 scratch/asb/dummy.phil -text
 scratch/asb/experiment_json_to_cbf_def.py -text
 scratch/asb/in_memory_process.py -text
+scratch/asb/in_memory_process2.py -text
 scratch/asb/index_thermolysin_cbfs.py -text
 scratch/asb/plot_deltapsi_vs_2theta.py -text
 scratch/asb/refine_quadrants.py -text
