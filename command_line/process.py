@@ -161,7 +161,7 @@ class Script(object):
     print '*' * 80
 
     # Find the strong spots
-    observed = flex.reflection_table.from_observations(datablock)
+    observed = flex.reflection_table.from_observations(datablock, self.params)
 
     # Save the reflections to file
     print '\n' + '-' * 80
