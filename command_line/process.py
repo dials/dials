@@ -231,7 +231,7 @@ class Script(object):
       Command.start('Saving {0} reflections to {1}'.format(
           len(indexed), self.params.output.indexed_filename))
       indexed.as_pickle(self.params.output.indexed_filename)
-      Command.end('Saved {0} refelctions to {1}'.format(
+      Command.end('Saved {0} reflections to {1}'.format(
           len(indexed), self.params.output.indexed_filename))
 
     print ''
@@ -316,7 +316,7 @@ class Script(object):
       Command.start('Saving {0} reflections to {1}'.format(
           len(reflections), self.params.output.integrated_filename))
       reflections.as_pickle(self.params.output.integrated_filename)
-      Command.end('Saved {0} refelctions to {1}'.format(
+      Command.end('Saved {0} reflections to {1}'.format(
           len(reflections), self.params.output.integrated_filename))
 
     if self.params.output.profile_filename:
