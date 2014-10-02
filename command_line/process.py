@@ -54,30 +54,35 @@ class Script(object):
     from libtbx.phil import parse
 
     phil_scope = parse('''
+      output {
+        datablock_filename = datablock.json
+          .type = str
+          .help = "The filename for output datablock"
 
-      strong_filename = strong.pickle
-        .type = str
-        .help = "The filename for strong reflections from spot finder output."
+        strong_filename = strong.pickle
+          .type = str
+          .help = "The filename for strong reflections from spot finder output."
 
-      indexed_filename = indexed.pickle
-        .type = str
-        .help = "The filename for indexed reflections."
+        indexed_filename = indexed.pickle
+          .type = str
+          .help = "The filename for indexed reflections."
 
-      refined_experiments_filename = refined_experiments.json
-        .type = str
-        .help = "The filename for saving refined experimental models"
+        refined_experiments_filename = refined_experiments.json
+          .type = str
+          .help = "The filename for saving refined experimental models"
 
-      integrated_filename = integrated.pickle
-        .type = str
-        .help = "The filename for final integrated reflections."
+        integrated_filename = integrated.pickle
+          .type = str
+          .help = "The filename for final integrated reflections."
 
-      profile_filename = profile.phil
-        .type = str
-        .help = "The filename for output reflection profile parameters"
+        profile_filename = profile.phil
+          .type = str
+          .help = "The filename for output reflection profile parameters"
 
-      mtz_filename = integrated.mtz
-        .type = str
-        .help = "The filename for output mtz"
+        mtz_filename = integrated.mtz
+          .type = str
+          .help = "The filename for output mtz"
+      }
 
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
       indexing {
@@ -154,9 +159,10 @@ class Script(object):
     print '*' * 80
     print ''
 
-    from dxtbx.datablock import DataBlockDumper
-    dump = DataBlockDumper(datablock)
-    dump.as_json("datablock.json")
+    if self.params.output.datablock_filename:
+      from dxtbx.datablock import DataBlockDumper
+      dump = DataBlockDumper(datablock)
+      dump.as_json(self.params.output.datablock_filename)
 
     # Do the processing
     observed = self.find_spots(datablock)
@@ -184,13 +190,13 @@ class Script(object):
 
     # Save the reflections to file
     print '\n' + '-' * 80
-    if self.params.strong_filename:
+    if self.params.output.strong_filename:
       from dials.util.command_line import Command
       Command.start('Saving {0} reflections to {1}'.format(
-          len(observed), self.params.strong_filename))
-      observed.as_pickle(self.params.strong_filename)
+          len(observed), self.params.output.strong_filename))
+      observed.as_pickle(self.params.output.strong_filename)
       Command.end('Saved {0} observed to {1}'.format(
-          len(observed), self.params.strong_filename))
+          len(observed), self.params.output.strong_filename))
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -220,13 +226,13 @@ class Script(object):
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments
 
-    if self.params.indexed_filename:
+    if self.params.output.indexed_filename:
       from dials.util.command_line import Command
       Command.start('Saving {0} reflections to {1}'.format(
-          len(indexed), self.params.indexed_filename))
-      indexed.as_pickle(self.params.indexed_filename)
+          len(indexed), self.params.output.indexed_filename))
+      indexed.as_pickle(self.params.output.indexed_filename)
       Command.end('Saved {0} refelctions to {1}'.format(
-          len(indexed), self.params.indexed_filename))
+          len(indexed), self.params.output.indexed_filename))
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -248,10 +254,10 @@ class Script(object):
     experiments = refiner.get_experiments()
 
     # Dump experiments to disk
-    if self.params.refined_experiments_filename:
+    if self.params.output.refined_experiments_filename:
       from dxtbx.model.experiment.experiment_list import ExperimentListDumper
       dump = ExperimentListDumper(experiments)
-      dump.as_json(self.params.refined_experiments_filename)
+      dump.as_json(self.params.output.refined_experiments_filename)
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -305,16 +311,16 @@ class Script(object):
     # Integrate the reflections
     reflections = integrator.integrate()
 
-    if self.params.integrated_filename:
+    if self.params.output.integrated_filename:
       # Save the reflections
       Command.start('Saving {0} reflections to {1}'.format(
-          len(reflections), self.params.integrated_filename))
-      reflections.as_pickle(self.params.integrated_filename)
+          len(reflections), self.params.output.integrated_filename))
+      reflections.as_pickle(self.params.output.integrated_filename)
       Command.end('Saved {0} refelctions to {1}'.format(
-          len(reflections), self.params.integrated_filename))
+          len(reflections), self.params.output.integrated_filename))
 
-    if self.params.profile_filename:
-      with open(self.params.profile_filename, "w") as outfile:
+    if self.params.output.profile_filename:
+      with open(self.params.output.profile_filename, "w") as outfile:
         outfile.write(profile_model.dump().as_str())
 
     print ''
@@ -326,9 +332,9 @@ class Script(object):
     from time import time
     st = time()
     print '*' * 80
-    print 'Exporting measurements to', self.params.mtz_filename
+    print 'Exporting measurements to', self.params.output.mtz_filename
     print '*' * 80
-    m = export_mtz(integrated, experiments, self.params.mtz_filename)
+    m = export_mtz(integrated, experiments, self.params.output.mtz_filename)
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
     return m
