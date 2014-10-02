@@ -55,9 +55,29 @@ class Script(object):
 
     phil_scope = parse('''
 
-      strong_filename = None
+      strong_filename = strong.pickle
         .type = str
         .help = "The filename for strong reflections from spot finder output."
+
+      indexed_filename = indexed.pickle
+        .type = str
+        .help = "The filename for indexed reflections."
+
+      refined_experiments_filename = refined_experiments.json
+        .type = str
+        .help = "The filename for saving refined experimental models"
+
+      integrated_filename = integrated.pickle
+        .type = str
+        .help = "The filename for final integrated reflections."
+
+      profile_filename = profile.phil
+        .type = str
+        .help = "The filename for output reflection profile parameters"
+
+      mtz_filename = integrated.mtz
+        .type = str
+        .help = "The filename for output mtz"
 
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
       indexing {
@@ -153,7 +173,6 @@ class Script(object):
   def find_spots(self, datablock):
     from time import time
     from dials.array_family import flex
-    from dials.util.command_line import Command
     st = time()
 
     print '*' * 80
@@ -166,13 +185,12 @@ class Script(object):
     # Save the reflections to file
     print '\n' + '-' * 80
     if self.params.strong_filename:
+      from dials.util.command_line import Command
       Command.start('Saving {0} reflections to {1}'.format(
           len(observed), self.params.strong_filename))
       observed.as_pickle(self.params.strong_filename)
       Command.end('Saved {0} observed to {1}'.format(
           len(observed), self.params.strong_filename))
-
-    observed.as_pickle("strong.pickle")
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -202,7 +220,13 @@ class Script(object):
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments
 
-    indexed.as_pickle("indexed.pickle")
+    if self.params.indexed_filename:
+      from dials.util.command_line import Command
+      Command.start('Saving {0} reflections to {1}'.format(
+          len(indexed), self.params.indexed_filename))
+      indexed.as_pickle(self.params.indexed_filename)
+      Command.end('Saved {0} refelctions to {1}'.format(
+          len(indexed), self.params.indexed_filename))
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -224,9 +248,10 @@ class Script(object):
     experiments = refiner.get_experiments()
 
     # Dump experiments to disk
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
-    dump = ExperimentListDumper(experiments)
-    dump.as_json("refined_experiments.json")
+    if self.params.refined_experiments_filename:
+      from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+      dump = ExperimentListDumper(experiments)
+      dump.as_json(self.params.refined_experiments_filename)
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -280,10 +305,17 @@ class Script(object):
     # Integrate the reflections
     reflections = integrator.integrate()
 
-    # Save the reflections
-    reflections.as_pickle("integrated.pickle")
-    with open("profile.phil", "w") as outfile:
-      outfile.write(profile_model.dump().as_str())
+    if self.params.integrated_filename:
+      # Save the reflections
+      Command.start('Saving {0} reflections to {1}'.format(
+          len(reflections), self.params.integrated_filename))
+      reflections.as_pickle(self.params.integrated_filename)
+      Command.end('Saved {0} refelctions to {1}'.format(
+          len(reflections), self.params.integrated_filename))
+
+    if self.params.profile_filename:
+      with open(self.params.profile_filename, "w") as outfile:
+        outfile.write(profile_model.dump().as_str())
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -294,9 +326,9 @@ class Script(object):
     from time import time
     st = time()
     print '*' * 80
-    print 'Exporting measurements to integrated.mtz'
+    print 'Exporting measurements to', self.params.mtz_filename
     print '*' * 80
-    m = export_mtz(integrated, experiments, 'integrated.mtz')
+    m = export_mtz(integrated, experiments, self.params.mtz_filename)
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
     return m
