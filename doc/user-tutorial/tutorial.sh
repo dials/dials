@@ -52,10 +52,9 @@ dials.refine experiments.json indexed.pickle \
 # methods. pass reference reflections from indexing in to determine the
 # profile parameters...
 
-dials.integrate2 outlier.algorithm=null intensity.algorithm=fitrs \
-  refined_experiments.json reference=indexed.pickle \
+dials.integrate outlier.algorithm=null intensity.algorithm=fitrs \
+  input.experiments=refined_experiments.json input.reflections=indexed.pickle \
   nproc=$((`libtbx.show_number_of_processors` / 2))
-
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
