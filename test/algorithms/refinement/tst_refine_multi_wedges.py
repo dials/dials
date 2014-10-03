@@ -21,6 +21,7 @@ import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
+from scitbx import matrix
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 from dials.array_family import flex
 
@@ -117,10 +118,12 @@ class Test(object):
       check_format=False)
 
     for e1, e2 in zip(self._refined_experiments, regression_experiments):
-      #assert e1.crystal == e2.crystal
+      assert e1.crystal.is_similar_to(e2.crystal)
+      # FIXME need is_similar_to for detector
       #assert e1.detector == e2.detector
-      #assert e1.beam == e2.beam
-      pass
+      s0_1 = matrix.col(e1.beam.get_unit_s0())
+      s0_2 = matrix.col(e1.beam.get_unit_s0())
+      assert s0_1.accute_angle(s0_2, deg=True) < 0.0057 # ~0.1 mrad
     print "OK"
     return
 
