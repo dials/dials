@@ -24,6 +24,7 @@ class MyApp(wx.App):
   def in_lst(self, lst):
     self.frame.set_bmp(lst[0])
     print "in_lst"
+    print lst
     self.SetTopWindow(self.frame)
     self.frame.Show()
 
