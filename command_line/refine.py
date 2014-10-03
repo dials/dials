@@ -51,10 +51,13 @@ class Script(object):
                     "later inspection, replotting etc."
 
           col_select = None
-            .type = ints(value_min=0)
+            .type = str
             .help = "Specific columns to include in the plots of parameter"
-                    "correlations. Defaults to all columns. This option is"
-                    "useful when there is a large number of parameters"
+                    "correlations, either specifed by parameter name or column"
+                    "number. Defaults to all columns."
+                    "This option is useful when there is a large number of"
+                    "parameters"
+            .multiple = True
 
           steps = None
             .type = ints(value_min=0)
@@ -259,7 +262,11 @@ class Script(object):
       steps = params.output.correlation_plot.steps
       if steps is None: steps = [refined.get_nrows()-1]
 
+      # flatten list of column names
       col_select = params.output.correlation_plot.col_select
+      if len(col_select) != 0:
+        col_select = " ".join(params.output.correlation_plot.col_select).split()
+      else: col_select = None
       save_matrix = params.output.correlation_plot.save_matrix
       if save_matrix: import cPickle as pickle
 

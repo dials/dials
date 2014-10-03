@@ -1124,19 +1124,25 @@ class Refiner(object):
     if col_select is None:
       col_select = range(corrmat.all()[0])
 
-    labels = self._pred_param.get_param_names()
-    try:
-      labels = [labels[e] for e in col_select]
-    except IndexError:
-      print "Invalid selection of columns for correlation plot. No plot will be produced"
-      return None
+    all_labels = self._pred_param.get_param_names()
+    idx = []
+    for col in col_select:
+      try: # column is specified by name
+        idx.append(all_labels.index(col))
+      except ValueError: # column specified by number
+        try:
+          idx.append(int(col))
+        except ValueError:
+          print "Invalid selection of columns for correlation plot. No plot will be produced"
+          return None
+    labels = [all_labels[e] for e in idx]
     num_cols = num_rows = len(labels)
 
     from scitbx.array_family import flex
     sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
 
-    for (i, x) in enumerate(col_select):
-      for (j, y) in enumerate(col_select):
+    for (i, x) in enumerate(idx):
+      for (j, y) in enumerate(idx):
         sub_corrmat[i,j] = corrmat[x, y]
 
     return (sub_corrmat, labels)
