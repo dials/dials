@@ -279,8 +279,8 @@ class OptionParserBase(optparse.OptionParser, object):
   ''' The base class for the option parser. '''
 
   def __init__(self,
-               stdin_options=False,
                config_options=False,
+               sort_options=False,
                **kwargs):
     '''Initialise the class.'''
 
@@ -308,14 +308,14 @@ class OptionParserBase(optparse.OptionParser, object):
         dest='expert_level',
         help='Set the expert level for showing configuration parameters')
 
-    # Add a stdin option
-    if stdin_options:
+    # Add an option to sort
+    if sort_options:
       self.add_option(
-        '-i', '--stdin',
+        '-s', '--sort',
         action='store_true',
-        dest='read_stdin',
+        dest='sort',
         default=False,
-        help='Read arguments from standard input')
+        help='Sort the arguments')
 
     # Set a verbosity parameter
     self.add_option(
@@ -334,15 +334,19 @@ class OptionParserBase(optparse.OptionParser, object):
     # which phil options will be included.
     options, args = super(OptionParserBase, self).parse_args(args=args)
 
-    # Maybe read stdin
-    if hasattr(options, "read_stdin") and options.read_stdin:
+    # Read stdin if data is available
+    if not sys.stdin.isatty():
       args.extend([l.strip() for l in sys.stdin.readlines()])
+
+    # Maybe sort the data
+    if hasattr(options, "sort") and options.sort:
+      args = sorted(args)
 
     # Return the parameters
     return options, args
 
   def format_epilog(self, formatter):
-    '''Do not do formatting on epilog.'''
+    ''' Don't do formatting on epilog. '''
     if self.epilog is None:
       return ''
     return self.epilog
@@ -360,7 +364,7 @@ class OptionParser(OptionParserBase):
                read_reflections=False,
                read_datablocks_from_images=False,
                check_format=True,
-               stdin_options = False,
+               sort_options=False,
                **kwargs):
     '''Initialise the class.'''
     from dials.phil import parse
@@ -376,7 +380,7 @@ class OptionParser(OptionParserBase):
 
     # Initialise the option parser
     super(OptionParser, self).__init__(
-      stdin_options=stdin_options,
+      sort_options=sort_options,
       config_options=self.system_phil.as_str() != '',
       **kwargs)
 
@@ -458,4 +462,3 @@ def flatten_experiments(filename_object_list):
   for i in range(len(filename_object_list)):
     result.extend(filename_object_list[i].data)
   return result
-

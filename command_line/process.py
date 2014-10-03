@@ -41,7 +41,7 @@ This program will do the following:
 
     dials.process datablock.json
 
-    find . -name "images*.cbf" | dials.process -i
+    find . -name "images*.cbf" | dials.process
 
 '''
 
@@ -101,7 +101,6 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      stdin_options=True,
       phil=phil_scope,
       epilog=help_message,
       read_datablocks=True,
