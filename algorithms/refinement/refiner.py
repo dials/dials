@@ -1111,24 +1111,15 @@ class Refiner(object):
 
     return self._param_report
 
-  def parameter_correlation_plot(self, step, col_select=None):
-    """Create a correlation matrix plot between columns of the Jacobian at
-    the specified refinement step. Inspired by R's corrplot and
-    https://github.com/louridas/corrplot/blob/master/corrplot.py"""
+  def get_parameter_correlation_matrix(self, step, col_select=None):
+    """Return the correlation matrix between columns of the Jacobian at
+    the specified refinement step. The parameter col_select can be used
+    to select subsets of the full number of columns. The column labels
+    are also returned as a list of strings"""
 
     corrmat = self._refinery.get_correlation_matrix_for_step(step)
     if corrmat is None: return None
     assert corrmat.is_square_matrix()
-
-    from math import pi, sqrt
-    try:
-      import matplotlib
-      matplotlib.use('Agg')
-      import matplotlib.pyplot as plt
-      import matplotlib.cm as cm
-    except ImportError as e:
-      print "matplotlib modules not available", e
-      return None
 
     if col_select is None:
       col_select = range(corrmat.all()[0])
@@ -1141,43 +1132,14 @@ class Refiner(object):
       return None
     num_cols = num_rows = len(labels)
 
-    plt.figure(1)
-    ax = plt.subplot(1, 1, 1, aspect='equal')
-    poscm = cm.get_cmap('Blues')
-    negcm = cm.get_cmap('Reds')
+    from scitbx.array_family import flex
+    sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
+
     for (i, x) in enumerate(col_select):
       for (j, y) in enumerate(col_select):
-        d = corrmat[x, y]
-        clrmap = poscm if d >= 0 else negcm
-        d_abs = abs(d)
-        circ = plt.Circle((i, j),radius=0.9*sqrt(d_abs)/2)
-        circ.set_edgecolor('white')
-        circ.set_facecolor(clrmap(d_abs))
-        ax.add_artist(circ)
-    ax.set_xlim(-0.5, num_cols-0.5)
-    ax.set_ylim(-0.5, num_rows-0.5)
+        sub_corrmat[i,j] = corrmat[x, y]
 
-    ax.xaxis.tick_top()
-    xtickslocs = range(len(labels))
-    ax.set_xticks(xtickslocs)
-    ax.set_xticklabels(labels, rotation=30, fontsize='small', ha='left')
-
-    ax.invert_yaxis()
-    ytickslocs = range(len(labels))
-    ax.set_yticks(ytickslocs)
-    ax.set_yticklabels(labels, fontsize='small')
-
-    xtickslocs = [e + 0.5 for e in range(len(labels))]
-    ax.set_xticks(xtickslocs, minor=True)
-    ytickslocs = [e + 0.5 for e in range(len(labels))]
-    ax.set_yticks(ytickslocs, minor=True)
-    plt.grid(color='0.8', which='minor', linestyle='-')
-
-    # suppress major tick marks
-    ax.tick_params(which='major', width=0)
-
-    # FIXME should this also have a colorbar as legend?
-    return plt
+    return (sub_corrmat, labels)
 
   def print_step_table(self):
     """print useful output about refinement steps in the form of a simple table"""

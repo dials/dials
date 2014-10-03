@@ -45,6 +45,11 @@ class Script(object):
                     "the type of output file, if it is one of matplotlib's"
                     "supported types"
 
+          save_matrix = False
+            .type = bool
+            .help = "Save the matrix and column labels in a pickle file for"
+                    "later inspection, replotting etc."
+
           col_select = None
             .type = ints(value_min=0)
             .help = "Specific columns to include in the plots of parameter"
@@ -111,6 +116,73 @@ class Script(object):
       f.write(msg)
     f.close()
     return
+
+  @staticmethod
+  def parameter_correlation_plot(corrmat, labels):
+    """Create a correlation matrix plot between columns of the Jacobian at
+    the specified refinement step. Inspired by R's corrplot and
+    https://github.com/louridas/corrplot/blob/master/corrplot.py"""
+
+    try: # is corrmat a scitbx matrix?
+      corrmat = corrmat.as_flex_double_matrix()
+    except AttributeError: # assume it is already a flex double matrix
+      pass
+    assert corrmat.is_square_matrix()
+
+    nr = corrmat.all()[0]
+    assert nr == len(labels)
+
+    from math import pi, sqrt
+    try:
+      import matplotlib
+      matplotlib.use('Agg')
+      import matplotlib.pyplot as plt
+      import matplotlib.cm as cm
+    except ImportError as e:
+      print "matplotlib modules not available", e
+      return None
+
+    plt.figure(1)
+    ax = plt.subplot(1, 1, 1, aspect='equal')
+    poscm = cm.get_cmap('Blues')
+    negcm = cm.get_cmap('Reds')
+
+    for x in xrange(nr):
+      for y in xrange(nr):
+        d = corrmat[x, y]
+        clrmap = poscm if d >= 0 else negcm
+        d_abs = abs(d)
+        circ = plt.Circle((x, y),radius=0.9*sqrt(d_abs)/2)
+        circ.set_edgecolor('white')
+        circ.set_facecolor(clrmap(d_abs))
+        ax.add_artist(circ)
+    ax.set_xlim(-0.5, nr-0.5)
+    ax.set_ylim(-0.5, nr-0.5)
+
+    ax.xaxis.tick_top()
+    xtickslocs = range(len(labels))
+    ax.set_xticks(xtickslocs)
+    ax.set_xticklabels(labels, rotation=30, fontsize='small', ha='left')
+
+    ax.invert_yaxis()
+    ytickslocs = range(len(labels))
+    ax.set_yticks(ytickslocs)
+    ax.set_yticklabels(labels, fontsize='small')
+
+    xtickslocs = [e + 0.5 for e in range(len(labels))]
+    ax.set_xticks(xtickslocs, minor=True)
+    ytickslocs = [e + 0.5 for e in range(len(labels))]
+    ax.set_yticks(ytickslocs, minor=True)
+    plt.grid(color='0.8', which='minor', linestyle='-')
+
+    # suppress major tick marks
+    ax.tick_params(which='major', width=0)
+
+    # need this otherwise text gets clipped
+    plt.tight_layout()
+
+    # FIXME should this also have a colorbar as legend?
+    return plt
 
   def run(self):
     '''Execute the script.'''
@@ -188,16 +260,26 @@ class Script(object):
       if steps is None: steps = [refined.get_nrows()-1]
 
       col_select = params.output.correlation_plot.col_select
+      save_matrix = params.output.correlation_plot.save_matrix
+      if save_matrix: import cPickle as pickle
 
       num_plots = 0
       for step in steps:
-        fname = root + "_step%02d_" % step + ext
+        fname_base = root + "_step%02d" % step
+        plot_fname = fname_base + ext
 
-        plt = refiner.parameter_correlation_plot(step, col_select)
+        corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
+        plt = self.parameter_correlation_plot(corrmat, labels)
         if plt is not None:
-          plt.tight_layout()
-          plt.savefig(fname)
+          plt.savefig(plot_fname)
           num_plots += 1
+
+          if save_matrix:
+            mat_fname = fname_base + ".pickle"
+            with open(mat_fname, 'wb') as handle:
+              py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
+              pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
+
       if num_plots == 0:
         print "Sorry, no parameter correlation plots were produced. Please set " \
               "track_parameter_correlation=True to ensure correlations are " \
