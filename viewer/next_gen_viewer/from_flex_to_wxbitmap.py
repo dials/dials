@@ -26,9 +26,7 @@ class wxbitmap_convert(object):
       print "error in entered data"
       self.depth = 0
 
-    data2d = data_in[0:1, :, :]
-    data2d_np = data2d.as_numpy_array()
-    self.np_3d_block = data2d_np
+    self.np_3d_block = data_in.as_numpy_array()
 
 
   def get_np(self):
@@ -36,8 +34,7 @@ class wxbitmap_convert(object):
 
 
   def get_wxbitmap_lst(self):
-    lst_img = []
     local_bmp = wxbmp_from_np_array()
-    wxbmp = local_bmp.get_bmp(self.np_3d_block)
-    lst_img.append(wxbmp)
+    wxbmplst = local_bmp.get_bmp_lst(self.np_3d_block)
+    lst_img = wxbmplst
     return lst_img

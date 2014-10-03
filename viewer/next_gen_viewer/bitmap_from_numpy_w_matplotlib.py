@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 class wxbmp_from_np_array(object):
 
-  def get_bmp(self, data_3d_in):
+  def get_bmp_lst(self, data_3d_in):
     print "data_3d_in =\n", data_3d_in
 
     print "data_3d_in[0:1, :, 0:1] =\n", data_3d_in[0:1, :, 0:1]
