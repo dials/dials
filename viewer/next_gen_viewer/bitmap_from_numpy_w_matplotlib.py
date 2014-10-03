@@ -19,44 +19,46 @@ import matplotlib.pyplot as plt
 
 class wxbmp_from_np_array(object):
 
-  def get_bmp(self, data2d_in):
-    print "data2d_in =", data2d_in
+  def get_bmp(self, data_3d_in):
+    print "data_3d_in =", data_3d_in
 
-    print "data2d_in[0:1, :, 0:1] =", data2d_in[0:1, :, 0:1]
-    print "data2d_in[0:1, 0:1, :] =", data2d_in[0:1, 0:1, :]
+    print "data_3d_in[0:1, :, 0:1] =\n", data_3d_in[0:1, :, 0:1]
+    print "data_3d_in[0:1, 0:1, :] =\n", data_3d_in[0:1, 0:1, :]
 
-    print "data2d_in.shape[0] =", data2d_in.shape[0]
-    print "data2d_in.shape[1] =", data2d_in.shape[1]
-    print "data2d_in.shape[2] =", data2d_in.shape[2]
+    print "data_3d_in.shape[0] =\n", data_3d_in.shape[0]
+    print "data_3d_in.shape[1] =\n", data_3d_in.shape[1]
+    print "data_3d_in.shape[2] =\n", data_3d_in.shape[2]
 
-    xmax = data2d_in.shape[1]
-    ymax = data2d_in.shape[2]
+    self.xmax = data_3d_in.shape[1]
+    self.ymax = data_3d_in.shape[2]
 
-    print "xmax, ymax =", xmax, ymax
+    self.data2d = np.zeros( (self.xmax, self.ymax),'double')
+    self.data2d[:, :] = data_3d_in[0:1, :, :]
 
-    data2d = np.zeros( (xmax, ymax),'double')
-    print "data2d =", data2d
-    data2d[:, :] = data2d_in[0:1, :, :]
-    print "data2d =", data2d
+    self.vl_max = np.amax(data_3d_in)
+    self.vl_min = np.amin(data_3d_in)
+    return self.bmp_lst()
 
-    vl_max = np.amax(data2d)
-    vl_min = np.amin(data2d)
-    d = vl_max - vl_min
-    vl_mid_low = vl_min + d / 3.0
-    vl_mid_hig = vl_max - d / 3.0
+
+  def bmp_lst(self):
+
+    d = self.vl_max - self.vl_min
+    vl_mid_low = self.vl_min + d / 3.0
+    vl_mid_hig = self.vl_max - d / 3.0
 
     lc_fig = plt.figure(frameon=False)
-    lc_fig.set_size_inches(xmax * .6, ymax * .6)
+    lc_fig.set_size_inches(self.xmax * .6, self.ymax * .6)
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     lc_fig.add_axes(ax)
-    plt.imshow(np.transpose(data2d), interpolation = "nearest", cmap = 'hot')
+    plt.imshow(np.transpose(self.data2d)
+               , interpolation = "nearest", cmap = 'hot')
 
-    print "xmax =", xmax
-    print "ymax =", ymax
-    for xpos in range(xmax):
-      for ypos in range(ymax):
-        f_num = data2d[xpos,ypos]
+    print "self.xmax =", self.xmax
+    print "self.ymax =", self.ymax
+    for xpos in range(self.xmax):
+      for ypos in range(self.ymax):
+        f_num = self.data2d[xpos,ypos]
         g = float("{0:.2f}".format(float(f_num)))
 
         txt_dat = str(g)

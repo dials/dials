@@ -22,7 +22,7 @@ class MyApp(wx.App):
 
 
   def in_lst(self, lst):
-    self.frame.set_bmp(lst[2])
+    self.frame.set_bmp(lst[0])
     print "in_lst"
     self.SetTopWindow(self.frame)
     self.frame.Show()
@@ -57,7 +57,7 @@ if(__name__ == "__main__"):
 
   #testing wxbitmap_convert as a class
   a = wxbitmap_convert(data2d)
-  print "calling obj", a.get_np_lst()
+  print "calling obj", a.get_np()
   print a.__doc__
 
 
@@ -74,9 +74,7 @@ if(__name__ == "__main__"):
   masksize_xyd[0, 1, 1] = 5
 
   #testing wxbitmap_convert as a function
-  print wxbitmap_convert(datasize_xyd).get_np_lst()
-  #print "calling obj", b.get_np_lst()
-  #print wxbitmap_convert(datasize_xyd).get_wxbitmap_lst()
+  print wxbitmap_convert(datasize_xyd).get_np()
 
   app = MyApp(redirect=False)
   app.in_lst(wxbitmap_convert(datasize_xyd).get_wxbitmap_lst())

@@ -19,7 +19,6 @@ class wxbitmap_convert(object):
   a 3D flex array to a list of WxBitmaps
   '''
   def __init__(self, data_in):
-    self.lst_np = []
 
     try:
       self.depth = data_in.all()[0]
@@ -27,21 +26,18 @@ class wxbitmap_convert(object):
       print "error in entered data"
       self.depth = 0
 
-    for z_from in range(self.depth):
-      data2d = data_in[z_from:z_from + 1, :, :]
-      #data2d.reshape(flex.grid(data_in.all()[1:]))
-      data2d_np = data2d.as_numpy_array()
-      self.lst_np.append(data2d_np)
+    data2d = data_in[0:1, :, :]
+    data2d_np = data2d.as_numpy_array()
+    self.np_3d_block = data2d_np
 
 
-  def get_np_lst(self):
-    return self.lst_np
+  def get_np(self):
+    return self.np_3d_block
 
 
   def get_wxbitmap_lst(self):
     lst_img = []
-    for np_elm in self.lst_np:
-      local_bmp = wxbmp_from_np_array()
-      wxbmp = local_bmp.get_bmp(np_elm)
-      lst_img.append(wxbmp)
+    local_bmp = wxbmp_from_np_array()
+    wxbmp = local_bmp.get_bmp(self.np_3d_block)
+    lst_img.append(wxbmp)
     return lst_img
