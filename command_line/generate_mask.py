@@ -10,23 +10,22 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from iotbx.phil import parse
+
+phil_scope = parse("""
+  border = 0
+    .type = int
+    .help = "The border around the edge of the image."
+
+  output {
+    mask = mask.p
+      .type = str
+      .help = "Name of output mask file"
+  }
+""", process_includes=True)
 
 class MaskGenerator(object):
   ''' Generate a mask. '''
-
-  phil = '''
-
-    border = 0
-      .type = int
-      .help = "The border around the edge of the image."
-
-    output {
-      mask = mask.p
-        .type = str
-        .help = "Name of output mask file"
-    }
-
-  '''
 
   def __init__(self, params):
     ''' Set the parameters. '''
@@ -78,10 +77,6 @@ class Script(object):
   def __init__(self):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
-
-    # Create the phil scope
-    phil_scope = parse(MaskGenerator.phil)
 
     # Create the parser
     usage = "usage: %prog [options] datablock.json"
