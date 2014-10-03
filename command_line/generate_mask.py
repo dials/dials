@@ -20,6 +20,12 @@ class MaskGenerator(object):
       .type = int
       .help = "The border around the edge of the image."
 
+    output {
+      mask = mask.p
+        .type = str
+        .help = "Name of output mask file"
+    }
+
   '''
 
   def __init__(self, params):
@@ -86,7 +92,6 @@ class Script(object):
 
   def run(self):
     ''' Run the script. '''
-    from dxtbx.datablock import DataBlockFactory
     from dials.util.options import flatten_datablocks
     import cPickle as pickle
 
@@ -110,7 +115,7 @@ class Script(object):
     mask = generator.generate(imageset)
 
     # Save the mask to file
-    pickle.dump(mask, open("mask.p", "w"))
+    pickle.dump(mask, open(params.output.mask, "w"))
 
 if __name__ == '__main__':
   from dials.util import halraiser

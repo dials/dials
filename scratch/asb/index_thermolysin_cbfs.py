@@ -7,6 +7,7 @@ def do_work(path):
   root        = os.path.dirname(path)
   basename    = os.path.splitext(os.path.basename(path))[0]
   datablock   = os.path.join(root, basename + "_datablock.json")
+  mask        = os.path.join(root, basename + "_mask.p")
   spots       = os.path.join(root, basename + "_strong.pickle")
   indexed     = os.path.join(root, basename + "_indexed.pickle")
   experiments = os.path.join(root, basename + "_experiments.json")
@@ -20,7 +21,12 @@ def do_work(path):
   easy_run.call(cmd)
   if not os.path.exists(datablock): return
 
-  cmd = "dials.find_spots input.datablock=%s threshold.xds.sigma_strong=15 min_spot_size=3 output.reflections=%s"%(datablock, spots)
+  cmd = "dials.generate_mask %s border=1 output.mask=%s"%(datablock, mask)
+  print cmd
+  easy_run.call(cmd)
+  if not os.path.exists(mask): return
+
+  cmd = "dials.find_spots input.datablock=%s threshold.xds.sigma_strong=15 min_spot_size=3 lookup.mask=%s output.reflections=%s"%(datablock, mask, spots)
   print cmd
   easy_run.call(cmd)
   if not os.path.exists(spots): return
