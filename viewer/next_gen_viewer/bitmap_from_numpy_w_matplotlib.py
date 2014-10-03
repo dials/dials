@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 class wxbmp_from_np_array(object):
 
   def get_bmp(self, data_3d_in):
-    print "data_3d_in =", data_3d_in
+    print "data_3d_in =\n", data_3d_in
 
     print "data_3d_in[0:1, :, 0:1] =\n", data_3d_in[0:1, :, 0:1]
     print "data_3d_in[0:1, 0:1, :] =\n", data_3d_in[0:1, 0:1, :]
@@ -29,36 +29,40 @@ class wxbmp_from_np_array(object):
     print "data_3d_in.shape[1] =\n", data_3d_in.shape[1]
     print "data_3d_in.shape[2] =\n", data_3d_in.shape[2]
 
+    z_dp = data_3d_in.shape[0]
     self.xmax = data_3d_in.shape[1]
     self.ymax = data_3d_in.shape[2]
 
-    self.data2d = np.zeros( (self.xmax, self.ymax),'double')
-    self.data2d[:, :] = data_3d_in[0:1, :, :]
+    self.np_slice_lst = []
+    tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
+
+    for z in range(z_dp):
+      tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
+      self.np_slice_lst.append(tmp_data2d)
 
     self.vl_max = np.amax(data_3d_in)
     self.vl_min = np.amin(data_3d_in)
-    return self.bmp_lst()
+    wx_bmp_lst = []
+    for single_np_2d in self.np_slice_lst:
+      wx_bmp_lst.append(self.wxbmp(single_np_2d))
 
+    return wx_bmp_lst
 
-  def bmp_lst(self):
+  def wxbmp(self, np_2d_tmp):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
     vl_mid_hig = self.vl_max - d / 3.0
-
     lc_fig = plt.figure(frameon=False)
     lc_fig.set_size_inches(self.xmax * .6, self.ymax * .6)
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     lc_fig.add_axes(ax)
-    plt.imshow(np.transpose(self.data2d)
-               , interpolation = "nearest", cmap = 'hot')
+    plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot')
 
-    print "self.xmax =", self.xmax
-    print "self.ymax =", self.ymax
     for xpos in range(self.xmax):
       for ypos in range(self.ymax):
-        f_num = self.data2d[xpos,ypos]
+        f_num = np_2d_tmp[xpos,ypos]
         g = float("{0:.2f}".format(float(f_num)))
 
         txt_dat = str(g)

@@ -40,7 +40,7 @@ class MyFrame(wx.Frame):
 
 
   def set_bmp(self, bmp_in):
-    self.bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_in)
+    self.bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_in[0])
 
 if(__name__ == "__main__"):
   size_xy = 5
