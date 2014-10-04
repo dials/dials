@@ -51,7 +51,7 @@ class DetectorRefiner(object):
     reflections.do_outlier_rejection=True
     reflections.minimum_number_of_reflections=1
   }""")
-  from dials.data.refinement import phil_scope as refinement_phil
+  from dials.algorithms.refinement.refiner import phil_scope as refinement_phil
   working_phil = refinement_phil.fetch(sources=[user_phil])
 
   def __call__(self, experiments, reflections):
@@ -75,8 +75,9 @@ class CrystalRefiners(object):
     }
     reflections.do_outlier_rejection=True
     reflections.minimum_number_of_reflections=1
+    refinery.engine=LBFGScurvs
   }""")
-  from dials.data.refinement import phil_scope as refinement_phil
+  from dials.algorithms.refinement.refiner import phil_scope as refinement_phil
   working_phil = refinement_phil.fetch(sources=[user_phil])
 
   def __call__(self, experiments, reflections):
@@ -89,7 +90,7 @@ class CrystalRefiners(object):
       print "Refining crystal", iexp
       # reflection subset for a single experiment
       refs = reflections.select(reflections['id'] == iexp)
-      refs['id'] = flex.int(len(refs),0)
+      refs['id'] = flex.size_t(len(refs),0)
       # experiment list for a single experiment
       exps=ExperimentList()
       exps.append(exp)
@@ -142,7 +143,7 @@ if __name__ =="__main__":
 
   for i, line in e:
     refs, exp = load_input(line.experiments, line.reflections)
-    refs['id'] = flex.int(len(refs),i)
+    refs['id'] = flex.size_t(len(refs),i)
     reflections.extend(refs)
     experiments.append(experiment_from_crystal(exp.crystal))
 
