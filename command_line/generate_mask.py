@@ -17,6 +17,10 @@ phil_scope = parse("""
     .type = int
     .help = "The border around the edge of the image."
 
+  use_trusted_range = True
+    .type = bool
+    .help = "Use the trusted range to mask bad pixels."
+
   output {
     mask = mask.p
       .type = str
@@ -49,9 +53,12 @@ class MaskGenerator(object):
     for im, panel in zip(image, detector):
 
       # Create the basic mask from the trusted range
-      low, high = panel.get_trusted_range()
-      imd = im.as_double()
-      mask = (imd > low) & (imd < high)
+      if self.params.use_trusted_range:
+        low, high = panel.get_trusted_range()
+        imd = im.as_double()
+        mask = (imd > low) & (imd < high)
+      else:
+        mask = flex.bool(flex.grid(im.all()), True)
 
       # Add a border around the image
       if self.params.border > 0:
