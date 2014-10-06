@@ -16,19 +16,15 @@ import wx
 
 
 class show_3d(wx.App):
-  def OnInit(self):
+  def OnInit(self, lst):
     self.frame = MyFrame(None, title="Bitmaps")
     print "______________________________________________________________"
-    return True
-
-
-  def in_lst(self, lst):
     self.frame.set_bmp(lst)
-    print "in_lst"
     print lst
+    print "______________________________________________________________"
     self.SetTopWindow(self.frame)
     self.frame.Show()
-
+    return True
 
 class MyFrame(wx.Frame):
   def __init__(self, parent, id = wx.ID_ANY, title = "",
@@ -78,6 +74,5 @@ if(__name__ == "__main__"):
   #testing wxbitmap_convert as a function
   print wxbitmap_convert(datasize_xyd).get_np()
 
-  app = show_3d(redirect=False)
-  app.in_lst(wxbitmap_convert(datasize_xyd).get_wxbitmap_lst())
+  app = show_3d(redirect=False, wxbitmap_convert(datasize_xyd).get_wxbitmap_lst())
   app.MainLoop()
