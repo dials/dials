@@ -72,6 +72,7 @@ class XDSThresholdStrategy(ThresholdStrategy):
         kwargs The keyword arguments
 
     '''
+
     # Initialise the base class
     ThresholdStrategy.__init__(self, **kwargs)
 
@@ -81,6 +82,9 @@ class XDSThresholdStrategy(ThresholdStrategy):
     self._n_sigma_b   = kwargs.get('n_sigma_b', 6)
     self._n_sigma_s   = kwargs.get('n_sigma_s', 3)
     self._min_count   = kwargs.get('min_count', 2)
+
+    # Create a buffer
+    self.algorithm = {}
 
   def __call__(self, image, mask):
     '''Call the thresholding function
@@ -93,27 +97,26 @@ class XDSThresholdStrategy(ThresholdStrategy):
 
     '''
     from dials.algorithms.image import threshold
+    from dials.array_family import flex
 
-    # Do the thresholding, if gain is given then use gain threshold,
-    # otherwise do normal poisson exclusion (fano) threshold
-    result = None
+    # Initialise the algorithm
+    try:
+      algorithm, result = self.algorithm[image.all()]
+    except Exception:
+      algorithm = threshold.DispersionThreshold(
+        image.all(),
+        self._kernel_size,
+        self._n_sigma_b,
+        self._n_sigma_s,
+        self._min_count)
+      result = flex.bool(flex.grid(image.all()))
+      self.algorithm[image.all()] = (algorithm, result)
+
+    # Compute the threshold
     if self._gain:
-      result = threshold.kabsch_w_gain(
-        image.as_double(),
-        mask,
-        self._gain,
-        self._kernel_size,
-        self._n_sigma_b,
-        self._n_sigma_s,
-        self._min_count)
+      algorithm(image, mask, self._gain, result)
     else:
-      result = threshold.kabsch(
-        image.as_double(),
-        mask,
-        self._kernel_size,
-        self._n_sigma_b,
-        self._n_sigma_s,
-        self._min_count)
+      algorithm(image, mask, result)
 
     # Return the result
     return result

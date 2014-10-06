@@ -72,6 +72,20 @@ namespace dials { namespace algorithms { namespace boost_python {
     local_threshold_suite<float>();
     local_threshold_suite<double>();
 
+
+    class_<DispersionThreshold>("DispersionThreshold", no_init)
+      .def(init< int2,
+                 int2,
+                 double,
+                 double,
+                 int >())
+      .def("__call__", &DispersionThreshold::threshold<int>)
+      .def("__call__", &DispersionThreshold::threshold<double>)
+      .def("__call__", &DispersionThreshold::threshold_w_gain<int>)
+      .def("__call__", &DispersionThreshold::threshold_w_gain<double>)
+      ;
+
+
     class_<KabschDebug>("KabschDebug", no_init)
       .def(init<const af::const_ref<double, af::c_grid<2> > &,
                 const af::const_ref<bool, af::c_grid<2> > &,
