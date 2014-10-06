@@ -752,11 +752,12 @@ class SpotFinderFactory(object):
     return FilterRunner(filters)
 
   @staticmethod
-  def load_image(filename):
-    ''' Given a filename, load an image
+  def load_image(filename_or_data):
+    ''' Given a filename, load an image. If the data is already loaded,
+    return it.
 
     Params:
-        filename The input filename
+        filename_or_data The input filename (or data)
 
     Returns:
         The image or None
@@ -765,8 +766,12 @@ class SpotFinderFactory(object):
     import cPickle as pickle
 
     # If no filename is set then return None
-    if not filename:
+    if not filename_or_data:
       return None
 
+    # If it's already loaded, return early
+    if type(filename_or_data) is tuple:
+      return filename_or_data
+
     # Read the image and return the image data
-    return pickle.load(open(filename))
+    return pickle.load(open(filename_or_data))
