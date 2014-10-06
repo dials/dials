@@ -27,6 +27,8 @@ class Script(object):
 
   def __init__(self):
     '''Initialise the script.'''
+    from dials.util.options import OptionParser
+
 
     # The script usage
     usage  = "usage: %prog [options] experiment.json"
@@ -34,25 +36,24 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      epilog=help_message)
+      epilog=help_message,
+      read_reflections=True)
 
   def run(self):
 
     ''' Show the reflections one by one in an interactive way '''
-    from dials.util.command_line import Importer
+    from dials.util.options import flatten_reflections
     from dials.viewer.reflection_view import viewer_App
 
     # Parse the command line
-    params, options, args = self.parser.parse_args(show_diff_phil=True)
-    if len(args) == 0:
+    params, options = self.parser.parse_args(show_diff_phil=True)
+    reflections = flatten_reflections(params.input.reflections)
+    if len(reflections) == 0:
       self.parser.print_help()
       return
 
-    importer = Importer(args, include=["reflections", "experiments"])
-    my_tables = importer.reflections
-
     ''' opens and closes the viewer for each new reflection table '''
-    for table in my_tables:
+    for table in reflections:
       My_app = viewer_App(redirect=False)
       My_app.table_in(table)
       My_app.MainLoop()

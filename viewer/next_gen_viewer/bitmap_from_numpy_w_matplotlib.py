@@ -20,14 +20,6 @@ import matplotlib.pyplot as plt
 class wxbmp_from_np_array(object):
 
   def get_bmp_lst(self, data_3d_in):
-    print "data_3d_in =\n", data_3d_in
-
-    print "data_3d_in[0:1, :, 0:1] =\n", data_3d_in[0:1, :, 0:1]
-    print "data_3d_in[0:1, 0:1, :] =\n", data_3d_in[0:1, 0:1, :]
-
-    print "data_3d_in.shape[0] =\n", data_3d_in.shape[0]
-    print "data_3d_in.shape[1] =\n", data_3d_in.shape[1]
-    print "data_3d_in.shape[2] =\n", data_3d_in.shape[2]
 
     z_dp = data_3d_in.shape[0]
     self.xmax = data_3d_in.shape[1]
