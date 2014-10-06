@@ -101,7 +101,7 @@ class XDSThresholdStrategy(ThresholdStrategy):
 
     # Initialise the algorithm
     try:
-      algorithm, result = self.algorithm[image.all()]
+      algorithm = self.algorithm[image.all()]
     except Exception:
       algorithm = threshold.DispersionThreshold(
         image.all(),
@@ -109,10 +109,10 @@ class XDSThresholdStrategy(ThresholdStrategy):
         self._n_sigma_b,
         self._n_sigma_s,
         self._min_count)
-      result = flex.bool(flex.grid(image.all()))
-      self.algorithm[image.all()] = (algorithm, result)
+      self.algorithm[image.all()] = algorithm
 
     # Compute the threshold
+    result = flex.bool(flex.grid(image.all()))
     if self._gain:
       algorithm(image, mask, self._gain, result)
     else:

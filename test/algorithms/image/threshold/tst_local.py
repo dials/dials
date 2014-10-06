@@ -25,6 +25,7 @@ class Test:
     self.tst_kabsch()
     self.tst_kabsch_w_gain()
     self.tst_kabsch_debug()
+    self.tst_dispersion_threshold()
 
   def tst_niblack(self):
     from dials.algorithms.image.threshold import niblack
@@ -79,6 +80,45 @@ class Test:
     debug = KabschDebug(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
     result2 = debug.final_mask()
     assert(result1.all_eq(result2))
+    print 'OK'
+
+  def tst_dispersion_threshold(self):
+    from dials.algorithms.image.threshold import kabsch, kabsch_w_gain
+    from dials.algorithms.image.threshold import DispersionThreshold
+    from dials.array_family import flex
+    nsig_b = 3
+    nsig_s = 3
+    algorithm = DispersionThreshold(
+      self.image.all(),
+      self.size,
+      nsig_b,
+      nsig_s,
+      self.min_count)
+
+    result1 = kabsch(
+      self.image,
+      self.mask,
+      self.size,
+      nsig_b,
+      nsig_s,
+      self.min_count)
+
+    result2 = kabsch_w_gain(
+      self.image,
+      self.mask,
+      self.gain,
+      self.size,
+      nsig_b,
+      nsig_s,
+      self.min_count)
+
+    result3 = flex.bool(flex.grid(self.image.all()))
+    result4 = flex.bool(flex.grid(self.image.all()))
+    algorithm(self.image, self.mask, result3)
+    algorithm(self.image, self.mask, self.gain, result4)
+    assert(result1 == result3)
+    assert(result2 == result4)
+
     print 'OK'
 
 if __name__ == '__main__':

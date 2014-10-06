@@ -386,7 +386,7 @@ namespace dials { namespace algorithms {
       }
 
       // Allocate the buffer
-      std::size_t element_size = sizeof(int) + sizeof(double) + sizeof(double);
+      std::size_t element_size = sizeof(Data<double>);
       buffer_.resize(element_size * image_size[0] * image_size[1]);
     }
 
