@@ -166,7 +166,7 @@ class XDSFileImporter(object):
     if params.input.xds_file is None:
       xds_file = XDSFileImporter.find_best_xds_file(self.args[0])
     else:
-      xds_file = os.path.join(self.args[0], params.xds_file)
+      xds_file = os.path.join(self.args[0], params.input.xds_file)
 
     # Check a file is given
     if xds_file is None:
