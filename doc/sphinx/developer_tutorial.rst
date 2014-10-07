@@ -1,7 +1,7 @@
 Developer Tutorial
 ==================
 
-DIALS has been designed to be extendible. If you've got a great idea for a new
+DIALS has been designed to be extensible. If you've got a great idea for a new
 integration algorithm, then, with a bit of work, you should be able to get it
 running within the DIALS framework. The following tutorial applies for both
 developers looking to put their algorithms within DIALS itself as well as for
