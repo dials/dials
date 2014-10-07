@@ -483,6 +483,7 @@ scratch/asb/in_memory_process.py -text
 scratch/asb/in_memory_process2.py -text
 scratch/asb/index_thermolysin_cbfs.py -text
 scratch/asb/plot_deltapsi_vs_2theta.py -text
+scratch/asb/print_refquad_input.py -text
 scratch/asb/refine_quadrants.py -text
 scratch/asb/refine_quadrants_hybrid.py -text
 scratch/asb/refine_quadrants_hybrid_mpi.py -text
