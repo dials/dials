@@ -59,6 +59,13 @@ class Script(object):
         .type = bool
         .help = "For JSON output use compact representation"
 
+      input {
+        template = None
+          .type = str
+          .help = "The image sweep template"
+          .multiple = True
+      }
+
     ''')
 
     # Create the option parser
@@ -72,6 +79,7 @@ class Script(object):
 
   def run(self):
     ''' Parse the options. '''
+    from dxtbx.datablock import DataBlockTemplateImporter
     from dials.util.options import flatten_datablocks
 
     # Parse the command line arguments
@@ -80,8 +88,17 @@ class Script(object):
 
     # Check we have some filenames
     if len(datablocks) == 0:
-      self.parser.print_help()
-      exit(0)
+
+      # Check if a template has been set and print help if not, otherwise try to
+      # import the images based on the template input
+      if len(params.input.template) == 0:
+        self.parser.print_help()
+        exit(0)
+      else:
+        importer = DataBlockTemplateImporter(
+          params.input.template,
+          options.verbose)
+        datablocks = importer.datablocks
 
     # Loop through the data blocks
     for i, datablock in enumerate(datablocks):
