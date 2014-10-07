@@ -10,15 +10,18 @@ class iner_panel(wx.Panel):
 
         print "Hi"
 
-        data2d = np.arange( 5 * 5, dtype = 'uintc').reshape( 5, 5 )
+        data2d = np.arange( 7 * 6, dtype = 'uintc').reshape( 7, 6 )
         bmp = GetBitmap_from_np_array(data2d)
         local_bmp = wx.StaticBitmap(self, bitmap=bmp)
 
-        #to_test = '''
+        data2d_ag = np.arange( 6 * 7, dtype = 'uintc').reshape( 6, 7 )
+        bmp_ag = GetBitmap_from_np_array(data2d_ag)
+        local_bmp_ag = wx.StaticBitmap(self, bitmap=bmp_ag)
+
         self.top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.top_sizer.Add(local_bmp, 1, wx.EXPAND)
+        self.top_sizer.Add(local_bmp, 1, wx.RIGHT)
+        self.top_sizer.Add(local_bmp_ag, 1, wx.LEFT)
         self.SetSizer(self.top_sizer)
-        #'''
 
 class MyFrame(wx.Frame):
     """ We simply derive a new class of Frame. """
@@ -26,11 +29,12 @@ class MyFrame(wx.Frame):
         wx.Frame.__init__(self, parent, title=title, size=wx.DefaultSize)
 
         # Attributes
-        self.panel = iner_panel(self)
-
+        self.panel_01 = iner_panel(self)
+        self.panel_02 = iner_panel(self)
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.panel, 1, wx.EXPAND)
+        sizer.Add(self.panel_01, 1, wx.EXPAND)
+        sizer.Add(self.panel_02, 1, wx.EXPAND)
         self.SetSizer(sizer)
 
         self.Show(True)
