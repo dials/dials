@@ -13,6 +13,8 @@ from __future__ import division
 from dials.array_family import flex
 from from_flex_to_wxbitmap import wxbitmap_convert
 import wx
+import wx.lib.scrolledpanel as scroll_pan
+
 
 class show_3d(object):
   def __init__(self, data_xyz_in):
@@ -41,7 +43,7 @@ class MyFrame(wx.Frame):
     super(MyFrame, self).__init__(parent, id, title,
                                   pos, size, style, name)
     # Attributes
-    self.panel = wx.Panel(self)
+    self.panel = scroll_pan.ScrolledPanel(self)
 
   def set_bmp(self, bmp_in):
     self.img_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -51,7 +53,9 @@ class MyFrame(wx.Frame):
       self.img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
 
 
-    self.panel.SetSizerAndFit(self.img_sizer)
+    self.panel.SetSizer(self.img_sizer)
+    self.panel.SetupScrolling()
+
 
 if(__name__ == "__main__"):
   size_xy = 5
