@@ -46,8 +46,11 @@ class MyFrame(wx.Frame):
   def set_bmp(self, bmp_in):
     self.img_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-    local_bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_in[2])
-    self.img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
+    for bmp_lst in bmp_in:
+      local_bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_lst)
+      self.img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
+
+
     self.panel.SetSizerAndFit(self.img_sizer)
 
 if(__name__ == "__main__"):
