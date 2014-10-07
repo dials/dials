@@ -1,11 +1,13 @@
 import os
 import wx
 import numpy as np
-from dials.viewer.img_utilities import GetBitmap_from_np_array
+
+from bitmap_from_numpy import GetBitmap_from_np_array
 
 class iner_panel(wx.Panel):
     def __init__(self, outer_frame):
         wx.Panel.__init__(self, outer_frame)
+
         print "Hi"
 
         data2d = np.arange( 5 * 5, dtype = 'uintc').reshape( 5, 5 )
@@ -22,7 +24,6 @@ class MyFrame(wx.Frame):
     """ We simply derive a new class of Frame. """
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=wx.DefaultSize)
-
 
         # Attributes
         self.panel = iner_panel(self)

@@ -1,7 +1,7 @@
 import os
 import wx
 import numpy as np
-from dials.viewer.img_utilities import GetBitmap_from_np_array
+from bitmap_from_numpy import GetBitmap_from_np_array
 
 class iner_panel(wx.Panel):
     def __init__(self, outer_frame):
