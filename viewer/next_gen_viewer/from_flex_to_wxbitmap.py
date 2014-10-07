@@ -35,6 +35,7 @@ class wxbitmap_convert(object):
 
   def get_wxbitmap_lst(self):
     local_bmp = wxbmp_from_np_array()
-    wxbmplst = local_bmp.get_bmp_lst(self.np_3d_block)
-    lst_img = wxbmplst
+
+    lst_img = local_bmp.get_bmp_lst(self.np_3d_block)
+
     return lst_img

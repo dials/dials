@@ -43,15 +43,17 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-
   def set_bmp(self, bmp_in):
-    self.bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_in[1])
+    local_bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_in[2])
+    self.img_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    self.img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
+    self.panel.SetSizerAndFit(self.img_sizer)
 
 if(__name__ == "__main__"):
   size_xy = 5
 
   data_xyz_flex = flex.double(flex.grid(size_xy, size_xy, size_xy),15)
-  data_xyz_flex[1, 1, 1] = 50
+  data_xyz_flex[2, 1, 1] = 50
 
   for frm in range(size_xy):
     for row in range(size_xy):

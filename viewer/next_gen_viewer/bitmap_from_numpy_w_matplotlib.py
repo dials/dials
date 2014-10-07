@@ -33,11 +33,11 @@ class wxbmp_from_np_array(object):
     tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
     for z in range(z_dp):
       tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-      wx_bmp_lst.append(self.wxbmp(tmp_data2d))
+      wx_bmp_lst.append(self._wxbmp(tmp_data2d))
 
     return wx_bmp_lst
 
-  def wxbmp(self, np_2d_tmp):
+  def _wxbmp(self, np_2d_tmp):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
