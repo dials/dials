@@ -42,19 +42,18 @@ class MyFrame(wx.Frame):
                name = "MyFrame"):
     super(MyFrame, self).__init__(parent, id, title,
                                   pos, size, style, name)
-    # Attributes
-    self.panel = scroll_pan.ScrolledPanel(self)
+
+    self.scrl_panel = scroll_pan.ScrolledPanel(self)
 
   def set_bmp(self, bmp_in):
-    self.img_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    img_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
     for bmp_lst in bmp_in:
-      local_bitmap = wx.StaticBitmap(self.panel, bitmap = bmp_lst)
-      self.img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
+      local_bitmap = wx.StaticBitmap(self.scrl_panel, bitmap = bmp_lst)
+      img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
 
-
-    self.panel.SetSizer(self.img_sizer)
-    self.panel.SetupScrolling()
+    self.scrl_panel.SetSizer(img_sizer)
+    self.scrl_panel.SetupScrolling()
 
 
 if(__name__ == "__main__"):
