@@ -52,7 +52,6 @@ class MyFrame(wx.Frame):
       img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
 
 
-
     ToggleButton = wx.Button(scrl_panel, label="Toggle Show I")
     img_sizer.Add(ToggleButton, 0, wx.LEFT | wx.ALL,8)
     ToggleButton.Bind(wx.EVT_BUTTON, self.OnTglBut)
