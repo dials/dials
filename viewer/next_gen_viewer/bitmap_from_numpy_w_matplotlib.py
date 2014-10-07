@@ -47,7 +47,8 @@ class wxbmp_from_np_array(object):
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     lc_fig.add_axes(ax)
-    plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot')
+    plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot'
+               , vmin = self.vl_min, vmax = self.vl_max)
 
     for xpos in range(self.xmax):
       for ypos in range(self.ymax):

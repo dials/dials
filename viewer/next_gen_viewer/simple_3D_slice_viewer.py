@@ -43,24 +43,35 @@ class MyFrame(wx.Frame):
     super(MyFrame, self).__init__(parent, id, title,
                                   pos, size, style, name)
 
-    self.scrl_panel = scroll_pan.ScrolledPanel(self)
-
   def set_bmp(self, bmp_in):
-    img_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    scrl_panel = scroll_pan.ScrolledPanel(self)
 
+    img_sizer = wx.BoxSizer(wx.HORIZONTAL)
     for bmp_lst in bmp_in:
-      local_bitmap = wx.StaticBitmap(self.scrl_panel, bitmap = bmp_lst)
+      local_bitmap = wx.StaticBitmap(scrl_panel, bitmap = bmp_lst)
       img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL,3)
 
-    self.scrl_panel.SetSizer(img_sizer)
-    self.scrl_panel.SetupScrolling()
 
+
+    ToggleButton = wx.Button(scrl_panel, label="Toggle Show I")
+    img_sizer.Add(ToggleButton, 0, wx.LEFT | wx.ALL,8)
+    ToggleButton.Bind(wx.EVT_BUTTON, self.OnTglBut)
+
+    scrl_panel.SetSizer(img_sizer)
+    scrl_panel.SetupScrolling()
+
+  def OnTglBut(self, event):
+    print "OnTstBut"
 
 if(__name__ == "__main__"):
-  size_xy = 5
+  size_xy = 7
 
   data_xyz_flex = flex.double(flex.grid(size_xy, size_xy, size_xy),15)
-  data_xyz_flex[2, 1, 1] = 50
+  data_xyz_flex[1, 1, 1] = 35
+  data_xyz_flex[2, 1, 1] = 40
+  data_xyz_flex[3, 1, 1] = 45
+  data_xyz_flex[4, 1, 1] = 40
+  data_xyz_flex[5, 1, 1] = 35
 
   for frm in range(size_xy):
     for row in range(size_xy):
