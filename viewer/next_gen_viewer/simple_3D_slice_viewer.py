@@ -38,10 +38,9 @@ class show_3d_wx_app(wx.App):
 class MyFrame(wx.Frame):
   def __init__(self, parent, id = wx.ID_ANY, title = "",
                pos=wx.DefaultPosition, size=wx.DefaultSize,
-               style = wx.DEFAULT_FRAME_STYLE,
-               name = "MyFrame"):
+               style = wx.DEFAULT_FRAME_STYLE):
     super(MyFrame, self).__init__(parent, id, title,
-                                  pos, size, style, name)
+                                  pos, size, style)
 
   def set_bmp(self, bmp_in):
     scrl_panel = scroll_pan.ScrolledPanel(self)
