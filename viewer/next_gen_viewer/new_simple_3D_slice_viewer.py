@@ -27,7 +27,7 @@ class show_3d(object):
 
 class show_3d_wx_app(wx.App):
   def OnInit(self):
-    self.frame = My_old_Frame(None, title="Bitmaps")
+    self.frame = My_3d_flex_arr_frame(None, title="Bitmaps")
     return True
 
 
@@ -36,7 +36,7 @@ class show_3d_wx_app(wx.App):
     self.SetTopWindow(self.frame)
     self.frame.Show()
 
-class multi_img(scroll_pan.ScrolledPanel):
+class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def __init__(self, outer_frame, bmp_lst_in):
         scroll_pan.ScrolledPanel.__init__(self, outer_frame)
 
@@ -48,7 +48,7 @@ class multi_img(scroll_pan.ScrolledPanel):
         self.SetSizer(my_sizer)
         self.SetupScrolling()
 
-class butoms_panel(wx.Panel):
+class buttons_panel(wx.Panel):
     def __init__(self, outer_frame):
         wx.Panel.__init__(self, outer_frame)
 
@@ -72,18 +72,18 @@ class butoms_panel(wx.Panel):
     def OnHidIBut(self, event):
         print "OnHidIBut"
 
-class My_old_Frame(wx.Frame):
+class My_3d_flex_arr_frame(wx.Frame):
   def __init__(self, parent, id = wx.ID_ANY, title = "",
                pos=wx.DefaultPosition, size=wx.DefaultSize,
                style = wx.DEFAULT_FRAME_STYLE):
-    super(My_old_Frame, self).__init__(parent, id, title,
+    super(My_3d_flex_arr_frame, self).__init__(parent, id, title,
                                   pos, size, style)
 
   def ini_n_intro(self, bmp_lst_in):
 
     # Attributes
-    self.panel_01 = butoms_panel(self)
-    self.panel_02 = multi_img(self, bmp_lst_in)
+    self.panel_01 = buttons_panel(self)
+    self.panel_02 = multi_img_scrollable(self, bmp_lst_in)
     # Layout
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     sizer.Add(self.panel_01, 1, wx.EXPAND)
