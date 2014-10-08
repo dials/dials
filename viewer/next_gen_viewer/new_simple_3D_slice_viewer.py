@@ -57,11 +57,10 @@ class buttons_panel(wx.Panel):
 
         Show_I_Button = wx.Button(self, label="Show I")
         Show_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
-        sb = wx.StaticBox(self, -1, size=(180, 150))
-        my_sizer = wx.StaticBoxSizer(sb, wx.VERTICAL)
+        my_sizer = wx.BoxSizer(wx.VERTICAL)
         my_sizer.Add(Show_I_Button, 0, wx.LEFT | wx.ALL,8)
         my_sizer.Add(Hide_I_Button, 0, wx.LEFT | wx.ALL,8)
-        my_sizer.SetMinSize((120, 250))
+        my_sizer.SetMinSize((90, 250))
 
         self.SetSizer(my_sizer)
 
