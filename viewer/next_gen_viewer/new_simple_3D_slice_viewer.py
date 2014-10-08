@@ -43,7 +43,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         my_sizer = wx.BoxSizer(wx.HORIZONTAL)
         for bmp_lst in bmp_lst_in:
           local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
-          my_sizer.Add(local_bitmap, 10, wx.RIGHT)
+          my_sizer.Add(local_bitmap, 1, wx.RIGHT)
 
         self.SetSizer(my_sizer)
         self.SetupScrolling()
@@ -62,7 +62,6 @@ class buttons_panel(wx.Panel):
         my_sizer.Add(Show_I_Button, 0, wx.LEFT | wx.ALL,8)
         my_sizer.Add(Hide_I_Button, 0, wx.LEFT | wx.ALL,8)
         my_sizer.SetMinSize((120, 250))
-        #my_sizer.SetMaxSize((140, 270))
 
         self.SetSizer(my_sizer)
 
@@ -86,7 +85,7 @@ class My_3d_flex_arr_frame(wx.Frame):
     self.panel_02 = multi_img_scrollable(self, bmp_lst_in)
     # Layout
     sizer = wx.BoxSizer(wx.HORIZONTAL)
-    sizer.Add(self.panel_01, 1, wx.EXPAND)
+    sizer.Add(self.panel_01, 0, wx.EXPAND)
     sizer.Add(self.panel_02, 1, wx.EXPAND)
     self.SetSizerAndFit(sizer)
 
