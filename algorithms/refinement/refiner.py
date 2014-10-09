@@ -1249,6 +1249,70 @@ class Refiner(object):
 
     return
 
+  def print_panel_rmsd_table(self):
+    """print useful output about refinement steps in the form of a simple table"""
+
+    from libtbx.table_utils import simple_table
+    from math import pi
+    rad2deg = 180/pi
+
+    print
+    print "Final RMSDs by panel"
+    print "-------------------------"
+
+    header = ["Panel", "Nref"]
+    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+      if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
+        header.append(name + "\n(px)")
+      elif name == "RMSD_Phi" and units == "rad": # convert radians to images for reporting of scans
+        header.append("RMSD_Z" + "\n(images)")
+      elif name == "RMSD_DeltaPsi" and units == "rad": # convert radians to degrees for reporting of stills
+        header.append(name + "\n(deg)")
+      else: # skip RMSDs that cannot be expressed in image/scan space
+        pass
+    rows = []
+
+    for ipanel, panel in enumerate(self._detector):
+
+      px_size = panel.get_pixel_size()
+      px_per_mm = [1./e for e in px_size]
+
+      scan = self._scan
+      try:
+        temp = scan.get_oscillation(deg=False)
+        images_per_rad  = 1./abs(scan.get_oscillation(deg=False)[1])
+      except AttributeError:
+        images_per_rad = None
+
+      num = self._target.get_num_matches_for_panel(ipanel)
+      if num <= 0: continue
+      raw_rmsds = self._target.rmsds_for_panel(ipanel)
+      rmsds = []
+      for (name, units, rmsd) in zip(self._target.rmsd_names, self._target.rmsd_units, raw_rmsds):
+        if name == "RMSD_X" and units == "mm":
+          rmsds.append(rmsd * px_per_mm[0])
+        elif name == "RMSD_Y" and units == "mm":
+          rmsds.append(rmsd * px_per_mm[1])
+        elif name == "RMSD_Phi" and units == "rad":
+          rmsds.append(rmsd * images_per_rad)
+        elif name == "RMSD_DeltaPsi" and units == "rad":
+          rmsds.append(rmsd * rad2deg)
+      rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
+
+    if len(rows) > 0:
+      truncated = False
+      max_rows = 20
+      if self._verbosity < 2 and len(rows) > max_rows:
+        rows = rows[0:max_rows]
+        truncated = True
+      st = simple_table(rows, header)
+      print st.format()
+      if truncated:
+        print "Table truncated to show the first", max_rows, "panels only"
+        print "Re-run with verbosity >= 2 to show all panels"
+
+    return
+
   def run(self):
     """Run refinement"""
 
@@ -1276,6 +1340,9 @@ class Refiner(object):
       print
       self.print_step_table()
       self.print_exp_rmsd_table()
+
+      if len(self._detector) > 0:
+        self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
     #FIXME tidy up
