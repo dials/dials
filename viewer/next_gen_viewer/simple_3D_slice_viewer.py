@@ -39,7 +39,7 @@ class show_3d_wx_app(wx.App):
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def __init__(self, outer_frame, bmp_lst_in):
         scroll_pan.ScrolledPanel.__init__(self, outer_frame)
-
+        self.Bind(wx.EVT_MOUSEWHEEL, self.moveparentpanel)
         my_sizer = wx.BoxSizer(wx.HORIZONTAL)
         for bmp_lst in bmp_lst_in:
           local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
@@ -47,6 +47,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
         self.SetSizer(my_sizer)
         self.SetupScrolling()
+    def moveparentpanel(self, event):
+        print "Weel event"
 
 class buttons_panel(wx.Panel):
     def __init__(self, outer_frame):
@@ -57,6 +59,7 @@ class buttons_panel(wx.Panel):
 
         Show_I_Button = wx.Button(self, label="Show I")
         Show_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
+
         my_sizer = wx.BoxSizer(wx.VERTICAL)
         my_sizer.Add(Show_I_Button, 0, wx.LEFT | wx.ALL,8)
         my_sizer.Add(Hide_I_Button, 0, wx.LEFT | wx.ALL,8)
