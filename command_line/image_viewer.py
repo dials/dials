@@ -52,7 +52,8 @@ if __name__ == '__main__':
     usage=usage_message,
     read_datablocks=True,
     read_experiments=True,
-    read_reflections=True)
+    read_reflections=True,
+    read_datablocks_from_images=True)
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
