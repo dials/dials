@@ -64,7 +64,17 @@ class Script(object):
           .type = str
           .help = "The image sweep template"
           .multiple = True
+        reference_geometry = None
+          .type = path
+          .help = "Experimental geometry from this datablock.json or "
+                  "experiments.json will override the geometry from the "
+                  "image headers."
       }
+
+      mosflm_beam_centre = None
+        .type = floats(size=2)
+        .help = "Override the beam centre from the image headers, following "
+                "the mosflm convention."
 
     ''')
 
@@ -85,6 +95,25 @@ class Script(object):
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
     datablocks = flatten_datablocks(params.input.datablock)
+
+    reference_detector = None
+    reference_beam = None
+
+    if params.input.reference_geometry is not None:
+      from dxtbx.serialize import load
+      try:
+        experiments = load.experiment_list(
+          params.input.reference_geometry, check_format=False)
+        assert len(experiments.detectors()) == 1
+        assert len(experiments.beams()) == 1
+        reference_detector = experiments.detectors()[0]
+        reference_beam = experiments.beams()[0]
+      except Exception, e:
+        datablock = load.datablock(params.input.reference_geometry)
+        assert len(datablock) == 1
+        imageset = datablock[0].extract_imagesets()[0]
+        reference_detector = imageset.get_detector()
+        reference_beam = imageset.get_beam()
 
     # Check we have some filenames
     if len(datablocks) == 0:
@@ -112,6 +141,27 @@ class Script(object):
         num_stills = 0
       else:
         num_stills = len(stills)
+
+      if reference_beam is not None and reference_detector is not None:
+        for sweep in sweeps:
+          assert reference_detector.is_similar_to(sweep.get_detector())
+          sweep.set_beam(reference_beam)
+          sweep.set_detector(reference_detector)
+
+        for still in stills:
+          assert reference_detector.is_similar_to(still.get_detector())
+          still.set_beam(reference_beam)
+          still.set_detector(reference_detector)
+
+      elif params.mosflm_beam_centre is not None:
+        from dxtbx.model.detector_helpers import set_mosflm_beam_centre
+        for sweep in sweeps:
+          set_mosflm_beam_centre(
+            sweep.get_detector(), sweep.get_beam(), params.mosflm_beam_centre)
+
+        for still in stills:
+          set_mosflm_beam_centre(
+            still.get_detector(), still.get_beam(), params.mosflm_beam_centre)
 
       # Print some data block info
       print "-" * 80

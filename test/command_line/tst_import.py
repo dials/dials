@@ -14,6 +14,35 @@ class Test(object):
 
   def run(self):
     self.tst_from_image_files()
+    self.tst_import_beam_centre()
+
+  def tst_import_beam_centre(self):
+    from glob import glob
+    import os
+    from libtbx import easy_run
+    from dxtbx.serialize import load
+
+    # Find the image files
+    image_files = glob(os.path.join(self.path, "centroid*.cbf"))
+    image_files = ' '.join(image_files)
+
+    # provide mosflm beam centre to dials.import
+    cmd = 'dials.import %s mosflm_beam_centre=100,200 output=mosflm_beam_centre.json' %image_files
+    easy_run.fully_buffered(cmd)
+    assert os.path.exists("mosflm_beam_centre.json")
+    datablock = load.datablock("mosflm_beam_centre.json")[0]
+    imgset = datablock.extract_imagesets()[0]
+    assert imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0()) == (200,100)
+
+    # provide an alternative datablock.json to get geometry from
+    cmd = 'dials.import %s reference_geometry=mosflm_beam_centre.json output=mosflm_beam_centre2.json' %image_files
+    easy_run.fully_buffered(cmd)
+    assert os.path.exists("mosflm_beam_centre2.json")
+    datablock = load.datablock("mosflm_beam_centre2.json")[0]
+    imgset = datablock.extract_imagesets()[0]
+    assert imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0()) == (200,100)
+
+    print 'OK'
 
   def tst_from_image_files(self):
     from subprocess import call
