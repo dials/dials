@@ -91,14 +91,14 @@ class My_3d_flex_arr_frame(wx.Frame):
     self.Show(True)
 
 if(__name__ == "__main__"):
-  size_xy = 7
+  size_xy = 6
 
   data_xyz_flex = flex.double(flex.grid(size_xy, size_xy, size_xy),15)
-  data_xyz_flex[1, 1, 1] = 35
-  data_xyz_flex[2, 1, 1] = 40
-  data_xyz_flex[3, 1, 1] = 45
-  data_xyz_flex[4, 1, 1] = 40
-  data_xyz_flex[5, 1, 1] = 35
+  data_xyz_flex[1, 2, 2] = 15
+  data_xyz_flex[2, 2, 2] = 20
+  data_xyz_flex[3, 2, 2] = 25
+  data_xyz_flex[4, 2, 2] = 20
+  data_xyz_flex[5, 2, 2] = 15
 
   for frm in range(size_xy):
     for row in range(size_xy):
