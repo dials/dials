@@ -393,6 +393,12 @@ class SpotFrame(XrayFrame) :
                       vector_data=vector_data,
                       vector_text_data=vector_text_data)
 
+  def get_detector(self):
+    return self.imagesets[0].get_detector()
+
+  def get_beam(self):
+    return self.imagesets[0].get_beam()
+
 
 class SpotSettingsFrame (SettingsFrame) :
   def __init__ (self, *args, **kwds) :
