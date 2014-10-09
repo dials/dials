@@ -20,8 +20,6 @@ class np_to_bmp(object):
   def __call__(self, np_img_2d, Intst_max, ofst, xyz, title = 'Aaaaaaaaaa'):
     lc_fig = plt.figure()
 
-    print Intst_max
-    Intst_max = 21
     if( np_img_2d == None ):
 
       plt.imshow(np.asarray([[-1]]), interpolation = "nearest")
