@@ -100,17 +100,31 @@ class ExperimentsPredictor(object):
       sel = reflections['id'] == iexp
       refs = reflections.select(sel)
 
-      # determine whether to try scan-varying prediction
-      if refs.has_key('ub_matrix'):
-        UBs = refs['ub_matrix']
-        # predict and assign in place
-        self._predictors[iexp].for_reflection_table(refs, UBs)
-      else:
-        # predict and assign in place
-        self._predictors[iexp].for_reflection_table(refs, self._UBs[iexp])
+      try:
+        # determine whether to try scan-varying prediction
+        if refs.has_key('ub_matrix'):
+          UBs = refs['ub_matrix']
+          # predict and assign in place
+          self._predictors[iexp].for_reflection_table(refs, UBs)
+        else:
+          # predict and assign in place
+          self._predictors[iexp].for_reflection_table(refs, self._UBs[iexp])
 
-      # write predictions back to overall reflections
-      reflections.set_selected(sel, refs)
+        # write predictions back to overall reflections
+        reflections.set_selected(sel, refs)
+      except AssertionError:
+        ### FIXME DEBUG: here have caught a rare error spotted by Aaron.
+        ### Dump relevant objects now for easier debugging
+        print "ERROR for experiment", iexp
+        print "during attempt to call for_reflection_table"
+        print "with UB matrix:"
+        print self._UBs[iexp]
+        print "saving reflections and experiments to disk"
+        from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+        dump = ExperimentListDumper(self._experiments)
+        dump.as_json("problematic_experiments.json")
+        refs.as_pickle("problematic_reflections.json")
+        raise
 
     return reflections
 
