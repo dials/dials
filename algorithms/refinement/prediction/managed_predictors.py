@@ -112,7 +112,7 @@ class ExperimentsPredictor(object):
 
         # write predictions back to overall reflections
         reflections.set_selected(sel, refs)
-      except AssertionError:
+      except RuntimeError:
         ### FIXME DEBUG: here have caught a rare error spotted by Aaron.
         ### Dump relevant objects now for easier debugging
         print "ERROR for experiment", iexp
