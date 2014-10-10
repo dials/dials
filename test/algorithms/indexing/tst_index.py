@@ -289,7 +289,7 @@ def exercise_7():
                 ]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.24, 0.23, 0.005)
+  expected_rmsds = (0.24, 0.23, 0.006)
   expected_hall_symbol = ' P 1'
   n_expected_lattices = 4
 
@@ -447,10 +447,11 @@ def exercise_12():
                 "min_samples=15",
                 "maximum_spot_error=3",
                 "n_macro_cycles=4",
+                "d_min=4"
                 ]
 
   expected_unit_cell = uctbx.unit_cell((57.8,57.8,150,90,90,90))
-  expected_rmsds = (0.06, 0.07, 0.002)
+  expected_rmsds = (0.06, 0.07, 0.003)
   expected_hall_symbol = ' P 4'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -515,7 +516,7 @@ def exercise_14():
 
   expected_unit_cell = uctbx.unit_cell((78.184, 78.184, 78.184, 90.000, 90.000, 90.000))
   expected_hall_symbol = ' I 2 2 3'
-  expected_rmsds = (0.04, 0.05, 0.007)
+  expected_rmsds = (0.05, 0.05, 0.008)
 
   for method in ("fft3d", "fft1d", "real_space_grid_search"):
     extra_args = []

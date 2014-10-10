@@ -223,7 +223,7 @@ refinement
               "manager to be constructed for."
       .type = int(value_min=1)
 
-    close_to_spindle_cutoff = 0.1
+    close_to_spindle_cutoff = 0.05
       .help = "The inclusion criterion currently uses the volume of the"
               "parallelepiped formed by the spindle axis, the incident"
               "beam and the scattered beam. If this is lower than some"
