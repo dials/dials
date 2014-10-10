@@ -36,9 +36,15 @@ class show_3d_wx_app(wx.App):
     self.SetTopWindow(self.frame)
     self.frame.Show()
 
+
+
+
+
+
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def __init__(self, outer_frame, bmp_lst_in):
-      scroll_pan.ScrolledPanel.__init__(self, outer_frame)
+      #scroll_pan.ScrolledPanel.__init__(self, outer_frame)
+      super(multi_img_scrollable, self).__init__(outer_frame)
       self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
       my_sizer = wx.BoxSizer(wx.HORIZONTAL)
       for bmp_lst in bmp_lst_in:
@@ -52,9 +58,21 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         print "event.GetWheelRotation() =", event.GetWheelRotation()
 
 
+
+'''
+class MyFrame(wx.Frame):
+  def __init__(self, parent, id=wx.ID_ANY, title="",
+               pos=wx.DefaultPosition, size=wx.DefaultSize,
+               style=wx.DEFAULT_FRAME_STYLE,
+               name="MyFrame"):
+    super(MyFrame, self).__init__(parent, id, title,
+                                  pos, size, style, name)
+'''
+
 class buttons_panel(wx.Panel):
     def __init__(self, outer_frame):
-        wx.Panel.__init__(self, outer_frame)
+        #wx.Panel.__init__(self, outer_frame)
+        super(buttons_panel, self).__init__(outer_frame)
 
         Hide_I_Button = wx.Button(self, label="Hide I")
         Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
