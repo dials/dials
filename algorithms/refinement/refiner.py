@@ -1344,7 +1344,7 @@ class Refiner(object):
       self.print_step_table()
       self.print_exp_rmsd_table()
 
-      if len(self._detector) > 0:
+      if len(self._detector) > 1:
         self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
