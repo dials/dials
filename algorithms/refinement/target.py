@@ -416,22 +416,24 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     resid_phi = flex.sum(self._matches['phi_resid2'].select(sel))
 
     n = sel.count(True)
+    if n == 0: return None
     rmsds = (sqrt(resid_x / n),
              sqrt(resid_y / n),
              sqrt(resid_phi / n))
 
     return rmsds
 
-  def rmsds_for_panel(self, ipanel=0, iexp=0):
+  def rmsds_for_panel(self, ipanel=0):
     """calculate unweighted RMSDs for the selected panel."""
 
     self.update_matches()
-    sel = self._matches['panel'] == iexp
+    sel = self._matches['panel'] == ipanel
     resid_x = flex.sum(self._matches['x_resid2'].select(sel))
     resid_y = flex.sum(self._matches['y_resid2'].select(sel))
     resid_phi = flex.sum(self._matches['phi_resid2'].select(sel))
 
     n = sel.count(True)
+    if n == 0: return None
     rmsds = (sqrt(resid_x / n),
              sqrt(resid_y / n),
              sqrt(resid_phi / n))

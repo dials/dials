@@ -1203,6 +1203,7 @@ class Refiner(object):
         header.append(name + "\n(deg)")
       else: # skip RMSDs that cannot be expressed in image/scan space
         pass
+
     rows = []
     for iexp, exp in enumerate(self._experiments):
       detector = exp.detector
@@ -1222,6 +1223,7 @@ class Refiner(object):
         images_per_rad = None
 
       raw_rmsds = self._target.rmsds_for_experiment(iexp)
+      if raw_rmsds is None: continue # skip experiments where rmsd cannot be calculated
       num = self._target.get_num_matches_for_experiment(iexp)
       rmsds = []
       for (name, units, rmsd) in zip(self._target.rmsd_names, self._target.rmsd_units, raw_rmsds):
@@ -1258,7 +1260,7 @@ class Refiner(object):
 
     print
     print "Final RMSDs by panel"
-    print "-------------------------"
+    print "--------------------"
 
     header = ["Panel", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1270,8 +1272,8 @@ class Refiner(object):
         header.append(name + "\n(deg)")
       else: # skip RMSDs that cannot be expressed in image/scan space
         pass
-    rows = []
 
+    rows = []
     for ipanel, panel in enumerate(self._detector):
 
       px_size = panel.get_pixel_size()
@@ -1287,6 +1289,7 @@ class Refiner(object):
       num = self._target.get_num_matches_for_panel(ipanel)
       if num <= 0: continue
       raw_rmsds = self._target.rmsds_for_panel(ipanel)
+      if raw_rmsds is None: continue # skip panels where rmsd cannot be calculated
       rmsds = []
       for (name, units, rmsd) in zip(self._target.rmsd_names, self._target.rmsd_units, raw_rmsds):
         if name == "RMSD_X" and units == "mm":
