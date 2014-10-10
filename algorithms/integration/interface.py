@@ -432,48 +432,11 @@ class Manager(object):
 
   def _print_final_summary(self, data):
     ''' Print a final summary. '''
-    from libtbx.table_utils import format as table
-    from dials.util.command_line import heading
-    from dials.array_family import flex
-    from math import sqrt
-    print '=' * 80
-    print ''
-    print heading('Summary of integration results')
-    print ''
     from dials.algorithms.integration import Summary
     print Summary(
       data,
       self._experiments.imagesets()[0].get_array_range(),
       5).as_str()
-    # num_images = len(self._experiments.imagesets()[0])
-    # full = flex.size_t(num_images)
-    # part = flex.size_t(num_images)
-    # iosp = flex.double(num_images)
-    # ioss = flex.double(num_images)
-    # count = flex.size_t(num_images)
-    # rows = [["Image",
-    #          "# full",
-    #          "# part",
-    #          "<I/sigI>\n (prf)",
-    #          "<I/sigI>\n (sum)"]]
-    # for r in data:
-    #   z = int(r['xyzcal.px'][2])
-    #   flags = r['flags']
-    #   isum = r['intensity.sum.value']
-    #   vsum = r['intensity.sum.variance']
-    #   if flags & data.flags.integrated_sum:
-    #     if vsum > 0:
-    #       ioss[z] += isum / sqrt(vsum)
-
-
-    # for i in range(num_images):
-    #   rows.append([
-    #     str(i),
-    #     str(full[i]),
-    #     str(part[i]),
-    #     '%.1f' % iosp[i],
-    #     '%.1f' % ioss[i]])
-    # print table(rows, has_header=True, justify="right", prefix=" ")
 
 
 class PreProcessorOsc(object):

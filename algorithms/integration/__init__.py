@@ -67,9 +67,14 @@ class WholeSummaryAux(boost.python.injector, WholeSummary):
 class SummaryAux(boost.python.injector, Summary):
 
   def as_str(self):
+    from dials.util.command_line import heading
     img_summary = self.image_summary().table()
     res_summary = self.resolution_summary().table()
     who_summary = self.whole_summary().table()
+    print '=' * 80
+    print ''
+    print heading('Summary of integration results')
+    print ''
     return (
       ' Summary of integration results as a function of image number'
       '\n%s\n\n'
