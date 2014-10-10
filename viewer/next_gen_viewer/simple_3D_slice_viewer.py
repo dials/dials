@@ -38,17 +38,19 @@ class show_3d_wx_app(wx.App):
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def __init__(self, outer_frame, bmp_lst_in):
-        scroll_pan.ScrolledPanel.__init__(self, outer_frame)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.moveparentpanel)
-        my_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        for bmp_lst in bmp_lst_in:
-          local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
-          my_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL, 3)
+      scroll_pan.ScrolledPanel.__init__(self, outer_frame)
+      self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+      my_sizer = wx.BoxSizer(wx.HORIZONTAL)
+      for bmp_lst in bmp_lst_in:
+        local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
+        my_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL, 3)
 
-        self.SetSizer(my_sizer)
-        self.SetupScrolling()
-    def moveparentpanel(self, event):
+      self.SetSizer(my_sizer)
+      self.SetupScrolling()
+    def OnMouseWheel(self, event):
         print "Weel event"
+        print "event.GetWheelRotation() =", event.GetWheelRotation()
+
 
 class buttons_panel(wx.Panel):
     def __init__(self, outer_frame):
