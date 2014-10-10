@@ -25,7 +25,6 @@ tst_list = (
     "$D/test/command_line/tst_generate_mask.py",
     "$D/test/command_line/tst_show_extensions.py",
     "$D/test/command_line/tst_combine_experiments_and_reflections.py",
-    "$D/test/util/tst_command_line.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_reflection_table.py",
     "$D/test/model/data/tst_prediction.py",
