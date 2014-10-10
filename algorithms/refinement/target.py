@@ -422,7 +422,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return rmsds
 
-  def rmsds_for_panel(self, ipanel=0):
+  def rmsds_for_panel(self, ipanel=0, iexp=0):
     """calculate unweighted RMSDs for the selected panel."""
 
     self.update_matches()
