@@ -455,8 +455,8 @@ namespace dials { namespace algorithms {
             }
           }
           if (!(flags[i] & af::DontIntegrate) &&
-               flags[i] & af::IntegratedSum) {
-            DIALS_ASSERT(vsum[i] > 0);
+               flags[i] & af::IntegratedSum &&
+               vsum[i] > 0) {
             double ios = isum[i] / std::sqrt(vsum[i]);
             for (std::size_t j = bbox[i][4]; j < bbox[i][5]; ++j) {
               std::size_t k = j - image_range[0];
@@ -466,8 +466,7 @@ namespace dials { namespace algorithms {
           }
           if (!(flags[i] & af::DontIntegrate) &&
                flags[i] & af::IntegratedPrf &&
-               prf) {
-            DIALS_ASSERT(vprf[i] > 0);
+               prf && vprf[i] > 0) {
             double ios = iprf[i] / std::sqrt(vprf[i]);
             for (std::size_t j = bbox[i][4]; j < bbox[i][5]; ++j) {
               std::size_t k = j - image_range[0];
@@ -587,8 +586,8 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(j >= 0 && j <= nbins);
           if (j == nbins) j = nbins-1;
           if (!(flags[i] & af::DontIntegrate)) {
-            if (flags[i] & af::IntegratedSum) {
-              DIALS_ASSERT(vsum[i] > 0);
+            if (flags[i] & af::IntegratedSum &&
+                vsum[i] > 0) {
               double ios = isum[i] / std::sqrt(vsum[i]);
               if (partiality[i] >= full_value) {
                 sum_ios_full_[j] += ios;
@@ -600,8 +599,7 @@ namespace dials { namespace algorithms {
               sum_ios_[j] += ios;
               sum_cnt_[j]++;
             }
-            if (flags[i] & af::IntegratedPrf && prf) {
-              DIALS_ASSERT(vprf[i] > 0);
+            if (flags[i] & af::IntegratedPrf && prf && vprf[i] > 0) {
               double ios = iprf[i] / std::sqrt(vprf[i]);
               if (partiality[i] >= full_value) {
                 prf_ios_full_[j] += ios;
@@ -733,8 +731,7 @@ namespace dials { namespace algorithms {
         // Compute the stats
         for (std::size_t i = 0; i < data.size(); ++i) {
           if (!(flags[i] & af::DontIntegrate)) {
-            if (flags[i] & af::IntegratedSum) {
-              DIALS_ASSERT(vsum[i] > 0);
+            if (flags[i] & af::IntegratedSum && vsum[i] > 0) {
               double ios = isum[i] / std::sqrt(vsum[i]);
               if (partiality[i] >= full_value) {
                 sum_ios_full_ += ios;
@@ -746,8 +743,7 @@ namespace dials { namespace algorithms {
               sum_ios_ += ios;
               sum_cnt_++;
             }
-            if (flags[i] & af::IntegratedPrf && prf) {
-              DIALS_ASSERT(vprf[i] > 0);
+            if (flags[i] & af::IntegratedPrf && prf && vprf[i] > 0) {
               double ios = iprf[i] / std::sqrt(vprf[i]);
               if (partiality[i] >= full_value) {
                 prf_ios_full_ += ios;
