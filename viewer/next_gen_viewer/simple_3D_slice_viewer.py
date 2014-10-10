@@ -37,42 +37,40 @@ class show_3d_wx_app(wx.App):
     self.frame.Show()
 
 
-
-
-
-
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def __init__(self, outer_frame, bmp_lst_in):
-      #scroll_pan.ScrolledPanel.__init__(self, outer_frame)
       super(multi_img_scrollable, self).__init__(outer_frame)
+
+      self.set_scroll_content(bmp_lst_in)
+
       self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+      self.SetupScrolling()
+
+
+    def set_scroll_content(self, bmp_lst_in):
+
       my_sizer = wx.BoxSizer(wx.HORIZONTAL)
       for bmp_lst in bmp_lst_in:
         local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
         my_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL, 3)
 
       self.SetSizer(my_sizer)
-      self.SetupScrolling()
+
+      to_be_used_soon = '''
+        for child in panel.GetChildren():
+          child.Destroy()
+      '''
+
+
     def OnMouseWheel(self, event):
         print "Weel event"
         print "event.GetWheelRotation() =", event.GetWheelRotation()
 
 
-
-'''
-class MyFrame(wx.Frame):
-  def __init__(self, parent, id=wx.ID_ANY, title="",
-               pos=wx.DefaultPosition, size=wx.DefaultSize,
-               style=wx.DEFAULT_FRAME_STYLE,
-               name="MyFrame"):
-    super(MyFrame, self).__init__(parent, id, title,
-                                  pos, size, style, name)
-'''
-
 class buttons_panel(wx.Panel):
     def __init__(self, outer_frame):
-        #wx.Panel.__init__(self, outer_frame)
         super(buttons_panel, self).__init__(outer_frame)
+        self.p_frame  = outer_frame
 
         Hide_I_Button = wx.Button(self, label="Hide I")
         Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
@@ -89,6 +87,7 @@ class buttons_panel(wx.Panel):
 
     def OnShwIBut(self, event):
         print "OnShwIBut"
+        self.p_frame.tst()
 
     def OnHidIBut(self, event):
         print "OnHidIBut"
@@ -112,6 +111,8 @@ class My_3d_flex_arr_frame(wx.Frame):
     self.SetSizer(sizer)
 
     self.Show(True)
+  def tst(self):
+    print "testing"
 
 if(__name__ == "__main__"):
   size_xy = 6
