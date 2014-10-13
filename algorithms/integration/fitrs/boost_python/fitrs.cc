@@ -12,6 +12,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python/iterator.hpp>
 #include <dials/algorithms/integration/fitrs/fitrs.h>
+#include <dials/algorithms/integration/fitrs/fit.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -35,6 +36,24 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("max_iter") = 10)))
       .def("__call__", call_single)
       .def("__call__", call_array);
+
+
+
+    class_<Spec>("Spec", no_init)
+      .def(init< const Beam&,
+                 const Detector&,
+                 const Goniometer&,
+                 const Scan&,
+                 double,
+                 double >())
+      ;
+
+
+    class_<ReciprocalSpaceProfileFitting>("ReciprocalSpaceProfileFitting", no_init)
+      .def(init< std::size_t >())
+      .def("add", &ReciprocalSpaceProfileFitting::add)
+      .def("execute", &ReciprocalSpaceProfileFitting::execute)
+      ;
   }
 
 }}} // namespace = dials::algorithms::boost_python
