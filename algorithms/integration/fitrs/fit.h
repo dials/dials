@@ -133,8 +133,8 @@ namespace dials { namespace algorithms {
   public:
 
     typedef double float_type;
-    typedef af::versa< float_type, af::c_grid<3> > profile_type;
-    typedef af::versa< bool, af::c_grid<3> > mask_type;
+    typedef af::const_ref< float_type, af::c_grid<3> > profile_type;
+    typedef af::const_ref< bool, af::c_grid<3> > mask_type;
 
     GridProfileLearner(
         const Spec &spec,
@@ -189,7 +189,7 @@ namespace dials { namespace algorithms {
      * @returns The profile.
      */
     profile_type data(std::size_t index) const {
-      return learner_.locate().profile(index);
+      return learner_.locate().profile_ref(index);
     }
 
     std::size_t size() const {
@@ -212,10 +212,10 @@ namespace dials { namespace algorithms {
      * @returns The profile for the reflection
      */
     profile_type get(vec3<double> xyz) const {
-      return learner_.locate().profile(xyz);
+      return learner_.locate().profile_ref(xyz);
     }
     mask_type get_mask(vec3<double> xyz) const {
-      return learner_.locate().mask(xyz);
+      return learner_.locate().mask_ref(xyz);
     }
 
   private:
@@ -359,7 +359,7 @@ namespace dials { namespace algorithms {
     typedef Shoebox<>::float_type float_type;
     typedef MultiExpGridProfileLearner reference_learner_type;
     typedef reference_learner_type::profile_type profile_type;
-    typedef af::versa< bool, af::c_grid<3> > mask_type;
+    typedef reference_learner_type::mask_type mask_type;
     typedef ProfileFitting<double> fitting_type;
 
     ReciprocalSpaceProfileFitting(std::size_t grid_size,
@@ -481,20 +481,14 @@ namespace dials { namespace algorithms {
               sbox);
 
           // Get the profile for a given reflection
-          profile_type c = transform.profile();
-          profile_type b = transform.background();
+          profile_type c = transform.profile().const_ref();
+          profile_type b = transform.background().const_ref();
           profile_type p = reference.get(id[i], xyzpx[i]);
           mask_type    m = reference.get_mask(id[i], xyzpx[i]);
 
           // Perform the profile fit
           try {
-            fitting_type fit(
-                p.const_ref(),
-                m.const_ref(),
-                c.const_ref(),
-                b.const_ref(),
-                1e-3,
-                10);
+            fitting_type fit(p, m, c, b, 1e-3, 10);
             DIALS_ASSERT(fit.niter() < 10);
 
             // Set the data in the reflection

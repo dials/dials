@@ -91,6 +91,43 @@ namespace dials { namespace algorithms {
      * @param index The profile index
      * @returns The profile array
      */
+    af::const_ref< FloatType, af::c_grid<3> > profile_ref(std::size_t index) const {
+
+      // Check the index and size of the profile array
+      DIALS_ASSERT(index < sampler_.size());
+      int4 profile_size = profiles_.accessor();
+
+      // Return the result
+      std::size_t j = index*profile_size[3]*profile_size[2]*profile_size[1];
+      return af::const_ref< FloatType, af::c_grid<3> >(
+          &profiles_[j],
+          af::c_grid<3>(
+            profile_size[1],
+            profile_size[2],
+            profile_size[3]));
+    }
+
+    af::const_ref< bool, af::c_grid<3> > mask_ref(std::size_t index) const {
+
+      // Check the index and size of the profile array
+      DIALS_ASSERT(index < sampler_.size());
+      int4 mask_size = masks_.accessor();
+
+      // Return the result
+      std::size_t j = index*mask_size[3]*mask_size[2]*mask_size[1];
+      return af::const_ref< bool, af::c_grid<3> >(
+          &masks_[j],
+          af::c_grid<3>(
+            mask_size[1],
+            mask_size[2],
+            mask_size[3]));
+    }
+
+    /**
+     * Get the profile at the given index
+     * @param index The profile index
+     * @returns The profile array
+     */
     af::versa< FloatType, af::c_grid<3> > profile(std::size_t index) const {
 
       // Check the index and size of the profile array
@@ -100,7 +137,7 @@ namespace dials { namespace algorithms {
       // Unfortunately, you can't take a reference from a versa array and
       // return to python so we'll just have to make a copy.
       af::versa< FloatType, af::c_grid<3> > result(
-        af::c_grid<3>(profile_size[1], profile_size[2], profile_size[2]),
+        af::c_grid<3>(profile_size[1], profile_size[2], profile_size[3]),
         af::init_functor_null<FloatType>());
       std::size_t j = index*profile_size[3]*profile_size[2]*profile_size[1];
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -125,7 +162,7 @@ namespace dials { namespace algorithms {
       // Unfortunately, you can't take a reference from a versa array and
       // return to python so we'll just have to make a copy.
       af::versa< bool, af::c_grid<3> > result(
-        af::c_grid<3>(mask_size[1], mask_size[2], mask_size[2]),
+        af::c_grid<3>(mask_size[1], mask_size[2], mask_size[3]),
         af::init_functor_null<bool>());
       std::size_t j = index*mask_size[3]*mask_size[2]*mask_size[1];
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -141,6 +178,9 @@ namespace dials { namespace algorithms {
      * @param xyz The detector coordinate
      * @returns The profile array
      */
+    af::const_ref< FloatType, af::c_grid<3> > profile_ref(double3 xyz) const {
+      return profile_ref(sampler_.nearest(xyz));
+    }
     af::versa< FloatType, af::c_grid<3> > profile(double3 xyz) const {
       return profile(sampler_.nearest(xyz));
     }
@@ -150,6 +190,9 @@ namespace dials { namespace algorithms {
      * @param xyz The detector coordinate
      * @returns The profile array
      */
+    af::const_ref< bool, af::c_grid<3> > mask_ref(double3 xyz) const {
+      return mask_ref(sampler_.nearest(xyz));
+    }
     af::versa< bool, af::c_grid<3> > mask(double3 xyz) const {
       return mask(sampler_.nearest(xyz));
     }
