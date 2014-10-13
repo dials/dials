@@ -233,9 +233,9 @@ namespace dials { namespace algorithms {
   public:
 
     typedef GridProfileLearner learner_type;
-    typedef typename learner_type::float_type float_type;
-    typedef typename learner_type::profile_type profile_type;
-    typedef typename learner_type::mask_type mask_type;
+    typedef learner_type::float_type float_type;
+    typedef learner_type::profile_type profile_type;
+    typedef learner_type::mask_type mask_type;
 
     /**
      * Compute the reference profiles.
@@ -492,7 +492,9 @@ namespace dials { namespace algorithms {
                 p.const_ref(),
                 m.const_ref(),
                 c.const_ref(),
-                b.const_ref());
+                b.const_ref(),
+                1e-3,
+                10);
             DIALS_ASSERT(fit.niter() < 10);
 
             // Set the data in the reflection

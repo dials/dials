@@ -23,44 +23,38 @@ class FitrsIntegrationExt(IntensityIface):
   def phil(cls):
     from libtbx.phil import parse
     phil = parse('''
+
       grid_size = 5
-        .help = "The size of the reciprocal space grid for each reflection."
-                "The size is the same in each dimensions"
         .type = int
-        .expert_level = 1
+        .help = "The size of the profile grid."
 
-      reference_frame_interval = 10
-        .help = "The oscillation at which to learn new reference profiles"
-        .type = int
-        .expert_level = 1
-
-      reference_signal_threshold = 0.02
-        .help = "The threshold to use in reference profile"
+      threshold = 0.02
         .type = float
-        .expert_level = 1
+        .help = "The threshold to use in reference profile"
+
+      debug = False
+        .type = bool
+        .help = "Save the reference profiles and other debug info."
+
     ''')
     return phil
 
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.integration.fitrs import IntegrationAlgorithm
-    self._experiments = experiments
-    assert(len(experiments) == 1)
-    assert(len(profile_model) == 1)
+    from dials.algorithms.integration.fitrs.algorithm2 import IntegrationAlgorithm
     self._algorithm = IntegrationAlgorithm(
-      n_sigma = profile_model[0].n_sigma(),
-      sigma_b = profile_model[0].sigma_b(deg=True),
-      sigma_m = profile_model[0].sigma_m(deg=True),
-      grid_size = params.integration.intensity.fitrs.grid_size,
-      frame_interval = params.integration.intensity.fitrs.reference_frame_interval,
-      threshold = params.integration.intensity.fitrs.reference_signal_threshold)
+      experiments,
+      profile_model,
+      grid_size=params.integration.intensity.fitrs.grid_size,
+      threshold=params.integration.intensity.fitrs.threshold,
+      debug=params.integration.intensity.fitrs.debug)
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
-    self._algorithm(self._experiments, reflections)
-    del reflections['rs_shoebox']
+    self._algorithm(reflections)
 
   @classmethod
   def type(cls, params, experiments):
     ''' Return the type of the integrator. '''
     return '3d'
+

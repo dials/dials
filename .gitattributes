@@ -417,8 +417,8 @@ doc/user-tutorial/tutorial.txt -text
 doc/user/manual.tex -text
 /error.h -text
 extensions/__init__.py -text
-extensions/fitrs2_integration_ext.py -text
 extensions/fitrs_integration_ext.py -text
+extensions/fitrs_old_integration_ext.py -text
 extensions/gaussian_rs_profile_model_ext.py -text
 extensions/kabsch_spotfinder_threshold_ext.py -text
 extensions/null_background_ext.py -text
