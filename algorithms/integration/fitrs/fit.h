@@ -134,7 +134,7 @@ namespace dials { namespace algorithms {
 
     typedef double float_type;
     typedef af::versa< float_type, af::c_grid<3> > profile_type;
-    typedef af::versa< int, af::c_grid<3> > mask_type;
+    typedef af::versa< bool, af::c_grid<3> > mask_type;
 
     GridProfileLearner(
         const Spec &spec,
@@ -213,6 +213,9 @@ namespace dials { namespace algorithms {
      */
     profile_type get(vec3<double> xyz) const {
       return learner_.locate().profile(xyz);
+    }
+    mask_type get_mask(vec3<double> xyz) const {
+      return learner_.locate().mask(xyz);
     }
 
   private:
@@ -303,6 +306,13 @@ namespace dials { namespace algorithms {
       return learner_[id].get(xyz);
     }
 
+    mask_type get_mask(
+        std::size_t id,
+        vec3<double> xyz) const {
+      DIALS_ASSERT(id < learner_.size());
+      return learner_[id].get_mask(xyz);
+    }
+
     /**
      * Get the reference profile.
      * @param id The experiment ID
@@ -350,7 +360,7 @@ namespace dials { namespace algorithms {
     typedef MultiExpGridProfileLearner reference_learner_type;
     typedef reference_learner_type::profile_type profile_type;
     typedef af::versa< bool, af::c_grid<3> > mask_type;
-    typedef ProfileFitting<float_type> fitting_type;
+    typedef ProfileFitting<double> fitting_type;
 
     ReciprocalSpaceProfileFitting(std::size_t grid_size,
                                   double threshold)
@@ -383,6 +393,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.contains("id"));
       DIALS_ASSERT(data.contains("shoebox"));
       DIALS_ASSERT(data.contains("s1"));
+      DIALS_ASSERT(data.contains("xyzcal.px"));
       DIALS_ASSERT(data.contains("xyzcal.mm"));
       DIALS_ASSERT(data.contains("flags"));
 
@@ -390,7 +401,8 @@ namespace dials { namespace algorithms {
       af::const_ref<std::size_t>    id      = data["id"];
       af::const_ref< Shoebox<> >    shoebox = data["shoebox"];
       af::const_ref< vec3<double> > s1      = data["s1"];
-      af::const_ref< vec3<double> > xyzcal  = data["xyzcal.mm"];
+      af::const_ref< vec3<double> > xyzpx  = data["xyzcal.px"];
+      af::const_ref< vec3<double> > xyzmm  = data["xyzcal.mm"];
       af::ref<std::size_t>          flags   = data["flags"];
 
       // Remove any reflections which have invalid pixels or are not fully
@@ -424,65 +436,77 @@ namespace dials { namespace algorithms {
           grid_size_,
           threshold_);
 
-      /* // Get the new columns to set */
-      /* af::ref<double> intensity   = data["intensity.prf.value"]; */
-      /* af::ref<double> variance    = data["intensity.prf.variance"]; */
-      /* af::ref<double> correlation = data["profile_correlation"]; */
+      // Create a list of transform specs
+      std::vector< TransformSpec<> > transform_spec;
+      for (std::size_t i = 0; i < spec_.size(); ++i) {
+        transform_spec.push_back(
+            TransformSpec<>(
+              spec_[i].beam(),
+              spec_[i].detector(),
+              spec_[i].goniometer(),
+              spec_[i].scan(),
+              spec_[i].sigma_b(),
+              spec_[i].sigma_m(),
+              5.0,
+              grid_size_));
+      }
 
-      /* // Do the profile fitting for all reflections */
-      /* for (std::size_t i = 0; i < data.size(); ++i) { */
+      // Get the new columns to set
+      af::ref<double> intensity   = data["intensity.prf.value"];
+      af::ref<double> variance    = data["intensity.prf.variance"];
+      af::ref<double> correlation = data["profile_correlation"];
 
-      /*   // Initialise some stuff */
-      /*   intensity[i] = 0; */
-      /*   variance[i] = 0; */
-      /*   correlation[i] = 0; */
-      /*   flags[i] &= ~IntegratedPrf; */
+      // Do the profile fitting for all reflections
+      for (std::size_t i = 0; i < data.size(); ++i) {
 
-      /*   // Integrate */
-      /*   if (!(flags[i] & DontIntegrate)) { */
+        // Initialise some stuff
+        intensity[i] = 0;
+        variance[i] = -1;
+        correlation[i] = 0;
+        flags[i] &= ~IntegratedPrf;
 
-      /*     // Get the shoebox */
-      /*     const Shoebox<> &sbox = shoebox[i]; */
-      /*     DIALS_ASSERT(sbox.is_consistent()); */
+        // Integrate
+        if (!(flags[i] & DontIntegrate)) {
 
-      /*     // Get the profile for a given reflection */
-      /*     profile_type profile = reference.get( */
-      /*         id[i], */
-      /*         sbox.panel, */
-      /*         s1[i], */
-      /*         xyzcal[i][2], */
-      /*         sbox.bbox); */
+          // Get the shoebox
+          const Shoebox<> &sbox = shoebox[i];
+          DIALS_ASSERT(sbox.is_consistent());
+          DIALS_ASSERT(id[i] < spec_.size());
 
-      /*     // Compute the integration mask */
-      /*     mask_type mask(sbox.mask.accessor(), false); */
-      /*     std::size_t mask_code = Valid | Foreground; */
-      /*     std::size_t mask_count = 0; */
-      /*     DIALS_ASSERT(profile.accessor().all_eq(sbox.mask.accessor())); */
-      /*     for (std::size_t j = 0; j < sbox.mask.size(); ++j) { */
-      /*       if ((sbox.mask[j] & mask_code) == mask_code && profile[j] >= 0.0) { */
-      /*         mask[j] = true; */
-      /*         mask_count++; */
-      /*       } */
-      /*     } */
+          // Do the transform
+          Forward<> transform(
+              transform_spec[id[i]],
+              s1[i],
+              xyzmm[i][2],
+              sbox);
 
-      /*     // Perform the profile fit */
-      /*     if (mask_count > 0) { */
-      /*       fitting_type fit( */
-      /*           profile.const_ref(), */
-      /*           mask.const_ref(), */
-      /*           sbox.data.const_ref(), */
-      /*           sbox.background.const_ref()); */
+          // Get the profile for a given reflection
+          profile_type c = transform.profile();
+          profile_type b = transform.background();
+          profile_type p = reference.get(id[i], xyzpx[i]);
+          mask_type    m = reference.get_mask(id[i], xyzpx[i]);
 
-      /*       // Set the data in the reflection */
-      /*       intensity[i]   = fit.intensity(); */
-      /*       variance[i]    = fit.variance(); */
-      /*       correlation[i] = fit.correlation(); */
+          // Perform the profile fit
+          try {
+            fitting_type fit(
+                p.const_ref(),
+                m.const_ref(),
+                c.const_ref(),
+                b.const_ref());
+            DIALS_ASSERT(fit.niter() < 10);
 
-      /*       // Set the integrated flag */
-      /*       flags[i] |= IntegratedPrf; */
-      /*     } */
-      /*   } */
-      /* } */
+            // Set the data in the reflection
+            intensity[i]   = fit.intensity();
+            variance[i]    = fit.variance();
+            correlation[i] = fit.correlation();
+
+            // Set the integrated flag
+            flags[i] |= IntegratedPrf;
+          } catch (dials::error) {
+            continue;
+          }
+        }
+      }
 
       // Return the reference learner
       return reference;

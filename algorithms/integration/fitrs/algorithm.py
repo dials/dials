@@ -37,6 +37,7 @@ class IntegrationAlgorithm(object):
 
     '''
     from dials.model.serialize import dump
+    from dials.array_family import flex
     assert(len(experiments) == 1)
     experiment = experiments[0]
     assert("flags" in reflections)
@@ -56,6 +57,8 @@ class IntegrationAlgorithm(object):
     reflections2 = self._integrate_intensities(self.learner, reflections2)
 
     reflections.set_selected(mask3, reflections2)
+    V = flex.double(mask3.count(False), -1)
+    reflections['intensity.prf.variance'].set_selected(~mask3, V)
 
   def _filter_reflections(self, experiments, reflections):
 
@@ -170,17 +173,15 @@ class IntegrationAlgorithm(object):
     coords = reflections['xyzcal.px'].select(mask)
     intensity = integrate(profiles, coords)
     I, I_var, P_cor = intensity.parts()
-    mask2 = I_var > 0
-    I_var.set_selected(mask2 != True, 0.0)
-    reflections['intensity.prf.value'] = flex.double(len(reflections))
-    reflections['intensity.prf.variance'] = flex.double(len(reflections))
-    reflections['profile.correlation'] = flex.double(len(reflections))
+    mask2 = I_var < 0
+    reflections['intensity.prf.value'] = flex.double(len(reflections), 0)
+    reflections['intensity.prf.variance'] = flex.double(len(reflections), -1)
+    reflections['profile.correlation'] = flex.double(len(reflections), 0)
     reflections['intensity.prf.value'].set_selected(mask, I)
     reflections['intensity.prf.variance'].set_selected(mask, I_var)
     reflections['profile.correlation'].set_selected(mask, P_cor)
-    indices = flex.size_t(range(len(mask))).select(mask).select(~mask2)
+    indices = flex.size_t(range(len(mask))).select(mask).select(mask2)
     mask.set_selected(indices, False)
     reflections.set_flags(mask, reflections.flags.integrated_prf)
-    reflections['intensity.prf.variance'].set_selected(~mask, -1)
     Command.end('Integrated {0} reflections'.format(mask.count(True)))
     return reflections
