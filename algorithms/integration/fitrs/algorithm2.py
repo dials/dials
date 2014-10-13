@@ -48,7 +48,9 @@ class IntegrationAlgorithm(object):
     flags = flex.reflection_table.flags
 
     # Create the algorithm
-    algorithm = ReciprocalSpaceProfileFitting(self._grid_size)
+    algorithm = ReciprocalSpaceProfileFitting(
+      self._grid_size,
+      self._threshold)
 
     # Add the specs
     for experiment, model in zip(self._experiments, self._profile_model):
@@ -64,11 +66,6 @@ class IntegrationAlgorithm(object):
     num = reflections.get_flags(flags.dont_integrate).count(False)
     Command.start('Integrating %d reflections with profile fitting' % num)
     profiles = algorithm.execute(reflections)
-
-    mask1 = reflections.get_flags(reflections.flags.dont_integrate)
-    mask2 = reflections.get_flags(reflections.flags.reference_spot)
-
-    print mask1.count(True), mask2.count(True)
 
     # Print the number integrated
     num = reflections.get_flags(flags.integrated_prf).count(True)
