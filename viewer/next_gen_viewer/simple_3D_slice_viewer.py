@@ -21,7 +21,6 @@ import wx.lib.scrolledpanel as scroll_pan
 class show_3d(object):
   def __init__(self, data_xyz_in):
     app = show_3d_wx_app(redirect=False)
-    #app.in_lst(wxbitmap_convert(data_xyz_in).get_wxbitmap_lst(show_nums = True))
     app.in_lst(data_xyz_in)
     app.MainLoop()
 
@@ -41,7 +40,7 @@ class show_3d_wx_app(wx.App):
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def __init__(self, outer_frame, bmp_lst_in):
       super(multi_img_scrollable, self).__init__(outer_frame)
-
+      self.p_frame  = outer_frame
       self.local_bmp_lst = bmp_lst_in
 
       self.set_scroll_content(self.local_bmp_lst)
@@ -61,11 +60,11 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
     def OnMouseWheel(self, event):
-      print "Weel event"
-      print "event.GetWheelRotation() =", event.GetWheelRotation()
+      rot_sn = event.GetWheelRotation()
+      self.p_frame._to_re_zoom(rot_sn)
 
 
-    def Waipeando(self, bmp_lst_new, show_nums):
+    def img_refresh(self, bmp_lst_new):
       self.local_bmp_lst = bmp_lst_new
       for child in self.GetChildren():
         child.Destroy()
@@ -81,7 +80,6 @@ class buttons_panel(wx.Panel):
 
         Hide_I_Button = wx.Button(self, label="Hide I")
         Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
-
         Show_I_Button = wx.Button(self, label="Show I")
         Show_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
 
@@ -93,11 +91,9 @@ class buttons_panel(wx.Panel):
         self.SetSizer(self.my_sizer)
 
     def OnHidIBut(self, event):
-        print "OnHidIBut"
         self.p_frame._to_hide_nums()
 
     def OnShwIBut(self, event):
-        print "OnShwIBut"
         self.p_frame._to_show_nums()
 
 class My_3d_flex_arr_frame(wx.Frame):
@@ -109,27 +105,47 @@ class My_3d_flex_arr_frame(wx.Frame):
     self.show_nums = True
 
   def ini_n_intro(self, flex_arr_in):
-
     self.flex_arr = flex_arr_in
-    self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = True)
+    self.scale = 1.0
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_01 = buttons_panel(self)
     self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
-
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     sizer.Add(self.panel_01, 0, wx.EXPAND)
     sizer.Add(self.panel_02, 1, wx.EXPAND)
     self.SetSizer(sizer)
     self.Show(True)
 
+
+  def _mi_list_of_wxbitmaps(self):
+    bmp_obj = wxbitmap_convert(self.flex_arr)
+    return bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums, scale = self.scale)
+
+
   def _to_hide_nums(self):
     self.show_nums = False
-    self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = self.show_nums)
-    self.panel_02.Waipeando(self.bmp_lst, self.show_nums)
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
+    self.panel_02.img_refresh(self.bmp_lst)
+
 
   def _to_show_nums(self):
     self.show_nums = True
-    self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = self.show_nums)
-    self.panel_02.Waipeando(self.bmp_lst, self.show_nums)
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
+    self.panel_02.img_refresh(self.bmp_lst)
+
+
+  def _to_re_zoom(self, rot_sn):
+    print "sence of scroll = ", rot_sn
+    if( rot_sn > 0 ):
+      self.scale = self.scale * 1.05
+      print "scale =", self.scale
+
+    elif( rot_sn < 0):
+      self.scale = self.scale * 0.95
+      print "scale =", self.scale
+
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
+    self.panel_02.img_refresh(self.bmp_lst)
 
 
 if(__name__ == "__main__"):

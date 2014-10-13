@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 class wxbmp_from_np_array(object):
 
-  def get_bmp_lst(self, data_3d_in, show_nums = True):
+  def get_bmp_lst(self, data_3d_in, show_nums = True, scale = 1.0):
 
     z_dp = data_3d_in.shape[0]
     self.xmax = data_3d_in.shape[1]
@@ -33,17 +33,17 @@ class wxbmp_from_np_array(object):
     tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
     for z in range(z_dp):
       tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-      wx_bmp_lst.append(self._wxbmp(tmp_data2d, show_nums))
+      wx_bmp_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
 
     return wx_bmp_lst
 
-  def _wxbmp(self, np_2d_tmp, show_nums):
+  def _wxbmp(self, np_2d_tmp, show_nums, scale):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
     vl_mid_hig = self.vl_max - d / 3.0
     lc_fig = plt.figure(frameon=False)
-    lc_fig.set_size_inches(self.xmax * .6, self.ymax * .6)
+    lc_fig.set_size_inches(self.xmax * .6 * scale, self.ymax * .6 * scale)
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     lc_fig.add_axes(ax)
