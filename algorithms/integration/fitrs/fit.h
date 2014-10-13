@@ -180,8 +180,12 @@ namespace dials { namespace algorithms {
     /**
      * @returns The profile.
      */
-    profile_type data() const {
-      return profile_type();
+    profile_type data(std::size_t index) const {
+      return learner_.locate().profile(index);
+    }
+
+    std::size_t size() const {
+      return learner_.locate().size();
     }
 
     /**
@@ -199,12 +203,8 @@ namespace dials { namespace algorithms {
      * @param bbox The bounding box
      * @returns The profile for the reflection
      */
-    profile_type get(
-        std::size_t panel_number,
-        const vec3<double> &s1,
-        double phi,
-        int6 bbox) const {
-      return profile_type();
+    profile_type get(vec3<double> xyz) const {
+      return learner_.locate().profile(xyz);
     }
 
   private:
@@ -290,12 +290,9 @@ namespace dials { namespace algorithms {
      */
     profile_type get(
         std::size_t id,
-        std::size_t panel,
-        const vec3<double> &s1,
-        double phi,
-        int6 bbox) const {
+        vec3<double> xyz) const {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].get(panel, s1, phi, bbox);
+      return learner_[id].get(xyz);
     }
 
     /**
@@ -303,9 +300,9 @@ namespace dials { namespace algorithms {
      * @param id The experiment ID
      * @returns The reference profile.
      */
-    profile_type data(std::size_t id) {
+    profile_type data(std::size_t id, std::size_t index) {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].data();
+      return learner_[id].data(index);
     }
 
     /**
@@ -323,6 +320,11 @@ namespace dials { namespace algorithms {
      */
     std::size_t size() const {
       return learner_.size();
+    }
+
+    std::size_t single_size(std::size_t id) const {
+      DIALS_ASSERT(id < learner_.size());
+      return learner_[id].size();
     }
 
   private:

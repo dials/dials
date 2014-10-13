@@ -71,5 +71,25 @@ class IntegrationAlgorithm(object):
     num = reflections.get_flags(flags.integrated_prf).count(True)
     Command.end('Integrated %d reflections with profile fitting' % num)
 
+    # Maybe save some debug info
+    if self._debug:
+      import cPickle as pickle
+      filename = 'debug_%d.pickle' % job_id()
+      print 'Saving debugging information to %s' % filename
+      reference = []
+      for i in range(len(profiles)):
+        r = []
+        for j in range(profiles.single_size(i)):
+          r.append(profiles.data(i,j))
+        reference.append(r)
+      output = {
+        'reflections' : reflections,
+        'experiments' : self._experiments,
+        'profile_model' : self._profile_model,
+        'reference' : reference,
+      }
+      with open(filename, 'wb') as outfile:
+        pickle.dump(output, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+
     # Return the reflections
     return reflections

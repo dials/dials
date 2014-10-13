@@ -260,7 +260,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The reference profile locator.
      */
-    locator_type locate() {
+    locator_type locate() const {
       DIALS_ASSERT(finalized_);
       return locator_;
     }
