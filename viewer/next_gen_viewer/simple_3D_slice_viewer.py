@@ -80,10 +80,10 @@ class buttons_panel(wx.Panel):
         self.p_frame  = outer_frame
 
         Hide_I_Button = wx.Button(self, label="Hide I")
-        Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
+        Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
 
         Show_I_Button = wx.Button(self, label="Show I")
-        Show_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
+        Show_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
 
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
         self.my_sizer.Add(Show_I_Button, 0, wx.LEFT | wx.ALL,8)
@@ -92,12 +92,13 @@ class buttons_panel(wx.Panel):
 
         self.SetSizer(self.my_sizer)
 
-    def OnShwIBut(self, event):
-        print "OnShwIBut"
-        self.p_frame.tst()
-
     def OnHidIBut(self, event):
         print "OnHidIBut"
+        self.p_frame._to_hide_nums()
+
+    def OnShwIBut(self, event):
+        print "OnShwIBut"
+        self.p_frame._to_show_nums()
 
 class My_3d_flex_arr_frame(wx.Frame):
   def __init__(self, parent, id = wx.ID_ANY, title = "",
@@ -109,22 +110,27 @@ class My_3d_flex_arr_frame(wx.Frame):
 
   def ini_n_intro(self, flex_arr_in):
 
-
     self.flex_arr = flex_arr_in
     self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = True)
     self.panel_01 = buttons_panel(self)
     self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
-    # Layout
+
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     sizer.Add(self.panel_01, 0, wx.EXPAND)
     sizer.Add(self.panel_02, 1, wx.EXPAND)
     self.SetSizer(sizer)
-
     self.Show(True)
-  def tst(self):
+
+  def _to_hide_nums(self):
     self.show_nums = False
     self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = self.show_nums)
     self.panel_02.Waipeando(self.bmp_lst, self.show_nums)
+
+  def _to_show_nums(self):
+    self.show_nums = True
+    self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = self.show_nums)
+    self.panel_02.Waipeando(self.bmp_lst, self.show_nums)
+
 
 if(__name__ == "__main__"):
   size_xy = 6
