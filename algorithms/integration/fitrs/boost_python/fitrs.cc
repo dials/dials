@@ -45,6 +45,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                  const Goniometer&,
                  const Scan&,
                  double,
+                 double,
                  double >())
       ;
     typedef ReciprocalSpaceProfileFitting::reference_learner_type reference_learner_type;

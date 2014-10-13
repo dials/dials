@@ -18,7 +18,7 @@ class IntegrationAlgorithm(object):
                experiments,
                profile_model,
                grid_size=5,
-               threshold=2.0,
+               threshold=0.02,
                debug=False):
     '''Initialise algorithm.'''
     assert(len(experiments) == len(profile_model))
@@ -59,8 +59,9 @@ class IntegrationAlgorithm(object):
         experiment.detector,
         experiment.goniometer,
         experiment.scan,
-        model.delta_b(deg=False),
-        model.delta_m(deg=False)))
+        model.sigma_b(deg=False),
+        model.sigma_m(deg=False),
+        model.n_sigma()))
 
     # Perform the integration
     num = reflections.get_flags(flags.dont_integrate).count(False)

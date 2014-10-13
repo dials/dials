@@ -74,16 +74,19 @@ namespace dials { namespace algorithms {
          const Detector &detector,
          const Goniometer &goniometer,
          const Scan &scan,
-         double delta_b,
-         double delta_m)
+         double sigma_b,
+         double sigma_m,
+         double n_sigma)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
         scan_(scan),
-        delta_b_(delta_b),
-        delta_m_(delta_m) {
-      DIALS_ASSERT(delta_b_ > 0);
-      DIALS_ASSERT(delta_m_ > 0);
+        sigma_b_(sigma_b),
+        sigma_m_(sigma_m),
+        n_sigma_(n_sigma) {
+      DIALS_ASSERT(sigma_b_ > 0);
+      DIALS_ASSERT(sigma_m_ > 0);
+      DIALS_ASSERT(n_sigma_ > 0);
     }
 
     const Beam& beam() const {
@@ -102,12 +105,16 @@ namespace dials { namespace algorithms {
       return scan_;
     }
 
-    const double delta_b() const {
-      return delta_b_;
+    const double sigma_b() const {
+      return sigma_b_;
     }
 
-    const double delta_m() const {
-      return delta_m_;
+    const double sigma_m() const {
+      return sigma_m_;
+    }
+
+    const double n_sigma() const {
+      return n_sigma_;
     }
 
   private:
@@ -116,8 +123,9 @@ namespace dials { namespace algorithms {
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
-    double delta_b_;
-    double delta_m_;
+    double sigma_b_;
+    double sigma_m_;
+    double n_sigma_;
   };
 
 
@@ -137,7 +145,7 @@ namespace dials { namespace algorithms {
             int3(
               spec.detector()[0].get_image_size()[0],
               spec.detector()[0].get_image_size()[1],
-              1),
+              spec.scan().get_num_images()),
             int3(3, 3, 1)),
           int3(
             2 * grid_size + 1,
@@ -149,9 +157,9 @@ namespace dials { namespace algorithms {
             spec.detector(),
             spec.goniometer(),
             spec.scan(),
-            spec.delta_b(),
-            spec.delta_m(),
-            1,
+            spec.sigma_b(),
+            spec.sigma_m(),
+            5.0,
             grid_size),
         count_(0) {
       DIALS_ASSERT(spec.detector().size() == 1);
