@@ -70,6 +70,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         child.Destroy()
       self.set_scroll_content(self.local_bmp_lst)
       self.Layout()
+      self.p_frame.Layout()
       self.Refresh()
 
 
@@ -135,14 +136,11 @@ class My_3d_flex_arr_frame(wx.Frame):
 
 
   def _to_re_zoom(self, rot_sn):
-    print "sence of scroll = ", rot_sn
     if( rot_sn > 0 ):
       self.scale = self.scale * 1.05
-      print "scale =", self.scale
 
     elif( rot_sn < 0):
       self.scale = self.scale * 0.95
-      print "scale =", self.scale
 
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
