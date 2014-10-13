@@ -23,6 +23,7 @@
 #include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/integration/profile/fitting.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/reflection_basis/transform.h>
 #include <dials/algorithms/polygon/clip/clip.h>
 #include <dials/algorithms/polygon/spatial_interpolation.h>
 #include <dials/algorithms/polygon/area.h>
@@ -45,6 +46,8 @@ namespace dials { namespace algorithms {
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::algorithms::reflection_basis::CoordinateSystem;
+  using dials::algorithms::reflection_basis::transform::TransformSpec;
+  using dials::algorithms::reflection_basis::transform::Forward;
   using dials::algorithms::polygon::simple_area;
   using dials::algorithms::polygon::clip::vert4;
   using dials::algorithms::polygon::clip::vert8;
@@ -118,17 +121,16 @@ namespace dials { namespace algorithms {
   };
 
 
-  template <typename FloatType>
   class GridProfileLearner {
   public:
 
-    typedef FloatType float_type;
-    typedef af::versa< FloatType, af::c_grid<3> > profile_type;
+    typedef double float_type;
+    typedef af::versa< float_type, af::c_grid<3> > profile_type;
     typedef af::versa< int, af::c_grid<3> > mask_type;
 
     GridProfileLearner(
         const Spec &spec,
-        int3 grid_size,
+        std::size_t grid_size,
         double threshold)
       : learner_(
           GridSampler(
@@ -137,8 +139,21 @@ namespace dials { namespace algorithms {
               spec.detector()[0].get_image_size()[1],
               1),
             int3(3, 3, 1)),
-          grid_size,
-          threshold){
+          int3(
+            2 * grid_size + 1,
+            2 * grid_size + 1,
+            2 * grid_size + 1),
+          threshold),
+        spec_(
+            spec.beam(),
+            spec.detector(),
+            spec.goniometer(),
+            spec.scan(),
+            spec.delta_b(),
+            spec.delta_m(),
+            1,
+            grid_size),
+        count_(0) {
       DIALS_ASSERT(spec.detector().size() == 1);
     }
 
@@ -148,7 +163,10 @@ namespace dials { namespace algorithms {
      * @param s1 The diffracted beam vector.
      * @param phi The rotation angle.
      */
-    bool add(const Shoebox<> &sbox, vec3<double> s1, double phi) {
+    bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) {
+      Forward<double> transform(spec_, s1, phi, sbox);
+      learner_.add(transform.profile().const_ref(), xyz);
+      count_++;
       return true;
     }
 
@@ -156,13 +174,14 @@ namespace dials { namespace algorithms {
      * Finialize the profile.
      */
     void finalize() {
+      learner_.finalize();
     }
 
     /**
      * @returns The profile.
      */
     profile_type data() const {
-      return data_;
+      return profile_type();
     }
 
     /**
@@ -191,13 +210,7 @@ namespace dials { namespace algorithms {
   private:
 
     ReferenceLearnerNew<GridSampler> learner_;
-    Detector detector_;
-    Scan scan_;
-    vec3<double> m2_;
-    vec3<double> s0_;
-    double delta_b_;
-    double delta_m_;
-    profile_type data_;
+    TransformSpec<double> spec_;
     bool finalized_;
     std::size_t count_;
   };
@@ -205,12 +218,11 @@ namespace dials { namespace algorithms {
   /**
    * A class to compute reference profiles for each experiment.
    */
-  template <typename FloatType>
   class MultiExpGridProfileLearner {
   public:
 
-    typedef FloatType float_type;
-    typedef GridProfileLearner<FloatType> learner_type;
+    typedef GridProfileLearner learner_type;
+    typedef typename learner_type::float_type float_type;
     typedef typename learner_type::profile_type profile_type;
     typedef typename learner_type::mask_type mask_type;
 
@@ -233,9 +245,7 @@ namespace dials { namespace algorithms {
       // Create the array of learners
       learner_.reserve(spec.size());
       for (std::size_t i = 0; i < spec.size(); ++i) {
-        learner_.push_back(learner_type(spec[i],
-              int3(grid_size, grid_size, grid_size),
-              threshold));
+        learner_.push_back(learner_type(spec[i], grid_size, threshold));
       }
 
       // Check the input contains expected fields
@@ -245,20 +255,22 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.contains("shoebox"));
       DIALS_ASSERT(data.contains("s1"));
       DIALS_ASSERT(data.contains("xyzcal.mm"));
+      DIALS_ASSERT(data.contains("xyzcal.px"));
       DIALS_ASSERT(data.contains("flags"));
 
       // Get the data we need
       af::const_ref<std::size_t>    id      = data["id"];
       af::const_ref< Shoebox<> >    shoebox = data["shoebox"];
       af::const_ref< vec3<double> > s1      = data["s1"];
-      af::const_ref< vec3<double> > xyzcal  = data["xyzcal.mm"];
+      af::const_ref< vec3<double> > xyzpx   = data["xyzcal.px"];
+      af::const_ref< vec3<double> > xyzmm   = data["xyzcal.mm"];
       af::ref<std::size_t>          flags   = data["flags"];
 
       // Loop through all the reflections
       for (std::size_t i = 0; i < data.size(); ++i) {
         DIALS_ASSERT(id[i] < learner_.size());
         if (flags[i] & ReferenceSpot) {
-          learner_[id[i]].add(shoebox[i], s1[i], xyzcal[i][2]);
+          learner_[id[i]].add(shoebox[i], s1[i], xyzpx[i], xyzmm[i][2]);
         }
       }
 
@@ -325,7 +337,7 @@ namespace dials { namespace algorithms {
   public:
 
     typedef Shoebox<>::float_type float_type;
-    typedef MultiExpGridProfileLearner<float_type> reference_learner_type;
+    typedef MultiExpGridProfileLearner reference_learner_type;
     typedef reference_learner_type::profile_type profile_type;
     typedef af::versa< bool, af::c_grid<3> > mask_type;
     typedef ProfileFitting<float_type> fitting_type;

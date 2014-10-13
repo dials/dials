@@ -265,7 +265,6 @@ namespace dials { namespace algorithms {
       return locator_;
     }
 
-
     /**
      * Learn the reference profiles from the reflection list.
      * @param profiles The list of profiles
@@ -275,7 +274,7 @@ namespace dials { namespace algorithms {
       add_profile(profile, coord);
     }
 
-    bool finialize() {
+    void finalize() {
       normalize_reference_profiles();
       finalized_ = true;
     }
