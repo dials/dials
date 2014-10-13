@@ -21,7 +21,8 @@ import wx.lib.scrolledpanel as scroll_pan
 class show_3d(object):
   def __init__(self, data_xyz_in):
     app = show_3d_wx_app(redirect=False)
-    app.in_lst(wxbitmap_convert(data_xyz_in).get_wxbitmap_lst())
+    #app.in_lst(wxbitmap_convert(data_xyz_in).get_wxbitmap_lst(show_nums = True))
+    app.in_lst(data_xyz_in)
     app.MainLoop()
 
 
@@ -64,7 +65,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       print "event.GetWheelRotation() =", event.GetWheelRotation()
 
 
-    def Waipeando(self):
+    def Waipeando(self, bmp_lst_new, show_nums):
+      self.local_bmp_lst = bmp_lst_new
       for child in self.GetChildren():
         child.Destroy()
       self.set_scroll_content(self.local_bmp_lst)
@@ -105,11 +107,13 @@ class My_3d_flex_arr_frame(wx.Frame):
                                   pos, size, style)
     self.show_nums = True
 
-  def ini_n_intro(self, bmp_lst_in):
+  def ini_n_intro(self, flex_arr_in):
 
-    # Attributes
+
+    self.flex_arr = flex_arr_in
+    self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = True)
     self.panel_01 = buttons_panel(self)
-    self.panel_02 = multi_img_scrollable(self, bmp_lst_in)
+    self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
     # Layout
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     sizer.Add(self.panel_01, 0, wx.EXPAND)
@@ -119,7 +123,8 @@ class My_3d_flex_arr_frame(wx.Frame):
     self.Show(True)
   def tst(self):
     self.show_nums = False
-    self.panel_02.Waipeando()
+    self.bmp_lst = wxbitmap_convert(self.flex_arr).get_wxbitmap_lst(show_nums = self.show_nums)
+    self.panel_02.Waipeando(self.bmp_lst, self.show_nums)
 
 if(__name__ == "__main__"):
   size_xy = 6

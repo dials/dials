@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 class wxbmp_from_np_array(object):
 
-  def get_bmp_lst(self, data_3d_in):
+  def get_bmp_lst(self, data_3d_in, show_nums = True):
 
     z_dp = data_3d_in.shape[0]
     self.xmax = data_3d_in.shape[1]
@@ -33,11 +33,11 @@ class wxbmp_from_np_array(object):
     tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
     for z in range(z_dp):
       tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-      wx_bmp_lst.append(self._wxbmp(tmp_data2d))
+      wx_bmp_lst.append(self._wxbmp(tmp_data2d, show_nums))
 
     return wx_bmp_lst
 
-  def _wxbmp(self, np_2d_tmp):
+  def _wxbmp(self, np_2d_tmp, show_nums):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
@@ -62,8 +62,9 @@ class wxbmp_from_np_array(object):
           clr_chr = 'black'
         else:
           clr_chr = 'blue'
-        plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
-                     , color = clr_chr, size = 12.)
+        if( show_nums == True ):
+          plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
+                       , color = clr_chr, size = 12.)
 
     lc_fig.canvas.draw()
     width, height = lc_fig.canvas.get_width_height()
