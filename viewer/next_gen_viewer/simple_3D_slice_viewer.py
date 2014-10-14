@@ -18,6 +18,8 @@ import wx
 import numpy as np
 import wx.lib.scrolledpanel as scroll_pan
 
+import math
+
 class show_3d(object):
   def __init__(self, data_xyz_in):
     app = show_3d_wx_app(redirect=False)
@@ -46,7 +48,13 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.set_scroll_content(self.local_bmp_lst)
 
       self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+
+      self.Bind(wx.EVT_IDLE, self.OnIdle)
       self.SetupScrolling()
+
+      self.my_event_flag = False
+
+      self.rot_sn = 0
 
 
     def set_scroll_content(self, bmp_lst_in):
@@ -60,8 +68,9 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
     def OnMouseWheel(self, event):
-      rot_sn = event.GetWheelRotation()
-      self.p_frame._to_re_zoom(rot_sn)
+      print event.GetWheelRotation()
+      self.rot_sn += math.copysign(1, float(event.GetWheelRotation()))
+      self.my_event_flag = True
 
 
     def img_refresh(self, bmp_lst_new):
@@ -72,6 +81,11 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.Layout()
       self.p_frame.Layout()
       self.Refresh()
+    def OnIdle(self, event):
+      if( self.my_event_flag == True ):
+        self.p_frame._to_re_zoom(self.rot_sn)
+        self.rot_sn = 0
+        self.my_event_flag = False
 
 
 class buttons_panel(wx.Panel):
@@ -163,4 +177,10 @@ if(__name__ == "__main__"):
 
 
   show_3d(data_xyz_flex)
+
+  tmp_tst = '''
+  from bitmap_from_numpy_w_matplotlib import timing
+  print timing.time1
+  print timing.time2
   print "Done"
+  '''

@@ -17,6 +17,14 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+tmp_tst = '''
+class Time(object):
+  def __init__(self):
+    self.time1 = 0
+    self.time2 = 0
+
+timing = Time()
+'''
 class wxbmp_from_np_array(object):
 
   def get_bmp_lst(self, data_3d_in, show_nums = True, scale = 1.0):
@@ -38,31 +46,40 @@ class wxbmp_from_np_array(object):
     return wx_bmp_lst
 
   def _wxbmp(self, np_2d_tmp, show_nums, scale):
-
+    #from time import time
+    #st = time()
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
     vl_mid_hig = self.vl_max - d / 3.0
     lc_fig = plt.figure(frameon=False)
+    #timing.time1 += time() - st
+
     lc_fig.set_size_inches(self.xmax * .6 * scale, self.ymax * .6 * scale)
+
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
+
+    #st = time()
     ax.set_axis_off()
     lc_fig.add_axes(ax)
+    #timing.time2 += time() - st
     plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot'
                , vmin = self.vl_min, vmax = self.vl_max)
 
-    for xpos in range(self.xmax):
-      for ypos in range(self.ymax):
-        f_num = np_2d_tmp[xpos,ypos]
-        g = float("{0:.2f}".format(float(f_num)))
 
-        txt_dat = str(g)
-        if( g < vl_mid_low ):
-          clr_chr = 'yellow'
-        elif(g > vl_mid_hig):
-          clr_chr = 'black'
-        else:
-          clr_chr = 'blue'
-        if( show_nums == True ):
+    if( show_nums == True ):
+      for xpos in range(self.xmax):
+        for ypos in range(self.ymax):
+          f_num = np_2d_tmp[xpos,ypos]
+          g = float("{0:.2f}".format(float(f_num)))
+
+          txt_dat = str(g)
+          if( g < vl_mid_low ):
+            clr_chr = 'yellow'
+          elif(g > vl_mid_hig):
+            clr_chr = 'black'
+          else:
+            clr_chr = 'blue'
+
           plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
                        , color = clr_chr, size = 12.)
 
