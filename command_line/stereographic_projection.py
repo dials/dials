@@ -25,6 +25,8 @@ save_coordinates = True
   .type = bool
 plot = True
   .type = bool
+label_indices = False
+  .type = bool
 """)
 
 
@@ -178,6 +180,15 @@ def run(args):
         rotation_matrix=R_ij)
       projections_all.append(projections)
 
+  if params.save_coordinates:
+    with open('projections.txt', 'wb') as f:
+      print >> f, "crystal h k l x y"
+      for i_cryst, projections in enumerate(projections_all):
+        for hkl, proj in zip(miller_indices, projections):
+          print >> f, "%i" %(i_cryst+1),
+          print >> f, "%i %i %i" %hkl,
+          print >> f, "%f %f" %proj
+
   if params.plot:
     from matplotlib import pyplot
     from matplotlib import pylab
@@ -188,19 +199,13 @@ def run(args):
     for projections in projections_all:
       x, y = projections.parts()
       pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(), c='b', s=2)
-      #for hkl, proj in zip(miller_indices, projections):
-        #pyplot.text(proj[0], proj[1], str(hkl), fontsize=5)
+      if params.label_indices:
+        for hkl, proj in zip(miller_indices, projections):
+          pyplot.text(proj[0], proj[1], str(hkl), fontsize=10)
     pyplot.axes().set_aspect('equal')
     pyplot.xlim(-1.1,1.1)
     pyplot.ylim(-1.1,1.1)
     pyplot.show()
-
-  if params.save_coordinates:
-    with open('projections.txt', 'wb') as f:
-      for projections in projections_all:
-        for hkl, proj in zip(miller_indices, projections):
-          print >> f, "%i %i %i" %hkl,
-          print >> f, "%f %f" %proj
 
 
 
