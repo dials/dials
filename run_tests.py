@@ -27,6 +27,7 @@ tst_list = (
     "$D/test/command_line/tst_combine_experiments_and_reflections.py",
     "$D/test/command_line/tst_spot_counts_per_image.py",
     "$D/test/command_line/tst_stereographic_projections.py",
+    "$D/test/command_line/tst_compare_orientation_matrices.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_reflection_table.py",
     "$D/test/model/data/tst_prediction.py",

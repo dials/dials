@@ -12,21 +12,24 @@ hkl = None
 
 
 def run(args):
-  from libtbx.phil import command_line
-  from dials.util.command_line import Importer
-  importer = Importer(args, check_format=False)
-  assert importer.reflections is None
-  assert len(importer.experiments) > 1
 
-  cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  working_phil = cmd_line.process_and_fetch(args=importer.unhandled_arguments)
-  working_phil.show()
-  params = working_phil.extract()
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_experiments
+
+  parser = OptionParser(
+    phil=master_phil_scope,
+    read_experiments=True,
+    check_format=False)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+  experiments = flatten_experiments(params.input.experiments)
+  assert len(experiments) > 1
+
   hkl = flex.miller_index(params.hkl)
 
   from dials.algorithms.indexing.compare_orientation_matrices import \
        show_rotation_matrix_differences
-  show_rotation_matrix_differences(importer.experiments.crystals(),
+  show_rotation_matrix_differences(experiments.crystals(),
                                    miller_indices=hkl)
 
 
