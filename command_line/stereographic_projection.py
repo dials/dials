@@ -102,17 +102,24 @@ def gcd_list(l):
 
 
 def run(args):
-  print args
-  from libtbx.phil import command_line
-  from dials.util.command_line import Importer
-  importer = Importer(args, check_format=False)
-  assert importer.reflections is None
-  assert len(importer.experiments) > 0
+  #print args
 
-  cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  working_phil = cmd_line.process_and_fetch(args=importer.unhandled_arguments)
-  working_phil.show()
-  params = working_phil.extract()
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_experiments
+
+  parser = OptionParser(
+    phil=master_phil_scope,
+    read_experiments=True,
+    check_format=False)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+  experiments = flatten_experiments(params.input.experiments)
+  assert len(experiments) > 0
+
+  if len(params.hkl) == 0 and params.hkl_limit is None:
+    from libtbx.utils import Sorry
+    raise Sorry("Please provide hkl or hkl_limit parameters.")
+
   if params.hkl is not None and len(params.hkl):
     miller_indices = flex.miller_index(params.hkl)
   elif params.hkl_limit is not None:
@@ -124,7 +131,7 @@ def run(args):
           if (h,k,l) == (0,0,0): continue
           miller_indices.append((h,k,l))
 
-  crystals = importer.experiments.crystals()
+  crystals = experiments.crystals()
 
   symmetry = crystal.symmetry(
     unit_cell=crystals[0].get_unit_cell(),
