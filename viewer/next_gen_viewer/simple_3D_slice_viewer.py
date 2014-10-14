@@ -66,8 +66,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
     def OnMouseWheel(self, event):
-      print event.GetWheelRotation()
-      self.rot += math.copysign(1, float(event.GetWheelRotation()))
+      sn_mov = math.copysign(1, float(event.GetWheelRotation()))
+      self.rot += sn_mov
 
 
     def img_refresh(self, bmp_lst_new):
@@ -81,7 +81,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     def OnIdle(self, event):
       if( self.rot != 0 ):
-        print self.rot
         self.p_frame._to_re_zoom(self.rot)
         self.rot = 0
 
@@ -178,9 +177,3 @@ if(__name__ == "__main__"):
 
   show_3d(data_xyz_flex)
 
-  tmp_tst = '''
-  from bitmap_from_numpy_w_matplotlib import timing
-  print timing.time1
-  print timing.time2
-  print "Done"
-  '''
