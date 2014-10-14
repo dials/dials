@@ -52,8 +52,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.Bind(wx.EVT_IDLE, self.OnIdle)
       self.SetupScrolling()
 
-      self.my_event_flag = False
-
       self.rot_sn = 0
 
 
@@ -70,7 +68,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def OnMouseWheel(self, event):
       print event.GetWheelRotation()
       self.rot_sn += math.copysign(1, float(event.GetWheelRotation()))
-      self.my_event_flag = True
 
 
     def img_refresh(self, bmp_lst_new):
@@ -81,11 +78,11 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.Layout()
       self.p_frame.Layout()
       self.Refresh()
+
     def OnIdle(self, event):
-      if( self.my_event_flag == True ):
+      if( self.rot_sn != 0 ):
         self.p_frame._to_re_zoom(self.rot_sn)
         self.rot_sn = 0
-        self.my_event_flag = False
 
 
 class buttons_panel(wx.Panel):
