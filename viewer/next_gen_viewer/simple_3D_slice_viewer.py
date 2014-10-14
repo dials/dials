@@ -52,7 +52,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.Bind(wx.EVT_IDLE, self.OnIdle)
       self.SetupScrolling()
 
-      self.rot_sn = 0
+      self.rot = 0
 
 
     def set_scroll_content(self, bmp_lst_in):
@@ -67,7 +67,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     def OnMouseWheel(self, event):
       print event.GetWheelRotation()
-      self.rot_sn += math.copysign(1, float(event.GetWheelRotation()))
+      self.rot += math.copysign(1, float(event.GetWheelRotation()))
 
 
     def img_refresh(self, bmp_lst_new):
@@ -80,9 +80,10 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.Refresh()
 
     def OnIdle(self, event):
-      if( self.rot_sn != 0 ):
-        self.p_frame._to_re_zoom(self.rot_sn)
-        self.rot_sn = 0
+      if( self.rot != 0 ):
+        print self.rot
+        self.p_frame._to_re_zoom(self.rot)
+        self.rot = 0
 
 
 class buttons_panel(wx.Panel):
@@ -148,10 +149,12 @@ class My_3d_flex_arr_frame(wx.Frame):
 
   def _to_re_zoom(self, rot_sn):
     if( rot_sn > 0 ):
-      self.scale = self.scale * 1.05
+      for ntimes in range(int(math.fabs(rot_sn))):
+        self.scale = self.scale * 1.05
 
     elif( rot_sn < 0):
-      self.scale = self.scale * 0.95
+      for ntimes in range(int(math.fabs(rot_sn))):
+        self.scale = self.scale * 0.95
 
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
