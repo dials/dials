@@ -1,15 +1,21 @@
 from __future__ import division
 
 def run(args):
-  if len(args) == 0:
-    from libtbx.utils import Usage
-    import libtbx.load_env
-    usage_message = """\
-%s datablock.json | experiments.json""" %libtbx.env.dispatcher_name
-    raise Usage(usage_message)
-  from dials.util.command_line import Importer
-  importer = Importer(args, check_format=False)
-  experiments = importer.experiments
+
+
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_experiments
+  from dials.util.options import flatten_datablocks
+
+  parser = OptionParser(
+    read_experiments=True,
+    read_datablocks=True,
+    check_format=False)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+  experiments = flatten_experiments(params.input.experiments)
+  datablocks = flatten_datablocks(params.input.datablock)
+
   if experiments is not None:
     for detector in experiments.detectors():
       print detector
@@ -21,8 +27,8 @@ def run(args):
       print goniometer
     for crystal in experiments.crystals():
       crystal.show(show_scan_varying=True)
-  if importer.datablocks is not None:
-    for datablock in importer.datablocks:
+  if datablocks is not None:
+    for datablock in datablocks:
       imagesets = datablock.extract_imagesets()
       for imageset in imagesets:
         try: print imageset.get_template()

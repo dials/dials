@@ -873,6 +873,7 @@ test/command_line/tst_refine.py -text
 test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_reindex.py -text
 test/command_line/tst_show_extensions.py -text
+test/command_line/tst_show_models.py -text
 test/command_line/tst_sort_reflections.py -text
 test/command_line/tst_spot_counts_per_image.py -text
 test/command_line/tst_spotfinder.py -text
