@@ -915,6 +915,13 @@ class indexer_base(object):
         return len(self.volume_filtered)
 
       def update_analysis(self):
+        # pre-filter out solutions that only account for a very small
+        # percentage of the indexed spots relative to the best one
+        max_n_indexed = max(s.n_indexed for s in self.all_solutions)
+        self.all_solutions = [
+          s for s in self.all_solutions
+          if s.n_indexed >= 0.05 * max_n_indexed] # 5 percent
+
         self.best_likelihood = max(
           s.model_likelihood for s in self.all_solutions)
         self.close_solutions = [
