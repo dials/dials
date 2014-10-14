@@ -334,6 +334,7 @@ command_line/show_spots.py -text
 command_line/simulate.py -text
 command_line/simulate_rs.py -text
 command_line/sort_reflections.py -text
+command_line/spot_counts_per_image.py -text
 command_line/stereographic_projection.py -text
 /config.h -text
 data/__init__.py -text
@@ -872,6 +873,7 @@ test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_reindex.py -text
 test/command_line/tst_show_extensions.py -text
 test/command_line/tst_sort_reflections.py -text
+test/command_line/tst_spot_counts_per_image.py -text
 test/command_line/tst_spotfinder.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
