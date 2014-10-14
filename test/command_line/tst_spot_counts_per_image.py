@@ -4,6 +4,7 @@ def run():
   import os
   import libtbx.load_env
   from libtbx.test_utils import show_diff
+  from libtbx import easy_run
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
   except KeyError, e:
@@ -13,18 +14,15 @@ def run():
   path = os.path.join(dials_regression, "centroid_test_data")
 
   # import the data
-  from libtbx import easy_run
   cmd = "dials.import %s/*.cbf output=datablock.json" %path
   easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("datablock.json")
 
   # find the spots
-  from libtbx import easy_run
   cmd = "dials.find_spots datablock.json min_spot_size=3"
   easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("strong.pickle")
 
-  from libtbx import easy_run
   cmd = "dials.spot_counts_per_image datablock.json strong.pickle plot=spot_counts.png"
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("spot_counts.png")
