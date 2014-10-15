@@ -129,12 +129,148 @@ namespace dials { namespace algorithms {
   };
 
 
-  class GridProfileLearner {
+  class ProfileLearnerIface {
   public:
 
     typedef double float_type;
     typedef af::const_ref< float_type, af::c_grid<3> > profile_type;
     typedef af::const_ref< bool, af::c_grid<3> > mask_type;
+
+    virtual
+    ~ProfileLearnerIface() {}
+
+    virtual
+    bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) = 0;
+
+    virtual
+    void finalize() = 0;
+
+    virtual
+    profile_type data(std::size_t index) const = 0;
+
+    virtual
+    std::size_t size() const = 0;
+
+    virtual
+    std::size_t count() const = 0;
+
+    virtual
+    profile_type get(vec3<double> xyz) const = 0;
+
+    virtual
+    mask_type get_mask(vec3<double> xyz) const = 0;
+  };
+
+  class SingleProfileLearner : public ProfileLearnerIface {
+  public:
+
+    SingleProfileLearner(
+        const Spec &spec,
+        std::size_t grid_size,
+        double threshold)
+      : learner_(
+          GridSampler(
+            int3(
+              spec.detector()[0].get_image_size()[0],
+              spec.detector()[0].get_image_size()[1],
+              spec.scan().get_num_images()),
+            int3(1, 1, 1)),
+          int3(
+            2 * grid_size + 1,
+            2 * grid_size + 1,
+            2 * grid_size + 1),
+          threshold),
+        spec_(
+            spec.beam(),
+            spec.detector(),
+            spec.goniometer(),
+            spec.scan(),
+            spec.sigma_b(),
+            spec.sigma_m(),
+            5.0,
+            grid_size),
+        count_(0) {
+      DIALS_ASSERT(spec.detector().size() == 1);
+    }
+
+    /**
+     * Add a reflection to the reference profile.
+     * @param sbox The shoebox
+     * @param s1 The diffracted beam vector.
+     * @param phi The rotation angle.
+     */
+    virtual
+    bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) {
+      DIALS_ASSERT(!finalized_);
+      Forward<double> transform(spec_, s1, phi, sbox);
+      learner_.add(transform.profile().const_ref(), xyz);
+      count_++;
+      return true;
+    }
+
+    /**
+     * Finialize the profile.
+     */
+    virtual
+    void finalize() {
+      DIALS_ASSERT(!finalized_);
+      learner_.finalize();
+      finalized_ = true;
+    }
+
+    /**
+     * @returns The profile.
+     */
+    virtual
+    profile_type data(std::size_t index) const {
+      DIALS_ASSERT(finalized_);
+      return learner_.locate().profile_ref(index);
+    }
+
+    virtual
+    std::size_t size() const {
+      DIALS_ASSERT(finalized_);
+      return learner_.locate().size();
+    }
+
+    /**
+     * @returns The number of reflections used to compute the profile.
+     */
+    virtual
+    std::size_t count() const {
+      return count_;
+    }
+
+    /**
+     * Get the profile for the given reflection.
+     * @param The panel number
+     * @param s1 The diffracted beam vector
+     * @param phi The rotation angle
+     * @param bbox The bounding box
+     * @returns The profile for the reflection
+     */
+    virtual
+    profile_type get(vec3<double> xyz) const {
+      DIALS_ASSERT(finalized_);
+      return learner_.locate().profile_ref(xyz);
+    }
+
+    virtual
+    mask_type get_mask(vec3<double> xyz) const {
+      DIALS_ASSERT(finalized_);
+      return learner_.locate().mask_ref(xyz);
+    }
+
+  private:
+
+    ReferenceLearnerNew<GridSampler> learner_;
+    TransformSpec<double> spec_;
+    bool finalized_;
+    std::size_t count_;
+  };
+
+  class GridProfileLearner : public ProfileLearnerIface {
+  public:
 
     GridProfileLearner(
         const Spec &spec,
@@ -171,7 +307,9 @@ namespace dials { namespace algorithms {
      * @param s1 The diffracted beam vector.
      * @param phi The rotation angle.
      */
+    virtual
     bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) {
+      DIALS_ASSERT(!finalized_);
       Forward<double> transform(spec_, s1, phi, sbox);
       learner_.add(transform.profile().const_ref(), xyz);
       count_++;
@@ -181,24 +319,32 @@ namespace dials { namespace algorithms {
     /**
      * Finialize the profile.
      */
+    virtual
     void finalize() {
+      DIALS_ASSERT(!finalized_);
       learner_.finalize();
+      finalized_ = true;
     }
 
     /**
      * @returns The profile.
      */
+    virtual
     profile_type data(std::size_t index) const {
+      DIALS_ASSERT(finalized_);
       return learner_.locate().profile_ref(index);
     }
 
+    virtual
     std::size_t size() const {
+      DIALS_ASSERT(finalized_);
       return learner_.locate().size();
     }
 
     /**
      * @returns The number of reflections used to compute the profile.
      */
+    virtual
     std::size_t count() const {
       return count_;
     }
@@ -211,10 +357,15 @@ namespace dials { namespace algorithms {
      * @param bbox The bounding box
      * @returns The profile for the reflection
      */
+    virtual
     profile_type get(vec3<double> xyz) const {
+      DIALS_ASSERT(finalized_);
       return learner_.locate().profile_ref(xyz);
     }
+
+    virtual
     mask_type get_mask(vec3<double> xyz) const {
+      DIALS_ASSERT(finalized_);
       return learner_.locate().mask_ref(xyz);
     }
 
@@ -229,10 +380,10 @@ namespace dials { namespace algorithms {
   /**
    * A class to compute reference profiles for each experiment.
    */
-  class MultiExpGridProfileLearner {
+  class MultiExpProfileLearner {
   public:
 
-    typedef GridProfileLearner learner_type;
+    typedef ProfileLearnerIface learner_type;
     typedef learner_type::float_type float_type;
     typedef learner_type::profile_type profile_type;
     typedef learner_type::mask_type mask_type;
@@ -242,11 +393,12 @@ namespace dials { namespace algorithms {
      * @param spec The list of experiment specifications
      * @param data The list of reflections.
      */
-    MultiExpGridProfileLearner(
+    MultiExpProfileLearner(
         af::const_ref<Spec> spec,
         af::reflection_table data,
         std::size_t grid_size,
-        double threshold) {
+        double threshold,
+        bool single_reference) {
 
       // Check the input
       DIALS_ASSERT(spec.size() > 0);
@@ -256,7 +408,21 @@ namespace dials { namespace algorithms {
       // Create the array of learners
       learner_.reserve(spec.size());
       for (std::size_t i = 0; i < spec.size(); ++i) {
-        learner_.push_back(learner_type(spec[i], grid_size, threshold));
+        if (single_reference || spec[i].detector().size() > 1) {
+          learner_.push_back(
+              boost::shared_ptr<learner_type>(
+                new SingleProfileLearner(
+                  spec[i],
+                  grid_size,
+                  threshold)));
+        } else {
+          learner_.push_back(
+              boost::shared_ptr<learner_type>(
+                new GridProfileLearner(
+                  spec[i],
+                  grid_size,
+                  threshold)));
+        }
       }
 
       // Check the input contains expected fields
@@ -281,13 +447,13 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < data.size(); ++i) {
         DIALS_ASSERT(id[i] < learner_.size());
         if (flags[i] & ReferenceSpot) {
-          learner_[id[i]].add(shoebox[i], s1[i], xyzpx[i], xyzmm[i][2]);
+          learner_[id[i]]->add(shoebox[i], s1[i], xyzpx[i], xyzmm[i][2]);
         }
       }
 
       // Finalize the profiles
       for (std::size_t i = 0; i < learner_.size(); ++i) {
-        learner_[i].finalize();
+        learner_[i]->finalize();
       }
     }
 
@@ -303,14 +469,14 @@ namespace dials { namespace algorithms {
         std::size_t id,
         vec3<double> xyz) const {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].get(xyz);
+      return learner_[id]->get(xyz);
     }
 
     mask_type get_mask(
         std::size_t id,
         vec3<double> xyz) const {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].get_mask(xyz);
+      return learner_[id]->get_mask(xyz);
     }
 
     /**
@@ -320,7 +486,7 @@ namespace dials { namespace algorithms {
      */
     profile_type data(std::size_t id, std::size_t index) {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].data(index);
+      return learner_[id]->data(index);
     }
 
     /**
@@ -330,7 +496,7 @@ namespace dials { namespace algorithms {
      */
     std::size_t count(std::size_t id) {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].count();
+      return learner_[id]->count();
     }
 
     /**
@@ -342,13 +508,14 @@ namespace dials { namespace algorithms {
 
     std::size_t single_size(std::size_t id) const {
       DIALS_ASSERT(id < learner_.size());
-      return learner_[id].size();
+      return learner_[id]->size();
     }
 
   private:
 
-    std::vector<learner_type> learner_;
+    std::vector<boost::shared_ptr<learner_type> > learner_;
   };
+
 
   /**
    * A class to perform reciprocal space profile fitting.
@@ -357,15 +524,17 @@ namespace dials { namespace algorithms {
   public:
 
     typedef Shoebox<>::float_type float_type;
-    typedef MultiExpGridProfileLearner reference_learner_type;
+    typedef MultiExpProfileLearner reference_learner_type;
     typedef reference_learner_type::profile_type profile_type;
     typedef reference_learner_type::mask_type mask_type;
     typedef ProfileFitting<double> fitting_type;
 
     ReciprocalSpaceProfileFitting(std::size_t grid_size,
-                                  double threshold)
+                                  double threshold,
+                                  bool single_reference)
         : grid_size_(grid_size),
-          threshold_(threshold) {
+          threshold_(threshold),
+          single_reference_(single_reference) {
       DIALS_ASSERT(grid_size > 0);
     }
 
@@ -434,7 +603,8 @@ namespace dials { namespace algorithms {
           spec_.const_ref(),
           data,
           grid_size_,
-          threshold_);
+          threshold_,
+          single_reference_);
 
       // Create a list of transform specs
       std::vector< TransformSpec<> > transform_spec;
@@ -513,6 +683,7 @@ namespace dials { namespace algorithms {
     af::shared<Spec> spec_;
     std::size_t grid_size_;
     double threshold_;
+    bool single_reference_;
   };
 
 }} // namespace dials::algorithms

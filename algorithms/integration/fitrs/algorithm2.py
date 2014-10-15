@@ -19,6 +19,7 @@ class IntegrationAlgorithm(object):
                profile_model,
                grid_size=5,
                threshold=0.02,
+               single_reference=False,
                debug=False):
     '''Initialise algorithm.'''
     assert(len(experiments) == len(profile_model))
@@ -26,6 +27,7 @@ class IntegrationAlgorithm(object):
     self._profile_model = profile_model
     self._grid_size = grid_size
     self._threshold = threshold
+    self._single_reference = single_reference
     self._debug = debug
 
   def __call__(self, reflections):
@@ -50,7 +52,8 @@ class IntegrationAlgorithm(object):
     # Create the algorithm
     algorithm = ReciprocalSpaceProfileFitting(
       self._grid_size,
-      self._threshold)
+      self._threshold,
+      self._single_reference)
 
     # Add the specs
     for experiment, model in zip(self._experiments, self._profile_model):

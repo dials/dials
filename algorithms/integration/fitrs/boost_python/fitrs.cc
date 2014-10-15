@@ -59,7 +59,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       ;
 
     class_<ReciprocalSpaceProfileFitting>("ReciprocalSpaceProfileFitting", no_init)
-      .def(init< std::size_t, double >())
+      .def(init< std::size_t, double, bool >())
       .def("add", &ReciprocalSpaceProfileFitting::add)
       .def("execute", &ReciprocalSpaceProfileFitting::execute)
       ;

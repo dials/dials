@@ -32,6 +32,10 @@ class FitrsIntegrationExt(IntensityIface):
         .type = float
         .help = "The threshold to use in reference profile"
 
+      single_reference = False
+        .type = bool
+        .help = "Use a single reference profile for profile fitting"
+
       debug = False
         .type = bool
         .help = "Save the reference profiles and other debug info."
@@ -47,6 +51,7 @@ class FitrsIntegrationExt(IntensityIface):
       profile_model,
       grid_size=params.integration.intensity.fitrs.grid_size,
       threshold=params.integration.intensity.fitrs.threshold,
+      single_reference=params.integration.intensity.fitrs.single_reference,
       debug=params.integration.intensity.fitrs.debug)
 
   def compute_intensity(self, reflections):
