@@ -755,6 +755,7 @@ scratch/rjg/run_dials_index.py -text
 scratch/rjg/split_mtz.py -text
 scratch/rjg/total_counts_per_image.py -text
 scratch/rjg/unit_cell_refinement.py -text
+scratch/rjg/view_reciprocal_lattice.py -text
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
