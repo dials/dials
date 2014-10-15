@@ -626,7 +626,7 @@ namespace dials { namespace algorithms {
       // Get the new columns to set
       af::ref<double> intensity   = data["intensity.prf.value"];
       af::ref<double> variance    = data["intensity.prf.variance"];
-      af::ref<double> correlation = data["profile_correlation"];
+      af::ref<double> correlation = data["profile.correlation"];
 
       // Do the profile fitting for all reflections
       for (std::size_t i = 0; i < data.size(); ++i) {
