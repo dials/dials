@@ -6,6 +6,44 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 from scitbx.matrix import col
 
+def display_detectors(detectors, save=False):
+  fig = plt.figure()
+  ax = fig.add_subplot(111, aspect='equal')
+
+  for detector in detectors:
+    for i, panel in enumerate(detector):
+      size = panel.get_image_size()
+      p0 = col(panel.get_pixel_lab_coord((0,0)))
+      p1 = col(panel.get_pixel_lab_coord((size[0]-1,0)))
+      p2 = col(panel.get_pixel_lab_coord((size[0]-1,size[1]-1)))
+      p3 = col(panel.get_pixel_lab_coord((0,size[1]-1)))
+
+      v1 = p1-p0
+      v2 = p3-p0
+      vcen = ((v2/2) + (v1/2)) + p0
+
+      ax.add_patch(Polygon((p0[0:2],p1[0:2],p2[0:2],p3[0:2]), closed=True, color='green', fill=False, hatch='/'))
+      ax.annotate(i, vcen[0:2])
+
+  ax.set_xlim((-100, 100))
+  ax.set_ylim((-100, 100))
+
+  if save:
+    import os
+    i = 0
+    while i < 9999:
+      filename = "detector_%04d.png"%i
+      if os.path.exists(filename):
+        i += 1
+      else:
+        print "Saving detector image as", filename
+        fig.savefig(filename)
+        break
+  else:
+    plt.show()
+
+  del fig
+
 class Script(object):
   def __init__(self):
     # Create the parser
@@ -24,31 +62,7 @@ class Script(object):
       all_detectors.extend(db.unique_detectors())
 
     all_detectors.extend(experiments.detectors())
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, aspect='equal')
-
-    #for detector in all_detectors:
-    for j in xrange(min(len(all_detectors),10)):
-      detector = all_detectors[j]
-      print detector[0].get_d_matrix()
-      for i, panel in enumerate(detector):
-        size = panel.get_image_size()
-        p0 = col(panel.get_pixel_lab_coord((0,0)))
-        p1 = col(panel.get_pixel_lab_coord((size[0]-1,0)))
-        p2 = col(panel.get_pixel_lab_coord((size[0]-1,size[1]-1)))
-        p3 = col(panel.get_pixel_lab_coord((0,size[1]-1)))
-
-        v1 = p1-p0
-        v2 = p3-p0
-        vcen = ((v2/2) + (v1/2)) + p0
-
-        ax.add_patch(Polygon((p0[0:2],p1[0:2],p2[0:2],p3[0:2]), closed=True, color='green', fill=False, hatch='/'))
-        ax.annotate(i, vcen[0:2])
-
-    ax.set_xlim((-100, 100))
-    ax.set_ylim((-100, 100))
-    plt.show()
+    display_detectors(all_detectors[:min(len(all_detectors),10)])
 
 
 if __name__ == '__main__':
