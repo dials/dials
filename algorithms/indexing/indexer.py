@@ -1237,13 +1237,16 @@ class indexer_base(object):
       self, file_name='reciprocal_lattice.pdb'):
     from cctbx import crystal, xray
     cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
-    xs = xray.structure(crystal_symmetry=cs)
-    for site in self.reflections['rlp']:
-      xs.add_scatterer(xray.scatterer("C", site=site))
-
-    xs.sites_mod_short()
-    with open(file_name, 'wb') as f:
-      print >> f, xs.as_pdb_file()
+    for i_panel in range(len(self.detector)):
+      if len(self.detector) > 1:
+        file_name = 'reciprocal_lattice_%i.pdb' %i_panel
+      with open(file_name, 'wb') as f:
+        xs = xray.structure(crystal_symmetry=cs)
+        reflections = self.reflections.select(self.reflections['panel'] == i_panel)
+        for site in reflections['rlp']:
+          xs.add_scatterer(xray.scatterer("C", site=site))
+        xs.sites_mod_short()
+        print >> f, xs.as_pdb_file()
 
   def debug_write_ccp4_map(self, map_data, file_name):
     from iotbx import ccp4_map
