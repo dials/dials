@@ -166,10 +166,12 @@ def frame_hist(bbox, width=80, symbol='#', prefix=''):
   max_frame = max(frame)
   min_count = min(count)
   max_count = max(count)
-  assert(max_frame > min_frame)
-  assert(max_count > min_count)
+  assert(max_count > 0)
   assert(min_count >= 0)
-  num_frame_zeros = int(floor(log10(max_frame))) + 1
+  if max_frame == 0:
+    num_frame_zeros = 1
+  else:
+    num_frame_zeros = int(floor(log10(max_frame))) + 1
   num_count_zeros = int(floor(log10(max_count))) + 1
   assert(num_frame_zeros > 0)
   assert(num_count_zeros > 0)
@@ -266,7 +268,7 @@ class Task(object):
     imageset = imageset[index0:index1]
 
     # Print a histogram of reflections on frames
-    if frame11 - frame10 > 1:
+    if frame01 - frame00 > 1:
       print ' The number of reflections recorded on each frame'
       print ''
       print frame_hist(self._data['bbox'], prefix=' ', symbol='*')
