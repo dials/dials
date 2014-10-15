@@ -152,6 +152,36 @@ class Integrator(object):
     return self._manager.result()
 
 
+def frame_hist(bbox, width=80, symbol='#', prefix=''):
+  ''' A utility function to print a histogram of reflections on frames. '''
+  from collections import defaultdict, Counter
+  from math import log10, floor
+  assert(len(bbox) > 0)
+  assert(width > 0)
+  count = Counter([z for b in bbox for z in range(b[4], b[5])])
+  count = count.items()
+  count.sort()
+  frame, count = zip(*count)
+  min_frame = min(frame)
+  max_frame = max(frame)
+  min_count = min(count)
+  max_count = max(count)
+  assert(max_frame > min_frame)
+  assert(max_count > min_count)
+  assert(min_count >= 0)
+  num_frame_zeros = int(floor(log10(max_frame))) + 1
+  num_count_zeros = int(floor(log10(max_count))) + 1
+  assert(num_frame_zeros > 0)
+  assert(num_count_zeros > 0)
+  num_hist = width - (num_frame_zeros + num_count_zeros + 5) - len(prefix)
+  assert(num_hist) > 0
+  fmt = '%s%%-%dd [%%-%dd]: %%s' % (prefix, num_frame_zeros, num_count_zeros)
+  scale = float(num_hist) / max_count
+  return '\n'.join((
+    fmt % (key, value, int(value * scale) * symbol)
+      for key, value in zip(frame, count)))
+
+
 class Result(object):
   ''' A class representing an integration result. '''
 
@@ -234,6 +264,13 @@ class Task(object):
     assert(index0 >= 0)
     assert(index1 <= len(imageset))
     imageset = imageset[index0:index1]
+
+    # Print a histogram of reflections on frames
+    if frame11 - frame10 > 1:
+      print ' The number of reflections recorded on each frame'
+      print ''
+      print frame_hist(self._data['bbox'], prefix=' ', symbol='*')
+      print ''
 
     # Create the shoeboxes
     self._data["shoebox"] = flex.shoebox(
