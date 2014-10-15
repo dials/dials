@@ -189,7 +189,8 @@ namespace dials { namespace algorithms {
             spec.sigma_m(),
             5.0,
             grid_size),
-        count_(0) {
+        count_(0),
+        finalized_(false) {
       DIALS_ASSERT(spec.detector().size() == 1);
     }
 
@@ -265,8 +266,8 @@ namespace dials { namespace algorithms {
 
     ReferenceLearnerNew<GridSampler> learner_;
     TransformSpec<double> spec_;
-    bool finalized_;
     std::size_t count_;
+    bool finalized_;
   };
 
   class GridProfileLearner : public ProfileLearnerIface {
@@ -297,7 +298,8 @@ namespace dials { namespace algorithms {
             spec.sigma_m(),
             5.0,
             grid_size),
-        count_(0) {
+        count_(0),
+        finalized_(false) {
       DIALS_ASSERT(spec.detector().size() == 1);
     }
 
@@ -373,8 +375,8 @@ namespace dials { namespace algorithms {
 
     ReferenceLearnerNew<GridSampler> learner_;
     TransformSpec<double> spec_;
-    bool finalized_;
     std::size_t count_;
+    bool finalized_;
   };
 
   /**
