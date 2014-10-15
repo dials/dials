@@ -5,7 +5,7 @@ from scitbx import matrix
 
 def difference_rotation_matrix_and_euler_angles(crystal_a, crystal_b):
   from cctbx import sgtbx
-  assert crystal_a.get_space_group() == crystal_b.get_space_group()
+  #assert crystal_a.get_space_group() == crystal_b.get_space_group()
   space_group = crystal_b.get_space_group()
   min_sum_euler_angles = 1e8
   best_R_ab = None
@@ -45,7 +45,7 @@ def show_rotation_matrix_differences(crystal_models, out=None, miller_indices=No
         crystal_models[i], crystal_models[j])
       print "Rotation matrix to transform crystal %i to crystal %i" %(
         i+1, j+1)
-      print R_ij
+      print R_ij.mathematica_form(format="%.3f", one_row_per_line=True)
       print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
       if miller_indices is not None:
         for hkl in miller_indices:
