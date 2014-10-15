@@ -415,8 +415,8 @@ namespace dials { namespace algorithms {
         af::const_ref<std::size_t> flags = data["flags"];
 
         // Maybe get profile fitting results
-        af::const_ref<double> iprf;
-        af::const_ref<double> vprf;
+        af::const_ref<double> iprf(0, 0);
+        af::const_ref<double> vprf(0, 0);
         bool prf = false;
         if (data.contains("intensity.prf.value") &&
             data.contains("intensity.prf.variance")) {
@@ -542,8 +542,8 @@ namespace dials { namespace algorithms {
         af::const_ref<std::size_t> flags = data["flags"];
 
         // Maybe get profile fitting results
-        af::const_ref<double> iprf;
-        af::const_ref<double> vprf;
+        af::const_ref<double> iprf(0, 0);
+        af::const_ref<double> vprf(0, 0);
         bool prf = false;
         if (data.contains("intensity.prf.value") &&
             data.contains("intensity.prf.variance")) {
@@ -714,8 +714,8 @@ namespace dials { namespace algorithms {
         af::const_ref<std::size_t> flags = data["flags"];
 
         // Maybe get profile fitting results
-        af::const_ref<double> iprf;
-        af::const_ref<double> vprf;
+        af::const_ref<double> iprf(0, 0);
+        af::const_ref<double> vprf(0, 0);
         bool prf = false;
         if (data.contains("intensity.prf.value") &&
             data.contains("intensity.prf.variance")) {
