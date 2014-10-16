@@ -93,7 +93,7 @@ class TestForward(object):
     s0_length = matrix.col(self.beam.get_s0()).length()
 
     # Create an s1 map
-    s1_map = transform.beam_vector_map(self.detector, self.beam, True)
+    s1_map = transform.beam_vector_map(self.detector[0], self.beam, True)
 
     for i in range(100):
 
@@ -143,7 +143,7 @@ class TestForward(object):
             mask[k,j,i] = inside
 
       # Transform the image to the grid
-      transformed = transform.Forward(self.spec, cs, bbox, image.as_double(), mask)
+      transformed = transform.Forward(self.spec, cs, bbox, 0, image.as_double(), mask)
       grid = transformed.profile()
 
       # Get the sums and ensure they're the same
@@ -275,7 +275,7 @@ class TestForward(object):
     s0_length = matrix.col(self.beam.get_s0()).length()
 
     # Create an s1 map
-    s1_map = transform.beam_vector_map(self.detector, self.beam, True)
+    s1_map = transform.beam_vector_map(self.detector[0], self.beam, True)
 
     for i in range(100):
 
@@ -327,7 +327,7 @@ class TestForward(object):
             mask[k,j,i] = inside
 
       # Transform the image to the grid
-      transformed = transform.Forward(self.spec, cs, bbox, image.as_double(),
+      transformed = transform.Forward(self.spec, cs, bbox, 0, image.as_double(),
                                       background.as_double(), mask)
       igrid = transformed.profile()
       bgrid = transformed.background()

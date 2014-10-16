@@ -56,7 +56,7 @@ class Test(object):
     self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
 
     # Create the map of s1 coordinates
-    self.s1_map = transform.beam_vector_map(self.detector, self.beam, True)
+    self.s1_map = transform.beam_vector_map(self.detector[0], self.beam, True)
 
     # Create the grid index generator
     self.generate_indices = transform.GridIndexGenerator(

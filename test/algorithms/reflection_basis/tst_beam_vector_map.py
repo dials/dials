@@ -39,7 +39,7 @@ class Test(object):
     assert(len(self.detector) == 1)
 
     # The detector beam vectors
-    ds1 = beam_vector_map(self.detector, self.beam, True)
+    ds1 = beam_vector_map(self.detector[0], self.beam, True)
     expected_size = self.detector[0].get_image_size()[::-1]
     expected_size = tuple([e + 1 for e in expected_size])
     assert(ds1.all() == expected_size)
@@ -71,7 +71,7 @@ class Test(object):
     self.n_div = 2
 
     # The detector beam vectors
-    ds1 = beam_vector_map(self.detector, self.beam, self.n_div, True)
+    ds1 = beam_vector_map(self.detector[0], self.beam, self.n_div, True)
     expected_size = self.detector[0].get_image_size()[::-1]
     expected_size = tuple([e * self.n_div + 1 for e in expected_size])
     assert(ds1.all() == expected_size)
@@ -103,7 +103,7 @@ class Test(object):
     self.n_div = 2
 
     # The detector beam vectors
-    ds1 = beam_vector_map(self.detector, self.beam, self.n_div, False)
+    ds1 = beam_vector_map(self.detector[0], self.beam, self.n_div, False)
     expected_size = self.detector[0].get_image_size()[::-1]
     expected_size = tuple([e * self.n_div for e in expected_size])
     assert(ds1.all() == expected_size)
