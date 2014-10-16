@@ -225,7 +225,11 @@ def run(args):
       pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(),
                      c=colours[i], s=params.plot.marker_size, edgecolors='none')
       if params.plot.label_indices:
-        for hkl, proj in zip(miller_indices, projections):
+        for j, (hkl, proj) in enumerate(zip(miller_indices, projections)):
+          # hack to not write two labels on top of each other
+          p1, p2 = (projections - proj).parts()
+          if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
+            continue
           pyplot.text(proj[0], proj[1], str(hkl), fontsize=10)
     pyplot.axes().set_aspect('equal')
     pyplot.xlim(-1.1,1.1)
