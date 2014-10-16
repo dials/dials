@@ -217,6 +217,7 @@ def run(args):
     elif len(colours) < len(projections_all):
       colours = colours * len(projections_all)
 
+    pyplot.scatter([0], [0], marker='+', c='0.75', s=100)
     cir = pylab.Circle((0,0), radius=1.0, fill=False, color='0.75')
     pylab.gca().add_patch(cir)
 
