@@ -23,9 +23,12 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 
-namespace dials { namespace algorithms { namespace shoebox {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
 
   // Use a load of stuff from other namespaces
   using std::floor;
@@ -109,7 +112,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       double phib = scan_.get_angle_from_array_index(bbox[5]);
 
       // Compute the partiality
-      double zeta = reflection_basis::zeta_factor(m2_.normalize(), s0_, s1);
+      double zeta = profile_model::gaussian_rs::zeta_factor(m2_.normalize(), s0_, s1);
       double c = std::abs(zeta) / (sqrt(2.0) * sigma_m_);
       double p = 0.5 * (erf(c * (phib - phi)) - erf(c * (phia - phi)));
       DIALS_ASSERT(p >= 0.0 && p <= 1.0);
@@ -262,6 +265,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     std::vector< boost::shared_ptr<PartialityCalculatorIface> > compute_;
   };
 
-}}} // namespace dials::algorithms::shoebox
+}}}} // namespace dials::algorithms::profile_model::gaussian_rs
 
 #endif // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_PARTIALITY_CALCULATOR_H

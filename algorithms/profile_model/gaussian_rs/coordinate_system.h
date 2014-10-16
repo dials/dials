@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_REFLECTION_BASIS_COORDINATE_SYSTEM_H
-#define DIALS_ALGORITHMS_REFLECTION_BASIS_COORDINATE_SYSTEM_H
+#ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_COORDINATE_SYSTEM_H
+#define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_COORDINATE_SYSTEM_H
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
@@ -17,7 +17,10 @@
 #include <dxtbx/model/panel.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms { namespace reflection_basis {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -386,6 +389,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     double zeta_;
   };
 
-}}} // namespace = dials::algorithms::reflection_basis
+}}}} // namespace = dials::algorithms::profile_model::gaussian_rs
 
-#endif // DIALS_ALGORITHMS_REFLECTION_BASIS_COORDINATE_SYSTEM_H
+#endif // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_COORDINATE_SYSTEM_H

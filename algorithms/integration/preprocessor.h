@@ -21,7 +21,7 @@
 #include <cctbx/sgtbx/space_group.h>
 #include <cctbx/sgtbx/space_group_type.h>
 #include <dials/array_family/reflection_table.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 
 
 namespace dials { namespace algorithms {

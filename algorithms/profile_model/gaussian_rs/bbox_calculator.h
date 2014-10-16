@@ -22,9 +22,12 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 
-namespace dials { namespace algorithms { namespace shoebox {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
 
   // Use a load of stuff from other namespaces
   using std::floor;
@@ -121,7 +124,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       double phi = scan_.get_angle_from_array_index(frame);
 
       // Create the coordinate system for the reflection
-      reflection_basis::CoordinateSystem xcs(m2_, s0_, s1, phi);
+      CoordinateSystem xcs(m2_, s0_, s1, phi);
 
       // Get the divergence and mosaicity for this point
       double delta_d = delta_divergence_;
@@ -254,7 +257,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       DIALS_ASSERT(s1.length_sq() > 0);
 
       // Create the coordinate system for the reflection
-      reflection_basis::CoordinateSystem2d xcs(s0_, s1);
+      CoordinateSystem2d xcs(s0_, s1);
 
       // Get the divergence and mosaicity for this point
       double delta_d = delta_divergence_;
@@ -366,6 +369,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     std::vector< boost::shared_ptr<BBoxCalculatorIface> > compute_;
   };
 
-}}} // namespace dials::algorithms::shoebox
+}}}} // namespace dials::algorithms::profile_model::gaussian_rs
 
 #endif // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H

@@ -22,8 +22,8 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/integration/profile/fitting.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
-#include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
 #include <dials/algorithms/polygon/clip/clip.h>
 #include <dials/algorithms/polygon/spatial_interpolation.h>
 #include <dials/algorithms/polygon/area.h>
@@ -45,9 +45,9 @@ namespace dials { namespace algorithms {
   using dials::model::Shoebox;
   using dials::model::Valid;
   using dials::model::Foreground;
-  using dials::algorithms::reflection_basis::CoordinateSystem;
-  using dials::algorithms::reflection_basis::transform::TransformSpec;
-  using dials::algorithms::reflection_basis::transform::Forward;
+  using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
+  using dials::algorithms::profile_model::gaussian_rs::transform::TransformSpec;
+  using dials::algorithms::profile_model::gaussian_rs::transform::Forward;
   using dials::algorithms::polygon::simple_area;
   using dials::algorithms::polygon::clip::vert4;
   using dials::algorithms::polygon::clip::vert8;

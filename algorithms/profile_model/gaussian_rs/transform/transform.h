@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_PIXELS2_H
-#define DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_PIXELS2_H
+#ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_TRANSFORM_H
+#define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_TRANSFORM_H
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
@@ -19,13 +19,16 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
 #include <dials/algorithms/polygon/spatial_interpolation.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
-#include <dials/algorithms/reflection_basis/map_frames.h>
-#include <dials/algorithms/reflection_basis/beam_vector_map.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/transform/map_frames.h>
+#include <dials/algorithms/profile_model/gaussian_rs/transform/beam_vector_map.h>
 #include <dials/model/data/shoebox.h>
 
-namespace dials { namespace algorithms { namespace reflection_basis {
-    namespace transform {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
+namespace transform {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -156,7 +159,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    *
    * Example:
    *
-   *  from dials.algorithms.reflection_basis import transform
+   *  from dials.algorithms.profile_model::gaussian_rs import transform
    *  forward = transform.Forward(spec, reflection)
    *  print forward.profile()
    *  print forward.background()
@@ -523,7 +526,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    *
    * Example:
    *
-   *  from dials.algorithms.reflection_basis import transform
+   *  from dials.algorithms.profile_model::gaussian_rs import transform
    *  forward = transform.Forward(spec, reflection)
    *  print forward.profile()
    *  print forward.background()
@@ -780,6 +783,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     af::const_ref< FloatType, af::c_grid<2> > zfraction_;
   };
 
-}}}} // namespace dials::algorithms::reflection_basis::transform
+}}}}} // namespace dials::algorithms::profile_model::gaussian_rs::transform
 
-#endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_PIXELS_H */
+#endif /* DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_TRANSFORM */

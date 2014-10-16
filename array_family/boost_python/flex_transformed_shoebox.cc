@@ -16,17 +16,17 @@
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
-#include <dials/algorithms/reflection_basis/transform.h>
-#include <dials/algorithms/reflection_basis/ideal_profile.h>
+#include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
+#include <dials/algorithms/profile_model/gaussian_rs/ideal_profile.h>
 #include <dials/model/data/transformed_shoebox.h>
 
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
   using namespace scitbx::af::boost_python;
-  using algorithms::reflection_basis::transform::Forward;
-  using algorithms::reflection_basis::transform::TransformSpec;
-  using algorithms::reflection_basis::ideal_profile;
+  using algorithms::profile_model::gaussian_rs::transform::Forward;
+  using algorithms::profile_model::gaussian_rs::transform::TransformSpec;
+  using algorithms::profile_model::gaussian_rs::ideal_profile;
   using model::Shoebox;
   using model::TransformedShoebox;
   using scitbx::vec3;

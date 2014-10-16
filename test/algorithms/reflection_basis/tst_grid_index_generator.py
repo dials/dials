@@ -3,8 +3,8 @@ from __future__ import division
 class Test(object):
 
   def __init__(self):
-    from dials.algorithms.reflection_basis import transform
-    from dials.algorithms.reflection_basis import CoordinateSystem
+    from dials.algorithms.profile_model.gaussian_rs import transform
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     import os
     import libtbx.load_env
     from math import floor

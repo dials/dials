@@ -1,5 +1,5 @@
 from __future__ import division
-from dials.algorithms.reflection_basis import *
+from dials.algorithms.profile_model.gaussian_rs import *
 
 class TestCoordinateSystem(object):
   """Test the XDS coordinate system class"""

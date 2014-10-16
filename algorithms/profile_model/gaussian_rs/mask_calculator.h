@@ -19,12 +19,14 @@
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/scan.h>
 #include <dials/model/data/shoebox.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
-#include <dials/algorithms/reflection_basis/beam_vector_map.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms { namespace shoebox {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -35,9 +37,6 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using dials::model::Shoebox;
-  using dials::algorithms::reflection_basis::CoordinateSystem;
-  using dials::algorithms::reflection_basis::CoordinateSystem2d;
-  using dials::algorithms::reflection_basis::transform::beam_vector_map;
 
 
   /**
@@ -468,6 +467,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     std::vector< boost::shared_ptr<MaskCalculatorIface> > compute_;
   };
 
-}}} // namespace dials::algorithms::shoebox
+}}}} // namespace dials::algorithms::profile_model::gaussian_rs
 
 #endif /* DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MASK_FOREGROUND_H */

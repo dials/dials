@@ -22,7 +22,7 @@
 #include <dxtbx/model/detector.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/algorithms/image/threshold/unimodal.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 
 namespace dials { namespace algorithms { namespace filter {
 
@@ -34,8 +34,8 @@ namespace dials { namespace algorithms { namespace filter {
   using dxtbx::model::Goniometer;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
-  using dials::algorithms::reflection_basis::CoordinateSystem;
-  using dials::algorithms::reflection_basis::zeta_factor;
+  using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
+  using dials::algorithms::profile_model::gaussian_rs::zeta_factor;
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::model::Shoebox;

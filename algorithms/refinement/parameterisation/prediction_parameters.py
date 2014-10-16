@@ -442,7 +442,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # Uncommenting the code below shows that
     # s0.(e X r) = zeta * |s X s0|
 
-    #from dials.algorithms.reflection_basis import zeta_factor
+    #from dials.algorithms.profile_model.gaussian_rs import zeta_factor
     #from libtbx.test_utils import approx_equal
     #s = matrix.col(reflections['s1'][0])
     #z = zeta_factor(axis[0], s0[0], s)

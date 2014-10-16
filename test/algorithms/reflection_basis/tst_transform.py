@@ -31,7 +31,7 @@ def gaussian(size, a, x0, sx):
 class TestForward(object):
   def __init__(self, filename):
     from dials.model.serialize import load
-    from dials.algorithms.reflection_basis import transform
+    from dials.algorithms.profile_model.gaussian_rs import transform
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
     from math import pi
 
@@ -82,8 +82,8 @@ class TestForward(object):
 
     from scitbx import matrix
     from random import uniform
-    from dials.algorithms.reflection_basis import CoordinateSystem
-    from dials.algorithms.reflection_basis import transform
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+    from dials.algorithms.profile_model.gaussian_rs import transform
     from scitbx.array_family import flex
 
     assert(len(self.detector) == 1)
@@ -159,8 +159,8 @@ class TestForward(object):
 
 #        from scitbx import matrix
 #        from random import uniform
-#        from dials.algorithms.reflection_basis import CoordinateSystem
-#        from dials.algorithms.reflection_basis import transform
+#        from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+#        from dials.algorithms.profile_model.gaussian_rs import transform
 #        from scitbx.array_family import flex
 #        from time import time
 
@@ -266,8 +266,8 @@ class TestForward(object):
 
     from scitbx import matrix
     from random import uniform
-    from dials.algorithms.reflection_basis import CoordinateSystem
-    from dials.algorithms.reflection_basis import transform
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+    from dials.algorithms.profile_model.gaussian_rs import transform
     from scitbx.array_family import flex
     assert(len(self.detector) == 1)
     s0 = self.beam.get_s0()
@@ -351,7 +351,7 @@ class TestForward(object):
 #class TestReverse(object):
 #    def __init__(self, filename):
 #        from dials.model.serialize import load
-#        from dials.algorithms.reflection_basis import transform
+#        from dials.algorithms.profile_model.gaussian_rs import transform
 #        from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 #        from math import pi
 
@@ -393,8 +393,8 @@ class TestForward(object):
 
 #        from scitbx import matrix
 #        from random import uniform
-#        from dials.algorithms.reflection_basis import CoordinateSystem
-#        from dials.algorithms.reflection_basis import transform
+#        from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+#        from dials.algorithms.profile_model.gaussian_rs import transform
 #        from scitbx.array_family import flex
 #        from time import time
 

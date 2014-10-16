@@ -10,9 +10,9 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/algorithms/profile_model/gaussian_rs/transform.h>
 
-namespace dials { namespace algorithms { namespace reflection_basis {
+namespace dials { namespace algorithms { namespace profile_model { namespace gaussian_rs { {
   namespace transform { namespace boost_python {
 
   using namespace boost::python;

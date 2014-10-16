@@ -57,7 +57,7 @@ class Test(object):
     from scitbx import matrix
     from scitbx.array_family import flex
     from dials.algorithms.shoebox import MaskCode
-    from dials.algorithms.reflection_basis import CoordinateSystem
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from math import sqrt
     assert(len(self.detector) == 1)
     s0 = self.beam.get_s0()

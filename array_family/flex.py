@@ -237,7 +237,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
   def compute_zeta(self, experiment):
     ''' Compute zeta for each reflection. '''
-    from dials.algorithms.reflection_basis import zeta_factor
+    from dials.algorithms.profile_model.gaussian_rs import zeta_factor
     m2 = experiment.goniometer.get_rotation_axis()
     s0 = experiment.beam.get_s0()
     self['zeta'] = zeta_factor(m2, s0, self['s1'])
@@ -245,7 +245,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
   def compute_zeta_multi(self, experiments):
     ''' Compute zeta for each reflection. '''
-    from dials.algorithms.reflection_basis import zeta_factor
+    from dials.algorithms.profile_model.gaussian_rs import zeta_factor
     m2 = flex.vec3_double(len(experiments))
     s0 = flex.vec3_double(len(experiments))
     for i, e in enumerate(experiments):

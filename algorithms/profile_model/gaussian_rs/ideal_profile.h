@@ -8,15 +8,18 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_REFLECTION_BASIS_IDEAL_PROFILE_H
-#define DIALS_ALGORITHMS_REFLECTION_BASIS_IDEAL_PROFILE_H
+#ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_IDEAL_PROFILE_H
+#define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_IDEAL_PROFILE_H
 
 #include <cmath>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms { namespace reflection_basis {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
 
   /**
    * Evalaute a gaussian at a point
@@ -64,6 +67,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     return profile;
   }
 
-}}} // namespace dials::algorithms::reflection_basis
+}}}} // namespace dials::algorithms::profile_model::gaussian_rs
 
-#endif /* DIALS_ALGORITHMS_REFLECTION_BASIS_IDEAL_PROFILE_H */
+#endif /* DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_IDEAL_PROFILE_H */

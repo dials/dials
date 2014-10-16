@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_FRAMES_H
-#define DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_FRAMES_H
+#ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MAP_FRAMES_H
+#define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MAP_FRAMES_H
 
 #include <cmath>
 #include <algorithm>
@@ -25,8 +25,11 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms { namespace reflection_basis {
-    namespace transform {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
+namespace transform {
 
   using boost::math::erf;
   using scitbx::vec2;
@@ -318,6 +321,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     return fraction;
   }
 
-}}}} // namespace = dials::algorithms::reflection_basis::transform
+}}}}} // namespace = dials::algorithms::profile_model::gaussian_rs::transform
 
-#endif // DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_FRAMES_H
+#endif // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MAP_FRAMES_H

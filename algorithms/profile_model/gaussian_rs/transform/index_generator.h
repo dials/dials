@@ -8,17 +8,20 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_INDEX_GENERATOR_H
-#define DIALS_ALGORITHMS_REFLEXION_BASIS_INDEX_GENERATOR_H
+#ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_INDEX_GENERATOR_H
+#define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_INDEX_GENERATOR_H
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
-namespace dials { namespace algorithms { namespace reflection_basis {
-    namespace transform {
+namespace dials {
+namespace algorithms {
+namespace profile_model {
+namespace gaussian_rs {
+namespace transform {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -115,6 +118,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     std::size_t grid_half_size_;
   };
 
-}}}} // namespace dials::algorithms::reflection_basis::transform
+}}}}} // namespace dials::algorithms::profile_model::gaussian_rs::transform
 
-#endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_INDEX_GENERATOR_H */
+#endif /* DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_INDEX_GENERATOR_H */

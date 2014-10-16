@@ -87,7 +87,7 @@ class IntegrationAlgorithm(object):
   def _transform_profiles(self, experiment, reflections):
     ''' Transform the reflection profiles to reciprocal space. '''
     from dials.util.command_line import Command
-    from dials.algorithms.reflection_basis import transform as rbt
+    from dials.algorithms.profile_model.gaussian_rs import transform as rbt
     from dials.array_family import flex
 
     # Initialise the reciprocal space transform

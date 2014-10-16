@@ -20,7 +20,7 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
-#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <ctime>
 #include <dials/model/data/shoebox.h>
 
@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
-  using reflection_basis::CoordinateSystem;
+  using profile_model::gaussian_rs::CoordinateSystem;
   using dials::model::Foreground;
 
   /**

@@ -6,7 +6,7 @@ class TestMapFramesForward(object):
 
     from math import pi
     from dials.model.serialize import load
-    from dials.algorithms.reflection_basis.transform import MapFramesForward
+    from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesForward
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     # Load the sweep
@@ -46,7 +46,7 @@ class TestMapFramesForward(object):
 
     from scitbx import matrix
     from random import uniform
-    from dials.algorithms.reflection_basis import CoordinateSystem
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from scitbx.array_family import flex
     assert(len(self.detector) == 1)
     s0 = self.beam.get_s0()
@@ -115,7 +115,7 @@ class TestMapFramesReverse(object):
 
     from math import pi
     from dials.model.serialize import load
-    from dials.algorithms.reflection_basis.transform import MapFramesReverse
+    from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesReverse
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     # Load the sweep
@@ -155,7 +155,7 @@ class TestMapFramesReverse(object):
 
     from scitbx import matrix
     from random import uniform
-    from dials.algorithms.reflection_basis import CoordinateSystem
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from scitbx.array_family import flex
 
     s0 = self.beam.get_s0()
@@ -228,8 +228,8 @@ class TestMapForwardReverse(object):
 
     from math import pi
     from dials.model.serialize import load
-    from dials.algorithms.reflection_basis.transform import MapFramesReverse
-    from dials.algorithms.reflection_basis.transform import MapFramesForward
+    from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesReverse
+    from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesForward
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     # Load the sweep
@@ -277,7 +277,7 @@ class TestMapForwardReverse(object):
 
     from scitbx import matrix
     from random import uniform
-    from dials.algorithms.reflection_basis import CoordinateSystem
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
     s0 = self.beam.get_s0()
     m2 = self.gonio.get_rotation_axis()
