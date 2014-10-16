@@ -19,7 +19,7 @@ expand_to_p1 = True
 eliminate_sys_absent = True
   .type = bool
   .help = "Eliminate systematically absent reflections"
-plane_normal = 0,0,1
+plane_normal = None
   .type = ints(size=3)
 save_coordinates = True
   .type = bool
@@ -27,70 +27,63 @@ plot = True
   .type = bool
 label_indices = False
   .type = bool
+frame = laboratory *crystal
+  .type = choice
 """)
 
+def reference_poles_perpendicular_to_beam(beam, goniometer):
+  # plane normal
+  d0 = matrix.col(beam.get_s0()).normalize()
+  d1 = d0.cross(matrix.col(goniometer.get_rotation_axis())).normalize()
+  d2 = d1.cross(d0).normalize()
+  return (d0, d1, d2)
 
-def stereographic_projection(crystal_model, miller_indices,
-                             plane_normal=(0,0,1),
-                             rotation_matrix=None):
+def reference_poles_crystal(crystal_model, plane_normal=(0,0,1)):
+  A = crystal_model.get_A()
+  B = crystal_model.get_B()
+  A_inv = A.inverse()
+  G = A_inv * A_inv.transpose()
+  G_star = A.transpose() * A
+  h0 = (G * matrix.col(plane_normal)).normalize()
+  h1 = matrix.col((1,0,0)).cross((G_star * h0).normalize())
+  h2 = (G_star * h1).cross(G_star * h0).normalize()
+  return tuple((B * h).normalize() for h in (h0, h1, h2))
+
+def stereographic_projection(points, reference_poles):
   # http://dx.doi.org/10.1107/S0021889868005029
   # J. Appl. Cryst. (1968). 1, 68-70
   # The construction of stereographic projections by computer
   # G. K. Stokes, S. R. Keown and D. J. Dyson
 
-  A = crystal_model.get_A()
-  A_inv = A.inverse()
-
-  G = A_inv * A_inv.transpose()
-  G_star = A.transpose() * A
-  from libtbx.test_utils import approx_equal
-  assert approx_equal(G_star, G.inverse())
-  h0 = (G * matrix.col(plane_normal)).normalize()
-  h1 = matrix.col((1,0,0)).cross((G_star * h0).normalize())
-  h2 = (G_star * h1).cross(G_star * h0).normalize()
-
-  if rotation_matrix is not None:
-    h0 = rotation_matrix * h0
-    h1 = rotation_matrix * h1
-    h2 = rotation_matrix * h2
-
-  h0_t = h0.transpose()
-  h1_t = h1.transpose()
-  h2_t = h2.transpose()
+  assert len(reference_poles) == 3
+  r_0, r_1, r_2 = reference_poles
 
   projections = flex.vec2_double()
 
-  for hkl in miller_indices:
-    hi = matrix.col(hkl)
-    hi_t = hi.transpose()
-    for sign in (+1, -1):
-      hi *= sign
-      hi_t *= sign
-      cos_theta = (hi_t * G_star * h0)[0]/(
-        math.sqrt((hi_t * G_star * hi)[0] * (h0_t * G_star * h0)[0]))
-      if sign == -1:
-        hi *= sign
-        hi_t *= sign
-      if cos_theta >= 0:
-        break
-      else:
-        continue
-    cos_alpha = (hi_t * G_star * h1)[0]/(
-      math.sqrt((hi_t * G_star * hi)[0] * (h1_t * G_star * h1)[0]))
-    N = (hi_t * G_star * h2)[0]
-    if abs(cos_theta) > 1:
-      cos_theta = math.copysign(1, cos_theta) # XXX why?
+  for p in points:
+    r_i = matrix.col(p)
+    # theta is the angle between r_i and the plane normal, r_0
+    cos_theta = r_i.cos_angle(r_0)
+    if cos_theta < 0:
+      r_i = -r_i
+      cos_theta = r_i.cos_angle(r_0)
+
+    # alpha is the angle between r_i and r_1
+    cos_alpha = r_i.cos_angle(r_1)
     theta = math.acos(cos_theta)
-    if theta == 0:
-      projections.append((0,0)) # XXX
-      continue
-    r = math.tan(theta/2)
-    cos_phi = cos_alpha / math.sin(theta)
+    cos_phi = cos_alpha/math.sin(theta)
     if abs(cos_phi) > 1:
-      cos_phi = math.copysign(1, cos_phi) # XXX why?
+      cos_phi = math.copysign(1, cos_phi)
+    phi = math.acos(cos_phi)
+
+    N = r_i.dot(r_2)
+    r = math.tan(theta/2)
     x = r * cos_phi
-    y = math.copysign(abs(r * math.sin(math.acos(cos_phi))), N)
+    y = r * math.sin(phi)
+    y = math.copysign(y, N)
+
     projections.append((x,y))
+
   return projections
 
 
@@ -104,8 +97,6 @@ def gcd_list(l):
 
 
 def run(args):
-  #print args
-
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
 
@@ -160,11 +151,28 @@ def run(args):
   miller_indices = miller_indices_unique
   miller_indices = flex.miller_index(list(set(miller_indices)))
 
-  plane_normal = matrix.col(params.plane_normal).normalize()
-
   ref_crystal = crystals[0]
+  A = ref_crystal.get_A()
+  U = ref_crystal.get_U()
+  B = ref_crystal.get_B()
+
+  if params.frame == 'laboratory':
+    reference_poles = reference_poles_perpendicular_to_beam(
+      experiments.beams()[0], experiments.goniometers()[0])
+  else:
+    if params.plane_normal is not None:
+      plane_normal = params.plane_normal
+    else:
+      plane_normal = (0,0,1)
+    reference_poles = reference_poles_crystal(
+      ref_crystal, plane_normal=plane_normal)
+
+  if params.frame == 'crystal':
+    U = matrix.identity(3)
+
+  reciprocal_space_points = list(U * B) * miller_indices.as_vec3_double()
   projections_ref = stereographic_projection(
-    ref_crystal, miller_indices, plane_normal=plane_normal.elems)
+    reciprocal_space_points, reference_poles)
 
   projections_all = [projections_ref]
 
@@ -173,11 +181,15 @@ def run(args):
         difference_rotation_matrix_and_euler_angles
 
     for cryst in crystals[1:]:
-      R_ij, euler_angles, cb_op = difference_rotation_matrix_and_euler_angles(
-        ref_crystal, cryst)
+      if params.frame == 'crystal':
+        R_ij, euler_angles, cb_op = difference_rotation_matrix_and_euler_angles(
+          ref_crystal, cryst)
+        U = R_ij
+      else:
+        U = cryst.get_U()
+      reciprocal_space_points = list(U * cryst.get_B()) * miller_indices.as_vec3_double()
       projections = stereographic_projection(
-        cryst, miller_indices, plane_normal=plane_normal.elems,
-        rotation_matrix=R_ij)
+        reciprocal_space_points, reference_poles)
       projections_all.append(projections)
 
   if params.save_coordinates:
@@ -206,7 +218,6 @@ def run(args):
     pyplot.xlim(-1.1,1.1)
     pyplot.ylim(-1.1,1.1)
     pyplot.show()
-
 
 
 if __name__ == '__main__':
