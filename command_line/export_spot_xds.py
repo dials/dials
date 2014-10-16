@@ -65,10 +65,11 @@ class Script(object):
 if __name__ == '__main__':
 
   from optparse import OptionParser
+  import libtbx.load_env
 
   # Specify the command line options
-  usage  = "usage: %prog [options] " \
-           "/path/to/reflections.pickle "
+  usage  = "usage: %s [options] " \
+           "/path/to/reflections.pickle " % libtbx.env.dispatcher_name
 
   # Create an option parser
   parser = OptionParser(usage)

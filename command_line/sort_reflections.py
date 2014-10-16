@@ -18,6 +18,7 @@ class Sort(object):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
     from libtbx.phil import parse
+    import libtbx.load_env
 
     phil_scope = parse('''
 
@@ -38,10 +39,11 @@ class Sort(object):
 
     # The script usage
     usage  = """
-      usage: %prog [options] reflections.pickle
+      usage: %s [options] reflections.pickle
 
-      Example: %prog key=miller_index output=sorted.pickle
-    """
+      Example: %s key=miller_index output=sorted.pickle
+    """ % (libtbx.env.dispatcher_name,
+           libtbx.env.dispatcher_name)
 
     # Initialise the base class
     self.parser = OptionParser(

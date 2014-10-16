@@ -76,8 +76,10 @@ if __name__ == '__main__':
   from dials.util.command_line import Command
   from dials.array_family import flex
   from annlib_ext import AnnAdaptor as ann_adaptor
+  import libtbx.load_env
 
-  usage = "usage: %prog [options] reflections1.pickle reflections2.pickle"
+  usage = "usage: %s [options] reflections1.pickle reflections2.pickle" \
+    % libtbx.env.dispatcher_name
   parser = OptionParser(usage)
 
   # Parse the command line arguments

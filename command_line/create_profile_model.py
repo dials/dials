@@ -19,6 +19,7 @@ class Script(object):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
     from libtbx.phil import parse
+    import libtbx.load_env
 
     # The phil parameters
     phil_scope = parse('''
@@ -30,7 +31,8 @@ class Script(object):
     ''', process_includes=True)
 
     # The script usage
-    usage  = "usage: %prog [options] experiments.json spots.pickle"
+    usage  = "usage: %s [options] experiments.json spots.pickle" \
+      % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,

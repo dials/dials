@@ -78,9 +78,11 @@ class Script(object):
 if __name__ == '__main__':
 
   from optparse import OptionParser
+  import libtbx.load_env
 
   # Specify the command line options
-  usage  = "usage: %prog [options] /path/to/image/files "
+  usage  = "usage: %s [options] /path/to/image/files " % \
+           libtbx.env.dispatcher_name
 
   # Create an option parser
   parser = OptionParser(usage)

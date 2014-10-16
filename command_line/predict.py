@@ -18,10 +18,12 @@ class Script(object):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
     from libtbx.phil import parse
+    import libtbx.load_env
 
     # The script usage
-    usage = "usage: %prog [options] [param.phil] "\
-            "{sweep.json | image1.file [image2.file ...]}"
+    usage = "usage: %s [options] [param.phil] "\
+            "{sweep.json | image1.file [image2.file ...]}" \
+            % libtbx.env.dispatcher_name
 
     phil_scope = parse('''
       output = predicted.pickle

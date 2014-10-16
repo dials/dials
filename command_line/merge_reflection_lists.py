@@ -17,6 +17,7 @@ class Script(object):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
     from libtbx.phil import parse
+    import libtbx.load_env
 
     # Create the phil parameters
     phil_scope = parse('''
@@ -32,7 +33,7 @@ class Script(object):
     ''')
 
     # The script usage
-    usage = "usage: %prog [options] /path/to/image/reflection/files"
+    usage = "usage: %s [options] /path/to/image/reflection/files" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,

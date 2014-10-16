@@ -84,9 +84,10 @@ class Script(object):
   def __init__(self):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
+    import libtbx.load_env
 
     # Create the parser
-    usage = "usage: %prog [options] datablock.json"
+    usage = "usage: %s [options] datablock.json" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,

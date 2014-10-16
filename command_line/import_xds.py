@@ -253,6 +253,7 @@ class Script(object):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
     from libtbx.phil import parse
+    import libtbx.load_env
 
     # Create the phil parameters
     phil_scope = parse('''
@@ -282,7 +283,7 @@ class Script(object):
     ''')
 
     # The option parser
-    usage = "usage: %prog [options] (SPOT.XDS|INTEGRATE.HKL)"
+    usage = "usage: %s [options] (SPOT.XDS|INTEGRATE.HKL)" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope)

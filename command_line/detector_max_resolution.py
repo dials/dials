@@ -14,9 +14,10 @@ from __future__ import division
 if __name__ == '__main__':
   from dials.util.options import OptionParser
   from dials.util.options import flatten_datablocks, flatten_experiments
+  import libtbx.load_env
 
   # Initialise the option parser
-  usage = "usage: %prog [options] {datablock.json|experiments.json}"
+  usage = "usage: %s [options] {datablock.json|experiments.json}" % libtbx.env.dispatcher_name
   parser = OptionParser(
     usage=usage,
     read_datablocks=True,

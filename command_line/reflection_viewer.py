@@ -28,10 +28,11 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-
+    import libtbx.load_env
 
     # The script usage
-    usage  = "usage: %prog [options] experiment.json"
+    usage  = "usage: %s [options] experiment.json" \
+              % libtbx.env.dispatcher_name
 
     # Create the parser
     self.parser = OptionParser(

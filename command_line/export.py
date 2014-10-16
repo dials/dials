@@ -15,11 +15,13 @@ if __name__ == '__main__':
   from dials.array_family import flex
   from optparse import OptionParser
   from dials.util.command_line import Command
+  import libtbx.load_env
 
   # Specify the command line options
-  usage  = "usage: %prog [options] " \
+  usage  = "usage: %s [options] " \
            "/path/to/reflection/file.pkl " \
-           "/path/to/reflection/file.h5"
+           "/path/to/reflection/file.h5" \
+           % libtbx.env.dispatcher_name
 
   # Create an option parser
   parser = OptionParser(usage)
