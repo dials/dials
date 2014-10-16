@@ -19,16 +19,22 @@ expand_to_p1 = True
 eliminate_sys_absent = False
   .type = bool
   .help = "Eliminate systematically absent reflections"
+frame = laboratory *crystal
+  .type = choice
 plane_normal = None
   .type = ints(size=3)
 save_coordinates = True
   .type = bool
-plot = True
-  .type = bool
-label_indices = False
-  .type = bool
-frame = laboratory *crystal
-  .type = choice
+plot {
+  show = True
+    .type = bool
+  label_indices = False
+    .type = bool
+  colours = None
+    .type = strings
+  marker_size = 3
+    .type = int(value_min=1)
+}
 """)
 
 def reference_poles_perpendicular_to_beam(beam, goniometer):
@@ -201,17 +207,24 @@ def run(args):
           print >> f, "%i %i %i" %hkl,
           print >> f, "%f %f" %proj
 
-  if params.plot:
+  if params.plot.show:
     from matplotlib import pyplot
     from matplotlib import pylab
+
+    colours = params.plot.colours
+    if colours is None or len(colours) == 0:
+      colours = ['b'] * len(projections_all)
+    elif len(colours) < len(projections_all):
+      colours = colours * len(projections_all)
 
     cir = pylab.Circle((0,0), radius=1.0, fill=False, color='0.75')
     pylab.gca().add_patch(cir)
 
-    for projections in projections_all:
+    for i, projections in enumerate(projections_all):
       x, y = projections.parts()
-      pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(), c='b', s=2)
-      if params.label_indices:
+      pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(),
+                     c=colours[i], s=params.plot.marker_size, edgecolors='none')
+      if params.plot.label_indices:
         for hkl, proj in zip(miller_indices, projections):
           pyplot.text(proj[0], proj[1], str(hkl), fontsize=10)
     pyplot.axes().set_aspect('equal')
