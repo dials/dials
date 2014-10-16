@@ -262,6 +262,7 @@ array_family/boost_python/flex_observation.cc -text
 array_family/boost_python/flex_pixel_list.cc -text
 array_family/boost_python/flex_prediction.cc -text
 array_family/boost_python/flex_reflection_table.cc -text
+array_family/boost_python/flex_reflection_table_statistics.cc -text
 array_family/boost_python/flex_shoebox.cc -text
 array_family/boost_python/flex_shoebox_extractor.cc -text
 array_family/boost_python/flex_table_suite.h -text
@@ -270,6 +271,7 @@ array_family/flex.py -text
 array_family/flex_table.h -text
 array_family/import_scitbx_af.h -text
 array_family/reflection_table.h -text
+array_family/reflection_table_statistics.h -text
 array_family/scitbx_shared_and_versa.h -text
 array_family/shared.py -text
 array_family/shoebox_extractor.h -text

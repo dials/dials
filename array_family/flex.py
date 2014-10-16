@@ -22,6 +22,108 @@ elif get_real_type() == "double":
 else:
   raise TypeError('unknown "real" type')
 
+class ImageSummaryAux(boost.python.injector, ImageSummary):
+
+  def table(self, index):
+    from libtbx.table_utils import format as table
+    data = self.data(index)
+    rows = [["Image",
+             "# full",
+             "# part",
+             "<I/sigI>\n (sum)",
+             "<I/sigI>\n (prf)"]]
+    for i in range(len(data)):
+      rows.append([
+        '%d' % data[i].frame,
+        '%d' % data[i].full,
+        '%d' % data[i].part,
+        '%.1f' % data[i].sum_ios,
+        '%.1f' % data[i].prf_ios])
+    return table(rows, has_header=True, justify='right', prefix=' ')
+
+  def tables(self):
+    t = []
+    for i in range(len(self)):
+      t.append('%s\n%s' % (
+        ' Experiment: %d' % i,
+        self.table(i)))
+    return '\n'.join(t)
+
+
+class ResolutionSummaryAux(boost.python.injector, ResolutionSummary):
+
+  def table(self, index):
+    from libtbx.table_utils import format as table
+    data = self.data(index)
+    rows = [["d",
+             "<I/sigI>\n (sum)",
+             "<I/sigI>\n (prf)"]]
+    for i in range(len(data)):
+      rows.append([
+        '%.1f -> %.1f' % (data[i].d[0], data[i].d[1]),
+        '%.1f' % data[i].sum_ios,
+        '%.1f' % data[i].prf_ios])
+    return table(rows, has_header=True, justify='right', prefix=' ')
+
+  def tables(self):
+    t = []
+    for i in range(len(self)):
+      t.append('%s\n%s' % (
+        ' Experiment: %d' % i,
+        self.table(i)))
+    return '\n'.join(t)
+
+
+class WholeSummaryAux(boost.python.injector, WholeSummary):
+
+  def table(self, index):
+    from libtbx.table_utils import format as table
+    data = self.data(index)
+    rows = [["<I/sigI>\n (sum)",
+             "<I/sigI>\n (prf)"]]
+    rows.append([
+      '%.1f' % data.sum_ios,
+      '%.1f' % data.prf_ios])
+    return table(rows, has_header=True, justify='right', prefix=' ')
+
+  def tables(self):
+    t = []
+    for i in range(len(self)):
+      t.append('%s\n%s' % (
+        ' Experiment: %d' % i,
+        self.table(i)))
+    return '\n'.join(t)
+
+
+class SummaryAux(boost.python.injector, Summary):
+
+  def __str__(self):
+    from dials.util.command_line import heading
+    img_summary = self.image_summary().tables()
+    res_summary = self.resolution_summary().tables()
+    who_summary = self.whole_summary().tables()
+    print '=' * 80
+    print ''
+    print heading('Summary of integration results')
+    print ''
+    return (
+      '%s\n'
+      '\n'
+      '%s\n'
+      '\n'
+      ' Summary of integration results as a function of image number'
+      '\n%s\n\n'
+      ' Summary of integration results binned by resolution'
+      '\n%s\n\n'
+      ' Summary of integration results for the whole dataset'
+      '\n%s\n'
+    ) % ('=' * 80,
+         heading('Summary of integration results'),
+         img_summary,
+         res_summary,
+         who_summary)
+
+
 def strategy(cls, params=None):
   ''' Wrap a class that takes params and experiments as a strategy. '''
   from functools import wraps
@@ -367,3 +469,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     sys.stdout.flush()
     assert(extractor.finished())
     return read_time, extract_time
+
+  def statistics(self, experiments):
+    ''' Return some simple statistics. '''
+    from scitbx.array_family import shared
+    return Summary(
+      self,
+      shared.tiny_int_2([e.imageset.get_array_range() for e in experiments]),
+      10)

@@ -471,11 +471,7 @@ class Manager(object):
 
   def _print_final_summary(self, data):
     ''' Print a final summary. '''
-    from dials.algorithms.integration import Summary
-    print Summary(
-      data,
-      self._experiments.imagesets()[0].get_array_range(),
-      5).as_str()
+    print data.statistics(self._experiments)
 
 
 class PreProcessorOsc(object):
