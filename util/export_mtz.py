@@ -1,6 +1,6 @@
 from __future__ import division
 
-def export_mtz(integrated_data, experiment_list, hklout, ignore_panels):
+def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
