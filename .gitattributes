@@ -87,7 +87,6 @@ algorithms/integration/boost_python/preprocessor.cc -text
 algorithms/integration/corrections.h -text
 algorithms/integration/fitrs/__init__.py -text
 algorithms/integration/fitrs/algorithm.py -text
-algorithms/integration/fitrs/algorithm2.py -text
 algorithms/integration/fitrs/boost_python/fitrs.cc -text
 algorithms/integration/fitrs/boost_python/integration_fitrs_ext.cc -text
 algorithms/integration/fitrs/fit.h -text
@@ -409,7 +408,6 @@ doc/user/manual.tex -text
 /error.h -text
 extensions/__init__.py -text
 extensions/fitrs_integration_ext.py -text
-extensions/fitrs_old_integration_ext.py -text
 extensions/gaussian_rs_profile_model_ext.py -text
 extensions/kabsch_spotfinder_threshold_ext.py -text
 extensions/null_background_ext.py -text

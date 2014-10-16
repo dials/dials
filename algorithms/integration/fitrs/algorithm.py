@@ -14,174 +14,86 @@ from __future__ import division
 class IntegrationAlgorithm(object):
   ''' Class to do reciprocal space profile fitting. '''
 
-  reference_counter = 0
+  def __init__(self,
+               experiments,
+               profile_model,
+               grid_size=5,
+               threshold=0.02,
+               single_reference=False,
+               debug=False):
+    '''Initialise algorithm.'''
+    assert(len(experiments) == len(profile_model))
+    self._experiments = experiments
+    self._profile_model = profile_model
+    self._grid_size = grid_size
+    self._threshold = threshold
+    self._single_reference = single_reference
+    self._debug = debug
 
-  def __init__(self, **kwargs):
-    ''' Initialise the algorithm. '''
-    from math import pi
+  def __call__(self, reflections):
+    '''Process the reflections.
 
-    # Set the parameters
-    self.grid_size = kwargs['grid_size']
-    self.threshold = kwargs['threshold']
-    self.frame_interval = kwargs['frame_interval']
-    self.bbox_nsigma = kwargs['n_sigma']
-    self.sigma_b = kwargs['sigma_b'] * pi / 180
-    self.sigma_m = kwargs['sigma_m'] * pi / 180
+    Params:
+        reflections The reflections to process
 
-  def __call__(self, experiments, reflections):
-    ''' Do the integration.
-
-    Transform the profiles to reciprocal space. Select the reflections
-    to use in the reference profiles. Learn the reference profiles and
-    integrate the intensities via profile fitting.
+    Returns:
+        The list of integrated reflections
 
     '''
-    from dials.model.serialize import dump
-    from dials.array_family import flex
-    assert(len(experiments) == 1)
-    experiment = experiments[0]
-    assert("flags" in reflections)
-    assert(len(experiment.detector) == 1)
-    self._filter_reflections(experiments, reflections)
-
-    mask1 = ~reflections.get_flags(reflections.flags.dont_integrate)
-    mask2 = reflections.get_flags(reflections.flags.reference_spot)
-    mask3 = mask1 | mask2
-    reflections2 = reflections.select(mask3)
-
-    self._transform_profiles(experiment, reflections2)
-    self.learner = self._learn_references(experiment, reflections2)
-    counter = IntegrationAlgorithm.reference_counter
-    dump.reference(self.learner.locate(), "reference_%d.pickle" % counter)
-    IntegrationAlgorithm.reference_counter += 1
-    reflections2 = self._integrate_intensities(self.learner, reflections2)
-
-    reflections.set_selected(mask3, reflections2)
-    V = flex.double(mask3.count(False), -1)
-    reflections['intensity.prf.variance'].set_selected(~mask3, V)
-
-  def _filter_reflections(self, experiments, reflections):
-
-    mode = 'old'
-
-    assert(len(experiments) == 1)
-    assert(len(experiments[0].detector) == 1)
-    image_size = experiments[0].detector[0].get_image_size()[::-1]
-    scan_range = experiments[0].scan.get_array_range()
-
-    if mode == 'old':
-      from dials.algorithms.filtering import by_shoebox_mask
-      mask = by_shoebox_mask(reflections['shoebox'], image_size, scan_range)
-    else:
-      from dials.algorithms.filtering import by_detector_mask
-      tr = experiments[0].detector[0].get_trusted_range()
-      mask = experiments[0].imageset[0] > int(tr[0])
-      mask = by_detector_mask(reflections['bbox'], mask, scan_range)
-
-    print "Filtering %d reflections outside image range" % mask.count(False)
-    # print "Filtering %d reflections with invalid foreground pixels" % (
-    #   mask.count(False))
-    reflections.set_flags(~mask, reflections.flags.dont_integrate)
-    reflections.unset_flags(~mask, reflections.flags.reference_spot)
-
-  def _transform_profiles(self, experiment, reflections):
-    ''' Transform the reflection profiles to reciprocal space. '''
-    from dials.util.command_line import Command
-    from dials.algorithms.profile_model.gaussian_rs import transform as rbt
-    from dials.array_family import flex
-
-    # Initialise the reciprocal space transform
-    Command.start('Initialising reciprocal space transform')
-    spec = rbt.TransformSpec(experiment, self.sigma_b, self.sigma_m,
-                             5, self.grid_size)
-    Command.end('Initialised reciprocal space transform')
-
-    # Transform the reflections to reciprocal space
-    Command.start('Transforming reflections to reciprocal space')
-    s1 = reflections['s1']
-    phi = reflections['xyzcal.mm'].parts()[2]
-    shoebox = reflections['shoebox']
-    rs_shoebox = flex.transformed_shoebox(spec, s1, phi, shoebox)
-    reflections['rs_shoebox'] = rs_shoebox
-    Command.end('Transformed {0} reflections'.format(len(reflections)))
-
-    # Compute correlations between profile and idea
-    Command.start('Compute correlation between profile and ideal')
-    corr = rs_shoebox.correlation_with_ideal(5)
-    reflections['correlation.ideal.profile'] = corr
-    Command.end('Computed correlations between profile and ideal')
-
-  def _learn_references(self, experiment, reflections):
-    ''' Learn the reference profiles. '''
-    from dials.algorithms.integration.profile import GridSampler
-    from dials.algorithms.integration.profile import GridReferenceLearner
-    # from dials.algorithms.integration.profile import XdsCircleSampler
-    # from dials.algorithms.integration.profile import XdsCircleReferenceLearner
-
-    # Match the predictions with the strong spots
-    #sind, pind = self.match(strong, reflections)
-    pind = reflections.get_flags(reflections.flags.reference_spot)
-
-    # Create the reference profile sampler
-    assert(len(experiment.detector) == 1)
-    image_size = experiment.detector[0].get_image_size()
-    num_frames = experiment.scan.get_num_images()
-    volume_size = image_size + (num_frames,)
-    sampler = GridSampler(volume_size, (3, 3, 1))
-    #sampler = XdsCircleSampler(volume_size, 1)
-
-    # Configure the reference learner
-    grid_size = (self.grid_size * 2 + 1,) * 3
-    learner = GridReferenceLearner(sampler, grid_size, self.threshold)
-    #learner = XdsCircleReferenceLearner(sampler, grid_size, self.threshold)
-    profiles = reflections['rs_shoebox'].select(pind)
-    coords = reflections['xyzcal.px'].select(pind)
-    learner.learn(profiles, coords)
-    counts = learner.counts()
-
-    # Create the average profile
-    from dials.util import pprint
-    locator = learner.locate()
-
-    print "Number of reflections contributing to each profile:"
-    for i, num in enumerate(counts):
-      xyz = locator.coord(i)
-      print "%d: (%d, %d, %d); %d" % (
-        i, int(xyz[0]), int(xyz[1]), int(xyz[2]), num)
-
-    profiles = [locator.profile(i) for i in range(len(locator))]
-    average_profile = sum(profiles) / len(profiles)
-    print "Average Profile:\n"
-    print pprint.profile3d(average_profile)
-
-    # Return the learner
-    return learner
-
-  def _integrate_intensities(self, learner, reflections):
-    ''' Integrate the intensities. '''
+    from dials.algorithms.integration.fitrs import ReciprocalSpaceProfileFitting
+    from dials.algorithms.integration.fitrs import Spec
+    from dials.algorithms.integration.interface import job_id
     from dials.array_family import flex
     from dials.util.command_line import Command
-    from dials.algorithms.integration.fitrs import ProfileFittingReciprocalSpaceAlgorithm
 
-    # Configure the integration algorithm with the locator class
-    integrate = ProfileFittingReciprocalSpaceAlgorithm(learner.locate())
+    # Get the flags
+    flags = flex.reflection_table.flags
+
+    # Create the algorithm
+    algorithm = ReciprocalSpaceProfileFitting(
+      self._grid_size,
+      self._threshold,
+      self._single_reference)
+
+    # Add the specs
+    for experiment, model in zip(self._experiments, self._profile_model):
+      algorithm.add(Spec(
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
+        experiment.scan,
+        model.sigma_b(deg=False),
+        model.sigma_m(deg=False),
+        model.n_sigma()))
 
     # Perform the integration
-    Command.start('Integrating reflections in reciprocal space')
-    mask = ~reflections.get_flags(reflections.flags.dont_integrate)
-    profiles = reflections['rs_shoebox'].select(mask)
-    coords = reflections['xyzcal.px'].select(mask)
-    intensity = integrate(profiles, coords)
-    I, I_var, P_cor = intensity.parts()
-    mask2 = I_var < 0
-    reflections['intensity.prf.value'] = flex.double(len(reflections), 0)
-    reflections['intensity.prf.variance'] = flex.double(len(reflections), -1)
-    reflections['profile.correlation'] = flex.double(len(reflections), 0)
-    reflections['intensity.prf.value'].set_selected(mask, I)
-    reflections['intensity.prf.variance'].set_selected(mask, I_var)
-    reflections['profile.correlation'].set_selected(mask, P_cor)
-    indices = flex.size_t(range(len(mask))).select(mask).select(mask2)
-    mask.set_selected(indices, False)
-    reflections.set_flags(mask, reflections.flags.integrated_prf)
-    Command.end('Integrated {0} reflections'.format(mask.count(True)))
+    num = reflections.get_flags(flags.dont_integrate).count(False)
+    Command.start('Integrating %d reflections with profile fitting' % num)
+    profiles = algorithm.execute(reflections)
+
+    # Print the number integrated
+    num = reflections.get_flags(flags.integrated_prf).count(True)
+    Command.end('Integrated %d reflections with profile fitting' % num)
+
+    # Maybe save some debug info
+    if self._debug:
+      import cPickle as pickle
+      filename = 'debug_%d.pickle' % job_id()
+      print 'Saving debugging information to %s' % filename
+      reference = []
+      for i in range(len(profiles)):
+        r = []
+        for j in range(profiles.single_size(i)):
+          r.append(profiles.data(i,j))
+        reference.append(r)
+      output = {
+        'reflections' : reflections,
+        'experiments' : self._experiments,
+        'profile_model' : self._profile_model,
+        'reference' : reference,
+      }
+      with open(filename, 'wb') as outfile:
+        pickle.dump(output, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # Return the reflections
     return reflections

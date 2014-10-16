@@ -63,6 +63,16 @@ class Test(object):
     assert(len(experiments) == 1)
     self.experiments = experiments
 
+    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
+    self.profile_model = ProfileModelList()
+    self.profile_model.append(
+      ProfileModel(
+        sigma_b=0.024,
+        sigma_m=0.044,
+        n_sigma=3,
+        deg=True))
+
     # Load the reference spots
     from dials.array_family import flex
     self.reference = flex.reflection_table.from_pickle(reference_filename)
@@ -75,6 +85,7 @@ class Test(object):
     #self.test_for_reference()
     for filename in self.refl_filenames:
       refl = flex.reflection_table.from_pickle(filename)
+      refl['id'] = flex.size_t(len(refl),0)
       self.test_for_reflections(refl, filename)
 
   def mv3n_tolerance_interval(self, x):
@@ -241,17 +252,15 @@ class Test(object):
 
     # Integrate
     integration = IntegrationAlgorithm(
+      self.experiments,
+      self.profile_model,
       grid_size=4,
       threshold=0.00,
-      frame_interval=0,
-      n_sigma=5,
-      sigma_b=0.024,
-      sigma_m=0.044
     )
 
     old_size = len(refl)
     refl.extend(self.reference)
-    integration(self.experiments, refl)
+    ref_profiles = integration(refl)
     reference = refl[-len(self.reference):]
     refl = refl[:len(self.reference)]
     assert(len(refl) == old_size)
@@ -262,8 +271,6 @@ class Test(object):
     # Check the reference profiles and spots are ok
     #self.check_profiles(integration.learner)
     #self.check_reference(reference)
-
-    reference = integration.learner
 
     #np = reference.locate().size()
     #for i in range(np):

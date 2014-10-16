@@ -46,11 +46,16 @@ phil_scope = parse('''
 class ProfileModel(object):
   ''' A class to encapsulate the profile model. '''
 
-  def __init__(self, n_sigma, sigma_b, sigma_m):
+  def __init__(self, n_sigma, sigma_b, sigma_m, deg=False):
     ''' Initialise with the parameters. '''
+    from math import pi
     self._n_sigma = n_sigma
-    self._sigma_b = sigma_b
-    self._sigma_m = sigma_m
+    if deg == True:
+      self._sigma_b = sigma_b * pi / 180.0
+      self._sigma_m = sigma_m * pi / 180.0
+    else:
+      self._sigma_b = sigma_b
+      self._sigma_m = sigma_m
     assert(self._n_sigma > 0)
     assert(self._sigma_b > 0)
     assert(self._sigma_m > 0)

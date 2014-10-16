@@ -45,7 +45,7 @@ class FitrsIntegrationExt(IntensityIface):
 
   def __init__(self, params, experiments, profile_model):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.integration.fitrs.algorithm2 import IntegrationAlgorithm
+    from dials.algorithms.integration.fitrs.algorithm import IntegrationAlgorithm
     self._algorithm = IntegrationAlgorithm(
       experiments,
       profile_model,
