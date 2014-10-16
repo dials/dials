@@ -103,17 +103,25 @@ def gcd_list(l):
 
 
 def run(args):
+  import libtbx.load_env
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
 
+  # The script usage
+  usage = "usage: %s [options] [param.phil] experiments.json" %libtbx.env.dispatcher_name
+
   parser = OptionParser(
+    usage=usage,
     phil=master_phil_scope,
     read_experiments=True,
     check_format=False)
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
-  assert len(experiments) > 0
+
+  if len(experiments) == 0:
+    parser.print_help()
+    return
 
   if len(params.hkl) == 0 and params.hkl_limit is None:
     from libtbx.utils import Sorry
