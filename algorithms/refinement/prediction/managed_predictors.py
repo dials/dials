@@ -123,7 +123,7 @@ class ExperimentsPredictor(object):
         from dxtbx.model.experiment.experiment_list import ExperimentListDumper
         dump = ExperimentListDumper(self._experiments)
         dump.as_json("problematic_experiments.json")
-        refs.as_pickle("problematic_reflections.json")
+        refs.as_pickle("problematic_reflections.pickle")
         raise
 
     return reflections
