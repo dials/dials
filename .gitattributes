@@ -91,7 +91,6 @@ algorithms/integration/fitrs/algorithm2.py -text
 algorithms/integration/fitrs/boost_python/fitrs.cc -text
 algorithms/integration/fitrs/boost_python/integration_fitrs_ext.cc -text
 algorithms/integration/fitrs/fit.h -text
-algorithms/integration/fitrs/fitrs.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/interface.h -text
 algorithms/integration/interface.py -text
@@ -266,7 +265,6 @@ array_family/boost_python/flex_reflection_table.cc -text
 array_family/boost_python/flex_shoebox.cc -text
 array_family/boost_python/flex_shoebox_extractor.cc -text
 array_family/boost_python/flex_table_suite.h -text
-array_family/boost_python/flex_transformed_shoebox.cc -text
 array_family/boost_python/flex_unit_cell.cc -text
 array_family/flex.py -text
 array_family/flex_table.h -text
@@ -438,13 +436,11 @@ model/data/boost_python/adjacency_list.cc -text
 model/data/boost_python/data_ext.cc -text
 model/data/boost_python/image.cc -text
 model/data/boost_python/observation.cc -text
-model/data/boost_python/pickle.h -text
 model/data/boost_python/pixel_list.cc -text
 model/data/boost_python/prediction.cc -text
 model/data/boost_python/ray.cc -text
 model/data/boost_python/shoebox.cc -text
 model/data/boost_python/table.cc -text
-model/data/boost_python/transformed_shoebox.cc -text
 model/data/image.h -text
 model/data/mask_code.h -text
 model/data/observation.h -text
@@ -452,7 +448,6 @@ model/data/pixel_list.h -text
 model/data/prediction.h -text
 model/data/ray.h -text
 model/data/shoebox.h -text
-model/data/transformed_shoebox.h -text
 model/serialize/SConscript -text
 model/serialize/__init__.py -text
 model/serialize/boost_python/serialize_ext.cc -text

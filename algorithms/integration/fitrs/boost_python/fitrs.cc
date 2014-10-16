@@ -11,7 +11,6 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/iterator.hpp>
-#include <dials/algorithms/integration/fitrs/fitrs.h>
 #include <dials/algorithms/integration/fitrs/fit.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
@@ -20,25 +19,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_profile_fitting_reciprocal_space()
   {
-    vec3<double> (ProfileFittingReciprocalSpace::*call_single)(
-      const TransformedShoebox&, vec3<double>) const =
-        &ProfileFittingReciprocalSpace::operator();
-    af::shared< vec3<double> > (ProfileFittingReciprocalSpace::*call_array)(
-      const af::const_ref<TransformedShoebox>&,
-      const af::const_ref< vec3<double> >&) const =
-        &ProfileFittingReciprocalSpace::operator();
-
-    class_<ProfileFittingReciprocalSpace>(
-        "ProfileFittingReciprocalSpaceAlgorithm", no_init)
-      .def(init<shared_ptr<ProfileFittingReciprocalSpace::locator_type>,
-                std::size_t>((
-        arg("locate"),
-        arg("max_iter") = 10)))
-      .def("__call__", call_single)
-      .def("__call__", call_array);
-
-
-
     class_<Spec>("Spec", no_init)
       .def(init< const Beam&,
                  const Detector&,

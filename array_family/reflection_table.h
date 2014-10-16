@@ -13,7 +13,6 @@
 
 #include <dials/array_family/flex_table.h>
 #include <dials/model/data/shoebox.h>
-#include <dials/model/data/transformed_shoebox.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/mat3.h>
 #include <scitbx/vec3.h>
@@ -27,7 +26,6 @@ namespace dials { namespace af {
   using scitbx::mat3;
   using scitbx::af::int6;
   using model::Shoebox;
-  using model::TransformedShoebox;
 
   typedef flex_type_generator<
     bool,
@@ -40,8 +38,7 @@ namespace dials { namespace af {
     mat3<double>,
     int6,
     cctbx::miller::index<>,
-    Shoebox<>,
-    TransformedShoebox
+    Shoebox<>
   >::type reflection_table_types;
 
   typedef flex_table<reflection_table_types> reflection_table;
