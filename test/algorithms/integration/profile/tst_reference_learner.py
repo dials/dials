@@ -27,16 +27,16 @@ class Test(object):
     from scitbx.array_family import flex
 
     # Generate identical non-negative profiles
-    reflections, profile = self.generate_identical_non_negative_profiles()
+    reflections, profiles, profile = self.generate_identical_non_negative_profiles()
 
     # Create the reference learner
     learner = XdsCircleReferenceLearner(self.sampler,
         self.grid_size, self.threshold)
 
     # Learn from the reflections
-    learner.learn(
-      reflections['transformed_shoebox'],
-      reflections['xyzcal.px'])
+    for i in range(len(reflections)):
+      learner.add(profiles[i], reflections[i]['xyzcal.px'])
+    learner.finalize()
 
     # Get the reference locator
     locate = learner.locate()
@@ -63,16 +63,16 @@ class Test(object):
     from scitbx.array_family import flex
 
     # Generate identical non-negative profiles
-    reflections = self.generate_systematically_offset_profiles()
+    reflections, profiles = self.generate_systematically_offset_profiles()
 
     # Create the reference learner
     learner = XdsCircleReferenceLearner(self.sampler,
         self.grid_size, self.threshold)
 
     # Learn from the reflections
-    learner.learn(
-      reflections['transformed_shoebox'],
-      reflections['xyzcal.px'])
+    for i in range(len(reflections)):
+      learner.add(profiles[i], reflections[i]['xyzcal.px'])
+    learner.finalize()
 
     # Get the reference locator
     locate = learner.locate()
@@ -109,16 +109,16 @@ class Test(object):
     from scitbx.array_family import flex
 
     # Generate identical non-negative profiles
-    reflections, profile = self.generate_single_central_non_negative_profiles()
+    reflections, profiles, profile = self.generate_single_central_non_negative_profiles()
 
     # Create the reference learner
     learner = XdsCircleReferenceLearner(self.sampler,
         self.grid_size, self.threshold)
 
     # Learn from the reflections
-    learner.learn(
-      reflections['transformed_shoebox'],
-      reflections['xyzcal.px'])
+    for i in range(len(reflections)):
+      learner.add(profiles[i], reflections[i]['xyzcal.px'])
+    learner.finalize()
 
     # Get the reference locator
     locate = learner.locate()
@@ -170,12 +170,10 @@ class Test(object):
     z = 5
     xyz = flex.vec3_double(1)
     xyz[0] = (x, y, z)
-    profiles = flex.transformed_shoebox(1)
-    profiles[0].data = profile.deep_copy()
+    profiles = [ profile.deep_copy() ]
     rlist['xyzcal.px'] = xyz
-    rlist['transformed_shoebox'] = profiles
 
-    return rlist, profile
+    return rlist, profiles, profile
 
 
   def generate_identical_non_negative_profiles(self):
@@ -187,17 +185,16 @@ class Test(object):
     profile = gaussian(self.grid_size, 1000, (4, 4, 4), (1.5, 1.5, 1.5))
 
     xyz = flex.vec3_double(1000)
-    profiles = flex.transformed_shoebox(1000)
+    profiles = []
     for i in range(1000):
       x = uniform(0, 1000)
       y = uniform(0, 1000)
       z = uniform(0, 10)
       xyz[i] = (x, y, z)
-      profiles[i].data = profile.deep_copy()
+      profiles.append(profile.deep_copy())
     rlist['xyzcal.px'] = xyz
-    rlist['transformed_shoebox'] = profiles
 
-    return rlist, profile
+    return rlist, profiles, profile
 
   def generate_systematically_offset_profiles(self):
     from dials.array_family import flex
@@ -206,7 +203,7 @@ class Test(object):
     rlist = flex.reflection_table(1000)
 
     xyz = flex.vec3_double(1000)
-    profiles = flex.transformed_shoebox(1000)
+    profiles = []
     for i in range(1000):
       x = uniform(0, 1000)
       y = uniform(0, 1000)
@@ -217,11 +214,10 @@ class Test(object):
       profile = gaussian(self.grid_size, 1000,
           (4 + offset, 4, 4), (1.5, 1.5, 1.5))
       xyz[i] = (x, y, z)
-      profiles[i].data = profile
+      profiles.append(profile)
 
     rlist['xyzcal.px'] = xyz
-    rlist['transformed_shoebox'] = profiles
-    return rlist
+    return rlist, profiles
 
 if __name__ == '__main__':
   from dials.test import cd_auto
