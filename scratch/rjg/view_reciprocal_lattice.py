@@ -85,13 +85,46 @@ class ReciprocalLatticeViewer(wx.Frame):
     self.scan = imageset.get_scan()
     self.goniometer = imageset.get_goniometer()
     self.reflections = reflections
+    self.parameterise_models()
     self.map_points_to_reciprocal_space()
+
+  def parameterise_models(self):
+    from dials.algorithms.refinement.parameterisation import \
+      DetectorParameterisationSinglePanel, DetectorParameterisationHierarchical, \
+      DetectorParameterisationMultiPanel
+    if len(self.detector) > 1:
+      try:
+        h = self.detector.hierarchy()
+        self.dp = DetectorParameterisationHierarchical(self.detector,
+            experiment_ids=[0], level=0)
+      except AttributeError:
+        self.dp = DetectorParameterisationMultiPanel(self.detector, self.beam,
+                                                    experiment_ids=[0])
+    else:
+      self.dp = DetectorParameterisationSinglePanel(self.detector,
+                                                    experiment_ids=[0])
+
+    from dials.algorithms.refinement.parameterisation import BeamParameterisation
+    self.bp = BeamParameterisation(self.beam, self.goniometer, experiment_ids=[0])
+
+    # keep parameter names
+    self.detector_parameter_names = self.dp.get_param_names()
+    self.beam_parameter_names = self.bp.get_param_names()
+
+    # keep parameter values (modify these and update_models to make changes)
+    self.detector_parameters = self.dp.get_param_vals()
+    self.beam_parameters = self.bp.get_param_vals()
 
   def map_points_to_reciprocal_space(self):
     goniometer = copy.deepcopy(self.goniometer)
     if self.settings.reverse_phi:
       goniometer.set_rotation_axis([-i for i in goniometer.get_rotation_axis()])
     from dials.algorithms.indexing import indexer
+
+    # set parameters to latest values
+    self.dp.set_param_vals(self.detector_parameters)
+    self.bp.set_param_vals(self.beam_parameters)
+
     reflections = indexer.indexer_base.map_spots_pixel_to_mm_rad(
       self.reflections, self.detector, self.scan)
     indexer.indexer_base.map_centroids_to_reciprocal_space(
