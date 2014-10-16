@@ -77,20 +77,20 @@ namespace boost_python {
 
     class_<ForwardType>(name, no_init)
       .def(init<const TransformSpec<FloatType>&,
-                const vec3<double>&, double, int6,
+                const vec3<double>&, double, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
       .def(init<const TransformSpec<FloatType>&,
-                const vec3<double>&, double, int6,
+                const vec3<double>&, double, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
       .def(init<const TransformSpec<FloatType>&,
-                const CoordinateSystem&, int6,
+                const CoordinateSystem&, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
       .def(init<const TransformSpec<FloatType>&,
-                const CoordinateSystem&, int6,
+                const CoordinateSystem&, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
@@ -101,11 +101,11 @@ namespace boost_python {
 
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_transform_ext)
   {
-    af::versa< vec3<double>, af::c_grid<2> > (*overload1)(const Detector&,
+    af::versa< vec3<double>, af::c_grid<2> > (*overload1)(const Panel&,
       const Beam&, std::size_t, bool) = &beam_vector_map;
-    af::versa< vec3<double>, af::c_grid<2> > (*overload2)(const Detector&,
+    af::versa< vec3<double>, af::c_grid<2> > (*overload2)(const Panel&,
       const Beam&, bool) = &beam_vector_map;
-    af::versa< vec3<double>, af::c_grid<2> > (*overload3)(const Detector&,
+    af::versa< vec3<double>, af::c_grid<2> > (*overload3)(const Panel&,
       const Beam&) = &beam_vector_map;
 
     def("beam_vector_map", overload1, (

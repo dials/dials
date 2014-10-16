@@ -191,7 +191,6 @@ namespace dials { namespace algorithms {
             grid_size),
         count_(0),
         finalized_(false) {
-      DIALS_ASSERT(spec.detector().size() == 1);
     }
 
     /**

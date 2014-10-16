@@ -28,6 +28,7 @@ namespace transform {
   using scitbx::vec3;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
+  using dxtbx::model::Panel;
 
   /**
    * Calculate the beam vector at every pixel on the detector, sub-divided
@@ -42,16 +43,15 @@ namespace transform {
    */
   inline
   af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Detector &detector, const Beam &beam,
+      const Panel &panel, const Beam &beam,
       std::size_t n_div, bool corner)
   {
     // check the input
     DIALS_ASSERT(beam.get_wavelength() > 0.0);
     DIALS_ASSERT(n_div > 0);
-    DIALS_ASSERT(detector.size());
 
     // Calculate the image size
-    vec2<std::size_t> image_size = detector[0].get_image_size();
+    vec2<std::size_t> image_size = panel.get_image_size();
     std::size_t x_size = image_size[0] * n_div;
     std::size_t y_size = image_size[1] * n_div;
     if (corner) {
@@ -79,7 +79,7 @@ namespace transform {
         double x = (i + offset) * n_div_r;
         double y = (j + offset) * n_div_r;
         vec2<double> px(x, y);
-        detector_s1[k] = detector[0].get_pixel_lab_coord(
+        detector_s1[k] = panel.get_pixel_lab_coord(
           px).normalize() * wavelength_r;
       }
     }
@@ -97,8 +97,8 @@ namespace transform {
    */
   inline
   af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Detector &detector, const Beam &beam, bool corner) {
-    return beam_vector_map(detector, beam, 1, corner);
+      const Panel &panel, const Beam &beam, bool corner) {
+    return beam_vector_map(panel, beam, 1, corner);
   }
 
   /**
@@ -109,8 +109,8 @@ namespace transform {
    */
   inline
   af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Detector &detector, const Beam &beam) {
-    return beam_vector_map(detector, beam, 1, false);
+      const Panel &panel, const Beam &beam) {
+    return beam_vector_map(panel, beam, 1, false);
   }
 
 }}}}} // namespace dials::algorithms::profile_model::gaussian_rs::transform

@@ -449,21 +449,28 @@ namespace transform {
                   std::size_t grid_size)
       : s0_(beam.get_s0()),
         m2_(gonio.get_rotation_axis().normalize()),
-        image_size_(detector[0].get_image_size()[1],
-                    detector[0].get_image_size()[0]),
+        /* image_size_(detector[0].get_image_size()[1], */
+        /*             detector[0].get_image_size()[0]), */
         grid_size_(2*grid_size+1, 2*grid_size+1, 2*grid_size+1),
         step_size_(sigma_m * n_sigma / (grid_size + 0.5),
                    sigma_b * n_sigma / (grid_size + 0.5),
                    sigma_b * n_sigma / (grid_size + 0.5)),
         grid_centre_(grid_size + 0.5, grid_size + 0.5, grid_size + 0.5),
-        s1_map_(beam_vector_map(detector, beam, true)),
+        /* s1_map_(beam_vector_map(detector, beam, true)), */
         map_frames_(scan.get_oscillation()[0],
                     scan.get_oscillation()[1],
                     sigma_m, n_sigma, grid_size) {
-      DIALS_ASSERT(detector.size() == 1);
-      DIALS_ASSERT(image_size_.all_gt(0));
+      DIALS_ASSERT(detector.size() > 0);
+      /* DIALS_ASSERT(detector.size() == 1); */
+      /* DIALS_ASSERT(image_size_.all_gt(0)); */
       DIALS_ASSERT(step_size_.all_gt(0));
       DIALS_ASSERT(grid_size_.all_gt(0));
+      for (std::size_t i = 0; i < detector.size(); ++i) {
+        image_size_.push_back(int2(
+              detector[i].get_image_size()[1],
+              detector[i].get_image_size()[0]));
+        s1_map_.push_back(beam_vector_map(detector[i], beam, true));
+      }
     }
 
     /** @ returns the rotation angle */
@@ -477,8 +484,9 @@ namespace transform {
     }
 
     /** @returns the image size */
-    int2 image_size() const {
-      return image_size_;
+    int2 image_size(std::size_t panel) const {
+      DIALS_ASSERT(panel < s1_map_.size());
+      return image_size_[panel];
     }
 
     /** @returns the grid size */
@@ -497,8 +505,9 @@ namespace transform {
     }
 
     /** @returns the beam vector lookup map */
-    af::versa< vec3<double>, af::c_grid<2> > s1_map() const {
-      return s1_map_;
+    af::versa< vec3<double>, af::c_grid<2> > s1_map(std::size_t panel) const {
+      DIALS_ASSERT(panel < s1_map_.size());
+      return s1_map_[panel];
     }
 
     /** @returns the frame mapping fraction array */
@@ -510,11 +519,11 @@ namespace transform {
   private:
     vec3<double> s0_;
     vec3<double> m2_;
-    int2 image_size_;
+    std::vector<int2> image_size_;
     int3 grid_size_;
     double3 step_size_;
     double3 grid_centre_;
-    af::versa< vec3<double>, af::c_grid<2> > s1_map_;
+    std::vector<af::versa< vec3<double>, af::c_grid<2> > > s1_map_;
     MapFramesForward<FloatType> map_frames_;
   };
 
@@ -541,50 +550,50 @@ namespace transform {
     Forward() {}
 
     Forward(const TransformSpec<FloatType> &spec,
-            const vec3<double> &s1, double phi, int6 bbox,
+            const vec3<double> &s1, double phi, int6 bbox, std::size_t panel,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, s1, phi, bbox);
+      init(spec, s1, phi, bbox, panel);
       call(image, mask);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
-            const vec3<double> &s1, double phi, int6 bbox,
+            const vec3<double> &s1, double phi, int6 bbox, std::size_t panel,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, s1, phi, bbox);
+      init(spec, s1, phi, bbox, panel);
       call(image, bkgrd, mask);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
             const vec3<double> &s1, double phi,
             const Shoebox<> &shoebox) {
-      init(spec, s1, phi, shoebox.bbox);
+      init(spec, s1, phi, shoebox.bbox, shoebox.panel);
       call(shoebox);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
-            const CoordinateSystem &cs, int6 bbox,
+            const CoordinateSystem &cs, int6 bbox, std::size_t panel,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, cs, bbox);
+      init(spec, cs, bbox, panel);
       call(image, mask);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
-            const CoordinateSystem &cs, int6 bbox,
+            const CoordinateSystem &cs, int6 bbox, std::size_t panel,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, cs, bbox);
+      init(spec, cs, bbox, panel);
       call(image, bkgrd, mask);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs,
             const Shoebox<> &shoebox) {
-      init(spec, cs, shoebox.bbox);
+      init(spec, cs, shoebox.bbox, shoebox.panel);
       call(shoebox);
     }
 
@@ -607,14 +616,14 @@ namespace transform {
 
     /** Initialise using the beam vector and rotation angle */
     void init(const TransformSpec<FloatType> &spec,
-              const vec3<double> &s1, double phi, int6 bbox) {
+              const vec3<double> &s1, double phi, int6 bbox, std::size_t panel) {
       CoordinateSystem cs(spec.m2(), spec.s0(), s1, phi);
-      init(spec, cs, bbox);
+      init(spec, cs, bbox, panel);
     }
 
     /** Initialise using a coordinate system struct */
     void init(const TransformSpec<FloatType> &spec,
-              const CoordinateSystem &cs, int6 bbox) {
+              const CoordinateSystem &cs, int6 bbox, std::size_t panel) {
 
       // Initialise some stuff
       x0_ = bbox[0];
@@ -622,8 +631,8 @@ namespace transform {
       shoebox_size_ = int3(bbox[5]-bbox[4], bbox[3]-bbox[2], bbox[1]-bbox[0]);
       DIALS_ASSERT(shoebox_size_.all_gt(0));
       DIALS_ASSERT(bbox[0] >= 0 && bbox[2] >= 0);
-      DIALS_ASSERT(bbox[1] <= spec.image_size()[1]);
-      DIALS_ASSERT(bbox[3] <= spec.image_size()[0]);
+      DIALS_ASSERT(bbox[1] <= spec.image_size(panel)[1]);
+      DIALS_ASSERT(bbox[3] <= spec.image_size(panel)[0]);
       step_size_ = spec.step_size();
       grid_size_ = spec.grid_size();
       grid_cent_ = spec.grid_centre();
@@ -631,7 +640,7 @@ namespace transform {
       DIALS_ASSERT(s1_.length() > 0);
       e1_ = cs.e1_axis() / s1_.length();
       e2_ = cs.e2_axis() / s1_.length();
-      s1_map_arr_ = spec.s1_map();
+      s1_map_arr_ = spec.s1_map(panel);
       s1_map_ = s1_map_arr_.const_ref();
 
       // Calculate the fraction of intensity contributed from each data
