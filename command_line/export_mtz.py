@@ -12,6 +12,9 @@ def run(args):
     hklout = hklout.mtz
       .type = str
       .help = "The output MTZ file"
+    ignore_panels = False
+      .type = bool
+      .help = "Ignore multiple panels / detectors in output"
   ''')
 
   usage = '%s integrated.pickle experiments.json [hklout.mtz] [options]' % (
@@ -31,7 +34,8 @@ def run(args):
 
   integrated_data = reflections[0]
   experiment_list = experiments
-  m = export_mtz(integrated_data, experiment_list, params.hklout)
+  m = export_mtz(integrated_data, experiment_list, params.hklout,
+                 params.ignore_panels)
   m.show_summary()
 
 

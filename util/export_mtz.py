@@ -1,6 +1,6 @@
 from __future__ import division
 
-def export_mtz(integrated_data, experiment_list, hklout):
+def export_mtz(integrated_data, experiment_list, hklout, ignore_panels):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -56,7 +56,8 @@ def export_mtz(integrated_data, experiment_list, hklout):
 
   # also only work with one panel(for the moment)
 
-  assert(len(experiment.detector) == 1)
+  if not ignore_panels:
+    assert(len(experiment.detector) == 1)
 
   axis = experiment.goniometer.get_rotation_axis()
   s0 = experiment.beam.get_s0()
