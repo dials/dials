@@ -50,7 +50,8 @@ class Script(object):
     self.parser = OptionParser(
       read_experiments=True,
       read_datablocks=True,
-      read_datablocks_from_images=True)
+      read_datablocks_from_images=True,
+      check_format=False)
 
   def run(self):
     params, options = self.parser.parse_args(show_diff_phil=True)
