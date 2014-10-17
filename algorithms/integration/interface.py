@@ -317,6 +317,51 @@ class Task(object):
     print ''
 
 
+
+def create_job_list(experiments, block_size, block_size_units):
+  from math import ceil
+  jobs = JobList()
+
+  for a in a:
+
+    array_range = (0, len(imageset))
+    if scan is not None:
+      array_range = scan.get_array_range()
+    if block_size_units == 'degrees':
+      phi0, dphi = scan.get_oscillation()
+      block_size_frames = int(ceil(block_size / dphi))
+    elif block_size_units == 'frames':
+      block_size_frames = int(ceil(block_size))
+    else:
+      raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
+
+    jobs.add((id0, id1), array_range, block_size_frames)
+
+  return jobs
+
+  imagesets = experiments.imagesets()
+  detectors = experiments.detectors()
+  scans = experiments.scans()
+  assert(len(experiments) == len(profile_model))
+  imageset = imagesets[0]
+  array_range = (0, len(imageset))
+  if len(scans) != 0:
+    assert(len(scans) == 1)
+    scan = scans[0]
+    if scan is not None:
+      assert(len(imageset) == len(scan))
+      array_range = scan.get_array_range()
+  if block_size_units == 'degrees':
+    phi0, dphi = scan.get_oscillation()
+    block_size_frames = int(ceil(block_size / dphi))
+  elif block_size_units == 'frames':
+    block_size_frames = int(ceil(block_size))
+  else:
+    raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
+  jobs = JobList()
+  jobs.add((0, len(experiments)), array_range, block_size_frames)
+
+
 class Manager(object):
   ''' An class to manage integration book-keeping '''
 
@@ -333,21 +378,8 @@ class Manager(object):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import ReflectionManager
     from dials.algorithms.integration import JobList
+    from itertools import groupby
     from math import ceil
-    imagesets = experiments.imagesets()
-    detectors = experiments.detectors()
-    scans = experiments.scans()
-    assert(len(experiments) == len(profile_model))
-    assert(len(imagesets) == 1)
-    assert(len(detectors) == 1)
-    imageset = imagesets[0]
-    array_range = (0, len(imageset))
-    if len(scans) != 0:
-      assert(len(scans) == 1)
-      scan = scans[0]
-      if scan is not None:
-        assert(len(imageset) == len(scan))
-        array_range = scan.get_array_range()
     self._flatten = flatten
     self._save_shoeboxes = save_shoeboxes
     self._preprocess = preprocess
@@ -355,15 +387,31 @@ class Manager(object):
     self._experiments = experiments
     self._profile_model = profile_model
     self._reflections = reflections
-    if block_size_units == 'degrees':
-      phi0, dphi = scan.get_oscillation()
-      block_size_frames = int(ceil(block_size / dphi))
-    elif block_size_units == 'frames':
-      block_size_frames = int(ceil(block_size))
-    else:
-      raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
+    groups = groupby(
+      range(len(experiments)),
+      lambda x: (experiments[x].imageset,
+                 experiments[x].scan))
     jobs = JobList()
-    jobs.add((0, len(experiments)), array_range, block_size_frames)
+    for key, indices in groups:
+      indices = list(indices)
+      i0 = indices[0]
+      i1 = indices[-1]+1
+      expr = experiments[i0]
+      scan = expr.scan
+      imgs = expr.imageset
+      array_range = (0, len(imgs))
+      if scan is not None:
+        assert(len(imgs) == len(scan))
+        array_range = scan.get_array_range()
+      if block_size_units == 'degrees':
+        phi0, dphi = scan.get_oscillation()
+        block_size_frames = int(ceil(block_size / dphi))
+      elif block_size_units == 'frames':
+        block_size_frames = int(ceil(block_size))
+      else:
+        raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
+      jobs.add((i0, i1), array_range, block_size_frames)
+    assert(len(jobs) > 0)
     self._preprocess(self._reflections, jobs)
     self._manager = ReflectionManager(jobs, self._reflections)
     self.read_time = 0
