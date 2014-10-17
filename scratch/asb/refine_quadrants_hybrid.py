@@ -59,7 +59,7 @@ class DetectorRefiner(object):
     self.working_phil.show()
     params = self.working_phil.extract()
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments, verbosity=1)
+        params, reflections, experiments, verbosity=2)
     refiner.run()
     experiments = refiner.get_experiments()
 
