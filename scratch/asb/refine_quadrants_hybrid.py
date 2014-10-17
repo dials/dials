@@ -8,6 +8,7 @@ then each crystal is refined individually. This forms one macrocycle."""
 
 from __future__ import division
 import sys
+from math import sqrt
 
 from libtbx.phil import command_line, parse
 from dxtbx.serialize import load as load_dxtbx
@@ -104,6 +105,45 @@ class CrystalRefiners(object):
 
     return experiments
 
+def check_experiment(experiment, reflections):
+
+  # predict reflections in place
+  from dials.algorithms.spot_prediction import StillsReflectionPredictor
+  sp = StillsReflectionPredictor(experiment)
+  UB = experiment.crystal.get_U() * experiment.crystal.get_B()
+  try:
+    sp.for_reflection_table(reflections, UB)
+  except RuntimeError:
+    return False
+
+  # calculate unweighted RMSDs
+  x_obs, y_obs, _ = reflections['xyzobs.px.value'].parts()
+  delpsi = reflections['delpsical.rad']
+  x_calc, y_calc, _ = reflections['xyzcal.px'].parts()
+
+  # calculate residuals and assign columns
+  x_resid = x_calc - x_obs
+  x_resid2 = x_resid**2
+  y_resid = y_calc - y_obs
+  y_resid2 = y_resid**2
+  delpsical2 = delpsi**2
+  r_x = flex.sum(x_resid2)
+  r_y = flex.sum(y_resid2)
+  r_z = flex.sum(delpsical2)
+
+  # rmsd calculation
+  n = len(reflections)
+  rmsds = (sqrt(r_x / n),
+           sqrt(r_y / n),
+           sqrt(r_z / n))
+
+  # check positional RMSDs are within 5 pixels
+  print rmsds
+  if rmsds[0] > 5: return False
+  if rmsds[1] > 5: return False
+
+  return True
+
 if __name__ =="__main__":
 
   if len(sys.argv) != 2: exit("please pass the path to a phil file")
@@ -144,11 +184,17 @@ if __name__ =="__main__":
   experiments.append(experiment_from_crystal(exp.crystal))
 
   for i, line in e:
+
     refs, exp = load_input(line.experiments, line.reflections)
-    refs['id'] = flex.size_t(len(refs),i)
-    refs = indexer_base.map_spots_pixel_to_mm_rad(refs, exp.detector, exp.scan)
-    reflections.extend(refs)
-    experiments.append(experiment_from_crystal(exp.crystal))
+    new_exp = experiment_from_crystal(exp.crystal)
+    if check_experiment(new_exp, refs):
+      refs['id'] = flex.size_t(len(refs),len(experiments))
+      refs = indexer_base.map_spots_pixel_to_mm_rad(refs, exp.detector, exp.scan)
+      reflections.extend(refs)
+      experiments.append(experiment_from_crystal(exp.crystal))
+    else:
+      print "skipping experiment", i, "due to poor RMSDs"
+      continue
 
   dr = DetectorRefiner()
   cr = CrystalRefiners()
