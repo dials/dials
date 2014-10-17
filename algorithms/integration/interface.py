@@ -419,25 +419,26 @@ class Manager(object):
     from dials.util.command_line import heading
 
     # Compute the task table
-    scans = self._experiments.scans()
-    if scans.count(None) == len(scans):
+    if self._experiments.all_stills():
       rows = [["#", "Group", "Frame From", "Frame To"]]
       for i in range(len(self)):
         job = self._manager.job(i)
         group = job.index()
         f0, f1 = job.frames()
         rows.append([str(i), str(group), str(f0), str(f1)])
-    elif scans.count(None) == 0:
+    elif self._experiments.all_sweeps():
       rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
       for i in range(len(self)):
         job = self._manager.job(i)
         group = job.index()
+        expr = job.expr()
         f0, f1 = job.frames()
-        p0 = scans[0].get_angle_from_array_index(f0)
-        p1 = scans[0].get_angle_from_array_index(f1)
+        scan = self._experiments[expr[0]].scan
+        p0 = scan.get_angle_from_array_index(f0)
+        p1 = scan.get_angle_from_array_index(f1)
         rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
     else:
-      raise RuntimeError('Bad input')
+      raise RuntimeError('Experiments must be all sweeps or all stills')
     task_table = table(rows, has_header=True, justify="right", prefix=" ")
 
     # Create a table of integration tasks
