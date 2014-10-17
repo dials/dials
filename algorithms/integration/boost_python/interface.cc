@@ -42,6 +42,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       ;
 
     class_<JobList>("JobList")
+      .def(init< tiny<int,2>,
+                 const af::const_ref< tiny<int,2> >& >())
       .def("add", &JobList::add)
       .def("__len__", &JobList::size)
       .def("__getitem__", &JobList::operator[],

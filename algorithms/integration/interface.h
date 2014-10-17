@@ -175,6 +175,21 @@ namespace dials { namespace algorithms {
 
     JobList() {}
 
+    JobList(tiny<int,2> expr, const af::const_ref< tiny<int,2> > &jobs) {
+      DIALS_ASSERT(expr[1] > expr[0]);
+      DIALS_ASSERT(jobs.size() > 0);
+      DIALS_ASSERT(jobs[0][1] > jobs[0][0]);
+      jobs_.push_back(Job(0, expr, jobs[0]));
+      for (std::size_t i = 1; i < jobs.size(); ++i) {
+        DIALS_ASSERT(jobs[i][1] > jobs[i][0]);
+        DIALS_ASSERT(jobs[i][0] > jobs[i-1][0]);
+        DIALS_ASSERT(jobs[i][1] > jobs[i-1][1]);
+        DIALS_ASSERT(jobs[i][0] <= jobs[i-1][1]);
+        jobs_.push_back(Job(0, expr, jobs[i]));
+      }
+      groups_.add(int2(0, size()), expr, int2(jobs.front()[0], jobs.back()[1]));
+    }
+
     /**
      * Add a new group of jobs covering a range of experiments
      * @param expr The range of experiments

@@ -1,6 +1,242 @@
 
 from __future__ import division
 
+class TestSplitReflections(object):
+
+  def run(self):
+    self.tst_split_blocks_1_frame()
+    self.tst_split_blocks_non_overlapping()
+    self.tst_split_blocks_overlapping()
+
+  def tst_split_blocks_1_frame(self):
+    from dials.array_family import flex
+    from random import randint, uniform, seed
+    from dials.algorithms.integration import split_reflections_by_jobs
+    from dials.algorithms.integration import JobList
+    r = flex.reflection_table()
+    r['value1'] = flex.double()
+    r['value2'] = flex.int()
+    r['value3'] = flex.double()
+    r['bbox'] = flex.int6()
+    r['id'] = flex.size_t()
+    expected = []
+    for i in range(100):
+      x0 = randint(0, 100)
+      x1 = x0 + randint(1, 10)
+      y0 = randint(0, 100)
+      y1 = y0 + randint(1, 10)
+      z0 = randint(0, 100)
+      z1 = z0 + randint(1, 10)
+      v1 = uniform(0, 100)
+      v2 = randint(0, 100)
+      v3 = uniform(0, 100)
+      r.append({
+        'id' : 0,
+        'value1' : v1,
+        'value2' : v2,
+        'value3' : v3,
+        'bbox' : (x0, x1, y0, y1, z0, z1)
+      })
+      for z in range(z0, z1):
+        expected.append({
+          'id' : 0,
+          'value1' : v1,
+          'value2' : v2,
+          'value3' : v3,
+          'bbox' : (x0, x1, y0, y1, z, z+1),
+          'partial_id' : i,
+        })
+
+    jobs = JobList()
+    jobs.add((0,1), (0, 111), 1)
+
+    split_reflections_by_jobs(r, jobs)
+    assert(len(r) == len(expected))
+    EPS = 1e-7
+    for r1, r2 in zip(r, expected):
+      assert(r1['bbox'] == r2['bbox'])
+      assert(r1['partial_id'] == r2['partial_id'])
+      assert(abs(r1['value1'] - r2['value1']) < EPS)
+      assert(r1['value2'] == r2['value2'])
+      assert(abs(r1['value3'] - r2['value3']) < EPS)
+
+    print 'OK'
+
+  def tst_split_blocks_non_overlapping(self):
+    from dials.array_family import flex
+    from random import randint, uniform, seed
+    from dials.algorithms.integration import split_reflections_by_jobs
+    from dials.algorithms.integration import JobList
+
+    from scitbx.array_family import shared
+    blocks = shared.tiny_int_2([
+      (0, 10),
+      (10, 20),
+      (20, 30),
+      (30, 35),
+      (35, 40),
+      (40, 50),
+      (50, 60),
+      (60, 70),
+      (70, 80),
+      (80, 90),
+      (90, 100),
+      (100, 110)])
+
+    jobs = JobList((0, 1), blocks)
+
+    r = flex.reflection_table()
+    r['value1'] = flex.double()
+    r['value2'] = flex.int()
+    r['value3'] = flex.double()
+    r['bbox'] = flex.int6()
+    r['id'] = flex.size_t()
+    expected = []
+    for i in range(100):
+      x0 = randint(0, 100)
+      x1 = x0 + randint(1, 10)
+      y0 = randint(0, 100)
+      y1 = y0 + randint(1, 10)
+      z0 = randint(0, 100)
+      z1 = z0 + randint(1, 10)
+      v1 = uniform(0, 100)
+      v2 = randint(0, 100)
+      v3 = uniform(0, 100)
+      r.append({
+        'id' : 0,
+        'value1' : v1,
+        'value2' : v2,
+        'value3' : v3,
+        'bbox' : (x0, x1, y0, y1, z0, z1)
+      })
+
+      for j in range(len(blocks)):
+        b0 = blocks[j][0]
+        b1 = blocks[j][1]
+        if ((z0 >= b0 and z1 <= b1) or
+            (z0 < b1 and z1 >= b1) or
+            (z0 < b0 and z1 > b0)):
+          z00 = max(b0, z0)
+          z11 = min(b1, z1)
+          expected.append({
+            'id' : 0,
+            'value1' : v1,
+            'value2' : v2,
+            'value3' : v3,
+            'bbox' : (x0, x1, y0, y1, z00, z11),
+            'partial_id' : i,
+          })
+
+    split_reflections_by_jobs(r, jobs)
+    assert(len(r) == len(expected))
+    EPS = 1e-7
+    for r1, r2 in zip(r, expected):
+      assert(r1['bbox'] == r2['bbox'])
+      assert(r1['partial_id'] == r2['partial_id'])
+      assert(abs(r1['value1'] - r2['value1']) < EPS)
+      assert(r1['value2'] == r2['value2'])
+      assert(abs(r1['value3'] - r2['value3']) < EPS)
+
+    print 'OK'
+
+  def tst_split_blocks_overlapping(self):
+    from dials.array_family import flex
+    from random import randint, uniform, seed
+    from dials.algorithms.integration import split_reflections_by_jobs
+    from dials.algorithms.integration import JobList
+    from scitbx.array_family import shared
+    blocks = shared.tiny_int_2([
+      (0, 10),
+      (5, 15),
+      (10, 20),
+      (15, 25),
+      (20, 30),
+      (25, 35),
+      (30, 40),
+      (35, 45),
+      (40, 50),
+      (45, 55),
+      (50, 60),
+      (55, 65),
+      (60, 70),
+      (65, 75),
+      (70, 80),
+      (75, 85),
+      (80, 90),
+      (85, 95),
+      (90, 100),
+      (95, 105),
+      (100, 110)])
+
+    jobs = JobList((0, 1), blocks)
+
+    r = flex.reflection_table()
+    r['value1'] = flex.double()
+    r['value2'] = flex.int()
+    r['value3'] = flex.double()
+    r['bbox'] = flex.int6()
+    r['id'] = flex.size_t()
+    expected = []
+    for i in range(100):
+      x0 = randint(0, 100)
+      x1 = x0 + randint(1, 10)
+      y0 = randint(0, 100)
+      y1 = y0 + randint(1, 10)
+      z0 = randint(0, 90)
+      z1 = z0 + randint(1, 20)
+      v1 = uniform(0, 100)
+      v2 = randint(0, 100)
+      v3 = uniform(0, 100)
+      r.append({
+        'id' : 0,
+        'value1' : v1,
+        'value2' : v2,
+        'value3' : v3,
+        'bbox' : (x0, x1, y0, y1, z0, z1)
+      })
+      expected.append({
+        'id' : 0,
+        'value1' : v1,
+        'value2' : v2,
+        'value3' : v3,
+        'bbox' : (x0, x1, y0, y1, z0, z1)
+      })
+
+    split_reflections_by_jobs(r, jobs)
+    assert(len(r) > 100)
+    for r1 in r:
+      v1 = r1['value1']
+      v2 = r1['value2']
+      v3 = r1['value3']
+      bbox = r1['bbox']
+      pid = r1['partial_id']
+
+      z0 = bbox[4]
+      z1 = bbox[5]
+      success = False
+      for i in range(len(blocks)):
+        b0 = blocks[i][0]
+        b1 = blocks[i][1]
+        if (z0 >= b0 and z1 <= b1):
+          success = True
+          break
+      assert(success)
+
+      v11 = expected[pid]['value1']
+      v22 = expected[pid]['value2']
+      v33 = expected[pid]['value3']
+      bb = expected[pid]['bbox']
+      assert(v11 == v1)
+      assert(v22 == v2)
+      assert(v33 == v3)
+      assert(bb[0] == bbox[0])
+      assert(bb[1] == bbox[1])
+      assert(bb[2] == bbox[2])
+      assert(bb[3] == bbox[3])
+
+    print 'OK'
+
+
 class TestReflectionManager(object):
 
   def __init__(self):
@@ -406,12 +642,14 @@ class TestSummation(object):
 class Test(object):
 
   def __init__(self):
+    self.test0 = TestSplitReflections()
     self.test1 = TestReflectionManager()
     self.test2 = TestIntegrator3D(nproc=1)
     self.test3 = TestIntegrator3D(nproc=2)
     self.test4 = TestSummation()
 
   def run(self):
+    self.test0.run()
     self.test1.run()
     self.test2.run()
     self.test3.run()
