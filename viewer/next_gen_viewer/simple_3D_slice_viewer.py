@@ -39,6 +39,25 @@ class show_3d_wx_app(wx.App):
     self.panel.Show()
 
 
+'''
+class flex_arr_3d_outer_panel(wx.Frame):
+  def __init__(self, parent, id = wx.ID_ANY, title = "",
+               pos=wx.DefaultPosition, size=wx.DefaultSize,
+               style = wx.DEFAULT_FRAME_STYLE):
+    super(flex_arr_3d_outer_panel, self).__init__(parent, id, title,
+                                  pos, size, style)
+'''
+
+class flex_3d_frame(wx.Frame):
+  def __init__(self, parent):
+    super(flex_3d_frame, self).__init__(parent)
+    self.my_panel = main_panel
+    self.my_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    self.my_sizer.Add(main_panel, 0, wx.LEFT | wx.ALL, 3)
+    self.SetSizer(self.my_sizer)
+
+
+
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
   def __init__(self, outer_panel, bmp_lst_in):
     super(multi_img_scrollable, self).__init__(outer_panel)
