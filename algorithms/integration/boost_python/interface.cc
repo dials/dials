@@ -61,6 +61,8 @@ namespace dials { namespace algorithms { namespace boost_python {
           return_internal_reference<>())
       .def("data", &ReflectionManager::data)
       ;
+
+    def("split_reflections_by_jobs", &split_reflections_by_jobs);
   }
 
 }}} // namespace = dials::algorithms::boost_python

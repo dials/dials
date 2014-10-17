@@ -264,116 +264,115 @@ namespace dials { namespace algorithms {
 
 
   /**
+   * Helper class for checking the range of possible jobs for a particular
+   * frame.
+   */
+  class JobRangeLookup {
+  public:
+
+    /**
+     * Construct the lookup
+     */
+    JobRangeLookup(const JobList &jobs) {
+      const GroupList& groups = jobs.groups();
+      DIALS_ASSERT(0 ==  groups[0].expr()[0]);
+      for (std::size_t i = 0; i < groups.size(); ++i) {
+        for (std::size_t j = groups[i].expr()[0]; j < groups[i].expr()[1]; ++j) {
+          group_.push_back(i);
+        }
+      }
+      DIALS_ASSERT(group_.size() ==  groups[groups.size()-1].expr()[1]);
+      offset_.push_back(0);
+      for (std::size_t i = 0; i < groups.size(); ++i) {
+        tiny<int,2> f = groups[i].frames();
+        DIALS_ASSERT(f[1] > f[0]);
+        frame0_.push_back(f[0]);
+        offset_.push_back(f[1] - f[0]);
+      }
+      DIALS_ASSERT(offset_.back() > 0);
+      lookup0_.resize(offset_.back());
+      lookup1_.resize(offset_.back());
+      for (std::size_t i = 0; i < groups.size(); ++i) {
+        std::size_t job0 = groups[i].index()[0];
+        std::size_t job1 = groups[i].index()[1];
+        DIALS_ASSERT(job1 > job0 && job1 <= jobs.size());
+        std::size_t off0 = offset_[i];
+        std::size_t off1 = offset_[i+1];
+        DIALS_ASSERT(off1 > off0 && off1 <= lookup0_.size());
+        int frame0 = groups[i].frames()[0];
+        int frame1 = groups[i].frames()[1];
+        DIALS_ASSERT(frame1 > frame0);
+        DIALS_ASSERT(frame1 - frame0 == off1 - off0);
+        int frame = frame0;
+        for (std::size_t i = job0; i < job1; ++i) {
+          tiny<int,2> b = jobs[i].frames();
+          DIALS_ASSERT(frame >= b[0]);
+          for (; frame < b[1]; ++frame) {
+            lookup0_[off0+frame-frame0] = i;
+          }
+        }
+        DIALS_ASSERT(frame == frame1);
+        for (std::size_t i = job1; i > job0; --i) {
+          tiny<int,2> b = jobs[i-1].frames();
+          DIALS_ASSERT(frame <= b[1]);
+          for (; frame > b[0]; --frame) {
+            lookup1_[off0+frame-frame0-1] = i-1;
+          }
+        }
+        DIALS_ASSERT(frame == frame0);
+        for (std::size_t i = off0+1; i < off1; ++i) {
+          DIALS_ASSERT(lookup0_[i] >= lookup0_[i-1]);
+          DIALS_ASSERT(lookup1_[i] >= lookup1_[i-1]);
+        }
+      }
+    }
+
+    /**
+     * Get the first job index
+     */
+    std::size_t first(std::size_t id, int frame) const {
+      DIALS_ASSERT(id < group_.size());
+      std::size_t group = group_[id];
+      DIALS_ASSERT(group < offset_.size()-1);
+      std::size_t offset = offset_[group];
+      std::size_t frame0 = frame0_[group];
+      DIALS_ASSERT(frame >= frame0);
+      DIALS_ASSERT(frame < frame0+offset_[group+1]);
+      std::size_t index = offset + frame - frame0;
+      DIALS_ASSERT(index < lookup0_.size());
+      return lookup0_[index];
+    }
+
+    /**
+     * Get the second job index
+     */
+    std::size_t last(std::size_t id, int frame) const {
+      DIALS_ASSERT(id < group_.size());
+      std::size_t group = group_[id];
+      DIALS_ASSERT(group < offset_.size()-1);
+      std::size_t offset = offset_[group];
+      std::size_t frame0 = frame0_[group];
+      DIALS_ASSERT(frame >= frame0);
+      DIALS_ASSERT(frame < frame0+offset_[group+1]);
+      std::size_t index = offset + frame - frame0;
+      DIALS_ASSERT(index < lookup1_.size());
+      return lookup1_[index];
+    }
+
+  private:
+
+    std::vector<std::size_t> lookup0_;
+    std::vector<std::size_t> lookup1_;
+    std::vector<std::size_t> offset_;
+    std::vector<std::size_t> group_;
+    std::vector<int> frame0_;
+  };
+
+
+  /**
    * A class to managing reflection lookup indices
    */
   class ReflectionLookup {
-  private:
-
-    /**
-     * Helper class for checking the range of possible jobs for a particular
-     * frame.
-     */
-    class JobRangeLookup {
-    public:
-
-      /**
-       * Construct the lookup
-       */
-      JobRangeLookup(const JobList &jobs) {
-        const GroupList& groups = jobs.groups();
-        DIALS_ASSERT(0 ==  groups[0].expr()[0]);
-        for (std::size_t i = 0; i < groups.size(); ++i) {
-          for (std::size_t j = groups[i].expr()[0]; j < groups[i].expr()[1]; ++j) {
-            group_.push_back(i);
-          }
-        }
-        DIALS_ASSERT(group_.size() ==  groups[groups.size()-1].expr()[1]);
-        offset_.push_back(0);
-        for (std::size_t i = 0; i < groups.size(); ++i) {
-          tiny<int,2> f = groups[i].frames();
-          DIALS_ASSERT(f[1] > f[0]);
-          frame0_.push_back(f[0]);
-          offset_.push_back(f[1] - f[0]);
-        }
-        DIALS_ASSERT(offset_.back() > 0);
-        lookup0_.resize(offset_.back());
-        lookup1_.resize(offset_.back());
-        for (std::size_t i = 0; i < groups.size(); ++i) {
-          std::size_t job0 = groups[i].index()[0];
-          std::size_t job1 = groups[i].index()[1];
-          DIALS_ASSERT(job1 > job0 && job1 <= jobs.size());
-          std::size_t off0 = offset_[i];
-          std::size_t off1 = offset_[i+1];
-          DIALS_ASSERT(off1 > off0 && off1 <= lookup0_.size());
-          int frame0 = groups[i].frames()[0];
-          int frame1 = groups[i].frames()[1];
-          DIALS_ASSERT(frame1 > frame0);
-          DIALS_ASSERT(frame1 - frame0 == off1 - off0);
-          int frame = frame0;
-          for (std::size_t i = job0; i < job1; ++i) {
-            tiny<int,2> b = jobs[i].frames();
-            DIALS_ASSERT(frame >= b[0]);
-            for (; frame < b[1]; ++frame) {
-              lookup0_[off0+frame-frame0] = i;
-            }
-          }
-          DIALS_ASSERT(frame == frame1);
-          for (std::size_t i = job1; i > job0; --i) {
-            tiny<int,2> b = jobs[i-1].frames();
-            DIALS_ASSERT(frame <= b[1]);
-            for (; frame > b[0]; --frame) {
-              lookup1_[off0+frame-frame0-1] = i-1;
-            }
-          }
-          DIALS_ASSERT(frame == frame0);
-          for (std::size_t i = off0+1; i < off1; ++i) {
-            DIALS_ASSERT(lookup0_[i] >= lookup0_[i-1]);
-            DIALS_ASSERT(lookup1_[i] >= lookup1_[i-1]);
-          }
-        }
-      }
-
-      /**
-       * Get the first job index
-       */
-      std::size_t first(std::size_t id, int frame) const {
-        DIALS_ASSERT(id < group_.size());
-        std::size_t group = group_[id];
-        DIALS_ASSERT(group < offset_.size()-1);
-        std::size_t offset = offset_[group];
-        std::size_t frame0 = frame0_[group];
-        DIALS_ASSERT(frame >= frame0);
-        DIALS_ASSERT(frame < frame0+offset_[group+1]);
-        std::size_t index = offset + frame - frame0;
-        DIALS_ASSERT(index < lookup0_.size());
-        return lookup0_[index];
-      }
-
-      /**
-       * Get the second job index
-       */
-      std::size_t last(std::size_t id, int frame) const {
-        DIALS_ASSERT(id < group_.size());
-        std::size_t group = group_[id];
-        DIALS_ASSERT(group < offset_.size()-1);
-        std::size_t offset = offset_[group];
-        std::size_t frame0 = frame0_[group];
-        DIALS_ASSERT(frame >= frame0);
-        DIALS_ASSERT(frame < frame0+offset_[group+1]);
-        std::size_t index = offset + frame - frame0;
-        DIALS_ASSERT(index < lookup1_.size());
-        return lookup1_[index];
-      }
-
-    private:
-
-      std::vector<std::size_t> lookup0_;
-      std::vector<std::size_t> lookup1_;
-      std::vector<std::size_t> offset_;
-      std::vector<std::size_t> group_;
-      std::vector<int> frame0_;
-    };
-
   public:
 
     ReflectionLookup(
@@ -388,15 +387,10 @@ namespace dials { namespace algorithms {
       typedef std::vector<job_type> job_list_type;
 
       // Check all the reflections are in range
-      int frame0 = jobs_[0].frames()[0];
-      int frame1 = jobs_[jobs_.size()-1].frames()[1];
-      DIALS_ASSERT(frame1 > frame0);
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
         DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
         DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
-        DIALS_ASSERT(bbox[i][4] >= frame0);
-        DIALS_ASSERT(bbox[i][5] <= frame1);
       }
 
       // Compute the job range lookup table
@@ -654,6 +648,125 @@ namespace dials { namespace algorithms {
     af::shared<bool> finished_;
   };
 
+
+  /**
+   * Split the reflection table where the blocks are given.
+   */
+  inline
+  void split_reflections_by_jobs(
+      af::reflection_table self,
+      const JobList &jobs) {
+
+    // Check the input
+    DIALS_ASSERT(self.is_consistent());
+    DIALS_ASSERT(self.contains("bbox"));
+    DIALS_ASSERT(self.contains("id"));
+    DIALS_ASSERT(jobs.size() > 0);
+    DIALS_ASSERT(self.size() > 0);
+
+    // Get the bounding boxes
+    af::const_ref<int6> bbox = self["bbox"];
+    af::const_ref<std::size_t> id = self["id"];
+
+    // Check all the reflections are in range
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+      DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+      DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+    }
+
+    // Create the lookup
+    JobRangeLookup lookup(jobs);
+
+    // Split the reflections
+    af::shared<int6> bbox_new;
+    af::shared<std::size_t> indices;
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      int z0 = bbox[i][4];
+      int z1 = bbox[i][5];
+      std::size_t eid = id[i];
+      std::size_t j0 = lookup.first(eid, z0);
+      std::size_t j1 = lookup.last(eid, z1-1);
+      DIALS_ASSERT(j0 < jobs.size());
+      DIALS_ASSERT(j1 < jobs.size());
+      DIALS_ASSERT(j1 >= j0);
+      DIALS_ASSERT(z0 >= jobs[j0].frames()[0]);
+      DIALS_ASSERT(z1 <= jobs[j1].frames()[1]);
+      bool inside = false;
+      for (std::size_t j = j0; j <= j1; ++j) {
+        int jz0 = jobs[j].frames()[0];
+        int jz1 = jobs[j].frames()[1];
+        if (z0 >= jz0 && z1 <= jz1) {
+          inside = true;
+          break;
+        }
+      }
+      if (inside) {
+        bbox_new.push_back(bbox[i]);
+        indices.push_back(i);
+      } else {
+        int6 b = bbox[i];
+        std::vector<int> divisions;
+        for (std::size_t j = j0; j <= j1; ++j) {
+          divisions.push_back(jobs[j].frames()[0]);
+          divisions.push_back(jobs[j].frames()[1]);
+        }
+        std::size_t k = 1;
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          if (divisions[j] > divisions[j-1]) {
+            divisions[k] = divisions[j];
+            k++;
+          } else if (divisions[j] == divisions[j-1]) {
+            continue;
+          } else {
+            int a = divisions[j];
+            int b = divisions[j-1];
+            int c = (a + b) / 2;
+            DIALS_ASSERT(c >= a);
+            DIALS_ASSERT(c < b);
+            divisions[k] = c;
+          }
+        }
+        divisions.resize(k);
+        divisions[0] = b[4];
+        k = 1;
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          if (divisions[j] >= b[5]) {
+            break;
+          } else if (divisions[j] > divisions[j-1]) {
+            k++;
+          } else {
+            continue;
+          }
+        }
+        divisions[k++] = b[5];
+        divisions.resize(k);
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          DIALS_ASSERT(divisions[j] > divisions[j-1]);
+        }
+        for (std::size_t j = 1; j < divisions.size(); ++j) {
+          b[5] = divisions[j];
+          DIALS_ASSERT(b[5] > b[4]);
+          bbox_new.push_back(b);
+          indices.push_back(i);
+          b[4] = b[5];
+        }
+      }
+    }
+
+    // Resize the reflection table
+    DIALS_ASSERT(bbox_new.size() == indices.size());
+    self.resize(bbox_new.size());
+
+    // Reorder the reflections
+    af::boost_python::flex_table_suite::reorder(self, indices.const_ref());
+
+    // Set the new bounding boxes
+    af::boost_python::flex_table_suite::setitem_column(
+        self, "bbox", bbox_new.const_ref());
+    af::boost_python::flex_table_suite::setitem_column(
+        self, "partial_id", indices.const_ref());
+  }
 }}
 
 #endif // DIALS_ALGORITHMS_INTEGRATION_INTERFACE_H

@@ -496,6 +496,7 @@ class PreProcessorRot(object):
 
   def __call__(self, data, jobs):
     ''' Do some pre-processing. '''
+    from dials.algorithms.integration import split_reflections_by_jobs
     from dials.array_family import flex
     from dials.util.command_line import heading
     from scitbx.array_family import shared
@@ -523,8 +524,7 @@ class PreProcessorRot(object):
           num_partial)
     else:
       num_full = len(data)
-      data.split_blocks(shared.tiny_int_2([jobs[i].frames() for i in
-                                           range(len(jobs))]))
+      split_reflections_by_jobs(data, jobs)
       num_partial = len(data)
       assert(num_partial >= num_full)
       if (num_partial > num_full):
