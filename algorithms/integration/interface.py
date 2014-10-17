@@ -225,7 +225,8 @@ class Task(object):
 
     # Print out some info
     EPS = 1e-7
-    fully_recorded = self._data['partiality'] > (1.0 - EPS)
+    full_value = (0.997300203937 - EPS)
+    fully_recorded = self._data['partiality'] > full_value
     num_partial = fully_recorded.count(False)
     num_full = fully_recorded.count(True)
     num_integrate = self._data.get_flags(self._data.flags.dont_integrate).count(False)
@@ -474,7 +475,7 @@ class Manager(object):
     print data.statistics(self._experiments)
 
 
-class PreProcessorOsc(object):
+class PreProcessorRot(object):
   ''' A pre-processing class for oscillation data. '''
 
   def __init__(self, experiments, profile_model, min_zeta, partials, **kwargs):
@@ -528,7 +529,8 @@ class PreProcessorOsc(object):
     num_ignore = mask.count(True)
     data.set_flags(mask, data.flags.dont_integrate)
     EPS = 1e-7
-    fully_recorded = data['partiality'] > (1.0 - EPS)
+    full_value = (0.997300203937 - EPS)
+    fully_recorded = data['partiality'] > full_value
     num_partial = fully_recorded.count(False)
     num_full = fully_recorded.count(True)
     num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
@@ -584,7 +586,8 @@ class PreProcessorStills(object):
     # Print out the pre-processing summary
     num_ignore = 0
     EPS = 1e-7
-    fully_recorded = data['partiality'] > (1.0 - EPS)
+    full_value = (0.997300203937 - EPS)
+    fully_recorded = data['partiality'] > full_value
     num_partial = fully_recorded.count(False)
     num_full = fully_recorded.count(True)
     num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
@@ -604,7 +607,7 @@ class PreProcessorStills(object):
     print ''
 
 
-class PostProcessorOsc(object):
+class PostProcessorRot(object):
   ''' A post-processing class for oscillation data. '''
 
   def __init__(self, experiments):
@@ -647,7 +650,7 @@ class PostProcessorStills(object):
     pass
 
 
-class ManagerOsc(Manager):
+class ManagerRot(Manager):
   ''' Specialize the manager for oscillation data using the oscillation pre and
   post processors. '''
 
@@ -673,17 +676,17 @@ class ManagerOsc(Manager):
       ''')
 
     # Create the pre-processor
-    preprocess = PreProcessorOsc(
+    preprocess = PreProcessorRot(
       experiments,
       profile_model,
       min_zeta=min_zeta,
       partials=partials)
 
     # Create the post-processor
-    postprocess = PostProcessorOsc(experiments)
+    postprocess = PostProcessorRot(experiments)
 
     # Initialise the manager
-    super(ManagerOsc, self).__init__(
+    super(ManagerRot, self).__init__(
       preprocess,
       postprocess,
       experiments,
@@ -751,7 +754,7 @@ class Integrator3D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = ManagerOsc(
+    manager = ManagerRot(
       experiments,
       profile_model,
       reflections,
@@ -778,7 +781,7 @@ class IntegratorFlat3D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = ManagerOsc(
+    manager = ManagerRot(
       experiments,
       profile_model,
       reflections,
@@ -806,7 +809,7 @@ class Integrator2D(Integrator):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
-    manager = ManagerOsc(
+    manager = ManagerRot(
       experiments,
       profile_model,
       reflections,
@@ -837,7 +840,7 @@ class IntegratorSingle2D(Integrator):
     block_size = 1
 
     # Create the integration manager
-    manager = ManagerOsc(
+    manager = ManagerRot(
       experiments,
       profile_model,
       reflections,
