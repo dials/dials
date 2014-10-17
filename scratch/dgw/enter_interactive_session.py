@@ -291,7 +291,9 @@ from dials.algorithms.refinement.parameterisation.detector_parameters import \
     get_panel_ids_at_root
 
 # parameterise
-cspad_param = DetectorParameterisationHierarchical(cspad,level=0)
+cspad_param = DetectorParameterisationHierarchical(cspad,level=2)
+#from dials.scratch.asb.display_detectors import display_detectors
+#display_detectors([cspad], save=True)
 
 # enter interactive console
 from dials.util.command_line import interactive_console; interactive_console()
