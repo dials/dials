@@ -418,22 +418,29 @@ class Manager(object):
     from libtbx.table_utils import format as table
     from dials.util.command_line import heading
 
-    # Create a table of integration tasks
+    # Compute the task table
     scans = self._experiments.scans()
-    assert(len(scans) == 1)
-    if scans[0] is None:
-      rows = [["#", "Frame From", "Frame To"]]
+    if scans.count(None) == len(scans):
+      rows = [["#", "Group", "Frame From", "Frame To"]]
       for i in range(len(self)):
-        f0, f1 = self._manager.job(i).frames()
-        rows.append([str(i), str(f0), str(f1)])
-    else:
-      rows = [["#", "Frame From", "Frame To", "Angle From", "Angle To"]]
+        job = self._manager.job(i)
+        group = job.index()
+        f0, f1 = job.frames()
+        rows.append([str(i), str(group), str(f0), str(f1)])
+    elif scans.count(None) == 0:
+      rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
       for i in range(len(self)):
-        f0, f1 = self._manager.job(i).frames()
+        job = self._manager.job(i)
+        group = job.index()
+        f0, f1 = job.frames()
         p0 = scans[0].get_angle_from_array_index(f0)
         p1 = scans[0].get_angle_from_array_index(f1)
-        rows.append([str(i), str(f0), str(f1), str(p0), str(p1)])
+        rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
+    else:
+      raise RuntimeError('Bad input')
     task_table = table(rows, has_header=True, justify="right", prefix=" ")
+
+    # Create a table of integration tasks
 
     # Create summary format
     summary_format_str = (
@@ -447,6 +454,7 @@ class Manager(object):
       ' Goniometers: %d\n'
       ' Scans:       %d\n'
       ' Crystals:    %d\n'
+      ' Imagesets:   %d\n'
       '\n'
       'Integrating reflections in the following blocks of images:\n'
       '\n'
@@ -464,6 +472,7 @@ class Manager(object):
       len(self._experiments.goniometers()),
       len(self._experiments.scans()),
       len(self._experiments.crystals()),
+      len(self._experiments.imagesets()),
       block_size,
       block_size_units,
       task_table)
