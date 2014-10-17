@@ -29,90 +29,90 @@ class show_3d(object):
 
 class show_3d_wx_app(wx.App):
   def OnInit(self):
-    self.frame = My_3d_flex_arr_frame(None, title="Bitmaps")
+    self.panel = flex_arr_3d_outer_panel(None, title="Bitmaps")
     return True
 
 
   def in_lst(self, lst):
-    self.frame.ini_n_intro(lst)
-    self.SetTopWindow(self.frame)
-    self.frame.Show()
+    self.panel.ini_n_intro(lst)
+    self.SetTopWindow(self.panel)
+    self.panel.Show()
 
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
-    def __init__(self, outer_frame, bmp_lst_in):
-      super(multi_img_scrollable, self).__init__(outer_frame)
-      self.p_frame  = outer_frame
-      self.local_bmp_lst = bmp_lst_in
+  def __init__(self, outer_panel, bmp_lst_in):
+    super(multi_img_scrollable, self).__init__(outer_panel)
+    self.p_frame  = outer_panel
+    self.local_bmp_lst = bmp_lst_in
 
-      self.set_scroll_content(self.local_bmp_lst)
+    self.set_scroll_content(self.local_bmp_lst)
 
-      self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+    self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
-      self.Bind(wx.EVT_IDLE, self.OnIdle)
-      self.SetupScrolling()
+    self.Bind(wx.EVT_IDLE, self.OnIdle)
+    self.SetupScrolling()
 
+    self.rot = 0
+
+
+  def set_scroll_content(self, bmp_lst_in):
+
+    self.my_img_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    for bmp_lst in bmp_lst_in:
+      local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
+      self.my_img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL, 3)
+
+    self.SetSizer(self.my_img_sizer)
+
+
+  def OnMouseWheel(self, event):
+    sn_mov = math.copysign(1, float(event.GetWheelRotation()))
+    self.rot += sn_mov
+
+
+  def img_refresh(self, bmp_lst_new):
+    self.local_bmp_lst = bmp_lst_new
+    for child in self.GetChildren():
+      child.Destroy()
+    self.set_scroll_content(self.local_bmp_lst)
+    self.Layout()
+    self.p_frame.Layout()
+    self.Refresh()
+
+  def OnIdle(self, event):
+    if( self.rot != 0 ):
+      self.p_frame._to_re_zoom(self.rot)
       self.rot = 0
 
 
-    def set_scroll_content(self, bmp_lst_in):
-
-      self.my_img_sizer = wx.BoxSizer(wx.HORIZONTAL)
-      for bmp_lst in bmp_lst_in:
-        local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
-        self.my_img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL, 3)
-
-      self.SetSizer(self.my_img_sizer)
-
-
-    def OnMouseWheel(self, event):
-      sn_mov = math.copysign(1, float(event.GetWheelRotation()))
-      self.rot += sn_mov
-
-
-    def img_refresh(self, bmp_lst_new):
-      self.local_bmp_lst = bmp_lst_new
-      for child in self.GetChildren():
-        child.Destroy()
-      self.set_scroll_content(self.local_bmp_lst)
-      self.Layout()
-      self.p_frame.Layout()
-      self.Refresh()
-
-    def OnIdle(self, event):
-      if( self.rot != 0 ):
-        self.p_frame._to_re_zoom(self.rot)
-        self.rot = 0
-
-
 class buttons_panel(wx.Panel):
-    def __init__(self, outer_frame):
-        super(buttons_panel, self).__init__(outer_frame)
-        self.p_frame  = outer_frame
+  def __init__(self, outer_panel):
+    super(buttons_panel, self).__init__(outer_panel)
+    self.p_frame  = outer_panel
 
-        Hide_I_Button = wx.Button(self, label="Hide I")
-        Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
-        Show_I_Button = wx.Button(self, label="Show I")
-        Show_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
+    Hide_I_Button = wx.Button(self, label="Hide I")
+    Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
+    Show_I_Button = wx.Button(self, label="Show I")
+    Show_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
 
-        self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.my_sizer.Add(Show_I_Button, 0, wx.LEFT | wx.ALL,8)
-        self.my_sizer.Add(Hide_I_Button, 0, wx.LEFT | wx.ALL,8)
-        self.my_sizer.SetMinSize((90, 250))
+    self.my_sizer = wx.BoxSizer(wx.VERTICAL)
+    self.my_sizer.Add(Show_I_Button, 0, wx.LEFT | wx.ALL,8)
+    self.my_sizer.Add(Hide_I_Button, 0, wx.LEFT | wx.ALL,8)
+    self.my_sizer.SetMinSize((90, 250))
 
-        self.SetSizer(self.my_sizer)
+    self.SetSizer(self.my_sizer)
 
-    def OnHidIBut(self, event):
-        self.p_frame._to_hide_nums()
+  def OnHidIBut(self, event):
+    self.p_frame._to_hide_nums()
 
-    def OnShwIBut(self, event):
-        self.p_frame._to_show_nums()
+  def OnShwIBut(self, event):
+    self.p_frame._to_show_nums()
 
-class My_3d_flex_arr_frame(wx.Frame):
+class flex_arr_3d_outer_panel(wx.Frame):
   def __init__(self, parent, id = wx.ID_ANY, title = "",
                pos=wx.DefaultPosition, size=wx.DefaultSize,
                style = wx.DEFAULT_FRAME_STYLE):
-    super(My_3d_flex_arr_frame, self).__init__(parent, id, title,
+    super(flex_arr_3d_outer_panel, self).__init__(parent, id, title,
                                   pos, size, style)
     self.show_nums = True
 
