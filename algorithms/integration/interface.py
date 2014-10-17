@@ -136,7 +136,7 @@ class Integrator(object):
       task_results = [task() for task in self._manager.tasks()]
       for result in task_results:
         self._manager.accumulate(result)
-    assert(self._manager.finished())
+    self._manager.finalize()
     end_time = time()
     rows = [
       ["Read time"        , "%.2f seconds" % (self._manager.read_time)       ],
@@ -335,6 +335,7 @@ class Manager(object):
     from dials.algorithms.integration import JobList
     from itertools import groupby
     from math import ceil
+    self._finalized = False
     self._flatten = flatten
     self._save_shoeboxes = save_shoeboxes
     self._preprocess = preprocess
@@ -399,18 +400,23 @@ class Manager(object):
     self.extract_time += result.extract_time
     self.process_time += result.process_time
     self.total_time += result.total_time
-    if self.finished():
-      self._postprocess(self._manager.data())
-      self._print_final_summary(self._manager.data())
-      self.postprocess_time = self._postprocess.time
+
+  def finalize(self):
+    ''' Do the post-processing and finish. '''
+    assert(self._manager.finished())
+    self._postprocess(self._manager.data())
+    self.postprocess_time = self._postprocess.time
+    print self._manager.data().statistics(self._experiments)
+    self._finalized = True
 
   def result(self):
     ''' Return the result. '''
+    assert(self._finalized == True)
     return self._manager.data()
 
   def finished(self):
     ''' Return if all tasks have finished. '''
-    return self._manager.finished()
+    return self._finalized and self._manager.finished()
 
   def __len__(self):
     ''' Return the number of tasks. '''
@@ -443,8 +449,6 @@ class Manager(object):
     else:
       raise RuntimeError('Experiments must be all sweeps or all stills')
     task_table = table(rows, has_header=True, justify="right", prefix=" ")
-
-    # Create a table of integration tasks
 
     # Create summary format
     summary_format_str = (
@@ -480,10 +484,6 @@ class Manager(object):
       block_size,
       block_size_units,
       task_table)
-
-  def _print_final_summary(self, data):
-    ''' Print a final summary. '''
-    print data.statistics(self._experiments)
 
 
 class PreProcessorRot(object):
