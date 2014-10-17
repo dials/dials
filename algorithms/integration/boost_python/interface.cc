@@ -18,7 +18,23 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_interface() {
 
+    class_<GroupList::Group>("Group", no_init)
+      .def("index", &GroupList::Group::index)
+      .def("nindex", &GroupList::Group::nindex)
+      .def("expr", &GroupList::Group::expr)
+      .def("nexpr", &GroupList::Group::nexpr)
+      .def("frames", &GroupList::Group::frames)
+      .def("nframes", &GroupList::Group::nframes)
+      ;
+
+    class_<GroupList>("GroupList")
+      .def("__len__", &GroupList::size)
+      .def("__getitem__", &GroupList::operator[],
+          return_internal_reference<>())
+      ;
+
     class_<JobList::Job>("Job", no_init)
+      .def("index", &JobList::Job::index)
       .def("expr", &JobList::Job::expr)
       .def("nexpr", &JobList::Job::nexpr)
       .def("frames", &JobList::Job::frames)
@@ -41,7 +57,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("finished", &ReflectionManager::finished)
       .def("accumulate", &ReflectionManager::accumulate)
       .def("split", &ReflectionManager::split)
-      .def("job", &ReflectionManager::job)
+      .def("job", &ReflectionManager::job,
+          return_internal_reference<>())
       .def("data", &ReflectionManager::data)
       ;
   }

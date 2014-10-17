@@ -380,7 +380,7 @@ class Manager(object):
       self._experiments,
       self._profile_model,
       self._manager.split(index),
-      self._manager.job(index),
+      self._manager.job(index).frames(),
       self._flatten,
       self._save_shoeboxes)
 
@@ -424,12 +424,12 @@ class Manager(object):
     if scans[0] is None:
       rows = [["#", "Frame From", "Frame To"]]
       for i in range(len(self)):
-        f0, f1 = self._manager.job(i)
+        f0, f1 = self._manager.job(i).frames()
         rows.append([str(i), str(f0), str(f1)])
     else:
       rows = [["#", "Frame From", "Frame To", "Angle From", "Angle To"]]
       for i in range(len(self)):
-        f0, f1 = self._manager.job(i)
+        f0, f1 = self._manager.job(i).frames()
         p0 = scans[0].get_angle_from_array_index(f0)
         p1 = scans[0].get_angle_from_array_index(f1)
         rows.append([str(i), str(f0), str(f1), str(p0), str(p1)])

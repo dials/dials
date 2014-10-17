@@ -73,16 +73,17 @@ class TestReflectionManager(object):
 
   def run(self):
     from dials.algorithms.integration import ReflectionManager
-    from dials.algorithms.integration import JobCalculator
+    from dials.algorithms.integration import JobList
     from dials.array_family import flex
-
-    jobcalculator = JobCalculator(
+    jobs = JobList()
+    jobs.add(
+      (0, 1),
       self.array_range,
       self.block_size)
 
     # Create the executor
     executor = ReflectionManager(
-      jobcalculator,
+      jobs,
       self.reflections)
 
     # Ensure the tasks make sense
@@ -90,18 +91,18 @@ class TestReflectionManager(object):
     assert(len(executor) == 12)
     assert(not executor.finished())
     assert(len(jobs) == 12)
-    assert(jobs[0] == (0, 20))
-    assert(jobs[1] == (10, 30))
-    assert(jobs[2] == (20, 40))
-    assert(jobs[3] == (30, 50))
-    assert(jobs[4] == (40, 60))
-    assert(jobs[5] == (50, 70))
-    assert(jobs[6] == (60, 80))
-    assert(jobs[7] == (70, 90))
-    assert(jobs[8] == (80, 100))
-    assert(jobs[9] == (90, 110))
-    assert(jobs[10] == (100, 120))
-    assert(jobs[11] == (110, 130))
+    assert(jobs[0].frames() == (0, 20))
+    assert(jobs[1].frames() == (10, 30))
+    assert(jobs[2].frames() == (20, 40))
+    assert(jobs[3].frames() == (30, 50))
+    assert(jobs[4].frames() == (40, 60))
+    assert(jobs[5].frames() == (50, 70))
+    assert(jobs[6].frames() == (60, 80))
+    assert(jobs[7].frames() == (70, 90))
+    assert(jobs[8].frames() == (80, 100))
+    assert(jobs[9].frames() == (90, 110))
+    assert(jobs[10].frames() == (100, 120))
+    assert(jobs[11].frames() == (110, 130))
 
     # Get the task specs
     data0 = executor.split(0)
