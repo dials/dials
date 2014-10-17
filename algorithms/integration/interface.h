@@ -31,21 +31,85 @@ namespace dials { namespace algorithms {
   using model::Shoebox;
 
   /**
-   * A class to compute integration jobs.
+   * A class to manage jobs for multiple sweeps
    */
-  class JobCalculator {
+  class JobList {
   public:
 
     /**
-     * Compute the integration jobs
-     * @param array_range The range of frames to process
-     * @param block_size The number of frames in a job
+     * A single job class.
      */
-    JobCalculator(
-        vec2<int> array_range,
-        double block_size) {
-      int frame0 = array_range[0];
-      int frame1 = array_range[1];
+    class Job {
+    public:
+
+      Job(tiny<int,2> expr, tiny<int,2> frames)
+        : expr_(expr),
+          frames_(frames) {
+        DIALS_ASSERT(expr[0] >= 0 && expr[1] > expr[0]);
+        DIALS_ASSERT(frames[1] > frames[0]);
+      }
+
+      /** @returns The experiments which this job covers */
+      tiny<int,2> expr() const {
+        return expr_;
+      }
+
+      /** @returns The frames which this job covers */
+      tiny<int,2> frames() const {
+        return frames_;
+      }
+
+      /** @returns The number of experiments which this job covers */
+      std::size_t nexpr() const {
+        return expr_[1] - expr_[0];
+      }
+
+      /** @returns The number of frames which this job covers */
+      std::size_t nframes() const {
+        return frames_[1] - frames_[0];
+      }
+
+    private:
+      tiny<int,2> expr_;
+      tiny<int,2> frames_;
+    };
+
+    JobList() {}
+
+    /**
+     * Add a new group of jobs covering a range of experiments
+     * @param expr The range of experiments
+     * @param range The range of frames
+     * @param block_size The job block size
+     */
+    void add(tiny<int,2> expr, tiny<int,2> range, int block_size) {
+      DIALS_ASSERT(expr[0] >= 0);
+      DIALS_ASSERT(expr[1] > expr[0]);
+      DIALS_ASSERT(expr_.size() == 0 || expr[0] >= expr_.back()[1]);
+      add_jobs(expr, range, block_size);
+      expr_.push_back(expr);
+    }
+
+    /**
+     * @returns The requested job
+     */
+    const Job& operator[](std::size_t index) const {
+      DIALS_ASSERT(index < jobs_.size());
+      return jobs_[index];
+    }
+
+    /**
+     * @returns The number of jobs
+     */
+    std::size_t size() const {
+      return jobs_.size();
+    }
+
+  private:
+
+    void add_jobs(tiny<int,2> expr, tiny<int,2> range, int block_size) {
+      int frame0 = range[0];
+      int frame1 = range[1];
       DIALS_ASSERT(frame1 > frame0);
       int nframes = frame1 - frame0;
       DIALS_ASSERT(nframes > 0);
@@ -55,10 +119,10 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(block_size > 0);
       if (block_size == 1) {
         for (int f = frame0; f < frame1; ++f) {
-          jobs_.push_back(tiny<int,2>(f, f+1));
+          jobs_.push_back(Job(expr, tiny<int,2>(f, f+1)));
         }
       } else {
-        int nblocks = (int)std::ceil(2.0 * nframes / block_size);
+        int nblocks = (int)std::ceil(2.0 * nframes / (double)block_size);
         DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
         int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
         af::shared<int> indices;
@@ -80,21 +144,14 @@ namespace dials { namespace algorithms {
           int i1 = indices[i];
           int i2 = indices[i+2];
           DIALS_ASSERT(i2 > i1);
-          jobs_.push_back(tiny<int,2>(i1, i2));
+          jobs_.push_back(Job(expr, tiny<int,2>(i1, i2)));
         }
         DIALS_ASSERT(jobs_.size() > 0);
       }
     }
 
-    /**
-     * @returns The list of jobs.
-     */
-    af::shared< tiny<int,2> > jobs() const {
-      return af::shared< tiny<int,2> >(&jobs_[0], &jobs_[0] + jobs_.size());
-    }
-
-  private:
-    std::vector< tiny<int,2> > jobs_;
+    std::vector<Job> jobs_;
+    std::vector< tiny<int,2> > expr_;
   };
 
 
@@ -309,7 +366,7 @@ namespace dials { namespace algorithms {
      * @param data The reflection data
      */
     ReflectionManager(
-        const JobCalculator &jobs,
+        const JobList &jobs,
         af::reflection_table data)
           : lookup_(init(jobs, data)),
             data_(data),
@@ -403,19 +460,23 @@ namespace dials { namespace algorithms {
      * Initialise the indexer
      */
     ReflectionLookup init(
-        const JobCalculator &jobs,
+        const JobList &jobs,
         af::reflection_table data) {
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.size() > 0);
       DIALS_ASSERT(data.contains("id"));
       DIALS_ASSERT(data.contains("flags"));
       DIALS_ASSERT(data.contains("bbox"));
-      DIALS_ASSERT(jobs.jobs().size() > 0);
+      DIALS_ASSERT(jobs.size() > 0);
+      af::shared< tiny<int,2> > job_items(jobs.size());
+      for (std::size_t i = 0; i < jobs.size(); ++i) {
+        job_items[i] = jobs[i].frames();
+      }
       return ReflectionLookup(
           data["id"],
           data["flags"],
           data["bbox"],
-          jobs.jobs().const_ref());
+          job_items.const_ref());
     }
 
     ReflectionLookup lookup_;

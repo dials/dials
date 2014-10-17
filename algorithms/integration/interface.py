@@ -332,7 +332,8 @@ class Manager(object):
                save_shoeboxes=False):
     ''' Initialise the manager. '''
     from dials.algorithms.integration import ReflectionManager
-    from dials.algorithms.integration import JobCalculator
+    from dials.algorithms.integration import JobList
+    from math import ceil
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
     scans = experiments.scans()
@@ -356,18 +357,15 @@ class Manager(object):
     self._reflections = reflections
     if block_size_units == 'degrees':
       phi0, dphi = scan.get_oscillation()
-      block_size_frames = block_size / dphi
+      block_size_frames = int(ceil(block_size / dphi))
     elif block_size_units == 'frames':
-      block_size_frames = block_size
+      block_size_frames = int(ceil(block_size))
     else:
       raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
-    jobcalculator = JobCalculator(
-      array_range,
-      block_size_frames)
-    self._preprocess(self._reflections, jobcalculator.jobs())
-    self._manager = ReflectionManager(
-      jobcalculator,
-      self._reflections)
+    jobs = JobList()
+    jobs.add((0, len(experiments)), array_range, block_size_frames)
+    self._preprocess(self._reflections, jobs)
+    self._manager = ReflectionManager(jobs, self._reflections)
     self.read_time = 0
     self.extract_time = 0
     self.preprocess_time = self._preprocess.time
@@ -490,6 +488,7 @@ class PreProcessorRot(object):
     ''' Do some pre-processing. '''
     from dials.array_family import flex
     from dials.util.command_line import heading
+    from scitbx.array_family import shared
     from time import time
     print '=' * 80
     print ''
@@ -514,7 +513,8 @@ class PreProcessorRot(object):
           num_partial)
     else:
       num_full = len(data)
-      data.split_blocks(jobs)
+      data.split_blocks(shared.tiny_int_2([jobs[i].frames() for i in
+                                           range(len(jobs))]))
       num_partial = len(data)
       assert(num_partial >= num_full)
       if (num_partial > num_full):

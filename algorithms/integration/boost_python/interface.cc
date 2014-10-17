@@ -18,18 +18,25 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_interface() {
 
-    class_<JobCalculator>("JobCalculator", no_init)
-      .def(init< vec2<int>, double >((
-          arg("array_range"),
-          arg("block_size"))))
-      .def("jobs", &JobCalculator::jobs)
+    class_<JobList::Job>("Job", no_init)
+      .def("expr", &JobList::Job::expr)
+      .def("nexpr", &JobList::Job::nexpr)
+      .def("frames", &JobList::Job::frames)
+      .def("nframes", &JobList::Job::nframes)
+      ;
+
+    class_<JobList>("JobList")
+      .def("add", &JobList::add)
+      .def("__len__", &JobList::size)
+      .def("__getitem__", &JobList::operator[],
+          return_internal_reference<>())
       ;
 
     class_<ReflectionManager>("ReflectionManager", no_init)
-      .def(init<const JobCalculator&,
+      .def(init<const JobList&,
                 af::reflection_table>((
-          arg("jobcalculator"),
-          arg("reflections"))))
+          arg("jobs"),
+          arg("data"))))
       .def("__len__", &ReflectionManager::size)
       .def("finished", &ReflectionManager::finished)
       .def("accumulate", &ReflectionManager::accumulate)
