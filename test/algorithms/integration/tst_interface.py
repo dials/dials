@@ -1,7 +1,7 @@
 
 from __future__ import division
 
-class TestIntegrationManagerExecutor(object):
+class TestReflectionManager(object):
 
   def __init__(self):
     from dials.array_family import flex
@@ -72,16 +72,16 @@ class TestIntegrationManagerExecutor(object):
 
 
   def run(self):
-    from dials.algorithms.integration import IntegrationManagerExecutor
-    from dials.algorithms.integration import IntegrationJobCalculator
+    from dials.algorithms.integration import ReflectionManager
+    from dials.algorithms.integration import JobCalculator
     from dials.array_family import flex
 
-    jobcalculator = IntegrationJobCalculator(
+    jobcalculator = JobCalculator(
       self.array_range,
       self.block_size)
 
     # Create the executor
-    executor = IntegrationManagerExecutor(
+    executor = ReflectionManager(
       jobcalculator,
       self.reflections)
 
@@ -116,7 +116,6 @@ class TestIntegrationManagerExecutor(object):
     data9 = executor.split(9)
     data10 = executor.split(10)
     data11 = executor.split(11)
-    ignored = executor.ignored()
     assert(len(data0) == len(self.expected[0]))
     assert(len(data1) == len(self.expected[1]))
     assert(len(data2) == len(self.expected[2]))
@@ -129,7 +128,6 @@ class TestIntegrationManagerExecutor(object):
     assert(len(data9) == len(self.expected[9]))
     assert(len(data10) == len(self.expected[10]))
     assert(len(data11) == len(self.expected[11]))
-    assert(len(executor.ignored()) == 0)
 
     # Add some results
     data0["data"] = flex.double(len(data0), 1)
@@ -407,7 +405,7 @@ class TestSummation(object):
 class Test(object):
 
   def __init__(self):
-    self.test1 = TestIntegrationManagerExecutor()
+    self.test1 = TestReflectionManager()
     self.test2 = TestIntegrator3D(nproc=1)
     self.test3 = TestIntegrator3D(nproc=2)
     self.test4 = TestSummation()

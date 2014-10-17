@@ -18,25 +18,24 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_interface() {
 
-    class_<IntegrationJobCalculator>("IntegrationJobCalculator", no_init)
+    class_<JobCalculator>("JobCalculator", no_init)
       .def(init< vec2<int>, double >((
           arg("array_range"),
           arg("block_size"))))
-      .def("jobs", &IntegrationJobCalculator::jobs)
+      .def("jobs", &JobCalculator::jobs)
       ;
 
-    class_<IntegrationManagerExecutor>("IntegrationManagerExecutor", no_init)
-      .def(init<const IntegrationJobCalculator&,
+    class_<ReflectionManager>("ReflectionManager", no_init)
+      .def(init<const JobCalculator&,
                 af::reflection_table>((
           arg("jobcalculator"),
           arg("reflections"))))
-      .def("__len__", &IntegrationManagerExecutor::size)
-      .def("finished", &IntegrationManagerExecutor::finished)
-      .def("accumulate", &IntegrationManagerExecutor::accumulate)
-      .def("split", &IntegrationManagerExecutor::split)
-      .def("job", &IntegrationManagerExecutor::job)
-      .def("data", &IntegrationManagerExecutor::data)
-      .def("ignored", &IntegrationManagerExecutor::ignored)
+      .def("__len__", &ReflectionManager::size)
+      .def("finished", &ReflectionManager::finished)
+      .def("accumulate", &ReflectionManager::accumulate)
+      .def("split", &ReflectionManager::split)
+      .def("job", &ReflectionManager::job)
+      .def("data", &ReflectionManager::data)
       ;
   }
 

@@ -331,8 +331,8 @@ class Manager(object):
                flatten=False,
                save_shoeboxes=False):
     ''' Initialise the manager. '''
-    from dials.algorithms.integration import IntegrationManagerExecutor
-    from dials.algorithms.integration import IntegrationJobCalculator
+    from dials.algorithms.integration import ReflectionManager
+    from dials.algorithms.integration import JobCalculator
     imagesets = experiments.imagesets()
     detectors = experiments.detectors()
     scans = experiments.scans()
@@ -361,11 +361,11 @@ class Manager(object):
       block_size_frames = block_size
     else:
       raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
-    jobcalculator = IntegrationJobCalculator(
+    jobcalculator = JobCalculator(
       array_range,
       block_size_frames)
     self._preprocess(self._reflections, jobcalculator.jobs())
-    self._manager = IntegrationManagerExecutor(
+    self._manager = ReflectionManager(
       jobcalculator,
       self._reflections)
     self.read_time = 0

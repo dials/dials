@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to compute integration jobs.
    */
-  class IntegrationJobCalculator {
+  class JobCalculator {
   public:
 
     /**
@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
      * @param array_range The range of frames to process
      * @param block_size The number of frames in a job
      */
-    IntegrationJobCalculator(
+    JobCalculator(
         vec2<int> array_range,
         double block_size) {
       int frame0 = array_range[0];
@@ -99,20 +99,18 @@ namespace dials { namespace algorithms {
 
 
   /**
-   * A class to managing spliting and mergin data
+   * A class to managing reflection lookup indices
    */
-  class IntegrationManagerExecutor {
+  class ReflectionLookup {
   public:
 
-    IntegrationManagerExecutor(
-        const IntegrationJobCalculator &jobcalculator,
-        af::reflection_table reflections)
-          : jobs_(jobcalculator.jobs()),
-            data_(reflections) {
+    ReflectionLookup(
+        const af::const_ref<std::size_t> &id,
+        const af::const_ref<std::size_t> &flags,
+        const af::const_ref<int6> &bbox,
+        const af::const_ref< tiny<int,2> > &jobs)
+          : jobs_(jobs.begin(), jobs.end()) {
       DIALS_ASSERT(jobs_.size() > 0);
-
-      // Set all the finished flags to false
-      finished_.assign(jobs_.size(), false);
 
       // Generate indices of reflections to be integrated, used as reference
       // spots or passed just as data for each data block. If the reflection is
@@ -124,10 +122,6 @@ namespace dials { namespace algorithms {
       // and is unprocessed.
       typedef std::pair<std::size_t, bool> job_type;
       typedef std::vector<job_type> job_list_type;
-
-      // Get some reflection data
-      af::const_ref<int6> bbox = data_["bbox"];
-      af::ref<std::size_t> flags = data_["flags"];
 
       // Check blocks are valid (can be overlapping)
       DIALS_ASSERT(jobs_[0][1] > jobs_[0][0]);
@@ -183,7 +177,7 @@ namespace dials { namespace algorithms {
       for (std::size_t index = 0; index < bbox.size(); ++index) {
         int z0 = bbox[index][4];
         int z1 = bbox[index][5];
-        std::size_t &f = flags[index];
+        const std::size_t &f = flags[index];
         if (!(f & af::DontIntegrate)) {
           std::size_t j0 = lookup0[z0-frame0];
           std::size_t j1 = lookup1[z1-frame0-1];
@@ -223,8 +217,6 @@ namespace dials { namespace algorithms {
           } else {
             indices[jmin].push_back(job_type(index, true));
           }
-        } else {
-          ignored_.push_back(index);
         }
       }
 
@@ -255,25 +247,10 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * @returns The result data
-     */
-    af::reflection_table data() {
-      DIALS_ASSERT(finished());
-      return data_;
-    }
-
-    /**
-     * @returns Is the process finished
-     */
-    bool finished() const {
-      return finished_.all_eq(true);
-    }
-
-    /**
      * @returns The number of tasks
      */
     std::size_t size() const {
-      return finished_.size();
+      return jobs_.size();
     }
 
     /**
@@ -283,66 +260,6 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(index < jobs_.size());
       return jobs_[index];
     }
-
-    /**
-     * @returns The list of reflections to not process.
-     */
-    af::shared<std::size_t> ignored() const {
-      return af::shared<std::size_t>(&ignored_[0], &ignored_[0]+ignored_.size());
-    }
-
-    /**
-     * @returns The reflections for a particular block.
-     */
-    af::reflection_table split(std::size_t index) {
-
-      using namespace af::boost_python::flex_table_suite;
-
-      // Check the input
-      DIALS_ASSERT(index < finished_.size());
-      af::const_ref<std::size_t> ind = indices(index);
-      af::const_ref<bool> msk = mask(index);
-      DIALS_ASSERT(ind.size() == msk.size());
-
-      // Extract the reflection table
-      af::reflection_table result = select_rows_index(data_, ind);
-
-      // Extract the flags and set those reflections that are not to be
-      // processed.
-      af::ref<std::size_t> flags = result["flags"];
-      for (std::size_t i = 0; i < flags.size(); ++i) {
-        if (msk[i] == false) {
-          flags[i] |= af::DontIntegrate;
-        }
-      }
-
-      // Return the reflections
-      return result;
-    }
-
-    /**
-     * Accumulate the results.
-     */
-    void accumulate(std::size_t index, af::reflection_table result) {
-
-      using namespace af::boost_python::flex_table_suite;
-
-      // Check the input
-      DIALS_ASSERT(index < finished_.size());
-      DIALS_ASSERT(finished_[index] == false);
-      af::const_ref<std::size_t> ind = indices(index);
-      af::const_ref<bool> msk = mask(index);
-      DIALS_ASSERT(ind.size() == msk.size());
-      DIALS_ASSERT(ind.size() == result.size());
-
-      // Set the result
-      set_selected_rows_index_mask(data_, ind, msk, result);
-
-      // Set finished flag
-      finished_[index] = true;
-    }
-
-  private:
 
     /**
      * Get the indices for each job
@@ -373,12 +290,137 @@ namespace dials { namespace algorithms {
     }
 
     af::shared< tiny<int,2> > jobs_;
-    af::shared<bool> finished_;
-    af::reflection_table data_;
     af::shared<std::size_t> offset_;
     af::shared<std::size_t> indices_;
     af::shared<bool> mask_;
-   af::shared<std::size_t> ignored_;
+  };
+
+
+  /**
+   * A class to managing spliting and mergin data
+   */
+  class ReflectionManager {
+  public:
+
+    /**
+     * Create the reflection manager
+     * @param jobs The job calculator
+     * @param groups The group that each experiment is in
+     * @param data The reflection data
+     */
+    ReflectionManager(
+        const JobCalculator &jobs,
+        af::reflection_table data)
+          : lookup_(init(jobs, data)),
+            data_(data),
+            finished_(lookup_.size(), false) {
+      DIALS_ASSERT(finished_.size() > 0);
+    }
+
+    /**
+     * @returns The result data
+     */
+    af::reflection_table data() {
+      DIALS_ASSERT(finished());
+      return data_;
+    }
+
+    /**
+     * @returns Is the process finished
+     */
+    bool finished() const {
+      return finished_.all_eq(true);
+    }
+
+    /**
+     * @returns The number of tasks
+     */
+    std::size_t size() const {
+      return finished_.size();
+    }
+
+    /**
+     * @returns The job
+     */
+    tiny<int,2> job(std::size_t index) const {
+      return lookup_.job(index);
+    }
+
+    /**
+     * @returns The reflections for a particular block.
+     */
+    af::reflection_table split(std::size_t index) {
+
+      using namespace af::boost_python::flex_table_suite;
+
+      // Check the input
+      DIALS_ASSERT(index < finished_.size());
+      af::const_ref<std::size_t> ind = lookup_.indices(index);
+      af::const_ref<bool> msk = lookup_.mask(index);
+      DIALS_ASSERT(ind.size() == msk.size());
+
+      // Extract the reflection table
+      af::reflection_table result = select_rows_index(data_, ind);
+
+      // Extract the flags and set those reflections that are not to be
+      // processed.
+      af::ref<std::size_t> flags = result["flags"];
+      for (std::size_t i = 0; i < flags.size(); ++i) {
+        if (msk[i] == false) {
+          flags[i] |= af::DontIntegrate;
+        }
+      }
+
+      // Return the reflections
+      return result;
+    }
+
+    /**
+     * Accumulate the results.
+     */
+    void accumulate(std::size_t index, af::reflection_table result) {
+
+      using namespace af::boost_python::flex_table_suite;
+
+      // Check the input
+      DIALS_ASSERT(index < finished_.size());
+      DIALS_ASSERT(finished_[index] == false);
+      af::const_ref<std::size_t> ind = lookup_.indices(index);
+      af::const_ref<bool> msk = lookup_.mask(index);
+      DIALS_ASSERT(ind.size() == msk.size());
+      DIALS_ASSERT(ind.size() == result.size());
+
+      // Set the result
+      set_selected_rows_index_mask(data_, ind, msk, result);
+
+      // Set finished flag
+      finished_[index] = true;
+    }
+
+  private:
+
+    /**
+     * Initialise the indexer
+     */
+    ReflectionLookup init(
+        const JobCalculator &jobs,
+        af::reflection_table data) {
+      DIALS_ASSERT(data.is_consistent());
+      DIALS_ASSERT(data.size() > 0);
+      DIALS_ASSERT(data.contains("id"));
+      DIALS_ASSERT(data.contains("flags"));
+      DIALS_ASSERT(data.contains("bbox"));
+      DIALS_ASSERT(jobs.jobs().size() > 0);
+      return ReflectionLookup(
+          data["id"],
+          data["flags"],
+          data["bbox"],
+          jobs.jobs().const_ref());
+    }
+
+    ReflectionLookup lookup_;
+    af::reflection_table data_;
+    af::shared<bool> finished_;
   };
 
 }}
