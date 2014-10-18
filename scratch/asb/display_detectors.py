@@ -69,7 +69,11 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=True)
     datablocks  = flatten_datablocks(params.input.datablock)
     experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)[0]
+    reflections = flatten_reflections(params.input.reflections)
+    if len(reflections) > 0:
+      reflections = reflections[0]
+    else:
+      reflections = None
 
     all_detectors = []
     for db in datablocks:
