@@ -129,36 +129,37 @@ class Integrator(object):
     else:
       nthreads = self._nthreads
     omptbx.omp_set_num_threads(nthreads)
-    with self._manager:
-      num_proc = len(self._manager)
-      if self._nproc > 0:
-        num_proc = min(num_proc, self._nproc)
-      print ' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
-        self._mp_method, num_proc, nthreads)
-      if num_proc > 1:
-        def process_output(result):
-          print result[1]
-          self._manager.accumulate(result[0])
-        def execute_task(task):
-          from cStringIO import StringIO
-          import sys
-          sys.stdout = StringIO()
-          result = task()
-          output = sys.stdout.getvalue()
-          return result, output
-        task_results = easy_mp.parallel_map(
-          func=execute_task,
-          iterable=list(self._manager.tasks()),
-          processes=num_proc,
-          callback=process_output,
-          method=self._mp_method,
-          preserve_order=True,
-          preserve_exception_message=True)
-        task_results, output = zip(*task_results)
-      else:
-        task_results = [task() for task in self._manager.tasks()]
-        for result in task_results:
-          self._manager.accumulate(result)
+    self._manager.initialize()
+    num_proc = len(self._manager)
+    if self._nproc > 0:
+      num_proc = min(num_proc, self._nproc)
+    print ' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
+      self._mp_method, num_proc, nthreads)
+    if num_proc > 1:
+      def process_output(result):
+        print result[1]
+        self._manager.accumulate(result[0])
+      def execute_task(task):
+        from cStringIO import StringIO
+        import sys
+        sys.stdout = StringIO()
+        result = task()
+        output = sys.stdout.getvalue()
+        return result, output
+      task_results = easy_mp.parallel_map(
+        func=execute_task,
+        iterable=list(self._manager.tasks()),
+        processes=num_proc,
+        callback=process_output,
+        method=self._mp_method,
+        preserve_order=True,
+        preserve_exception_message=True)
+      task_results, output = zip(*task_results)
+    else:
+      task_results = [task() for task in self._manager.tasks()]
+      for result in task_results:
+        self._manager.accumulate(result)
+    self._manager.finalize()
     end_time = time()
     rows = [
       ["Read time"        , "%.2f seconds" % (self._manager.time().read)       ],
@@ -376,7 +377,7 @@ class Manager(object):
     self._reflections = reflections
     self._time = Manager.TimingInfo()
 
-  def __enter__(self):
+  def initialize(self):
     ''' Enter the context manager. '''
     from itertools import groupby
     from math import ceil
@@ -434,7 +435,7 @@ class Manager(object):
     self._time.process += result.process_time
     self._time.total += result.total_time
 
-  def __exit__(self, type, value, traceback):
+  def finalize(self):
     ''' Do the post-processing and finish. '''
     assert(self._manager.finished())
     self._postprocess(self._manager.data())
