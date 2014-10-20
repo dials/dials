@@ -92,7 +92,7 @@ phil_scope = generate_phil_scope()
 class Integrator(object):
   ''' Integrator interface class. '''
 
-  def __init__(self, manager, nproc=1, mp_method='multiprocessing'):
+  def __init__(self, manager, nthreads=1, nproc=1, mp_method='multiprocessing'):
     ''' Initialise the integrator.
 
     The integrator requires a manager class implementing the IntegratorManager
@@ -105,7 +105,10 @@ class Integrator(object):
       mp_method The multiprocessing method
 
     '''
+    assert(nthreads > 0)
+    assert(nproc > 0)
     self._manager = manager
+    self._nthreads = nthreads
     self._nproc = nproc
     self._mp_method = mp_method
 
@@ -119,45 +122,52 @@ class Integrator(object):
     from time import time
     from libtbx import easy_mp
     from libtbx.table_utils import format as table
+    import omptbx
     start_time = time()
-    num_proc = len(self._manager)
-    if self._nproc > 0:
-      num_proc = min(num_proc, self._nproc)
-    print ' Using %s with %d processes\n' % (self._mp_method, num_proc)
-    if num_proc > 1:
-      def process_output(result):
-        print result[1]
-        self._manager.accumulate(result[0])
-      def execute_task(task):
-        from cStringIO import StringIO
-        import sys
-        sys.stdout = StringIO()
-        result = task()
-        output = sys.stdout.getvalue()
-        return result, output
-      task_results = easy_mp.parallel_map(
-        func=execute_task,
-        iterable=list(self._manager.tasks()),
-        processes=num_proc,
-        callback=process_output,
-        method=self._mp_method,
-        preserve_order=True,
-        preserve_exception_message=True)
-      task_results, output = zip(*task_results)
+    if self._nthreads > omptbx.omp_get_num_procs():
+      nthreads = omptbx.omp_get_num_procs()
     else:
-      task_results = [task() for task in self._manager.tasks()]
-      for result in task_results:
-        self._manager.accumulate(result)
-    self._manager.finalize()
+      nthreads = self._nthreads
+    omptbx.omp_set_num_threads(nthreads)
+    with self._manager:
+      num_proc = len(self._manager)
+      if self._nproc > 0:
+        num_proc = min(num_proc, self._nproc)
+      print ' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
+        self._mp_method, num_proc, nthreads)
+      if num_proc > 1:
+        def process_output(result):
+          print result[1]
+          self._manager.accumulate(result[0])
+        def execute_task(task):
+          from cStringIO import StringIO
+          import sys
+          sys.stdout = StringIO()
+          result = task()
+          output = sys.stdout.getvalue()
+          return result, output
+        task_results = easy_mp.parallel_map(
+          func=execute_task,
+          iterable=list(self._manager.tasks()),
+          processes=num_proc,
+          callback=process_output,
+          method=self._mp_method,
+          preserve_order=True,
+          preserve_exception_message=True)
+        task_results, output = zip(*task_results)
+      else:
+        task_results = [task() for task in self._manager.tasks()]
+        for result in task_results:
+          self._manager.accumulate(result)
     end_time = time()
     rows = [
-      ["Read time"        , "%.2f seconds" % (self._manager.read_time)       ],
-      ["Extract time"     , "%.2f seconds" % (self._manager.extract_time)    ],
-      ["Pre-process time" , "%.2f seconds" % (self._manager.preprocess_time) ],
-      ["Process time"     , "%.2f seconds" % (self._manager.process_time)    ],
-      ["Post-process time", "%.2f seconds" % (self._manager.postprocess_time)],
-      ["Total time"       , "%.2f seconds" % (self._manager.total_time)      ],
-      ["User time"        , "%.2f seconds" % (end_time - start_time)         ],
+      ["Read time"        , "%.2f seconds" % (self._manager.time().read)       ],
+      ["Extract time"     , "%.2f seconds" % (self._manager.time().extract)    ],
+      ["Pre-process time" , "%.2f seconds" % (self._manager.time().preprocess) ],
+      ["Process time"     , "%.2f seconds" % (self._manager.time().process)    ],
+      ["Post-process time", "%.2f seconds" % (self._manager.time().postprocess)],
+      ["Total time"       , "%.2f seconds" % (self._manager.time().total)      ],
+      ["User time"        , "%.2f seconds" % (end_time - start_time)           ],
     ]
     print ''
     print table(rows, justify='right', prefix=' ')
@@ -329,8 +339,19 @@ class Task(object):
     print ''
 
 
+
 class Manager(object):
   ''' An class to manage integration book-keeping '''
+
+  class TimingInfo(object):
+    ''' A class to contain timing info. '''
+    def __init__(self):
+      self.read = 0
+      self.extract = 0
+      self.preprocess = 0
+      self.process = 0
+      self.postprocess = 0
+      self.total = 0
 
   def __init__(self,
                preprocess,
@@ -343,49 +364,51 @@ class Manager(object):
                flatten=False,
                save_shoeboxes=False):
     ''' Initialise the manager. '''
-    from itertools import groupby
-    from math import ceil
     self._finalized = False
     self._flatten = flatten
+    self._block_size = block_size
+    self._block_size_units = block_size_units
     self._save_shoeboxes = save_shoeboxes
     self._preprocess = preprocess
     self._postprocess = postprocess
     self._experiments = experiments
     self._profile_model = profile_model
     self._reflections = reflections
+    self._time = Manager.TimingInfo()
+
+  def __enter__(self):
+    ''' Enter the context manager. '''
+    from itertools import groupby
+    from math import ceil
     groups = groupby(
-      range(len(experiments)),
-      lambda x: (experiments[x].imageset,
-                 experiments[x].scan))
+      range(len(self._experiments)),
+      lambda x: (self._experiments[x].imageset,
+                 self._experiments[x].scan))
     jobs = JobList()
     for key, indices in groups:
       indices = list(indices)
       i0 = indices[0]
       i1 = indices[-1]+1
-      expr = experiments[i0]
+      expr = self._experiments[i0]
       scan = expr.scan
       imgs = expr.imageset
       array_range = (0, len(imgs))
       if scan is not None:
         assert(len(imgs) == len(scan))
         array_range = scan.get_array_range()
-      if block_size_units == 'degrees':
+      if self._block_size_units == 'degrees':
         phi0, dphi = scan.get_oscillation()
-        block_size_frames = int(ceil(block_size / dphi))
-      elif block_size_units == 'frames':
-        block_size_frames = int(ceil(block_size))
+        block_size_frames = int(ceil(self._block_size / dphi))
+      elif self._block_size_units == 'frames':
+        block_size_frames = int(ceil(self._block_size))
       else:
         raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
       jobs.add((i0, i1), array_range, block_size_frames)
     assert(len(jobs) > 0)
     self._preprocess(self._reflections, jobs)
     self._manager = ReflectionManager(jobs, self._reflections)
-    self.read_time = 0
-    self.extract_time = 0
-    self.preprocess_time = self._preprocess.time
-    self.process_time = 0
-    self.total_time = 0
-    self._print_summary(block_size, block_size_units)
+    self._time.preprocess = self._preprocess.time
+    self._print_summary(self._block_size, self._block_size_units)
 
   def task(self, index):
     ''' Get a task. '''
@@ -406,16 +429,16 @@ class Manager(object):
   def accumulate(self, result):
     ''' Accumulate the results. '''
     self._manager.accumulate(result.index, result.reflections)
-    self.read_time += result.read_time
-    self.extract_time += result.extract_time
-    self.process_time += result.process_time
-    self.total_time += result.total_time
+    self._time.read += result.read_time
+    self._time.extract += result.extract_time
+    self._time.process += result.process_time
+    self._time.total += result.total_time
 
-  def finalize(self):
+  def __exit__(self, type, value, traceback):
     ''' Do the post-processing and finish. '''
     assert(self._manager.finished())
     self._postprocess(self._manager.data())
-    self.postprocess_time = self._postprocess.time
+    self._time.postprocess = self._postprocess.time
     print self._manager.data().statistics(self._experiments)
     self._finalized = True
 
@@ -431,6 +454,10 @@ class Manager(object):
   def __len__(self):
     ''' Return the number of tasks. '''
     return len(self._manager)
+
+  def time(self):
+    ''' Return the timing information. '''
+    return self._time
 
   def _print_summary(self, block_size, block_size_units):
     ''' Print a summary of the integration stuff. '''
@@ -770,6 +797,7 @@ class Integrator3D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False):
@@ -785,7 +813,7 @@ class Integrator3D(Integrator):
       save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
-    super(Integrator3D, self).__init__(manager, nproc, mp_method)
+    super(Integrator3D, self).__init__(manager, nthreads, nproc, mp_method)
 
 
 class IntegratorFlat3D(Integrator):
@@ -797,6 +825,7 @@ class IntegratorFlat3D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False):
@@ -813,7 +842,7 @@ class IntegratorFlat3D(Integrator):
       save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
-    super(IntegratorFlat3D, self).__init__(manager, nproc, mp_method)
+    super(IntegratorFlat3D, self).__init__(manager, nthreads, nproc, mp_method)
 
 
 class Integrator2D(Integrator):
@@ -825,6 +854,7 @@ class Integrator2D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False):
@@ -841,7 +871,7 @@ class Integrator2D(Integrator):
       save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
-    super(Integrator2D, self).__init__(manager, nproc, mp_method)
+    super(Integrator2D, self).__init__(manager, nthreads, nproc, mp_method)
 
 
 class IntegratorSingle2D(Integrator):
@@ -853,6 +883,7 @@ class IntegratorSingle2D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False):
@@ -873,7 +904,7 @@ class IntegratorSingle2D(Integrator):
       save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
-    super(IntegratorSingle2D, self).__init__(manager, nproc, mp_method)
+    super(IntegratorSingle2D, self).__init__(manager, nthreads, nproc, mp_method)
 
 
 class IntegratorStills(Integrator):
@@ -885,6 +916,7 @@ class IntegratorStills(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False):
@@ -898,7 +930,7 @@ class IntegratorStills(Integrator):
       save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
-    super(IntegratorStills, self).__init__(manager, nproc, mp_method)
+    super(IntegratorStills, self).__init__(manager, nthreads, nproc, mp_method)
 
 
 class IntegratorFactory(object):
@@ -942,6 +974,7 @@ class IntegratorFactory(object):
       reflections=reflections,
       block_size=params.integration.block.size,
       min_zeta=params.integration.filter.min_zeta,
+      nthreads=params.integration.mp.nthreads,
       nproc=params.integration.mp.nproc,
       mp_method=params.integration.mp.method,
       save_shoeboxes=params.integration.debug.save_shoeboxes)
