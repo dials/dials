@@ -92,10 +92,18 @@ class flex_arr_3d_outer_panel(wx.Panel):
     if( rot_sn > 0 ):
       for ntimes in range(int(math.fabs(rot_sn))):
         self.scale = self.scale * 1.05
+        if( self.scale > 3.0 ):
+          self.scale = 3.0
+          print "Reached maximum possible Zoom"
+
 
     elif( rot_sn < 0):
       for ntimes in range(int(math.fabs(rot_sn))):
         self.scale = self.scale * 0.95
+        if( self.scale < 0.2 ):
+          self.scale = 0.2
+          print "Reached minimum possible Zoom"
+
 
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
@@ -165,8 +173,8 @@ class buttons_panel(wx.Panel):
 
   def OnHidIBut(self, event):
     self.parent_panel._to_hide_nums()
-    print "tst 01"
+
 
   def OnShwIBut(self, event):
     self.parent_panel.to_show_nums()
-    print "tst 02"
+
