@@ -1303,16 +1303,8 @@ class Refiner(object):
       rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
 
     if len(rows) > 0:
-      truncated = False
-      max_rows = 20
-      if self._verbosity < 2 and len(rows) > max_rows:
-        rows = rows[0:max_rows]
-        truncated = True
       st = simple_table(rows, header)
       print st.format()
-      if truncated:
-        print "Table truncated to show the first", max_rows, "panels only"
-        print "Re-run with verbosity >= 2 to show all panels"
 
     return
 
@@ -1344,8 +1336,8 @@ class Refiner(object):
       self.print_step_table()
       self.print_exp_rmsd_table()
 
-      if len(self._detector) > 1:
-        self.print_panel_rmsd_table()
+    if self._verbosity > 1 and len(self._detector) > 1:
+      self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
     #FIXME tidy up
