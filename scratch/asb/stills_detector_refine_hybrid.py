@@ -16,20 +16,17 @@ detector, only the detector parameters are refined at first (using all data)
 then each crystal is refined individually. This forms one macrocycle."""
 
 from __future__ import division
-import sys
 from math import sqrt
 
-from libtbx.phil import command_line, parse
-from dxtbx.serialize import load as load_dxtbx
+from libtbx.phil import parse
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.indexing.indexer import indexer_base
 
-from dials.model.serialize import load as load_dials
 from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
 
-from dials.util.options import flatten_reflections, flatten_experiments
 from libtbx.utils import Sorry
+from libtbx import easy_mp
 
 class ExperimentFromCrystal(object):
 
@@ -94,7 +91,8 @@ def detector_refiner(params, experiments, reflections):
 
 def crystals_refiner(params, experiments, reflections):
 
-  for iexp, exp in enumerate(experiments):
+  def do_work(item):
+    iexp, exp = item
 
     print "Refining crystal", iexp
     # reflection subset for a single experiment
@@ -110,6 +108,15 @@ def crystals_refiner(params, experiments, reflections):
     refined_exps = refiner.get_experiments()
     # replace this experiment with the refined one
     experiments[iexp] = refined_exps[0]
+
+  print "Beginning crystal refinement with %d processor(s)"%params.mp.nproc
+  easy_mp.parallel_map(
+    func = do_work,
+    iterable = enumerate(experiments),
+    processes = params.mp.nproc,
+    method = params.mp.method,
+    asynchronous=True,
+    preserve_exception_message=True)
 
   return experiments
 
@@ -144,7 +151,9 @@ class Script(object):
 
       crystals_phase {
         include scope dials.algorithms.refinement.refiner.phil_scope
+        include scope dials.data.multiprocessing.phil_scope
       }
+
     ''', process_includes=True)
 
     # Set new defaults for detector and crystals refinement phases
@@ -307,5 +316,3 @@ if __name__ == '__main__':
     script.run()
   except Exception as e:
     halraiser(e)
-
-
