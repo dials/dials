@@ -18,21 +18,16 @@ from dials.util.options import flatten_experiments
 
 
 def run(args):
-  if len(args) == 0:
-    from libtbx.utils import Usage
-    import libtbx.load_env
-    from cStringIO import StringIO
-    usage_message = """\
-%s datablock.json strong.pickle [options]
+  import libtbx.load_env
+  from libtbx.utils import Sorry
+  usage = """\
+%s [options] datablock.json strong.pickle
 
 Parameters:
 """ %libtbx.env.dispatcher_name
-    s = StringIO()
-    master_phil_scope.show(out=s)
-    usage_message += s.getvalue()
-    raise Usage(usage_message)
 
   parser = OptionParser(
+    usage=usage,
     phil=master_phil_scope,
     read_reflections=True,
     read_datablocks=True,
@@ -43,14 +38,15 @@ Parameters:
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
+
   if len(datablocks) == 0:
     if len(experiments) > 0:
       imagesets = importer.experiments.imagesets()
     else:
-      print "No Datablock could be constructed"
+      parser.print_help()
       return
   elif len(datablocks) > 1:
-    raise RuntimeError("Only one DataBlock can be processed at a time")
+    raise Sorry("Only one DataBlock can be processed at a time")
   else:
     imagesets = datablocks[0].extract_imagesets()
   if len(experiments):
@@ -60,25 +56,6 @@ Parameters:
   assert(len(reflections) == 1)
   reflections = reflections[0]
 
-  # importer = Importer(args, check_format=False)
-  # if importer.datablocks is None or len(importer.datablocks) == 0:
-  #   if importer.experiments is not None and len(importer.experiments):
-  #     imagesets = importer.experiments.imagesets()
-  #   else:
-  #     print "No DataBlock could be constructed"
-  #     return
-  # elif len(importer.datablocks) > 1:
-  #   raise RuntimeError("Only one DataBlock can be processed at a time")
-  # else:
-  #   imagesets = importer.datablocks[0].extract_imagesets()
-  # if importer.experiments is not None and len(importer.experiments):
-  #   known_crystal_models = importer.experiments.crystals()
-  # else:
-  #   known_crystal_models = None
-  # assert len(importer.reflections) == 1
-  # reflections = importer.reflections[0]
-  # args = importer.unhandled_arguments
-
   for imageset in imagesets:
     if (imageset.get_goniometer() is not None and
         imageset.get_scan() is not None and
@@ -86,27 +63,6 @@ Parameters:
       imageset.set_goniometer(None)
       imageset.set_scan(None)
 
-  parser.phil.show()
-
-  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  # working_phil = cmd_line.process_and_fetch(args=args)
-  # working_phil.show()
-
-  #filenames = imagesets[0].paths()
-  #beam = imagesets[0].get_beam()
-  #detector = imagesets[0].get_detector()
-
-  #from dxtbx.imageset import ImageSet
-  #from dxtbx.imageset import NullReader
-  #reader = NullReader(filenames)
-  #imgset = ImageSet(reader)
-  #imgset.set_beam(beam)
-  #imgset.set_detector(detector)
-  #print imgset.get_beam()
-  #print imgset.get_detector()
-  #imagesets = [imgset]
-
-  # params = working_phil.extract()
   if known_crystal_models is not None:
     from dials.algorithms.indexing.known_orientation \
          import indexer_known_orientation
