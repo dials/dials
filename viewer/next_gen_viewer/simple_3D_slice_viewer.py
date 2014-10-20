@@ -31,6 +31,7 @@ class show_3d_wx_app(wx.App):
   def OnInit(self):
     self.frame = flex_3d_frame(None, 'Test reuse')
     self.panel = flex_arr_3d_outer_panel(self.frame)
+    self.frame_ini_img(self.panel)
     return True
 
 
@@ -50,7 +51,10 @@ class flex_3d_frame(wx.Frame):
   def __init__(self, parent, title):
     super(flex_3d_frame, self).__init__(parent, title=title, size=wx.DefaultSize)
     #wx.Frame.__init__(self, parent, title=title, size=wx.DefaultSize)
-    self.my_panel = flex_arr_3d_outer_panel(self)
+    #self.my_panel = flex_arr_3d_outer_panel(self)
+
+  def frame_ini_img(self, in_panel):
+    self.my_panel = in_panel
     self.my_sizer = wx.BoxSizer(wx.HORIZONTAL)
     self.my_sizer.Add(self.my_panel, 1, wx.EXPAND)
     self.SetSizer(self.my_sizer)
