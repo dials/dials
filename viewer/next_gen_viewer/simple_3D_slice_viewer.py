@@ -31,7 +31,7 @@ class show_3d_wx_app(wx.App):
   def OnInit(self):
     self.frame = flex_3d_frame(None, 'Test reuse')
     self.panel = flex_arr_3d_outer_panel(self.frame)
-    self.frame_ini_img(self.panel)
+    self.frame.frame_ini_img(self.panel)
     return True
 
 
