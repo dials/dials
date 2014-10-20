@@ -865,14 +865,27 @@ class indexer_base(object):
         from dials.algorithms.indexing.symmetry import find_matching_symmetry
         best_subgroup = find_matching_symmetry(
           uc, self.target_symmetry_primitive.space_group())
+        cb_op_extra = None
         if best_subgroup is None:
-          continue
+          if self.target_symmetry_reference_setting is not None:
+            # if we have been told we have a centred unit cell check that
+            # indexing hasn't found the centred unit cell instead of the
+            # primitive cell
+            best_subgroup = find_matching_symmetry(
+              uc, self.target_symmetry_reference_setting.space_group().build_derived_point_group())
+            cb_op_extra = self.cb_op_reference_to_primitive
+            if best_subgroup is None:
+              continue
+          else:
+            continue
         cb_op_inp_best = best_subgroup['cb_op_inp_best']
         best_subsym = best_subgroup['best_subsym']
         cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
         ref_subsym = best_subsym.change_basis(cb_op_best_ref)
         cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
         cb_op_to_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
+        if cb_op_extra is not None:
+          cb_op_to_primitive = cb_op_extra * cb_op_to_primitive
         best_model = model.change_basis(cb_op_to_primitive)
         if (self.target_symmetry_primitive.unit_cell () is not None
             and not best_model.get_unit_cell().is_similar_to(
