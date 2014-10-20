@@ -29,7 +29,7 @@ class show_3d(object):
 
 class show_3d_wx_app(wx.App):
   def OnInit(self):
-    self.frame = flex_3d_frame(None, 'Test reuse')
+    self.frame = flex_3d_frame(None, '3D flex array viewer')
     self.panel = flex_arr_3d_outer_panel(self.frame)
     self.frame.frame_ini_img(self.panel)
     return True
@@ -53,9 +53,8 @@ class flex_3d_frame(wx.Frame):
 
 
 class flex_arr_3d_outer_panel(wx.Panel):
-  def __init__(self, outer_panel):
-    super(flex_arr_3d_outer_panel, self).__init__(outer_panel)
-    self.p_frame  = outer_panel
+  def __init__(self, parent_frame):
+    super(flex_arr_3d_outer_panel, self).__init__(parent_frame)
     self.show_nums = True
 
 
@@ -83,13 +82,13 @@ class flex_arr_3d_outer_panel(wx.Panel):
     self.panel_02.img_refresh(self.bmp_lst)
 
 
-  def _to_show_nums(self):
+  def to_show_nums(self):
     self.show_nums = True
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
 
 
-  def _to_re_zoom(self, rot_sn):
+  def to_re_zoom(self, rot_sn):
     if( rot_sn > 0 ):
       for ntimes in range(int(math.fabs(rot_sn))):
         self.scale = self.scale * 1.05
@@ -104,7 +103,7 @@ class flex_arr_3d_outer_panel(wx.Panel):
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
   def __init__(self, outer_panel, bmp_lst_in):
     super(multi_img_scrollable, self).__init__(outer_panel)
-    self.p_frame  = outer_panel
+    self.parent_panel  = outer_panel
     self.local_bmp_lst = bmp_lst_in
     self.set_scroll_content(self.local_bmp_lst)
 
@@ -136,20 +135,20 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       child.Destroy()
     self.set_scroll_content(self.local_bmp_lst)
     self.Layout()
-    self.p_frame.Layout()
+    self.parent_panel.Layout()
     self.Refresh()
 
 
   def OnIdle(self, event):
     if( self.rot != 0 ):
-      self.p_frame._to_re_zoom(self.rot)
+      self.parent_panel.to_re_zoom(self.rot)
       self.rot = 0
 
 
 class buttons_panel(wx.Panel):
   def __init__(self, outer_panel):
     super(buttons_panel, self).__init__(outer_panel)
-    self.p_frame  = outer_panel
+    self.parent_panel  = outer_panel
 
     Hide_I_Button = wx.Button(self, label="Hide I")
     Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
@@ -165,11 +164,11 @@ class buttons_panel(wx.Panel):
 
 
   def OnHidIBut(self, event):
-    self.p_frame._to_hide_nums()
+    self.parent_panel._to_hide_nums()
     print "tst 01"
 
   def OnShwIBut(self, event):
-    self.p_frame._to_show_nums()
+    self.parent_panel.to_show_nums()
     print "tst 02"
 
 if(__name__ == "__main__"):
