@@ -11,8 +11,6 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H
 #define DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H
 
-#include <omptbx/omp_or_stubs.h>
-
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -50,7 +48,6 @@ namespace dials { namespace algorithms {
     // Assign the pixels to object and background
     af::versa< bool, af::c_grid<2> > result(image.accessor(),
       af::init_functor_null<bool>());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
       result[i] = image[i] > mean[i] + n_sigma * std::sqrt(var[i]) ? 1 : 0;
     }
@@ -85,7 +82,6 @@ namespace dials { namespace algorithms {
     // Assign the pixels to object and background
     af::versa< bool, af::c_grid<2> > result(image.accessor(),
       af::init_functor_null<bool>());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
       result[i] = image[i] > mean[i] * (
         1.0 + k * (std::sqrt(var[i]) / r - 1)) ? 1 : 0;
@@ -126,7 +122,6 @@ namespace dials { namespace algorithms {
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(),
       af::init_functor_null<bool>());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       result[i] = (fano_image[i] > bound) ? 1 : 0;
     }
@@ -159,7 +154,6 @@ namespace dials { namespace algorithms {
 
     // Copy the mask into a temp variable
     af::versa< int, af::c_grid<2> > temp(mask.accessor());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < temp.size(); ++i) {
       temp[i] = mask[i] ? 1 : 0;
     }
@@ -172,7 +166,6 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
-    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         FloatType bound = 1.0 + n_sigma * std::sqrt(2.0 / (count[i] - 1));
@@ -210,7 +203,6 @@ namespace dials { namespace algorithms {
 
     // Copy the mask into a temp variable
     af::versa< int, af::c_grid<2> > temp(mask.accessor());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < temp.size(); ++i) {
       temp[i] = mask[i] ? 1 : 0;
     }
@@ -223,7 +215,6 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
-    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         FloatType bound = gain[i] + n_sigma * gain[i] *
@@ -261,7 +252,6 @@ namespace dials { namespace algorithms {
 
     // Copy the mask into a temp variable
     af::versa< int, af::c_grid<2> > temp(mask.accessor());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < temp.size(); ++i) {
       temp[i] = mask[i] ? 1 : 0;
     }
@@ -275,7 +265,6 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
-    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         FloatType bnd_b = 1.0 + nsig_b * std::sqrt(2.0 / (count[i] - 1));
@@ -315,7 +304,6 @@ namespace dials { namespace algorithms {
 
     // Copy the mask into a temp variable
     af::versa< int, af::c_grid<2> > temp(mask.accessor());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < temp.size(); ++i) {
       temp[i] = mask[i] ? 1 : 0;
     }
@@ -329,7 +317,6 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
-    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         FloatType bnd_b = gain[i] + nsig_b * gain[i] *

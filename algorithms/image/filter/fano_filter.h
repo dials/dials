@@ -11,8 +11,6 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_FILTER_FANO_FILTER_H
 #define DIALS_ALGORITHMS_IMAGE_FILTER_FANO_FILTER_H
 
-#include <omptbx/omp_or_stubs.h>
-
 #include <algorithm>
 #include <cmath>
 #include <scitbx/array_family/tiny_types.h>
@@ -51,7 +49,6 @@ namespace dials { namespace algorithms {
 
       // Calculate the filtered image
       fano_ = af::versa<FloatType, af::c_grid<2> >(var_.accessor(), 0);
-      #pragma omp parallel for
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mean_[i] > 0) {
           fano_[i] = var_[i] / mean_[i];
@@ -122,7 +119,6 @@ namespace dials { namespace algorithms {
 
       // Calculate the filtered image.
       fano_ = af::versa< FloatType, af::c_grid<2> >(var_.accessor(), 0);
-      #pragma omp parallel for
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mask_[i] && mean_[i] > 0) {
           fano_[i] = var_[i] / mean_[i];

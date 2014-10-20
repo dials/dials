@@ -11,8 +11,6 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_FILTER_SUMMED_AREA_H
 #define DIALS_ALGORITHMS_IMAGE_FILTER_SUMMED_AREA_H
 
-#include <omptbx/omp_or_stubs.h>
-
 #include <algorithm>
 #include <cmath>
 #include <scitbx/array_family/tiny_types.h>
@@ -82,7 +80,6 @@ namespace dials { namespace algorithms {
     std::size_t xsize = image.accessor()[1];
 
     // Calculate the local mean at every point
-    #pragma omp parallel for
     for (std::size_t j = 0; j < ysize; ++j) {
       for (std::size_t i = 0 ; i < xsize; ++i) {
         int i0 = i - size[1] - 1, i1 = i + size[1];
