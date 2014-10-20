@@ -13,7 +13,7 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
   if dmin is None:
     dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
 
-  # Only remove certain systematic absenses
+  # Only remove certain systematic absences
   space_group = experiment.crystal.get_space_group()
   space_group = space_group.build_derived_patterson_group()
 
@@ -38,7 +38,7 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
   if dmin is None:
     dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
 
-  # Only remove certain systematic absenses
+  # Only remove certain systematic absences
   space_group = experiment.crystal.get_space_group()
   space_group = space_group.build_derived_patterson_group()
 
