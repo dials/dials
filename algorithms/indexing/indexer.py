@@ -924,9 +924,11 @@ class indexer_base(object):
 
         self.best_likelihood = max(
           s.model_likelihood for s in self.all_solutions)
+        if self.best_likelihood <= 0: offset = 1
+        else: offset = 0
         self.close_solutions = [
           s for s in self.all_solutions
-          if s.model_likelihood >= (0.85 * self.best_likelihood)]
+          if (s.model_likelihood+offset) >= (0.85 * (self.best_likelihood+offset))]
 
         # filter by volume - prefer solutions with a smaller unit cell
         self.min_volume = min(s.crystal.get_unit_cell().volume()
@@ -1047,8 +1049,6 @@ class indexer_base(object):
       rmsds = refiner.rmsds()
       xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
       model_likelihood = 1.0 - xy_rmsds
-      if model_likelihood < 0:
-        continue
       solutions.append(
         Solution(model_likelihood=model_likelihood,
                  crystal=cm,
