@@ -40,18 +40,10 @@ class show_3d_wx_app(wx.App):
     self.SetTopWindow(self.frame)
     self.frame.Show()
 
-'''
-class C(B):
-    def method(self, arg):
-        super(C, self).method(arg)
-'''
-
 
 class flex_3d_frame(wx.Frame):
   def __init__(self, parent, title):
     super(flex_3d_frame, self).__init__(parent, title=title, size=wx.DefaultSize)
-    #wx.Frame.__init__(self, parent, title=title, size=wx.DefaultSize)
-    #self.my_panel = flex_arr_3d_outer_panel(self)
 
   def frame_ini_img(self, in_panel):
     self.my_panel = in_panel
