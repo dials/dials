@@ -15,14 +15,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_preprocessor();
-  void export_interface();
   void export_corrections();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
-    export_preprocessor();
-    export_interface();
     export_corrections();
   }
 

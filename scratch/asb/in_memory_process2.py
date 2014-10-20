@@ -42,7 +42,7 @@ phil_scope = parse('''
     include scope dials.algorithms.indexing.indexer.master_phil_scope
   }
   include scope dials.algorithms.refinement.refiner.phil_scope
-  include scope dials.algorithms.integration.interface.phil_scope
+  include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 ''', process_includes=True)

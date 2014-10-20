@@ -40,8 +40,8 @@ if __name__ == '__main__':
   print ""
 
   print "Creating params"
-  from dials.algorithms.integration.interface import IntegratorFactory
-  from dials.algorithms.integration.interface import phil_scope
+  from dials.algorithms.integration.integrator import IntegratorFactory
+  from dials.algorithms.integration.integrator import phil_scope
   from libtbx import phil
 
   user_phil = phil.parse('''

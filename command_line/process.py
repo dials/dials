@@ -90,7 +90,7 @@ class Script(object):
         include scope dials.algorithms.indexing.indexer.master_phil_scope
       }
       include scope dials.algorithms.refinement.refiner.phil_scope
-      include scope dials.algorithms.integration.interface.phil_scope
+      include scope dials.algorithms.integration.integrator.phil_scope
       include scope dials.algorithms.profile_model.factory.phil_scope
       include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
@@ -285,7 +285,7 @@ class Script(object):
     # Get the integrator from the input parameters
     print 'Configurating integrator from input parameters'
     from dials.algorithms.profile_model.factory import ProfileModelFactory
-    from dials.algorithms.integration.interface import IntegratorFactory
+    from dials.algorithms.integration.integrator import IntegratorFactory
     from dials.array_family import flex
 
     # Compute the profile model

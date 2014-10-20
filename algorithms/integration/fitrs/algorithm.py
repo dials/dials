@@ -42,7 +42,7 @@ class IntegrationAlgorithm(object):
     '''
     from dials.algorithms.integration.fitrs import ReciprocalSpaceProfileFitting
     from dials.algorithms.integration.fitrs import Spec
-    from dials.algorithms.integration.interface import job_id
+    from dials.algorithms.integration.integrator import job_id
     from dials.array_family import flex
     from dials.util.command_line import Command
 

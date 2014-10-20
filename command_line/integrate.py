@@ -64,7 +64,7 @@ class Script(object):
           .help = "The integrated output filename"
       }
 
-      include scope dials.algorithms.integration.interface.phil_scope
+      include scope dials.algorithms.integration.integrator.phil_scope
       include scope dials.algorithms.profile_model.factory.phil_scope
       include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
@@ -121,7 +121,7 @@ class Script(object):
     # else:
     if (True):
       from dials.algorithms.profile_model.factory import ProfileModelFactory
-      from dials.algorithms.integration.interface import IntegratorFactory
+      from dials.algorithms.integration.integrator import IntegratorFactory
       from dials.array_family import flex
 
       # Compute the profile model

@@ -1,7 +1,7 @@
 
 from __future__ import division
 
-class TestSplitReflections(object):
+class TestJobList(object):
 
   def run(self):
     self.tst_split_blocks_1_frame()
@@ -11,8 +11,7 @@ class TestSplitReflections(object):
   def tst_split_blocks_1_frame(self):
     from dials.array_family import flex
     from random import randint, uniform, seed
-    from dials.algorithms.integration import split_reflections_by_jobs
-    from dials.algorithms.integration import JobList
+    from dials.algorithms.integration.integrator import JobList
     r = flex.reflection_table()
     r['value1'] = flex.double()
     r['value2'] = flex.int()
@@ -50,7 +49,7 @@ class TestSplitReflections(object):
     jobs = JobList()
     jobs.add((0,1), (0, 111), 1)
 
-    split_reflections_by_jobs(r, jobs)
+    jobs.split(r)
     assert(len(r) == len(expected))
     EPS = 1e-7
     for r1, r2 in zip(r, expected):
@@ -65,8 +64,7 @@ class TestSplitReflections(object):
   def tst_split_blocks_non_overlapping(self):
     from dials.array_family import flex
     from random import randint, uniform, seed
-    from dials.algorithms.integration import split_reflections_by_jobs
-    from dials.algorithms.integration import JobList
+    from dials.algorithms.integration.integrator import JobList
 
     from scitbx.array_family import shared
     blocks = shared.tiny_int_2([
@@ -127,7 +125,7 @@ class TestSplitReflections(object):
             'partial_id' : i,
           })
 
-    split_reflections_by_jobs(r, jobs)
+    jobs.split(r)
     assert(len(r) == len(expected))
     EPS = 1e-7
     for r1, r2 in zip(r, expected):
@@ -142,8 +140,7 @@ class TestSplitReflections(object):
   def tst_split_blocks_overlapping(self):
     from dials.array_family import flex
     from random import randint, uniform, seed
-    from dials.algorithms.integration import split_reflections_by_jobs
-    from dials.algorithms.integration import JobList
+    from dials.algorithms.integration.integrator import JobList
     from scitbx.array_family import shared
     blocks = shared.tiny_int_2([
       (0, 10),
@@ -202,7 +199,7 @@ class TestSplitReflections(object):
         'bbox' : (x0, x1, y0, y1, z0, z1)
       })
 
-    split_reflections_by_jobs(r, jobs)
+    jobs.split(r)
     assert(len(r) > 100)
     for r1 in r:
       v1 = r1['value1']
@@ -308,8 +305,8 @@ class TestReflectionManager(object):
 
 
   def run(self):
-    from dials.algorithms.integration import ReflectionManager
-    from dials.algorithms.integration import JobList
+    from dials.algorithms.integration.integrator import ReflectionManager
+    from dials.algorithms.integration.integrator import JobList
     from dials.array_family import flex
     jobs = JobList()
     jobs.add(
@@ -445,7 +442,7 @@ class TestIntegrator3D(object):
     self.profile_model = profile_model
 
   def run(self):
-    from dials.algorithms.integration.interface import Integrator3D
+    from dials.algorithms.integration.integrator import Integrator3D
     import StringIO
     import sys
 
@@ -601,8 +598,8 @@ class TestSummation(object):
 
 
   def integrate(self, integrator_type):
-    from dials.algorithms.integration.interface import IntegratorFactory
-    from dials.algorithms.integration.interface import phil_scope as master_phil_scope
+    from dials.algorithms.integration.integrator import IntegratorFactory
+    from dials.algorithms.integration.integrator import phil_scope as master_phil_scope
     from libtbx.phil import parse
     import sys
     import StringIO
@@ -642,7 +639,7 @@ class TestSummation(object):
 class Test(object):
 
   def __init__(self):
-    self.test0 = TestSplitReflections()
+    self.test0 = TestJobList()
     self.test1 = TestReflectionManager()
     self.test2 = TestIntegrator3D(nproc=1)
     self.test3 = TestIntegrator3D(nproc=2)
