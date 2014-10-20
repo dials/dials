@@ -11,6 +11,7 @@
 #ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MASK_FOREGROUND_H
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MASK_FOREGROUND_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <boost/shared_ptr.hpp>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
@@ -131,6 +132,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(shoeboxes.size() == s1.size());
       DIALS_ASSERT(shoeboxes.size() == frame.size());
       DIALS_ASSERT(shoeboxes.size() == panel.size());
+      #pragma omp parallel for
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         this->single(shoeboxes[i], s1[i], frame[i], panel[i]);
       }
@@ -405,6 +407,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(shoeboxes.size() == s1.size());
       DIALS_ASSERT(shoeboxes.size() == frame.size());
       DIALS_ASSERT(shoeboxes.size() == panel.size());
+      #pragma omp parallel for
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         this->single(shoeboxes[i], s1[i], frame[i], panel[i]);
       }
@@ -456,6 +459,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(shoeboxes.size() == s1.size());
       DIALS_ASSERT(shoeboxes.size() == frame.size());
       DIALS_ASSERT(shoeboxes.size() == panel.size());
+      #pragma omp parallel for
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         DIALS_ASSERT(id[i] < size());
         compute_[id[i]]->single(shoeboxes[i], s1[i], frame[i], panel[i]);

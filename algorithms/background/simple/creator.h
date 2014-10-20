@@ -11,6 +11,7 @@
 #ifndef DIALS_ALGORITHMS_BACKGROUND_CREATOR_H
 #define DIALS_ALGORITHMS_BACKGROUND_CREATOR_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <cmath>
 #include <boost/shared_ptr.hpp>
 #include <dials/array_family/scitbx_shared_and_versa.h>
@@ -67,6 +68,7 @@ namespace dials { namespace algorithms { namespace background {
         const af::const_ref< Shoebox<FloatType> > &shoeboxes,
         af::ref<double> mse) const {
       af::shared<bool> result(shoeboxes.size(), true);
+      #pragma omp parallel for
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         try {
           mse[i] = this->operator()(shoeboxes[i]);

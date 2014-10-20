@@ -11,6 +11,7 @@
 #ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <cmath>
 #include <boost/shared_ptr.hpp>
 #include <scitbx/constants.h>
@@ -190,6 +191,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(s1.size() == frame.size());
       DIALS_ASSERT(s1.size() == panel.size());
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
+      #pragma omp parallel for
       for (std::size_t i = 0; i < s1.size(); ++i) {
         result[i] = single(s1[i], frame[i], panel[i]);
       }
@@ -307,6 +309,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(s1.size() == frame.size());
       DIALS_ASSERT(s1.size() == panel.size());
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
+      #pragma omp parallel for
       for (std::size_t i = 0; i < s1.size(); ++i) {
         result[i] = single(s1[i], frame[i], panel[i]);
       }
@@ -357,6 +360,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(s1.size() == phi.size());
       DIALS_ASSERT(s1.size() == panel.size());
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
+      #pragma omp parallel for
       for (std::size_t i = 0; i < s1.size(); ++i) {
         DIALS_ASSERT(id[i] < size());
         result[i] = compute_[id[i]]->single(s1[i], phi[i], panel[i]);

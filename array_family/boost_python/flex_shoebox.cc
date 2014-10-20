@@ -556,6 +556,7 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<double> mean_background(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<double> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       af::versa<FloatType, af::c_grid<3> > data = a[i].data;
       af::versa<int, af::c_grid<3> > mask = a[i].mask;
@@ -582,6 +583,7 @@ namespace dials { namespace af { namespace boost_python {
    */
   template <typename FloatType>
   void flatten(ref< Shoebox<FloatType> > self) {
+    #pragma omp parallel for
     for (std::size_t i = 0; i < self.size(); ++i) {
       self[i].flatten();
     }
