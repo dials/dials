@@ -19,21 +19,22 @@ import matplotlib.pyplot as plt
 
 class wxbmp_from_np_array(object):
 
-  def get_bmp_lst(self, data_3d_in, show_nums = True, scale = 1.0):
-
-    z_dp = data_3d_in.shape[0]
-    self.xmax = data_3d_in.shape[1]
-    self.ymax = data_3d_in.shape[2]
-
-
-    self.vl_max = np.amax(data_3d_in)
-    self.vl_min = np.amin(data_3d_in)
+  def get_bmp_lst(self, lst_data_in, show_nums = True, scale = 1.0):
 
     wx_bmp_lst = []
-    tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
-    for z in range(z_dp):
-      tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-      wx_bmp_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
+
+    for data_3d_in in lst_data_in:
+
+      self.xmax = data_3d_in.shape[1]
+      self.ymax = data_3d_in.shape[2]
+      self.vl_max = np.amax(data_3d_in)
+      self.vl_min = np.amin(data_3d_in)
+      tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
+
+      z_dp = data_3d_in.shape[0]
+      for z in range(z_dp):
+        tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
+        wx_bmp_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
 
     return wx_bmp_lst
 

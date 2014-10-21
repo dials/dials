@@ -33,3 +33,5 @@ if(__name__ == "__main__"):
   lst_flex = []
   lst_flex.append(data_xyz_flex)
   show_3d(lst_flex)
+  lst_flex.append(data_xyz_flex)
+  show_3d(lst_flex)

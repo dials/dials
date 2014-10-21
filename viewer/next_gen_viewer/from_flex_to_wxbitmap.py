@@ -18,33 +18,27 @@ class wxbitmap_convert(object):
   The main duty of this class is to convert from
   a 3D flex array to a list of WxBitmaps
   '''
-  def __init__(self, data_in):
+  def __init__(self, data_flex_in):
 
 
 
-    if type(data_in) is list:
-      print 'a list is not implemented yet'
-      return
+    if type(data_flex_in) is list:
+      self.lst_3d_block = []
+      for flex_arr_lst in data_flex_in:
+        self.lst_3d_block.append(flex_arr_lst.as_numpy_array())
 
     else:
-      print 'a flex is this'
-
-      try:
-        self.depth = data_in.all()[0]
-      except:
-        print "error in entered data"
-        self.depth = 0
-
-      self.np_3d_block = data_in.as_numpy_array()
+      self.lst_3d_block = []
+      self.lst_3d_block.append(data_flex_in.as_numpy_array())
 
 
   def get_np(self):
-    return self.np_3d_block
+    return self.lst_3d_block
 
 
   def get_wxbitmap_lst(self, show_nums = True, scale = 1.0):
     local_bmp = wxbmp_from_np_array()
 
-    lst_img = local_bmp.get_bmp_lst(self.np_3d_block, show_nums, scale)
+    lst_img = local_bmp.get_bmp_lst(self.lst_3d_block, show_nums, scale)
 
     return lst_img
