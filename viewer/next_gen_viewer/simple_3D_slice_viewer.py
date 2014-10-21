@@ -130,7 +130,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       data_txt_01 = wx.StaticText(self, -1, ">>>>>>> (data_txt) >>>>>>>")
       sigle_slice_sizer = wx.BoxSizer(wx.VERTICAL)
       sigle_slice_sizer.Add(local_bitmap, wx.ALIGN_CENTRE | wx.ALL, border=4)
-      sigle_slice_sizer.Add(data_txt_01, wx.ALIGN_CENTRE | wx.ALL, border=4)
+      sigle_slice_sizer.Add(data_txt_01, wx.ALL, border=4)
       self.img_lst_sizer.Add(sigle_slice_sizer, flag=wx.ALIGN_CENTER | wx.ALL, border=4)
 
     self.SetSizer(self.img_lst_sizer)
