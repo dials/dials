@@ -147,6 +147,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     resid_z = flex.sum(self._matches['delpsical2'].select(sel))
 
     n = sel.count(True)
+    if n == 0: return None
     rmsds = (sqrt(resid_x / n),
              sqrt(resid_y / n),
              sqrt(resid_z / n))
@@ -163,6 +164,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     resid_z = flex.sum(self._matches['delpsical2'].select(sel))
 
     n = sel.count(True)
+    if n == 0: return None
     rmsds = (sqrt(resid_x / n),
              sqrt(resid_y / n),
              sqrt(resid_z / n))

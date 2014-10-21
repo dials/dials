@@ -221,7 +221,7 @@ refinement
     minimum_number_of_reflections = 20
       .help = "The minimum number of input observations to allow a reflection"
               "manager to be constructed for."
-      .type = int(value_min=1)
+      .type = int(value_min=0)
 
     close_to_spindle_cutoff = 0.05
       .help = "The inclusion criterion currently uses the volume of the"

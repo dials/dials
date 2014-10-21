@@ -269,7 +269,7 @@ class Script(object):
         do_outlier_rejection=True
         weighting_strategy.override=stills
         weighting_strategy.delpsi_constant=1000000
-        minimum_number_of_reflections=1
+        minimum_number_of_reflections=0
       }
       refinery.engine=LevMar
       verbosity=2
@@ -380,9 +380,9 @@ class Script(object):
       # crystals
       print "PHASE 1"
 
-      # SWAP COMMENTED LINES BELOW TO REFINE SEPARATE PANEL GROUPS
-      #experiments = detector_parallel_refiners(params.detector_phase, experiments, reflections)
-      experiments = detector_refiner(params.detector_phase, experiments, reflections)
+      # SWAP COMMENTED LINES BELOW TO REFINE WHOLE DETECTOR AS SINGLE JOB
+      experiments = detector_parallel_refiners(params.detector_phase, experiments, reflections)
+      #experiments = detector_refiner(params.detector_phase, experiments, reflections)
 
       # second run
       print "PHASE 2"
