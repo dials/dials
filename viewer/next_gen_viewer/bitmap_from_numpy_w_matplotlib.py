@@ -49,8 +49,8 @@ class wxbmp_from_np_array(object):
 
     ax.set_axis_off()
     lc_fig.add_axes(ax)
-    plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot'
-               , vmin = self.vl_min, vmax = self.vl_max)
+    plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot',
+               vmin = self.vl_min, vmax = self.vl_max)
 
     if( show_nums == True ):
       for xpos in range(self.xmax):
@@ -66,8 +66,8 @@ class wxbmp_from_np_array(object):
           else:
             clr_chr = 'blue'
 
-          plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data'
-                       , color = clr_chr, size = 12.)
+          plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data',
+                       color = clr_chr, size = 12.)
 
     lc_fig.canvas.draw()
     width, height = lc_fig.canvas.get_width_height()
