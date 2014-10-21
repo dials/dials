@@ -21,10 +21,18 @@ import wx.lib.scrolledpanel as scroll_pan
 import math
 
 class show_3d(object):
-  def __init__(self, data_xyz_in):
-    app = show_3d_wx_app(redirect=False)
-    app.in_lst(data_xyz_in)
-    app.MainLoop()
+  def __init__(self, flex_arr_in):
+
+
+
+
+    if type(flex_arr_in) is list:
+        print 'a list is not implemented yet'
+    else:
+        print 'a flex'
+        app = show_3d_wx_app(redirect=False)
+        app.in_lst(flex_arr_in)
+        app.MainLoop()
 
 
 class show_3d_wx_app(wx.App):
@@ -35,15 +43,16 @@ class show_3d_wx_app(wx.App):
     return True
 
 
-  def in_lst(self, lst):
-    self.panel.ini_n_intro(lst)
+  def in_lst(self, flex_lst):
+    self.panel.ini_n_intro(flex_lst)
     self.SetTopWindow(self.frame)
     self.frame.Show()
 
 
 class flex_3d_frame(wx.Frame):
   def __init__(self, parent, title):
-    super(flex_3d_frame, self).__init__(parent, title=title, size=wx.DefaultSize)
+    super(flex_3d_frame, self).__init__(parent, title = title,
+          size = wx.DefaultSize)
 
   def frame_ini_img(self, in_panel):
     self.my_panel = in_panel
@@ -59,13 +68,14 @@ class flex_arr_3d_outer_panel(wx.Panel):
 
 
   def ini_n_intro(self, flex_arr_in):
+
     self.flex_arr = flex_arr_in
     self.scale = 1.0
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_01 = buttons_panel(self)
     self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
     sizer = wx.BoxSizer(wx.HORIZONTAL)
-    sizer.Add(self.panel_01, 0, wx.EXPAND)
+    sizer.Add(self.panel_01, 0, wx.ALIGN_CENTRE)
     sizer.Add(self.panel_02, 1, wx.EXPAND)
     self.SetSizer(sizer)
     self.Show(True)
@@ -73,8 +83,8 @@ class flex_arr_3d_outer_panel(wx.Panel):
 
   def _mi_list_of_wxbitmaps(self):
     bmp_obj = wxbitmap_convert(self.flex_arr)
-    return bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums
-                                    , scale = self.scale)
+    return bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
+                                    scale = self.scale)
 
 
   def _to_hide_nums(self):
