@@ -24,6 +24,8 @@ from dials.algorithms.indexing.indexer import indexer_base
 
 from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
+from dials.algorithms.refinement.refinement_helpers import \
+  get_panel_groups_at_depth, get_panel_ids_at_root
 
 from libtbx.utils import Sorry
 from libtbx import easy_mp
@@ -88,6 +90,94 @@ def detector_refiner(params, experiments, reflections):
         params, reflections, experiments)
   refiner.run()
   return refiner.get_experiments()
+
+def detector_parallel_refiners(params, experiments, reflections):
+
+  print "Refining detector at hierarchy_level=" + \
+    str(params.refinement.parameterisation.detector.hierarchy_level)
+  orig_detector = experiments.detectors()[0]
+  try:
+    h = orig_detector.hierarchy()
+  except AttributeError:
+    print "This detector does not have a hierarchy"
+    raise
+
+  # get the panel groups at the chosen level
+  level = params.refinement.parameterisation.detector.hierarchy_level
+  try:
+    groups = get_panel_groups_at_depth(h, level)
+  except AttributeError:
+    print "Cannot access the hierarchy at the depth level={0}".format(level)
+    raise
+
+  # collect the panel ids for each Panel within the groups
+  panels = [p for p in orig_detector]
+  panel_ids_by_group = [get_panel_ids_at_root(panels, g) for g in groups]
+
+  print "The detector will be divided into", len(panel_ids_by_group), \
+    "groups consisting of the following panels:"
+  for i, g in enumerate(panel_ids_by_group):
+    print "Group%02d:" % (i+1), g
+
+  # now construct sub-detectors
+  from dxtbx.model.detector import HierarchicalDetector
+  sub_detectors = [HierarchicalDetector() for e in groups]
+  for d, g in zip(sub_detectors, groups):
+    d.hierarchy().set_frame(g.get_fast_axis(),
+                            g.get_slow_axis(),
+                            g.get_origin())
+  for d, pnls in zip(sub_detectors, panel_ids_by_group):
+    for pnl in pnls:
+      p = d.add_panel()
+      d.hierarchy().add_panel(p)
+      orig_panel = orig_detector[pnl]
+      f = orig_panel.get_fast_axis()
+      s = orig_panel.get_slow_axis()
+      o = orig_panel.get_origin()
+      p.set_frame(f, s, o)
+      p.set_name(orig_panel.get_name())
+      p.set_image_size(orig_panel.get_image_size())
+      p.set_trusted_range(orig_panel.get_trusted_range())
+      p.set_pixel_size(orig_panel.get_pixel_size())
+
+  # set experiment lists for each sub-detector
+  import copy
+  sub_det_expts = [copy.deepcopy(experiments) for e in groups]
+  for d, exp in zip(sub_detectors, sub_det_expts):
+    exp.replace(exp.detectors()[0], d)
+
+  # divide the reflections by sub-detector
+  sub_reflections = []
+  for pnls in panel_ids_by_group:
+    isels = [(reflections['panel'] == pnl).iselection() for pnl in pnls]
+    isel = flex.size_t()
+    for s in isels: isel.extend(s)
+    gp_refs = reflections.select(isel)
+    # reset panel number to match the sub-detector
+    for new_id, old_id in enumerate(pnls):
+      sel = gp_refs['panel'] == old_id
+      gp_refs['panel'].set_selected(sel, new_id)
+    sub_reflections.append(gp_refs)
+
+  # do refinements and collect the refined experiments
+  params.refinement.parameterisation.detector.hierarchy_level=0
+  refined_exps = []
+  for refs, exps in zip(sub_reflections, sub_det_expts):
+    refiner = RefinerFactory.from_parameters_data_experiments(
+        params, refs, exps)
+    refiner.run()
+    refined_exps.append(refiner.get_experiments())
+
+  # update the full detector
+  for refined_exp, pnls in zip(refined_exps, panel_ids_by_group):
+    refined_det = refined_exp.detectors()[0]
+    for i, pnl in enumerate(pnls):
+      f = refined_det[i].get_fast_axis()
+      s = refined_det[i].get_slow_axis()
+      o = refined_det[i].get_origin()
+      orig_detector[pnl].set_frame(f, s, o)
+
+  return experiments
 
 def crystals_refiner(params, experiments, reflections):
 
@@ -164,7 +254,7 @@ class Script(object):
           detector.fix=all
         }
       reflections.do_outlier_rejection=True
-      refinery.engine=LBFGScurvs
+      refinery.engine=LevMar
       verbosity=1
     }
     detector_phase.refinement {
@@ -179,8 +269,9 @@ class Script(object):
         do_outlier_rejection=True
         weighting_strategy.override=stills
         weighting_strategy.delpsi_constant=1000000
+        minimum_number_of_reflections=1
       }
-      refinery.engine=LBFGScurvs
+      refinery.engine=LevMar
       verbosity=2
     }
     ''')
@@ -196,7 +287,7 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope,
+      phil=working_phil,
       read_reflections=True,
       read_experiments=True,
       check_format=False)
@@ -288,6 +379,9 @@ class Script(object):
       # first run: multi experiment joint refinement of detector with fixed beam and
       # crystals
       print "PHASE 1"
+
+      # SWAP COMMENTED LINES BELOW TO REFINE SEPARATE PANEL GROUPS
+      #experiments = detector_parallel_refiners(params.detector_phase, experiments, reflections)
       experiments = detector_refiner(params.detector_phase, experiments, reflections)
 
       # second run
