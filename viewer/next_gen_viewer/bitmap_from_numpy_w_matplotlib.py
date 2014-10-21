@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.reflection_viewer.py
+#  bitmap_from_numpy_w_matplotlib.py
 #
 #  Copyright (C) 2014 Diamond Light Source
 #

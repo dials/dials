@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.reflection_viewer.py
+#  multi_3D_slice_viewer.py
 #
 #  Copyright (C) 2014 Diamond Light Source
 #
@@ -22,15 +22,9 @@ import math
 
 class show_3d(object):
   def __init__(self, flex_arr_in):
-
-    if type(flex_arr_in) is list:
-        print 'a list is not implemented yet'
-
-    else:
-        print 'a flex'
-        app = show_3d_wx_app(redirect=False)
-        app.in_lst(flex_arr_in)
-        app.MainLoop()
+    app = show_3d_wx_app(redirect=False)
+    app.in_lst(flex_arr_in)
+    app.MainLoop()
 
 
 class show_3d_wx_app(wx.App):
@@ -67,7 +61,6 @@ class flex_arr_3d_outer_panel(wx.Panel):
 
 
   def ini_n_intro(self, flex_arr_in):
-
     self.flex_arr = flex_arr_in
     self.scale = 1.0
     self.bmp_lst = self._mi_list_of_wxbitmaps()

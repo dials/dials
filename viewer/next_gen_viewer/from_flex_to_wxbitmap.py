@@ -20,13 +20,22 @@ class wxbitmap_convert(object):
   '''
   def __init__(self, data_in):
 
-    try:
-      self.depth = data_in.all()[0]
-    except:
-      print "error in entered data"
-      self.depth = 0
 
-    self.np_3d_block = data_in.as_numpy_array()
+
+    if type(data_in) is list:
+      print 'a list is not implemented yet'
+      return
+
+    else:
+      print 'a flex is this'
+
+      try:
+        self.depth = data_in.all()[0]
+      except:
+        print "error in entered data"
+        self.depth = 0
+
+      self.np_3d_block = data_in.as_numpy_array()
 
 
   def get_np(self):

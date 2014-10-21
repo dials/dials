@@ -11,7 +11,7 @@
 import cPickle as pickle
 from dials.array_family import flex
 
-table = flex.reflection_table.from_pickle("strong_P1_X6_1_0-1.pickle")
+table = flex.reflection_table.from_pickle("all_refl.pickle")
 
 from dials.viewer.tools import show_reflection
 show_reflection(table[len(table)//2])
