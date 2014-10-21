@@ -124,12 +124,16 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
   def set_scroll_content(self):
 
-    self.my_img_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    self.img_lst_sizer = wx.BoxSizer(wx.HORIZONTAL)
     for bmp_lst in self.local_bmp_lst:
       local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
-      self.my_img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL, 3)
+      data_txt_01 = wx.StaticText(self, -1, ">>>>>>> (data_txt) >>>>>>>")
+      sigle_slice_sizer = wx.BoxSizer(wx.VERTICAL)
+      sigle_slice_sizer.Add(local_bitmap, wx.ALIGN_CENTRE)
+      sigle_slice_sizer.Add(data_txt_01, wx.ALIGN_CENTRE)
+      self.img_lst_sizer.Add(sigle_slice_sizer, flag=wx.ALIGN_CENTER | wx.ALL, border=7)
 
-    self.SetSizer(self.my_img_sizer)
+    self.SetSizer(self.img_lst_sizer)
 
 
   def OnMouseWheel(self, event):
