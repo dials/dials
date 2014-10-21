@@ -23,6 +23,9 @@ eliminate_sys_absent = False
   .help = "Eliminate systematically absent reflections"
 frame = laboratory *crystal
   .type = choice
+phi_angle = 0
+  .type = float
+  .help = "Phi rotation angle (degrees)"
 plane_normal = None
   .type = ints(size=3)
 save_coordinates = True
@@ -171,10 +174,16 @@ def run(args):
   A = ref_crystal.get_A()
   U = ref_crystal.get_U()
   B = ref_crystal.get_B()
+  R = matrix.identity(3)
 
   if params.frame == 'laboratory':
     reference_poles = reference_poles_perpendicular_to_beam(
       experiments.beams()[0], experiments.goniometers()[0])
+    if params.phi_angle != 0:
+      rotation_axis = matrix.col(
+        experiments.goniometers()[0].get_rotation_axis())
+      R = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+        params.phi_angle, deg=True)
   else:
     if params.plane_normal is not None:
       plane_normal = params.plane_normal
@@ -186,7 +195,7 @@ def run(args):
   if params.frame == 'crystal':
     U = matrix.identity(3)
 
-  reciprocal_space_points = list(U * B) * miller_indices.as_vec3_double()
+  reciprocal_space_points = list(R * U * B) * miller_indices.as_vec3_double()
   projections_ref = stereographic_projection(
     reciprocal_space_points, reference_poles)
 
@@ -203,7 +212,7 @@ def run(args):
         U = R_ij
       else:
         U = cryst.get_U()
-      reciprocal_space_points = list(U * cryst.get_B()) * miller_indices.as_vec3_double()
+      reciprocal_space_points = list(R * U * cryst.get_B()) * miller_indices.as_vec3_double()
       projections = stereographic_projection(
         reciprocal_space_points, reference_poles)
       projections_all.append(projections)
