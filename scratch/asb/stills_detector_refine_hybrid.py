@@ -103,7 +103,7 @@ def detector_parallel_refiners(params, experiments, reflections):
     raise
 
   # get the panel groups at the chosen level
-  level = params.refinement.parameterisation.detector.hierarchy_level
+  level = params.refinement.parameterisation.detector.hierarchy_level-1
   try:
     groups = get_panel_groups_at_depth(h, level)
   except AttributeError:
@@ -160,13 +160,26 @@ def detector_parallel_refiners(params, experiments, reflections):
     sub_reflections.append(gp_refs)
 
   # do refinements and collect the refined experiments
+  tmplevel = params.refinement.parameterisation.detector.hierarchy_level
   params.refinement.parameterisation.detector.hierarchy_level=0
-  refined_exps = []
-  for refs, exps in zip(sub_reflections, sub_det_expts):
+
+  def do_work(item):
+    refs, exps = item
+
     refiner = RefinerFactory.from_parameters_data_experiments(
         params, refs, exps)
     refiner.run()
-    refined_exps.append(refiner.get_experiments())
+    return refiner.get_experiments()
+
+  refined_exps = easy_mp.parallel_map(
+    func = do_work,
+    iterable = zip(sub_reflections, sub_det_expts),
+    processes = params.mp.nproc,
+    method = params.mp.method,
+    asynchronous=True,
+    preserve_exception_message=True)
+
+  params.refinement.parameterisation.detector.hierarchy_level=tmplevel
 
   # update the full detector
   for refined_exp, pnls in zip(refined_exps, panel_ids_by_group):
@@ -237,6 +250,7 @@ class Script(object):
 
       detector_phase {
         include scope dials.algorithms.refinement.refiner.phil_scope
+        include scope dials.data.multiprocessing.phil_scope
       }
 
       crystals_phase {
@@ -380,9 +394,11 @@ class Script(object):
       # crystals
       print "PHASE 1"
 
-      # SWAP COMMENTED LINES BELOW TO REFINE WHOLE DETECTOR AS SINGLE JOB
-      experiments = detector_parallel_refiners(params.detector_phase, experiments, reflections)
-      #experiments = detector_refiner(params.detector_phase, experiments, reflections)
+      # SET THIS TEST TO FALSE TO REFINE WHOLE DETECTOR AS SINGLE JOB
+      if params.detector_phase.refinement.parameterisation.detector.hierarchy_level > 0:
+        experiments = detector_parallel_refiners(params.detector_phase, experiments, reflections)
+      else:
+        experiments = detector_refiner(params.detector_phase, experiments, reflections)
 
       # second run
       print "PHASE 2"
