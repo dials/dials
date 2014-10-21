@@ -117,3 +117,18 @@ def print_grads(grad_list):
   for i, grad in enumerate(grad_list):
     print ("Param %02d. Gradients: "
            "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
+
+def get_panel_groups_at_depth(group, depth=0):
+  """Return a list of the panel groups at a certain depth below the node group"""
+  assert depth >= 0
+  if depth == 0:
+    return [group]
+  else:
+    return [p for gp in group.children() for p in get_panel_groups_at_depth(gp, depth-1)]
+
+def get_panel_ids_at_root(panel_list, group):
+  """Get the sequential panel IDs for a set of panels belonging to a group"""
+  try:
+    return [p for gp in group.children() for p in get_panel_ids_at_root(panel_list, gp)]
+  except AttributeError: # we got down to Panels
+    return [panel_list.index(group)]

@@ -13,8 +13,8 @@ from __future__ import division
 from scitbx import matrix
 
 from model_parameters import Parameter, ModelParameterisation
-from dials.algorithms.refinement.refinement_helpers \
-    import dR_from_axis_and_angle
+from dials.algorithms.refinement.refinement_helpers import \
+    dR_from_axis_and_angle, get_panel_groups_at_depth, get_panel_ids_at_root
 
 class DetectorParameterisationSinglePanel(ModelParameterisation):
   """Parameterisation for a single abstract panel
@@ -859,19 +859,6 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
                   ddir2_dtau3.elems + do_dtau3.elems).transpose() / 1000.
 
     return
-
-def get_panel_groups_at_depth(group, depth=0):
-  assert depth >= 0
-  if depth == 0:
-    return [group]
-  else:
-    return [p for gp in group.children() for p in get_panel_groups_at_depth(gp, depth-1)]
-
-def get_panel_ids_at_root(panel_list, group):
-  try:
-    return [p for gp in group.children() for p in get_panel_ids_at_root(panel_list, gp)]
-  except AttributeError: # we got down to Panels
-    return [panel_list.index(group)]
 
 class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel):
   """Parameterisation for a multiple panel detector with a hierarchy, where
