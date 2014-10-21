@@ -73,7 +73,8 @@ class flex_arr_3d_outer_panel(wx.Panel):
 
   def _mi_list_of_wxbitmaps(self):
     bmp_obj = wxbitmap_convert(self.flex_arr)
-    return bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums, scale = self.scale)
+    return bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums
+                                    , scale = self.scale)
 
 
   def _to_hide_nums(self):
@@ -113,8 +114,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     super(multi_img_scrollable, self).__init__(outer_panel)
     self.parent_panel  = outer_panel
     self.local_bmp_lst = bmp_lst_in
-    self.set_scroll_content(self.local_bmp_lst)
-
+    #self.set_scroll_content(self.local_bmp_lst)
+    self.set_scroll_content()
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.SetupScrolling()
@@ -122,10 +123,10 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.rot = 0
 
 
-  def set_scroll_content(self, bmp_lst_in):
+  def set_scroll_content(self):
 
     self.my_img_sizer = wx.BoxSizer(wx.HORIZONTAL)
-    for bmp_lst in bmp_lst_in:
+    for bmp_lst in self.local_bmp_lst:
       local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
       self.my_img_sizer.Add(local_bitmap, 0, wx.LEFT | wx.ALL, 3)
 
@@ -141,7 +142,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.local_bmp_lst = bmp_lst_new
     for child in self.GetChildren():
       child.Destroy()
-    self.set_scroll_content(self.local_bmp_lst)
+    self.set_scroll_content()
     self.Layout()
     self.parent_panel.Layout()
     self.Refresh()
