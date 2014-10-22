@@ -134,12 +134,15 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
         data_txt_01 = wx.StaticText(self, -1, slice_string)
         sigle_slice_sizer = wx.BoxSizer(wx.VERTICAL)
-        sigle_slice_sizer.Add(local_bitmap, wx.ALIGN_CENTRE | wx.ALL, border = 4)
-        sigle_slice_sizer.Add(data_txt_01, wx.ALL, border = 4)
-        img_lst_hor_sizer.Add(sigle_slice_sizer,
-                               flag=wx.ALIGN_CENTER | wx.ALL, border = 4)
+        sigle_slice_sizer.Add(local_bitmap, proportion = 0,
+                              flag = wx.ALIGN_CENTRE | wx.ALL, border = 4)
+        sigle_slice_sizer.Add(data_txt_01, proportion = 0,
+                              flag = wx.ALIGN_CENTRE | wx.ALL, border = 4)
+        img_lst_hor_sizer.Add(sigle_slice_sizer, proportion = 0,
+                              flag = wx.ALIGN_CENTER | wx.ALL, border = 4)
 
-      img_lst_vert_sizer.Add(img_lst_hor_sizer)
+      img_lst_vert_sizer.Add(img_lst_hor_sizer, proportion = 0,
+                             flag = wx.ALIGN_CENTER | wx.TOP, border = 4)
 
     self.SetSizer(img_lst_vert_sizer)
 
