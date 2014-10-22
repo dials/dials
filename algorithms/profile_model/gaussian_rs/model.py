@@ -313,17 +313,20 @@ class ProfileModelList(ProfileModelIface):
 
   def dump(self):
     ''' Dump the profile model to phil parameters. '''
+    from dials.algorithms.profile_model import factory
     phil_str = '\n'.join([
       '''
-      gaussian_rs {
-        model {
-          n_sigma=%g
-          sigma_b=%g
-          sigma_m=%g
+      profile {
+        gaussian_rs {
+          model {
+            n_sigma=%g
+            sigma_b=%g
+            sigma_m=%g
+          }
         }
       }
       ''' % (
         m.n_sigma(),
         m.sigma_b(deg=True),
         m.sigma_m(deg=True)) for m in self])
-    return phil_scope.fetch(source=parse(phil_str))
+    return factory.phil_scope.fetch(source=parse(phil_str))
