@@ -365,14 +365,18 @@ class ReflectionManager(object):
 
         sl = self._sort_obs_by_residual(l)
         print "Reflections with the worst 20 positional residuals:"
-        print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
+        print "H, K, L, x_resid, y_resid, phi_resid, x_obs, y_obs, phi_obs, weight_x_obs, weight_y_obs, " + \
               "weight_phi_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
         for i in xrange(20):
           e = sl[i]
+          x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                            e['y_resid'],
                            e['phi_resid'],
+                           x_obs,
+                           y_obs,
+                           phi_obs,
                            e['xyzobs.mm.weights'][0],
                            e['xyzobs.mm.weights'][1],
                            e['xyzobs.mm.weights'][2]))
@@ -380,14 +384,18 @@ class ReflectionManager(object):
         print
         sl = self._sort_obs_by_residual(sl, angular=True)
         print "\nReflections with the worst 20 angular residuals:"
-        print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
+        print "H, K, L, x_resid, y_resid, phi_resid, x_obs, y_obs, phi_obs, weight_x_obs, weight_y_obs, " + \
               "weight_phi_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f %6.4f %6.4f %5.3f %5.3f %6.4f"
         for i in xrange(20):
           e = sl[i]
+          x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                                                  e['y_resid'],
                                                  e['phi_resid'],
+                                                 x_obs,
+                                                 y_obs,
+                                                 phi_obs,
                                                  e['xyzobs.mm.weights'][0],
                                                  e['xyzobs.mm.weights'][1],
                                                  e['xyzobs.mm.weights'][2]))
