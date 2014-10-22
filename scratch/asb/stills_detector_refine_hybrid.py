@@ -120,25 +120,33 @@ def detector_parallel_refiners(params, experiments, reflections):
     print "Group%02d:" % (i+1), g
 
   # now construct sub-detectors
+  def recursive_add_child(d, parent, child):
+    """ Creates either a panel group or a panel on the parent,
+        and sets it up to match the child """
+    if hasattr(child, "children"):
+      newchild = parent.add_group()
+    else:
+      newchild = parent.add_panel(d.add_panel())
+      newchild.set_image_size(child.get_image_size())
+      newchild.set_trusted_range(child.get_trusted_range())
+      newchild.set_pixel_size(child.get_pixel_size())
+
+    m = child.get_local_d_matrix()
+    newchild.set_local_frame(m[0::3],m[1::3],m[2::3])
+    newchild.set_name(child.get_name())
+    if hasattr(child, "children"):
+      for c in child.children():
+        recursive_add_child(d, newchild, c)
+
   from dxtbx.model.detector import HierarchicalDetector
   sub_detectors = [HierarchicalDetector() for e in groups]
   for d, g in zip(sub_detectors, groups):
+    d.hierarchy().set_name(g.get_name())
     d.hierarchy().set_frame(g.get_fast_axis(),
                             g.get_slow_axis(),
                             g.get_origin())
-  for d, pnls in zip(sub_detectors, panel_ids_by_group):
-    for pnl in pnls:
-      p = d.add_panel()
-      d.hierarchy().add_panel(p)
-      orig_panel = orig_detector[pnl]
-      f = orig_panel.get_fast_axis()
-      s = orig_panel.get_slow_axis()
-      o = orig_panel.get_origin()
-      p.set_frame(f, s, o)
-      p.set_name(orig_panel.get_name())
-      p.set_image_size(orig_panel.get_image_size())
-      p.set_trusted_range(orig_panel.get_trusted_range())
-      p.set_pixel_size(orig_panel.get_pixel_size())
+    for c in g.children():
+      recursive_add_child(d, d.hierarchy(), c)
 
   # set experiment lists for each sub-detector
   import copy
@@ -161,7 +169,7 @@ def detector_parallel_refiners(params, experiments, reflections):
 
   # do refinements and collect the refined experiments
   tmplevel = params.refinement.parameterisation.detector.hierarchy_level
-  params.refinement.parameterisation.detector.hierarchy_level=0
+  params.refinement.parameterisation.detector.hierarchy_level=1
 
   def do_work(item):
     refs, exps = item
@@ -182,13 +190,11 @@ def detector_parallel_refiners(params, experiments, reflections):
   params.refinement.parameterisation.detector.hierarchy_level=tmplevel
 
   # update the full detector
-  for refined_exp, pnls in zip(refined_exps, panel_ids_by_group):
+  for group, refined_exp in zip(groups, refined_exps):
     refined_det = refined_exp.detectors()[0]
-    for i, pnl in enumerate(pnls):
-      f = refined_det[i].get_fast_axis()
-      s = refined_det[i].get_slow_axis()
-      o = refined_det[i].get_origin()
-      orig_detector[pnl].set_frame(f, s, o)
+    for g_child, ref_child in zip(group.children(), refined_det.hierarchy()):
+      m = ref_child.get_local_d_matrix()
+      g_child.set_local_frame(m[0::3],m[1::3],m[2::3])
 
   return experiments
 
