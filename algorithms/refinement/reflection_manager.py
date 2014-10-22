@@ -152,8 +152,8 @@ class ReflectionManager(object):
     # print summary after outlier rejection
     if rejection_occurred: self.print_stats_on_matches()
 
-    # form working subset
-    refs_to_keep = self._create_working_set()
+    # form working and free subsets
+    self._create_working_set()
     self._sample_size = len(self._reflections)
 
     self._check_too_few()
@@ -283,7 +283,10 @@ class ReflectionManager(object):
         isel = isel.select(flex.random_selection(nrefs, sample_size))
       working_isel.extend(isel)
 
-    # create subset
+    # create subsets
+    free_sel = flex.bool(len(self._reflections), True)
+    free_sel.set_selected(working_isel, False)
+    self._free_reflections = self._reflections.select(free_sel)
     self._reflections = self._reflections.select(working_isel)
 
     return
@@ -330,6 +333,12 @@ class ReflectionManager(object):
 
     return self._reflections.select(self._reflections.get_flags(
       self._reflections.flags.used_in_refinement))
+
+  def get_free_reflections(self):
+    """Return all reflections that were accepted for refinement but not chosen
+    in the working set"""
+
+    return self._free_reflections
 
   def print_stats_on_matches(self):
     """Print some basic statistics on the matches"""

@@ -1106,6 +1106,11 @@ class Refiner(object):
     # public API (indexing code seems to use it, but is it necessary?)
     return self._refman.get_matches()
 
+  def get_free_reflections(self):
+    """Delegated to the reflection manager"""
+
+    return self._refman.get_free_reflections()
+
   def get_param_reporter(self):
     """Get the ParameterReport object linked to this Refiner"""
 
