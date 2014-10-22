@@ -32,9 +32,13 @@ class wxbmp_from_np_array(object):
       tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
 
       z_dp = data_3d_in.shape[0]
+      single_block_lst = []
+
       for z in range(z_dp):
         tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-        wx_bmp_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
+        single_block_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
+
+      wx_bmp_lst.append(single_block_lst)
 
     return wx_bmp_lst
 
