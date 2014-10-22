@@ -33,12 +33,16 @@ save_coordinates = True
 plot {
   show = True
     .type = bool
+  filename = None
+    .type = path
   label_indices = False
     .type = bool
   colours = None
     .type = strings
   marker_size = 3
     .type = int(value_min=1)
+  font_size = 6
+    .type = float(value_min=0)
 }
 """)
 
@@ -226,15 +230,26 @@ def run(args):
           print >> f, "%i %i %i" %hkl,
           print >> f, "%f %f" %proj
 
-  if params.plot.show:
-    from matplotlib import pyplot
-    from matplotlib import pylab
+  if params.plot.show or params.plot.filename:
+
+    try:
+      import matplotlib
+
+      if not params.plot.show:
+        # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+        matplotlib.use('Agg') # use a non-interactive backend
+      from matplotlib import pyplot
+      from matplotlib import pylab
+    except ImportError:
+      raise Sorry("matplotlib must be installed to generate a plot.")
 
     colours = params.plot.colours
     if colours is None or len(colours) == 0:
       colours = ['b'] * len(projections_all)
     elif len(colours) < len(projections_all):
       colours = colours * len(projections_all)
+
+    fig = pyplot.figure()
 
     pyplot.scatter([0], [0], marker='+', c='0.75', s=100)
     cir = pylab.Circle((0,0), radius=1.0, fill=False, color='0.75')
@@ -250,11 +265,16 @@ def run(args):
           p1, p2 = (projections - proj).parts()
           if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
             continue
-          pyplot.text(proj[0], proj[1], str(hkl), fontsize=10)
+          pyplot.text(proj[0], proj[1], str(hkl), fontsize=params.plot.font_size)
     pyplot.axes().set_aspect('equal')
     pyplot.xlim(-1.1,1.1)
     pyplot.ylim(-1.1,1.1)
-    pyplot.show()
+    if params.plot.filename is not None:
+      pyplot.savefig(params.plot.filename,
+                     size_inches=(24,18),
+                     dpi=300)
+    if params.plot.show:
+      pyplot.show()
 
 
 if __name__ == '__main__':
