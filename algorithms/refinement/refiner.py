@@ -1315,7 +1315,7 @@ class Refiner(object):
     # Do refinement and return history #
     ####################################
 
-    if self._verbosity > 1:
+    if self._verbosity > 2:
       print ""
       print "Experimental models before refinement"
       print "-------------------------------------"
@@ -1365,7 +1365,7 @@ class Refiner(object):
         self._pred_param.set_model_state_uncertainties(
           u_cov_list, b_cov_list, iexp)
 
-    if self._verbosity > 1:
+    if self._verbosity > 2:
       print
       print "Experimental models after refinement"
       print "------------------------------------"
