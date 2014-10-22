@@ -94,8 +94,14 @@ class PredictionParameterisation(object):
     from collections import namedtuple
     ParamSet = namedtuple('ParamSet', ['beam_param', 'xl_ori_param',
                                          'xl_uc_param', 'det_param'])
-    self._exp_to_param = {i: ParamSet(e2bp[i], e2xop[i], e2xucp[i], e2dp[i]) \
-                          for i, _ in enumerate(experiments)}
+
+    # FIXME scan-varying refinement needs this to exist, but we cannot
+    # create it if not all experiments are parameterised
+    try:
+      self._exp_to_param = {i: ParamSet(e2bp[i], e2xop[i], e2xucp[i], e2dp[i]) \
+                            for i, _ in enumerate(experiments)}
+    except KeyError:
+      self._exp_to_param = None
 
   def _len(self):
     length = 0
