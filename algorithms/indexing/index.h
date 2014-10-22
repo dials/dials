@@ -122,6 +122,7 @@ namespace dials { namespace algorithms {
               }
             }
           }
+          curr_hkl = it->first;
           i_same_hkl.clear();
         }
         i_same_hkl.push_back(it->second);
