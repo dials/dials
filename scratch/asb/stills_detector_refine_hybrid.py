@@ -193,9 +193,11 @@ def detector_parallel_refiners(params, experiments, reflections):
   # update the full detector
   for group, refined_exp in zip(groups, refined_exps):
     refined_det = refined_exp.detectors()[0]
-    for g_child, ref_child in zip(group.children(), refined_det.hierarchy()):
-      m = ref_child.get_local_d_matrix()
-      g_child.set_local_frame(m[0::3],m[1::3],m[2::3])
+    local_root = refined_det.hierarchy()
+    f = local_root.get_fast_axis()
+    s = local_root.get_slow_axis()
+    o = local_root.get_origin()
+    group.set_frame(f, s, o) # propagates local frame changes (?)
 
   # refine the full detector to get RMSDs per panel
   print
