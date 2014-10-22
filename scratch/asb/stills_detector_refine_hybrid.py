@@ -94,7 +94,7 @@ def detector_refiner(params, experiments, reflections):
 def detector_parallel_refiners(params, experiments, reflections):
 
   print "Refining detector at hierarchy_level=" + \
-    str(params.refinement.parameterisation.detector.hierarchy_level)
+    str(params.refinement.parameterisation.detector.hierarchy_level), "\n"
   orig_detector = experiments.detectors()[0]
   try:
     h = orig_detector.hierarchy()
@@ -103,7 +103,7 @@ def detector_parallel_refiners(params, experiments, reflections):
     raise
 
   # get the panel groups at the chosen level
-  level = params.refinement.parameterisation.detector.hierarchy_level-1
+  level = params.refinement.parameterisation.detector.hierarchy_level
   try:
     groups = get_panel_groups_at_depth(h, level)
   except AttributeError:
@@ -118,6 +118,7 @@ def detector_parallel_refiners(params, experiments, reflections):
     "groups consisting of the following panels:"
   for i, g in enumerate(panel_ids_by_group):
     print "Group%02d:" % (i+1), g
+  print
 
   # now construct sub-detectors
   def recursive_add_child(d, parent, child):
@@ -167,10 +168,12 @@ def detector_parallel_refiners(params, experiments, reflections):
       gp_refs['panel'].set_selected(sel, new_id)
     sub_reflections.append(gp_refs)
 
-  # do refinements and collect the refined experiments
+  # We wish to refine each whole sub-detector as a single group. Therefore
+  # we must use hierarchy_level=0 for these jobs
   tmplevel = params.refinement.parameterisation.detector.hierarchy_level
-  params.refinement.parameterisation.detector.hierarchy_level=1
+  params.refinement.parameterisation.detector.hierarchy_level=0
 
+  # do refinements and collect the refined experiments
   def do_work(item):
     refs, exps = item
 
@@ -187,14 +190,21 @@ def detector_parallel_refiners(params, experiments, reflections):
     asynchronous=True,
     preserve_exception_message=True)
 
-  params.refinement.parameterisation.detector.hierarchy_level=tmplevel
-
   # update the full detector
   for group, refined_exp in zip(groups, refined_exps):
     refined_det = refined_exp.detectors()[0]
     for g_child, ref_child in zip(group.children(), refined_det.hierarchy()):
       m = ref_child.get_local_d_matrix()
       g_child.set_local_frame(m[0::3],m[1::3],m[2::3])
+
+  # refine the full detector to get RMSDs per panel
+  print
+  print "Refining full recombined detector"
+  print "---------------------------------"
+  experiments = detector_refiner(params, experiments, reflections)
+
+  # reset hierarchy_level
+  params.refinement.parameterisation.detector.hierarchy_level=tmplevel
 
   return experiments
 
@@ -390,6 +400,7 @@ class Script(object):
     header = ["Experiment", "Nref"]
     rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
     st = simple_table(rows, header)
+    print "Number of reflections per experiment"
     print st.format()
 
     for cycle in range(params.n_macrocycles):
