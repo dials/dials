@@ -220,7 +220,16 @@ class PhilCommandParser(object):
       self._phil, args = interpretor.process_and_fetch(args,
         custom_processor="collect_remaining")
     else:
-      self._phil = interpretor.process_and_fetch(args)
+      processed = interpretor.process(args=args)
+      self._phil, unused = self._system_phil.fetch(
+        sources=processed,
+        track_unused_definitions=True)
+      if (len(unused) != 0):
+        raise RuntimeError((
+          '\n'
+          ' The following phil parameters were not recognised:\n'
+          '  %s\n'
+        ) % '\n  '.join(map(str,unused)))
       args = []
     return self.phil.extract(), args
 
