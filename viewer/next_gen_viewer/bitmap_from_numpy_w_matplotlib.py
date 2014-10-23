@@ -36,7 +36,14 @@ class wxbmp_from_np_array(object):
 
       for z in range(z_dp):
         tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-        single_block_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
+
+        #single_block_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
+
+        #should be commented either the next two lines or the previous one
+
+        self._wxbmp(tmp_data2d, show_nums, 1.0)
+        single_block_lst.append(self._re_scale(scale))
+
 
       wx_bmp_lst.append(single_block_lst)
 
@@ -75,14 +82,24 @@ class wxbmp_from_np_array(object):
                        color = clr_chr, size = 12.)
 
     lc_fig.canvas.draw()
-    width, height = lc_fig.canvas.get_width_height()
+    self.width, self.height = lc_fig.canvas.get_width_height()
     np_buf = np.fromstring (lc_fig.canvas.tostring_rgb(), dtype=np.uint8)
-    np_buf.shape = (width, height, 3)
+    np_buf.shape = (self.width, self.height, 3)
     np_buf = np.roll(np_buf, 3, axis = 2)
-    wx_image = wx.EmptyImage(width, height)
-    wx_image.SetData(np_buf )
-    wxBitmap = wx_image.ConvertToBitmap()
+    self._wx_image = wx.EmptyImage(self.width, self.height)
+    self._wx_image.SetData(np_buf )
+    to_become_bmp = self._wx_image
+    wxBitmap = to_become_bmp.ConvertToBitmap()
 
     plt.close(lc_fig)
 
+    return wxBitmap
+
+
+  def _re_scale(self, scale):
+    NewW = int(self.width * scale)
+    NewH = int(self.height * scale)
+    self._wx_image = self._wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_NORMAL)
+    to_become_bmp = self._wx_image
+    wxBitmap = to_become_bmp.ConvertToBitmap()
     return wxBitmap
