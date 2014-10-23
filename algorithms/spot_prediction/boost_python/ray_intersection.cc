@@ -26,6 +26,10 @@ namespace dials { namespace algorithms { namespace boost_python {
         const Detector&,
         af::reflection_table,
         std::size_t panel) = &ray_intersection;
+    af::shared<bool>(*ray_intersection_table_w_panels)(
+        const Detector&,
+        af::reflection_table,
+        af::ref<std::size_t> panel) = &ray_intersection;
 
     //init<
       //const Detector&,
@@ -53,6 +57,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("ray_intersection", ray_intersection_table,
       (arg("detector"), arg("reflection_table")));
     def("ray_intersection", ray_intersection_table_w_panel,
+      (arg("detector"), arg("reflection_table"), arg("panel")));
+    def("ray_intersection", ray_intersection_table_w_panels,
       (arg("detector"), arg("reflection_table"), arg("panel")));
   }
 
