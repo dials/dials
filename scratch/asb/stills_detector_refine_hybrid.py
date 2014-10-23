@@ -24,6 +24,8 @@ from dials.algorithms.indexing.indexer import indexer_base
 
 from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
+from dials.algorithms.refinement.stills_detector_metrology import \
+  StillsDetectorRefinerFactory
 from dials.algorithms.refinement.refinement_helpers import \
   get_panel_groups_at_depth, get_panel_ids_at_root
 
@@ -86,7 +88,9 @@ def detector_refiner(params, experiments, reflections):
 
   print "Refining detector at hierarchy_level=" + \
     str(params.refinement.parameterisation.detector.hierarchy_level)
-  refiner = RefinerFactory.from_parameters_data_experiments(
+
+  # Here use the specialised faster refiner
+  refiner = StillsDetectorRefinerFactory.from_parameters_data_experiments(
         params, reflections, experiments)
   refiner.run()
   return refiner.get_experiments()
@@ -177,7 +181,8 @@ def detector_parallel_refiners(params, experiments, reflections):
   def do_work(item):
     refs, exps = item
 
-    refiner = RefinerFactory.from_parameters_data_experiments(
+    # Here use the specialised faster refiner
+    refiner = StillsDetectorRefinerFactory.from_parameters_data_experiments(
         params, refs, exps)
     refiner.run()
     return refiner.get_experiments()
