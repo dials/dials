@@ -21,41 +21,50 @@ class wxbmp_from_np_array(object):
 
   def get_bmp_lst(self, lst_data_in, show_nums = True, scale = 1.0):
 
-    wx_bmp_lst = []
+
+    wx_bmp_lst_01 = []
 
     for data_3d_in in lst_data_in:
-
       self.xmax = data_3d_in.shape[1]
       self.ymax = data_3d_in.shape[2]
       self.vl_max = np.amax(data_3d_in)
       self.vl_min = np.amin(data_3d_in)
       tmp_data2d = np.zeros( (self.xmax, self.ymax), 'double')
-
       z_dp = data_3d_in.shape[0]
-      single_block_lst = []
+      single_block_lst_01 = []
 
       for z in range(z_dp):
         tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
+        sigle_img = self._wxbmp(tmp_data2d, show_nums)
+        single_block_lst_01.append(sigle_img)
 
-        #single_block_lst.append(self._wxbmp(tmp_data2d, show_nums, scale))
+      wx_bmp_lst_01.append(single_block_lst_01)
 
-        #should be commented either the next two lines or the previous one
 
-        self._wxbmp(tmp_data2d, show_nums, 1.0)
-        single_block_lst.append(self._re_scale(scale))
-
+    wx_bmp_lst = []
+    for data_3d in wx_bmp_lst_01:
+      single_block_lst = []
+      for sigle_img in data_3d:
+        single_block_lst.append(self._re_scale(sigle_img, scale))
 
       wx_bmp_lst.append(single_block_lst)
 
+
+
+
+
+
+
     return wx_bmp_lst
 
-  def _wxbmp(self, np_2d_tmp, show_nums, scale):
+
+  def _wxbmp(self, np_2d_tmp, show_nums):
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
     vl_mid_hig = self.vl_max - d / 3.0
     lc_fig = plt.figure(frameon=False)
 
-    lc_fig.set_size_inches(self.xmax * .6 * scale, self.ymax * .6 * scale)
+    lc_fig.set_size_inches(self.xmax * .5, self.ymax * .5)
 
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
 
@@ -89,17 +98,18 @@ class wxbmp_from_np_array(object):
     self._wx_image = wx.EmptyImage(self.width, self.height)
     self._wx_image.SetData(np_buf )
     to_become_bmp = self._wx_image
-    wxBitmap = to_become_bmp.ConvertToBitmap()
+    #wxBitmap = to_become_bmp.ConvertToBitmap()
 
     plt.close(lc_fig)
 
-    return wxBitmap
+    return to_become_bmp
 
 
-  def _re_scale(self, scale):
+  def _re_scale(self, to_become_bmp, scale):
     NewW = int(self.width * scale)
     NewH = int(self.height * scale)
-    self._wx_image = self._wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_NORMAL)
-    to_become_bmp = self._wx_image
+    #self._wx_image = self._wx_image.Scale(NewW, NewH, wx.IMAGE_QUALITY_NORMAL)
+    #to_become_bmp = self._wx_image
+    to_become_bmp = to_become_bmp.Scale(NewW, NewH, wx.IMAGE_QUALITY_NORMAL)
     wxBitmap = to_become_bmp.ConvertToBitmap()
     return wxBitmap
