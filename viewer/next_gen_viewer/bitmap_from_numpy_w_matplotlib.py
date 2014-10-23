@@ -19,11 +19,8 @@ import matplotlib.pyplot as plt
 
 class wxbmp_from_np_array(object):
 
-  def get_bmp_lst(self, lst_data_in, show_nums = True, scale = 1.0):
-
-
-    wx_bmp_lst_01 = []
-
+  def __init__(self, lst_data_in, show_nums = True):
+    self._ini_wx_bmp_lst = []
     for data_3d_in in lst_data_in:
       xmax = data_3d_in.shape[1]
       ymax = data_3d_in.shape[2]
@@ -32,23 +29,22 @@ class wxbmp_from_np_array(object):
       tmp_data2d = np.zeros( (xmax, ymax), 'double')
       z_dp = data_3d_in.shape[0]
       single_block_lst_01 = []
-
       for z in range(z_dp):
         tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
         data_sigle_img = self._wx_img(tmp_data2d, show_nums)
         single_block_lst_01.append(data_sigle_img)
 
-      wx_bmp_lst_01.append(single_block_lst_01)
+      self._ini_wx_bmp_lst.append(single_block_lst_01)
 
 
+  def bmp_lst_scaled(self, scale = 1.0):
     wx_bmp_lst = []
-    for data_3d in wx_bmp_lst_01:
+    for data_3d in self._ini_wx_bmp_lst:
       single_block_lst = []
       for sigle_img_data in data_3d:
         single_block_lst.append(self._wx_bmp_scaled(sigle_img_data, scale))
 
       wx_bmp_lst.append(single_block_lst)
-
 
     return wx_bmp_lst
 

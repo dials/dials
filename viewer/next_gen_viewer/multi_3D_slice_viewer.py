@@ -73,10 +73,14 @@ class flex_arr_3d_outer_panel(wx.Panel):
     self.Show(True)
 
 
-  def _mi_list_of_wxbitmaps(self):
-    bmp_obj = wxbitmap_convert(self.flex_arr)
-    return bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
-                                    scale = self.scale)
+  def _mi_list_of_wxbitmaps(self, re_scaling = False):
+    if(re_scaling == False):
+      self.lst_bmp_obj = wxbitmap_convert(self.flex_arr)
+      return self.lst_bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
+                                      scale = self.scale)
+
+    else:
+      return self.lst_bmp_obj.scaling(scale = self.scale)
 
 
   def _to_hide_nums(self):
@@ -107,7 +111,7 @@ class flex_arr_3d_outer_panel(wx.Panel):
           print "Minimum possible zoom reached"
 
 
-    self.bmp_lst = self._mi_list_of_wxbitmaps()
+    self.bmp_lst = self._mi_list_of_wxbitmaps(re_scaling = True)
     self.panel_02.img_refresh(self.bmp_lst)
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):

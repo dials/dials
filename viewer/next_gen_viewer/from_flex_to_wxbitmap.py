@@ -15,8 +15,11 @@ from dials.array_family import flex
 from bitmap_from_numpy_w_matplotlib import wxbmp_from_np_array
 class wxbitmap_convert(object):
   '''
-  The main duty of this class is to convert from
-  a 3D flex array to a list of WxBitmaps
+  The main duty of this class is to convert
+  from
+  a 3D flex array or a list of flex arrays
+  to
+  a list of WxBitmaps
   '''
   def __init__(self, data_flex_in):
 
@@ -37,8 +40,12 @@ class wxbitmap_convert(object):
 
 
   def get_wxbitmap_lst(self, show_nums = True, scale = 1.0):
-    local_bmp = wxbmp_from_np_array()
+    self.local_bmp = wxbmp_from_np_array(self.lst_3d_block, show_nums)
+    return self.scaling(scale)
 
-    lst_img = local_bmp.get_bmp_lst(self.lst_3d_block, show_nums, scale)
+
+  def scaling(self, scale = 1.0):
+    lst_img = self.local_bmp.bmp_lst_scaled(scale)
+
 
     return lst_img
