@@ -612,8 +612,7 @@ class RefinerFactory(object):
                   for i in range(beam_param.num_total())]
         beam_param.set_fixed(to_fix)
 
-      # FIXME scan varying
-      if beam_param.num_free() > 0 and not crystal_options.scan_varying:
+      if beam_param.num_free() > 0:
         beam_params.append(beam_param)
 
     # Parameterise unique Crystals
@@ -680,10 +679,9 @@ class RefinerFactory(object):
                   for i in range(xl_ori_param.num_total())]
         xl_ori_param.set_fixed(to_fix)
 
-      # FIXME for scan varying
-      if xl_ori_param.num_free() > 0 and not crystal_options.scan_varying:
+      if xl_ori_param.num_free() > 0:
         xl_ori_params.append(xl_ori_param)
-      if xl_uc_param.num_free() > 0 and not crystal_options.scan_varying:
+      if xl_uc_param.num_free() > 0:
         xl_uc_params.append(xl_uc_param)
 
     # Parameterise unique Detectors
@@ -735,8 +733,7 @@ class RefinerFactory(object):
                   for i in range(det_param.num_total())]
         det_param.set_fixed(to_fix)
 
-      # FIXME for scan-varying
-      if det_param.num_free() > 0 and not crystal_options.scan_varying:
+      if det_param.num_free() > 0:
         det_params.append(det_param)
 
     # Prediction equation parameterisation
