@@ -24,6 +24,42 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
   """Support crystal parameterisations that vary with time (via the proxy of
   "observed image number")"""
 
+  def _get_xl_orientation_parameterisation(self, experiment_id):
+    """Return the crystal orientation parameterisation for the requested
+    experiment number (or None if the crystal orientation in that experiment
+    is not parameterised)"""
+
+    param_set = self._exp_to_param[experiment_id]
+    xl_op = None
+    if param_set.xl_ori_param is not None:
+      xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
+
+    return xl_op
+
+  def _get_xl_unit_cell_parameterisation(self, experiment_id):
+    """Return the crystal unit cell parameterisation for the requested
+    experiment number (or None if the crystal unit cell in that experiment
+    is not parameterised)"""
+
+    param_set = self._exp_to_param[experiment_id]
+    xl_ucp = None
+    if param_set.xl_uc_param is not None:
+      xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+
+    return xl_ucp
+
+  def _get_state_from_parameterisation(self, parameterisation, frame):
+    """Get the model state from the parameterisation at the specified frame,
+    taking care of whether it is a scan-varying parameterisation or not"""
+
+    if parameterisation is None: return None
+    try:
+      parameterisation.compose(frame)
+    except AttributeError:
+      pass
+    return parameterisation.get_state()
+
+
   def compose(self, reflections):
     """Compose scan-varying crystal parameterisations at the specified image
     number, for the specified experiment, for all reflections. Put the U, B and
@@ -54,32 +90,36 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       obs_image_numbers = (reflections['xyzobs.px.value'].parts()[2]).select(isel)
 
       # identify which crystal parameterisations to use for this experiment
-      param_set = self._exp_to_param[iexp]
-      xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
-      xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+      xl_op = self._get_xl_orientation_parameterisation(iexp)
+      xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
 
       # get state and derivatives for each reflection
       for i, frame in zip(isel, obs_image_numbers):
 
-        # compose the models
-        xl_op.compose(frame)
-        xl_ucp.compose(frame)
+        # model states at current frame
+        U = self._get_state_from_parameterisation(xl_op, frame)
+        if U is None: U = exp.crystal.get_U()
 
-        # set states
-        row = {'u_matrix':xl_op.get_state().elems,
-               'b_matrix':xl_ucp.get_state().elems}
+        B = self._get_state_from_parameterisation(xl_ucp, frame)
+        if B is None: B = exp.crystal.get_B()
+
+        # set states into reflections
+        row = {'u_matrix':U.elems,
+               'b_matrix':B.elems}
         reflections[i] = row
 
         # set derivatives of the states
-        for j, dU in enumerate(xl_op.get_ds_dp()):
-          j2 = j + ori_offset
-          self._dU_dp[j2][i] = dU
-        for j, dB in enumerate(xl_ucp.get_ds_dp()):
-          j2 = j + uc_offset
-          self._dB_dp[j2][i] = dB
+        if xl_op is not None:
+          for j, dU in enumerate(xl_op.get_ds_dp()):
+            j2 = j + ori_offset
+            self._dU_dp[j2][i] = dU
+        if xl_ucp is not None:
+          for j, dB in enumerate(xl_ucp.get_ds_dp()):
+            j2 = j + uc_offset
+            self._dB_dp[j2][i] = dB
 
-      ori_offset += xl_op.num_free()
-      uc_offset += xl_ucp.num_free()
+      if xl_op is not None: ori_offset += xl_op.num_free()
+      if xl_ucp is not None: uc_offset += xl_ucp.num_free()
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
@@ -87,19 +127,23 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     return
 
   def get_UB(self, obs_image_number, experiment_id):
-    """Extract the setting matrix from the contained scan
-    dependent crystal parameterisations at specified image number"""
+    """Extract the setting matrix from the contained scan-dependent crystal
+    parameterisations at specified image number."""
 
     # called by refiner.run for setting the crystal scan points
-    param_set = self._exp_to_param[experiment_id]
-    xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
-    xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
 
-    xl_op.compose(obs_image_number)
-    xl_ucp.compose(obs_image_number)
+    # identify which crystal parameterisations to use for this experiment
+    xl_op = self._get_xl_orientation_parameterisation(experiment_id)
+    xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
 
-    UB = xl_op.get_state() * xl_ucp.get_state()
-    return UB
+    # model states at current frame
+    U = self._get_state_from_parameterisation(xl_op, obs_image_number)
+    if U is None: U = exp.crystal.get_U()
+
+    B = self._get_state_from_parameterisation(xl_ucp, obs_image_number)
+    if B is None: B = exp.crystal.get_B()
+
+    return U*B
 
   # overloaded for the scan-varying case
   def _get_U_B_for_experiment(self, crystal, reflections, isel):
@@ -443,18 +487,23 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # later calls, only an experiment and image number are supplied
     else:
       # identify the crystal parameterisations for this experiment
-      param_set = self._exp_to_param[experiment_id]
-      xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
-      xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+      xl_op = self._get_xl_orientation_parameterisation(experiment_id)
+      xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
 
-      # compose at the requested image number
-      xl_op.compose(obs_image_number)
-      xl_ucp.compose(obs_image_number)
+      # compose at the requested image number and calculate using the cached
+      # varcov matrices. Take the first elt of the list becase the crystal
+      # parameterisations are not multi-state
+      try:
+        xl_op.compose(obs_image_number)
+        U_cov = xl_op.calculate_state_uncertainties(var_cov=None)[0]
+      except AttributeError:
+        U_cov = None
 
-      # calculate using the cached varcov matrices. Take the first elt of the
-      # list becase the crystal parameterisations are not multi-state
-      U_cov = xl_op.calculate_state_uncertainties(var_cov=None)[0]
-      B_cov = xl_ucp.calculate_state_uncertainties(var_cov=None)[0]
+      try:
+        xl_ucp.compose(obs_image_number)
+        B_cov = xl_ucp.calculate_state_uncertainties(var_cov=None)[0]
+      except AttributeError:
+        B_cov = None
 
     return U_cov, B_cov
 
@@ -462,13 +511,17 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
                                           experiment_id=None):
     """Identify the parameterisation"""
 
+    xl_op = self._get_xl_orientation_parameterisation(experiment_id)
+    xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
+    try:
+      xl_op.set_state_uncertainties(u_cov_list)
+    except AttributeError:
+      pass
 
-    param_set = self._exp_to_param[experiment_id]
-    xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
-    xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
-
-    xl_op.set_state_uncertainties(u_cov_list)
-    xl_ucp.set_state_uncertainties(b_cov_list)
+    try:
+      xl_ucp.set_state_uncertainties(b_cov_list)
+    except AttributeError:
+      pass
 
     return
 
@@ -508,35 +561,39 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
       obs_image_numbers = flex.floor((frames).select(isel)).iround()
 
       # identify which crystal parameterisations to use for this experiment
-      param_set = self._exp_to_param[iexp]
-      xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
-      xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+      xl_op = self._get_xl_orientation_parameterisation(iexp)
+      xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
 
       # get state and derivatives for each image
       for frame in xrange(flex.min(obs_image_numbers),
                           flex.max(obs_image_numbers) + 1):
 
-        # compose the models
-        xl_op.compose(frame)
-        xl_ucp.compose(frame)
+        # model states at current frame
+        U = self._get_state_from_parameterisation(xl_op, frame)
+        if U is None: U = exp.crystal.get_U()
+
+        B = self._get_state_from_parameterisation(xl_ucp, frame)
+        if B is None: B = exp.crystal.get_B()
 
         # determine the subset of reflections this affects
         subsel = isel.select(obs_image_numbers == frame)
 
         # set states
-        reflections['u_matrix'].set_selected(subsel, xl_op.get_state().elems)
-        reflections['b_matrix'].set_selected(subsel, xl_ucp.get_state().elems)
+        reflections['u_matrix'].set_selected(subsel, U.elems)
+        reflections['b_matrix'].set_selected(subsel, B.elems)
 
         # set derivatives of the states
-        for j, dU in enumerate(xl_op.get_ds_dp()):
-          j2 = j + ori_offset
-          self._dU_dp[j2].set_selected(subsel, dU)
-        for j, dB in enumerate(xl_ucp.get_ds_dp()):
-          j2 = j + uc_offset
-          self._dB_dp[j2].set_selected(subsel, dB)
+        if xl_op is not None:
+          for j, dU in enumerate(xl_op.get_ds_dp()):
+            j2 = j + ori_offset
+            self._dU_dp[j2].set_selected(subsel, dU)
+        if xl_ucp is not None:
+          for j, dB in enumerate(xl_ucp.get_ds_dp()):
+            j2 = j + uc_offset
+            self._dB_dp[j2].set_selected(subsel, dB)
 
-      ori_offset += xl_op.num_free()
-      uc_offset += xl_ucp.num_free()
+      if xl_op is not None: ori_offset += xl_op.num_free()
+      if xl_ucp is not None: uc_offset += xl_ucp.num_free()
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
