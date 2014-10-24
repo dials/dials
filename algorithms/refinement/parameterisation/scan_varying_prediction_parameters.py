@@ -55,8 +55,6 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
       # identify which crystal parameterisations to use for this experiment
       param_set = self._exp_to_param[iexp]
-      xl_ori_param_id = param_set.xl_ori_param
-      xl_uc_param_id = param_set.xl_uc_param
       xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
       xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
 
@@ -94,8 +92,6 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     # called by refiner.run for setting the crystal scan points
     param_set = self._exp_to_param[experiment_id]
-    xl_ori_param_id = param_set.xl_ori_param
-    xl_uc_param_id = param_set.xl_uc_param
     xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
     xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
 
@@ -448,8 +444,6 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     else:
       # identify the crystal parameterisations for this experiment
       param_set = self._exp_to_param[experiment_id]
-      xl_ori_param_id = param_set.xl_ori_param
-      xl_uc_param_id = param_set.xl_uc_param
       xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
       xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
 
@@ -470,8 +464,6 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
 
     param_set = self._exp_to_param[experiment_id]
-    xl_ori_param_id = param_set.xl_ori_param
-    xl_uc_param_id = param_set.xl_uc_param
     xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
     xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
 
@@ -517,8 +509,6 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
 
       # identify which crystal parameterisations to use for this experiment
       param_set = self._exp_to_param[iexp]
-      xl_ori_param_id = param_set.xl_ori_param
-      xl_uc_param_id = param_set.xl_uc_param
       xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
       xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
 
