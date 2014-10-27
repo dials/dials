@@ -1099,9 +1099,19 @@ class Refiner(object):
   def rmsds(self):
     """Return rmsds of the current model"""
 
+    # ensure predictions for the matches are up to date
     self._refinery.prepare_for_step()
 
     return self._target.rmsds()
+
+  def rmsds_for_reflection_table(self, reflections):
+    """Calculate unweighted RMSDs for the specified reflections"""
+
+    # ensure predictions for these reflections are up to date
+    preds = self.predict_for_reflection_table(reflections)
+
+    return self._target.rmsds_for_reflection_table(preds)
+
 
   def get_matches(self):
     """Delegated to the reflection manager"""
@@ -1188,6 +1198,40 @@ class Refiner(object):
     st = simple_table(rows, header)
     print st.format()
     print self._refinery.history.reason_for_termination
+
+    return
+
+  def print_out_of_sample_rmsds(self):
+    """print useful the out-of-sample RSMDs in the form of a one row table"""
+
+    from libtbx.table_utils import simple_table
+    from math import pi
+    rad2deg = 180/pi
+
+    print
+    print "Final RMSDs for out-of-sample (free) reflections"
+    print "------------------------------------------------"
+
+    rmsd_multipliers = []
+    header = []
+    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+      if units == "mm":
+        header.append(name + "\n(mm)")
+        rmsd_multipliers.append(1.0)
+      elif units == "rad": # convert radians to degrees for reporting
+        header.append(name + "\n(deg)")
+        rmsd_multipliers.append(rad2deg)
+      else: # leave unknown units alone
+        header.append(name + "\n(" + units + ")")
+
+    free_refs = self.get_free_reflections()
+    if len(free_refs) < 10: return None # don't do anything if very few refs
+    rmsds = self.rmsds_for_reflection_table(free_refs)
+    rows = []
+    rows.append(["%.5g" % e for e in rmsds])
+
+    st = simple_table(rows, header)
+    print st.format()
 
     return
 

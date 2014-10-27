@@ -225,6 +225,10 @@ class Script(object):
     # Refine and get the refinement history
     refined = refiner.run()
 
+    # out-of-sample RMSDs
+    if params.calc_out_of_sample_rmsds:
+      refiner.print_out_of_sample_rmsds()
+
     if params.output.centroids_filename:
       print "Writing table of centroids to '{0}'".format(
         params.output.centroids_filename)
@@ -299,12 +303,6 @@ class Script(object):
         print "Sorry, no parameter correlation plots were produced. Please set " \
               "track_parameter_correlation=True to ensure correlations are " \
               "tracked, and make sure correlation_plot.col_select is valid."
-
-    # cross-validated RMSDs
-    if params.calc_out_of_sample_rmsds:
-      free_refs = refiner.get_free_reflections()
-      preds = refiner.predict_for_reflection_table(free_refs)
-      #TODO got preds, now calc RMSDs
 
     return
 

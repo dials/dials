@@ -314,6 +314,14 @@ class Target(object):
 
     return self._rmsds
 
+  def rmsds_for_reflection_table(self, reflections):
+    """calculate unweighted RMSDs for the specified reflections. Caution: this
+    assumes that the table reflections has the keys expected by _rmsds_core"""
+
+    n = len(reflections)
+    if n == 0: return None
+    return self._rmsds_core(reflections)
+
   def rmsds_for_experiment(self, iexp=0):
     """calculate unweighted RMSDs for the selected experiment."""
 
