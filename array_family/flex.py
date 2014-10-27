@@ -473,7 +473,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   def statistics(self, experiments):
     ''' Return some simple statistics. '''
     from scitbx.array_family import shared
-    return Summary(
-      self,
-      shared.tiny_int_2([e.imageset.get_array_range() for e in experiments]),
-      10)
+    if experiments.all_sweeps():
+      return Summary(
+        self,
+        shared.tiny_int_2([e.imageset.get_array_range() for e in experiments]),
+        10)
+    elif experiments.all_stills():
+      return Summary(
+        self,
+        shared.tiny_int_2([(0, len(e.imageset)) for e in experiments]),
+        10)
+    else:
+      raise RuntimeError('Experiments must be all sweeps or all stills')
