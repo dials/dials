@@ -54,6 +54,13 @@ class wxbmp_from_np_array(object):
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
     vl_mid_hig = self.vl_max - d / 3.0
+    log_debug_code = '''
+    print
+    print "self.vl_min =", self.vl_min
+    print " vl_mid_low =", vl_mid_low
+    print " vl_mid_hig =", vl_mid_hig
+    print "self.vl_max =", self.vl_max
+    '''
     lc_fig = plt.figure(frameon=False)
 
     xmax = np_2d_tmp.shape[0]
@@ -75,9 +82,9 @@ class wxbmp_from_np_array(object):
           g = float("{0:.2f}".format(float(f_num)))
 
           txt_dat = str(g)
-          if( g < vl_mid_low ):
+          if( f_num < vl_mid_low ):
             clr_chr = 'yellow'
-          elif(g > vl_mid_hig):
+          elif(f_num > vl_mid_hig):
             clr_chr = 'black'
           else:
             clr_chr = 'blue'
