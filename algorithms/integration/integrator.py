@@ -15,7 +15,7 @@ from iotbx import phil
 
 class JobId(object):
   def __init__(self):
-    self.value = None
+    self.value = 0
   def __call__(self):
     return self.value
 
