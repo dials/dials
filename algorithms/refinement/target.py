@@ -124,6 +124,12 @@ class Target(object):
     # set the entering flags
     from dials.algorithms.refinement.reflection_manager import calculate_entering_flags
     reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
+    # If the prediction equation parameterisation is a scan-varying type,
+    # ensure compose(reflections) is called to set up the ub_matrix.
+    try:
+      self._prediction_parameterisation.compose(reflections)
+    except AttributeError:
+      pass
     self._reflection_predictor.predict(reflections)
     x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
     x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()

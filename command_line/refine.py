@@ -72,6 +72,12 @@ class Script(object):
           .help = "The filename for output of refined reflections"
       }
 
+      calc_x_validated_rmsds = False
+        .type = bool
+        .help = "Report RMSDs calculated using the refined experiments with"
+                "reflections not used in refinement. Only valid if a subset of"
+                "input reflections was taken for refinement"
+
       include scope dials.algorithms.refinement.refiner.phil_scope
     ''', process_includes=True)
 
@@ -293,6 +299,12 @@ class Script(object):
         print "Sorry, no parameter correlation plots were produced. Please set " \
               "track_parameter_correlation=True to ensure correlations are " \
               "tracked, and make sure correlation_plot.col_select is valid."
+
+    # cross-validated RMSDs
+    if params.calc_x_validated_rmsds:
+      free_refs = refiner.get_free_reflections()
+      preds = refiner.predict_for_reflection_table(free_refs)
+      #TODO got preds, now calc RMSDs
 
     return
 
