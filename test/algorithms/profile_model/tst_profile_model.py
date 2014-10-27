@@ -11,28 +11,31 @@ class Test(object):
 
   def tst_load_and_dump(self):
     from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
-    from dials.algorithms.profile_model.gaussian_rs import phil_scope
+    from dials.algorithms.profile_model.factory import phil_scope
     from libtbx.phil import parse
 
     user_phil = parse('''
-      gaussian_rs {
-        filter {
-          min_zeta = 0.05
-        }
-        model {
-          n_sigma = 3
-          sigma_b = 1
-          sigma_m = 2
-        }
-        model {
-          n_sigma = 2
-          sigma_b = 4
-          sigma_m = 5
+      profile {
+        algorithm = *gaussian_rs
+        gaussian_rs {
+          filter {
+            min_zeta = 0.05
+          }
+          model {
+            n_sigma = 3
+            sigma_b = 1
+            sigma_m = 2
+          }
+          model {
+            n_sigma = 2
+            sigma_b = 4
+            sigma_m = 5
+          }
         }
       }
       ''')
     params = phil_scope.fetch(source=user_phil).extract()
-    model = ProfileModelList.load(params)
+    model = ProfileModelList.load(params.profile)
     assert(len(model) == 2)
     assert(model[0].n_sigma() == 3)
     assert(model[0].sigma_b() == 1)
