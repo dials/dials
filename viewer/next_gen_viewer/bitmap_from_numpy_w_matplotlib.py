@@ -79,7 +79,7 @@ class wxbmp_from_np_array(object):
       for xpos in range(xmax):
         for ypos in range(ymax):
           f_num = np_2d_tmp[xpos,ypos]
-          g = float("{0:.2f}".format(float(f_num)))
+          g = float("{0:.3f}".format(float(f_num)))
 
           txt_dat = str(g)
           if( f_num < vl_mid_low ):
@@ -89,8 +89,8 @@ class wxbmp_from_np_array(object):
           else:
             clr_chr = 'blue'
 
-          plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3), xycoords = 'data',
-                       color = clr_chr, size = 12.)
+          plt.annotate(txt_dat, xy = (xpos - 0.5, ypos + 0.1), xycoords = 'data',
+                       color = clr_chr, size = 9.)
 
     lc_fig.canvas.draw()
     width, height = lc_fig.canvas.get_width_height()
