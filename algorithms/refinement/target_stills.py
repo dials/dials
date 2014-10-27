@@ -55,19 +55,14 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     return
 
+  def  _predict_core(self, reflections):
 
-  def predict(self):
-    """perform reflection prediction and update the reflection manager"""
-
+    """perform prediction for the specified reflections"""
     # update the reflection_predictor with the scan-independent part of the
     # current geometry
     self._reflection_predictor.update()
 
-    # reset the 'use' flag for all observations
-    self._reflection_manager.reset_accepted_reflections()
-
     # do prediction (updates reflection table in situ).
-    reflections = self._reflection_manager.get_obs()
     self._reflection_predictor.predict(reflections)
 
     x_obs, y_obs, _ = reflections['xyzobs.mm.value'].parts()
@@ -81,21 +76,13 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     reflections['y_resid2'] = reflections['y_resid']**2
     reflections['delpsical2'] = reflections['delpsical.rad']**2
 
-    # set used_in_refinement flag to all those that had predictions
-    mask = reflections.get_flags(reflections.flags.predicted)
-    reflections.set_flags(mask, reflections.flags.used_in_refinement)
-
-    # collect the matches
-    self.update_matches(force=True)
-
-    return
+    return reflections
 
   def predict_for_reflection_table(self, reflections):
     """perform prediction for all reflections in the supplied table"""
 
-    self._reflection_predictor.update()
-    self._reflection_predictor.predict(reflections)
-    return reflections
+    # predict
+    return self._predict_core(reflections)
 
   @staticmethod
   def _extract_residuals_and_weights(matches):
@@ -121,54 +108,16 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     return residuals2
 
-  def rmsds(self):
+  def _rmsds_core(self, reflections):
     """calculate unweighted RMSDs"""
 
-    self.update_matches()
-    resid_x = flex.sum(self._matches['x_resid2'])
-    resid_y = flex.sum(self._matches['y_resid2'])
-    resid_z = flex.sum(self._matches['delpsical2'])
-
-    # cache rmsd calculation for achieved test
-    n = len(self._matches)
-    self._rmsds = (sqrt(resid_x / n),
-                   sqrt(resid_y / n),
-                   sqrt(resid_z / n))
-
-    return self._rmsds
-
-  def rmsds_for_experiment(self, iexp=0):
-    """calculate unweighted RMSDs for the selected experiment."""
-
-    self.update_matches()
-    sel = self._matches['id'] == iexp
-    resid_x = flex.sum(self._matches['x_resid2'].select(sel))
-    resid_y = flex.sum(self._matches['y_resid2'].select(sel))
-    resid_z = flex.sum(self._matches['delpsical2'].select(sel))
-
-    n = sel.count(True)
-    if n == 0: return None
+    resid_x = flex.sum(reflections['x_resid2'])
+    resid_y = flex.sum(reflections['y_resid2'])
+    resid_z = flex.sum(reflections['delpsical2'])
+    n = len(reflections)
     rmsds = (sqrt(resid_x / n),
              sqrt(resid_y / n),
              sqrt(resid_z / n))
-
-    return rmsds
-
-  def rmsds_for_panel(self, ipanel=0):
-    """calculate unweighted RMSDs for the selected panel."""
-
-    self.update_matches()
-    sel = self._matches['panel'] == ipanel
-    resid_x = flex.sum(self._matches['x_resid2'].select(sel))
-    resid_y = flex.sum(self._matches['y_resid2'].select(sel))
-    resid_z = flex.sum(self._matches['delpsical2'].select(sel))
-
-    n = sel.count(True)
-    if n == 0: return None
-    rmsds = (sqrt(resid_x / n),
-             sqrt(resid_y / n),
-             sqrt(resid_z / n))
-
     return rmsds
 
   def achieved(self):

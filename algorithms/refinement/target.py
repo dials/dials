@@ -63,15 +63,12 @@ class Target(object):
 
     return
 
-  def predict(self):
-    """perform reflection prediction and update the reflection manager"""
+  def _predict_core(self, reflections):
+    """perform prediction for the specified reflections"""
 
     # update the reflection_predictor with the scan-independent part of the
     # current geometry
     self._reflection_predictor.update()
-
-    # reset the 'use' flag for all observations
-    self._reflection_manager.reset_accepted_reflections()
 
     # duck-typing for VaryingCrystalPredictionParameterisation. Only this
     # class has a compose(reflections) method. Sets ub_matrix (and caches
@@ -85,7 +82,7 @@ class Target(object):
     # do prediction (updates reflection table in situ). Scan-varying prediction
     # is done automatically if the crystal has scan-points (assuming reflections
     # have ub_matrix set)
-    reflections = self._reflection_manager.get_obs()
+
     self._reflection_predictor.predict(reflections)
 
     x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
@@ -107,6 +104,21 @@ class Target(object):
     reflections['phi_resid'] = phi_calc - phi_obs
     reflections['phi_resid2'] = reflections['phi_resid']**2
 
+    return reflections
+
+  def predict(self):
+    """perform reflection prediction for the working reflections and update the
+    reflection manager"""
+
+    # get the matches
+    reflections = self._reflection_manager.get_obs()
+
+    # reset the 'use' flag for all observations
+    self._reflection_manager.reset_accepted_reflections()
+
+    # predict
+    reflections = self._predict_core(reflections)
+
     # set used_in_refinement flag to all those that had predictions
     mask = reflections.get_flags(reflections.flags.predicted)
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
@@ -119,29 +131,12 @@ class Target(object):
   def predict_for_reflection_table(self, reflections):
     """perform prediction for all reflections in the supplied table"""
 
-    # ensure the predictor is ready with the right models
-    self._reflection_predictor.update()
-    # set the entering flags
+    # set the entering flags as this may not have been done
     from dials.algorithms.refinement.reflection_manager import calculate_entering_flags
     reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
-    # If the prediction equation parameterisation is a scan-varying type,
-    # ensure compose(reflections) is called to set up the ub_matrix.
-    try:
-      self._prediction_parameterisation.compose(reflections)
-    except AttributeError:
-      pass
-    self._reflection_predictor.predict(reflections)
-    x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
-    x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
-    # do not wrap around multiples of 2*pi; keep the full rotation
-    # from zero to differentiate repeat observations.
-    resid = phi_calc - (flex.fmod(phi_obs, TWO_PI))
-    # ensure this is the smaller of two possibilities
-    resid = flex.fmod((resid + pi), TWO_PI) - pi
-    phi_calc = phi_obs + resid
-    # put back in the reflections
-    reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
-    return reflections
+
+    # predict
+    return self._predict_core(reflections)
 
   def calculate_gradients(self, reflections=None):
     """delegate to the prediction_parameterisation object to calculate
@@ -309,23 +304,37 @@ class Target(object):
 
     pass
 
-  @abc.abstractmethod
   def rmsds(self):
-    """calculate unweighted RMSDs"""
+    """calculate unweighted RMSDs for the matches"""
 
-    pass
+    self.update_matches()
 
-  @abc.abstractmethod
+    # cache rmsd calculation for achieved test
+    self._rmsds = self._rmsds_core(self._matches)
+
+    return self._rmsds
+
   def rmsds_for_experiment(self, iexp=0):
     """calculate unweighted RMSDs for the selected experiment."""
 
-    pass
+    self.update_matches()
+    sel = self._matches['id'] == iexp
+    n = sel.count(True)
+    if n == 0: return None
 
-  @abc.abstractmethod
+    rmsds = self._rmsds_core(self._matches.select(sel))
+    return rmsds
+
   def rmsds_for_panel(self, ipanel=0):
     """calculate unweighted RMSDs for the selected panel."""
 
-    pass
+    self.update_matches()
+    sel = self._matches['panel'] == ipanel
+    n = sel.count(True)
+    if n == 0: return None
+
+    rmsds = self._rmsds_core(self._matches.select(sel))
+    return rmsds
 
   @abc.abstractmethod
   def achieved(self):
@@ -396,54 +405,17 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return residuals2
 
-  def rmsds(self):
-    """calculate unweighted RMSDs"""
+  def _rmsds_core(self, reflections):
+    """calculate unweighted RMSDs for the specified reflections"""
 
-    self.update_matches()
-    resid_x = flex.sum(self._matches['x_resid2'])
-    resid_y = flex.sum(self._matches['y_resid2'])
-    resid_phi = flex.sum(self._matches['phi_resid2'])
+    resid_x = flex.sum(reflections['x_resid2'])
+    resid_y = flex.sum(reflections['y_resid2'])
+    resid_phi = flex.sum(reflections['phi_resid2'])
+    n = len(reflections)
 
-    # cache rmsd calculation for achieved test
-    n = len(self._matches)
-    self._rmsds = (sqrt(resid_x / n),
-                   sqrt(resid_y / n),
-                   sqrt(resid_phi / n))
-
-    return self._rmsds
-
-  def rmsds_for_experiment(self, iexp=0):
-    """calculate unweighted RMSDs for the selected experiment."""
-
-    self.update_matches()
-    sel = self._matches['id'] == iexp
-    resid_x = flex.sum(self._matches['x_resid2'].select(sel))
-    resid_y = flex.sum(self._matches['y_resid2'].select(sel))
-    resid_phi = flex.sum(self._matches['phi_resid2'].select(sel))
-
-    n = sel.count(True)
-    if n == 0: return None
     rmsds = (sqrt(resid_x / n),
              sqrt(resid_y / n),
              sqrt(resid_phi / n))
-
-    return rmsds
-
-  def rmsds_for_panel(self, ipanel=0):
-    """calculate unweighted RMSDs for the selected panel."""
-
-    self.update_matches()
-    sel = self._matches['panel'] == ipanel
-    resid_x = flex.sum(self._matches['x_resid2'].select(sel))
-    resid_y = flex.sum(self._matches['y_resid2'].select(sel))
-    resid_phi = flex.sum(self._matches['phi_resid2'].select(sel))
-
-    n = sel.count(True)
-    if n == 0: return None
-    rmsds = (sqrt(resid_x / n),
-             sqrt(resid_y / n),
-             sqrt(resid_phi / n))
-
     return rmsds
 
   def achieved(self):
