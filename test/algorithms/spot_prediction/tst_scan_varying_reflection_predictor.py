@@ -27,6 +27,7 @@ class Test(object):
     #self.tst_with_hkl()
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
+    self.tst_for_reflection_table()
 
   def predict_new(self, hkl=None, frame=None, panel=None):
     from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
@@ -191,6 +192,38 @@ class Test(object):
                              #flex.size_t(len(all_indices), 0))
     #assert(len(r_old) < len(r_new))
     #print 'OK'
+
+  def tst_for_reflection_table(self):
+    from dials.algorithms.spot_prediction import \
+      ScanVaryingReflectionPredictor, ScanStaticReflectionPredictor
+    from dials.array_family import flex
+
+    predict = ScanStaticReflectionPredictor(self.experiments[0])
+    preds = predict.for_ub(self.experiments[0].crystal.get_A())
+
+    preds['ub_matrix'] = flex.mat3_double(len(preds), self.experiments[0].crystal.get_A())
+    preds['s0'] = flex.vec3_double(len(preds), self.experiments[0].beam.get_s0())
+    preds['D_matrix'] = flex.mat3_double(len(preds))
+    for ipanel, panel in enumerate(self.experiments[0].detector):
+      sel = preds['panel'] == ipanel
+      D = panel.get_D_matrix()
+      preds['D_matrix'].set_selected(sel, D)
+    predict = ScanVaryingReflectionPredictor(self.experiments[0])
+    from copy import deepcopy
+    old_preds = deepcopy(preds)
+    predict.for_reflection_table(preds,
+                                 preds['ub_matrix'],
+                                 preds['s0'],
+                                 preds['D_matrix'])
+
+    # Because UB, s0 and D values are the same for all reflections, the new
+    # reflections should be equal to those produced by the scan static predictor
+    for old, new in zip(old_preds, preds):
+      assert new == old
+
+    print "OK"
+
+    return
 
 if __name__ == '__main__':
 
