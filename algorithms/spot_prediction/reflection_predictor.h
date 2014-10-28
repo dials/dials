@@ -35,6 +35,7 @@ namespace dials { namespace algorithms {
   using scitbx::constants::two_pi;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
+  using dxtbx::model::Panel;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using dxtbx::model::is_angle_in_range;
@@ -395,6 +396,8 @@ namespace dials { namespace algorithms {
      * @param entering The array of entering flags
      * @param panel The array of panels
      * @param ub The array of UB matrices
+     * @param s0 The array of s0 vectors
+     * @param d The array of d matrices
      * @returns A reflection table.
      */
     af::reflection_table for_hkl_with_individual_ub(
@@ -403,17 +406,17 @@ namespace dials { namespace algorithms {
         const af::const_ref<std::size_t> &panel,
         const af::const_ref< mat3<double> >&ub,
         const af::const_ref< vec3<double> > &s0,
-        const af::const_ref< mat3<double> > &D) const {
+        const af::const_ref< mat3<double> > &d) const {
       DIALS_ASSERT(ub.size() == h.size());
       DIALS_ASSERT(ub.size() == panel.size());
       DIALS_ASSERT(ub.size() == entering.size());
       DIALS_ASSERT(ub.size() == s0.size());
-      DIALS_ASSERT(ub.size() == D.size());
+      DIALS_ASSERT(ub.size() == d.size());
       DIALS_ASSERT(scan_.get_oscillation()[1] > 0.0);
       af::reflection_table table;
       prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, ub[i], s0[i], D[i], h[i], entering[i], panel[i]);
+        append_for_index(predictions, ub[i], s0[i], d[i], h[i], entering[i], panel[i]);
       }
       DIALS_ASSERT(table.nrows() == h.size());
       return table;
@@ -424,24 +427,24 @@ namespace dials { namespace algorithms {
      * @param table The reflection table
      * @param ub The ub matrix array
      * @param s0 The s0 vector array
-     * @param D The D matrix array
+     * @param d The d matrix array
      */
     void for_reflection_table(
         af::reflection_table table,
         const af::const_ref< mat3<double> > &ub,
         const af::const_ref< vec3<double> > &s0,
-        const af::const_ref< mat3<double> > &D
+        const af::const_ref< mat3<double> > &d
         ) const {
       DIALS_ASSERT(ub.size() == table.nrows());
       DIALS_ASSERT(s0.size() == table.nrows());
-      DIALS_ASSERT(D.size() == table.nrows());
+      DIALS_ASSERT(d.size() == table.nrows());
       af::reflection_table new_table = for_hkl_with_individual_ub(
         table["miller_index"],
         table["entering"],
         table["panel"],
         ub,
         s0,
-        D);
+        d);
       DIALS_ASSERT(new_table.nrows() == table.nrows());
       table["miller_index"] = new_table["miller_index"];
       table["entering"] = new_table["entering"];
@@ -559,19 +562,18 @@ namespace dials { namespace algorithms {
     /**
      * Do the prediction for a miller index given all model states.
      * @param p The reflection data
-     * @param A1 The beginning setting matrix.
-     * @param A2 The end setting matrix
-     * @param frame The frame to predict on
-     * @param h The miller index
+     * @param ub The ub matrix array
+     * @param s0 The s0 vector array
+     * @param d The d matrix array
+     * @param h The miller index array
+     * @param entering The entering flag array
+     * @param panel The array of panel numbers
      */
-
-     //predictions, ub[i], s0[i], D[i], h[i], entering[i], panel[i]
-
     void append_for_index(
         prediction_data &p,
         const mat3<double> ub,
         const vec3<double> s0,
-        const mat3<double> D,
+        const mat3<double> d,
         const miller_index &h,
         bool entering,
         std::size_t panel) const {
@@ -589,11 +591,11 @@ namespace dials { namespace algorithms {
           p.s1.push_back(rays[i].s1);
           double frame = scan_.get_array_index_from_angle(rays[i].angle);
           try {
-            //vec2<double> mm = detector_[panel].get_ray_intersection(rays[i].s1);
-            vec2<double> mm = plane_ray_intersection(D, rays[i].s1);
-            // FIXME millimeter_to_pixel uses the panel's internal D matrix,
-            // which is not generally correct!
-            vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+            // Need a local panel with the right D matrix
+            Panel local_panel(detector_[panel]);
+            local_panel.set_frame(d.get_column(0), d.get_column(1), d.get_column(2));
+            vec2<double> mm = local_panel.get_ray_intersection(rays[i].s1);
+            vec2<double> px = local_panel.millimeter_to_pixel(mm);
             p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle));
             p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
             p.flags.push_back(af::Predicted);
