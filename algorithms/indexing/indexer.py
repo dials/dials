@@ -674,7 +674,7 @@ class indexer_base(object):
           n_steps = int(math.ceil(d_phi / step_size))
           max_cell = flex.double()
           for n in range(n_steps):
-            sel = (phi_deg > (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
+            sel = (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
             rlp = self.reflections['rlp'].select(sel)
             if len(rlp) == 0:
               continue
