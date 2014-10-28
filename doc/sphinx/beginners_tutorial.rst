@@ -42,7 +42,7 @@ Import
 There are two ways of importing images
 
 .. code-block:: none
-  
+
   dials.import /path/to/the/data/*.img
 
 or
@@ -135,7 +135,7 @@ run pointless and aimless to resort and scale the data viz:
 
 .. code-block:: none
 
-  dials.export_mtz integrated.pickle refined_experiments.json integrated.mtz
+  dials.export_mtz integrated.pickle refined_experiments.json
   pointless hklin integrated.mtz hklout sorted.mtz
   aimless hklin sorted.mtz hklout scaled.mtz
 
