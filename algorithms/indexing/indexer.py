@@ -415,6 +415,8 @@ class indexer_base(object):
         self.reflections_input.select(sel),
         imageset.get_detector(), imageset.get_scan()))
     self.filter_reflections_by_scan_range()
+    if len(self.reflections) == 0:
+      raise Sorry("No reflections left to index!")
     self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
 
