@@ -939,8 +939,9 @@ class indexer_base(object):
 
         self.best_likelihood = max(
           s.model_likelihood for s in self.all_solutions)
-        if self.best_likelihood <= 0: offset = 1
-        else: offset = 0
+        offset = 0
+        while (self.best_likelihood + offset) <= 0:
+          offset += 1
         self.close_solutions = [
           s for s in self.all_solutions
           if (s.model_likelihood+offset) >= (0.85 * (self.best_likelihood+offset))]
