@@ -90,10 +90,14 @@ def plot(histogram, file_name):
   #ax2.set_ylabel(u'resolution (\u00c5)')
   #ax2.set_xlim((0, len(n_spots)))
   #ax2.invert_yaxis()
+
+  # Use mode="fixed" as mode="expand" causes floating point error on some
+  # versions of matplotlib.
+  # See https://github.com/matplotlib/matplotlib/pull/1864
   lgd = pyplot.legend(
     (sc1, ), ('#spots',), ncol=1,
     loc='upper center',
-    mode="expand", borderaxespad=0.,
+    mode="fixed", borderaxespad=0.,
     bbox_to_anchor=(0.0,-0.22, 1., .102))
   pyplot.savefig(file_name, dpi=600, bbox_extra_artists=(lgd,),
                  bbox_inches='tight')
