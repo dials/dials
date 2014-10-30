@@ -17,8 +17,11 @@ import matplotlib.pyplot as plt
 
 class np_to_bmp(object):
 
-  def __call__(self, np_img_2d, Intst_max, ofst, xyz, title = 'Aaaaaaaaaa'):
+  def __call__(self, np_img_2d, Intst_max, ofst, xyz, title = 'Aaaaaaaaaa',
+               mask_colour = False):
     lc_fig = plt.figure()
+
+    print "imax = ", Intst_max
 
     if( np_img_2d == None ):
 
@@ -38,8 +41,12 @@ class np_to_bmp(object):
         plt.suptitle(title, fontsize = 18)
         #plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
         #           , vmax = Intst_max)
-        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest"
-                   , cmap = 'hot', vmin = 0, vmax = Intst_max)
+        if(mask_colour == False):
+          plt.imshow(np.transpose(np_img_2d), interpolation = "nearest",
+                     cmap = 'hot', vmin = 0, vmax = Intst_max)
+        else:
+          plt.imshow(np.transpose(np_img_2d), interpolation = "nearest",
+                     cmap = 'gist_rainbow', vmin = 0, vmax = Intst_max)
 
         xmax = len(np_img_2d[:,1])
         ymax = len(np_img_2d[1,:])
@@ -61,14 +68,14 @@ class np_to_bmp(object):
                 clr_chr = 'black'
               else:
                 clr_chr = 'blue'
-              plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3)
-                           , xycoords = 'data', color = clr_chr, size = 22.)
+              plt.annotate(txt_dat, xy = (xpos - 0.3, ypos + 0.3) ,
+                           xycoords = 'data', color = clr_chr, size = 22.)
 
 
       else:
         plt.suptitle(title, fontsize = 22)
-        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0
-                                , vmax = 10)
+        plt.imshow(np.transpose(np_img_2d), interpolation = "nearest", vmin = 0,
+                                cmap = 'gist_rainbow', vmax = 10)
 
       if(xyz != None):
         arr_w = np.shape(np_img_2d)[0]

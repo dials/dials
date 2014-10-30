@@ -123,7 +123,7 @@ class ReflectionFrame(wx.Frame):
 
     self.bmp = np_to_bmp()
     self.arr_img = [None, None, None]
-    self.arr_ttl = [None, None, None]
+    self.arr_title = [None, None, None]
     self.My_Img = [None, None, None]
     self.wx_Img = [None, None, None]
     wx.EVT_CLOSE(self, self._On_Close_Window)
@@ -152,18 +152,22 @@ class ReflectionFrame(wx.Frame):
 
   def _OnRadio1(self, event = None):
     self.opt = 0
+    # opt = 0 means (data, background, mask)
     self._My_Update(request_new_data = True)
 
   def _OnRadio2(self, event = None):
     self.opt = 1
+    # self.opt = 1 means (3 layers of data)
     self._My_Update(request_new_data = True)
 
   def _OnRadio3(self, event = None):
     self.opt = 2
+    # self.opt = 2 means (3 layers of background)
     self._My_Update(request_new_data = True)
 
   def _OnRadio4(self, event = None):
     self.opt = 3
+    # self.opt = 3 means (3 layers of mask)
     self._My_Update(request_new_data = True)
 
   def _OnSize(self, event = None):
@@ -192,20 +196,24 @@ class ReflectionFrame(wx.Frame):
   def _My_Update(self, request_new_data = True):
 
     if( request_new_data == True ):
-      self.arr_img, self.arr_ttl = self.tabl(opt = self.opt)
+      self.arr_img, self.arr_title = self.tabl(opt = self.opt)
       ref_max = self.tabl.Get_Max(self.opt)
       #box_lmt = self.tabl.Get_bbox()
       self.xyz_px = self.tabl.Get_xyz()
       self.bbox_px = self.tabl.Get_bbox()
       self.hkl_data = self.tabl.Get_hkl()
       for indx in range(len(self.arr_img)):
-        if( self.opt == 0 and indx == len(self.arr_img) - 1 ):
+        if( (self.opt == 0 and indx == len(self.arr_img) - 1) or self.opt == 3):
           Imax = 10
+          mask_colour = True
         else:
           Imax = ref_max
-        self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx]
-                          , Intst_max = Imax, ofst = self.bbox_px
-                          , xyz = self.xyz_px, title = self.arr_ttl[indx])
+          mask_colour = False
+        print "calling np_to_bmp.__init__(...)"
+        self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx],
+                                     Intst_max = Imax, ofst = self.bbox_px,
+                                     xyz = self.xyz_px, title = self.arr_title[indx],
+                                     mask_colour = mask_colour)
       self.text01.SetValue(str(self.tabl.Get_ref_num()))
 
     for indx in range(len(self.arr_img)):
