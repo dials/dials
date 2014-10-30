@@ -26,6 +26,10 @@ frame = laboratory *crystal
 phi_angle = 0
   .type = float
   .help = "Phi rotation angle (degrees)"
+use_starting_angle = False
+  .type = bool
+  .help = "If True, then the projection will be done for each crystal at the "
+          "starting phi angle for the scan associated with the crystal."
 plane_normal = None
   .type = ints(size=3)
 save_coordinates = True
@@ -182,10 +186,15 @@ def run(args):
 
   if params.frame == 'laboratory':
     reference_poles = reference_poles_perpendicular_to_beam(
-      experiments.beams()[0], experiments.goniometers()[0])
-    if params.phi_angle != 0:
+      experiments[0].beam, experiments[0].goniometer)
+    if params.use_starting_angle:
       rotation_axis = matrix.col(
-        experiments.goniometers()[0].get_rotation_axis())
+        experiments[0].goniometer.get_rotation_axis())
+      R = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+        experiments[0].scan.get_oscillation()[0], deg=True)
+    elif params.phi_angle != 0:
+      rotation_axis = matrix.col(
+        experiments[0].goniometer.get_rotation_axis())
       R = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
         params.phi_angle, deg=True)
   else:
@@ -205,15 +214,22 @@ def run(args):
 
   projections_all = [projections_ref]
 
-  if len(crystals) > 0:
+  if len(experiments) > 0:
     from dials.algorithms.indexing.compare_orientation_matrices import \
         difference_rotation_matrix_and_euler_angles
 
-    for cryst in crystals[1:]:
+    for expt in experiments[1:]:
+      cryst = expt.crystal
       if params.frame == 'crystal':
         R_ij, euler_angles, cb_op = difference_rotation_matrix_and_euler_angles(
           ref_crystal, cryst)
         U = R_ij
+      elif params.use_starting_angle:
+        if params.use_starting_angle:
+          rotation_axis = matrix.col(
+            expt.goniometer.get_rotation_axis())
+          R = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+            expt.scan.get_oscillation()[0], deg=True)
       else:
         U = cryst.get_U()
       reciprocal_space_points = list(R * U * cryst.get_B()) * miller_indices.as_vec3_double()
