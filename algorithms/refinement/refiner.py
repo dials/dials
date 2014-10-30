@@ -116,10 +116,9 @@ refinement
               "understood"
       .type = bool
 
-    treat_single_image_as_still = True
-      .help = "A single image scan (with no observed phi centroid information)"
-              "will be treated as a still by default. Set this to False to"
-              "override that behaviour - but this is not usually recommended!"
+    treat_single_image_as_still = False
+      .help = "Set this to True to treat a single image scan with a non zero"
+              "oscillation width as a still"
       .type = bool
       .expert_level = 1
   }
@@ -497,8 +496,13 @@ class RefinerFactory(object):
     for exp in experiments:
       if exp.scan is None:
         exps_are_stills.append(True)
-      elif exp.scan.get_num_images() == 1 and single_as_still:
-        exps_are_stills.append(True)
+      elif exp.scan.get_num_images() == 1:
+        if single_as_still:
+          exps_are_stills.append(True)
+        elif exp.scan.get_oscillation()[1] == 0.0:
+          exps_are_stills.append(True)
+        else:
+          exps_are_stills.append(False)
       else:
         try:
           assert exp.scan.get_oscillation()[1] > 0.0
