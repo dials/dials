@@ -58,7 +58,7 @@ def test1():
   for e1, e2 in zip(reg_exp, ref_exp):
     # test refined models against expected
     assert e1.crystal.is_similar_to(e2.crystal)
-    # FIXME need is_similar_to for detector
+    # FIXME need is_similar_to for detector that checks geometry
     #assert e1.detector == e2.detector
     s0_1 = matrix.col(e1.beam.get_unit_s0())
     s0_2 = matrix.col(e1.beam.get_unit_s0())
