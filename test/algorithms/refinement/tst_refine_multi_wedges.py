@@ -120,8 +120,7 @@ class Test(object):
 
     for e1, e2 in zip(self._refined_experiments, regression_experiments):
       assert e1.crystal.is_similar_to(e2.crystal)
-      # FIXME need is_similar_to for detector
-      #assert e1.detector == e2.detector
+      assert e1.detector.is_similar_to(e2.detector)
       s0_1 = matrix.col(e1.beam.get_unit_s0())
       s0_2 = matrix.col(e1.beam.get_unit_s0())
       assert s0_1.accute_angle(s0_2, deg=True) < 0.0057 # ~0.1 mrad
