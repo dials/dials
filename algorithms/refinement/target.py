@@ -75,7 +75,7 @@ class Target(object):
     # derivatives).
     try:
       self._prediction_parameterisation.compose(
-          self._reflection_manager.get_obs())
+          reflections)
     except AttributeError:
       pass
 
