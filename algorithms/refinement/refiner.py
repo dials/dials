@@ -1230,7 +1230,8 @@ class Refiner(object):
 
     free_refs = self.get_free_reflections()
     if len(free_refs) < 10: return None # don't do anything if very few refs
-    rmsds = self.rmsds_for_reflection_table(free_refs)
+    rmsds = [r*m for r, m in zip(self.rmsds_for_reflection_table(free_refs),
+                                 rmsd_multipliers)]
     rows = []
     rows.append(["%.5g" % e for e in rmsds])
 
