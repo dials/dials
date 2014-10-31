@@ -145,6 +145,12 @@ refinement
               "each step of refinement."
       .type = bool
 
+    track_out_of_sample_rmsd = False
+      .type = bool
+      .help = "Record RMSDs calculated using the refined experiments with"
+              "reflections not used in refinement at each step. Only valid if a"
+              "subset of input reflections was taken for refinement"
+
     log = None
       .help = "Filename for an optional log that a minimisation engine may use"
               "to write additional information"
@@ -821,6 +827,7 @@ class RefinerFactory(object):
             track_step = options.track_step,
             track_gradient = options.track_gradient,
             track_parameter_correlation = options.track_parameter_correlation,
+            track_out_of_sample_rmsd = options.track_out_of_sample_rmsd,
             max_iterations = options.max_iterations)
 
   @staticmethod
@@ -1205,19 +1212,24 @@ class Refiner(object):
 
     return
 
-  def print_out_of_sample_rmsds(self):
-    """print useful the out-of-sample RSMDs in the form of a one row table"""
+  def print_out_of_sample_rmsd_table(self):
+    """print out-of-sample RSMDs per step, if these were tracked"""
 
     from libtbx.table_utils import simple_table
     from math import pi
     rad2deg = 180/pi
 
+    # check if it makes sense to proceed
+    if not self._refinery.history.has_key("out_of_sample_rmsd"): return
+    nref = len(self.get_free_reflections())
+    if nref < 10: return # don't do anything if very few refs
+
     print
-    print "Final RMSDs for out-of-sample (free) reflections"
-    print "------------------------------------------------"
+    print "RMSDs for out-of-sample (free) reflections"
+    print "------------------------------------------"
 
     rmsd_multipliers = []
-    header = []
+    header = ["Step", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
       if units == "mm":
         header.append(name + "\n(mm)")
@@ -1228,12 +1240,11 @@ class Refiner(object):
       else: # leave unknown units alone
         header.append(name + "\n(" + units + ")")
 
-    free_refs = self.get_free_reflections()
-    if len(free_refs) < 10: return None # don't do anything if very few refs
-    rmsds = [r*m for r, m in zip(self.rmsds_for_reflection_table(free_refs),
-                                 rmsd_multipliers)]
     rows = []
-    rows.append(["%.5g" % e for e in rmsds])
+    for i in range(self._refinery.history.get_nrows()):
+      rmsds = [r*m for r, m in zip(self._refinery.history["out_of_sample_rmsd"][i],
+                                   rmsd_multipliers)]
+      rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
 
     st = simple_table(rows, header)
     print st.format()
@@ -1248,8 +1259,8 @@ class Refiner(object):
     rad2deg = 180/pi
 
     print
-    print "Final RMSDs by experiment"
-    print "-------------------------"
+    print "RMSDs by experiment"
+    print "-------------------"
 
     header = ["Exp", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1317,8 +1328,8 @@ class Refiner(object):
     rad2deg = 180/pi
 
     print
-    print "Final RMSDs by panel"
-    print "--------------------"
+    print "RMSDs by panel"
+    print "--------------"
 
     header = ["Panel", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1392,6 +1403,7 @@ class Refiner(object):
     if self._verbosity > 0:
       print
       self.print_step_table()
+      self.print_out_of_sample_rmsd_table()
       self.print_exp_rmsd_table()
 
     if self._verbosity > 1 and len(self._detector) > 1:

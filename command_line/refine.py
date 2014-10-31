@@ -72,12 +72,6 @@ class Script(object):
           .help = "The filename for output of refined reflections"
       }
 
-      calc_out_of_sample_rmsds = False
-        .type = bool
-        .help = "Report RMSDs calculated using the refined experiments with"
-                "reflections not used in refinement. Only valid if a subset of"
-                "input reflections was taken for refinement"
-
       include scope dials.algorithms.refinement.refiner.phil_scope
     ''', process_includes=True)
 
@@ -229,10 +223,6 @@ class Script(object):
 
     # Refine and get the refinement history
     refined = refiner.run()
-
-    # out-of-sample RMSDs
-    if params.calc_out_of_sample_rmsds:
-      refiner.print_out_of_sample_rmsds()
 
     if params.output.centroids_filename:
       print "Writing table of centroids to '{0}'".format(

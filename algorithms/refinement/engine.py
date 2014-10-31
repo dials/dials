@@ -106,6 +106,7 @@ class Refinery(object):
   def __init__(self, target, prediction_parameterisation, log = None,
                verbosity = 0, track_step = False,
                track_gradient = False, track_parameter_correlation = False,
+               track_out_of_sample_rmsd = False,
                max_iterations = None):
 
     # reference to PredictionParameterisation and Target objects
@@ -142,6 +143,8 @@ class Refinery(object):
       self.history.add_column("parameter_correlation")
     if track_step:
       self.history.add_column("solution")
+    if track_out_of_sample_rmsd:
+      self.history.add_column("out_of_sample_rmsd")
     self.history.add_column("solution_norm")#flex.double()
     self.history.add_column("parameter_vector")
     self.history.add_column("parameter_vector_norm")#flex.double()
@@ -178,7 +181,10 @@ class Refinery(object):
       if self._jacobian is not None:
         self.history.set_last_cell("parameter_correlation",
           self._packed_corr_mat(self._jacobian))
-
+    if self.history.has_key("out_of_sample_rmsd"):
+      preds = self._target.predict_for_free_reflections()
+      self.history.set_last_cell("out_of_sample_rmsd",
+        self._target.rmsds_for_reflection_table(preds))
     return
 
   @staticmethod
@@ -391,12 +397,14 @@ class AdaptLstbx(
 
   def __init__(self, target, prediction_parameterisation, log=None,
                verbosity = 0, track_step = False, track_gradient = False,
-               track_parameter_correlation = False, max_iterations = None):
+               track_parameter_correlation = False,
+               track_out_of_sample_rmsd = False, max_iterations = None):
 
     Refinery.__init__(self, target, prediction_parameterisation,
              log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
              track_parameter_correlation=track_parameter_correlation,
+             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
              max_iterations=max_iterations)
 
     # required for restart to work (do I need that method?)
@@ -502,12 +510,14 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   def __init__(self, target, prediction_parameterisation, log=None,
                verbosity=0, track_step=False, track_gradient=False,
                track_parameter_correlation=False,
+               track_out_of_sample_rmsd=False,
                max_iterations=20, **kwds):
 
     AdaptLstbx.__init__(self, target, prediction_parameterisation,
              log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
              track_parameter_correlation=track_parameter_correlation,
+             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
              max_iterations=max_iterations)
 
     # add an attribute to the journal

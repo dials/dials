@@ -128,12 +128,19 @@ class Target(object):
 
     return
 
+  def predict_for_free_reflections(self):
+    """perform prediction for the reflections not used for refinement"""
+
+    refs = self._reflection_manager.get_free_reflections()
+    return self._predict_core(refs)
+
   def predict_for_reflection_table(self, reflections):
     """perform prediction for all reflections in the supplied table"""
 
-    # set the entering flags as this may not have been done
+    # set the entering flags if this has not been done
     from dials.algorithms.refinement.reflection_manager import calculate_entering_flags
-    reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
+    if not reflections.has_key("entering"):
+      reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
 
     # predict
     return self._predict_core(reflections)
