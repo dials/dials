@@ -36,11 +36,9 @@ def next_gen_viewer_test(table):
   data_flex = table_row['shoebox'].data
   show_3d(data_flex)
 
-  #lst_nm = [8034, 8036, 8037, 8141, 8240, 8243, 9356, 9504]
-  lst_nm = range(9)
+
   lst_flex_dat = []
-  for nm in lst_nm:
-    #table_row = table[nm]
+  for nm in range(9):
     lst_flex_dat.append(table[nm]['shoebox'].data)
     lst_flex_dat.append(table[nm]['shoebox'].mask)
 
