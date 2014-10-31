@@ -199,6 +199,7 @@ class Script(object):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
     from dials.util.options import flatten_reflections, flatten_experiments
+    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -207,11 +208,15 @@ class Script(object):
 
     # Try to load the models and data
     if len(experiments) == 0:
-      raise RuntimeError("No Experiments found in the input")
+      print "No Experiments found in the input"
+      self.parser.print_help()
+      return
     if len(reflections) == 0:
-      raise RuntimeError("No reflection data found in the input")
+      print "No reflection data found in the input"
+      self.parser.print_help()
+      return
     if len(reflections) > 1:
-      raise RuntimeError("Only one reflections list can be imported at present")
+      raise Sorry("Only one reflections list can be imported at present")
     reflections = reflections[0]
 
     # Get the refiner

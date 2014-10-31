@@ -122,9 +122,13 @@ class Script(object):
 
     # Try to load the models and data
     if len(params.input.experiments) == 0:
-      raise Sorry("No Experiments found in the input")
+      print "No Experiments found in the input"
+      self.parser.print_help()
+      return
     if len(params.input.reflections) == 0:
-      raise Sorry("No reflection data found in the input")
+      print "No reflection data found in the input"
+      self.parser.print_help()
+      return
     try:
       assert len(params.input.reflections) == len(params.input.experiments)
     except AssertionError:
