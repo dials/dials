@@ -152,52 +152,49 @@ def generate_reflections(experiment):
 
   print "Total number of observations made", len(obs_refs)
 
-  return obs_refs
+  return obs_refs, experiment
 
 
 if __name__ == "__main__":
 
-  from optparse import OptionParser
-  from dials.util.command_line import Importer
+  from dials.util.options import OptionParser
+  # The phil scope
+  phil_scope = parse('''
+  include scope dials.algorithms.refinement.refiner.phil_scope
+  ''', process_includes=True)
 
   # Initialise the option parser
   usage = "usage: %prog experiments.json [params]"
-  parser = OptionParser(usage)
+  parser = OptionParser(
+    phil=phil_scope,
+    usage=usage,
+    read_experiments=True,
+    check_format=False)
 
   # Parse the command line arguments
-  options, args = parser.parse_args()
-
-  # Load the experiment list
-  importer = Importer(args, include=['experiments'], check_format=False)
-  args = importer.unhandled_arguments
-
+  params, options = parser.parse_args(show_diff_phil=True)
+  print params.input.experiments
+  from dials.util.options import flatten_experiments
+  experiments = flatten_experiments(params.input.experiments)
 
   try:
     # only allow single experiment at the moment
-    assert len(importer.experiments) == 1
+    assert len(experiments) == 1
   except AssertionError:
     print usage
     raise
 
-  from dials.algorithms.refinement.refiner import phil_scope as master_phil
-  interp = master_phil.command_line_argument_interpreter(
-    home_scope="refinement")
-  cmdline_phils = interp.process_args(args)
-  working_phil = master_phil.fetch(sources=cmdline_phils)
-  working_phil.show()
-  params = working_phil.extract()
-
-  reflections = generate_reflections(importer.experiments[0])
+  reflections, perturbed_exp = generate_reflections(experiments[0])
 
   from dials.algorithms.refinement import RefinerFactory
   refiner = RefinerFactory.from_parameters_data_experiments(
-    params, reflections, importer.experiments)
+    params, reflections, experiments)
   refiner.run()
 
   refined_experiments = refiner.get_experiments()
 
   # quick check on refined detector geometry using panel 0
-  old_detector = importer.experiments[0].detector
+  old_detector = perturbed_exp.detector
   new_detector = refined_experiments[0].detector
   old_origin = matrix.col(old_detector[0].get_origin())
   new_origin = matrix.col(new_detector[0].get_origin())
