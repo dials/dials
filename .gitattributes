@@ -900,6 +900,7 @@ util/spotfinder_wrap.py -text
 viewer/__init__.py -text
 viewer/img_utilities.py -text
 viewer/new_reflection_view_tester.py -text
+viewer/new_viewer_tst.py -text
 viewer/next_gen_viewer/__init__.py -text
 viewer/next_gen_viewer/bitmap_from_numpy_w_matplotlib.py -text
 viewer/next_gen_viewer/flex_3d_array_viewer_test.py -text
