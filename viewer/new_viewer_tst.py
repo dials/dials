@@ -11,8 +11,6 @@
 #
 from __future__ import division
 import wx
-from dials.viewer.viewer_frame import ReflectionFrame
-
 
 
 def next_gen_viewer_test(table):
@@ -41,6 +39,7 @@ if __name__ == "__main__":
   from dials.viewer.reflection_view import viewer_App
 
   table = flex.reflection_table.from_pickle(sys.argv[1])
+
 
   app = viewer_App(redirect=False)
   app.table_in(table)
