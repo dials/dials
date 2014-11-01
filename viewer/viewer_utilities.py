@@ -21,7 +21,7 @@ class np_to_bmp(object):
                mask_colour = False):
     lc_fig = plt.figure()
 
-    print "imax = ", Intst_max
+    #print "imax = ", Intst_max
 
     if( np_img_2d == None ):
 

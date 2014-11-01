@@ -36,7 +36,7 @@ if __name__ == "__main__":
   '''
   #print "num of ref =", len(table)
 
-  app = viewer_App(redirect=False)
+  app = viewer_App()
   app.table_in(table)
 
   app.MainLoop()

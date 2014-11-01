@@ -14,10 +14,8 @@ import wx
 
 
 def next_gen_viewer_test(table):
-  print "table(ptr) =", table
+
   from dials.viewer.next_gen_viewer.multi_3D_slice_viewer import show_3d
-
-
   table_row = table[8037]
   data_flex = table_row['shoebox'].data
   show_3d(data_flex)
@@ -41,7 +39,7 @@ if __name__ == "__main__":
   table = flex.reflection_table.from_pickle(sys.argv[1])
 
 
-  app = viewer_App(redirect=False)
+  app = viewer_App()
   app.table_in(table)
   app.MainLoop()
 

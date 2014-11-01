@@ -209,7 +209,7 @@ class ReflectionFrame(wx.Frame):
         else:
           Imax = ref_max
           mask_colour = False
-        print "calling np_to_bmp.__init__(...)"
+        #print "calling np_to_bmp.__init__(...)"
         self.wx_Img[indx] = self.bmp(np_img_2d = self.arr_img[indx],
                                      Intst_max = Imax, ofst = self.bbox_px,
                                      xyz = self.xyz_px, title = self.arr_title[indx],
