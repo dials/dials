@@ -22,7 +22,7 @@ def next_gen_viewer_test(table):
 
 
   lst_flex_dat = []
-  for nm in range(9):
+  for nm in range(312000, 312020):
     lst_flex_dat.append(table[nm]['shoebox'].data)
     lst_flex_dat.append(table[nm]['shoebox'].mask)
 
