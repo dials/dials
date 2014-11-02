@@ -31,13 +31,11 @@ def next_gen_viewer_test(table):
 
 if __name__ == "__main__":
 
-  import cPickle as pickle
   import sys
   from dials.array_family import flex
   from dials.viewer.reflection_view import viewer_App
 
   table = flex.reflection_table.from_pickle(sys.argv[1])
-
 
   app = viewer_App()
   app.table_in(table)
