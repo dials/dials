@@ -36,6 +36,13 @@ master_params = master_phil_scope.fetch().extract()
 
 
 def run(args):
+  import libtbx.load_env
+  from libtbx.utils import Sorry
+  usage = """\
+%s [options] experiments.json indexed.pickle
+
+Parameters:
+""" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     phil=master_phil_scope,
@@ -47,54 +54,44 @@ def run(args):
 
   reflections = flatten_reflections(params.input.reflections)
   experiments = flatten_experiments(params.input.experiments)
-  if len(experiments) == 0:
-    print "No ExperimentList could be constructed"
+  if len(experiments) == 0 and len(reflections) == 0:
+    parser.print_help()
     return
   elif len(experiments) > 1:
-    raise RuntimeError("Only one Experiment can be processed at a time")
-
-  # importer = Importer(args, check_format=False)
-  # if len(importer.experiments) == 0:
-  #   print "No ExperimentList could be constructed"
-  #   return
-  # elif len(importer.experiments) > 1:
-  #   raise RuntimeError("Only one Experiment can be processed at a time")
-  # experiments = importer.experiments
-  experiment = experiments[0]
-  assert(len(reflections) == 1)
-  reflections = reflections[0]
-  # assert len(importer.reflections) == 1
-  # reflections = importer.reflections[0]
-  # args = importer.unhandled_arguments
-  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  # working_phil = cmd_line.process_and_fetch(args=args)
-  # working_phil.show()
-  # params = working_phil.extract()
-  parser.phil.show()
-  assert params.change_of_basis_op is not None
+    raise Sorry("Only one Experiment can be processed at a time")
+  if params.change_of_basis_op is None:
+    raise Sorry("Please provide a change_of_basis_op.")
 
   change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
-  cryst_orig = experiment.crystal
-  cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
-  if params.space_group is not None:
-    a, b, c = cryst_reindexed.get_real_space_vectors()
-    cryst_reindexed = crystal_model(
-      a, b, c, space_group=params.space_group.group())
-  experiment.crystal = cryst_reindexed
 
-  print "Old crystal:"
-  print cryst_orig
-  print
-  print "New crystal:"
-  print cryst_reindexed
-  print
+  if len(experiments):
+    experiment = experiments[0]
+    cryst_orig = experiment.crystal
+    cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
+    if params.space_group is not None:
+      a, b, c = cryst_reindexed.get_real_space_vectors()
+      cryst_reindexed = crystal_model(
+        a, b, c, space_group=params.space_group.group())
+    experiment.crystal = cryst_reindexed
 
-  miller_indices = reflections['miller_index']
-  miller_indices_reindexed = change_of_basis_op.apply(miller_indices)
-  reflections['miller_index'] = miller_indices_reindexed
+    print "Old crystal:"
+    print cryst_orig
+    print
+    print "New crystal:"
+    print cryst_reindexed
+    print
 
-  easy_pickle.dump('reflections_reindexed.pickle', reflections)
-  dump.experiment_list(experiments, 'experiments_reindexed.json')
+    dump.experiment_list(experiments, 'experiments_reindexed.json')
+
+  if len(reflections):
+    assert(len(reflections) == 1)
+    reflections = reflections[0]
+
+    miller_indices = reflections['miller_index']
+    miller_indices_reindexed = change_of_basis_op.apply(miller_indices)
+    reflections['miller_index'] = miller_indices_reindexed
+
+    easy_pickle.dump('reflections_reindexed.pickle', reflections)
 
 
 if __name__ == '__main__':
