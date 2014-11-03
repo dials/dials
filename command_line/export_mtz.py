@@ -29,8 +29,9 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
-  assert(len(experiments) > 0)
-  assert(len(reflections) == 1)
+  if len(reflections) == 0 or len(experiments) == 0:
+    parser.print_help()
+    return
 
   integrated_data = reflections[0]
   experiment_list = experiments
