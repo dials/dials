@@ -48,13 +48,43 @@ namespace dials { namespace af {
     Observed         = (1 << 1),
     Indexed          = (1 << 2),
     UsedInRefinement = (1 << 3),
-    InPowderRing     = (1 << 4),
-    Strong           = (1 << 5),
-    ReferenceSpot    = (1 << 6),
-    DontIntegrate    = (1 << 7),
-    IntegratedSum    = (1 << 8),
-    IntegratedPrf    = (1 << 9),
+    Strong           = (1 << 4),
+
+    // Role in integration
+    ReferenceSpot    = (1 << 5),
+    DontIntegrate    = (1 << 6),
+
+    // Integated
+    IntegratedSum    = (1 << 7),
+    IntegratedPrf    = (1 << 8),
     Integrated       = IntegratedSum | IntegratedPrf,
+
+    // Bad shoebox
+    Overloaded       = (1 << 9),
+    OverlappedBg     = (1 << 10),
+    OverlappedFg     = (1 << 11),
+    InPowderRing     = (1 << 12),
+    BadShoebox       = Overloaded | OverlappedBg | OverlappedFg | InPowderRing,
+
+    // Bad background
+    LargeBgVariation = (1 << 13),
+    LargeBgGradient  = (1 << 14),
+    LargeBgLevel     = (1 << 15),
+    BadBackground    = LargeBgVariation | LargeBgGradient | LargeBgLevel,
+
+    // Bad shape
+    LargePosDiff     = (1 << 16),
+    BadShape         = LargePosDiff,
+
+    // Bad integrated intensity
+    LargeSumPrfDiff  = (1 << 17),
+    NegativeSum      = (1 << 18),
+    NegativePrf      = (1 << 19),
+    PoorProfileFit   = (1 << 20),
+    BadIntegration   = LargeSumPrfDiff | NegativeSum | NegativePrf | PoorProfileFit,
+
+    // Bad spot
+    BadSpot = BadShoebox | BadBackground | BadShape | BadIntegration
   };
 
 }} // namespace dials::af
