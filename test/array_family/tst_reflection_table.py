@@ -892,8 +892,9 @@ class Test(object):
       r.append({"id" : 5})
     result = r.split_by_experiment_id()
     assert(len(result) == 5)
-    for res in result:
+    for res, exp in zip(result, [0, 1, 2, 3, 5]):
       assert(len(res) == 100)
+      assert(res['id'].count(exp) == 100)
     print 'OK'
 
   def tst_split_partials(self):

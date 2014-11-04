@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <numeric>
 #include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/model/data/shoebox.h>
@@ -283,6 +284,65 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Split reflection table by experiment id
+   */
+  template <typename T>
+  boost::python::list split_by_experiment_id(T self) {
+    DIALS_ASSERT(self.contains("id"));
+
+    // Get the id array
+    af::const_ref<std::size_t> id = self["id"];
+
+    // Get the number of experiments
+    std::size_t num_expr = 0;
+    for (std::size_t i = 0; i < id.size(); ++i) {
+      if (id[i] >= num_expr) num_expr = id[i] + 1;
+    }
+
+    // Get the number of each
+    std::vector<std::size_t> num(num_expr, 0);
+    for (std::size_t i = 0; i < id.size(); ++i) {
+      num[id[i]]++;
+    }
+
+    // Compute the indices
+    std::vector<std::size_t> indices(id.size());
+    std::vector<std::size_t> offset(1, 0);
+    std::partial_sum(num.begin(), num.end(), std::back_inserter(offset));
+    num.assign(num.size(), 0);
+    for (std::size_t i = 0; i < indices.size(); ++i) {
+      std::size_t j = id[i];
+      DIALS_ASSERT(j < offset.size() - 1);
+      std::size_t off1 = offset[j];
+      std::size_t off2 = offset[j+1];
+      DIALS_ASSERT(off2 > off1);
+      DIALS_ASSERT(off2 <= indices.size());
+      std::size_t k = off1 + num[j];
+      DIALS_ASSERT(j < off2);
+      num[j]++;
+      indices[k] = i;
+    }
+
+    // For each experiment if select the reflections in the list
+    boost::python::list result;
+    for (std::size_t i = 0; i < offset.size()-1; ++i) {
+      std::size_t off1 = offset[i];
+      std::size_t off2 = offset[i+1];
+      DIALS_ASSERT(off2 >= off1);
+      std::size_t off = off1;
+      std::size_t num = off2 - off1;
+      if (num > 0) {
+        DIALS_ASSERT(off + num <= indices.size());
+        result.append(flex_table_suite::select_rows_index(
+              self, const_ref<std::size_t>(&indices[off], num)));
+      }
+    }
+
+    // Return the result
+    return result;
+  }
+
+  /**
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
@@ -324,6 +384,8 @@ namespace dials { namespace af { namespace boost_python {
           &unset_flags_by_index<flex_table_type>)
         .def("split_partials",
           &split_partials<flex_table_type>)
+        .def("split_by_experiment_id",
+          &split_by_experiment_id<flex_table_type>)
         ;
 
       // Create the flags enum in the reflection table scope

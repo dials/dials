@@ -292,23 +292,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       reverse=reverse)
     self.reorder(flex.size_t(indices))
 
-  def split_by_experiment_id(self):
-    ''' Split the reflection table into multiple tables by experiment id. '''
-    from scitbx.array_family import flex
-    temp = self.select(flex.bool(len(self), True))
-    result = []
-    i = 0
-    while (True):
-      mask = temp['id'] == i
-      new_list = temp.select(mask)
-      temp.del_selected(mask)
-      if len(new_list) > 0:
-        result.append(new_list)
-      if len(temp) == 0:
-        break
-      i += 1
-    return result
-
   def match(self, other):
     ''' Match reflections with another set of reflections. '''
     from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
