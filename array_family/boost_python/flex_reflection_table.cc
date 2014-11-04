@@ -452,15 +452,7 @@ namespace dials { namespace af { namespace boost_python {
         .value("overlapped_bg", OverlappedBg)
         .value("overlapped_fg", OverlappedFg)
         .value("in_powder_ring", InPowderRing)
-        .value("large_bg_variation", LargeBgVariation)
-        .value("large_bg_gradient", LargeBgGradient)
-        .value("large_pos_diff", LargePosDiff)
-        .value("large_sum_prf_diff", LargeSumPrfDiff)
-        .value("poor_profile_fit", PoorProfileFit)
         .value("bad_shoebox", BadShoebox)
-        .value("bad_background", BadBackground)
-        .value("bad_shape", BadShape)
-        .value("bad_intensity", BadIntensity)
         .value("bad_spot", BadSpot)
         ;
 

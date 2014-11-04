@@ -44,44 +44,34 @@ namespace dials { namespace af {
   typedef flex_table<reflection_table_types> reflection_table;
 
   enum Flags {
+
+    // Predicted/Observed
     Predicted        = (1 << 0),
     Observed         = (1 << 1),
+
+    // Use in indexing/refinement
     Indexed          = (1 << 2),
     UsedInRefinement = (1 << 3),
-    Strong           = (1 << 4),
+    Strong           = (1 << 5),
 
     // Role in integration
-    ReferenceSpot    = (1 << 5),
-    DontIntegrate    = (1 << 6),
+    ReferenceSpot    = (1 << 6),
+    DontIntegrate    = (1 << 7),
 
     // Integated
-    IntegratedSum    = (1 << 7),
-    IntegratedPrf    = (1 << 8),
+    IntegratedSum    = (1 << 8),
+    IntegratedPrf    = (1 << 9),
     Integrated       = IntegratedSum | IntegratedPrf,
 
     // Bad shoebox
-    Overloaded       = (1 << 9),
-    OverlappedBg     = (1 << 10),
-    OverlappedFg     = (1 << 11),
-    InPowderRing     = (1 << 12),
+    Overloaded       = (1 << 10),
+    OverlappedBg     = (1 << 11),
+    OverlappedFg     = (1 << 12),
+    InPowderRing     = (1 << 13),
     BadShoebox       = Overloaded | OverlappedBg | OverlappedFg | InPowderRing,
 
-    // Bad background
-    LargeBgVariation = (1 << 13),
-    LargeBgGradient  = (1 << 14),
-    BadBackground    = LargeBgVariation | LargeBgGradient,
-
-    // Bad shape
-    LargePosDiff     = (1 << 15),
-    BadShape         = LargePosDiff,
-
-    // Bad integrated intensity
-    LargeSumPrfDiff  = (1 << 16),
-    PoorProfileFit   = (1 << 17),
-    BadIntensity     = LargeSumPrfDiff | PoorProfileFit,
-
     // Bad spot
-    BadSpot = BadShoebox | BadBackground | BadShape | BadIntensity
+    BadSpot = BadShoebox
   };
 
 }} // namespace dials::af
