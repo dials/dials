@@ -69,22 +69,19 @@ namespace dials { namespace af {
     // Bad background
     LargeBgVariation = (1 << 13),
     LargeBgGradient  = (1 << 14),
-    LargeBgLevel     = (1 << 15),
-    BadBackground    = LargeBgVariation | LargeBgGradient | LargeBgLevel,
+    BadBackground    = LargeBgVariation | LargeBgGradient,
 
     // Bad shape
-    LargePosDiff     = (1 << 16),
+    LargePosDiff     = (1 << 15),
     BadShape         = LargePosDiff,
 
     // Bad integrated intensity
-    LargeSumPrfDiff  = (1 << 17),
-    NegativeSum      = (1 << 18),
-    NegativePrf      = (1 << 19),
-    PoorProfileFit   = (1 << 20),
-    BadIntegration   = LargeSumPrfDiff | NegativeSum | NegativePrf | PoorProfileFit,
+    LargeSumPrfDiff  = (1 << 16),
+    PoorProfileFit   = (1 << 17),
+    BadIntensity     = LargeSumPrfDiff | PoorProfileFit,
 
     // Bad spot
-    BadSpot = BadShoebox | BadBackground | BadShape | BadIntegration
+    BadSpot = BadShoebox | BadBackground | BadShape | BadIntensity
   };
 
 }} // namespace dials::af
