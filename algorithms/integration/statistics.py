@@ -12,6 +12,19 @@ from dials.array_family import flex
 from dials.array_family.flex import Binner
 
 
+def flex_ios(val, var):
+  ''' Compute I/sigma or return zero for each element. '''
+  assert(var.all_ge(0))
+  assert(len(val) == len(var))
+  result = flex.double(len(val),0)
+  indices = flex.size_t(range(len(val))).select(var > 0)
+  val = val.select(indices)
+  var = var.select(indices)
+  assert(var.all_gt(0))
+  result.set_selected(indices, val / flex.sqrt(var))
+  return result
+
+
 class ImageSummary(object):
   ''' A class to produce statistics per image. '''
 
@@ -53,8 +66,7 @@ class ImageSummary(object):
     i_sum_flg = data.get_flags(data.flags.integrated_sum)
     i_sum_val = data['intensity.sum.value'].select(i_sum_flg)
     i_sum_var = data['intensity.sum.variance'].select(i_sum_flg)
-    assert(i_sum_var.all_gt(0))
-    ios_sum = i_sum_val / flex.sqrt(i_sum_var)
+    ios_sum = flex_ios(i_sum_val, i_sum_var)
     bin_indexer = binner.indexer(frames.select(i_sum_flg).as_double())
     self.num_sum = bin_indexer.count()
     self.ios_sum = bin_indexer.mean(ios_sum)
@@ -64,8 +76,7 @@ class ImageSummary(object):
       i_prf_flg = data.get_flags(data.flags.integrated_prf)
       i_prf_val = data['intensity.prf.value'].select(i_prf_flg)
       i_prf_var = data['intensity.prf.variance'].select(i_prf_flg)
-      assert(i_prf_var.all_gt(0))
-      ios_prf = i_prf_val / flex.sqrt(i_prf_var)
+      ios_prf = flex_ios(i_prf_val, i_prf_var)
       bin_indexer = binner.indexer(frames.select(i_prf_flg).as_double())
       self.num_prf = bin_indexer.count()
       self.ios_prf = bin_indexer.mean(ios_prf)
@@ -147,8 +158,7 @@ class ResolutionSummary(object):
     i_sum_flg = data.get_flags(data.flags.integrated_sum)
     i_sum_val = data['intensity.sum.value'].select(i_sum_flg)
     i_sum_var = data['intensity.sum.variance'].select(i_sum_flg)
-    assert(i_sum_var.all_gt(0))
-    ios_sum = i_sum_val / flex.sqrt(i_sum_var)
+    ios_sum = flex_ios(i_sum_val, i_sum_var)
     bin_indexer = binner.indexer(data['d'].select(i_sum_flg))
     self.num_sum = bin_indexer.count()
     self.ios_sum = bin_indexer.mean(ios_sum)
@@ -158,8 +168,7 @@ class ResolutionSummary(object):
       i_prf_flg = data.get_flags(data.flags.integrated_prf)
       i_prf_val = data['intensity.prf.value'].select(i_prf_flg)
       i_prf_var = data['intensity.prf.variance'].select(i_prf_flg)
-      assert(i_prf_var.all_gt(0))
-      ios_prf = i_prf_val / flex.sqrt(i_prf_var)
+      ios_prf = flex_ios(i_prf_val, i_prf_var)
       bin_indexer = binner.indexer(data['d'].select(i_prf_flg))
       self.num_prf = bin_indexer.count()
       self.ios_prf = bin_indexer.mean(ios_prf)
@@ -206,16 +215,14 @@ class WholeSummary(object):
     flags_sum = data.get_flags(data.flags.integrated_sum)
     I_sum_val = data['intensity.sum.value'].select(flags_sum)
     I_sum_var = data['intensity.sum.variance'].select(flags_sum)
-    assert(I_sum_var.all_gt(0))
-    self.sum_ios = flex.mean(I_sum_val / flex.sqrt(I_sum_var))
+    self.sum_ios = flex.mean(flex_ios(I_sum_val, I_sum_var))
 
     # Compute for profile fitting
     try:
       flags_prf = data.get_flags(data.flags.integrated_prf)
       I_prf_val = data['intensity.prf.value'].select(flags_prf)
       I_prf_var = data['intensity.prf.variance'].select(flags_prf)
-      assert(I_prf_var.all_gt(0))
-      self.prf_ios = flex.mean(I_prf_val / flex.sqrt(I_prf_var))
+      self.prf_ios = flex.mean(flex_ios(I_prf_val, I_prf_var))
     except Exception:
         self.prf_ios = 0.0
 
