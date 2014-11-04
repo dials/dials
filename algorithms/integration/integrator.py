@@ -52,22 +52,7 @@ def generate_phil_scope():
                   "positive value is used as the minimum permissable value."
           .type = float
 
-        ice_rings {
-          filter = False
-            .type = bool
-          unit_cell = 4.498,4.498,7.338,90,90,120
-            .type = unit_cell
-            .help = "The unit cell to generate d_spacings for ice rings."
-          space_group = 194
-            .type = space_group
-            .help = "The space group used to generate d_spacings for ice rings."
-          d_min = 0
-            .type = int(value_min=0)
-            .help = "The minimum resolution to filter ice rings"
-          width = 0.06
-            .type = float(value_min=0.0)
-            .help = "The width of an ice ring (in d-spacing)."
-        }
+        include scope dials.algorithms.integration.filtering.phil_scope
       }
 
       debug {
@@ -531,11 +516,18 @@ class Manager(object):
 class PreProcessorRot(object):
   ''' A pre-processing class for oscillation data. '''
 
-  def __init__(self, experiments, profile_model, min_zeta, partials, **kwargs):
+  def __init__(self,
+               experiments,
+               profile_model,
+               min_zeta,
+               powder_filter,
+               partials,
+               **kwargs):
     ''' Initialise the pre-processor. '''
     self.experiments = experiments
     self.profile_model = profile_model
     self.min_zeta = min_zeta
+    self.powder_filter = powder_filter
     self.partials = partials
     self.time = 0
 
@@ -582,6 +574,13 @@ class PreProcessorRot(object):
     mask = flex.abs(data['zeta']) < self.min_zeta
     num_ignore = mask.count(True)
     data.set_flags(mask, data.flags.dont_integrate)
+
+    # Filter the reflections by powder rings
+    if self.powder_filter is not None:
+      mask = self.powder_filter(data['d'])
+      data.set_flags(mask, data.flags.in_powder_ring)
+
+    # Print some output
     EPS = 1e-7
     full_value = (0.997300203937 - EPS)
     fully_recorded = data['partiality'] > full_value
@@ -609,10 +608,15 @@ class PreProcessorRot(object):
 class PreProcessorStills(object):
   ''' A pre-processing class for stills data. '''
 
-  def __init__(self, experiments, profile_model, **kwargs):
+  def __init__(self,
+               experiments,
+               profile_model,
+               powder_filter,
+               **kwargs):
     ''' Initialise the pre-processor. '''
     self.experiments = experiments
     self.profile_model = profile_model
+    self.powder_filter = powder_filter
     self.time = 0
 
   def __call__(self, data, jobs):
@@ -636,6 +640,11 @@ class PreProcessorStills(object):
 
     # Compute the partiality
     data.compute_partiality(self.experiments, self.profile_model)
+
+    # Filter the reflections by powder rings
+    if self.powder_filter is not None:
+      mask = self.powder_filter(data['d'])
+      data.set_flags(mask, data.flags.in_powder_ring)
 
     # Print out the pre-processing summary
     num_ignore = 0
@@ -715,6 +724,7 @@ class ManagerRot(Manager):
                block_size=10,
                block_size_units='degrees',
                min_zeta=0.05,
+               powder_filter=None,
                flatten=False,
                partials=False,
                save_shoeboxes=False,
@@ -734,6 +744,7 @@ class ManagerRot(Manager):
       experiments,
       profile_model,
       min_zeta=min_zeta,
+      powder_filter=powder_filter,
       partials=partials)
 
     # Create the post-processor
@@ -761,6 +772,7 @@ class ManagerStills(Manager):
                profile_model,
                reflections,
                save_shoeboxes=False,
+               powder_filter=None,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -775,7 +787,8 @@ class ManagerStills(Manager):
     # Create the pre-processor
     preprocess = PreProcessorStills(
       experiments,
-      profile_model)
+      profile_model,
+      powder_filter=powder_filter)
 
     # Create the post-processor
     postprocess = PostProcessorStills(experiments)
@@ -802,6 +815,7 @@ class Integrator3D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
@@ -815,6 +829,7 @@ class Integrator3D(Integrator):
       reflections,
       block_size=block_size,
       min_zeta=min_zeta,
+      powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
@@ -830,6 +845,7 @@ class IntegratorFlat3D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
@@ -843,6 +859,7 @@ class IntegratorFlat3D(Integrator):
       reflections,
       block_size=block_size,
       min_zeta=min_zeta,
+      powder_filter=powder_filter,
       flatten=True,
       save_shoeboxes=save_shoeboxes)
 
@@ -859,6 +876,7 @@ class Integrator2D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
@@ -872,6 +890,7 @@ class Integrator2D(Integrator):
       reflections,
       block_size=block_size,
       min_zeta=min_zeta,
+      powder_filter=powder_filter,
       partials=True,
       save_shoeboxes=save_shoeboxes)
 
@@ -888,6 +907,7 @@ class IntegratorSingle2D(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
@@ -905,6 +925,7 @@ class IntegratorSingle2D(Integrator):
       block_size=block_size,
       block_size_units='frames',
       min_zeta=min_zeta,
+      powder_filter=powder_filter,
       partials=True,
       save_shoeboxes=save_shoeboxes)
 
@@ -921,6 +942,7 @@ class IntegratorStills(Integrator):
                reflections,
                block_size=1,
                min_zeta=0.05,
+               powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
@@ -932,6 +954,7 @@ class IntegratorStills(Integrator):
       experiments,
       profile_model,
       reflections,
+      powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes)
 
     # Initialise the integrator
@@ -944,6 +967,7 @@ class IntegratorFactory(object):
   @staticmethod
   def create(params, experiments, profile_model, reflections):
     ''' Create the integrator from the input configuration. '''
+    from dials.algorithms.integration.filtering import MultiPowderRingFilter
     from dials.interfaces import IntensityIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import CentroidIface
@@ -972,6 +996,10 @@ class IntegratorFactory(object):
     IntegratorClass = IntegratorFactory.select_integrator(
       IntensityAlgorithm.type(params, experiments))
 
+    # Create the powder filter
+    powder_filter = MultiPowderRingFilter.from_params(
+      params.integration.filter)
+
     # Return an instantiation of the class
     return IntegratorClass(
       experiments=experiments,
@@ -979,6 +1007,7 @@ class IntegratorFactory(object):
       reflections=reflections,
       block_size=params.integration.block.size,
       min_zeta=params.integration.filter.min_zeta,
+      powder_filter=powder_filter,
       nthreads=params.integration.mp.nthreads,
       nproc=params.integration.mp.nproc,
       mp_method=params.integration.mp.method,
