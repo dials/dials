@@ -67,6 +67,10 @@ class Script(object):
                     "the first step is numbered 0."
         }
 
+        history_filename = None
+          .type = str
+          .help = "The filename for output of the refinement history pickle"
+
         reflections_filename = None
           .type = str
           .help = "The filename for output of refined reflections"
@@ -194,6 +198,7 @@ class Script(object):
     from dials.algorithms.refinement import RefinerFactory
     from dials.util.options import flatten_reflections, flatten_experiments
     from libtbx.utils import Sorry
+    import cPickle as pickle
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -222,7 +227,7 @@ class Script(object):
     print 'Performing refinement'
 
     # Refine and get the refinement history
-    refined = refiner.run()
+    history = refiner.run()
 
     if params.output.centroids_filename:
       print "Writing table of centroids to '{0}'".format(
@@ -267,7 +272,7 @@ class Script(object):
       if not ext: ext = ".pdf"
 
       steps = params.output.correlation_plot.steps
-      if steps is None: steps = [refined.get_nrows()-1]
+      if steps is None: steps = [history.get_nrows()-1]
 
       # flatten list of column names
       col_select = params.output.correlation_plot.col_select
@@ -275,7 +280,6 @@ class Script(object):
         col_select = " ".join(params.output.correlation_plot.col_select).split()
       else: col_select = None
       save_matrix = params.output.correlation_plot.save_matrix
-      if save_matrix: import cPickle as pickle
 
       num_plots = 0
       for step in steps:
@@ -298,6 +302,11 @@ class Script(object):
         print "Sorry, no parameter correlation plots were produced. Please set " \
               "track_parameter_correlation=True to ensure correlations are " \
               "tracked, and make sure correlation_plot.col_select is valid."
+
+    # Write out refinement history, if requested
+    if params.output.history_filename:
+      with open(params.output.history_filename, 'wb') as handle:
+        pickle.dump(history, handle)
 
     return
 
