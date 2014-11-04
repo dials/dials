@@ -16,7 +16,7 @@ sources = [
     'boost_python/flex_reflection_table.cc',
     'boost_python/flex_unit_cell.cc',
     'boost_python/flex_shoebox_extractor.cc',
-    'boost_python/flex_reflection_table_statistics.cc',
+    'boost_python/flex_binner.cc',
     'boost_python/flex_ext.cc']
 
 env.SharedLibrary(

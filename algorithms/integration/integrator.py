@@ -440,7 +440,8 @@ class Manager(object):
     assert(self._manager.finished())
     self._postprocess(self._manager.data())
     self._time.postprocess = self._postprocess.time
-    print self._manager.data().statistics(self._experiments)
+    for stats in self._manager.data().statistics(self._experiments):
+      print stats
     self._finalized = True
 
   def result(self):

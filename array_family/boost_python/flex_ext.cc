@@ -32,7 +32,7 @@ namespace dials { namespace af { namespace boost_python {
   void export_flex_reflection_table();
   void export_flex_unit_cell();
   void export_flex_shoebox_extractor();
-  void export_flex_reflection_table_statistics();
+  void export_flex_binner();
 
   template <typename FloatType>
   std::string get_real_type();
@@ -59,7 +59,7 @@ namespace dials { namespace af { namespace boost_python {
     export_flex_reflection_table();
     export_flex_unit_cell();
     export_flex_shoebox_extractor();
-    export_flex_reflection_table_statistics();
+    export_flex_binner();
 
     def("get_real_type", &get_real_type<ProfileFloatType>);
 

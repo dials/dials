@@ -284,6 +284,50 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Split the reflection table in partials and return indices.
+   */
+  template <typename T>
+  af::shared<std::size_t> split_partial_indices(T self) {
+
+    // Check the input
+    DIALS_ASSERT(self.is_consistent());
+    DIALS_ASSERT(self.contains("bbox"));
+
+    // Compute the number of partials
+    af::const_ref<int6> bbox = self["bbox"];
+    std::size_t num_full = bbox.size();
+    std::size_t num_partial = 0;
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+      DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+      DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+      num_partial += (bbox[i][5] - bbox[i][4]);
+    }
+    DIALS_ASSERT(num_partial >= num_full);
+
+    // If num partial is the same as num full exit early
+    af::shared<std::size_t> indices(num_partial);
+    if (num_partial == num_full) {
+      for (std::size_t i = 0; i < indices.size(); ++i) {
+        indices[i] = i;
+      }
+      return indices;
+    }
+
+    // Create the new bounding boxes and indices
+    std::size_t j = 0;
+    for (std::size_t i = 0; i < num_full; ++i) {
+      for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
+        DIALS_ASSERT(j < num_partial);
+        indices[j] = i;
+        j++;
+      }
+    }
+    DIALS_ASSERT(j == num_partial);
+    return indices;
+  }
+
+  /**
    * Split reflection table by experiment id
    */
   template <typename T>
@@ -342,6 +386,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
+
   /**
    * Struct to facilitate wrapping reflection table type
    */
@@ -384,6 +429,8 @@ namespace dials { namespace af { namespace boost_python {
           &unset_flags_by_index<flex_table_type>)
         .def("split_partials",
           &split_partials<flex_table_type>)
+        .def("split_partial_indices",
+          &split_partial_indices<flex_table_type>)
         .def("split_by_experiment_id",
           &split_by_experiment_id<flex_table_type>)
         ;

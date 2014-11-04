@@ -100,7 +100,7 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   void export_flex_reflection_table_statistics() {
-    summary_wrapper();
+    /* summary_wrapper(); */
 
 /*     class_<Summary::ImageSummary>("ImageSummary", no_init) */
 /*       .def("full", &Summary::ImageSummary::full) */

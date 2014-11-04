@@ -253,6 +253,8 @@ algorithms/statistics/ks_test.py -text
 algorithms/statistics/temp.py -text
 array_family/SConscript -text
 array_family/__init__.py -text
+array_family/binner.h -text
+array_family/boost_python/flex_binner.cc -text
 array_family/boost_python/flex_centroid.cc -text
 array_family/boost_python/flex_ext.cc -text
 array_family/boost_python/flex_int6.cc -text
