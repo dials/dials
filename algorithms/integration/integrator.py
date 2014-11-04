@@ -437,10 +437,13 @@ class Manager(object):
 
   def finalize(self):
     ''' Do the post-processing and finish. '''
+    from dials.algorithms.integration import statistics
     assert(self._manager.finished())
     self._postprocess(self._manager.data())
     self._time.postprocess = self._postprocess.time
-    for stats in self._manager.data().statistics(self._experiments):
+    for stats in statistics.statistics(
+        self._manager.data(),
+        self._experiments):
       print stats
     self._finalized = True
 
