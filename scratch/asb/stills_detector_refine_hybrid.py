@@ -17,6 +17,7 @@ then each crystal is refined individually. This forms one macrocycle."""
 
 from __future__ import division
 from math import sqrt
+import os
 
 from libtbx.phil import parse
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
@@ -135,6 +136,7 @@ def detector_parallel_refiners(params, experiments, reflections):
       newchild.set_image_size(child.get_image_size())
       newchild.set_trusted_range(child.get_trusted_range())
       newchild.set_pixel_size(child.get_pixel_size())
+      newchild.set_px_mm_strategy(child.get_px_mm_strategy())
 
     m = child.get_local_d_matrix()
     newchild.set_local_frame(m[0::3],m[1::3],m[2::3])
@@ -150,8 +152,19 @@ def detector_parallel_refiners(params, experiments, reflections):
     d.hierarchy().set_frame(g.get_fast_axis(),
                             g.get_slow_axis(),
                             g.get_origin())
-    for c in g.children():
-      recursive_add_child(d, d.hierarchy(), c)
+    if hasattr(g, "children"):
+      for c in g.children():
+        recursive_add_child(d, d.hierarchy(), c)
+    else: # at the bottom of the hierarchy
+      p = d.hierarchy().add_panel(d.add_panel())
+      p.set_image_size(g.get_image_size())
+      p.set_trusted_range(g.get_trusted_range())
+      p.set_pixel_size(g.get_pixel_size())
+      p.set_px_mm_strategy(g.get_px_mm_strategy())
+
+      m = g.get_local_d_matrix()
+      p.set_local_frame(m[0::3],m[1::3],m[2::3])
+      p.set_name(g.get_name())
 
   # set experiment lists for each sub-detector
   import copy
@@ -224,6 +237,11 @@ def crystals_refiner(params, experiments, reflections):
     # reflection subset for a single experiment
     refs = reflections.select(reflections['id'] == iexp)
     refs['id'] = flex.size_t(len(refs),0)
+
+    if len(refs) < params.refinement.reflections.minimum_number_of_reflections:
+      print "Not enough reflections to refine experiment"
+      return
+
     # experiment list for a single experiment
     exps=ExperimentList()
     exps.append(exp)
@@ -373,8 +391,8 @@ class Script(object):
         sel = refs['id'] == i
         sub_ref = refs.select(sel)
 
-        if len(sub_ref) == 0:
-          print "skipping experiment", i, "in", exp_wrapper.filename, "due to no reflections being found in", refs.filename
+        if len(sub_ref) < params.crystals_phase.refinement.reflections.minimum_number_of_reflections:
+          print "skipping experiment", i, "in", exp_wrapper.filename, "due to insufficient strong reflections in", ref_wrapper.filename
           continue
 
         # build an experiment with this crystal plus the reference models
