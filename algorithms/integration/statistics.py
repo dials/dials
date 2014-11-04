@@ -1,5 +1,5 @@
 #
-# flex.py
+# statistics.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -13,7 +13,7 @@ from dials.array_family.flex import Binner
 
 
 class ImageSummary(object):
-  ''' Summary per image. '''
+  ''' A class to produce statistics per image. '''
 
   def __init__(self, data, experiment):
     ''' Compute stats. '''
@@ -36,7 +36,9 @@ class ImageSummary(object):
     frames = data['bbox'].parts()[4]
 
     # Create the binner with the bins per image
-    binner = Binner(flex.int(range(*array_range)).as_double())
+    binner = Binner(flex.int(range(
+      array_range[0],
+      array_range[1]+1)).as_double())
 
     # Get the bins
     self.bins = binner.bins()
@@ -72,7 +74,9 @@ class ImageSummary(object):
       self.ios_prf = flex.size_t(len(self.bins), 0)
 
   def __len__(self):
-    return len(self.bins)
+    ''' The number of bins. '''
+    assert(len(self.bins) > 1)
+    return len(self.bins)-1
 
   def table(self):
     ''' Produce a table of results. '''
@@ -97,8 +101,10 @@ class ImageSummary(object):
 
 
 class ResolutionSummary(object):
+  ''' A class to produce statistics in resolution shells. '''
 
   def __init__(self, data, experiment, nbins=10):
+    ''' Compute the statistics. '''
     from cctbx import miller
     from cctbx import crystal
 
@@ -162,9 +168,12 @@ class ResolutionSummary(object):
       self.ios_prf = flex.double(len(bins)-1, 0)
 
   def __len__(self):
+    ''' The number of bins. '''
+    assert(len(self.bins) > 1)
     return len(self.bins)-1
 
   def table(self):
+    ''' Produce a table. '''
     from libtbx.table_utils import format as table
     rows = [["d min",
              "d max",
@@ -188,7 +197,7 @@ class ResolutionSummary(object):
 
 
 class WholeSummary(object):
-  ''' Whole dataset summary. '''
+  ''' A class to produce statistics for the whole dataset. '''
 
   def __init__(self, data, experiment):
     ''' Compute the results. '''
@@ -259,7 +268,7 @@ class Summary(object):
 
 
 def statistics(data, experiments):
-  ''' Return some simple statistics. '''
+  ''' Return some simple statistics for a reflection table. '''
   tables = data.split_by_experiment_id()
   assert(len(tables) == len(experiments))
   summaries = []
