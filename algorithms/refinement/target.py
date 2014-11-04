@@ -132,6 +132,8 @@ class Target(object):
     """perform prediction for the reflections not used for refinement"""
 
     refs = self._reflection_manager.get_free_reflections()
+    if len(refs) == 0: return refs
+
     return self._predict_core(refs)
 
   def predict_for_reflection_table(self, reflections):
