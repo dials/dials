@@ -74,7 +74,7 @@ class Script(object):
     for dirpath, _, filenames in os.walk("."):
       dirpath = os.path.abspath(dirpath)
       for e, r in zip(e_templ, r_templ):
-        if e in filenames and r in r_templ:
+        if e in filenames and r in filenames:
           e_path = os.path.join(dirpath, e)
           r_path = os.path.join(dirpath, r)
           pairs.append((e_path, r_path))
