@@ -296,6 +296,9 @@ class Task(object):
     if self._flatten:
       self._data['shoebox'].flatten()
 
+    # Check if pixels are overloaded
+    self._data.is_overloaded(self._experiments)
+
     # Process the data
     process_start_time = time()
     self._process()

@@ -24,6 +24,7 @@ env_etc.include_registry.append(
 sources = [
     'boost_python/mask_code.cc',
     'boost_python/find_overlapping.cc',
+    'boost_python/overload_checker.cc',
     'boost_python/mask_empirical.cc',
     'boost_python/mask_overlapping.cc',
     'boost_python/mask_builder.cc',

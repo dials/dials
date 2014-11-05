@@ -32,6 +32,7 @@ class ImageSummary(object):
     ''' Compute stats. '''
 
     # Check some table columns
+    assert("flags" in data)
     assert("bbox" in data)
     assert("partiality" in data)
     assert("intensity.sum.value" in data)
@@ -120,6 +121,7 @@ class ResolutionSummary(object):
     from cctbx import crystal
 
     # Check some table columns
+    assert("flags" in data)
     assert("d" in data)
     assert("intensity.sum.value" in data)
     assert("intensity.sum.variance" in data)
@@ -150,9 +152,13 @@ class ResolutionSummary(object):
 
     # Get full and partial counts
     full = data['partiality'] > 0.997300203937
+    over = data.get_flags(data.flags.overloaded)
+    ice = data.get_flags(data.flags.in_powder_ring)
     bin_indexer = binner.indexer(data['d'])
     self.num_full = bin_indexer.sum(full.as_double())
     self.num_part = bin_indexer.sum((~full).as_double())
+    self.num_over = bin_indexer.sum(over.as_double())
+    self.num_ice  = bin_indexer.sum(ice.as_double())
 
     # Get stuff from table for summation
     i_sum_flg = data.get_flags(data.flags.integrated_sum)
@@ -188,6 +194,8 @@ class ResolutionSummary(object):
              "d max",
              "# full",
              "# part",
+             "# over",
+             "# ice",
              "# sum",
              "# prf",
              "<I/sigI>\n (sum)",
@@ -198,6 +206,8 @@ class ResolutionSummary(object):
         '%.1f' % self.bins[i+1],
         '%d'   % self.num_full[i],
         '%d'   % self.num_part[i],
+        '%d'   % self.num_over[i],
+        '%d'   % self.num_ice[i],
         '%d'   % self.num_sum[i],
         '%d'   % self.num_prf[i],
         '%.1f' % self.ios_sum[i],
@@ -211,30 +221,45 @@ class WholeSummary(object):
   def __init__(self, data, experiment):
     ''' Compute the results. '''
 
+    # Compute some flag stuff
+    full = data['partiality'] > 0.997300203937
+    over = data.get_flags(data.flags.overloaded)
+    ice = data.get_flags(data.flags.in_powder_ring)
+    self.num_full = full.count(True)
+    self.num_part = full.count(False)
+    self.num_over = over.count(True)
+    self.num_ice = ice.count(True)
+
     # Compute for summation
     flags_sum = data.get_flags(data.flags.integrated_sum)
     I_sum_val = data['intensity.sum.value'].select(flags_sum)
     I_sum_var = data['intensity.sum.variance'].select(flags_sum)
-    self.sum_ios = flex.mean(flex_ios(I_sum_val, I_sum_var))
+    self.ios_sum = flex.mean(flex_ios(I_sum_val, I_sum_var))
+    self.num_sum = flags_sum.count(True)
 
     # Compute for profile fitting
     try:
       flags_prf = data.get_flags(data.flags.integrated_prf)
       I_prf_val = data['intensity.prf.value'].select(flags_prf)
       I_prf_var = data['intensity.prf.variance'].select(flags_prf)
-      self.prf_ios = flex.mean(flex_ios(I_prf_val, I_prf_var))
+      self.ios_prf = flex.mean(flex_ios(I_prf_val, I_prf_var))
+      self.num_prf = flags_prf.count(True)
     except Exception:
-        self.prf_ios = 0.0
+        self.ios_prf = 0.0
+        self.num_prf = 0
 
   def table(self):
     ''' Produce a table of results. '''
     from libtbx.table_utils import format as table
-    rows = [["<I/sigI>\n (sum)",
-             "<I/sigI>\n (prf)"]]
-    rows.append([
-      '%.1f' % self.sum_ios,
-      '%.1f' % self.prf_ios])
-    return table(rows, has_header=True, justify='right', prefix=' ')
+    rows = [["Number fully recorded",                 '%d'   % self.num_full],
+            ["Number partially recorded",             '%d'   % self.num_part],
+            ["Number with overloaded pixels",         '%d'   % self.num_over],
+            ["Number in powder rings",                '%d'   % self.num_ice],
+            ["Number processed with summation",       '%d'   % self.num_sum],
+            ["Number processed with profile fitting", '%d'   % self.num_prf],
+            ["<I/sigI> (summation)",                  '%.1f' % self.ios_sum],
+            ["<I/sigI> (profile fitting)",            '%.1f' % self.ios_prf]]
+    return table(rows, justify='left', prefix=' ')
 
 
 class Summary(object):
