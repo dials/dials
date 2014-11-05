@@ -83,7 +83,6 @@ algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/corrections.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/integration_integrator_ext.cc -text
-algorithms/integration/boost_python/preprocessor.cc -text
 algorithms/integration/corrections.h -text
 algorithms/integration/filtering.py -text
 algorithms/integration/fitrs/__init__.py -text
@@ -93,7 +92,6 @@ algorithms/integration/fitrs/boost_python/integration_fitrs_ext.cc -text
 algorithms/integration/fitrs/fit.h -text
 algorithms/integration/integrator.h -text
 algorithms/integration/integrator.py -text
-algorithms/integration/preprocessor.h -text
 algorithms/integration/profile/SConscript -text
 algorithms/integration/profile/__init__.py -text
 algorithms/integration/profile/boost_python/fitting.cc -text
