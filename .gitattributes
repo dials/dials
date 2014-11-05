@@ -541,6 +541,7 @@ scratch/gw/parallax_module_correction.py -text
 scratch/gw/plotintensity.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
+scratch/gw/toy_scaler.py -text
 scratch/gw/twospacify.py -text
 scratch/gw/wx_image.py -text
 scratch/gw/x2tbx/SConscript -text
