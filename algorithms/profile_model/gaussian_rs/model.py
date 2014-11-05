@@ -175,6 +175,17 @@ class ProfileModelList(ProfileModelIface):
     ''' Add another model. '''
     self._models.append(model)
 
+  def predict_reflections(self, experiments, dmin=None, dmax=None, margin=1,
+                          force_static=False):
+    ''' Predict the reflections. '''
+    from dials.array_family import flex
+    return flex.reflection_table.from_predictions_multi(
+      experiments,
+      dmin=dmin,
+      dmax=dmax,
+      margin=margin,
+      force_static=force_static)
+
   def compute_bbox(self, experiments, reflections, sigma_b_multiplier=2.0):
     ''' Compute the bounding boxes. '''
     from dials.algorithms.profile_model.gaussian_rs import BBoxMultiCalculator

@@ -19,17 +19,22 @@ class ProfileModelIface(object):
   __metaclass__ = ABCMeta
 
   @abstractmethod
-  def compute_bbox(self, experiments, reflections, **kwargs):
-    ''' Given a list of experiments and list of reflections, compute the
-    bounding box of the reflections on the detector (and image frames).
-
-    '''
+  def predict_reflections(self, experiments, **kwargs):
+    ''' Given a list of experiments, predict the reflections. '''
     pass
 
   @abstractmethod
   def compute_partiality(self, experiments, reflections, **kwargs):
     ''' Given a list of experiments and list of reflections, compute the
     partiality of the reflections
+
+    '''
+    pass
+
+  @abstractmethod
+  def compute_bbox(self, experiments, reflections, **kwargs):
+    ''' Given a list of experiments and list of reflections, compute the
+    bounding box of the reflections on the detector (and image frames).
 
     '''
     pass
@@ -49,7 +54,7 @@ class ProfileModelIface(object):
 
   @abstractmethod
   def __len__(self):
-    ''' The number of models (should equal the number of experiments. '''
+    ''' The number of models (should equal the number of experiments). '''
     pass
 
   @abstractmethod

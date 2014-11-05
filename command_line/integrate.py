@@ -134,7 +134,7 @@ class Script(object):
       print ""
       print heading("Predicting reflections")
       print ""
-      predicted = flex.reflection_table.from_predictions_multi(
+      predicted = profile_model.predict_reflections(
         experiments,
         dmin=params.prediction.dmin,
         dmax=params.prediction.dmax,
