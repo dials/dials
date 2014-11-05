@@ -73,10 +73,8 @@ class scaler:
       Ij[_j] = self.x[j + len(self._i)]
     return Gi, Ij
 
-def test(nG):
+def test(nG, nI):
   from random import random
-
-  nI = 10
 
   Gi_t = [random() for i in range(nG)]
   Ij_t = [random() for j in range(nI)]
@@ -90,8 +88,9 @@ def test(nG):
 
   Gi, Ij = s.get_Gi_Ij()
 
+  rms_G = sum([(Gi[i] - Gi_t[i]) ** 2 for i in sorted(Gi)])
   rms_I = sum([(Ij[j] - Ij_t[j]) ** 2 for j in sorted(Ij)])
-  return math.sqrt(rms_I / len(Ij))
+  return math.sqrt(rms_G / len(Gi)), math.sqrt(rms_I / len(Ij))
 
 def meansd(values):
   mean = sum(values) / len(values)
@@ -99,7 +98,10 @@ def meansd(values):
   return mean, math.sqrt(var)
 
 if __name__ == '__main__':
-  for pnG in range(1, 10):
+  print ' nG    nI   rmsG  rmsI'
+  for pnG in range(3, 9):
     nG = 2 ** pnG
-    m, s = meansd([test(nG) for j in range(30)])
-    print nG, m, s
+    for pnI in range(3, 9):
+      nI = 2 ** pnI
+      rmsG, rmsI = test(nG, nI)
+      print '%5d %5d %.3f %.3f' % (nG, nI, rmsG, rmsI)
