@@ -64,6 +64,10 @@ below.
   class ProfileModelIface(object):
 
     @interface.abstractmethod
+    def predict_reflections(self, experiments, **kwargs):
+      pass
+
+    @interface.abstractmethod
     def compute_bbox(self, experiments, reflections, **kwargs):
       pass
 
@@ -93,11 +97,12 @@ below.
       pass
 
 The implementation may choose to handle this as a list of single experiment
-profile models. The profile model should have methods for computing the bounding
-box of reflections for a number of experiments, computing the partiality of
-reflections and computing the foreground/background mask. Of these the bounding
-box and mask methods are crucial for integration to work; partiality is
-currently only used in reporting and can be a placeholder.
+profile models. The profile model should have methods for predicting the
+reflections, computing the bounding box of reflections for a number of
+experiments, computing the partiality of reflections and computing the
+foreground/background mask. Of these the bounding box and mask methods are
+crucial for integration to work; partiality is currently only used in reporting
+and can be a placeholder.
 
 The extention should have the ability to dump the profile model to phil
 parameters so that it can be input via a profile.phil file to, for example,
