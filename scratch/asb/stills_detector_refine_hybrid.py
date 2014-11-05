@@ -17,7 +17,6 @@ then each crystal is refined individually. This forms one macrocycle."""
 
 from __future__ import division
 from math import sqrt
-import os
 
 from libtbx.phil import parse
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
@@ -155,15 +154,12 @@ def detector_parallel_refiners(params, experiments, reflections):
     if hasattr(g, "children"):
       for c in g.children():
         recursive_add_child(d, d.hierarchy(), c)
-    else: # at the bottom of the hierarchy
+    else: # at the bottom of the hierarchy. Note the new panel's frame will be the identity matrix.
       p = d.hierarchy().add_panel(d.add_panel())
       p.set_image_size(g.get_image_size())
       p.set_trusted_range(g.get_trusted_range())
       p.set_pixel_size(g.get_pixel_size())
       p.set_px_mm_strategy(g.get_px_mm_strategy())
-
-      m = g.get_local_d_matrix()
-      p.set_local_frame(m[0::3],m[1::3],m[2::3])
       p.set_name(g.get_name())
 
   # set experiment lists for each sub-detector
@@ -194,6 +190,10 @@ def detector_parallel_refiners(params, experiments, reflections):
   def do_work(item):
     refs, exps = item
 
+    if len(refs) < 20:
+      print "Cannot refine detector", exps[0].detector.hierarchy().get_name(), "due to too few reflections (", len(refs), ")"
+      return exps # do not refine this detector element
+
     # Here use the specialised faster refiner
     refiner = StillsDetectorRefinerFactory.from_parameters_data_experiments(
         params, refs, exps)
@@ -215,7 +215,7 @@ def detector_parallel_refiners(params, experiments, reflections):
     f = local_root.get_fast_axis()
     s = local_root.get_slow_axis()
     o = local_root.get_origin()
-    group.set_frame(f, s, o) # propagates local frame changes (?)
+    group.set_frame(f, s, o) # propagates local frame changes
 
   # refine the full detector to get RMSDs per panel
   print
