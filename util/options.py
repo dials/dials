@@ -306,7 +306,7 @@ class OptionParserBase(optparse.OptionParser, object):
         help='Show the configuration parameters.')
       self.add_option(
         '-a', '--attributes-level',
-        default=0,
+        default=2,
         type='int',
         dest='attributes_level',
         help='Set the attributes level for showing configuration parameters')
