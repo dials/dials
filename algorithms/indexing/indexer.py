@@ -27,23 +27,25 @@ from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 master_phil_scope = iotbx.phil.parse("""
 discover_better_experimental_model = False
   .type = bool
+  .expert_level = 1
 min_cell = 20
   .type = float(value_min=0)
   .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
-nearest_neighbor_percentile = 0.05
-  .type = float(value_min=0)
-  .help = "Percentile of NN histogram to use for min cell determination."
+  .expert_level = 1
 max_cell = Auto
   .type = float(value_min=0)
   .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
+nearest_neighbor_percentile = 0.05
+  .type = float(value_min=0)
+  .help = "Percentile of NN histogram to use for max cell determination."
+  .expert_level = 1
 fft3d {
   peak_search = *flood_fill clean
     .type = choice
+    .expert_level = 2
   reciprocal_space_grid {
     n_points = 256
       .type = int(value_min=0)
-    d_max = None
-      .type = float(value_min=0)
     d_min = Auto
       .type = float(value_min=0)
       .help = "The high resolution limit in Angstrom for spots to include in "
@@ -54,10 +56,13 @@ sigma_phi_deg = None
   .type = float(value_min=0)
   .help = "Override the phi sigmas for refinement. Mainly intended for single-shot"
           "rotation images where the phi sigma is almost certainly incorrect."
+  .expert_level = 2
 b_iso = 200
   .type = float(value_min=0)
+  .expert_level = 2
 rmsd_cutoff = 15
   .type = float(value_min=0)
+  .expert_level = 1
 scan_range = None
   .help = "The range of images to use in indexing. Number of arguments"
           "must be a factor of two. Specifying \"0 0\" will use all images"
@@ -68,52 +73,69 @@ scan_range = None
 known_symmetry {
   space_group = None
     .type = space_group
+    .help = "Target space group for indexing."
   unit_cell = None
     .type = unit_cell
+    .help = "Target unit cell for indexing."
   relative_length_tolerance = 0.1
     .type = float
     .help = "Relative tolerance for unit cell lengths in unit cell comparision."
+    .expert_level = 1
   absolute_angle_tolerance = 5
     .type = float
     .help = "Angular tolerance (in degrees) in unit cell comparison."
+    .expert_level = 1
 }
 basis_vector_combinations {
   max_try = 50
     .type = int(value_min=1)
+    .help = "Number of putative basis vector combinations to try."
+    .expert_level = 1
   metric = *model_likelihood n_indexed
     .type = choice
+    .expert_level = 1
 }
 index_assignment {
   method = *simple local
     .type = choice
+    .help = "Choose between simple 'global' index assignment and xds-style "
+            "'local' index assignment."
+    .expert_level = 1
   simple {
     hkl_tolerance = 0.3
       .type = float(value_min=0, value_max=0.5)
+      .help = "Maximum allowable deviation from integer-ness for assigning "
+              "a miller index to a reciprocal lattice vector."
   }
   local {
     epsilon = 0.05
       .type = float
+      .help = "This corresponds to the xds parameter INDEX_ERROR="
+      .expert_level = 1
     delta = 8
       .type = int
+      .expert_level = 1
+      .help = "This corresponds to the xds parameter INDEX_MAGNITUDE="
     l_min = 0.8
       .type = float
+      .expert_level = 1
+      .help = "This corresponds to the xds parameter INDEX_QUALITY="
     nearest_neighbours = 20
       .type = int(value_min=1)
+      .expert_level = 1
   }
 }
 optimise_initial_basis_vectors = False
   .type = bool
+  .expert_level = 2
 debug = False
   .type = bool
+  .expert_level = 1
 debug_plots = False
   .type = bool
   .help = "Requires matplotlib"
-show_timing = False
-  .type = bool
-include scope dials.algorithms.refinement.refiner.phil_scope
+  .expert_level = 1
 refinement_protocol {
-  weight_outlier_n_sigma = 5
-    .type = float(value_min=0)
   n_macro_cycles = 5
     .type = int(value_min=0)
   d_min_step = 1.0
@@ -143,7 +165,9 @@ refinement_protocol {
 }
 method = *fft3d fft1d real_space_grid_search
   .type = choice
-multiple_lattice_search {
+multiple_lattice_search
+  .expert_level = 1
+{
   cluster_analysis_search = False
     .type = bool
     .help = "Perform cluster analysis search for multiple lattices."
@@ -191,6 +215,7 @@ real_space_grid_search {
   characteristic_grid = 0.02
     .type = float(value_min=0)
 }
+include scope dials.algorithms.refinement.refiner.phil_scope
 output {
   experiments = experiments.json
     .type = path

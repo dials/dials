@@ -97,7 +97,6 @@ class indexer_fft3d(indexer_base):
   def map_centroids_to_reciprocal_space_grid(self):
     wavelength = self.beam.get_wavelength()
     d_min = self.params.fft3d.reciprocal_space_grid.d_min
-    d_max = self.params.fft3d.reciprocal_space_grid.d_max
 
     n_points = self.gridding[0]
     rlgrid = 2 / (d_min * n_points)

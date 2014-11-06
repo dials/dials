@@ -406,7 +406,6 @@ def exercise_11():
   assert os.path.exists(pickle_path)
 
   extra_args = ["method=real_space_grid_search",
-                "weight_outlier_n_sigma=None",
                 "use_all_reflections=True",
                 "n_macro_cycles=3",
                 "known_symmetry.unit_cell=78,78,39,90,90,90",
