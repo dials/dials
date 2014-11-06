@@ -46,6 +46,7 @@ fft3d {
   reciprocal_space_grid {
     n_points = 256
       .type = int(value_min=0)
+      .expert_level = 1
     d_min = Auto
       .type = float(value_min=0)
       .help = "The high resolution limit in Angstrom for spots to include in "
@@ -107,22 +108,20 @@ index_assignment {
       .help = "Maximum allowable deviation from integer-ness for assigning "
               "a miller index to a reciprocal lattice vector."
   }
-  local {
+  local
+    .expert_level = 1
+  {
     epsilon = 0.05
       .type = float
       .help = "This corresponds to the xds parameter INDEX_ERROR="
-      .expert_level = 1
     delta = 8
       .type = int
-      .expert_level = 1
       .help = "This corresponds to the xds parameter INDEX_MAGNITUDE="
     l_min = 0.8
       .type = float
-      .expert_level = 1
       .help = "This corresponds to the xds parameter INDEX_QUALITY="
     nearest_neighbours = 20
       .type = int(value_min=1)
-      .expert_level = 1
   }
 }
 optimise_initial_basis_vectors = False
@@ -211,7 +210,9 @@ multiple_lattice_search
       .type = float(value_min=0.0, value_max=1.0)
   }
 }
-real_space_grid_search {
+real_space_grid_search
+  .expert_level = 1
+{
   characteristic_grid = 0.02
     .type = float(value_min=0)
 }
