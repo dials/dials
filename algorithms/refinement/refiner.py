@@ -268,6 +268,7 @@ refinement
 
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
+      .expert_level = 1
     {
       override = statistical stills constant
         .help = "selection of a strategy to override default weighting behaviour"
