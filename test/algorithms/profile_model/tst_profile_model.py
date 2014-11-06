@@ -10,7 +10,8 @@ class Test(object):
     self.tst_load_and_dump()
 
   def tst_load_and_dump(self):
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    from dials.algorithms.profile_model.model_list import ProfileModelList
+    from dials.algorithms.profile_model.gaussian_rs import Factory
     from dials.algorithms.profile_model.factory import phil_scope
     from libtbx.phil import parse
 
@@ -35,7 +36,7 @@ class Test(object):
       }
       ''')
     params = phil_scope.fetch(source=user_phil).extract()
-    model = ProfileModelList.load(params.profile)
+    model = Factory.load(params.profile)
     assert(len(model) == 2)
     assert(model[0].n_sigma() == 3)
     assert(model[0].sigma_b() == 1)

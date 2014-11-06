@@ -300,10 +300,10 @@ class Script(object):
     print ""
     predicted = profile_model.predict_reflections(
       experiments,
-      dmin=params.prediction.dmin,
-      dmax=params.prediction.dmax,
-      margin=params.prediction.margin,
-      force_static=params.prediction.force_static)
+      dmin=self.params.prediction.dmin,
+      dmax=self.params.prediction.dmax,
+      margin=self.params.prediction.margin,
+      force_static=self.params.prediction.force_static)
     predicted.match_with_reference(indexed)
     print ""
     integrator = IntegratorFactory.create(self.params, experiments, profile_model, predicted)

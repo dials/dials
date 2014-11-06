@@ -42,7 +42,7 @@ class Test(object):
       self.sigma_m)
 
     predicted = flex.reflection_table.from_predictions(self.experiment)
-    predicted.compute_bbox(self.experiment, self.profile_model)
+    predicted['bbox'] = predicted.compute_bbox(self.experiment, self.profile_model)
 
     # Remove any touching edges of scan to get only fully recorded
     x0, x1, y0, y1, z0, z1 = predicted['bbox'].parts()

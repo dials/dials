@@ -19,29 +19,29 @@ class ProfileModelIface(object):
   __metaclass__ = ABCMeta
 
   @abstractmethod
-  def predict_reflections(self, experiments, **kwargs):
-    ''' Given a list of experiments, predict the reflections. '''
+  def predict_reflections(self, experiment, **kwargs):
+    ''' Given an experiment, predict the reflections. '''
     pass
 
   @abstractmethod
-  def compute_partiality(self, experiments, reflections, **kwargs):
-    ''' Given a list of experiments and list of reflections, compute the
+  def compute_partiality(self, experiment, reflections, **kwargs):
+    ''' Given an experiment and list of reflections, compute the
     partiality of the reflections
 
     '''
     pass
 
   @abstractmethod
-  def compute_bbox(self, experiments, reflections, **kwargs):
-    ''' Given a list of experiments and list of reflections, compute the
+  def compute_bbox(self, experiment, reflections, **kwargs):
+    ''' Given an experiment and list of reflections, compute the
     bounding box of the reflections on the detector (and image frames).
 
     '''
     pass
 
   @abstractmethod
-  def compute_mask(self, experiments, reflections, **kwargs):
-    ''' Given a list of experiments and list of reflections, compute the
+  def compute_mask(self, experiment, reflections, **kwargs):
+    ''' Given an experiment and list of reflections, compute the
     foreground/background mask of the reflections.
 
     '''
@@ -52,17 +52,3 @@ class ProfileModelIface(object):
     ''' Dump and return the profile model to a phil scope object. '''
     pass
 
-  @abstractmethod
-  def __len__(self):
-    ''' The number of models (should equal the number of experiments). '''
-    pass
-
-  @abstractmethod
-  def __iter__(self):
-    ''' Iterate through models '''
-    pass
-
-  @abstractmethod
-  def __getitem__(self, index):
-    ''' Get a model. '''
-    pass

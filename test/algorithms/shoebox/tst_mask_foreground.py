@@ -181,7 +181,7 @@ class Test(object):
     rlist['panel'] = panel
     rlist['xyzcal.px'] = xyzcal_px
     rlist['xyzcal.mm'] = xyzcal_mm
-    rlist.compute_bbox(self.experiment, self.profile_model)
+    rlist['bbox'] = rlist.compute_bbox(self.experiment, self.profile_model)
     index = []
     image_size = self.experiment.detector[0].get_image_size()
     array_range = self.experiment.scan.get_array_range()

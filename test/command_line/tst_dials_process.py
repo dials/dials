@@ -30,7 +30,7 @@ def exercise_1():
                   ]
                 + ['"%s"' %p for p in g]
                  )
-  #print cmd
+  # print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   for out_file in ['datablock.json', 'refined_experiments.json',
                    'integrated.mtz', 'integrated.pickle', 'strong.pickle']:

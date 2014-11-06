@@ -31,6 +31,6 @@ class GaussianRSProfileModelExt(ProfileModelCreatorIface):
 
   @classmethod
   def create(cls, params, experiments, reflections):
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
-    return ProfileModelList.create(params, experiments, reflections)
+    from dials.algorithms.profile_model.gaussian_rs import Factory
+    return Factory.create(params, experiments, reflections)
 

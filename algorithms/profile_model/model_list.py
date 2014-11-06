@@ -10,7 +10,7 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-class ProfileModelList(ProfileModelIface):
+class ProfileModelList(object):
   ''' A class to represent multiple profile models. '''
 
   def __init__(self):
@@ -37,7 +37,7 @@ class ProfileModelList(ProfileModelIface):
   def predict_reflections(self, experiments, **kwargs):
     ''' Predict the reflections. '''
     from dials.array_family import flex
-    result = reflection_table()
+    result = flex.reflection_table()
     for index, (model, experiment) in enumerate(zip(self, experiments)):
       rlist = model.predict_reflections(experiment, **kwargs)
       rlist['id'] = flex.size_t(len(rlist), index)
@@ -53,14 +53,14 @@ class ProfileModelList(ProfileModelIface):
     reflections['bbox'] = flex.int6(len(reflections))
     for model, experiment, index in zip(self, experiments, index_list):
       reflections['bbox'].set_selected(
+        index,
         model.compute_bbox(
           experiment,
           reflections.select(index),
-          **kwargs),
-        indices)
+          **kwargs))
     return reflections['bbox']
 
-  def compute_partiality(self, experiments, reflections):
+  def compute_partiality(self, experiments, reflections, **kwargs):
     ''' Compute the partiality. '''
     from dials.array_family import flex
     index_list = reflections.split_indices_by_experiment_id(len(experiments))
@@ -69,14 +69,14 @@ class ProfileModelList(ProfileModelIface):
     reflections['partiality'] = flex.double(len(reflections))
     for model, experiment, index in zip(self, experiments, index_list):
       reflections['partiality'].set_selected(
+        index,
         model.compute_partiality(
           experiment,
           reflections.select(index),
-          **kwargs),
-        indices)
+          **kwargs))
     return reflections['partiality']
 
-  def compute_mask(self, experiments, reflections):
+  def compute_mask(self, experiments, reflections, **kwargs):
     ''' Compute the shoebox mask. '''
     from dials.array_family import flex
     index_list = reflections.split_indices_by_experiment_id(len(experiments))
@@ -91,4 +91,4 @@ class ProfileModelList(ProfileModelIface):
   def dump(self):
     ''' Dump the profile model to phil parameters. '''
     from dials.algorithms.profile_model import factory
-    return [model.dump() for model in self]:
+    return factory.phil_scope.fetch(sources=[model.dump() for model in self])

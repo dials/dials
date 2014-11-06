@@ -63,7 +63,7 @@ class Test(object):
     assert(len(experiments) == 1)
     self.experiments = experiments
 
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     self.profile_model = ProfileModelList()
     self.profile_model.append(

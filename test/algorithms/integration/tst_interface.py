@@ -409,7 +409,7 @@ class TestIntegrator3D(object):
 
   def __init__(self, nproc):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     import libtbx.load_env
     from dials.array_family import flex
@@ -470,7 +470,7 @@ class TestSummation(object):
 
   def __init__(self):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     import libtbx.load_env
     from dials.array_family import flex

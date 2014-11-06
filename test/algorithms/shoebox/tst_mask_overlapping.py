@@ -154,7 +154,7 @@ class Test(object):
     from dials.array_family import flex
     from dxtbx.model.experiment.experiment_list import ExperimentList
     from dxtbx.model.experiment.experiment_list import Experiment
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
+    from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
 
     # Get models from the sweep
