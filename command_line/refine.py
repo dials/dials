@@ -29,16 +29,24 @@ class Script(object):
           .type = str
           .help = "The filename for refined experimental models"
 
+        reflections_filename = None
+          .type = str
+          .help = "The filename for output of refined reflections"
+
         centroids_filename = None
           .type = str
           .help = "The filename for the table of centroids at the end of"
                   "refinement"
+          .expert_level = 1
 
         parameters_filename = None
           .type = str
           .help = "The filename for the table of scan varying parameter values"
+          .expert_level = 1
 
-        correlation_plot {
+        correlation_plot
+          .expert_level = 1
+        {
           filename = None
             .type = str
             .help = "The base filename for output of plots of parameter"
@@ -70,10 +78,7 @@ class Script(object):
         history_filename = None
           .type = str
           .help = "The filename for output of the refinement history pickle"
-
-        reflections_filename = None
-          .type = str
-          .help = "The filename for output of refined reflections"
+          .expert_level = 1
       }
 
       include scope dials.algorithms.refinement.refiner.phil_scope

@@ -47,6 +47,7 @@ refinement
       fix_list = None
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
+        .expert_level = 1
     }
 
     crystal
@@ -59,10 +60,12 @@ refinement
       cell_fix_list = None
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
+        .expert_level = 1
 
       orientation_fix_list = None
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
+        .expert_level = 1
 
       scan_varying = False
         .help = "Parameterise the crystal to vary during the scan"
@@ -72,15 +75,18 @@ refinement
         .help = "Choose the way to determine the number of intervals for scan-"
                 "varying refinement"
         .type = choice
+        .expert_level = 1
 
       interval_width_degrees = 36.0
         .help = "Width of scan between checkpoints in degrees"
         .type = float(value_min=0.)
+        .expert_level = 1
 
       absolute_num_intervals = 5
         .help = "Number of intervals between checkpoints if scan_varying"
                 "refinement is requested"
         .type = int(value_min=1)
+        .expert_level = 1
 
       UB_model_per = reflection *image
         .help = "Compose a new crystal model either every reflection (slow) or"
@@ -97,17 +103,23 @@ refinement
                 "detector as a rigid body. The hierarchical parameterisation"
                 "treats groups of panels as separate rigid bodies."
         .type = choice
+        .expert_level = 1
+
       hierarchy_level = 0
         .help = "Level of the detector hierarchy (starting from the root at 0)"
                 "at which to determine panel groups to parameterise independently"
         .type = int(value_min=0)
+        .expert_level = 1
+
       fix = all position orientation
         .help = "Fix detector parameters. The translational parameters"
                 "(position) may be set separately to the orientation."
         .type = choice
+
       fix_list = None
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
+        .expert_level = 1
     }
 
     sparse = False
@@ -115,6 +127,7 @@ refinement
               "during development - should be automatic when the trade-offs are well"
               "understood"
       .type = bool
+      .expert_level = 1
 
     treat_single_image_as_still = False
       .help = "Set this to True to treat a single image scan with a non zero"
@@ -134,36 +147,43 @@ refinement
       .help = "Record parameter shifts history in the refinement journal, if"
               "the engine supports it."
       .type = bool
+      .expert_level = 1
 
     track_gradient = False
       .help = "Record parameter gradients history in the refinement journal, if"
               "the engine supports it."
       .type = bool
+      .expert_level = 1
 
     track_parameter_correlation = False
       .help = "Record correlation matrix between columns of the Jacobian for"
               "each step of refinement."
       .type = bool
+      .expert_level = 1
 
     track_out_of_sample_rmsd = False
       .type = bool
       .help = "Record RMSDs calculated using the refined experiments with"
               "reflections not used in refinement at each step. Only valid if a"
               "subset of input reflections was taken for refinement"
+      .expert_level = 1
 
     log = None
       .help = "Filename for an optional log that a minimisation engine may use"
               "to write additional information"
       .type = path
+      .expert_level = 1
 
     max_iterations = None
       .help = "Maximum number of iterations in refinement before termination."
               "None implies the engine supplies its own default."
       .type = int(value_min=1)
+      .expert_level = 1
   }
 
   target
     .help = "Parameters to configure the target function"
+    .expert_level = 1
   {
 
     rmsd_cutoff = *fraction_of_bin_size absolute
@@ -222,6 +242,7 @@ refinement
       .help = "Random seed to use when sampling to create a working set of"
               "reflections. May be int or None."
       .type = int
+      .expert_level = 1
 
     minimum_number_of_reflections = 20
       .help = "The minimum number of input observations to allow a reflection"
@@ -236,6 +257,7 @@ refinement
               "In detector space, these are the reflections located close"
               "to the rotation axis."
       .type = float(value_min = 0)
+      .expert_level = 1
 
     do_outlier_rejection = False
       .help = "Whether refinement should attempt to reject outliers. Warning:"
@@ -246,6 +268,7 @@ refinement
       .help = "The IQR multiplier used to detect outliers. A value of 1.5 gives"
               "Tukey's rule for outlier detection"
       .type = float(value_min = 0.)
+      .expert_level = 1
 
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
