@@ -28,6 +28,7 @@ class Test(object):
     self.tst_copy()
     self.tst_extract_shoeboxes()
     self.tst_split_by_experiment_id()
+    self.tst_split_indices_by_experiment_id()
     self.tst_split_partials()
 
   def tst_init(self):
@@ -895,6 +896,26 @@ class Test(object):
     for res, exp in zip(result, [0, 1, 2, 3, 5]):
       assert(len(res) == 100)
       assert(res['id'].count(exp) == 100)
+    print 'OK'
+
+  def tst_split_indices_by_experiment_id(self):
+    from dials.array_family import flex
+    r = flex.reflection_table()
+    r['id'] = flex.size_t()
+    for i in range(100):
+      r.append({"id" : 0})
+      r.append({"id" : 1})
+      r.append({"id" : 2})
+      r.append({"id" : 3})
+      r.append({"id" : 5})
+    index_list = r.split_indices_by_experiment_id(6)
+    assert(len(index_list) == 6)
+    for index, exp, num in zip(
+        index_list,
+        [0, 1, 2, 3, 4, 5],
+        [100, 100, 100, 100, 0, 100]):
+      assert(len(index) == num)
+      assert(r.select(index)['id'].count(exp) == num)
     print 'OK'
 
   def tst_split_partials(self):
