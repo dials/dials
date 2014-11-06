@@ -38,8 +38,8 @@ DEV_BUILD=`echo ${DIALS_VERSION} | grep -c dev`
 PYTHON_BIN=${BUILD_DIR}/build/bin/libtbx.python
 $PYTHON_BIN ${BUILD_DIR}/modules/dials/util/assemble_installer.py \
   --version=${DIALS_VERSION} --host-tag=${HOST_TAG} $BUILD_DIR
-DIALS_INSTALLER="phenix-installer-${DIALS_VERSION}"
-DIALS_TAR="phenix-installer-${DIALS_VERSION}-${HOST_TAG}.tar.gz"
+DIALS_INSTALLER="dials-installer-${DIALS_VERSION}"
+DIALS_TAR="dials-installer-${DIALS_VERSION}-${HOST_TAG}.tar.gz"
 if [ ! -d "$DIALS_INSTALLER" ]; then
   echo "Directory ${DIALS_INSTALLER} not found!"
   exit 1
@@ -62,12 +62,6 @@ if [ "`uname`" = "Darwin" ]; then
     echo "Fatal installer error"
     exit 1
   fi
-  #APP_BIN="${APP_DIR}/phenix-${DIALS_VERSION}/build/bin"
-  #${APP_BIN}/libtbx.create_mac_app phenix \
-  #  --app_name="Phenix-${DIALS_VERSION}" \
-  #  --python_interpreter=/usr/bin/python \
-  #  --dest="/Applications/Phenix-${DIALS_VERSION}" > py2app.log
-  # also copy phenix_env.* files to top-level directory
   ${PYTHON_BIN} ./lib/libtbx/auto_build/create_mac_pkg.py \
     --package_name=DIALS --version=${DIALS_VERSION} \
     --background=${BUILD_DIR}/modules/dials/util/installer_background.jpg \
