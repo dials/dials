@@ -55,7 +55,9 @@ reflections, the profile model should be constructable from phil parameters.
 When reflections are present, the create method should be able to construct the
 model from the input reflections and experiments.
 
-The algorithm should return an object which implements the interface given in
+The algorithm should return an instance of the ProfileModelList class (found in
+:samp:`dials.algorithms.profile_model.model_list`). The profile model list 
+should contain a list of objects which implement the interface given in
 the :samp:`dials.algorithms.profile_model.interface` module and shown in brief
 below.
 
@@ -64,45 +66,30 @@ below.
   class ProfileModelIface(object):
 
     @interface.abstractmethod
-    def predict_reflections(self, experiments, **kwargs):
+    def predict_reflections(self, experiment, **kwargs):
       pass
 
     @interface.abstractmethod
-    def compute_bbox(self, experiments, reflections, **kwargs):
+    def compute_bbox(self, experiment, reflections, **kwargs):
       pass
 
     @interface.abstractmethod
-    def compute_partiality(self, experiments, reflections, **kwargs):
+    def compute_partiality(self, experiment, reflections, **kwargs):
       pass
 
     @interface.abstractmethod
-    def compute_mask(self, experiments, reflections, **kwargs):
+    def compute_mask(self, experiment, reflections, **kwargs):
       pass
 
     @interface.abstractmethod
     def dump(self):
       pass
 
-    @abstractmethod
-    def __len__(self):
-      pass
-
-    @abstractmethod
-    def __iter__(self):
-      pass
-
-    @abstractmethod
-    def __getitem__(self, index):
-      ''' Get a model. '''
-      pass
-
-The implementation may choose to handle this as a list of single experiment
-profile models. The profile model should have methods for predicting the
-reflections, computing the bounding box of reflections for a number of
-experiments, computing the partiality of reflections and computing the
-foreground/background mask. Of these the bounding box and mask methods are
-crucial for integration to work; partiality is currently only used in reporting
-and can be a placeholder.
+The profile model should have methods for predicting the reflections, computing
+the bounding box of reflections for a number of experiments, computing the
+partiality of reflections and computing the foreground/background mask. Of these
+the bounding box and mask methods are crucial for integration to work;
+partiality is currently only used in reporting and can be a placeholder.
 
 The extention should have the ability to dump the profile model to phil
 parameters so that it can be input via a profile.phil file to, for example,
