@@ -37,7 +37,6 @@ def generate_phil_scope():
 
     filter
       .help = "Parameters used in the spot finding filter strategy."
-      .expert_level = 1
 
     {
       min_spot_size = 6
@@ -49,6 +48,7 @@ def generate_phil_scope():
         .help = "The maximum peak-to-centroid separation (in pixels)"
                 "for a spot to be accepted by the filtering algorithm."
         .type = float(value_min=0)
+        .expert_level = 1
 
       d_min = None
         .help = "The high resolution limit in Angstrom for a spot to be"
@@ -84,12 +84,15 @@ def generate_phil_scope():
         unit_cell = 4.498,4.498,7.338,90,90,120
           .type = unit_cell
           .help = "The unit cell to generate d_spacings for powder rings."
+          .expert_level = 1
         space_group = 194
           .type = space_group
           .help = "The space group used to generate d_spacings for powder rings."
+          .expert_level = 1
         width = 0.06
           .type = float(value_min=0.0)
           .help = "The width of an ice ring (in d-spacing)."
+          .expert_level = 1
       }
 
       untrusted_polygon = None
