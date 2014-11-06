@@ -88,9 +88,13 @@ def test(nG, nI):
 
   Gi, Ij = s.get_Gi_Ij()
 
-  rms_G = sum([(Gi[i] - Gi_t[i]) ** 2 for i in sorted(Gi)])
-  rms_I = sum([(Ij[j] - Ij_t[j]) ** 2 for j in sorted(Ij)])
-  return math.sqrt(rms_G / len(Gi)), math.sqrt(rms_I / len(Ij))
+  scale_G = sum([Gi[i] for i in Gi]) / sum(Gi_t)
+  scale_I = sum([Ij[j] for j in Ij]) / sum(Ij_t)
+
+  rms_G = sum([(Gi[i] / scale_G - Gi_t[i]) ** 2 for i in sorted(Gi)])
+  rms_I = sum([(Ij[j] / scale_I - Ij_t[j]) ** 2 for j in sorted(Ij)])
+  return math.sqrt(rms_G / len(Gi)), math.sqrt(rms_I / len(Ij)), \
+      scale_G * scale_I
 
 def meansd(values):
   mean = sum(values) / len(values)
@@ -103,5 +107,5 @@ if __name__ == '__main__':
     nG = 2 ** pnG
     for pnI in range(3, 9):
       nI = 2 ** pnI
-      rmsG, rmsI = test(nG, nI)
-      print '%5d %5d %.3f %.3f' % (nG, nI, rmsG, rmsI)
+      rmsG, rmsI, s = test(nG, nI)
+      print '%5d %5d %.3f %.3f %.3f' % (nG, nI, rmsG, rmsI, s)
