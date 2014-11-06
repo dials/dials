@@ -163,6 +163,44 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     return table
 
+  @staticmethod
+  def plot(table, detector, key):
+    ''' Plot a reflection table using matplotlib '''
+    from matplotlib import pyplot as plt
+    from matplotlib.patches import Polygon
+    fig=plt.figure()
+    ax=fig.add_subplot(111,aspect='equal')
+    spots = table[key]
+    if 'px' in key:
+      spots = [detector[table['panel'][i]].get_pixel_lab_coord(spots[i][0:2]) for i in xrange(len(spots))]
+    else:
+      assert 'mm' in key
+      spots = [detector[table['panel'][i]].get_lab_coord(spots[i][0:2]) for i in xrange(len(spots))]
+
+    min_f = max_f = min_s = max_s = 0
+
+    for i, panel in enumerate(detector):
+      fs, ss = panel.get_image_size()
+      p0 = panel.get_pixel_lab_coord((0,0))
+      p1 = panel.get_pixel_lab_coord((fs-1,0))
+      p2 = panel.get_pixel_lab_coord((fs-1,ss-1))
+      p3 = panel.get_pixel_lab_coord((0,ss-1))
+      p = Polygon((p0[0:2],p1[0:2],p2[0:2],p3[0:2]), closed=True, color='green', fill=False, hatch='/')
+
+      if p.xy[:,0].min() < min_f: min_f = p.xy[:,0].min()
+      if p.xy[:,0].max() > max_f: max_f = p.xy[:,0].max()
+      if p.xy[:,1].min() < min_s: min_s = p.xy[:,1].min()
+      if p.xy[:,1].max() > max_s: max_s = p.xy[:,1].max()
+
+      ax.add_patch(p)
+
+    ax.set_xlim((min_f-10,max_f+10))
+    ax.set_ylim((min_s-10,max_s+10))
+    plt.scatter([s[0] for s in spots],
+                [s[1] for s in spots],c='blue',linewidth=0)
+    plt.show()
+
+
   def as_pickle(self, filename):
     ''' Write the reflection table as a pickle file. '''
     import cPickle as pickle
