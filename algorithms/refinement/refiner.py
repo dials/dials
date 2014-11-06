@@ -92,6 +92,7 @@ refinement
         .help = "Compose a new crystal model either every reflection (slow) or"
                 "every image (faster, less accurate)"
         .type = choice
+        .expert_level = 1
      }
 
     detector
@@ -138,6 +139,7 @@ refinement
 
   refinery
     .help = "Parameters to configure the refinery"
+    .expert_level = 1
   {
     engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar
       .help = "The minimisation engine to use"
@@ -147,38 +149,32 @@ refinement
       .help = "Record parameter shifts history in the refinement journal, if"
               "the engine supports it."
       .type = bool
-      .expert_level = 1
 
     track_gradient = False
       .help = "Record parameter gradients history in the refinement journal, if"
               "the engine supports it."
       .type = bool
-      .expert_level = 1
 
     track_parameter_correlation = False
       .help = "Record correlation matrix between columns of the Jacobian for"
               "each step of refinement."
       .type = bool
-      .expert_level = 1
 
     track_out_of_sample_rmsd = False
       .type = bool
       .help = "Record RMSDs calculated using the refined experiments with"
               "reflections not used in refinement at each step. Only valid if a"
               "subset of input reflections was taken for refinement"
-      .expert_level = 1
 
     log = None
       .help = "Filename for an optional log that a minimisation engine may use"
               "to write additional information"
       .type = path
-      .expert_level = 1
 
     max_iterations = None
       .help = "Maximum number of iterations in refinement before termination."
               "None implies the engine supplies its own default."
       .type = int(value_min=1)
-      .expert_level = 1
   }
 
   target
