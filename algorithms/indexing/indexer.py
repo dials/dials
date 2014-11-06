@@ -25,14 +25,6 @@ from dxtbx.model.crystal import crystal_model as Crystal
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 master_phil_scope = iotbx.phil.parse("""
-reference {
-  detector = None
-    .type = path
-    .help = "Use detector model from the given reference sweep."
-  beam = None
-    .type = path
-    .help = "Use beam model from the given reference sweep."
-}
 discover_better_experimental_model = False
   .type = bool
 min_cell = 20
@@ -272,36 +264,6 @@ class indexer_base(object):
 
     from dxtbx.serialize import load
     if params is None: params = master_params
-    if params.reference.detector is not None:
-      try:
-        experiments = load.experiment_list(
-          params.reference.detector, check_format=False)
-        assert len(experiments.detectors()) == 1
-        reference_detector = experiments.detectors()[0]
-      except Exception, e:
-        imageset = load.imageset(params.reference.detector)
-        reference_detector = imageset.get_detector()
-      print "Replacing detector:"
-      print self.sweep.get_detector()
-      print "with:"
-      print reference_detector
-      for imageset in self.imagesets:
-        imageset.set_detector(reference_detector)
-    if params.reference.beam is not None:
-      try:
-        experiments = load.experiment_list(
-          params.reference.detector, check_format=False)
-        assert len(experiments.beams()) == 1
-        reference_beam = experiments.beams()[0]
-      except Exception, e:
-        imageset = load.imageset(params.reference.beam)
-        reference_beam = imageset.get_beam()
-      print "Replacing beam:"
-      print self.sweep.get_beam()
-      print "with:"
-      print reference_beam
-      for imageset in self.imagesets:
-        imageset.set_beam(reference_beam)
 
     self.goniometer = sweep.get_goniometer()
     self.detector = sweep.get_detector()
