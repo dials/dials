@@ -86,9 +86,7 @@ class Script(object):
       }
 
       include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
-      indexing {
-        include scope dials.algorithms.indexing.indexer.master_phil_scope
-      }
+      include scope dials.algorithms.indexing.indexer.index_only_phil_scope
       include scope dials.algorithms.refinement.refiner.phil_scope
       include scope dials.algorithms.integration.integrator.phil_scope
       include scope dials.algorithms.profile_model.factory.phil_scope
@@ -204,6 +202,7 @@ class Script(object):
 
   def index(self, datablock, reflections):
     from time import time
+    import copy
     st = time()
 
     print '*' * 80
@@ -212,13 +211,14 @@ class Script(object):
 
     imagesets = datablock.extract_imagesets()
 
-    #params = working_phil.extract()
-    params = self.params.indexing
-    if params.method == "fft3d":
+    params = copy.deepcopy(self.params)
+    # don't do scan-varying refinement during indexing
+    params.refinement.parameterisation.crystal.scan_varying = False
+    if params.indexing.method == "fft3d":
       from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
-    elif params.method == "fft1d":
+    elif params.indexing.method == "fft1d":
       from dials.algorithms.indexing.fft1d import indexer_fft1d as indexer
-    elif params.method == "real_space_grid_search":
+    elif params.indexing.method == "real_space_grid_search":
       from dials.algorithms.indexing.real_space_grid_search \
            import indexer_real_space_grid_search as indexer
     idxr = indexer(reflections, imagesets, params=params)

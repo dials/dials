@@ -9,8 +9,6 @@ except ImportError, e:
   pass
 
 from libtbx.phil import command_line
-# from dials.util.command_line import Importer
-from dials.algorithms.indexing.indexer import master_phil_scope
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
@@ -25,6 +23,17 @@ def run(args):
 
 Parameters:
 """ %libtbx.env.dispatcher_name
+
+  import iotbx.phil
+  master_phil_scope = iotbx.phil.parse("""\
+include scope dials.algorithms.indexing.indexer.master_phil_scope
+output {
+  experiments = experiments.json
+    .type = path
+  reflections = indexed.pickle
+    .type = path
+}
+""", process_includes=True)
 
   parser = OptionParser(
     usage=usage,
@@ -68,13 +77,13 @@ Parameters:
          import indexer_known_orientation
     idxr = indexer_known_orientation(
       reflections, imagesets, params, known_crystal_models)
-  elif params.method == "fft3d":
+  elif params.indexing.method == "fft3d":
     from dials.algorithms.indexing.fft3d import indexer_fft3d
     idxr = indexer_fft3d(reflections, imagesets, params=params)
-  elif params.method == "fft1d":
+  elif params.indexing.method == "fft1d":
     from dials.algorithms.indexing.fft1d import indexer_fft1d
     idxr = indexer_fft1d(reflections, imagesets, params=params)
-  elif params.method == "real_space_grid_search":
+  elif params.indexing.method == "real_space_grid_search":
     from dials.algorithms.indexing.real_space_grid_search \
          import indexer_real_space_grid_search
     idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)

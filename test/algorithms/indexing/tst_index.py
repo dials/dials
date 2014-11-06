@@ -304,7 +304,7 @@ def exercise_8():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
-  extra_args = ["method=real_space_grid_search",
+  extra_args = ["indexing.method=real_space_grid_search",
                 "reflections_per_degree=10",
                 "use_all_reflections=True",
                 "n_macro_cycles=5",
@@ -333,7 +333,7 @@ def exercise_9():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["n_macro_cycles=2",
-                "method=fft1d",
+                "indexing.method=fft1d",
                 "bin_size_fraction=0.25",
                 ]
   expected_unit_cell = uctbx.unit_cell(
@@ -349,7 +349,7 @@ def exercise_10():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
-  extra_args = ["method=real_space_grid_search",
+  extra_args = ["indexing.method=real_space_grid_search",
                 "d_min_start=3",
                 "use_all_reflections=True",
                 "n_macro_cycles=3",
@@ -405,7 +405,7 @@ def exercise_11():
   pickle_path = os.path.join(tmp_dir, "strong.pickle")
   assert os.path.exists(pickle_path)
 
-  extra_args = ["method=real_space_grid_search",
+  extra_args = ["indexing.method=real_space_grid_search",
                 "use_all_reflections=True",
                 "n_macro_cycles=3",
                 "known_symmetry.unit_cell=78,78,39,90,90,90",
@@ -438,7 +438,7 @@ def exercise_12():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "first_image.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["method=fft3d",
+  extra_args = ["indexing.method=fft3d",
                 "space_group=P4",
                 "unit_cell=57.8,57.8,150,90,90,90",
                 "peak_search=clean",
@@ -522,7 +522,7 @@ def exercise_14():
     extra_args.append(
       "unit_cell='%s %s %s %s %s %s'" %expected_unit_cell.parameters())
     extra_args.append("space_group='Hall: %s'" %expected_hall_symbol)
-    extra_args.append("method=%s" %method)
+    extra_args.append("indexing.method=%s" %method)
     extra_args.append("basis_vector_combinations.metric=n_indexed")
     extra_args.append("treat_single_image_as_still=False")
 

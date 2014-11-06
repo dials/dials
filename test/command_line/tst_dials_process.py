@@ -69,11 +69,11 @@ def exercise_2():
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
-                  "indexing.refinement.reflections.use_all_reflections=True",
+                  "refinement.reflections.use_all_reflections=True",
                   ]
                 + ['"%s"' %p for p in g]
                  )
-  print cmd
+  #print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   for out_file in ['datablock.json', 'refined_experiments.json',
                    'integrated.mtz', 'integrated.pickle', 'strong.pickle']:

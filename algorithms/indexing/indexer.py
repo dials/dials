@@ -24,207 +24,208 @@ from cctbx import crystal, sgtbx, xray
 from dxtbx.model.crystal import crystal_model as Crystal
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
-master_phil_scope = iotbx.phil.parse("""
+index_only_phil_str = """\
+indexing {
 discover_better_experimental_model = False
-  .type = bool
-  .expert_level = 1
-min_cell = 20
-  .type = float(value_min=0)
-  .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
-  .expert_level = 1
-max_cell = Auto
-  .type = float(value_min=0)
-  .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
-nearest_neighbor_percentile = 0.05
-  .type = float(value_min=0)
-  .help = "Percentile of NN histogram to use for max cell determination."
-  .expert_level = 1
-fft3d {
-  peak_search = *flood_fill clean
-    .type = choice
-    .expert_level = 2
-  reciprocal_space_grid {
-    n_points = 256
-      .type = int(value_min=0)
-      .expert_level = 1
-    d_min = Auto
-      .type = float(value_min=0)
-      .help = "The high resolution limit in Angstrom for spots to include in "
-              "the initial indexing."
-  }
-}
-sigma_phi_deg = None
-  .type = float(value_min=0)
-  .help = "Override the phi sigmas for refinement. Mainly intended for single-shot"
-          "rotation images where the phi sigma is almost certainly incorrect."
-  .expert_level = 2
-b_iso = 200
-  .type = float(value_min=0)
-  .expert_level = 2
-rmsd_cutoff = 15
-  .type = float(value_min=0)
-  .expert_level = 1
-scan_range = None
-  .help = "The range of images to use in indexing. Number of arguments"
-          "must be a factor of two. Specifying \"0 0\" will use all images"
-          "by default. The given range follows C conventions"
-          "(e.g. j0 <= j < j1)."
-  .type = ints(size=2)
-  .multiple = True
-known_symmetry {
-  space_group = None
-    .type = space_group
-    .help = "Target space group for indexing."
-  unit_cell = None
-    .type = unit_cell
-    .help = "Target unit cell for indexing."
-  relative_length_tolerance = 0.1
-    .type = float
-    .help = "Relative tolerance for unit cell lengths in unit cell comparision."
-    .expert_level = 1
-  absolute_angle_tolerance = 5
-    .type = float
-    .help = "Angular tolerance (in degrees) in unit cell comparison."
-    .expert_level = 1
-}
-basis_vector_combinations {
-  max_try = 50
-    .type = int(value_min=1)
-    .help = "Number of putative basis vector combinations to try."
-    .expert_level = 1
-  metric = *model_likelihood n_indexed
-    .type = choice
-    .expert_level = 1
-}
-index_assignment {
-  method = *simple local
-    .type = choice
-    .help = "Choose between simple 'global' index assignment and xds-style "
-            "'local' index assignment."
-    .expert_level = 1
-  simple {
-    hkl_tolerance = 0.3
-      .type = float(value_min=0, value_max=0.5)
-      .help = "Maximum allowable deviation from integer-ness for assigning "
-              "a miller index to a reciprocal lattice vector."
-  }
-  local
-    .expert_level = 1
-  {
-    epsilon = 0.05
-      .type = float
-      .help = "This corresponds to the xds parameter INDEX_ERROR="
-    delta = 8
-      .type = int
-      .help = "This corresponds to the xds parameter INDEX_MAGNITUDE="
-    l_min = 0.8
-      .type = float
-      .help = "This corresponds to the xds parameter INDEX_QUALITY="
-    nearest_neighbours = 20
-      .type = int(value_min=1)
-  }
-}
-optimise_initial_basis_vectors = False
-  .type = bool
-  .expert_level = 2
-debug = False
-  .type = bool
-  .expert_level = 1
-debug_plots = False
-  .type = bool
-  .help = "Requires matplotlib"
-  .expert_level = 1
-refinement_protocol {
-  n_macro_cycles = 5
-    .type = int(value_min=0)
-  d_min_step = 1.0
-    .type = float(value_min=0.0)
-    .help = "Reduction per step in d_min for reflections to include in refinement."
-  d_min_start = 4.0
-    .type = float(value_min=0.0)
-  d_min_final = None
-    .type = float(value_min=0.0)
-    .help = "Do not ever include reflections below this value in refinement."
-  verbosity = 1
-    .type = int(value_min=0)
-  outlier_rejection {
-    maximum_spot_error = None
-      .type = float(value_min=0)
-      .help = "Reject reflections whose predicted and observed centroids differ "
-              "by more than the given multiple of the pixel size."
-              "No outlier rejection is performed in the first macro cycle, and "
-              "in the second macro cycle twice the given multiple is used."
-    maximum_phi_error = None
-      .type = float(value_min=0)
-      .help = "Reject reflections whose predicted and observed phi centroids "
-              "differ by more than the given value (degrees)."
-              "No outlier rejection is performed in the first macro cycle, and "
-              "in the second macro cycle twice the given multiple is used."
-  }
-}
-method = *fft3d fft1d real_space_grid_search
-  .type = choice
-multiple_lattice_search
-  .expert_level = 1
-{
-  cluster_analysis_search = False
     .type = bool
-    .help = "Perform cluster analysis search for multiple lattices."
-  recycle_unindexed_reflections = False
-    .type = bool
-    .help = "Attempt another cycle of indexing on the unindexed reflections "
-            "if enough reflections are unindexed."
-  recycle_unindexed_reflections_cutoff = 0.1
-    .type = float(value_min=0, value_max=1)
-    .help = "Attempt another cycle of indexing on the unindexed reflections "
-            "if more than the fraction of input reflections are unindexed."
-  minimum_angular_separation = 5
+    .expert_level = 1
+  min_cell = 20
     .type = float(value_min=0)
-    .help = "The minimum angular separation (in degrees) between two lattices."
-  max_lattices = None
-    .type = int
-  cluster_analysis {
-    method = *dbscan hcluster
+    .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
+    .expert_level = 1
+  max_cell = Auto
+    .type = float(value_min=0)
+    .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
+  nearest_neighbor_percentile = 0.05
+    .type = float(value_min=0)
+    .help = "Percentile of NN histogram to use for max cell determination."
+    .expert_level = 1
+  fft3d {
+    peak_search = *flood_fill clean
       .type = choice
-    hcluster {
-      linkage {
-        method = *ward
-          .type = choice
-        metric = *euclidean
-          .type = choice
-      }
-      cutoff = 15
+      .expert_level = 2
+    reciprocal_space_grid {
+      n_points = 256
+        .type = int(value_min=0)
+        .expert_level = 1
+      d_min = Auto
         .type = float(value_min=0)
-      cutoff_criterion = *distance inconsistent
-        .type = choice
+        .help = "The high resolution limit in Angstrom for spots to include in "
+                "the initial indexing."
     }
-    dbscan {
-      eps = 0.05
-        .type = float(value_min=0.0)
-      min_samples = 30
+  }
+  sigma_phi_deg = None
+    .type = float(value_min=0)
+    .help = "Override the phi sigmas for refinement. Mainly intended for single-shot"
+            "rotation images where the phi sigma is almost certainly incorrect."
+    .expert_level = 2
+  b_iso = 200
+    .type = float(value_min=0)
+    .expert_level = 2
+  rmsd_cutoff = 15
+    .type = float(value_min=0)
+    .expert_level = 1
+  scan_range = None
+    .help = "The range of images to use in indexing. Number of arguments"
+            "must be a factor of two. Specifying \"0 0\" will use all images"
+            "by default. The given range follows C conventions"
+            "(e.g. j0 <= j < j1)."
+    .type = ints(size=2)
+    .multiple = True
+  known_symmetry {
+    space_group = None
+      .type = space_group
+      .help = "Target space group for indexing."
+    unit_cell = None
+      .type = unit_cell
+      .help = "Target unit cell for indexing."
+    relative_length_tolerance = 0.1
+      .type = float
+      .help = "Relative tolerance for unit cell lengths in unit cell comparision."
+      .expert_level = 1
+    absolute_angle_tolerance = 5
+      .type = float
+      .help = "Angular tolerance (in degrees) in unit cell comparison."
+      .expert_level = 1
+  }
+  basis_vector_combinations {
+    max_try = 50
+      .type = int(value_min=1)
+      .help = "Number of putative basis vector combinations to try."
+      .expert_level = 1
+    metric = *model_likelihood n_indexed
+      .type = choice
+      .expert_level = 1
+  }
+  index_assignment {
+    method = *simple local
+      .type = choice
+      .help = "Choose between simple 'global' index assignment and xds-style "
+              "'local' index assignment."
+      .expert_level = 1
+    simple {
+      hkl_tolerance = 0.3
+        .type = float(value_min=0, value_max=0.5)
+        .help = "Maximum allowable deviation from integer-ness for assigning "
+                "a miller index to a reciprocal lattice vector."
+    }
+    local
+      .expert_level = 1
+    {
+      epsilon = 0.05
+        .type = float
+        .help = "This corresponds to the xds parameter INDEX_ERROR="
+      delta = 8
+        .type = int
+        .help = "This corresponds to the xds parameter INDEX_MAGNITUDE="
+      l_min = 0.8
+        .type = float
+        .help = "This corresponds to the xds parameter INDEX_QUALITY="
+      nearest_neighbours = 20
         .type = int(value_min=1)
     }
-    min_cluster_size = 20
+  }
+  optimise_initial_basis_vectors = False
+    .type = bool
+    .expert_level = 2
+  debug = False
+    .type = bool
+    .expert_level = 1
+  debug_plots = False
+    .type = bool
+    .help = "Requires matplotlib"
+    .expert_level = 1
+  refinement_protocol {
+    n_macro_cycles = 5
       .type = int(value_min=0)
-    intersection_union_ratio_cutoff = 0.4
-      .type = float(value_min=0.0, value_max=1.0)
+    d_min_step = 1.0
+      .type = float(value_min=0.0)
+      .help = "Reduction per step in d_min for reflections to include in refinement."
+    d_min_start = 4.0
+      .type = float(value_min=0.0)
+    d_min_final = None
+      .type = float(value_min=0.0)
+      .help = "Do not ever include reflections below this value in refinement."
+    verbosity = 1
+      .type = int(value_min=0)
+    outlier_rejection {
+      maximum_spot_error = None
+        .type = float(value_min=0)
+        .help = "Reject reflections whose predicted and observed centroids differ "
+                "by more than the given multiple of the pixel size."
+                "No outlier rejection is performed in the first macro cycle, and "
+                "in the second macro cycle twice the given multiple is used."
+      maximum_phi_error = None
+        .type = float(value_min=0)
+        .help = "Reject reflections whose predicted and observed phi centroids "
+                "differ by more than the given value (degrees)."
+                "No outlier rejection is performed in the first macro cycle, and "
+                "in the second macro cycle twice the given multiple is used."
+    }
+  }
+  method = *fft3d fft1d real_space_grid_search
+    .type = choice
+  multiple_lattice_search
+    .expert_level = 1
+  {
+    cluster_analysis_search = False
+      .type = bool
+      .help = "Perform cluster analysis search for multiple lattices."
+    recycle_unindexed_reflections = False
+      .type = bool
+      .help = "Attempt another cycle of indexing on the unindexed reflections "
+              "if enough reflections are unindexed."
+    recycle_unindexed_reflections_cutoff = 0.1
+      .type = float(value_min=0, value_max=1)
+      .help = "Attempt another cycle of indexing on the unindexed reflections "
+              "if more than the fraction of input reflections are unindexed."
+    minimum_angular_separation = 5
+      .type = float(value_min=0)
+      .help = "The minimum angular separation (in degrees) between two lattices."
+    max_lattices = None
+      .type = int
+    cluster_analysis {
+      method = *dbscan hcluster
+        .type = choice
+      hcluster {
+        linkage {
+          method = *ward
+            .type = choice
+          metric = *euclidean
+            .type = choice
+        }
+        cutoff = 15
+          .type = float(value_min=0)
+        cutoff_criterion = *distance inconsistent
+          .type = choice
+      }
+      dbscan {
+        eps = 0.05
+          .type = float(value_min=0.0)
+        min_samples = 30
+          .type = int(value_min=1)
+      }
+      min_cluster_size = 20
+        .type = int(value_min=0)
+      intersection_union_ratio_cutoff = 0.4
+        .type = float(value_min=0.0, value_max=1.0)
+    }
+  }
+  real_space_grid_search
+    .expert_level = 1
+  {
+    characteristic_grid = 0.02
+      .type = float(value_min=0)
   }
 }
-real_space_grid_search
-  .expert_level = 1
-{
-  characteristic_grid = 0.02
-    .type = float(value_min=0)
-}
-include scope dials.algorithms.refinement.refiner.phil_scope
-output {
-  experiments = experiments.json
-    .type = path
-  reflections = indexed.pickle
-    .type = path
-}
+"""
 
-""", process_includes=True)
+index_only_phil_scope = iotbx.phil.parse(index_only_phil_str, process_includes=True)
+
+master_phil_scope = iotbx.phil.parse("""
+%s
+include scope dials.algorithms.refinement.refiner.phil_scope
+""" %index_only_phil_str, process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
 
@@ -295,7 +296,8 @@ class indexer_base(object):
     self.detector = sweep.get_detector()
     #self.scan = sweep.get_scan()
     self.beam = sweep.get_beam()
-    self.params = params
+    self.params = params.indexing
+    self.all_params = params
     self.refined_experiments = None
 
     self._setup_symmetry()
@@ -602,8 +604,8 @@ class indexer_base(object):
         self.goniometer = self.sweep.get_goniometer()
         self.scan = self.sweep.get_scan()
 
-        if not (self.params.refinement.parameterisation.beam.fix == 'all'
-                and self.params.refinement.parameterisation.detector.fix == 'all'):
+        if not (self.all_params.refinement.parameterisation.beam.fix == 'all'
+                and self.all_params.refinement.parameterisation.detector.fix == 'all'):
           # Experimental geometry may have changed - re-map centroids to
           # reciprocal space
           self.map_centroids_to_reciprocal_space(
@@ -985,7 +987,7 @@ class indexer_base(object):
     n_indexed = flex.int()
 
     import copy
-    params = copy.deepcopy(self.params)
+    params = copy.deepcopy(self.all_params)
     params.refinement.parameterisation.crystal.scan_varying = False
     params.refinement.parameterisation.detector.fix = "all"
     params.refinement.parameterisation.beam.fix = "all"
@@ -1037,7 +1039,7 @@ class indexer_base(object):
             orientation_too_similar = True
             break
         if orientation_too_similar:
-          if params.debug:
+          if self.params.debug:
             print "skipping crystal: too similar to other crystals"
           continue
 
@@ -1153,7 +1155,7 @@ class indexer_base(object):
              maximum_phi_error=None):
     from dials.algorithms.indexing.refinement import refine
     refiner, refined, outliers = refine(
-      self.params, reflections, experiments,
+      self.all_params, reflections, experiments,
       maximum_spot_error=maximum_spot_error,
       maximum_phi_error=maximum_phi_error,
       verbosity=self.params.refinement_protocol.verbosity,
