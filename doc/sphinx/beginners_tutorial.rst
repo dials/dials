@@ -59,7 +59,7 @@ Find Spots
 ----------
 
 Most useful parameter here is the minimum spots size. By default it is 6, but
-this can be overridden with mini_spot_size=N where N is e.g. 3. This takes
+this can be overridden with min_spot_size=N where N is e.g. 3. This takes
 datablock.json and creates strong.pickle:
 
 .. code-block:: none

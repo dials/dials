@@ -5,7 +5,7 @@ DIALS has been designed to be extensible. If you've got a great idea for a new
 integration algorithm, then, with a bit of work, you should be able to get it
 running within the DIALS framework. The following tutorial applies for both
 developers looking to put their algorithms within DIALS itself as well as for
-those adding algorithms in their own installation. 
+those adding algorithms in their own installation.
 
 Spot Finding
 ------------
@@ -17,7 +17,7 @@ implement the following interface. An example can be found under
 .. code-block:: python
 
   class SpotFinderThresholdIface(interface.Interface):
-    
+
     def __init__(self, params, imageset):
       pass
 
@@ -28,7 +28,7 @@ implement the following interface. An example can be found under
 The algorithm is configured through phil parameters and the imageset.
 The extension should also provide a :samp:`compute_threshold` method which
 takes an image and a mask and should return a flex.bool array of the same
-dimensions where :samp:`True` pixels are possible spot pixels and :sampe:`False`
+dimensions where :samp:`True` pixels are possible spot pixels and :samp:`False`
 pixels are background.
 
 Profile Modelling
@@ -42,7 +42,7 @@ interface. An example can be found under
 "dials/extensions/gaussian_rs_profile_model_ext.py".
 
 .. code-block:: python
-  
+
   class ProfileModelCreatorIface(interface.Interface):
 
     @interface.abstractmethod
@@ -55,9 +55,9 @@ reflections, the profile model should be constructable from phil parameters.
 When reflections are present, the create method should be able to construct the
 model from the input reflections and experiments.
 
-The algorithm should return an object which implements the interface given in 
+The algorithm should return an object which implements the interface given in
 the :samp:`dials.algorithms.profile_model.interface` module and shown in brief
-below. 
+below.
 
 .. code-block:: python
 
@@ -82,7 +82,7 @@ below.
     @interface.abstractmethod
     def dump(self):
       pass
-  
+
     @abstractmethod
     def __len__(self):
       pass
@@ -106,7 +106,7 @@ and can be a placeholder.
 
 The extention should have the ability to dump the profile model to phil
 parameters so that it can be input via a profile.phil file to, for example,
-re-run integration with the same profile parameters. 
+re-run integration with the same profile parameters.
 
 Indexing
 --------
@@ -131,7 +131,7 @@ interface. An example can be found under
 .. code-block:: python
 
   class CentroidIface(interface.Interface):
-    
+
     def __init__(self, params, experiments):
       pass
 
@@ -154,9 +154,9 @@ following interface. An example can be found under
 "dials/extensions/simple_background_ext.py".
 
 .. code-block:: python
-  
+
   class BackgroundIface(interface.Interface):
-    
+
     def __init__(self, params, experiments):
       pass
 
@@ -205,7 +205,7 @@ integrator.
  +----------+------------+-------------------------------+
  | Value    | Experiment | Description                   |
  +==========+============+===============================+
- | 3d       | rotation   | 3D shoeboxes                  | 
+ | 3d       | rotation   | 3D shoeboxes                  |
  +----------+------------+-------------------------------+
  | flat3d   | rotation   | 3D shoeboxes flattend         |
  +----------+------------+-------------------------------+
@@ -267,7 +267,7 @@ Within external projects
 
 If you have a project containing algorithms written for use within DIALS that is
 built using the cctbx build system, it is easy to make DIALS aware of your new
-algorithms. 
+algorithms.
 
 A typical project layout is shown below.
 
@@ -293,7 +293,7 @@ implementation within the "my_algorithm" directory and the extension class
 make DIALS aware of your algorithm by adding the following code to the
 libtbx_refresh.py scripy in the top level of your project. This will add the
 extensions directory in your project to the list of directories searched when
-loading available algorithms. 
+loading available algorithms.
 
 .. code-block:: python
 
