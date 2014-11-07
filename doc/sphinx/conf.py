@@ -38,6 +38,7 @@ extensions = [
     'sphinx.ext.pngmath',
     'numpydoc',
     'libtbx.sphinx.phil',
+    'libtbx.sphinx.python_string',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

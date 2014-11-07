@@ -4,6 +4,8 @@ dials.index
 Introduction
 ------------
 
+.. python_string:: dials.command_line.index.help_message
+
 Basic parameters
 ----------------
 

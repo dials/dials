@@ -4,6 +4,8 @@ dials.find_spots
 Introduction
 ------------
 
+.. python_string:: dials.command_line.find_spots.help_message
+
 Basic parameters
 ----------------
 

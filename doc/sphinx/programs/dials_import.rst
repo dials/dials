@@ -4,6 +4,8 @@ dials.import
 Introduction
 ------------
 
+.. python_string:: dials.command_line.import.help_message
+
 Basic parameters
 ----------------
 

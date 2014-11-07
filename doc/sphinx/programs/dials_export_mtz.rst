@@ -4,6 +4,8 @@ dials.export_mtz
 Introduction
 ------------
 
+.. python_string:: dials.command_line.export_mtz.help_message
+
 Basic parameters
 ----------------
 

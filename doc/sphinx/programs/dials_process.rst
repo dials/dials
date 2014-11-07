@@ -4,6 +4,8 @@ dials.process
 Introduction
 ------------
 
+.. python_string:: dials.command_line.process.help_message
+
 Basic parameters
 ----------------
 

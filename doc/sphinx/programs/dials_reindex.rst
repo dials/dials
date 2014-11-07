@@ -4,6 +4,8 @@ dials.reindex
 Introduction
 ------------
 
+.. python_string:: dials.command_line.reindex.help_message
+
 Basic parameters
 ----------------
 
