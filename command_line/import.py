@@ -24,7 +24,7 @@ maximum number of arguments that can be given on the command line and the number
 of files may exceed this. In this case image filenames can be input on stdin
 delmited by a new line using the -i option (see below for examples).
 
-Examples:
+Examples::
 
   dials.import image_*.cbf
 

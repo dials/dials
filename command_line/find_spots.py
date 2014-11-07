@@ -27,7 +27,7 @@ of the user. The output will be a file (strong.pickle) containing a list of spot
 centroids and intensities which can be used in the dials.index program. To view
 a list of parameters for spot finding use the --show-config option.
 
-Examples:
+Examples::
 
   dials.find_spots image1.cbf
 

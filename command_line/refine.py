@@ -12,6 +12,9 @@
 
 from __future__ import division
 
+help_message = '''
+'''
+
 # The phil scope
 from libtbx.phil import parse
 phil_scope = parse('''
@@ -96,7 +99,8 @@ class Script(object):
       phil=phil_scope,
       read_reflections=True,
       read_experiments=True,
-      check_format=False)
+      check_format=False,
+      epilog=help_message)
 
   def write_centroids_table(self, refiner, filename):
 

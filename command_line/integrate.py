@@ -29,7 +29,7 @@ options using the same measurement boxes by giving the measurement box file
 using the -s option. This will skip reading the measurement boxes and go
 directly to integrating the reflections.
 
-Examples:
+Examples::
 
   dials.integrate experiments.json reference=indexed.pickle
 

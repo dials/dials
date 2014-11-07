@@ -22,6 +22,9 @@ from dxtbx.serialize import dump
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 
+help_message = '''
+'''
+
 phil_scope = iotbx.phil.parse("""
 change_of_basis_op = None
   .type = str
@@ -36,18 +39,15 @@ space_group = None
 def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
-  usage = """\
-%s [options] experiments.json indexed.pickle
-
-Parameters:
-""" %libtbx.env.dispatcher_name
+  usage = "%s [options] experiments.json indexed.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
     read_reflections=True,
     read_experiments=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
 

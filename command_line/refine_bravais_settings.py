@@ -9,6 +9,9 @@ from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
 from dials.array_family import flex
 
+help_message = '''
+'''
+
 phil_scope = iotbx.phil.parse("""
 include scope dials.algorithms.refinement.refiner.phil_scope
 lepage_max_delta = 5
@@ -24,16 +27,15 @@ experiment_id = None
 
 def run(args):
   import libtbx.load_env
-  usage = """\
-%s experiments.json indexed.pickle [options]
-""" %libtbx.env.dispatcher_name
+  usage = "%s experiments.json indexed.pickle [options]" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
     read_experiments=True,
     read_reflections=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)

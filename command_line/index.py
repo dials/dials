@@ -15,6 +15,9 @@ from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
 from dials.util.options import flatten_experiments
 
+help_message = '''
+'''
+
 phil_scope = iotbx.phil.parse("""\
 include scope dials.algorithms.indexing.indexer.master_phil_scope
 output {
@@ -29,9 +32,7 @@ output {
 def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
-  usage = """\
-%s [options] datablock.json strong.pickle
-""" %libtbx.env.dispatcher_name
+  usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
@@ -39,7 +40,8 @@ def run(args):
     read_reflections=True,
     read_datablocks=True,
     read_experiments=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)

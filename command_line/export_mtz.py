@@ -2,6 +2,9 @@ from __future__ import division
 from dials.util.export_mtz import export_mtz
 from libtbx.phil import parse
 
+help_message = '''
+'''
+
 phil_scope = parse('''
   hklout = hklout.mtz
     .type = str
@@ -26,7 +29,8 @@ def run(args):
     read_experiments=True,
     read_reflections=True,
     check_format=False,
-    phil=phil_scope)
+    phil=phil_scope,
+    epilog=help_message)
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)

@@ -17,7 +17,7 @@ This is the main dials program. Given a set of images, the data will be
 processed and a list of integrated reflections will be given as output. More
 specialised help can be seen by looking at the command line programs that
 perform the individual processing steps. Looks at the following for more
-details:
+details::
 
   dials.import
   dials.find_spots
@@ -35,7 +35,7 @@ This program will do the following:
   Finally, the integrated reflections will be exported to an MTZ file which can
   be input into Aimless to be scaled.
 
-  Examples:
+  Examples::
 
     dials.process images*.cbf
 
