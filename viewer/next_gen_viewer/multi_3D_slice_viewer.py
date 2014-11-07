@@ -127,7 +127,10 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.SetupScrolling()
     self.scroll_rot = 0
     self.SetBackgroundColour(wx.Colour(200,200,200))
-    self.SetScrollbars(1, 1, 10000, 1000)
+
+    aprox_len_pix = len(self.lst_2d_bmp) * 10
+    #print "aprox_len_pix =", aprox_len_pix
+    self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
 
   def set_scroll_content(self):
 
@@ -165,14 +168,18 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     #saving relative position of scrolling area to keep after scrolling
     v_size_x, v_size_y = self.GetVirtualSize()
-    print "self.GetVirtualSize() =", self.GetVirtualSize()
-    print "self.GetViewStart() =", self.GetViewStart()
+
     self.x_to_keep, self.y_to_keep = self.GetViewStart()
     self.x_to_keep = float(self.x_to_keep) / float(v_size_x)
     self.y_to_keep = float(self.y_to_keep) / float(v_size_y)
+
+    debugg_screen_log = '''
+    print "self.GetVirtualSize() =", self.GetVirtualSize()
+    print "self.GetViewStart() =", self.GetViewStart()
     print "self.GetScrollPixelsPerUnit() =", self.GetScrollPixelsPerUnit()
     print "self.x_to_keep =", self.x_to_keep
     print "self.y_to_keep =", self.y_to_keep
+    '''
 
   def img_refresh(self, bmp_lst_new):
     self.lst_2d_bmp = bmp_lst_new
