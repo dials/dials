@@ -452,6 +452,13 @@ class OptionParser(OptionParserBase):
     ''' Get the diff phil. '''
     return self._phil_parser.diff_phil
 
+  def _strip_rst_markup(self, text):
+    return text.replace("::", ":")
+
+  def format_help(self, formatter=None):
+    result = super(OptionParser, self).format_help(formatter=formatter)
+    return self._strip_rst_markup(result)
+
 
 def flatten_reflections(filename_object_list):
   result = []
