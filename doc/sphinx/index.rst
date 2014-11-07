@@ -15,6 +15,7 @@ DIALS
    beginners_tutorial
    advanced_tutorial
    developer_tutorial
+   programs/index
    conventions
    library_reference/index
 

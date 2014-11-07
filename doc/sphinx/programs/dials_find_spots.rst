@@ -12,8 +12,8 @@ Basic parameters
    :attributes-level: 0
 
 
-Full parameter list
--------------------
+Full parameter definitions
+--------------------------
 
 .. phil:: dials.command_line.find_spots.phil_scope
    :expert-level: 2
