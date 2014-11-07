@@ -17,6 +17,7 @@ from __future__ import division
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.array_family import flex # import dependency
 from libtbx.phil import parse
+import libtbx
 
 phil_scope = parse('''
 
@@ -123,10 +124,8 @@ refinement
         .expert_level = 1
     }
 
-    sparse = False
-      .help = "Calculate gradients using sparse data structures. Temporary user choice"
-              "during development - should be automatic when the trade-offs are well"
-              "understood"
+    sparse = Auto
+      .help = "Calculate gradients using sparse data structures."
       .type = bool
       .expert_level = 1
 
@@ -605,6 +604,13 @@ class RefinerFactory(object):
     beam_options = params.refinement.parameterisation.beam
     crystal_options = params.refinement.parameterisation.crystal
     detector_options = params.refinement.parameterisation.detector
+
+    # Automatic selection for sparse parameter
+    if params.refinement.parameterisation.sparse == libtbx.Auto:
+      if len(experiments) > 1:
+        params.refinement.parameterisation.sparse = True
+      else:
+        params.refinement.parameterisation.sparse = False
     sparse = params.refinement.parameterisation.sparse
 
     # Shorten paths
