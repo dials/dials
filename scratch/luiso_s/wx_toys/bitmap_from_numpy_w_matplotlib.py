@@ -1,4 +1,4 @@
-#import os, io, Image, PIL
+import os, io, Image, PIL
 import wx
 import numpy as np
 from scipy.misc import toimage
@@ -43,13 +43,23 @@ def GetBitmap_from_np_array(data2d):
   self.draw(event.data,event.number)
   '''
 
+
+
+  one_more_way = '''
+  from scipy.misc import toimage
+  toimage(data2d).show()
+  '''
+  #Image.fromarray(a)
+
   #new_way= '''
   np_max = np.amax(data2d)
   print "np_max =", np_max
   img=toimage(data2d,high=256, low=0, pal=3, mode='P')
+  #img = Image.fromarray(data2d, 'RGB')
   wximg=wx.EmptyImage(img.size[0],img.size[1])
   wximg.SetData(img.convert("RGB").tostring())
-  wximg=wximg.Scale(600,300, wx.IMAGE_QUALITY_HIGH)
+  #wximg.SetData(img.tostring())
+  #wximg=wximg.Scale(600,300, wx.IMAGE_QUALITY_HIGH)
   bitmp=wx.BitmapFromImage(wximg, depth=-1)
   wxBitmap = bitmp
   #'''
@@ -61,6 +71,7 @@ def GetBitmap_from_np_array(data2d):
   #'''
 
   return wxBitmap
+
 
 def build_np_img(width=64, height=64):
   data2d = np.zeros( (width, height),'float')
