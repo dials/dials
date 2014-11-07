@@ -13,6 +13,20 @@
 from __future__ import division
 
 help_message = '''
+
+Refine the diffraction geometry of input experiments against the input indexed
+reflections. For rotation scans, the model may be either static (the same for
+all reflections) or scan-varying (dependent on image number in the scan).
+Other basic parameters include control over output filenames, fixing of
+certain parameters of each model and options that control the number of
+reflections used in refinement.
+
+Examples::
+
+  dials.refine experiments.json indexed.pickle
+
+  dials.refine experiments.json indexed.pickle scan_varying=True
+
 '''
 
 # The phil scope
