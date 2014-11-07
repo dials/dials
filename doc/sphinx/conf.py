@@ -37,6 +37,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.pngmath',
     'numpydoc',
+    'libtbx.sphinx.phil',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
