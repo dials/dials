@@ -20,6 +20,8 @@ import wx.lib.scrolledpanel as scroll_pan
 
 import math
 
+#self.CalcScrolledPosition((old_x,old_y))
+
 class show_3d(object):
   def __init__(self, flex_arr_in):
     app = show_3d_wx_app(redirect=False)
@@ -124,7 +126,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.SetupScrolling()
     self.scroll_rot = 0
-
+    self.SetBackgroundColour(wx.Colour(200,200,200))
+    self.SetScrollbars(1, 1, 10000, 1000)
 
   def set_scroll_content(self):
 
@@ -151,10 +154,25 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.SetSizer(img_lst_vert_sizer)
 
 
+
+
+
   def OnMouseWheel(self, event):
+
+    #saving amount of scroll steps to do
     sn_mov = math.copysign(1, float(event.GetWheelRotation()))
     self.scroll_rot += sn_mov
 
+    #saving relative position of scrolling area to keep after scrolling
+    v_size_x, v_size_y = self.GetVirtualSize()
+    print "self.GetVirtualSize() =", self.GetVirtualSize()
+    print "self.GetViewStart() =", self.GetViewStart()
+    self.x_to_keep, self.y_to_keep = self.GetViewStart()
+    self.x_to_keep = float(self.x_to_keep) / float(v_size_x)
+    self.y_to_keep = float(self.y_to_keep) / float(v_size_y)
+    print "self.GetScrollPixelsPerUnit() =", self.GetScrollPixelsPerUnit()
+    print "self.x_to_keep =", self.x_to_keep
+    print "self.y_to_keep =", self.y_to_keep
 
   def img_refresh(self, bmp_lst_new):
     self.lst_2d_bmp = bmp_lst_new
@@ -171,6 +189,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     if( self.scroll_rot != 0 ):
       self.parent_panel.to_re_zoom(self.scroll_rot)
       self.scroll_rot = 0
+      v_size_x, v_size_y = self.GetVirtualSize()
+      self.Scroll(self.x_to_keep * v_size_x, self.y_to_keep * v_size_y)
 
 
 class buttons_panel(wx.Panel):

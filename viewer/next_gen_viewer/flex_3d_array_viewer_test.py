@@ -42,5 +42,5 @@ if(__name__ == "__main__"):
 
   show_3d(data_xyz_flex)
 
-  show_3d(lst_flex)
+  #show_3d(lst_flex)
   show_3d(lst_flex_norm)
