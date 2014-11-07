@@ -11,6 +11,8 @@ if (__name__ == "__main__") :
   cctbx_base = libtbx.env.find_in_repositories("cctbx_project")
   dials_dir = libtbx.env.find_in_repositories("dials")
   dials_htdocs = libtbx.env.find_in_repositories("dials_htdocs")
+  if dials_htdocs is None:
+    dials_htdocs = libtbx.env.find_in_repositories("htdocs")
   assert (dials_htdocs is not None)
   assert (cctbx_base is not None)
   base_dir = op.dirname(cctbx_base)
