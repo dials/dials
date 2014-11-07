@@ -9,7 +9,7 @@ from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
 from dials.array_family import flex
 
-master_phil_scope = iotbx.phil.parse("""
+phil_scope = iotbx.phil.parse("""
 include scope dials.algorithms.refinement.refiner.phil_scope
 lepage_max_delta = 5
   .type = float
@@ -21,26 +21,16 @@ experiment_id = None
   .type = int(value_min=0)
 """, process_includes=True)
 
-master_params = master_phil_scope.fetch().extract()
-
 
 def run(args):
-  if len(args) == 0:
-    from libtbx.utils import Usage
-    import libtbx.load_env
-    from cStringIO import StringIO
-    usage_message = """\
+  import libtbx.load_env
+  usage = """\
 %s experiments.json indexed.pickle [options]
-
-Parameters:
 """ %libtbx.env.dispatcher_name
-    s = StringIO()
-    master_phil_scope.show(out=s)
-    usage_message += s.getvalue()
-    raise Usage(usage_message)
 
   parser = OptionParser(
-    phil=master_phil_scope,
+    usage=usage,
+    phil=phil_scope,
     read_experiments=True,
     read_reflections=True,
     check_format=False)
@@ -49,23 +39,11 @@ Parameters:
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
   if len(experiments) == 0:
-    print "No ExperimentList could be constructed"
+    parser.print_help()
     return
   elif len(experiments) > 1 and params.experiment_id is None:
     raise Sorry("More than one experiment present: set experiment_id to choose experiment.")
 
-  # importer = Importer(args, check_format=False)
-  # args = importer.unhandled_arguments
-  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  # working_phil = cmd_line.process_and_fetch(args=args)
-  # working_phil.show()
-  # params = working_phil.extract()
-  # if len(importer.experiments) == 0:
-  #   print "No ExperimentList could be constructed"
-  #   return
-  # elif len(importer.experiments) > 1 and params.experiment_id is None:
-  #   raise Sorry("More than one experiment present: set experiment_id to choose experiment.")
-  # experiments = importer.experiments
   if params.experiment_id is None:
     params.experiment_id = 0
   assert params.experiment_id < len(experiments)

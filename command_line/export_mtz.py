@@ -1,5 +1,15 @@
 from __future__ import division
 from dials.util.export_mtz import export_mtz
+from libtbx.phil import parse
+
+phil_scope = parse('''
+  hklout = hklout.mtz
+    .type = str
+    .help = "The output MTZ file"
+  ignore_panels = False
+    .type = bool
+    .help = "Ignore multiple panels / detectors in output"
+''')
 
 def run(args):
 
@@ -7,15 +17,6 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
-  from libtbx.phil import parse
-  phil_scope = parse('''
-    hklout = hklout.mtz
-      .type = str
-      .help = "The output MTZ file"
-    ignore_panels = False
-      .type = bool
-      .help = "Ignore multiple panels / detectors in output"
-  ''')
 
   usage = '%s integrated.pickle experiments.json [hklout.mtz] [options]' % (
               libtbx.env.dispatcher_name)

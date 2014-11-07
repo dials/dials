@@ -41,6 +41,26 @@ Examples:
 
 '''
 
+# Create the phil scope
+from libtbx.phil import parse
+phil_scope = parse('''
+
+  output {
+    profile_model = 'profile_model.phil'
+      .type = str
+      .help = "The profile parameters output filename"
+
+    reflections = 'integrated.pickle'
+      .type = str
+      .help = "The integrated output filename"
+  }
+
+  include scope dials.algorithms.integration.integrator.phil_scope
+  include scope dials.algorithms.profile_model.factory.phil_scope
+  include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
+
+''', process_includes=True)
+
 
 class Script(object):
   ''' The integration program. '''
@@ -48,27 +68,7 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    # Create the phil scope
-    phil_scope = parse('''
-
-      output {
-        profile_model = 'profile_model.phil'
-          .type = str
-          .help = "The profile parameters output filename"
-
-        reflections = 'integrated.pickle'
-          .type = str
-          .help = "The integrated output filename"
-      }
-
-      include scope dials.algorithms.integration.integrator.phil_scope
-      include scope dials.algorithms.profile_model.factory.phil_scope
-      include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
-
-    ''', process_includes=True)
 
     # The script usage
     usage  = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name

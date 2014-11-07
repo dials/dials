@@ -39,6 +39,37 @@ Examples:
 
 '''
 
+# Create the phil parameters
+from libtbx.phil import parse
+phil_scope = parse('''
+
+  output = datablock.json
+    .type = str
+    .help = "The output JSON or pickle file"
+
+  compact = False
+    .type = bool
+    .help = "For JSON output use compact representation"
+
+  input {
+    template = None
+      .type = str
+      .help = "The image sweep template"
+      .multiple = True
+    reference_geometry = None
+      .type = path
+      .help = "Experimental geometry from this datablock.json or "
+              "experiments.json will override the geometry from the "
+              "image headers."
+  }
+
+  mosflm_beam_centre = None
+    .type = floats(size=2)
+    .help = "Override the beam centre from the image headers, following "
+            "the mosflm convention."
+
+''')
+
 
 class Script(object):
   ''' Class to parse the command line options. '''
@@ -46,38 +77,7 @@ class Script(object):
   def __init__(self):
     ''' Set the expected options. '''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    # Create the phil parameters
-    phil_scope = parse('''
-
-      output = datablock.json
-        .type = str
-        .help = "The output JSON or pickle file"
-
-      compact = False
-        .type = bool
-        .help = "For JSON output use compact representation"
-
-      input {
-        template = None
-          .type = str
-          .help = "The image sweep template"
-          .multiple = True
-        reference_geometry = None
-          .type = path
-          .help = "Experimental geometry from this datablock.json or "
-                  "experiments.json will override the geometry from the "
-                  "image headers."
-      }
-
-      mosflm_beam_centre = None
-        .type = floats(size=2)
-        .help = "Override the beam centre from the image headers, following "
-                "the mosflm convention."
-
-    ''')
 
     # Create the option parser
     usage = "usage: %s [options] /path/to/image/files" % libtbx.env.dispatcher_name

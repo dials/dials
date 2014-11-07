@@ -22,7 +22,7 @@ from dxtbx.serialize import dump
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 
-master_phil_scope = iotbx.phil.parse("""
+phil_scope = iotbx.phil.parse("""
 change_of_basis_op = None
   .type = str
   .optional = False
@@ -31,8 +31,6 @@ space_group = None
   .help = "The space group to be applied AFTER applying the change of basis "
            "operator."
 """, process_includes=True)
-
-master_params = master_phil_scope.fetch().extract()
 
 
 def run(args):
@@ -45,7 +43,8 @@ Parameters:
 """ %libtbx.env.dispatcher_name
 
   parser = OptionParser(
-    phil=master_phil_scope,
+    usage=usage,
+    phil=phil_scope,
     read_reflections=True,
     read_experiments=True,
     check_format=False)

@@ -12,77 +12,78 @@
 
 from __future__ import division
 
+# The phil scope
+from libtbx.phil import parse
+phil_scope = parse('''
+
+  output {
+    experiments_filename = refined_experiments.json
+      .type = str
+      .help = "The filename for refined experimental models"
+
+    reflections_filename = None
+      .type = str
+      .help = "The filename for output of refined reflections"
+
+    centroids_filename = None
+      .type = str
+      .help = "The filename for the table of centroids at the end of"
+              "refinement"
+      .expert_level = 1
+
+    parameters_filename = None
+      .type = str
+      .help = "The filename for the table of scan varying parameter values"
+      .expert_level = 1
+
+    correlation_plot
+      .expert_level = 1
+    {
+      filename = None
+        .type = str
+        .help = "The base filename for output of plots of parameter"
+                "correlations. A file extension may be added to control"
+                "the type of output file, if it is one of matplotlib's"
+                "supported types"
+
+      save_matrix = False
+        .type = bool
+        .help = "Save the matrix and column labels in a pickle file for"
+                "later inspection, replotting etc."
+
+      col_select = None
+        .type = str
+        .help = "Specific columns to include in the plots of parameter"
+                "correlations, either specifed by parameter name or column"
+                "number. Defaults to all columns."
+                "This option is useful when there is a large number of"
+                "parameters"
+        .multiple = True
+
+      steps = None
+        .type = ints(value_min=0)
+        .help = "Steps for which to make correlation plots. By default only"
+                "the final step is plotted. Uses zero-based numbering, so"
+                "the first step is numbered 0."
+    }
+
+    history_filename = None
+      .type = str
+      .help = "The filename for output of the refinement history pickle"
+      .expert_level = 1
+  }
+
+  include scope dials.algorithms.refinement.refiner.phil_scope
+''', process_includes=True)
+
 class Script(object):
   '''A class for running the script.'''
 
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
 
-    # The phil scope
-    phil_scope = parse('''
-
-      output {
-        experiments_filename = refined_experiments.json
-          .type = str
-          .help = "The filename for refined experimental models"
-
-        reflections_filename = None
-          .type = str
-          .help = "The filename for output of refined reflections"
-
-        centroids_filename = None
-          .type = str
-          .help = "The filename for the table of centroids at the end of"
-                  "refinement"
-          .expert_level = 1
-
-        parameters_filename = None
-          .type = str
-          .help = "The filename for the table of scan varying parameter values"
-          .expert_level = 1
-
-        correlation_plot
-          .expert_level = 1
-        {
-          filename = None
-            .type = str
-            .help = "The base filename for output of plots of parameter"
-                    "correlations. A file extension may be added to control"
-                    "the type of output file, if it is one of matplotlib's"
-                    "supported types"
-
-          save_matrix = False
-            .type = bool
-            .help = "Save the matrix and column labels in a pickle file for"
-                    "later inspection, replotting etc."
-
-          col_select = None
-            .type = str
-            .help = "Specific columns to include in the plots of parameter"
-                    "correlations, either specifed by parameter name or column"
-                    "number. Defaults to all columns."
-                    "This option is useful when there is a large number of"
-                    "parameters"
-            .multiple = True
-
-          steps = None
-            .type = ints(value_min=0)
-            .help = "Steps for which to make correlation plots. By default only"
-                    "the final step is plotted. Uses zero-based numbering, so"
-                    "the first step is numbered 0."
-        }
-
-        history_filename = None
-          .type = str
-          .help = "The filename for output of the refinement history pickle"
-          .expert_level = 1
-      }
-
-      include scope dials.algorithms.refinement.refiner.phil_scope
-    ''', process_includes=True)
 
     # The script usage
     usage  = "usage: %s [options] [param.phil] " \

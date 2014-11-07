@@ -9,23 +9,13 @@ except ImportError, e:
   pass
 
 from libtbx.phil import command_line
+import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
 from dials.util.options import flatten_experiments
 
-
-def run(args):
-  import libtbx.load_env
-  from libtbx.utils import Sorry
-  usage = """\
-%s [options] datablock.json strong.pickle
-
-Parameters:
-""" %libtbx.env.dispatcher_name
-
-  import iotbx.phil
-  master_phil_scope = iotbx.phil.parse("""\
+phil_scope = iotbx.phil.parse("""\
 include scope dials.algorithms.indexing.indexer.master_phil_scope
 output {
   experiments = experiments.json
@@ -35,9 +25,17 @@ output {
 }
 """, process_includes=True)
 
+
+def run(args):
+  import libtbx.load_env
+  from libtbx.utils import Sorry
+  usage = """\
+%s [options] datablock.json strong.pickle
+""" %libtbx.env.dispatcher_name
+
   parser = OptionParser(
     usage=usage,
-    phil=master_phil_scope,
+    phil=phil_scope,
     read_reflections=True,
     read_datablocks=True,
     read_experiments=True,

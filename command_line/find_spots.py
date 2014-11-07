@@ -39,6 +39,24 @@ Examples:
 
 '''
 
+# Set the phil scope
+from libtbx.phil import parse
+phil_scope = parse('''
+
+  output {
+    reflections = 'strong.pickle'
+      .type = str
+      .help = "The output filename"
+
+    shoeboxes = True
+      .type = bool
+      .help = "Save the raw pixel values inside the reflection shoeboxes."
+  }
+
+  include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
+
+''', process_includes=True)
+
 
 class Script(object):
   '''A class for running the script.'''
@@ -46,25 +64,7 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    # Set the phil scope
-    phil_scope = parse('''
-
-      output {
-        reflections = 'strong.pickle'
-          .type = str
-          .help = "The output filename"
-
-        shoeboxes = True
-          .type = bool
-          .help = "Save the raw pixel values inside the reflection shoeboxes."
-      }
-
-      include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
-
-    ''', process_includes=True)
 
     # The script usage
     usage = "usage: %s [options] [param.phil] "\

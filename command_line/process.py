@@ -45,54 +45,54 @@ This program will do the following:
 
 '''
 
+from libtbx.phil import parse
+phil_scope = parse('''
+  output {
+    datablock_filename = datablock.json
+      .type = str
+      .help = "The filename for output datablock"
+
+    strong_filename = strong.pickle
+      .type = str
+      .help = "The filename for strong reflections from spot finder output."
+
+    indexed_filename = indexed.pickle
+      .type = str
+      .help = "The filename for indexed reflections."
+
+    refined_experiments_filename = refined_experiments.json
+      .type = str
+      .help = "The filename for saving refined experimental models"
+
+    integrated_filename = integrated.pickle
+      .type = str
+      .help = "The filename for final integrated reflections."
+
+    profile_filename = profile.phil
+      .type = str
+      .help = "The filename for output reflection profile parameters"
+
+    mtz_filename = integrated.mtz
+      .type = str
+      .help = "The filename for output mtz"
+  }
+
+  include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
+  include scope dials.algorithms.indexing.indexer.index_only_phil_scope
+  include scope dials.algorithms.refinement.refiner.phil_scope
+  include scope dials.algorithms.integration.integrator.phil_scope
+  include scope dials.algorithms.profile_model.factory.phil_scope
+  include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
+
+''', process_includes=True)
+
 class Script(object):
   '''A class for running the script.'''
 
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    phil_scope = parse('''
-      output {
-        datablock_filename = datablock.json
-          .type = str
-          .help = "The filename for output datablock"
-
-        strong_filename = strong.pickle
-          .type = str
-          .help = "The filename for strong reflections from spot finder output."
-
-        indexed_filename = indexed.pickle
-          .type = str
-          .help = "The filename for indexed reflections."
-
-        refined_experiments_filename = refined_experiments.json
-          .type = str
-          .help = "The filename for saving refined experimental models"
-
-        integrated_filename = integrated.pickle
-          .type = str
-          .help = "The filename for final integrated reflections."
-
-        profile_filename = profile.phil
-          .type = str
-          .help = "The filename for output reflection profile parameters"
-
-        mtz_filename = integrated.mtz
-          .type = str
-          .help = "The filename for output mtz"
-      }
-
-      include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
-      include scope dials.algorithms.indexing.indexer.index_only_phil_scope
-      include scope dials.algorithms.refinement.refiner.phil_scope
-      include scope dials.algorithms.integration.integrator.phil_scope
-      include scope dials.algorithms.profile_model.factory.phil_scope
-      include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
-
-    ''', process_includes=True)
 
     # The script usage
     usage = "usage: %s [options] [param.phil] datablock.json" % libtbx.env.dispatcher_name
