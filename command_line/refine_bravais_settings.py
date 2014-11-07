@@ -10,10 +10,35 @@ from dials.util.options import flatten_experiments
 from dials.array_family import flex
 
 help_message = '''
+
+This program takes as input the output of dials.index, i.e. experiments.json
+and indexed.pickle files. Full refinement of the crystal and experimental
+geometry parameters will be performed (by default) in all Bravais settings
+that are consistent with the input primitive unit cell. A table is printed
+containing various information for each potential Bravais setting, including
+the metric fit (a measure of the deviation from the triclinic cell),
+the root-mean-square-deviations (rmsd), in mm, between the observed and
+predicted spot centroids, the refined unit cell parameters in each Bravais
+setting, and the change of basis operator to transform from the triclinic cell
+to each Bravais setting.
+
+The program also generates a .json file for each Bravais setting, e.g.
+bravais_setting_1.json, which is equivalent to the input experiments.json, but
+with the crystal model refined in the chosen Bravais setting. These
+bravais_setting_*.json files are suitable as input to dials.refine or
+dials.integrate, although the indexed.pickle file will need to be re-indexed
+using dials.reindex if the change of basis operator (cb_op) for the chosen
+Bravais setting is not the identity operator (a,b,c).
+
+Examples::
+
+  dials.refine_bravais_settings experiments.json indexed.pickle
+
+  dials.refine_bravais_settings experiments.json indexed.pickle nproc=4
+
 '''
 
 phil_scope = iotbx.phil.parse("""
-include scope dials.algorithms.refinement.refiner.phil_scope
 lepage_max_delta = 5
   .type = float
 verbosity = 0
@@ -22,6 +47,7 @@ nproc = Auto
   .type = int(value_min=1)
 experiment_id = None
   .type = int(value_min=0)
+include scope dials.algorithms.refinement.refiner.phil_scope
 """, process_includes=True)
 
 

@@ -23,6 +23,15 @@ from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 
 help_message = '''
+
+Examples::
+
+  dials.reindex experiments.json change_of_basis_op=b+c,a+c,a+b
+
+  dials.reindex indexed.pickle change_of_basis_op=-b,a+b+2*c,-a
+
+  dials.reindex experiments.json index.pickle change_of_basis_op=l,h,k
+
 '''
 
 phil_scope = iotbx.phil.parse("""
