@@ -484,6 +484,7 @@ model/serialize/shoebox_file_importer.h -text
 /run_tests.py -text
 scratch/__init__.py -text
 scratch/asb/__init__.py -text
+scratch/asb/asic_stats.py -text
 scratch/asb/display_detectors.py -text
 scratch/asb/dummy.phil -text
 scratch/asb/experiment_json_to_cbf_def.py -text
