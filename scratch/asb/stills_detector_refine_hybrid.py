@@ -245,10 +245,15 @@ def crystals_refiner(params, experiments, reflections):
     # experiment list for a single experiment
     exps=ExperimentList()
     exps.append(exp)
-    refiner = RefinerFactory.from_parameters_data_experiments(
-      params, refs, exps)
-    # do refinement
-    refiner.run()
+    try:
+      refiner = RefinerFactory.from_parameters_data_experiments(
+        params, refs, exps)
+      # do refinement
+      refiner.run()
+    except Exception, e:
+      print "Error,", str(e)
+      return
+
     refined_exps = refiner.get_experiments()
     # replace this experiment with the refined one
     experiments[iexp] = refined_exps[0]
