@@ -327,7 +327,7 @@ Parameters:
   imageset.set_detector(new_detector)
   imageset.set_beam(new_beam)
   from dxtbx.serialize import dump
-  dump.imageset(imageset, 'optimized_imageset.json')
+  dump.datablock(datablock, 'optimized_datablock.json')
 
 
 if __name__ == '__main__':
