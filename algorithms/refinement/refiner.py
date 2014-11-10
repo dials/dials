@@ -89,7 +89,7 @@ refinement
         .type = int(value_min=1)
         .expert_level = 1
 
-      UB_model_per = reflection *image block
+      UB_model_per = reflection image *block
         .help = "Compose a new crystal model either every reflection (slow),"
                 "every image (faster, less accurate) or within blocks of a"
                 "width specified in the reflections parameters. When this block"
