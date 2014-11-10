@@ -937,4 +937,3 @@ viewer/next_gen_viewer/bitmap_from_numpy_w_matplotlib.py -text
 viewer/next_gen_viewer/flex_3d_array_viewer_test.py -text
 viewer/next_gen_viewer/from_flex_to_wxbitmap.py -text
 viewer/next_gen_viewer/multi_3D_slice_viewer.py -text
-viewer/next_gen_viewer/simple_3D_slice_viewer.py -text
