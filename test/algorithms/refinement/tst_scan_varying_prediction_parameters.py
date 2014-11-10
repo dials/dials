@@ -153,6 +153,11 @@ flex.set_random_seed(12407)
 # take 5 random reflections for speed
 reflections = obs_refs.select(flex.random_selection(len(obs_refs), 5))
 
+# use a BlockCalculator to calculate the blocks per image
+from dials.algorithms.refinement.reflection_manager import BlockCalculator
+block_calculator = BlockCalculator(experiments, reflections)
+reflections = block_calculator.per_image()
+
 # use a ReflectionManager to exclude reflections too close to the spindle,
 # plus set the frame numbers
 from dials.algorithms.refinement.reflection_manager import ReflectionManager

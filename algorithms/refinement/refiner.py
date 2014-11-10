@@ -927,14 +927,15 @@ class RefinerFactory(object):
         *options.weighting_strategy.constants, stills=do_stills)
 
     # calculate reflection block_width?
-    if params.refinement.parameterisation.crystal.UB_model_per == "block":
-      from dials.algorithms.refinement.reflection_manager import BlockCalculator
-      block_calculator = BlockCalculator(experiments, reflections)
-      reflections = block_calculator.per_width(options.block_width, deg=True)
-    elif params.refinement.parameterisation.crystal.UB_model_per == "image":
-      from dials.algorithms.refinement.reflection_manager import BlockCalculator
-      block_calculator = BlockCalculator(experiments, reflections)
-      reflections = block_calculator.per_image()
+    if not do_stills:
+      if params.refinement.parameterisation.crystal.UB_model_per == "block":
+        from dials.algorithms.refinement.reflection_manager import BlockCalculator
+        block_calculator = BlockCalculator(experiments, reflections)
+        reflections = block_calculator.per_width(options.block_width, deg=True)
+      elif params.refinement.parameterisation.crystal.UB_model_per == "image":
+        from dials.algorithms.refinement.reflection_manager import BlockCalculator
+        block_calculator = BlockCalculator(experiments, reflections)
+        reflections = block_calculator.per_image()
 
     return refman(reflections=reflections,
             experiments=experiments,
