@@ -21,11 +21,9 @@ master_params = master_phil_scope.fetch().extract()
 
 
 class better_experimental_model_discovery(object):
-  def __init__(self, imagesets, spot_lists, solution_lists, horizon_phil):
-    self.imagesets = imagesets
-    self.spot_lists = spot_lists
-    self.solution_lists = solution_lists
-    self.horizon_phil = horizon_phil
+  def __init__(self, imagesets, spot_lists, solution_lists, amax_lists, horizon_phil):
+    from libtbx import adopt_init_args
+    adopt_init_args(self, locals())
 
   def optimize_origin_offset_local_scope(self):
     """Local scope: find the optimal origin-offset closest to the current overall detector position
@@ -72,13 +70,14 @@ class better_experimental_model_discovery(object):
         for i in range(len(self.imagesets)):
           target -= self.get_origin_offset_score(trial_origin_offset,
                                                  self.solution_lists[i],
+                                                 self.amax_lists[i],
                                                  self.spot_lists[i],
                                                  self.imagesets[i])
         return target
 
     MIN = test_simplex_method()
-    trial_origin_offset =  MIN.x[0]*0.2*beamr1 + MIN.x[1]*0.2*beamr2
-    #print "The Origin Offset best score is",self.get_origin_offset_score(trial_origin_offset)
+    new_offset =  MIN.x[0]*0.2*beamr1 + MIN.x[1]*0.2*beamr2
+    # not used in global_scope implementation
 
     if self.horizon_phil.indexing.plot_search_scope:
       scope = self.horizon_phil.indexing.mm_search_scope
@@ -92,14 +91,19 @@ class better_experimental_model_discovery(object):
           for i in range(len(self.imagesets)):
             score += self.get_origin_offset_score(new_origin_offset,
                                                   self.solution_lists[i],
+                                                  self.amax_lists[i],
                                                   self.spot_lists[i],
                                                   self.imagesets[i])
           scores.append(score)
 
       def show_plot(widegrid,excursi):
         excursi.reshape(flex.grid(widegrid, widegrid))
+        plot_max = flex.max(excursi)
+        idx_max = flex.max_index(excursi)
 
         def igrid(x): return x - (widegrid//2)
+        idxs = [igrid(i)*plot_px_sz for i in xrange(widegrid)]
+
         from matplotlib import pyplot as plt
         plt.figure()
         CS = plt.contour([igrid(i)*plot_px_sz for i in xrange(widegrid)],
@@ -108,16 +112,21 @@ class better_experimental_model_discovery(object):
         plt.title("Wide scope search for detector origin offset")
         plt.scatter([0.0],[0.0],color='g',marker='o')
         plt.scatter([0.2*MIN.x[0]] , [0.2*MIN.x[1]],color='r',marker='*')
+        plt.scatter([idxs[idx_max%widegrid]] , [idxs[idx_max//widegrid]],color='k',marker='s')
         plt.axes().set_aspect("equal")
         plt.xlabel("offset (mm) along beamr1 vector")
         plt.ylabel("offset (mm) along beamr2 vector")
         plt.show()
 
-      show_plot(widegrid = 2 * grid + 1, excursi = scores)
+        #changing value
+        trial_origin_offset =  (idxs[idx_max%widegrid])*beamr1 + (idxs[idx_max//widegrid])*beamr2
+        return trial_origin_offset
 
-    return dps_extended.get_new_detector(self.imagesets[0].get_detector(), trial_origin_offset)
+      new_offset = show_plot(widegrid = 2 * grid + 1, excursi = scores)
 
-  def get_origin_offset_score(self, trial_origin_offset, solutions, spots_mm, imageset):
+    return dps_extended.get_new_detector(self.imagesets[0].get_detector(), new_offset)
+
+  def get_origin_offset_score(self, trial_origin_offset, solutions, amax, spots_mm, imageset):
     from rstbx.indexing_api import lattice # import dependency
     from rstbx.indexing_api import dps_extended
     trial_detector = dps_extended.get_new_detector(imageset.get_detector(), trial_origin_offset)
@@ -126,7 +135,7 @@ class better_experimental_model_discovery(object):
     indexer_base.map_centroids_to_reciprocal_space(
       spots_mm, trial_detector, imageset.get_beam(), imageset.get_goniometer())
 
-    return self.sum_score_detail(spots_mm['rlp'], solutions)
+    return self.sum_score_detail(spots_mm['rlp'], solutions, amax=amax)
 
   def sum_score_detail(self, reciprocal_space_vectors, solutions, granularity=None, amax=None):
     """Evaluates the probability that the trial value of ( S0_vector | origin_offset ) is correct,
@@ -143,7 +152,7 @@ class better_experimental_model_discovery(object):
       #if t!=unique:continue
       dfft = Directional_FFT(
         angle=Direction(solutions[t]), xyzdata=reciprocal_space_vectors,
-        granularity=5.0, amax=812, # extended API XXX These values have to come from somewhere!
+        granularity=5.0, amax=amax, # extended API XXX These values have to come from somewhere!
         F0_cutoff = 11)
       kval = dfft.kval();
       kmax = dfft.kmax();
@@ -215,8 +224,9 @@ def run_dps(args):
 
   DPS.index(raw_spot_input=data,
             panel_addresses=flex.int([s['panel'] for s in spots_mm]))
-  print "Found %i solutions" %len(DPS.getSolutions())
-  return flex.vec3_double([s.dvec for s in DPS.getSolutions()])
+  print "Found %i solutions" %len(DPS.getSolutions()),
+  print "with max unit cell %7.2f Angstroms."%(DPS.amax)
+  return dict(solutions=flex.vec3_double([s.dvec for s in DPS.getSolutions()]),amax=DPS.amax)
 
 
 def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
@@ -245,7 +255,8 @@ def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
     preserve_order=True,
     asynchronous=True,
     preserve_exception_message=True)
-  solution_lists = results
+  solution_lists = [r["solutions"] for r in results]
+  amax_list = [r["amax"] for r in results]
   assert len(solution_lists) > 0
 
   detector = imagesets[0].get_detector()
@@ -254,7 +265,7 @@ def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
   # perform calculation
   if params.indexing.improve_local_scope == "origin_offset":
     discoverer = better_experimental_model_discovery(
-      imagesets, spot_lists_mm, solution_lists, params)
+      imagesets, spot_lists_mm, solution_lists, amax_list, params)
     new_detector = discoverer.optimize_origin_offset_local_scope()
     return new_detector, beam
   elif params.indexing.improve_local_scope=="S0_vector":
