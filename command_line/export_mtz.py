@@ -3,6 +3,19 @@ from dials.util.export_mtz import export_mtz
 from libtbx.phil import parse
 
 help_message = '''
+
+This program is used to export the results of dials processing as an
+unmerged mtz file, ready for input to downstream programs such as Pointless
+and Aimless. The required input is an experiments.json file and an
+integrated.pickle file. Optionally the name of the output mtz file can be
+specified.
+
+Examples::
+
+  dials.export_mtz experiments.json integrated.pickle
+
+  dials.export_mtz experiments.json integrated.pickle hklout=integrated.mtz
+
 '''
 
 phil_scope = parse('''
@@ -21,7 +34,7 @@ def run(args):
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
 
-  usage = '%s integrated.pickle experiments.json [hklout.mtz] [options]' % (
+  usage = '%s integrated.pickle experiments.json [options]' % (
               libtbx.env.dispatcher_name)
 
   parser = OptionParser(

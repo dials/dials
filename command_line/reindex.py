@@ -24,6 +24,13 @@ from dials.util.options import flatten_reflections, flatten_experiments
 
 help_message = '''
 
+This program can be used to re-index an experiments.json and/or indexed.pickle
+file from one setting to another. The change of basis operator can be
+provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
+basis operator will also be applied to the space group in the experiments.json
+file, however, optionally, a space group (including setting) to be applied
+AFTER applying the change of basis operator can be provided.
+
 Examples::
 
   dials.reindex experiments.json change_of_basis_op=b+c,a+c,a+b
