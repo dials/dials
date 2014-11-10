@@ -334,9 +334,9 @@ Parameters:
 
   new_detector, new_beam = discover_better_experimental_model(
     imagesets, reflections, hardcoded_phil, nproc=params.nproc)
-  imageset = imagesets[0]
-  imageset.set_detector(new_detector)
-  imageset.set_beam(new_beam)
+  for imageset in imagesets:
+    imageset.set_detector(new_detector)
+    imageset.set_beam(new_beam)
   from dxtbx.serialize import dump
   dump.datablock(datablock, 'optimized_datablock.json')
 
