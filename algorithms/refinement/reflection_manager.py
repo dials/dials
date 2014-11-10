@@ -19,6 +19,7 @@ from dials.algorithms.refinement import weighting_strategies
 
 # constants
 RAD_TO_DEG = 180. / pi
+DEG_TO_RAD = pi / 180.
 
 # helper functions
 def calculate_entering_flags(reflections, experiments):
@@ -45,6 +46,83 @@ def calculate_entering_flags(reflections, experiments):
     enterings.set_selected(sel, to_update)
 
   return enterings
+
+class BlockCalculator(object):
+  """Utility class to calculate and set a 'block' number column in the provided
+  reflection table, which is used during scan-varying refinement"""
+
+  def __init__(self, experiments, reflections):
+
+    self._experiments = experiments
+    self._reflections = reflections
+
+    # do not create block column in the reflection table yet, in case we don't
+    # need it at all
+
+    return
+
+  def _create_block_column(self):
+    """Create a column to contain the block number."""
+
+    from scitbx.array_family import flex
+    self._reflections['block'] = flex.size_t(len(self._reflections))
+    return
+
+  def per_width(self, width, deg=True):
+    """Set blocks for all experiments according to a constant width"""
+
+    if deg: width *= DEG_TO_RAD
+    self._create_block_column()
+
+    # get observed phi in radians
+    phi_obs = self._reflections['xyzobs.mm.value'].parts()[2]
+
+    for iexp, exp in enumerate(self._experiments):
+
+      sel = self._reflections['id'] == iexp
+      isel = sel.iselection()
+      exp_phi = phi_obs.select(isel)
+
+      start, stop = exp.scan.get_oscillation_range()
+      nblocks = int(abs(stop - start) / width) + 1
+      if stop < start: width *= -1. # ensure width has the right sign
+
+      block_starts = [start + n * width for n in xrange(nblocks)]
+
+      for b_num, b_start in enumerate(block_starts):
+        sub_isel = isel.select((b_start <= exp_phi) & \
+                                          (exp_phi < (b_start + width)))
+        self._reflections['block'].set_selected(sub_isel, b_num)
+
+    return self._reflections
+
+  def per_image(self):
+    """Set one block per image for all experiments"""
+
+    self._create_block_column()
+
+    # get observed phi in radians
+    phi_obs = self._reflections['xyzobs.mm.value'].parts()[2]
+
+    for iexp, exp in enumerate(self._experiments):
+
+      sel = self._reflections['id'] == iexp
+      isel = sel.iselection()
+      exp_phi = phi_obs.select(isel)
+
+      # convert phi to integer frames
+      frames = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
+      frames = flex.floor(frames).iround()
+
+      start, stop = flex.min(frames), flex.max(frames)
+      frame_range = range(start, stop + 1)
+
+      for f_num, f in enumerate(frame_range):
+        sub_isel = isel.select(frames == f)
+        self._reflections['block'].set_selected(sub_isel, f_num)
+
+    return self._reflections
+
 
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted

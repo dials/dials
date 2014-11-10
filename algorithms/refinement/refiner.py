@@ -89,7 +89,7 @@ refinement
         .type = int(value_min=1)
         .expert_level = 1
 
-      UB_model_per = reflection *image
+      UB_model_per = reflection *image block
         .help = "Compose a new crystal model either every reflection (slow) or"
                 "every image (faster, less accurate)"
         .type = choice
@@ -262,6 +262,14 @@ refinement
     iqr_multiplier = 1.5
       .help = "The IQR multiplier used to detect outliers. A value of 1.5 gives"
               "Tukey's rule for outlier detection"
+      .type = float(value_min = 0.)
+      .expert_level = 1
+
+    block_width = 1.0
+      .help = "Width of a reflection 'block' (in degrees) determining how fine-"
+              "grained the model used for scan-varying prediction during"
+              "refinement is. Currently only has any effect if the crystal"
+              "parameterisation is set to use UB_model_per=block"
       .type = float(value_min = 0.)
       .expert_level = 1
 
@@ -789,7 +797,7 @@ class RefinerFactory(object):
         if crystal_options.UB_model_per == "reflection":
           from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
             import VaryingCrystalPredictionParameterisation as PredParam
-        elif crystal_options.UB_model_per == "image":
+        elif crystal_options.UB_model_per == "image" or crystal_options.UB_model_per == "block":
           from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
             import VaryingCrystalPredictionParameterisationFast as PredParam
         else:
@@ -917,6 +925,16 @@ class RefinerFactory(object):
         import ConstantWeightingStrategy
       weighting_strategy = ConstantWeightingStrategy(
         *options.weighting_strategy.constants, stills=do_stills)
+
+    # calculate reflection block_width?
+    if params.refinement.parameterisation.crystal.UB_model_per == "block":
+      from dials.algorithms.refinement.reflection_manager import BlockCalculator
+      block_calculator = BlockCalculator(experiments, reflections)
+      reflections = block_calculator.per_width(options.block_width, deg=True)
+    elif params.refinement.parameterisation.crystal.UB_model_per == "image":
+      from dials.algorithms.refinement.reflection_manager import BlockCalculator
+      block_calculator = BlockCalculator(experiments, reflections)
+      reflections = block_calculator.per_image()
 
     return refman(reflections=reflections,
             experiments=experiments,
