@@ -27,11 +27,19 @@ def exercise():
   datablock_path1 = os.path.join(data_dir, "datablock_P1_X6_1.json")
   datablock_path2 = os.path.join(data_dir, "datablock_P1_X6_2.json")
 
+  # FIXME here - seems if > 1 datablock, strong.pickle given does not
+  # refine detector position any more; when exactly one given it does refine
+  # but tests fail with assertion error.
+
   args = ["dials.discover_better_experimental_model",
           datablock_path1,
           datablock_path2,
           pickle_path1,
           pickle_path2]
+
+  args = ["dials.discover_better_experimental_model",
+          datablock_path1,
+          pickle_path1]
 
   command = " ".join(args)
   print command
@@ -47,6 +55,8 @@ def exercise():
                                        check_format=False)
   detector_1 = original_imageset.get_detector()
   detector_2 = optimized_datablock[0].unique_detectors()[0]
+  print detector_1[0].get_origin()
+  print detector_2[0].get_origin()
   shift = (matrix.col(detector_1[0].get_origin()) -
            matrix.col(detector_2[0].get_origin()))
   print shift.elems
