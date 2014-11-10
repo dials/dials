@@ -32,21 +32,25 @@ def exercise():
           datablock_path2,
           pickle_path1,
           pickle_path2]
+
   command = " ".join(args)
   print command
   cwd = os.path.abspath(os.curdir)
   tmp_dir = open_tmp_directory()
   os.chdir(tmp_dir)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
-  assert os.path.exists('optimized_imageset.json')
+  assert os.path.exists('optimized_datablock.json')
   from dxtbx.serialize import load
   datablocks = load.datablock(datablock_path1, check_format=False)
   original_imageset = datablocks[0].extract_imagesets()[0]
-  optimized_imageset = load.imageset('optimized_imageset.json')
+  optimized_datablock = load.datablock('optimized_datablock.json',
+                                       check_format=False)
   detector_1 = original_imageset.get_detector()
-  detector_2 = optimized_imageset.get_detector()
+  detector_2 = optimized_datablock[0].unique_detectors()[0]
   shift = (matrix.col(detector_1[0].get_origin()) -
            matrix.col(detector_2[0].get_origin()))
+  print shift.elems
+  print (-0.178, -0.041, 0.0)
   assert approx_equal(shift.elems, (-0.178, -0.041, 0.0), eps=1e-2)
   os.chdir(cwd)
 
