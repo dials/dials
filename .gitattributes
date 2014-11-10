@@ -931,6 +931,7 @@ util/pycbf_extra.py -text
 util/show_version.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text
+viewer/__init__.py -text
 viewer/next_gen_viewer/__init__.py -text
 viewer/next_gen_viewer/bitmap_from_numpy_w_matplotlib.py -text
 viewer/next_gen_viewer/flex_3d_array_viewer_test.py -text
