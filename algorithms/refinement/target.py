@@ -56,7 +56,7 @@ class Target(object):
     self._rmsds = None
     self._matches = None
 
-    # Keep maximum number of reflections used to for Jacobian calculation, if
+    # Keep maximum number of reflections used for Jacobian calculation, if
     # a cutoff is required
     self._jacobian_max_nref = jacobian_max_nref
     self._finished_residuals_and_gradients = False
