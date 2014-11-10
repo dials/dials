@@ -20,8 +20,6 @@ import wx.lib.scrolledpanel as scroll_pan
 
 import math
 
-#self.CalcScrolledPosition((old_x,old_y))
-
 class show_3d(object):
   def __init__(self, flex_arr_in):
     app = show_3d_wx_app(redirect=False)
@@ -32,13 +30,13 @@ class show_3d(object):
 class show_3d_wx_app(wx.App):
   def OnInit(self):
     self.frame = flex_3d_frame(None, '3D flex array viewer')
-    self.panel = flex_arr_3d_outer_panel(self.frame)
-    self.frame.frame_ini_img(self.panel)
+    self.upper_panel = flex_arr_img_panel(self.frame)
+    self.frame.frame_ini_img(self.upper_panel)
     return True
 
 
   def in_lst(self, flex_lst):
-    self.panel.ini_n_intro(flex_lst)
+    self.upper_panel.ini_n_intro(flex_lst)
     self.SetTopWindow(self.frame)
     self.frame.Show()
 
@@ -49,16 +47,22 @@ class flex_3d_frame(wx.Frame):
           size = wx.DefaultSize)
 
 
-  def frame_ini_img(self, in_panel):
-    self.my_panel = in_panel
-    self.my_sizer = wx.BoxSizer(wx.HORIZONTAL)
+  def frame_ini_img(self, in_upper_panel):
+    self.my_panel = in_upper_panel
+
+    self.data_txt_01 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
+    self.data_txt_01.SetLabel(" No (x, y, z) Data")
+
+    self.my_sizer = wx.BoxSizer(wx.VERTICAL)
     self.my_sizer.Add(self.my_panel, 1, wx.EXPAND)
+    self.my_sizer.Add(self.data_txt_01, 0, wx.CENTER | wx.ALL,3)
+
     self.SetSizer(self.my_sizer)
 
 
-class flex_arr_3d_outer_panel(wx.Panel):
+class flex_arr_img_panel(wx.Panel):
   def __init__(self, parent_frame):
-    super(flex_arr_3d_outer_panel, self).__init__(parent_frame)
+    super(flex_arr_img_panel, self).__init__(parent_frame)
     self.show_nums = True
 
 
@@ -112,9 +116,9 @@ class flex_arr_3d_outer_panel(wx.Panel):
           self.scale = 0.2
           print "Minimum possible zoom reached"
 
-
     self.bmp_lst = self._mi_list_of_wxbitmaps(re_scaling = True)
     self.panel_02.img_refresh(self.bmp_lst)
+
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
   def __init__(self, outer_panel, bmp_lst_in):
@@ -131,6 +135,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     aprox_len_pix = len(self.lst_2d_bmp) * 10
     #print "aprox_len_pix =", aprox_len_pix
     self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
+
 
   def set_scroll_content(self):
 
@@ -157,9 +162,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.SetSizer(img_lst_vert_sizer)
 
 
-
-
-
   def OnMouseWheel(self, event):
 
     #saving amount of scroll steps to do
@@ -180,6 +182,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     print "self.x_to_keep =", self.x_to_keep
     print "self.y_to_keep =", self.y_to_keep
     '''
+
 
   def img_refresh(self, bmp_lst_new):
     self.lst_2d_bmp = bmp_lst_new
