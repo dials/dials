@@ -90,8 +90,11 @@ refinement
         .expert_level = 1
 
       UB_model_per = reflection *image block
-        .help = "Compose a new crystal model either every reflection (slow) or"
-                "every image (faster, less accurate)"
+        .help = "Compose a new crystal model either every reflection (slow),"
+                "every image (faster, less accurate) or within blocks of a"
+                "width specified in the reflections parameters. When this block"
+                "width is larger than the image width the result is faster"
+                "again, with another trade-off in accuracy"
         .type = choice
         .expert_level = 1
      }
