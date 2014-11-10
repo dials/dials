@@ -48,8 +48,10 @@ def calculate_entering_flags(reflections, experiments):
   return enterings
 
 class BlockCalculator(object):
-  """Utility class to calculate and set a 'block' number column in the provided
-  reflection table, which is used during scan-varying refinement"""
+  """Utility class to calculate and set columns in the provided reflection
+  table, which will be used during scan-varying refinement. The columns are a
+  'block' number and an associated 'block_centre', giving the image number in
+  the centre of the block"""
 
   def __init__(self, experiments, reflections):
 
@@ -61,18 +63,19 @@ class BlockCalculator(object):
 
     return
 
-  def _create_block_column(self):
+  def _create_block_columns(self):
     """Create a column to contain the block number."""
 
     from scitbx.array_family import flex
     self._reflections['block'] = flex.size_t(len(self._reflections))
+    self._reflections['block_centre'] = flex.double(len(self._reflections))
     return
 
   def per_width(self, width, deg=True):
     """Set blocks for all experiments according to a constant width"""
 
     if deg: width *= DEG_TO_RAD
-    self._create_block_column()
+    self._create_block_columns()
 
     # get observed phi in radians
     phi_obs = self._reflections['xyzobs.mm.value'].parts()[2]
@@ -85,21 +88,25 @@ class BlockCalculator(object):
 
       start, stop = exp.scan.get_oscillation_range()
       nblocks = int(abs(stop - start) / width) + 1
-      if stop < start: width *= -1. # ensure width has the right sign
+      _width = cmp(stop, start) * width # ensure width has the right sign
+      half_width = width * (0.5 - 1e-11) # ensure round down behaviour
 
-      block_starts = [start + n * width for n in xrange(nblocks)]
+      block_starts = [start + n * _width for n in xrange(nblocks)]
+      block_centres = [exp.scan.get_array_index_from_angle(
+        e + half_width, deg=False) for e in block_starts]
 
-      for b_num, b_start in enumerate(block_starts):
+      for b_num, (b_start, b_cent) in enumerate(zip(block_starts, block_centres)):
         sub_isel = isel.select((b_start <= exp_phi) & \
-                                          (exp_phi < (b_start + width)))
+                                          (exp_phi < (b_start + _width)))
         self._reflections['block'].set_selected(sub_isel, b_num)
+        self._reflections['block_centre'].set_selected(sub_isel, b_cent)
 
     return self._reflections
 
   def per_image(self):
     """Set one block per image for all experiments"""
 
-    self._create_block_column()
+    self._create_block_columns()
 
     # get observed phi in radians
     phi_obs = self._reflections['xyzobs.mm.value'].parts()[2]
@@ -120,6 +127,7 @@ class BlockCalculator(object):
       for f_num, f in enumerate(frame_range):
         sub_isel = isel.select(frames == f)
         self._reflections['block'].set_selected(sub_isel, f_num)
+        self._reflections['block_centre'].set_selected(sub_isel, f_num)
 
     return self._reflections
 

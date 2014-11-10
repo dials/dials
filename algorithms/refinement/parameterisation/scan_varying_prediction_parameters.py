@@ -9,6 +9,7 @@
 
 # Python imports
 from __future__ import division
+from math import floor
 
 # cctbx imports
 from scitbx import matrix
@@ -556,17 +557,30 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
       sel = reflections['id'] == iexp
       isel = sel.iselection()
 
+      blocks = reflections['block'].select(isel)
+      block_centres = reflections['block_centre'].select(isel)
       # get their integer frame numbers
-      frames = reflections['xyzobs.px.value'].parts()[2]
-      obs_image_numbers = flex.floor((frames).select(isel)).iround()
+      #frames = reflections['xyzobs.px.value'].parts()[2]
+      #obs_image_numbers = flex.floor((frames).select(isel)).iround()
 
       # identify which crystal parameterisations to use for this experiment
       xl_op = self._get_xl_orientation_parameterisation(iexp)
       xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
 
       # get state and derivatives for each image
-      for frame in xrange(flex.min(obs_image_numbers),
-                          flex.max(obs_image_numbers) + 1):
+      #for frame in xrange(flex.min(obs_image_numbers),
+      #                    flex.max(obs_image_numbers) + 1):
+      for block in xrange(flex.min(blocks),
+                          flex.max(blocks) + 1):
+
+        # determine the subset of reflections this affects
+        subsel = isel.select(reflections['block'] == block)
+        if len(subsel) == 0: continue
+
+        # get the integer frame number nearest the centre of that block
+        frames = block_centres.select(subsel)
+        assert frames.all_eq(frames[0]) # should never be false
+        frame = int(floor(frames[0]))
 
         # model states at current frame
         U = self._get_state_from_parameterisation(xl_op, frame)
@@ -574,9 +588,6 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
 
         B = self._get_state_from_parameterisation(xl_ucp, frame)
         if B is None: B = exp.crystal.get_B()
-
-        # determine the subset of reflections this affects
-        subsel = isel.select(obs_image_numbers == frame)
 
         # set states
         reflections['u_matrix'].set_selected(subsel, U.elems)
