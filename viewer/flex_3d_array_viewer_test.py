@@ -2,7 +2,7 @@
 #
 #  flex_3d_array_viewer_test.py
 #
-#  test for multi_3D_slice_viewer.py
+#  test for slice_viewer.py
 #
 #  Copyright (C) 2014 Diamond Light Source
 #
@@ -12,7 +12,7 @@
 #  included in the root directory of this package.
 
 from dials.array_family import flex
-from dials.viewer.next_gen_viewer.multi_3D_slice_viewer import show_3d
+from dials.viewer.slice_viewer import show_3d
 if(__name__ == "__main__"):
   lst_flex = []
   lst_flex_norm = []

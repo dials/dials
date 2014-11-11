@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  multi_3D_slice_viewer.py
+#  slice_viewer.py
 #
 #  Copyright (C) 2014 Diamond Light Source
 #
