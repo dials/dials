@@ -8,24 +8,20 @@
 #   modules/ : source code, etc.
 #
 # The intention is to make this as independent of specific setup at each site,
-# but some customization is recommended, e.g. specifying the final location
-# for the completed installer packages (DIALS_DEST_DIR).
+# but some customization is recommended, e.g. via a thin wrapper script.
 #
 if [ -z "${DIALS_DEST_DIR}" ]; then
   # XXX This should be defined to wherever installers live, minus version
   DIALS_DEST_DIR=""
 fi
-DIALS_DEBUG=1
+if [ -z "${DIALS_DEBUG}" ]; then
+  DIALS_DEBUG=0
+fi
 #
 # Stuff below here should be site-independent...
 #
-BUILD_DIR=$1
-DIALS_VERSION=$2
-HOST_TAG=$3
-if [ -z "$BUILD_DIR" ] || [ ! -d "$BUILD_DIR" ]; then
-  echo "BUILD_DIR must be first argument!"
-  exit 1
-fi
+DIALS_VERSION=$1
+HOST_TAG=$2
 if [ -z "$DIALS_VERSION" ]; then
   echo "DIALS_VERSION must be second argument!"
   exit 1
@@ -34,6 +30,8 @@ if [ -z "$HOST_TAG" ]; then
   echo "HOST_TAG must be third argument!"
   exit 1
 fi
+BUILD_DIR="`libtbx.find_in_repositories dials`/../.."
+echo "BUILD_DIR is ${BUILD_DIR}"
 DEV_BUILD=`echo ${DIALS_VERSION} | grep -c dev`
 PYTHON_BIN=${BUILD_DIR}/build/bin/libtbx.python
 $PYTHON_BIN ${BUILD_DIR}/modules/dials/util/assemble_installer.py \
@@ -74,7 +72,7 @@ if [ "`uname`" = "Darwin" ]; then
   cd ..
 fi
 # get rid of bulky directories
-#if [ $DIALS_DEBUG -eq 0 ] && [ $DEV_BUILD -eq 1 ]; then
-#  rm -rf $INST_DIR
-#  rm -rf ${DIALS_INSTALLER}
-#fi
+if [ $DIALS_DEBUG -eq 0 ] && [ $DEV_BUILD -eq 1 ]; then
+  rm -rf $INST_DIR
+  rm -rf ${DIALS_INSTALLER}
+fi
