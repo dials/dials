@@ -8,8 +8,12 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package."
 
+# should be called with:
+# dials.python new_viewer_tst.py ../../../../../../example/indexed.pickle
+# or dials.python new_viewer_tst.py PATH/TO/MY/pickle/file
+#
 import wx
-from dials.viewer.viewer_frame import ReflectionFrame
+from viewer_frame import ReflectionFrame
 
 class viewer_App(wx.App):
   def OnInit(self):

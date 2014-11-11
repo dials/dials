@@ -679,7 +679,6 @@ scratch/luiso_s/old_viewer/pickle_to_viewer.py -text
 scratch/luiso_s/old_viewer/reflection_data_navigator.py -text
 scratch/luiso_s/old_viewer/reflection_view.py -text
 scratch/luiso_s/old_viewer/reflection_view_old.py -text
-scratch/luiso_s/old_viewer/reflection_view_tester.py -text
 scratch/luiso_s/old_viewer/shoebox_view_frame.py -text
 scratch/luiso_s/old_viewer/tools.py -text
 scratch/luiso_s/old_viewer/viewer_frame.py -text

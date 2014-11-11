@@ -10,10 +10,9 @@
 
 import wx
 from wx.lib.buttons import GenBitmapTextButton
-from dials.viewer.viewer_utilities \
-     import np_to_bmp
+from dials.scratch.luiso_s.old_viewer.viewer_utilities import np_to_bmp
 
-from dials.viewer.reflection_data_navigator import table_s_navigator
+from dials.scratch.luiso_s.old_viewer.reflection_data_navigator import table_s_navigator
 
 class ReflectionFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
