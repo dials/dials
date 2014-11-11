@@ -31,7 +31,7 @@ if [ -z "$DIALS_VERSION" ]; then
   exit 1
 fi
 if [ -z "$HOST_TAG" ]; then
-  echo "DIALS_VERSION must be second argument!"
+  echo "HOST_TAG must be third argument!"
   exit 1
 fi
 DEV_BUILD=`echo ${DIALS_VERSION} | grep -c dev`
