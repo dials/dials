@@ -21,9 +21,9 @@ import wx.lib.scrolledpanel as scroll_pan
 import math
 
 class show_3d(object):
-  def __init__(self, flex_arr_in):
+  def __init__(self, flex_arr_one, flex_arr_two = None):
     app = show_3d_wx_app(redirect=False)
-    app.in_lst(flex_arr_in)
+    app.in_lst(flex_arr_one, flex_arr_two)
     app.MainLoop()
 
 
@@ -35,8 +35,8 @@ class show_3d_wx_app(wx.App):
     return True
 
 
-  def in_lst(self, flex_lst):
-    self.upper_panel.ini_n_intro(flex_lst)
+  def in_lst(self, flex_lst_one, flex_lst_two = None):
+    self.upper_panel.ini_n_intro(flex_lst_one, flex_lst_two)
     self.SetTopWindow(self.frame)
     self.frame.Show()
 
@@ -66,8 +66,8 @@ class flex_arr_img_panel(wx.Panel):
     self.show_nums = True
 
 
-  def ini_n_intro(self, flex_arr_in):
-    self.flex_arr = flex_arr_in
+  def ini_n_intro(self, flex_arr_one, flex_arr_two = None):
+    self.first_lst_in, self.segn_lst_in = flex_arr_one, flex_arr_two
     self.scale = 1.0
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_01 = buttons_panel(self)
@@ -81,7 +81,7 @@ class flex_arr_img_panel(wx.Panel):
 
   def _mi_list_of_wxbitmaps(self, re_scaling = False):
     if(re_scaling == False):
-      self.lst_bmp_obj = wxbitmap_convert(self.flex_arr)
+      self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
       return self.lst_bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
                                       scale = self.scale)
 

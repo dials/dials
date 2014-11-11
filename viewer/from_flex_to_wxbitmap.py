@@ -21,18 +21,46 @@ class wxbitmap_convert(object):
   to
   a list of WxBitmaps
   '''
-  def __init__(self, data_flex_in):
+  def __init__(self, data_in_n1, data_in_n2 = None):
 
+    if( data_in_n2 == None ):
+      print "No double list given"
 
+      if type(data_in_n1) is list:
+        print "is a single list"
+        self.lst_3d_block = []
+        for lst_memb in data_in_n1:
+          self.lst_3d_block.append(lst_memb.as_numpy_array())
 
-    if type(data_flex_in) is list:
-      self.lst_3d_block = []
-      for flex_arr_lst in data_flex_in:
-        self.lst_3d_block.append(flex_arr_lst.as_numpy_array())
+      else:
+        print "Got flex array"
+        self.lst_3d_block = []
+        self.lst_3d_block.append(data_in_n1.as_numpy_array())
+
 
     else:
-      self.lst_3d_block = []
-      self.lst_3d_block.append(data_flex_in.as_numpy_array())
+      print "Got two arguments"
+      if( type(data_in_n1) is list and type(data_in_n2) is list):
+        print "Got two lists"
+        if( len(data_in_n1) == len(data_in_n2) ):
+          self.lst_3d_block = []
+          for lst_pos in range(len(data_in_n1)):
+            lst_memb1 = data_in_n1[lst_pos]
+            self.lst_3d_block.append(lst_memb1.as_numpy_array())
+            lst_memb2 = data_in_n2[lst_pos]
+            self.lst_3d_block.append(lst_memb2.as_numpy_array())
+
+        else:
+          print "the two lists do NOT have the same size"
+
+      elif( type(data_in_n1) is not list and type(data_in_n2) is not list ):
+        print "Got two blocks"
+        self.lst_3d_block = []
+        self.lst_3d_block.append(data_in_n1.as_numpy_array())
+        self.lst_3d_block.append(data_in_n2.as_numpy_array())
+
+      else:
+        print "Got mixture of different type of data"
 
 
   def get_np(self):
