@@ -1,0 +1,13 @@
+package_name = DIALS
+pkg_prefix = dials
+installer_script = dials/util/installer.py
+license = dials/license.txt
+source_module = annlib
+source_module = annlib_adaptbx
+source_module = dials
+exclude_build_module = dials_regression
+exclude_build_module = cxi_xdr_xes
+exclude_build_module = labelit_regression
+exclude_build_module = phenix_dev
+exclude_build_module = phenix_regression
+exclude_build_module = chem_data

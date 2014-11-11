@@ -911,7 +911,6 @@ test/model/serialize/tst_shoebox_file.py -text
 test/tst_phil.py -text
 test/tst_plot_reflections.py -text
 util/__init__.py -text
-util/assemble_installer.py -text
 util/command_line.py -text
 util/config.py -text
 util/create_dials_binary_installers.sh -text
@@ -922,6 +921,7 @@ util/installer.py -text
 util/installer_background.png -text
 util/ioutil.py -text
 util/log.py -text
+util/make_dist.phil -text
 util/nexus.py -text
 util/options.py -text
 util/picklez.py -text
