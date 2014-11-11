@@ -45,6 +45,8 @@ class installer_builder (assemble_binary_installer.installer_builder) :
   # packages, or third-party code with an incompatible license.
   exclude_build_modules = [
     "dials_regression",
+    "cxi_xdr_xes",
+    "labelit_regression",
     # XXX most of these shouldn't even be in the build!
     "phenix_dev",
     "phenix_regression",
