@@ -91,16 +91,18 @@ class FractionOfObservedIntensity(object):
         experiment The experiment object
 
     '''
+    from dials.array_family import flex 
+    from math import sqrt
 
     # Get the oscillation width
     dphi2 = experiment.scan.get_oscillation(deg=False)[1] / 2.0
 
     # Calculate a list of angles and zeta's
     tau, zeta = self._calculate_tau_and_zeta(experiment, reflections)
-
-    # Calculate zeta * (tau +- dphi / 2)
-    self.e1 = (tau + dphi2) * zeta
-    self.e2 = (tau - dphi2) * zeta
+    
+    # Calculate zeta * (tau +- dphi / 2) / sqrt(2)
+    self.e1 = (tau + dphi2) * flex.abs(zeta) / sqrt(2.0)
+    self.e2 = (tau - dphi2) * flex.abs(zeta) / sqrt(2.0)
 
   def _calculate_tau_and_zeta(self, experiment, reflections):
     '''Calculate the list of tau and zeta needed for the calculation.
@@ -126,8 +128,7 @@ class FractionOfObservedIntensity(object):
     tau = []
     zeta2 = []
     scan = experiment.scan
-    xyzobs = reflections['xyzobs.mm.value']
-    for b, p, z, xyz in zip(bbox, phi, zeta, xyzobs):
+    for b, p, z in zip(bbox, phi, zeta):
       for f in range(b[4], b[5]):
         phi0 = scan.get_angle_from_array_index(int(f), deg=False)
         phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
@@ -155,19 +156,18 @@ class FractionOfObservedIntensity(object):
     TINY = 1e-10
     assert(sigma_m > TINY)
 
-    # Calculate the denominator to the fraction
-    den =  sqrt(2.0) * sigma_m
-
     # Calculate the two components to the fraction
-    a = scitbx.math.erf(self.e1 / den)
-    b = scitbx.math.erf(self.e2 / den)
-
+    a = scitbx.math.erf(self.e1 / sigma_m)
+    b = scitbx.math.erf(self.e2 / sigma_m)
+    
     # Calculate the fraction of observed reflection intensity
     R = (a - b) / 2.0
-
+    
     # Set any points <= 0 to 1e-10 (otherwise will get a floating
     # point error in log calculation below).
-    R.set_selected(R < TINY, TINY)
+    assert(R.all_ge(0))
+    mask = R < TINY
+    R.set_selected(mask, TINY)
 
     # Return the logarithm of r
     return flex.log(R)
