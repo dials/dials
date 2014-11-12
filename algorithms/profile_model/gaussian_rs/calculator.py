@@ -91,7 +91,7 @@ class FractionOfObservedIntensity(object):
         experiment The experiment object
 
     '''
-    from dials.array_family import flex 
+    from dials.array_family import flex
     from math import sqrt
 
     # Get the oscillation width
@@ -99,7 +99,7 @@ class FractionOfObservedIntensity(object):
 
     # Calculate a list of angles and zeta's
     tau, zeta = self._calculate_tau_and_zeta(experiment, reflections)
-    
+
     # Calculate zeta * (tau +- dphi / 2) / sqrt(2)
     self.e1 = (tau + dphi2) * flex.abs(zeta) / sqrt(2.0)
     self.e2 = (tau - dphi2) * flex.abs(zeta) / sqrt(2.0)
@@ -159,14 +159,15 @@ class FractionOfObservedIntensity(object):
     # Calculate the two components to the fraction
     a = scitbx.math.erf(self.e1 / sigma_m)
     b = scitbx.math.erf(self.e2 / sigma_m)
-    
+
     # Calculate the fraction of observed reflection intensity
     R = (a - b) / 2.0
-    
+
     # Set any points <= 0 to 1e-10 (otherwise will get a floating
     # point error in log calculation below).
     assert(R.all_ge(0))
     mask = R < TINY
+    assert(mask.count(True) < len(mask))
     R.set_selected(mask, TINY)
 
     # Return the logarithm of r
