@@ -170,7 +170,9 @@ namespace gaussian_rs {
       vec2<int> array_range = scan_.get_array_range();
       DIALS_ASSERT(bbox[4] <= frame && frame < bbox[5]);
       bbox[4] = std::max(bbox[4], array_range[0]);
+      bbox[4] = std::min(bbox[4], array_range[1]-1);
       bbox[5] = std::min(bbox[5], array_range[1]);
+      bbox[5] = std::max(bbox[5], array_range[0]+1);
       DIALS_ASSERT(bbox[1] > bbox[0]);
       DIALS_ASSERT(bbox[3] > bbox[2]);
       DIALS_ASSERT(bbox[5] > bbox[4]);
