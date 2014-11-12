@@ -38,5 +38,5 @@ class IntegrationAlgorithm(object):
     reflections['intensity.sum.variance'] = intensity.observed_variance()
     success = intensity.observed_success()
     reflections.set_flags(success, reflections.flags.integrated_sum)
-    Command.end('Integrated {0} reflections'.format(success.count(True)))
+    Command.end('Integrated %d reflections by summation' % success.count(True))
     return reflections
