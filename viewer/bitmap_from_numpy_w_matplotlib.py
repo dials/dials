@@ -19,19 +19,31 @@ import matplotlib.pyplot as plt
 
 class wxbmp_from_np_array(object):
 
-  def __init__(self, lst_data_in, show_nums = True):
+  def __init__(self, lst_data_in, show_nums = True, lst_data_mask_in = None):
     self._ini_wx_bmp_lst = []
-    for data_3d_in in lst_data_in:
+    for lst_pos in range(len(lst_data_in)):
+      data_3d_in = lst_data_in[lst_pos]
       xmax = data_3d_in.shape[1]
       ymax = data_3d_in.shape[2]
+      # remember to put here some assertion to check that
+      # both arrays have the same shape
+
+      if(lst_data_mask_in != None):
+        data_3d_in_mask = lst_data_mask_in[lst_pos]
+
       self.vl_max = np.amax(data_3d_in)
       self.vl_min = np.amin(data_3d_in)
       tmp_data2d = np.zeros( (xmax, ymax), 'double')
+      tmp_data2d_mask = np.zeros( (xmax, ymax), 'double')
       z_dp = data_3d_in.shape[0]
       single_block_lst_01 = []
       for z in range(z_dp):
         tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-        data_sigle_img = self._wx_img(tmp_data2d, show_nums)
+        if(lst_data_mask_in != None):
+          tmp_data2d_mask[:, :] = data_3d_in_mask[z:z + 1, :, :]
+        else:
+          tmp_data2d_mask = None
+        data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
         single_block_lst_01.append(data_sigle_img)
 
       self._ini_wx_bmp_lst.append(single_block_lst_01)
@@ -49,7 +61,7 @@ class wxbmp_from_np_array(object):
     return wx_bmp_lst
 
 
-  def _wx_img(self, np_2d_tmp, show_nums):
+  def _wx_img(self, np_2d_tmp, show_nums, np_2d_mask = None):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
@@ -75,6 +87,20 @@ class wxbmp_from_np_array(object):
     plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot',
                vmin = self.vl_min, vmax = self.vl_max)
 
+
+    if( np_2d_mask != None):
+      for xpos in range(xmax):
+        for ypos in range(ymax):
+          loc_mask = np_2d_mask[xpos, ypos]
+          if( loc_mask != 0 ):
+            plt.vlines(xpos - 0.45, ypos - 0.45, ypos + 0.45, color = 'gray')
+            plt.vlines(xpos + 0.45, ypos - 0.45, ypos + 0.45, color = 'gray')
+            plt.hlines(ypos - 0.45, xpos - 0.45, xpos + 0.45, color = 'gray')
+            plt.hlines(ypos + 0.45, xpos - 0.45, xpos + 0.45, color = 'gray')
+
+
+
+
     if( show_nums == True ):
       for xpos in range(xmax):
         for ypos in range(ymax):
@@ -91,6 +117,7 @@ class wxbmp_from_np_array(object):
 
           plt.annotate(txt_dat, xy = (xpos - 0.5, ypos + 0.1), xycoords = 'data',
                        color = clr_chr, size = 9.)
+
 
     lc_fig.canvas.draw()
     width, height = lc_fig.canvas.get_width_height()
