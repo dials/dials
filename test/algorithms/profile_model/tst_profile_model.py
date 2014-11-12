@@ -17,13 +17,8 @@ class Test(object):
 
     user_phil = parse('''
       profile {
-        algorithm = *gaussian_rs
         gaussian_rs {
-          filter {
-            min_zeta = 0.05
-          }
           model {
-            n_sigma = 3
             sigma_b = 1
             sigma_m = 2
           }
@@ -46,8 +41,8 @@ class Test(object):
     assert(model[1].sigma_m() == 5)
     print 'OK'
 
-    model_phil = model.dump()
-    assert(model_phil.as_str() == user_phil.as_str())
+    model_phil = model.dump().fetch_diff(user_phil)
+    assert(model_phil.as_str() == '')
     print 'OK'
 
 if __name__ == '__main__':

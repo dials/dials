@@ -34,7 +34,7 @@ class Test(object):
           sigma_m = float(tokens[1])
       eps = 1e-6
       assert(abs(sigma_b - 0.02262206634) < eps)
-      assert(abs(sigma_m - 0.07971599709) < eps)
+      assert(abs(sigma_m - 0.0774177) < eps)
     print 'OK'
 
 

@@ -92,7 +92,7 @@ def exercise_2():
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
   # number of reflections we get seems to be rather sensitive to machine
   # or initial conditions?
-  assert approx_equal(mtz_object.n_reflections(), 43500, 1e3)
+  assert approx_equal(mtz_object.n_reflections(), 42300, 1e3)
   os.chdir(cwd)
 
 
