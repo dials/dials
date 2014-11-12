@@ -350,10 +350,10 @@ namespace dials { namespace algorithms {
       std::size_t group = group_[id];
       DIALS_ASSERT(group < offset_.size()-1);
       std::size_t offset = offset_[group];
-      std::size_t frame0 = frame0_[group];
+      int frame0 = frame0_[group];
       DIALS_ASSERT(frame >= frame0);
-      DIALS_ASSERT(frame < frame0+offset_[group+1]);
-      std::size_t index = offset + frame - frame0;
+      DIALS_ASSERT(frame < frame0+(int)offset_[group+1]);
+      std::size_t index = offset + (std::size_t)(frame - frame0);
       DIALS_ASSERT(index < lookup0_.size());
       return lookup0_[index];
     }
@@ -366,10 +366,10 @@ namespace dials { namespace algorithms {
       std::size_t group = group_[id];
       DIALS_ASSERT(group < offset_.size()-1);
       std::size_t offset = offset_[group];
-      std::size_t frame0 = frame0_[group];
+      int frame0 = frame0_[group];
       DIALS_ASSERT(frame >= frame0);
-      DIALS_ASSERT(frame < frame0+offset_[group+1]);
-      std::size_t index = offset + frame - frame0;
+      DIALS_ASSERT(frame < frame0+(int)offset_[group+1]);
+      std::size_t index = offset + (std::size_t)(frame - frame0);
       DIALS_ASSERT(index < lookup1_.size());
       return lookup1_[index];
     }
