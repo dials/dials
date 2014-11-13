@@ -87,18 +87,27 @@ class wxbmp_from_np_array(object):
     plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot',
                vmin = self.vl_min, vmax = self.vl_max)
 
-
     if( np_2d_mask != None):
+      dst_diag = 0.05
       for xpos in range(xmax):
         for ypos in range(ymax):
           loc_mask = np_2d_mask[xpos, ypos]
           if( loc_mask != 0 ):
-            plt.vlines(xpos - 0.45, ypos - 0.45, ypos + 0.45, color = 'gray')
-            plt.vlines(xpos + 0.45, ypos - 0.45, ypos + 0.45, color = 'gray')
-            plt.hlines(ypos - 0.45, xpos - 0.45, xpos + 0.45, color = 'gray')
-            plt.hlines(ypos + 0.45, xpos - 0.45, xpos + 0.45, color = 'gray')
+            plt.vlines(xpos - 0.45, ypos - 0.45, ypos + 0.45,
+                       color = 'gray', linewidth=2)
+            plt.vlines(xpos + 0.45, ypos - 0.45, ypos + 0.45,
+                       color = 'gray', linewidth=2)
+            plt.hlines(ypos - 0.45, xpos - 0.45, xpos + 0.45,
+                       color = 'gray', linewidth=2)
+            plt.hlines(ypos + 0.45, xpos - 0.45, xpos + 0.45,
+                       color = 'gray', linewidth=2)
 
-
+            plt.plot([xpos - dst_diag, xpos - 0.45], [ypos - 0.45, ypos - dst_diag],
+                     color='gray', linewidth=2)
+            plt.plot([xpos + dst_diag, xpos + 0.45], [ypos + 0.45, ypos + dst_diag],
+                     color='gray', linewidth=2)
+            plt.plot([xpos - 0.45, xpos + 0.45], [ypos + 0.45, ypos - 0.45],
+                     color='gray', linewidth=2)
 
 
     if( show_nums == True ):
