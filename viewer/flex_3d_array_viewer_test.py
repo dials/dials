@@ -13,6 +13,8 @@
 
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d
+from dials.algorithms.shoebox import MaskCode
+
 if(__name__ == "__main__"):
   lst_flex = []
   lst_flex_norm = []
@@ -20,6 +22,8 @@ if(__name__ == "__main__"):
 
     data_xyz_flex = flex.double(flex.grid(size_xyz, size_xyz, size_xyz),15)
     data_flex_norm = flex.double(flex.grid(size_xyz, size_xyz, size_xyz),15)
+    data_flex_mask = flex.int(flex.grid(size_xyz, size_xyz, size_xyz),0)
+
     #data_xyz_flex[1, 2, 2] = 35 + size_xyz * 5
     #data_xyz_flex[2, 2, 2] = 40 + size_xyz * 5
 
@@ -29,6 +33,19 @@ if(__name__ == "__main__"):
         for col in range(size_xyz):
           data_xyz_flex[frm, row, col] += (row * 2 + col * 2 + frm * 2)
           tot += data_xyz_flex[frm, row, col]
+          if( row > 1 and row < size_xyz - 2 and col > 1 and col < size_xyz - 2 ):
+            data_flex_mask[frm, row, col] = MaskCode.BackgroundUsed \
+                                            + MaskCode.Valid \
+                                            + MaskCode.Foreground \
+                                            + MaskCode.Background
+
+            different_mask_values = '''
+            MaskCode.Valid
+            MaskCode.Foreground
+            MaskCode.Background
+            MaskCode.BackgroundUsed
+            '''
+
 
     for frm in range(size_xyz):
       for row in range(size_xyz):
@@ -40,7 +57,7 @@ if(__name__ == "__main__"):
     lst_flex_norm.append(data_flex_norm)
 
 
-  show_3d(data_xyz_flex)
+  show_3d(data_xyz_flex, data_flex_mask)
 
   #show_3d(lst_flex)
-  show_3d(lst_flex_norm)
+  #show_3d(lst_flex_norm)

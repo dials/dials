@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from dials.algorithms.shoebox import MaskCode
 
 class wxbmp_from_np_array(object):
 
@@ -91,8 +92,13 @@ class wxbmp_from_np_array(object):
       dst_diag = 0.05
       for xpos in range(xmax):
         for ypos in range(ymax):
-          loc_mask = np_2d_mask[xpos, ypos]
+          loc_mask = int(np_2d_mask[xpos, ypos])
+
           if( loc_mask != 0 ):
+            print "loc_mask =", loc_mask
+
+
+            # drawing box
             plt.vlines(xpos - 0.45, ypos - 0.45, ypos + 0.45,
                        color = 'gray', linewidth=2)
             plt.vlines(xpos + 0.45, ypos - 0.45, ypos + 0.45,
@@ -102,15 +108,52 @@ class wxbmp_from_np_array(object):
             plt.hlines(ypos + 0.45, xpos - 0.45, xpos + 0.45,
                        color = 'gray', linewidth=2)
 
-            plt.plot([xpos - dst_diag, xpos - 0.45], [ypos - 0.45, ypos - dst_diag],
-                     color='gray', linewidth=2)
-            plt.plot([xpos + dst_diag, xpos + 0.45], [ypos + 0.45, ypos + dst_diag],
-                     color='gray', linewidth=2)
-            plt.plot([xpos - 0.45, xpos + 0.45], [ypos + 0.45, ypos - 0.45],
-                     color='gray', linewidth=2)
+            if( (loc_mask & MaskCode.Background) == MaskCode.Background ):
+              print "MaskCode.Background =", int(MaskCode.Background)
+
+              # drawing v_lines
+              plt.vlines(xpos, ypos - 0.45, ypos + 0.45,
+                         color = 'gray', linewidth=2)
+              plt.vlines(xpos + 0.225, ypos - 0.45, ypos + 0.45,
+                         color = 'gray', linewidth=2)
+              plt.vlines(xpos - 0.225, ypos - 0.45, ypos + 0.45,
+                         color = 'gray', linewidth=2)
+
+            if( (loc_mask & MaskCode.Foreground) == MaskCode.Foreground ):
+              # drawing lines from 1p5 to 7p5
+              print "MaskCode.Foreground =", int(MaskCode.Foreground)
+              plt.plot([xpos - dst_diag, xpos - 0.45], [ypos - 0.45, ypos - dst_diag],
+                       color='gray', linewidth=2)
+              plt.plot([xpos + dst_diag, xpos + 0.45], [ypos + 0.45, ypos + dst_diag],
+                       color='gray', linewidth=2)
+              plt.plot([xpos - 0.45, xpos + 0.45], [ypos + 0.45, ypos - 0.45],
+                       color='gray', linewidth=2)
+
+            if( (loc_mask &  MaskCode.Valid) == MaskCode.Valid ):
+              # drawing lines from 4p5 to 10p5
+              print "MaskCode.Valid =", int(MaskCode.Valid)
+              plt.plot([xpos + dst_diag, xpos - 0.45], [ypos + 0.45, ypos - dst_diag],
+                       color='gray', linewidth=2)
+              plt.plot([xpos + dst_diag, xpos + 0.45], [ypos - 0.45, ypos - dst_diag],
+                       color='gray', linewidth=2)
+              plt.plot([xpos + 0.45, xpos - 0.45], [ypos + 0.45, ypos - 0.45],
+                       color='gray', linewidth=2)
 
 
-    if( show_nums == True ):
+            if( (loc_mask & MaskCode.BackgroundUsed) == MaskCode.BackgroundUsed ):
+              # drawing h_lines
+              print "MaskCode.BackgroundUsed =", int(MaskCode.BackgroundUsed)
+              plt.hlines(ypos , xpos - 0.45, xpos + 0.45,
+                         color = 'gray', linewidth=2)
+              plt.hlines(ypos + 0.225, xpos - 0.45, xpos + 0.45,
+                         color = 'gray', linewidth=2)
+              plt.hlines(ypos - 0.225, xpos - 0.45, xpos + 0.45,
+                         color = 'gray', linewidth=2)
+
+
+
+
+    if( show_nums != 0 ):
       for xpos in range(xmax):
         for ypos in range(ymax):
           f_num = np_2d_tmp[xpos,ypos]
