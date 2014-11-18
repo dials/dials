@@ -75,6 +75,14 @@ class IntegrationAlgorithm(object):
     num = reflections.get_flags(flags.integrated_prf).count(True)
     Command.end('Integrated %d reflections with profile fitting' % num)
 
+    # Print warning
+    nbad = profiles.nbad()
+    if nbad > 0:
+      print ''
+      print '*' * 80
+      print 'Warning: %d standard profile(s) could not be created' % nbad
+      print '*' * 80
+
     # Maybe save some debug info
     if self._debug:
       import cPickle as pickle

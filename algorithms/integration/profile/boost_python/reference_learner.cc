@@ -33,7 +33,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("add", &learner_type::add)
       .def("counts", &learner_type::counts)
       .def("finalize", &learner_type::finalize)
-      .def("locate", &learner_type::locate);
+      .def("locate", &learner_type::locate)
+      .def("no_reference_count", &learner_type::no_reference_count)
+      ;
   }
 
   void export_reference_learner()

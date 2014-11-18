@@ -155,6 +155,9 @@ namespace dials { namespace algorithms {
     std::size_t count() const = 0;
 
     virtual
+    std::size_t nbad() const = 0;
+
+    virtual
     profile_type get(vec3<double> xyz) const = 0;
 
     virtual
@@ -231,6 +234,11 @@ namespace dials { namespace algorithms {
     std::size_t size() const {
       DIALS_ASSERT(finalized_);
       return learner_.locate().size();
+    }
+
+    virtual
+    std::size_t nbad() const {
+      return count_ > 0 ? 0 : 1;
     }
 
     /**
@@ -361,13 +369,18 @@ namespace dials { namespace algorithms {
     virtual
     profile_type get(vec3<double> xyz) const {
       DIALS_ASSERT(finalized_);
-      return learner_.locate().profile_ref(xyz);
+      return learner_.get(xyz);
     }
 
     virtual
     mask_type get_mask(vec3<double> xyz) const {
       DIALS_ASSERT(finalized_);
-      return learner_.locate().mask_ref(xyz);
+      return learner_.get_mask(xyz);
+    }
+
+    virtual
+    std::size_t nbad() const {
+      return learner_.no_reference_count();
     }
 
   private:
@@ -507,6 +520,14 @@ namespace dials { namespace algorithms {
       return learner_.size();
     }
 
+    std::size_t nbad() const {
+      std::size_t n = 0 ;
+      for (std::size_t i = 0; i < learner_.size(); ++i) {
+        n += learner_[i]->nbad();
+      }
+      return n;
+    }
+
     std::size_t single_size(std::size_t id) const {
       DIALS_ASSERT(id < learner_.size());
       return learner_[id]->size();
@@ -644,6 +665,16 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(sbox.is_consistent());
           DIALS_ASSERT(id[i] < spec_.size());
 
+          // Get the reference profile
+          profile_type p;
+          mask_type m;
+          try {
+            p = reference.get(id[i], xyzpx[i]);
+            m = reference.get_mask(id[i], xyzpx[i]);
+          } catch (dials::error) {
+            continue;
+          }
+
           // Do the transform
           Forward<> transform(
               transform_spec[id[i]],
@@ -654,8 +685,6 @@ namespace dials { namespace algorithms {
           // Get the profile for a given reflection
           profile_type c = transform.profile().const_ref();
           profile_type b = transform.background().const_ref();
-          profile_type p = reference.get(id[i], xyzpx[i]);
-          mask_type    m = reference.get_mask(id[i], xyzpx[i]);
 
           // Perform the profile fit
           try {

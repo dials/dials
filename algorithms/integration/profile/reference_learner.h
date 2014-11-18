@@ -83,6 +83,28 @@ namespace dials { namespace algorithms {
       return result;
     }
 
+    af::const_ref<double, af::c_grid<3> > get(vec3<double> xyz) const {
+      std::size_t index = locator_.index(xyz);
+      DIALS_ASSERT(counts_[index] > 0);
+      return locator_.profile_ref(index);
+    }
+
+    af::const_ref<bool, af::c_grid<3> > get_mask(vec3<double> xyz) const {
+      std::size_t index = locator_.index(xyz);
+      DIALS_ASSERT(counts_[index] > 0);
+      return locator_.mask_ref(index);
+    }
+
+    std::size_t no_reference_count() const {
+      std::size_t n = 0;
+      for (std::size_t i = 0; i < counts_.size(); ++i) {
+        if (counts_[i] == 0) {
+          n++;
+        }
+      }
+      return n;
+    }
+
   private:
 
     /**
@@ -162,31 +184,35 @@ namespace dials { namespace algorithms {
      */
     void normalize_reference_profile(std::size_t index) {
 
-      // Get the reference profile at the index
-      af::ref<float_type> reference = reference_profile(index);
-      af::ref<bool> mask = reference_mask(index);
+      // Check if the number of reflections contributing is > 0
+      if (counts_[index] > 0) {
 
-      // Calculate the profile maximum and signal threshold
-      double profile_maximum = max(reference);
-      double threshold = threshold_ * profile_maximum;
+        // Get the reference profile at the index
+        af::ref<float_type> reference = reference_profile(index);
+        af::ref<bool> mask = reference_mask(index);
 
-      // Get the sum of signal pixels
-      double signal_sum = 0.0;
-      for (std::size_t i = 0; i < reference.size(); ++i) {
-        if (reference[i] >= threshold) {
-          signal_sum += reference[i];
-        } else {
-          reference[i] = 0.0;
-          mask[i] = false;
+        // Calculate the profile maximum and signal threshold
+        double profile_maximum = max(reference);
+        double threshold = threshold_ * profile_maximum;
+
+        // Get the sum of signal pixels
+        double signal_sum = 0.0;
+        for (std::size_t i = 0; i < reference.size(); ++i) {
+          if (reference[i] >= threshold) {
+            signal_sum += reference[i];
+          } else {
+            reference[i] = 0.0;
+            mask[i] = false;
+          }
         }
-      }
 
-      // If the reference profile sum is <= 0 then return
-      DIALS_ASSERT(signal_sum > 0);
+        // If the reference profile sum is <= 0 then return
+        DIALS_ASSERT(signal_sum > 0);
 
-      // Normalize the profile such that sum of signal pixels == 1
-      for (std::size_t i = 0; i < reference.size(); ++i) {
-        reference[i] /= signal_sum;
+        // Normalize the profile such that sum of signal pixels == 1
+        for (std::size_t i = 0; i < reference.size(); ++i) {
+          reference[i] /= signal_sum;
+        }
       }
     }
 

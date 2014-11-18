@@ -36,6 +36,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("count", &reference_learner_type::count)
       .def("__len__", &reference_learner_type::size)
       .def("single_size", &reference_learner_type::single_size)
+      .def("nbad", &reference_learner_type::nbad)
       ;
 
     class_<ReciprocalSpaceProfileFitting>("ReciprocalSpaceProfileFitting", no_init)
