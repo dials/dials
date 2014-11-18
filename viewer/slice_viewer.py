@@ -79,9 +79,12 @@ class flex_arr_img_panel(wx.Panel):
     self.Show(True)
 
 
-  def _mi_list_of_wxbitmaps(self, re_scaling = False):
+  def _mi_list_of_wxbitmaps(self, re_scaling = False, show_mask = True):
     if(re_scaling == False):
-      self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
+      if(show_mask == True):
+        self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
+      else:
+        self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
       return self.lst_bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
                                       scale = self.scale)
 
@@ -98,6 +101,17 @@ class flex_arr_img_panel(wx.Panel):
   def to_show_nums(self):
     self.show_nums = True
     self.bmp_lst = self._mi_list_of_wxbitmaps()
+    self.panel_02.img_refresh(self.bmp_lst)
+
+
+
+  def to_show_mask(self):
+    self.bmp_lst = self._mi_list_of_wxbitmaps(show_mask = True)
+    self.panel_02.img_refresh(self.bmp_lst)
+
+
+  def to_hide_mask(self):
+    self.bmp_lst = self._mi_list_of_wxbitmaps(show_mask = False)
     self.panel_02.img_refresh(self.bmp_lst)
 
 
@@ -236,8 +250,7 @@ class buttons_panel(wx.Panel):
     print "OnMskCheckbox"
     print "event.IsChecked() =", event.IsChecked()
     if(event.IsChecked() == True):
-      print "op 1"
-      #self.parent_panel.to_show_nums()
+      self.parent_panel.to_show_mask()
     else:
-      #self.parent_panel.to_hide_nums()
-      print "op 2"
+      self.parent_panel.to_hide_mask()
+
