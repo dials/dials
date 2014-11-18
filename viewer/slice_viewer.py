@@ -209,6 +209,7 @@ class buttons_panel(wx.Panel):
     self.parent_panel  = outer_panel
 
     Show_Its_CheckBox = wx.CheckBox(self, -1, "Show I")
+    Show_Its_CheckBox.SetValue(True)
     Show_Its_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnItsCheckbox)
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
