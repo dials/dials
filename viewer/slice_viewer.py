@@ -89,7 +89,7 @@ class flex_arr_img_panel(wx.Panel):
       return self.lst_bmp_obj.scaling(scale = self.scale)
 
 
-  def _to_hide_nums(self):
+  def to_hide_nums(self):
     self.show_nums = False
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
@@ -208,22 +208,19 @@ class buttons_panel(wx.Panel):
     super(buttons_panel, self).__init__(outer_panel)
     self.parent_panel  = outer_panel
 
-    Hide_I_Button = wx.Button(self, label="Hide I")
-    Hide_I_Button.Bind(wx.EVT_BUTTON, self.OnHidIBut)
-    Show_I_Button = wx.Button(self, label="Show I")
-    Show_I_Button.Bind(wx.EVT_BUTTON, self.OnShwIBut)
+    Show_Its_CheckBox = wx.CheckBox(self, -1, "Show I")
+    Show_Its_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnItsCheckbox)
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-    self.my_sizer.Add(Show_I_Button, 0, wx.LEFT | wx.ALL,8)
-    self.my_sizer.Add(Hide_I_Button, 0, wx.LEFT | wx.ALL,8)
+    self.my_sizer.Add(Show_Its_CheckBox, 0, wx.LEFT | wx.ALL,8)
+
     self.my_sizer.SetMinSize((90, 250))
     self.SetSizer(self.my_sizer)
 
-
-  def OnHidIBut(self, event):
-    self.parent_panel._to_hide_nums()
-
-
-  def OnShwIBut(self, event):
-    self.parent_panel.to_show_nums()
-
+  def OnItsCheckbox(self, event):
+    print "OnItsCheckbox"
+    print "event.IsChecked() =", event.IsChecked()
+    if(event.IsChecked() == True):
+      self.parent_panel.to_show_nums()
+    else:
+      self.parent_panel.to_hide_nums()
