@@ -30,6 +30,7 @@ class TestMapFramesForward(object):
 
     # Create the E3 fraction object
     self.transform = MapFramesForward(
+        self.scan.get_array_range()[0],
         self.scan.get_oscillation(deg=False)[0],
         self.scan.get_oscillation(deg=False)[1],
         self.mosaicity,
@@ -139,6 +140,7 @@ class TestMapFramesReverse(object):
 
     # Create the E3 fraction object
     self.transform = MapFramesReverse(
+        self.scan.get_array_range()[0],
         self.scan.get_oscillation(deg=False)[0],
         self.scan.get_oscillation(deg=False)[1],
         self.mosaicity,
@@ -253,6 +255,7 @@ class TestMapForwardReverse(object):
 
     # Create the E3 fraction object
     self.transform_forward = MapFramesForward(
+        self.scan.get_array_range()[0],
         self.scan.get_oscillation(deg=False)[0],
         self.scan.get_oscillation(deg=False)[1],
         self.mosaicity,
@@ -261,6 +264,7 @@ class TestMapForwardReverse(object):
 
     # Create the E3 fraction object
     self.transform_reverse = MapFramesReverse(
+        self.scan.get_array_range()[0],
         self.scan.get_oscillation(deg=False)[0],
         self.scan.get_oscillation(deg=False)[1],
         self.mosaicity,

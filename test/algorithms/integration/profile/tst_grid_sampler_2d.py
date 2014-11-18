@@ -81,7 +81,7 @@ class Test(object):
       if j >= ny:
         j = ny - 1
       index0 = i + j * nx
-      index1 = sampler.nearest((x, y))
+      index1 = sampler.nearest((x, y, 0))
       assert(index0 == index1)
 
     print 'OK'
@@ -157,22 +157,22 @@ class Test(object):
 
     for i in range(250):
       x, y, z, indices0 = first_quad()
-      indices1 = sampler.nearest_n((x, y))
+      indices1 = sampler.nearest_n((x, y, 0))
       assert(len(indices1) == len(indices0))
       for j1, j2 in zip(sorted(indices1), sorted(indices0)):
         assert(j1 == j2)
       x, y, z, indices0 = second_quad()
-      indices1 = sampler.nearest_n((x, y))
+      indices1 = sampler.nearest_n((x, y, 0))
       assert(len(indices1) == len(indices0))
       for j1, j2 in zip(sorted(indices1), sorted(indices0)):
         assert(j1 == j2)
       x, y, z, indices0 = third_quad()
-      indices1 = sampler.nearest_n((x, y))
+      indices1 = sampler.nearest_n((x, y, 0))
       assert(len(indices1) == len(indices0))
       for j1, j2 in zip(sorted(indices1), sorted(indices0)):
         assert(j1 == j2)
       x, y, z, indices0 = fourth_quad()
-      indices1 = sampler.nearest_n((x, y))
+      indices1 = sampler.nearest_n((x, y, 0))
       assert(len(indices1) == len(indices0))
       for j1, j2 in zip(sorted(indices1), sorted(indices0)):
         assert(j1 == j2)
@@ -193,7 +193,7 @@ class Test(object):
     eps = 1e-7
     for i in range(len(sampler)):
       coord = sampler[i]
-      weight = sampler.weight(i, coord)
+      weight = sampler.weight(i, (coord[0], coord[1], 0))
       assert(abs(weight - 1.0) < eps)
 
     # Ensure we get the expected weight at the next grid point at half way
@@ -211,27 +211,31 @@ class Test(object):
         coord1 = matrix.col(sampler[l1])
         if i < nx-1:
           coord = matrix.col(sampler[l2])
-          weight = sampler.weight(l1, coord)
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - expected) < eps)
-          weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+          coord = (coord + coord1) / 2.0
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - 0.5) < eps)
         if i > 0:
           coord = matrix.col(sampler[l3])
-          weight = sampler.weight(l1, coord)
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - expected) < eps)
-          weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+          coord = (coord + coord1) / 2.0
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - 0.5) < eps)
         if j < ny-1:
           coord = matrix.col(sampler[l4])
-          weight = sampler.weight(l1, coord)
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - expected) < eps)
-          weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+          coord = (coord + coord1) / 2.0
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - 0.5) < eps)
         if j > 0:
           coord = matrix.col(sampler[l5])
-          weight = sampler.weight(l1, coord)
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - expected) < eps)
-          weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+          coord = (coord + coord1) / 2.0
+          weight = sampler.weight(l1, (coord[0], coord[1], 0))
           assert(abs(weight - 0.5) < eps)
 
     print 'OK'
@@ -281,7 +285,7 @@ class Test(object):
 
     for i in range(len(sampler)):
       coord = sampler[i]
-      index = sampler.nearest(coord)
+      index = sampler.nearest((coord[0], coord[1], 0))
       assert(index == i)
 
     print 'OK'
