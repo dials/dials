@@ -20,6 +20,7 @@ namespace dials { namespace algorithms {
 
   using scitbx::af::int2;
   using scitbx::af::double2;
+  using scitbx::af::double3;
 
   /**
    * Class to sample reference profiles in a grid
@@ -74,7 +75,7 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns The index of the reference profile
      */
-    std::size_t nearest(double2 xy) const {
+    std::size_t nearest(double3 xy) const {
       DIALS_ASSERT(xy[0] >= 0 && xy[1] >= 0);
       DIALS_ASSERT(xy[0] < image_size_[0] && xy[1] < image_size_[1]);
       int ix = (int)floor(xy[0] / step_size_[0]);
@@ -92,7 +93,7 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns A list of reference profile indices
      */
-    af::shared<std::size_t> nearest_n(double2 xy) const {
+    af::shared<std::size_t> nearest_n(double3 xy) const {
       DIALS_ASSERT(xy[0] >= 0 && xy[1] >= 0);
       DIALS_ASSERT(xy[0] < image_size_[0] && xy[1] < image_size_[1]);
       double fx = xy[0] / step_size_[0];
@@ -129,7 +130,7 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns The weight (between 1.0 and 0.0)
      */
-    double weight(std::size_t index, double2 xy) const {
+    double weight(std::size_t index, double3 xy) const {
       double2 c = (*this)[index];
       double dx = (c[0] - xy[0]) / step_size_[0];
       double dy = (c[1] - xy[1]) / step_size_[1];

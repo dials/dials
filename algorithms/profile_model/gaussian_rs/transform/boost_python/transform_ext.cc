@@ -148,7 +148,8 @@ namespace boost_python {
 
     class_<MapFramesForwardType>(
         "MapFramesForward", no_init)
-      .def(init<double, double, double, double, int>((
+      .def(init<int, double, double, double, double, int>((
+          arg("starting_frame"),
           arg("starting_angle"),
           arg("oscillation"),
           arg("mosaicity"),
@@ -162,7 +163,8 @@ namespace boost_python {
 
     class_<MapFramesReverseType>(
         "MapFramesReverse", no_init)
-      .def(init<double, double, double, double, int>((
+      .def(init<int, double, double, double, double, int>((
+          arg("starting_frame"),
           arg("starting_angle"),
           arg("oscillation"),
           arg("mosaicity"),

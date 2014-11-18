@@ -53,10 +53,12 @@ namespace transform {
      * @param n_sigma The number of standard deviation to use
      * @param grid_size_e3 The size of the grid
      */
-    MapFramesForward(double starting_angle, double oscillation,
+    MapFramesForward(int starting_frame,
+                     double starting_angle, double oscillation,
                      double mosaicity, double n_sigma,
                      std::size_t grid_size_e3)
-      : starting_angle_(starting_angle),
+      : starting_frame_(starting_frame),
+        starting_angle_(starting_angle),
         oscillation_(oscillation),
         mosaicity_(mosaicity),
         delta_mosaicity_(mosaicity_ * n_sigma),
@@ -68,6 +70,7 @@ namespace transform {
 
   private:
 
+    int starting_frame_;
     double starting_angle_;
     double oscillation_;
     double mosaicity_;
@@ -128,7 +131,7 @@ namespace transform {
       // The data frame j covers the range of phi such that
       // rj = {phi':phi0 + j*dphi <= phi' >= phi0 + (j+1)*dpi}
       // Therefore the range of phi for j is given as follows.
-      double aj = starting_angle_ + j * oscillation_;
+      double aj = starting_angle_ + (j - starting_frame_) * oscillation_;
       double bj = aj + oscillation_;
 
       // Calculate the integral over rj (leaving out scaling factors):
@@ -196,10 +199,12 @@ namespace transform {
      * @param n_sigma The number of standard deviation to use
      * @param grid_size_e3 The size of the grid
      */
-    MapFramesReverse(double starting_angle, double oscillation,
+    MapFramesReverse(int starting_frame,
+                     double starting_angle, double oscillation,
                      double mosaicity, double n_sigma,
                      std::size_t grid_size_e3)
-      : starting_angle_(starting_angle),
+      : starting_frame_(starting_frame),
+        starting_angle_(starting_angle),
         oscillation_(oscillation),
         mosaicity_(mosaicity),
         delta_mosaicity_(mosaicity_ * n_sigma),
@@ -211,6 +216,7 @@ namespace transform {
 
   private:
 
+    int starting_frame_;
     double starting_angle_;
     double oscillation_;
     double mosaicity_;
@@ -293,7 +299,7 @@ namespace transform {
           // The data frame j covers the range of phi such that
           // rj = {phi':phi0 + j*dphi <= phi' >= phi0 + (j+1)*dpi}
           // Therefore the range of phi for j is given as follows.
-          double aj = starting_angle_ + j * oscillation_;
+          double aj = starting_angle_ + (j - starting_frame_) * oscillation_;
           double bj = aj + oscillation_;
 
           // We need to integrate over the intersection of sets rv3 and rj

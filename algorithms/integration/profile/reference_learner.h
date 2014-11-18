@@ -129,7 +129,6 @@ namespace dials { namespace algorithms {
      */
     void add_profile(const af::const_ref< float_type, af::c_grid<3> > profile,
         vec3<double> coord) {
-
       // Get the expected profile size
       int4 size_all = locator_.profile().accessor();
       int3 size(size_all[1], size_all[2], size_all[3]);
@@ -207,6 +206,10 @@ namespace dials { namespace algorithms {
         }
 
         // If the reference profile sum is <= 0 then return
+        /* if (signal_sum <= 0) { */
+        /*   counts_[index] = 0; */
+        /*   return; */
+        /* } */
         DIALS_ASSERT(signal_sum > 0);
 
         // Normalize the profile such that sum of signal pixels == 1

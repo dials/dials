@@ -115,7 +115,7 @@ class ImageSummary(object):
 class ResolutionSummary(object):
   ''' A class to produce statistics in resolution shells. '''
 
-  def __init__(self, data, experiment, nbins=10):
+  def __init__(self, data, experiment, nbins=20):
     ''' Compute the statistics. '''
     from cctbx import miller
     from cctbx import crystal
@@ -202,8 +202,8 @@ class ResolutionSummary(object):
              "<I/sigI>\n (prf)"]]
     for i in range(len(self)):
       rows.append([
-        '%.1f' % self.bins[i],
-        '%.1f' % self.bins[i+1],
+        '%.2f' % self.bins[i],
+        '%.2f' % self.bins[i+1],
         '%d'   % self.num_full[i],
         '%d'   % self.num_part[i],
         '%d'   % self.num_over[i],

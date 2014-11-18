@@ -43,7 +43,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.accessor().all_eq(background.accessor()));
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       add_internal(data, background, mask,
-          sampler_.nearest(double2(coord[0], coord[1])));
+          sampler_.nearest(double3(coord[0], coord[1], 0.0)));
     }
 
     void finish() {

@@ -28,7 +28,7 @@
 #include <dials/algorithms/polygon/spatial_interpolation.h>
 #include <dials/algorithms/polygon/area.h>
 #include <dials/algorithms/integration/profile/reference_learner.h>
-#include <dials/algorithms/integration/profile/grid_sampler.h>
+#include <dials/algorithms/integration/profile/grid_sampler_2d.h>
 
 
 namespace dials { namespace algorithms {
@@ -172,12 +172,11 @@ namespace dials { namespace algorithms {
         std::size_t grid_size,
         double threshold)
       : learner_(
-          GridSampler(
-            int3(
+          GridSampler2D(
+            int2(
               spec.detector()[0].get_image_size()[0],
-              spec.detector()[0].get_image_size()[1],
-              spec.scan().get_num_images()),
-            int3(1, 1, 1)),
+              spec.detector()[0].get_image_size()[1]),
+            int2(1, 1)),
           int3(
             2 * grid_size + 1,
             2 * grid_size + 1,
@@ -271,7 +270,7 @@ namespace dials { namespace algorithms {
 
   private:
 
-    ReferenceLearnerNew<GridSampler> learner_;
+    ReferenceLearnerNew<GridSampler2D> learner_;
     TransformSpec<double> spec_;
     std::size_t count_;
     bool finalized_;
@@ -285,12 +284,11 @@ namespace dials { namespace algorithms {
         std::size_t grid_size,
         double threshold)
       : learner_(
-          GridSampler(
-            int3(
+          GridSampler2D(
+            int2(
               spec.detector()[0].get_image_size()[0],
-              spec.detector()[0].get_image_size()[1],
-              spec.scan().get_num_images()),
-            int3(3, 3, 1)),
+              spec.detector()[0].get_image_size()[1]),
+            int2(3, 3)),
           int3(
             2 * grid_size + 1,
             2 * grid_size + 1,
@@ -385,7 +383,7 @@ namespace dials { namespace algorithms {
 
   private:
 
-    ReferenceLearnerNew<GridSampler> learner_;
+    ReferenceLearnerNew<GridSampler2D> learner_;
     TransformSpec<double> spec_;
     std::size_t count_;
     bool finalized_;

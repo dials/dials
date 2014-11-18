@@ -457,7 +457,8 @@ namespace transform {
                    sigma_b * n_sigma / (grid_size + 0.5)),
         grid_centre_(grid_size + 0.5, grid_size + 0.5, grid_size + 0.5),
         /* s1_map_(beam_vector_map(detector, beam, true)), */
-        map_frames_(scan.get_oscillation()[0],
+        map_frames_(scan.get_array_range()[0],
+                    scan.get_oscillation()[0],
                     scan.get_oscillation()[1],
                     sigma_m, n_sigma, grid_size) {
       DIALS_ASSERT(detector.size() > 0);
@@ -754,10 +755,10 @@ namespace transform {
       af::versa< bool, af::c_grid<3> > mask(shoebox.mask.accessor());
       af::ref< bool, af::c_grid<3> > mask_ref = mask.ref();
       af::const_ref< int, af::c_grid<3> > temp_ref = shoebox.mask.const_ref();
+      int mask_code = Valid | Foreground;
       for (std::size_t i = 0; i < mask_ref.size(); ++i) {
-        mask_ref[i] = (temp_ref[i] & Valid && temp_ref[i] & Foreground);
+        mask_ref[i] = (temp_ref[i] & mask_code) == mask_code ? 1 : 0;
       }
-
       af::versa< FloatType, af::c_grid<3> > data(shoebox.data.accessor());
       af::versa< FloatType, af::c_grid<3> > bgrd(shoebox.background.accessor());
       std::copy(shoebox.data.begin(), shoebox.data.end(), data.begin());
