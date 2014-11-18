@@ -88,8 +88,11 @@ class wxbmp_from_np_array(object):
     plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot',
                vmin = self.vl_min, vmax = self.vl_max)
 
+
+    l_wdt = 1.2
+
     if( np_2d_mask != None):
-      dst_diag = 0.05
+      dst_diag = 0.015
       for xpos in range(xmax):
         for ypos in range(ymax):
           loc_mask = int(np_2d_mask[xpos, ypos])
@@ -98,49 +101,49 @@ class wxbmp_from_np_array(object):
 
             # drawing box
             plt.vlines(xpos - 0.45, ypos - 0.45, ypos + 0.45,
-                       color = 'gray', linewidth=2)
+                       color = 'gray', linewidth=l_wdt)
             plt.vlines(xpos + 0.45, ypos - 0.45, ypos + 0.45,
-                       color = 'gray', linewidth=2)
+                       color = 'gray', linewidth=l_wdt)
             plt.hlines(ypos - 0.45, xpos - 0.45, xpos + 0.45,
-                       color = 'gray', linewidth=2)
+                       color = 'gray', linewidth=l_wdt)
             plt.hlines(ypos + 0.45, xpos - 0.45, xpos + 0.45,
-                       color = 'gray', linewidth=2)
+                       color = 'gray', linewidth=l_wdt)
 
             if( (loc_mask & MaskCode.Background) == MaskCode.Background ):
               # drawing v_lines
               plt.vlines(xpos, ypos - 0.45, ypos + 0.45,
-                         color = 'gray', linewidth=2)
+                         color = 'gray', linewidth=l_wdt)
               plt.vlines(xpos + 0.225, ypos - 0.45, ypos + 0.45,
-                         color = 'gray', linewidth=2)
+                         color = 'gray', linewidth=l_wdt)
               plt.vlines(xpos - 0.225, ypos - 0.45, ypos + 0.45,
-                         color = 'gray', linewidth=2)
+                         color = 'gray', linewidth=l_wdt)
 
             if( (loc_mask & MaskCode.Foreground) == MaskCode.Foreground ):
               # drawing lines from 1p5 to 7p5
               plt.plot([xpos - dst_diag, xpos - 0.45], [ypos - 0.45, ypos - dst_diag],
-                       color='gray', linewidth=2)
+                       color='gray', linewidth=l_wdt)
               plt.plot([xpos + dst_diag, xpos + 0.45], [ypos + 0.45, ypos + dst_diag],
-                       color='gray', linewidth=2)
+                       color='gray', linewidth=l_wdt)
               plt.plot([xpos - 0.45, xpos + 0.45], [ypos + 0.45, ypos - 0.45],
-                       color='gray', linewidth=2)
+                       color='gray', linewidth=l_wdt)
 
             if( (loc_mask &  MaskCode.Valid) == MaskCode.Valid ):
               # drawing lines from 4p5 to 10p5
-              plt.plot([xpos + dst_diag, xpos - 0.45], [ypos + 0.45, ypos - dst_diag],
-                       color='gray', linewidth=2)
+              plt.plot([xpos - dst_diag, xpos - 0.45], [ypos + 0.45, ypos + dst_diag],
+                       color='gray', linewidth=l_wdt)
               plt.plot([xpos + dst_diag, xpos + 0.45], [ypos - 0.45, ypos - dst_diag],
-                       color='gray', linewidth=2)
+                       color='gray', linewidth=l_wdt)
               plt.plot([xpos + 0.45, xpos - 0.45], [ypos + 0.45, ypos - 0.45],
-                       color='gray', linewidth=2)
+                       color='gray', linewidth=l_wdt)
 
             if( (loc_mask & MaskCode.BackgroundUsed) == MaskCode.BackgroundUsed ):
               # drawing h_lines
               plt.hlines(ypos , xpos - 0.45, xpos + 0.45,
-                         color = 'gray', linewidth=2)
+                         color = 'gray', linewidth=l_wdt)
               plt.hlines(ypos + 0.225, xpos - 0.45, xpos + 0.45,
-                         color = 'gray', linewidth=2)
+                         color = 'gray', linewidth=l_wdt)
               plt.hlines(ypos - 0.225, xpos - 0.45, xpos + 0.45,
-                         color = 'gray', linewidth=2)
+                         color = 'gray', linewidth=l_wdt)
 
 
     if( show_nums != 0 ):
