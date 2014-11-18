@@ -208,11 +208,16 @@ class buttons_panel(wx.Panel):
     super(buttons_panel, self).__init__(outer_panel)
     self.parent_panel  = outer_panel
 
-    Show_Its_CheckBox = wx.CheckBox(self, -1, "Show I")
+    Show_Its_CheckBox = wx.CheckBox(self, -1, "Show I nums")
     Show_Its_CheckBox.SetValue(True)
     Show_Its_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnItsCheckbox)
 
+    Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
+    Show_Msk_CheckBox.SetValue(True)
+    Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
+
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
+    self.my_sizer.Add(Show_Its_CheckBox, 0, wx.LEFT | wx.ALL,8)
     self.my_sizer.Add(Show_Its_CheckBox, 0, wx.LEFT | wx.ALL,8)
 
     self.my_sizer.SetMinSize((90, 250))
@@ -225,3 +230,14 @@ class buttons_panel(wx.Panel):
       self.parent_panel.to_show_nums()
     else:
       self.parent_panel.to_hide_nums()
+
+
+  def OnMskCheckbox(self, event):
+    print "OnMskCheckbox"
+    print "event.IsChecked() =", event.IsChecked()
+    if(event.IsChecked() == True):
+      print "op 1"
+      #self.parent_panel.to_show_nums()
+    else:
+      #self.parent_panel.to_hide_nums()
+      print "op 2"
