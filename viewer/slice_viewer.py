@@ -54,8 +54,13 @@ class flex_3d_frame(wx.Frame):
     self.data_txt_01.SetLabel(" No (x, y, z) Data")
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-    self.my_sizer.Add(self.my_panel, 1, wx.EXPAND)
-    self.my_sizer.Add(self.data_txt_01, 0, wx.CENTER | wx.ALL,3)
+
+    self.my_sizer.Add(self.my_panel, proportion = 1,
+                      flag =  wx.EXPAND | wx.ALL, border = 3)
+    self.my_sizer.Add(self.data_txt_01, proportion = 0,
+                      flag =  wx.ALIGN_LEFT, border = 3)
+
+    self.my_sizer.SetMinSize((50, 20))
 
     self.SetSizer(self.my_sizer)
 
@@ -233,12 +238,14 @@ class buttons_panel(wx.Panel):
       Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-    self.my_sizer.Add(Show_Its_CheckBox, 0, wx.LEFT | wx.ALL,8)
+    self.my_sizer.Add(Show_Its_CheckBox, proportion = 0,
+                      flag = wx.ALIGN_TOP, border = 5)
 
     if( self.parent_panel.segn_lst_in != None ):
-      self.my_sizer.Add(Show_Msk_CheckBox, 0, wx.LEFT | wx.ALL,8)
+      self.my_sizer.Add(Show_Msk_CheckBox, proportion = 0,
+                        flag = wx.ALIGN_TOP, border = 5)
 
-    self.my_sizer.SetMinSize((90, 250))
+    self.my_sizer.SetMinSize((50, 20))
     self.SetSizer(self.my_sizer)
 
 
