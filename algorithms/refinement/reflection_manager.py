@@ -86,7 +86,7 @@ class BlockCalculator(object):
       isel = sel.iselection()
       exp_phi = phi_obs.select(isel)
 
-      start, stop = exp.scan.get_oscillation_range()
+      start, stop = exp.scan.get_oscillation_range(deg=False)
       nblocks = int(abs(stop - start) / width) + 1
       _width = cmp(stop, start) * width # ensure width has the right sign
       half_width = width * (0.5 - 1e-11) # ensure round down behaviour
