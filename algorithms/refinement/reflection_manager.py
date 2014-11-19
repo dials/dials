@@ -88,7 +88,9 @@ class BlockCalculator(object):
 
       start, stop = exp.scan.get_oscillation_range(deg=False)
       nblocks = int(abs(stop - start) / width) + 1
-      _width = cmp(stop, start) * width # ensure width has the right sign
+      # ensure width has the right sign and is wide enough that all reflections
+      # get assigned a block
+      _width = cmp(stop, start) * width + 1e-11
       half_width = width * (0.5 - 1e-11) # ensure round down behaviour
 
       block_starts = [start + n * _width for n in xrange(nblocks)]
@@ -97,9 +99,10 @@ class BlockCalculator(object):
 
       for b_num, (b_start, b_cent) in enumerate(zip(block_starts, block_centres)):
         sub_isel = isel.select((b_start <= exp_phi) & \
-                                          (exp_phi < (b_start + _width)))
+                                          (exp_phi <= (b_start + _width)))
         self._reflections['block'].set_selected(sub_isel, b_num)
         self._reflections['block_centre'].set_selected(sub_isel, b_cent)
+
 
     return self._reflections
 

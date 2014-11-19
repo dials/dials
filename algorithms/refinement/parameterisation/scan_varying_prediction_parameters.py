@@ -579,7 +579,10 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
 
         # get the integer frame number nearest the centre of that block
         frames = block_centres.select(subsel)
-        assert frames.all_eq(frames[0]) # should never be false
+
+        # can only be false if original block assignment has gone wrong
+        assert (frames.all_eq(frames[0]),
+                "Failing: a block contains reflections that shouldn't be there")
         frame = int(floor(frames[0]))
 
         # model states at current frame
