@@ -227,16 +227,22 @@ class buttons_panel(wx.Panel):
     Show_Its_CheckBox.SetValue(True)
     Show_Its_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnItsCheckbox)
 
-    Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
-    Show_Msk_CheckBox.SetValue(True)
-    Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
+    if( self.parent_panel.segn_lst_in != None ):
+      Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
+      Show_Msk_CheckBox.SetValue(True)
+      Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
     self.my_sizer.Add(Show_Its_CheckBox, 0, wx.LEFT | wx.ALL,8)
-    self.my_sizer.Add(Show_Its_CheckBox, 0, wx.LEFT | wx.ALL,8)
+
+    if( self.parent_panel.segn_lst_in != None ):
+      self.my_sizer.Add(Show_Msk_CheckBox, 0, wx.LEFT | wx.ALL,8)
 
     self.my_sizer.SetMinSize((90, 250))
     self.SetSizer(self.my_sizer)
+
+
+    print "self.parent_panel.segn_lst_in =", self.parent_panel.segn_lst_in
 
   def OnItsCheckbox(self, event):
     print "OnItsCheckbox"
