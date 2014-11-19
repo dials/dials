@@ -581,8 +581,8 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
         frames = block_centres.select(subsel)
 
         # can only be false if original block assignment has gone wrong
-        assert (frames.all_eq(frames[0]),
-                "Failing: a block contains reflections that shouldn't be there")
+        assert frames.all_eq(frames[0]), \
+            "Failing: a block contains reflections that shouldn't be there"
         frame = int(floor(frames[0]))
 
         # model states at current frame
