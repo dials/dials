@@ -64,7 +64,7 @@ class flex_arr_img_panel(wx.Panel):
   def __init__(self, parent_frame):
     super(flex_arr_img_panel, self).__init__(parent_frame)
     self.show_nums = True
-
+    self.show_mask = True
 
   def ini_n_intro(self, flex_arr_one, flex_arr_two = None):
     self.first_lst_in, self.segn_lst_in = flex_arr_one, flex_arr_two
@@ -79,9 +79,9 @@ class flex_arr_img_panel(wx.Panel):
     self.Show(True)
 
 
-  def _mi_list_of_wxbitmaps(self, re_scaling = False, show_mask = True):
+  def _mi_list_of_wxbitmaps(self, re_scaling = False):
     if(re_scaling == False):
-      if(show_mask == True):
+      if(self.show_mask == True):
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
       else:
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
@@ -104,14 +104,15 @@ class flex_arr_img_panel(wx.Panel):
     self.panel_02.img_refresh(self.bmp_lst)
 
 
-
   def to_show_mask(self):
-    self.bmp_lst = self._mi_list_of_wxbitmaps(show_mask = True)
+    self.show_mask = True
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
 
 
   def to_hide_mask(self):
-    self.bmp_lst = self._mi_list_of_wxbitmaps(show_mask = False)
+    self.show_mask = False
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
 
 
