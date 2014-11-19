@@ -79,7 +79,7 @@ class run_one_indexing(object):
     unpickling_timer = time_log("unpickling")
     self.calc_rmsds_timer = time_log("calc_rmsds")
     unpickling_timer.start()
-    indexed_reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
+    self.indexed_reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
     unpickling_timer.stop()
     for i in range(n_expected_lattices):
       suffix = ""
@@ -94,7 +94,8 @@ class run_one_indexing(object):
       sg = self.crystal_model.get_space_group()
       assert sg.type().hall_symbol() == expected_hall_symbol, (
         sg.type().hall_symbol(), expected_hall_symbol)
-      reflections = indexed_reflections.select(indexed_reflections['id'] == i)
+      reflections = self.indexed_reflections.select(
+        self.indexed_reflections['id'] == i)
       mi = reflections['miller_index']
       assert (mi != (0,0,0)).count(False) == 0
       reflections = reflections.select(mi != (0,0,0))
@@ -530,6 +531,20 @@ def exercise_14():
     result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
                               expected_rmsds, expected_hall_symbol)
 
+def exercise_15():
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
+  pickle_path = os.path.join(data_dir, "strong.pickle")
+  sweep_path = os.path.join(data_dir, "datablock_import.json")
+  extra_args = ["max_try=10"]
+  expected_unit_cell = uctbx.unit_cell(
+    (48.3, 48.3, 98.6, 90, 104.1, 120))
+  expected_rmsds = (0.06, 0.08, 0.22)
+  expected_hall_symbol = ' P 1'
+
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol)
+  assert len(result.indexed_reflections) > 298000, len(result.indexed_reflections)
+
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
@@ -537,7 +552,7 @@ def run(args):
 
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
                exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
-               exercise_11, exercise_12, exercise_13, exercise_14)
+               exercise_11, exercise_12, exercise_13, exercise_14, exercise_15)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0

@@ -17,6 +17,7 @@ def index_reflections(
   isel = sel.iselection()
   rlps = reciprocal_lattice_points.select(isel)
   refs = reflections.select(isel)
+  phi = refs['xyzobs.mm.value'].parts()[2]
 
   diffs = []
   norms = []
@@ -26,7 +27,7 @@ def index_reflections(
 
   if 1:
     # Use fast c++ version
-    result = AssignIndices(rlps, UB_matrices, tolerance=tolerance)
+    result = AssignIndices(rlps, phi, UB_matrices, tolerance=tolerance)
     miller_indices = result.miller_indices()
     crystal_ids = result.crystal_ids()
     n_rejects = result.n_rejects()
@@ -126,6 +127,7 @@ def index_reflections_local(
   isel = sel.iselection()
   rlps = reciprocal_lattice_points.select(isel)
   refs = reflections.select(isel)
+  phi = refs['xyzobs.mm.value'].parts()[2]
 
   diffs = []
   norms = []
@@ -134,7 +136,7 @@ def index_reflections_local(
   UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
 
   result = AssignIndicesLocal(
-    rlps, UB_matrices, epsilon=epsilon, delta=delta, l_min=l_min,
+    rlps, phi, UB_matrices, epsilon=epsilon, delta=delta, l_min=l_min,
     nearest_neighbours=nearest_neighbours)
   miller_indices = result.miller_indices()
   crystal_ids = result.crystal_ids()

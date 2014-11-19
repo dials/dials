@@ -18,7 +18,9 @@
 #include <scitbx/mat3.h>
 #include <scitbx/math/utils.h>
 #include <cctbx/miller.h>
+#include <scitbx/constants.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/error.h>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
 #include <boost/graph/depth_first_search.hpp>
@@ -34,6 +36,7 @@ namespace dials { namespace algorithms {
   public:
     AssignIndices(
       af::const_ref<scitbx::vec3<double> > const & reciprocal_space_points,
+      af::const_ref<double> const & phi,
       af::const_ref<scitbx::mat3<double> > const & UB_matrices,
       double tolerance=0.3
       )
@@ -42,6 +45,8 @@ namespace dials { namespace algorithms {
         crystal_ids_(reciprocal_space_points.size(), -1),
         n_rejects_(0) {
 
+      DIALS_ASSERT(reciprocal_space_points.size() == phi.size());
+
       typedef std::pair<const cctbx::miller::index<>, const std::size_t> pair_t;
       typedef std::multimap<cctbx::miller::index<>, std::size_t> map_t;
 
@@ -49,6 +54,8 @@ namespace dials { namespace algorithms {
 
       std::vector<af::shared<cctbx::miller::index<> > > hkl_ints;
       std::vector<af::shared<double> > lengths_sq;
+
+      const double pi_4 = scitbx::constants::pi / 4;
 
       // loop over crystals and assign one hkl per crystal per reflection
       for (int i_lattice=0; i_lattice<UB_matrices.size(); i_lattice++) {
@@ -111,6 +118,9 @@ namespace dials { namespace algorithms {
                 int crystal_j = crystal_ids_[j_ref];
                 if (crystal_i != crystal_j) { continue; }
                 else if (crystal_i == -1) { continue; }
+                double phi_i = phi[i_ref];
+                double phi_j = phi[j_ref];
+                if (std::abs(phi_i-phi_j) > pi_4) { continue; }
                 if (lengths_sq[crystal_j][j_ref] < lengths_sq[crystal_i][i_ref]) {
                   miller_indices_[i_ref] = cctbx::miller::index<>(0,0,0);
                   crystal_ids_[i_ref] = -1;
@@ -166,6 +176,7 @@ namespace dials { namespace algorithms {
   public:
     AssignIndicesLocal(
       af::const_ref<scitbx::vec3<double> > const & reciprocal_space_points,
+      af::const_ref<double> const & phi,
       af::const_ref<scitbx::mat3<double> > const & UB_matrices,
       const double epsilon=0.05,
       const double delta=5,
@@ -177,6 +188,8 @@ namespace dials { namespace algorithms {
         /*subtree_ids_(reciprocal_space_points.size(), 0),*/
         crystal_ids_(reciprocal_space_points.size(), -1),
         n_rejects_(0) {
+
+      DIALS_ASSERT(reciprocal_space_points.size() == phi.size());
 
       using annlib_adaptbx::AnnAdaptor;
       using namespace boost;
