@@ -1237,7 +1237,7 @@ class Refiner(object):
     print "----------------"
 
     rmsd_multipliers = []
-    header = ["Step", "Nref", "Objective"]
+    header = ["Step", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
       if units == "mm":
         header.append(name + "\n(mm)")
@@ -1251,8 +1251,8 @@ class Refiner(object):
     rows = []
     for i in range(self._refinery.history.get_nrows()):
       rmsds = [r*m for (r,m) in zip(self._refinery.history["rmsd"][i], rmsd_multipliers)]
-      rows.append([str(i), str(self._refinery.history["num_reflections"][i]),
-                   "%.5g" % self._refinery.history["objective"][i]] + ["%.5g" % r for r in rmsds])
+      rows.append([str(i), str(self._refinery.history["num_reflections"][i])] + \
+        ["%.5g" % r for r in rmsds])
 
     st = simple_table(rows, header)
     print st.format()
