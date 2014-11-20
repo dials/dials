@@ -18,8 +18,8 @@ from dials.array_family import flex
 from dials.algorithms.refinement import weighting_strategies
 
 # constants
-RAD_TO_DEG = 180. / pi
-DEG_TO_RAD = pi / 180.
+RAD2DEG = 180. / pi
+DEG2RAD = pi / 180.
 
 # helper functions
 def calculate_entering_flags(reflections, experiments):
@@ -74,7 +74,7 @@ class BlockCalculator(object):
   def per_width(self, width, deg=True):
     """Set blocks for all experiments according to a constant width"""
 
-    if deg: width *= DEG_TO_RAD
+    if deg: width *= DEG2RAD
     self._create_block_columns()
 
     # get observed phi in radians
@@ -356,7 +356,7 @@ class ReflectionManager(object):
       if exp.scan and self._nref_per_degree:
         sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
         width = abs(sweep_range_rad[1] -
-                    sweep_range_rad[0]) * RAD_TO_DEG
+                    sweep_range_rad[0]) * RAD2DEG
         sample_size = int(self._nref_per_degree * width)
       else: sweep_range_rad = None
 
@@ -434,8 +434,9 @@ class ReflectionManager(object):
 
     l = self.get_matches()
 
-    if self._verbosity > 1:
+    if self._verbosity > 0:
 
+      from libtbx.table_utils import simple_table
       from scitbx.math import five_number_summary
       x_resid = l['x_resid']
       y_resid = l['y_resid']
@@ -443,20 +444,22 @@ class ReflectionManager(object):
       w_x, w_y, w_phi = l['xyzobs.mm.weights'].parts()
 
       print "\nSummary statistics for observations matched to predictions:"
-      print ("                      "
-             "Min         Q1        Med         Q3        Max")
-      print "(Xc-Xo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(x_resid))
-      print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(y_resid))
-      print "(Phic-Phio)    {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(phi_resid))
-      print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_x))
-      print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_y))
-      print "Phi weights    {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_phi))
+      header = ["", "Min", "Q1", "Med", "Q3", "Max"]
+      rows = []
+      row_data = five_number_summary(x_resid)
+      rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(y_resid)
+      rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(phi_resid)
+      rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+      row_data = five_number_summary(w_x)
+      rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_y)
+      rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_phi)
+      rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+      st = simple_table(rows, header)
+      print st.format()
       print
 
       if len(l) >= 20 and self._verbosity > 2:
@@ -471,14 +474,14 @@ class ReflectionManager(object):
           x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                            e['y_resid'],
-                           e['phi_resid'] * RAD_TO_DEG,
+                           e['phi_resid'] * RAD2DEG,
                            e['panel'],
                            x_obs,
                            y_obs,
-                           phi_obs * RAD_TO_DEG,
+                           phi_obs * RAD2DEG,
                            e['xyzobs.mm.weights'][0],
                            e['xyzobs.mm.weights'][1],
-                           e['xyzobs.mm.weights'][2] / RAD_TO_DEG**2))
+                           e['xyzobs.mm.weights'][2] * DEG2RAD**2))
           print msg
         print
         sl = self._sort_obs_by_residual(sl, angular=True)
@@ -491,14 +494,14 @@ class ReflectionManager(object):
           x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                                                  e['y_resid'],
-                                                 e['phi_resid'] * RAD_TO_DEG,
+                                                 e['phi_resid'] * RAD2DEG,
                                                  e['panel'],
                                                  x_obs,
                                                  y_obs,
-                                                 phi_obs * RAD_TO_DEG,
+                                                 phi_obs * RAD2DEG,
                                                  e['xyzobs.mm.weights'][0],
                                                  e['xyzobs.mm.weights'][1],
-                                                 e['xyzobs.mm.weights'][2] / RAD_TO_DEG**2))
+                                                 e['xyzobs.mm.weights'][2] * DEG2RAD**2))
           print msg
         print
 
@@ -586,8 +589,9 @@ class StillsReflectionManager(ReflectionManager):
 
     l = self.get_matches()
 
-    if self._verbosity > 1:
+    if self._verbosity > 0:
 
+      from libtbx.table_utils import simple_table
       from scitbx.math import five_number_summary
       x_resid = l['x_resid']
       y_resid = l['y_resid']
@@ -596,20 +600,22 @@ class StillsReflectionManager(ReflectionManager):
       w_delpsi = l['delpsical.weights']
 
       print "\nSummary statistics for observations matched to predictions:"
-      print ("                      "
-             "Min         Q1        Med         Q3        Max")
-      print "(Xc-Xo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(x_resid))
-      print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(y_resid))
-      print "DeltaPsi       {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(delpsi))
-      print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_x))
-      print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_y))
-      print "DeltaPsi wts   {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_delpsi))
+      header = ["", "Min", "Q1", "Med", "Q3", "Max"]
+      rows = []
+      row_data = five_number_summary(x_resid)
+      rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(y_resid)
+      rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(delpsi)
+      rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+      row_data = five_number_summary(w_x)
+      rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_y)
+      rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_delpsi)
+      rows.append(["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+      st = simple_table(rows, header)
+      print st.format()
       print
 
       if len(l) >= 20 and self._verbosity > 2:
