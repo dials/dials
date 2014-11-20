@@ -420,6 +420,7 @@ doc/sphinx/programs/dials_refine.rst -text
 doc/sphinx/programs/dials_refine_bravais_settings.rst -text
 doc/sphinx/programs/dials_reindex.rst -text
 doc/sphinx/programs/index.rst -text
+doc/sphinx/small_molecule_tutorial.rst -text
 doc/user-tutorial/tutorial.sh -text
 doc/user-tutorial/tutorial.txt -text
 doc/user/manual.tex -text

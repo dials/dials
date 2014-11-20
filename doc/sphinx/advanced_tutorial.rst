@@ -1,13 +1,6 @@
 Advanced Tutorial
 =================
 
-Caveat Lector
--------------
-
-These are my notes on how to run elements of the DIALS processing suite. I make
-no promises that anything described in here will work, or will give sensible
-results, or will in fact do anything. You have been warned.
-
 Introduction
 ------------
 
@@ -27,7 +20,7 @@ assuming everything works correctly. Some sensible options to use are:
  - :samp:`scan_varying=true` - allow the crystal orientation and unit cell
    constants to vary during the scan
  - :samp:`mp.nproc=1` - only use one processor (necessary currently for data in
-   NeXus files
+   NeXus files)
  - :samp:`intensity.algorithm=sum` - use summation integtration, other
    algorithms are being added
  - :samp:`block_size=N` - for some N, split the data set into N degree blocks
@@ -35,225 +28,19 @@ assuming everything works correctly. Some sensible options to use are:
  - :samp:`-i` - pass the images to process through the standard input e.g. from
    :samp:`find . -name *.cbf` to avoid issues with limited command-line lengths
 
-I have used all of these options and they appear to do sensible things.
-Important to make sure that what is passed in is exactly one sweep.
-
-Results
--------
-
-At the start you will see:
-
-::
-
-  ********************************************************************************
-
-                         mmmm   mmmmm    mm   m       mmmm
-                         #   "m   #      ##   #      #"   "
-                        m#mm  #   #     #  #  #      "#mmm
-                         #    #   #     #mm#  #          "#
-                         #mmm"  mm#mm  #    # #mmmmm "mmm#"
-
-  Launching dials.process
-
-  The following tasks will be performed:
-   1) Strong spots will be found (dials.find_spots)
-   2) The strong spots will be indexed (dials.index)
-   3) The model will be further refined (dials.refine)
-   4) The reflections will be integrated (dials.integrate)
-   5) The data will be exported as MTZ (dials.export_mtz)
-
-  Please be patient, this may take a few minutes
-
-  ********************************************************************************
-
-  Command-line: scan_varying=true /Users/graeme/data/i04-BAG-training/th_8_2_0001
-
-  ********************************************************************************
-
-and depending on the size of your data set you may be looking at this for a
-while. The first thing to happen is the peak finding, which happens for every
-image in the set (this will probably be changed in the future.)
-
-::
-
-  ********************************************************************************
-  Finding Strong Spots
-  ********************************************************************************
-  Configuring spot finder from input parameters
-  --------------------------------------------------------------------------------
-  Finding strong spots in imageset 0
-  --------------------------------------------------------------------------------
-
-  Finding spots in image 0 to 540...
-  Extracted strong pixels from images......................................210.62s
-  Merged 8 pixel lists with 922661 pixels....................................0.03s
-  Extracted 219127 spots.....................................................1.02s
-  Calculated 219127 spot centroids...........................................0.98s
-  Calculated 219127 spot intensities.........................................0.06s
-  Filtered 58009 spots by number of pixels...................................0.02s
-  Filtered 57769 spots by peak-centroid distance.............................0.05s
-
-The next step will be indexing, using by default 3D FFT indexing on peaks
-randomly drawn from the entire set:
-
-::
-
-  Found max_cell: 230.8 Angstrom
-  FFT gridding: (256,256,256)
-  Number of centroids used: 9104
-  model 1 (9100 reflections):
-  Crystal:
-      Unit cell: (57.933, 57.953, 150.052, 90.237, 89.675, 90.287)
-      Space group: P 1
-      U matrix:  {{-0.3452, -0.2600,  0.9018},
-                  {-0.8909,  0.3929, -0.2278},
-                  {-0.2951, -0.8820, -0.3673}}
-      B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  { 0.0001,  0.0173,  0.0000},
-                  {-0.0001,  0.0001,  0.0067}}
-      A = UB:    {{-0.0061, -0.0044,  0.0060},
-                  {-0.0153,  0.0068, -0.0015},
-                  {-0.0051, -0.0152, -0.0024}}
-
-after which some refinement will be performed - this will currently take a
-little while, particularly if scan varying refinement was specified. The main
-thing to look for is the RMSD values in X, Y and Phi (in mm, mm and radians
-respectively) are going down and ideally converging. Several cycles of
-refinement are performed with increasing resolution limits, thus trying to
-achieve an increasingly accurate result:
-
-::
-
-  ################################################################################
-  Starting refinement (macro-cycle 3)
-  ################################################################################
-
-
-  Running refinement
-  ------------------
-  0 1 2 3 4 5 6 7 8 9 10
-
-  Refinement steps
-  ----------------
-  Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 4049 1049.9 0.047277 0.03654 0.00026327
-  1 4049 929.44 0.043631 0.03471 0.00027018
-  2 4049 922.78 0.043567 0.034537 0.00026713
-  3 4049 913.33 0.043471 0.034256 0.00026399
-  4 4049 901.65 0.043308 0.033923 0.00026122
-  5 4049 890.14 0.043155 0.033532 0.00025993
-  6 4049 882.6 0.043147 0.033145 0.0002593
-  7 4049 879.67 0.04323 0.032888 0.00025882
-  8 4049 879.32 0.043279 0.032808 0.00025867
-  9 4049 879.31 0.043288 0.032797 0.00025865
-  10 4049 879.31 0.043288 0.032796 0.00025865
-  RMSD no longer decreasing
-  Final refined crystal models:
-  model 1 (48411 reflections):
-  Crystal:
-      Unit cell: (57.809, 57.772, 150.015, 89.981, 89.997, 90.010)
-      Space group: P 1
-      U matrix:  {{-0.3455, -0.2589,  0.9020},
-                  {-0.8914,  0.3909, -0.2293},
-                  {-0.2932, -0.8833, -0.3658}}
-      B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  { 0.0000,  0.0173,  0.0000},
-                  {-0.0000, -0.0000,  0.0067}}
-      A = UB:    {{-0.0060, -0.0045,  0.0060},
-                  {-0.0154,  0.0068, -0.0015},
-                  {-0.0051, -0.0153, -0.0024}}
-
-After all of the refinement is complete the integration is performed - currently
-the output of integration is rather terse and includes little in the way of
-diagnostics or information. In the future this will be improved:
-
-::
-
-  ********************************************************************************
-  Integrating Reflections
-  ********************************************************************************
-  Removed invalid coordinates, 4049 remaining................................0.09s
-  Configurating integrator from input parameters
-  Integrating reflections
-   Prediction type: Unknown prediction
-  Predicted 373210 reflections...............................................2.06s
-  Filtered 1847 reflections with zeta > 0.050000.............................0.00s
-  Calculated E.S.D Beam Divergence...........................................0.06s
-  Calculated E.S.D Reflecting Range..........................................0.07s
-  Sigma B: 0.022247
-  Sigma M: 0.080272
-  Calculated 373210 bounding boxes...........................................0.21s
-  Filtered 319044 reflections by detector mask...............................0.32s
-  Filtered 318767 reflections by zeta >= 0.05................................0.02s
-  Found 19 overlaps..........................................................0.08s
-  Extracted 318767 profiles from frames 0 -> 540...........................107.21s
-
-  Extracted 318767 profiles from block 0.....................................6.68s
-  Masked foreground pixels for 318767 reflections............................1.03s
-  Filtered 318767 reflections by detector mask...............................0.25s
-  Filtered 318767 reflections by zeta >= 0.05................................0.03s
-  Found nearest neighbours...................................................0.25s
-  Filtered 1757 matches by distance..........................................0.00s
-  Removed 0 duplicate match(es)..............................................0.00s
-  Calculated 318767 background values........................................6.10s
-  Calculated 318767 reflection centroids.....................................2.50s
-  Integrated 318767 reflections..............................................0.59s
-  Performed LP-correction on 318767 reflections.............................13.58s
-
-At the end of processing you will see something like:
-
-::
-
-  Space group symbol from file: P1
-  Space group number from file: 1
-  Space group from matrices: P 1 (No. 1)
-  Point group symbol from file: 1
-  Number of batches: 540
-  Number of crystals: 1
-  Number of Miller indices: 318767
-  Resolution range: 150.015 1.169
-  History:
-  Crystal 1:
-    Name: XTAL
-    Project: DIALS
-    Id: 1
-    Unit cell: (57.8091, 57.7715, 150.015, 89.9809, 89.9967, 90.01)
-    Number of datasets: 1
-    Dataset 1:
-      Name: FROMDIALS
-      Id: 1
-      Wavelength: 0.97625
-      Number of columns: 11
-      label        #valid  %valid     min     max type
-      H            318767 100.00%  -47.00   39.00 H: index h,k,l
-      K            318767 100.00%  -34.00   43.00 H: index h,k,l
-      L            318767 100.00% -114.00  114.00 H: index h,k,l
-      M_ISYM       318767 100.00%    1.00    1.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH        318767 100.00%    2.00  538.00 B: BATCH number
-      I            318767 100.00%   -8.34 3032.36 J: intensity
-      SIGI         318767 100.00%    0.00   55.21 Q: standard deviation
-      FRACTIONCALC 318767 100.00%    1.00    1.00 R: real
-      XDET         318767 100.00%    3.38 2458.38 R: real
-      YDET         318767 100.00%    2.97 2522.77 R: real
-      ROT          318767 100.00%   82.09  162.45 R: real
-
-which just shows the summary of what is in the output MTZ file. There are also
-indexing and refinement results which I need to add FIXME.
-
-Running From a Datablock
-------------------------
-
-FIXME write about this, also copying in refinement results from elsewhere to
-describe your experiment before you get started.
-
-Easy:
-
-::
-
-  dials.process datablock.json
-
 Running the Individual Steps: Macromolecule
 -------------------------------------------
+
+The following example uses a Thaumatin dataset collected using beamline I04
+at Diamond Light Source which is available for download from |thaumatin|.
+
+.. |thaumatin| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10271.png
+               :target: http://dx.doi.org/10.5281/zenodo.10271
+
+A complete example script can be found
+:download:`here<../user-tutorial/tutorial.sh>`, which can be run as follows::
+
+  ./tutorial.sh /path/to/data
 
 Import
 ^^^^^^
@@ -266,16 +53,22 @@ use this.
 
 ::
 
-  dials.import ~/data/i04-BAG-training/th_8_2_0*cbf
+  dials.import data/th_8_2_0*cbf
 
 The output just describes what the software understands of the images it was
-passed - not very interesting but useful to make sure it all makes sense.
+passed, in this case one sweep of data containing 540 images.
 
 ::
 
+  The following parameters have been modified:
+
+  input {
+    datablock = <image files>
+  }
+
   --------------------------------------------------------------------------------
   DataBlock 0
-    format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>
+    format: <class 'dxtbx.format.FormatCBFMiniPilatusDLS6MSN100.FormatCBFMiniPilatusDLS6MSN100'>
     num images: 540
     num sweeps: 1
     num stills: 0
@@ -285,17 +78,31 @@ passed - not very interesting but useful to make sure it all makes sense.
 Find Spots
 ^^^^^^^^^^
 
-The first "real" task in any DIALS processing will be the spot finding - while
-there are plenty of options the defaults often seem to do sensible things.
+The first "real" task in any DIALS processing will be the spot finding.
+Here we tweak the minimum spot size (min_spot_size=3) and use multiple
+processors to speed up the spot-finding (nproc=4).
 
 ::
 
-  dials.find_spots datablock.json
+  dials.find_spots datablock.json min_spot_size=3 nproc=4
 
-This will just report the number of spots found - guess we could probably write
-some more interesting output.
+This will just report the number of spots found.
 
 ::
+
+  The following parameters have been modified:
+
+  spotfinder {
+    mp {
+      nproc = 8
+    }
+    filter {
+      min_spot_size = 3
+    }
+  }
+  input {
+    datablock = datablock.json
+  }
 
   Configuring spot finder from input parameters
   --------------------------------------------------------------------------------
@@ -303,275 +110,365 @@ some more interesting output.
   --------------------------------------------------------------------------------
 
   Finding spots in image 0 to 540...
-  Extracted strong pixels from images......................................137.72s
-  Merged 8 pixel lists with 922661 pixels....................................0.03s
-  Extracted 219127 spots.....................................................1.00s
-  Calculated 219127 spot centroids...........................................0.92s
-  Calculated 219127 spot intensities.........................................0.07s
-  Filtered 58009 spots by number of pixels...................................0.02s
-  Filtered 57769 spots by peak-centroid distance.............................0.05s
+  Extracted strong pixels from images.......................................21.09s
+  Merged 8 pixel lists with 922120 pixels....................................0.02s
+  Extracted 219125 spots.....................................................0.88s
+  Calculated 219125 spot centroids...........................................0.79s
+  Calculated 219125 spot intensities.........................................0.02s
+  Filtered 116321 spots by number of pixels..................................0.01s
+  Filtered 116082 spots by peak-centroid distance............................0.05s
 
   --------------------------------------------------------------------------------
-  Saved 57769 reflections to strong.pickle...................................0.25s
-  Total time:  142.911371946
+  Saved 116082 reflections to strong.pickle..................................0.23s
+
 
 Indexing
 ^^^^^^^^
 
-::
-
-  dials.index datablock.json strong.pickle
-
-The output for this is rather verbose: FIXME perhaps I should abbreviate it
-some?
+The next step will be indexing of the strong spots, by default using a 3D FFT
+algorithm, although the 1D FFT algorithm can be selected using the parameter
+:samp:`indexing.method=fft1d`.
 
 ::
 
-  reference {
-    detector = None
-    beam = None
-  }
-  discover_better_experimental_model = False
-  min_cell = 20
-  max_cell = Auto
-  reciprocal_space_grid {
-    n_points = 256
-    d_min = 4
-  }
-  sigma_phi_deg = None
-  b_iso = 200
-  rmsd_cutoff = 15
-  scan_range = None
-  known_symmetry {
-    space_group = None
-    unit_cell = None
-    relative_length_tolerance = 0.1
-    absolute_angle_tolerance = 10
-  }
-  optimise_initial_basis_vectors = False
-  debug = False
-  debug_plots = False
-  show_timing = False
-  refinement {
-    parameterisation {
-      beam {
-        fix = all *in_spindle_plane out_spindle_plane
-        fix_list = None
-      }
-      crystal {
-        fix = all cell orientation
-        cell_fix_list = None
-        orientation_fix_list = None
-        scan_varying = False
-        num_intervals = *fixed_width absolute
-        interval_width_degrees = 36.0
-        absolute_num_intervals = 5
-      }
-      detector {
-        panels = *automatic single multiple hierarchical
-        hierarchy_level = 0
-        fix = all position orientation
-        fix_list = None
-      }
-    }
-    refinery {
-      engine = SimpleLBFGS LBFGScurvs GaussNewtonIterations *LevMarIterations
-      track_step = False
-      track_gradient = False
-      track_parameter_correlation = False
-      log = None
-      max_iterations = None
-    }
-    target {
-      rmsd_cutoff = *fraction_of_bin_size absolute
-      bin_size_fraction = 0.33333
-      absolute_cutoffs = None
-    }
-    reflections {
-      reflections_per_degree = 50
-      minimum_sample_size = 1000
-      maximum_number_of_reflections = None
-      use_all_reflections = False
-      random_seed = 42
-      minimum_number_of_reflections = 20
-      close_to_spindle_cutoff = 0.1
-      do_outlier_rejection = False
-      iqr_multiplier = 1.5
-    }
-  }
-  refinement_protocol {
-    weight_outlier_n_sigma = 5
-    n_macro_cycles = 3
-    d_min_step = 1.0
-    d_min_start = 4.0
-    d_min_final = None
-    verbosity = 1
-    outlier_rejection {
-      maximum_spot_error = None
-      hkl_tolerance = 0.3
-    }
-  }
-  method = *fft3d fft1d real_space_grid_search
-  multiple_lattice_search {
-    cluster_analysis_search = False
-    recycle_unindexed_reflections = False
-    recycle_unindexed_reflections_cutoff = 0.1
-    max_lattices = None
-    cluster_analysis {
-      method = *dbscan hcluster
-      hcluster {
-        linkage {
-          method = *ward
-          metric = *euclidean
-        }
-        cutoff = 15
-        cutoff_criterion = *distance inconsistent
-      }
-      dbscan {
-        eps = 0.05
-        min_samples = 30
-      }
-      min_cluster_size = 20
-      intersection_union_ratio_cutoff = 0.4
-    }
-  }
-  Detector:
-  Panel:
-    pixel_size:{0.172,0.172}
-    image_size: {2463,2527}
-    trusted_range: {-1,161977}
-    fast_axis: {1,0,0}
-    slow_axis: {0,-1,0}
-    origin: {-210.76,205.277,-265.27}
+  dials.index datablock.json strong.pickle refinement.reflections.use_all_reflections=true
 
-  Scan:
-      image range:   {1,540}
-      oscillation:   {82,0.15}
+If known, the space group and unit cell can be
+provided at this stage using the :samp:`space_group` and :samp:`unit_cell`
+parameters, otherwise indexing and refinement will be carried out in the
+primitive lattice using space group P1.
 
-  Goniometer:
-      Rotation axis:  {1,0,0}
-      Fixed rotation: {1,0,0,0,1,0,0,0,1}
+::
 
-  Beam:
-      wavelength: 0.97625
-      sample to source direction : {0,0,1}
-      divergence: 0
-      sigma divergence: 0
-      polarization normal: {0,1,0}
-      polarization fraction: 0.999
+  The following parameters have been modified:
 
-  Found max_cell: 230.8 Angstrom
+  input {
+    datablock = datablock.json
+    reflections = strong.pickle
+  }
+
+  Found max_cell: 229.7 Angstrom
+  Setting d_min: 4.48575618871
   FFT gridding: (256,256,256)
-  Number of centroids used: 9104
-  model 1 (9100 reflections):
+  Number of centroids used: 8627
+  model 1 (7863 reflections):
   Crystal:
-      Unit cell: (57.933, 57.953, 150.052, 89.763, 89.675, 89.713)
+      Unit cell: (58.179, 58.461, 149.622, 90.337, 90.317, 90.560)
       Space group: P 1
-      U matrix:  {{ 0.3452, -0.2600, -0.9018},
-                  { 0.8909,  0.3929,  0.2278},
-                  { 0.2951, -0.8820,  0.3673}}
-      B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  {-0.0001,  0.0173,  0.0000},
-                  {-0.0001, -0.0001,  0.0067}}
-      A = UB:    {{ 0.0061, -0.0044, -0.0060},
-                  { 0.0153,  0.0068,  0.0015},
-                  { 0.0051, -0.0152,  0.0024}}
+      U matrix:  {{-0.2595,  0.3410,  0.9035},
+                  { 0.3839,  0.8949, -0.2275},
+                  {-0.8862,  0.2878, -0.3632}}
+      B matrix:  {{ 0.0172,  0.0000,  0.0000},
+                  { 0.0002,  0.0171,  0.0000},
+                  { 0.0001,  0.0001,  0.0067}}
+      A = UB:    {{-0.0043,  0.0059,  0.0060},
+                  { 0.0067,  0.0153, -0.0015},
+                  {-0.0152,  0.0049, -0.0024}}
 
 
-  0 unindexed reflections
+  757 unindexed reflections
 
   ################################################################################
   Starting refinement (macro-cycle 1)
   ################################################################################
 
 
+  Summary statistics for observations matched to predictions:
+  -----------------------------------------------------------------------
+  |                   | Min     | Q1       | Med      | Q3     | Max    |
+  -----------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.7665 | -0.4922  | -0.05848 | 0.1489 | 0.4568 |
+  | Yc - Yo (mm)      | -0.8621 | -0.4161  | 0.04831  | 0.2403 | 0.5781 |
+  | Phic - Phio (deg) | -0.442  | -0.01297 | 0.1146   | 0.2693 | 0.9865 |
+  | X weights         | 113.8   | 134.7    | 135      | 135.1  | 135.2  |
+  | Y weights         | 119.2   | 134.9    | 135.1    | 135.2  | 135.2  |
+  | Phi weights       | 162.5   | 177.1    | 177.5    | 177.7  | 177.8  |
+  -----------------------------------------------------------------------
+
+
   Running refinement
   ------------------
-  0 1 2 3 4 5 6 7 8 9 10
+  0 1 2 3 4
 
   Refinement steps
   ----------------
-  Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 4049 51016 0.27078 0.16307 0.0044847
-  1 4049 3016.4 0.045314 0.047339 0.0012501
-  2 4049 1792.4 0.04019 0.044352 0.00083054
-  3 4049 1063.7 0.03583 0.039659 0.00049001
-  4 4049 764.91 0.033407 0.035648 0.00030911
-  5 4049 659.78 0.032163 0.033601 0.0002411
-  6 4049 599.7 0.030626 0.032161 0.00022696
-  7 4049 567.81 0.029447 0.031492 0.00022524
-  8 4049 562.25 0.029137 0.031465 0.00022505
-  9 4049 562.06 0.029102 0.031486 0.00022503
-  10 4049 562.06 0.0291 0.031488 0.00022503
-  RMSD no longer decreasing
-  Increasing resolution to 3.0 Angstrom
-  model 1 (21107 reflections):
+  ------------------------------------------------
+  | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |      | (mm)     | (mm)     | (deg)    |
+  ------------------------------------------------
+  | 0    | 4049 | 0.38369  | 0.37431  | 0.23548  |
+  | 1    | 4049 | 0.12009  | 0.11387  | 0.18697  |
+  | 2    | 4049 | 0.088057 | 0.081596 | 0.14271  |
+  | 3    | 4049 | 0.048008 | 0.048841 | 0.076388 |
+  | 4    | 4049 | 0.026475 | 0.035665 | 0.02821  |
+  ------------------------------------------------
+  RMSD target achieved
+
+  RMSDs by experiment
+  -------------------
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 4049 | 0.13752 | 0.18741 | 0.11533  |
+  ---------------------------------------------
+  Increasing resolution to 3.5 Angstrom
+  model 1 (18471 reflections):
   Crystal:
-      Unit cell: (57.802, 57.770, 149.995, 90.012, 89.988, 89.991)
+      Unit cell: (57.783, 57.795, 149.981, 90.039, 90.024, 90.007)
       Space group: P 1
-      U matrix:  {{ 0.3455, -0.2589, -0.9020},
-                  { 0.8914,  0.3909,  0.2292},
-                  { 0.2933, -0.8833,  0.3659}}
+      U matrix:  {{-0.2593,  0.3448,  0.9021},
+                  { 0.3909,  0.8916, -0.2285},
+                  {-0.8832,  0.2934, -0.3660}}
       B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  {-0.0000,  0.0173,  0.0000},
-                  {-0.0000,  0.0000,  0.0067}}
-      A = UB:    {{ 0.0060, -0.0045, -0.0060},
-                  { 0.0154,  0.0068,  0.0015},
-                  { 0.0051, -0.0153,  0.0024}}
+                  { 0.0000,  0.0173,  0.0000},
+                  { 0.0000,  0.0000,  0.0067}}
+      A = UB:    {{-0.0045,  0.0060,  0.0060},
+                  { 0.0068,  0.0154, -0.0015},
+                  {-0.0153,  0.0051, -0.0024}}
 
 
-  32 unindexed reflections
+  86 unindexed reflections
 
   ################################################################################
   Starting refinement (macro-cycle 2)
   ################################################################################
 
 
+  Summary statistics for observations matched to predictions:
+  -------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med       | Q3      | Max    |
+  -------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.2894 | -0.04219 | -0.007729 | 0.01458 | 0.2122 |
+  | Yc - Yo (mm)      | -0.7472 | -0.03726 | -0.0137   | 0.01058 | 0.2652 |
+  | Phic - Phio (deg) | -1.045  | -0.01004 | 0.001227  | 0.01285 | 0.9063 |
+  | X weights         | 110.6   | 134.7    | 135       | 135.1   | 135.2  |
+  | Y weights         | 114     | 134.8    | 135.1     | 135.2   | 135.2  |
+  | Phi weights       | 160.2   | 177.2    | 177.5     | 177.7   | 177.8  |
+  -------------------------------------------------------------------------
+
+
   Running refinement
   ------------------
-  0 1 2 3 4 5 6 7 8 9 10
+  0
 
   Refinement steps
   ----------------
-  Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 4049 807.18 0.039784 0.033706 0.00023487
-  1 4049 739.92 0.037853 0.032236 0.000235
-  2 4049 728.35 0.037744 0.031751 0.00023342
-  3 4049 716.58 0.037597 0.031279 0.00023229
-  4 4049 706.91 0.037376 0.030994 0.00023169
-  5 4049 693.89 0.036994 0.0307 0.00023113
-  6 4049 680.36 0.036553 0.030422 0.00023104
-  7 4049 673.72 0.036288 0.030335 0.00023115
-  8 4049 672.74 0.036213 0.03036 0.00023131
-  9 4049 672.71 0.036204 0.030368 0.00023135
-  10 4049 672.71 0.036204 0.030369 0.00023136
-  RMSD no longer decreasing
-  Increasing resolution to 2.0 Angstrom
-  model 1 (48411 reflections):
+  -----------------------------------------------
+  | Step | Nref | RMSD_X  | RMSD_Y   | RMSD_Phi |
+  |      |      | (mm)    | (mm)     | (deg)    |
+  -----------------------------------------------
+  | 0    | 4049 | 0.04984 | 0.043948 | 0.02381  |
+  -----------------------------------------------
+  RMSD target achieved
+
+  RMSDs by experiment
+  -------------------
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 4049 | 0.23649 | 0.23959 | 0.16135  |
+  ---------------------------------------------
+  Increasing resolution to 2.5 Angstrom
+  model 1 (47547 reflections):
   Crystal:
-      Unit cell: (57.804, 57.769, 150.004, 90.019, 89.999, 89.991)
+      Unit cell: (57.767, 57.785, 149.992, 90.051, 90.004, 89.998)
       Space group: P 1
-      U matrix:  {{ 0.3456, -0.2588, -0.9020},
-                  { 0.8914,  0.3909,  0.2293},
-                  { 0.2933, -0.8833,  0.3658}}
+      U matrix:  {{-0.2593,  0.3449,  0.9021},
+                  { 0.3909,  0.8916, -0.2285},
+                  {-0.8832,  0.2934, -0.3660}}
       B matrix:  {{ 0.0173,  0.0000,  0.0000},
                   {-0.0000,  0.0173,  0.0000},
-                  {-0.0000,  0.0000,  0.0067}}
-      A = UB:    {{ 0.0060, -0.0045, -0.0060},
-                  { 0.0154,  0.0068,  0.0015},
-                  { 0.0051, -0.0153,  0.0024}}
+                  { 0.0000,  0.0000,  0.0067}}
+      A = UB:    {{-0.0045,  0.0060,  0.0060},
+                  { 0.0068,  0.0154, -0.0015},
+                  {-0.0153,  0.0051, -0.0024}}
 
 
-  63 unindexed reflections
+  137 unindexed reflections
 
   ################################################################################
   Starting refinement (macro-cycle 3)
   ################################################################################
 
 
+  Summary statistics for observations matched to predictions:
+  ------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med      | Q3      | Max    |
+  ------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.4052 | -0.02696 | 0.008701 | 0.05057 | 0.3013 |
+  | Yc - Yo (mm)      | -0.73   | -0.06316 | -0.02221 | 0.01147 | 0.2737 |
+  | Phic - Phio (deg) | -1.039  | -0.01125 | 0.001069 | 0.01416 | 0.911  |
+  | X weights         | 101.4   | 134.1    | 134.8    | 135.1   | 135.2  |
+  | Y weights         | 103.4   | 134      | 134.8    | 135.1   | 135.2  |
+  | Phi weights       | 157.8   | 176.8    | 177.4    | 177.7   | 177.8  |
+  ------------------------------------------------------------------------
+
+
   Running refinement
   ------------------
-  0 1 2 3 4 5 6 7 8 9 10
+  0 1 2 3 4
+
+  Refinement steps
+  ----------------
+  ------------------------------------------------
+  | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |      | (mm)     | (mm)     | (deg)    |
+  ------------------------------------------------
+  | 0    | 4049 | 0.061077 | 0.064421 | 0.022755 |
+  | 1    | 4049 | 0.05994  | 0.05691  | 0.022316 |
+  | 2    | 4049 | 0.059291 | 0.055404 | 0.021625 |
+  | 3    | 4049 | 0.057855 | 0.053071 | 0.020781 |
+  | 4    | 4049 | 0.054599 | 0.049016 | 0.020268 |
+  ------------------------------------------------
+  RMSD target achieved
+
+  RMSDs by experiment
+  -------------------
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 4049 | 0.28272 | 0.24168 | 0.13326  |
+  ---------------------------------------------
+  Increasing resolution to 1.5 Angstrom
+  model 1 (113986 reflections):
+  Crystal:
+      Unit cell: (57.793, 57.802, 150.030, 90.024, 90.011, 89.995)
+      Space group: P 1
+      U matrix:  {{-0.2593,  0.3451,  0.9020},
+                  { 0.3910,  0.8915, -0.2287},
+                  {-0.8831,  0.2934, -0.3661}}
+      B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                  {-0.0000,  0.0173,  0.0000},
+                  { 0.0000,  0.0000,  0.0067}}
+      A = UB:    {{-0.0045,  0.0060,  0.0060},
+                  { 0.0068,  0.0154, -0.0015},
+                  {-0.0153,  0.0051, -0.0024}}
+
+
+  328 unindexed reflections
+
+  ################################################################################
+  Starting refinement (macro-cycle 4)
+  ################################################################################
+
+
+  Summary statistics for observations matched to predictions:
+  --------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med        | Q3      | Max    |
+  --------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.4434 | -0.03989 | 0.001557   | 0.0502  | 0.5943 |
+  | Yc - Yo (mm)      | -1.172  | -0.07835 | -0.02655   | 0.0125  | 1.477  |
+  | Phic - Phio (deg) | -1.424  | -0.01516 | -0.0005431 | 0.01418 | 0.9079 |
+  | X weights         | 81.12   | 131.3    | 133.8      | 134.9   | 135.2  |
+  | Y weights         | 87.23   | 130      | 133.3      | 134.7   | 135.2  |
+  | Phi weights       | 145.2   | 176.2    | 177.4      | 177.8   | 177.8  |
+  --------------------------------------------------------------------------
+
+
+  Running refinement
+  ------------------
+  0 1 2 3 4 5
+
+  Refinement steps
+  ----------------
+  ------------------------------------------------
+  | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |      | (mm)     | (mm)     | (deg)    |
+  ------------------------------------------------
+  | 0    | 4049 | 0.077047 | 0.088022 | 0.02738  |
+  | 1    | 4049 | 0.07408  | 0.075985 | 0.027343 |
+  | 2    | 4049 | 0.072926 | 0.074442 | 0.027333 |
+  | 3    | 4049 | 0.070029 | 0.070914 | 0.027238 |
+  | 4    | 4049 | 0.06367  | 0.063312 | 0.027096 |
+  | 5    | 4049 | 0.054825 | 0.052748 | 0.026893 |
+  ------------------------------------------------
+  RMSD target achieved
+
+  RMSDs by experiment
+  -------------------
+  --------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y | RMSD_Z   |
+  |     |      | (px)    | (px)   | (images) |
+  --------------------------------------------
+  | 0   | 4049 | 0.28944 | 0.2715 | 0.17801  |
+  --------------------------------------------
+  Increasing resolution to 0.5 Angstrom
+  model 1 (114691 reflections):
+  Crystal:
+      Unit cell: (57.785, 57.797, 150.018, 90.019, 90.000, 89.993)
+      Space group: P 1
+      U matrix:  {{-0.2591,  0.3453,  0.9020},
+                  { 0.3911,  0.8914, -0.2290},
+                  {-0.8831,  0.2934, -0.3661}}
+      B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                  {-0.0000,  0.0173,  0.0000},
+                  { 0.0000,  0.0000,  0.0067}}
+      A = UB:    {{-0.0045,  0.0060,  0.0060},
+                  { 0.0068,  0.0154, -0.0015},
+                  {-0.0153,  0.0051, -0.0024}}
+
+
+  341 unindexed reflections
+
+  ################################################################################
+  Starting refinement (macro-cycle 5)
+  ################################################################################
+
+
+  Summary statistics for observations matched to predictions:
+  ------------------------------------------------------------------------
+  |                   | Min    | Q1       | Med       | Q3      | Max    |
+  ------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.574 | -0.03382 | -0.004531 | 0.03071 | 0.6556 |
+  | Yc - Yo (mm)      | -1.409 | -0.02517 | 0.003335  | 0.02913 | 1.261  |
+  | Phic - Phio (deg) | -1.427 | -0.01379 | 0.0002674 | 0.01498 | 0.9102 |
+  | X weights         | 81.12  | 131.2    | 133.8     | 134.9   | 135.2  |
+  | Y weights         | 87.23  | 130      | 133.3     | 134.7   | 135.2  |
+  | Phi weights       | 145.2  | 176.2    | 177.5     | 177.8   | 177.8  |
+  ------------------------------------------------------------------------
+
+
+  Running refinement
+  ------------------
+  0
+
+  Refinement steps
+  ----------------
+  ------------------------------------------------
+  | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |      | (mm)     | (mm)     | (deg)    |
+  ------------------------------------------------
+  | 0    | 4049 | 0.050185 | 0.045811 | 0.028146 |
+  ------------------------------------------------
+  RMSD target achieved
+
+  RMSDs by experiment
+  -------------------
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 4049 | 0.29133 | 0.26534 | 0.18682  |
+  ---------------------------------------------
+  Final refined crystal models:
+  model 1 (114691 reflections):
+  Crystal:
+      Unit cell: (57.782, 57.797, 150.019, 90.017, 90.000, 89.996)
+      Space group: P 1
+      U matrix:  {{-0.2591,  0.3454,  0.9020},
+                  { 0.3911,  0.8914, -0.2290},
+                  {-0.8831,  0.2934, -0.3661}}
+      B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                  {-0.0000,  0.0173,  0.0000},
+                  { 0.0000,  0.0000,  0.0067}}
+      A = UB:    {{-0.0045,  0.0060,  0.0060},
+                  { 0.0068,  0.0154, -0.0015},
+                  {-0.0153,  0.0051, -0.0024}}
+
+
 
 If you want to specify the Bravais lattice for processing (i.e. include the
 lattice constraints in the refinement) then you need to either specify this
@@ -581,37 +478,55 @@ lattice at this stage as
 
   space_group=P4
 
-as a command-line option to :samp:`dials.index` or you can use
-:samp:`dials.refine_bravais_settings`, which will take the results of the P1
-autoindexing and run refinement with all of the possible Bravais lattices
-applied - after which you may select the preferred solution.
+as a command-line option to :doc:`dials.index </programs/dials_index>`
+or you can use
+:doc:`dials.refine_bravais_settings </programs/dials_refine_bravais_settings>`,
+which will take the results of the P1 autoindexing and run refinement with all
+of the possible Bravais settings applied - after which you may select the
+preferred solution.
 
 ::
 
   dials.refine_bravais_settings experiments.json indexed.pickle
 
-gives lots of output followed by...
+gives a table containing the metric fit, rmsds (in mm) and unit cell for
+each Bravais setting...
 
 ::
 
-  --------------------------------------------------------------------------------------------------
-  Solution Metric fit  rmsd #spots  crystal_system                                 unit_cell  volume
-  --------------------------------------------------------------------------------------------------
-         9  0.0478 dg 0.057   2250   tetragonal tP  57.98  57.98 150.29  90.00  90.00  90.00  505151
-         8  0.0433 dg 0.057   2250 orthorhombic oC  81.99  81.99 150.29  90.00  90.00  90.00 1010308
-         7  0.0478 dg 0.054   2250 orthorhombic oP  57.98  57.95 150.28  90.00  90.00  90.00  504967
-         6  0.0387 dg 0.057   2250   monoclinic mC  81.96  81.96 150.22  90.00  90.02  90.00 1009092
-         5  0.0478 dg 0.053   2250   monoclinic mP  57.98  57.99 150.33  90.00  90.02  90.00  505402
-         4  0.0433 dg 0.054   2250   monoclinic mP  57.98 150.28  57.95  90.00  90.00  90.00  504965
-         3  0.0207 dg 0.053   2250   monoclinic mC  81.97  81.95 150.28  90.00  90.04  90.00 1009513
-         2  0.0274 dg 0.053   2250   monoclinic mP  57.95  57.95 150.20  90.00  90.04  90.00  504389
-         1  0.0000 dg 0.053   2250    triclinic aP  57.93  57.94 150.22  90.01  90.04  89.98  504225
-  --------------------------------------------------------------------------------------------------
-  usr+sys time: 0.98 seconds, ticks: 2235113, micro-seconds/tick: 0.438
-  wall clock time: 4.03 seconds
+  The following parameters have been modified:
+
+  input {
+    experiments = experiments.json
+    reflections = indexed.pickle
+  }
+
+  -------------------------------------------------------------------------------------------------------------
+  Solution Metric fit  rmsd #spots  crystal_system                                 unit_cell  volume      cb_op
+  -------------------------------------------------------------------------------------------------------------
+         9  0.0195 dg 0.070   4049   tetragonal tP  57.79  57.79 150.01  90.00  90.00  90.00  501004      a,b,c
+         8  0.0195 dg 0.069   4049 orthorhombic oC  81.72  81.74 150.02  90.00  90.00  90.00 1002112  a-b,a+b,c
+         7  0.0175 dg 0.069   4049 orthorhombic oP  57.78  57.80 150.01  90.00  90.00  90.00  500989      a,b,c
+         6  0.0195 dg 0.068   4049   monoclinic mC  81.72  81.73 150.02  90.00  89.99  90.00 1002056  a-b,a+b,c
+         5  0.0191 dg 0.069   4049   monoclinic mC  81.74  81.72 150.02  90.00  90.01  90.00 1002108 a+b,-a+b,c
+         4  0.0175 dg 0.069   4049   monoclinic mP  57.78  57.80 150.01  90.00  90.00  90.00  500989      a,b,c
+         3  0.0170 dg 0.069   4049   monoclinic mP  57.78 150.01  57.80  90.00  89.99  90.00  501034   -a,-c,-b
+         2  0.0044 dg 0.068   4049   monoclinic mP  57.80  57.78 150.02  90.00  90.02  90.00  500980   -b,-a,-c
+         1  0.0000 dg 0.068   4049    triclinic aP  57.78  57.80 150.02  90.02  90.00  90.00  501002      a,b,c
+  -------------------------------------------------------------------------------------------------------------
+  usr+sys time: 2.06 seconds, ticks: 3148462, micro-seconds/tick: 0.654
 
 In this example we would continue processing (i.e. proceed to the refinement
-step, perhaps) with :samp:`bravais_setting_9.json`.
+step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
+necessary to reindex the :samp:`indexed.pickle` file output by dials.index.
+However, in this case as the change of basis operator to the chosen setting
+is the identity operator (:samp:`a,b,c`) this step is not needed::
+
+  dials.reindex indexed.pickle change_of_basis_op=a,b,c
+
+This outputs the file :samp:`reflections_reindexed.pickle` which should be
+used as input to downstream programs in place of :samp:`indexed.pickle`.
+
 
 Refinement
 ^^^^^^^^^^
@@ -621,7 +536,9 @@ step in here to allow e.g. scan varying refinement as here.
 
 ::
 
-  dials.refine scan_varying=true experiments.json indexed.pickle
+  dials.refine bravais_setting_9.json reflections_reindexed.pickle \
+  refinement.parameterisation.crystal.scan_varying=true \
+  refinement.reflections.use_all_reflections=true
 
 This one on the other hand would probably stand to be *more* verbose!
 
@@ -634,49 +551,63 @@ This one on the other hand would probably stand to be *more* verbose!
 Integration
 ^^^^^^^^^^^
 
-After the refinement is done the next steps are easier namely integration and
-exporting.
+After the refinement is done the next step is integration, which is performed
+by the program :samp:`dials.integrate`.
 
 ::
 
   dials.integrate refined_experiments.json indexed.pickle
 
+This program outputs a lot of information as integration progresses,
+concluding with a summary of the integration results.
+
 ::
 
-  Processed command line options............................................28.73s
-  Removed invalid coordinates, 4049 remaining................................0.09s
-  Configurating integrator from input parameters
-  Integrating reflections
-   Prediction type: Unknown prediction
-  Predicted 373210 reflections...............................................2.18s
-  Filtered 4049 reflections with zeta > 0.050000.............................0.00s
-  Calculated E.S.D Beam Divergence...........................................0.17s
-  Calculated E.S.D Reflecting Range..........................................0.15s
-  Sigma B: 0.022590
-  Sigma M: 0.080272
-  Calculated 373210 bounding boxes...........................................0.20s
-  Filtered 318756 reflections by detector mask...............................0.78s
-  Filtered 318479 reflections by zeta >= 0.05................................0.02s
-  Found 19 overlaps..........................................................0.09s
-  Extracted 318479 profiles from frames 0 -> 540............................92.79s
-  Extracted 318479 profiles from block 0.....................................6.73s
-  Masked foreground pixels for 318479 reflections...........................10.08s
-  Filtered 318479 reflections by detector mask...............................0.25s
-  Filtered 318479 reflections by zeta >= 0.05................................0.03s
-  Found nearest neighbours...................................................0.26s
-  Filtered 3857 matches by distance..........................................0.00s
-  Removed 0 duplicate match(es)..............................................0.00s
-  Calculated 318454 background values........................................4.06s
-  Calculated 318454 reflection centroids.....................................2.44s
-  Integrated 318454 reflections..............................................0.61s
-  Performed LP-correction on 318454 reflections.............................14.02s
+  Summary of integration results binned by resolution
+   ---------------------------------------------------------------------------------------
+   d min |  d max | # full | # part | # over | # ice | # sum | # prf | <I/sigI> | <I/sigI>
+         |        |        |        |        |       |       |       |    (sum) |    (prf)
+   ---------------------------------------------------------------------------------------
+    1.17 |   1.19 |    304 |      2 |      0 |     0 |   306 |   233 |      0.4 |      0.5
+    1.19 |   1.21 |   1063 |      5 |      0 |     0 |  1068 |   911 |      0.4 |      0.5
+    1.21 |   1.23 |   2265 |     13 |      0 |     0 |  2278 |  2061 |      0.5 |      0.6
+    1.23 |   1.26 |   3719 |     21 |      0 |     0 |  3740 |  3519 |      0.5 |      0.7
+    1.26 |   1.28 |   5346 |     29 |      0 |     0 |  5375 |  5080 |      0.6 |      0.8
+    1.28 |   1.31 |   7116 |     45 |      0 |     0 |  7161 |  6818 |      0.7 |      0.8
+    1.31 |   1.35 |   9374 |     58 |      0 |     0 |  9432 |  9044 |      0.8 |      1.0
+    1.35 |   1.38 |  12321 |     78 |      0 |     0 | 12399 | 11981 |      0.9 |      1.1
+    1.38 |   1.42 |  16781 |     94 |      0 |     0 | 16875 | 16329 |      1.0 |      1.2
+    1.42 |   1.47 |  19951 |    133 |      0 |     0 | 20084 | 19691 |      1.2 |      1.5
+    1.47 |   1.52 |  23395 |    193 |      0 |     0 | 23588 | 23218 |      1.5 |      1.8
+    1.52 |   1.58 |  23905 |    204 |      0 |     0 | 24109 | 23972 |      1.8 |      2.1
+    1.58 |   1.66 |  25334 |    210 |      0 |     0 | 25544 | 25436 |      2.2 |      2.6
+    1.66 |   1.74 |  24067 |    185 |      0 |     0 | 24252 | 24185 |      2.7 |      3.1
+    1.74 |   1.85 |  24607 |    189 |      0 |     0 | 24796 | 24750 |      3.5 |      4.0
+    1.85 |   2.00 |  25544 |    222 |      0 |     0 | 25766 | 25742 |      4.9 |      5.4
+    2.00 |   2.20 |  24539 |    205 |      0 |     0 | 24744 | 24734 |      6.6 |      7.2
+    2.20 |   2.52 |  25538 |    195 |      0 |     0 | 25733 | 25728 |      8.8 |      9.4
+    2.52 |   3.17 |  25050 |    236 |      0 |     0 | 25286 | 25283 |     12.7 |     13.3
+    3.17 | 151.26 |  25609 |    225 |      0 |     0 | 25834 | 25831 |     25.4 |     25.6
+   ---------------------------------------------------------------------------------------
 
-  Saved 318454 reflections to integrated.pickle..............................0.52s
+   Summary of integration results for the whole dataset
+   ----------------------------------------------
+   Number fully recorded                 | 370431
+   Number partially recorded             | 4294
+   Number with overloaded pixels         | 0
+   Number in powder rings                | 0
+   Number processed with summation       | 328370
+   Number processed with profile fitting | 324546
+   <I/sigI> (summation)                  | 5.6
+   <I/sigI> (profile fitting)            | 6.1
+   ----------------------------------------------
 
 Exporting as MTZ
 ^^^^^^^^^^^^^^^^
 
-Less to see here...
+The final step of dials processing is to export the integrated results to mtz
+format, suitable for input to downstream processing programs such as pointless_
+and aimless_.
 
 ::
 
@@ -686,513 +617,100 @@ And this is the output, showing the reflection file statistics.
 
 ::
 
+  The following parameters have been modified:
+
+  hklout = integrated.mtz
+  input {
+    experiments = refined_experiments.json
+    reflections = integrated.pickle
+  }
+
+  Removing 22782 reflections with negative variance
+  Removing 27509 profile reflections with negative variance
+  Removing 1963 incomplete reflections
   Title: from dials.export_mtz
-  Space group symbol from file: P1
-  Space group number from file: 1
-  Space group from matrices: P 1 (No. 1)
-  Point group symbol from file: 1
+  Space group symbol from file: P4
+  Space group number from file: 75
+  Space group from matrices: P 4 (No. 75)
+  Point group symbol from file: 4
   Number of batches: 540
   Number of crystals: 1
-  Number of Miller indices: 318454
-  Resolution range: 150.015 1.169
+  Number of Miller indices: 322471
+  Resolution range: 150.008 1.17004
   History:
   Crystal 1:
     Name: XTAL
     Project: DIALS
     Id: 1
-    Unit cell: (57.8091, 57.7715, 150.015, 90.0191, 89.9967, 89.99)
+    Unit cell: (57.7876, 57.7876, 150.008, 90, 90, 90)
     Number of datasets: 1
     Dataset 1:
       Name: FROMDIALS
       Id: 1
       Wavelength: 0.97625
-      Number of columns: 11
-      label        #valid  %valid     min     max type
-      H            318454 100.00%  -39.00   47.00 H: index h,k,l
-      K            318454 100.00%  -34.00   43.00 H: index h,k,l
-      L            318454 100.00% -114.00  114.00 H: index h,k,l
-      M_ISYM       318454 100.00%    1.00    1.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH        318454 100.00%    2.00  538.00 B: BATCH number
-      I            318454 100.00%  -14.55 3058.18 J: intensity
-      SIGI         318454 100.00%    0.00   55.58 Q: standard deviation
-      FRACTIONCALC 318454 100.00%    1.00    1.00 R: real
-      XDET         318454 100.00%    3.38 2458.38 R: real
-      YDET         318454 100.00%    2.97 2522.66 R: real
-      ROT          318454 100.00%   82.09  162.45 R: real
-
-Running the Individual Steps: Small Molecule
---------------------------------------------
-
-FIXME write this section too, and in each section detail the available
-parameters. Guess it would also be rather nice to write about the available
-parameters, and :samp:`dials.parameters`. For this example will process some
-small-molecule data (sugar) to really demonstrate how the command-line options
-work.
-
-Import
-^^^^^^
-
-The first stage of step-by-step DIALS processing is to import the data - all
-that happens here is that the image headers are read, and a file describing
-their contents (:samp:`datablock.json`) is written. It's worth noting that if
-this file is changed subsequent processing (even with :samp:`dials.process`) can
-use this.
-
-::
-
-  dials.import ~/data/sugar/15_n_120K_1_00*cbf
-
-The output just describes what the software understands of the images it was
-passed - not very interesting but useful to make sure it all makes sense.
-
-::
-
-  --------------------------------------------------------------------------------
-  DataBlock 0
-    format: <class 'dxtbx.format.FormatCBFFullPilatus.FormatCBFFullPilatus'>
-    num images: 645
-    num sweeps: 1
-    num stills: 0
-  --------------------------------------------------------------------------------
-  Writing datablocks to datablock.json
-
-Find Spots
-^^^^^^^^^^
-
-The first "real" task in any DIALS processing will be the spot finding - while
-there are plenty of options the defaults often seem to do sensible things.
-
-::
-
-  dials.find_spots datablock.json
-
-This will just report the nubmer of spots found - guess we could probably write
-some more interesting output.
-
-::
-
-  Configuring spot finder from input parameters
-  --------------------------------------------------------------------------------
-  Finding strong spots in imageset 0
-  --------------------------------------------------------------------------------
-
-  Finding spots in image 0 to 645...
-  Extracted strong pixels from images.......................................24.35s
-  Merged 8 pixel lists with 34901 pixels.....................................0.00s
-  Extracted 6951 spots.......................................................0.09s
-  Calculated 6951 spot centroids.............................................0.09s
-  Calculated 6951 spot intensities...........................................0.01s
-  Filtered 1448 spots by number of pixels....................................0.00s
-  Filtered 1374 spots by peak-centroid distance..............................0.00s
-
-  --------------------------------------------------------------------------------
-  Saved 1374 reflections to strong.pickle....................................0.01s
-  Total time:  26.5041749477
-
-Indexing
-^^^^^^^^
-
-Here we will use a bunch more options to properly index the data, as the unit
-cell from sucrose is very small! Method of fft1d corresponds to the 1D FFT
-indexing rather than the 3D FFT default, the grid spacing clues just determine
-how the indexing is done. N.B. the defaults are configured for macromolecular
-crystallography.
-
-::
-
-  dials.index method=fft1d reciprocal_space_grid.d_min=1
-    refinement_protocol.d_min_start=1 datablock.json strong.pickle max_cell=20
-
-The output for this is rather verbose: FIXME perhaps I should abbreviate it
-some?
-
-::
-
-  reference {
-    detector = None
-    beam = None
-  }
-  discover_better_experimental_model = False
-  min_cell = 20
-  max_cell = 20
-  reciprocal_space_grid {
-    n_points = 256
-    d_min = 1
-  }
-  sigma_phi_deg = None
-  b_iso = 200
-  rmsd_cutoff = 15
-  scan_range = None
-  known_symmetry {
-    space_group = None
-    unit_cell = None
-    relative_length_tolerance = 0.1
-    absolute_angle_tolerance = 10
-  }
-  optimise_initial_basis_vectors = False
-  debug = False
-  debug_plots = False
-  show_timing = False
-  refinement {
-    parameterisation {
-      beam {
-        fix = all *in_spindle_plane out_spindle_plane
-        fix_list = None
-      }
-      crystal {
-        fix = all cell orientation
-        cell_fix_list = None
-        orientation_fix_list = None
-        scan_varying = False
-        num_intervals = *fixed_width absolute
-        interval_width_degrees = 36.0
-        absolute_num_intervals = 5
-      }
-      detector {
-        panels = *automatic single multiple hierarchical
-        hierarchy_level = 0
-        fix = all position orientation
-        fix_list = None
-      }
-    }
-    refinery {
-      engine = SimpleLBFGS LBFGScurvs GaussNewtonIterations *LevMarIterations
-      track_step = False
-      track_gradient = False
-      track_parameter_correlation = False
-      log = None
-      max_iterations = None
-    }
-    target {
-      rmsd_cutoff = *fraction_of_bin_size absolute
-      bin_size_fraction = 0.33333
-      absolute_cutoffs = None
-    }
-    reflections {
-      reflections_per_degree = 50
-      minimum_sample_size = 1000
-      maximum_number_of_reflections = None
-      use_all_reflections = False
-      random_seed = 42
-      minimum_number_of_reflections = 20
-      close_to_spindle_cutoff = 0.1
-      do_outlier_rejection = False
-      iqr_multiplier = 1.5
-    }
-  }
-  refinement_protocol {
-    weight_outlier_n_sigma = 5
-    n_macro_cycles = 3
-    d_min_step = 1.0
-    d_min_start = 1
-    d_min_final = None
-    verbosity = 1
-    outlier_rejection {
-      maximum_spot_error = None
-      hkl_tolerance = 0.3
-    }
-  }
-  method = fft3d *fft1d real_space_grid_search
-  multiple_lattice_search {
-    cluster_analysis_search = False
-    recycle_unindexed_reflections = False
-    recycle_unindexed_reflections_cutoff = 0.1
-    max_lattices = None
-    cluster_analysis {
-      method = *dbscan hcluster
-      hcluster {
-        linkage {
-          method = *ward
-          metric = *euclidean
-        }
-        cutoff = 15
-        cutoff_criterion = *distance inconsistent
-      }
-      dbscan {
-        eps = 0.05
-        min_samples = 30
-      }
-      min_cluster_size = 20
-      intersection_union_ratio_cutoff = 0.4
-    }
-  }
-  Detector:
-  Panel:
-    pixel_size:{0.172,0.172}
-    image_size: {487,619}
-    trusted_range: {-1,243592}
-    fast_axis: {1,0,0}
-    slow_axis: {0,-0.866025,-0.5}
-    origin: {-41.05,87.8104,-47.4522}
-
-  Scan:
-      image range:   {1,645}
-      oscillation:   {-92,0.2}
-
-  Goniometer:
-      Rotation axis:  {1,-3.17778e-14,1.59583e-14}
-      Fixed rotation: {0.661179,0.0297045,0.74964,-0.284305,-0.914768,0.287003,0.694272,-0.402887,-0.59638}
-
-  Beam:
-      wavelength: 0.6889
-      sample to source direction : {0,0,1}
-      divergence: 0
-      sigma divergence: 0
-      polarization normal: {0,1,0}
-      polarization fraction: 0.8
-
-  model 1 (136 reflections):
-  Crystal:
-      Unit cell: (7.493, 8.354, 10.337, 89.635, 77.719, 88.128)
-      Space group: P 1
-      U matrix:  {{ 0.5248, -0.3912,  0.7560},
-                  {-0.2594, -0.9194, -0.2956},
-                  { 0.8107, -0.0410, -0.5840}}
-      B matrix:  {{ 0.1335,  0.0000,  0.0000},
-                  {-0.0044,  0.1198,  0.0000},
-                  {-0.0291,  0.0001,  0.0990}}
-      A = UB:    {{ 0.0498, -0.0468,  0.0749},
-                  {-0.0220, -0.1101, -0.0293},
-                  { 0.1254, -0.0050, -0.0578}}
-
-
-  801 unindexed reflections
-
-  ################################################################################
-  Starting refinement (macro-cycle 1)
-  ################################################################################
-
-
-  Running refinement
-  ------------------
-  0 1 2 3 4 5 6 7 8 9 10 11
-
-  Refinement steps
-  ----------------
-  Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 132 47422 0.4368 1.9379 0.024119
-  1 132 6910.7 0.36193 0.3461 0.01491
-  2 132 5063.1 0.34305 0.33002 0.012053
-  3 132 3846.4 0.32599 0.32141 0.009753
-  4 132 3396 0.31899 0.32687 0.0086288
-  5 132 3313.8 0.31916 0.3268 0.0084046
-  6 132 3293.2 0.32082 0.32416 0.0083628
-  7 132 3270.3 0.32025 0.32331 0.008318
-  8 132 3251.2 0.31897 0.32334 0.0082794
-  9 132 3246.1 0.31816 0.32369 0.0082696
-  10 132 3245.8 0.31794 0.32383 0.0082692
-  11 132 3245.8 0.31792 0.32384 0.0082692
-  RMSD no longer decreasing
-  Increasing resolution to 0.0 Angstrom
-  model 1 (1034 reflections):
-  Crystal:
-      Unit cell: (7.653, 8.586, 10.666, 89.631, 77.289, 89.852)
-      Space group: P 1
-      U matrix:  {{ 0.5443, -0.3908,  0.7423},
-                  {-0.2534, -0.9201, -0.2986},
-                  { 0.7997, -0.0255, -0.5999}}
-      B matrix:  {{ 0.1307,  0.0000,  0.0000},
-                  {-0.0003,  0.1165,  0.0000},
-                  {-0.0295, -0.0007,  0.0961}}
-      A = UB:    {{ 0.0494, -0.0460,  0.0713},
-                  {-0.0240, -0.1070, -0.0287},
-                  { 0.1222, -0.0026, -0.0577}}
-
-
-  62 unindexed reflections
-
-  ################################################################################
-  Starting refinement (macro-cycle 2)
-  ################################################################################
-
-
-  Running refinement
-  ------------------
-  0 1 2 3 4 5 6 7 8 9 10
-
-  Refinement steps
-  ----------------
-  Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 1027 50906 0.46797 0.43965 0.011741
-  1 1027 31234 0.30073 0.31112 0.010643
-  2 1027 27298 0.25668 0.27272 0.010466
-  3 1027 23548 0.2175 0.21235 0.010339
-  4 1027 21868 0.20436 0.17651 0.010241
-  5 1027 21595 0.20583 0.17004 0.010195
-  6 1027 21456 0.2056 0.16845 0.010167
-  7 1027 21368 0.20484 0.16744 0.010154
-  8 1027 21353 0.20449 0.16708 0.010154
-  9 1027 21352 0.20442 0.16702 0.010155
-  10 1027 21352 0.20442 0.16701 0.010155
-  RMSD no longer decreasing
-  Final refined crystal models:
-  model 1 (1034 reflections):
-  Crystal:
-      Unit cell: (7.743, 8.707, 10.817, 90.180, 76.968, 90.281)
-      Space group: P 1
-      U matrix:  {{ 0.5416, -0.3876,  0.7460},
-                  {-0.2449, -0.9216, -0.3011},
-                  { 0.8042, -0.0196, -0.5940}}
-      B matrix:  {{ 0.1291,  0.0000,  0.0000},
-                  { 0.0006,  0.1148,  0.0000},
-                  {-0.0299,  0.0002,  0.0949}}
-      A = UB:    {{ 0.0474, -0.0443,  0.0708},
-                  {-0.0232, -0.1059, -0.0286},
-                  { 0.1216, -0.0024, -0.0564}}
-
-  usr+sys time: 20.34 seconds, ticks: 99507393, micro-seconds/tick: 0.204
-  wall clock time: 20.48 seconds
-
-Refinement
-^^^^^^^^^^
-
-Although the model is already refined in indexing we can also add a refineent
-step in here to allow e.g. scan varying refinement (though with this data we are
-unlikely to really have enough measurements to do this!)
-
-::
-
-  dials.refine experiments.json indexed.pickle
-
-This one on the other hand would probably stand to be *more* verbose!
-
-::
-
-  Configuring refiner
-  Performing refinement
-  Saving refined experiments to refined_experiments.json
-
-Integration
-^^^^^^^^^^^
-
-After refinement is complete integration may proceed - though in this example it
-failed so this is not a great example!
-
-::
-
-  %%%FIXME make command line right!
-
-  dials.integrate refined_experiments.json
-
-  FIXME ADD IN HERE RESULTS
-
-Exporting as MTZ
-^^^^^^^^^^^^^^^^
-
-::
-
-  FIXME ADD IN HERE EXPORT STUFF
+      Number of columns: 14
+      label        #valid  %valid    min     max type
+      H            322471 100.00%   0.00   47.00 H: index h,k,l
+      K            322471 100.00%   0.00   46.00 H: index h,k,l
+      L            322471 100.00%   0.00  114.00 H: index h,k,l
+      M_ISYM       322471 100.00%   1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
+      BATCH        322471 100.00%   2.00  539.00 B: BATCH number
+      IPR          322471 100.00%  -2.51 2938.60 J: intensity
+      SIGIPR       322471 100.00%   0.05   54.24 Q: standard deviation
+      I            322471 100.00% -24.60 3059.63 J: intensity
+      SIGI         322471 100.00%   0.09   55.45 Q: standard deviation
+      FRACTIONCALC 322471 100.00%   1.00    1.00 R: real
+      XDET         322471 100.00%   6.41 2456.14 R: real
+      YDET         322471 100.00%   5.70 2520.45 R: real
+      ROT          322471 100.00%  82.00  162.70 R: real
+      LP           322471 100.00%   0.00    0.76 R: real
 
 What to do Next
 ---------------
 
-The output MTZ file :samp:`integrated.mtz` may be read by pointless which will
-assign the correct symmetry and so on, and may then be scaled with aimless. I
-have been running:
+The following demonstrates how to take the output of dials processing and
+continue with downstream analysis using pointless_ to sort the data and assign
+the correct symmetry, followed by scaling with aimless_ and intensity analysis
+using ctruncate_::
 
-::
-
-  pointless hklin integrated.mtz hklout sorted.mtz
-  aimless hklin sorted.mtz hklout scaled.mtz
+  pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
+  aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << eof
+  resolution 1.3
+  anomalous off
+  eof
+  ctruncate -hklin scaled.mtz -hklout truncated.mtz \
+  -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
 
 to get merged data for downstream analysis. The output from this will include
 the merging statistics which will give some idea of the data quality. Often
 passing in a sensible resolution limit to aimless is also helpful... this should
-give you something like:
-
-::
+give you something like::
 
   Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
 
                                              Overall  InnerShell  OuterShell
-  Low resolution limit                      149.83    149.83      1.53
-  High resolution limit                       1.50      8.22      1.50
+  Low resolution limit                      150.01    150.01      1.32
+  High resolution limit                       1.30      7.12      1.30
 
-  Rmerge  (within I+/I-)                     0.074     0.027     0.246
-  Rmerge  (all I+ and I-)                    0.082     0.029     0.287
-  Rmeas (within I+/I-)                       0.090     0.034     0.301
-  Rmeas (all I+ & I-)                        0.091     0.035     0.316
-  Rpim (within I+/I-)                        0.051     0.020     0.171
-  Rpim (all I+ & I-)                         0.038     0.017     0.132
-  Rmerge in top intensity bin                0.028        -         -
-  Total number of observations              229869      1388     11411
-  Total number unique                        41559       333      2036
-  Mean((I)/sd(I))                             17.9      37.7       6.5
-  Mn(I) half-set correlation CC(1/2)         0.998     0.982     0.840
-  Completeness                               100.0      99.7      99.9
-  Multiplicity                                 5.5       4.2       5.6
+  Rmerge  (within I+/I-)                     0.064     0.024     0.405
+  Rmerge  (all I+ and I-)                    0.072     0.026     0.474
+  Rmeas (within I+/I-)                       0.079     0.030     0.559
+  Rmeas (all I+ & I-)                        0.080     0.030     0.593
+  Rpim (within I+/I-)                        0.045     0.017     0.384
+  Rpim (all I+ & I-)                         0.034     0.014     0.349
+  Rmerge in top intensity bin                0.029        -         -
+  Total number of observations              307413      2248      5428
+  Total number unique                        62326       499      2461
+  Mean((I)/sd(I))                             10.8      26.6       1.5
+  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.707
+  Completeness                                98.2      99.8      79.6
+  Multiplicity                                 4.9       4.5       2.2
 
-  Anomalous completeness                      99.5     100.0      99.9
-  Anomalous multiplicity                       2.8       2.8       2.8
-  DelAnom correlation between half-sets     -0.002     0.124    -0.001
-  Mid-Slope of Anom Normal Probability       0.972       -         -
+  Anomalous completeness                      92.2     100.0      47.2
+  Anomalous multiplicity                       2.4       3.0       1.5
+  DelAnom correlation between half-sets      0.001     0.346    -0.042
+  Mid-Slope of Anom Normal Probability       0.944       -         -
 
-Error Messages and How to Resolve Them
---------------------------------------
-
-Error 1
-^^^^^^^
-
-::
-
-  Graemes-MacBook-Pro:demo graeme$ dials.integrate \
-  ../sum/refined_experiments.json \
-  ../sum/indexed.pickle ../sum/extracted.tar shoebox.n_blocks=36
-  Processed command line options............................................35.40s
-  --------------------------------------------------------------------------------
-  The following command line arguments weren't handled
-    ../sum/refined_experiments.json
-  Error: no experiment list specified
-
-This cryptic error means that the image disk is not available (so plug that USB
-disk back in.) I would assume that somewhere in the constructor for the
-experiment list from a json file it checks to see if the path referred to is
-there and fails if not. N.B. here we have already extracted shoeboxes so images
-should not be needed anyway.
-
-Recipes
--------
-
-Processing
-^^^^^^^^^^
-
-Playing some with DIALS integration arrived at this recipe, as of 2014-04-01,
-which seems to do a good job of processing nice synchrotron / Pilatus 6M data
-without any artefacts.
-
-First set up the data block:
-
-::
-
-  find /Volumes/GraemeData/data/i04-inhouse/PNAS/P3_X5 -name \
-    'PNAS_M3S5_1_*cbf' | dials.import -i
-
-Then process this data - this is one recipe which uses the 3D reciprocal space
-profile fitting, with the general background determination with no rejection of
-pixel outliers in the background.
-
-::
-
-  dials.process intensity.algorithm=fitrs outlier.algorithm=null \
-    shoebox.n_blocks=36 datablock.json
-
-Analysis
-^^^^^^^^
-
-::
-
-  pointless hklin integrated.mtz hklout sorted.mtz
-  aimless hklin sorted.mtz hklout scaled.mtz <<
-  resolution 1.2
-  eof
-  ctruncate -hklin scaled.mtz -hklout truncated.mtz \
-  -colin '/*/*/[IMEAN,SIGIMEAN]'
-
-Piping the last of these into a log file allows the log information to be viewed
-with the CCP4i tool loggraph, e.g.:
-
-.. figure:: figures/E4.png
-    :width: 484px
-    :align: center
-    :height: 685px
-    :alt: figures/E4.png not found
+.. _pointless: http://www.ccp4.ac.uk/html/pointless.html
+.. _aimless: http://www.ccp4.ac.uk/html/aimless.html
+.. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html
