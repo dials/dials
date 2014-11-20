@@ -47,11 +47,11 @@ At the start you will see:
 
   ********************************************************************************
 
-                         mmmm   mmmmm    mm   m       mmmm            
-                         #   "m   #      ##   #      #"   "           
-                        m#mm  #   #     #  #  #      "#mmm            
-                         #    #   #     #mm#  #          "#           
-                         #mmm"  mm#mm  #    # #mmmmm "mmm#"           
+                         mmmm   mmmmm    mm   m       mmmm
+                         #   "m   #      ##   #      #"   "
+                        m#mm  #   #     #  #  #      "#mmm
+                         #    #   #     #mm#  #          "#
+                         #mmm"  mm#mm  #    # #mmmmm "mmm#"
 
   Launching dials.process
 
@@ -136,17 +136,17 @@ achieve an increasingly accurate result:
   Refinement steps
   ----------------
   Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 4049 1049.9 0.047277 0.03654 0.00026327 
-  1 4049 929.44 0.043631 0.03471 0.00027018 
-  2 4049 922.78 0.043567 0.034537 0.00026713 
-  3 4049 913.33 0.043471 0.034256 0.00026399 
-  4 4049 901.65 0.043308 0.033923 0.00026122 
-  5 4049 890.14 0.043155 0.033532 0.00025993 
-  6 4049 882.6 0.043147 0.033145 0.0002593 
-  7 4049 879.67 0.04323 0.032888 0.00025882 
-  8 4049 879.32 0.043279 0.032808 0.00025867 
-  9 4049 879.31 0.043288 0.032797 0.00025865 
-  10 4049 879.31 0.043288 0.032796 0.00025865 
+  0 4049 1049.9 0.047277 0.03654 0.00026327
+  1 4049 929.44 0.043631 0.03471 0.00027018
+  2 4049 922.78 0.043567 0.034537 0.00026713
+  3 4049 913.33 0.043471 0.034256 0.00026399
+  4 4049 901.65 0.043308 0.033923 0.00026122
+  5 4049 890.14 0.043155 0.033532 0.00025993
+  6 4049 882.6 0.043147 0.033145 0.0002593
+  7 4049 879.67 0.04323 0.032888 0.00025882
+  8 4049 879.32 0.043279 0.032808 0.00025867
+  9 4049 879.31 0.043288 0.032797 0.00025865
+  10 4049 879.31 0.043288 0.032796 0.00025865
   RMSD no longer decreasing
   Final refined crystal models:
   model 1 (48411 reflections):
@@ -290,7 +290,7 @@ there are plenty of options the defaults often seem to do sensible things.
 
 ::
 
-  dials.find_spots datablock.json 
+  dials.find_spots datablock.json
 
 This will just report the number of spots found - guess we could probably write
 some more interesting output.
@@ -313,7 +313,7 @@ some more interesting output.
 
   --------------------------------------------------------------------------------
   Saved 57769 reflections to strong.pickle...................................0.25s
-  Total time:  142.911371946 
+  Total time:  142.911371946
 
 Indexing
 ^^^^^^^^
@@ -492,17 +492,17 @@ some?
   Refinement steps
   ----------------
   Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 4049 51016 0.27078 0.16307 0.0044847 
-  1 4049 3016.4 0.045314 0.047339 0.0012501 
-  2 4049 1792.4 0.04019 0.044352 0.00083054 
-  3 4049 1063.7 0.03583 0.039659 0.00049001 
-  4 4049 764.91 0.033407 0.035648 0.00030911 
-  5 4049 659.78 0.032163 0.033601 0.0002411 
-  6 4049 599.7 0.030626 0.032161 0.00022696 
-  7 4049 567.81 0.029447 0.031492 0.00022524 
-  8 4049 562.25 0.029137 0.031465 0.00022505 
-  9 4049 562.06 0.029102 0.031486 0.00022503 
-  10 4049 562.06 0.0291 0.031488 0.00022503 
+  0 4049 51016 0.27078 0.16307 0.0044847
+  1 4049 3016.4 0.045314 0.047339 0.0012501
+  2 4049 1792.4 0.04019 0.044352 0.00083054
+  3 4049 1063.7 0.03583 0.039659 0.00049001
+  4 4049 764.91 0.033407 0.035648 0.00030911
+  5 4049 659.78 0.032163 0.033601 0.0002411
+  6 4049 599.7 0.030626 0.032161 0.00022696
+  7 4049 567.81 0.029447 0.031492 0.00022524
+  8 4049 562.25 0.029137 0.031465 0.00022505
+  9 4049 562.06 0.029102 0.031486 0.00022503
+  10 4049 562.06 0.0291 0.031488 0.00022503
   RMSD no longer decreasing
   Increasing resolution to 3.0 Angstrom
   model 1 (21107 reflections):
@@ -534,17 +534,17 @@ some?
   Refinement steps
   ----------------
   Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 4049 807.18 0.039784 0.033706 0.00023487 
-  1 4049 739.92 0.037853 0.032236 0.000235 
-  2 4049 728.35 0.037744 0.031751 0.00023342 
-  3 4049 716.58 0.037597 0.031279 0.00023229 
-  4 4049 706.91 0.037376 0.030994 0.00023169 
-  5 4049 693.89 0.036994 0.0307 0.00023113 
-  6 4049 680.36 0.036553 0.030422 0.00023104 
-  7 4049 673.72 0.036288 0.030335 0.00023115 
-  8 4049 672.74 0.036213 0.03036 0.00023131 
-  9 4049 672.71 0.036204 0.030368 0.00023135 
-  10 4049 672.71 0.036204 0.030369 0.00023136 
+  0 4049 807.18 0.039784 0.033706 0.00023487
+  1 4049 739.92 0.037853 0.032236 0.000235
+  2 4049 728.35 0.037744 0.031751 0.00023342
+  3 4049 716.58 0.037597 0.031279 0.00023229
+  4 4049 706.91 0.037376 0.030994 0.00023169
+  5 4049 693.89 0.036994 0.0307 0.00023113
+  6 4049 680.36 0.036553 0.030422 0.00023104
+  7 4049 673.72 0.036288 0.030335 0.00023115
+  8 4049 672.74 0.036213 0.03036 0.00023131
+  9 4049 672.71 0.036204 0.030368 0.00023135
+  10 4049 672.71 0.036204 0.030369 0.00023136
   RMSD no longer decreasing
   Increasing resolution to 2.0 Angstrom
   model 1 (48411 reflections):
@@ -587,8 +587,8 @@ autoindexing and run refinement with all of the possible Bravais lattices
 applied - after which you may select the preferred solution.
 
 ::
-  
-  dials.refine_bravais_settings experiments.json indexed.pickle 
+
+  dials.refine_bravais_settings experiments.json indexed.pickle
 
 gives lots of output followed by...
 
@@ -638,8 +638,8 @@ After the refinement is done the next steps are easier namely integration and
 exporting.
 
 ::
-  
-  dials.integrate refined_experiments.json indexed.pickle 
+
+  dials.integrate refined_experiments.json indexed.pickle
 
 ::
 
@@ -680,7 +680,7 @@ Less to see here...
 
 ::
 
-  dials.export_mtz integrated.pickle refined_experiments.json integrated.mtz
+  dials.export_mtz integrated.pickle refined_experiments.json hklout=integrated.mtz
 
 And this is the output, showing the reflection file statistics.
 
@@ -740,7 +740,7 @@ use this.
 
 ::
 
-  dials.import ~/data/sugar/15_n_120K_1_00*cbf 
+  dials.import ~/data/sugar/15_n_120K_1_00*cbf
 
 The output just describes what the software understands of the images it was
 passed - not very interesting but useful to make sure it all makes sense.
@@ -764,7 +764,7 @@ there are plenty of options the defaults often seem to do sensible things.
 
 ::
 
-  dials.find_spots datablock.json 
+  dials.find_spots datablock.json
 
 This will just report the nubmer of spots found - guess we could probably write
 some more interesting output.
@@ -970,18 +970,18 @@ some?
   Refinement steps
   ----------------
   Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 132 47422 0.4368 1.9379 0.024119 
-  1 132 6910.7 0.36193 0.3461 0.01491 
-  2 132 5063.1 0.34305 0.33002 0.012053 
-  3 132 3846.4 0.32599 0.32141 0.009753 
-  4 132 3396 0.31899 0.32687 0.0086288 
-  5 132 3313.8 0.31916 0.3268 0.0084046 
-  6 132 3293.2 0.32082 0.32416 0.0083628 
-  7 132 3270.3 0.32025 0.32331 0.008318 
-  8 132 3251.2 0.31897 0.32334 0.0082794 
-  9 132 3246.1 0.31816 0.32369 0.0082696 
-  10 132 3245.8 0.31794 0.32383 0.0082692 
-  11 132 3245.8 0.31792 0.32384 0.0082692 
+  0 132 47422 0.4368 1.9379 0.024119
+  1 132 6910.7 0.36193 0.3461 0.01491
+  2 132 5063.1 0.34305 0.33002 0.012053
+  3 132 3846.4 0.32599 0.32141 0.009753
+  4 132 3396 0.31899 0.32687 0.0086288
+  5 132 3313.8 0.31916 0.3268 0.0084046
+  6 132 3293.2 0.32082 0.32416 0.0083628
+  7 132 3270.3 0.32025 0.32331 0.008318
+  8 132 3251.2 0.31897 0.32334 0.0082794
+  9 132 3246.1 0.31816 0.32369 0.0082696
+  10 132 3245.8 0.31794 0.32383 0.0082692
+  11 132 3245.8 0.31792 0.32384 0.0082692
   RMSD no longer decreasing
   Increasing resolution to 0.0 Angstrom
   model 1 (1034 reflections):
@@ -1013,17 +1013,17 @@ some?
   Refinement steps
   ----------------
   Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
-  0 1027 50906 0.46797 0.43965 0.011741 
-  1 1027 31234 0.30073 0.31112 0.010643 
-  2 1027 27298 0.25668 0.27272 0.010466 
-  3 1027 23548 0.2175 0.21235 0.010339 
-  4 1027 21868 0.20436 0.17651 0.010241 
-  5 1027 21595 0.20583 0.17004 0.010195 
-  6 1027 21456 0.2056 0.16845 0.010167 
-  7 1027 21368 0.20484 0.16744 0.010154 
-  8 1027 21353 0.20449 0.16708 0.010154 
-  9 1027 21352 0.20442 0.16702 0.010155 
-  10 1027 21352 0.20442 0.16701 0.010155 
+  0 1027 50906 0.46797 0.43965 0.011741
+  1 1027 31234 0.30073 0.31112 0.010643
+  2 1027 27298 0.25668 0.27272 0.010466
+  3 1027 23548 0.2175 0.21235 0.010339
+  4 1027 21868 0.20436 0.17651 0.010241
+  5 1027 21595 0.20583 0.17004 0.010195
+  6 1027 21456 0.2056 0.16845 0.010167
+  7 1027 21368 0.20484 0.16744 0.010154
+  8 1027 21353 0.20449 0.16708 0.010154
+  9 1027 21352 0.20442 0.16702 0.010155
+  10 1027 21352 0.20442 0.16701 0.010155
   RMSD no longer decreasing
   Final refined crystal models:
   model 1 (1034 reflections):
@@ -1069,10 +1069,10 @@ After refinement is complete integration may proceed - though in this example it
 failed so this is not a great example!
 
 ::
-  
+
   %%%FIXME make command line right!
 
-  dials.integrate refined_experiments.json 
+  dials.integrate refined_experiments.json
 
   FIXME ADD IN HERE RESULTS
 
@@ -1080,7 +1080,7 @@ Exporting as MTZ
 ^^^^^^^^^^^^^^^^
 
 ::
-  
+
   FIXME ADD IN HERE EXPORT STUFF
 
 What to do Next
@@ -1114,7 +1114,7 @@ give you something like:
   Rmeas (all I+ & I-)                        0.091     0.035     0.316
   Rpim (within I+/I-)                        0.051     0.020     0.171
   Rpim (all I+ & I-)                         0.038     0.017     0.132
-  Rmerge in top intensity bin                0.028        -         - 
+  Rmerge in top intensity bin                0.028        -         -
   Total number of observations              229869      1388     11411
   Total number unique                        41559       333      2036
   Mean((I)/sd(I))                             17.9      37.7       6.5
@@ -1125,7 +1125,7 @@ give you something like:
   Anomalous completeness                      99.5     100.0      99.9
   Anomalous multiplicity                       2.8       2.8       2.8
   DelAnom correlation between half-sets     -0.002     0.124    -0.001
-  Mid-Slope of Anom Normal Probability       0.972       -         -  
+  Mid-Slope of Anom Normal Probability       0.972       -         -
 
 Error Messages and How to Resolve Them
 --------------------------------------
