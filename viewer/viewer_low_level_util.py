@@ -25,14 +25,14 @@ class flex_3d_frame(wx.Frame):
 
 
   def frame_ini_img(self, in_upper_panel):
-    self.my_panel = in_upper_panel
+    self.img_panel = in_upper_panel
 
     self.data_txt_01 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
     self.data_txt_01.SetLabel(" No (x, y, z) Data")
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
 
-    self.my_sizer.Add(self.my_panel, proportion = 1,
+    self.my_sizer.Add(self.img_panel, proportion = 1,
                       flag =  wx.EXPAND | wx.ALL, border = 3)
     self.my_sizer.Add(self.data_txt_01, proportion = 0,
                       flag =  wx.ALIGN_LEFT, border = 3)
@@ -103,15 +103,15 @@ class flex_arr_img_panel(wx.Panel):
       for ntimes in range(int(math.fabs(rot_sn))):
         self.scale = self.scale * 1.05
         if( self.scale > 3.0 ):
+          #Maximum possible zoom reached
           self.scale = 3.0
-          print "Maximum possible zoom reached "
 
     elif( rot_sn < 0):
       for ntimes in range(int(math.fabs(rot_sn))):
         self.scale = self.scale * 0.95
         if( self.scale < 0.2 ):
+          #Minimum possible zoom reached
           self.scale = 0.2
-          print "Minimum possible zoom reached"
 
     self.bmp_lst = self._mi_list_of_wxbitmaps(re_scaling = True)
     self.panel_02.img_refresh(self.bmp_lst)
@@ -128,9 +128,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.SetupScrolling()
     self.scroll_rot = 0
     self.SetBackgroundColour(wx.Colour(200,200,200))
-
     aprox_len_pix = len(self.lst_2d_bmp) * 10
-    #print "aprox_len_pix =", aprox_len_pix
     self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
 
 
@@ -227,8 +225,10 @@ class buttons_panel(wx.Panel):
 
 
   def OnItsCheckbox(self, event):
+    debugg_screen_log = '''
     print "OnItsCheckbox"
     print "event.IsChecked() =", event.IsChecked()
+    '''
     if(event.IsChecked() == True):
       self.parent_panel.to_show_nums()
     else:
@@ -236,8 +236,10 @@ class buttons_panel(wx.Panel):
 
 
   def OnMskCheckbox(self, event):
+    debugg_screen_log = '''
     print "OnMskCheckbox"
     print "event.IsChecked() =", event.IsChecked()
+    '''
     if(event.IsChecked() == True):
       self.parent_panel.to_show_mask()
     else:

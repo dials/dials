@@ -26,25 +26,23 @@ class wxbitmap_convert(object):
 
     if( data_in_n2 == None ):
       self.lst_3d_mask = None
-      print "No double list given"
+      #No double list given
 
       if type(data_in_n1) is list:
-        print "is a single list"
+        #is a single list
         self.lst_3d_data = []
         for lst_memb in data_in_n1:
           self.lst_3d_data.append(lst_memb.as_numpy_array())
 
       else:
-        print "Got flex array"
+        #Got flex array
         self.lst_3d_data = []
         self.lst_3d_data.append(data_in_n1.as_numpy_array())
 
-
     else:
-
-      print "Got two arguments"
+      #Got two arguments
       if( type(data_in_n1) is list and type(data_in_n2) is list):
-        print "Got two lists"
+        #Got two lists
         if( len(data_in_n1) == len(data_in_n2) ):
           self.lst_3d_data = []
           self.lst_3d_mask = []
@@ -55,43 +53,35 @@ class wxbitmap_convert(object):
             self.lst_3d_mask.append(lst_memb2.as_numpy_array())
 
         else:
+          # might be a good idea to raise a runtime error here
           print "the two lists do NOT have the same size"
 
       elif( type(data_in_n1) is not list and type(data_in_n2) is not list ):
-        print "Got two blocks"
+        #Got two blocks
         self.lst_3d_data = []
         self.lst_3d_mask = []
         self.lst_3d_data.append(data_in_n1.as_numpy_array())
-
-        self.lst_3d_mask.append(  data_in_n2.as_numpy_array() )
-
-        old_testing_stuff = '''
-        print "nump_arr =", nump_arr
-        zmax = nump_arr.shape[0]
-        xmax = nump_arr.shape[1]
-        ymax = nump_arr.shape[2]
-        print "xmax, ymax, zmax =", xmax, ymax, zmax
-        print "len(nump_arr) =", len(nump_arr)
-        nump_3d = np.zeros( (zmax, xmax, ymax), 'int')
-
-        nump_3d[:,:,:] = nump_arr[:,:,:]
-        self.lst_3d_mask.append(  nump_3d )
-        '''
+        self.lst_3d_mask.append(data_in_n2.as_numpy_array())
 
       else:
+        # might be a good idea to raise a runtime error here
         print "Got mixture of different type of data"
 
 
   def get_np(self):
+    #returning numpy arrays in the rare case where they might be needed
     return self.lst_3d_data
 
 
+
   def get_wxbitmap_lst(self, show_nums = True, scale = 1.0):
+    #returning wxbitmaps needed to be shown
     self.local_bmp = wxbmp_from_np_array(self.lst_3d_data, show_nums, self.lst_3d_mask)
     return self.scaling(scale)
 
 
   def scaling(self, scale = 1.0):
+    #scaling the list of wxbitmap to be shown
     lst_img = self.local_bmp.bmp_lst_scaled(scale)
 
 
