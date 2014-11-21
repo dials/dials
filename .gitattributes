@@ -512,6 +512,7 @@ scratch/dgw/detector_model_old/detector.py -text
 scratch/dgw/enter_interactive_session.py -text
 scratch/dgw/goniometer_model/__init__.py -text
 scratch/dgw/goniometer_model/gonio.py -text
+scratch/dgw/plot_detector_shifts.py -text
 scratch/dgw/prediction/README -text
 scratch/dgw/prediction/__init__.py -text
 scratch/dgw/prediction/obsolete_predictors.py -text
