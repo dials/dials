@@ -768,7 +768,7 @@ namespace dials { namespace algorithms {
           cv_mask_[i] = cv_[i] > bnd_b;
           global_mask_[i] = image[i] > threshold;
           value_mask_[i] = image[i] > bnd_s;
-          final_mask_[i] = cv_mask_[i] && value_mask_[i];
+          final_mask_[i] = cv_mask_[i] && value_mask_[i] & global_mask_[i];
         }
       }
     }
