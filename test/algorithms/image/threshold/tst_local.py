@@ -77,7 +77,7 @@ class Test:
     nsig_b = 3
     nsig_s = 3
     result1 = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
-    debug = KabschDebug(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
+    debug = KabschDebug(self.image, self.mask, self.size, nsig_b, nsig_s,  0, self.min_count)
     result2 = debug.final_mask()
     assert(result1.all_eq(result2))
     print 'OK'
@@ -93,6 +93,7 @@ class Test:
       self.size,
       nsig_b,
       nsig_s,
+      0,
       self.min_count)
 
     result1 = kabsch(

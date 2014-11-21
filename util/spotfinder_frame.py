@@ -544,7 +544,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self, value=self.settings.nsigma_s, name="sigma_strong")
     self.nsigma_s_ctrl.SetMin(0)
     grid1.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
-    
+
     txt1 = wx.StaticText(self, -1, "Global Threshold")
     grid1.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.global_threshold_ctrl = FloatCtrl(
