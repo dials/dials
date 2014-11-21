@@ -352,14 +352,17 @@ namespace dials { namespace algorithms {
               int2 kernel_size,
               double nsig_b,
               double nsig_s,
+              double threshold,
               int min_count)
         : image_size_(image_size),
           kernel_size_(kernel_size),
           nsig_b_(nsig_b),
           nsig_s_(nsig_s),
+          threshold_(threshold),
           min_count_(min_count) {
 
       // Check the input
+      DIALS_ASSERT(threshold_ >= 0);
       DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
       DIALS_ASSERT(image_size.all_gt(0));
       DIALS_ASSERT(kernel_size.all_gt(0));
@@ -477,7 +480,7 @@ namespace dials { namespace algorithms {
 
           // Compute the thresholds
           dst[k] = false;
-          if (mask[k] && m  >= min_count_ && x > 0) {
+          if (mask[k] && m >= min_count_ && x > threshold_) {
             double a = m * y - x * x - x * (m-1);
             double b = m * src[k] - x;
             double c = x * nsig_b_ * std::sqrt(2*(m-1));
@@ -552,7 +555,7 @@ namespace dials { namespace algorithms {
 
           // Compute the thresholds
           dst[k] = false;
-          if (mask[k] && m  >= min_count_ && x > 0) {
+          if (mask[k] && m >= min_count_ && x > threshold_) {
             double a = m * y - x * x;
             double b = m * src[k] - x;
             double c = gain[k] * x * (m-1+nsig_b_ * std::sqrt(2*(m-1)));
@@ -632,6 +635,7 @@ namespace dials { namespace algorithms {
     int2 kernel_size_;
     double nsig_b_;
     double nsig_s_;
+    double threshold_;
     int min_count_;
     std::vector<char> buffer_;
   };
@@ -651,6 +655,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the local window
      * @param nsig_b The background threshold.
      * @param nsig_s The strong pixel threshold
+     * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
     KabschDebug(const af::const_ref<double, af::c_grid<2> > &image,
@@ -658,9 +663,10 @@ namespace dials { namespace algorithms {
                 int2 size,
                 double nsig_b,
                 double nsig_s,
+                double threshold,
                 int min_count) {
       af::versa< double, af::c_grid<2> > gain(image.accessor(), 1.0);
-      init(image, mask, gain.const_ref(), size, nsig_b, nsig_s, min_count);
+      init(image, mask, gain.const_ref(), size, nsig_b, nsig_s, threshold, min_count);
     }
 
     /**
@@ -670,6 +676,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the local window
      * @param nsig_b The background threshold.
      * @param nsig_s The strong pixel threshold
+     * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
     KabschDebug(const af::const_ref<double, af::c_grid<2> > &image,
@@ -678,8 +685,9 @@ namespace dials { namespace algorithms {
                 int2 size,
                 double nsig_b,
                 double nsig_s,
+                double threshold,
                 int min_count) {
-      init(image, mask, gain, size, nsig_b, nsig_s, min_count);
+      init(image, mask, gain, size, nsig_b, nsig_s, threshold, min_count);
     }
 
     /** @returns The mean map */
@@ -702,6 +710,11 @@ namespace dials { namespace algorithms {
       return cv_mask_;
     }
 
+    /** @returns The global mask */
+    af::versa<bool, af::c_grid<2> > global_mask() const {
+      return global_mask_;
+    }
+
     /** @returns The thresholded value mask */
     af::versa<bool, af::c_grid<2> > value_mask() const {
       return value_mask_;
@@ -720,9 +733,11 @@ namespace dials { namespace algorithms {
               int2 size,
               double nsig_b,
               double nsig_s,
+              double threshold,
               int min_count) {
 
       // Check the input
+      DIALS_ASSERT(threshold >= 0);
       DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(image.accessor().all_eq(gain.accessor()));
@@ -745,11 +760,13 @@ namespace dials { namespace algorithms {
       cv_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
       value_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
       final_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      global_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
       for (std::size_t i = 0; i < image.size(); ++i) {
         if (temp[i]) {
           double bnd_b = gain[i] + nsig_b * gain[i] * std::sqrt(2.0 / (count[i] - 1));
           double bnd_s = mean_[i] + nsig_s * std::sqrt(gain[i] * mean_[i]);
           cv_mask_[i] = cv_[i] > bnd_b;
+          global_mask_[i] = image[i] > threshold;
           value_mask_[i] = image[i] > bnd_s;
           final_mask_[i] = cv_mask_[i] && value_mask_[i];
         }
@@ -759,6 +776,7 @@ namespace dials { namespace algorithms {
     af::versa< double, af::c_grid<2> > mean_;
     af::versa< double, af::c_grid<2> > variance_;
     af::versa< double, af::c_grid<2> > cv_;
+    af::versa< bool, af::c_grid<2> > global_mask_;
     af::versa< bool, af::c_grid<2> > cv_mask_;
     af::versa< bool, af::c_grid<2> > value_mask_;
     af::versa< bool, af::c_grid<2> > final_mask_;

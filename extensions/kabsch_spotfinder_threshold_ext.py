@@ -46,13 +46,18 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
         .type = float
         .expert_level = 1
 
-      min_local=2
+      min_local = 2
         .help = "The number of pixels in the local area of each pixel needed"
                 "to do the thresholding. Setting to 0 or less means that all"
                 "the pixels under the kernel are needed. The minimum allowable"
                 "number is 2"
         .type = int
         .expert_level = 1
+
+      global_threshold = 0
+        .type = float
+        .help = "The global threshold value. Consider all pixels less than this"
+                "value to be part of the background."
     ''')
     return phil
 
@@ -65,7 +70,8 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
       mask=params.spotfinder.lookup.mask,
       n_sigma_b=params.spotfinder.threshold.xds.sigma_background,
       n_sigma_s=params.spotfinder.threshold.xds.sigma_strong,
-      min_count=params.spotfinder.threshold.xds.min_local)
+      min_count=params.spotfinder.threshold.xds.min_local,
+      global_threshold=params.spotfinder.threshold.xds.global_threshold)
 
   def compute_threshold(self, image, mask):
     ''' Compute the threshold. '''

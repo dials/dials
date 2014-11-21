@@ -82,6 +82,7 @@ class XDSThresholdStrategy(ThresholdStrategy):
     self._n_sigma_b   = kwargs.get('n_sigma_b', 6)
     self._n_sigma_s   = kwargs.get('n_sigma_s', 3)
     self._min_count   = kwargs.get('min_count', 2)
+    self._threshold   = kwargs.get('global_threshold', None)
 
     # Create a buffer
     self.algorithm = {}
@@ -108,6 +109,7 @@ class XDSThresholdStrategy(ThresholdStrategy):
         self._kernel_size,
         self._n_sigma_b,
         self._n_sigma_s,
+        self._threshold,
         self._min_count)
       self.algorithm[image.all()] = algorithm
 

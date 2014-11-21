@@ -75,16 +75,18 @@ class SpotFrame(XrayFrame) :
 
     nsigma_b = self.settings.nsigma_b
     nsigma_s = self.settings.nsigma_s
+    global_threshold = self.settings.global_threshold
     min_local = self.settings.min_local
     size = self.settings.kernel_size
     debug = KabschDebug(image.get_raw_data().as_double(),
-      mask[0], gain_map, size, nsigma_b, nsigma_s, min_local)
+      mask[0], gain_map, size, nsigma_b, nsigma_s, global_threshold, min_local)
     mean = debug.mean()
     variance = debug.variance()
     cv = debug.coefficient_of_variation()
     cv_mask = debug.cv_mask()
     value_mask = debug.value_mask()
     final_mask = debug.final_mask()
+    global_mask = debug.global_mask()
     if self.settings.show_mean_filter:
       self.pyslip.tiles.set_image_data(mean)
     elif self.settings.show_variance_filter:
@@ -99,6 +101,10 @@ class SpotFrame(XrayFrame) :
       value_mask = value_mask.as_1d().as_double()
       value_mask.reshape(mean.accessor())
       self.pyslip.tiles.set_image_data(value_mask)
+    elif self.settings.show_global_threshold_filter:
+      global_mask = global_mask.as_1d().as_double()
+      global_mask.reshape(mean.accessor())
+      self.pyslip.tiles.set_image_data(global_mask)
     elif self.settings.show_threshold_map:
       final_mask = final_mask.as_1d().as_double()
       final_mask.reshape(mean.accessor())
@@ -434,8 +440,10 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_sigma_b_filter = False
     self.settings.show_sigma_s_filter = False
     self.settings.show_threshold_map = False
+    self.settings.show_global_threshold_filter = False
     self.settings.nsigma_b = 6
     self.settings.nsigma_s = 3
+    self.settings.global_threshold = 0
     self.settings.kernel_size = [3,3]
     self.settings.min_local = 2
     self.settings.gain = 1
@@ -536,6 +544,13 @@ class SpotSettingsPanel (SettingsPanel) :
       self, value=self.settings.nsigma_s, name="sigma_strong")
     self.nsigma_s_ctrl.SetMin(0)
     grid1.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
+    
+    txt1 = wx.StaticText(self, -1, "Global Threshold")
+    grid1.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.global_threshold_ctrl = FloatCtrl(
+      self, value=self.settings.global_threshold, name="global_threshold")
+    self.global_threshold_ctrl.SetMin(0)
+    grid1.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
 
     from wxtbx.phil_controls.intctrl import IntCtrl
     txt4 = wx.StaticText(self, -1, "Min. local")
@@ -564,6 +579,7 @@ class SpotSettingsPanel (SettingsPanel) :
 
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_b_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_s_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.global_threshold_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.kernel_size_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.min_local_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.gain_ctrl)
@@ -574,6 +590,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.btn.AddSegment("mean")
     self.btn.AddSegment("variance")
     self.btn.AddSegment("dispersion")
+    self.btn.AddSegment("Global")
     self.btn.AddSegment("sigma_b")
     self.btn.AddSegment("sigma_s ")
     self.btn.AddSegment("threshold")
@@ -625,11 +642,13 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_mean_filter = self.btn.values[1]
       self.settings.show_variance_filter = self.btn.values[2]
       self.settings.show_dispersion = self.btn.values[3]
-      self.settings.show_sigma_b_filter = self.btn.values[4]
-      self.settings.show_sigma_s_filter = self.btn.values[5]
-      self.settings.show_threshold_map = self.btn.values[6]
+      self.settings.show_global_threshold_filter = self.btn.values[4]
+      self.settings.show_sigma_b_filter = self.btn.values[5]
+      self.settings.show_sigma_s_filter = self.btn.values[6]
+      self.settings.show_threshold_map = self.btn.values[7]
       self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
       self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
+      self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
       self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
       self.settings.min_local = self.min_local_ctrl.GetPhilValue()
       self.settings.gain = self.gain_ctrl.GetPhilValue()
