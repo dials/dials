@@ -12,6 +12,7 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_FITRS_FIT_H
 #define DIALS_ALGORITHMS_INTEGRATION_FITRS_FIT_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <iostream>
 #include <iomanip>
 #include <scitbx/array_family/tiny_types.h>
@@ -647,6 +648,7 @@ namespace dials { namespace algorithms {
       af::ref<double> correlation = data["profile.correlation"];
 
       // Do the profile fitting for all reflections
+      #pragma omp parallel for
       for (std::size_t i = 0; i < data.size(); ++i) {
 
         // Initialise some stuff
