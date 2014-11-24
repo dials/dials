@@ -160,5 +160,3 @@ if __name__ == "__main__":
   cbar_ax.set_ylabel(r"$normal_{2} - normal_{1}$ (mm)")
   plt.savefig("normal_diff.png")
   plt.clf()
-
-

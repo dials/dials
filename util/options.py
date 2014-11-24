@@ -336,7 +336,8 @@ class OptionParserBase(optparse.OptionParser, object):
 
   def parse_args(self, args=None):
     '''Parse the command line arguments and get system configuration.'''
-    import sys, os
+    import sys
+    import select
 
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
@@ -344,8 +345,9 @@ class OptionParserBase(optparse.OptionParser, object):
     options, args = super(OptionParserBase, self).parse_args(args=args)
 
     # Read stdin if data is available
-    if not sys.stdin.isatty() and os.fstat(sys.stdin.fileno()).st_size > 0:
-      args.extend([l.strip() for l in sys.stdin.readlines()])
+    r, w, x = select.select([sys.stdin], [], [], 0)
+    if len(r) > 0:
+      args.extend([l.strip() for rr in r for l in rr.readlines()])
 
     # Maybe sort the data
     if hasattr(options, "sort") and options.sort:
