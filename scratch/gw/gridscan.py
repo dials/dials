@@ -5,6 +5,8 @@ def analyse(reflections, detector, beam):
   x, y = reflections['xyzobs.px.value'].parts()[:2]
   resolutions = flex.double(len(reflections), 0.0)
 
+  # FIXME move this calculation to C++
+
   for j, r in enumerate(reflections):
     d = detector[p[j]].get_resolution_at_pixel(beam.get_s0(), (x[j], y[j]))
     resolutions[j] = d
