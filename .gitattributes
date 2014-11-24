@@ -639,6 +639,8 @@ scratch/jmp/misc/test_sweep_pickle.py -text
 scratch/jmp/misc/test_table.py -text
 scratch/jmp/misc/test_to_dict.py -text
 scratch/jmp/misc/test_transform.py -text
+scratch/jmp/mp_test.h -text
+scratch/jmp/mp_test.py -text
 scratch/jmp/new_extract/new_extract.py -text
 scratch/jmp/new_integrator/interface.cc -text
 scratch/jmp/new_integrator/interface.h -text
