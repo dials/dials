@@ -82,7 +82,6 @@ class wxbmp_from_np_array(object):
     lc_fig.set_size_inches(xmax * .5, ymax * .5)
 
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
-
     ax.set_axis_off()
     lc_fig.add_axes(ax)
     plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot',
@@ -118,6 +117,15 @@ class wxbmp_from_np_array(object):
               plt.vlines(xpos - 0.225, ypos - 0.45, ypos + 0.45,
                          color = 'gray', linewidth=l_wdt)
 
+            if( (loc_mask & MaskCode.BackgroundUsed) == MaskCode.BackgroundUsed ):
+              # drawing h_lines
+              plt.hlines(ypos , xpos - 0.45, xpos + 0.45,
+                         color = 'gray', linewidth=l_wdt)
+              plt.hlines(ypos + 0.225, xpos - 0.45, xpos + 0.45,
+                         color = 'gray', linewidth=l_wdt)
+              plt.hlines(ypos - 0.225, xpos - 0.45, xpos + 0.45,
+                         color = 'gray', linewidth=l_wdt)
+
             if( (loc_mask & MaskCode.Foreground) == MaskCode.Foreground ):
               # drawing lines from 1p5 to 7p5
               plt.plot([xpos - dst_diag, xpos - 0.45], [ypos - 0.45, ypos - dst_diag],
@@ -136,15 +144,6 @@ class wxbmp_from_np_array(object):
               plt.plot([xpos + 0.45, xpos - 0.45], [ypos + 0.45, ypos - 0.45],
                        color='gray', linewidth=l_wdt)
 
-            if( (loc_mask & MaskCode.BackgroundUsed) == MaskCode.BackgroundUsed ):
-              # drawing h_lines
-              plt.hlines(ypos , xpos - 0.45, xpos + 0.45,
-                         color = 'gray', linewidth=l_wdt)
-              plt.hlines(ypos + 0.225, xpos - 0.45, xpos + 0.45,
-                         color = 'gray', linewidth=l_wdt)
-              plt.hlines(ypos - 0.225, xpos - 0.45, xpos + 0.45,
-                         color = 'gray', linewidth=l_wdt)
-
 
     if( show_nums != 0 ):
       for xpos in range(xmax):
@@ -162,7 +161,6 @@ class wxbmp_from_np_array(object):
 
           plt.annotate(txt_dat, xy = (xpos - 0.5, ypos + 0.1), xycoords = 'data',
                        color = clr_chr, size = 9.)
-
 
     lc_fig.canvas.draw()
     width, height = lc_fig.canvas.get_width_height()

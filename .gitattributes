@@ -941,4 +941,5 @@ viewer/bitmap_from_numpy_w_matplotlib.py -text
 viewer/flex_3d_array_viewer_test.py -text
 viewer/from_flex_to_wxbitmap.py -text
 viewer/slice_viewer.py -text
+viewer/viewer_interface.py -text
 viewer/viewer_low_level_util.py -text
