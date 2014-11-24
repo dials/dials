@@ -506,9 +506,9 @@ namespace transform {
     }
 
     /** @returns the beam vector lookup map */
-    af::versa< vec3<double>, af::c_grid<2> > s1_map(std::size_t panel) const {
+    af::const_ref< vec3<double>, af::c_grid<2> > s1_map(std::size_t panel) const {
       DIALS_ASSERT(panel < s1_map_.size());
-      return s1_map_[panel];
+      return s1_map_[panel].const_ref();
     }
 
     /** @returns the frame mapping fraction array */
@@ -554,8 +554,9 @@ namespace transform {
             const vec3<double> &s1, double phi, int6 bbox, std::size_t panel,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, s1, phi, bbox, panel);
-      call(image, mask);
+      af::const_ref< vec3<double>, af::c_grid<2> > s1_map;
+      init(spec, s1, phi, bbox, panel, s1_map);
+      call(image, mask, s1_map);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
@@ -563,23 +564,26 @@ namespace transform {
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, s1, phi, bbox, panel);
-      call(image, bkgrd, mask);
+      af::const_ref< vec3<double>, af::c_grid<2> > s1_map;
+      init(spec, s1, phi, bbox, panel, s1_map);
+      call(image, bkgrd, mask, s1_map);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
             const vec3<double> &s1, double phi,
             const Shoebox<> &shoebox) {
-      init(spec, s1, phi, shoebox.bbox, shoebox.panel);
-      call(shoebox);
+      af::const_ref< vec3<double>, af::c_grid<2> > s1_map;
+      init(spec, s1, phi, shoebox.bbox, shoebox.panel, s1_map);
+      call(shoebox, s1_map);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs, int6 bbox, std::size_t panel,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, cs, bbox, panel);
-      call(image, mask);
+      af::const_ref< vec3<double>, af::c_grid<2> > s1_map;
+      init(spec, cs, bbox, panel, s1_map);
+      call(image, mask, s1_map);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
@@ -587,15 +591,17 @@ namespace transform {
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, cs, bbox, panel);
-      call(image, bkgrd, mask);
+      af::const_ref< vec3<double>, af::c_grid<2> > s1_map;
+      init(spec, cs, bbox, panel, s1_map);
+      call(image, bkgrd, mask, s1_map);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs,
             const Shoebox<> &shoebox) {
-      init(spec, cs, shoebox.bbox, shoebox.panel);
-      call(shoebox);
+      af::const_ref< vec3<double>, af::c_grid<2> > s1_map;
+      init(spec, cs, shoebox.bbox, shoebox.panel, s1_map);
+      call(shoebox, s1_map);
     }
 
     /** @returns The transformed profile */
@@ -617,14 +623,21 @@ namespace transform {
 
     /** Initialise using the beam vector and rotation angle */
     void init(const TransformSpec<FloatType> &spec,
-              const vec3<double> &s1, double phi, int6 bbox, std::size_t panel) {
+              const vec3<double> &s1,
+              double phi,
+              int6 bbox,
+              std::size_t panel,
+              af::const_ref< vec3<double>, af::c_grid<2> > &s1_map) {
       CoordinateSystem cs(spec.m2(), spec.s0(), s1, phi);
-      init(spec, cs, bbox, panel);
+      init(spec, cs, bbox, panel, s1_map);
     }
 
     /** Initialise using a coordinate system struct */
     void init(const TransformSpec<FloatType> &spec,
-              const CoordinateSystem &cs, int6 bbox, std::size_t panel) {
+              const CoordinateSystem &cs,
+              int6 bbox,
+              std::size_t panel,
+              af::const_ref< vec3<double>, af::c_grid<2> > &s1_map) {
 
       // Initialise some stuff
       x0_ = bbox[0];
@@ -641,14 +654,12 @@ namespace transform {
       DIALS_ASSERT(s1_.length() > 0);
       e1_ = cs.e1_axis() / s1_.length();
       e2_ = cs.e2_axis() / s1_.length();
-      s1_map_arr_ = spec.s1_map(panel);
-      s1_map_ = s1_map_arr_.const_ref();
+      s1_map = spec.s1_map(panel);
 
       // Calculate the fraction of intensity contributed from each data
       // frame to each grid coordinate
       vec2<int> zrange(bbox[4], bbox[5]);
       zfraction_arr_ = spec.map_frames(zrange, cs.phi(), cs.zeta());
-      zfraction_ = zfraction_arr_.const_ref();
     }
 
     /**
@@ -657,11 +668,14 @@ namespace transform {
      * @param mask The mask accompanying the image
      */
     void call(const af::const_ref< FloatType, af::c_grid<3> > &image,
-              const af::const_ref< bool, af::c_grid<3> > &mask) {
+              const af::const_ref< bool, af::c_grid<3> > &mask,
+              const af::const_ref< vec3<double>, af::c_grid<2> > &s1_map) {
 
       // Check the input
       DIALS_ASSERT(image.accessor().all_eq(shoebox_size_));
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+
+      af::const_ref< FloatType, af::c_grid<2> > zfraction = zfraction_arr_.const_ref();
 
       // Initialise the profile arrays
       af::c_grid<3> accessor(grid_size_);
@@ -676,7 +690,10 @@ namespace transform {
       int2 grid_size2(grid_size_[1], grid_size_[2]);
       for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
         for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
-          vert4 input(gc(j, i), gc(j, i+1), gc(j+1, i+1), gc(j+1, i));
+          vert4 input(gc(s1_map, j, i),
+                      gc(s1_map, j, i+1),
+                      gc(s1_map, j+1, i+1),
+                      gc(s1_map, j+1, i));
           af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
           for (int m = 0; m < matches.size(); ++m) {
             FloatType fraction = matches[m].fraction;
@@ -687,7 +704,7 @@ namespace transform {
               if (mask(k, j, i)) {
                 FloatType value = image(k, j, i) * fraction;
                 for (int kk = 0; kk < grid_size_[0]; ++kk) {
-                  profile_(kk, jj, ii) += value * zfraction_(k, kk);
+                  profile_(kk, jj, ii) += value * zfraction(k, kk);
                 }
               }
             }
@@ -704,12 +721,15 @@ namespace transform {
      */
     void call(const af::const_ref< FloatType, af::c_grid<3> > &image,
               const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
-              const af::const_ref< bool, af::c_grid<3> > &mask) {
+              const af::const_ref< bool, af::c_grid<3> > &mask,
+              const af::const_ref< vec3<double>, af::c_grid<2> > &s1_map) {
 
       // Check the input
       DIALS_ASSERT(image.accessor().all_eq(shoebox_size_));
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(image.accessor().all_eq(bkgrd.accessor()));
+
+      af::const_ref< FloatType, af::c_grid<2> > zfraction = zfraction_arr_.const_ref();
 
       // Initialise the profile arrays
       af::c_grid<3> accessor(grid_size_);
@@ -725,7 +745,10 @@ namespace transform {
       int2 grid_size2(grid_size_[1], grid_size_[2]);
       for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
         for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
-          vert4 input(gc(j, i), gc(j, i+1), gc(j+1, i+1), gc(j+1, i));
+          vert4 input(gc(s1_map, j, i),
+                      gc(s1_map, j, i+1),
+                      gc(s1_map, j+1, i+1),
+                      gc(s1_map, j+1, i));
           af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
           for (int m = 0; m < matches.size(); ++m) {
             FloatType fraction = matches[m].fraction;
@@ -737,7 +760,7 @@ namespace transform {
                 FloatType ivalue = image(k, j, i) * fraction;
                 FloatType bvalue = bkgrd(k, j, i) * fraction;
                 for (int kk = 0; kk < grid_size_[0]; ++kk) {
-                  FloatType zf = zfraction_(k, kk);
+                  FloatType zf = zfraction(k, kk);
                   profile_(kk, jj, ii) += ivalue * zf;
                   background_(kk, jj, ii) += bvalue * zf;
                 }
@@ -751,7 +774,8 @@ namespace transform {
     /**
      * Call the transform with the shoebox
      */
-    void call(const Shoebox<> &shoebox) {
+    void call(const Shoebox<> &shoebox,
+              const af::const_ref< vec3<double>, af::c_grid<2> > &s1_map) {
       af::versa< bool, af::c_grid<3> > mask(shoebox.mask.accessor());
       af::ref< bool, af::c_grid<3> > mask_ref = mask.ref();
       af::const_ref< int, af::c_grid<3> > temp_ref = shoebox.mask.const_ref();
@@ -764,7 +788,7 @@ namespace transform {
       std::copy(shoebox.data.begin(), shoebox.data.end(), data.begin());
       std::copy(shoebox.background.begin(), shoebox.background.end(), bgrd.begin());
 
-      call(data.const_ref(), bgrd.const_ref(), mask_ref);
+      call(data.const_ref(), bgrd.const_ref(), mask_ref, s1_map);
     }
 
     /**
@@ -773,8 +797,12 @@ namespace transform {
      * @param i The x index
      * @returns The grid (c1, c2) index
      */
-    vec2<double> gc(std::size_t j, std::size_t i) const {
-      vec3<double> ds = s1_map_(y0_ + j, x0_ + i) - s1_;
+    vec2<double> gc(const af::const_ref< vec3<double>, af::c_grid<2> > &s1_map,
+                    std::size_t j,
+                    std::size_t i) const {
+      DIALS_ASSERT(y0_ + j >= 0 && y0_ + j < s1_map.accessor()[0]);
+      DIALS_ASSERT(x0_ + i >= 0 && x0_ + i < s1_map.accessor()[1]);
+      vec3<double> ds = s1_map(y0_ + j, x0_ + i) - s1_;
       return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],
                           grid_cent_[1] + (e2_ * ds) / step_size_[1]);
     }
@@ -785,12 +813,9 @@ namespace transform {
     double3 step_size_;
     double3 grid_cent_;
     vec3<double> s1_, e1_, e2_;
-    af::versa< vec3<double>, af::c_grid<2> > s1_map_arr_;
-    af::const_ref< vec3<double>, af::c_grid<2> > s1_map_;
     af::versa< FloatType, af::c_grid<3> > profile_;
     af::versa< FloatType, af::c_grid<3> > background_;
     af::versa< FloatType, af::c_grid<2> > zfraction_arr_;
-    af::const_ref< FloatType, af::c_grid<2> > zfraction_;
   };
 
 }}}}} // namespace dials::algorithms::profile_model::gaussian_rs::transform

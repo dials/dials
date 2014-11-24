@@ -56,6 +56,16 @@ namespace boost_python {
   }
 
   template <typename FloatType>
+  af::versa< vec3<double>, af::c_grid<2> > transform_spec_s1_map(
+      const TransformSpec<FloatType> &self,
+      std::size_t panel) {
+    af::const_ref< vec3<double>, af::c_grid<2> > array = self.s1_map(panel);
+    af::versa< vec3<double>, af::c_grid<2> > result(array.accessor());
+    std::copy(array.begin(), array.end(), result.begin());
+    return result;
+  }
+
+  template <typename FloatType>
   void forward_wrapper(const char *name) {
 
     typedef Forward<FloatType> ForwardType;
@@ -73,7 +83,7 @@ namespace boost_python {
       .def("grid_size", &TransformSpecType::grid_size)
       .def("step_size", &TransformSpecType::step_size)
       .def("grid_centre", &TransformSpecType::grid_centre)
-      .def("s1_map", &TransformSpecType::s1_map);
+      .def("s1_map", &transform_spec_s1_map<FloatType> );
 
     class_<ForwardType>(name, no_init)
       .def(init<const TransformSpec<FloatType>&,
