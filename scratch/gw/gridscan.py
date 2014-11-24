@@ -8,8 +8,8 @@ def analyse(reflections, detector, beam):
   for j, r in enumerate(reflections):
     d = detector[p[j]].get_resolution_at_pixel(beam.get_s0(), (x[j], y[j]))
     resolutions[j] = d
-  return len(resolutions) - (resolutions < 4).count(True) - (resolutions > 40).count(True)
-
+  return len(resolutions) - (resolutions < 4).count(True) - \
+    (resolutions > 40).count(True)
 
 def work(filename, cl=[]):
   from dials.command_line.find_spots import phil_scope as params
