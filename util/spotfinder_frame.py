@@ -526,7 +526,7 @@ class SpotSettingsPanel (SettingsPanel) :
     #s.Add(box)
 
     # Kabsch thresholding parameters
-    grid1 = wx.FlexGridSizer(cols=2, rows=5)
+    grid1 = wx.FlexGridSizer(cols=2, rows=6)
     s.Add(grid1)
 
     from wxtbx.phil_controls import EVT_PHIL_CONTROL
@@ -590,7 +590,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.btn.AddSegment("mean")
     self.btn.AddSegment("variance")
     self.btn.AddSegment("dispersion")
-    self.btn.AddSegment("Global")
+    self.btn.AddSegment("global")
     self.btn.AddSegment("sigma_b")
     self.btn.AddSegment("sigma_s ")
     self.btn.AddSegment("threshold")
