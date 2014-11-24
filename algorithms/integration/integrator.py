@@ -40,6 +40,11 @@ def generate_phil_scope():
         size = 10
           .type = float
           .help = "The block size in rotation angle (degrees)."
+
+        max_mem_usage = 0.5
+          .type = float(value_min=0.0,value_max=1.0)
+          .help = "The maximum percentage of total physical memory to use for"
+                  "allocating shoebox arrays."
       }
 
       filter
@@ -211,7 +216,8 @@ class Task(object):
                data,
                job,
                flatten=False,
-               save_shoeboxes=False):
+               save_shoeboxes=False,
+               max_mem_usage=0.5):
     ''' Initialise the task. '''
     self._index = index
     self._experiments = experiments
@@ -220,6 +226,7 @@ class Task(object):
     self._job = job
     self._flatten = flatten
     self._save_shoeboxes = save_shoeboxes
+    self._max_mem_usage = max_mem_usage
     self._mask = None
 
   def __call__(self):
@@ -227,9 +234,37 @@ class Task(object):
     from dials.array_family import flex
     from time import time
     from dials.util.command_line import heading
+    from libtbx.introspection import machine_memory_info
 
     # Set the global process ID
     job_id.value = self._index
+
+    # Compute the number of shoebox bytes
+    x0, x1, y0, y1, z0, z1 = self._data['bbox'].parts()
+    assert(x1.all_gt(x0))
+    assert(y1.all_gt(y0))
+    assert(z1.all_gt(z0))
+    xs = x1 - x0
+    ys = y1 - y0
+    zs = z1 - z0
+    size = flex.sum(xs * ys * zs)
+    nbytes = size * (4 + 4 + 4)
+
+    # Compute percentage of max available
+    memory_info = machine_memory_info()
+    total_memory = memory_info.memory_total()
+    assert(self._max_mem_usage >  0.0)
+    assert(self._max_mem_usage <= 1.0)
+    limit_memory = total_memory * self._max_mem_usage
+    if nbytes > limit_memory:
+      raise RuntimeError('''
+        There was a problem allocating memory for shoeboxes. Possible solutions
+        include increasing the percentage of memory allowed for shoeboxes or
+        decreasing the block size.
+          Total system memory: %g GB
+          Limit shoebox memory: %g GB
+          Requested shoebox memory: %g GB
+      ''' % (total_memory/1e9, limit_memory/1e9, nbytes/1e9))
 
     # Print out some info
     EPS = 1e-7
@@ -351,13 +386,15 @@ class Manager(object):
                block_size=10,
                block_size_units='degrees',
                flatten=False,
-               save_shoeboxes=False):
+               save_shoeboxes=False,
+               max_mem_usage=0.5):
     ''' Initialise the manager. '''
     self._finalized = False
     self._flatten = flatten
     self._block_size = block_size
     self._block_size_units = block_size_units
     self._save_shoeboxes = save_shoeboxes
+    self._max_mem_usage = max_mem_usage
     self._preprocess = preprocess
     self._postprocess = postprocess
     self._experiments = experiments
@@ -408,7 +445,8 @@ class Manager(object):
       self._manager.split(index),
       self._manager.job(index).frames(),
       self._flatten,
-      self._save_shoeboxes)
+      self._save_shoeboxes,
+      self._max_mem_usage)
 
   def tasks(self):
     ''' Iterate through the tasks. '''
@@ -731,6 +769,7 @@ class ManagerRot(Manager):
                flatten=False,
                partials=False,
                save_shoeboxes=False,
+               max_mem_usage=0.5,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -763,7 +802,8 @@ class ManagerRot(Manager):
       block_size=block_size,
       block_size_units=block_size_units,
       flatten=flatten,
-      save_shoeboxes=save_shoeboxes)
+      save_shoeboxes=save_shoeboxes,
+      max_mem_usage=max_mem_usage)
 
 
 class ManagerStills(Manager):
@@ -775,6 +815,7 @@ class ManagerStills(Manager):
                profile_model,
                reflections,
                save_shoeboxes=False,
+               max_mem_usage=0.5,
                powder_filter=None,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
@@ -806,7 +847,8 @@ class ManagerStills(Manager):
       block_size=1,
       block_size_units='frames',
       flatten=False,
-      save_shoeboxes=save_shoeboxes)
+      save_shoeboxes=save_shoeboxes,
+      max_mem_usage=max_mem_usage)
 
 
 class Integrator3D(Integrator):
@@ -822,7 +864,8 @@ class Integrator3D(Integrator):
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
-               save_shoeboxes=False):
+               save_shoeboxes=False,
+               max_mem_usage=0.5):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -833,7 +876,8 @@ class Integrator3D(Integrator):
       block_size=block_size,
       min_zeta=min_zeta,
       powder_filter=powder_filter,
-      save_shoeboxes=save_shoeboxes)
+      save_shoeboxes=save_shoeboxes,
+      max_mem_usage=max_mem_usage)
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -852,7 +896,8 @@ class IntegratorFlat3D(Integrator):
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
-               save_shoeboxes=False):
+               save_shoeboxes=False,
+               max_mem_usage=0.5):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -864,7 +909,8 @@ class IntegratorFlat3D(Integrator):
       min_zeta=min_zeta,
       powder_filter=powder_filter,
       flatten=True,
-      save_shoeboxes=save_shoeboxes)
+      save_shoeboxes=save_shoeboxes,
+      max_mem_usage=max_mem_usage)
 
     # Initialise the integrator
     super(IntegratorFlat3D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -883,7 +929,8 @@ class Integrator2D(Integrator):
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
-               save_shoeboxes=False):
+               save_shoeboxes=False,
+               max_mem_usage=0.5):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -895,7 +942,8 @@ class Integrator2D(Integrator):
       min_zeta=min_zeta,
       powder_filter=powder_filter,
       partials=True,
-      save_shoeboxes=save_shoeboxes)
+      save_shoeboxes=save_shoeboxes,
+      max_mem_usage=max_mem_usage)
 
     # Initialise the integrator
     super(Integrator2D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -914,7 +962,8 @@ class IntegratorSingle2D(Integrator):
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
-               save_shoeboxes=False):
+               save_shoeboxes=False,
+               max_mem_usage=0.5):
     ''' Initialise the manager and the integrator. '''
 
     # Override block size
@@ -930,7 +979,8 @@ class IntegratorSingle2D(Integrator):
       min_zeta=min_zeta,
       powder_filter=powder_filter,
       partials=True,
-      save_shoeboxes=save_shoeboxes)
+      save_shoeboxes=save_shoeboxes,
+      max_mem_usage=max_mem_usage)
 
     # Initialise the integrator
     super(IntegratorSingle2D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -949,7 +999,8 @@ class IntegratorStills(Integrator):
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
-               save_shoeboxes=False):
+               save_shoeboxes=False,
+               max_mem_usage=0.5):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -958,7 +1009,8 @@ class IntegratorStills(Integrator):
       profile_model,
       reflections,
       powder_filter=powder_filter,
-      save_shoeboxes=save_shoeboxes)
+      save_shoeboxes=save_shoeboxes,
+      max_mem_usage=max_mem_usage)
 
     # Initialise the integrator
     super(IntegratorStills, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1014,7 +1066,8 @@ class IntegratorFactory(object):
       nthreads=params.integration.mp.nthreads,
       nproc=params.integration.mp.nproc,
       mp_method=params.integration.mp.method,
-      save_shoeboxes=params.integration.debug.save_shoeboxes)
+      save_shoeboxes=params.integration.debug.save_shoeboxes,
+      max_mem_usage=params.integration.block.max_mem_usage)
 
   @staticmethod
   def select_integrator(integrator_type):
