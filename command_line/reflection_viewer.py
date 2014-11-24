@@ -42,9 +42,9 @@ class Script(object):
 
   def run(self):
 
-    ''' Show the reflections one by one in an interactive way '''
+
     from dials.util.options import flatten_reflections
-    from dials.viewer.reflection_view import viewer_App
+    from dials.viewer.viewer_interface import extract_n_show
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -53,12 +53,11 @@ class Script(object):
       self.parser.print_help()
       return
 
-    ''' opens and closes the viewer for each new reflection table '''
+    #opens and closes the viewer for each new reflection table
     for table in reflections:
-      My_app = viewer_App(redirect=False)
-      My_app.table_in(table)
-      My_app.MainLoop()
-      My_app.Destroy()
+      print "table =", table
+      extract_n_show(table)
+
 
 if __name__ == '__main__':
   script = Script()
