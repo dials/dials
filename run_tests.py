@@ -17,6 +17,7 @@ tst_list = (
     "$D/test/command_line/tst_merge_reflection_lists.py",
     "$D/test/command_line/tst_spotfinder.py",
     "$D/test/command_line/tst_export.py",
+    "$D/test/command_line/tst_export_mosflm.py",
     "$D/test/command_line/tst_export_xds.py",
     "$D/test/command_line/tst_refine.py",
     "$D/test/command_line/tst_create_profile_model.py",

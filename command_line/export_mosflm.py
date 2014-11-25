@@ -10,22 +10,30 @@
 #  included in the root directory of this package.
 from __future__ import division
 
+import math
+import os
+from scitbx import matrix
+from dxtbx.model.crystal import crystal_model
+from dials.util.options import OptionParser
+from dials.util.options import flatten_reflections
+from dials.util.options import flatten_datablocks
+from dials.util.options import flatten_experiments
+
 
 def run(args):
-  import math
-  import os
-  from scitbx import matrix
-  from dxtbx.model.crystal import crystal_model
-  from dials.util.command_line import Importer
+  import libtbx.load_env
+  from libtbx.utils import Sorry
+  usage = "%s [options] experiments.json" %libtbx.env.dispatcher_name
 
-  importer = Importer(args)
-  experiments = importer.experiments
-  reflections = importer.reflections
-  if reflections is not None:
-    assert len(reflections) == 1
-    reflections = reflections[0]
-  args = importer.unhandled_arguments
+  parser = OptionParser(
+    usage=usage,
+    read_experiments=True,
+    check_format=False,
+    #epilog=help_message
+  )
 
+  params, options = parser.parse_args(show_diff_phil=True)
+  experiments = flatten_experiments(params.input.experiments)
   assert len(experiments) > 0
 
   for i in range(len(experiments)):
