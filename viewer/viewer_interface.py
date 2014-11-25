@@ -13,27 +13,9 @@ from __future__ import division
 
 def extract_n_show(table):
 
-  from dials.viewer.slice_viewer import show_3d
+  from dials.viewer.slice_viewer import show_reflections
 
-  lst_nm = range(1, 20)
-  flex_dat_frst_lst = []
-  flex_dat_seg_lst = []
-
-  for nm in lst_nm:
-    # next line might be used later to a test reflection as input data
-    # table_row = table[nm]
-
-    flex_dat_frst_lst.append(table[nm]['shoebox'].data)
-    flex_dat_seg_lst.append(table[nm]['shoebox'].mask)
-
-
-  not_needed_for_now = '''
-  show_3d(flex_dat_frst_lst[0])
-  show_3d(flex_dat_frst_lst[0], flex_dat_seg_lst[0])
-  show_3d(flex_dat_frst_lst)
-  '''
-  show_3d(flex_dat_frst_lst, flex_dat_seg_lst)
-
+  show_reflections(table)
 
 
 if __name__ == "__main__":
