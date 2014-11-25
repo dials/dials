@@ -556,6 +556,7 @@ scratch/gw/parallax/parallax_xds.py -text
 scratch/gw/parallax/xds_parallax.png -text
 scratch/gw/parallax_module_correction.py -text
 scratch/gw/plotintensity.py -text
+scratch/gw/read_goniometer_from_cbf_full.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
 scratch/gw/test_client.py -text
