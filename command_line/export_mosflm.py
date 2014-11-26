@@ -19,6 +19,17 @@ from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
 from dials.util.options import flatten_experiments
 
+help_message = '''
+
+This program exports an experiments.json file as an index.mat mosflm-format
+matrix file and a mosflm.in file containing basic instructions for input
+to mosflm.
+
+Examples::
+
+  dials.export_mosflm experiments.json
+
+'''
 
 def run(args):
   import libtbx.load_env
@@ -29,12 +40,15 @@ def run(args):
     usage=usage,
     read_experiments=True,
     check_format=False,
-    #epilog=help_message
+    epilog=help_message
   )
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
-  assert len(experiments) > 0
+
+  if len(experiments) == 0:
+    parser.print_help()
+    return
 
   for i in range(len(experiments)):
     suffix = ""
@@ -114,7 +128,11 @@ def run(args):
             0,                        0,                      w/c))
     U_mosflm = A_mosflm * B.inverse()
 
-    with open(os.path.join(sub_dir, "index.mat"), "wb") as f:
+    index_mat = os.path.join(sub_dir, "index.mat")
+    mosflm_in = os.path.join(sub_dir, "mosflm.in")
+    print "Exporting experiment to %s and %s" %(index_mat, mosflm_in)
+
+    with open(index_mat, "wb") as f:
       print >> f, format_mosflm_mat(w*A_mosflm, U_mosflm, cryst.get_unit_cell())
 
     directory, template = os.path.split(imageset.get_template())
@@ -122,7 +140,7 @@ def run(args):
     beam_centre = tuple(reversed(detector[0].get_beam_centre(beam.get_s0())))
     distance = detector[0].get_distance()
 
-    with open(os.path.join(sub_dir, "mosflm.in"), "wb") as f:
+    with open(mosflm_in, "wb") as f:
       print >> f, write_mosflm_input(directory=directory,
                                      template=template,
                                      symmetry=symmetry,

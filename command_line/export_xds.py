@@ -10,6 +10,22 @@
 #  included in the root directory of this package.
 from __future__ import division
 
+help_message = '''
+
+This program exports an experiments.json as XDS.INP and XPARM.XDS files and/or
+exports a reflections.pickle file as a SPOT.XDS file.
+
+Examples::
+
+  dials.export_xds strong.pickle
+
+  dials.export_xds indexed.pickle
+
+  dials.export_xds experiments.json
+
+  dials.export_xds experiments.json indexed.pickle
+
+'''
 
 def run(args):
   import os
@@ -17,19 +33,28 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments, flatten_reflections
 
+  import libtbx.load_env
+  usage = "%s experiments.json and/or indexed.pickle [options]" %libtbx.env.dispatcher_name
+
   parser = OptionParser(
+    usage=usage,
     read_experiments=True,
     read_reflections=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
   params, options = parser.parse_args(show_diff_phil=True)
   reflections = flatten_reflections(params.input.reflections)
   experiments = flatten_experiments(params.input.experiments)
+
+  if len(experiments) == 0 and len(reflections) == 0:
+    parser.print_help()
+    return
+
   if len(reflections) > 0:
     assert len(reflections) == 1
     reflections = reflections[0]
 
   if len(experiments) > 0:
-    assert len(experiments) > 0
 
     for i in range(len(experiments)):
       suffix = ""
@@ -56,7 +81,10 @@ def run(args):
       real_space_b = A_inv.elems[3:6]
       real_space_c = A_inv.elems[6:9]
       to_xds = xds.to_xds(imageset)
-      with open(os.path.join(sub_dir, 'XDS.INP'), 'wb') as f:
+      xds_inp = os.path.join(sub_dir, 'XDS.INP')
+      xparm_xds = os.path.join(sub_dir, 'XPARM.XDS')
+      print "Exporting experiment to %s and %s" %(xds_inp, xparm_xds)
+      with open(xds_inp, 'wb') as f:
         to_xds.XDS_INP(
           out=f,
           space_group_number=crystal_model.get_space_group().type().number(),
@@ -64,7 +92,7 @@ def run(args):
           real_space_b=real_space_b,
           real_space_c=real_space_c,
           job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
-      with open(os.path.join(sub_dir, 'XPARM.XDS'), 'wb') as f:
+      with open(xparm_xds, 'wb') as f:
         to_xds.xparm_xds(
           real_space_a, real_space_b, real_space_c,
           crystal_model.get_space_group().type().number(),
@@ -91,6 +119,7 @@ def export_spot_xds(reflections, filename):
     xds_writer = spot_xds.writer(centroids=centroids,
                                  intensities=intensities,
                                  miller_indices=miller_indices)
+    print "Exporting spot list as %s" %filename
     xds_writer.write_file(filename=filename)
 
 
