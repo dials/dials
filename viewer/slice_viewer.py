@@ -83,22 +83,52 @@ class show_3d(object):
 
 class show_reflections(show_3d):
   def __init__(self, table):
+    print "inside show_reflections(show_3d)"
+
+    app = show_tabl_wx_app(redirect=False)
+    app.in_tabl(table)
+    app.MainLoop()
+
+
+class show_3d_wx_app(wx.App):
+  def OnInit(self):
+    self.frame = flex_3d_frame(None, '3D flex array viewer')
+    self.upper_panel = flex_arr_img_panel(self.frame)
+    self.frame.frame_ini_img(self.upper_panel)
+    return True
+
+  def in_lst(self, flex_lst_one, flex_lst_two = None):
+    self.upper_panel.ini_n_intro(flex_lst_one, flex_lst_two)
+    self.SetTopWindow(self.frame)
+    self.frame.Show()
+
+
+class show_tabl_wx_app(wx.App):
+  def OnInit(self):
+    self.frame = flex_3d_frame(None, 'DIALS reflections viewer')
+    self.upper_panel = flex_arr_img_panel(self.frame)
+    self.frame.frame_ini_img(self.upper_panel, "test text")
+    return True
+
+  def in_tabl(self, table):
+    print "in in_tabl(show_tabl_wx_app)"
+
     lst_nm = range(1, 20)
     flex_dat_frst_lst = []
     flex_dat_seg_lst = []
+    info_lst = []
 
     for nm in lst_nm:
-      # next line might be used later to a test reflection as input data
-      # table_row = table[nm]
-
       flex_dat_frst_lst.append(table[nm]['shoebox'].data)
       flex_dat_seg_lst.append(table[nm]['shoebox'].mask)
+      info_lst.append(table[nm]['miller_index'])
 
+    print "info_lst ="
+    print info_lst
 
-    show_3d(flex_dat_frst_lst, flex_dat_seg_lst)
-    # testing log
-    #print "table[0] =", table[0]
-
+    self.upper_panel.ini_n_intro(flex_dat_frst_lst, flex_dat_seg_lst)
+    self.SetTopWindow(self.frame)
+    self.frame.Show()
     output_full_row = '''
 
     table[0] = {
@@ -122,25 +152,3 @@ class show_reflections(show_3d):
     }
 
     '''
-
-    not_needed_for_now = '''
-    show_3d(flex_dat_frst_lst[0])
-    show_3d(flex_dat_frst_lst[0], flex_dat_seg_lst[0])
-    show_3d(flex_dat_frst_lst)
-    show_3d(flex_dat_frst_lst, flex_dat_seg_lst)
-    '''
-
-
-class show_3d_wx_app(wx.App):
-  def OnInit(self):
-    self.frame = flex_3d_frame(None, '3D flex array viewer')
-    self.upper_panel = flex_arr_img_panel(self.frame)
-    self.frame.frame_ini_img(self.upper_panel)
-    return True
-
-
-  def in_lst(self, flex_lst_one, flex_lst_two = None):
-    self.upper_panel.ini_n_intro(flex_lst_one, flex_lst_two)
-    self.SetTopWindow(self.frame)
-    self.frame.Show()
-

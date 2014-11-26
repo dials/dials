@@ -24,18 +24,21 @@ class flex_3d_frame(wx.Frame):
           size = wx.DefaultSize)
 
 
-  def frame_ini_img(self, in_upper_panel):
+  def frame_ini_img(self, in_upper_panel, text_data = None):
     self.img_panel = in_upper_panel
 
-    self.data_txt_01 = wx.StaticText(self, -1, "(data_txt)", size = (800, 16))
-    self.data_txt_01.SetLabel(" No (x, y, z) Data")
+    if( text_data != None):
+      self.data_txt_01 = wx.StaticText(self, -1, text_data, size = (800, 16))
+      #self.data_txt_01.SetLabel(text_data)
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
 
     self.my_sizer.Add(self.img_panel, proportion = 1,
                       flag =  wx.EXPAND | wx.ALL, border = 3)
-    self.my_sizer.Add(self.data_txt_01, proportion = 0,
-                      flag =  wx.ALIGN_LEFT, border = 3)
+
+    if( text_data != None):
+      self.my_sizer.Add(self.data_txt_01, proportion = 0,
+                        flag =  wx.ALIGN_LEFT, border = 3)
 
     self.my_sizer.SetMinSize((50, 20))
 
@@ -142,11 +145,11 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       for i, bmp_lst in enumerate(lst_1d):
         local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
         slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
-        data_txt_01 = wx.StaticText(self, -1, slice_string)
+        slice_sub_info_txt = wx.StaticText(self, -1, slice_string)
         sigle_slice_sizer = wx.BoxSizer(wx.VERTICAL)
         sigle_slice_sizer.Add(local_bitmap, proportion = 0,
                               flag = wx.ALIGN_CENTRE | wx.ALL, border = 2)
-        sigle_slice_sizer.Add(data_txt_01, proportion = 0,
+        sigle_slice_sizer.Add(slice_sub_info_txt, proportion = 0,
                               flag = wx.ALIGN_CENTRE | wx.ALL, border = 2)
         img_lst_hor_sizer.Add(sigle_slice_sizer, proportion = 0,
                               flag = wx.ALIGN_CENTER | wx.ALL, border = 2)
