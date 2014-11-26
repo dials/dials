@@ -10,13 +10,10 @@ from dxtbx.model.crystal import crystal_model
 from dials.array_family import flex
 
 # set random seeds so tests more reliable
-
 seed = 54321
-
 import random
 random.seed(seed)
-import scitbx.random
-scitbx.random.set_random_seed(seed)
+flex.set_random_seed(seed)
 
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
@@ -124,7 +121,8 @@ def run(space_group_info):
                                 miller_indices)
 
   # check that the local indexing did a better job given the errors in the basis vectors
-  assert result.misindexed_local <= result.misindexed_global
+  assert result.misindexed_local <= result.misindexed_global, (
+    result.misindexed_local, result.misindexed_global)
   assert result.misindexed_local < 0.01 * result.correct_local
   assert result.correct_local > result.correct_global
   # usually the number misindexed is much smaller than this
