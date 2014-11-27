@@ -47,7 +47,7 @@ for axis in gonio_axes:
     assert(not scan_axis), (scan_axis, axis, delta)
     scan_axis = axis
 
-# now compute the pre-rotation, scan-rotation, post-rotation - FIXME need to 
+# now compute the pre-rotation, scan-rotation, post-rotation - FIXME need to
 # make sure that orientation of axis is being correctly applied...
 
 total_r_before = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
@@ -76,3 +76,14 @@ print total_r_scan
 print 'After'
 print total_r_after
 
+R_gw = total_r_before * total_r_scan * total_r_after
+
+x = gonio.rotate_vector(0.0, 1, 0, 0)
+y = gonio.rotate_vector(0.0, 0, 1, 0)
+z = gonio.rotate_vector(0.0, 0, 0, 1)
+
+R_cbf = matrix.sqr(x + y + z).transpose()
+
+print 'Comparison'
+print '%8.5f %8.5f %8.5f\n%8.5f %8.5f %8.5f\n%8.5f %8.5f %8.5f' % tuple(
+  (R_gw * R_cbf.inverse()).elems)
