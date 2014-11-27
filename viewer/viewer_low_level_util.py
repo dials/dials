@@ -28,12 +28,9 @@ class flex_3d_frame(wx.Frame):
     self.img_panel = in_upper_panel
 
     if( text_data != None):
-
-      self.myGrid = MyGrid(self)
-      self.myGrid.ini_n_intro(text_data)
+      self.myGrid = text_data
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-
     self.my_sizer.Add(self.img_panel, proportion = 1,
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
@@ -49,13 +46,13 @@ class flex_3d_frame(wx.Frame):
 
 class MyGrid(gridlib.Grid):
 
-  def __init__(self, parent):
+  def __init__(self, parent_frame):
     """Constructor"""
-    super(MyGrid, self).__init__(parent)
+    super(MyGrid, self).__init__(parent_frame)
 
   def ini_n_intro(self, table_in):
     self.CreateGrid(12, 8)
-    self.SetCellValue(5, 3, table_in)
+    self.SetCellValue(5, 3, "table_in here")
     self.EnableEditing(False)
     '''self.SetCellSize(row(pos), col(pos),
                       size(n of grid rows), size(n of grid cols))'''

@@ -12,7 +12,7 @@
 
 from __future__ import division
 import wx
-from viewer_low_level_util import flex_3d_frame, flex_arr_img_panel
+from viewer_low_level_util import flex_3d_frame, flex_arr_img_panel, MyGrid
 
 
 class show_3d(object):
@@ -105,9 +105,12 @@ class show_3d_wx_app(wx.App):
 
 class show_tabl_wx_app(wx.App):
   def OnInit(self):
+
     self.frame = flex_3d_frame(None, 'DIALS reflections viewer')
     self.upper_panel = flex_arr_img_panel(self.frame)
-    self.frame.frame_ini_img(self.upper_panel, "test text")
+    self.data_grid = MyGrid(self.frame)
+    self.frame.frame_ini_img(self.upper_panel, self.data_grid)
+
     return True
 
   def in_tabl(self, table):
@@ -127,6 +130,7 @@ class show_tabl_wx_app(wx.App):
     print info_lst
 
     self.upper_panel.ini_n_intro(flex_dat_frst_lst, flex_dat_seg_lst)
+    self.data_grid.ini_n_intro(table)
     self.SetTopWindow(self.frame)
     self.frame.Show()
     output_full_row = '''
