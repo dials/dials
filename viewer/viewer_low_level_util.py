@@ -51,8 +51,26 @@ class MyGrid(gridlib.Grid):
     super(MyGrid, self).__init__(parent_frame)
 
   def ini_n_intro(self, table_in):
-    self.CreateGrid(12, 8)
-    self.SetCellValue(5, 3, "table_in here")
+
+    lst_nm = range(1, 20)
+    info_lst = []
+
+    for nm in lst_nm:
+      info_lst.append(table_in[nm]['miller_index'])
+
+    print "info_lst ="
+    print info_lst
+
+
+
+    self.CreateGrid(len(info_lst), 8)
+    #for nm in lst_nm:
+    for nm, data in enumerate(info_lst):
+      print "nm =", nm
+      #self.SetCellValue(nm - 1, 3, str(info_lst[nm - 1]))
+      self.SetCellValue(nm, 3, str(data))
+
+
     self.EnableEditing(False)
     '''self.SetCellSize(row(pos), col(pos),
                       size(n of grid rows), size(n of grid cols))'''
