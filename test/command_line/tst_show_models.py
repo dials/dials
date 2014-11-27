@@ -38,8 +38,9 @@ Scan:
     oscillation:   {0,0.2}
 
 Goniometer:
-    Rotation axis:  {1,0,0}
-    Fixed rotation: {1,0,0,0,1,0,0,0,1}
+    Rotation axis:   {1,0,0}
+    Fixed rotation:  {1,0,0,0,1,0,0,0,1}
+    Setting rotation:{1,0,0,0,1,0,0,0,1}
 
 Crystal:
     Unit cell: (42.272, 42.272, 39.670, 90.000, 89.999, 90.000)
@@ -81,8 +82,9 @@ Scan:
     oscillation:   {82,0.15}
 
 Goniometer:
-    Rotation axis:  {1,0,0}
-    Fixed rotation: {1,0,0,0,1,0,0,0,1}
+    Rotation axis:   {1,0,0}
+    Fixed rotation:  {1,0,0,0,1,0,0,0,1}
+    Setting rotation:{1,0,0,0,1,0,0,0,1}
 """)
 
 
