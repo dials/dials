@@ -751,6 +751,9 @@ scratch/luiso_s/wx_toys/bitmap_from_numpy_w_matplotlib.py -text
 scratch/luiso_s/wx_toys/bitmap_from_numpy_w_matplotlib_one_more_try.py -text
 scratch/luiso_s/wx_toys/bitmap_from_numpy_w_matplotlib_well_done.py -text
 scratch/luiso_s/wx_toys/dual_frame.py -text
+scratch/luiso_s/wx_toys/grid_tst.py -text
+scratch/luiso_s/wx_toys/grid_tst_01.py -text
+scratch/luiso_s/wx_toys/grid_tst_02.py -text
 scratch/luiso_s/wx_toys/py_bmp.py -text
 scratch/luiso_s/wx_toys/radiobutton_test.py -text
 scratch/luiso_s/wx_toys/radiobutton_test_simpl.py -text

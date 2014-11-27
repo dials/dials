@@ -15,7 +15,7 @@ from from_flex_to_wxbitmap import wxbitmap_convert
 import wx
 import numpy as np
 import wx.lib.scrolledpanel as scroll_pan
-
+import wx.grid as gridlib
 import math
 
 class flex_3d_frame(wx.Frame):
@@ -28,8 +28,11 @@ class flex_3d_frame(wx.Frame):
     self.img_panel = in_upper_panel
 
     if( text_data != None):
-      self.data_txt_01 = wx.StaticText(self, -1, text_data, size = (800, 16))
-      #self.data_txt_01.SetLabel(text_data)
+
+      self.myGrid = gridlib.Grid(self)
+      self.myGrid.CreateGrid(12, 8)
+      self.myGrid.SetCellValue(5, 0, "123")
+      self.myGrid.EnableEditing(False)
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -37,8 +40,8 @@ class flex_3d_frame(wx.Frame):
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
     if( text_data != None):
-      self.my_sizer.Add(self.data_txt_01, proportion = 0,
-                        flag =  wx.ALIGN_LEFT, border = 3)
+      self.my_sizer.Add(self.myGrid, proportion = 1,
+                        flag =  wx.EXPAND | wx.ALL, border = 3)
 
     self.my_sizer.SetMinSize((50, 20))
 
@@ -130,7 +133,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.SetupScrolling()
     self.scroll_rot = 0
-    self.SetBackgroundColour(wx.Colour(200,200,200))
+    self.SetBackgroundColour(wx.Colour(200, 200, 200))
     aprox_len_pix = len(self.lst_2d_bmp) * 10
     self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
 
