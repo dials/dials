@@ -29,10 +29,8 @@ class flex_3d_frame(wx.Frame):
 
     if( text_data != None):
 
-      self.myGrid = gridlib.Grid(self)
-      self.myGrid.CreateGrid(12, 8)
-      self.myGrid.SetCellValue(5, 0, "123")
-      self.myGrid.EnableEditing(False)
+      self.myGrid = MyGrid(self)
+      self.myGrid.ini_n_intro(text_data)
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -47,6 +45,29 @@ class flex_3d_frame(wx.Frame):
 
     self.SetSizer(self.my_sizer)
 
+
+
+class MyGrid(gridlib.Grid):
+
+  def __init__(self, parent):
+    """Constructor"""
+    super(MyGrid, self).__init__(parent)
+
+  def ini_n_intro(self, table_in):
+    self.CreateGrid(12, 8)
+    self.SetCellValue(5, 3, table_in)
+    self.EnableEditing(False)
+    '''self.SetCellSize(row(pos), col(pos),
+                      size(n of grid rows), size(n of grid cols))'''
+    #self.SetCellSize(5, 3, 2, 50)
+    self.AutoSizeColumns(True)
+    self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
+
+  def OnCellLeftClick(self, evt):
+    print "OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                             evt.GetCol(),
+                                             evt.GetPosition())
+    evt.Skip()
 
 class flex_arr_img_panel(wx.Panel):
   def __init__(self, parent_frame):
