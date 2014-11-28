@@ -33,6 +33,9 @@ class SpotFrame(XrayFrame) :
     self.draw_max_pix_timer = time_log("draw_max_pix")
     self.draw_ctr_mass_timer = time_log("draw_ctr_mass_pix")
 
+    self._image_chooser_tmp_key = []
+    self._image_chooser_tmp_clientdata = []
+
   #def __del__(self):
     #print self.show_all_pix_timer.legend
     #print self.show_all_pix_timer.report()
@@ -43,6 +46,43 @@ class SpotFrame(XrayFrame) :
     #print self.draw_shoebox_timer.report()
     #print self.draw_max_pix_timer.report()
     #print self.draw_ctr_mass_timer.report()
+
+  def add_file_name_or_data (self, file_name_or_data) :
+      """The add_file_name_or_data() function appends @p
+      file_name_or_data to the image chooser, unless it is already
+      present.  For file-backed images, the base name is displayed in
+      the chooser.  If necessary, the number of entries in the chooser
+      is pruned.  The function returns the index of the recently added
+      entry.  XXX This is probably the place for heuristics to determine
+      if the viewer was given a pattern, or a plain list of files.  XXX
+      Rename this function, because it only deals with the chooser?
+      """
+
+      key = self.get_key(file_name_or_data)
+      count = self.image_chooser.GetCount()
+      for i in xrange(count) :
+        if (key == str(self.image_chooser.GetClientData(i))) :
+          return i
+      self._image_chooser_tmp_key.append(key)
+      self._image_chooser_tmp_clientdata.append(file_name_or_data)
+      return len(self._image_chooser_tmp_key) + count
+
+  def load_image (self, file_name_or_data) :
+    """The load_image() function displays the image from @p
+    file_name_or_data.  The chooser is updated appropriately.
+    """
+
+    if len(self._image_chooser_tmp_key):
+      starting_count = self.image_chooser.GetCount()
+      n = len(self._image_chooser_tmp_key)
+      self.image_chooser.AppendItems(self._image_chooser_tmp_key)
+      for i in range(n):
+        self.image_chooser.SetClientData(
+          starting_count+i, self._image_chooser_tmp_clientdata[i])
+      self._image_chooser_tmp_key = []
+      self._image_chooser_tmp_clientdata = []
+
+    super(SpotFrame, self).load_image(file_name_or_data)
 
   def OnShowSettings (self, event) :
     if (self.settings_frame is None) :

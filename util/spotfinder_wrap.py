@@ -21,7 +21,7 @@ class spot_wrapper:
     for imageset in imagesets:
       for idx in imageset.indices():
         i += 1
-        print i
+        #print i
         frame.add_file_name_or_data(chooser_wrapper(imageset, idx))
     idx = imagesets[0].indices()[0]
     frame.load_image(chooser_wrapper(imagesets[0],idx))
