@@ -23,11 +23,11 @@ fi
 DIALS_VERSION=$1
 HOST_TAG=$2
 if [ -z "$DIALS_VERSION" ]; then
-  echo "DIALS_VERSION must be second argument!"
+  echo "DIALS_VERSION must be first argument!"
   exit 1
 fi
 if [ -z "$HOST_TAG" ]; then
-  echo "HOST_TAG must be third argument!"
+  echo "HOST_TAG must be second argument!"
   exit 1
 fi
 DIALS="`libtbx.find_in_repositories dials`"
