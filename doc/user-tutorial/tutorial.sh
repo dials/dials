@@ -7,19 +7,19 @@
 # data should be passed on the command-line e.g. ./tutorial.sh /path/to/data
 # or linked to the directory where the script is run as "data"
 
-if [[ -z $1 ]]; then
+if test -z $1; then
   data_directory=./data
 else
   data_directory=$1
 fi
 
-if [[ -z $2 ]]; then
+if test -z $2; then
   nproc=$((`libtbx.show_number_of_processors` / 2))
 else
   nproc=$2
 fi
 
-if [[ ! -f ${data_directory}/th_8_2_0001.cbf ]]; then
+if test ! -f ${data_directory}/th_8_2_0001.cbf; then
   echo "Data not found in directory: ${data_directory} -"
   echo "please download from doi:10.5281/zenodo.10271 and pass on command-line"
   echo "or create softlink from data directory to ./data"
