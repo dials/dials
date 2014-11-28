@@ -51,6 +51,16 @@ class MyGrid(gridlib.Grid):
     super(MyGrid, self).__init__(parent_frame)
 
   def ini_n_intro(self, table_in):
+    print "Data to be visualized:"
+    print "_____________________"
+
+    col_names = []
+
+    for col_num, col_key in enumerate(table_in[0]):
+      print col_num, col_key
+      if( col_key != 'shoebox' ):
+        col_names.append(col_key)
+    print "num of col to show =", len(col_names)
 
     lst_nm = range(1, 20)
     info_lst = []
@@ -60,16 +70,40 @@ class MyGrid(gridlib.Grid):
 
     print "info_lst ="
     print info_lst
+    output_full_row = '''
+
+    table[0] = {
+    'imageset_id': 0,
+    'xyzcal.mm': (0.0, 0.0, 0.0),
+    'intensity.sum.value': 15.0,
+    'xyzobs.px.variance': (0.286144578313253, 0.2676706827309237, 0.25),
+    'intensity.sum.variance': 15.0,
+    's1': (-0.03497287541155274, 0.604366929910932, -0.826295905178965),
+    'shoebox': <dials_model_data_ext.Shoebox object at 0x7b4f820>,
+    'iobs': 0,
+    'rlp': (-0.035319267434222125, 0.27946863045406983, -0.5712908827798997),
+    'xyzobs.mm.variance': (0.00846530120481, 0.007918769477911, 1.7134729863002e-06),
+    'miller_index': (36, -4, -17),
+    'flags': 0,
+    'bbox': (1158, 1161, 68, 70, 0, 1),
+    'xyzobs.mm.value': (199.43804512406385, 11.977194484339728, 1.4324789835743459),
+    'xyzobs.px.value': (1159.5, 69.23333333333333, 0.5),
+    'id': 0,
+    'panel': 0
+    }
+
+    '''
 
 
-
-    self.CreateGrid(len(info_lst), 8)
+    self.CreateGrid(len(info_lst), len(col_names))
     #for nm in lst_nm:
     for nm, data in enumerate(info_lst):
       print "nm =", nm
       #self.SetCellValue(nm - 1, 3, str(info_lst[nm - 1]))
-      self.SetCellValue(nm, 3, str(data))
+      for col_pos, cel_val in enumerate( table_in[nm].iteritems() ):
 
+        #self.SetCellValue(nm, 3, str(data))
+        self.SetCellValue(nm, col_pos, str(cel_val))
 
     self.EnableEditing(False)
     '''self.SetCellSize(row(pos), col(pos),
