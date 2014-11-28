@@ -11,7 +11,7 @@ class MyGrid(gridlib.Grid):
     """Constructor"""
     super(MyGrid, self).__init__(parent)
     self.CreateGrid(12, 8)
-
+    self.SetColLabelValue(5, "test")
     # test all the events
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
 

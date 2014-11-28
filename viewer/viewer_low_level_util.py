@@ -54,6 +54,7 @@ class MyGrid(gridlib.Grid):
     print "Data to be visualized:"
     print "_____________________"
 
+
     col_names = []
 
     for col_num, col_key in enumerate(table_in[0]):
@@ -62,14 +63,22 @@ class MyGrid(gridlib.Grid):
         col_names.append(col_key)
     print "num of col to show =", len(col_names)
 
-    lst_nm = range(1, 20)
-    info_lst = []
+    self.CreateGrid(len(table_in), len(col_names))
 
-    for nm in lst_nm:
-      info_lst.append(table_in[nm]['miller_index'])
+    for col_pos, key in enumerate(table_in[0].keys()):
+      print col_pos, key
+      self.SetColLabelValue(col_pos, str(key))
 
-    print "info_lst ="
-    print info_lst
+    for nm, data in enumerate(table_in):
+      for col_pos, key in enumerate(table_in[nm].keys()):
+        self.SetCellValue(nm, col_pos, str(table_in[nm][key]))
+
+    self.AutoSizeColumns(True)
+    self.EnableEditing(False)
+    self.EnableDragGridSize(False)
+
+    self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
+
     output_full_row = '''
 
     table[0] = {
@@ -93,24 +102,6 @@ class MyGrid(gridlib.Grid):
     }
 
     '''
-
-
-    self.CreateGrid(len(info_lst), len(col_names))
-    #for nm in lst_nm:
-    for nm, data in enumerate(info_lst):
-      print "nm =", nm
-      #self.SetCellValue(nm - 1, 3, str(info_lst[nm - 1]))
-      for col_pos, cel_val in enumerate( table_in[nm].iteritems() ):
-
-        #self.SetCellValue(nm, 3, str(data))
-        self.SetCellValue(nm, col_pos, str(cel_val))
-
-    self.EnableEditing(False)
-    '''self.SetCellSize(row(pos), col(pos),
-                      size(n of grid rows), size(n of grid cols))'''
-    #self.SetCellSize(5, 3, 2, 50)
-    self.AutoSizeColumns(True)
-    self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
 
   def OnCellLeftClick(self, evt):
     print "OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
