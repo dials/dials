@@ -19,6 +19,7 @@ class Test(object):
     # self.test1()
     self.test2()
     self.test3()
+    self.test4()
 
   def test1(self):
     from os.path import join, exists
@@ -174,6 +175,45 @@ class Test(object):
     assert(flex.abs(diff_Cal_P).all_lt(1e-7))
     assert(flex.abs(diff_Obs_Z).all_lt(1e-7))
     # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
+
+    print 'OK'
+
+  def test4(self):
+    from os.path import join
+    from libtbx import easy_run
+    import os
+    from uuid import uuid4
+
+    dirname ='tmp_%s' % uuid4().hex
+    os.mkdir(dirname)
+    os.chdir(dirname)
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.integrate',
+      join(self.path, 'experiments.json'),
+      join(self.path, 'profile.phil'),
+      'intensity.algorithm=sum',
+      'sampling.integrate_all_reflections=False',
+    ]).raise_if_errors()
+
+    import cPickle as pickle
+    table = pickle.load(open('integrated.pickle', 'rb'))
+    assert len(table) == 1000
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.integrate',
+      join(self.path, 'experiments.json'),
+      join(self.path, 'profile.phil'),
+      'intensity.algorithm=sum',
+      'sampling.integrate_all_reflections=False',
+      'sampling.minimum_sample_size=500',
+    ]).raise_if_errors()
+
+    import cPickle as pickle
+    table = pickle.load(open('integrated.pickle', 'rb'))
+    assert len(table) == 500
 
     print 'OK'
 
