@@ -642,8 +642,7 @@ class indexer_base(object):
     import libtbx
     if self.params.max_cell is libtbx.Auto:
       if self.params.known_symmetry.unit_cell is not None:
-        best_cell = self.target_symmetry_reference_setting.best_cell()
-        uc_params  = best_cell.unit_cell().parameters()
+        uc_params = self.target_symmetry_primitive.unit_cell().parameters()
         self.params.max_cell = 1.5 * max(uc_params[:3])
       else:
         # The nearest neighbour analysis gets fooled when the same part of
