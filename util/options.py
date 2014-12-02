@@ -332,7 +332,7 @@ class OptionParserBase(optparse.OptionParser, object):
       action='count',
       default=0,
       dest='verbose',
-      help='Set the verbosity')
+      help='Increase verbosity')
 
   def parse_args(self, args=None):
     '''Parse the command line arguments and get system configuration.'''
