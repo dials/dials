@@ -6,7 +6,7 @@ import wx
 import wx.grid as gridlib
 
 
-class GenericTable(gridlib.PyGridTableBase):
+class TupTable(gridlib.PyGridTableBase):
   def __init__(self, data, rowLabels=None, colLabels=None):
     gridlib.PyGridTableBase.__init__(self)
     self.data = data
@@ -23,6 +23,9 @@ class GenericTable(gridlib.PyGridTableBase):
     if self.colLabels:
       return self.colLabels[col]
 
+  def GetRowLabelValue(self, row):
+    if self.rowLabels:
+      return self.rowLabels[row]
 
   def IsEmptyCell(self, row, col):
     return False
@@ -33,22 +36,22 @@ class GenericTable(gridlib.PyGridTableBase):
   def SetValue(self, row, col, value):
     pass
 
-colLabels = ("Last", "First")
-rowLabels = ("1", "2", "3", "4", "E", "6", "7", "8", "A")
 
 class MyGrid(gridlib.Grid):
   def __init__(self, parent):
     """Constructor"""
-    super(MyGrid, self).__init__(parent)
 
     data = (("A", "B"),
             ("C", "D"),
-            ("E", "F"),
+            ("E", "Fxx123xx"),
             ("G", "G"),
             ("F", "F"),
             ("Q", "Q"))
+    colLabels = ("Last", "Test")
+    rowLabels = ("1", "2", "X", "40000", "E", "6")
 
-    tableBase = GenericTable(data, rowLabels, colLabels)
+    super(MyGrid, self).__init__(parent)
+    tableBase = TupTable(data, rowLabels, colLabels)
     self.SetTable(tableBase)
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
@@ -60,14 +63,13 @@ class MyGrid(gridlib.Grid):
                                              evt.GetPosition())
     evt.Skip()
 
-
 class MyForm(wx.Frame):
 
   def __init__(self):
-
+    """Constructor"""
     super(MyForm, self).__init__(parent=None, title="An Grid for toying")
     panel = wx.Panel(self)
-
+    #grid = SimpleGrid(self)
     myGrid = MyGrid(panel)
 
     sizer = wx.BoxSizer(wx.VERTICAL)
