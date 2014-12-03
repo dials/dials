@@ -44,6 +44,40 @@ class flex_3d_frame(wx.Frame):
 
 
 
+
+
+class TupTable(gridlib.PyGridTableBase):
+  def __init__(self, data, rowLabels=None, colLabels=None):
+    gridlib.PyGridTableBase.__init__(self)
+    self.data = data
+    self.rowLabels = rowLabels
+    self.colLabels = colLabels
+
+  def GetNumberRows(self):
+    return len(self.data)
+
+  def GetNumberCols(self):
+    return len(self.data[0])
+
+  def GetColLabelValue(self, col):
+    if self.colLabels:
+      return self.colLabels[col]
+
+  def GetRowLabelValue(self, row):
+    if self.rowLabels:
+      return self.rowLabels[row]
+
+  def IsEmptyCell(self, row, col):
+    return False
+
+  def GetValue(self, row, col):
+    return self.data[row][col]
+
+  def SetValue(self, row, col, value):
+    pass
+
+
+
 class MyGrid(gridlib.Grid):
 
   def __init__(self, parent_frame):
@@ -51,57 +85,53 @@ class MyGrid(gridlib.Grid):
     super(MyGrid, self).__init__(parent_frame)
 
   def ini_n_intro(self, table_in):
-    print "Data to be visualized:"
-    print "_____________________"
+
+    #new_code = '''
+    lst_keys = []
+    for col_pos, key in enumerate(table_in.keys()):
+      if(key != "shoebox"):
+        lst_keys.append(key)
+      else:
+        shoebox_col_n = col_pos
+        print "col with shoebox =", shoebox_col_n
+
+    data = []
+    for col_pos, key in enumerate(table_in.keys()):
+      if(col_pos != shoebox_col_n):
+        col = table_in[key]
+        print "col = key = ", str(col)
+        col_strs = map(str, col)
+        data.append(col_strs)
+
+    data = tuple(zip(*data))
+    colLabels = tuple(lst_keys)
+    rowLabels = tuple(range(len(data)))
+
+    tableBase = TupTable(data, rowLabels, colLabels)
+    self.SetTable(tableBase)
+    #'''
 
 
-    col_names = []
+    old_code = '''
 
-    for col_num, col_key in enumerate(table_in[0]):
-      print col_num, col_key
-      if( col_key != 'shoebox' ):
-        col_names.append(col_key)
-    print "num of col to show =", len(col_names)
-
-    self.CreateGrid(len(table_in), len(col_names))
+    self.CreateGrid(len(table_in), len(table_in[0]))
 
     for col_pos, key in enumerate(table_in[0].keys()):
       print col_pos, key
       self.SetColLabelValue(col_pos, str(key))
 
+
     for nm, data in enumerate(table_in):
       for col_pos, key in enumerate(table_in[nm].keys()):
         self.SetCellValue(nm, col_pos, str(table_in[nm][key]))
+    #'''
+
 
     self.AutoSizeColumns(True)
     self.EnableEditing(False)
     self.EnableDragGridSize(False)
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
-
-    output_full_row = '''
-
-    table[0] = {
-    'imageset_id': 0,
-    'xyzcal.mm': (0.0, 0.0, 0.0),
-    'intensity.sum.value': 15.0,
-    'xyzobs.px.variance': (0.286144578313253, 0.2676706827309237, 0.25),
-    'intensity.sum.variance': 15.0,
-    's1': (-0.03497287541155274, 0.604366929910932, -0.826295905178965),
-    'shoebox': <dials_model_data_ext.Shoebox object at 0x7b4f820>,
-    'iobs': 0,
-    'rlp': (-0.035319267434222125, 0.27946863045406983, -0.5712908827798997),
-    'xyzobs.mm.variance': (0.00846530120481, 0.007918769477911, 1.7134729863002e-06),
-    'miller_index': (36, -4, -17),
-    'flags': 0,
-    'bbox': (1158, 1161, 68, 70, 0, 1),
-    'xyzobs.mm.value': (199.43804512406385, 11.977194484339728, 1.4324789835743459),
-    'xyzobs.px.value': (1159.5, 69.23333333333333, 0.5),
-    'id': 0,
-    'panel': 0
-    }
-
-    '''
 
   def OnCellLeftClick(self, evt):
     print "OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
