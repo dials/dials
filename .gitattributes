@@ -191,6 +191,9 @@ algorithms/refinement/target.py -text
 algorithms/refinement/target_stills.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
 algorithms/refinement/weighting_strategies.py -text
+algorithms/rs_mapper/SConscript -text
+algorithms/rs_mapper/__init__.py -text
+algorithms/rs_mapper/ext.cpp -text
 algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
 algorithms/shoebox/boost_python/find_overlapping.cc -text
@@ -321,6 +324,7 @@ command_line/refine_bravais_settings.py -text
 command_line/reflection_viewer.py -text
 command_line/reindex.py -text
 command_line/remove_absent_reflections.py -text
+command_line/rs_mapper.py -text
 command_line/show_extensions.py -text
 command_line/show_indexed_strong.py -text
 command_line/show_isig_rmsd.py -text
