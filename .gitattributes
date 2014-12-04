@@ -646,6 +646,8 @@ scratch/jmp/misc/test_to_dict.py -text
 scratch/jmp/misc/test_transform.py -text
 scratch/jmp/mp_test.h -text
 scratch/jmp/mp_test.py -text
+scratch/jmp/mtz2/__init__.py -text
+scratch/jmp/mtz2/mtz2.py -text
 scratch/jmp/new_extract/new_extract.py -text
 scratch/jmp/new_integrator/interface.cc -text
 scratch/jmp/new_integrator/interface.h -text
