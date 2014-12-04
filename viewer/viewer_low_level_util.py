@@ -86,8 +86,10 @@ class MyGrid(gridlib.Grid):
 
   def ini_n_intro(self, table_in):
 
+    timing_for_debugging = '''
     import time
     time1 = time.time()
+    '''
 
     #new_code = '''
     lst_keys = []
@@ -99,7 +101,6 @@ class MyGrid(gridlib.Grid):
         col = table_in[key]
         col_strs = map(str, col)
         data.append(col_strs)
-
 
     data = tuple(zip(*data))
     colLabels = tuple(lst_keys)
@@ -120,17 +121,17 @@ class MyGrid(gridlib.Grid):
         self.SetCellValue(nm, col_pos, str(table_in[nm][key]))
     #'''
 
-
     self.AutoSizeColumns(True)
     self.EnableEditing(False)
     self.EnableDragGridSize(False)
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
 
-
+    timing_for_debugging = '''
     time2 = time.time()
     timedif = time2 - time1
     print "timedif =", timedif
+    '''
 
 
   def OnCellLeftClick(self, evt):
