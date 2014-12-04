@@ -86,22 +86,20 @@ class MyGrid(gridlib.Grid):
 
   def ini_n_intro(self, table_in):
 
+    import time
+    time1 = time.time()
+
     #new_code = '''
     lst_keys = []
-    for col_pos, key in enumerate(table_in.keys()):
+    data = []
+
+    for key in table_in.keys():
       if(key != "shoebox"):
         lst_keys.append(key)
-      else:
-        shoebox_col_n = col_pos
-        print "col with shoebox =", shoebox_col_n
-
-    data = []
-    for col_pos, key in enumerate(table_in.keys()):
-      if(col_pos != shoebox_col_n):
         col = table_in[key]
-        print "col = key = ", str(col)
         col_strs = map(str, col)
         data.append(col_strs)
+
 
     data = tuple(zip(*data))
     colLabels = tuple(lst_keys)
@@ -111,18 +109,14 @@ class MyGrid(gridlib.Grid):
     self.SetTable(tableBase)
     #'''
 
-
     old_code = '''
-
     self.CreateGrid(len(table_in), len(table_in[0]))
-
-    for col_pos, key in enumerate(table_in[0].keys()):
+    for col_pos, key in enumerate(table_in.keys()):
       print col_pos, key
       self.SetColLabelValue(col_pos, str(key))
-
-
     for nm, data in enumerate(table_in):
-      for col_pos, key in enumerate(table_in[nm].keys()):
+      #for col_pos, key in enumerate(table_in[nm].keys()):
+      for col_pos, key in enumerate(table_in.keys()):
         self.SetCellValue(nm, col_pos, str(table_in[nm][key]))
     #'''
 
@@ -132,6 +126,12 @@ class MyGrid(gridlib.Grid):
     self.EnableDragGridSize(False)
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
+
+
+    time2 = time.time()
+    timedif = time2 - time1
+    print "timedif =", timedif
+
 
   def OnCellLeftClick(self, evt):
     print "OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
