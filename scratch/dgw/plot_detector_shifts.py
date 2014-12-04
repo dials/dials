@@ -106,11 +106,11 @@ if __name__ == "__main__":
 
   for ipanel in range(len(det1)):
     f, s, f_off, s_off, n_off = dat[ipanel]
-    #im = axarr[ipanel].hexbin(list(f), list(s), C=list(f_off), gridsize=30,
-    #  vmin=-1.*extrema, vmax=extrema)
-    im = axarr[ipanel].hexbin(list(f), list(s), C=list(f_off), gridsize=30)
-    #axarr[iax].ylabel("slow (mm)")
-  plt.axis([flex.min(f), flex.max(f), flex.min(s), flex.max(s)])
+    ax=axarr[ipanel]
+    im = ax.hexbin(list(f), list(s), C=list(f_off), gridsize=30)
+    ax.invert_yaxis()
+    ax.set_yticks([0., 20.])
+    ax.tick_params('y', labelsize='x-small')
 
   fig.subplots_adjust(right=0.8)
   cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
@@ -127,11 +127,11 @@ if __name__ == "__main__":
 
   for ipanel in range(len(det1)):
     f, s, f_off, s_off, n_off = dat[ipanel]
-    #im = axarr[ipanel].hexbin(list(f), list(s), C=list(s_off), gridsize=30,
-    #  vmin=-1.*extrema, vmax=extrema)
-    im = axarr[ipanel].hexbin(list(f), list(s), C=list(s_off), gridsize=30)
-    #axarr[iax].ylabel("slow (mm)")
-  plt.axis([flex.min(f), flex.max(f), flex.min(s), flex.max(s)])
+    ax=axarr[ipanel]
+    im = ax.hexbin(list(f), list(s), C=list(s_off), gridsize=30)
+    ax.invert_yaxis()
+    ax.set_yticks([0., 20.])
+    ax.tick_params('y', labelsize='x-small')
 
   fig.subplots_adjust(right=0.8)
   cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
@@ -148,11 +148,11 @@ if __name__ == "__main__":
 
   for ipanel in range(len(det1)):
     f, s, f_off, s_off, n_off = dat[ipanel]
-    #im = axarr[ipanel].hexbin(list(f), list(s), C=list(n_off), gridsize=30,
-    #  vmin=-1.*extrema, vmax=extrema)
-    im = axarr[ipanel].hexbin(list(f), list(s), C=list(n_off), gridsize=30)
-    #axarr[iax].ylabel("slow (mm)")
-  #plt.axis([flex.min(f), flex.max(f), flex.min(s), flex.max(s)])
+    ax=axarr[ipanel]
+    im = ax.hexbin(list(f), list(s), C=list(n_off), gridsize=30)
+    ax.invert_yaxis()
+    ax.set_yticks([0., 20.])
+    ax.tick_params('y', labelsize='x-small')
 
   fig.subplots_adjust(right=0.8)
   cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
