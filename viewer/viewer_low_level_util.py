@@ -142,14 +142,14 @@ class MyGrid(gridlib.Grid):
 
   def repaint_img(self, new_row):
     print "new row  =", new_row
-    self.parent_fr.img_panel.tst_tmp(new_row)
+    self.parent_fr.img_panel.update_img_w_row_pos(new_row)
 
 class flex_arr_img_panel(wx.Panel):
   def __init__(self, parent_frame):
     super(flex_arr_img_panel, self).__init__(parent_frame)
     self.show_nums = True
     self.show_mask = True
-    self.row_pos = 5
+    self.row_pos = 0
 
   def ini_n_intro(self, data_in_one, data_in_two = None):
 
@@ -204,9 +204,11 @@ class flex_arr_img_panel(wx.Panel):
       return self.lst_bmp_obj.scaling(scale = self.scale)
 
 
-  def tst_tmp(self, num):
-    print "testing: going back and forward in parenthood "
-    print "number passed =", num
+  def update_img_w_row_pos(self, num):
+    self.row_pos = num
+    self.assign_row_pos()
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
+    self.panel_02.img_refresh(self.bmp_lst)
 
 
   def to_hide_nums(self):
