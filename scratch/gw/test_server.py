@@ -6,22 +6,6 @@ from multiprocessing import current_process
 
 stop = False
 
-def analyse(reflections, detector, beam):
-  '''Find #refl between 40A and 4A (hard coded at the moment)'''
-  from dials.array_family import flex
-
-  p = reflections['panel']
-  x, y = reflections['xyzobs.px.value'].parts()[:2]
-  resolutions = flex.double(len(reflections), 0.0)
-
-  # FIXME move this calculation to C++
-
-  for j, r in enumerate(reflections):
-    d = detector[p[j]].get_resolution_at_pixel(beam.get_s0(), (x[j], y[j]))
-    resolutions[j] = d
-  return len(resolutions) - (resolutions < 4).count(True) - \
-    (resolutions > 40).count(True)
-
 def work(filename, cl=[]):
   from dials.command_line.find_spots import phil_scope as params
   from dxtbx.datablock import DataBlockFactory
@@ -32,9 +16,11 @@ def work(filename, cl=[]):
   datablock = DataBlockFactory.from_filenames([filename])[0]
   reflections = flex.reflection_table.from_observations(
     datablock, params.extract())
-  detector = datablock.unique_detectors()[0]
-  beam = datablock.unique_beams()[0]
-  return analyse(reflections, detector, beam)
+  params = params.fetch(interp.process(
+    'spotfinder.filter.ice_rings.filter=true'))
+  reflections_filter = flex.reflection_table.from_observations(
+    datablock, params.extract())
+  return len(reflections), len(reflections_filter)
 
 class handler(server_base.BaseHTTPRequestHandler):
   def do_GET(s):
@@ -50,9 +36,9 @@ class handler(server_base.BaseHTTPRequestHandler):
     params = s.path.split(';')[1:]
     proc = current_process().name
     try:
-      result = work(filename, params)
-      s.wfile.write("<response>%s: %s: %d</response>" %
-                    (proc, filename, result))
+      result, result_filter = work(filename, params)
+      s.wfile.write("<response>%s: %s: %d / %d</response>" %
+                    (proc, filename, result, result_filter))
     except:
       s.wfile.write("<response>error</response>")
     return
