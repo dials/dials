@@ -116,6 +116,8 @@ class show_tabl_wx_app(wx.App):
   def in_tabl(self, table):
     print "in in_tabl(show_tabl_wx_app)"
 
+    tst_old = '''
+
     lst_nm = range(1, 20)
     flex_dat_frst_lst = []
     flex_dat_seg_lst = []
@@ -123,9 +125,11 @@ class show_tabl_wx_app(wx.App):
     for nm in lst_nm:
       flex_dat_frst_lst.append(table[nm]['shoebox'].data)
       flex_dat_seg_lst.append(table[nm]['shoebox'].mask)
+    '''
 
+    #self.upper_panel.ini_n_intro(flex_dat_frst_lst, flex_dat_seg_lst)
+    self.upper_panel.ini_n_intro(table[0]['shoebox'].data, table[0]['shoebox'].mask)
 
-    self.upper_panel.ini_n_intro(flex_dat_frst_lst, flex_dat_seg_lst)
     self.data_grid.ini_n_intro(table)
     self.SetTopWindow(self.frame)
     self.frame.Show()

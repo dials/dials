@@ -28,7 +28,7 @@ class wxbitmap_convert(object):
       self.lst_3d_mask = None
       #No double list given
 
-      if type(data_in_n1) is list:
+      if isinstance(data_in_n1, list):
         #is a single list
         self.lst_3d_data = []
         for lst_memb in data_in_n1:

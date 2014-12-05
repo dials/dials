@@ -126,18 +126,19 @@ class MyGrid(gridlib.Grid):
     self.EnableDragGridSize(False)
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
-
+    self.Bind(gridlib.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
     timing_for_debugging = '''
     time2 = time.time()
     timedif = time2 - time1
     print "timedif =", timedif
     '''
 
+  def OnLabelLeftClick(self, evt):
+    print "OnLabelLeftClick: ", evt.GetRow()
+    evt.Skip()
 
   def OnCellLeftClick(self, evt):
-    print "OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
-                                             evt.GetCol(),
-                                             evt.GetPosition())
+    print "OnCellLeftClick: ", evt.GetRow()
     evt.Skip()
 
 class flex_arr_img_panel(wx.Panel):
@@ -147,21 +148,24 @@ class flex_arr_img_panel(wx.Panel):
     self.show_mask = True
 
   def ini_n_intro(self, flex_arr_one, flex_arr_two = None):
-    self.first_lst_in, self.segn_lst_in = flex_arr_one, flex_arr_two
-    self.scale = 1.0
-    self.bmp_lst = self._mi_list_of_wxbitmaps()
-    self.panel_01 = buttons_panel(self)
-    self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-    sizer.Add(self.panel_01, 0, wx.ALIGN_CENTRE)
-    sizer.Add(self.panel_02, 1, wx.EXPAND)
-    self.SetSizer(sizer)
-    self.Show(True)
+    if( isinstance(flex_arr_one, flex.reflection_table) ):
+      print "Is a Table"
+    else:
+      self.first_lst_in, self.segn_lst_in = flex_arr_one, flex_arr_two
+      self.scale = 1.0
+      self.bmp_lst = self._mi_list_of_wxbitmaps()
+      self.panel_01 = buttons_panel(self)
+      self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
+      sizer = wx.BoxSizer(wx.HORIZONTAL)
+      sizer.Add(self.panel_01, 0, wx.ALIGN_CENTRE)
+      sizer.Add(self.panel_02, 1, wx.EXPAND)
+      self.SetSizer(sizer)
+      self.Show(True)
 
 
   def _mi_list_of_wxbitmaps(self, re_scaling = False):
-    if(re_scaling == False):
-      if(self.show_mask == True):
+    if( re_scaling == False ):
+      if( self.show_mask == True ):
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
       else:
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
