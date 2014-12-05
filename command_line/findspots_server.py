@@ -51,19 +51,21 @@ def serve(httpd):
     pass
   return
 
-def nproc():
-  from libtbx.introspection import number_of_processors
-  return number_of_processors(return_value_if_unknown=-1)
-
-def main():
+def main(nproc):
   server_class = server_base.HTTPServer
   httpd = server_class(('', 1701), handler)
   print time.asctime(), 'start'
-  for j in range(nproc() - 1):
+  for j in range(nproc - 1):
     new_process(target=serve, args=(httpd,)).start()
   serve(httpd)
   httpd.server_close()
   print time.asctime(), 'done'
 
 if __name__ == '__main__':
-  main()
+  import sys
+  if len(sys.argv) > 1:
+    nproc = int(sys.argv[1])
+  else:
+    from libtbx.introspection import number_of_processors
+    nproc = number_of_processors(return_value_if_unknown=-1)
+  main(nproc)

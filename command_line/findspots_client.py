@@ -28,12 +28,17 @@ def work_all(host, filenames, params):
 
 def stop(host, nproc):
   import httplib
+  from socket import error as socket_error
   for j in range(nproc):
-    conn = httplib.HTTPConnection(host, 1701)
-    path = '/Ctrl-C'
-    conn.request('GET', path)
-    response = conn.getresponse()
-  return
+    try:
+      conn = httplib.HTTPConnection(host, 1701)
+      path = '/Ctrl-C'
+      conn.request('GET', path)
+      response = conn.getresponse()
+    except socket_error, e:
+      # run out of procs
+      break
+  return j
 
 if __name__ == '__main__':
   import sys
@@ -42,11 +47,15 @@ if __name__ == '__main__':
     raise RuntimeError, '%s [host] [filename] [param=value]'
 
   if sys.argv[2] == 'stop':
-    if len(sys.argv) < 4:
-      raise RuntimeError, '%s stop nproc'
+    if len(sys.argv) < 3:
+      raise RuntimeError, '%s stop [nproc]'
     host = sys.argv[1]
-    nproc = int(sys.argv[3])
-    stop(host, nproc)
+    if len(sys.argv) > 3:
+      nproc = int(sys.argv[3])
+    else:
+      nproc = 1024
+    stopped = stop(host, nproc)
+    print 'Stopped %d findspots processes' % stopped
   else:
     host = sys.argv[1]
     filenames = []
