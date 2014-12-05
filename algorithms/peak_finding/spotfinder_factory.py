@@ -419,15 +419,16 @@ class BackgroundGradientFilter(object):
     import time
     t0 = time.time()
     for i, shoebox in enumerate(shoeboxes):
-      #print i
-      if not flags[perm[i]]: continue
+      if not flags[perm[i]]:
+        continue
       panel = detector[shoebox.panel]
       trusted_range = panel.get_trusted_range()
       max_x, max_y = panel.get_image_size()
       bbox = shoebox.bbox
       x1, x2, y1, y2, z1, z2 = bbox
       # expand the bbox with a background region around the spotfinder shoebox
-      # perhaps also should use a buffer zone between the shoebox and the background region
+      # perhaps also should use a buffer zone between the shoebox and the
+      # background region
       expanded_bbox = (max(0, x1-bg_plus_buffer),
                        min(max_x, x2+bg_plus_buffer),
                        max(0, y1-bg_plus_buffer),
@@ -446,7 +447,6 @@ class BackgroundGradientFilter(object):
     t0 = time.time()
     rlist.extract_shoeboxes(sweep)
     t1 = time.time()
-    #print "Time extract_shoeboxes: %s" %(t1-t0)
 
     shoeboxes = rlist['shoebox']
     shoeboxes.flatten()
@@ -472,12 +472,11 @@ class BackgroundGradientFilter(object):
       model = modeller.create(data.as_double(), mask)
       d, a, b = model.params()[:3]
       c = -1
-      #print a, b, d
 
       if abs(a) > self.gradient_cutoff or abs(b) > self.gradient_cutoff:
         flags[perm[i]] = False
-        #print a, b, d
 
+      # FIXME should this commented out section be removed?
       #if abs(a) < self.gradient_cutoff and abs(b) < self.gradient_cutoff:
         #flags[i] = False
 
@@ -552,9 +551,7 @@ class SpotDensityFilter(object):
     from scitbx.array_family import flex
     H_flex = flex.double(H.flatten().astype(np.float64))
     n_slots = min(int(flex.max(H_flex)), 30)
-    #print "n_slots: %s" %n_slots
     hist = flex.histogram(H_flex, n_slots=n_slots)
-    #hist.show()
 
     slots = hist.slots()
     cumulative_hist = flex.long(len(slots))
@@ -563,7 +560,8 @@ class SpotDensityFilter(object):
       if i > 0:
         cumulative_hist[i] += cumulative_hist[i-1]
 
-    cumulative_hist = cumulative_hist.as_double()/flex.max(cumulative_hist.as_double())
+    cumulative_hist = cumulative_hist.as_double()/flex.max(
+      cumulative_hist.as_double())
 
     cutoff = None
     gradients = flex.double()
@@ -575,7 +573,6 @@ class SpotDensityFilter(object):
       if (cutoff is None and  i > 0 and
           g < self.gradient_cutoff and gradients[i-1] < self.gradient_cutoff):
         cutoff = hist.slot_centers()[i-1]-0.5*hist.slot_width()
-    #print list(gradients)
 
     H_flex = flex.double(np.ascontiguousarray(H))
     isel = (H_flex > cutoff).iselection()
