@@ -304,6 +304,8 @@ command_line/export_xds.py -text
 command_line/filter_good_intensities.py -text
 command_line/find_overlaps.py -text
 command_line/find_spots.py -text
+command_line/findspots_client.py -text
+command_line/findspots_server.py -text
 command_line/generate_mask.py -text
 command_line/generate_process_test_reflections.py -text
 command_line/generate_test_reflections.py -text
@@ -563,8 +565,6 @@ scratch/gw/plotintensity.py -text
 scratch/gw/read_goniometer_from_cbf_full.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
-scratch/gw/test_client.py -text
-scratch/gw/test_server.py -text
 scratch/gw/toy_scaler.py -text
 scratch/gw/twospacify.py -text
 scratch/gw/wx_image.py -text
