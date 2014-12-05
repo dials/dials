@@ -27,23 +27,20 @@ class flex_3d_frame(wx.Frame):
   def frame_ini_img(self, in_upper_panel, text_data = None):
     self.img_panel = in_upper_panel
 
-    if( text_data != None):
+    if( text_data != None ):
       self.myGrid = text_data
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
     self.my_sizer.Add(self.img_panel, proportion = 1,
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
-    if( text_data != None):
+    if( text_data != None ):
       self.my_sizer.Add(self.myGrid, proportion = 1,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
 
     self.my_sizer.SetMinSize((50, 20))
 
     self.SetSizer(self.my_sizer)
-
-
-
 
 
 class TupTable(gridlib.PyGridTableBase):
@@ -82,6 +79,7 @@ class MyGrid(gridlib.Grid):
 
   def __init__(self, parent_frame):
     """Constructor"""
+    self.parent_fr = parent_frame
     super(MyGrid, self).__init__(parent_frame)
 
   def ini_n_intro(self, table_in):
@@ -134,33 +132,63 @@ class MyGrid(gridlib.Grid):
     '''
 
   def OnLabelLeftClick(self, evt):
-    print "OnLabelLeftClick: ", evt.GetRow()
+    self.repaint_img(evt.GetRow())
     evt.Skip()
 
   def OnCellLeftClick(self, evt):
-    print "OnCellLeftClick: ", evt.GetRow()
+    self.repaint_img(evt.GetRow())
     evt.Skip()
+
+
+  def repaint_img(self, new_row):
+    print "new row  =", new_row
+    self.parent_fr.img_panel.tst_tmp(new_row)
 
 class flex_arr_img_panel(wx.Panel):
   def __init__(self, parent_frame):
     super(flex_arr_img_panel, self).__init__(parent_frame)
     self.show_nums = True
     self.show_mask = True
+    self.row_pos = 5
 
-  def ini_n_intro(self, flex_arr_one, flex_arr_two = None):
-    if( isinstance(flex_arr_one, flex.reflection_table) ):
+  def ini_n_intro(self, data_in_one, data_in_two = None):
+
+    self.scale = 1.0
+
+    if( isinstance(data_in_one, flex.reflection_table) ):
+
+      to_hack_latter = '''
+      lst_nm = range(1, 20)
+      flex_dat_frst_lst = []
+      flex_dat_seg_lst = []
+
+      for nm in lst_nm:
+        flex_dat_frst_lst.append(data_in_one[nm]['shoebox'].data)
+        flex_dat_seg_lst.append(data_in_one[nm]['shoebox'].mask)
+      '''
+      self.table = data_in_one
+      self.assign_row_pos()
+
       print "Is a Table"
     else:
-      self.first_lst_in, self.segn_lst_in = flex_arr_one, flex_arr_two
-      self.scale = 1.0
-      self.bmp_lst = self._mi_list_of_wxbitmaps()
-      self.panel_01 = buttons_panel(self)
-      self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
-      sizer = wx.BoxSizer(wx.HORIZONTAL)
-      sizer.Add(self.panel_01, 0, wx.ALIGN_CENTRE)
-      sizer.Add(self.panel_02, 1, wx.EXPAND)
-      self.SetSizer(sizer)
-      self.Show(True)
+      self.first_lst_in, self.segn_lst_in = data_in_one, data_in_two
+
+    self.bmp_lst = self._mi_list_of_wxbitmaps()
+    self.panel_01 = buttons_panel(self)
+    self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
+    sizer = wx.BoxSizer(wx.HORIZONTAL)
+    sizer.Add(self.panel_01, 0, wx.ALIGN_CENTRE)
+    sizer.Add(self.panel_02, 1, wx.EXPAND)
+    self.SetSizer(sizer)
+    self.Show(True)
+
+
+  def assign_row_pos(self):
+
+    self.first_lst_in, \
+    self.segn_lst_in = \
+                              self.table[self.row_pos]['shoebox'].data, \
+                              self.table[self.row_pos]['shoebox'].mask
 
 
   def _mi_list_of_wxbitmaps(self, re_scaling = False):
@@ -174,6 +202,11 @@ class flex_arr_img_panel(wx.Panel):
 
     else:
       return self.lst_bmp_obj.scaling(scale = self.scale)
+
+
+  def tst_tmp(self, num):
+    print "testing: going back and forward in parenthood "
+    print "number passed =", num
 
 
   def to_hide_nums(self):

@@ -128,7 +128,9 @@ class show_tabl_wx_app(wx.App):
     '''
 
     #self.upper_panel.ini_n_intro(flex_dat_frst_lst, flex_dat_seg_lst)
-    self.upper_panel.ini_n_intro(table[0]['shoebox'].data, table[0]['shoebox'].mask)
+    #self.upper_panel.ini_n_intro(table[0]['shoebox'].data, table[0]['shoebox'].mask)
+
+    self.upper_panel.ini_n_intro(table)
 
     self.data_grid.ini_n_intro(table)
     self.SetTopWindow(self.frame)
