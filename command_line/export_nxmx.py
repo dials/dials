@@ -1,0 +1,61 @@
+from __future__ import division
+from libtbx.phil import parse
+
+help_message = '''
+
+This program is used to export the results of dials processing as an nxmx file.
+The required input is an experiments.json file and an integrated.pickle file.
+Optionally the name of the output mtz file can be specified.
+
+Examples::
+
+  dials.export_nxmx experiments.json integrated.pickle
+
+  dials.export_nxmx experiments.json integrated.pickle hklout=integrated.nxs
+
+'''
+
+phil_scope = parse('''
+  hklout = hklout.nxs
+    .type = str
+    .help = "The output NXmx file"
+  ignore_panels = False
+    .type = bool
+    .help = "Ignore multiple panels / detectors in output"
+''')
+
+def run(args):
+  from dials.util.export_nxmx import export
+  import libtbx.load_env
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_experiments
+  from dials.util.options import flatten_reflections
+
+  usage = '%s integrated.pickle experiments.json [options]' % (
+              libtbx.env.dispatcher_name)
+
+  parser = OptionParser(
+    usage = usage,
+    read_experiments=True,
+    read_reflections=True,
+    check_format=False,
+    phil=phil_scope,
+    epilog=help_message)
+  params, options = parser.parse_args(show_diff_phil=True)
+  experiments = flatten_experiments(params.input.experiments)
+  reflections = flatten_reflections(params.input.reflections)
+  if len(reflections) == 0 or len(experiments) == 0:
+    parser.print_help()
+    return
+
+  integrated_data = reflections[0]
+  experiment_list = experiments
+  m = export(
+    experiment_list,
+    integrated_data,
+    params.hklout)
+
+
+if __name__ == '__main__':
+  import sys
+  run(sys.argv[1:])

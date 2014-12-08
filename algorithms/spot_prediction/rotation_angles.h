@@ -125,6 +125,15 @@ namespace dials { namespace algorithms {
     double s0_d_m3;
   };
 
+  /**
+   * Helper function
+   */
+  inline
+  vec2<double> rotation_angles(vec3<double> s0, vec3<double> m2, vec3<double> r0) {
+    RotationAngles rot(s0, m2);
+    return rot(r0);
+  }
+
 }} // namespace dials::algorithms
 
 #endif // DIALS_ALGORITHMS_SPOT_PREDICTION_ROTATION_ANGLES_H

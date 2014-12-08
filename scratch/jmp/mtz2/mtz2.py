@@ -14,12 +14,10 @@ class NXobject(object):
     self._handle = handle
 
   @classmethod
-  def factory(Class, handle, index=None):
-    if index is None:
+  def factory(Class, handle, name=None):
+    if name is None:
       name = Class.name
-    else:
-      name = '%s%d' % (Class.name, index)
-    if Class.name in handle:
+    if name in handle:
       obj = handle[name]
       assert(obj.attrs['NX_class'] == 'NX%s' % Class.name)
     else:
@@ -33,15 +31,17 @@ class NXobject(object):
   def __getitem__(self, name):
     return self._handle[name]
 
+  def path(self):
+    return self._handle.name
+
 
 class NXobject_list(object):
 
   def __init__(self, handle):
     self._handle = handle
 
-  def __getitem__(self, index):
-    return self.Class.factory(self._handle, index=index)
-
+  def __getitem__(self, name):
+    return self.Class.factory(self._handle, name=name)
 
 
 class NXcollection(NXobject):
@@ -60,6 +60,10 @@ class NXdetector_module(NXobject):
 
   name = 'detector_module'
 
+class NXdetector_module_list(NXobject_list):
+
+  Class = NXdetector_module
+
 class NXdetector(NXobject):
 
   name = 'detector'
@@ -73,8 +77,8 @@ class NXdetector(NXobject):
     return NXcollection.factory(self._handle)
 
   @property
-  def detector_module(self):
-    return NXdetector_module.factory(self._handle)
+  def module(self):
+    return NXdetector_module_list(self._handle)
 
 class NXinstrument(NXobject):
 
@@ -103,6 +107,10 @@ class NXsample(NXobject):
   @property
   def beam(self):
     return NXbeam.factory(self._handle)
+
+  @property
+  def transformations(self):
+    return NXtransformations.factory(self._handle)
 
 class NXnote(NXobject):
 
@@ -325,42 +333,42 @@ def test_export_dials():
   diffraction['k'] = col2
   diffraction['l'] = col3
   diffraction['id'] = col4
-  diffraction['intensity_sum_value'] = col5
-  diffraction['intensity_sum_variance'] = col6
-  diffraction['intensity_prf_value'] = col7
-  diffraction['intensity_prf_variance'] = col8
+  diffraction['int_sum_val'] = col5
+  diffraction['int_sum_var'] = col6
+  diffraction['int_prf_val'] = col7
+  diffraction['int_prf_var'] = col8
   diffraction['lp'] = col9
-  diffraction['detector_module'] = col10
-  diffraction['x0'] = col11
-  diffraction['x1'] = col12
-  diffraction['y0'] = col13
-  diffraction['y1'] = col14
-  diffraction['z0'] = col15
-  diffraction['z1'] = col16
-  diffraction['predicted_px_x'] = col17
-  diffraction['predicted_px_y'] = col18
-  diffraction['predicted_frame'] = col19
-  diffraction['predicted_mm_x'] = col20
-  diffraction['predicted_mm_y'] = col21
-  diffraction['predicted_phi'] = col22
-  diffraction['observed_px_x_value'] = col23
-  diffraction['observed_px_x_variance'] = col24
-  diffraction['observed_px_y_value'] = col25
-  diffraction['observed_px_y_variance'] = col26
-  diffraction['observed_frame_value'] = col27
-  diffraction['observed_frame_variance'] = col28
-  diffraction['observed_mm_x_value'] = col29
-  diffraction['observed_mm_x_variance'] = col30
-  diffraction['observed_mm_y_value'] = col31
-  diffraction['observed_mm_y_variance'] = col32
-  diffraction['observed_phi_value'] = col33
-  diffraction['observed_phi_variance'] = col34
+  diffraction['det_module'] = col10
+  diffraction['bbx0'] = col11
+  diffraction['bbx1'] = col12
+  diffraction['bby0'] = col13
+  diffraction['bby1'] = col14
+  diffraction['bbz0'] = col15
+  diffraction['bbz1'] = col16
+  diffraction['prd_px_x'] = col17
+  diffraction['prd_px_y'] = col18
+  diffraction['prd_frame'] = col19
+  diffraction['prd_mm_x'] = col20
+  diffraction['prd_mm_y'] = col21
+  diffraction['prd_phi'] = col22
+  diffraction['obs_px_x_val'] = col23
+  diffraction['obs_px_x_var'] = col24
+  diffraction['obs_px_y_val'] = col25
+  diffraction['obs_px_y_var'] = col26
+  diffraction['obs_frame_val'] = col27
+  diffraction['obs_frame_var'] = col28
+  diffraction['obs_mm_x_val'] = col29
+  diffraction['obs_mm_x_var'] = col30
+  diffraction['obs_mm_y_val'] = col31
+  diffraction['obs_mm_y_var'] = col32
+  diffraction['obs_phi_val'] = col33
+  diffraction['obs_phi_var'] = col34
   diffraction['partiality'] = col35
   diffraction['d'] = col36
-  diffraction['background.mean'] = col37
+  diffraction['bkg_mean'] = col37
   diffraction['entering'] = col38
   diffraction['flags'] = col39
-  diffraction['profile_correlation'] = col40
+  diffraction['prf_cc'] = col40
 
   # Flush the file
   outfile.flush()
