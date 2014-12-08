@@ -3,6 +3,7 @@ import time
 import BaseHTTPServer as server_base
 from multiprocessing import Process as new_process
 from multiprocessing import current_process
+import os
 
 stop = False
 
@@ -37,8 +38,8 @@ class handler(server_base.BaseHTTPRequestHandler):
     proc = current_process().name
     try:
       result, result_filter = work(filename, params)
-      s.wfile.write("<response>%s: %s: %d / %d</response>" %
-                    (proc, filename, result, result_filter))
+      s.wfile.write("<response>%s: %6d / %6d</response>" %
+                    (os.path.split(filename)[-1], result, result_filter))
     except:
       s.wfile.write("<response>error</response>")
     return
