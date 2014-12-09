@@ -42,7 +42,7 @@ def export_detector(outfile, detector):
   transformations['translation'].attrs['vector'] = (0, 0, 1)
 
   # Get the path for below
-  translation_path = '%s/%s' % (transformations.path(), 'translation')
+  translation_path = str('%s/%s' % (transformations.path(), 'translation'))
 
   # Create the detector depends on
   detector['depends_on'] = translation_path
@@ -55,7 +55,7 @@ def export_detector(outfile, detector):
   module['module_offset'].attrs['vector'] = origin.normalize()
 
   # The path for items below
-  module_offset_path = '%s/%s' % (module.path(), 'module_offset')
+  module_offset_path = str('%s/%s' % (module.path(), 'module_offset'))
 
   # Write the fast pixel direction
   module['fast_pixel_direction'] = pixel_size[0]
@@ -103,6 +103,8 @@ def export_goniometer(outfile, goniometer, scan):
 def export_crystal(outfile, crystal):
   ''' Export the crystal model. '''
 
+  from scitbx.array_family import flex
+
   # Get the sample
   sample = outfile.entry.sample
 
@@ -112,16 +114,17 @@ def export_crystal(outfile, crystal):
   # Get the unit cell and orientation matrix in the case of scan varying and
   # scan static models
   if crystal.num_scan_points:
-    num = experiment.crystal.num_scan_points
+    num = crystal.num_scan_points
     unit_cell = flex.double(flex.grid(num, 6))
     orientation_matrix = flex.double(flex.grid(num, 9))
     for i in range(num):
-      temp1 = flex.double(crystal.get_unit_cell_at_scan_point(i))
-      temp2 = flex.double(crystal.get_U_at_scan_point().transpose())
-      temp1.reshape(flex.grid(1, len(temp1)))
-      temp2.reshape(flex.grid(1, len(temp2)))
-      unit_cell[i,:] = temp1
-      orientation_matrix[i,:] = temp2
+      __cell = crystal.get_unit_cell_at_scan_point(i).parameters()
+      for j in range(6):
+        unit_cell[i,j] = __cell[j]
+      __matrix = crystal.get_U_at_scan_point(i).transpose().elems
+      for j in range(9):
+        orientation_matrix[i,j] = __matrix[j]
+
   else:
     unit_cell = crystal.get_unit_cell().parameters()
     orientation_matrix = crystal.get_U().transpose()
@@ -135,7 +138,7 @@ def export_crystal(outfile, crystal):
   sample['orientation_matrix'] = orientation_matrix
 
   # Set depends on
-  sample['depends_on'] = '%s/%s' % (sample.transformations.path(), 'phi')
+  sample['depends_on'] = str('%s/%s' % (sample.transformations.path(), 'phi'))
 
 
 def export_experiments(outfile, experiments):
