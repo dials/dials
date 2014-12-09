@@ -81,12 +81,20 @@ class wxbmp_from_np_array(object):
 
     lc_fig.set_size_inches(xmax * .5, ymax * .5)
 
+
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     lc_fig.add_axes(ax)
+
+
+    a=lc_fig.gca()
+    a.set_frame_on(False)
+    a.set_xticks([])
+    a.set_yticks([])
+    plt.axis('off')
+
     plt.imshow(np.transpose(np_2d_tmp), interpolation = "nearest", cmap = 'hot',
                vmin = self.vl_min, vmax = self.vl_max)
-
 
     l_wdt = 1.2
 
@@ -145,6 +153,7 @@ class wxbmp_from_np_array(object):
                        color='gray', linewidth=l_wdt)
 
 
+
     if( show_nums != 0 ):
       for xpos in range(xmax):
         for ypos in range(ymax):
@@ -161,6 +170,9 @@ class wxbmp_from_np_array(object):
 
           plt.annotate(txt_dat, xy = (xpos - 0.5, ypos + 0.1), xycoords = 'data',
                        color = clr_chr, size = 9.)
+
+
+
 
     lc_fig.canvas.draw()
     width, height = lc_fig.canvas.get_width_height()
