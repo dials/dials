@@ -270,10 +270,10 @@ def export_reflections(outfile, reflections):
     col23, col24, col25 = reflections['xyzobs.px.value'].parts()
     col26, col27, col28 = reflections['xyzobs.px.variance'].parts()
     diffraction['obs_px_x_val'] = col23
-    diffraction['obs_px_x_var'] = col24
-    diffraction['obs_px_y_val'] = col25
-    diffraction['obs_px_y_var'] = col26
-    diffraction['obs_frame_val'] = col27
+    diffraction['obs_px_x_var'] = col26
+    diffraction['obs_px_y_val'] = col24
+    diffraction['obs_px_y_var'] = col27
+    diffraction['obs_frame_val'] = col25
     diffraction['obs_frame_var'] = col28
   except Exception:
     pass
@@ -282,10 +282,10 @@ def export_reflections(outfile, reflections):
     col29, col30, col31 = reflections['xyzobs.mm.value'].parts()
     col32, col33, col34 = reflections['xyzobs.mm.variance'].parts()
     diffraction['obs_mm_x_val'] = col29
-    diffraction['obs_mm_x_var'] = col30
-    diffraction['obs_mm_y_val'] = col31
-    diffraction['obs_mm_y_var'] = col32
-    diffraction['obs_phi_val'] = col33
+    diffraction['obs_mm_x_var'] = col32
+    diffraction['obs_mm_y_val'] = col30
+    diffraction['obs_mm_y_var'] = col33
+    diffraction['obs_phi_val'] = col31
     diffraction['obs_phi_var'] = col34
   except Exception:
     pass
