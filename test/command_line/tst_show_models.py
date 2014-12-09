@@ -87,8 +87,43 @@ Goniometer:
     Setting rotation:{1,0,0,0,1,0,0,0,1}
 """)
 
+  path = os.path.join(
+    dials_regression, "centroid_test_data", "centroid_*.cbf")
+  import glob
+  g = glob.glob(path)
+  assert len(g) > 0, path
+  cmd = "dials.show_models %s" %(' '.join(g))
+  result = easy_run.fully_buffered(cmd).raise_if_errors()
+  assert (
+    "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
+    in result.stdout_lines)
+  assert not show_diff("\n".join(result.stdout_lines[8:]), """\
+Detector:
+Panel:
+  pixel_size:{0.172,0.172}
+  image_size: {2463,2527}
+  trusted_range: {-1,495976}
+  fast_axis: {1,0,0}
+  slow_axis: {0,-1,0}
+  origin: {-212.478,220.002,-190.18}
 
+Beam:
+    wavelength: 0.9795
+    sample to source direction : {0,0,1}
+    divergence: 0
+    sigma divergence: 0
+    polarization normal: {0,1,0}
+    polarization fraction: 0.999
 
+Scan:
+    image range:   {1,9}
+    oscillation:   {0,0.2}
+
+Goniometer:
+    Rotation axis:   {1,0,0}
+    Fixed rotation:  {1,0,0,0,1,0,0,0,1}
+    Setting rotation:{1,0,0,0,1,0,0,0,1}
+""")
 
 
 if __name__ == '__main__':

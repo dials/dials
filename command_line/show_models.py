@@ -10,6 +10,7 @@ def run(args):
   parser = OptionParser(
     read_experiments=True,
     read_datablocks=True,
+    read_datablocks_from_images=True,
     check_format=False)
 
   params, options = parser.parse_args(show_diff_phil=True)
@@ -29,6 +30,8 @@ def run(args):
       crystal.show(show_scan_varying=True)
   if datablocks is not None:
     for datablock in datablocks:
+      if datablock.format_class() is not None:
+        print 'Format: %s' %datablock.format_class()
       imagesets = datablock.extract_imagesets()
       for imageset in imagesets:
         try: print imageset.get_template()
