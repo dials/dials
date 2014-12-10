@@ -84,14 +84,15 @@ class MyGrid(gridlib.Grid):
 
   def ini_n_intro(self, table_in):
 
-    timing_for_debugging = '''
+    #timing_for_debugging = '''
     import time
     time1 = time.time()
-    '''
+    #'''
 
     #new_code = '''
     lst_keys = []
     data = []
+    img_data = []
 
     stable_by_james = '''
     for key in table_in.keys():
@@ -109,10 +110,13 @@ class MyGrid(gridlib.Grid):
       if(key != "shoebox"):
         lst_keys.append(key)
         data.append(map(str, table_in[key]))
-
+      else:
+        img_data.append(map(str, table_in["shoebox"]))
 
 
     data = tuple(zip(*data))
+    img_data = tuple(zip(*img_data))
+
     colLabels = tuple(lst_keys)
     rowLabels = tuple(range(len(data)))
 
@@ -128,11 +132,11 @@ class MyGrid(gridlib.Grid):
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
     self.Bind(gridlib.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
-    timing_for_debugging = '''
+    #timing_for_debugging = '''
     time2 = time.time()
     timedif = time2 - time1
     print "timedif =", timedif
-    '''
+    #'''
 
   def OnLabelLeftClick(self, evt):
     self.repaint_img(evt.GetRow())
