@@ -708,6 +708,7 @@ scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/interpolation_2D_test.py -text
+scratch/luiso_s/test_code/list_n_zip.py -text
 scratch/luiso_s/test_code/mask_test.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matr_opr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matr_system.py -text svneol=unset#text/plain
