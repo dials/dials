@@ -96,6 +96,124 @@ class SpotFrame(XrayFrame) :
         style=wx.CAPTION|wx.MINIMIZE_BOX, pos=(x_start, y_start))
     self.settings_frame.Show()
 
+
+  def _draw_rings_layer(self, dc, data, map_rel):
+    """Draw a points layer.
+
+    dc       the device context to draw on
+    data     an iterable of point tuples:
+             (x, y, place, radius, colour, x_off, y_off, pdata)
+    map_rel  points relative to map if True, MUST BE TRUE for lightweight
+    Assumes all points are the same colour, saving 100's of ms.
+    """
+
+    assert map_rel is True
+    if len(data)==0:
+      return
+    (lon, lat, place, radius, colour, x_off, y_off, pdata) = data[0]
+
+    scale = 2**self.pyslip.tiles.zoom_level
+
+    # Draw points on map/view, using transparency if implemented.
+    try:
+      dc = wx.GCDC(dc)
+    except NotImplementedError:
+      pass
+    dc.SetPen(wx.Pen(colour))
+    dc.SetBrush(wx.Brush(colour, wx.TRANSPARENT))
+    for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+      (x, y) = self.pyslip.ConvertGeo2View((lon, lat))
+      dc.DrawCircle(x, y, radius * scale)
+
+
+  def draw_resolution_rings(self):
+    from cctbx import uctbx
+    import math
+
+    image = self.pyslip.tiles.raw_image
+    detector = image.get_detector()
+    beam = image.get_beam()
+
+    d_min = detector.get_max_resolution(beam.get_s0())
+    d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
+
+    n_rings = 11
+    step = d_star_sq_max/n_rings
+    from cctbx.array_family import flex
+    spacings = flex.double(
+      [uctbx.d_star_sq_as_d(i*step) for i in range(1, n_rings)])
+
+    wavelength = beam.get_wavelength()
+    distance = detector[0].get_distance()
+    pixel_size = detector[0].get_pixel_size()[0] # FIXME assumes square pixels, and that all panels use same pixel size
+
+    twotheta = uctbx.d_star_sq_as_two_theta(
+      uctbx.d_as_d_star_sq(spacings), wavelength)
+    L_mm = []
+    L_pixels = []
+    for tt in twotheta: L_mm.append(distance * math.tan(tt))
+    for lmm in L_mm: L_pixels.append(lmm/pixel_size)
+
+    if len(detector) > 1:
+      beam_pixel_fast, beam_pixel_slow = detector[0].millimeter_to_pixel(  # FIXME assumes all detector elements use the same
+        detector.hierarchy().get_beam_centre(beam.get_s0()))               # millimeter-to-pixel convention
+    else:
+      beam_pixel_fast, beam_pixel_slow = detector[0].millimeter_to_pixel(
+        detector[0].get_beam_centre(beam.get_s0()))
+
+    self._center = [0,0]
+    center = self.pyslip.tiles.picture_fast_slow_to_map_relative(
+      beam_pixel_fast + self._center[0], beam_pixel_slow + self._center[1])
+
+    # XXX Transparency?
+    ring_data = [(center[0], center[1], {"colour": "red", "radius": pxl})
+                 for pxl in L_pixels]
+
+    # Remove the old ring layer, and draw a new one.
+    if (hasattr(self, "_ring_layer") and self._ring_layer is not None):
+      self.pyslip.DeleteLayer(self._ring_layer)
+      self._ring_layer = None
+    self._ring_layer = self.pyslip.AddPointLayer(
+      ring_data,
+      map_rel=True,
+      visible=True,
+      show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+      renderer=self._draw_rings_layer,
+      name="<ring_layer>")
+
+    def rotate_around_point(vector, point, angle, deg=False):
+      # http://benn.org/2007/01/06/rotating-coordinates-around-a-centre/
+      x, y = vector
+      x_centre, y_centre = point
+      if deg:
+        angle = math.pi * angle / 180
+      x_rot = x_centre + math.cos(angle) * (x - x_centre) - math.sin(angle) * (y - y_centre)
+      y_rot = y_centre + math.sin(angle) * (x - x_centre) - math.cos(angle) * (y - y_centre)
+      return (x_rot, y_rot)
+
+    resolution_text_data = []
+    for d, pxl in zip(spacings, L_pixels):
+      for angle in (45, 135, 225, 315):
+        x, y = rotate_around_point(
+          (center[0], center[1]+pxl), center, angle, deg=True)
+        resolution_text_data.append(
+          (x, y, "%.2f" %d, {'placement':'cc', 'colour': 'red'}))
+
+    # Remove the old resolution text layer, and draw a new one.
+    if (hasattr(self, "_resolution_text_layer") and self._resolution_text_layer is not None):
+      self.pyslip.DeleteLayer(self._resolution_text_layer)
+      self._resolution_text_layer = None
+    self._resolution_text_layer = self.pyslip.AddTextLayer(
+      resolution_text_data,
+      map_rel=True,
+      visible=True,
+      show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+      selectable=False,
+      name="<resolution_text_layer>",
+      colour='red',
+      fontsize=15)
+
+
   def show_filters(self):
     from dials.algorithms.image.threshold import KabschDebug
     from dials.array_family import flex
@@ -266,6 +384,8 @@ class SpotFrame(XrayFrame) :
           name='<vector_text_layer>',
           colour='#F62817')
     self.show_filters()
+    if self.settings.show_resolution_rings:
+      self.draw_resolution_rings()
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
@@ -485,6 +605,7 @@ class SpotSettingsPanel (SettingsPanel) :
     # CONTROLS 4: additional settings for derived class
     self.settings.show_spotfinder_spots = False
     self.settings.show_dials_spotfinder_spots = True
+    self.settings.show_resolution_rings = False
     self.settings.show_ctr_mass = True
     self.settings.show_max_pix = True
     self.settings.show_all_pix = True
@@ -533,6 +654,11 @@ class SpotSettingsPanel (SettingsPanel) :
     self.brightness_ctrl.SetMax(500)
     self.brightness_ctrl.SetValue(self.settings.brightness)
     self.brightness_ctrl.SetTickFreq(25)
+
+    # Resolution rings control
+    self.resolution_rings_ctrl = wx.CheckBox(self, -1, "Show resolution rings")
+    self.resolution_rings_ctrl.SetValue(self.settings.show_resolution_rings)
+    s.Add(self.resolution_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Center control
     self.center_ctrl = wx.CheckBox(self, -1, "Mark beam center")
@@ -666,6 +792,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.zoom_ctrl)
     self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
     self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.resolution_rings_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.center_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.ctr_mass)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.max_pix)
@@ -686,6 +813,7 @@ class SpotSettingsPanel (SettingsPanel) :
   # CONTROLS 2:  Fetch values from widgets
   def collect_values (self) :
     if self.settings.enable_collect_values:
+      self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
       self.settings.zoom_level = self.zoom_ctrl.GetSelection()
       self.settings.brightness = self.brightness_ctrl.GetValue()
       self.settings.show_beam_center = self.center_ctrl.GetValue()
