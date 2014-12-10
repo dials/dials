@@ -209,33 +209,43 @@ def export_reflections(outfile, reflections):
     diffraction['h'] = col1
     diffraction['k'] = col2
     diffraction['l'] = col3
+    diffraction['h'].attrs['description'] = 'The h component of the miller index'
+    diffraction['k'].attrs['description'] = 'The k component of the miller index'
+    diffraction['l'].attrs['description'] = 'The l component of the miller index'
   except Exception:
     pass
 
   try:
     diffraction['id'] = reflections['id']
+    diffraction['id'].attrs['description'] = 'The experiment id'
   except Exception:
     pass
 
   try:
     diffraction['int_sum_val'] = reflections['intensity.sum.value']
     diffraction['int_sum_var'] = reflections['intensity.sum.variance']
+    diffraction['int_sum_val'].attrs['description'] = 'The value of the summed intensity'
+    diffraction['int_sum_var'].attrs['description'] = 'The variance of the summed intensity'
   except Exception:
     pass
 
   try:
     diffraction['int_prf_val'] = reflections['intensity.prf.value']
     diffraction['int_prf_var'] = reflections['intensity.prf.variance']
+    diffraction['int_prf_val'].attrs['description'] = 'The value of the profile fitted intensity'
+    diffraction['int_prf_var'].attrs['description'] = 'The variance of the profile fitted intensity'
   except Exception:
     pass
 
   try:
     diffraction['lp'] = reflections['lp']
+    diffraction['lp'].attrs['description'] = 'The lorentz-polarization correction factor'
   except Exception:
     pass
 
   try:
     diffraction['det_module'] = reflections['panel']
+    diffraction['det_module'].attrs['description'] = 'The detector module on which the reflection was recorded'
   except Exception:
     pass
 
@@ -247,6 +257,12 @@ def export_reflections(outfile, reflections):
     diffraction['bby1'] = col14
     diffraction['bbz0'] = col15
     diffraction['bbz1'] = col16
+    diffraction['bbx0'].attrs['description'] = 'The bounding box lower x bound'
+    diffraction['bbx1'].attrs['description'] = 'The bounding box upper x bound'
+    diffraction['bby0'].attrs['description'] = 'The bounding box lower y bound'
+    diffraction['bby1'].attrs['description'] = 'The bounding box upper y bound'
+    diffraction['bbz0'].attrs['description'] = 'The bounding box lower z bound'
+    diffraction['bbz1'].attrs['description'] = 'The bounding box upper z bound'
   except Exception:
     pass
 
@@ -255,6 +271,9 @@ def export_reflections(outfile, reflections):
     diffraction['prd_px_x'] = col17
     diffraction['prd_px_y'] = col18
     diffraction['prd_frame'] = col19
+    diffraction['prd_px_x'].attrs['description'] = 'The predicted bragg peak fast pixel location'
+    diffraction['prd_px_y'].attrs['description'] = 'The predicted bragg peak slow pixel location'
+    diffraction['prd_frame'].attrs['description'] = 'The predicted bragg peak frame number'
   except Exception:
     pass
 
@@ -263,6 +282,9 @@ def export_reflections(outfile, reflections):
     diffraction['prd_mm_x'] = col20
     diffraction['prd_mm_y'] = col21
     diffraction['prd_phi'] = col22
+    diffraction['prd_mm_x'].attrs['description'] = 'The predicted bragg peak fast millimeter location'
+    diffraction['prd_mm_y'].attrs['description'] = 'The predicted bragg peak slow millimeter location'
+    diffraction['prd_phi'].attrs['description'] = 'The predicted bragg peak rotation angle number'
   except Exception:
     pass
 
@@ -275,6 +297,12 @@ def export_reflections(outfile, reflections):
     diffraction['obs_px_y_var'] = col27
     diffraction['obs_frame_val'] = col25
     diffraction['obs_frame_var'] = col28
+    diffraction['obs_px_x_val'].attrs['description'] = 'The observed centroid fast pixel value'
+    diffraction['obs_px_x_var'].attrs['description'] = 'The observed centroid fast pixel variance'
+    diffraction['obs_px_y_val'].attrs['description'] = 'The observed centroid slow pixel value'
+    diffraction['obs_px_y_var'].attrs['description'] = 'The observed centroid slow pixel variance'
+    diffraction['obs_frame_val'].attrs['description'] = 'The observed centroid frame value'
+    diffraction['obs_frame_var'].attrs['description'] = 'The observed centroid frame variance'
   except Exception:
     pass
 
@@ -287,36 +315,48 @@ def export_reflections(outfile, reflections):
     diffraction['obs_mm_y_var'] = col33
     diffraction['obs_phi_val'] = col31
     diffraction['obs_phi_var'] = col34
+    diffraction['obs_mm_x_val'].attrs['description'] = 'The observed centroid fast millimeter value'
+    diffraction['obs_mm_x_var'].attrs['description'] = 'The observed centroid fast millimeter variance'
+    diffraction['obs_mm_y_val'].attrs['description'] = 'The observed centroid slow millimeter value'
+    diffraction['obs_mm_y_var'].attrs['description'] = 'The observed centroid slow millimeter variance'
+    diffraction['obs_phi_val'].attrs['description'] = 'The observed centroid phi value'
+    diffraction['obs_phi_var'].attrs['description'] = 'The observed centroid phi variance'
   except Exception:
     pass
 
   try:
     diffraction['partiality'] = reflections['partiality']
+    diffraction['partiality'].attrs['description'] = 'The partiality of the reflection'
   except Exception:
     pass
 
   try:
     diffraction['d'] = reflections['d']
+    diffraction['d'].attrs['description'] = 'The resolution of the reflection'
   except Exception:
     pass
 
   try:
     diffraction['bkg_mean'] = reflections['background.mean']
+    diffraction['bkg_mean'].attrs['description'] = 'The mean background value'
   except Exception:
     pass
 
   try:
     diffraction['entering'] = reflections['entering']
+    diffraction['entering'].attrs['description'] = 'Entering or exiting the Ewald sphere'
   except Exception:
     pass
 
   try:
     diffraction['flags'] = reflections['flags']
+    diffraction['flags'].attrs['description'] = 'Status of the reflection in processing'
   except Exception:
     pass
 
   try:
     diffraction['prf_cc'] = reflections['profile.correlation']
+    diffraction['prf_cc'].attrs['description'] = 'Profile fitting correlations'
   except Exception:
     pass
 
@@ -332,25 +372,38 @@ def export_details(outfile):
   entry['program_name'].attrs['configuration'] = ''
 
   # Set some processing information (each program should add itself)
-  process = entry.process['spotfinding']
-  process['program'] = 'dials.find_spots'
+  process = entry.process['process']
+  process['program'] = 'dials'
   process['version'] = 1
   process['date'] = strftime('%Y-%m-%dT%H:%M:%S')
 
-  process = entry.process['indexing']
-  process['program'] = 'dials.index'
-  process['version'] = 1
-  process['date'] = strftime('%Y-%m-%dT%H:%M:%S')
+  note = process.note['0_spot_finding']
+  note['author'] = 'dials.find_spots'
+  note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
+  note['type'] = 'text/plain'
+  note['description'] = 'Spot finding parameters'
+  note['data'] = 'dials.find_spots datablock.json'
 
-  process = entry.process['refinement']
-  process['program'] = 'dials.refine'
-  process['version'] = 1
-  process['date'] = strftime('%Y-%m-%dT%H:%M:%S')
+  note = process.note['1_indexing']
+  note['author'] = 'dials.index'
+  note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
+  note['type'] = 'text/plain'
+  note['description'] = 'Indexing parameters'
+  note['data'] = 'dials.index datablock.json strong.pickle'
 
-  process = entry.process['integration']
-  process['program'] = 'dials.integrate'
-  process['version'] = 1
-  process['date'] = strftime('%Y-%m-%dT%H:%M:%S')
+  note = process.note['2_refinement']
+  note['author'] = 'dials.refine'
+  note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
+  note['type'] = 'text/plain'
+  note['description'] = 'Refinement parameters'
+  note['data'] = 'dials.refine experiments.json indexed.pickle'
+
+  note = process.note['3_integration']
+  note['author'] = 'dials.integrate'
+  note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
+  note['type'] = 'text/plain'
+  note['description'] = 'Integration parameters'
+  note['data'] = 'dials.integrate refined_experiments.json indexed.pickle'
 
 def export(experiments, reflections, filename):
   ''' Export the experiments and reflections as an NXmx file. '''

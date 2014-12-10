@@ -116,9 +116,17 @@ class NXnote(NXobject):
 
   name = 'note'
 
+class NXnote_list(NXobject_list):
+
+  Class = NXnote
+
 class NXprocess(NXobject):
 
   name = 'process'
+
+  @property
+  def note(self):
+    return NXnote_list(self._handle)
 
 
 class NXprocess_list(NXobject_list):
