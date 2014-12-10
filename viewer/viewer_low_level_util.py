@@ -93,12 +93,24 @@ class MyGrid(gridlib.Grid):
     lst_keys = []
     data = []
 
+    stable_by_james = '''
     for key in table_in.keys():
       if(key != "shoebox"):
         lst_keys.append(key)
         col = table_in[key]
         col_strs = map(str, col)
         data.append(col_strs)
+    '''
+
+
+
+
+    for key in table_in.keys():
+      if(key != "shoebox"):
+        lst_keys.append(key)
+        data.append(map(str, table_in[key]))
+
+
 
     data = tuple(zip(*data))
     colLabels = tuple(lst_keys)
@@ -108,16 +120,7 @@ class MyGrid(gridlib.Grid):
     self.SetTable(tableBase)
     #'''
 
-    old_code = '''
-    self.CreateGrid(len(table_in), len(table_in[0]))
-    for col_pos, key in enumerate(table_in.keys()):
-      print col_pos, key
-      self.SetColLabelValue(col_pos, str(key))
-    for nm, data in enumerate(table_in):
-      #for col_pos, key in enumerate(table_in[nm].keys()):
-      for col_pos, key in enumerate(table_in.keys()):
-        self.SetCellValue(nm, col_pos, str(table_in[nm][key]))
-    #'''
+
 
     self.AutoSizeColumns(True)
     self.EnableEditing(False)
@@ -157,15 +160,6 @@ class flex_arr_img_panel(wx.Panel):
 
     if( isinstance(data_in_one, flex.reflection_table) ):
 
-      to_hack_latter = '''
-      lst_nm = range(1, 20)
-      flex_dat_frst_lst = []
-      flex_dat_seg_lst = []
-
-      for nm in lst_nm:
-        flex_dat_frst_lst.append(data_in_one[nm]['shoebox'].data)
-        flex_dat_seg_lst.append(data_in_one[nm]['shoebox'].mask)
-      '''
       self.table = data_in_one
       self.assign_row_pos()
 
