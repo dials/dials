@@ -101,53 +101,70 @@ class SpotFrame(XrayFrame) :
     from dials.array_family import flex
 
     image = self.pyslip.tiles.raw_image
-    raw_data = image.get_raw_data()
     detector = image.get_detector()
+    if len(detector) == 1:
+      raw_data = [image.get_raw_data()]
+    else:
+      raw_data = [image.get_raw_data(i) for i in range(len(detector))]
 
     trange = [p.get_trusted_range() for p in detector]
     mask = []
-    for tr, im in zip(trange, [raw_data]):
+    for tr, im in zip(trange, raw_data):
       mask.append(im > int(tr[0]))
 
     gain_value = self.settings.gain
     assert gain_value > 0
-    gain_map = flex.double(raw_data.accessor(), gain_value)
+    gain_map = [flex.double(raw_data[i].accessor(), gain_value)
+                for i in range(len(detector))]
 
     nsigma_b = self.settings.nsigma_b
     nsigma_s = self.settings.nsigma_s
     global_threshold = self.settings.global_threshold
     min_local = self.settings.min_local
     size = self.settings.kernel_size
-    debug = KabschDebug(image.get_raw_data().as_double(),
-      mask[0], gain_map, size, nsigma_b, nsigma_s, global_threshold, min_local)
-    mean = debug.mean()
-    variance = debug.variance()
-    cv = debug.coefficient_of_variation()
-    cv_mask = debug.cv_mask()
-    value_mask = debug.value_mask()
-    final_mask = debug.final_mask()
-    global_mask = debug.global_mask()
+    kabsch_debug_list = []
+    for i_panel in range(len(detector)):
+      kabsch_debug_list.append(
+        KabschDebug(
+          raw_data[i_panel].as_double(), mask[i_panel], gain_map[i_panel],
+          size, nsigma_b, nsigma_s, global_threshold, min_local))
+
     if self.settings.show_mean_filter:
+      mean = [kabsch.mean() for kabsch in kabsch_debug_list]
       self.pyslip.tiles.set_image_data(mean)
     elif self.settings.show_variance_filter:
+      variance = [kabsch.variance() for kabsch in kabsch_debug_list]
       self.pyslip.tiles.set_image_data(variance)
     elif self.settings.show_dispersion:
+      cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
       self.pyslip.tiles.set_image_data(cv)
     elif self.settings.show_sigma_b_filter:
-      cv_mask = cv_mask.as_1d().as_double()
-      cv_mask.reshape(mean.accessor())
+      cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+      cv_mask = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
+      cv_mask = [mask.as_1d().as_double() for mask in cv_mask]
+      for i, mask in enumerate(cv_mask):
+        mask.reshape(cv[i].accessor())
       self.pyslip.tiles.set_image_data(cv_mask)
     elif self.settings.show_sigma_s_filter:
-      value_mask = value_mask.as_1d().as_double()
-      value_mask.reshape(mean.accessor())
+      cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+      value_mask = [kabsch.value_mask() for kabsch in kabsch_debug_list]
+      value_mask = [mask.as_1d().as_double() for mask in value_mask]
+      for i, mask in enumerate(value_mask):
+        mask.reshape(cv[i].accessor())
       self.pyslip.tiles.set_image_data(value_mask)
     elif self.settings.show_global_threshold_filter:
-      global_mask = global_mask.as_1d().as_double()
-      global_mask.reshape(mean.accessor())
+      cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+      global_mask = [kabsch.global_mask() for kabsch in kabsch_debug_list]
+      global_mask = [mask.as_1d().as_double() for mask in global_mask]
+      for i, mask in enumerate(global_mask):
+        mask.reshape(cv[i].accessor())
       self.pyslip.tiles.set_image_data(global_mask)
     elif self.settings.show_threshold_map:
-      final_mask = final_mask.as_1d().as_double()
-      final_mask.reshape(mean.accessor())
+      cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+      final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+      final_mask = [mask.as_1d().as_double() for mask in final_mask]
+      for i, mask in enumerate(final_mask):
+        mask.reshape(cv[i].accessor())
       self.pyslip.tiles.set_image_data(final_mask)
     else:
       self.pyslip.tiles.set_image_data(raw_data)
