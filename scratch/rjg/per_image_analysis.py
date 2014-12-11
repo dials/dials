@@ -1,5 +1,6 @@
 from __future__ import division
 
+from libtbx import group_args
 from dials.array_family import flex
 
 def map_to_reciprocal_space(reflections, imageset):
@@ -178,8 +179,66 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     ax_.set_xlabel(r"Resolution ($\AA$)")
     ax_.set_xticklabels(["%.1f" %d for d in xticks_d])
     #pyplot.show()
-    pyplot.savefig("spot_count_vs_resolution.png")
+    pyplot.savefig(plot_filename)
     pyplot.clf()
+
+def plot_ordered_d_star_sq(reflections, imageset):
+  reflections = map_to_reciprocal_space(reflections, imageset)
+  d_star_sq = flex.pow2(reflections['rlp'].norms())
+
+  from matplotlib import pyplot
+  perm = flex.sort_permutation(d_star_sq)
+  pyplot.scatter(list(range(len(perm))), list(d_star_sq.select(perm)), marker='+')
+  pyplot.show()
+
+
+def stats_single_image(imageset, reflections, i=None):
+  if i is not None:
+    filename = "i_over_sigi_vs_resolution_%d.png" %i
+  #plot_ordered_d_star_sq(reflections, imageset)
+  n_spots_total = len(reflections)
+  estimated_d_min = estimate_resolution_limit(
+    reflections, imageset, plot_filename=filename)
+
+  return group_args(n_spots_total=n_spots_total,
+                    estimated_d_min=estimated_d_min)
+
+def stats_imageset(imageset, reflections):
+  n_spots_total = []
+  estimated_d_min = []
+
+  image_number = reflections['xyzobs.px.value'].parts()[2]
+  image_number = flex.floor(image_number)
+
+  for i in range(len(imageset)):
+    stats = stats_single_image(
+      imageset[i:i+1], reflections.select(image_number==i), i=i)
+    n_spots_total.append(stats.n_spots_total)
+    estimated_d_min.append(stats.estimated_d_min)
+
+  return group_args(n_spots_total=n_spots_total,
+                    estimated_d_min=estimated_d_min)
+
+
+def table(stats):
+  n_spots_total = stats.n_spots_total
+  estimated_d_min = stats.estimated_d_min
+  rows = [("image", "#spots")]
+  for i_image in range(len(n_spots_total)):
+    rows.append((str(int(i_image)),
+                 str(n_spots_total[i_image]),
+                 "%.2f" %estimated_d_min[i_image]))
+  return rows
+
+def print_table(stats, out=None):
+  if out is None:
+    import sys
+    out = sys.stdout
+  from libtbx import table_utils
+
+  rows = table(stats)
+  print >> out, table_utils.format(
+    rows, has_header=True, prefix="|", postfix="|")
 
 
 if __name__ == '__main__':
@@ -201,8 +260,11 @@ if __name__ == '__main__':
   reflections = reflections[0]
   imageset = datablocks[0].extract_imagesets()[0]
 
-  resolution_histogram(
-    reflections, imageset, plot_filename="spot_count_vs_resolution.png")
-  estimated_d_min = estimate_resolution_limit(
-    reflections, imageset, plot_filename="i_over_sigi_vs_resolution.png")
-  print "Estimated d_min: %.2f" %estimated_d_min
+  stats = stats_imageset(imageset, reflections)
+  print_table(stats)
+
+  #resolution_histogram(
+  #  reflections, imageset, plot_filename="spot_count_vs_resolution.png")
+  #estimated_d_min = estimate_resolution_limit(
+  #  reflections, imageset, plot_filename="i_over_sigi_vs_resolution.png")
+  #print "Estimated d_min: %.2f" %estimated_d_min
