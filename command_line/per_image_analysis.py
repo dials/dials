@@ -127,8 +127,6 @@ def resolution_histogram(reflections, imageset):
 if __name__ == '__main__':
   import sys
   import os
-  stdout = sys.stdout
-  sys.stdout = open(os.devnull, 'w')
 
   # filter command parameters from filenames
   cl = []
@@ -143,6 +141,8 @@ if __name__ == '__main__':
   from dxtbx.datablock import DataBlockFactory
   from dials.array_family import flex
   interp = params.command_line_argument_interpreter()
+  params = params.fetch(interp.process(
+    'verbosity=0'))
   for cla in cl:
     params = params.fetch(interp.process(cla))
   params_extract = params.extract()
@@ -157,6 +157,5 @@ if __name__ == '__main__':
     resolution_histogram(reflections, imageset)
     results[filename] = estimate_resolution_limit(reflections, imageset)
 
-  sys.stdout = stdout
   for filename in filenames:
     print filename, results[filename]
