@@ -38,7 +38,7 @@ def estimate_resolution_limit(reflections, imageset):
   intensities = intensities.select(sel)
   variances = intensities.select(sel)
 
-  i_over_sigi = intensities/flex.sqrt(variances)
+  i_over_sigi = intensities / flex.sqrt(variances)
   log_i_over_sigi = flex.log(i_over_sigi)
 
   fit = flex.linear_regression(d_star_sq, log_i_over_sigi)
@@ -68,11 +68,13 @@ def estimate_resolution_limit(reflections, imageset):
   upper_percentile_limit = 1-low_percentile_limit
   for i_slot, slot in enumerate(hist.slot_infos()):
     sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
+
     if sel.count(True) == 0:
       if i_slot > i_slot_max:
         break
       else:
         continue
+
     log_i_over_sigi_sel = log_i_over_sigi.select(sel)
     d_star_sq_sel = d_star_sq.select(sel)
     perm = flex.sort_permutation(log_i_over_sigi_sel)
@@ -115,16 +117,18 @@ def estimate_resolution_limit(reflections, imageset):
 
   return resolution_estimate
 
-
 def resolution_histogram(reflections, imageset):
   reflections = map_to_reciprocal_space(reflections, imageset)
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   hist = get_histogram(d_star_sq)
 
-  # FIXME analyse here
+  # FIXME analyse here to see if is powder pattern
 
 if __name__ == '__main__':
   import sys
+  import os
+  stdout = sys.stdout
+  sys.stdout = open(os.devnull, 'w')
 
   # filter command parameters from filenames
   cl = []
@@ -142,6 +146,7 @@ if __name__ == '__main__':
   for cla in cl:
     params = params.fetch(interp.process(cla))
   params_extract = params.extract()
+  results = { }
   for filename in filenames:
     datablock = DataBlockFactory.from_filenames([filename])[0]
     reflections = flex.reflection_table.from_observations(
@@ -150,5 +155,8 @@ if __name__ == '__main__':
     imageset = datablock.extract_imagesets()[0]
 
     resolution_histogram(reflections, imageset)
-    estimated_d_min = estimate_resolution_limit(reflections, imageset)
-    print "%s: %.2f" % (filename, estimated_d_min)
+    results[filename] = estimate_resolution_limit(reflections, imageset)
+
+  sys.stdout = stdout
+  for filename in filenames:
+    print filename, results[filename]
