@@ -137,11 +137,11 @@ class SpotFrame(XrayFrame) :
     d_min = detector.get_max_resolution(beam.get_s0())
     d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
 
-    n_rings = 11
+    n_rings = 6
     step = d_star_sq_max/n_rings
     from cctbx.array_family import flex
     spacings = flex.double(
-      [uctbx.d_star_sq_as_d(i*step) for i in range(1, n_rings)])
+      [uctbx.d_star_sq_as_d(i*step) for i in range(0, n_rings)])
 
     wavelength = beam.get_wavelength()
     distance = detector[0].get_distance()
