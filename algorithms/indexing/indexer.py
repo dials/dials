@@ -11,8 +11,12 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from libtbx import easy_pickle
 import math
+from logging import info, debug
+from dials.util import log
+
+debug_handle = log.debug_handle()
+info_handle = log.info_handle()
 
 from libtbx.utils import Sorry
 import iotbx.phil
@@ -386,15 +390,14 @@ class indexer_base(object):
       self.cb_op_primitive_inp \
         = self.cb_op_ref_inp * self.cb_op_reference_to_primitive.inverse()
 
-      if self.params.debug:
-        if self.target_symmetry_reference_setting is not None:
-          print "Target symmetry (reference setting):"
-          self.target_symmetry_reference_setting.show_summary()
-        if self.target_symmetry_primitive is not None:
-          print "Target symmetry (primitive cell):"
-          self.target_symmetry_primitive.show_summary()
-        print "cb_op reference->primitive:", self.cb_op_reference_to_primitive
-        print "cb_op primitive->input:", self.cb_op_primitive_inp
+      if self.target_symmetry_reference_setting is not None:
+        debug("Target symmetry (reference setting):")
+        self.target_symmetry_reference_setting.show_summary(f=debug_handle)
+      if self.target_symmetry_primitive is not None:
+        debug("Target symmetry (primitive cell):")
+        self.target_symmetry_primitive.show_summary(f=debug_handle)
+      debug("cb_op reference->primitive:", self.cb_op_reference_to_primitive)
+      debug("cb_op primitive->input:", self.cb_op_primitive_inp)
 
   def index(self):
     self.reflections_input = self.reflections
@@ -452,8 +455,8 @@ class indexer_base(object):
         cutoff_fraction * len(self.reflections.select(d_spacings > self.d_min))
       crystal_ids = self.reflections.select(d_spacings > self.d_min)['id']
       if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
-        print "Finish searching for more lattices: %i unindexed reflections remaining." %(
-          min_reflections_for_indexing)
+        info("Finish searching for more lattices: %i unindexed reflections remaining." %(
+          min_reflections_for_indexing))
         break
 
       n_lattices_previous_cycle = len(experiments)
@@ -471,7 +474,7 @@ class indexer_base(object):
           self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
           if self.d_min < 0:
             break
-          print "Increasing resolution to %.1f Angstrom" %self.d_min
+          info("Increasing resolution to %.1f Angstrom" %self.d_min)
 
         # reset reflection lattice flags
         # the lattice a given reflection belongs to: a value of -1 indicates
@@ -511,7 +514,7 @@ class indexer_base(object):
                   self.reflections['id'] == i_expt, miller_indices)
               if self.cb_op_primitive_inp is not None:
                 new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
-                print new_cryst.get_space_group().info()
+                info(new_cryst.get_space_group().info())
                 miller_indices = self.reflections['miller_index'].select(
                   self.reflections['id'] == i_expt)
                 miller_indices = self.cb_op_primitive_inp.apply(miller_indices)
@@ -529,12 +532,12 @@ class indexer_base(object):
               difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
             min_angle = self.params.multiple_lattice_search.minimum_angular_separation
             if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
-              print "Crystal models too similar, rejecting crystal %i:" %(
-                len(experiments))
-              print "Rotation matrix to transform crystal %i to crystal %i" %(
-                i_a+1, len(experiments))
-              print R_ab
-              print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
+              info("Crystal models too similar, rejecting crystal %i:" %(
+                len(experiments)))
+              info("Rotation matrix to transform crystal %i to crystal %i" %(
+                i_a+1, len(experiments)))
+              info(R_ab)
+              info("Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles)
               #show_rotation_matrix_differences([cryst_a, cryst_b])
               have_similar_crystal_models = True
               del experiments[-1]
@@ -542,11 +545,11 @@ class indexer_base(object):
           if have_similar_crystal_models:
             break
 
-        print
-        print "#" * 80
-        print "Starting refinement (macro-cycle %i)" %(i_cycle+1)
-        print "#" * 80
-        print
+        info("")
+        info("#" * 80)
+        info("Starting refinement (macro-cycle %i)" %(i_cycle+1))
+        info("#" * 80)
+        info("")
         self.indexed_reflections = (self.reflections['id'] > -1)
 
         if self.params.debug:
@@ -586,8 +589,8 @@ class indexer_base(object):
             if len(experiments) == 1:
               raise Sorry(e)
             had_refinement_error = True
-            print "Refinement failed:"
-            print s
+            info("Refinement failed:")
+            info(s)
             del experiments[-1]
             break
           raise
@@ -617,7 +620,7 @@ class indexer_base(object):
 
         if (i_cycle >=2 and
             self.d_min == self.params.refinement_protocol.d_min_final):
-          print "Target d_min_final reached: finished with refinement"
+          info("Target d_min_final reached: finished with refinement")
           break
 
       if not self.params.multiple_lattice_search.recycle_unindexed_reflections:
@@ -630,13 +633,14 @@ class indexer_base(object):
     if len(self.refined_experiments) > 1:
       from dials.algorithms.indexing.compare_orientation_matrices \
            import show_rotation_matrix_differences
-      show_rotation_matrix_differences(self.refined_experiments.crystals())
+      show_rotation_matrix_differences(
+        self.refined_experiments.crystals(), out=info_handle)
 
-    print "Final refined crystal models:"
+    info("Final refined crystal models:")
     for i, crystal_model in enumerate(self.refined_experiments.crystals()):
-      print "model %i (%i reflections):" %(
-        i+1, (self.reflections['id'] == i).count(True))
-      print crystal_model
+      info("model %i (%i reflections):" %(
+        i+1, (self.reflections['id'] == i).count(True)))
+      info(crystal_model)
 
   def find_max_cell(self):
     import libtbx
@@ -675,12 +679,13 @@ class indexer_base(object):
               max_cell.append(NN.max_cell)
             except AssertionError:
               continue
-            if self.params.debug: print phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell
-          if self.params.debug:
-            print list(max_cell)
-            print flex.median(max_cell), flex.mean(max_cell)
+            debug("%s %s %s"  %(
+              phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
+          debug(list(max_cell))
+          debug("median: %s" %flex.median(max_cell))
+          debug("mean: %s" %flex.mean(max_cell))
           self.params.max_cell = flex.median(max_cell) # mean or max or median?
-        print "Found max_cell: %.1f Angstrom" %(self.params.max_cell)
+        info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
 
   def filter_reflections_by_scan_range(self):
     reflections_in_scan_range = flex.size_t()
@@ -790,9 +795,9 @@ class indexer_base(object):
     opt_detector, opt_beam = discover_better_experimental_model(
       copy.deepcopy(reflections), detector, beam,
       goniometer=goniometer, scan=scan, params=hardcoded_phil)
-    print "DISCOVERED BETTER MODEL:"
-    print opt_detector
-    print opt_beam
+    info("DISCOVERED BETTER MODEL:")
+    info(opt_detector)
+    info(opt_beam)
     return opt_detector, opt_beam
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
@@ -1038,8 +1043,7 @@ class indexer_base(object):
             orientation_too_similar = True
             break
         if orientation_too_similar:
-          if self.params.debug:
-            print "skipping crystal: too similar to other crystals"
+          debug("skipping crystal: too similar to other crystals")
           continue
 
       from dials.algorithms.refinement import RefinerFactory
@@ -1059,16 +1063,14 @@ class indexer_base(object):
                  crystal=cm,
                  rmsds=rmsds,
                  n_indexed=n_indexed[-1]))
-      if self.params.debug:
-        print "unit_cell:", cm.get_unit_cell()
-        print "model_likelihood: %.2f" %model_likelihood
-        print "n_indexed: %i" %n_indexed[-1]
+      debug("unit_cell: " + str(cm.get_unit_cell()))
+      debug("model_likelihood: %.2f" %model_likelihood)
+      debug("n_indexed: %i" %n_indexed[-1])
 
     if len(solutions):
       best_solution = solutions.best_solution()
-      if self.params.debug:
-        print "best model_likelihood: %.2f" %best_solution.model_likelihood
-        print "best n_indexed: %i" %best_solution.n_indexed
+      debug("best model_likelihood: %.2f" %best_solution.model_likelihood)
+      debug("best n_indexed: %i" %best_solution.n_indexed)
       return best_solution.crystal, best_solution.n_indexed
     else:
       return None, None
@@ -1176,7 +1178,7 @@ class indexer_base(object):
     vectors = self.candidate_basis_vectors
 
     for i, v in enumerate(vectors):
-      print i, v.length()# , vector_heights[i]
+      debug("%s %s" %(i, v.length()))# , vector_heights[i]
 
     # print a table of the angles between each pair of vectors
 
@@ -1189,18 +1191,18 @@ class indexer_base(object):
         v_j = vectors[j]
         angles[i,j] = v_i.angle(v_j, deg=True)
 
-    print (" "*7),
+    print >> debug_handle, (" "*7),
     for i in range(len(vectors)):
-      print "%7.3f" % vectors[i].length(),
-    print
+      print >> debug_handle, "%7.3f" % vectors[i].length(),
+    print >> debug_handle
     for i in range(len(vectors)):
-      print "%7.3f" % vectors[i].length(),
+      print >> debug_handle, "%7.3f" % vectors[i].length(),
       for j in range(len(vectors)):
         if j <= i:
-          print (" "*7),
+          print >> debug_handle, (" "*7),
         else:
-          print "%5.1f  " %angles[i,j],
-      print
+          print >> debug_handle, "%5.1f  " %angles[i,j],
+      print >> debug_handle
 
   def debug_plot_candidate_basis_vectors(self):
     from matplotlib import pyplot
@@ -1274,6 +1276,7 @@ class indexer_base(object):
     dump.experiment_list(experiments, file_name)
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
+    from libtbx import easy_pickle
     easy_pickle.dump(file_name, reflections)
 
   def find_lattices(self):

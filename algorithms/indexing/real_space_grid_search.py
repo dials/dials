@@ -21,6 +21,7 @@ from dials.algorithms.indexing.indexer import \
      is_approximate_integer_multiple
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
+from logging import info, debug
 
 
 class indexer_real_space_grid_search(indexer_base):
@@ -48,7 +49,7 @@ class indexer_real_space_grid_search(indexer_base):
       (self.reflections['id'] == -1) &
       (1/self.reflections['rlp'].norms() > d_min))
 
-    print "Indexing from %i reflections" %len(reciprocal_lattice_points)
+    info("Indexing from %i reflections" %len(reciprocal_lattice_points))
 
     def compute_functional(vector):
       two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_points.dot(vector)
@@ -63,7 +64,8 @@ class indexer_real_space_grid_search(indexer_base):
     SST.construct_hemisphere_grid(SST.incr)
     cell_dimensions = self.target_symmetry_primitive.unit_cell().parameters()[:3]
     unique_cell_dimensions = set(cell_dimensions)
-    print "Number of search vectors: %i" %(len(SST.angles) * len(unique_cell_dimensions))
+    info(
+      "Number of search vectors: %i" %(len(SST.angles) * len(unique_cell_dimensions)))
     vectors = flex.vec3_double()
     function_values = flex.double()
     for i, direction in enumerate(SST.angles):
@@ -95,10 +97,9 @@ class indexer_real_space_grid_search(indexer_base):
         unique_vectors.append(v)
       i += 1
 
-    if self.params.debug:
-      for i in range(30):
-        v = matrix.col(vectors[i])
-        print v.elems, v.length(), function_values[i]
+    for i in range(30):
+      v = matrix.col(vectors[i])
+      debug("%s %s %s" %(str(v.elems), str(v.length()), str(function_values[i])))
 
     basis_vectors = [v.elems for v in unique_vectors]
     self.candidate_basis_vectors = basis_vectors
@@ -115,17 +116,17 @@ class indexer_real_space_grid_search(indexer_base):
 
       unique_vectors = [matrix.col(v) for v in optimised_basis_vectors]
 
-    print "Number of unique vectors: %i" %len(unique_vectors)
+    info("Number of unique vectors: %i" %len(unique_vectors))
 
-    if self.params.debug:
-      for i in range(len(unique_vectors)):
-        print compute_functional(unique_vectors[i].elems), unique_vectors[i].length(), unique_vectors[i].elems
-        print
+    for i in range(len(unique_vectors)):
+      debug("%s %s %s" %(
+        str(compute_functional(unique_vectors[i].elems)),
+        str(unique_vectors[i].length()),
+        str(unique_vectors[i].elems)))
 
     crystal_models = []
     self.candidate_basis_vectors = unique_vectors
-    if self.params.debug:
-      self.debug_show_candidate_basis_vectors()
+    self.debug_show_candidate_basis_vectors()
     if self.params.debug_plots:
       self.debug_plot_candidate_basis_vectors()
     candidate_orientation_matrices \

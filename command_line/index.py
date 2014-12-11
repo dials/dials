@@ -55,12 +55,17 @@ output {
   reflections = indexed.pickle
     .type = path
 }
+
+verbosity = 1
+  .type = int(value_min=0)
+  .help = "The verbosity level"
 """, process_includes=True)
 
 
 def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
+  from dials.util import log
   usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
@@ -73,6 +78,10 @@ def run(args):
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
+
+  # Configure the logging
+  log.config(params.verbosity, filename='dials.index.log')
+
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)

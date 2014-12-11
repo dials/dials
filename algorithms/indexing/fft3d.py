@@ -24,6 +24,8 @@ from dials.algorithms.indexing.indexer \
      import vector_group, is_approximate_integer_multiple
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
+from logging import info, debug
+
 class indexer_fft3d(indexer_base):
 
   def __init__(self, reflections, sweep, params):
@@ -43,7 +45,7 @@ class indexer_fft3d(indexer_base):
 
       self.params.fft3d.reciprocal_space_grid.d_min = (
         5 * self.params.max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
-      print "Setting d_min: %s" %self.params.fft3d.reciprocal_space_grid.d_min
+      info("Setting d_min: %s" %self.params.fft3d.reciprocal_space_grid.d_min)
     n_points = self.params.fft3d.reciprocal_space_grid.n_points
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
@@ -51,8 +53,8 @@ class indexer_fft3d(indexer_base):
     self.map_centroids_to_reciprocal_space_grid()
     self.d_min = self.params.fft3d.reciprocal_space_grid.d_min
 
-    print "Number of centroids used: %i" %(
-      (self.reciprocal_space_grid>0).count(True))
+    info("Number of centroids used: %i" %(
+      (self.reciprocal_space_grid>0).count(True)))
     self.fft()
     if self.params.debug:
       self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
@@ -107,7 +109,7 @@ class indexer_fft3d(indexer_base):
     self.crystal_symmetry = crystal.symmetry(unit_cell=self.fft_cell,
                                              space_group_symbol="P1")
 
-    print "FFT gridding: (%i,%i,%i)" %self.gridding
+    info("FFT gridding: (%i,%i,%i)" %self.gridding)
 
     grid = flex.double(flex.grid(self.gridding), 0)
 
@@ -175,7 +177,7 @@ class indexer_fft3d(indexer_base):
       flex.min_max_mean_double(norms).show()
       perm = flex.sort_permutation(norms, reverse=True)
       for p in perm[:10]:
-        print sites_cart[p], sites_cart_optimised[p], norms[p]
+        debug(sites_cart[p], sites_cart_optimised[p], norms[p])
 
       # only use those vectors which haven't shifted too far from starting point
       self.sites = self.sites.select(
@@ -386,11 +388,11 @@ class indexer_fft3d(indexer_base):
         this_set = set()
         for i_cluster in clique:
           this_set = this_set.union(cluster_point_sets[i_cluster])
-        print "Clique %i: %i lattice points" %(i+1, len(this_set))
+        info("Clique %i: %i lattice points" %(i+1, len(this_set)))
 
     assert len(distinct_cliques) > 0
 
-    print "Estimated number of lattices: %i" %len(distinct_cliques)
+    info("Estimated number of lattices: %i" %len(distinct_cliques))
 
     self.candidate_basis_vectors = []
     self.candidate_crystal_models = []
@@ -446,9 +448,8 @@ class indexer_fft3d(indexer_base):
       with open(file_name, 'wb') as f:
         print >> f, xs.as_pdb_file()
 
-    if self.params.debug:
-      for crystal_model in self.candidate_crystal_models:
-        print crystal_model
+    for crystal_model in self.candidate_crystal_models:
+      debug(crystal_model)
 
   def cluster_analysis_hcluster(self, vectors):
     from hcluster import linkage, fcluster
@@ -488,7 +489,7 @@ class indexer_fft3d(indexer_base):
     # Number of clusters in labels, ignoring noise if present.
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
 
-    print('Estimated number of clusters: %d' % n_clusters_)
+    info('Estimated number of clusters: %d' % n_clusters_)
 
     return labels
 

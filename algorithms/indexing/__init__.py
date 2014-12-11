@@ -2,6 +2,7 @@ from __future__ import division
 
 from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import *
+from logging import info, debug
 
 def index_reflections(
     reflections, experiments, d_min=None,
@@ -102,12 +103,12 @@ def index_reflections(
 
   if verbosity > 0:
     for i_expt, expt in enumerate(experiments):
-      print "model %i (%i reflections):" %(
-        i_expt+1, (reflections['id'] == i_expt).count(True))
-      print expt.crystal
-      print
+      info("model %i (%i reflections):" %(
+        i_expt+1, (reflections['id'] == i_expt).count(True)))
+      info(expt.crystal)
+      info("")
 
-    print "%i unindexed reflections" %n_rejects
+    info("%i unindexed reflections" %n_rejects)
 
 
 def index_reflections_local(
@@ -180,9 +181,9 @@ def index_reflections_local(
 
   if verbosity > 0:
     for i_expt, expt in enumerate(experiments):
-      print "model %i (%i reflections):" %(
-        i_expt+1, (reflections['id'] == i_expt).count(True))
-      print expt.crystal
-      print
+      info("model %i (%i reflections):" %(
+        i_expt+1, (reflections['id'] == i_expt).count(True)))
+      info(expt.crystal)
+      info("")
 
-    print "%i unindexed reflections" %n_rejects
+    info("%i unindexed reflections" %n_rejects)
