@@ -356,7 +356,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   def extract_shoeboxes(self, imageset, mask=None):
     ''' Helper function to read a load of shoebox data. '''
     from dials.model.data import make_image
-    import sys
+    from logging import info
     from time import time
     assert("shoebox" in self)
     detector = imageset.get_detector()
@@ -374,7 +374,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         tr = detector[i].get_trusted_range()
         mask.append(image[i].as_double() > tr[0])
       mask = tuple(mask)
-    sys.stdout.write("Reading images: ")
+    info("Reading images")
     read_time = 0
     extract_time = 0
     for i in range(len(imageset)):
@@ -386,11 +386,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       st = time()
       extractor.next(make_image(image, mask))
       extract_time += time() - st
-      sys.stdout.write(".")
-      sys.stdout.flush()
       del image
-    sys.stdout.write("\n")
-    sys.stdout.flush()
     assert(extractor.finished())
     return read_time, extract_time
 
