@@ -80,7 +80,8 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=True)
 
   # Configure the logging
-  log.config(params.verbosity, filename='dials.index.log')
+  log.config(
+    params.verbosity, info='dials.index.log', debug='dials.index.debug.log')
 
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
