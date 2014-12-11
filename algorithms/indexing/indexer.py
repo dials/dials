@@ -396,8 +396,8 @@ class indexer_base(object):
       if self.target_symmetry_primitive is not None:
         debug("Target symmetry (primitive cell):")
         self.target_symmetry_primitive.show_summary(f=debug_handle)
-      debug("cb_op reference->primitive:", self.cb_op_reference_to_primitive)
-      debug("cb_op primitive->input:", self.cb_op_primitive_inp)
+      debug("cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive))
+      debug("cb_op primitive->input: " + str(self.cb_op_primitive_inp))
 
   def index(self):
     self.reflections_input = self.reflections
