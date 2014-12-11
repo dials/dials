@@ -103,3 +103,26 @@ def config_simple_stdout():
     }
   })
 
+
+class LoggerIO(object):
+  ''' Wrap the logger with file type object '''
+
+  def __init__(self, level):
+    self.level = level
+
+  def write(self, buf):
+    from logging import log
+    log(self.level, buf)
+
+  def flush(self):
+    pass
+
+
+def info_handle():
+  from logging import INFO
+  return LoggerIO(INFO)
+
+
+def debug_handle():
+  from logging import DEBUG
+  return LoggerIO(DEBUG)
