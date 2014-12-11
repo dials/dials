@@ -1,5 +1,6 @@
 from __future__ import division
 
+import math
 from libtbx import group_args
 from dials.array_family import flex
 
@@ -46,8 +47,6 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
   fit = flex.linear_regression(d_star_sq, log_i_over_sigi)
   m = fit.slope()
   c = fit.y_intercept()
-
-  import math
 
   log_i_sigi_lower = flex.double()
   d_star_sq_lower = flex.double()
@@ -172,7 +171,6 @@ def points_inside_envelope(d_star_sq, log_i_over_sigi,
   points_lower = (0, c_lower, 1, m_lower*1 + c_lower)
 
   from scitbx import matrix
-  import math
   p1 = matrix.col((0, c_upper))
   p2 = matrix.col(( 1, m_upper*1 + c_upper))
   p3 = matrix.col((0, c_lower))
@@ -224,6 +222,54 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     pyplot.savefig(plot_filename)
     pyplot.close()
 
+def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
+  reflections = map_to_reciprocal_space(reflections, imageset)
+  d_star_sq = flex.pow2(reflections['rlp'].norms())
+  hist = get_histogram(d_star_sq)
+
+  intensities = reflections['intensity.sum.value']
+  variances = reflections['intensity.sum.variance']
+
+  sel = variances > 0
+  intensities = intensities.select(sel)
+  variances = intensities.select(sel)
+  
+  i_over_sigi = intensities/flex.sqrt(variances)
+  #log_i_over_sigi = flex.log(i_over_sigi)
+
+  slots = []
+  for slot in hist.slot_infos():
+    sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
+    if sel.count(True) > 0:
+      slots.append(math.log(flex.sum(i_over_sigi.select(sel))))
+    else:
+      slots.append(0)
+
+  if plot_filename is not None:
+    from matplotlib import pyplot
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1,1,1)
+    #ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
+    ax.scatter(hist.slot_centers()-0.5*hist.slot_width(), slots, s=20, color='blue', marker='o', alpha=0.5)
+    ax.set_xlabel("d_star_sq")
+    ax.set_ylabel("ln(sum(I/sigI))")
+
+    ax_ = ax.twiny() # ax2 is responsible for "top" axis and "right" axis
+    xticks = ax.get_xticks()
+    xlim = ax.get_xlim()
+    from cctbx import uctbx
+    xticks_d = [
+      uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks ]
+    xticks_ = [ds2/(xlim[1]-xlim[0]) for ds2 in xticks]
+    ax_.set_xticks(xticks)
+    ax_.set_xlim(ax.get_xlim())
+    ax_.set_xlabel(r"Resolution ($\AA$)")
+    ax_.set_xticklabels(["%.1f" %d for d in xticks_d])
+    #pyplot.show()
+    pyplot.savefig(plot_filename)
+    pyplot.close()
+
+
 def plot_ordered_d_star_sq(reflections, imageset):
   reflections = map_to_reciprocal_space(reflections, imageset)
   d_star_sq = flex.pow2(reflections['rlp'].norms())
@@ -237,10 +283,19 @@ def plot_ordered_d_star_sq(reflections, imageset):
 def stats_single_image(imageset, reflections, i=None, plot=False):
   if plot and i is not None:
     filename = "i_over_sigi_vs_resolution_%d.png" %i
+    hist_filename = "spot_count_vs_resolution_%d.png" %i
+    extra_filename = "log_sum_i_sigi_vs_resolution_%d.png" %i
   else:
     filename = None
+    hist_filename = None
+    extra_filename = None
   #plot_ordered_d_star_sq(reflections, imageset)
   n_spots_total = len(reflections)
+  #print i
+  #resolution_histogram(
+    #reflections, imageset, plot_filename=hist_filename)
+  #log_sum_i_sigi_vs_resolution(
+    #reflections, imageset, plot_filename=extra_filename)
   if n_spots_total > 10:
     estimated_d_min = estimate_resolution_limit(
       reflections, imageset, plot_filename=filename)
