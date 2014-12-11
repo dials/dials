@@ -55,6 +55,7 @@ def config(verbosity=1, info='', debug=''):
         'level' : level,
         'class' : 'logging.StreamHandler',
         'formatter' : 'standard',
+        'stream': 'ext://sys.stdout',
       },
       'file_debug' : {
         'level' : 'DEBUG',
@@ -102,6 +103,7 @@ def config_simple_stdout():
         'level' : 'DEBUG',
         'class' : 'logging.StreamHandler',
         'formatter' : 'standard',
+        'stream': 'ext://sys.stdout',
       }
     },
 
