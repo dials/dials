@@ -83,7 +83,8 @@ namespace boost_python {
       .def("grid_size", &TransformSpecType::grid_size)
       .def("step_size", &TransformSpecType::step_size)
       .def("grid_centre", &TransformSpecType::grid_centre)
-      .def("s1_map", &transform_spec_s1_map<FloatType> );
+      /* .def("s1_map", &transform_spec_s1_map<FloatType> ) */
+      ;
 
     class_<ForwardType>(name, no_init)
       .def(init<const TransformSpec<FloatType>&,
