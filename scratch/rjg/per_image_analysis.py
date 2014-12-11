@@ -101,6 +101,7 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
   if m_upper == m_lower:
     intersection = (-1,-1)
     resolution_estimate = -1
+    inside = flex.bool(len(d_star_sq), False)
 
   else:
     # http://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_the_equations_of_the_lines
@@ -114,7 +115,12 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     d = c_lower
     assert intersection == ((d-c_)/(a-b), (a*d-b*c_)/(a-b))
 
-    d_star_sq_estimate = intersection[0]
+    inside = points_inside_envelope(
+      d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
+
+    d_star_sq_estimate = flex.max(d_star_sq.select(inside))
+
+    #d_star_sq_estimate = intersection[0]
     resolution_estimate = uctbx.d_star_sq_as_d(d_star_sq_estimate)
 
   resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
@@ -125,8 +131,11 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     fig = pyplot.figure()
     ax = fig.add_subplot(1,1,1)
     ax.scatter(d_star_sq, log_i_over_sigi, marker='+')
+    ax.scatter(d_star_sq.select(inside), log_i_over_sigi.select(inside),
+               marker='+', color='green')
     ax.scatter(d_star_sq_upper, log_i_sigi_upper, marker='+', color='red')
     ax.scatter(d_star_sq_lower, log_i_sigi_lower, marker='+', color='red')
+
     ax.scatter([intersection[0]], [intersection[1]], marker='x', s=50, color='b')
     #ax.hexbin(d_star_sq, log_i_over_sigi, gridsize=30)
     ax.plot(pyplot.xlim(), [(m * x + c) for x in pyplot.xlim()])
@@ -151,6 +160,37 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     pyplot.close()
 
   return resolution_estimate
+
+
+def points_inside_envelope(d_star_sq, log_i_over_sigi,
+                           m_upper, c_upper,
+                           m_lower, c_lower):
+
+  points_upper = (0, c_upper, 1, m_upper*1 + c_upper)
+  points_lower = (0, c_lower, 1, m_lower*1 + c_lower)
+
+  from scitbx import matrix
+  import math
+  p1 = matrix.col((0, c_upper))
+  p2 = matrix.col(( 1, m_upper*1 + c_upper))
+  p3 = matrix.col((0, c_lower))
+  p4 = matrix.col(( 1, m_lower*1 + c_lower))
+
+  def side(p1, p2, p):
+    diff = p2 - p1
+    perp = matrix.col((-diff[1], diff[0]))
+    #print p, p1, p2, perp
+    d = (p-p1).dot(perp)
+    #print d
+    return math.copysign(1, d)
+
+  inside = flex.bool(len(d_star_sq), False)
+  for i, (x, y) in enumerate(zip(d_star_sq, log_i_over_sigi)):
+    p = matrix.col((x, y))
+    if side(p1, p2, p) < 0 and side(p3, p4, p) > 0:
+      inside[i] = True
+
+  return inside
 
 
 def resolution_histogram(reflections, imageset, plot_filename=None):
