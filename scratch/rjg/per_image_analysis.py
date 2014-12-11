@@ -267,7 +267,7 @@ def table(stats):
   estimated_d_min = stats.estimated_d_min
   rows = [("image", "#spots", "#d_min")]
   for i_image in range(len(n_spots_total)):
-    rows.append((str(int(i_image)),
+    rows.append((str(int(i_image)+1),
                  str(n_spots_total[i_image]),
                  "%.2f" %estimated_d_min[i_image]))
   return rows
@@ -282,6 +282,43 @@ def print_table(stats, out=None):
   print >> out, table_utils.format(
     rows, has_header=True, prefix="|", postfix="|")
 
+def plot_stats(stats, filename="per_image_analysis.png"):
+  n_spots_total = flex.int(stats.n_spots_total)
+  estimated_d_min = flex.double(stats.estimated_d_min)
+  try:
+    import matplotlib
+    matplotlib.use('Agg') # use a non-interactive backend
+    # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+    from matplotlib import pyplot
+  except ImportError:
+    raise Sorry("matplotlib must be installed to generate a plot.")
+
+  i_image = flex.int(list(range(1, len(n_spots_total)+1)))
+  fig = pyplot.figure()
+  ax1 = fig.add_subplot(111)
+  sc1 = ax1.scatter(i_image, n_spots_total, s=20, color='blue', marker='o', alpha=0.5)
+  ax1.set_xlabel('Image #')
+  ax1.set_ylabel('# spots')
+  ax1.set_xlim((0.0, len(n_spots_total)))
+  ax1.set_ylim(bottom=-0.2)
+  ax2 = ax1.twinx()
+  sel = (estimated_d_min < 50.0) & (n_spots_total > 20) # XXX
+  sc2 = ax2.scatter(i_image.select(sel), estimated_d_min.select(sel),
+                    s=20, color='red', marker='^', alpha=0.5)
+  ax2.set_ylabel(u'resolution (\u00c5)')
+  ax2.set_xlim((0, len(n_spots_total)))
+  ax2.invert_yaxis()
+
+  # Use mode="fixed" as mode="expand" causes floating point error on some
+  # versions of matplotlib.
+  # See https://github.com/matplotlib/matplotlib/pull/1864
+  lgd = pyplot.legend(
+    (sc1, ), ('#spots',), ncol=1,
+    loc='upper center',
+    mode="fixed", borderaxespad=0.,
+    bbox_to_anchor=(0.0,-0.22, 1., .102))
+  pyplot.savefig(filename, dpi=600, bbox_extra_artists=(lgd,),
+                 bbox_inches='tight')
 
 if __name__ == '__main__':
   from dials.util.options import OptionParser
@@ -290,6 +327,8 @@ if __name__ == '__main__':
   import iotbx.phil
   phil_scope = iotbx.phil.parse("""\
 plot=False
+  .type = bool
+individual_plots=False
   .type = bool
 """)
 
@@ -309,8 +348,10 @@ plot=False
   reflections = reflections[0]
   imageset = datablocks[0].extract_imagesets()[0]
 
-  stats = stats_imageset(imageset, reflections, plot=params.plot)
+  stats = stats_imageset(imageset, reflections, plot=params.individual_plots)
   print_table(stats)
+  if params.plot:
+    plot_stats(stats)
 
   #resolution_histogram(
   #  reflections, imageset, plot_filename="spot_count_vs_resolution.png")
