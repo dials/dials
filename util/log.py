@@ -69,3 +69,37 @@ def config(verbosity=1, filename=''):
       }
     }
   })
+
+def config_simple_stdout():
+  ''' Configure the logging. '''
+  import logging.config
+
+  # Configure the logging
+  logging.config.dictConfig({
+
+    'version' : 1,
+    'disable_existing_loggers' : False,
+
+    'formatters' : {
+      'standard' : {
+        'format' : '%(message)s'
+      }
+    },
+
+    'handlers' : {
+      'stream' : {
+        'level' : 'DEBUG',
+        'class' : 'logging.StreamHandler',
+        'formatter' : 'standard',
+      }
+    },
+
+    'loggers' : {
+      '' : {
+        'handlers' : ['stream'],
+        'level' : 'DEBUG',
+        'propagate' : True
+      }
+    }
+  })
+

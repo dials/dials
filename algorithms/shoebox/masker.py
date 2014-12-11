@@ -36,16 +36,16 @@ class MaskerBase(object):
         The masked reflection list
 
     '''
-    from dials.util.command_line import Command
+    from logging import info
 
     # Mask the overlaps if an adjacency list is given
     if adjacency_list:
-      Command.start('Masking overlapping reflections')
+      info('Masking overlapping reflections')
       self.mask_overlapping(
         reflections['shoebox'],
         reflections['xyzcal.px'],
         adjacency_list)
-      Command.end('Masked {0} overlapping reflections'.format(
+      info('Masked {0} overlapping reflections'.format(
           len(adjacency_list)))
 
     # Return the reflections
@@ -82,12 +82,12 @@ class Masker3DProfile(MaskerBase):
     '''
     reflections = super(Masker3DProfile, self).__call__(reflections, adjacency_list)
 
-    from dials.util.command_line import Command
+    from logging import info
 
     # Mask the foreground region
-    Command.start('Masking foreground pixels')
+    info('Masking foreground pixels')
     self._profile_model.compute_mask(self._experiments, reflections)
-    Command.end('Masked foreground pixels for {0} reflections'.format(
+    info('Masked foreground pixels for {0} reflections'.format(
       len(reflections)))
 
     # Return the reflections
@@ -124,13 +124,13 @@ class MaskerEmpirical(MaskerBase):
     '''
     reflections = super(MaskerEmpirical, self).__call__(reflections, adjacency_list)
 
-    from dials.util.command_line import Command
+    from logging import info
 
     if self.mask_empirical:
       # Mask the foreground region
-      Command.start('Masking foreground pixels')
+      info('Masking foreground pixels')
       self.mask_empirical(reflections)
-      Command.end('Masked foreground pixels for {0} reflections'.format(
+      info('Masked foreground pixels for {0} reflections'.format(
         len(reflections)))
 
     # Return the reflections

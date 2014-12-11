@@ -108,11 +108,11 @@ class ReflectionPredictor(object):
       A reflection table
 
     '''
-    from dials.util.command_line import Command
-    print ' Prediction type: %s' % self._predict.name
-    Command.start('Predicting reflections')
+    from logging import info
+    info('Prediction type: %s' % self._predict.name)
+    info('Predicting reflections')
     table = self._predict()
-    Command.end('Predicted %d reflections' % len(table))
+    info('Predicted %d reflections' % len(table))
     return table
 
   def predictor(self, index):

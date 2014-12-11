@@ -64,6 +64,7 @@ class SpotMatcher(object):
 
     '''
     from scitbx.array_family import flex
+    from logging import warn
 
     # Get the predicted coordinates
     predicted_panel = predicted['panel']
@@ -90,7 +91,7 @@ class SpotMatcher(object):
         nn_all.extend(indices)
         dd_all.extend(d)
       except Exception:
-        print "Unable to match spots on panel %d" % panel
+        warn("Unable to match spots on panel %d" % panel)
     return nn_all, dd_all
 
   def _find_nearest_neighbours_single(self, oxyz, pxyz):

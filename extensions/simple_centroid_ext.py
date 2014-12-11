@@ -22,11 +22,11 @@ class SimpleCentroidExt(CentroidIface):
 
   def compute_centroid(self, reflections):
     ''' Compute the centroid. '''
-    from dials.util.command_line import Command
+    from logging import info
     from dials.array_family import flex
 
     # Compute the reflections
-    Command.start('Calculating reflection centroids')
+    info('Calculating reflection centroids')
     centroid = reflections['shoebox'].centroid_valid()
     value = flex.vec3_double(len(centroid))
     variance = flex.vec3_double(len(centroid))
@@ -35,4 +35,4 @@ class SimpleCentroidExt(CentroidIface):
       variance[i] = centroid[i].px.variance
     reflections['xyzobs.px.value'] = value
     reflections['xyzobs.px.variance'] = variance
-    Command.end('Calculated %d reflection centroids' % len(reflections))
+    info('Calculated %d reflection centroids' % len(reflections))

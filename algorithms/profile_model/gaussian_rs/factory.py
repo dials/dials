@@ -30,12 +30,13 @@ class Factory(object):
     ''' Compute the profile models. '''
     from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.util.command_line import heading
+    from logging import info
     assert(len(experiments) > 0)
 
-    print "=" * 80
-    print ""
-    print heading("Computing Profile Model")
-    print ""
+    info("=" * 80)
+    info("")
+    info(heading("Computing Profile Model"))
+    info("")
 
     # Split the reflections by experiment id
     if len(experiments) > 1:
@@ -49,8 +50,8 @@ class Factory(object):
     profile_model_list = ProfileModelList()
     for exp, ref in zip(experiments, reflections_split):
       model = Factory.compute_single(exp, ref, min_zeta)
-      print " Sigma_b: %.3f degrees" % model.sigma_b(deg=True)
-      print " Sigma_m: %.3f degrees" % model.sigma_m(deg=True)
+      info(" Sigma_b: %.3f degrees" % model.sigma_b(deg=True))
+      info(" Sigma_m: %.3f degrees" % model.sigma_m(deg=True))
       profile_model_list.append(model)
 
     # Return the profile models

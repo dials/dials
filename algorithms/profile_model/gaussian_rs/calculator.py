@@ -237,7 +237,7 @@ class ProfileModelCalculator(object):
 
   def __init__(self, experiment, reflections, min_zeta=0.05):
     ''' Calculate the profile model. '''
-    from dials.util.command_line import Command
+    from logging import info
 
     # Check input has what we want
     assert(experiment is not None)
@@ -253,18 +253,18 @@ class ProfileModelCalculator(object):
       zeta = reflections.compute_zeta(experiment)
 
       # Filter based on zeta value
-      Command.start('Filtering reflections with zeta < %f' % min_zeta)
+      info('Filtering reflections with zeta < %f' % min_zeta)
 
       from scitbx.array_family import flex
       mask = flex.abs(zeta) < min_zeta
       reflections.del_selected(mask)
-      Command.end('Filtered %d reflections with zeta > %f' %
+      info('Filtered %d reflections with zeta > %f' %
         (len(reflections), min_zeta))
 
     # Calculate the E.S.D of the beam divergence
-    Command.start('Calculating E.S.D Beam Divergence.')
+    info('Calculating E.S.D Beam Divergence.')
     beam_divergence = ComputeEsdBeamDivergence(experiment.detector, reflections)
-    Command.end('Calculated E.S.D Beam Divergence')
+    info('Calculated E.S.D Beam Divergence')
 
     # Set the sigma b
     self._sigma_b = beam_divergence.sigma()
@@ -275,9 +275,9 @@ class ProfileModelCalculator(object):
     else:
 
       # Calculate the E.S.D of the reflecting range
-      Command.start('Calculating E.S.D Reflecting Range.')
+      info('Calculating E.S.D Reflecting Range.')
       reflecting_range = ComputeEsdReflectingRange(experiment, reflections)
-      Command.end('Calculated E.S.D Reflecting Range.')
+      info('Calculated E.S.D Reflecting Range.')
 
       # Set the sigmas
       self._sigma_m = reflecting_range.sigma()

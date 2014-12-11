@@ -44,7 +44,7 @@ class IntegrationAlgorithm(object):
     from dials.algorithms.integration.fitrs import Spec
     from dials.algorithms.integration.integrator import job_id
     from dials.array_family import flex
-    from dials.util.command_line import Command
+    from logging import info, warn
 
     # Get the flags
     flags = flex.reflection_table.flags
@@ -68,26 +68,26 @@ class IntegrationAlgorithm(object):
 
     # Perform the integration
     num = reflections.get_flags(flags.dont_integrate).count(False)
-    Command.start('Integrating %d reflections with profile fitting' % num)
+    info('Integrating %d reflections with profile fitting' % num)
     profiles = algorithm.execute(reflections)
 
     # Print the number integrated
     num = reflections.get_flags(flags.integrated_prf).count(True)
-    Command.end('Integrated %d reflections with profile fitting' % num)
+    info('Integrated %d reflections with profile fitting' % num)
 
     # Print warning
     nbad = profiles.nbad()
     if nbad > 0:
-      print ''
-      print '*' * 80
-      print 'Warning: %d standard profile(s) could not be created' % nbad
-      print '*' * 80
+      warn('')
+      warn('*' * 80)
+      warn('Warning: %d standard profile(s) could not be created' % nbad)
+      warn('*' * 80)
 
     # Maybe save some debug info
     if self._debug:
       import cPickle as pickle
       filename = 'debug_%d.pickle' % job_id()
-      print 'Saving debugging information to %s' % filename
+      info('Saving debugging information to %s' % filename)
       reference = []
       for i in range(len(profiles)):
         r = []

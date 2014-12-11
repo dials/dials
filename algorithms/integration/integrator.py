@@ -112,7 +112,9 @@ class Integrator(object):
     from time import time
     from libtbx import easy_mp
     from libtbx.table_utils import format as table
+    from logging import info
     import omptbx
+
     start_time = time()
     if self._nthreads > omptbx.omp_get_num_procs():
       nthreads = omptbx.omp_get_num_procs()
@@ -123,15 +125,17 @@ class Integrator(object):
     num_proc = len(self._manager)
     if self._nproc > 0:
       num_proc = min(num_proc, self._nproc)
-    print ' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
-      self._mp_method, num_proc, nthreads)
+    info(' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
+      self._mp_method, num_proc, nthreads))
     if num_proc > 1:
       def process_output(result):
-        print result[1]
+        info(result[1])
         self._manager.accumulate(result[0])
       def execute_task(task):
         from cStringIO import StringIO
+        from dials.util import log
         import sys
+        log.config_simple_stdout()
         sys.stdout = StringIO()
         result = task()
         output = sys.stdout.getvalue()
@@ -160,8 +164,8 @@ class Integrator(object):
       ["Total time"       , "%.2f seconds" % (self._manager.time().total)      ],
       ["User time"        , "%.2f seconds" % (end_time - start_time)           ],
     ]
-    print ''
-    print table(rows, justify='right', prefix=' ')
+    info('')
+    info(table(rows, justify='right', prefix=' '))
     return self._manager.result()
 
 
@@ -235,6 +239,7 @@ class Task(object):
     from time import time
     from dials.util.command_line import heading
     from libtbx.introspection import machine_memory_info
+    from logging import info
 
     # Set the global process ID
     job_id.value = self._index
@@ -275,20 +280,20 @@ class Task(object):
     num_integrate = self._data.get_flags(self._data.flags.dont_integrate).count(False)
     num_reference = self._data.get_flags(self._data.flags.reference_spot).count(True)
     num_ice_ring = self._data.get_flags(self._data.flags.in_powder_ring).count(True)
-    print "=" * 80
-    print ""
-    print heading("Beginning integration job %d" % self._index)
-    print ""
-    print " Frames: %d -> %d" % self._job
-    print ""
-    print " Number of reflections"
-    print "  Partial:     %d" % num_partial
-    print "  Full:        %d" % num_full
-    print "  In ice ring: %d" % num_ice_ring
-    print "  Integrate:   %d" % num_integrate
-    print "  Reference:   %d" % num_reference
-    print "  Total:       %d" % len(self._data)
-    print ""
+    info("=" * 80)
+    info("")
+    info(heading("Beginning integration job %d" % self._index))
+    info("")
+    info(" Frames: %d -> %d" % self._job)
+    info("")
+    info(" Number of reflections")
+    info("  Partial:     %d" % num_partial)
+    info("  Full:        %d" % num_full)
+    info("  In ice ring: %d" % num_ice_ring)
+    info("  Integrate:   %d" % num_integrate)
+    info("  Reference:   %d" % num_reference)
+    info("  Total:       %d" % len(self._data))
+    info("")
     start_time = time()
 
     # Get the sub imageset
@@ -313,10 +318,10 @@ class Task(object):
 
     # Print a histogram of reflections on frames
     if frame01 - frame00 > 1:
-      print ' The number of reflections recorded on each frame'
-      print ''
-      print frame_hist(self._data['bbox'], prefix=' ', symbol='*')
-      print ''
+      info(' The number of reflections recorded on each frame')
+      info('')
+      info(frame_hist(self._data['bbox'], prefix=' ', symbol='*'))
+      info('')
 
     # Create the shoeboxes
     self._data["shoebox"] = flex.shoebox(
@@ -342,7 +347,7 @@ class Task(object):
     # Optionally save the shoeboxes
     if self._save_shoeboxes:
       filename = 'shoeboxes_%d.pickle' % self._index
-      print 'Saving shoeboxes to %s\n' % filename
+      info('Saving shoeboxes to %s\n' % filename)
       self._data.as_pickle(filename)
 
     # Delete the shoeboxes
@@ -358,9 +363,10 @@ class Task(object):
 
   def _process(self):
     ''' Process the data. '''
+    from logging import info
     self._data.compute_mask(self._experiments, self._profile_model)
     self._data.integrate(self._experiments, self._profile_model)
-    print ''
+    info('')
 
 
 
@@ -464,13 +470,14 @@ class Manager(object):
   def finalize(self):
     ''' Do the post-processing and finish. '''
     from dials.algorithms.integration import statistics
+    from logging import info
     assert(self._manager.finished())
     self._postprocess(self._manager.data())
     self._time.postprocess = self._postprocess.time
     for stats in statistics.statistics(
         self._manager.data(),
         self._experiments):
-      print stats
+      info(stats)
     self._finalized = True
 
   def result(self):
@@ -494,6 +501,7 @@ class Manager(object):
     ''' Print a summary of the integration stuff. '''
     from libtbx.table_utils import format as table
     from dials.util.command_line import heading
+    from logging import info
 
     # Compute the task table
     if self._experiments.all_stills():
@@ -540,7 +548,7 @@ class Manager(object):
     )
 
     # Print the summary
-    print summary_format_str % (
+    info(summary_format_str % (
       '=' * 80,
       len(self._experiments),
       len(self._experiments.beams()),
@@ -551,7 +559,7 @@ class Manager(object):
       len(self._experiments.imagesets()),
       block_size,
       block_size_units,
-      task_table)
+      task_table))
 
 
 class PreProcessorRot(object):
@@ -577,11 +585,12 @@ class PreProcessorRot(object):
     from dials.array_family import flex
     from dials.util.command_line import heading
     from scitbx.array_family import shared
+    from logging import info
     from time import time
-    print '=' * 80
-    print ''
-    print heading('Pre-processing reflections')
-    print ''
+    info('=' * 80)
+    info('')
+    info(heading('Pre-processing reflections'))
+    info('')
     st = time()
 
     # Compute some reflection properties
@@ -596,9 +605,9 @@ class PreProcessorRot(object):
       num_partial = len(data)
       assert(num_partial >= num_full)
       if (num_partial > num_full):
-        print ' Split %d reflections into %d partial reflections\n' % (
+        info(' Split %d reflections into %d partial reflections\n' % (
           num_full,
-          num_partial)
+          num_partial))
     else:
       num_full = len(data)
       jobs.split(data)
@@ -606,7 +615,7 @@ class PreProcessorRot(object):
       assert(num_partial >= num_full)
       if (num_partial > num_full):
         num_split = num_partial - num_full
-        print ' Split %d reflections overlapping job boundaries\n' % num_split
+        info(' Split %d reflections overlapping job boundaries\n' % num_split)
 
     # Compute the partiality
     data.compute_partiality(self.experiments, self.profile_model)
@@ -631,19 +640,19 @@ class PreProcessorRot(object):
     num_reference = data.get_flags(data.flags.reference_spot).count(True)
     num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
     self.time = time() - st
-    print ' Number of reflections'
-    print '  Partial:     %d' % num_partial
-    print '  Full:        %d' % num_full
-    print '  In ice ring: %d' % num_ice_ring
-    print '  Integrate:   %d' % num_integrate
-    print '  Reference:   %d' % num_reference
-    print '  Ignore:      %d' % num_ignore
-    print '  Total:       %d' % len(data)
-    print ''
-    print ' Filtered %d reflections by zeta = %0.3f' % (num_ignore, self.min_zeta)
-    print ''
-    print ' Time taken: %.2f seconds' % self.time
-    print ''
+    info(' Number of reflections')
+    info('  Partial:     %d' % num_partial)
+    info('  Full:        %d' % num_full)
+    info('  In ice ring: %d' % num_ice_ring)
+    info('  Integrate:   %d' % num_integrate)
+    info('  Reference:   %d' % num_reference)
+    info('  Ignore:      %d' % num_ignore)
+    info('  Total:       %d' % len(data))
+    info('')
+    info(' Filtered %d reflections by zeta = %0.3f' % (num_ignore, self.min_zeta))
+    info('')
+    info(' Time taken: %.2f seconds' % self.time)
+    info('')
 
 
 class PreProcessorStills(object):
@@ -664,11 +673,12 @@ class PreProcessorStills(object):
     ''' Do some pre-processing. '''
     from dials.array_family import flex
     from dials.util.command_line import heading
+    from logging import info
     from time import time
-    print '=' * 80
-    print ''
-    print heading('Pre-processing reflections')
-    print ''
+    info('=' * 80)
+    info('')
+    info(heading('Pre-processing reflections'))
+    info('')
     st = time()
 
     # Compute some reflection properties
@@ -698,17 +708,17 @@ class PreProcessorStills(object):
     num_reference = data.get_flags(data.flags.reference_spot).count(True)
     num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
     self.time = time() - st
-    print ' Number of reflections'
-    print '  Partial:     %d' % num_partial
-    print '  Full:        %d' % num_full
-    print '  In ice ring: %d' % num_ice_ring
-    print '  Integrate:   %d' % num_integrate
-    print '  Reference:   %d' % num_reference
-    print '  Ignore:      %d' % num_ignore
-    print '  Total:       %d' % len(data)
-    print ''
-    print ' Time taken: %.2f seconds' % self.time
-    print ''
+    info(' Number of reflections')
+    info('  Partial:     %d' % num_partial)
+    info('  Full:        %d' % num_full)
+    info('  In ice ring: %d' % num_ice_ring)
+    info('  Integrate:   %d' % num_integrate)
+    info('  Reference:   %d' % num_reference)
+    info('  Ignore:      %d' % num_ignore)
+    info('  Total:       %d' % len(data))
+    info('')
+    info(' Time taken: %.2f seconds' % self.time)
+    info('')
 
 
 class PostProcessorRot(object):
@@ -722,23 +732,24 @@ class PostProcessorRot(object):
   def __call__(self, data):
     ''' Do some post processing. '''
     from dials.util.command_line import heading
+    from logging import info
     from time import time
     st = time()
-    print '=' * 80
-    print ''
-    print heading('Post-processing reflections')
-    print ''
+    info('=' * 80)
+    info('')
+    info(heading('Post-processing reflections'))
+    info('')
 
     # Compute the corrections
     data.compute_corrections(self.experiments)
 
-    print ''
+    info('')
     num = data.get_flags(data.flags.integrated, all=False).count(True)
     self.time = time() - st
-    print ' Integrated %d reflections' % num
-    print ''
-    print ' Time taken: %.2f seconds' % self.time
-    print ''
+    info(' Integrated %d reflections' % num)
+    info('')
+    info(' Time taken: %.2f seconds' % self.time)
+    info('')
 
 
 class PostProcessorStills(object):

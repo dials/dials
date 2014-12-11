@@ -28,15 +28,15 @@ class IntegrationAlgorithm(object):
         The list of integrated reflections
 
     '''
-    from dials.util.command_line import Command
+    from logging import info
     from dials.array_family import flex
 
     # Integrate and return the reflections
-    Command.start('Integrating reflections')
+    info('Integrating reflections')
     intensity = reflections['shoebox'].summed_intensity()
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
     success = intensity.observed_success()
     reflections.set_flags(success, reflections.flags.integrated_sum)
-    Command.end('Integrated %d reflections by summation' % success.count(True))
+    info('Integrated %d reflections by summation' % success.count(True))
     return reflections

@@ -239,14 +239,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
   def match_with_reference(self, other):
     ''' Match reflections with another set of reflections. '''
-    from dials.util.command_line import Command
-    Command.start("Matching reference spots with predicted reflections")
+    from logging import info
+    info("Matching reference spots with predicted reflections")
     sind, oind = self.match(other)
     h1 = self.select(sind)['miller_index']
     h2 = other.select(oind)['miller_index']
     mask = (h1 == h2)
     self.set_flags(sind.select(mask), self.flags.reference_spot)
-    Command.end("Matched %d reference spots with predicted reflections" %
+    info("Matched %d reference spots with predicted reflections" %
                 mask.count(True))
 
   #def is_bbox_inside_image_range(self, experiment):
@@ -327,8 +327,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   def compute_corrections(self, experiments):
     ''' Helper function to correct the intensity. '''
     from dials.algorithms.integration import Corrections, CorrectionsMulti
-    from dials.util.command_line import Command
-    Command.start("Calculating lp correction")
+    from logging import info
+    info("Calculating lp correction")
     compute = CorrectionsMulti()
     for experiment in experiments:
       compute.append(Corrections(
@@ -336,7 +336,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         experiment.goniometer))
     lp = compute.lp(self['id'], self['s1'])
     self['lp'] = lp
-    Command.end("Calculated lp correction")
+    info("Calculated lp correction")
     return lp
 
   def integrate(self, experiments, profile_model):

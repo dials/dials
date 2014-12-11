@@ -66,15 +66,15 @@ class BackgroundAlgorithm(object):
 
   def compute_background(self, reflections):
     ''' Compute the backgrond. '''
-    from dials.util.command_line import Command
+    from logging import info
     from dials.array_family import flex
 
     # Do the background subtraction
-    Command.start('Calculating reflection background')
+    info('Calculating reflection background')
     reflections['background.mse'] = flex.double(len(reflections))
     success = self._creator(
       reflections['shoebox'],
       reflections['background.mse'])
     reflections['background.mean'] = reflections['shoebox'].mean_background()
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
-    Command.end('Calculated {0} background values'.format(success.count(True)))
+    info('Calculated {0} background values'.format(success.count(True)))

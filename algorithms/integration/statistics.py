@@ -277,10 +277,6 @@ class Summary(object):
     img_summary = self._image_summary.table()
     res_summary = self._resolution_summary.table()
     who_summary = self._whole_summary.table()
-    print '=' * 80
-    print ''
-    print heading('Summary of integration results')
-    print ''
     return (
       '%s\n'
       '\n'

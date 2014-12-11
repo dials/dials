@@ -82,6 +82,10 @@ phil_scope = parse('''
 
   }
 
+  verbosity = 1
+    .type = int(value_min=0)
+    .help = "The verbosity level"
+
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
@@ -112,6 +116,8 @@ class Script(object):
     ''' Perform the integration. '''
     from dials.util.command_line import heading
     from dials.util.options import flatten_reflections, flatten_experiments
+    from dials.util import log
+    from logging import info
     from time import time
 
     # Check the number of arguments is correct
@@ -132,14 +138,17 @@ class Script(object):
     elif len(experiments.imagesets()) > 1 or len(experiments.detectors()) > 1:
       raise RuntimeError('experiment list contains > 1 imageset or detector')
 
-    print "=" * 80
-    print ""
-    print heading("Initialising")
-    print ""
+    # Configure logging
+    log.config(params.verbosity, 'dials.integrate.log')
+
+    info("=" * 80)
+    info("")
+    info(heading("Initialising"))
+    info("")
 
     # Load the data
     reference = self.process_reference(reference)
-    print ""
+    info("")
 
     # Initialise the integrator
     # if None in experiments.goniometers():
@@ -156,11 +165,11 @@ class Script(object):
       # Match the predictions with the reference
       # Create the integrator
       profile_model = ProfileModelFactory.create(params, experiments, reference)
-      print ""
-      print "=" * 80
-      print ""
-      print heading("Predicting reflections")
-      print ""
+      info("")
+      info("=" * 80)
+      info("")
+      info(heading("Predicting reflections"))
+      info("")
       predicted = profile_model.predict_reflections(
         experiments,
         dmin=params.prediction.dmin,
@@ -213,7 +222,7 @@ class Script(object):
 
       if reference:
         predicted.match_with_reference(reference)
-      print ""
+      info("")
       integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
 
     # Integrate the reflections
@@ -224,38 +233,38 @@ class Script(object):
     self.save_profile_model(profile_model, params.output.profile_model)
 
     # Print the total time taken
-    print "\nTotal time taken: ", time() - start_time
+    info("\nTotal time taken: %f" % (time() - start_time))
 
   def process_reference(self, reference):
     ''' Load the reference spots. '''
-    from dials.util.command_line import Command
     from dials.array_family import flex
+    from logging import info
     if reference is None:
       return None
     assert("miller_index" in reference)
-    Command.start('Removing reference spots with invalid coordinates')
+    info('Removing reference spots with invalid coordinates')
     mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
     reference.del_selected(mask)
     mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
     reference.del_selected(mask)
-    Command.end('Removed reference spots with invalid coordinates, %d remaining' %
+    info('Removed reference spots with invalid coordinates, %d remaining' %
                 len(reference))
     return reference
 
   def save_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
-    from dials.util.command_line import Command
-    Command.start('Saving %d reflections to %s' % (len(reflections), filename))
+    from logging import info
+    info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
-    Command.end('Saved %d reflections to %s' % (len(reflections), filename))
+    info('Saved %d reflections to %s' % (len(reflections), filename))
 
   def save_profile_model(self, profile_model, filename):
     ''' Save the profile model parameters. '''
-    from dials.util.command_line import Command
-    Command.start('Saving the profile model parameters to %s' % filename)
+    from logging import info
+    info('Saving the profile model parameters to %s' % filename)
     with open(filename, "w") as outfile:
       outfile.write(profile_model.dump().as_str())
-    Command.end('Saved the profile model parameters to %s' % filename)
+    info('Saved the profile model parameters to %s' % filename)
 
 
 if __name__ == '__main__':
