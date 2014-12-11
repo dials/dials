@@ -121,6 +121,7 @@ class ExtractSpots(object):
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from libtbx import easy_mp
+    from logging import info
 
     # Change the number of processors if necessary
     nproc = self.nproc
@@ -128,7 +129,7 @@ class ExtractSpots(object):
       nproc = len(imageset)
 
     # Extract the pixels in blocks of images in parallel
-    Command.start("Extracting strong pixels from images (may take a while)")
+    info("Extracting strong pixels from images (may take a while)")
     pl = easy_mp.parallel_map(
       func=Extract(imageset, self.threshold_image, self.mask),
       iterable=self._calculate_blocks(imageset, nproc),
@@ -136,17 +137,17 @@ class ExtractSpots(object):
       method=self.mp_method,
       preserve_order=True,
       asynchronous=False)
-    Command.end("Extracted strong pixels from images")
+    info("Extracted strong pixels from images")
 
     # Merge pixel lists into a single list for each panel
     len_pl = sum(len(p) for p in pl)
-    Command.start('Merging {0} pixel lists'.format(len_pl))
+    info('Merging {0} pixel lists'.format(len_pl))
     pl = [flex.pixel_list(p).merge() for p in zip(*pl)]
     np = sum([len(p.values()) for p in pl])
-    Command.end('Merged {0} pixel lists with {1} pixels'.format(len_pl, np))
+    info('Merged {0} pixel lists with {1} pixels'.format(len_pl, np))
 
     # Extract the pixel lists into a list of reflections
-    Command.start('Extracting spots')
+    info('Extracting spots')
     shoeboxes = flex.shoebox()
     if isinstance(imageset, ImageSweep):
       twod = False
@@ -155,7 +156,7 @@ class ExtractSpots(object):
     for i, p in enumerate(pl):
       if p.num_pixels() > 0:
         shoeboxes.extend(flex.shoebox(p, i, 0, twod))
-    Command.end('Extracted {0} spots'.format(len(shoeboxes)))
+    info('Extracted {0} spots'.format(len(shoeboxes)))
 
     # Return the shoeboxes
     return shoeboxes
@@ -193,15 +194,16 @@ class SpotFinder(object):
   def __call__(self, datablock):
     ''' Do the spot finding. '''
     from dials.array_family import flex
+    from logging import info
 
     # Loop through all the imagesets and find the strong spots
     reflections = flex.reflection_table()
     for i, imageset in enumerate(datablock.extract_imagesets()):
 
       # Find the strong spots in the sweep
-      print '-' * 80
-      print 'Finding strong spots in imageset %d' % i
-      print '-' * 80
+      info('-' * 80)
+      info('Finding strong spots in imageset %d' % i)
+      info('-' * 80)
       table = self._find_in_imageset(imageset)
       table['id'] = flex.size_t(table.nrows(), i)
       reflections.extend(table)
@@ -214,6 +216,7 @@ class SpotFinder(object):
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep
+    from logging import info
 
     # Get the max scan range
     if isinstance(imageset, ImageSweep):
@@ -232,7 +235,7 @@ class SpotFinder(object):
     for scan in scan_range:
       j0, j1 = scan
       assert(j1 > j0 and j0 >= max_scan_range[0] and j1 <= max_scan_range[1])
-      print '\nFinding spots in image {0} to {1}...'.format(j0, j1)
+      info('\nFinding spots in image {0} to {1}...'.format(j0, j1))
       if isinstance(imageset, ImageSweep):
         j0 -= imageset.get_array_range()[0]
         j1 -= imageset.get_array_range()[0]
@@ -242,14 +245,14 @@ class SpotFinder(object):
     shoeboxes = flex.shoebox(spots_all)
 
     # Calculate the spot centroids
-    Command.start('Calculating {0} spot centroids'.format(len(shoeboxes)))
+    info('Calculating {0} spot centroids'.format(len(shoeboxes)))
     centroid = shoeboxes.centroid_valid()
-    Command.end('Calculated {0} spot centroids'.format(len(shoeboxes)))
+    info('Calculated {0} spot centroids'.format(len(shoeboxes)))
 
     # Calculate the spot intensities
-    Command.start('Calculating {0} spot intensities'.format(len(shoeboxes)))
+    info('Calculating {0} spot intensities'.format(len(shoeboxes)))
     intensity = shoeboxes.summed_intensity()
-    Command.end('Calculated {0} spot intensities'.format(len(shoeboxes)))
+    info('Calculated {0} spot intensities'.format(len(shoeboxes)))
 
     # Create the observations
     observed = flex.observation(shoeboxes.panels(), centroid, intensity)

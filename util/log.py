@@ -11,18 +11,21 @@
 
 from __future__ import division
 
-def config(verbose=False, filename=''):
+def config(verbosity=1, filename=''):
   ''' Configure the logging. '''
   import logging.config
 
   # Debug or not
-  if verbose == True:
+  if verbosity > 1:
     logging_level = 'DEBUG'
   else:
     logging_level = 'INFO'
 
   # Set the handlers to use
-  handlers = ['stream']
+  if verbosity > 0:
+    handlers = ['stream']
+  else:
+    handlers = []
   if filename is not None and filename != '':
     handlers.append('file')
   else:
@@ -52,8 +55,9 @@ def config(verbose=False, filename=''):
       'file' : {
         'level' : 'DEBUG',
         'class' : 'logging.FileHandler',
-        'formatter' : 'extended',
+        'formatter' : 'standard',
         'filename' : filename,
+        'mode' : 'w'
       }
     },
 

@@ -193,11 +193,11 @@ class MinPixelsFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from dials.util.command_line import Command
-    Command.start('Filtering {0} spots by number of pixels'.format(
+    from logging import info
+    info('Filtering {0} spots by number of pixels'.format(
         flags.count(True)))
     flags = self.run(flags, **kwargs)
-    Command.end('Filtered {0} spots by number of pixels'.format(
+    info('Filtered {0} spots by number of pixels'.format(
         flags.count(True)))
     return flags
 
@@ -224,11 +224,11 @@ class PeakCentroidDistanceFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from dials.util.command_line import Command
-    Command.start('Filtering {0} spots by peak-centroid distance'.format(
+    from logging import info
+    info('Filtering {0} spots by peak-centroid distance'.format(
         flags.count(True)))
     flags = self.run(flags, **kwargs)
-    Command.end('Filtered {0} spots by peak-centroid distance'.format(
+    info('Filtered {0} spots by peak-centroid distance'.format(
         flags.count(True)))
     return flags
 
@@ -264,11 +264,11 @@ class CentroidResolutionFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from dials.util.command_line import Command
-    Command.start('Filtering {0} spots by resolution'.format(
+    from logging import info
+    info('Filtering {0} spots by resolution'.format(
         flags.count(True)))
     flags = self.run(flags, **kwargs)
-    Command.end('Filtered {0} spots by resolution'.format(
+    info('Filtered {0} spots by resolution'.format(
         flags.count(True)))
     return flags
 
@@ -312,11 +312,11 @@ class PowderRingFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from dials.util.command_line import Command
-    Command.start('Filtering {0} spots by powder rings'.format(
+    from logging import info
+    info('Filtering {0} spots by powder rings'.format(
         flags.count(True)))
     flags = self.run(flags, **kwargs)
-    Command.end('Filtered {0} spots by powder rings'.format(
+    info('Filtered {0} spots by powder rings'.format(
         flags.count(True)))
     return flags
 
@@ -358,11 +358,11 @@ class UntrustedPolygonFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from dials.util.command_line import Command
-    Command.start('Filtering {0} spots by untrusted polygons'.format(
+    from logging import info
+    info('Filtering {0} spots by untrusted polygons'.format(
         flags.count(True)))
     flags = self.run(flags, **kwargs)
-    Command.end('Filtered {0} spots by untrusted polygons'.format(
+    info('Filtered {0} spots by untrusted polygons'.format(
         flags.count(True)))
     return flags
 
@@ -436,7 +436,7 @@ class BackgroundGradientFilter(object):
                        z1, z2)
       shoebox.bbox = expanded_bbox
     t1 = time.time()
-    print "Time expand_shoebox: %s" %(t1-t0)
+    info("Time expand_shoebox: %s" %(t1-t0))
 
     rlist = flex.reflection_table()
     rlist['shoebox'] = shoeboxes
@@ -526,11 +526,11 @@ class BackgroundGradientFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from dials.util.command_line import Command
-    Command.start('Filtering {0} spots by background gradient'.format(
+    from logging import info
+    info('Filtering {0} spots by background gradient'.format(
         flags.count(True)))
     flags = self.run(flags, **kwargs)
-    Command.end('Filtered {0} spots by background gradient'.format(
+    info('Filtered {0} spots by background gradient'.format(
         flags.count(True)))
     return flags
 
@@ -619,11 +619,11 @@ class SpotDensityFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from dials.util.command_line import Command
-    Command.start('Filtering {0} spots by spot density'.format(
+    from logging import info
+    info('Filtering {0} spots by spot density'.format(
         flags.count(True)))
     flags = self.run(flags, **kwargs)
-    Command.end('Filtered {0} spots by spot density'.format(
+    info('Filtered {0} spots by spot density'.format(
         flags.count(True)))
     return flags
 

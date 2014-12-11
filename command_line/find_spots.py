@@ -53,6 +53,10 @@ phil_scope = parse('''
       .help = "Save the raw pixel values inside the reflection shoeboxes."
   }
 
+  verbosity = 1
+    .type = int(value_min=0)
+    .help = "The verbosity level"
+
   include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
 
 ''', process_includes=True)
@@ -81,14 +85,18 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
-    from dials.util.command_line import Command
     from dials.array_family import flex
     from dials.util.options import flatten_datablocks
     from time import time
+    from dials.util import log
+    from logging import info
     start_time = time()
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
+
+    # Configure the logging
+    log.config(params.verbosity, filename='dials.find_spots.log')
 
     # Ensure we have a data block
     datablocks = flatten_datablocks(params.input.datablock)
@@ -107,15 +115,15 @@ class Script(object):
       del reflections['shoebox']
 
     # Save the reflections to file
-    print '\n' + '-' * 80
-    Command.start('Saving {0} reflections to {1}'.format(
+    info('\n' + '-' * 80)
+    info('Saving {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
     reflections.as_pickle(params.output.reflections)
-    Command.end('Saved {0} reflections to {1}'.format(
+    info('Saved {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
 
     # Print the time
-    print time() - start_time
+    info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == '__main__':
