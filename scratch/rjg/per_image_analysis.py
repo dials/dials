@@ -118,12 +118,14 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     inside = points_inside_envelope(
       d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
 
-    d_star_sq_estimate = flex.max(d_star_sq.select(inside))
+    if inside.count(True) > 0:
+      d_star_sq_estimate = flex.max(d_star_sq.select(inside))
+      #d_star_sq_estimate = intersection[0]
+      resolution_estimate = uctbx.d_star_sq_as_d(d_star_sq_estimate)
+    else:
+      resolution_estimate = -1
 
-    #d_star_sq_estimate = intersection[0]
-    resolution_estimate = uctbx.d_star_sq_as_d(d_star_sq_estimate)
-
-  resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
+  #resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
   if plot_filename is not None:
     from cctbx import uctbx
@@ -239,8 +241,11 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     filename = None
   #plot_ordered_d_star_sq(reflections, imageset)
   n_spots_total = len(reflections)
-  estimated_d_min = estimate_resolution_limit(
-    reflections, imageset, plot_filename=filename)
+  if n_spots_total > 10:
+    estimated_d_min = estimate_resolution_limit(
+      reflections, imageset, plot_filename=filename)
+  else:
+    estimated_d_min = -1.0
 
   return group_args(n_spots_total=n_spots_total,
                     estimated_d_min=estimated_d_min)
