@@ -148,7 +148,7 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     ax_.set_xticklabels(["%.1f" %d for d in xticks_d])
     #pyplot.show()
     pyplot.savefig(plot_filename)
-    pyplot.clf()
+    pyplot.close()
 
   return resolution_estimate
 
@@ -180,7 +180,7 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     ax_.set_xticklabels(["%.1f" %d for d in xticks_d])
     #pyplot.show()
     pyplot.savefig(plot_filename)
-    pyplot.clf()
+    pyplot.close()
 
 def plot_ordered_d_star_sq(reflections, imageset):
   reflections = map_to_reciprocal_space(reflections, imageset)
@@ -192,9 +192,11 @@ def plot_ordered_d_star_sq(reflections, imageset):
   pyplot.show()
 
 
-def stats_single_image(imageset, reflections, i=None):
-  if i is not None:
+def stats_single_image(imageset, reflections, i=None, plot=False):
+  if plot and i is not None:
     filename = "i_over_sigi_vs_resolution_%d.png" %i
+  else:
+    filename = None
   #plot_ordered_d_star_sq(reflections, imageset)
   n_spots_total = len(reflections)
   estimated_d_min = estimate_resolution_limit(
@@ -203,7 +205,7 @@ def stats_single_image(imageset, reflections, i=None):
   return group_args(n_spots_total=n_spots_total,
                     estimated_d_min=estimated_d_min)
 
-def stats_imageset(imageset, reflections):
+def stats_imageset(imageset, reflections, plot=False):
   n_spots_total = []
   estimated_d_min = []
 
@@ -212,7 +214,7 @@ def stats_imageset(imageset, reflections):
 
   for i in range(len(imageset)):
     stats = stats_single_image(
-      imageset[i:i+1], reflections.select(image_number==i), i=i)
+      imageset[i:i+1], reflections.select(image_number==i), i=i, plot=plot)
     n_spots_total.append(stats.n_spots_total)
     estimated_d_min.append(stats.estimated_d_min)
 
@@ -223,7 +225,7 @@ def stats_imageset(imageset, reflections):
 def table(stats):
   n_spots_total = stats.n_spots_total
   estimated_d_min = stats.estimated_d_min
-  rows = [("image", "#spots")]
+  rows = [("image", "#spots", "#d_min")]
   for i_image in range(len(n_spots_total)):
     rows.append((str(int(i_image)),
                  str(n_spots_total[i_image]),
@@ -245,9 +247,16 @@ if __name__ == '__main__':
   from dials.util.options import OptionParser
   from dials.util.options import flatten_reflections, flatten_datablocks
 
+  import iotbx.phil
+  phil_scope = iotbx.phil.parse("""\
+plot=False
+  .type = bool
+""")
+
   parser = OptionParser(
     read_reflections=True,
     read_datablocks=True,
+    phil=phil_scope,
     check_format=False)
 
   params, options = parser.parse_args(show_diff_phil=False)
@@ -260,7 +269,7 @@ if __name__ == '__main__':
   reflections = reflections[0]
   imageset = datablocks[0].extract_imagesets()[0]
 
-  stats = stats_imageset(imageset, reflections)
+  stats = stats_imageset(imageset, reflections, plot=params.plot)
   print_table(stats)
 
   #resolution_histogram(
