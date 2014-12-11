@@ -11,25 +11,29 @@
 
 from __future__ import division
 
-def config(verbosity=1, filename=''):
+def config(verbosity=1, info='', debug=''):
   ''' Configure the logging. '''
   import logging.config
 
   # Debug or not
   if verbosity > 1:
-    logging_level = 'DEBUG'
+    level = 'DEBUG'
   else:
-    logging_level = 'INFO'
+    level = 'INFO'
 
   # Set the handlers to use
   if verbosity > 0:
     handlers = ['stream']
   else:
     handlers = []
-  if filename is not None and filename != '':
-    handlers.append('file')
+  if info is not None and info != '':
+    handlers.append('file_info')
   else:
-    filename = 'dials.log'
+    info = 'dials.info.log'
+  if debug is not None and debug != '':
+    handlers.append('file_debug')
+  else:
+    debug = 'dials.debug.log'
 
   # Configure the logging
   logging.config.dictConfig({
@@ -48,15 +52,22 @@ def config(verbosity=1, filename=''):
 
     'handlers' : {
       'stream' : {
-        'level' : 'DEBUG',
+        'level' : level,
         'class' : 'logging.StreamHandler',
         'formatter' : 'standard',
       },
-      'file' : {
+      'file_debug' : {
         'level' : 'DEBUG',
         'class' : 'logging.FileHandler',
         'formatter' : 'standard',
-        'filename' : filename,
+        'filename' : debug,
+        'mode' : 'w'
+      },
+      'file_info' : {
+        'level' : 'INFO',
+        'class' : 'logging.FileHandler',
+        'formatter' : 'standard',
+        'filename' : info,
         'mode' : 'w'
       }
     },
@@ -64,7 +75,7 @@ def config(verbosity=1, filename=''):
     'loggers' : {
       '' : {
         'handlers' : handlers,
-        'level' : logging_level,
+        'level' : 'DEBUG',
         'propagate' : True
       }
     }

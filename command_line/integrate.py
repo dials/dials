@@ -139,7 +139,10 @@ class Script(object):
       raise RuntimeError('experiment list contains > 1 imageset or detector')
 
     # Configure logging
-    log.config(params.verbosity, 'dials.integrate.log')
+    log.config(
+      params.verbosity,
+      info='dials.integrate.log',
+      debug='dials.integrate.debug.log')
 
     info("=" * 80)
     info("")

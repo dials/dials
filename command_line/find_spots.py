@@ -96,7 +96,10 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=True)
 
     # Configure the logging
-    log.config(params.verbosity, filename='dials.find_spots.log')
+    log.config(
+      params.verbosity,
+      info='dials.find_spots.log',
+      debug='dials.find_spots.debug.log')
 
     # Ensure we have a data block
     datablocks = flatten_datablocks(params.input.datablock)
