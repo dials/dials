@@ -110,6 +110,8 @@ def run(args):
   for subgroup in Lfat:
     expts = copy.deepcopy(experiments)
     expts[0].crystal = subgroup.refined_crystal
+    expts[0].detector = subgroup.detector
+    expts[0].beam = subgroup.beam
     dump.experiment_list(
       expts, 'bravais_setting_%i.json' % (int(subgroup.setting_number)))
   return
