@@ -68,13 +68,18 @@ class BackgroundAlgorithm(object):
     ''' Compute the backgrond. '''
     from logging import info
     from dials.array_family import flex
+    from time import time
 
     # Do the background subtraction
-    info('Calculating reflection background')
+    start_time = time()
+    info('')
+    info(' Beginning background modelling')
+    info('  using %d reflections' % len(reflections))
     reflections['background.mse'] = flex.double(len(reflections))
     success = self._creator(
       reflections['shoebox'],
       reflections['background.mse'])
     reflections['background.mean'] = reflections['shoebox'].mean_background()
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
-    info('Calculated {0} background values'.format(success.count(True)))
+    info('  successfully processed %d reflections' % success.count(True))
+    info('  time taken: %g seconds' % (time() - start_time))

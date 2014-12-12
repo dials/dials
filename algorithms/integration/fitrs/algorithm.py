@@ -45,9 +45,17 @@ class IntegrationAlgorithm(object):
     from dials.algorithms.integration.integrator import job_id
     from dials.array_family import flex
     from logging import info, warn
+    from time import time
+
+    # Start the profile fitting
+    info('')
+    info(' Beginning integration by profile fitting')
+    start_time = time()
 
     # Get the flags
     flags = flex.reflection_table.flags
+    num = reflections.get_flags(flags.dont_integrate).count(False)
+    info('  using %d reflections' % num)
 
     # Create the algorithm
     algorithm = ReciprocalSpaceProfileFitting(
@@ -67,21 +75,20 @@ class IntegrationAlgorithm(object):
         model.n_sigma()))
 
     # Perform the integration
-    num = reflections.get_flags(flags.dont_integrate).count(False)
-    info('Integrating %d reflections with profile fitting' % num)
     profiles = algorithm.execute(reflections)
 
     # Print the number integrated
     num = reflections.get_flags(flags.integrated_prf).count(True)
-    info('Integrated %d reflections with profile fitting' % num)
+    info('  successfully processed %d reflections' % num)
+    info('  time taken: %g seconds' % (time() - start_time))
 
     # Print warning
     nbad = profiles.nbad()
     if nbad > 0:
       warn('')
-      warn('*' * 80)
-      warn('Warning: %d standard profile(s) could not be created' % nbad)
-      warn('*' * 80)
+      warn('  *' * 80)
+      warn('  Warning: %d standard profile(s) could not be created' % nbad)
+      warn('  *' * 80)
 
     # Maybe save some debug info
     if self._debug:

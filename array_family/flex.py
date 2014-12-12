@@ -374,7 +374,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         tr = detector[i].get_trusted_range()
         mask.append(image[i].as_double() > tr[0])
       mask = tuple(mask)
-    info("Reading images")
+    info(" Beginning to read images")
     read_time = 0
     extract_time = 0
     for i in range(len(imageset)):
@@ -388,6 +388,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       extract_time += time() - st
       del image
     assert(extractor.finished())
+    info('  successfully read %d images' % (frame1 - frame0))
+    info('  read time: %g seconds' % read_time)
+    info('  extract time: %g seconds' % extract_time)
     return read_time, extract_time
 
   def is_overloaded(self, experiments):
