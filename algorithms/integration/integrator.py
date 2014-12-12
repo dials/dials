@@ -239,7 +239,11 @@ class Task(object):
     from time import time
     from dials.util.command_line import heading
     from libtbx.introspection import machine_memory_info
+    from libtbx.table_utils import format as table
     from logging import info
+
+    # Get the start time
+    start_time = time()
 
     # Set the global process ID
     job_id.value = self._index
@@ -294,7 +298,6 @@ class Task(object):
     info("  Reference:   %d" % num_reference)
     info("  Total:       %d" % len(self._data))
     info("")
-    start_time = time()
 
     # Get the sub imageset
     imagesets = self._experiments.imagesets()
@@ -353,12 +356,27 @@ class Task(object):
     # Delete the shoeboxes
     del self._data["shoebox"]
 
+    # The total time
+    total_time = time() - start_time
+
+    # Print a table timing info for the task
+    info('')
+    info(table(
+      [
+        ["Read time"    , "%.2f seconds" % read_time    ],
+        ["Extract time" , "%.2f seconds" % extract_time ],
+        ["Process time" , "%.2f seconds" % process_time ],
+        ["Total time"   , "%.2f seconds" % total_time   ],
+      ],
+      justify='right',
+      prefix=' '))
+
     # Return the result
     result = Result(self._index, self._data)
     result.read_time = read_time
     result.extract_time = extract_time
     result.process_time = process_time
-    result.total_time = time() - start_time
+    result.total_time = total_time
     return result
 
   def _process(self):
