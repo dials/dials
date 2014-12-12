@@ -225,6 +225,7 @@ class Script(object):
 
       if reference:
         predicted.match_with_reference(reference)
+      del reference
       info("")
       integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
 
