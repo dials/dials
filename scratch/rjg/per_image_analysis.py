@@ -233,7 +233,7 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
   sel = variances > 0
   intensities = intensities.select(sel)
   variances = intensities.select(sel)
-  
+
   i_over_sigi = intensities/flex.sqrt(variances)
   #log_i_over_sigi = flex.log(i_over_sigi)
 
