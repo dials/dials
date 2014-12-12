@@ -141,7 +141,7 @@ namespace dials { namespace algorithms {
     ~ProfileLearnerIface() {}
 
     virtual
-    bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) = 0;
+    bool add(const af::const_ref< double, af::c_grid<3> > &profile, vec3<double> xyz) = 0;
 
     virtual
     void finalize() = 0;
@@ -163,6 +163,9 @@ namespace dials { namespace algorithms {
 
     virtual
     mask_type get_mask(vec3<double> xyz) const = 0;
+
+    virtual
+    const TransformSpec<double>& spec() const = 0;
   };
 
   class SingleProfileLearner : public ProfileLearnerIface {
@@ -196,6 +199,11 @@ namespace dials { namespace algorithms {
         finalized_(false) {
     }
 
+    virtual
+    const TransformSpec<double>& spec() const {
+      return spec_;
+    }
+
     /**
      * Add a reflection to the reference profile.
      * @param sbox The shoebox
@@ -203,13 +211,20 @@ namespace dials { namespace algorithms {
      * @param phi The rotation angle.
      */
     virtual
-    bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) {
+    bool add(const af::const_ref< double, af::c_grid<3> > &profile, vec3<double> xyz) {
       DIALS_ASSERT(!finalized_);
-      Forward<double> transform(spec_, s1, phi, sbox);
-      learner_.add(transform.profile().const_ref(), xyz);
+      learner_.add(profile, xyz);
       count_++;
       return true;
     }
+    /* virtual */
+    /* bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) { */
+    /*   DIALS_ASSERT(!finalized_); */
+    /*   Forward<double> transform(spec_, s1, phi, sbox); */
+    /*   learner_.add(transform.profile().const_ref(), xyz); */
+    /*   count_++; */
+    /*   return true; */
+    /* } */
 
     /**
      * Finialize the profile.
@@ -309,6 +324,11 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(spec.detector().size() == 1);
     }
 
+    virtual
+    const TransformSpec<double>& spec() const {
+      return spec_;
+    }
+
     /**
      * Add a reflection to the reference profile.
      * @param sbox The shoebox
@@ -316,10 +336,9 @@ namespace dials { namespace algorithms {
      * @param phi The rotation angle.
      */
     virtual
-    bool add(const Shoebox<> &sbox, vec3<double> s1, vec3<double> xyz, double phi) {
+    bool add(const af::const_ref< double, af::c_grid<3> > &profile, vec3<double> xyz) {
       DIALS_ASSERT(!finalized_);
-      Forward<double> transform(spec_, s1, phi, sbox);
-      learner_.add(transform.profile().const_ref(), xyz);
+      learner_.add(profile, xyz);
       count_++;
       return true;
     }
@@ -457,10 +476,16 @@ namespace dials { namespace algorithms {
       af::ref<std::size_t>          flags   = data["flags"];
 
       // Loop through all the reflections
+      #pragma omp parallel for
       for (std::size_t i = 0; i < data.size(); ++i) {
         DIALS_ASSERT(id[i] < learner_.size());
         if (flags[i] & ReferenceSpot) {
-          learner_[id[i]]->add(shoebox[i], s1[i], xyzpx[i], xyzmm[i][2]);
+          boost::shared_ptr<learner_type> learner = learner_[id[i]];
+          Forward<double> transform(learner->spec(), s1[i], xyzmm[i][2], shoebox[i]);
+          #pragma omp critical
+          {
+            learner->add(transform.profile().const_ref(), xyzpx[i]);
+          }
         }
       }
 
@@ -597,8 +622,9 @@ namespace dials { namespace algorithms {
 
       // Remove any reflections which have invalid pixels or are not fully
       // recorded from integration.
+      #pragma omp parallel for
       for (std::size_t i = 0; i < data.size(); ++i) {
-        Shoebox<> sbox = shoebox[i];
+        const Shoebox<> &sbox = shoebox[i];
         std::size_t panel = sbox.panel;
         int6 bbox = sbox.bbox;
         DIALS_ASSERT(id[i] < spec_.size());
@@ -608,13 +634,13 @@ namespace dials { namespace algorithms {
             bbox[2] < 0 || bbox[3] > image_size[1]) {
           flags[i] |= DontIntegrate;
           flags[i] &= ~ReferenceSpot;
-          continue;
-        }
-        for (std::size_t j = 0; j < sbox.mask.size(); ++j) {
-          if (sbox.mask[j] & Foreground && !(sbox.mask[j] & Valid)) {
-            flags[i] |= DontIntegrate;
-            flags[i] &= ~ReferenceSpot;
-            break;
+        } else {
+          for (std::size_t j = 0; j < sbox.mask.size(); ++j) {
+            if (sbox.mask[j] & Foreground && !(sbox.mask[j] & Valid)) {
+              flags[i] |= DontIntegrate;
+              flags[i] &= ~ReferenceSpot;
+              break;
+            }
           }
         }
       }
