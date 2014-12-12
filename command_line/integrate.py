@@ -154,80 +154,75 @@ class Script(object):
     info("")
 
     # Initialise the integrator
-    # if None in experiments.goniometers():
-    #   from dials.algorithms.integration import IntegratorStills
-    #   integrator = IntegratorStills(params, experiments, reference, None, None)
-    # else:
-    if (True):
-      from dials.algorithms.profile_model.factory import ProfileModelFactory
-      from dials.algorithms.integration.integrator import IntegratorFactory
-      from dials.array_family import flex
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
+    from dials.algorithms.integration.integrator import IntegratorFactory
+    from dials.array_family import flex
 
-      # Compute the profile model
-      # Predict the reflections
-      # Match the predictions with the reference
-      # Create the integrator
-      profile_model = ProfileModelFactory.create(params, experiments, reference)
-      info("")
-      info("=" * 80)
-      info("")
-      info(heading("Predicting reflections"))
-      info("")
-      predicted = profile_model.predict_reflections(
-        experiments,
-        dmin=params.prediction.dmin,
-        dmax=params.prediction.dmax,
-        margin=params.prediction.margin,
-        force_static=params.prediction.force_static)
+    # Compute the profile model
+    # Predict the reflections
+    # Match the predictions with the reference
+    # Create the integrator
+    profile_model = ProfileModelFactory.create(params, experiments, reference)
+    info("")
+    info("=" * 80)
+    info("")
+    info(heading("Predicting reflections"))
+    info("")
+    predicted = profile_model.predict_reflections(
+      experiments,
+      dmin=params.prediction.dmin,
+      dmax=params.prediction.dmax,
+      margin=params.prediction.margin,
+      force_static=params.prediction.force_static)
 
-      if not params.sampling.integrate_all_reflections:
-        nref_per_degree = params.sampling.reflections_per_degree
-        min_sample_size = params.sampling.minimum_sample_size
-        max_sample_size = params.sampling.maximum_sample_size
+    if not params.sampling.integrate_all_reflections:
+      nref_per_degree = params.sampling.reflections_per_degree
+      min_sample_size = params.sampling.minimum_sample_size
+      max_sample_size = params.sampling.maximum_sample_size
 
-        # this code is very similar to David's code in algorithms/refinement/reflection_manager.py!
+      # this code is very similar to David's code in algorithms/refinement/reflection_manager.py!
 
-        # constants
-        from math import pi
-        RAD2DEG = 180. / pi
-        DEG2RAD = pi / 180.
+      # constants
+      from math import pi
+      RAD2DEG = 180. / pi
+      DEG2RAD = pi / 180.
 
-        working_isel = flex.size_t()
-        for iexp, exp in enumerate(experiments):
+      working_isel = flex.size_t()
+      for iexp, exp in enumerate(experiments):
 
-          sel = predicted['id'] == iexp
-          isel = sel.iselection()
-          #refs = self._reflections.select(sel)
-          nrefs = sample_size = len(isel)
+        sel = predicted['id'] == iexp
+        isel = sel.iselection()
+        #refs = self._reflections.select(sel)
+        nrefs = sample_size = len(isel)
 
-          # set sample size according to nref_per_degree (per experiment)
-          if exp.scan and nref_per_degree:
-            sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
-            width = abs(sweep_range_rad[1] -
-                        sweep_range_rad[0]) * RAD2DEG
-            sample_size = int(nref_per_degree * width)
-          else: sweep_range_rad = None
+        # set sample size according to nref_per_degree (per experiment)
+        if exp.scan and nref_per_degree:
+          sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
+          width = abs(sweep_range_rad[1] -
+                      sweep_range_rad[0]) * RAD2DEG
+          sample_size = int(nref_per_degree * width)
+        else: sweep_range_rad = None
 
-          # adjust sample size if below the chosen limit
-          sample_size = max(sample_size, min_sample_size)
+        # adjust sample size if below the chosen limit
+        sample_size = max(sample_size, min_sample_size)
 
-          # set maximum sample size if requested
-          if max_sample_size:
-            sample_size = min(sample_size, max_sample_size)
+        # set maximum sample size if requested
+        if max_sample_size:
+          sample_size = min(sample_size, max_sample_size)
 
-          # determine subset and collect indices
-          if sample_size < nrefs:
-            isel = isel.select(flex.random_selection(nrefs, sample_size))
-          working_isel.extend(isel)
+        # determine subset and collect indices
+        if sample_size < nrefs:
+          isel = isel.select(flex.random_selection(nrefs, sample_size))
+        working_isel.extend(isel)
 
-        # create subset
-        predicted = predicted.select(working_isel)
+      # create subset
+      predicted = predicted.select(working_isel)
 
-      if reference:
-        predicted.match_with_reference(reference)
-      del reference
-      info("")
-      integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
+    if reference:
+      predicted.match_with_reference(reference)
+    del reference
+    info("")
+    integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
 
     # Integrate the reflections
     reflections = integrator.integrate()
