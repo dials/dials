@@ -42,7 +42,7 @@ class IntegrationAlgorithm(object):
     '''
     from dials.algorithms.integration.fitrs import ReciprocalSpaceProfileFitting
     from dials.algorithms.integration.fitrs import Spec
-    from dials.algorithms.integration.integrator import job_id
+    from dials.algorithms.integration.integrator import job
     from dials.array_family import flex
     from logging import info, warn
     from time import time
@@ -93,7 +93,7 @@ class IntegrationAlgorithm(object):
     # Maybe save some debug info
     if self._debug:
       import cPickle as pickle
-      filename = 'debug_%d.pickle' % job_id()
+      filename = 'debug_%d.pickle' % job.index
       info('Saving debugging information to %s' % filename)
       reference = []
       for i in range(len(profiles)):

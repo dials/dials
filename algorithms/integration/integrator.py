@@ -13,13 +13,13 @@ from dials_algorithms_integration_integrator_ext import *
 from iotbx import phil
 
 
-class JobId(object):
+class _Job(object):
   def __init__(self):
-    self.value = 0
-  def __call__(self):
-    return self.value
+    self.index = 0
+    self.nthreads = 1
 
-job_id = JobId()
+
+job = _Job()
 
 
 def generate_phil_scope():
@@ -121,6 +121,7 @@ class Integrator(object):
     else:
       nthreads = self._nthreads
     omptbx.omp_set_num_threads(nthreads)
+    job.nthreads = nthreads
     self._manager.initialize()
     num_proc = len(self._manager)
     if self._nproc > 0:
@@ -246,7 +247,7 @@ class Task(object):
     start_time = time()
 
     # Set the global process ID
-    job_id.value = self._index
+    job.index = self._index
 
     # Compute the number of shoebox bytes
     x0, x1, y0, y1, z0, z1 = self._data['bbox'].parts()
@@ -333,7 +334,9 @@ class Task(object):
       allocate=True)
 
     # Extract the shoeboxes
-    read_time, extract_time = self._data.extract_shoeboxes(imageset, self._mask)
+    read_time, extract_time = self._data.extract_shoeboxes(
+      imageset,
+      self._mask)
 
     # Optionally flatten the shoeboxes
     if self._flatten:
