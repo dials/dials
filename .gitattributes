@@ -337,6 +337,7 @@ command_line/show_profiles.py -text
 command_line/show_spots.py -text
 command_line/simulate.py -text
 command_line/simulate_rs.py -text
+command_line/slice_sweep.py -text
 command_line/sort_reflections.py -text
 command_line/spot_counts_per_image.py -text
 command_line/stereographic_projection.py -text
