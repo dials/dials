@@ -89,41 +89,30 @@ class MyGrid(gridlib.Grid):
     time1 = time.time()
     #'''
 
-    #new_code = '''
     lst_keys = []
     data = []
-    img_data = []
-
-    stable_by_james = '''
-    for key in table_in.keys():
-      if(key != "shoebox"):
-        lst_keys.append(key)
-        col = table_in[key]
-        col_strs = map(str, col)
-        data.append(col_strs)
-    '''
-
-
 
 
     for key in table_in.keys():
       if(key != "shoebox"):
         lst_keys.append(key)
         data.append(map(str, table_in[key]))
-      else:
-        img_data.append(map(str, table_in["shoebox"]))
+
+    data.append(range(len(table_in)))
+    lst_keys.append("lst pos")
+
+    self.last_col_num = len(lst_keys) - 1
 
 
     data = tuple(zip(*data))
-    img_data = tuple(zip(*img_data))
+
+    data = sorted(data, key=lambda x: x[4])
 
     colLabels = tuple(lst_keys)
     rowLabels = tuple(range(len(data)))
 
     tableBase = TupTable(data, rowLabels, colLabels)
     self.SetTable(tableBase)
-    #'''
-
 
 
     self.AutoSizeColumns(True)
@@ -147,8 +136,10 @@ class MyGrid(gridlib.Grid):
     evt.Skip()
 
 
-  def repaint_img(self, new_row):
-    print "new row  =", new_row
+  def repaint_img(self, clikd_row):
+    print "clikd_row  =", clikd_row
+    print "new_row =", int(self.GetCellValue(clikd_row, self.last_col_num))
+    new_row = int(self.GetCellValue(clikd_row, self.last_col_num))
     self.parent_fr.img_panel.update_img_w_row_pos(new_row)
 
 class flex_arr_img_panel(wx.Panel):
