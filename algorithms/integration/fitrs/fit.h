@@ -522,7 +522,7 @@ namespace dials { namespace algorithms {
      * @param id The experiment ID
      * @returns The reference profile.
      */
-    profile_type data(std::size_t id, std::size_t index) {
+    profile_type data(std::size_t id, std::size_t index) const {
       DIALS_ASSERT(id < learner_.size());
       return learner_[id]->data(index);
     }
@@ -532,7 +532,7 @@ namespace dials { namespace algorithms {
      * @param id The experiment ID
      * @returns The number of profiles used.
      */
-    std::size_t count(std::size_t id) {
+    std::size_t count(std::size_t id) const {
       DIALS_ASSERT(id < learner_.size());
       return learner_[id]->count();
     }

@@ -43,8 +43,9 @@ class IntegrationAlgorithm(object):
     from dials.algorithms.integration.fitrs import ReciprocalSpaceProfileFitting
     from dials.algorithms.integration.fitrs import Spec
     from dials.algorithms.integration.integrator import job
+    from dials.util import pprint
     from dials.array_family import flex
-    from logging import info, warn
+    from logging import info, warn, debug
     from time import time
 
     # Start the profile fitting
@@ -81,6 +82,13 @@ class IntegrationAlgorithm(object):
     num = reflections.get_flags(flags.integrated_prf).count(True)
     info('  successfully processed %d reflections' % num)
     info('  time taken: %g seconds' % (time() - start_time))
+
+    # Print the reference profiles
+    for i in range(len(self._experiments)):
+      for j in range(profiles.single_size(i)):
+        debug("")
+        debug("Profile %d for experiment %d" % (j, i))
+        debug(pprint.profile3d(profiles.data(i,j)))
 
     # Print warning
     nbad = profiles.nbad()
