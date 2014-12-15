@@ -84,13 +84,16 @@ class ImageSummary(object):
       i_prf_flg = data.get_flags(data.flags.integrated_prf)
       i_prf_val = data['intensity.prf.value'].select(i_prf_flg)
       i_prf_var = data['intensity.prf.variance'].select(i_prf_flg)
+      cor_prf = data['profile.correlation'].select(i_prf_flg)
       ios_prf = flex_ios(i_prf_val, i_prf_var)
       bin_indexer = binner.indexer(frames.select(i_prf_flg).as_double())
       self.num_prf = bin_indexer.count()
       self.ios_prf = bin_indexer.mean(ios_prf)
+      self.cor_prf = bin_indexer.mean(cor_prf)
     except RuntimeError:
       self.num_prf = flex.size_t(len(self.bins), 0)
-      self.ios_prf = flex.size_t(len(self.bins), 0)
+      self.ios_prf = flex.double(len(self.bins), 0)
+      self.cor_prf = flex.double(len(self.bins), 0)
 
   def __len__(self):
     ''' The number of bins. '''
@@ -107,7 +110,8 @@ class ImageSummary(object):
              "# prf",
              "<Ibg>",
              "<I/sigI>\n (sum)",
-             "<I/sigI>\n (prf)"]]
+             "<I/sigI>\n (prf)",
+             "<CC prf>"]]
     for i in range(len(self)):
       rows.append([
         '%d' % self.bins[i],
@@ -117,7 +121,8 @@ class ImageSummary(object):
         '%d' % self.num_prf[i],
         '%.2f' % self.i_bg[i],
         '%.2f' % self.ios_sum[i],
-        '%.2f' % self.ios_prf[i]])
+        '%.2f' % self.ios_prf[i],
+        '%.2f' % self.cor_prf[i]])
     return table(rows, has_header=True, justify='right', prefix=' ')
 
 
@@ -190,13 +195,16 @@ class ResolutionSummary(object):
       i_prf_flg = data.get_flags(data.flags.integrated_prf)
       i_prf_val = data['intensity.prf.value'].select(i_prf_flg)
       i_prf_var = data['intensity.prf.variance'].select(i_prf_flg)
+      cor_prf = data['profile.correlation'].select(i_prf_flg)
       ios_prf = flex_ios(i_prf_val, i_prf_var)
       bin_indexer = binner.indexer(data['d'].select(i_prf_flg))
       self.num_prf = bin_indexer.count()
       self.ios_prf = bin_indexer.mean(ios_prf)
+      self.cor_prf = bin_indexer.mean(cor_prf)
     except Exception:
       self.num_prf = flex.size_t(len(bins)-1, 0)
       self.ios_prf = flex.double(len(bins)-1, 0)
+      self.cor_prf = flex.double(len(bins)-1, 0)
 
   def __len__(self):
     ''' The number of bins. '''
@@ -216,7 +224,8 @@ class ResolutionSummary(object):
              "# prf",
              "<Ibg>",
              "<I/sigI>\n (sum)",
-             "<I/sigI>\n (prf)"]]
+             "<I/sigI>\n (prf)",
+             "<CC prf>"]]
     for i in range(len(self)):
       rows.append([
         '%.2f' % self.bins[i],
@@ -229,7 +238,8 @@ class ResolutionSummary(object):
         '%d'   % self.num_prf[i],
         '%.2f' % self.i_bg[i],
         '%.2f' % self.ios_sum[i],
-        '%.2f' % self.ios_prf[i]])
+        '%.2f' % self.ios_prf[i],
+        '%.2f' % self.cor_prf[i]])
     return table(rows, has_header=True, justify='right', prefix=' ')
 
 
@@ -266,9 +276,11 @@ class WholeSummary(object):
       I_prf_var = data['intensity.prf.variance'].select(flags_prf)
       self.ios_prf = flex.mean(flex_ios(I_prf_val, I_prf_var))
       self.num_prf = flags_prf.count(True)
+      self.cor_prf = flex.mean(data['profile.correlation'])
     except Exception:
         self.ios_prf = 0.0
         self.num_prf = 0
+        self.cor_prf = 0
 
   def table(self):
     ''' Produce a table of results. '''
@@ -281,7 +293,8 @@ class WholeSummary(object):
             ["Number processed with profile fitting", '%d'   % self.num_prf],
             ["<Ibg>",                                 '%.2f' % self.i_bg],
             ["<I/sigI> (summation)",                  '%.2f' % self.ios_sum],
-            ["<I/sigI> (profile fitting)",            '%.2f' % self.ios_prf]]
+            ["<I/sigI> (profile fitting)",            '%.2f' % self.ios_prf],
+            ["<CC prf>",                              '%.2f' % self.cor_prf]]
     return table(rows, justify='left', prefix=' ')
 
 
