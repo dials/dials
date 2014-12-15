@@ -108,8 +108,9 @@ def slice_reflections(reflections, scan_ranges):
     if sr is None: continue
     isel = (reflections['id'] == iexp).iselection()
     frames = (reflections['xyzobs.px.value'].parts()[2]).select(isel)
-    in_low_lim = frames >= sr[0]
-    in_high_lim = frames <= sr[1]
+    # reflns on image n have frames in range [n-1, n)
+    in_low_lim = frames >= sr[0] - 1
+    in_high_lim = frames < sr[1]
     in_lim = in_low_lim & in_high_lim
 
     # which indices to keep?
