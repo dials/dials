@@ -85,6 +85,8 @@ def slice_experiments(experiments, scan_ranges):
       raise IndexError("requested slice outside current scan range")
 
     exp.scan.set_image_range(sr)
+    x_times = exp.scan.get_exposure_times()[(sr[0] - 1):sr[1]]
+    exp.scan.set_exposure_times(x_times)
 
   return experiments
 
