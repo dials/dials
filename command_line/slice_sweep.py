@@ -236,9 +236,9 @@ class Script(object):
         basename = splitext(params.input.reflections[0].filename)[0]
         if not basename: basename = "reflections"
         if len(params.scan_range) == 1 and params.scan_range[0] is not None:
-          ext = "_{0}_{1}.json".format(*params.scan_range[0])
+          ext = "_{0}_{1}.pickle".format(*params.scan_range[0])
         else:
-          ext = "_subsets.json"
+          ext = "_subsets.pickle"
         output_reflections_filename = basename + ext
 
       print 'Saving sliced reflections to {0}'.format(
