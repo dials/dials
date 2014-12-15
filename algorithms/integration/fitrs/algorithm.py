@@ -86,9 +86,9 @@ class IntegrationAlgorithm(object):
     nbad = profiles.nbad()
     if nbad > 0:
       warn('')
-      warn('  *' * 80)
+      warn(' ' + '*' * 79)
       warn('  Warning: %d standard profile(s) could not be created' % nbad)
-      warn('  *' * 80)
+      warn(' ' + '*' * 79)
 
     # Maybe save some debug info
     if self._debug:

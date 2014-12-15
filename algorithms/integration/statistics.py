@@ -37,6 +37,7 @@ class ImageSummary(object):
     assert("partiality" in data)
     assert("intensity.sum.value" in data)
     assert("intensity.sum.variance" in data)
+    assert("background.mean" in data)
 
     # Get the array range
     try:
@@ -62,6 +63,12 @@ class ImageSummary(object):
     bin_indexer = binner.indexer(frames.as_double())
     self.full = bin_indexer.sum(full.as_double())
     self.part = bin_indexer.sum((~full).as_double())
+
+    # Get the mean background values
+    i_flg = data.get_flags(data.flags.integrated, all=False)
+    i_bg = data['background.mean'].select(i_flg)
+    bin_indexer = binner.indexer(frames.select(i_flg).as_double())
+    self.i_bg = bin_indexer.mean(i_bg)
 
     # Get stuff from table for summation
     i_sum_flg = data.get_flags(data.flags.integrated_sum)
@@ -98,6 +105,7 @@ class ImageSummary(object):
              "# part",
              "# sum",
              "# prf",
+             "<Ibg>",
              "<I/sigI>\n (sum)",
              "<I/sigI>\n (prf)"]]
     for i in range(len(self)):
@@ -107,8 +115,9 @@ class ImageSummary(object):
         '%d' % self.part[i],
         '%d' % self.num_sum[i],
         '%d' % self.num_prf[i],
-        '%.1f' % self.ios_sum[i],
-        '%.1f' % self.ios_prf[i]])
+        '%.2f' % self.i_bg[i],
+        '%.2f' % self.ios_sum[i],
+        '%.2f' % self.ios_prf[i]])
     return table(rows, has_header=True, justify='right', prefix=' ')
 
 
@@ -125,6 +134,7 @@ class ResolutionSummary(object):
     assert("d" in data)
     assert("intensity.sum.value" in data)
     assert("intensity.sum.variance" in data)
+    assert("background.mean" in data)
 
     # Select integrated reflections
     data = data.select(data.get_flags(data.flags.integrated, all=False))
@@ -159,6 +169,12 @@ class ResolutionSummary(object):
     self.num_part = bin_indexer.sum((~full).as_double())
     self.num_over = bin_indexer.sum(over.as_double())
     self.num_ice  = bin_indexer.sum(ice.as_double())
+
+    # Get the mean background values
+    i_flg = data.get_flags(data.flags.integrated, all=False)
+    i_bg = data['background.mean'].select(i_flg)
+    bin_indexer = binner.indexer(data['d'].select(i_flg).as_double())
+    self.i_bg = bin_indexer.mean(i_bg)
 
     # Get stuff from table for summation
     i_sum_flg = data.get_flags(data.flags.integrated_sum)
@@ -198,6 +214,7 @@ class ResolutionSummary(object):
              "# ice",
              "# sum",
              "# prf",
+             "<Ibg>",
              "<I/sigI>\n (sum)",
              "<I/sigI>\n (prf)"]]
     for i in range(len(self)):
@@ -210,8 +227,9 @@ class ResolutionSummary(object):
         '%d'   % self.num_ice[i],
         '%d'   % self.num_sum[i],
         '%d'   % self.num_prf[i],
-        '%.1f' % self.ios_sum[i],
-        '%.1f' % self.ios_prf[i]])
+        '%.2f' % self.i_bg[i],
+        '%.2f' % self.ios_sum[i],
+        '%.2f' % self.ios_prf[i]])
     return table(rows, has_header=True, justify='right', prefix=' ')
 
 
@@ -229,6 +247,10 @@ class WholeSummary(object):
     self.num_part = full.count(False)
     self.num_over = over.count(True)
     self.num_ice = ice.count(True)
+
+    # Get the mean background values
+    i_flg = data.get_flags(data.flags.integrated, all=False)
+    self.i_bg = flex.mean(data['background.mean'].select(i_flg))
 
     # Compute for summation
     flags_sum = data.get_flags(data.flags.integrated_sum)
@@ -257,8 +279,9 @@ class WholeSummary(object):
             ["Number in powder rings",                '%d'   % self.num_ice],
             ["Number processed with summation",       '%d'   % self.num_sum],
             ["Number processed with profile fitting", '%d'   % self.num_prf],
-            ["<I/sigI> (summation)",                  '%.1f' % self.ios_sum],
-            ["<I/sigI> (profile fitting)",            '%.1f' % self.ios_prf]]
+            ["<Ibg>",                                 '%.2f' % self.i_bg],
+            ["<I/sigI> (summation)",                  '%.2f' % self.ios_sum],
+            ["<I/sigI> (profile fitting)",            '%.2f' % self.ios_prf]]
     return table(rows, justify='left', prefix=' ')
 
 
