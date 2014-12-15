@@ -11,6 +11,7 @@
 from __future__ import division
 from dials_algorithms_integration_integrator_ext import *
 from iotbx import phil
+import libtbx
 
 
 class _Job(object):
@@ -37,9 +38,17 @@ def generate_phil_scope():
       include scope dials.data.multiprocessing.phil_scope
 
       block {
-        size = 10
+        size = auto
           .type = float
           .help = "The block size in rotation angle (degrees)."
+
+        threshold = 0.99
+          .type = float(value_min=0.0, value_max=1.0)
+          .help = "For block size auto the block size is calculated by sorting"
+                  "reflections by the number of frames they cover and then"
+                  "selecting the block size to be 2*nframes[threshold] such"
+                  "that 100*threshold % of reflections are guarenteed to be"
+                  "fully contained in 1 block"
 
         max_mem_usage = 0.5
           .type = float(value_min=0.0,value_max=1.0)
@@ -169,14 +178,13 @@ class Integrator(object):
     info(table(rows, justify='right', prefix=' '))
     return self._manager.result()
 
-
-def frame_hist(bbox, width=80, symbol='#', prefix=''):
+def hist(data, width=80, symbol='#', prefix=''):
   ''' A utility function to print a histogram of reflections on frames. '''
   from collections import defaultdict, Counter
   from math import log10, floor
-  assert(len(bbox) > 0)
+  assert(len(data) > 0)
   assert(width > 0)
-  count = Counter([z for b in bbox for z in range(b[4], b[5])])
+  count = Counter(data)
   count = count.items()
   count.sort()
   frame, count = zip(*count)
@@ -200,6 +208,22 @@ def frame_hist(bbox, width=80, symbol='#', prefix=''):
   return '\n'.join((
     fmt % (key, value, int(value * scale) * symbol)
       for key, value in zip(frame, count)))
+
+def frame_hist(bbox, width=80, symbol='#', prefix=''):
+  ''' A utility function to print a histogram of reflections on frames. '''
+  return hist(
+    [z for b in bbox for z in range(b[4], b[5])],
+    width=width,
+    symbol=symbol,
+    prefix=prefix)
+
+def nframes_hist(bbox, width=80, symbol='#', prefix=''):
+  ''' A utility function to print a histogram of number of frames. '''
+  return hist(
+    [b[5] - b[4] for b in bbox],
+    width=width,
+    symbol=symbol,
+    prefix=prefix)
 
 
 class Result(object):
@@ -410,8 +434,9 @@ class Manager(object):
                experiments,
                profile_model,
                reflections,
-               block_size=10,
+               block_size=libtbx.Auto,
                block_size_units='degrees',
+               block_size_threshold=0.99,
                flatten=False,
                save_shoeboxes=False,
                max_mem_usage=0.5):
@@ -420,6 +445,7 @@ class Manager(object):
     self._flatten = flatten
     self._block_size = block_size
     self._block_size_units = block_size_units
+    self._block_size_threshold = block_size_threshold
     self._save_shoeboxes = save_shoeboxes
     self._max_mem_usage = max_mem_usage
     self._preprocess = preprocess
@@ -433,6 +459,16 @@ class Manager(object):
     ''' Enter the context manager. '''
     from itertools import groupby
     from math import ceil
+    if self._block_size == libtbx.Auto:
+      assert(self._block_size_threshold > 0)
+      assert(self._block_size_threshold <= 1.0)
+      self._reflections.compute_bbox(
+        self._experiments,
+        self._profile_model)
+      nframes = sorted([b[5] - b[4] for b in self._reflections['bbox']])
+      cutoff = int(self._block_size_threshold*len(nframes))
+      self._block_size = nframes[cutoff] * 2
+      self._block_size_units = 'frames'
     groups = groupby(
       range(len(self._experiments)),
       lambda x: (self._experiments[x].imageset,
@@ -794,8 +830,9 @@ class ManagerRot(Manager):
                experiments,
                profile_model,
                reflections,
-               block_size=10,
+               block_size=libtbx.Auto,
                block_size_units='degrees',
+               block_size_threshold=0.99,
                min_zeta=0.05,
                powder_filter=None,
                flatten=False,
@@ -833,6 +870,7 @@ class ManagerRot(Manager):
       reflections,
       block_size=block_size,
       block_size_units=block_size_units,
+      block_size_threshold=block_size_threshold,
       flatten=flatten,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage)
@@ -890,7 +928,8 @@ class Integrator3D(Integrator):
                experiments,
                profile_model,
                reflections,
-               block_size=1,
+               block_size=libtbx.Auto,
+               block_size_threshold=0.99,
                min_zeta=0.05,
                powder_filter=None,
                nthreads=1,
@@ -906,6 +945,7 @@ class Integrator3D(Integrator):
       profile_model,
       reflections,
       block_size=block_size,
+      block_size_threshold=block_size_threshold,
       min_zeta=min_zeta,
       powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes,
@@ -922,7 +962,8 @@ class IntegratorFlat3D(Integrator):
                experiments,
                profile_model,
                reflections,
-               block_size=1,
+               block_size=libtbx.Auto,
+               block_size_threshold=0.99,
                min_zeta=0.05,
                powder_filter=None,
                nthreads=1,
@@ -938,6 +979,7 @@ class IntegratorFlat3D(Integrator):
       profile_model,
       reflections,
       block_size=block_size,
+      block_size_threshold=block_size_threshold,
       min_zeta=min_zeta,
       powder_filter=powder_filter,
       flatten=True,
@@ -955,14 +997,16 @@ class Integrator2D(Integrator):
                experiments,
                profile_model,
                reflections,
-               block_size=1,
+               block_size=libtbx.Auto,
+               block_size_threshold=0.99,
                min_zeta=0.05,
                powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False,
-               max_mem_usage=0.5):
+               max_mem_usage=0.5,
+               **kwargs):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -971,6 +1015,7 @@ class Integrator2D(Integrator):
       profile_model,
       reflections,
       block_size=block_size,
+      block_size_threshold=block_size_threshold,
       min_zeta=min_zeta,
       powder_filter=powder_filter,
       partials=True,
@@ -988,25 +1033,22 @@ class IntegratorSingle2D(Integrator):
                experiments,
                profile_model,
                reflections,
-               block_size=1,
                min_zeta=0.05,
                powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False,
-               max_mem_usage=0.5):
+               max_mem_usage=0.5,
+               **kwargs):
     ''' Initialise the manager and the integrator. '''
-
-    # Override block size
-    block_size = 1
 
     # Create the integration manager
     manager = ManagerRot(
       experiments,
       profile_model,
       reflections,
-      block_size=block_size,
+      block_size=1,
       block_size_units='frames',
       min_zeta=min_zeta,
       powder_filter=powder_filter,
@@ -1025,14 +1067,13 @@ class IntegratorStills(Integrator):
                experiments,
                profile_model,
                reflections,
-               block_size=1,
-               min_zeta=0.05,
                powder_filter=None,
                nthreads=1,
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False,
-               max_mem_usage=0.5):
+               max_mem_usage=0.5,
+               **kwargs):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -1093,6 +1134,7 @@ class IntegratorFactory(object):
       profile_model=profile_model,
       reflections=reflections,
       block_size=params.integration.block.size,
+      block_size_threshold=params.integration.block.threshold,
       min_zeta=params.integration.filter.min_zeta,
       powder_filter=powder_filter,
       nthreads=params.integration.mp.nthreads,
