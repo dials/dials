@@ -128,7 +128,28 @@ class MyGrid(gridlib.Grid):
     #'''
 
   def OnLabelLeftClick(self, evt):
-    self.repaint_img(evt.GetRow())
+    if(evt.GetCol() == -1):
+      self.repaint_img(evt.GetRow())
+
+    else:
+      print "evt.GetCol() =", evt.GetCol()
+      data_01 =  (("H", "I"),
+                  ("J", "K"),
+                  ("L", "M"),
+                  ("N", "N"),
+                  ("n", "n"),
+                  ("n", "n"),
+                  ("n", "n"),
+                  ("m", "m"))
+
+      colLabels = ("AAAA", "Beeee")
+      rowLabels = tuple(range(len(data_01)))
+
+      new_tableBase = TupTable(data_01, rowLabels, colLabels)
+      self.SetTable(new_tableBase)
+      self.Refresh()
+
+
     evt.Skip()
 
   def OnCellLeftClick(self, evt):

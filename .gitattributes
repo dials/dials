@@ -765,6 +765,7 @@ scratch/luiso_s/wx_toys/grid_tst.py -text
 scratch/luiso_s/wx_toys/grid_tst_01.py -text
 scratch/luiso_s/wx_toys/grid_tst_02.py -text
 scratch/luiso_s/wx_toys/grid_tst_04.py -text
+scratch/luiso_s/wx_toys/grid_tst_05.py -text
 scratch/luiso_s/wx_toys/py_bmp.py -text
 scratch/luiso_s/wx_toys/radiobutton_test.py -text
 scratch/luiso_s/wx_toys/radiobutton_test_simpl.py -text
