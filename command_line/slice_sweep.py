@@ -11,7 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from os.path import splitext
+from os.path import splitext, basename
 from scitbx.array_family import flex
 from libtbx.utils import Sorry
 
@@ -214,13 +214,14 @@ class Script(object):
       output_experiments_filename = params.output.experiments_filename
       if output_experiments_filename is None:
         # take first filename as template
-        basename = splitext(params.input.experiments[0].filename)[0]
-        if not basename: basename = "experiments"
+        bname = basename(params.input.experiments[0].filename)
+        bname = splitext(bname)[0]
+        if not bname: bname = "experiments"
         if len(params.scan_range) == 1 and params.scan_range[0] is not None:
           ext = "_{0}_{1}.json".format(*params.scan_range[0])
         else:
           ext = "_subsets.json"
-        output_experiments_filename = basename + ext
+        output_experiments_filename = bname + ext
       print 'Saving sliced experiments to {0}'.format(
         output_experiments_filename)
 
@@ -233,13 +234,14 @@ class Script(object):
       output_reflections_filename = params.output.reflections_filename
       if output_reflections_filename is None:
         # take first filename as template
-        basename = splitext(params.input.reflections[0].filename)[0]
-        if not basename: basename = "reflections"
+        bname = basename(params.input.reflections[0].filename)
+        bname = splitext(bname)[0]
+        if not bname: bname = "reflections"
         if len(params.scan_range) == 1 and params.scan_range[0] is not None:
           ext = "_{0}_{1}.pickle".format(*params.scan_range[0])
         else:
           ext = "_subsets.pickle"
-        output_reflections_filename = basename + ext
+        output_reflections_filename = bname + ext
 
       print 'Saving sliced reflections to {0}'.format(
         output_reflections_filename)
