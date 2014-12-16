@@ -2,6 +2,7 @@ from __future__ import division
 
 import math
 from libtbx import group_args
+from cctbx import sgtbx, uctbx
 from dials.array_family import flex
 
 def map_to_reciprocal_space(reflections, imageset):
@@ -30,7 +31,6 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
 
   d_star_sq = flex.pow2(reflections['rlp'].norms())
 
-  from cctbx import uctbx
   d_spacings = 1/reflections['rlp'].norms()
   assert d_star_sq == uctbx.d_as_d_star_sq(d_spacings)
 
@@ -127,7 +127,6 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
   #resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
   if plot_filename is not None:
-    from cctbx import uctbx
     from matplotlib import pyplot
     fig = pyplot.figure()
     ax = fig.add_subplot(1,1,1)
@@ -193,6 +192,25 @@ def points_inside_envelope(d_star_sq, log_i_over_sigi,
   return inside
 
 
+def filter_ice_rings(reflections, imageset):
+  reflections = map_to_reciprocal_space(reflections, imageset)
+  d_star_sq = flex.pow2(reflections['rlp'].norms())
+  d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
+
+  from dials.algorithms.integration import filtering
+
+  unit_cell = uctbx.unit_cell((4.498,4.498,7.338,90,90,120))
+  d_min = imageset.get_detector().get_max_resolution(imageset.get_beam().get_s0())
+  space_group = sgtbx.space_group_info(number=194).group()
+  width = 0.06
+
+  ice_filter = filtering.PowderRingFilter(
+    unit_cell, space_group, d_min, width)
+
+  ice_sel = ice_filter(d_spacings)
+  return reflections.select(~ice_sel)
+
+
 def resolution_histogram(reflections, imageset, plot_filename=None):
   reflections = map_to_reciprocal_space(reflections, imageset)
   d_star_sq = flex.pow2(reflections['rlp'].norms())
@@ -210,7 +228,6 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     ax_ = ax.twiny() # ax2 is responsible for "top" axis and "right" axis
     xticks = ax.get_xticks()
     xlim = ax.get_xlim()
-    from cctbx import uctbx
     xticks_d = [
       uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks ]
     xticks_ = [ds2/(xlim[1]-xlim[0]) for ds2 in xticks]
@@ -257,7 +274,6 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
     ax_ = ax.twiny() # ax2 is responsible for "top" axis and "right" axis
     xticks = ax.get_xticks()
     xlim = ax.get_xlim()
-    from cctbx import uctbx
     xticks_d = [
       uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks ]
     xticks_ = [ds2/(xlim[1]-xlim[0]) for ds2 in xticks]
@@ -290,23 +306,28 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     hist_filename = None
     extra_filename = None
   #plot_ordered_d_star_sq(reflections, imageset)
-  n_spots_total = len(reflections)
+  reflections_all = reflections
+  reflections_no_ice = filter_ice_rings(reflections_all, imageset)
+  n_spots_total = len(reflections_all)
+  n_spots_no_ice = len(reflections_no_ice)
   #print i
   #resolution_histogram(
     #reflections, imageset, plot_filename=hist_filename)
   #log_sum_i_sigi_vs_resolution(
     #reflections, imageset, plot_filename=extra_filename)
-  if n_spots_total > 10:
+  if n_spots_no_ice > 10:
     estimated_d_min = estimate_resolution_limit(
-      reflections, imageset, plot_filename=filename)
+      reflections_no_ice, imageset, plot_filename=filename)
   else:
     estimated_d_min = -1.0
 
   return group_args(n_spots_total=n_spots_total,
+                    n_spots_no_ice=n_spots_no_ice,
                     estimated_d_min=estimated_d_min)
 
 def stats_imageset(imageset, reflections, plot=False):
   n_spots_total = []
+  n_spots_no_ice = []
   estimated_d_min = []
 
   image_number = reflections['xyzobs.px.value'].parts()[2]
@@ -316,19 +337,23 @@ def stats_imageset(imageset, reflections, plot=False):
     stats = stats_single_image(
       imageset[i:i+1], reflections.select(image_number==i), i=i, plot=plot)
     n_spots_total.append(stats.n_spots_total)
+    n_spots_no_ice.append(stats.n_spots_no_ice)
     estimated_d_min.append(stats.estimated_d_min)
 
   return group_args(n_spots_total=n_spots_total,
+                    n_spots_no_ice=n_spots_no_ice,
                     estimated_d_min=estimated_d_min)
 
 
 def table(stats):
   n_spots_total = stats.n_spots_total
+  n_spots_no_ice = stats.n_spots_no_ice
   estimated_d_min = stats.estimated_d_min
-  rows = [("image", "#spots", "#d_min")]
+  rows = [("image", "#spots", "#spots_no_ice", "#d_min")]
   for i_image in range(len(n_spots_total)):
     rows.append((str(int(i_image)+1),
                  str(n_spots_total[i_image]),
+                 str(n_spots_no_ice[i_image]),
                  "%.2f" %estimated_d_min[i_image]))
   return rows
 
@@ -344,6 +369,7 @@ def print_table(stats, out=None):
 
 def plot_stats(stats, filename="per_image_analysis.png"):
   n_spots_total = flex.int(stats.n_spots_total)
+  n_spots_no_ice = stats.n_spots_no_ice
   estimated_d_min = flex.double(stats.estimated_d_min)
   try:
     import matplotlib
@@ -356,7 +382,8 @@ def plot_stats(stats, filename="per_image_analysis.png"):
   i_image = flex.int(list(range(1, len(n_spots_total)+1)))
   fig = pyplot.figure()
   ax1 = fig.add_subplot(111)
-  sc1 = ax1.scatter(i_image, n_spots_total, s=20, color='blue', marker='o', alpha=0.5)
+  sc1 = ax1.scatter(i_image, n_spots_total, s=20, color='orange', marker='o', alpha=0.5)
+  sc1 = ax1.scatter(i_image, n_spots_no_ice, s=20, color='blue', marker='o', alpha=0.5)
   ax1.set_xlabel('Image #')
   ax1.set_ylabel('# spots')
   ax1.set_xlim((0.0, len(n_spots_total)))
@@ -418,3 +445,4 @@ individual_plots=False
   #estimated_d_min = estimate_resolution_limit(
   #  reflections, imageset, plot_filename="i_over_sigi_vs_resolution.png")
   #print "Estimated d_min: %.2f" %estimated_d_min
+
