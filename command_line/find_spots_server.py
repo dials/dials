@@ -38,11 +38,16 @@ class handler(server_base.BaseHTTPRequestHandler):
     proc = current_process().name
     try:
       stats = work(filename, params)
-      s.wfile.write("<response>%s: %6d / %6d</response>" %
-                    (os.path.split(filename)[-1],
-                     stats.n_spots_total, stats.n_spots_no_ice))
+      response = [
+        "<image>%s</image>" %filename,
+        "<spot_count>%s</spot_count>" %stats.n_spots_total,
+        "<spot_count_no_ice>%s</spot_count_no_ice>" %stats.n_spots_no_ice,
+        "<d_min>%.2f</d_min>" %stats.estimated_d_min,
+        "<total_intensity>%.0f</total_intensity>" %stats.total_intensity,
+      ]
+      s.wfile.write("<response>\n%s\n</response>" %("\n".join(response)))
 
-    except:
+    except Exception, e:
       s.wfile.write("<response>error</response>")
     return
 
