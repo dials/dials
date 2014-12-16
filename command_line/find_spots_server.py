@@ -17,7 +17,7 @@ def work(filename, cl=[]):
   datablock = DataBlockFactory.from_filenames([filename])[0]
   reflections = flex.reflection_table.from_observations(
     datablock, params.extract())
-  from dials.scratch.rjg import per_image_analysis
+  from dials.algorithms.peak_finding import per_image_analysis
   imageset = datablock.extract_imagesets()[0]
   stats = per_image_analysis.stats_single_image(imageset, reflections)
   return stats
