@@ -130,7 +130,7 @@ def calculate_frame_numbers(reflections, experiments):
   # staticmethod instead, and then just reuse that?
 
   # Only do this if we have to
-  if reflections.has_key('xyzobs.px.value'): return
+  if reflections.has_key('xyzobs.px.value'): return reflections
 
   # Ok, frames are not set, so set them, with dummy observed pixel values
   frames = flex.double(len(reflections), 0.)
@@ -186,18 +186,19 @@ class Script(object):
     slice_exps = len(experiments) > 0
     slice_refs = len(reflections) > 0
 
-    if len(reflections) > 1:
-      raise Sorry("Only one reflections list can be imported at present")
-    reflections = reflections[0]
+    if reflections:
+      if len(reflections) > 1:
+        raise Sorry("Only one reflections list can be imported at present")
+      reflections = reflections[0]
 
-    # calculate frame numbers if needed
-    if len(experiments) > 0:
-      reflections = calculate_frame_numbers(reflections, experiments)
+      # calculate frame numbers if needed
+      if len(experiments) > 0:
+        reflections = calculate_frame_numbers(reflections, experiments)
 
-    # if we still don't have the right column give up
-    if not reflections.has_key('xyzobs.px.value'):
-      raise Sorry("These reflections do not have frame numbers set, and "
-        "there are no experiments provided to calculate these.")
+      # if we still don't have the right column give up
+      if not reflections.has_key('xyzobs.px.value'):
+        raise Sorry("These reflections do not have frame numbers set, and "
+          "there are no experiments provided to calculate these.")
 
     # set trivial case where no scan range is provided at all
     if len(params.scan_range) == 0:
