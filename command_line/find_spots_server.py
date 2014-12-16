@@ -17,11 +17,11 @@ def work(filename, cl=[]):
   datablock = DataBlockFactory.from_filenames([filename])[0]
   reflections = flex.reflection_table.from_observations(
     datablock, params.extract())
-  params = params.fetch(interp.process(
-    'spotfinder.filter.ice_rings.filter=true'))
-  reflections_filter = flex.reflection_table.from_observations(
-    datablock, params.extract())
-  return len(reflections), len(reflections_filter)
+  from dials.scratch.rjg import per_image_analysis
+  imageset = datablock.extract_imagesets()[0]
+  stats = per_image_analysis.stats_single_image(imageset, reflections)
+  return stats
+  return stats.n_spots_total, stats.n_spots_no_ice, #stats.n_spots_4A, stats.total_intensity, stats.estimated_d_min
 
 class handler(server_base.BaseHTTPRequestHandler):
   def do_GET(s):
@@ -37,9 +37,11 @@ class handler(server_base.BaseHTTPRequestHandler):
     params = s.path.split(';')[1:]
     proc = current_process().name
     try:
-      result, result_filter = work(filename, params)
+      stats = work(filename, params)
       s.wfile.write("<response>%s: %6d / %6d</response>" %
-                    (os.path.split(filename)[-1], result, result_filter))
+                    (os.path.split(filename)[-1],
+                     stats.n_spots_total, stats.n_spots_no_ice))
+
     except:
       s.wfile.write("<response>error</response>")
     return
