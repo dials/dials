@@ -22,6 +22,8 @@ class SpotFrame(XrayFrame) :
     self.miller_indices_layer = None
     self.vector_layer = None
     self.vector_text_layer = None
+    self._ring_layer = None
+    self._resolution_text_layer = None
 
     from libtbx.utils import time_log
     self.show_all_pix_timer = time_log("show_all_pix")
@@ -126,7 +128,8 @@ class SpotFrame(XrayFrame) :
       dc.DrawCircle(x, y, radius * scale)
 
 
-  def draw_resolution_rings(self):
+  def draw_resolution_rings(self, unit_cell=None, space_group=None):
+    from cctbx.array_family import flex
     from cctbx import uctbx
     import math
 
@@ -137,11 +140,18 @@ class SpotFrame(XrayFrame) :
     d_min = detector.get_max_resolution(beam.get_s0())
     d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
 
-    n_rings = 5
-    step = d_star_sq_max/n_rings
-    from cctbx.array_family import flex
-    spacings = flex.double(
-      [uctbx.d_star_sq_as_d((i+1)*step) for i in range(0, n_rings)])
+    if unit_cell is not None and space_group is not None:
+      from cctbx.miller import index_generator
+      unit_cell = space_group.average_unit_cell(unit_cell)
+      generator = index_generator(unit_cell, space_group.type(), False, d_min)
+      indices = generator.to_array()
+      spacings = flex.sorted(unit_cell.d(indices))
+
+    else:
+      n_rings = 5
+      step = d_star_sq_max/n_rings
+      spacings = flex.double(
+        [uctbx.d_star_sq_as_d((i+1)*step) for i in range(0, n_rings)])
 
     wavelength = beam.get_wavelength()
     distance = detector[0].get_distance()
@@ -192,12 +202,13 @@ class SpotFrame(XrayFrame) :
       return (x_rot, y_rot)
 
     resolution_text_data = []
-    for d, pxl in zip(spacings, L_pixels):
-      for angle in (45, 135, 225, 315):
-        x, y = rotate_around_point(
-          (center[0], center[1]+pxl), center, angle, deg=True)
-        resolution_text_data.append(
-          (x, y, "%.2f" %d, {'placement':'cc', 'colour': 'red'}))
+    if unit_cell is None and space_group is None:
+      for d, pxl in zip(spacings, L_pixels):
+        for angle in (45, 135, 225, 315):
+          x, y = rotate_around_point(
+            (center[0], center[1]+pxl), center, angle, deg=True)
+          resolution_text_data.append(
+            (x, y, "%.2f" %d, {'placement':'cc', 'colour': 'red'}))
 
     # Remove the old resolution text layer, and draw a new one.
     if (hasattr(self, "_resolution_text_layer") and self._resolution_text_layer is not None):
@@ -326,6 +337,12 @@ class SpotFrame(XrayFrame) :
       if self.vector_text_layer is not None:
         self.pyslip.DeleteLayer(self.vector_text_layer)
         self.vector_text_layer = None
+      if self._ring_layer is not None:
+        self.pyslip.DeleteLayer(self._ring_layer)
+        self._ring_layer = None
+      if self._resolution_text_layer is not None:
+        self.pyslip.DeleteLayer(self._resolution_text_layer)
+        self._resolution_text_layer = None
 
       if self.settings.show_miller_indices and len(miller_indices_data):
         self.miller_indices_layer = self.pyslip.AddTextLayer(
@@ -386,6 +403,11 @@ class SpotFrame(XrayFrame) :
     self.show_filters()
     if self.settings.show_resolution_rings:
       self.draw_resolution_rings()
+    elif self.settings.show_ice_rings:
+      from cctbx import sgtbx, uctbx
+      unit_cell = uctbx.unit_cell((4.498,4.498,7.338,90,90,120))
+      space_group = sgtbx.space_group_info(number=194).group()
+      self.draw_resolution_rings(unit_cell=unit_cell, space_group=space_group)
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
@@ -606,6 +628,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_spotfinder_spots = False
     self.settings.show_dials_spotfinder_spots = True
     self.settings.show_resolution_rings = False
+    self.settings.show_ice_rings = False
     self.settings.show_ctr_mass = True
     self.settings.show_max_pix = True
     self.settings.show_all_pix = True
@@ -659,6 +682,11 @@ class SpotSettingsPanel (SettingsPanel) :
     self.resolution_rings_ctrl = wx.CheckBox(self, -1, "Show resolution rings")
     self.resolution_rings_ctrl.SetValue(self.settings.show_resolution_rings)
     s.Add(self.resolution_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
+    # Ice rings control
+    self.ice_rings_ctrl = wx.CheckBox(self, -1, "Show ice rings")
+    self.ice_rings_ctrl.SetValue(self.settings.show_ice_rings)
+    s.Add(self.ice_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Center control
     self.center_ctrl = wx.CheckBox(self, -1, "Mark beam center")
@@ -793,6 +821,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
     self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.resolution_rings_ctrl)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.ice_rings_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.center_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.ctr_mass)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.max_pix)
@@ -814,6 +843,7 @@ class SpotSettingsPanel (SettingsPanel) :
   def collect_values (self) :
     if self.settings.enable_collect_values:
       self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
+      self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
       self.settings.zoom_level = self.zoom_ctrl.GetSelection()
       self.settings.brightness = self.brightness_ctrl.GetValue()
       self.settings.show_beam_center = self.center_ctrl.GetValue()
