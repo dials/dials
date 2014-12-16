@@ -27,8 +27,9 @@ def run():
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("spot_counts.png")
 
-  assert "Per-image analysis:" in result.stdout_lines
-  assert "|image | #spots|" in result.stdout_lines
+  assert (
+    "|image | #spots | #spots_no_ice | #spots_4A | total_intensity | d_min|"
+    in result.stdout_lines)
 
 
 if __name__ == '__main__':
