@@ -1,8 +1,8 @@
 from __future__ import division
 
-def work(host, filename, params):
+def work(host, port, filename, params):
   import httplib
-  conn = httplib.HTTPConnection(host, 1701)
+  conn = httplib.HTTPConnection(host, port)
   path = filename
   for param in params:
     path += ';%s' % param
@@ -14,24 +14,24 @@ def nproc():
   from libtbx.introspection import number_of_processors
   return number_of_processors(return_value_if_unknown=-1)
 
-def work_all(host, filenames, params):
+def work_all(host, port, filenames, params):
   from multiprocessing.pool import ThreadPool as thread_pool
   pool = thread_pool(processes=nproc())
   threads = { }
   for filename in filenames:
-    threads[filename] = pool.apply_async(work, (host, filename, params))
+    threads[filename] = pool.apply_async(work, (host, port, filename, params))
   results = { }
   for filename in filenames:
     results[filename] = threads[filename].get()
     print results[filename]
   return
 
-def stop(host, nproc):
+def stop(host, port, nproc):
   import httplib
   from socket import error as socket_error
   for j in range(nproc):
     try:
-      conn = httplib.HTTPConnection(host, 1701)
+      conn = httplib.HTTPConnection(host, port)
       path = '/Ctrl-C'
       conn.request('GET', path)
       response = conn.getresponse()
@@ -40,32 +40,40 @@ def stop(host, nproc):
       break
   return j
 
+import libtbx.phil
+phil_scope = libtbx.phil.parse("""\
+nproc = Auto
+  .type = int(value_min=2)
+host = localhost
+  .type = str
+port = 1701
+  .type = int(value_min=1)
+""")
+
 if __name__ == '__main__':
+  import os
   import sys
+  import libtbx.load_env
 
-  if len(sys.argv) < 3:
-    raise RuntimeError, '%s [host] [filename] [param=value]'
+  args = sys.argv[1:]
 
-  if sys.argv[2] == 'stop':
-    if len(sys.argv) < 3:
-      raise RuntimeError, '%s stop [nproc]'
-    host = sys.argv[1]
-    if len(sys.argv) > 3:
-      nproc = int(sys.argv[3])
-    else:
-      nproc = 1024
-    stopped = stop(host, nproc)
+  filenames = [arg for arg in args if os.path.isfile(arg)]
+  args = [arg for arg in args if not arg in filenames]
+
+  usage = "%s [options] filenames" %libtbx.env.dispatcher_name
+
+  from dials.util.options import OptionParser
+  parser = OptionParser(usage=usage, phil=phil_scope)
+  params, options, args = parser.parse_args(
+    args=args, show_diff_phil=True, return_unhandled=True)
+  if params.nproc is libtbx.Auto:
+    params.nproc = 1024
+
+  if args[0] == 'stop':
+    stopped = stop(params.host, params.port, params.nproc)
     print 'Stopped %d findspots processes' % stopped
   else:
-    host = sys.argv[1]
-    filenames = []
-    params = []
-    for arg in sys.argv[2:]:
-      if '=' in arg:
-        params.append(arg)
-      else:
-        filenames.append(arg)
     if len(filenames) == 1:
-      print work(host, filenames[0], params)
+      print work(params.host, params.port, filenames[0], args)
     else:
-      work_all(host, filenames, params)
+      work_all(params.host, params.port, filenames, args)

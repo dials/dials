@@ -54,9 +54,19 @@ def serve(httpd):
     pass
   return
 
-def main(nproc):
+
+import libtbx.phil
+phil_scope = libtbx.phil.parse("""\
+nproc = Auto
+  .type = int(value_min=2)
+port = 1701
+  .type = int(value_min=1)
+""")
+
+
+def main(nproc, port):
   server_class = server_base.HTTPServer
-  httpd = server_class(('', 1701), handler)
+  httpd = server_class(('', port), handler)
   print time.asctime(), 'start'
   for j in range(nproc - 1):
     new_process(target=serve, args=(httpd,)).start()
@@ -66,9 +76,14 @@ def main(nproc):
 
 if __name__ == '__main__':
   import sys
-  if len(sys.argv) > 1:
-    nproc = int(sys.argv[1])
-  else:
+  import libtbx.load_env
+
+  usage = "%s [options]" %libtbx.env.dispatcher_name
+
+  from dials.util.options import OptionParser
+  parser = OptionParser(usage=usage, phil=phil_scope)
+  params, options = parser.parse_args(show_diff_phil=True)
+  if params.nproc is libtbx.Auto:
     from libtbx.introspection import number_of_processors
-    nproc = number_of_processors(return_value_if_unknown=-1)
-  main(nproc)
+    params.nproc = number_of_processors(return_value_if_unknown=-1)
+  main(params.nproc, params.port)
