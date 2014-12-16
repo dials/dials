@@ -307,6 +307,8 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
   n_spots_total = len(reflections_all)
   n_spots_no_ice = len(reflections_no_ice)
   n_spot_4A = (d_spacings > 4).count(True)
+  intensities = reflections_no_ice['intensity.sum.value']
+  total_intensity = flex.sum(intensities)
   #print i
   #resolution_histogram(
     #reflections, imageset, plot_filename=hist_filename)
@@ -321,6 +323,7 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
   return group_args(n_spots_total=n_spots_total,
                     n_spots_no_ice=n_spots_no_ice,
                     n_spots_4A=n_spot_4A,
+                    total_intensity=total_intensity,
                     estimated_d_min=estimated_d_min)
 
 def stats_imageset(imageset, reflections, plot=False):
@@ -328,6 +331,7 @@ def stats_imageset(imageset, reflections, plot=False):
   n_spots_total = []
   n_spots_no_ice = []
   n_spots_4A = []
+  total_intensity = []
   estimated_d_min = []
 
   image_number = reflections['xyzobs.px.value'].parts()[2]
@@ -339,11 +343,13 @@ def stats_imageset(imageset, reflections, plot=False):
     n_spots_total.append(stats.n_spots_total)
     n_spots_no_ice.append(stats.n_spots_no_ice)
     n_spots_4A.append(stats.n_spots_4A)
+    total_intensity.append(stats.total_intensity)
     estimated_d_min.append(stats.estimated_d_min)
 
   return group_args(n_spots_total=n_spots_total,
                     n_spots_no_ice=n_spots_no_ice,
                     n_spots_4A=n_spots_4A,
+                    total_intensity=total_intensity,
                     estimated_d_min=estimated_d_min)
 
 
@@ -351,13 +357,15 @@ def table(stats):
   n_spots_total = stats.n_spots_total
   n_spots_no_ice = stats.n_spots_no_ice
   n_spots_4A = stats.n_spots_4A
+  total_intensity = stats.total_intensity
   estimated_d_min = stats.estimated_d_min
-  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "#d_min")]
+  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "total_intensity", "d_min")]
   for i_image in range(len(n_spots_total)):
     rows.append((str(int(i_image)+1),
                  str(n_spots_total[i_image]),
                  str(n_spots_no_ice[i_image]),
                  str(n_spots_4A[i_image]),
+                 "%.0f" %total_intensity[i_image],
                  "%.2f" %estimated_d_min[i_image]))
   return rows
 
