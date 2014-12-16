@@ -389,13 +389,13 @@ def plot_stats(stats, filename='per_image_analysis.png'):
   ax1 = fig.add_subplot(111)
   sc1 = ax1.scatter(
     list(i_image), list(n_spots_total),
-    s=10, color='orange', marker='o', alpha=0.5, label='#spots (total)')
+    s=5, color='orange', marker='o', alpha=0.4, label='#spots (total)')
   sc2 = ax1.scatter(
     list(i_image), n_spots_4A,
-    s=10, color='green', marker='o', alpha=0.5, label=u'#spots (to 4\u00c5)')
+    s=5, color='green', marker='o', alpha=0.4, label=u'#spots (to 4\u00c5)')
   sc3 = ax1.scatter(
     list(i_image), n_spots_no_ice,
-    s=10, color='blue', marker='o', alpha=0.5, label='#spots (no ice)')
+    s=5, color='blue', marker='o', alpha=0.4, label='#spots (no ice)')
   ax1.set_xlabel('Image #')
   ax1.set_ylabel('# spots')
   ax1.set_xlim((0.0, len(n_spots_total)))
