@@ -318,7 +318,6 @@ command_line/index.py -text
 command_line/integrate.py -text
 command_line/make_sphinx_html.py -text
 command_line/merge_reflection_lists.py -text
-command_line/per_image_analysis.py -text
 command_line/plot_reflections.py -text
 command_line/plot_scan_varying_crystal.py -text
 command_line/predict.py -text
