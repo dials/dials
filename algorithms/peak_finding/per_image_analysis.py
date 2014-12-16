@@ -432,37 +432,3 @@ def plot_stats(stats, filename='per_image_analysis.png'):
     bbox_to_anchor=(0.0,-0.22, 1., .102))
   pyplot.savefig(filename, dpi=600, bbox_extra_artists=(lgd,),
                  bbox_inches='tight')
-
-if __name__ == '__main__':
-  from dials.util.options import OptionParser
-  from dials.util.options import flatten_reflections, flatten_datablocks
-
-  import iotbx.phil
-  phil_scope = iotbx.phil.parse("""\
-plot=False
-  .type = bool
-individual_plots=False
-  .type = bool
-""")
-
-  parser = OptionParser(
-    read_reflections=True,
-    read_datablocks=True,
-    phil=phil_scope,
-    check_format=False)
-
-  params, options = parser.parse_args(show_diff_phil=False)
-  reflections = flatten_reflections(params.input.reflections)
-  datablocks = flatten_datablocks(params.input.datablock)
-
-  assert len(reflections) == 1
-  assert len(datablocks) == 1
-
-  reflections = reflections[0]
-  imageset = datablocks[0].extract_imagesets()[0]
-
-  stats = stats_imageset(
-    imageset, reflections, plot=params.individual_plots)
-  print_table(stats)
-  if params.plot:
-    plot_stats(stats)
