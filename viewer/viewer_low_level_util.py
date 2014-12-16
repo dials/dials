@@ -84,35 +84,29 @@ class MyGrid(gridlib.Grid):
 
   def ini_n_intro(self, table_in):
 
-    #timing_for_debugging = '''
+    timing_for_debugging = '''
     import time
     time1 = time.time()
     #'''
 
-    lst_keys = []
-    data = []
+    self.lst_keys = []
+    self.data = []
 
 
     for key in table_in.keys():
       if(key != "shoebox"):
-        lst_keys.append(key)
-        data.append(map(str, table_in[key]))
+        self.lst_keys.append(key)
+        self.data.append(map(str, table_in[key]))
 
-    data.append(range(len(table_in)))
-    lst_keys.append("lst pos")
+    self.data.append(range(len(table_in)))
+    self.lst_keys.append("lst pos")
 
-    self.last_col_num = len(lst_keys) - 1
+    self.last_col_num = len(self.lst_keys) - 1
 
 
-    data = tuple(zip(*data))
+    self.data = tuple(zip(*self.data))
 
-    data = sorted(data, key=lambda x: x[4])
-
-    colLabels = tuple(lst_keys)
-    rowLabels = tuple(range(len(data)))
-
-    tableBase = TupTable(data, rowLabels, colLabels)
-    self.SetTable(tableBase)
+    self.set_my_table(self.data, 4)
 
 
     self.AutoSizeColumns(True)
@@ -121,34 +115,35 @@ class MyGrid(gridlib.Grid):
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
     self.Bind(gridlib.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
-    #timing_for_debugging = '''
+
+    timing_for_debugging = '''
     time2 = time.time()
     timedif = time2 - time1
     print "timedif =", timedif
     #'''
+
+  def set_my_table(self, tupldata_in, col_to_sort):
+
+    tupldata = sorted(tupldata_in, key=lambda x: x[col_to_sort])
+
+    colLabels = tuple(self.lst_keys)
+    rowLabels = tuple(range(len(tupldata)))
+
+    tableBase = TupTable(tupldata, rowLabels, colLabels)
+    self.SetTable(tableBase)
+
+
+
 
   def OnLabelLeftClick(self, evt):
     if(evt.GetCol() == -1):
       self.repaint_img(evt.GetRow())
 
     else:
+
       print "evt.GetCol() =", evt.GetCol()
-      data_01 =  (("H", "I"),
-                  ("J", "K"),
-                  ("L", "M"),
-                  ("N", "N"),
-                  ("n", "n"),
-                  ("n", "n"),
-                  ("n", "n"),
-                  ("m", "m"))
-
-      colLabels = ("AAAA", "Beeee")
-      rowLabels = tuple(range(len(data_01)))
-
-      new_tableBase = TupTable(data_01, rowLabels, colLabels)
-      self.SetTable(new_tableBase)
+      self.set_my_table(self.data, evt.GetCol())
       self.Refresh()
-
 
     evt.Skip()
 
