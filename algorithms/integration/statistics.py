@@ -37,7 +37,6 @@ class ImageSummary(object):
     assert("partiality" in data)
     assert("intensity.sum.value" in data)
     assert("intensity.sum.variance" in data)
-    assert("background.mean" in data)
 
     # Get the array range
     try:
@@ -65,10 +64,13 @@ class ImageSummary(object):
     self.part = bin_indexer.sum((~full).as_double())
 
     # Get the mean background values
-    i_flg = data.get_flags(data.flags.integrated, all=False)
-    i_bg = data['background.mean'].select(i_flg)
-    bin_indexer = binner.indexer(frames.select(i_flg).as_double())
-    self.i_bg = bin_indexer.mean(i_bg)
+    try:
+      i_flg = data.get_flags(data.flags.integrated, all=False)
+      i_bg = data['background.mean'].select(i_flg)
+      bin_indexer = binner.indexer(frames.select(i_flg).as_double())
+      self.i_bg = bin_indexer.mean(i_bg)
+    except RuntimeError:
+      self.i_bg = flex.double(len(self.bins), 0)
 
     # Get stuff from table for summation
     i_sum_flg = data.get_flags(data.flags.integrated_sum)
@@ -139,7 +141,6 @@ class ResolutionSummary(object):
     assert("d" in data)
     assert("intensity.sum.value" in data)
     assert("intensity.sum.variance" in data)
-    assert("background.mean" in data)
 
     # Select integrated reflections
     data = data.select(data.get_flags(data.flags.integrated, all=False))
@@ -176,10 +177,13 @@ class ResolutionSummary(object):
     self.num_ice  = bin_indexer.sum(ice.as_double())
 
     # Get the mean background values
-    i_flg = data.get_flags(data.flags.integrated, all=False)
-    i_bg = data['background.mean'].select(i_flg)
-    bin_indexer = binner.indexer(data['d'].select(i_flg).as_double())
-    self.i_bg = bin_indexer.mean(i_bg)
+    try:
+      i_flg = data.get_flags(data.flags.integrated, all=False)
+      i_bg = data['background.mean'].select(i_flg)
+      bin_indexer = binner.indexer(data['d'].select(i_flg).as_double())
+      self.i_bg = bin_indexer.mean(i_bg)
+    except RuntimeError:
+      self.i_bg = flex.double(len(self.bins), 0)
 
     # Get stuff from table for summation
     i_sum_flg = data.get_flags(data.flags.integrated_sum)
@@ -249,6 +253,11 @@ class WholeSummary(object):
   def __init__(self, data, experiment):
     ''' Compute the results. '''
 
+    # Check columns are there
+    assert("partiality" in data)
+    assert("intensity.sum.value" in data)
+    assert("intensity.sum.variance" in data)
+
     # Compute some flag stuff
     full = data['partiality'] > 0.997300203937
     over = data.get_flags(data.flags.overloaded)
@@ -259,8 +268,11 @@ class WholeSummary(object):
     self.num_ice = ice.count(True)
 
     # Get the mean background values
-    i_flg = data.get_flags(data.flags.integrated, all=False)
-    self.i_bg = flex.mean(data['background.mean'].select(i_flg))
+    try:
+      i_flg = data.get_flags(data.flags.integrated, all=False)
+      self.i_bg = flex.mean(data['background.mean'].select(i_flg))
+    except RuntimeError:
+      self.i_bg = 0
 
     # Compute for summation
     flags_sum = data.get_flags(data.flags.integrated_sum)
