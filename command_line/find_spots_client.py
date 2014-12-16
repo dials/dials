@@ -69,7 +69,7 @@ if __name__ == '__main__':
   if params.nproc is libtbx.Auto:
     params.nproc = 1024
 
-  if args[0] == 'stop':
+  if len(args) and args[0] == 'stop':
     stopped = stop(params.host, params.port, params.nproc)
     print 'Stopped %d findspots processes' % stopped
   else:
