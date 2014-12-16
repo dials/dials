@@ -27,12 +27,8 @@ def get_histogram(d_star_sq, target_n_per_bin=10, max_slots=20, min_slots=5):
 
 
 def estimate_resolution_limit(reflections, imageset, plot_filename=None):
-  reflections = map_to_reciprocal_space(reflections, imageset)
-
   d_star_sq = flex.pow2(reflections['rlp'].norms())
-
-  d_spacings = 1/reflections['rlp'].norms()
-  assert d_star_sq == uctbx.d_as_d_star_sq(d_spacings)
+  d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
   intensities = reflections['intensity.sum.value']
   variances = reflections['intensity.sum.variance']
@@ -193,7 +189,6 @@ def points_inside_envelope(d_star_sq, log_i_over_sigi,
 
 
 def filter_ice_rings(reflections, imageset):
-  reflections = map_to_reciprocal_space(reflections, imageset)
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
@@ -212,7 +207,6 @@ def filter_ice_rings(reflections, imageset):
 
 
 def resolution_histogram(reflections, imageset, plot_filename=None):
-  reflections = map_to_reciprocal_space(reflections, imageset)
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   hist = get_histogram(d_star_sq)
 
@@ -240,7 +234,6 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     pyplot.close()
 
 def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
-  reflections = map_to_reciprocal_space(reflections, imageset)
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   hist = get_histogram(d_star_sq)
 
@@ -287,7 +280,6 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
 
 
 def plot_ordered_d_star_sq(reflections, imageset):
-  reflections = map_to_reciprocal_space(reflections, imageset)
   d_star_sq = flex.pow2(reflections['rlp'].norms())
 
   from matplotlib import pyplot
@@ -305,11 +297,16 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     filename = None
     hist_filename = None
     extra_filename = None
+
+  d_star_sq = flex.pow2(reflections['rlp'].norms())
+  d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
+
   #plot_ordered_d_star_sq(reflections, imageset)
   reflections_all = reflections
   reflections_no_ice = filter_ice_rings(reflections_all, imageset)
   n_spots_total = len(reflections_all)
   n_spots_no_ice = len(reflections_no_ice)
+  n_spot_4A = (d_spacings > 4).count(True)
   #print i
   #resolution_histogram(
     #reflections, imageset, plot_filename=hist_filename)
@@ -323,11 +320,14 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
 
   return group_args(n_spots_total=n_spots_total,
                     n_spots_no_ice=n_spots_no_ice,
+                    n_spots_4A=n_spot_4A,
                     estimated_d_min=estimated_d_min)
 
 def stats_imageset(imageset, reflections, plot=False):
+  reflections = map_to_reciprocal_space(reflections, imageset)
   n_spots_total = []
   n_spots_no_ice = []
+  n_spots_4A = []
   estimated_d_min = []
 
   image_number = reflections['xyzobs.px.value'].parts()[2]
@@ -338,22 +338,26 @@ def stats_imageset(imageset, reflections, plot=False):
       imageset[i:i+1], reflections.select(image_number==i), i=i, plot=plot)
     n_spots_total.append(stats.n_spots_total)
     n_spots_no_ice.append(stats.n_spots_no_ice)
+    n_spots_4A.append(stats.n_spots_4A)
     estimated_d_min.append(stats.estimated_d_min)
 
   return group_args(n_spots_total=n_spots_total,
                     n_spots_no_ice=n_spots_no_ice,
+                    n_spots_4A=n_spots_4A,
                     estimated_d_min=estimated_d_min)
 
 
 def table(stats):
   n_spots_total = stats.n_spots_total
   n_spots_no_ice = stats.n_spots_no_ice
+  n_spots_4A = stats.n_spots_4A
   estimated_d_min = stats.estimated_d_min
-  rows = [("image", "#spots", "#spots_no_ice", "#d_min")]
+  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "#d_min")]
   for i_image in range(len(n_spots_total)):
     rows.append((str(int(i_image)+1),
                  str(n_spots_total[i_image]),
                  str(n_spots_no_ice[i_image]),
+                 str(n_spots_4A[i_image]),
                  "%.2f" %estimated_d_min[i_image]))
   return rows
 
@@ -367,9 +371,10 @@ def print_table(stats, out=None):
   print >> out, table_utils.format(
     rows, has_header=True, prefix="|", postfix="|")
 
-def plot_stats(stats, filename="per_image_analysis.png"):
+def plot_stats(stats, filename='per_image_analysis.png'):
   n_spots_total = flex.int(stats.n_spots_total)
   n_spots_no_ice = stats.n_spots_no_ice
+  n_spots_4A = stats.n_spots_4A
   estimated_d_min = flex.double(stats.estimated_d_min)
   try:
     import matplotlib
@@ -377,30 +382,43 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
     from matplotlib import pyplot
   except ImportError:
-    raise Sorry("matplotlib must be installed to generate a plot.")
+    raise Sorry('matplotlib must be installed to generate a plot.')
 
   i_image = flex.int(list(range(1, len(n_spots_total)+1)))
   fig = pyplot.figure()
   ax1 = fig.add_subplot(111)
-  sc1 = ax1.scatter(i_image, n_spots_total, s=20, color='orange', marker='o', alpha=0.5)
-  sc1 = ax1.scatter(i_image, n_spots_no_ice, s=20, color='blue', marker='o', alpha=0.5)
+  sc1 = ax1.scatter(
+    list(i_image), list(n_spots_total),
+    s=10, color='orange', marker='o', alpha=0.5, label='#spots (total)')
+  sc2 = ax1.scatter(
+    list(i_image), n_spots_4A,
+    s=10, color='green', marker='o', alpha=0.5, label=u'#spots (to 4\u00c5)')
+  sc3 = ax1.scatter(
+    list(i_image), n_spots_no_ice,
+    s=10, color='blue', marker='o', alpha=0.5, label='#spots (no ice)')
   ax1.set_xlabel('Image #')
   ax1.set_ylabel('# spots')
   ax1.set_xlim((0.0, len(n_spots_total)))
   ax1.set_ylim(bottom=-0.2)
   ax2 = ax1.twinx()
-  sel = (estimated_d_min < 50.0) & (n_spots_total > 20) # XXX
-  sc2 = ax2.scatter(i_image.select(sel), estimated_d_min.select(sel),
-                    s=20, color='red', marker='^', alpha=0.5)
-  ax2.set_ylabel(u'resolution (\u00c5)')
+  sel = (estimated_d_min < 50.0) & (n_spots_total > 20) & (estimated_d_min > 0) # XXX
+  sc4 = ax2.scatter(
+    list(i_image.select(sel)),
+    list(estimated_d_min.select(sel)),
+    s=10, color='red', marker='^', alpha=0.5, label='Estimated d_min')
+  ax2.set_ylabel(u'Resolution (\u00c5)')
   ax2.set_xlim((0, len(n_spots_total)))
   ax2.invert_yaxis()
 
   # Use mode="fixed" as mode="expand" causes floating point error on some
   # versions of matplotlib.
   # See https://github.com/matplotlib/matplotlib/pull/1864
+  plots = (sc1, sc2, sc3, sc4)
+  plot_labels = [plot.get_label() for plot in plots]
   lgd = pyplot.legend(
-    (sc1, ), ('#spots',), ncol=1,
+    plots,
+    plot_labels,
+    ncol=2,
     loc='upper center',
     mode="fixed", borderaxespad=0.,
     bbox_to_anchor=(0.0,-0.22, 1., .102))
@@ -435,14 +453,8 @@ individual_plots=False
   reflections = reflections[0]
   imageset = datablocks[0].extract_imagesets()[0]
 
-  stats = stats_imageset(imageset, reflections, plot=params.individual_plots)
+  stats = stats_imageset(
+    imageset, reflections, plot=params.individual_plots)
   print_table(stats)
   if params.plot:
     plot_stats(stats)
-
-  #resolution_histogram(
-  #  reflections, imageset, plot_filename="spot_count_vs_resolution.png")
-  #estimated_d_min = estimate_resolution_limit(
-  #  reflections, imageset, plot_filename="i_over_sigi_vs_resolution.png")
-  #print "Estimated d_min: %.2f" %estimated_d_min
-
