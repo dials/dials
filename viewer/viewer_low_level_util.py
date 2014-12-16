@@ -84,11 +84,6 @@ class MyGrid(gridlib.Grid):
 
   def ini_n_intro(self, table_in):
 
-    timing_for_debugging = '''
-    import time
-    time1 = time.time()
-    #'''
-
     self.lst_keys = []
     self.data = []
 
@@ -106,36 +101,19 @@ class MyGrid(gridlib.Grid):
 
     self.data = tuple(zip(*self.data))
 
-    self.set_my_table(self.data, 4)
-
-
-    self.AutoSizeColumns(True)
-    self.EnableEditing(False)
-    self.EnableDragGridSize(False)
+    self.set_my_table(self.data, self.last_col_num)
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
     self.Bind(gridlib.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
 
-    timing_for_debugging = '''
-    time2 = time.time()
-    timedif = time2 - time1
-    print "timedif =", timedif
+  def OnLabelLeftClick(self, evt):
+
+
+    #timing_for_debugging = '''
+    import time
+    time1 = time.time()
     #'''
 
-  def set_my_table(self, tupldata_in, col_to_sort):
-
-    tupldata = sorted(tupldata_in, key=lambda x: x[col_to_sort])
-
-    colLabels = tuple(self.lst_keys)
-    rowLabels = tuple(range(len(tupldata)))
-
-    tableBase = TupTable(tupldata, rowLabels, colLabels)
-    self.SetTable(tableBase)
-
-
-
-
-  def OnLabelLeftClick(self, evt):
     if(evt.GetCol() == -1):
       self.repaint_img(evt.GetRow())
 
@@ -143,9 +121,39 @@ class MyGrid(gridlib.Grid):
 
       print "evt.GetCol() =", evt.GetCol()
       self.set_my_table(self.data, evt.GetCol())
-      self.Refresh()
+
 
     evt.Skip()
+
+    #timing_for_debugging = '''
+    time2 = time.time()
+    timedif = time2 - time1
+    print "timedif =", timedif
+    #'''
+
+  def set_my_table(self, tupldata_in, col_to_sort):
+
+    try:
+      tupldata = sorted(tupldata_in, key=lambda x: float(x[col_to_sort]))
+    except:
+      tupldata = sorted(tupldata_in, key=lambda x: x[col_to_sort])
+
+    colLabels = tuple(self.lst_keys)
+    rowLabels = tuple(range(len(tupldata)))
+
+    tableBase = TupTable(tupldata, rowLabels, colLabels)
+    self.SetTable(tableBase)
+
+    self.EnableEditing(True)
+    self.EnableDragGridSize(True)
+
+    self.AutoSizeColumns(True)
+    self.Refresh()
+
+    #self.EnableEditing(False)
+    #self.EnableDragGridSize(False)
+
+
 
   def OnCellLeftClick(self, evt):
     self.repaint_img(evt.GetRow())
