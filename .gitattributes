@@ -285,7 +285,7 @@ array_family/sort_index.h -text
 command_line/__init__.py -text
 command_line/analyse_output.py -text
 command_line/background_lookup.py -text
-command_line/combine_experiments_and_reflections.py -text
+command_line/combine_experiments.py -text
 command_line/compare_mosflm_dials.py -text
 command_line/compare_mosflm_xds.py -text
 command_line/compare_orientation_matrices.py -text
@@ -339,7 +339,7 @@ command_line/simulate.py -text
 command_line/simulate_rs.py -text
 command_line/slice_sweep.py -text
 command_line/sort_reflections.py -text
-command_line/split_experiments_and_reflections.py -text
+command_line/split_experiments.py -text
 command_line/spot_counts_per_image.py -text
 command_line/stereographic_projection.py -text
 /config.h -text
@@ -898,7 +898,7 @@ test/algorithms/spot_prediction/tst_stills_reflection_predictor.py -text
 test/array_family/tst_flex_pixel_list.py -text
 test/array_family/tst_flex_shoebox.py -text
 test/array_family/tst_reflection_table.py -text
-test/command_line/tst_combine_experiments_and_reflections.py -text
+test/command_line/tst_combine_experiments.py -text
 test/command_line/tst_compare.py -text
 test/command_line/tst_compare_orientation_matrices.py -text
 test/command_line/tst_create_profile_model.py -text

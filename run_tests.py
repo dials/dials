@@ -26,7 +26,7 @@ tst_list = (
     "$D/test/command_line/tst_plot_scan_varying_crystal.py",
     "$D/test/command_line/tst_generate_mask.py",
     "$D/test/command_line/tst_show_extensions.py",
-    "$D/test/command_line/tst_combine_experiments_and_reflections.py",
+    "$D/test/command_line/tst_combine_experiments.py",
     "$D/test/command_line/tst_spot_counts_per_image.py",
     "$D/test/command_line/tst_stereographic_projections.py",
     "$D/test/command_line/tst_compare_orientation_matrices.py",
