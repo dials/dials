@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import logging
 
 def config(verbosity=1, info='', debug=''):
   ''' Configure the logging. '''
@@ -110,6 +111,47 @@ def config_simple_stdout():
     'loggers' : {
       '' : {
         'handlers' : ['stream'],
+        'level' : 'DEBUG',
+        'propagate' : True
+      }
+    }
+  })
+
+
+class CacheHandler(logging.Handler):
+  ''' A simple class to store log messages. '''
+
+  def __init__(self):
+    super(CacheHandler, self).__init__()
+    self._messages = []
+
+  def emit(self, record):
+    self._messages.append(record)
+
+  def messages(self):
+    return self._messages
+
+
+def config_simple_cached():
+  ''' Configure the logging. '''
+  import logging.config
+
+  # Configure the logging
+  logging.config.dictConfig({
+
+    'version' : 1,
+    'disable_existing_loggers' : False,
+
+    'handlers' : {
+      'cache' : {
+        'level' : 'DEBUG',
+        'class' : 'dials.util.log.CacheHandler',
+      }
+    },
+
+    'loggers' : {
+      '' : {
+        'handlers' : ['cache'],
         'level' : 'DEBUG',
         'propagate' : True
       }

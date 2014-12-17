@@ -353,11 +353,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     mask_profiles = Masker3DProfile(experiments, profile_model)
     mask_profiles(self, None)
 
-  def extract_shoeboxes(self, imageset, mask=None):
+  def extract_shoeboxes(self, imageset, mask=None, nthreads=1):
     ''' Helper function to read a load of shoebox data. '''
     from dials.model.data import make_image
+    from libtbx import easy_mp
     from logging import info
     from time import time
+    assert(nthreads > 0)
     assert("shoebox" in self)
     detector = imageset.get_detector()
     try:
@@ -375,19 +377,50 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         mask.append(image[i].as_double() > tr[0])
       mask = tuple(mask)
     info(" Beginning to read images")
-    read_time = 0
-    extract_time = 0
-    for i in range(len(imageset)):
+    if True:
+    # if nthreads == 1:
+      read_time = 0
+      extract_time = 0
+      for i in range(len(imageset)):
+        st = time()
+        image = imageset[i]
+        read_time += time() - st
+        if not isinstance(image, tuple):
+          image = (image,)
+        st = time()
+        extractor.next(make_image(image, mask))
+        extract_time += time() - st
+        del image
+      assert(extractor.finished())
+    else:
+      read_time = 0
+      # smem = SMemImageReader.create("reader")
+      if nthreads > len(imageset):
+        nthreads = len(imageset)
+      def read_function(index):
+        # smem = SMemImageReader.open("reader")
+        image = imageset[index]
+        if not isinstance(image, tuple):
+          image = (image,)
+        # smem.set(index, image)
       st = time()
-      image = imageset[i]
-      read_time += time() - st
-      if not isinstance(image, tuple):
-        image = (image,)
-      st = time()
-      extractor.next(make_image(image, mask))
-      extract_time += time() - st
-      del image
-    assert(extractor.finished())
+      easy_mp.pool_map(
+        processes=nthreads,
+        iterable=range(len(imageset)),
+        fixed_func=read_function,
+        )
+      read_time = time() - st
+      print read_time
+      exit(0)
+      extract_time = 0
+      for i in range(len(smem)):
+        image = smem.get(i)
+        st = time()
+        extractor.next(make_image(image, mask))
+        extract_time += time() - st
+        del image
+      assert(extractor.finished())
+
     info('  successfully read %d images' % (frame1 - frame0))
     info('  read time: %g seconds' % read_time)
     info('  extract time: %g seconds' % extract_time)

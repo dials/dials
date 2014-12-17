@@ -110,6 +110,13 @@ class Integrator(object):
     self._nthreads = nthreads
     self._nproc = nproc
     self._mp_method = mp_method
+    if nproc > 1 and nthreads > 1 and mp_method == 'multiprocessing':
+      raise RuntimeError( '''
+        At the moment, running multiple jobs in parallel on a single machine
+        with more than 1 thread per jobs is not implemented. Either set the
+        number of threads per job to be 1 or set the number of jobs to be 1
+        or set the multiprocessing method to operate on a cluster
+      ''')
 
   def integrate(self):
     ''' Do all the integration tasks.
@@ -139,17 +146,19 @@ class Integrator(object):
       self._mp_method, num_proc, nthreads))
     if num_proc > 1:
       def process_output(result):
-        info(result[1])
+        import logging
+        for message in result[1]:
+          logging.log(message.levelno, message.msg)
         self._manager.accumulate(result[0])
       def execute_task(task):
         from cStringIO import StringIO
         from dials.util import log
-        import sys
-        log.config_simple_stdout()
-        sys.stdout = StringIO()
+        import logging
+        log.config_simple_cached()
         result = task()
-        output = sys.stdout.getvalue()
-        return result, output
+        handlers = logging.getLogger().handlers
+        assert(len(handlers) == 1)
+        return result, handlers[0].messages()
       task_results = easy_mp.parallel_map(
         func=execute_task,
         iterable=list(self._manager.tasks()),
@@ -360,7 +369,8 @@ class Task(object):
     # Extract the shoeboxes
     read_time, extract_time = self._data.extract_shoeboxes(
       imageset,
-      self._mask)
+      self._mask,
+      job.nthreads)
 
     # Optionally flatten the shoeboxes
     if self._flatten:
