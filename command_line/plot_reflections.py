@@ -115,7 +115,7 @@ def run(args):
       reflection_list = reflection_list.select(perm)
     if params.crystal_id is not None:
       reflection_list = reflection_list.select(
-        reflection_list.crystal() == params.crystal_id)
+        reflection_list['id'] == params.crystal_id)
 
     xyzcal_px = None
     xyzcal_px = None
