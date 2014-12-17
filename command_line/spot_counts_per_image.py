@@ -8,6 +8,8 @@ plot=None
   .type = path
 individual_plots=False
   .type = bool
+id = None
+  .type = int(value_min=0)
 """)
 
 def run(args):
@@ -26,6 +28,9 @@ def run(args):
 
   reflections = reflections[0]
   imageset = datablocks[0].extract_imagesets()[0]
+
+  if params.id is not None:
+    reflections = reflections.select(reflections['id'] == params.id)
 
   stats = per_image_analysis.stats_imageset(
     imageset, reflections, plot=params.individual_plots)
