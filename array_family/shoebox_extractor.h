@@ -11,6 +11,7 @@
 #ifndef DIALS_ARRAY_FAMILY_SHOEBOX_EXTRACTOR_H
 #define DIALS_ARRAY_FAMILY_SHOEBOX_EXTRACTOR_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <string>
 #include <sstream>
 #include <iostream>
