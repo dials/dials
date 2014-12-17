@@ -798,11 +798,19 @@ class RefinerFactory(object):
     else: # doing scans
       if crystal_options.scan_varying:
         if crystal_options.UB_model_per == "reflection":
-          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-            import VaryingCrystalPredictionParameterisation as PredParam
+          if sparse:
+            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+              import VaryingCrystalPredictionParameterisationSparse as PredParam
+          else:
+            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+              import VaryingCrystalPredictionParameterisation as PredParam
         elif crystal_options.UB_model_per == "image" or crystal_options.UB_model_per == "block":
-          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-            import VaryingCrystalPredictionParameterisationFast as PredParam
+          if sparse:
+            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+              import VaryingCrystalPredictionParameterisationFastSparse as PredParam
+          else:
+            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+              import VaryingCrystalPredictionParameterisationFast as PredParam
         else:
           raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
                              " is not a recognised option")

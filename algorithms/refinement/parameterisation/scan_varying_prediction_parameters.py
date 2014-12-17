@@ -17,7 +17,7 @@ from scitbx import matrix
 # dials imports
 #from dials_refinement_helpers_ext import *
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-    XYPhiPredictionParameterisation
+    XYPhiPredictionParameterisation, SparseGradientVectorMixin
 
 from dials.array_family import flex
 
@@ -612,3 +612,11 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
 
     return
+
+class VaryingCrystalPredictionParameterisationSparse(
+    SparseGradientVectorMixin, VaryingCrystalPredictionParameterisation):
+  pass
+
+class VaryingCrystalPredictionParameterisationFastSparse(
+    SparseGradientVectorMixin, VaryingCrystalPredictionParameterisationFast):
+  pass
