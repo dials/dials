@@ -33,7 +33,6 @@ namespace dials { namespace algorithms {
      * Initialise the generator.
      * @param unit_cell The unit cell structure
      * @param space_group_type The space group type structure
-     * @param anomalous_flag Allow for anomalous scattering (does nothing)
      * @param d_min The resolution
      */
     IndexGenerator(cctbx::uctbx::unit_cell const& unit_cell,
