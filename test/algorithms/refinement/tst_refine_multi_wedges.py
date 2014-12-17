@@ -82,7 +82,7 @@ class Test(object):
   def _combine(self):
     """Combine all the separate sweeps"""
 
-    cmd = "dials.combine_experiments_and_reflections " + phil_input.format(
+    cmd = "dials.combine_experiments " + phil_input.format(
       self._data_dir) + " reference_from_experiment.beam=0 " + \
       "reference_from_experiment.scan=0 reference_from_experiment.goniometer=0"+ \
       " reference_from_experiment.detector=0"
