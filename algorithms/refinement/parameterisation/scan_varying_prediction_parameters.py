@@ -558,7 +558,6 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
       isel = sel.iselection()
 
       blocks = reflections['block'].select(isel)
-      block_centres = reflections['block_centre'].select(isel)
       # get their integer frame numbers
       #frames = reflections['xyzobs.px.value'].parts()[2]
       #obs_image_numbers = flex.floor((frames).select(isel)).iround()
@@ -574,11 +573,11 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
                           flex.max(blocks) + 1):
 
         # determine the subset of reflections this affects
-        subsel = isel.select(reflections['block'] == block)
+        subsel = isel.select(blocks == block)
         if len(subsel) == 0: continue
 
         # get the integer frame number nearest the centre of that block
-        frames = block_centres.select(subsel)
+        frames = reflections['block_centre'].select(subsel)
 
         # can only be false if original block assignment has gone wrong
         assert frames.all_eq(frames[0]), \
