@@ -40,6 +40,12 @@ class Factory(object):
 
     # Split the reflections by experiment id
     if len(experiments) > 1:
+      # XXX dials.index uses id as flex.int in order to allow negative indices
+      # to represent "unindexed" reflections, however
+      # reflections.split_by_experiment_id() expects id to be flex.size_t
+      from dials.array_family import flex
+      reflections = reflections.select(reflections['id'] > -1)
+      reflections['id'] = flex.size_t(list(reflections['id']))
       reflections_split = reflections.split_by_experiment_id()
       assert(len(reflections_split) == len(experiments))
     else:
