@@ -17,7 +17,6 @@ Test combination of multiple experiments and reflections files.
 # python imports
 from __future__ import division
 import os
-import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
@@ -124,17 +123,11 @@ def test1():
     " reference_from_experiment.detector=0"
   #print cmd
 
-  try:
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    # load results
-    exp = ExperimentListFactory.from_json_file("combined_experiments.json",
-                check_format=False)
-    ref = flex.reflection_table.from_pickle("combined_reflections.pickle")
-  finally:
-    os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
-  print "OK"
+  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+  # load results
+  exp = ExperimentListFactory.from_json_file("combined_experiments.json",
+              check_format=False)
+  ref = flex.reflection_table.from_pickle("combined_reflections.pickle")
 
   # test the experiments
   assert len(exp) == 103
@@ -146,7 +139,28 @@ def test1():
 
   # test the reflections
   assert len(ref) == 11689
-  print "OK"
+
+  cmd = " ".join([
+    "dials.split_experiments_and_reflections",
+    "combined_experiments.json",
+    "combined_reflections.pickle"])
+
+  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+  for i in range(len(exp)):
+    assert os.path.exists("experiments_%03d.json" %i)
+    assert os.path.exists("reflections_%03d.pickle" %i)
+
+    exp_single = ExperimentListFactory.from_json_file(
+      "experiments_%03d.json" %i, check_format=False)
+    ref_single = flex.reflection_table.from_pickle("reflections_%03d.pickle" %i)
+
+    assert len(exp_single) ==1
+    assert exp_single[0].crystal == exp[i].crystal
+    assert exp_single[0].beam == exp[i].beam
+    assert exp_single[0].detector == exp[i].detector
+    assert exp_single[0].scan == exp[i].scan
+    assert exp_single[0].goniometer == exp[i].goniometer
+    assert len(ref_single) == len(ref.select(ref['id'] == i))
 
   return
 
@@ -158,6 +172,8 @@ def run():
   test1()
 
 if __name__ == '__main__':
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
-  run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    from libtbx.utils import show_times_at_exit
+    show_times_at_exit()
+    run()
