@@ -70,14 +70,14 @@ def exercise_client():
   assert len(images) == 9
   spot_counts = [int(node.childNodes[0].data)
                  for node in xmldoc.getElementsByTagName('spot_count')]
-  assert spot_counts == [203, 196, 205, 209, 195, 205, 203, 207, 189]
+  assert spot_counts == [203, 196, 205, 209, 195, 205, 203, 207, 189], spot_counts
   spot_counts_no_ice = [
     int(node.childNodes[0].data)
     for node in xmldoc.getElementsByTagName('spot_count_no_ice')]
-  assert spot_counts_no_ice == [150, 142, 151, 161, 151, 167, 164, 161, 146]
+  assert spot_counts_no_ice == [150, 142, 151, 161, 151, 167, 164, 161, 146], spot_counts_no_ice
   d_min = [float(node.childNodes[0].data)
            for node in xmldoc.getElementsByTagName('d_min')]
-  assert d_min == [1.56, 1.98, 1.76, 1.61, 1.59, 1.59, 1.57, 1.56, 1.61]
+  assert d_min == [1.56, 1.98, 1.76, 1.61, 1.59, 1.59, 1.57, 1.56, 1.61], d_min
 
 
 if __name__ == '__main__':
