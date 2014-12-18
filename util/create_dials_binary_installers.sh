@@ -33,7 +33,7 @@ fi
 DIALS="`libtbx.find_in_repositories dials`"
 MISC_OPTIONS=""
 if [ ! -z "${DIALS_DEST_DIR}" ]; then
-  MISC_OPTIONS="--destination=${DIALS_DEST_DIR}"
+  MISC_OPTIONS="--dist-dir=${DIALS_DEST_DIR}"
 fi
 if [ "${DIALS_DEBUG}" != "0" ]; then
   MISC_OPTIONS="${MISC_OPTIONS} --debug"
