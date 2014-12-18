@@ -448,16 +448,18 @@ class indexer_base(object):
       max_lattices = self.params.multiple_lattice_search.max_lattices
       if max_lattices is not None and len(experiments) >= max_lattices:
         break
-      cutoff_fraction = \
-        self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-      d_spacings = 1/self.reflections['rlp'].norms()
-      min_reflections_for_indexing = \
-        cutoff_fraction * len(self.reflections.select(d_spacings > self.d_min))
-      crystal_ids = self.reflections.select(d_spacings > self.d_min)['id']
-      if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
-        info("Finish searching for more lattices: %i unindexed reflections remaining." %(
-          min_reflections_for_indexing))
-        break
+      if len(experiments) > 0:
+        cutoff_fraction = \
+          self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
+        d_spacings = 1/self.reflections['rlp'].norms()
+        d_min_indexed = flex.min(d_spacings.select(self.indexed_reflections))
+        min_reflections_for_indexing = \
+          cutoff_fraction * len(self.reflections.select(d_spacings > d_min_indexed))
+        crystal_ids = self.reflections.select(d_spacings > d_min_indexed)['id']
+        if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
+          info("Finish searching for more lattices: %i unindexed reflections remaining." %(
+            min_reflections_for_indexing))
+          break
 
       n_lattices_previous_cycle = len(experiments)
 
