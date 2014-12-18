@@ -6,16 +6,17 @@ Introduction
 
 DIALS processing may be performed by either running the individual tools (spot
 finding, indexing, refinement, integration, exporting to MTZ) or you can run the
-whole lot through :samp:`dials.process`, which just chains them together (and
-incidentally does all of the processing in P1.)
+whole lot through :doc:`dials.process </programs/dials_process>`, which just
+chains them together (and incidentally does all of the processing in P1.)
 
 dials.process
 -------------
 
-In the simplest case, :samp:`dials.process /here/are/all/images*.cbf` will do
-sensible processing, with a static model of the experiment and sample, and will
-output a reflection file integrated.mtz containing the intensity measurements
-assuming everything works correctly. Some sensible options to use are:
+In the simplest case, :doc:`dials.process </programs/dials_process>`
+/here/are/all/images*.cbf` will do sensible processing, with a static model
+of the experiment and sample, and will output a reflection file integrated.mtz
+containing the intensity measurements assuming everything works correctly.
+Some sensible options to use are:
 
  - :samp:`scan_varying=true` - allow the crystal orientation and unit cell
    constants to vary during the scan
@@ -552,7 +553,7 @@ Integration
 ^^^^^^^^^^^
 
 After the refinement is done the next step is integration, which is performed
-by the program :samp:`dials.integrate`.
+by the program :doc:`dials.integrate </programs/dials_integrate>`.
 
 ::
 
