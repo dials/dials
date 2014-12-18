@@ -57,7 +57,8 @@ dials.index datablock.json strong.pickle \
   refinement.reflections.use_all_reflections=true \
   space_group=P222
 
-dials.refine experiments.json indexed.pickle scan_varying=True
+dials.refine experiments.json indexed.pickle \
+  use_all_reflections=True scan_varying=True
 
 # now run the integration - complex choices of algorithms are shown here in
 # terms of the peak measurement (fitrs) and background determination
