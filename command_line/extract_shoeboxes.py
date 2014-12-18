@@ -138,10 +138,11 @@ class Script(object):
         y0 = bbox0[2] - bbox1[2]
         y1 = bbox0[3] - bbox0[2] + y0
         z0 = bbox0[4] - bbox1[4]
-        z1 = bbox0[5] - bbox0[4] + z1
+        z1 = bbox0[5] - bbox0[4] + z0
         mask2[z0:z1,y0:y1,x0:x1] = mask0
-        mask1 = mask1 | mask2
-
+        mask1 = mask1.as_1d() | mask2.as_1d()
+        mask1.reshape(new_shoebox[i].mask.accessor())
+        new_shoebox[i].mask = mask1
 
     # Saving the reflections to disk
     filename = params.output.reflections
