@@ -64,7 +64,6 @@ class Masker3DProfile(MaskerBase):
 
     '''
     assert(len(experiments) == len(profile_model))
-    assert(len(experiments) == 1)
     super(Masker3DProfile, self).__init__(experiments[0])
     self._experiments = experiments
     self._profile_model = profile_model

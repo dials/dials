@@ -313,8 +313,9 @@ class WholeSummary(object):
 class Summary(object):
   ''' A class to present a summary of integration results. '''
 
-  def __init__(self, data, experiment):
+  def __init__(self, index, data, experiment):
     ''' Initialise. '''
+    self._index = index
     self._image_summary = ImageSummary(data, experiment)
     self._resolution_summary = ResolutionSummary(data, experiment)
     self._whole_summary = WholeSummary(data, experiment)
@@ -337,7 +338,8 @@ class Summary(object):
       ' Summary of integration results for the whole dataset'
       '\n%s\n'
     ) % ('=' * 80,
-         heading('Summary of integration results'),
+         heading('Summary of integration results for experiment %d' %
+                 self._index),
          img_summary,
          res_summary,
          who_summary)
@@ -348,6 +350,6 @@ def statistics(data, experiments):
   tables = data.split_by_experiment_id()
   assert(len(tables) == len(experiments))
   summaries = []
-  for table, experiment in zip(tables, experiments):
-    summaries.append(Summary(table, experiment))
+  for index, (table, experiment) in enumerate(zip(tables, experiments)):
+    summaries.append(Summary(index, table, experiment))
   return summaries
