@@ -161,6 +161,7 @@ def test1():
     assert exp_single[0].scan == exp[i].scan
     assert exp_single[0].goniometer == exp[i].goniometer
     assert len(ref_single) == len(ref.select(ref['id'] == i))
+    assert ref_single['id'].all_eq(0)
 
   return
 

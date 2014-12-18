@@ -48,6 +48,7 @@ class Script(object):
 
     from dials.util.options import flatten_reflections, flatten_experiments
     from libtbx.utils import Sorry
+    from dials.array_family import flex
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -80,6 +81,7 @@ class Script(object):
 
     for i, experiment in enumerate(experiments):
       ref_sel = reflections.select(reflections['id'] == i)
+      ref_sel['id'] = flex.int(len(ref_sel), 0)
 
       from dxtbx.model.experiment.experiment_list import ExperimentList
       from dxtbx.serialize import dump
