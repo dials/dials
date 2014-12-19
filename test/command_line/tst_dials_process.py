@@ -49,7 +49,7 @@ def exercise_1():
     (58.373, 58.373, 155.939, 90, 90, 120))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
-  assert approx_equal(mtz_object.n_reflections(), 22355, eps=2e3)
+  assert approx_equal(mtz_object.n_reflections(), 24465, eps=2e3)
   # assert approx_equal(mtz_object.n_reflections(), 21875, eps=1e2)
   os.chdir(cwd)
 
@@ -92,7 +92,7 @@ def exercise_2():
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
   # number of reflections we get seems to be rather sensitive to machine
   # or initial conditions?
-  assert approx_equal(mtz_object.n_reflections(), 42300, 1e3)
+  assert approx_equal(mtz_object.n_reflections(), 48063, 1e3)
   os.chdir(cwd)
 
 
