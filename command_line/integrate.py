@@ -238,32 +238,41 @@ class Script(object):
     ''' Load the reference spots. '''
     from dials.array_family import flex
     from logging import info
+    from time import time
     if reference is None:
       return None
+    st = time()
     assert("miller_index" in reference)
     info('Removing reference spots with invalid coordinates')
+    info(' using %d reference spots' % len(reference))
     mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
     reference.del_selected(mask)
+    info(' removed %d with no coordinates' % mask.count(True))
     mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
     reference.del_selected(mask)
-    info('Removed reference spots with invalid coordinates, %d remaining' %
-                len(reference))
+    info(' removed %d with no miller indices' % mask.count(True))
+    info(' using %d reference spots' % len(reference))
+    info(' time taken: %g' % (time() - st))
     return reference
 
   def save_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
     from logging import info
+    from time import time
+    st = time()
     info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
-    info('Saved %d reflections to %s' % (len(reflections), filename))
+    info(' time taken: %g' % (time() - st))
 
   def save_profile_model(self, profile_model, filename):
     ''' Save the profile model parameters. '''
     from logging import info
+    from time import time
+    st = time()
     info('Saving the profile model parameters to %s' % filename)
     with open(filename, "w") as outfile:
       outfile.write(profile_model.dump().as_str())
-    info('Saved the profile model parameters to %s' % filename)
+    info(' time taken: %g' % (time() - st))
 
 
 if __name__ == '__main__':

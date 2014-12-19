@@ -12,7 +12,7 @@ cd sources
 svn co https://svn.code.sf.net/p/cctbx/code/trunk cctbx_project
 svn co https://svn.code.sf.net/p/dials/code/trunk dials
 for MODULE in annlib annlib_adaptbx boost cbflib ccp4io ccp4io_adaptbx \
-clipper dials gui_resources opt_resources scons tntbx; do 
+clipper dials gui_resources opt_resources scons tntbx; do
 mv ../dials-dev-127/modules/${MODULE} .
 done
 cd ../build
@@ -20,5 +20,3 @@ ${BASE}/python ../sources/cctbx_project/libtbx/configure.py cctbx rstbx dials sp
 . setpaths.sh
 make
 make
-
-
