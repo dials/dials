@@ -924,6 +924,7 @@ test/command_line/tst_predict.py -text
 test/command_line/tst_refine.py -text
 test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_reindex.py -text
+test/command_line/tst_rs_mapper.py -text
 test/command_line/tst_show_extensions.py -text
 test/command_line/tst_show_models.py -text
 test/command_line/tst_slice_sweep.py -text
