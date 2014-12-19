@@ -338,11 +338,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     info("Calculated lp correction")
     return lp
 
-  def integrate(self, experiments, profile_model):
+  def integrate(self, experiments, profile_model, reference_selector=None):
     ''' Helper function to integrate reflections. '''
     self.compute_background(experiments)
     self.compute_centroid(experiments)
     self.compute_summed_intensity()
+    if reference_selector is not None:
+      reference_selector(self)
     self.compute_intensity(experiments, profile_model)
 
   def compute_mask(self, experiments, profile_model):

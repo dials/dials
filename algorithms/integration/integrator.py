@@ -37,6 +37,19 @@ def generate_phil_scope():
       include scope dials.data.lookup.phil_scope
       include scope dials.data.multiprocessing.phil_scope
 
+      reference {
+
+        select = False
+          .type = bool
+          .help = "Do selection of reference profiles (if false use indexed"
+                  "reflections)"
+
+        truncate = 0.5,0.01
+          .type = floats(size=2,value_min=0.0, value_max=1.0)
+          .help = "Remove a fraction of lowest and highest intensity"
+                  "reflections for selectr"
+      }
+
       block {
         size = auto
           .type = float
@@ -255,7 +268,8 @@ class Task(object):
                job,
                flatten=False,
                save_shoeboxes=False,
-               max_mem_usage=0.5):
+               max_mem_usage=0.5,
+               reference_selector=None):
     ''' Initialise the task. '''
     self._index = index
     self._experiments = experiments
@@ -266,6 +280,7 @@ class Task(object):
     self._save_shoeboxes = save_shoeboxes
     self._max_mem_usage = max_mem_usage
     self._mask = None
+    self._reference_selector = reference_selector
 
   def __call__(self):
     ''' Do the integration. '''
@@ -420,7 +435,10 @@ class Task(object):
     ''' Process the data. '''
     from logging import info
     self._data.compute_mask(self._experiments, self._profile_model)
-    self._data.integrate(self._experiments, self._profile_model)
+    self._data.integrate(
+      self._experiments,
+      self._profile_model,
+      reference_selector=self._reference_selector)
     info('')
 
 
@@ -449,7 +467,8 @@ class Manager(object):
                block_size_threshold=0.99,
                flatten=False,
                save_shoeboxes=False,
-               max_mem_usage=0.5):
+               max_mem_usage=0.5,
+               reference_selector=None):
     ''' Initialise the manager. '''
     self._finalized = False
     self._flatten = flatten
@@ -458,6 +477,7 @@ class Manager(object):
     self._block_size_threshold = block_size_threshold
     self._save_shoeboxes = save_shoeboxes
     self._max_mem_usage = max_mem_usage
+    self._reference_selector = reference_selector
     self._preprocess = preprocess
     self._postprocess = postprocess
     self._experiments = experiments
@@ -512,14 +532,15 @@ class Manager(object):
   def task(self, index):
     ''' Get a task. '''
     return Task(
-      index,
-      self._experiments,
-      self._profile_model,
-      self._manager.split(index),
-      self._manager.job(index).frames(),
-      self._flatten,
-      self._save_shoeboxes,
-      self._max_mem_usage)
+      index=index,
+      experiments=self._experiments,
+      profile_model=self._profile_model,
+      data=self._manager.split(index),
+      job=self._manager.job(index).frames(),
+      flatten=self._flatten,
+      save_shoeboxes=self._save_shoeboxes,
+      max_mem_usage=self._max_mem_usage,
+      reference_selector=self._reference_selector)
 
   def tasks(self):
     ''' Iterate through the tasks. '''
@@ -849,6 +870,7 @@ class ManagerRot(Manager):
                partials=False,
                save_shoeboxes=False,
                max_mem_usage=0.5,
+               reference_selector=None,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -883,7 +905,8 @@ class ManagerRot(Manager):
       block_size_threshold=block_size_threshold,
       flatten=flatten,
       save_shoeboxes=save_shoeboxes,
-      max_mem_usage=max_mem_usage)
+      max_mem_usage=max_mem_usage,
+      reference_selector=reference_selector)
 
 
 class ManagerStills(Manager):
@@ -897,6 +920,7 @@ class ManagerStills(Manager):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                powder_filter=None,
+               reference_selector=None,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -928,7 +952,8 @@ class ManagerStills(Manager):
       block_size_units='frames',
       flatten=False,
       save_shoeboxes=save_shoeboxes,
-      max_mem_usage=max_mem_usage)
+      max_mem_usage=max_mem_usage,
+      reference_selector=reference_selector)
 
 
 class Integrator3D(Integrator):
@@ -946,7 +971,9 @@ class Integrator3D(Integrator):
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False,
-               max_mem_usage=0.5):
+               max_mem_usage=0.5,
+               reference_selector=None,
+               **kwargs):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -959,7 +986,8 @@ class Integrator3D(Integrator):
       min_zeta=min_zeta,
       powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes,
-      max_mem_usage=max_mem_usage)
+      max_mem_usage=max_mem_usage,
+      reference_selector=reference_selector)
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -980,7 +1008,9 @@ class IntegratorFlat3D(Integrator):
                nproc=1,
                mp_method='multiprocessing',
                save_shoeboxes=False,
-               max_mem_usage=0.5):
+               max_mem_usage=0.5,
+               reference_selector=None,
+               **kwargs):
     ''' Initialise the manager and the integrator. '''
 
     # Create the integration manager
@@ -994,7 +1024,8 @@ class IntegratorFlat3D(Integrator):
       powder_filter=powder_filter,
       flatten=True,
       save_shoeboxes=save_shoeboxes,
-      max_mem_usage=max_mem_usage)
+      max_mem_usage=max_mem_usage,
+      reference_selector=reference_selector)
 
     # Initialise the integrator
     super(IntegratorFlat3D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1016,6 +1047,7 @@ class Integrator2D(Integrator):
                mp_method='multiprocessing',
                save_shoeboxes=False,
                max_mem_usage=0.5,
+               reference_selector=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1030,7 +1062,8 @@ class Integrator2D(Integrator):
       powder_filter=powder_filter,
       partials=True,
       save_shoeboxes=save_shoeboxes,
-      max_mem_usage=max_mem_usage)
+      max_mem_usage=max_mem_usage,
+      reference_selector=reference_selector)
 
     # Initialise the integrator
     super(Integrator2D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1050,6 +1083,7 @@ class IntegratorSingle2D(Integrator):
                mp_method='multiprocessing',
                save_shoeboxes=False,
                max_mem_usage=0.5,
+               reference_selector=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1064,7 +1098,8 @@ class IntegratorSingle2D(Integrator):
       powder_filter=powder_filter,
       partials=True,
       save_shoeboxes=save_shoeboxes,
-      max_mem_usage=max_mem_usage)
+      max_mem_usage=max_mem_usage,
+      reference_selector=reference_selector)
 
     # Initialise the integrator
     super(IntegratorSingle2D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1083,6 +1118,7 @@ class IntegratorStills(Integrator):
                mp_method='multiprocessing',
                save_shoeboxes=False,
                max_mem_usage=0.5,
+               reference_selector=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1093,10 +1129,79 @@ class IntegratorStills(Integrator):
       reflections,
       powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes,
-      max_mem_usage=max_mem_usage)
+      max_mem_usage=max_mem_usage,
+      reference_selector=reference_selector)
 
     # Initialise the integrator
     super(IntegratorStills, self).__init__(manager, nthreads, nproc, mp_method)
+
+
+class ReferenceSelector(object):
+  ''' A class to select reflections for reference profiles. '''
+
+  def __init__(self, truncate=(0.5,0.01)):
+    ''' Set the parameters. '''
+    self._truncate = tuple(truncate)
+
+  def __call__(self, reflections):
+    ''' Select the reference reflections. '''
+    from dials.array_family import flex
+    from logging import info
+    from time import time
+    st = time()
+    minv = 100 * self._truncate[0]
+    maxv = 100 * self._truncate[1]
+    info('')
+    info(' Selecting reference spots for profile fitting')
+    info('  using %d reflections' % len(reflections))
+    info('  removing %.1f%% of low intensity reflections' % minv)
+    info('  removing %.1f%% of high intensity reflections' % maxv)
+
+    # The reference flag
+    reference_flag = reflections.flags.reference_spot
+
+    # Unset the reference spot flags
+    reflections.unset_flags(
+      flex.size_t(range(len(reflections))),
+      reference_flag)
+
+    # Get the reflections integrated by summation
+    integrated = reflections.get_flags(reflections.flags.integrated_sum)
+
+    # Get the intensities and variances
+    I = reflections['intensity.sum.value']
+
+    # Get indices of those which are potential candidates
+    indices = flex.size_t(range(len(I)))
+    indices = indices.select(integrated)
+
+    # Get the indices of reference spots
+    indices = sorted(indices, key=lambda x: I[x])
+    i0 = int(self._truncate[0] * len(indices))
+    i1 = int(len(indices) - self._truncate[1] * len(indices))
+    assert(i1 > i0)
+    indices = flex.size_t(indices[i0:i1])
+
+    # Get the min/max I/Sigma
+    min_i = flex.min(I.select(indices))
+    max_i = flex.max(I.select(indices))
+    mean_i = flex.mean(I.select(indices))
+
+    # Set the flags
+    reflections.set_flags(indices, reference_flag)
+    assert(reflections.get_flags(reference_flag).count(True) == len(indices))
+    info('  selected %d reflections' % len(indices))
+    info('  mean I: %g' % mean_i)
+    info('  min  I: %g' % min_i)
+    info('  max  I: %g' % max_i)
+    info('  time taken: %d' % (time() - st))
+
+  @classmethod
+  def from_params(Class, params):
+    ''' Create the reference selector. '''
+    if params.select:
+      return Class(params.truncate)
+    return None
 
 
 class IntegratorFactory(object):
@@ -1138,6 +1243,10 @@ class IntegratorFactory(object):
     powder_filter = MultiPowderRingFilter.from_params(
       params.integration.filter)
 
+    # Create the reference selector
+    reference_selector = ReferenceSelector.from_params(
+      params.integration.reference)
+
     # Return an instantiation of the class
     return IntegratorClass(
       experiments=experiments,
@@ -1151,7 +1260,8 @@ class IntegratorFactory(object):
       nproc=params.integration.mp.nproc,
       mp_method=params.integration.mp.method,
       save_shoeboxes=params.integration.debug.save_shoeboxes,
-      max_mem_usage=params.integration.block.max_mem_usage)
+      max_mem_usage=params.integration.block.max_mem_usage,
+      reference_selector=reference_selector)
 
   @staticmethod
   def select_integrator(integrator_type):
