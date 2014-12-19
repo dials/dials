@@ -110,7 +110,6 @@ class ReflectionPredictor(object):
     '''
     from logging import info
     info('Prediction type: %s' % self._predict.name)
-    info('Predicting reflections')
     table = self._predict()
     info('Predicted %d reflections' % len(table))
     return table
