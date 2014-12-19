@@ -481,7 +481,7 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(id[i] < learner_.size());
         if (flags[i] & ReferenceSpot) {
           boost::shared_ptr<learner_type> learner = learner_[id[i]];
-          Forward<double> transform(learner->spec(), s1[i], xyzmm[i][2], shoebox[i]);
+          Forward<double> transform(learner->spec(), s1[i], xyzmm[i][2], shoebox[i], true);
           #pragma omp critical
           {
             learner->add(transform.profile().const_ref(), xyzpx[i]);
@@ -706,7 +706,8 @@ namespace dials { namespace algorithms {
               transform_spec[id[i]],
               s1[i],
               xyzmm[i][2],
-              sbox);
+              sbox,
+              false);
 
           // Get the profile for a given reflection
           profile_type c = transform.profile().const_ref();

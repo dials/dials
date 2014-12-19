@@ -44,7 +44,7 @@ def generate_phil_scope():
           .help = "Do selection of reference profiles (if false use indexed"
                   "reflections)"
 
-        truncate = 0.5,0.01
+        truncate = 0.9,0.01
           .type = floats(size=2,value_min=0.0, value_max=1.0)
           .help = "Remove a fraction of lowest and highest intensity"
                   "reflections for selectr"
@@ -1139,7 +1139,7 @@ class IntegratorStills(Integrator):
 class ReferenceSelector(object):
   ''' A class to select reflections for reference profiles. '''
 
-  def __init__(self, truncate=(0.5,0.01)):
+  def __init__(self, truncate=(0.9,0.01)):
     ''' Set the parameters. '''
     self._truncate = tuple(truncate)
 
@@ -1194,7 +1194,7 @@ class ReferenceSelector(object):
     info('  mean I: %g' % mean_i)
     info('  min  I: %g' % min_i)
     info('  max  I: %g' % max_i)
-    info('  time taken: %d' % (time() - st))
+    info('  time taken: %g seconds' % (time() - st))
 
   @classmethod
   def from_params(Class, params):

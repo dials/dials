@@ -575,9 +575,10 @@ namespace transform {
 
     Forward(const TransformSpec<FloatType> &spec,
             const vec3<double> &s1, double phi,
-            const Shoebox<> &shoebox) {
+            const Shoebox<> &shoebox,
+            bool subtract_background) {
       init(spec, s1, phi, shoebox.bbox, shoebox.panel);
-      call(spec.detector()[shoebox.panel], shoebox);
+      call(spec.detector()[shoebox.panel], shoebox, subtract_background);
     }
 
     Forward(const TransformSpec<FloatType> &spec,
@@ -599,9 +600,10 @@ namespace transform {
 
     Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs,
-            const Shoebox<> &shoebox) {
+            const Shoebox<> &shoebox,
+            bool subtract_background) {
       init(spec, cs, shoebox.bbox, shoebox.panel);
-      call(spec.detector()[shoebox.panel], shoebox);
+      call(spec.detector()[shoebox.panel], shoebox, subtract_background);
     }
 
     /** @returns The transformed profile */
@@ -772,7 +774,7 @@ namespace transform {
     /**
      * Call the transform with the shoebox
      */
-    void call(const Panel &panel, const Shoebox<> &shoebox) {
+    void call(const Panel &panel, const Shoebox<> &shoebox, bool subtract_background) {
       af::versa< bool, af::c_grid<3> > mask(shoebox.mask.accessor());
       af::ref< bool, af::c_grid<3> > mask_ref = mask.ref();
       af::const_ref< int, af::c_grid<3> > temp_ref = shoebox.mask.const_ref();
@@ -781,11 +783,18 @@ namespace transform {
         mask_ref[i] = (temp_ref[i] & mask_code) == mask_code ? 1 : 0;
       }
       af::versa< FloatType, af::c_grid<3> > data(shoebox.data.accessor());
-      af::versa< FloatType, af::c_grid<3> > bgrd(shoebox.background.accessor());
       std::copy(shoebox.data.begin(), shoebox.data.end(), data.begin());
-      std::copy(shoebox.background.begin(), shoebox.background.end(), bgrd.begin());
 
-      call(panel, data.const_ref(), bgrd.const_ref(), mask_ref);
+      if (subtract_background) {
+        for (std::size_t i = 0; i < data.size(); ++i) {
+          data[i] -= shoebox.background[i];
+        }
+        call(panel, data.const_ref(), mask_ref);
+      } else {
+        af::versa< FloatType, af::c_grid<3> > bgrd(shoebox.background.accessor());
+        std::copy(shoebox.background.begin(), shoebox.background.end(), bgrd.begin());
+        call(panel, data.const_ref(), bgrd.const_ref(), mask_ref);
+      }
     }
 
     /**
