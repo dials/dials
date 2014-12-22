@@ -97,7 +97,7 @@ class CentroidAnalyser(object):
     self.centroid_diff_xy(rlist, threshold)
     print " Analysing centroid differences in z with I/Sigma > %s" %threshold
     self.centroid_diff_z(rlist, threshold)
-    print " Analysing centroid differences in z with I/Sigma > %s" %threshold
+    print " Analysing centroid differences vs phi with I/Sigma > %s" %threshold
     self.centroid_mean_diff_vs_phi(rlist, threshold)
 
   def centroid_diff_hist(self, rlist, threshold):
@@ -176,6 +176,60 @@ class CentroidAnalyser(object):
     pylab.savefig(join(self.directory, "centroid_diff_z.png"))
     pylab.clf()
 
+  def centroid_mean_diff_vs_phi(self, rlist, threshold):
+    from dials.array_family import flex
+    from os.path import join
+    import math
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
+    I_over_S = I / I_sig
+    mask = I_over_S > threshold
+    rlist = rlist.select(mask)
+    assert(len(rlist) > 0)
+
+    xc, yc, zc = rlist['xyzcal.mm'].parts()
+    xo, yo, zo = rlist['xyzobs.mm.value'].parts()
+
+    dx = xc - xo
+    dy = yc - yo
+    dphi = zc - zo
+
+    mean_residuals_x = []
+    mean_residuals_y = []
+    mean_residuals_phi = []
+    frame = []
+    phi_obs_deg = (180/math.pi) * zo
+    phi = []
+
+    for i_phi in range(int(math.floor(flex.min(phi_obs_deg))),
+                   int(math.ceil(flex.max(phi_obs_deg)))):
+      sel = (phi_obs_deg >= i_phi) & (phi_obs_deg < (i_phi+1))
+      if sel.count(True) == 0:
+        continue
+      mean_residuals_x.append(flex.mean(dx.select(sel)))
+      mean_residuals_y.append(flex.mean(dy.select(sel)))
+      mean_residuals_phi.append(flex.mean(dphi.select(sel)))
+      phi.append(i_phi)
+
+    from matplotlib import pyplot
+    fig = pyplot.figure()
+    ax = fig.add_subplot(311)
+    fig.subplots_adjust(hspace=0.5)
+    pyplot.axhline(0, color='grey')
+    ax.scatter(phi, mean_residuals_x)
+    ax.set_xlabel('phi (deg)')
+    ax.set_ylabel('mean $\Delta$ x (mm)')
+    ax = fig.add_subplot(312)
+    pyplot.axhline(0, color='grey')
+    ax.scatter(phi, mean_residuals_y)
+    ax.set_xlabel('phi (deg)')
+    ax.set_ylabel('mean $\Delta$ y (mm)')
+    ax = fig.add_subplot(313)
+    pyplot.axhline(0, color='grey')
+    ax.scatter(phi, mean_residuals_phi)
+    ax.set_xlabel('phi (deg)')
+    ax.set_ylabel('mean $\Delta$ phi (deg)')
+    pyplot.savefig(join(self.directory, "centroid_mean_diff_vs_phi.png"))
 
 class BackgroundAnalyser(object):
   ''' Analyse the background. '''
