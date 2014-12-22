@@ -644,6 +644,25 @@ class indexer_base(object):
         i+1, (self.reflections['id'] == i).count(True)))
       info(crystal_model)
 
+    # set xyzcal.px field in self.refined_reflections
+    panel_numbers = flex.size_t(self.refined_reflections['panel'])
+    xyzcal_mm = self.refined_reflections['xyzcal.mm']
+    x_mm, y_mm, z_rad = xyzcal_mm.parts()
+    xy_cal_mm = flex.vec2_double(x_mm, y_mm)
+    xy_cal_px = flex.vec2_double(len(xy_cal_mm))
+    for i_panel in range(len(self.detector)):
+      panel = self.detector[i_panel]
+      sel = (panel_numbers == i_panel)
+      isel = sel.iselection()
+      ref_panel = self.refined_reflections.select(panel_numbers == i_panel)
+      xy_cal_px.set_selected(
+        sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel)))
+    x_px, y_px = xy_cal_px.parts()
+    scan = self.sweep.get_scan()
+    z_px = scan.get_array_index_from_angle(z_rad, deg=False)
+    xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
+    self.refined_reflections['xyzcal.px'] = xyzcal_px
+
   def find_max_cell(self):
     import libtbx
     if self.params.max_cell is libtbx.Auto:
