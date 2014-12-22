@@ -35,6 +35,8 @@ def index_reflections(
 
     reflections['miller_index'].set_selected(sel, miller_indices)
     reflections['id'].set_selected(sel, crystal_ids)
+    reflections.set_flags(
+      reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
 
   else:
     # XXX Use old python version
@@ -178,6 +180,8 @@ def index_reflections_local(
 
   reflections['miller_index'].set_selected(isel, refs['miller_index'])
   reflections['id'].set_selected(isel, refs['id'])
+  reflections.set_flags(
+    reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
 
   if verbosity > 0:
     for i_expt, expt in enumerate(experiments):

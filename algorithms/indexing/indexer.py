@@ -304,6 +304,9 @@ class indexer_base(object):
     self.all_params = params
     self.refined_experiments = None
 
+    self.reflections.unset_flags(
+      flex.size_t_range(len(self.reflections)), reflections.flags.indexed)
+
     self._setup_symmetry()
 
     # now actually do the indexing
