@@ -84,19 +84,21 @@ class CentroidAnalyser(object):
       rlist = rlist.select(mask)
       Command.end(" Selected %d integrated reflections" % len(rlist))
     else:
+      # Select only those reflections used in refinement
       threshold = 0
-      # shouldn't the strong flag be set from spotfinding?
-      #mask = rlist.get_flags(rlist.flags.strong)
-      #rlist = rlist.select(mask)
-      Command.end(" Selected %d strong reflections" % len(rlist))
+      mask = rlist.get_flags(rlist.flags.used_in_refinement)
+      rlist = rlist.select(mask)
+      Command.end(" Selected %d refined reflections" % len(rlist))
 
     # Look at differences in calculated/observed position
-    print " Analysing centroid differences with I/Sigma > 10"
+    print " Analysing centroid differences with I/Sigma > %s" %threshold
     self.centroid_diff_hist(rlist, threshold)
-    print " Analysing centroid differences in x/y with I/Sigma > 10"
+    print " Analysing centroid differences in x/y with I/Sigma > %s" %threshold
     self.centroid_diff_xy(rlist, threshold)
-    print " Analysing centroid differences in z with I/Sigma > 10"
+    print " Analysing centroid differences in z with I/Sigma > %s" %threshold
     self.centroid_diff_z(rlist, threshold)
+    print " Analysing centroid differences in z with I/Sigma > %s" %threshold
+    self.centroid_mean_diff_vs_phi(rlist, threshold)
 
   def centroid_diff_hist(self, rlist, threshold):
     ''' Analyse the correlations. '''
