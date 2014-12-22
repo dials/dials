@@ -954,6 +954,13 @@ class Script(object):
       phil=phil_scope,
       read_reflections=True)
 
+    self.parser.add_option(
+      '--xkcd',
+      action='store_true',
+      dest='xkcd',
+      default=False,
+      help='Special drawing mode')
+
   def run(self):
     ''' Run the script. '''
     from dials.array_family import flex
@@ -961,6 +968,10 @@ class Script(object):
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
+
+    if options.xkcd:
+      from matplotlib import pyplot
+      pyplot.xkcd()
 
     # Shoe the help
     if len(params.input.reflections) != 1:
