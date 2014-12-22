@@ -95,6 +95,7 @@ class CentroidAnalyser(object):
     self.centroid_diff_hist(rlist, threshold)
     print " Analysing centroid differences in x/y with I/Sigma > %s" %threshold
     self.centroid_diff_xy(rlist, threshold)
+    self.centroid_xy_xz_zy_residuals(rlist, threshold)
     print " Analysing centroid differences in z with I/Sigma > %s" %threshold
     self.centroid_diff_z(rlist, threshold)
     print " Analysing centroid differences vs phi with I/Sigma > %s" %threshold
@@ -230,6 +231,104 @@ class CentroidAnalyser(object):
     ax.set_xlabel('phi (deg)')
     ax.set_ylabel('mean $\Delta$ phi (deg)')
     pyplot.savefig(join(self.directory, "centroid_mean_diff_vs_phi.png"))
+    pyplot.clf()
+
+  def centroid_xy_xz_zy_residuals(self, rlist, threshold):
+    from dials.array_family import flex
+    from os.path import join
+    import math
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
+    I_over_S = I / I_sig
+    mask = I_over_S > threshold
+    rlist = rlist.select(mask)
+    assert(len(rlist) > 0)
+
+    xc, yc, zc = rlist['xyzcal.mm'].parts()
+    xo, yo, zo = rlist['xyzobs.mm.value'].parts()
+
+    dx = xc - xo
+    dy = yc - yo
+    dphi = zc - zo
+
+    panel_ids = rlist['panel']
+    crystal_ids = rlist['id']
+    n_crystals = flex.max(crystal_ids) + 1
+    n_panels = flex.max(panel_ids) + 1
+    n_cols = int(math.floor(math.sqrt(n_panels)))
+    n_rows = int(math.ceil(n_panels / n_cols))
+
+    from matplotlib import pyplot
+
+    for i_crystal in range(n_crystals):
+      if n_crystals > 1:
+        suffix = '_%i' %i_crystal
+      else:
+        suffix = ''
+      crystal_sel = (crystal_ids == i_crystal)
+      fig_xy, axes_xy = pyplot.subplots(
+        n_rows, n_cols, sharex=True, sharey=True)
+      fig_xz, axes_xz = pyplot.subplots(
+        n_rows, n_cols, sharex=True, sharey=True)
+      fig_zy, axes_zy = pyplot.subplots(
+        n_rows, n_cols, sharex=True, sharey=True)
+
+      if n_panels == 1:
+        axes_xy = [[axes_xy]]
+        axes_xz = [[axes_xz]]
+        axes_zy = [[axes_zy]]
+
+      i_panel = 0
+      for i_row in range(n_rows):
+        for i_col in range(n_cols):
+          panel_sel = (panel_ids == i_panel)
+
+          axes_xy[i_row][i_col].axhline(0, color='grey')
+          axes_xy[i_row][i_col].axvline(0, color='grey')
+          ax_xy = axes_xy[i_row][i_col].scatter(
+            dx.select(panel_sel & crystal_sel).as_numpy_array(),
+            dy.select(panel_sel & crystal_sel).as_numpy_array(),
+            c='b', alpha=0.3, label='Panel %d' %i_panel)
+          axes_xy[i_row][i_col].axes.set_aspect('equal')
+
+          axes_xz[i_row][i_col].axhline(0, color='grey')
+          axes_xz[i_row][i_col].axvline(0, color='grey')
+          ax_xz = axes_xz[i_row][i_col].scatter(
+            dx.select(panel_sel & crystal_sel).as_numpy_array(),
+            dphi.select(panel_sel & crystal_sel).as_numpy_array(),
+            c='b', alpha=0.3, label='Panel %d' %i_panel)
+
+          axes_zy[i_row][i_col].axhline(0, color='grey')
+          axes_zy[i_row][i_col].axvline(0, color='grey')
+          ax_zy = axes_zy[i_row][i_col].scatter(
+            dphi.select(panel_sel & crystal_sel).as_numpy_array(),
+            dy.select(panel_sel & crystal_sel).as_numpy_array(),
+            c='b', alpha=0.3, label='Panel %d' %i_panel)
+
+          if n_panels > 1:
+            axes_xy[i_row][i_col].set_title('Panel %d' %i_panel)
+            axes_xz[i_row][i_col].set_title('Panel %d' %i_panel)
+            axes_zy[i_row][i_col].set_title('Panel %d' %i_panel)
+
+          if (i_row+1) == n_rows:
+            axes_xy[i_row][i_col].set_xlabel('$\Delta$(x) (mm)')
+            axes_xz[i_row][i_col].set_xlabel('$\Delta$(x) (mm)')
+            axes_zy[i_row][i_col].set_xlabel('$\Delta$(phi) (deg)')
+          if i_col == 0:
+            axes_xy[i_row][i_col].set_ylabel('$\Delta$(y) (mm)')
+            axes_xz[i_row][i_col].set_ylabel('$\Delta$(phi) (deg)')
+            axes_zy[i_row][i_col].set_ylabel('$\Delta$(y) (mm)')
+          i_panel += 1
+
+      for fig in (fig_xy, fig_xz, fig_zy):
+        fig.set_size_inches([n_cols * i for i in fig.get_size_inches()])
+      fig_xy.savefig(
+        join(self.directory, "centroid_xy_residuals%s.png" %suffix))
+      fig_xz.savefig(
+        join(self.directory, "centroid_xz_residuals%s.png" %suffix))
+      fig_zy.savefig(
+        join(self.directory, "centroid_zy_residuals%s.png" %suffix))
+      pyplot.clf()
 
 class BackgroundAnalyser(object):
   ''' Analyse the background. '''
