@@ -39,7 +39,8 @@ dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
 
 dials.index datablock.json strong.pickle \
   recycle_unindexed_reflections=true \
-  refinement.reflections.use_all_reflections=true
+  refinement.reflections.use_all_reflections=true \
+  maximum_spot_error=3 maximum_phi_error=2
 
 # refine each indexing solution (separately) in all Bravais settings consistent
 # with the indexed unit cell. In this example we would continue processing
@@ -55,10 +56,12 @@ dials.refine_bravais_settings experiments.json indexed.pickle experiment_id=1
 dials.index datablock.json strong.pickle \
   recycle_unindexed_reflections=true \
   refinement.reflections.use_all_reflections=true \
+  maximum_spot_error=3 maximum_phi_error=2 \
   space_group=P222
 
 dials.refine experiments.json indexed.pickle \
-  use_all_reflections=True scan_varying=True
+  use_all_reflections=True scan_varying=True \
+  do_outlier_rejection=True
 
 # now run the integration - complex choices of algorithms are shown here in
 # terms of the peak measurement (fitrs) and background determination
