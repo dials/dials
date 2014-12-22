@@ -79,16 +79,24 @@ class CentroidAnalyser(object):
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
-    rlist = rlist.select(mask)
-    Command.end(" Selected %d integrated reflections" % len(rlist))
+    if mask.count(True) > 0:
+      threshold = 10
+      rlist = rlist.select(mask)
+      Command.end(" Selected %d integrated reflections" % len(rlist))
+    else:
+      threshold = 0
+      # shouldn't the strong flag be set from spotfinding?
+      #mask = rlist.get_flags(rlist.flags.strong)
+      #rlist = rlist.select(mask)
+      Command.end(" Selected %d strong reflections" % len(rlist))
 
     # Look at differences in calculated/observed position
     print " Analysing centroid differences with I/Sigma > 10"
-    self.centroid_diff_hist(rlist, 10)
+    self.centroid_diff_hist(rlist, threshold)
     print " Analysing centroid differences in x/y with I/Sigma > 10"
-    self.centroid_diff_xy(rlist, 10)
+    self.centroid_diff_xy(rlist, threshold)
     print " Analysing centroid differences in z with I/Sigma > 10"
-    self.centroid_diff_z(rlist, 10)
+    self.centroid_diff_z(rlist, threshold)
 
   def centroid_diff_hist(self, rlist, threshold):
     ''' Analyse the correlations. '''
@@ -217,6 +225,9 @@ class BackgroundAnalyser(object):
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
+    if mask.count(True) == 0:
+      return
+
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
@@ -412,6 +423,9 @@ class IntensityAnalyser(object):
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
+    if mask.count(True) == 0:
+      return
+
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
@@ -531,6 +545,9 @@ class ReferenceProfileAnalyser(object):
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
+    if mask.count(True) == 0:
+      return
+
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
