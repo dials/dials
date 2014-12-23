@@ -14,6 +14,7 @@ DIALS
    installation
    beginners_tutorial
    advanced_tutorial
+   multi_lattice_tutorial
    developer_tutorial
    programs/index
    conventions
