@@ -68,16 +68,17 @@ def exercise_client():
   xmldoc = minidom.parseString(out)
   images = xmldoc.getElementsByTagName('image')
   assert len(images) == 9
-  spot_counts = [int(node.childNodes[0].data)
-                 for node in xmldoc.getElementsByTagName('spot_count')]
-  assert spot_counts == [203, 196, 205, 209, 195, 205, 203, 207, 189], spot_counts
-  spot_counts_no_ice = [
+  spot_counts = sorted([int(node.childNodes[0].data)
+                 for node in xmldoc.getElementsByTagName('spot_count')])
+  assert spot_counts == sorted([203, 196, 205, 209, 195, 205, 203, 207, 189]), spot_counts
+  spot_counts_no_ice = sorted([
     int(node.childNodes[0].data)
-    for node in xmldoc.getElementsByTagName('spot_count_no_ice')]
-  assert spot_counts_no_ice == [150, 142, 151, 161, 151, 167, 164, 161, 146], spot_counts_no_ice
-  d_min = [float(node.childNodes[0].data)
-           for node in xmldoc.getElementsByTagName('d_min')]
-  assert d_min == [1.56, 1.98, 1.76, 1.61, 1.59, 1.59, 1.57, 1.56, 1.61], d_min
+    for node in xmldoc.getElementsByTagName('spot_count_no_ice')])
+  assert spot_counts_no_ice \
+         == sorted([150, 142, 151, 161, 151, 167, 164, 161, 146]), spot_counts_no_ice
+  d_min = sorted([float(node.childNodes[0].data)
+                  for node in xmldoc.getElementsByTagName('d_min')])
+  assert d_min == sorted([1.56, 1.98, 1.76, 1.61, 1.59, 1.59, 1.57, 1.56, 1.61]), d_min
 
 
 if __name__ == '__main__':
