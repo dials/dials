@@ -96,7 +96,7 @@ Goniometer:
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert (
     "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
-    in result.stdout_lines)
+    in result.stdout_lines), result.show_stdout()
   assert not show_diff("\n".join(result.stdout_lines[8:]), """\
 Detector:
 Panel:
