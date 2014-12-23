@@ -662,7 +662,11 @@ class indexer_base(object):
         sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel)))
     x_px, y_px = xy_cal_px.parts()
     scan = self.sweep.get_scan()
-    z_px = scan.get_array_index_from_angle(z_rad, deg=False)
+    if scan is not None:
+      z_px = scan.get_array_index_from_angle(z_rad, deg=False)
+    else:
+      # must be a still image, z centroid not meaningful
+      z_px = z_rad
     xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
     self.refined_reflections['xyzcal.px'] = xyzcal_px
 
