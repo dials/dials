@@ -186,6 +186,12 @@ class Script(object):
     slice_exps = len(experiments) > 0
     slice_refs = len(reflections) > 0
 
+    # Catch case of nothing to do
+    if not slice_exps and not slice_refs:
+      print "No Experiments or reflection data found in the input"
+      self.parser.print_help()
+      return
+
     if reflections:
       if len(reflections) > 1:
         raise Sorry("Only one reflections list can be imported at present")
