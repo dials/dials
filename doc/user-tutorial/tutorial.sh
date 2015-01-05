@@ -57,11 +57,14 @@ dials.reindex indexed.pickle change_of_basis_op=a,b,c
 # run the refinement of the data - the indexing includes refinement so the result
 # will be refined already with a static model - however here we would like to use
 # a scan varying model so re-run the refinement (you should find that the R.M.S.
-# deviations are a little lower following the scan varying refinement)
+# deviations are a little lower following the scan varying refinement). Here we
+# use an expert option "bin_size_fraction=0.0" to ensure the refinement runs
+# to RMSD convergence rather than terminating early with a good-enough RMSD.
 
 dials.refine bravais_setting_9.json reflections_reindexed.pickle \
   refinement.parameterisation.crystal.scan_varying=true \
-  refinement.reflections.use_all_reflections=true
+  refinement.reflections.use_all_reflections=true \
+  refinement.target.bin_size_fraction=0.0
 
 # now run the integration - complex choices of algorithms are shown here in
 # terms of the peak measurement (fitrs) and background determination
