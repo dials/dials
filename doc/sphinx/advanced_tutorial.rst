@@ -13,7 +13,7 @@ dials.process
 -------------
 
 In the simplest case, :doc:`dials.process </programs/dials_process>`
-/here/are/all/images*.cbf` will do sensible processing, with a static model
+``/here/are/all/images*.cbf`` will do sensible processing, with a static model
 of the experiment and sample, and will output a reflection file integrated.mtz
 containing the intensity measurements assuming everything works correctly.
 Some sensible options to use are:
@@ -545,18 +545,21 @@ Refinement
 ^^^^^^^^^^
 
 Although the model is already refined in indexing we can also add a refinement
-step in here to allow e.g. scan varying refinement as here. In fact, this
+step using :doc:`dials.refine </programs/dials_refine>` in here to allow e.g.
+scan-varying refinement. In fact, this
 dataset is of such good quality that with default options scan-varying
 refinement would terminate immediately because the RMSD target was already
 achieved during the indexing step. To ensure we squeeze the best possible results
-from this data we use an expert parameter
+from this data we use the expert parameter ``bin_size_fraction`` to set the
+RMSD target to zero in each dimension. This ensures that refinement continues
+until RMSD convergence.
 
-To show all the options up to and including ``expert_level = 1`` use this
-command::
+As an aside, to show all the options up to and including ``expert_level = 1``
+use this command::
 
   dials.refine -c -e 1
 
-Our refinement job is specified as::
+Now, our refinement job is specified as::
 
   dials.refine bravais_setting_9.json reflections_reindexed.pickle \
   refinement.parameterisation.crystal.scan_varying=true \
