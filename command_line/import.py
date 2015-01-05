@@ -22,13 +22,18 @@ to two rotation scans have been given, two image sweeps will be saved. Images to
 be processed are specified as command line arguments. Sometimes, there is a
 maximum number of arguments that can be given on the command line and the number
 of files may exceed this. In this case image filenames can be input on stdin
-delmited by a new line using the -i option (see below for examples).
+delimited by a new line using the -i option (see below for examples).
+Alternatively a template can be specified using the template= parameter where
+the consecutive digits representing the image numbers in the filenames are
+replaced with '#' characters.
 
 Examples::
 
   dials.import image_*.cbf
 
   dials.import image_1_*.cbf image_2_*.cbf
+
+  dials.import template=image_1_####.cbf
 
   find . -name "image_*.cbf" | dials.import
 
