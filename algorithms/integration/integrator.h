@@ -611,6 +611,19 @@ namespace dials { namespace algorithms {
         }
       }
 
+      // Make sure that the experiment ids start at zero
+      tiny<int,2> expr = job(index).expr();
+      if (expr[0] != 0) {
+        DIALS_ASSERT(expr[0] > 0);
+        DIALS_ASSERT(expr[1] > expr[0]);
+        af::ref<std::size_t> id = result["id"];
+        for (std::size_t i = 0; i < id.size(); ++i) {
+          DIALS_ASSERT(id[i] >= expr[0]);
+          DIALS_ASSERT(id[i] < expr[1]);
+          id[i] -= expr[0];
+        }
+      }
+
       // Return the reflections
       return result;
     }
@@ -629,6 +642,17 @@ namespace dials { namespace algorithms {
       af::const_ref<bool> msk = lookup_.mask(index);
       DIALS_ASSERT(ind.size() == msk.size());
       DIALS_ASSERT(ind.size() == result.size());
+
+      // Rejig the experiment ids again
+      tiny<int,2> expr = job(index).expr();
+      DIALS_ASSERT(expr[0] >= 0);
+      DIALS_ASSERT(expr[1] > expr[0]);
+      std::size_t num_expr = expr[1] - expr[0];
+      af::ref<std::size_t> id = result["id"];
+      for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] < num_expr);
+        id[i] += expr[0];
+      }
 
       // Set the result
       set_selected_rows_index_mask(data_, ind, msk, result);

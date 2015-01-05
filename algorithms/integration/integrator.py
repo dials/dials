@@ -531,12 +531,21 @@ class Manager(object):
 
   def task(self, index):
     ''' Get a task. '''
+    job = self._manager.job(index)
+    frames = job.frames()
+    expr_id = job.expr()
+    assert(expr_id[1] > expr_id[0])
+    assert(expr_id[0] >= 0)
+    assert(expr_id[1] <= len(self._experiments))
+    expr = self._experiments[expr_id[0]:expr_id[1]]
+    prof = self._profile_model[expr_id[0]:expr_id[1]]
+    data = self._manager.split(index)
     return Task(
       index=index,
-      experiments=self._experiments,
-      profile_model=self._profile_model,
-      data=self._manager.split(index),
-      job=self._manager.job(index).frames(),
+      experiments=expr,
+      profile_model=prof,
+      data=data,
+      job=frames,
       flatten=self._flatten,
       save_shoeboxes=self._save_shoeboxes,
       max_mem_usage=self._max_mem_usage,

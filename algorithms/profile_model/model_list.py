@@ -13,12 +13,17 @@ from __future__ import division
 class ProfileModelList(object):
   ''' A class to represent multiple profile models. '''
 
-  def __init__(self):
+  def __init__(self, models=None):
     ''' Initialise the model list. '''
-    self._models = []
+    if models is None:
+      self._models = []
+    else:
+      self._models = models
 
   def __getitem__(self, index):
     ''' Get a profile model. '''
+    if isinstance(index, slice):
+      return ProfileModelList(self._models[index])
     return self._models[index]
 
   def __len__(self):
