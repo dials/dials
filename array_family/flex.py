@@ -101,6 +101,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.algorithms.peak_finding.spotfinder_factory \
       import SpotFinderFactory
     from logging import info
+    from libtbx import Auto
+
+    if params.spotfinder.filter.min_spot_size is Auto:
+      detector = datablock.extract_imagesets()[0].get_detector()
+      if detector[0].get_type() == 'SENSOR_PAD':
+        # smaller default value for pixel array detectors
+        params.spotfinder.filter.min_spot_size = 3
+      else:
+        params.spotfinder.filter.min_spot_size = 6
 
     # Get the integrator from the input parameters
     info('Configuring spot finder from input parameters')

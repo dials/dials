@@ -21,12 +21,12 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 459
+    assert len(reflections) == 654, len(reflections)
     refl = reflections[0]
-    assert approx_equal(refl['intensity.sum.value'], 142)
-    assert approx_equal(refl['bbox'], (1258, 1260, 537, 541, 0, 1))
+    assert approx_equal(refl['intensity.sum.value'], 42)
+    assert approx_equal(refl['bbox'], (1398, 1400, 513, 515, 0, 1))
     assert approx_equal(refl['xyzobs.px.value'],
-                        (1258.7957746478874, 539.112676056338, 0.5))
+                        (1399.1190476190477, 514.2142857142857, 0.5))
     assert "shoebox" in reflections
   print 'OK'
 
@@ -37,8 +37,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 370
-    refl = reflections[0]
+    assert len(reflections) == 468, len(reflections)
     assert "shoebox" not in reflections
   print 'OK'
 
@@ -50,7 +49,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 679
+    assert len(reflections) == 679, len(reflections)
   print 'OK'
 
   # now with XFEL stills
@@ -63,7 +62,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 2643
+    assert len(reflections) == 2643, len(reflections)
   print 'OK'
 
 def exercise_polygon():

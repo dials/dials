@@ -39,7 +39,7 @@ def generate_phil_scope():
       .help = "Parameters used in the spot finding filter strategy."
 
     {
-      min_spot_size = 6
+      min_spot_size = Auto
         .help = "The minimum number of contiguous pixels for a spot"
                 "to be accepted by the filtering algorithm."
         .type = int(value_min=0)
