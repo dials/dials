@@ -55,6 +55,12 @@ phil_scope = parse('''
       .help = "The integrated output filename"
   }
 
+  scan_range = None
+    .type = ints(size=2)
+    .help = "Explicitly specify the images to be processed. Only applicable"
+            "when experiment list contains a single imageset."
+    .multiple = True
+
   sampling
     .expert_level = 1
   {
@@ -158,6 +164,12 @@ class Script(object):
     from dials.algorithms.integration.integrator import IntegratorFactory
     from dials.array_family import flex
 
+    # Modify experiment list if scan range is set.
+    experiments, reference = self.split_for_scan_range(
+      experiments,
+      reference,
+      params.scan_range)
+
     # Compute the profile model
     # Predict the reflections
     # Match the predictions with the reference
@@ -243,6 +255,7 @@ class Script(object):
       return None
     st = time()
     assert("miller_index" in reference)
+    assert("id" in reference)
     info('Removing reference spots with invalid coordinates')
     info(' using %d reference spots' % len(reference))
     mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
@@ -251,6 +264,10 @@ class Script(object):
     mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
     reference.del_selected(mask)
     info(' removed %d with no miller indices' % mask.count(True))
+    mask = flex.bool([x < 0 for x in reference['id']])
+    reference.del_selected(mask)
+    reference['id'] = flex.size_t(list(reference['id']))
+    info(' removed %d with negative experiment id' % mask.count(True))
     info(' using %d reference spots' % len(reference))
     info(' time taken: %g' % (time() - st))
     return reference
@@ -274,6 +291,81 @@ class Script(object):
       outfile.write(profile_model.dump().as_str())
     info(' time taken: %g' % (time() - st))
 
+  def split_for_scan_range(self, experiments, reference, scan_range):
+    ''' Update experiments when scan range is set. '''
+    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment.experiment_list import Experiment
+    from logging import info
+    from dials.array_family import flex
+
+    # Only do anything is the scan range is set
+    if scan_range is not None and len(scan_range) > 0:
+
+
+      # Ensure that all experiments have the same imageset and scan
+      iset = [e.imageset for e in experiments]
+      scan = [e.scan for e in experiments]
+      assert(all(x == iset[0] for x in iset))
+      assert(all(x == scan[0] for x in scan))
+
+      # Get the imageset and scan
+      iset = experiments[0].imageset
+      scan = experiments[0].scan
+
+      # Get the array range
+      if scan is not None:
+        frame10, frame11 = scan.get_array_range()
+        assert(scan.get_num_images() == len(iset))
+      else:
+        frame10, frame11 = (0, len(iset))
+
+      # Create the new lists
+      new_experiments = ExperimentList()
+      new_reference_all = reference.split_by_experiment_id()
+      new_reference = flex.reflection_table()
+      for i in range(len(new_reference_all) - len(experiments)):
+        new_reference_all.append(flex.reflection_table())
+      assert(len(new_reference_all) == len(experiments))
+
+      # Loop through all the scan ranges and create a new experiment list with
+      # the requested scan ranges.
+      for frame00, frame01 in scan_range:
+        assert(frame01 >  frame00)
+        assert(frame00 >= frame10)
+        assert(frame01 <= frame11)
+        index0 = frame00 - frame10
+        index1 = index0 + (frame01 - frame00)
+        assert(index0 < index1)
+        assert(index0 >= 0)
+        assert(index1 <= len(iset))
+        new_iset = iset[index0:index1]
+        if scan is None:
+          new_scan = None
+        else:
+          new_scan = scan[index0:index1]
+        for i, e1 in enumerate(experiments):
+          e2 = Experiment()
+          e2.beam = e1.beam
+          e2.detector = e1.detector
+          e2.goniometer = e1.goniometer
+          e2.crystal = e1.crystal
+          e2.imageset = new_iset
+          e2.scan = new_scan
+          new_reference_all[i]['id'] = flex.size_t(
+            len(new_reference_all[i]), len(new_experiments))
+          new_reference.extend(new_reference_all[i])
+          new_experiments.append(e2)
+      experiments = new_experiments
+      reference = new_reference
+
+      # Print some information
+      info('Modified experiment list to integrate over requested scan range')
+      for frame00, frame01 in scan_range:
+        info(' scan_range = %d -> %d' % (frame00, frame01))
+      info('')
+
+    # Return the experiments
+    return experiments, reference
 
 if __name__ == '__main__':
   from dials.util import halraiser

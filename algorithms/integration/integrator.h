@@ -302,7 +302,7 @@ namespace dials { namespace algorithms {
         tiny<int,2> f = groups[i].frames();
         DIALS_ASSERT(f[1] > f[0]);
         frame0_.push_back(f[0]);
-        offset_.push_back(f[1] - f[0]);
+        offset_.push_back(offset_.back() + f[1] - f[0]);
       }
       DIALS_ASSERT(offset_.back() > 0);
       lookup0_.resize(offset_.back());
