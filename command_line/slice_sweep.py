@@ -18,15 +18,17 @@ from libtbx.utils import Sorry
 help_message = '''
 
 Slice a sweep to produce a smaller sweep within the bounds of the original. If
-experiments are provided, modify the scan objects within the experiments. If
+experiments or datablocks are provided, modify the scan objects within these. If
 reflections are provided, remove reflections outside the provided scan ranges.
 Each scan_range parameter refers to a single experiment ID, counting up from
 zero. Any reflections with experiment ID not matched by a scan_range parameter
-are are removed.
+are removed.
 
 Examples::
 
   dials.slice_sweep experiments.json reflections.pickle "scan_range=1 20"
+
+  dials.slice_sweep datablock.json "scan_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
   dials.slice_sweep experiments.json reflections.pickle \
@@ -49,6 +51,12 @@ phil_scope = parse('''
       .help = "The filename for output reflections sliced to remove those"
               "outside the reduced scan range. By default generated"
               "automatically from the input name"
+
+    datablocks_filename = None
+      .type = str
+      .help = "The filename for the output datablock with sliced scans.
+               By default generated automatically from the input name"
+
   }
 
   scan_range = None
@@ -121,6 +129,36 @@ def slice_reflections(reflections, scan_ranges):
   # length of scan_ranges
   return reflections.select(to_keep)
 
+def slice_datablocks(datablocks, scan_ranges):
+  '''
+
+  :param datablocks:
+  :type datablocks: list of dxtbx.datablock.DataBlocks
+  :param scan_range:
+  :type scan_range: list of 2-tuples defining scan range for each unique scan'''
+
+  # copy the experiments
+  import copy
+  datablocks = copy.deepcopy(datablocks)
+
+  scans = []
+  for db in datablocks:
+    scans.extend(db.unique_scans())
+
+  if len(scans) != len(scan_ranges):
+    raise Sorry("Unique scans in the input datablock list and supplued scan_ranges are not of the same length")
+
+  for scan, sr in zip(scans, scan_ranges):
+    if sr is None: continue
+
+    im_range = scan.get_image_range()
+    if sr[0] < im_range[0] or sr[1] > im_range[1]:
+      raise IndexError("requested slice outside current scan range")
+
+    scan.set_image_range(sr)
+
+  return datablocks
+
 def calculate_frame_numbers(reflections, experiments):
   """calculate observed frame numbers for all reflections, if not already
   set"""
@@ -168,27 +206,31 @@ class Script(object):
       phil=phil_scope,
       read_reflections=True,
       read_experiments=True,
+      read_datablocks=True,
       check_format=False,
       epilog=help_message)
 
   def run(self):
     '''Execute the script.'''
 
-    from dials.util.options import flatten_reflections, flatten_experiments
+    from dials.util.options import flatten_reflections, flatten_experiments, \
+      flatten_datablocks
     import cPickle as pickle
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
+    datablocks = flatten_datablocks(params.input.datablock)
 
     # Try to load the models and data
     slice_exps = len(experiments) > 0
     slice_refs = len(reflections) > 0
+    slice_dbs = len(datablocks) > 0
 
     # Catch case of nothing to do
-    if not slice_exps and not slice_refs:
-      print "No Experiments or reflection data found in the input"
+    if not any([slice_exps, slice_refs, slice_dbs]):
+      print "No suitable input provided"
       self.parser.print_help()
       return
 
@@ -215,6 +257,8 @@ class Script(object):
       sliced_experiments = slice_experiments(experiments, params.scan_range)
     if slice_refs:
       sliced_reflections = slice_reflections(reflections, params.scan_range)
+    if slice_dbs:
+      sliced_datablocks =  slice_datablocks(datablocks, params.scan_range)
 
     # Save sliced experiments
     if slice_exps:
@@ -253,6 +297,26 @@ class Script(object):
       print 'Saving sliced reflections to {0}'.format(
         output_reflections_filename)
       sliced_reflections.as_pickle(output_reflections_filename)
+
+    # Save sliced datablocks
+    if slice_dbs:
+      output_datablocks_filename = params.output.datablocks_filename
+      if output_datablocks_filename is None:
+        # take first filename as template
+        bname = basename(params.input.datablock[0].filename)
+        bname = splitext(bname)[0]
+        if not bname: bname = "datablock"
+        if len(params.scan_range) == 1 and params.scan_range[0] is not None:
+          ext = "_{0}_{1}.json".format(*params.scan_range[0])
+        else:
+          ext = "_subsets.json"
+        output_datablocks_filename = bname + ext
+      print 'Saving sliced datablocks to {0}'.format(
+        output_datablocks_filename)
+
+      from dxtbx.datablock import DataBlockDumper
+      dump = DataBlockDumper(sliced_datablocks)
+      dump.as_file(output_datablocks_filename)
 
     return
 
