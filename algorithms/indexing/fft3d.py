@@ -14,6 +14,7 @@ from __future__ import division
 import math
 
 import libtbx
+from libtbx.utils import Sorry
 from scitbx import fftpack
 from scitbx import matrix
 from cctbx import crystal, uctbx, xray
@@ -153,16 +154,13 @@ class indexer_fft3d(indexer_base):
     grid_real_binary = grid_real_binary.iround()
     from cctbx import masks
     flood_fill = masks.flood_fill(grid_real_binary, self.fft_cell)
+    if flood_fill.n_voids() < 4:
+      # Require at least peak at origin and one peak for each basis vector
+      raise Sorry("Indexing failed: fft3d peak search failed to find sufficient number of peaks.")
     # the peak at the origin might have a significantly larger volume than the
     # rest so exclude this peak from determining maximum volume
     isel = (flood_fill.grid_points_per_void() > int(
         0.2 * flex.max(flood_fill.grid_points_per_void()[1:]))).iselection()
-    #sites = flex.double()
-    #for i in isel:
-      #sel = grid_real_binary == (i+2)
-      #max_value = flex.max(grid_real.as_1d().select(sel.as_1d()))
-      #idx = flex.first_index(grid_real, max_value)
-      #sites.append(
 
     if self.params.optimise_initial_basis_vectors:
       sites_cart = flood_fill.centres_of_mass_cart().select(isel)
