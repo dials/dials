@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.utils import Sorry
 
 class UsefulError(RuntimeError):
   '''Error message to direct user to report to dials developers.'''
@@ -30,6 +31,8 @@ def usefulraiser(e):
 
   if len(e.args) == 0:
     e.args = (text,)
+  elif issubclass(e.__class__, Sorry):
+    raise
   elif len(e.args) == 1:
     e.args = (text + ' ' + str(e.args[0]),)
   else:
