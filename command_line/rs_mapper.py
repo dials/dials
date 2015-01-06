@@ -61,7 +61,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = "usage: %s --map_file output.ccp4 [max_resolution=6] [grid_size=192] "\
+        usage = "usage: %s map_file=output.ccp4 [max_resolution=6] [grid_size=192] "\
                 "[reverse_phi=False] [param.phil] "\
                 "{datablock.json | image1.file [image2.file ...]}" \
                 % libtbx.env.dispatcher_name
