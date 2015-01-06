@@ -179,7 +179,10 @@ class Script(object):
     experiments = self.refine(experiments, indexed)
     integrated = self.integrate(experiments, indexed)
     mtz = self.mtz(integrated, experiments)
-    mtz.show_summary()
+    from StringIO import StringIO
+    buf = StringIO()
+    mtz.show_summary(buf)
+    info(buf.getvalue())
 
     # Total Time
     info("")
