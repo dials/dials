@@ -138,8 +138,8 @@ class Script(object):
     # Configure logging
     log.config(
       params.verbosity,
-      info='dials.integrate.log',
-      debug='dials.integrate.debug.log')
+      info='dials.process.log',
+      debug='dials.process.debug.log')
 
     # Preamble stuff
     info('*' * 80)
