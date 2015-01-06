@@ -47,6 +47,10 @@ Examples::
 
 from libtbx.phil import parse
 phil_scope = parse('''
+  verbosity = 1
+    .type = int(value_min=0)
+    .help = "The verbosity level"
+
   output {
     datablock_filename = datablock.json
       .type = str
@@ -107,8 +111,9 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
-    from dials.util.command_line import Command
     from dials.util.options import flatten_datablocks
+    from dials.util import log
+    from logging import info
     from time import time
     import sys
 
@@ -130,32 +135,38 @@ class Script(object):
       raise RuntimeError('Only 1 datablock can be processed at a time.')
     datablock = datablocks[0]
 
+    # Configure logging
+    log.config(
+      params.verbosity,
+      info='dials.integrate.log',
+      debug='dials.integrate.debug.log')
+
     # Preamble stuff
-    print '*' * 80
-    print ''
-    print '                       mmmm   mmmmm    mm   m       mmmm            '
-    print '                       #   "m   #      ##   #      #"   "           '
-    print '                      m#mm  #   #     #  #  #      "#mmm            '
-    print '                       #    #   #     #mm#  #          "#           '
-    print '                       #mmm"  mm#mm  #    # #mmmmm "mmm#"           '
-    print ''
-    print 'Launching dials.process'
-    print ''
-    print 'The following tasks will be performed:'
-    print ' 1) Strong spots will be found (dials.find_spots)'
-    print ' 2) The strong spots will be indexed (dials.index)'
-    print ' 3) The model will be further refined (dials.refine)'
-    print ' 4) The reflections will be integrated (dials.integrate)'
-    print ' 5) The data will be exported as MTZ (dials.export_mtz)'
-    print ''
-    print 'Please be patient, this may take a few minutes'
-    print ''
-    print '*' * 80
-    print ''
-    print 'Command-line: %s' % (' '.join(sys.argv[1:]))[:65]
-    print ''
-    print '*' * 80
-    print ''
+    info('*' * 80)
+    info('')
+    info('                       mmmm   mmmmm    mm   m       mmmm            ')
+    info('                       #   "m   #      ##   #      #"   "           ')
+    info('                      m#mm  #   #     #  #  #      "#mmm            ')
+    info('                       #    #   #     #mm#  #          "#           ')
+    info('                       #mmm"  mm#mm  #    # #mmmmm "mmm#"           ')
+    info('')
+    info('Launching dials.process')
+    info('')
+    info('The following tasks will be performed:')
+    info(' 1) Strong spots will be found (dials.find_spots)')
+    info(' 2) The strong spots will be indexed (dials.index)')
+    info(' 3) The model will be further refined (dials.refine)')
+    info(' 4) The reflections will be integrated (dials.integrate)')
+    info(' 5) The data will be exported as MTZ (dials.export_mtz)')
+    info('')
+    info('Please be patient, this may take a few minutes')
+    info('')
+    info('*' * 80)
+    info('')
+    info('Command-line: %s' % (' '.join(sys.argv[1:]))[:65])
+    info('')
+    info('*' * 80)
+    info('')
 
     if self.params.output.datablock_filename:
       from dxtbx.datablock import DataBlockDumper
@@ -171,43 +182,40 @@ class Script(object):
     mtz.show_summary()
 
     # Total Time
-    print ""
-    print "Total Time Taken = %f seconds" % (time() - st)
+    info("")
+    info("Total Time Taken = %f seconds" % (time() - st))
 
   def find_spots(self, datablock):
     from time import time
+    from logging import info
     from dials.array_family import flex
     st = time()
 
-    print '*' * 80
-    print 'Finding Strong Spots'
-    print '*' * 80
+    info('*' * 80)
+    info('Finding Strong Spots')
+    info('*' * 80)
 
     # Find the strong spots
     observed = flex.reflection_table.from_observations(datablock, self.params)
 
     # Save the reflections to file
-    print '\n' + '-' * 80
+    info('\n' + '-' * 80)
     if self.params.output.strong_filename:
-      from dials.util.command_line import Command
-      Command.start('Saving {0} reflections to {1}'.format(
-          len(observed), self.params.output.strong_filename))
-      observed.as_pickle(self.params.output.strong_filename)
-      Command.end('Saved {0} observed to {1}'.format(
-          len(observed), self.params.output.strong_filename))
+      self.save_reflections(observed, self.params.output.strong_filename)
 
-    print ''
-    print 'Time Taken = %f seconds' % (time() - st)
+    info('')
+    info('Time Taken = %f seconds' % (time() - st))
     return observed
 
   def index(self, datablock, reflections):
     from time import time
+    from logging import info
     import copy
     st = time()
 
-    print '*' * 80
-    print 'Indexing Strong Spots'
-    print '*' * 80
+    info('*' * 80)
+    info('Indexing Strong Spots')
+    info('*' * 80)
 
     imagesets = datablock.extract_imagesets()
 
@@ -227,25 +235,21 @@ class Script(object):
     experiments = idxr.refined_experiments
 
     if self.params.output.indexed_filename:
-      from dials.util.command_line import Command
-      Command.start('Saving {0} reflections to {1}'.format(
-          len(indexed), self.params.output.indexed_filename))
-      indexed.as_pickle(self.params.output.indexed_filename)
-      Command.end('Saved {0} reflections to {1}'.format(
-          len(indexed), self.params.output.indexed_filename))
+      self.save_reflections(indexed, self.params.output.indexed_filename)
 
-    print ''
-    print 'Time Taken = %f seconds' % (time() - st)
+    info('')
+    info('Time Taken = %f seconds' % (time() - st))
     return experiments, indexed
 
   def refine(self, experiments, centroids):
     from dials.algorithms.refinement import RefinerFactory
+    from logging import info
     from time import time
     st = time()
 
-    print '*' * 80
-    print 'Refining Model'
-    print '*' * 80
+    info('*' * 80)
+    info('Refining Model')
+    info('*' * 80)
 
     refiner = RefinerFactory.from_parameters_data_experiments(
       self.params, centroids, experiments)
@@ -259,31 +263,26 @@ class Script(object):
       dump = ExperimentListDumper(experiments)
       dump.as_json(self.params.output.refined_experiments_filename)
 
-    print ''
-    print 'Time Taken = %f seconds' % (time() - st)
+    info('')
+    info('Time Taken = %f seconds' % (time() - st))
 
     return experiments
 
   def integrate(self, experiments, indexed):
     from time import time
-    from dials.util.command_line import Command
+    from logging import info
 
     st = time()
 
-    print '*' * 80
-    print 'Integrating Reflections'
-    print '*' * 80
+    info('*' * 80)
+    info('Integrating Reflections')
+    info('*' * 80)
 
 
-    from dials.array_family import flex
-    Command.start('Removing invalid coordinates')
-    xyz = indexed['xyzcal.mm']
-    mask = flex.bool([x == (0, 0, 0) for x in xyz])
-    indexed.del_selected(mask)
-    Command.end('Removed invalid coordinates, %d remaining' % len(indexed))
+    indexed = self.process_reference(indexed)
 
     # Get the integrator from the input parameters
-    print 'Configurating integrator from input parameters'
+    info('Configurating integrator from input parameters')
     from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.algorithms.integration.integrator import IntegratorFactory
     from dials.array_family import flex
@@ -293,11 +292,11 @@ class Script(object):
     # Match the predictions with the reference
     # Create the integrator
     profile_model = ProfileModelFactory.create(self.params, experiments, indexed)
-    print ""
-    print "=" * 80
-    print ""
-    print "Predicting reflections"
-    print ""
+    info("")
+    info("=" * 80)
+    info("")
+    info("Predicting reflections")
+    info("")
     predicted = profile_model.predict_reflections(
       experiments,
       dmin=self.params.prediction.dmin,
@@ -305,7 +304,7 @@ class Script(object):
       margin=self.params.prediction.margin,
       force_static=self.params.prediction.force_static)
     predicted.match_with_reference(indexed)
-    print ""
+    info("")
     integrator = IntegratorFactory.create(self.params, experiments, profile_model, predicted)
 
     # Integrate the reflections
@@ -313,31 +312,63 @@ class Script(object):
 
     if self.params.output.integrated_filename:
       # Save the reflections
-      Command.start('Saving {0} reflections to {1}'.format(
-          len(reflections), self.params.output.integrated_filename))
-      reflections.as_pickle(self.params.output.integrated_filename)
-      Command.end('Saved {0} reflections to {1}'.format(
-          len(reflections), self.params.output.integrated_filename))
+      self.save_reflections(reflections, self.params.output.integrated_filename)
 
     if self.params.output.profile_filename:
       with open(self.params.output.profile_filename, "w") as outfile:
         outfile.write(profile_model.dump().as_str())
 
-    print ''
-    print 'Time Taken = %f seconds' % (time() - st)
+    info('')
+    info('Time Taken = %f seconds' % (time() - st))
     return reflections
 
   def mtz(self, integrated, experiments):
     from dials.util.export_mtz import export_mtz
     from time import time
+    from logging import info
     st = time()
-    print '*' * 80
-    print 'Exporting measurements to', self.params.output.mtz_filename
-    print '*' * 80
+    info('*' * 80)
+    info('Exporting measurements to %s' % self.params.output.mtz_filename)
+    info('*' * 80)
     m = export_mtz(integrated, experiments, self.params.output.mtz_filename)
-    print ''
-    print 'Time Taken = %f seconds' % (time() - st)
+    info('')
+    info('Time Taken = %f seconds' % (time() - st))
     return m
+
+  def process_reference(self, reference):
+    ''' Load the reference spots. '''
+    from dials.array_family import flex
+    from logging import info
+    from time import time
+    if reference is None:
+      return None
+    st = time()
+    assert("miller_index" in reference)
+    assert("id" in reference)
+    info('Removing reference spots with invalid coordinates')
+    info(' using %d reference spots' % len(reference))
+    mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
+    reference.del_selected(mask)
+    info(' removed %d with no coordinates' % mask.count(True))
+    mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
+    reference.del_selected(mask)
+    info(' removed %d with no miller indices' % mask.count(True))
+    mask = flex.bool([x < 0 for x in reference['id']])
+    reference.del_selected(mask)
+    reference['id'] = flex.size_t(list(reference['id']))
+    info(' removed %d with negative experiment id' % mask.count(True))
+    info(' using %d reference spots' % len(reference))
+    info(' time taken: %g' % (time() - st))
+    return reference
+
+  def save_reflections(self, reflections, filename):
+    ''' Save the reflections to file. '''
+    from logging import info
+    from time import time
+    st = time()
+    info('Saving %d reflections to %s' % (len(reflections), filename))
+    reflections.as_pickle(filename)
+    info(' time taken: %g' % (time() - st))
 
 if __name__ == '__main__':
   from dials.util import halraiser
