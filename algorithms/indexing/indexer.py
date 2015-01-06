@@ -152,6 +152,11 @@ discover_better_experimental_model = False
       .help = "Do not ever include reflections below this value in refinement."
     verbosity = 1
       .type = int(value_min=0)
+    disable_unit_cell_volume_sanity_check = False
+      .type = bool
+      .help = "Disable sanity check on unrealistic increases in unit cell volume"
+              "during refinement."
+      .expert_level = 1
     outlier_rejection {
       maximum_spot_error = None
         .type = float(value_min=0)
@@ -293,7 +298,6 @@ class indexer_base(object):
     sweep = self.imagesets[0]
     self.sweep = sweep
 
-    from dxtbx.serialize import load
     if params is None: params = master_params
 
     self.goniometer = sweep.get_goniometer()
@@ -599,6 +603,25 @@ class indexer_base(object):
             del experiments[-1]
             break
           raise
+
+        # sanity check for unrealistic unit cell volume increase during refinement
+        # usually this indicates too many parameters are being refined given the
+        # number of observations provided.
+        if not self.params.refinement_protocol.disable_unit_cell_volume_sanity_check:
+          for orig_expt, refined_expt in zip(experiments, refined_experiments):
+            uc1 = orig_expt.crystal.get_unit_cell()
+            uc2 = refined_expt.crystal.get_unit_cell()
+            volume_change = abs(uc1.volume()-uc2.volume())/uc1.volume()
+            cutoff = 0.5
+            if volume_change > cutoff:
+              msg = "\n".join((
+                "Unrealistic unit cell volume increase during refinement of %.1f%%.",
+                "Please try refining fewer parameters, either by enforcing symmetry",
+                "constraints (space_group=) and/or disabling experimental geometry",
+                "refinement (detector.fix=all and beam.fix=all). To disable this",
+                "sanity check set disable_unit_cell_volume_sanity_check=True.")) %(
+                100*volume_change)
+              raise Sorry(msg)
 
         self.refined_reflections = refined_reflections
 
