@@ -64,8 +64,8 @@ def quad_with_aabb_area(poly, aabb):
 
   i = 0
   while i < len(poly):
-
-    area, i += area_component(i, poly, aabb)
+    pass
+    # area, i += area_component(i, poly, aabb)
 
   # Return the intersection area
   return 0.5 * area

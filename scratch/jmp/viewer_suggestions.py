@@ -14,19 +14,20 @@ class ImageFrame(wx.Frame):
 
   @image.setter
   def image(self, value):
-    return self._image = value
+    self._image = value
+    return self._image
 
 
 # Example
-frame = ImageFrame(...)
-frame.image = flex.double(flex.grid(width, height))
-frame.xrange = (bbox[0], bbox[1])
-frame.yrange = (bbox[2], bbox[3])
-frame.points = [(xcentre, ycentre)]
-frame.contour = [(xi, yi), ...]
-frame.show_pixel_values = True
-frame.show_points = True
-frame.show_contour = True
+# frame = ImageFrame(...)
+# frame.image = flex.double(flex.grid(width, height))
+# frame.xrange = (bbox[0], bbox[1])
+# frame.yrange = (bbox[2], bbox[3])
+# frame.points = [(xcentre, ycentre)]
+# frame.contour = [(xi, yi), ...]
+# frame.show_pixel_values = True
+# frame.show_points = True
+# frame.show_contour = True
 
 
 class ReflectionFrame(wx.Frame):
@@ -40,13 +41,13 @@ class ReflectionFrame(wx.Frame):
   pass
 
 # Example
-frame = ReflectionFrame(...)
-frame.data = reflection_table[i]
-frame.show_pixel_values = True # Show the pixel values in pixels
-frame.show_centroid = True     # Display the centroid on each frame
-frame.overlay_mask = True      # Show mask contours on data
-frame.display_mode = 'data'    # ('data' | 'mask' | 'background')
-frame.slice_mode = 'xy'        # ('xy' | 'xz' | 'yz')
+# frame = ReflectionFrame(...)
+# frame.data = reflection_table[i]
+# frame.show_pixel_values = True # Show the pixel values in pixels
+# frame.show_centroid = True     # Display the centroid on each frame
+# frame.overlay_mask = True      # Show mask contours on data
+# frame.display_mode = 'data'    # ('data' | 'mask' | 'background')
+# frame.slice_mode = 'xy'        # ('xy' | 'xz' | 'yz')
 
 
 def view_reflection(reflection, **kwargs):
