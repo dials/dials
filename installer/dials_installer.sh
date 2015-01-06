@@ -6,7 +6,7 @@ build/bin/libtbx.python modules/cctbx_project/libtbx/auto_build/create_installer
 	--binary
 
 cd tmp
-tar -cvzf 
+tar -cvzf \
 	dials-installer-dev.tar.gz \
 	dials-installer-dev \
 	--exclude dials-installer-dev/build \
