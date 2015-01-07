@@ -18,14 +18,12 @@ class installer(install_distribution.installer):
   include_gui_packages = True
   base_package_options = ["--dials"]
   installer_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  base_modules = ['docutils']
   modules = [
     # hot
     'annlib',
     'boost',
     'scons',
     'ccp4io',
-    'docutils',
     # base
     'cbflib',
     'cctbx_project',
