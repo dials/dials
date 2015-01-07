@@ -103,6 +103,7 @@ class Script(object):
 
   def StrategyEvaluator(self, experiments, evaluation_function_factory, dmin, dmax):
     # TODO: Don't take experiments, rather take one set of experiment components and a strategy equivalent list
+    # TODO: the sweep range currently comes from expt.scan
 
     def calculate_observations(detector, goniometer, oscillation):
       crystal_R = matrix.sqr(goniometer.get_fixed_rotation())
@@ -112,6 +113,7 @@ class Script(object):
       from dials.algorithms.spot_prediction import ray_intersection
       rays = ScanStaticRayPredictor(s0, rotation_axis, oscillation)(flex.miller_index(possible_hkl), crystal_R * crystal_A)
       # ||s0|| = 1 / beam wavelength [A^-1]
+      # TODO: 2theta is currently fixed within detector object
       detectable_rays = rays.select(ray_intersection(detector, rays))
 
       return detectable_rays['miller_index']
@@ -177,15 +179,27 @@ class Script(object):
       observed_hkls = {}
 
       total_score = 0.0
+      degrees = 0
 
       from itertools import izip, count
+      from dxtbx.model.goniometer import goniometer_factory
       for (run, strategy) in izip(count(1), strategies):
         print
         print "Sweep %d:" % run
         evaluation_function = evaluation_function_factory(possible_hkl, observed_hkls, map_hkl_to_symmhkl, map_symmhkl_to_hkl)
 
+        goniometer = goniometer_factory.make_kappa_goniometer(alpha=50,
+                                                              kappa=strategy['kappa'],
+                                                              phi=strategy['phi'],
+                                                              omega=strategy['omega'],
+                                                              direction="-y",
+                                                              scan_axis=strategy['scan_axis'])
+
+        degrees += strategy['scan']
+
         # repeat sweep: expt.goniometer
-        proposed_hkls = calculate_observations(expt.detector, strategy, oscillation_range)
+        proposed_hkls = calculate_observations(expt.detector, goniometer, oscillation_range)
+        # TODO: use strategy['scan'] instead of oscillation_range
         strategy_results = evaluate_concrete_strategy(proposed_hkls, evaluation_function)
         combined_observations = self.add_seen_multiplicity(observed_hkls, proposed_hkls)
 
@@ -199,7 +213,7 @@ class Script(object):
 
         # keep the repeat sweep and continue
         observed_hkls = combined_observations
-      return total_score
+      return {'completeness': completeness, 'multiplicity': multiplicity, 'score': total_score, 'degrees': degrees}
 
     return run_strategies
 
@@ -263,6 +277,7 @@ class Script(object):
     # Geometric scoring.
     # First observation of a reflection: 0.5^0. Second: 0.5^1. Third: 0.5^2. etc.
     # Plus the same scoring scheme again for the ASU reduced reflection observation
+    # Advantage: Order of observations does not matter for scoring purposes
     #
     # This function returns a very basic evaluation function based on the number of observations per reflection
     # TODO: Evaluation function does not consider resolution shells of reflections
@@ -280,7 +295,6 @@ class Script(object):
       score = 0.0
 #      scores = []
       for hkl in hkls:
-#        score += pow(0.5, _reflection_count[hkl] + _symm_reflection_count[map_hkl_to_symmhkl[hkl]])
         score += pow(0.5, _reflection_count[hkl])
         score += pow(0.5, _symm_reflection_count[map_hkl_to_symmhkl[hkl]])
         _reflection_count[hkl] += 1
@@ -294,6 +308,78 @@ class Script(object):
       return score
     return evaluation_function
 
+  def getFixedStrategylist(self):
+    from dxtbx.model.goniometer import goniometer_factory
+
+    strategylist = []
+
+    strategylist.append(
+        {'name': "Kappa = 65 deg",
+         'strategy': [
+           {'kappa': 65, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 65, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 65, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+         ]
+        }
+    )
+
+    strategylist.append(
+        {'name': "Kappa = 75 deg",
+         'strategy': [
+           {'kappa': 75, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 75, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 75, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+         ]
+        }
+    )
+
+    strategylist.append(
+        {'name': "Kappa = 90 deg",
+         'strategy': [
+           {'kappa': 90, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 90, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 90, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+         ]
+        }
+    )
+
+    strategylist.append(
+        {'name': "Kappa = 60 deg",
+         'strategy': [
+           {'kappa': 60, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 60, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 60, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+         ]
+        }
+    )
+
+    strategylist.append(
+        {'name': "Kappa = 45 deg",
+         'strategy': [
+           {'kappa': 45, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 45, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 45, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+         ]
+        }
+    )
+
+    strategylist.append(
+        {'name': "Naive Phi",
+         'strategy': [
+           {'kappa': 0, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 0, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 0, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
+           {'kappa': 0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+         ]
+        }
+    )
+
+    return strategylist
 
   def run(self):
     """lurrr"""
@@ -326,48 +412,19 @@ class Script(object):
                                        params.prediction.dmin,
                                        params.prediction.dmax)
 
-    print
-    print "Kappa = 65 deg strategy:"
-    from dxtbx.model.goniometer import goniometer_factory
-    strategies = [
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=65, phi=160, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=65, phi= 40, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=65, phi=-80, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=0,  phi=-80, omega=-160, direction="-y", scan_axis="omega")
-    ]
-    evaluator(strategies)
+    strategylist = self.getFixedStrategylist()
+    results = []
 
-    print
-    print "Kappa = 60 deg strategy:"
-    from dxtbx.model.goniometer import goniometer_factory
-    strategies = [
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=60, phi=160, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=60, phi= 40, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=60, phi=-80, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=0,  phi=-80, omega=-160, direction="-y", scan_axis="omega")
-    ]
-    evaluator(strategies)
+    for strategy in strategylist:
+      print
+      print "%s strategy: " % strategy['name']
+      quality = evaluator(strategy['strategy'])
+      quality['name'] = strategy['name']
+      results.append(quality)
 
-    print
-    print "Kappa = 45 deg strategy:"
-    strategies = [
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=45, phi=160, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=45, phi= 40, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=45, phi=-80, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=0,  phi=-80, omega=-160, direction="-y", scan_axis="omega")
-    ]
-    evaluator(strategies)
-
-    print
-    print "Naive Phi strategy:"
-    strategies = [
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=0,  phi=160, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=0,  phi= 40, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=0,  phi=-80, omega= -92, direction="-y", scan_axis="omega"),
-      goniometer_factory.make_kappa_goniometer(alpha=50, kappa=0,  phi=-80, omega=-160, direction="-y", scan_axis="omega")
-    ]
-    evaluator(strategies)
-
+    print "           Strategy    Comp   Mul  Score  Sweep"
+    for r in results:
+      print "%20s: %5.1f  %4.1f  %5d  %4d%s" % (r['name'], r['completeness'], r['multiplicity'], r['score'], r['degrees'], u"\u00B0")
 
 # remove first argument to run in pycharm
 sys.argv.pop(0)
