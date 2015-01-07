@@ -167,8 +167,6 @@ class Script(object):
     # Determine the detectable reflections given some data collection sweep
     s0 = expt.beam.get_s0()
     rotation_axis = expt.goniometer.get_rotation_axis()
-    oscillation_range = expt.scan.get_oscillation_range(deg=False)
-    print "Oscillation: %.3f - %3f" % (oscillation_range[0], oscillation_range[1])
 
     # Obtain the A matrix with all diffractometer angles set to 0.
     crystal_R = matrix.sqr(expt.goniometer.get_fixed_rotation())
@@ -197,9 +195,15 @@ class Script(object):
 
         degrees += strategy['scan']
 
+        from math import radians
+        if strategy['scan_axis'] == 'omega':
+          oscillation_range = (radians(strategy['omega']), radians(strategy['omega'] + strategy['scan']))
+        else:
+          oscillation_range = (radians(strategy['phi']), radians(strategy['phi'] + strategy['scan']))
+
         # repeat sweep: expt.goniometer
         proposed_hkls = calculate_observations(expt.detector, goniometer, oscillation_range)
-        # TODO: use strategy['scan'] instead of oscillation_range
+
         strategy_results = evaluate_concrete_strategy(proposed_hkls, evaluation_function)
         combined_observations = self.add_seen_multiplicity(observed_hkls, proposed_hkls)
 
