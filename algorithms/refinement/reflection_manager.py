@@ -12,6 +12,7 @@ principally ReflectionManager."""
 from __future__ import division
 
 from math import pi
+from logging import info, debug
 
 from scitbx import matrix
 from dials.array_family import flex
@@ -158,6 +159,7 @@ class ReflectionManager(object):
                      verbosity=0):
 
     # set verbosity
+    # FIXME verbosity is deprecated now we use logging
     self._verbosity = verbosity
 
     # keep track of models
@@ -216,7 +218,7 @@ class ReflectionManager(object):
     """Complete initialisation by performing outlier rejection and any
     requested subsetting. This function to be called by a Target object"""
 
-    if self._verbosity > 1: print "Finalising the Reflection Manager"
+    debug("Finalising the Reflection Manager")
 
     # print summary before outlier rejection
     self.print_stats_on_matches()
@@ -226,17 +228,15 @@ class ReflectionManager(object):
 
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
-    if self._verbosity > 1:
-      msg = "Removing reflections not matched to predictions"
-      if rejection_occurred: msg += " or marked as outliers"
-      print msg
+    msg = "Removing reflections not matched to predictions"
+    if rejection_occurred: msg += " or marked as outliers"
+    debug(msg)
 
     self._reflections = self._reflections.select(self._reflections.get_flags(
                       self._reflections.flags.used_in_refinement))
     self._check_too_few()
 
-    if self._verbosity > 1:
-      print len(self._reflections), "reflections remain in the manager"
+    debug("%d reflections remain in the manager", len(self._reflections))
 
     # print summary after outlier rejection
     if rejection_occurred: self.print_stats_on_matches()
@@ -247,8 +247,7 @@ class ReflectionManager(object):
 
     self._check_too_few()
 
-    if self._verbosity > 1:
-      print "Working set size = %d observations" % self.get_sample_size()
+    debug("Working set size = %d observations", self.get_sample_size())
 
     return
 
@@ -434,76 +433,72 @@ class ReflectionManager(object):
 
     l = self.get_matches()
 
-    if self._verbosity > 0:
+    from libtbx.table_utils import simple_table
+    from scitbx.math import five_number_summary
+    x_resid = l['x_resid']
+    y_resid = l['y_resid']
+    phi_resid = l['phi_resid']
+    w_x, w_y, w_phi = l['xyzobs.mm.weights'].parts()
 
-      from libtbx.table_utils import simple_table
-      from scitbx.math import five_number_summary
-      x_resid = l['x_resid']
-      y_resid = l['y_resid']
-      phi_resid = l['phi_resid']
-      w_x, w_y, w_phi = l['xyzobs.mm.weights'].parts()
+    info("\nSummary statistics for observations matched to predictions:")
+    header = ["", "Min", "Q1", "Med", "Q3", "Max"]
+    rows = []
+    row_data = five_number_summary(x_resid)
+    rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(y_resid)
+    rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(phi_resid)
+    rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+    row_data = five_number_summary(w_x)
+    rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(w_y)
+    rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(w_phi)
+    rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+    st = simple_table(rows, header)
+    info(st.format())
+    info("\n")
 
-      print "\nSummary statistics for observations matched to predictions:"
-      header = ["", "Min", "Q1", "Med", "Q3", "Max"]
-      rows = []
-      row_data = five_number_summary(x_resid)
-      rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(y_resid)
-      rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(phi_resid)
-      rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
-      row_data = five_number_summary(w_x)
-      rows.append(["X weights"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(w_y)
-      rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(w_phi)
-      rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
-      st = simple_table(rows, header)
-      print st.format()
-      print
-
-      if len(l) >= 20 and self._verbosity > 2:
-
-        sl = self._sort_obs_by_residual(l)
-        print "Reflections with the worst 20 positional residuals:"
-        print "H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, phi_obs, weight_x_obs, weight_y_obs, " + \
-              "weight_phi_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %d %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-        for i in xrange(20):
-          e = sl[i]
-          x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
-          msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                           e['y_resid'],
-                           e['phi_resid'] * RAD2DEG,
-                           e['panel'],
-                           x_obs,
-                           y_obs,
-                           phi_obs * RAD2DEG,
-                           e['xyzobs.mm.weights'][0],
-                           e['xyzobs.mm.weights'][1],
-                           e['xyzobs.mm.weights'][2] * DEG2RAD**2))
-          print msg
-        print
-        sl = self._sort_obs_by_residual(sl, angular=True)
-        print "\nReflections with the worst 20 angular residuals:"
-        print "H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, phi_obs, weight_x_obs, weight_y_obs, " + \
-              "weight_phi_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %d %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-        for i in xrange(20):
-          e = sl[i]
-          x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
-          msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                                                 e['y_resid'],
-                                                 e['phi_resid'] * RAD2DEG,
-                                                 e['panel'],
-                                                 x_obs,
-                                                 y_obs,
-                                                 phi_obs * RAD2DEG,
-                                                 e['xyzobs.mm.weights'][0],
-                                                 e['xyzobs.mm.weights'][1],
-                                                 e['xyzobs.mm.weights'][2] * DEG2RAD**2))
-          print msg
-        print
+    sl = self._sort_obs_by_residual(l)
+    debug("Reflections with the worst 20 positional residuals:")
+    debug("H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, " + \
+      "phi_obs, weight_x_obs, weight_y_obs, weight_phi_obs")
+    fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %d %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+    for i in xrange(20):
+      e = sl[i]
+      x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
+      msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
+                       e['y_resid'],
+                       e['phi_resid'] * RAD2DEG,
+                       e['panel'],
+                       x_obs,
+                       y_obs,
+                       phi_obs * RAD2DEG,
+                       e['xyzobs.mm.weights'][0],
+                       e['xyzobs.mm.weights'][1],
+                       e['xyzobs.mm.weights'][2] * DEG2RAD**2))
+      debug(msg)
+    debug("\n")
+    sl = self._sort_obs_by_residual(sl, angular=True)
+    debug("\nReflections with the worst 20 angular residuals:")
+    debug("H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, " + \
+      "phi_obs, weight_x_obs, weight_y_obs, weight_phi_obs")
+    fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %d %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+    for i in xrange(20):
+      e = sl[i]
+      x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
+      msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
+                                             e['y_resid'],
+                                             e['phi_resid'] * RAD2DEG,
+                                             e['panel'],
+                                             x_obs,
+                                             y_obs,
+                                             phi_obs * RAD2DEG,
+                                             e['xyzobs.mm.weights'][0],
+                                             e['xyzobs.mm.weights'][1],
+                                             e['xyzobs.mm.weights'][2] * DEG2RAD**2))
+      debug(msg)
+    debug("\n")
 
     return
 
@@ -557,8 +552,7 @@ class ReflectionManager(object):
     nreject = sel.count(True)
     if nreject == 0: return False
 
-    if self._verbosity > 1:
-      print "%d reflections have been rejected as outliers" % nreject
+    info("%d reflections have been rejected as outliers", nreject)
 
     return True
 
@@ -589,49 +583,45 @@ class StillsReflectionManager(ReflectionManager):
 
     l = self.get_matches()
 
-    if self._verbosity > 0:
+    from libtbx.table_utils import simple_table
+    from scitbx.math import five_number_summary
+    x_resid = l['x_resid']
+    y_resid = l['y_resid']
+    delpsi = l['delpsical.rad']
+    w_x, w_y, _ = l['xyzobs.mm.weights'].parts()
+    w_delpsi = l['delpsical.weights']
 
-      from libtbx.table_utils import simple_table
-      from scitbx.math import five_number_summary
-      x_resid = l['x_resid']
-      y_resid = l['y_resid']
-      delpsi = l['delpsical.rad']
-      w_x, w_y, _ = l['xyzobs.mm.weights'].parts()
-      w_delpsi = l['delpsical.weights']
+    info("\nSummary statistics for observations matched to predictions:")
+    header = ["", "Min", "Q1", "Med", "Q3", "Max"]
+    rows = []
+    row_data = five_number_summary(x_resid)
+    rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(y_resid)
+    rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(delpsi)
+    rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+    row_data = five_number_summary(w_x)
+    rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(w_y)
+    rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+    row_data = five_number_summary(w_delpsi)
+    rows.append(["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+    st = simple_table(rows, header)
+    info(st.format())
+    info("\n")
 
-      print "\nSummary statistics for observations matched to predictions:"
-      header = ["", "Min", "Q1", "Med", "Q3", "Max"]
-      rows = []
-      row_data = five_number_summary(x_resid)
-      rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(y_resid)
-      rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(delpsi)
-      rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
-      row_data = five_number_summary(w_x)
-      rows.append(["X weights"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(w_y)
-      rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
-      row_data = five_number_summary(w_delpsi)
-      rows.append(["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
-      st = simple_table(rows, header)
-      print st.format()
-      print
-
-      if len(l) >= 20 and self._verbosity > 2:
-
-        sl = self._sort_obs_by_residual(l)
-        print "Reflections with the worst 20 positional residuals:"
-        print "H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
-        for i in xrange(20):
-          e = sl[i]
-          msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                                                 e['y_resid'],
-                                                 e['xyzobs.mm.weights'][0],
-                                                 e['xyzobs.mm.weights'][1]))
-          print msg
-        print
+    sl = self._sort_obs_by_residual(l)
+    debug("Reflections with the worst 20 positional residuals:")
+    debug("H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs")
+    fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
+    for i in xrange(20):
+      e = sl[i]
+      msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
+                                             e['y_resid'],
+                                             e['xyzobs.mm.weights'][0],
+                                             e['xyzobs.mm.weights'][1]))
+      debug(msg)
+    debug("\n")
 
     return
 
@@ -685,8 +675,7 @@ class StillsReflectionManager(ReflectionManager):
     nreject = sel.count(True)
     if nreject == 0: return False
 
-    if self._verbosity > 1:
-      print "%d reflections have been rejected as outliers" % nreject
+    info("%d reflections have been rejected as outliers" % nreject)
 
     return True
 

@@ -172,7 +172,8 @@ class Script(object):
       import matplotlib.pyplot as plt
       import matplotlib.cm as cm
     except ImportError as e:
-      print "matplotlib modules not available", e
+      msg = "matplotlib modules not available " + str(e)
+      info(msg)
       return None
 
     plt.figure(1)
@@ -224,6 +225,9 @@ class Script(object):
     from libtbx.utils import Sorry
     import cPickle as pickle
 
+    from dials.util import log
+    from logging import info
+
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
@@ -242,20 +246,24 @@ class Script(object):
       raise Sorry("Only one reflections list can be imported at present")
     reflections = reflections[0]
 
+    # Configure the logging
+    log.config(params.refinement.verbosity,
+      info='dials.refine.log', debug='dials.refine.debug.log')
+
     # Get the refiner
-    print 'Configuring refiner'
+    info('Configuring refiner')
     refiner = RefinerFactory.from_parameters_data_experiments(params,
         reflections, experiments)
 
     # Refine the geometry
-    print 'Performing refinement'
+    info('Performing refinement')
 
     # Refine and get the refinement history
     history = refiner.run()
 
     if params.output.centroids_filename:
-      print "Writing table of centroids to '{0}'".format(
-        params.output.centroids_filename)
+      info("Writing table of centroids to '{0}'".format(
+        params.output.centroids_filename))
       self.write_centroids_table(refiner, params.output.centroids_filename)
 
     # Write scan-varying parameters to file, if there were any
@@ -265,20 +273,20 @@ class Script(object):
         text = refiner.get_param_reporter().varying_params_vs_image_number(
             scan.get_array_range())
         if text:
-          print "Writing scan-varying parameter table to '{0}'".format(
-            params.output.parameters_filename)
+          info("Writing scan-varying parameter table to '{0}'".format(
+            params.output.parameters_filename))
           f = open(params.output.parameters_filename,"w")
           f.write(text)
           f.close()
         else:
-          print "No scan-varying parameter table to write"
+          info("No scan-varying parameter table to write")
 
     # get the refined experiments
     experiments = refiner.get_experiments()
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments_filename
-    print 'Saving refined experiments to {0}'.format(output_experiments_filename)
+    info('Saving refined experiments to {0}'.format(output_experiments_filename))
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
@@ -286,8 +294,8 @@ class Script(object):
     # Write out refined reflections, if requested
     if params.output.reflections_filename:
       matches = refiner.get_matches()
-      print 'Saving refined reflections to {0}'.format(
-        params.output.reflections_filename)
+      info('Saving refined reflections to {0}'.format(
+        params.output.reflections_filename))
       matches.as_pickle(params.output.reflections_filename)
 
     if params.output.correlation_plot.filename is not None:
@@ -323,9 +331,10 @@ class Script(object):
               pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
 
       if num_plots == 0:
-        print "Sorry, no parameter correlation plots were produced. Please set " \
+        msg = "Sorry, no parameter correlation plots were produced. Please set " \
               "track_parameter_correlation=True to ensure correlations are " \
               "tracked, and make sure correlation_plot.col_select is valid."
+        info(msg)
 
     # Write out refinement history, if requested
     if params.output.history_filename:

@@ -14,6 +14,8 @@
 what should usually be used to construct a Refiner."""
 
 from __future__ import division
+from logging import info, debug
+
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.array_family import flex # import dependency
 from libtbx.phil import parse
@@ -503,8 +505,8 @@ class RefinerFactory(object):
     # check that the beam vectors are stored: if not, compute them
     refs_wo_s1_sel = (reflections['s1'].norms() < 1.e-6)
     nrefs_wo_s1 = refs_wo_s1_sel.count(True)
-    if nrefs_wo_s1 > 0 and verbosity > 1:
-      print "Setting scattering vectors for", nrefs_wo_s1, "reflections"
+    if nrefs_wo_s1 > 0:
+      debug("Setting scattering vectors for %d reflections", nrefs_wo_s1)
     for i_expt, expt in enumerate(experiments):
       detector = expt.detector
       beam = expt.beam
@@ -555,42 +557,38 @@ class RefinerFactory(object):
     pred_param, param_reporter = \
             cls.config_parameterisation(params, experiments, do_stills)
 
-    if verbosity > 1:
-      print "Prediction equation parameterisation built\n"
-      print "Parameter order : name mapping"
-      for i, e in enumerate(pred_param.get_param_names()):
-        print "Parameter %03d : " % i + e
-      print
+    debug("Prediction equation parameterisation built")
+    debug("Parameter order : name mapping")
+    for i, e in enumerate(pred_param.get_param_names()):
+      debug("Parameter %03d : %s", i, e)
+    debug("\n")
 
-    if verbosity > 1:
-      print "Building reflection manager"
-      print ("Input reflection list size = %d observations"
-             % len(reflections))
+    debug("Building reflection manager")
+    debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
     refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
 
-    if verbosity > 1:
-      print ("Number of observations that pass initial inclusion criteria = %d"
-             % refman.get_accepted_refs_size())
-      sample_size = refman.get_sample_size()
-      if sample_size:
-        print ("Working set size = %d observations" % sample_size)
-      print "Reflection manager built\n"
+    debug("Number of observations that pass initial inclusion criteria = %d",
+          refman.get_accepted_refs_size())
+    sample_size = refman.get_sample_size()
+    if sample_size:
+      debug("Working set size = %d observations", sample_size)
+    debug("Reflection manager built\n")
 
-    if verbosity > 1: print "Building target function"
+    debug("Building target function")
 
     # create target function
     target = cls.config_target(params, experiments, refman, pred_param, do_stills)
 
-    if verbosity > 1: print "Target function built\n"
+    debug("Target function built")
 
-    if verbosity > 1: print "Building refinement engine"
+    debug("Building refinement engine")
 
     # create refinery
     refinery = cls.config_refinery(params, target, pred_param, verbosity)
 
-    if verbosity > 1: print "Refinement engine built\n"
+    debug("Refinement engine built")
 
     # build refiner interface and return
     return Refiner(reflections, experiments, crystal_ids,
@@ -863,7 +861,7 @@ class RefinerFactory(object):
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")
 
-    if verbosity > 1: print "Selected refinement engine type:", options.engine
+    debug("Selected refinement engine type: %s", options.engine)
 
     return refinery(target = target,
             prediction_parameterisation = pred_param,
@@ -900,8 +898,7 @@ class RefinerFactory(object):
       import random
       random.seed(options.random_seed)
       flex.set_random_seed(options.random_seed)
-      if verbosity > 1:
-        print "Random seed set to %d\n" % options.random_seed
+      debug("Random seed set to %d", options.random_seed)
 
     # check whether we deal with stills or scans
     if do_stills:
@@ -1219,7 +1216,8 @@ class Refiner(object):
         try:
           idx.append(int(col))
         except ValueError:
-          print "Invalid selection of columns for correlation plot. No plot will be produced"
+          info("Invalid selection of columns for correlation plot. " + \
+               "No plot will be produced")
           return None
     labels = [all_labels[e] for e in idx]
     num_cols = num_rows = len(labels)
@@ -1240,9 +1238,8 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    print
-    print "Refinement steps"
-    print "----------------"
+    info("\nRefinement steps")
+    info("----------------")
 
     rmsd_multipliers = []
     header = ["Step", "Nref"]
@@ -1263,8 +1260,8 @@ class Refiner(object):
         ["%.5g" % r for r in rmsds])
 
     st = simple_table(rows, header)
-    print st.format()
-    print self._refinery.history.reason_for_termination
+    info(st.format())
+    info(self._refinery.history.reason_for_termination)
 
     return
 
@@ -1280,9 +1277,8 @@ class Refiner(object):
     nref = len(self.get_free_reflections())
     if nref < 10: return # don't do anything if very few refs
 
-    print
-    print "RMSDs for out-of-sample (free) reflections"
-    print "------------------------------------------"
+    info("\nRMSDs for out-of-sample (free) reflections")
+    info("------------------------------------------")
 
     rmsd_multipliers = []
     header = ["Step", "Nref"]
@@ -1303,7 +1299,7 @@ class Refiner(object):
       rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
 
     st = simple_table(rows, header)
-    print st.format()
+    info(st.format())
 
     return
 
@@ -1314,9 +1310,8 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    print
-    print "RMSDs by experiment"
-    print "-------------------"
+    info("\nRMSDs by experiment")
+    info("-------------------")
 
     header = ["Exp", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1336,7 +1331,8 @@ class Refiner(object):
       it = iter(px_sizes)
       px_size = next(it)
       if not all(tst == px_size for tst in it):
-        print "The detector in experiment", iexp, "does not have the same pixel sizes on each panel. Skipping..."
+        info("The detector in experiment %d does not have the same pixel " + \
+             "sizes on each panel. Skipping...", iexp)
         continue
       px_per_mm = [1./e for e in px_size]
 
@@ -1369,10 +1365,10 @@ class Refiner(object):
         rows = rows[0:max_rows]
         truncated = True
       st = simple_table(rows, header)
-      print st.format()
+      info(st.format())
       if truncated:
-        print "Table truncated to show the first", max_rows, "experiments only"
-        print "Re-run with verbosity >= 2 to show all experiments"
+        info("Table truncated to show the first %d experiments only", max_rows)
+        info("Re-run with verbosity >= 2 to show all experiments")
 
     return
 
@@ -1383,9 +1379,8 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    print
-    print "RMSDs by panel"
-    print "--------------"
+    info("\nRMSDs by panel")
+    info("--------------")
 
     header = ["Panel", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1429,7 +1424,7 @@ class Refiner(object):
 
     if len(rows) > 0:
       st = simple_table(rows, header)
-      print st.format()
+      info(st.format())
 
     return
 
@@ -1440,29 +1435,27 @@ class Refiner(object):
     # Do refinement and return history #
     ####################################
 
-    if self._verbosity > 2:
-      print ""
-      print "Experimental models before refinement"
-      print "-------------------------------------"
-      print self._beam
-      print self._detector
-      if self._goniometer: print self._goniometer
-      if self._scan: print self._scan
-      for i, x in zip(self._crystal_ids, self._crystals): print i, x
+    debug("\nExperimental models before refinement")
+    debug("-------------------------------------")
+    debug(str(self._beam))
+    debug(str(self._detector))
+    if self._goniometer: debug(str(self._goniometer))
+    if self._scan: debug(str(self._scan))
+    for i, x in zip(self._crystal_ids, self._crystals):
+      msg = "%d " % i
+      msg += str(x)
+      debug(msg)
 
-    if self._verbosity > 0:
-      print ""
-      print "Running refinement"
-      print "------------------"
+    info("\nRunning refinement")
+    info("------------------")
     self._refinery.run()
 
-    if self._verbosity > 0:
-      print
-      self.print_step_table()
-      self.print_out_of_sample_rmsd_table()
-      self.print_exp_rmsd_table()
+    info("\n")
+    self.print_step_table()
+    self.print_out_of_sample_rmsd_table()
+    self.print_exp_rmsd_table()
 
-    if self._verbosity > 1 and len(self._detector) > 1:
+    if len(self._detector) > 1:
       self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
@@ -1491,18 +1484,19 @@ class Refiner(object):
         self._pred_param.set_model_state_uncertainties(
           u_cov_list, b_cov_list, iexp)
 
-    if self._verbosity > 2:
-      print
-      print "Experimental models after refinement"
-      print "------------------------------------"
-      print self._beam
-      print self._detector
-      if self._goniometer: print self._goniometer
-      if self._scan: print self._scan
-      for i, x in zip(self._crystal_ids, self._crystals): print i, x
+    debug("\nExperimental models after refinement")
+    debug("------------------------------------")
+    debug(str(self._beam))
+    debug(str(self._detector))
+    if self._goniometer: debug(str(self._goniometer))
+    if self._scan: debug(str(self._scan))
+    for i, x in zip(self._crystal_ids, self._crystals):
+      msg = "%d " % i
+      msg += str(x)
+      debug(msg)
 
-      # Report on the refined parameters
-      print self._param_report
+    # Report on the refined parameters
+    debug(str(self._param_report))
 
     # Return the refinement history
     return self._refinery.history

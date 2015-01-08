@@ -12,6 +12,8 @@ LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
 from __future__ import division
+from logging import info, debug
+
 from scitbx import lbfgs
 from scitbx.array_family import flex
 import libtbx
@@ -310,9 +312,7 @@ class AdaptLbfgs(Refinery):
     """
 
     self.update_journal()
-    if self._verbosity > 0:
-      print self.history.get_nrows() - 1,
-      sys.stdout.flush()
+    debug("Step %d", self.history.get_nrows() - 1)
 
     if self.test_for_termination():
       self.history.reason_for_termination = TARGET_ACHIEVED
@@ -376,9 +376,9 @@ class LBFGScurvs(AdaptLbfgs):
 
     diags = 1. / curvs
 
-    if self._verbosity > 1:
+    if self._verbosity > 2:
       msg = "  curv: " +  "%.5f " * len(tuple(curvs))
-      print msg % tuple(curvs)
+      debug(msg, *curvs)
 
     return self._f, flex.double(self._g), diags
 
@@ -490,12 +490,12 @@ class AdaptLstbx(
 
   def _print_normal_matrix(self):
     """Print the full normal matrix at the current step. For debugging only"""
-    print "The normal matrix for the current step is:"
-    print self.normal_matrix_packed_u().\
-        matrix_packed_u_as_symmetric().\
-        as_scitbx_matrix().matlab_form(format=None,
-        one_row_per_line=True)
-    print
+    debug("The normal matrix for the current step is:")
+    debug(self.normal_matrix_packed_u().\
+          matrix_packed_u_as_symmetric().\
+          as_scitbx_matrix().matlab_form(format=None,
+          one_row_per_line=True))
+    debug("\n")
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   """Refinery implementation, using lstbx Gauss Newton iterations"""
@@ -555,9 +555,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0:
-        print self.history.get_nrows() - 1,
-        sys.stdout.flush()
+      debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)
@@ -665,9 +663,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0:
-        print self.history.get_nrows() - 1,
-        sys.stdout.flush()
+      debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)
