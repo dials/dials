@@ -21,13 +21,13 @@ def work(filename, cl=[]):
   imageset = datablock.extract_imagesets()[0]
   stats = per_image_analysis.stats_single_image(imageset, reflections)
   return stats
-  return stats.n_spots_total, stats.n_spots_no_ice, #stats.n_spots_4A, stats.total_intensity, stats.estimated_d_min
+  return stats.n_spots_total, stats.n_spots_no_ice
 
 class handler(server_base.BaseHTTPRequestHandler):
   def do_GET(s):
-    """Respond to a GET request."""
+    '''Respond to a GET request.'''
     s.send_response(200)
-    s.send_header("Content-type", "text/xml")
+    s.send_header('Content-type', 'text/xml')
     s.end_headers()
     if s.path == '/Ctrl-C':
       global stop
@@ -39,16 +39,16 @@ class handler(server_base.BaseHTTPRequestHandler):
     try:
       stats = work(filename, params)
       response = [
-        "<image>%s</image>" %filename,
-        "<spot_count>%s</spot_count>" %stats.n_spots_total,
-        "<spot_count_no_ice>%s</spot_count_no_ice>" %stats.n_spots_no_ice,
-        "<d_min>%.2f</d_min>" %stats.estimated_d_min,
-        "<total_intensity>%.0f</total_intensity>" %stats.total_intensity,
+        '<image>%s</image>' % filename,
+        '<spot_count>%s</spot_count>' % stats.n_spots_total,
+        '<spot_count_no_ice>%s</spot_count_no_ice>' % stats.n_spots_no_ice,
+        '<d_min>%.2f</d_min>' % stats.estimated_d_min,
+        '<total_intensity>%.0f</total_intensity>' % stats.total_intensity,
       ]
-      s.wfile.write("<response>\n%s\n</response>" %("\n".join(response)))
+      s.wfile.write('<response>\n%s\n</response>' % ('\n'.join(response)))
 
     except Exception, e:
-      s.wfile.write("<response>error</response>")
+      s.wfile.write('<response>error: %s</response>' % str(e))
     return
 
 def serve(httpd):
@@ -61,12 +61,12 @@ def serve(httpd):
 
 
 import libtbx.phil
-phil_scope = libtbx.phil.parse("""\
+phil_scope = libtbx.phil.parse('''\
 nproc = Auto
   .type = int(value_min=2)
 port = 1701
   .type = int(value_min=1)
-""")
+''')
 
 
 def main(nproc, port):
@@ -83,7 +83,7 @@ if __name__ == '__main__':
   import sys
   import libtbx.load_env
 
-  usage = "%s [options]" %libtbx.env.dispatcher_name
+  usage = '%s [options]' % libtbx.env.dispatcher_name
 
   from dials.util.options import OptionParser
   parser = OptionParser(usage=usage, phil=phil_scope)
