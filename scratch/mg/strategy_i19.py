@@ -318,56 +318,88 @@ class Script(object):
     strategylist = []
 
     strategylist.append(
-        {'name': "Kappa = 65 deg",
+        {'name': "20140302-runlist-sphere",
          'strategy': [
-           {'kappa': 65, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 65, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 65, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+           {'kappa': 60, 'phi': 120, 'omega': -99, 'scan_axis': 'omega', 'scan': 134, '2theta': 25},
+           {'kappa': 60, 'phi':   0, 'omega': -99, 'scan_axis': 'omega', 'scan': 134, '2theta': 25},
+           {'kappa': 60, 'phi':-120, 'omega': -99, 'scan_axis': 'omega', 'scan': 134, '2theta': 25},
+           {'kappa': 60, 'phi':-180, 'omega':-149, 'scan_axis': 'omega', 'scan': 134, '2theta':-25},
+           {'kappa': 60, 'phi': -60, 'omega':-149, 'scan_axis': 'omega', 'scan': 133, '2theta':-25},
+           {'kappa': 60, 'phi':  60, 'omega':-149, 'scan_axis': 'omega', 'scan': 133, '2theta':-25},
+           {'kappa':  0, 'phi':  60, 'omega':-135, 'scan_axis': 'omega', 'scan': 180, '2theta': 25},
+           {'kappa':  0, 'phi': -60, 'omega':-135, 'scan_axis': 'omega', 'scan': 180, '2theta': 25},
+           {'kappa':  0, 'phi': -60, 'omega':  45, 'scan_axis': 'phi'  , 'scan': 180, '2theta': 25}
          ]
         }
     )
 
     strategylist.append(
-        {'name': "Kappa = 75 deg",
+        {'name': "cpRunlistAugust2013",
          'strategy': [
-           {'kappa': 75, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 75, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 75, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+           {'kappa':-141, 'phi':  64, 'omega': -61, 'scan_axis': 'omega', 'scan': 136, '2theta':119},
+           {'kappa':-107, 'phi': 149, 'omega': -61, 'scan_axis': 'omega', 'scan': 136, '2theta':119},
+           {'kappa':-105, 'phi':-101, 'omega': -61, 'scan_axis': 'omega', 'scan': 114, '2theta':119},
+           {'kappa': 109, 'phi': 117, 'omega':   1, 'scan_axis': 'omega', 'scan': 128, '2theta':119},
+           {'kappa': 128, 'phi':-176, 'omega':  72, 'scan_axis': 'omega', 'scan':  60, '2theta':119},
+           {'kappa': 144, 'phi':  20, 'omega':  24, 'scan_axis': 'omega', 'scan': 105, '2theta':119},
+           {'kappa': 153, 'phi':-120, 'omega': -11, 'scan_axis': 'omega', 'scan': 140, '2theta':119}
+         ]
+        }
+    )
+
+    return strategylist
+
+    strategylist.append(
+        {'name': "default sphere, K=65",
+         'strategy': [
+           {'kappa': 65, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 65, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 65, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
          ]
         }
     )
 
     strategylist.append(
-        {'name': "Kappa = 90 deg",
+        {'name': "default sphere, K=75",
          'strategy': [
-           {'kappa': 90, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 90, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 90, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+           {'kappa': 75, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 75, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 75, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
          ]
         }
     )
 
     strategylist.append(
-        {'name': "Kappa = 60 deg",
+        {'name': "default sphere, K=90",
          'strategy': [
-           {'kappa': 60, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 60, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 60, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+           {'kappa': 90, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 90, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 90, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
          ]
         }
     )
 
     strategylist.append(
-        {'name': "Kappa = 45 deg",
+        {'name': "default sphere, K=60",
          'strategy': [
-           {'kappa': 45, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 45, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 45, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+           {'kappa': 60, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 60, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 60, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
+         ]
+        }
+    )
+
+    strategylist.append(
+        {'name': "default sphere, K=45",
+         'strategy': [
+           {'kappa': 45, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 45, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 45, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
          ]
         }
     )
@@ -375,10 +407,21 @@ class Script(object):
     strategylist.append(
         {'name': "Naive Phi",
          'strategy': [
-           {'kappa': 0, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 0, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 0, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132},
-           {'kappa': 0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180}
+           {'kappa': 0, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 0, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 0, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
+         ]
+        }
+    )
+
+    strategylist.append(
+        {'name': "140505-gascell",
+         'strategy': [
+           {'kappa': 0, 'phi': 160, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 0, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 0, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+           {'kappa': 0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
          ]
         }
     )
@@ -426,9 +469,9 @@ class Script(object):
       quality['name'] = strategy['name']
       results.append(quality)
 
-    print "           Strategy    Comp   Mul  Score  Sweep"
-    for r in results:
-      print "%20s: %5.1f  %4.1f  %5d  %4d%s" % (r['name'], r['completeness'], r['multiplicity'], r['score'], r['degrees'], u"\u00B0")
+    print "%30s   Comp   Mul  Score  Sweep  Sc/deg" % "Strategy"
+    for r in sorted(results, key=(lambda x:x['score']), reverse=True):
+      print "%30s: %5.1f  %4.1f  %5d  %4d%s  %5.1f" % (r['name'], r['completeness'], r['multiplicity'], r['score'], r['degrees'], u"\u00B0", r['score'] / r['degrees'])
 
 # remove first argument to run in pycharm
 sys.argv.pop(0)
