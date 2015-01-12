@@ -83,8 +83,6 @@ class show_3d(object):
 
 class show_reflections(show_3d):
   def __init__(self, table):
-    print "inside show_reflections(show_3d)"
-
     app = show_tabl_wx_app(redirect=False)
     app.in_tabl(table)
     app.MainLoop()
@@ -106,7 +104,7 @@ class show_3d_wx_app(wx.App):
 class show_tabl_wx_app(wx.App):
   def OnInit(self):
 
-    self.frame = flex_3d_frame(None, 'DIALS reflections viewer')
+    self.frame = flex_3d_frame(None, 'DIALS reflections viewer _')
     self.upper_panel = flex_arr_img_panel(self.frame)
     self.data_grid = MyGrid(self.frame)
     self.frame.frame_ini_img(self.upper_panel, self.data_grid)
@@ -114,25 +112,10 @@ class show_tabl_wx_app(wx.App):
     return True
 
   def in_tabl(self, table):
-    print "in in_tabl(show_tabl_wx_app)"
-
-    tst_old = '''
-
-    lst_nm = range(1, 20)
-    flex_dat_frst_lst = []
-    flex_dat_seg_lst = []
-
-    for nm in lst_nm:
-      flex_dat_frst_lst.append(table[nm]['shoebox'].data)
-      flex_dat_seg_lst.append(table[nm]['shoebox'].mask)
-    '''
-
-    #self.upper_panel.ini_n_intro(flex_dat_frst_lst, flex_dat_seg_lst)
-    #self.upper_panel.ini_n_intro(table[0]['shoebox'].data, table[0]['shoebox'].mask)
 
     self.upper_panel.ini_n_intro(table)
-
     self.data_grid.ini_n_intro(table)
+
     self.SetTopWindow(self.frame)
     self.frame.Show()
 

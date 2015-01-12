@@ -100,6 +100,8 @@ class MyGrid(gridlib.Grid):
 
 
     self.data = tuple(zip(*self.data))
+    self.EnableEditing(True)
+    self.EnableDragGridSize(True)
 
     self.set_my_table(self.data, self.last_col_num)
 
@@ -142,18 +144,15 @@ class MyGrid(gridlib.Grid):
     rowLabels = tuple(range(len(tupldata)))
 
     tableBase = TupTable(tupldata, rowLabels, colLabels)
+
+    #self.AutoSizeColumns(False)
     self.SetTable(tableBase)
-
-    self.EnableEditing(True)
-    self.EnableDragGridSize(True)
-
-    self.AutoSizeColumns(True)
     self.Refresh()
+    #self.AutoSizeColumn(1)
+    for i in range( len(self.lst_keys) ):
+      self.AutoSizeColLabelSize(i)
 
-    #self.EnableEditing(False)
-    #self.EnableDragGridSize(False)
-
-
+    #self.AutoSizeColumns(True)
 
   def OnCellLeftClick(self, evt):
     self.repaint_img(evt.GetRow())
