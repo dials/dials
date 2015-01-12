@@ -31,9 +31,9 @@ directly to integrating the reflections.
 
 Examples::
 
-  dials.integrate experiments.json reference=indexed.pickle
+  dials.integrate experiments.json input.reflections=indexed.pickle
 
-  dials.integrate experiments.json reference=indexed.pickle integrated=integrated.pickle
+  dials.integrate experiments.json input.reflections=indexed.pickle output.reflections=integrated.pickle
 
   dials.integrate experiments.json profile.phil
 
