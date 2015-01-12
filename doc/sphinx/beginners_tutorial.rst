@@ -79,7 +79,7 @@ program. The most useful options are:
 
   unit_cell=a,b,c,al,be,ga
   space_group=P4 (say)
-  method=fft3d (say)
+  indexing.method=fft3d (say)
 
 The indexing works as
 
