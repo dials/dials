@@ -980,10 +980,6 @@ class RefinerFactory(object):
       raise RuntimeError("Target function rmsd_cutoff option" +
           options.rmsd_cutoff + " not recognised")
 
-    # all experiments have the same (or no) goniometer
-    goniometer = experiments[0].goniometer
-    for e in experiments: assert e.goniometer is goniometer
-
     # build managed reflection predictors
     from dials.algorithms.refinement.prediction import ExperimentsPredictor
     ref_predictor = ExperimentsPredictor(experiments, do_stills)
