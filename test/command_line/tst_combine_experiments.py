@@ -136,6 +136,8 @@ def test1():
   assert len(exp.scans()) == 1
   assert len(exp.detectors()) == 1
   assert len(exp.goniometers()) == 1
+  for e in exp:
+    assert e.imageset is not None
 
   # test the reflections
   assert len(ref) == 11689
@@ -160,6 +162,7 @@ def test1():
     assert exp_single[0].detector == exp[i].detector
     assert exp_single[0].scan == exp[i].scan
     assert exp_single[0].goniometer == exp[i].goniometer
+    assert exp_single[0].imageset == exp[i].imageset
     assert len(ref_single) == len(ref.select(ref['id'] == i))
     assert ref_single['id'].all_eq(0)
 

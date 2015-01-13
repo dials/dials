@@ -46,7 +46,8 @@ class CombineWithReference(object):
                       detector=detector,
                       scan=scan,
                       goniometer=goniometer,
-                      crystal=crystal)
+                      crystal=crystal,
+                      imageset=experiment.imageset)
 
 class Script(object):
 
