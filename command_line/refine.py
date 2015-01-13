@@ -34,21 +34,21 @@ from libtbx.phil import parse
 phil_scope = parse('''
 
   output {
-    experiments_filename = refined_experiments.json
+    experiments = refined_experiments.json
       .type = str
       .help = "The filename for refined experimental models"
 
-    reflections_filename = None
+    reflections = None
       .type = str
       .help = "The filename for output of refined reflections"
 
-    centroids_filename = None
+    centroids = None
       .type = str
       .help = "The filename for the table of centroids at the end of"
               "refinement"
       .expert_level = 1
 
-    parameters_filename = None
+    parameter_table = None
       .type = str
       .help = "The filename for the table of scan varying parameter values"
       .expert_level = 1
@@ -84,7 +84,7 @@ phil_scope = parse('''
                 "the first step is numbered 0."
     }
 
-    history_filename = None
+    history = None
       .type = str
       .help = "The filename for output of the refinement history pickle"
       .expert_level = 1
@@ -261,21 +261,21 @@ class Script(object):
     # Refine and get the refinement history
     history = refiner.run()
 
-    if params.output.centroids_filename:
+    if params.output.centroids:
       info("Writing table of centroids to '{0}'".format(
-        params.output.centroids_filename))
-      self.write_centroids_table(refiner, params.output.centroids_filename)
+        params.output.centroids))
+      self.write_centroids_table(refiner, params.output.centroids)
 
     # Write scan-varying parameters to file, if there were any
-    if params.output.parameters_filename:
+    if params.output.parameter_table:
       scan = refiner.get_scan()
       if scan:
         text = refiner.get_param_reporter().varying_params_vs_image_number(
             scan.get_array_range())
         if text:
           info("Writing scan-varying parameter table to '{0}'".format(
-            params.output.parameters_filename))
-          f = open(params.output.parameters_filename,"w")
+            params.output.parameter_table))
+          f = open(params.output.parameter_table,"w")
           f.write(text)
           f.close()
         else:
@@ -285,18 +285,18 @@ class Script(object):
     experiments = refiner.get_experiments()
 
     # Save the refined experiments to file
-    output_experiments_filename = params.output.experiments_filename
+    output_experiments_filename = params.output.experiments
     info('Saving refined experiments to {0}'.format(output_experiments_filename))
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 
     # Write out refined reflections, if requested
-    if params.output.reflections_filename:
+    if params.output.reflections:
       matches = refiner.get_matches()
       info('Saving refined reflections to {0}'.format(
-        params.output.reflections_filename))
-      matches.as_pickle(params.output.reflections_filename)
+        params.output.reflections))
+      matches.as_pickle(params.output.reflections)
 
     if params.output.correlation_plot.filename is not None:
       from os.path import splitext
@@ -337,8 +337,8 @@ class Script(object):
         info(msg)
 
     # Write out refinement history, if requested
-    if params.output.history_filename:
-      with open(params.output.history_filename, 'wb') as handle:
+    if params.output.history:
+      with open(params.output.history, 'wb') as handle:
         pickle.dump(history, handle)
 
     return
