@@ -90,11 +90,15 @@ class MyGrid(gridlib.Grid):
 
     for key in table_in.keys():
       if(key != "shoebox"):
-        self.lst_keys.append(key)
-        self.data.append(map(str, table_in[key]))
+        col_label = str(key)
+        col_label = "        " + col_label + "           "
+        col_content = map(str, table_in[key])
+
+        self.lst_keys.append(col_label)
+        self.data.append(col_content)
 
     self.data.append(range(len(table_in)))
-    self.lst_keys.append("lst pos")
+    self.lst_keys.append("123456789         123456789         ")
 
     self.last_col_num = len(self.lst_keys) - 1
 
