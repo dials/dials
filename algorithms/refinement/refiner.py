@@ -1446,7 +1446,6 @@ class Refiner(object):
     info("------------------")
     self._refinery.run()
 
-    info("\n")
     self.print_step_table()
     self.print_out_of_sample_rmsd_table()
     self.print_exp_rmsd_table()
