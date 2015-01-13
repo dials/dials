@@ -49,6 +49,16 @@ space_group = None
   .type = space_group
   .help = "The space group to be applied AFTER applying the change of basis "
            "operator."
+
+output {
+  experiments_filename = reindexed_experiments.json
+    .type = str
+    .help = "The filename for reindexed experimental models"
+
+  reflections_filename = reindexed_reflections.pickle
+    .type = str
+    .help = "The filename for reindexed reflections"
+}
 """, process_includes=True)
 
 
@@ -96,7 +106,7 @@ def run(args):
     print cryst_reindexed
     print
 
-    dump.experiment_list(experiments, 'experiments_reindexed.json')
+    dump.experiment_list(experiments, params.output.experiments_filename)
 
   if len(reflections):
     assert(len(reflections) == 1)
@@ -106,7 +116,7 @@ def run(args):
     miller_indices_reindexed = change_of_basis_op.apply(miller_indices)
     reflections['miller_index'] = miller_indices_reindexed
 
-    easy_pickle.dump('reflections_reindexed.pickle', reflections)
+    easy_pickle.dump(params.output.reflections_filename, reflections)
 
 
 if __name__ == '__main__':

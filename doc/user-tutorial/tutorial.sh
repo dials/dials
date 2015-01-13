@@ -61,7 +61,7 @@ dials.reindex indexed.pickle change_of_basis_op=a,b,c
 # use an expert option "bin_size_fraction=0.0" to ensure the refinement runs
 # to RMSD convergence rather than terminating early with a good-enough RMSD.
 
-dials.refine bravais_setting_9.json reflections_reindexed.pickle \
+dials.refine bravais_setting_9.json reindexed_reflections.pickle \
   refinement.parameterisation.crystal.scan_varying=true \
   refinement.reflections.use_all_reflections=true \
   refinement.target.bin_size_fraction=0.0
@@ -73,7 +73,7 @@ dials.refine bravais_setting_9.json reflections_reindexed.pickle \
 
 dials.integrate outlier.algorithm=null intensity.algorithm=fitrs \
   input.experiments=refined_experiments.json \
-  input.reflections=reflections_reindexed.pickle \
+  input.reflections=reindexed_reflections.pickle \
   nproc=$nproc
 
 # finally export the integrated measurements in an MTZ file - this should be

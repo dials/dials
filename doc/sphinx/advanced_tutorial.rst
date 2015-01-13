@@ -537,7 +537,7 @@ is the identity operator (:samp:`a,b,c`) this step is not needed::
 
   dials.reindex indexed.pickle change_of_basis_op=a,b,c
 
-This outputs the file :samp:`reflections_reindexed.pickle` which should be
+This outputs the file :samp:`reindexed_reflections.pickle` which should be
 used as input to downstream programs in place of :samp:`indexed.pickle`.
 
 
@@ -561,7 +561,7 @@ use this command::
 
 Now, our refinement job is specified as::
 
-  dials.refine bravais_setting_9.json reflections_reindexed.pickle \
+  dials.refine bravais_setting_9.json reindexed_reflections.pickle \
   refinement.parameterisation.crystal.scan_varying=true \
   refinement.reflections.use_all_reflections=true \
   refinement.target.bin_size_fraction=0.0
