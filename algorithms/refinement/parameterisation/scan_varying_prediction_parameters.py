@@ -371,7 +371,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
-      for exp_id in xlop.get_experiment_ids():
+      for exp_id in xlucp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
 
       # Get required data from those reflections
@@ -527,7 +527,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     return
 
 class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParameterisation):
-  """Overloads compose to calculate UB model per frame rather than per
+  """Overloads compose to calculate UB model per block rather than per
   reflection"""
 
   def compose(self, reflections):
@@ -558,17 +558,12 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
       isel = sel.iselection()
 
       blocks = reflections['block'].select(isel)
-      # get their integer frame numbers
-      #frames = reflections['xyzobs.px.value'].parts()[2]
-      #obs_image_numbers = flex.floor((frames).select(isel)).iround()
 
       # identify which crystal parameterisations to use for this experiment
       xl_op = self._get_xl_orientation_parameterisation(iexp)
       xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
 
-      # get state and derivatives for each image
-      #for frame in xrange(flex.min(obs_image_numbers),
-      #                    flex.max(obs_image_numbers) + 1):
+      # get state and derivatives for each block
       for block in xrange(flex.min(blocks),
                           flex.max(blocks) + 1):
 
