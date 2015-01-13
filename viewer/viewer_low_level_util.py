@@ -91,14 +91,22 @@ class MyGrid(gridlib.Grid):
     for key in table_in.keys():
       if(key != "shoebox"):
         col_label = str(key)
-        col_label = "        " + col_label + "           "
         col_content = map(str, table_in[key])
+
+        str_len = bigger_size(col_label, col_content)
+
+        if(str_len > len(col_label)):
+          lng_dif = int(float(str_len - len(col_label)) * 1.6)
+          add_str = ' ' * lng_dif
+          col_label = add_str + col_label + add_str
+        else:
+          col_label = "   " + col_label + "   "
 
         self.lst_keys.append(col_label)
         self.data.append(col_content)
 
     self.data.append(range(len(table_in)))
-    self.lst_keys.append("123456789         123456789         ")
+    self.lst_keys.append("lst pos")
 
     self.last_col_num = len(self.lst_keys) - 1
 
@@ -398,3 +406,28 @@ class buttons_panel(wx.Panel):
     else:
       self.parent_panel.to_hide_mask()
 
+
+
+def bigger_size(str_label, lst_col):
+  lng_label_ini = len(str_label)
+  lng_lst_col = len(lst_col)
+  lng_final = lng_label_ini
+
+  if( lng_lst_col < 30 ):
+    pos_lst = range(lng_lst_col)
+
+  else:
+    pos_lst = range(15)
+    pos_lst += range(lng_lst_col - 15, lng_lst_col )
+
+  lng_cel_zero = 0
+  for pos in pos_lst:
+    lng_cel_pos = len(str(lst_col[pos]))
+    if( lng_cel_pos > lng_cel_zero ):
+      lng_cel_zero = lng_cel_pos
+
+    if(lng_cel_zero > lng_label_ini):
+      lng_final = lng_cel_zero
+
+
+  return lng_final
