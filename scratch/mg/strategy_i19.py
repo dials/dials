@@ -103,7 +103,6 @@ class Script(object):
 
   def StrategyEvaluator(self, experiments, evaluation_function_factory, dmin, dmax):
     # TODO: Don't take experiments, rather take one set of experiment components and a strategy equivalent list
-    # TODO: the sweep range currently comes from expt.scan
 
     def calculate_observations(detector, goniometer, oscillation):
       crystal_R = matrix.sqr(goniometer.get_fixed_rotation())
@@ -115,6 +114,8 @@ class Script(object):
       # ||s0|| = 1 / beam wavelength [A^-1]
       # TODO: 2theta is currently fixed within detector object
       detectable_rays = rays.select(ray_intersection(detector, rays))
+      # TODO: To test 2theta rotation code use detector.py detector factory
+      # TODO: and create two different two_theta detectors and try to rotate one onto the other
 
       return detectable_rays['miller_index']
 
@@ -230,34 +231,10 @@ class Script(object):
     # This function returns a very basic evaluation function based on the number of observations per reflection
     # TODO: Evaluation function does not consider resolution shells of reflections
 
-    #if len(seen_hkl_multiplicity) > 0:
-    #  max_multiplicity = max(seen_hkl_multiplicity.values())
-    #else:
-    #  max_multiplicity = 0
-    #
-    ##reflection_fitness = {hkl : 1 + max_multiplicity - seen_hkl_multiplicity[hkl] for hkl in seen_hkl_multiplicity.keys()}
-    ##for hkl in set(possible_hkl) - set(seen_hkl_multiplicity.keys()):
-    ##  reflection_fitness[hkl] = 1 + max_multiplicity
-    #
-    # Alternative, equivalent definition:
-    #reflection_fitness = {hkl : 1 - (seen_hkl_multiplicity[hkl] / (max_multiplicity + 1)) for hkl in seen_hkl_multiplicity.keys()}
-    #for hkl in set(possible_hkl) - set(seen_hkl_multiplicity.keys()):
-    #  reflection_fitness[hkl] = 1
-
-    reflection_count = {hkl : seen_hkl_multiplicity[hkl] if seen_hkl_multiplicity.has_key(hkl) else 0 for hkl in possible_hkl}
+    reflection_count = {hkl: seen_hkl_multiplicity[hkl] if hkl in seen_hkl_multiplicity else 0 for hkl in possible_hkl}
     symm_reflection_count = {}
     for symm_hkl, symm_hkl_group in map_symmhkl_to_hkl.iteritems():
       symm_reflection_count[symm_hkl] = sum([reflection_count[hkl] for hkl in symm_hkl_group])
-
-#    unique_reflection_fitness = {}
-#    for hkl in map_symmhkl_to_hkl.keys():
-#      hkl_group = map_symmhkl_to_hkl[hkl]
-#      unique_reflection_fitness[hkl] = sum([reflection_fitness[symm_related_hkl] for symm_related_hkl in hkl_group]) \
-#                                       / float(len(hkl_group))
-#
-#    def evaluation_function(hkls):
-#      return sum([unique_reflection_fitness[map_hkl_to_symmhkl[hkl]] for hkl in hkls]) \
-#           + sum([reflection_fitness[hkl] for hkl in hkls])
 
     def evaluation_function(hkls):
       _reflection_count = reflection_count.copy()
@@ -270,11 +247,7 @@ class Script(object):
         _symm_reflection_count[map_hkl_to_symmhkl[hkl]] += 1
         score += 1.0 / _symm_reflection_count[map_hkl_to_symmhkl[hkl]]
       return score
-#      return sum([unique_reflection_fitness[map_hkl_to_symmhkl[hkl]] for hkl in hkls]) \
-#           + sum([reflection_fitness[hkl] for hkl in hkls])
-
     return evaluation_function
-
 
 
   def SimpleGeometricEvaluationFunctionFactory(self, possible_hkl, seen_hkl_multiplicity, map_hkl_to_symmhkl, map_symmhkl_to_hkl):
@@ -286,7 +259,7 @@ class Script(object):
     # This function returns a very basic evaluation function based on the number of observations per reflection
     # TODO: Evaluation function does not consider resolution shells of reflections
 
-    reflection_count = {hkl : seen_hkl_multiplicity[hkl] if seen_hkl_multiplicity.has_key(hkl) else 0 for hkl in possible_hkl}
+    reflection_count = {hkl: seen_hkl_multiplicity[hkl] if hkl in seen_hkl_multiplicity else 0 for hkl in possible_hkl}
     symm_reflection_count = {}
     for symm_hkl, symm_hkl_group in map_symmhkl_to_hkl.iteritems():
       symm_reflection_count[symm_hkl] = sum([reflection_count[hkl] for hkl in symm_hkl_group])
@@ -313,8 +286,6 @@ class Script(object):
     return evaluation_function
 
   def getFixedStrategylist(self):
-    from dxtbx.model.goniometer import goniometer_factory
-
     strategylist = []
 
     strategylist.append(
@@ -470,14 +441,85 @@ class Script(object):
       results.append(quality)
 
     print "%30s   Comp   Mul  Score  Sweep  Sc/deg" % "Strategy"
-    for r in sorted(results, key=(lambda x:x['score']), reverse=True):
-      print "%30s: %5.1f  %4.1f  %5d  %4d%s  %5.1f" % (r['name'], r['completeness'], r['multiplicity'], r['score'], r['degrees'], u"\u00B0", r['score'] / r['degrees'])
+    for r in sorted(results, key=(lambda x: x['score']), reverse=True):
+      print "%30s: %5.1f  %4.1f  %5d  %4d%s  %5.1f" %\
+            (r['name'], r['completeness'], r['multiplicity'], r['score'], r['degrees'], u"\u00B0",
+             r['score'] / r['degrees'])
 
 # remove first argument to run in pycharm
 sys.argv.pop(0)
 
 if __name__ == '__main__':
-  script = Script()
-  script.run()
+  #script = Script()
+  #script.run()
+  from dxtbx.model.detector import detector_factory
+  sensor = 'PAD'
+  distance = 85
+  beam_centre = (0, 0)
+  pixel_size =  (0.172, 0.172)
+  image_size = (487, 619)
+
+  two_theta_angle = 30
+  d = detector_factory.two_theta(sensor, distance, beam_centre, '+x', '-y', '-x', two_theta_angle, pixel_size, image_size, trusted_range = (0.0, 0.0), mask = [], px_mm = None)
+  print d
+
+  two_theta_angle = 10
+  d = detector_factory.two_theta(sensor, distance, beam_centre, '+x', '-y', '-x', two_theta_angle, pixel_size, image_size, trusted_range = (0.0, 0.0), mask = [], px_mm = None)
+  print d
+
+  for p in d:
+    print p
+    print dir(p)
+
+    from scitbx import matrix
+    # Obtain and normalize axes
+    fast_axis = matrix.col(p.get_fast_axis()).normalize()
+    slow_axis = matrix.col(p.get_slow_axis()).normalize()
+    normal = fast_axis.cross(slow_axis)
+
+    # Get the local transformation matrix
+    tl = matrix.sqr(
+     fast_axis.elems       + (0,) +
+     slow_axis.elems       + (0,) +
+     normal.elems          + (0,) +
+     tuple(p.get_origin()) + (1,)).transpose()
+
+    # Obtain 2theta=0 orientation
+    two_theta_axis = matrix.col((-1.0, 0, 0))
+    rinv = two_theta_axis.axis_and_angle_as_r3_rotation_matrix(-10, deg=True).transpose()
+    rinv = matrix.sqr(
+      rinv[0:3] + (0,) +
+      rinv[3:6] + (0,) +
+      rinv[6:9] + (0,) +
+      (0, 0, 0, 1)).transpose()
+    print "Undoing 2theta rotation:"
+    print rinv
+    print
+
+    print "2theta=0 orientation matrix:"
+    ztl = rinv * tl
+    print ztl
+    print
+
+    # Obtain new 2theta orientation
+    r = two_theta_axis.axis_and_angle_as_r3_rotation_matrix(30, deg=True).transpose()
+    r = matrix.sqr(
+      r[0:3] + (0,) +
+      r[3:6] + (0,) +
+      r[6:9] + (0,) +
+      (0, 0, 0, 1)).transpose()
+
+    tgt = (r * ztl).transpose()
+    print "New 2theta orientation:"
+    print tgt
+    print
+
+    p.set_frame(tgt[0:3], tgt[4:7], tgt[12:15])
+    print p
+
+  print "Theoretically equivalent to:"
+  two_theta_angle = 30
+  d = detector_factory.two_theta(sensor, distance, beam_centre, '+x', '-y', '-x', two_theta_angle, pixel_size, image_size, trusted_range = (0.0, 0.0), mask = [], px_mm = None)
+  print d
 
 sys.exit(0)
