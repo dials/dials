@@ -22,14 +22,17 @@ def remove_absent_reflections(hklin, hklout):
 if __name__ == '__main__':
   import os
   import sys
+  from libtbx.utils import Abort
 
   if len(sys.argv) != 3:
-    raise RuntimeError, '%s hklin hklout' % sys.argv[0]
+    raise Abort('%s hklin hklout' % sys.argv[0])
 
   hklin = sys.argv[1]
   hklout = sys.argv[2]
-  assert os.path.exists(hklin)
-  assert not os.path.exists(hklout)
+  if not os.paths.exists(hklin):
+    raise Abort('%s does not exist' % hklin)
+  if not os.paths.exists(hklout):
+    raise Abort('%s does not exist' % hklout)
 
   print 'Removed %d absent reflections' % remove_absent_reflections(
     hklin, hklout)

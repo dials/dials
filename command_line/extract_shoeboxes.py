@@ -52,6 +52,7 @@ class Script(object):
     from dials.util.options import flatten_datablocks
     from dials.util import log
     from dials.array_family import flex
+    from libtbx.utils import Abort
     from logging import info
 
     # Parse the command line
@@ -65,20 +66,20 @@ class Script(object):
     experiments = flatten_experiments(params.input.experiments)
     datablocks = flatten_datablocks(params.input.datablock)
     if (len(experiments) != 0 and len(datablocks) != 0):
-      raise RuntimeError('Both experiment list and datablocks set')
+      raise Abort('Both experiment list and datablocks set')
     elif len(experiments) > 1:
-      raise RuntimeError('More than 1 experiment set')
+      raise Abort('More than 1 experiment set')
     elif len(datablocks) > 1:
-      raise RuntimeError('More than 1 datablock set')
+      raise Abort('More than 1 datablock set')
     elif len(experiments) == 1:
       imageset = experiments[0].imageset
     elif len(datablocks) == 1:
       imagesets = datablocks[0].extract_imagesets()
       if len(imagesets) != 1:
-        raise RuntimeError('Need 1 imageset, got %d' % len(imagesets))
+        raise Abort('Need 1 imageset, got %d' % len(imagesets))
       imageset = imagesets[0]
     if len(reflections) != 1:
-      raise RuntimeError('Need 1 reflection table, got %d' % len(reflections))
+      raise Abort('Need 1 reflection table, got %d' % len(reflections))
     else:
       reflections = reflections[0]
 

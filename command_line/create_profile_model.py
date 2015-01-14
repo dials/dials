@@ -46,6 +46,7 @@ class Script(object):
     from dials.util.command_line import Command
     from dials.array_family import flex
     from dials.util.options import flatten_reflections, flatten_experiments
+    from libtbx.utils import Abort
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -54,9 +55,11 @@ class Script(object):
     if len(reflections) == 0 and len(experiments) == 0:
       self.parser.print_help()
       return
-    assert(len(reflections) == 1)
+    if len(reflections) != 1:
+      raise Abort('exactly 1 reflection table must be specified')
+    if len(experiments) == 0:
+      raise Abort('no experiments were specified')
     reflections = reflections[0]
-    assert(len(experiments) > 0)
 
     from dials.array_family import flex
     Command.start('Removing invalid coordinates')

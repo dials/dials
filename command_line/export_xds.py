@@ -32,7 +32,7 @@ def run(args):
   from dxtbx.serialize import xds
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments, flatten_reflections
-
+  from libtbx.utils import Abort
   import libtbx.load_env
   usage = "%s experiments.json and/or indexed.pickle [options]" %libtbx.env.dispatcher_name
 
@@ -51,7 +51,8 @@ def run(args):
     return
 
   if len(reflections) > 0:
-    assert len(reflections) == 1
+    if len(reflections) != 1:
+      raise Abort('exactly 1 reflection table must be specified')
     reflections = reflections[0]
 
   if len(experiments) > 0:

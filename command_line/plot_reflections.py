@@ -40,6 +40,7 @@ def run(args):
   from scitbx.array_family import flex
   from scitbx import matrix
   from libtbx.phil import command_line
+  from libtbx.utils import Abort
   parser = OptionParser(
     usage=usage,
     phil=master_phil_scope,
@@ -55,7 +56,7 @@ def run(args):
   if len(datablocks) == 1:
     imageset = datablocks[0].extract_imagesets()[0]
   elif len(datablocks) > 1:
-    raise RuntimeError("Only one DataBlock can be processed at a time")
+    raise Abort("Only one DataBlock can be processed at a time")
   elif len(experiments.imagesets()) > 0:
     imageset = experiments.imagesets()[0]
     imageset.set_detector(experiments[0].detector)

@@ -18,13 +18,16 @@ def run(args):
     read_datablocks=True,
     phil=phil_scope,
     check_format=False)
+  from libtbx.utils import Abort
 
   params, options = parser.parse_args(show_diff_phil=False)
   reflections = flatten_reflections(params.input.reflections)
   datablocks = flatten_datablocks(params.input.datablock)
 
-  assert len(reflections) == 1
-  assert len(datablocks) == 1
+  if len(reflections) != 1:
+    raise Abort('exactly 1 reflection table must be specified')
+  if len(datablocks) != 1:
+    raise Abort('exactly 1 datablock must be specified')
 
   reflections = reflections[0]
   imageset = datablocks[0].extract_imagesets()[0]

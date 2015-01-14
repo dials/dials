@@ -116,6 +116,7 @@ class Script(object):
     from logging import info
     from time import time
     import sys
+    from libtbx.utils import Abort
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -129,10 +130,9 @@ class Script(object):
 
     # Import stuff
     if len(datablocks) == 0:
-      self.parser.print_help()
-      return
+      raise Abort('No datablocks specified')
     elif len(datablocks) > 1:
-      raise RuntimeError('Only 1 datablock can be processed at a time.')
+      raise Abort('Only 1 datablock can be processed at a time.')
     datablock = datablocks[0]
 
     # Configure logging

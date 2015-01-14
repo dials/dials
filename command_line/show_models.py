@@ -6,6 +6,7 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_datablocks
+  from libtbx.utils import Abort
 
   parser = OptionParser(
     read_experiments=True,
@@ -42,6 +43,8 @@ def run(args):
           print imageset.get_scan()
         if imageset.get_goniometer() is not None:
           print imageset.get_goniometer()
+  if experiments is None and datablocks is None:
+    raise Abort('No experiments or datablocks specified')
   return
 
 if __name__ == '__main__':
