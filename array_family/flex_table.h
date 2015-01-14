@@ -26,6 +26,18 @@
 namespace dials { namespace af {
 
   /**
+   * A class to represent an unknown column.
+   */
+  class UnknownColumnError : public dials::error {
+  public:
+    UnknownColumnError(const char *k)
+      : dials::error(
+          std::string("Could not find \"") +
+          std::string(k) +
+          std::string("\" in table")) {}
+  };
+
+  /**
    * A class to represent a column-centric table. I.e. a table in which the
    * data is represented as a list of columns. It is created with a variant
    * type of column data. It can be instantiated as follows:
@@ -154,7 +166,9 @@ namespace dials { namespace af {
       operator mapped_type() const {
         boost::shared_ptr<map_type> table = t_->table_;
         iterator it = table->find(k_);
-        DIALS_ASSERT(it != table->end());
+        if (it == table->end()) {
+          throw UnknownColumnError(k_.c_str());
+        }
         return it->second;
       }
     };
