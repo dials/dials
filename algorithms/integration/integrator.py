@@ -781,8 +781,8 @@ class PreProcessorRot(object):
     info('  Reflections with 1 or more overlap: %d (%.2f%%)' % (num_overlap, perc_overlap))
     info('  Total number of overlaps:           %d' % overlaps.num_edges())
     info('')
-    info(' Filtered %d reflections by max_shoebox_overlap = %0.3f' %
-         (num_bad_overlap, self.max_shoebox_overlap))
+    # info(' Filtered %d reflections by max_shoebox_overlap = %0.3f' %
+    #      (num_bad_overlap, self.max_shoebox_overlap))
     info('')
     info(' Time taken: %.2f seconds' % self.time)
     info('')
