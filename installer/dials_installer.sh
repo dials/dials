@@ -4,4 +4,3 @@ build/bin/libtbx.python modules/cctbx_project/libtbx/auto_build/create_installer
 	--version         dev \
 	--binary \
 	tmp/dials-installer-dev
-
