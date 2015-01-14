@@ -125,6 +125,7 @@ class Script(object):
     from dials.util import log
     from logging import info
     from time import time
+    from libtbx.utils import Abort
 
     # Check the number of arguments is correct
     start_time = time()
@@ -135,14 +136,14 @@ class Script(object):
     experiments = flatten_experiments(params.input.experiments)
     if len(reference) == 0:
       reference = None
+    elif len(reference) != 1:
+      raise Abort('more than 1 reflection file was given')
     else:
-      assert(len(reference) == 1)
       reference = reference[0]
     if len(experiments) == 0:
-      self.parser.print_help()
-      return
+      raise Abort('no experiment list was specified')
     elif len(experiments.imagesets()) > 1 or len(experiments.detectors()) > 1:
-      raise RuntimeError('experiment list contains > 1 imageset or detector')
+      raise Abort('experiment list contains > 1 imageset or detector')
 
     # Configure logging
     log.config(
