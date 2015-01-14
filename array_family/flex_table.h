@@ -120,8 +120,7 @@ namespace dials { namespace af {
        * Assign from another proxy
        */
       void operator=(const proxy &p) {
-        mapped_type item = p;
-        (*this) = item;
+        (*this) = p.variant();
       }
 
       /**
@@ -163,14 +162,12 @@ namespace dials { namespace af {
       /**
        * Return the mapped variant type at the given element directly.
        */
-      operator mapped_type() const {
+          mapped_type variant() const {
         boost::shared_ptr<map_type> table = t_->table_;
         iterator it = table->find(k_);
-        if (it == table->end()) {
-          throw UnknownColumnError(k_.c_str());
-        }
+        DIALS_ASSERT(it != table->end());
         return it->second;
-      }
+          }
     };
 
     /** Get the size of each column */

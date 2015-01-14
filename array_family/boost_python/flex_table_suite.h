@@ -403,7 +403,7 @@ namespace flex_table_suite {
    */
   template <typename T>
   object getitem_column(T &self, const typename T::key_type &key) {
-    typename T::mapped_type column = self[key];
+    typename T::mapped_type column = self[key].variant();
     column_to_object_visitor visitor;
     return column.apply_visitor(visitor);
   }
