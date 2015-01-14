@@ -142,7 +142,7 @@ discover_better_experimental_model = False
     .expert_level = 1
   refinement_protocol {
     n_macro_cycles = 5
-      .type = int(value_min=0)
+      .type = int(value_min=1)
     d_min_step = 1.0
       .type = float(value_min=0.0)
       .help = "Reduction per step in d_min for reflections to include in refinement."
