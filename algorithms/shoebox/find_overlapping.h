@@ -156,6 +156,111 @@ namespace dials { namespace algorithms { namespace shoebox {
     return list;
   }
 
+  class OverlapFinder {
+  public:
+
+    OverlapFinder(const af::const_ref< af::tiny<int,2> > &groups) {
+      for (std::size_t i = 0; i < groups.size(); ++i) {
+        DIALS_ASSERT(groups[i][0] >= 0);
+        DIALS_ASSERT(groups[i][1] > groups[i][0]);
+        if (i > 0) {
+          DIALS_ASSERT(groups[i][0] >= groups[i-1][1]);
+        }
+        for (int j = groups[i][0]; j < groups[i][1]; ++j) {
+          exp_group_.push_back(i);
+        }
+      }
+      DIALS_ASSERT(exp_group_.size() > 0);
+    }
+
+    struct sort_by_group {
+      const std::vector<std::size_t>& g_;
+      sort_by_group(const std::vector<std::size_t> &g)
+        : g_(g) {}
+      bool operator()(std::size_t a, std::size_t b) {
+        return g_[a] < g_[b];
+      }
+    };
+
+    boost::shared_ptr<AdjacencyList> operator()(
+      const af::const_ref<std::size_t> &id,
+      const af::const_ref<int6> &bbox,
+      const af::const_ref<std::size_t> &panel) const {
+
+      DIALS_ASSERT(panel.size() > 0);
+      DIALS_ASSERT(panel.size() == bbox.size());
+      DIALS_ASSERT(panel.size() == id.size());
+
+      // Get the maximum panel number
+      std::size_t max_panel = af::max(panel);
+
+      // The arrays to use in the collision detection
+      std::vector<std::size_t> group(panel.size());
+      std::vector<int6> data(panel.size());
+      std::vector<std::size_t> index(panel.size());
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        index[i] = i;
+      }
+      std::vector<std::size_t> offset;
+
+      // Construct a list of groups
+      for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] < exp_group_.size());
+        std::size_t eg = exp_group_[id[i]];
+        std::size_t pp = panel[i];
+        group[i] = pp + eg*max_panel;
+      }
+
+      // Sort arrays by group
+      std::sort(index.begin(), index.end(), sort_by_group(group));
+
+      // Create an array of offsets where the group number is the same and put
+      // the sorted list of bboxes into an new array
+      offset.push_back(0);
+      std::size_t g = group[index[0]];
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        std::size_t j = index[i];
+        data[i] = bbox[j];
+        if (group[j] != g) {
+          DIALS_ASSERT(group[j] > g);
+          g = group[j];
+          offset.push_back(i);
+        }
+      }
+      offset.push_back(index.size());
+
+      // Do the collision detection for all bboxes in the same group
+      boost::shared_ptr<AdjacencyList> list(new AdjacencyList);
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        add_vertex(*list);
+      }
+      for (std::size_t j = 0; j < offset.size() - 1; ++j) {
+        std::size_t d0 = offset[j];
+        std::size_t d1 = offset[j+1];
+        std::vector< std::pair<int,int> > collisions;
+
+        // Detect the collisions
+        detect_collisions3d(
+            data.begin() + d0,
+            data.begin() + d1,
+            collisions);
+
+        // Put all the collisions into an adjacency list
+        for (std::size_t i = 0; i < collisions.size(); ++i) {
+          add_edge(
+              index[d0 + collisions[i].first],
+              index[d0 + collisions[i].second],
+              *list);
+        }
+      }
+      return list;
+    }
+
+  private:
+
+    std::vector<std::size_t> exp_group_;
+  };
+
 }}} // namespace dials::algorithms::shoebox
 
 #endif // DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_H

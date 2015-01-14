@@ -418,3 +418,32 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     result = checker(self['id'], self['shoebox'])
     self.set_flags(result, self.flags.overloaded)
     return result
+
+  def find_overlaps(self, experiments):
+    ''' Check for overlapping reflections. '''
+    from dials.algorithms.shoebox import OverlapFinder
+    from itertools import groupby
+    from scitbx.array_family import shared
+
+    # Group according to imageset
+    groups = groupby(
+      range(len(experiments)),
+      lambda x: experiments[x].imageset)
+
+    # Get the experiment ids we're to treat together
+    group_ranges = shared.tiny_int_2()
+    for key, indices in groups:
+      indices = list(indices)
+      i0 = indices[0]
+      i1 = indices[-1] + 1
+      group_ranges.append((i0, i1))
+
+    # Create the overlap finder
+    find_overlapping = OverlapFinder(group_ranges)
+
+    # Find the overlaps
+    overlaps = find_overlapping(self['id'], self['bbox'], self['panel'])
+    assert(overlaps.num_vertices() == len(self))
+
+    # Return the overlaps
+    return overlaps

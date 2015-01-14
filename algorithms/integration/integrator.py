@@ -47,7 +47,7 @@ def generate_phil_scope():
         truncate = 0.9,0.01
           .type = floats(size=2,value_min=0.0, value_max=1.0)
           .help = "Remove a fraction of lowest and highest intensity"
-                  "reflections for selectr"
+                  "reflections for selection."
       }
 
       block {
@@ -736,6 +736,15 @@ class PreProcessorRot(object):
     num_integrate = data.get_flags(data.flags.dont_integrate).count(False)
     num_reference = data.get_flags(data.flags.reference_spot).count(True)
     num_ice_ring = data.get_flags(data.flags.in_powder_ring).count(True)
+
+    # Find any overlaps
+    overlaps = data.find_overlaps(self.experiments)
+    num_overlap = 0
+    for i in range(len(data)):
+      if len(list(overlaps.adjacent_vertices(i))) > 0:
+        num_overlap += 1
+    perc_overlap = 100.0 * num_overlap / len(data)
+
     self.time = time() - st
     info(' Number of reflections')
     info('  Partial:     %d' % num_partial)
@@ -747,6 +756,10 @@ class PreProcessorRot(object):
     info('  Total:       %d' % len(data))
     info('')
     info(' Filtered %d reflections by zeta = %0.3f' % (num_ignore, self.min_zeta))
+    info('')
+    info(' Shoebox overlaps (foreground and background)')
+    info('  Reflections with 1 or more overlap: %d (%.2f%%)' % (num_overlap, perc_overlap))
+    info('  Total number of overlaps:           %d' % overlaps.num_edges())
     info('')
     info(' Time taken: %.2f seconds' % self.time)
     info('')

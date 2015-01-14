@@ -27,6 +27,11 @@ namespace dials { namespace algorithms { namespace shoebox {
       &find_overlapping_multi_panel, (
         arg("bbox"),
         arg("panel")));
+
+    class_<OverlapFinder>("OverlapFinder", no_init)
+      .def(init< const af::const_ref< af::tiny<int,2> > >())
+      .def("__call__", &OverlapFinder::operator())
+      ;
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python
