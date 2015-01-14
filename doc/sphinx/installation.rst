@@ -1,5 +1,5 @@
-Installation
-============
+Install DIALS from SVN on Linux
+===============================
 
 We are in the process of refining the build process (Nat Echols @ LBL is doing
 the work for this) such that we can start with a clean directory and with a few
@@ -118,6 +118,96 @@ Then navigate to the cctbx build directory and build the dials source code.
 
    cd ../build
    make
+
+You should now be good to go!
+
+Obtaining the DIALS regression test data
+----------------------------------------
+
+To obtain the dials regression test data, needed for some of the dials tests,
+you will need access to the CCI server. Checkout the data into the cctbx source
+directory and configure as follows, replacing "USERNAME" for your username:
+
+.. code-block:: none
+
+   cd ../sources
+   svn checkout svn+ssh://USERNAME@cci.lbl.gov/dials_regression/trunk dials_regression
+   libtbx.configure dials_regression
+   
+Install DIALS from SVN on Windows
+=================================
+
+The following instructions detail how developers can install DIALS on windows 
+from the svn repository.
+
+Dependencies
+------------
+
+In order to follow this process, you will need to following programs installed on
+your machine:
+
+ - 64bit python (https://www.python.org/downloads/release/python-278/)
+ - HDF5 (http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/hdf5-1.8.14-win64-vs2012-shared.zip)
+ - A subversion client
+
+Before trying to compile anything, you will need to add the path to the hdf5.h
+file to the IMPORT environment variable.
+
+You will also need a C/C++ compiler (e.g. visual sudio).
+
+Installing CCTBX
+----------------
+
+In your file browser, create a directory to contain the cctbx installation. For
+example "C:\Users\Joe Bloggs\Documents\cctbx"
+
+Download http://cci.lbl.gov/cctbx_build/results/current/cctbx_bundle_for_installer.tar.gz
+and unpack into the directory "cctbx\sources".
+
+Using your subversion client, checkout svn://svn.code.sf.net/p/cctbx/code/trunk
+into "cctbx\sources\cctbx_project".
+
+Now, in a terminal create and navigate to a build directory in "cctbx\build".
+Then configure the cctbx installation and build the c++ libraries as follows.
+
+.. code-block:: none
+
+   cd build
+   python ../sources/cctbx_project/libtbx/configure.py cctbx
+   setpaths.bat
+   libtbx.scons
+
+This is for the basic cctbx - no labelit etc. which needs to be added and built.
+
+Note that the setpaths.bat script needs to be sourced each time you want to build
+cctbx or run a cctbx program.
+
+Building DIALS with this CCTBX
+------------------------------
+
+In the "sources" directory of your cctbx installation, checkout the dials source
+in the following way:
+
+.. code-block:: none
+
+   cd ../sources/
+   svn checkout https://svn.code.sf.net/p/dials/code/trunk dials
+
+This may take some time, but will fetch all the dials source code and deposit in
+in a folder called dials within the cctbx source directory.
+
+To include dials within the cctbx build process, execute the following command.
+
+.. code-block:: none
+
+   libtbx.configure dials
+
+Then navigate to the cctbx build directory and build the dials source code.
+
+.. code-block:: none
+
+   cd ../build
+   libtbx.scons
 
 You should now be good to go!
 
