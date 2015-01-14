@@ -12,6 +12,7 @@
 
 from __future__ import division
 import math
+import logging
 from logging import info, debug
 from dials.util import log
 
@@ -1099,6 +1100,9 @@ class indexer_base(object):
 
       from dials.algorithms.refinement import RefinerFactory
       try:
+        logger = logging.getLogger()
+        disabled = logger.disabled
+        logger.disabled = True
         refiner = RefinerFactory.from_parameters_data_experiments(
           params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
           verbosity=0)
@@ -1106,6 +1110,8 @@ class indexer_base(object):
       except RuntimeError, e:
         #print e
         continue
+      finally:
+        logger.disabled = disabled
       rmsds = refiner.rmsds()
       xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
       model_likelihood = 1.0 - xy_rmsds
