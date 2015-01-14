@@ -222,6 +222,7 @@ algorithms/spatial_indexing/boost_python/octree.cc -text
 algorithms/spatial_indexing/boost_python/quadtree.cc -text
 algorithms/spatial_indexing/boost_python/spatial_indexing_ext.cc -text
 algorithms/spatial_indexing/detect_collisions.h -text
+algorithms/spatial_indexing/log2.h -text
 algorithms/spatial_indexing/octree.h -text
 algorithms/spatial_indexing/qotree.h -text
 algorithms/spatial_indexing/quadtree.h -text

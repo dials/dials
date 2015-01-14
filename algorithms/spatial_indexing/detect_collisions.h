@@ -19,6 +19,7 @@
 #include <boost/mpl/range_c.hpp>
 #include <cmath>
 #include <dials/error.h>
+#include <dials/algorithms/spatial_indexing/log2.h>
 
 namespace dials { namespace algorithms {
 
