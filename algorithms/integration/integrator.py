@@ -79,7 +79,7 @@ def generate_phil_scope():
                   "positive value is used as the minimum permissable value."
           .type = float(value_min=0.0, value_max=1.0)
 
-        max_shoebox_overlap = 0.9
+        max_shoebox_overlap = 1.0
           .type = float(value_min=0.0, value_max=1.0)
           .help = "Filter reflections whose shoeboxes are overlapped by greater"
                   "than the requested amount. Note that this is not the"
@@ -380,7 +380,8 @@ class Task(object):
 
     # Print a histogram of reflections on frames
     if frame01 - frame00 > 1:
-      info(' The number of reflections recorded on each frame')
+      info(' The following histogram shows the number of reflections predicted')
+      info(' to have all or part of their intensity on each frame.')
       info('')
       info(frame_hist(self._data['bbox'], prefix=' ', symbol='*'))
       info('')
@@ -758,10 +759,10 @@ class PreProcessorRot(object):
     perc_overlap = 100.0 * num_overlap / len(data)
 
     # Compute the fractional overlap
-    frac_overlap = data.compute_shoebox_overlap_fraction(overlaps)
-    mask = (frac_overlap > self.max_shoebox_overlap)
-    num_bad_overlap = mask.count(True)
-    data.set_flags(mask, data.flags.dont_integrate)
+    # frac_overlap = data.compute_shoebox_overlap_fraction(overlaps)
+    # mask = (frac_overlap > self.max_shoebox_overlap)
+    # num_bad_overlap = mask.count(True)
+    # data.set_flags(mask, data.flags.dont_integrate)
 
 
     self.time = time() - st
