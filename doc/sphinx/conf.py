@@ -237,8 +237,54 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'cctbx', u'CCTBX Documentation',
-     [u'Paul D. Adams'], 1)
+  (
+    'programs/dials_import', 
+    'dials.import', 
+    'dials.import documentation', 
+    ['James Parkhurst'], 
+    1),
+  (
+    'programs/dials_find_spots', 
+    'dials.find_spots', 
+    'dials.find_spots documentation', 
+    ['James Parkhurst'], 
+    1),
+  (
+    'programs/dials_index', 
+    'dials.index', 
+    'dials.index documentation', 
+    ['James Parkhurst'], 
+    1),
+  (
+    'programs/dials_reindex', 
+    'dials.reindex', 
+    'dials.reindex documentation', 
+    ['James Parkhurst'], 
+    1),
+  (
+    'programs/dials_refine_bravais_settings', 
+    'dials.refine_bravais_settings',
+    'dials.refine_bravais_settings documentation', 
+    ['James Parkhurst'], 
+    1),
+  (
+    'programs/dials_refine', 
+    'dials.refine', 
+    'dials.refine documentation', 
+    ['James Parkhurst'], 
+    1),
+  (
+    'programs/dials_integrate', 
+    'dials.integrate', 
+    'dials.integrate documentation', 
+    ['James Parkhurst'], 
+    1),
+  (
+    'programs/dials_export_mtz', 
+    'dials.export_mtz', 
+    'dials.export_mtz documentation', 
+    ['James Parkhurst'], 
+    1),
 ]
 
 # If true, show URL addresses after external links.
@@ -251,8 +297,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'CCTBX', u'CCTBX Documentation',
-   u'Paul D. Adams', 'CCTBX', 'One line description of project.',
+  ('index', 'DIALS', u'DIALS Documentation',
+   u'James Parkhurst', 'DIALS', 'One line description of project.',
    'Miscellaneous'),
 ]
 
