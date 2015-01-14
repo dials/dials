@@ -231,7 +231,8 @@ class Script(object):
       predicted = predicted.select(working_isel)
 
     if reference:
-      predicted.match_with_reference(reference)
+      matched = predicted.match_with_reference(reference)
+      assert(matched.count(True) > 0)
     del reference
     info("")
     integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)

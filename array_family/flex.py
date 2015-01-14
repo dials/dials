@@ -256,6 +256,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.set_flags(sind.select(mask), self.flags.reference_spot)
     info("Matched %d reference spots with predicted reflections" %
                 mask.count(True))
+    return mask
 
   #def is_bbox_inside_image_range(self, experiment):
     #''' Check if bbox is within image range. '''
