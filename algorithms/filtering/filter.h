@@ -350,7 +350,7 @@ namespace dials { namespace algorithms { namespace filter {
   inline
   af::shared<bool> by_bbox_volume(const af::const_ref<int6> &bboxes) {
     std::size_t num = (std::size_t)(std::exp((1.0/3.0) *
-      std::log(bboxes.size())));
+      std::log((double)bboxes.size())));
     return by_bbox_volume(bboxes, num);
   }
 
