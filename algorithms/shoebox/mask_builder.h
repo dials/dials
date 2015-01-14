@@ -60,10 +60,10 @@ namespace dials { namespace algorithms { namespace shoebox {
       for( int col = 0; col < nx; col++ ){
 
             // conditioning first the corners an then the boundaries
-            if( row + col + 1 >= nc and row >= col - nx + nc and
-             row <= col + ny - nc and (ny - row) + (nx - col) > nc and
-              row >= nry and row < (ny - nry) and
-               col >= nrx and col < (nx - nrx) )
+            if( row + col + 1 >= nc && row >= col - nx + nc &&
+             row <= col + ny - nc && (ny - row) + (nx - col) > nc &&
+              row >= nry && row < (ny - nry) &&
+               col >= nrx && col < (nx - nrx) )
 
           {
               // when [ pixel mask ] = 5 both bits are set:
