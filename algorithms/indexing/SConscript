@@ -27,4 +27,4 @@ sources = [
 
 env.SharedLibrary(target='#/lib/dials_algorithms_indexing_ext',
     source=sources,
-    LIBS=['ann'])
+    LIBS=['ann']+env["LIBS"])

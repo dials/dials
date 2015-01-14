@@ -11,4 +11,7 @@ sources = [
     'boost_python/image.cc',
     'boost_python/data_ext.cc']
 
-env.SharedLibrary(target='#/lib/dials_model_data_ext', source=sources)
+env.SharedLibrary(
+  target='#/lib/dials_model_data_ext', 
+  source=sources,
+  LIBS=env["LIBS"])

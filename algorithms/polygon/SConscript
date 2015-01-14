@@ -5,10 +5,12 @@ sources = [
     'boost_python/polygon_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_polygon_ext', 
-    source=sources)
+    source=sources,
+    LIBS=env["LIBS"])
 
 env.SharedLibrary(
     target='#/lib/dials_algorithms_polygon_spatial_interpolation_ext', 
-    source='boost_python/spatial_interpolation_ext.cc')
+    source='boost_python/spatial_interpolation_ext.cc',
+    LIBS=env["LIBS"])
 
 env.SConscript('clip/SConscript', exports={ 'env' : env })

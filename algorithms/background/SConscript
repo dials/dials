@@ -6,7 +6,8 @@ sources = [
     'boost_python/background_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_background_ext', 
-    source=sources)
+    source=sources,
+    LIBS=env["LIBS"])
 
 sources = [
     'simple/boost_python/outlier_rejector.cc',
@@ -15,4 +16,5 @@ sources = [
     'simple/boost_python/background_simple_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_background_simple_ext', 
-    source=sources)
+    source=sources,
+    LIBS=env["LIBS"])

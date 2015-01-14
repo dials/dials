@@ -6,27 +6,31 @@ env.SharedLibrary(
   source=[
     'boost_python/corrections.cc',
     'boost_python/integration_ext.cc'
-  ])
+  ],
+  LIBS=env["LIBS"])
 
 env.SharedLibrary(
   target='#/lib/dials_algorithms_integration_integrator_ext', 
   source=[
     'boost_python/integration_integrator_ext.cc'
-  ])
+  ],
+  LIBS=env["LIBS"])
 
 env.SharedLibrary(
   target='#/lib/dials_algorithms_integration_sum_ext', 
   source=[
     'sum/boost_python/summation.cc',
     'sum/boost_python/integration_sum_ext.cc'
-  ])
+  ],
+  LIBS=env["LIBS"])
 
 env.SharedLibrary(
   target='#/lib/dials_algorithms_integration_fitrs_ext', 
   source=[
     'fitrs/boost_python/fitrs.cc',
     'fitrs/boost_python/integration_fitrs_ext.cc'
-  ])
+  ],
+  LIBS=env["LIBS"])
 
 env.SConscript('profile/SConscript', exports={ 'env' : env })
 

@@ -10,4 +10,5 @@ sources = [
     'boost_python/filter_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_image_filter_ext', 
-    source=sources)
+    source=sources,
+    LIBS=env["LIBS"])

@@ -4,4 +4,5 @@ Import('env')
 sources = ['boost_python/centroid_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_image_centroid_ext', 
-    source=sources)
+    source=sources,
+    LIBS=env["LIBS"])

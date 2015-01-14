@@ -7,4 +7,7 @@ sources = [
     'boost_python/shoebox_block_importer.cc',
     'boost_python/serialize_ext.cc']
 
-env.SharedLibrary(target='#/lib/dials_model_serialize_ext', source=sources)
+env.SharedLibrary(
+  target='#/lib/dials_model_serialize_ext', 
+  source=sources,
+  LIBS=env["LIBS"])

@@ -19,4 +19,5 @@ env_etc.include_registry.append(
 
 env.SharedLibrary(
   target="#lib/recviewer_ext",
-  source=["ext.cpp"])
+  source=["ext.cpp"],
+  LIBS=env["LIBS"])

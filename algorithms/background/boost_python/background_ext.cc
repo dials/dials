@@ -21,6 +21,7 @@ namespace dials { namespace algorithms { namespace background {
   BOOST_PYTHON_MODULE(dials_algorithms_background_ext)
   {
     export_helpers();
+
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python

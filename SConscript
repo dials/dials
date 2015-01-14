@@ -22,14 +22,11 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
             env_etc.dials_include])
     env.Append(
 		LIBS=env_etc.libm + [ 
-		"cctbx",
-		"rstbx",
-		"scitbx",
 		"scitbx_boost_python",
-		"boost_python"])
+		"boost_python",
+		"cctbx"])
 
     env.SConscript('model/SConscript', exports={ 'env' : env })
     env.SConscript('array_family/SConscript', exports={ 'env' : env })
     env.SConscript('algorithms/SConscript', exports={ 'env' : env })
     env.SConscript('test/SConscript', exports={ 'env' : env })
-    env.SConscript('scratch/luiso_s/SConscript', exports={ 'env' : env })

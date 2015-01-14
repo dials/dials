@@ -21,4 +21,5 @@ sources = [
 
 env.SharedLibrary(
     target='#/lib/dials_array_family_flex_ext', 
-    source=sources)
+    source=sources,
+    LIBS=env["LIBS"])

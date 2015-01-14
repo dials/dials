@@ -5,5 +5,8 @@ sources = [
     'boost_python/parameterisation_helpers.cc',
     'boost_python/refinement_ext.cc']
 
-env.SharedLibrary(target='#/lib/dials_refinement_helpers_ext', source=sources)
+env.SharedLibrary(
+  target='#/lib/dials_refinement_helpers_ext', 
+  source=sources,
+  LIBS=env["LIBS"])
 
