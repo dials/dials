@@ -77,7 +77,17 @@ def generate_phil_scope():
           .help = "Filter the reflections by the value of zeta. A value of less"
                   "than or equal to zero indicates that this will not be used. A"
                   "positive value is used as the minimum permissable value."
-          .type = float
+          .type = float(value_min=0.0, value_max=1.0)
+
+        max_shoebox_overlap = 0.9
+          .type = float(value_min=0.0, value_max=1.0)
+          .help = "Filter reflections whose shoeboxes are overlapped by greater"
+                  "than the requested amount. Note that this is not the"
+                  "percentage of the peak that is overlapped but rather the"
+                  "percentage of the shoebox (background and foreground). This"
+                  "can be useful when the detector is too close and many"
+                  "overlapping reflections are predicted at high resolution"
+                  "causing memory issues."
 
         include scope dials.algorithms.integration.filtering.phil_scope
       }
@@ -668,6 +678,7 @@ class PreProcessorRot(object):
                min_zeta,
                powder_filter,
                partials,
+               max_shoebox_overlap=1.0,
                **kwargs):
     ''' Initialise the pre-processor. '''
     self.experiments = experiments
@@ -675,6 +686,7 @@ class PreProcessorRot(object):
     self.min_zeta = min_zeta
     self.powder_filter = powder_filter
     self.partials = partials
+    self.max_shoebox_overlap = max_shoebox_overlap
     self.time = 0
 
   def __call__(self, data, jobs):
@@ -745,6 +757,13 @@ class PreProcessorRot(object):
         num_overlap += 1
     perc_overlap = 100.0 * num_overlap / len(data)
 
+    # Compute the fractional overlap
+    frac_overlap = data.compute_shoebox_overlap_fraction(overlaps)
+    mask = (frac_overlap > self.max_shoebox_overlap)
+    num_bad_overlap = mask.count(True)
+    data.set_flags(mask, data.flags.dont_integrate)
+
+
     self.time = time() - st
     info(' Number of reflections')
     info('  Partial:     %d' % num_partial)
@@ -760,6 +779,9 @@ class PreProcessorRot(object):
     info(' Shoebox overlaps (foreground and background)')
     info('  Reflections with 1 or more overlap: %d (%.2f%%)' % (num_overlap, perc_overlap))
     info('  Total number of overlaps:           %d' % overlaps.num_edges())
+    info('')
+    info(' Filtered %d reflections by max_shoebox_overlap = %0.3f' %
+         (num_bad_overlap, self.max_shoebox_overlap))
     info('')
     info(' Time taken: %.2f seconds' % self.time)
     info('')
@@ -893,6 +915,7 @@ class ManagerRot(Manager):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                reference_selector=None,
+               max_shoebox_overlap=1.0,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -910,7 +933,8 @@ class ManagerRot(Manager):
       profile_model,
       min_zeta=min_zeta,
       powder_filter=powder_filter,
-      partials=partials)
+      partials=partials,
+      max_shoebox_overlap=max_shoebox_overlap)
 
     # Create the post-processor
     postprocess = PostProcessorRot(experiments)
@@ -995,6 +1019,7 @@ class Integrator3D(Integrator):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                reference_selector=None,
+               max_shoebox_overlap=1.0,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1006,6 +1031,7 @@ class Integrator3D(Integrator):
       block_size=block_size,
       block_size_threshold=block_size_threshold,
       min_zeta=min_zeta,
+      max_shoebox_overlap=max_shoebox_overlap,
       powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
@@ -1025,6 +1051,7 @@ class IntegratorFlat3D(Integrator):
                block_size=libtbx.Auto,
                block_size_threshold=0.99,
                min_zeta=0.05,
+               max_shoebox_overlap=1.0,
                powder_filter=None,
                nthreads=1,
                nproc=1,
@@ -1043,6 +1070,7 @@ class IntegratorFlat3D(Integrator):
       block_size=block_size,
       block_size_threshold=block_size_threshold,
       min_zeta=min_zeta,
+      max_shoebox_overlap=max_shoebox_overlap,
       powder_filter=powder_filter,
       flatten=True,
       save_shoeboxes=save_shoeboxes,
@@ -1063,6 +1091,7 @@ class Integrator2D(Integrator):
                block_size=libtbx.Auto,
                block_size_threshold=0.99,
                min_zeta=0.05,
+               max_shoebox_overlap=1.0,
                powder_filter=None,
                nthreads=1,
                nproc=1,
@@ -1081,6 +1110,7 @@ class Integrator2D(Integrator):
       block_size=block_size,
       block_size_threshold=block_size_threshold,
       min_zeta=min_zeta,
+      max_shoebox_overlap=max_shoebox_overlap,
       powder_filter=powder_filter,
       partials=True,
       save_shoeboxes=save_shoeboxes,
@@ -1099,6 +1129,7 @@ class IntegratorSingle2D(Integrator):
                profile_model,
                reflections,
                min_zeta=0.05,
+               max_shoebox_overlap=1.0,
                powder_filter=None,
                nthreads=1,
                nproc=1,
@@ -1117,6 +1148,7 @@ class IntegratorSingle2D(Integrator):
       block_size=1,
       block_size_units='frames',
       min_zeta=min_zeta,
+      max_shoebox_overlap=max_shoebox_overlap,
       powder_filter=powder_filter,
       partials=True,
       save_shoeboxes=save_shoeboxes,
@@ -1277,6 +1309,7 @@ class IntegratorFactory(object):
       block_size=params.integration.block.size,
       block_size_threshold=params.integration.block.threshold,
       min_zeta=params.integration.filter.min_zeta,
+      max_shoebox_overlap=params.integration.filter.max_shoebox_overlap,
       powder_filter=powder_filter,
       nthreads=params.integration.mp.nthreads,
       nproc=params.integration.mp.nproc,

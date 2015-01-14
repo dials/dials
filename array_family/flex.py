@@ -447,3 +447,39 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     # Return the overlaps
     return overlaps
+
+  def compute_shoebox_overlap_fraction(self, overlaps):
+    ''' Compute the fraction of shoebox overlapping. '''
+    from dials.array_family import flex
+    result = flex.double(len(self))
+    bbox = self['bbox']
+    for i in range(len(self)):
+      b1 = bbox[i]
+      xs = b1[1] - b1[0]
+      ys = b1[3] - b1[2]
+      zs = b1[5] - b1[4]
+      assert(xs > 0)
+      assert(ys > 0)
+      assert(zs > 0)
+      mask = flex.bool(flex.grid(zs,ys,xs),False)
+      for edge in overlaps.adjacent_vertices(i):
+        b2 = bbox[edge]
+        x0 = b2[0]-b1[0]
+        x1 = b2[1]-b1[0]
+        y0 = b2[2]-b1[2]
+        y1 = b2[3]-b1[2]
+        z0 = b2[4]-b1[4]
+        z1 = b2[5]-b1[4]
+        if x0 < 0: x0 = 0
+        if y0 < 0: y0 = 0
+        if z0 < 0: z0 = 0
+        if x1 > xs: x1 = xs
+        if y1 > ys: y1 = ys
+        if z1 > zs: z1 = zs
+        assert(x1 > x0)
+        assert(y1 > y0)
+        assert(z1 > z0)
+        m2 = flex.bool(flex.grid(z1-z0,y1-y0,x1-x0),True)
+        mask[z0:z1,y0:y1,x0:x1] = m2
+      result[i] = (1.0*mask.count(True)) / mask.size()
+    return result
