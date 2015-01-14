@@ -12,6 +12,8 @@
 from __future__ import division
 import optparse
 
+from libtbx.utils import Sorry
+
 
 class ConfigWriter(object):
   '''Class to write configuration to file.'''
@@ -231,7 +233,11 @@ class PhilCommandParser(object):
           '  %s\n'
         ) % '\n  '.join(map(str,unused)))
       args = []
-    return self.phil.extract(), args
+    try:
+      params = self.phil.extract()
+    except RuntimeError, e:
+      raise Sorry(e)
+    return params, args
 
   def _generate_input_scope(self):
     ''' Generate the required input scope. '''
