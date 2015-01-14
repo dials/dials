@@ -36,58 +36,58 @@ namespace dials { namespace algorithms { namespace background {
 
     def("maximum_n_sigma",
       &maximum_n_sigma<FloatType>, (
-        arg("data")));
+        boost::python::arg("data")));
 
     def("minimum_n_sigma",
       &minimum_n_sigma<FloatType>, (
-        arg("data")));
+        boost::python::arg("data")));
 
     def("absolute_maximum_n_sigma",
       &maximum_n_sigma<FloatType>, (
-        arg("data")));
+        boost::python::arg("data")));
 
     def("is_normally_distributed",
       &is_normally_distributed_wrapper<FloatType>, (
-        arg("data"),
-        arg("n_sigma") = -1));
+        boost::python::arg("data"),
+        boost::python::arg("n_sigma") = -1));
   }
 
   void export_outlier_rejector()
   {
     def("normal_expected_n_sigma",
       &normal_expected_n_sigma, (
-        arg("n_obs")));
+        boost::python::arg("n_obs")));
 
     normal_discriminator_suite<float>();
     normal_discriminator_suite<double>();
 
     class_<OutlierRejector, boost::noncopyable>("OutlierRejector", no_init)
       .def("__call__", &OutlierRejector::mark, (
-            arg("data"),
-            arg("mask")));
+            boost::python::arg("data"),
+            boost::python::arg("mask")));
 
     class_<TruncatedOutlierRejector, bases<OutlierRejector> >(
         "TruncatedOutlierRejector", no_init)
       .def(init<double, double>((
-        arg("lower") = 0.01,
-        arg("upper") = 0.01)));
+        boost::python::arg("lower") = 0.01,
+        boost::python::arg("upper") = 0.01)));
 
     class_<NSigmaOutlierRejector, bases<OutlierRejector> >(
         "NSigmaOutlierRejector", no_init)
       .def(init<double, double>((
-        arg("lower") = 3.0,
-        arg("upper") = 3.0)));
+        boost::python::arg("lower") = 3.0,
+        boost::python::arg("upper") = 3.0)));
 
     class_<NormalOutlierRejector, bases<OutlierRejector> >(
         "NormalOutlierRejector", no_init)
       .def(init<std::size_t>((
-        arg("min_data") = 10)));
+        boost::python::arg("min_data") = 10)));
 
     class_<MosflmOutlierRejector, bases<OutlierRejector> >(
         "MosflmOutlierRejector", no_init)
       .def(init<double, double>((
-        arg("fraction")=1.0,
-        arg("n_sigma")=3)));
+        boost::python::arg("fraction")=1.0,
+        boost::python::arg("n_sigma")=3)));
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python
