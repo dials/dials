@@ -88,45 +88,10 @@ def run(args):
       real_space_a, real_space_b, real_space_c,
       space_group=cryst.get_space_group(),
       mosaicity=cryst.get_mosaicity())
-    #print cryst_mosflm
     A_mosflm = cryst_mosflm.get_A()
-    A_inv_mosflm = A_mosflm.inverse()
-    a = matrix.col(A_inv_mosflm[0:3])
-    b = matrix.col(A_inv_mosflm[3:6])
-    c = matrix.col(A_inv_mosflm[6:9])
-    astar = matrix.col(A_mosflm[0:3])
-    bstar = matrix.col(A_mosflm[3:6])
-    cstar = matrix.col(A_mosflm[6:9])
-
-    a, b, c, alpha, beta, gamma = cryst_mosflm.get_unit_cell().parameters()
-    sin_alpha = math.sin(alpha)
-    sin_beta = math.sin(beta)
-    sin_gamma = math.sin(gamma)
-    cos_alpha = math.cos(alpha)
-    cos_beta = math.cos(beta)
-    cos_gamma = math.cos(gamma)
-
-    # formulae according Rupp A.3 A-45, pg 747.
-    V = cryst_mosflm.get_unit_cell().volume()
-    V_star = 1/V
-    astar = b * c * sin_alpha * V_star
-    bstar = a * c * sin_beta * V_star
-    cstar = a * b * sin_gamma * V_star
-    sin_alpha_star = V / (a * b * c * sin_beta * sin_gamma)
-    cos_alpha_star = (cos_beta * cos_gamma - cos_alpha)/ (sin_beta * sin_gamma)
-    sin_beta_star = V / (a * b * c * sin_alpha * sin_gamma)
-    cos_beta_star = (cos_alpha * cos_gamma - cos_beta)/ (sin_alpha * sin_gamma)
-    sin_gamma_star = V / (a * b * c * sin_alpha * sin_beta)
-    cos_gamma_star = (cos_alpha * cos_beta - cos_gamma)/ (sin_alpha * sin_beta)
-
+    U_mosflm = cryst_mosflm.get_U()
+    assert U_mosflm.is_r3_rotation_matrix(), U_mosflm
     w = beam.get_wavelength()
-    # Mosflm B matrix according to David's notes. This is the same as
-    # defined by Busing & Levy apart from the extra factors of 1/w and w.
-    B = matrix.sqr((
-      astar/w, bstar/w * cos_gamma_star,  cstar/w * cos_beta_star,
-            0, bstar/w * sin_gamma_star,     -cstar/w * sin_alpha,
-            0,                        0,                      w/c))
-    U_mosflm = A_mosflm * B.inverse()
 
     index_mat = os.path.join(sub_dir, "index.mat")
     mosflm_in = os.path.join(sub_dir, "mosflm.in")
