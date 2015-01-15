@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import math
 import matplotlib
 
 # Offline backend
@@ -39,6 +40,104 @@ def ensure_required(rlist, required):
       print "  %s" % k
     return False
   return True
+
+
+class StrongSpotsAnalyser(object):
+  ''' Analyse a list of strong spots. '''
+
+  def __init__(self, directory):
+    ''' Setup the directory. '''
+    from os.path import join
+
+    # Set the directory
+    self.directory = join(directory, "strong")
+    ensure_directory(self.directory)
+
+    # Set the required fields
+    self.required = [
+      "xyzobs.px.value",
+      "panel",
+    ]
+
+  def __call__(self, rlist):
+    ''' Analyse the strong spots. '''
+    from dials.util.command_line import Command
+
+    # Check we have the required fields
+    print "Analysing strong spots"
+    if not ensure_required(rlist, self.required):
+      return
+
+    # Remove I_sigma <= 0
+    selection = rlist['intensity.sum.variance'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print ' Removing %d reflections with variance <= 0' % \
+        selection.count(True)
+
+    if 'flags' in rlist:
+      # Select only strong reflections
+      Command.start(" Selecting only strong reflections")
+      mask = rlist.get_flags(rlist.flags.strong)
+      if mask.count(True) > 0:
+        threshold = 10
+        rlist = rlist.select(mask)
+      Command.end(" Selected %d strong reflections" % len(rlist))
+
+    # Look at distribution of spot counts
+    self.spot_count_per_image(rlist)
+    self.spot_count_per_panel(rlist)
+
+  def spot_count_per_image(self, rlist):
+    ''' Analyse the spot count per image. '''
+    from dials.array_family import flex
+    from os.path import join
+    x,y,z = rlist['xyzobs.px.value'].parts()
+    max_z = int(math.ceil(flex.max(z)))
+
+    spot_count_per_image = flex.int()
+    for i in range(max_z):
+      sel = (z >= i) & (z < (i+1))
+      spot_count_per_image.append(sel.count(True))
+
+    from matplotlib import pyplot
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+    ax.set_title("Spot count per image")
+    ax.scatter(
+      list(range(len(spot_count_per_image))), spot_count_per_image,
+      s=5, color='blue', marker='o', alpha=0.4)
+    ax.set_xlabel("Image #")
+    ax.set_ylabel("# spots")
+    pyplot.savefig(join(self.directory, "spots_per_image.png"))
+    pyplot.clf()
+
+  def spot_count_per_panel(self, rlist):
+    ''' Analyse the spot count per panel. '''
+    from dials.array_family import flex
+    from os.path import join
+    panel = rlist['panel']
+    if flex.max(panel) == 0:
+      # only one panel, don't bother generating a plot
+      return
+
+    n_panels = int(flex.max(panel))
+    spot_count_per_panel = flex.int()
+    for i in range(n_panels):
+      sel = (panel >= i) & (panel < (i+1))
+      spot_count_per_panel.append(sel.count(True))
+
+    from matplotlib import pyplot
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+    ax.set_title("Spot count per panel")
+    ax.scatter(
+      list(range(len(spot_count_per_panel))), spot_count_per_panel,
+      s=10, color='blue', marker='o', alpha=0.4)
+    ax.set_xlabel("Panel #")
+    ax.set_ylabel("# spots")
+    pyplot.savefig(join(self.directory, "spots_per_panel.png"))
+    pyplot.clf()
 
 
 class CentroidAnalyser(object):
@@ -916,6 +1015,7 @@ class Analyser(object):
     from os.path import join
     directory = join(directory, "analysis")
     self.analysers = [
+      StrongSpotsAnalyser(directory),
       CentroidAnalyser(directory),
       BackgroundAnalyser(directory),
       IntensityAnalyser(directory),
