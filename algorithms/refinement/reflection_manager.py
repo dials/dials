@@ -459,6 +459,10 @@ class ReflectionManager(object):
     info(st.format())
     info("\n")
 
+    if len(l) < 20:
+      debug("Fewer than 20 reflections matched!")
+      return
+
     sl = self._sort_obs_by_residual(l)
     debug("Reflections with the worst 20 positional residuals:")
     debug("H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, " + \
