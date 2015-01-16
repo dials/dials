@@ -18,6 +18,9 @@ matplotlib.use("Agg")
 
 from matplotlib import pylab
 
+from dials.array_family import flex
+
+
 def ensure_directory(path):
   ''' Make the directory if not already there. '''
   from os import makedirs
@@ -40,6 +43,16 @@ def ensure_required(rlist, required):
       print "  %s" % k
     return False
   return True
+
+def determine_grid_size(rlist, grid_size=None):
+  from libtbx import Auto
+  if grid_size is not None and grid_size is not Auto:
+    return grid_size
+  panel_ids = rlist['panel']
+  n_panels = flex.max(panel_ids) + 1
+  n_cols = int(math.floor(math.sqrt(n_panels)))
+  n_rows = int(math.ceil(n_panels / n_cols))
+  return n_cols, n_rows
 
 
 class StrongSpotsAnalyser(object):
@@ -90,7 +103,6 @@ class StrongSpotsAnalyser(object):
 
   def spot_count_per_image(self, rlist):
     ''' Analyse the spot count per image. '''
-    from dials.array_family import flex
     from os.path import join
     x,y,z = rlist['xyzobs.px.value'].parts()
     max_z = int(math.ceil(flex.max(z)))
@@ -114,7 +126,6 @@ class StrongSpotsAnalyser(object):
 
   def spot_count_per_panel(self, rlist):
     ''' Analyse the spot count per panel. '''
-    from dials.array_family import flex
     from os.path import join
     panel = rlist['panel']
     if flex.max(panel) == 0:
@@ -143,12 +154,14 @@ class StrongSpotsAnalyser(object):
 class CentroidAnalyser(object):
   ''' Analyse the reflection centroids. '''
 
-  def __init__(self, directory):
+  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
     ''' Setup the directory. '''
     from os.path import join
 
     # Set the directory
     self.directory = join(directory, "centroid")
+    self.grid_size = grid_size
+    self.pixels_per_bin = pixels_per_bin
     ensure_directory(self.directory)
 
     # Set the required fields
@@ -189,6 +202,9 @@ class CentroidAnalyser(object):
       rlist = rlist.select(mask)
       Command.end(" Selected %d refined reflections" % len(rlist))
 
+    self.n_cols, self.n_rows = determine_grid_size(
+      rlist, grid_size=self.grid_size)
+
     # Look at differences in calculated/observed position
     print " Analysing centroid differences with I/Sigma > %s" %threshold
     self.centroid_diff_hist(rlist, threshold)
@@ -202,7 +218,6 @@ class CentroidAnalyser(object):
 
   def centroid_diff_hist(self, rlist, threshold):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
@@ -225,7 +240,6 @@ class CentroidAnalyser(object):
 
   def centroid_diff_xy(self, rlist, threshold):
     ''' Look at the centroid difference in x, y '''
-    from dials.array_family import flex
     from os.path import join
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
@@ -237,26 +251,117 @@ class CentroidAnalyser(object):
     xo, yo, zo = rlist['xyzobs.px.value'].parts()
     xd = xo - xc
     yd = yo - yc
-    pylab.title("Difference between observed and calculated in X")
-    cax = pylab.hexbin(xc, yc, C=xd, gridsize=100)
-    pylab.xlabel("x")
-    pylab.ylabel("y")
-    cbar = pylab.colorbar(cax)
-    cbar.ax.set_ylabel("Difference in x position")
-    pylab.savefig(join(self.directory, "centroid_diff_x.png"))
-    pylab.clf()
-    pylab.title("Difference between observed and calculated in Y")
-    cax = pylab.hexbin(xc, yc, C=yd, gridsize=100)
-    pylab.xlabel("x")
-    pylab.ylabel("y")
-    cbar = pylab.colorbar(cax)
-    cbar.ax.set_ylabel("Difference in y position")
-    pylab.savefig(join(self.directory, "centroid_diff_y.png"))
-    pylab.clf()
+
+    min_x = math.floor(min(flex.min(xc), flex.min(xo)))
+    min_y = math.floor(min(flex.min(yc), flex.min(yo)))
+    max_x = math.ceil(max(flex.max(xc), flex.max(xo)))
+    max_y = math.ceil(max(flex.max(yc), flex.max(yo)))
+
+    panel_ids = rlist['panel']
+    crystal_ids = rlist['id']
+    n_crystals = flex.max(crystal_ids) + 1
+    n_panels = flex.max(panel_ids) + 1
+    #n_cols = int(math.floor(math.sqrt(n_panels)))
+    #n_rows = int(math.ceil(n_panels / n_cols))
+
+    from matplotlib import pyplot
+
+    for i_crystal in range(n_crystals):
+      if n_crystals > 1:
+        suffix = '_%i' %i_crystal
+      else:
+        suffix = ''
+      crystal_sel = (crystal_ids == i_crystal)
+      fig_x, axes_x = pyplot.subplots(
+        self.n_rows, self.n_cols,
+        #sharex=True, sharey=True
+      )
+      fig_y, axes_y = pyplot.subplots(
+        self.n_rows, self.n_cols,
+        #sharex=True, sharey=True
+      )
+
+      if n_panels == 1:
+        axes_x = [[axes_x]]
+        axes_y = [[axes_y]]
+      elif self.n_cols == 1:
+        axes_x = [[ax] for ax in axes_x]
+        axes_y = [[ax] for ax in axes_y]
+      elif self.n_rows == 1:
+        axes_x = [axes_x]
+        axes_y = [axes_y]
+
+      min_xd = flex.min(xd.select(crystal_sel))
+      max_xd = flex.max(xd.select(crystal_sel))
+      min_yd = flex.min(yd.select(crystal_sel))
+      max_yd = flex.max(yd.select(crystal_sel))
+
+      gridsize = tuple(
+        int(math.ceil(i))
+        for i in (max_x/self.pixels_per_bin, max_y/self.pixels_per_bin))
+      #print gridsize
+
+      i_panel = 0
+      for i_row in range(self.n_rows):
+        for i_col in range(self.n_cols):
+          panel_sel = (panel_ids == i_panel)
+          sel = (panel_sel & crystal_sel)
+          #print i_panel, crystal_sel.count(True), panel_sel.count(True), sel.count(True)
+          i_panel += 1
+
+          if n_panels > 1:
+            #print len(axes_x), len(axes_x[0]), self.n_rows, self.n_cols
+            axes_x[i_row][i_col].set_title('Panel %d' %i_panel)
+            axes_y[i_row][i_col].set_title('Panel %d' %i_panel)
+            #axes_x[i_row][i_col].set_title("Difference between observed and calculated in X")
+            #axes_y[i_row][i_col].set_title("Difference between observed and calculated in Y")
+
+          if (i_row+1) == self.n_rows:
+            axes_x[i_row][i_col].set_xlabel("x")
+            axes_y[i_row][i_col].set_xlabel("x")
+
+          if i_col == 0:
+            axes_x[i_row][i_col].set_ylabel("y")
+            axes_y[i_row][i_col].set_ylabel("y")
+
+          if sel.count(True) > 0:
+            cax_x = axes_x[i_row][i_col].hexbin(
+              xc.select(sel).as_numpy_array(), yc.select(sel).as_numpy_array(),
+              C=xd.select(sel).as_numpy_array(), gridsize=gridsize,
+              vmin=min_xd, vmax=max_xd
+            )
+
+            cax_y = axes_y[i_row][i_col].hexbin(
+              xc.select(sel).as_numpy_array(), yc.select(sel).as_numpy_array(),
+              C=yd.select(sel).as_numpy_array(), gridsize=gridsize,
+              vmin=min_yd, vmax=max_yd
+            )
+
+          axes_x[i_row][i_col].set_xlim(min_x, max_x)
+          axes_x[i_row][i_col].set_ylim(min_y, max_y)
+          axes_y[i_row][i_col].set_xlim(min_x, max_x)
+          axes_y[i_row][i_col].set_ylim(min_y, max_y)
+          axes_x[i_row][i_col].invert_yaxis()
+          axes_y[i_row][i_col].invert_yaxis()
+          #axes_x[i_row][i_col].axes.set_aspect('equal')
+          #axes_y[i_row][i_col].axes.set_aspect('equal')
+
+      cax = fig_x.add_axes([0.9, 0.1, 0.03, 0.8])
+      cbar_x = fig_x.colorbar(cax_x, cax=cax)
+      cbar_x.ax.set_ylabel("Difference in x position")
+      cax = fig_y.add_axes([0.9, 0.1, 0.03, 0.8])
+      cbar_y = fig_y.colorbar(cax_y, cax=cax)
+      cbar_y.ax.set_ylabel("Difference in y position")
+
+      for fig in (fig_x, fig_y):
+        fig.set_size_inches([max(self.n_cols, self.n_rows) * i
+                             for i in fig.get_size_inches()])
+      fig_x.savefig(join(self.directory, "centroid_diff_x.png"))
+      fig_y.savefig(join(self.directory, "centroid_diff_y.png"))
+      pylab.clf()
 
   def centroid_diff_z(self, rlist, threshold):
     ''' Look at the centroid difference in x, y '''
-    from dials.array_family import flex
     from os.path import join
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
@@ -277,7 +382,6 @@ class CentroidAnalyser(object):
     pylab.clf()
 
   def centroid_mean_diff_vs_phi(self, rlist, threshold):
-    from dials.array_family import flex
     from os.path import join
     import math
     I = rlist['intensity.sum.value']
@@ -333,7 +437,6 @@ class CentroidAnalyser(object):
     pyplot.clf()
 
   def centroid_xy_xz_zy_residuals(self, rlist, threshold):
-    from dials.array_family import flex
     from os.path import join
     import math
     I = rlist['intensity.sum.value']
@@ -566,7 +669,6 @@ class BackgroundAnalyser(object):
 
   def mean_vs_ios(self, rlist):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     MEAN = rlist['background.mean']
     I = rlist['intensity.sum.value']
@@ -586,7 +688,6 @@ class BackgroundAnalyser(object):
 
   def rmsd_hist(self, rlist):
     ''' Analyse the background RMSD. '''
-    from dials.array_family import flex
     from os.path import join
     RMSD = flex.sqrt(rlist['background.mse'])
     MEAN = rlist['background.mean']
@@ -600,7 +701,6 @@ class BackgroundAnalyser(object):
 
   def rmsd_vs_xy(self, rlist):
     ''' Plot I/Sigma vs X/Y '''
-    from dials.array_family import flex
     from os.path import join
     RMSD = flex.sqrt(rlist['background.mse'])
     MEAN = rlist['background.mean']
@@ -617,7 +717,6 @@ class BackgroundAnalyser(object):
 
   def rmsd_vs_z(self, rlist):
     ''' Plot I/Sigma vs Z. '''
-    from dials.array_family import flex
     from os.path import join
     RMSD = flex.sqrt(rlist['background.mse'])
     MEAN = rlist['background.mean']
@@ -634,7 +733,6 @@ class BackgroundAnalyser(object):
 
   def rmsd_vs_ios(self, rlist):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     RMSD = flex.sqrt(rlist['background.mse'])
     MEAN = rlist['background.mean']
@@ -719,7 +817,6 @@ class IntensityAnalyser(object):
 
   def i_over_s_hist(self, rlist):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
@@ -733,7 +830,6 @@ class IntensityAnalyser(object):
 
   def i_over_s_vs_xy(self, rlist):
     ''' Plot I/Sigma vs X/Y '''
-    from dials.array_family import flex
     from os.path import join
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
@@ -750,7 +846,6 @@ class IntensityAnalyser(object):
 
   def i_over_s_vs_z(self, rlist):
     ''' Plot I/Sigma vs Z. '''
-    from dials.array_family import flex
     from os.path import join
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
@@ -939,7 +1034,6 @@ class ReferenceProfileAnalyser(object):
 
   def reflection_corr_vs_ios(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     corr = rlist['profile.correlation']
     I = rlist['intensity.prf.value']
@@ -1005,7 +1099,6 @@ class ReferenceProfileAnalyser(object):
 
   def ideal_reflection_corr_vs_ios(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from dials.array_family import flex
     from os.path import join
     if 'correlation.ideal.profile' in rlist:
       corr = rlist['correlation.ideal.profile']
@@ -1032,13 +1125,14 @@ class ReferenceProfileAnalyser(object):
 class Analyser(object):
   ''' Helper class to do all the analysis. '''
 
-  def __init__(self, directory):
+  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
     ''' Setup the analysers. '''
     from os.path import join
     directory = join(directory, "analysis")
     self.analysers = [
       StrongSpotsAnalyser(directory),
-      CentroidAnalyser(directory),
+      CentroidAnalyser(directory, grid_size=grid_size,
+                       pixels_per_bin=pixels_per_bin),
       BackgroundAnalyser(directory),
       IntensityAnalyser(directory),
       ReferenceProfileAnalyser(directory),
@@ -1067,6 +1161,10 @@ class Script(object):
           .type = str
           .help = "The directory to store the results"
       }
+      grid_size = Auto
+        .type = ints(size=2)
+      pixels_per_bin = 10
+        .type = int(value_min=1)
     ''')
 
     # Create the parser
@@ -1085,7 +1183,6 @@ class Script(object):
 
   def run(self):
     ''' Run the script. '''
-    from dials.array_family import flex
     from dials.util.command_line import Command
     from libtbx.utils import Abort
 
@@ -1101,7 +1198,9 @@ class Script(object):
       raise Abort('No reflections specified')
 
     # Analyse the reflections
-    analyse = Analyser(params.output.directory)
+    analyse = Analyser(
+      params.output.directory, grid_size=params.grid_size,
+      pixels_per_bin=params.pixels_per_bin)
     analyse(params.input.reflections[0].data)
 
 
