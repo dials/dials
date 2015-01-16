@@ -520,40 +520,55 @@ class ReflectionManager(object):
     from scitbx.math import five_number_summary
     sel = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
     matches = self._reflections.select(sel)
-    imatches = sel.iselection()
+    all_imatches = sel.iselection()
 
-    x_resid = matches['x_resid']
-    y_resid = matches['y_resid']
-    phi_resid = matches['phi_resid']
+    max_panel = flex.max(matches['panel'])
 
-    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
-    min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
-    min_phi, q1_phi, med_phi, q3_phi, max_phi = five_number_summary(phi_resid)
+    nreject = 0
+    for pnl in range(max_panel + 1):
+      sub_sel = matches['panel'] == pnl
+      sub_matches = matches.select(sub_sel)
 
-    iqr_x = q3_x - q1_x
-    iqr_y = q3_y - q1_y
-    iqr_phi = q3_phi - q1_phi
+      if len(sub_matches) < 20:
+        debug("Only %d reflections on panel %d. Outlier rejection skipped.",
+          len(sub_matches), pnl)
+        continue
 
-    cut_x = self._iqr_multiplier * iqr_x
-    cut_y = self._iqr_multiplier * iqr_y
-    cut_phi = self._iqr_multiplier * iqr_phi
+      sub_imatches = all_imatches.select(sub_sel)
 
-    # accumulate a selection of outliers
-    sel = matches['x_resid'] > q3_x + cut_x
-    sel.set_selected((matches['x_resid'] < q1_x - cut_x), True)
-    sel.set_selected((matches['y_resid'] > q3_y + cut_y), True)
-    sel.set_selected((matches['y_resid'] < q1_y - cut_y), True)
-    sel.set_selected((matches['phi_resid'] > q3_phi + cut_phi), True)
-    sel.set_selected((matches['phi_resid'] < q1_phi - cut_phi), True)
+      x_resid = sub_matches['x_resid']
+      y_resid = sub_matches['y_resid']
+      phi_resid = sub_matches['phi_resid']
 
-    # get positions of outliers from the original matches
-    ioutliers = imatches.select(sel)
+      min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
+      min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
+      min_phi, q1_phi, med_phi, q3_phi, max_phi = five_number_summary(phi_resid)
 
-    # set those reflections to not be used
-    self._reflections.unset_flags(ioutliers,
-      self._reflections.flags.used_in_refinement)
+      iqr_x = q3_x - q1_x
+      iqr_y = q3_y - q1_y
+      iqr_phi = q3_phi - q1_phi
 
-    nreject = sel.count(True)
+      cut_x = self._iqr_multiplier * iqr_x
+      cut_y = self._iqr_multiplier * iqr_y
+      cut_phi = self._iqr_multiplier * iqr_phi
+
+      # accumulate a selection of outliers for this panel
+      sel_out = x_resid > q3_x + cut_x
+      sel_out.set_selected(x_resid < q1_x - cut_x, True)
+      sel_out.set_selected(y_resid > q3_y + cut_y, True)
+      sel_out.set_selected(y_resid < q1_y - cut_y, True)
+      sel_out.set_selected(phi_resid > q3_phi + cut_phi, True)
+      sel_out.set_selected(phi_resid < q1_phi - cut_phi, True)
+
+      # get positions of outliers from the original matches
+      ioutliers = sub_imatches.select(sel_out)
+
+      # set those reflections to not be used
+      self._reflections.unset_flags(ioutliers,
+        self._reflections.flags.used_in_refinement)
+
+      nreject += len(ioutliers)
+
     if nreject == 0: return False
 
     info("%d reflections have been rejected as outliers", nreject)
@@ -643,40 +658,55 @@ class StillsReflectionManager(ReflectionManager):
     from scitbx.math import five_number_summary
     sel = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
     matches = self._reflections.select(sel)
-    imatches = sel.iselection()
+    all_imatches = sel.iselection()
 
-    x_resid = matches['x_resid']
-    y_resid = matches['y_resid']
-    delpsi = matches['delpsical.rad']
+    max_panel = flex.max(matches['panel'])
 
-    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
-    min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
-    min_p, q1_p, med_p, q3_p, max_p = five_number_summary(delpsi)
+    nreject = 0
+    for pnl in range(max_panel + 1):
+      sub_sel = matches['panel'] == pnl
+      sub_matches = matches.select(sub_sel)
 
-    iqr_x = q3_x - q1_x
-    iqr_y = q3_y - q1_y
-    iqr_p = q3_p - q1_p
+      if len(sub_matches) < 20:
+        debug("Only %d reflections on panel %d. Outlier rejection skipped.",
+          len(sub_matches), pnl)
+        continue
 
-    cut_x = self._iqr_multiplier * iqr_x
-    cut_y = self._iqr_multiplier * iqr_y
-    cut_p = self._iqr_multiplier * iqr_p
+      sub_imatches = all_imatches.select(sub_sel)
 
-    # accumulate a selection of outliers
-    sel = matches['x_resid'] > q3_x + cut_x
-    sel.set_selected((matches['x_resid'] < q1_x - cut_x), True)
-    sel.set_selected((matches['y_resid'] > q3_y + cut_y), True)
-    sel.set_selected((matches['y_resid'] < q1_y - cut_y), True)
-    sel.set_selected((matches['delpsical.rad'] > q3_p + cut_p), True)
-    sel.set_selected((matches['delpsical.rad'] < q1_p - cut_p), True)
+      x_resid = sub_matches['x_resid']
+      y_resid = sub_matches['y_resid']
+      delpsi = sub_matches['delpsical.rad']
 
-    # get positions of outliers from the original matches
-    ioutliers = imatches.select(sel)
+      min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
+      min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
+      min_p, q1_p, med_p, q3_p, max_p = five_number_summary(delpsi)
 
-    # set those reflections to not be used
-    self._reflections.unset_flags(ioutliers,
-      self._reflections.flags.used_in_refinement)
+      iqr_x = q3_x - q1_x
+      iqr_y = q3_y - q1_y
+      iqr_p = q3_p - q1_p
 
-    nreject = sel.count(True)
+      cut_x = self._iqr_multiplier * iqr_x
+      cut_y = self._iqr_multiplier * iqr_y
+      cut_p = self._iqr_multiplier * iqr_p
+
+      # accumulate a selection of outliers for this panel
+      sel_out = x_resid > q3_x + cut_x
+      sel_out.set_selected(x_resid < q1_x - cut_x, True)
+      sel_out.set_selected(y_resid > q3_y + cut_y, True)
+      sel_out.set_selected(y_resid < q1_y - cut_y, True)
+      sel_out.set_selected(delpsi > q3_p + cut_p, True)
+      sel_out.set_selected(delpsi < q1_p - cut_p, True)
+
+      # get positions of outliers from the original matches
+      ioutliers = sub_imatches.select(sel_out)
+
+      # set those reflections to not be used
+      self._reflections.unset_flags(ioutliers,
+        self._reflections.flags.used_in_refinement)
+
+      nreject += len(ioutliers)
+
     if nreject == 0: return False
 
     info("%d reflections have been rejected as outliers" % nreject)
