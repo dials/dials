@@ -350,6 +350,16 @@ class CentroidAnalyser(object):
     dy = yc - yo
     dphi = zc - zo
 
+    min_dx = flex.min(dx)
+    max_dx = flex.max(dx)
+    min_dy = flex.min(dy)
+    max_dy = flex.max(dy)
+    min_dphi = flex.min(dphi)
+    max_dphi = flex.max(dphi)
+    #print min_dx, max_dx
+    #print min_dy, max_dy
+    #print min_dphi, max_dphi
+
     panel_ids = rlist['panel']
     crystal_ids = rlist['id']
     n_crystals = flex.max(crystal_ids) + 1
@@ -366,11 +376,17 @@ class CentroidAnalyser(object):
         suffix = ''
       crystal_sel = (crystal_ids == i_crystal)
       fig_xy, axes_xy = pyplot.subplots(
-        n_rows, n_cols, sharex=True, sharey=True)
+        n_rows, n_cols,
+        #sharex=True, sharey=True
+      )
       fig_xz, axes_xz = pyplot.subplots(
-        n_rows, n_cols, sharex=True, sharey=True)
+        n_rows, n_cols,
+        #sharex=True, sharey=True
+      )
       fig_zy, axes_zy = pyplot.subplots(
-        n_rows, n_cols, sharex=True, sharey=True)
+        n_rows, n_cols,
+        #sharex=True, sharey=True
+      )
 
       if n_panels == 1:
         axes_xy = [[axes_xy]]
@@ -389,6 +405,8 @@ class CentroidAnalyser(object):
             dy.select(panel_sel & crystal_sel).as_numpy_array(),
             c='b', alpha=0.3, label='Panel %d' %i_panel)
           axes_xy[i_row][i_col].axes.set_aspect('equal')
+          axes_xy[i_row][i_col].axes.set_xlim(min_dx, max_dx)
+          axes_xy[i_row][i_col].axes.set_ylim(min_dy, max_dy)
 
           axes_xz[i_row][i_col].axhline(0, color='grey')
           axes_xz[i_row][i_col].axvline(0, color='grey')
@@ -396,6 +414,8 @@ class CentroidAnalyser(object):
             dx.select(panel_sel & crystal_sel).as_numpy_array(),
             dphi.select(panel_sel & crystal_sel).as_numpy_array(),
             c='b', alpha=0.3, label='Panel %d' %i_panel)
+          axes_xz[i_row][i_col].axes.set_xlim(min_dx, max_dx)
+          axes_xz[i_row][i_col].axes.set_ylim(min_dphi, max_dphi)
 
           axes_zy[i_row][i_col].axhline(0, color='grey')
           axes_zy[i_row][i_col].axvline(0, color='grey')
@@ -403,6 +423,8 @@ class CentroidAnalyser(object):
             dphi.select(panel_sel & crystal_sel).as_numpy_array(),
             dy.select(panel_sel & crystal_sel).as_numpy_array(),
             c='b', alpha=0.3, label='Panel %d' %i_panel)
+          axes_zy[i_row][i_col].axes.set_xlim(min_dphi, max_dphi)
+          axes_zy[i_row][i_col].axes.set_ylim(min_dy, max_dy)
 
           if n_panels > 1:
             axes_xy[i_row][i_col].set_title('Panel %d' %i_panel)
