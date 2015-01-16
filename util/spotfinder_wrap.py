@@ -1,7 +1,7 @@
 from __future__ import division
-class spot_wrapper:
-  def __init__(self,working_phil):
-    self.working_phil = working_phil
+class spot_wrapper(object):
+  def __init__(self, params):
+    self.params = params
 
   def display(self, imagesets, reflections, crystals=None):
     import wx
@@ -10,6 +10,7 @@ class spot_wrapper:
     app   = wx.App(0)
     frame = SpotFrame(None, -1, "X-ray image display", size=(800,720),
       pos=(100,100),
+      params=self.params,
       imagesets=imagesets,
       reflections=reflections,
       crystals=crystals)

@@ -609,6 +609,7 @@ class SpotSettingsFrame (SettingsFrame) :
   def __init__ (self, *args, **kwds) :
     super(SettingsFrame, self).__init__(*args, **kwds)
     self.settings = self.GetParent().settings
+    self.params = self.GetParent().params
     szr = wx.BoxSizer(wx.VERTICAL)
     panel = SpotSettingsPanel(self, -1)
     self.SetSizer(szr)
@@ -624,30 +625,31 @@ class SpotSettingsPanel (SettingsPanel) :
   def __init__ (self, *args, **kwds) :
     wx.Panel.__init__(self, *args, **kwds)
     self.settings = self.GetParent().settings
+    self.params = self.GetParent().params
     # CONTROLS 4: additional settings for derived class
     self.settings.show_spotfinder_spots = False
     self.settings.show_dials_spotfinder_spots = True
-    self.settings.show_resolution_rings = False
-    self.settings.show_ice_rings = False
-    self.settings.show_ctr_mass = True
-    self.settings.show_max_pix = True
-    self.settings.show_all_pix = True
-    self.settings.show_shoebox = True
-    self.settings.show_predictions = True
-    self.settings.show_miller_indices = False
-    self.settings.show_mean_filter = False
-    self.settings.show_variance_filter = False
-    self.settings.show_dispersion = False
-    self.settings.show_sigma_b_filter = False
-    self.settings.show_sigma_s_filter = False
-    self.settings.show_threshold_map = False
-    self.settings.show_global_threshold_filter = False
-    self.settings.nsigma_b = 6
-    self.settings.nsigma_s = 3
-    self.settings.global_threshold = 0
-    self.settings.kernel_size = [3,3]
-    self.settings.min_local = 2
-    self.settings.gain = 1
+    self.settings.show_resolution_rings = self.params.show_resolution_rings
+    self.settings.show_ice_rings = self.params.show_ice_rings
+    self.settings.show_ctr_mass = self.params.show_ctr_mass
+    self.settings.show_max_pix = self.params.show_max_pix
+    self.settings.show_all_pix = self.params.show_all_pix
+    self.settings.show_shoebox = self.params.show_shoebox
+    self.settings.show_predictions = self.params.show_predictions
+    self.settings.show_miller_indices = self.params.show_miller_indices
+    self.settings.show_mean_filter = self.params.display == "mean"
+    self.settings.show_variance_filter = self.params.display == "variance"
+    self.settings.show_dispersion = self.params.display == "dispersion"
+    self.settings.show_sigma_b_filter = self.params.display == "sigma_b"
+    self.settings.show_sigma_s_filter = self.params.display == "sigma_s"
+    self.settings.show_threshold_map = self.params.display == "threshold"
+    self.settings.show_global_threshold_filter = self.params.display == "global_threshold"
+    self.settings.nsigma_b = self.params.nsigma_b
+    self.settings.nsigma_s = self.params.nsigma_s
+    self.settings.global_threshold = self.params.global_threshold
+    self.settings.kernel_size = self.params.kernel_size
+    self.settings.min_local = self.params.min_local
+    self.settings.gain = self.params.gain
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
@@ -805,7 +807,9 @@ class SpotSettingsPanel (SettingsPanel) :
     self.btn.AddSegment("sigma_b")
     self.btn.AddSegment("sigma_s ")
     self.btn.AddSegment("threshold")
-    self.btn.SetSelection(0)
+    self.btn.SetSelection(
+      ["image", "mean", "variance", "dispersion", "global_threshold",
+       "sigma_b", "sigma_s", "threshold"].index(self.params.display))
 
     self.Bind(wx.EVT_RADIOBUTTON, self.OnUpdateCM, self.btn)
     self.GetSizer().Add(self.btn, 0, wx.ALL, 5)

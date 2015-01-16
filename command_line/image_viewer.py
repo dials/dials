@@ -14,13 +14,54 @@ from __future__ import division
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 
+import iotbx.phil
+
+phil_scope = iotbx.phil.parse("""\
+image_viewer {
+  show_beam_center = True
+    .type = bool
+  show_resolution_rings = False
+    .type = bool
+  show_ice_rings = False
+    .type = bool
+  show_ctr_mass = True
+    .type = bool
+  show_max_pix = True
+    .type = bool
+  show_all_pix = True
+    .type = bool
+  show_shoebox = True
+    .type = bool
+  show_predictions = True
+    .type = bool
+  show_miller_indices = False
+    .type = bool
+  display = *image mean variance dispersion sigma_b \
+            sigma_s threshold global_threshold
+    .type = choice
+  nsigma_b = 6
+    .type = float(value_min=0)
+  nsigma_s = 3
+    .type = float(value_min=0)
+  global_threshold = 0
+    .type = float(value_min=0)
+  kernel_size = 3,3
+    .type = ints(size=2, value_min=1)
+  min_local = 2
+    .type = int
+  gain = 1
+    .type = float(value_min=0)
+}
+""")
+
 class Script(object):
   '''Class to run script.'''
 
-  def __init__(self, imagesets, reflections, crystals=None):
+  def __init__(self, params, imagesets, reflections, crystals=None):
     '''Setup the script.'''
 
     # Filename data
+    self.params = params
     self.imagesets = imagesets
     self.reflections = reflections
     self.crystals = crystals
@@ -33,7 +74,7 @@ class Script(object):
 
   def view(self):
     from dials.util.spotfinder_wrap import spot_wrapper
-    spot_wrapper(working_phil=None).display(
+    spot_wrapper(params=self.params).display(
       imagesets=self.imagesets, reflections=self.reflections,
       crystals=self.crystals)
 
@@ -50,6 +91,7 @@ if __name__ == '__main__':
   """ %libtbx.env.dispatcher_name
   parser = OptionParser(
     usage=usage_message,
+    phil=phil_scope,
     read_datablocks=True,
     read_experiments=True,
     read_reflections=True,
@@ -75,9 +117,10 @@ if __name__ == '__main__':
     raise RuntimeError("No imageset could be constructed")
 
   runner = Script(
-      reflections=reflections,
-      imagesets=imagesets,
-      crystals=crystals)
+    params=params.image_viewer,
+    reflections=reflections,
+    imagesets=imagesets,
+    crystals=crystals)
 
   # Run the script
   runner()
