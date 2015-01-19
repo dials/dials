@@ -49,7 +49,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @returns An adjacency list
    */
   inline
-  boost::shared_ptr<AdjacencyList> find_overlapping(
+  AdjacencyList find_overlapping(
       const af::const_ref<int6> &bboxes) {
 
     // Ensure we have a valid number of bboxes
@@ -60,12 +60,12 @@ namespace dials { namespace algorithms { namespace shoebox {
     detect_collisions3d(bboxes.begin(), bboxes.end(), collisions);
 
     // Put all the collisions into an adjacency list
-    boost::shared_ptr<AdjacencyList> list(new AdjacencyList);
+    AdjacencyList list;
     for (std::size_t i = 0; i < bboxes.size(); ++i) {
-      add_vertex(*list);
+      add_vertex(list);
     }
     for (std::size_t i = 0; i < collisions.size(); ++i) {
-      add_edge(collisions[i].first, collisions[i].second, *list);
+      add_edge(collisions[i].first, collisions[i].second, list);
     }
 
     // Return the adjacency list
@@ -96,7 +96,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @returns An adjacency list
    */
   inline
-  boost::shared_ptr<AdjacencyList> find_overlapping_multi_panel(
+  AdjacencyList find_overlapping_multi_panel(
       const af::const_ref<int6> &bbox,
       const af::const_ref<std::size_t> &panel) {
 
@@ -130,9 +130,9 @@ namespace dials { namespace algorithms { namespace shoebox {
     offset.push_back(index.size());
 
     // Do the collision detection for all bboxes in the same panel
-    boost::shared_ptr<AdjacencyList> list(new AdjacencyList);
+    AdjacencyList list;
     for (std::size_t i = 0; i < bbox.size(); ++i) {
-      add_vertex(*list);
+      add_vertex(list);
     }
     for (std::size_t j = 0; j < offset.size() - 1; ++j) {
       std::size_t d0 = offset[j];
@@ -150,7 +150,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         add_edge(
             index[d0 + collisions[i].first],
             index[d0 + collisions[i].second],
-            *list);
+            list);
       }
     }
     return list;
@@ -182,7 +182,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     };
 
-    boost::shared_ptr<AdjacencyList> operator()(
+    AdjacencyList operator()(
       const af::const_ref<std::size_t> &id,
       const af::const_ref<int6> &bbox,
       const af::const_ref<std::size_t> &panel) const {
@@ -230,9 +230,9 @@ namespace dials { namespace algorithms { namespace shoebox {
       offset.push_back(index.size());
 
       // Do the collision detection for all bboxes in the same group
-      boost::shared_ptr<AdjacencyList> list(new AdjacencyList);
+      AdjacencyList list;
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        add_vertex(*list);
+        add_vertex(list);
       }
       for (std::size_t j = 0; j < offset.size() - 1; ++j) {
         std::size_t d0 = offset[j];
@@ -250,7 +250,7 @@ namespace dials { namespace algorithms { namespace shoebox {
           add_edge(
               index[d0 + collisions[i].first],
               index[d0 + collisions[i].second],
-              *list);
+              list);
         }
       }
       return list;

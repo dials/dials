@@ -23,86 +23,88 @@ from libtbx.test_utils import open_tmp_directory
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 from dials.array_family import flex
 
-phil_input = """experiments={0}/data/sweep_002/experiments.json \
-  reflections={0}/data/sweep_002/reflections.pickle \
-  experiments={0}/data/sweep_003/experiments.json \
-  reflections={0}/data/sweep_003/reflections.pickle \
-  experiments={0}/data/sweep_004/experiments.json \
-  reflections={0}/data/sweep_004/reflections.pickle \
-  experiments={0}/data/sweep_005/experiments.json \
-  reflections={0}/data/sweep_005/reflections.pickle \
-  experiments={0}/data/sweep_006/experiments.json \
-  reflections={0}/data/sweep_006/reflections.pickle \
-  experiments={0}/data/sweep_007/experiments.json \
-  reflections={0}/data/sweep_007/reflections.pickle \
-  experiments={0}/data/sweep_009/experiments.json \
-  reflections={0}/data/sweep_009/reflections.pickle \
-  experiments={0}/data/sweep_011/experiments.json \
-  reflections={0}/data/sweep_011/reflections.pickle \
-  experiments={0}/data/sweep_012/experiments.json \
-  reflections={0}/data/sweep_012/reflections.pickle \
-  experiments={0}/data/sweep_013/experiments.json \
-  reflections={0}/data/sweep_013/reflections.pickle \
-  experiments={0}/data/sweep_014/experiments.json \
-  reflections={0}/data/sweep_014/reflections.pickle \
-  experiments={0}/data/sweep_017/experiments.json \
-  reflections={0}/data/sweep_017/reflections.pickle \
-  experiments={0}/data/sweep_018/experiments.json \
-  reflections={0}/data/sweep_018/reflections.pickle \
-  experiments={0}/data/sweep_019/experiments.json \
-  reflections={0}/data/sweep_019/reflections.pickle \
-  experiments={0}/data/sweep_020/experiments.json \
-  reflections={0}/data/sweep_020/reflections.pickle \
-  experiments={0}/data/sweep_021/experiments.json \
-  reflections={0}/data/sweep_021/reflections.pickle \
-  experiments={0}/data/sweep_022/experiments.json \
-  reflections={0}/data/sweep_022/reflections.pickle \
-  experiments={0}/data/sweep_023/experiments.json \
-  reflections={0}/data/sweep_023/reflections.pickle \
-  experiments={0}/data/sweep_024/experiments.json \
-  reflections={0}/data/sweep_024/reflections.pickle \
-  experiments={0}/data/sweep_025/experiments.json \
-  reflections={0}/data/sweep_025/reflections.pickle \
-  experiments={0}/data/sweep_026/experiments.json \
-  reflections={0}/data/sweep_026/reflections.pickle \
-  experiments={0}/data/sweep_027/experiments.json \
-  reflections={0}/data/sweep_027/reflections.pickle \
-  experiments={0}/data/sweep_028/experiments.json \
-  reflections={0}/data/sweep_028/reflections.pickle \
-  experiments={0}/data/sweep_029/experiments.json \
-  reflections={0}/data/sweep_029/reflections.pickle \
-  experiments={0}/data/sweep_030/experiments.json \
-  reflections={0}/data/sweep_030/reflections.pickle \
-  experiments={0}/data/sweep_031/experiments.json \
-  reflections={0}/data/sweep_031/reflections.pickle \
-  experiments={0}/data/sweep_032/experiments.json \
-  reflections={0}/data/sweep_032/reflections.pickle \
-  experiments={0}/data/sweep_033/experiments.json \
-  reflections={0}/data/sweep_033/reflections.pickle \
-  experiments={0}/data/sweep_035/experiments.json \
-  reflections={0}/data/sweep_035/reflections.pickle \
-  experiments={0}/data/sweep_036/experiments.json \
-  reflections={0}/data/sweep_036/reflections.pickle \
-  experiments={0}/data/sweep_037/experiments.json \
-  reflections={0}/data/sweep_037/reflections.pickle \
-  experiments={0}/data/sweep_038/experiments.json \
-  reflections={0}/data/sweep_038/reflections.pickle \
-  experiments={0}/data/sweep_040/experiments.json \
-  reflections={0}/data/sweep_040/reflections.pickle \
-  experiments={0}/data/sweep_041/experiments.json \
-  reflections={0}/data/sweep_041/reflections.pickle \
-  experiments={0}/data/sweep_042/experiments.json \
-  reflections={0}/data/sweep_042/reflections.pickle \
-  experiments={0}/data/sweep_043/experiments.json \
-  reflections={0}/data/sweep_043/reflections.pickle \
-  experiments={0}/data/sweep_044/experiments.json \
-  reflections={0}/data/sweep_044/reflections.pickle \
-  experiments={0}/data/sweep_046/experiments.json \
-  reflections={0}/data/sweep_046/reflections.pickle \
-  experiments={0}/data/sweep_047/experiments.json \
-  reflections={0}/data/sweep_047/reflections.pickle \
-  experiments={0}/data/sweep_048/experiments.json \
-  reflections={0}/data/sweep_048/reflections.pickle"""
+phil_input = """
+  input.experiments={0}/data/sweep_002/experiments.json
+  input.reflections={0}/data/sweep_002/reflections.pickle
+  input.experiments={0}/data/sweep_003/experiments.json
+  input.reflections={0}/data/sweep_003/reflections.pickle
+  input.experiments={0}/data/sweep_004/experiments.json
+  input.reflections={0}/data/sweep_004/reflections.pickle
+  input.experiments={0}/data/sweep_005/experiments.json
+  input.reflections={0}/data/sweep_005/reflections.pickle
+  input.experiments={0}/data/sweep_006/experiments.json
+  input.reflections={0}/data/sweep_006/reflections.pickle
+  input.experiments={0}/data/sweep_007/experiments.json
+  input.reflections={0}/data/sweep_007/reflections.pickle
+  input.experiments={0}/data/sweep_009/experiments.json
+  input.reflections={0}/data/sweep_009/reflections.pickle
+  input.experiments={0}/data/sweep_011/experiments.json
+  input.reflections={0}/data/sweep_011/reflections.pickle
+  input.experiments={0}/data/sweep_012/experiments.json
+  input.reflections={0}/data/sweep_012/reflections.pickle
+  input.experiments={0}/data/sweep_013/experiments.json
+  input.reflections={0}/data/sweep_013/reflections.pickle
+  input.experiments={0}/data/sweep_014/experiments.json
+  input.reflections={0}/data/sweep_014/reflections.pickle
+  input.experiments={0}/data/sweep_017/experiments.json
+  input.reflections={0}/data/sweep_017/reflections.pickle
+  input.experiments={0}/data/sweep_018/experiments.json
+  input.reflections={0}/data/sweep_018/reflections.pickle
+  input.experiments={0}/data/sweep_019/experiments.json
+  input.reflections={0}/data/sweep_019/reflections.pickle
+  input.experiments={0}/data/sweep_020/experiments.json
+  input.reflections={0}/data/sweep_020/reflections.pickle
+  input.experiments={0}/data/sweep_021/experiments.json
+  input.reflections={0}/data/sweep_021/reflections.pickle
+  input.experiments={0}/data/sweep_022/experiments.json
+  input.reflections={0}/data/sweep_022/reflections.pickle
+  input.experiments={0}/data/sweep_023/experiments.json
+  input.reflections={0}/data/sweep_023/reflections.pickle
+  input.experiments={0}/data/sweep_024/experiments.json
+  input.reflections={0}/data/sweep_024/reflections.pickle
+  input.experiments={0}/data/sweep_025/experiments.json
+  input.reflections={0}/data/sweep_025/reflections.pickle
+  input.experiments={0}/data/sweep_026/experiments.json
+  input.reflections={0}/data/sweep_026/reflections.pickle
+  input.experiments={0}/data/sweep_027/experiments.json
+  input.reflections={0}/data/sweep_027/reflections.pickle
+  input.experiments={0}/data/sweep_028/experiments.json
+  input.reflections={0}/data/sweep_028/reflections.pickle
+  input.experiments={0}/data/sweep_029/experiments.json
+  input.reflections={0}/data/sweep_029/reflections.pickle
+  input.experiments={0}/data/sweep_030/experiments.json
+  input.reflections={0}/data/sweep_030/reflections.pickle
+  input.experiments={0}/data/sweep_031/experiments.json
+  input.reflections={0}/data/sweep_031/reflections.pickle
+  input.experiments={0}/data/sweep_032/experiments.json
+  input.reflections={0}/data/sweep_032/reflections.pickle
+  input.experiments={0}/data/sweep_033/experiments.json
+  input.reflections={0}/data/sweep_033/reflections.pickle
+  input.experiments={0}/data/sweep_035/experiments.json
+  input.reflections={0}/data/sweep_035/reflections.pickle
+  input.experiments={0}/data/sweep_036/experiments.json
+  input.reflections={0}/data/sweep_036/reflections.pickle
+  input.experiments={0}/data/sweep_037/experiments.json
+  input.reflections={0}/data/sweep_037/reflections.pickle
+  input.experiments={0}/data/sweep_038/experiments.json
+  input.reflections={0}/data/sweep_038/reflections.pickle
+  input.experiments={0}/data/sweep_040/experiments.json
+  input.reflections={0}/data/sweep_040/reflections.pickle
+  input.experiments={0}/data/sweep_041/experiments.json
+  input.reflections={0}/data/sweep_041/reflections.pickle
+  input.experiments={0}/data/sweep_042/experiments.json
+  input.reflections={0}/data/sweep_042/reflections.pickle
+  input.experiments={0}/data/sweep_043/experiments.json
+  input.reflections={0}/data/sweep_043/reflections.pickle
+  input.experiments={0}/data/sweep_044/experiments.json
+  input.reflections={0}/data/sweep_044/reflections.pickle
+  input.experiments={0}/data/sweep_046/experiments.json
+  input.reflections={0}/data/sweep_046/reflections.pickle
+  input.experiments={0}/data/sweep_047/experiments.json
+  input.reflections={0}/data/sweep_047/reflections.pickle
+  input.experiments={0}/data/sweep_048/experiments.json
+  input.reflections={0}/data/sweep_048/reflections.pickle
+ """
 
 def test1():
 
@@ -117,10 +119,18 @@ def test1():
   cwd = os.path.abspath(os.curdir)
   tmp_dir = open_tmp_directory(suffix="tst_combine_experiments_and_reflections")
   os.chdir(tmp_dir)
-  cmd = "dials.combine_experiments " + phil_input.format(
-    data_dir) + " reference_from_experiment.beam=0 " + \
-    "reference_from_experiment.scan=0 reference_from_experiment.goniometer=0"+ \
-    " reference_from_experiment.detector=0"
+
+  input_phil = phil_input.format(data_dir) + """
+ reference_from_experiment.beam=0
+ reference_from_experiment.scan=0
+ reference_from_experiment.goniometer=0
+ reference_from_experiment.detector=0
+ """
+
+  with open("input.phil","w") as phil_file:
+      phil_file.writelines(input_phil)
+
+  cmd = "dials.combine_experiments input.phil"
   #print cmd
 
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()

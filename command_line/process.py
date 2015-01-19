@@ -51,6 +51,13 @@ phil_scope = parse('''
     .type = int(value_min=0)
     .help = "The verbosity level"
 
+  input {
+    template = None
+      .type = str
+      .help = "The image sweep template"
+      .multiple = True
+   }
+
   output {
     datablock_filename = datablock.json
       .type = str
@@ -111,6 +118,7 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
+    from dxtbx.datablock import DataBlockTemplateImporter
     from dials.util.options import flatten_datablocks
     from dials.util import log
     from logging import info
@@ -121,6 +129,20 @@ class Script(object):
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     datablocks = flatten_datablocks(params.input.datablock)
+
+    # Check we have some filenames
+    if len(datablocks) == 0:
+
+      # Check if a template has been set and print help if not, otherwise try to
+      # import the images based on the template input
+      if len(params.input.template) == 0:
+        self.parser.print_help()
+        exit(0)
+      else:
+        importer = DataBlockTemplateImporter(
+          params.input.template,
+          options.verbose)
+        datablocks = importer.datablocks
 
     # Save the options
     self.options = options

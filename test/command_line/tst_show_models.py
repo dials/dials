@@ -13,7 +13,7 @@ def run():
 
   path = os.path.join(dials_regression, "experiment_test_data")
 
-  cmd = "dials.show_models '%s/experiment_1.json'" %path
+  cmd = "dials.show_models %s/experiment_1.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert not show_diff("\n".join(result.stdout_lines[6:]), """\
 Detector:
@@ -57,7 +57,7 @@ Crystal:
 
   path = os.path.join(
     dials_regression, "indexing_test_data", "i04_weak_data")
-  cmd = "dials.show_models '%s/datablock_orig.json'" %path
+  cmd = "dials.show_models %s/datablock_orig.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert not show_diff("\n".join(result.stdout_lines[7:]), """\
 Detector:

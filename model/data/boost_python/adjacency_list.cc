@@ -28,51 +28,51 @@ namespace dials { namespace model { namespace boost_python {
   typedef std::pair<adjacency_iterator, adjacency_iterator>
     adjacency_iterator_range;
 
-  void adjacency_list_add_edge(boost::shared_ptr<AdjacencyList> &list,
+  void adjacency_list_add_edge(boost::shared_ptr<AdjacencyList> list,
       vertex_descriptor i, vertex_descriptor j) {
     add_edge(i, j, *list);
   }
 
-  void adjacency_list_remove_edge(boost::shared_ptr<AdjacencyList> &list,
+  void adjacency_list_remove_edge(boost::shared_ptr<AdjacencyList> list,
       vertex_descriptor i, vertex_descriptor j) {
     remove_edge(i, j, *list);
   }
 
-  void adjacency_list_clear_vertex(boost::shared_ptr<AdjacencyList> &list,
+  void adjacency_list_clear_vertex(boost::shared_ptr<AdjacencyList> list,
       vertex_descriptor v) {
     clear_vertex(v, *list);
   }
 
-  void adjacency_list_clear(boost::shared_ptr<AdjacencyList> &list) {
+  void adjacency_list_clear(boost::shared_ptr<AdjacencyList> list) {
     list->clear();
   }
 
   vertex_iterator_range adjacency_list_vertices(
-      boost::shared_ptr<AdjacencyList> &list) {
+      boost::shared_ptr<AdjacencyList> list) {
     return vertices(*list);
   }
 
   edge_iterator_range adjacency_list_edges(
-      boost::shared_ptr<AdjacencyList> &list) {
+      boost::shared_ptr<AdjacencyList> list) {
     return edges(*list);
   }
 
   adjacency_iterator_range adjacency_list_adjacent_vertices(
-      boost::shared_ptr<AdjacencyList> &list, vertex_descriptor v) {
+      boost::shared_ptr<AdjacencyList> list, vertex_descriptor v) {
     return adjacent_vertices(v, *list);
   }
 
   std::size_t adjacency_list_num_vertices(
-      boost::shared_ptr<AdjacencyList> &list) {
+      boost::shared_ptr<AdjacencyList> list) {
     return num_vertices(*list);
   }
   std::size_t adjacency_list_num_edges(
-      boost::shared_ptr<AdjacencyList> &list) {
+      boost::shared_ptr<AdjacencyList> list) {
     return num_edges(*list);
   }
 
   std::pair<vertex_descriptor, vertex_descriptor> adjacency_list_edge_vertices(
-      boost::shared_ptr<AdjacencyList> &list, edge_descriptor edge) {
+      boost::shared_ptr<AdjacencyList> list, edge_descriptor edge) {
     return std::pair<vertex_descriptor, vertex_descriptor>(
       source(edge, *list), target(edge, *list));
   }
@@ -90,11 +90,11 @@ namespace dials { namespace model { namespace boost_python {
 
     class_<edge_descriptor>("EdgeDescriptor", no_init);
 
-    class_<edge_iterator_range>("EdgeIteratorRange", no_init)
+    class_< boost::shared_ptr<edge_iterator_range> >("EdgeIteratorRange", no_init)
       .def("__iter__",
         boost::python::range(
-          &edge_iterator_range::first,
-          &edge_iterator_range::second));
+          &edge_iterator_begin,
+          &edge_iterator_endrange::second));
 
     class_<adjacency_iterator_range>("AdjacencyIteratorRange", no_init)
       .def("__iter__",
@@ -102,7 +102,7 @@ namespace dials { namespace model { namespace boost_python {
           &adjacency_iterator_range::first,
           &adjacency_iterator_range::second));
 
-    class_<boost::shared_ptr<AdjacencyList> >("AdjacencyList")
+    class_< boost::shared_ptr<AdjacencyList> >("AdjacencyList")
       .def("add_edge", &adjacency_list_add_edge)
       .def("remove_edge", &adjacency_list_remove_edge)
       .def("clear_vertex", &adjacency_list_clear_vertex)

@@ -47,7 +47,7 @@ class Test(object):
     # Loop through all edges
     overlapping = []
     for e in adjacency_list.edges():
-      v1, v2 = adjacency_list[e]
+      v1, v2 = adjacency_list.source(e), adjacency_list.target(e)
       overlapping.append(v1)
       overlapping.append(v2)
 

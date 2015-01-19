@@ -37,10 +37,10 @@ class Test(object):
     import cPickle as pickle
     from math import sqrt
     from dials.algorithms.shoebox import MaskCode
-
+    print self.shoebox_filename
     # Read the data
     rtable = flex.reflection_table.from_pickle(self.reflection_filename)
-    shoeboxes, masks = pickle.load(open(self.shoebox_filename))
+    shoeboxes, masks = pickle.load(open(self.shoebox_filename, "r"))
     assert(len(rtable) == len(shoeboxes))
     assert(len(rtable) == len(masks))
 

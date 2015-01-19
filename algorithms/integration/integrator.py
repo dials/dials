@@ -318,21 +318,25 @@ class Task(object):
     size = flex.sum(xs * ys * zs)
     nbytes = size * (4 + 4 + 4)
 
-    # Compute percentage of max available
+    # Compute percentage of max available. The function is not portable to
+    # windows so need to add a check if the function fails. On windows no
+    # warning will be printed
     memory_info = machine_memory_info()
     total_memory = memory_info.memory_total()
-    assert(self._max_mem_usage >  0.0)
-    assert(self._max_mem_usage <= 1.0)
-    limit_memory = total_memory * self._max_mem_usage
-    if nbytes > limit_memory:
-      raise RuntimeError('''
+    if total_memory is not None:
+      assert(total_memory > 0)
+      assert(self._max_mem_usage >  0.0)
+      assert(self._max_mem_usage <= 1.0)
+      limit_memory = total_memory * self._max_mem_usage
+      if nbytes > limit_memory:
+        raise RuntimeError('''
         There was a problem allocating memory for shoeboxes. Possible solutions
         include increasing the percentage of memory allowed for shoeboxes or
         decreasing the block size.
           Total system memory: %g GB
           Limit shoebox memory: %g GB
           Requested shoebox memory: %g GB
-      ''' % (total_memory/1e9, limit_memory/1e9, nbytes/1e9))
+        ''' % (total_memory/1e9, limit_memory/1e9, nbytes/1e9))
 
     # Print out some info
     EPS = 1e-7

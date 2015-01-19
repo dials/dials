@@ -5,6 +5,7 @@ def run():
   import libtbx.load_env
   from libtbx.test_utils import show_diff
   from libtbx import easy_run
+  from glob import glob
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
   except KeyError, e:
@@ -14,7 +15,7 @@ def run():
   path = os.path.join(dials_regression, "centroid_test_data")
 
   # import the data
-  cmd = "dials.import %s/*.cbf output=datablock.json" %path
+  cmd = "dials.import %s output=datablock.json" % ' '.join(glob(os.path.join(path,"*.cbf")))
   easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("datablock.json")
 

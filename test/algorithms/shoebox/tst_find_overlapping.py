@@ -30,6 +30,7 @@ class Test(object):
 
     # Find the overlaps
     overlaps = find_overlapping(bbox)
+
     assert(overlaps.num_vertices() == nrefl)
     overlaps2 = self.brute_force(bbox)
     assert(overlaps.num_edges() == len(overlaps2))
@@ -38,7 +39,7 @@ class Test(object):
       edge = (min(edge), max(edge))
       edges[edge] = None
     for edge in overlaps.edges():
-      edge = overlaps[edge]
+      edge = overlaps.source(edge), overlaps.target(edge)
       edge = (min(edge), max(edge))
       assert(edge in edges)
     print 'OK'
@@ -72,7 +73,7 @@ class Test(object):
       edge = (min(edge), max(edge))
       edges[edge] = None
     for edge in overlaps.edges():
-      edge = overlaps[edge]
+      edge = (overlaps.source(edge), overlaps.target(edge))
       edge = (min(edge), max(edge))
       assert(edge in edges)
     print 'OK'

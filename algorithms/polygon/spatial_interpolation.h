@@ -163,7 +163,7 @@ namespace dials { namespace algorithms { namespace polygon {
   inline
   af::shared<Match> irregular_grid_to_grid(
     const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy,
-    af::c_grid<2> output_size) {
+    af::tiny<std::size_t,2> output_size) {
     af::shared<Match> matches;
     DIALS_ASSERT(inputxy.accessor().all_gt(0) && output_size.all_gt(0));
     for (std::size_t j = 0, k = 0; j < inputxy.accessor()[0]-1; ++j) {
@@ -187,7 +187,7 @@ namespace dials { namespace algorithms { namespace polygon {
   inline
   af::shared<Match> grid_to_irregular_grid(
     const af::const_ref< vec2<double>, af::c_grid<2> > &outputxy,
-    af::c_grid<2> input_size) {
+    af::tiny<std::size_t,2> input_size) {
     af::shared<Match> matches;
     DIALS_ASSERT(outputxy.accessor().all_gt(0) && input_size.all_gt(0));
     for (std::size_t j = 0, k = 0; j < outputxy.accessor()[0]-1; ++j) {
@@ -212,7 +212,7 @@ namespace dials { namespace algorithms { namespace polygon {
   af::versa< double, af::c_grid<2> > regrid_irregular_grid_to_grid(
       const af::const_ref< double, af::c_grid<2> > &input,
       const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy,
-      af::c_grid<2> output_size) {
+      af::tiny<std::size_t,2> output_size) {
     DIALS_ASSERT(inputxy.accessor()[0] == input.accessor()[0] + 1);
     DIALS_ASSERT(inputxy.accessor()[1] == input.accessor()[1] + 1);
     af::c_grid<2> accessor(output_size);

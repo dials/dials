@@ -12,7 +12,7 @@ def run():
     exit(0)
 
   path = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
-  cmd = "dials.compare_orientation_matrices '%s/experiments.json' '%s/regression_experiments.json'" %(path, path)
+  cmd = "dials.compare_orientation_matrices %s/experiments.json %s/regression_experiments.json" %(path, path)
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert not show_diff("\n".join(result.stdout_lines[7:]), """\
 Rotation matrix to transform crystal 1 to crystal 2

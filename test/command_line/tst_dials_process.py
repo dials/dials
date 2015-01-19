@@ -23,12 +23,12 @@ def exercise_1():
   hall_symbol =  '-R 3 2"'
   cmd = " ".join(["dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
-                  "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
+                  "indexing.known_symmetry.space_group=\"Hall: %s\"" %hall_symbol.replace('"', '\\"'),
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
+                  "template=%s" % os.path.join(data_dir, "hg_###.mar1600"),
                   ]
-                + ['"%s"' %p for p in g]
                  )
   # print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
@@ -65,11 +65,12 @@ def exercise_2():
   hall_symbol =  " I 2 2 3"
   cmd = " ".join(["dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
-                  "indexing.known_symmetry.space_group='Hall: %s'" %hall_symbol,
+                  "indexing.known_symmetry.space_group=\"Hall: %s\"" %hall_symbol,
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
                   "refinement.reflections.use_all_reflections=True",
+                  "template=%s" % os.path.join(data_dir, "insulin_1_###.img"),
                   ]
                 + ['"%s"' %p for p in g]
                  )

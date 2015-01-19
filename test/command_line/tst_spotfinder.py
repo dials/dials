@@ -5,6 +5,7 @@ import cPickle as pickle
 import libtbx.load_env
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
+from glob import glob
 
 def exercise_spotfinder():
   if not libtbx.env.has_module("dials_regression"):
@@ -14,8 +15,8 @@ def exercise_spotfinder():
   data_dir = libtbx.env.find_in_repositories(
     relative_path="dials_regression/centroid_test_data",
     test=os.path.isdir)
-  template = os.path.join(data_dir, "centroid*.cbf")
-  args = ["dials.find_spots", template, "output.reflections=spotfinder.pickle",
+  template = glob(os.path.join(data_dir, "centroid*.cbf"))
+  args = ["dials.find_spots", ' '.join(template), "output.reflections=spotfinder.pickle",
           "output.shoeboxes=True"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
@@ -32,7 +33,7 @@ def exercise_spotfinder():
 
   # now with a resolution filter
   args = ["dials.find_spots", "d_min=2", "d_max=15",
-          template, "output.reflections=spotfinder.pickle", "output.shoeboxes=False"]
+          ' '.join(template), "output.reflections=spotfinder.pickle", "output.shoeboxes=False"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
@@ -44,7 +45,7 @@ def exercise_spotfinder():
   # now with more generous parameters
   args = ["dials.find_spots", "min_spot_size=3",
           "max_separation=3",
-          template, "output.reflections=spotfinder.pickle"]
+          ' '.join(template), "output.reflections=spotfinder.pickle"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:

@@ -18,7 +18,6 @@ namespace dials { namespace model { namespace boost_python {
   void export_shoebox();
   void export_observation();
   void export_prediction();
-  void export_adjacency_list();
   void export_pixel_list();
   void export_ray();
   void export_image();
@@ -28,7 +27,6 @@ namespace dials { namespace model { namespace boost_python {
     export_observation();
     export_prediction();
     export_shoebox();
-    export_adjacency_list();
     export_pixel_list();
     export_ray();
     export_image();

@@ -471,9 +471,9 @@ def exercise_13():
     extra_args = ["bin_size_fraction=0.25",
                   "use_all_reflections=True"]
     if uc is not None:
-      extra_args.append("unit_cell='%s %s %s %s %s %s'" %unit_cell.parameters())
+      extra_args.append("unit_cell=\"%s %s %s %s %s %s\"" %unit_cell.parameters())
     if hall is not None:
-      extra_args.append("space_group='Hall: %s'" %hall)
+      extra_args.append("space_group=\"Hall: %s\"" %hall.replace('"', '\\"'))
 
     expected_unit_cell = unit_cell
     if hall is not None:
@@ -486,6 +486,7 @@ def exercise_13():
                               expected_rmsds, expected_hall_symbol)
 
 def exercise_14():
+  from glob import glob
   data_dir = os.path.join(dials_regression, "xia2_demo_data")
 
   cwd = os.path.abspath(os.curdir)
@@ -498,7 +499,7 @@ def exercise_14():
     shutil.copyfile(
       os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
 
-  args = ["dials.import", os.path.join(tmp_dir, "image_00*.img"),
+  args = ["dials.import", ' '.join(glob(os.path.join(tmp_dir, "image_00*.img"))),
           "output=datablock.json"]
   command = " ".join(args)
   #print command
@@ -521,8 +522,8 @@ def exercise_14():
   for method in ("fft3d", "fft1d", "real_space_grid_search"):
     extra_args = []
     extra_args.append(
-      "unit_cell='%s %s %s %s %s %s'" %expected_unit_cell.parameters())
-    extra_args.append("space_group='Hall: %s'" %expected_hall_symbol)
+      "unit_cell=\"%s %s %s %s %s %s\"" %expected_unit_cell.parameters())
+    extra_args.append("space_group=\"Hall: %s\"" %expected_hall_symbol)
     extra_args.append("indexing.method=%s" %method)
     extra_args.append("basis_vector_combinations.metric=n_indexed")
     extra_args.append("treat_single_image_as_still=False")

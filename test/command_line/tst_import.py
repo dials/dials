@@ -45,7 +45,7 @@ class Test(object):
     print 'OK'
 
   def tst_from_image_files(self):
-    from subprocess import call
+    from subprocess import call, PIPE
     from glob import glob
     from os.path import join, exists
 
@@ -54,7 +54,7 @@ class Test(object):
     image_files = ' '.join(image_files)
 
     # Import from the image files
-    call('dials.import %s output=import_datablock.json > /dev/null' % image_files, shell=True)
+    call('dials.import %s output=import_datablock.json' % image_files, shell=True, stdout=PIPE)
 
     # Get the expected output
     #expected = self.expected_import_from_image_files()
