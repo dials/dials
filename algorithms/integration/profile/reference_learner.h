@@ -21,7 +21,6 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int3;
-  using scitbx::af::int4;
 
   /**
    * Class to learn the reference profiles
@@ -118,8 +117,12 @@ namespace dials { namespace algorithms {
         std::size_t num, int3 grid_size, T value) {
       DIALS_ASSERT(num > 0);
       DIALS_ASSERT(grid_size.all_gt(0));
-      return af::versa< T, af::c_grid<4> >(af::c_grid<4>(
-        int4(num, grid_size[0], grid_size[1], grid_size[2])), value);
+          af::c_grid<4> accessor;
+          accessor[0] = num;
+          accessor[1] = grid_size[0];
+          accessor[2] = grid_size[1];
+          accessor[3] = grid_size[2];
+      return af::versa< T, af::c_grid<4> >(accessor, value);
     }
 
     /**
@@ -130,7 +133,7 @@ namespace dials { namespace algorithms {
     void add_profile(const af::const_ref< float_type, af::c_grid<3> > profile,
         vec3<double> coord) {
       // Get the expected profile size
-      int4 size_all = locator_.profile().accessor();
+      af::c_grid<4> size_all = locator_.profile().accessor();
       int3 size(size_all[1], size_all[2], size_all[3]);
 
       // Ensure that the profiles are the correct size
@@ -226,7 +229,7 @@ namespace dials { namespace algorithms {
      */
     af::ref<float_type> reference_profile(std::size_t index) {
       af::versa<float_type, af::c_grid<4> > all_profiles = locator_.profile();
-      int4 size = all_profiles.accessor();
+      af::c_grid<4> size = all_profiles.accessor();
       int offset = size[1] * size[2] * size[3];
       return af::ref<float_type>(&all_profiles[index * offset], offset);
     }
@@ -239,7 +242,7 @@ namespace dials { namespace algorithms {
 
     af::ref<bool> reference_mask(std::size_t index) {
       af::versa<bool, af::c_grid<4> > all_masks = locator_.mask();
-      int4 size = all_masks.accessor();
+      af::c_grid<4> size = all_masks.accessor();
       int offset = size[1] * size[2] * size[3];
       return af::ref<bool>(&all_masks[index * offset], offset);
     }

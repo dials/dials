@@ -364,7 +364,7 @@ namespace dials { namespace af { namespace boost_python {
     for (std::size_t i = 0; i < a.size(); ++i) {
       std::size_t index = af::max_index(a[i].data.const_ref());
       af::c_grid<3> accessor = a[i].data.accessor();
-      tiny<int, 3> coord = accessor.index_nd(index);
+      tiny<std::size_t, 3> coord = accessor.index_nd(index);
       result[i][0] = a[i].bbox[0] + coord[2] + 0.5;
       result[i][1] = a[i].bbox[2] + coord[1] + 0.5;
       result[i][2] = a[i].bbox[4] + coord[0] + 0.5;

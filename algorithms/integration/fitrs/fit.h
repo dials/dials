@@ -628,10 +628,10 @@ namespace dials { namespace algorithms {
         std::size_t panel = sbox.panel;
         int6 bbox = sbox.bbox;
         DIALS_ASSERT(id[i] < spec_.size());
-        int2 image_size = spec_[id[i]].detector()[panel].get_image_size();
+        tiny<std::size_t,2> image_size = spec_[id[i]].detector()[panel].get_image_size();
         DIALS_ASSERT(sbox.is_consistent());
-        if (bbox[0] < 0 || bbox[1] > image_size[0] ||
-            bbox[2] < 0 || bbox[3] > image_size[1]) {
+        if (bbox[0] < 0 || bbox[1] > (int)image_size[0] ||
+            bbox[2] < 0 || bbox[3] > (int)image_size[1]) {
           flags[i] |= DontIntegrate;
           flags[i] &= ~ReferenceSpot;
         } else {

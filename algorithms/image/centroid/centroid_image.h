@@ -54,7 +54,7 @@ namespace dials { namespace algorithms {
      * Generate coordinates.
      * @param size The size of the image
      */
-    af::shared<coord_type> generate_coords(int2 size) {
+    af::shared<coord_type> generate_coords(af::c_grid<2> size) {
 
       // Check the sizes
       DIALS_ASSERT(size.all_gt(0));
@@ -103,7 +103,7 @@ namespace dials { namespace algorithms {
      * Generate coordinates.
      * @param size The size of the image
      */
-    af::shared<coord_type> generate_coords(int3 size) {
+    af::shared<coord_type> generate_coords(af::c_grid<3> size) {
 
       // Check the sizes
       DIALS_ASSERT(size.all_gt(0));

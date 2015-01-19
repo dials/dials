@@ -362,11 +362,11 @@ namespace dials { namespace algorithms { namespace filter {
    * @returns True/False
    */
   inline
-  bool is_bbox_outside_image_range(int6 bbox, tiny<int, 2> image_size,
+  bool is_bbox_outside_image_range(int6 bbox, tiny<std::size_t, 2> image_size,
       int2 scan_range) {
     DIALS_ASSERT(image_size.size() == 2);
-    return bbox[0] < 0 || bbox[1] > image_size[1] ||
-           bbox[2] < 0 || bbox[3] > image_size[0] ||
+    return bbox[0] < 0 || bbox[1] > (int)image_size[1] ||
+           bbox[2] < 0 || bbox[3] > (int)image_size[0] ||
            bbox[4] < scan_range[0] || bbox[5] > scan_range[1];
   }
 

@@ -17,8 +17,6 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::int3;
-  using scitbx::af::int4;
   using scitbx::af::double3;
 
   /**
@@ -95,7 +93,7 @@ namespace dials { namespace algorithms {
 
       // Check the index and size of the profile array
       DIALS_ASSERT(index < sampler_.size());
-      int4 profile_size = profiles_.accessor();
+      af::c_grid<4> profile_size = profiles_.accessor();
 
       // Return the result
       std::size_t j = index*profile_size[3]*profile_size[2]*profile_size[1];
@@ -111,7 +109,7 @@ namespace dials { namespace algorithms {
 
       // Check the index and size of the profile array
       DIALS_ASSERT(index < sampler_.size());
-      int4 mask_size = masks_.accessor();
+      af::c_grid<4> mask_size = masks_.accessor();
 
       // Return the result
       std::size_t j = index*mask_size[3]*mask_size[2]*mask_size[1];
@@ -132,7 +130,7 @@ namespace dials { namespace algorithms {
 
       // Check the index and size of the profile array
       DIALS_ASSERT(index < sampler_.size());
-      int4 profile_size = profiles_.accessor();
+      af::c_grid<4> profile_size = profiles_.accessor();
 
       // Unfortunately, you can't take a reference from a versa array and
       // return to python so we'll just have to make a copy.
@@ -157,7 +155,7 @@ namespace dials { namespace algorithms {
 
       // Check the index and size of the profile array
       DIALS_ASSERT(index < sampler_.size());
-      int4 mask_size = masks_.accessor();
+      af::c_grid<4> mask_size = masks_.accessor();
 
       // Unfortunately, you can't take a reference from a versa array and
       // return to python so we'll just have to make a copy.
