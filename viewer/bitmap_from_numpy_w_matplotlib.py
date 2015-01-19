@@ -21,43 +21,67 @@ from dials.algorithms.shoebox import MaskCode
 class wxbmp_from_np_array(object):
 
   def __init__(self, lst_data_in, show_nums = True, lst_data_mask_in = None):
-    self._ini_wx_bmp_lst = []
-    for lst_pos in range(len(lst_data_in)):
-      data_3d_in = lst_data_in[lst_pos]
-      xmax = data_3d_in.shape[1]
-      ymax = data_3d_in.shape[2]
-      # remember to put here some assertion to check that
-      # both arrays have the same shape
+    if(lst_data_in == [None] and lst_data_mask_in == [None] ):
+      print "No Shoebox (in wxbmp_from_np_array)"
+      self._ini_wx_bmp_lst = None
+    else:
+      self._ini_wx_bmp_lst = []
+      for lst_pos in range(len(lst_data_in)):
+        data_3d_in = lst_data_in[lst_pos]
+        xmax = data_3d_in.shape[1]
+        ymax = data_3d_in.shape[2]
+        # remember to put here some assertion to check that
+        # both arrays have the same shape
 
-      if(lst_data_mask_in != None):
-        data_3d_in_mask = lst_data_mask_in[lst_pos]
-
-      self.vl_max = np.amax(data_3d_in)
-      self.vl_min = np.amin(data_3d_in)
-      tmp_data2d = np.zeros( (xmax, ymax), 'double')
-      tmp_data2d_mask = np.zeros( (xmax, ymax), 'double')
-      z_dp = data_3d_in.shape[0]
-      single_block_lst_01 = []
-      for z in range(z_dp):
-        tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
         if(lst_data_mask_in != None):
-          tmp_data2d_mask[:, :] = data_3d_in_mask[z:z + 1, :, :]
-        else:
-          tmp_data2d_mask = None
-        data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
-        single_block_lst_01.append(data_sigle_img)
+          data_3d_in_mask = lst_data_mask_in[lst_pos]
 
-      self._ini_wx_bmp_lst.append(single_block_lst_01)
+        self.vl_max = np.amax(data_3d_in)
+        self.vl_min = np.amin(data_3d_in)
+        tmp_data2d = np.zeros( (xmax, ymax), 'double')
+        tmp_data2d_mask = np.zeros( (xmax, ymax), 'double')
+        z_dp = data_3d_in.shape[0]
+        single_block_lst_01 = []
+        for z in range(z_dp):
+          tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
+          if(lst_data_mask_in != None):
+            tmp_data2d_mask[:, :] = data_3d_in_mask[z:z + 1, :, :]
+          else:
+            tmp_data2d_mask = None
+          data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
+          single_block_lst_01.append(data_sigle_img)
+
+        self._ini_wx_bmp_lst.append(single_block_lst_01)
 
 
   def bmp_lst_scaled(self, scale = 1.0):
-    wx_bmp_lst = []
-    for data_3d in self._ini_wx_bmp_lst:
-      single_block_lst = []
-      for sigle_img_data in data_3d:
-        single_block_lst.append(self._wx_bmp_scaled(sigle_img_data, scale))
+    if( self._ini_wx_bmp_lst == None):
 
-      wx_bmp_lst.append(single_block_lst)
+      NewW = 350
+      NewH = 50
+
+      wx_image = wx.EmptyImage(NewW, NewW)
+      wxBitmap = wx_image.ConvertToBitmap()
+
+
+      dc = wx.MemoryDC(wxBitmap)
+      text = 'No Shoebox data'
+      w, h = dc.GetSize()
+      tw, th = dc.GetTextExtent(text)
+      dc.Clear()
+      dc.DrawText(text, (w - tw) / 2, (h - th) / 2) #display text in center
+      dc.SelectObject(wxBitmap)
+      del dc
+      wx_bmp_lst = [[wxBitmap]]
+
+    else:
+      wx_bmp_lst = []
+      for data_3d in self._ini_wx_bmp_lst:
+        single_block_lst = []
+        for sigle_img_data in data_3d:
+          single_block_lst.append(self._wx_bmp_scaled(sigle_img_data, scale))
+
+        wx_bmp_lst.append(single_block_lst)
 
     return wx_bmp_lst
 
@@ -184,6 +208,9 @@ class wxbmp_from_np_array(object):
     data_to_become_bmp = (self._wx_image, width, height)
 
     plt.close(lc_fig)
+
+
+
 
     return data_to_become_bmp
 

@@ -24,7 +24,15 @@ class wxbitmap_convert(object):
   '''
   def __init__(self, data_in_n1, data_in_n2 = None):
 
-    if( data_in_n2 == None ):
+    print "in data(wxbitmap_convert) ="
+    print data_in_n1, data_in_n2
+
+    if(data_in_n1 == None and data_in_n2 == None):
+      print "No shoebox in table"
+      self.lst_3d_data = [None]
+      self.lst_3d_mask = [None]
+
+    elif( data_in_n1 != None and data_in_n2 == None ):
       self.lst_3d_mask = None
       #No double list given
 
@@ -60,12 +68,8 @@ class wxbitmap_convert(object):
         #Got two blocks
         self.lst_3d_data = []
         self.lst_3d_mask = []
-        try:
-          self.lst_3d_data.append(data_in_n1.as_numpy_array())
-          self.lst_3d_mask.append(data_in_n2.as_numpy_array())
-        except:
-          self.lst_3d_data.append(None)
-          self.lst_3d_mask.append(None)
+        self.lst_3d_data.append(data_in_n1.as_numpy_array())
+        self.lst_3d_mask.append(data_in_n2.as_numpy_array())
 
       else:
         # might be a good idea to raise a runtime error here
@@ -80,15 +84,7 @@ class wxbitmap_convert(object):
 
   def get_wxbitmap_lst(self, show_nums = True, scale = 1.0):
     #returning wxbitmaps needed to be shown
-    if(self.lst_3d_data != None and self.lst_3d_mask != None):
-      self.local_bmp = wxbmp_from_np_array(self.lst_3d_data, show_nums, self.lst_3d_mask)
-    else:
-      self.local_bmp = wx.ArtProvider.GetBitmap(wx.ART_MISSING_IMAGE, wx.ART_OTHER, (32, 32))
-      #static_bitmap = wx.StaticBitmap(panel, -1, bmp_none)
-      #bitmap_sizer.Add(static_bitmap, 0, wx.ALL, 5)
-
-
-
+    self.local_bmp = wxbmp_from_np_array(self.lst_3d_data, show_nums, self.lst_3d_mask)
     return self.scaling(scale)
 
 

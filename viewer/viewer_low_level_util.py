@@ -208,34 +208,30 @@ class flex_arr_img_panel(wx.Panel):
 
 
   def assign_row_pos(self):
-    try:
 
+    try:
       self.first_lst_in, \
       self.segn_lst_in = \
                               self.table[self.row_pos]['shoebox'].data, \
                               self.table[self.row_pos]['shoebox'].mask
     except:
-
       self.first_lst_in, self.segn_lst_in = None, None
-      print "no img data"
-
 
   def _mi_list_of_wxbitmaps(self, re_scaling = False):
-    if( self.first_lst_in != None or self.segn_lst_in == None ):
-      if( re_scaling == False ):
-        if( self.show_mask == True ):
-          self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
-        else:
-          self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
-        return self.lst_bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
-                                        scale = self.scale)
-
+    print "flex_arr_img_panel.first_lst_in, flex_arr_img_panel.segn_lst_in ="
+    print
+    if( re_scaling == False ):
+      if( self.show_mask == True ):
+        self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
       else:
-        return self.lst_bmp_obj.scaling(scale = self.scale)
+        print "calling (self.lst_bmp_obj.get_wxbitmap_lst)"
+        self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
+      return self.lst_bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
+                                      scale = self.scale)
 
     else:
-
-      return [None], [None]
+      print "calling self.lst_bmp_obj.scaling"
+      return self.lst_bmp_obj.scaling(scale = self.scale)
 
 
   def update_img_w_row_pos(self, num):
