@@ -169,7 +169,10 @@ class CentroidAnalyser(object):
       "intensity.sum.value",
       "intensity.sum.variance",
       "xyzcal.px",
-      "xyzobs.px.value"
+      "xyzobs.px.value",
+      "xyzcal.mm",
+      "xyzobs.mm.value",
+
     ]
 
   def __call__(self, rlist):
