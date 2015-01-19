@@ -835,13 +835,15 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
 
-    txt3 = wx.StaticText(self, -1, "Thumbnail view:")
-    s.Add(txt3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.thumb_panel = rstbx.viewer.display.ThumbnailView(
-      parent=self,
-      size=(256,256),
-      style=wx.SUNKEN_BORDER)
-    s.Add(self.thumb_panel, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    have_thumbnail = False
+    if have_thumbnail:
+      txt3 = wx.StaticText(self, -1, "Thumbnail view:")
+      s.Add(txt3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+      self.thumb_panel = rstbx.viewer.display.ThumbnailView(
+        parent=self,
+        size=(256,256),
+        style=wx.SUNKEN_BORDER)
+      s.Add(self.thumb_panel, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
   # CONTROLS 2:  Fetch values from widgets
   def collect_values (self) :
