@@ -80,12 +80,11 @@ Find Spots
 ^^^^^^^^^^
 
 The first "real" task in any DIALS processing will be the spot finding.
-Here we tweak the minimum spot size (min_spot_size=3) and use multiple
-processors to speed up the spot-finding (nproc=4).
+Here we request multiple processors to speed up the spot-finding (nproc=4).
 
 ::
 
-  dials.find_spots datablock.json min_spot_size=3 nproc=4
+  dials.find_spots datablock.json nproc=4
 
 This will just report the number of spots found.
 
@@ -97,13 +96,11 @@ This will just report the number of spots found.
     mp {
       nproc = 4
     }
-    filter {
-      min_spot_size = 3
-    }
   }
   input {
     datablock = datablock.json
   }
+
 
   Configuring spot finder from input parameters
   --------------------------------------------------------------------------------
@@ -130,6 +127,21 @@ This will just report the number of spots found.
   Saving 116082 reflections to strong.pickle
   Saved 116082 reflections to strong.pickle
   Time Taken: 28.706979
+
+The default parameters for :doc:`dials.find_spots </programs/dials_find_spots>`
+usually do a good job
+for Pilatus images, such as these. However they may not be optimal for data from
+other detector types, such as CCDs or image plates. Issues with incorrectly
+set gain or sigma thresholds might lead to far too many spots being extracted
+(for example). If you are having issues with spot finding, it is worth
+inspecting the images with :program:`dials.image_viewer`::
+
+  dials.image_viewer datablock.json
+
+Viewing the various images from 'image' to 'threshold' gives an idea of how the
+various parameters affect the spot finding algorithm. The final image,
+'threshold' is the one on which spots are found, so ensuring this produces peaks
+at real diffraction spot positions will give the best chance of success.
 
 Indexing
 ^^^^^^^^
