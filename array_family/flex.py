@@ -110,6 +110,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         params.spotfinder.filter.min_spot_size = 3
       else:
         params.spotfinder.filter.min_spot_size = 6
+      info('Setting spotfinder.filter.min_spot_size=%i' %(
+        params.spotfinder.filter.min_spot_size))
 
     # Get the integrator from the input parameters
     info('Configuring spot finder from input parameters')
