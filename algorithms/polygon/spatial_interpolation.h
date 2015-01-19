@@ -54,7 +54,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The grid indices (x0, x1, y0, y1)
    */
   inline
-  int4 quad_grid_range(const vert4 &input, int2 output_size) {
+  int4 quad_grid_range(const vert4 &input, af::c_grid<2> output_size) {
 
     // Get the range of new grid points
     double4 ix(input[0][0], input[1][0], input[2][0], input[3][0]);
@@ -111,7 +111,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The matches between the quad and the grid
    */
   inline
-  af::shared<Match> quad_to_grid(vert4 input, int2 output_size, int index) {
+  af::shared<Match> quad_to_grid(vert4 input, af::c_grid<2> output_size, int index) {
     af::shared<Match> matches;
     int4 range = quad_grid_range(input, output_size);
     if (range[0] >= range[1] || range[2] >= range[3]) return matches;
@@ -136,7 +136,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The matches between the quad and the grid
    */
   inline
-  af::shared<Match> grid_to_quad(vert4 output, int2 input_size, int index) {
+  af::shared<Match> grid_to_quad(vert4 output, af::c_grid<2> input_size, int index) {
     af::shared<Match> matches;
     int4 range = quad_grid_range(output, input_size);
     if (range[0] >= range[1] || range[2] >= range[3]) return matches;
@@ -163,7 +163,7 @@ namespace dials { namespace algorithms { namespace polygon {
   inline
   af::shared<Match> irregular_grid_to_grid(
     const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy,
-    int2 output_size) {
+    af::c_grid<2> output_size) {
     af::shared<Match> matches;
     DIALS_ASSERT(inputxy.accessor().all_gt(0) && output_size.all_gt(0));
     for (std::size_t j = 0, k = 0; j < inputxy.accessor()[0]-1; ++j) {
@@ -187,7 +187,7 @@ namespace dials { namespace algorithms { namespace polygon {
   inline
   af::shared<Match> grid_to_irregular_grid(
     const af::const_ref< vec2<double>, af::c_grid<2> > &outputxy,
-    int2 input_size) {
+    af::c_grid<2> input_size) {
     af::shared<Match> matches;
     DIALS_ASSERT(outputxy.accessor().all_gt(0) && input_size.all_gt(0));
     for (std::size_t j = 0, k = 0; j < outputxy.accessor()[0]-1; ++j) {
@@ -212,10 +212,10 @@ namespace dials { namespace algorithms { namespace polygon {
   af::versa< double, af::c_grid<2> > regrid_irregular_grid_to_grid(
       const af::const_ref< double, af::c_grid<2> > &input,
       const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy,
-      int2 output_size) {
+      af::c_grid<2> output_size) {
     DIALS_ASSERT(inputxy.accessor()[0] == input.accessor()[0] + 1);
     DIALS_ASSERT(inputxy.accessor()[1] == input.accessor()[1] + 1);
-    af::c_grid<2> accessor(output_size[0], output_size[1]);
+    af::c_grid<2> accessor(output_size);
     af::versa< double, af::c_grid<2> > result(accessor, 0.0);
     af::shared<Match> matches = irregular_grid_to_grid(inputxy, output_size);
     for (std::size_t i = 0; i < matches.size(); ++i) {

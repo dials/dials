@@ -687,7 +687,7 @@ namespace transform {
       // pixel area shared with each grid point. For each intersection, loop
       // through the frames, mapping the fraction of the pixel value in each
       // frame to the grid point.
-      int2 grid_size2(grid_size_[1], grid_size_[2]);
+      af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
       for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
         for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
           vert4 input(gc(panel, j, i),
@@ -742,7 +742,7 @@ namespace transform {
       // pixel area shared with each grid point. For each intersection, loop
       // through the frames, mapping the fraction of the pixel value in each
       // frame to the grid point.
-      int2 grid_size2(grid_size_[1], grid_size_[2]);
+      af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
       for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
         for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
           vert4 input(gc(panel, j, i),

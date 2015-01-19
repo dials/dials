@@ -116,8 +116,8 @@ namespace dials { namespace algorithms { namespace shoebox {
       af::ref< int, af::c_grid<3> > mask_b = b.mask.ref();
 
       // Get the sizes of the masks
-      int3 size_a = mask_a.accessor();
-      int3 size_b = mask_b.accessor();
+      af::c_grid<3> size_a = mask_a.accessor();
+      af::c_grid<3> size_b = mask_b.accessor();
 
       // Get the bounding boxes
       int6 bbox_a = a.bbox;
