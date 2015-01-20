@@ -43,11 +43,9 @@ def test1():
     assert os.path.exists(pth)
 
   # have to reduce bin_size_fraction from the default otherwise this test
-  # terminates without taking any steps with RMSD target achieved. Also set
-  # close_to_spindle_cutoff to the old default, which is what was used to
-  # produce the results for regression test comparison.
+  # terminates without taking any steps with RMSD target achieved.
   cmd = "dials.refine " + experiments_path + " " + pickle_path + \
-  " bin_size_fraction=0.001 close_to_spindle_cutoff=0.1"
+  " bin_size_fraction=0.001"
   print cmd
 
   # work in a temporary directory

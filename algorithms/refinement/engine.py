@@ -677,8 +677,18 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       self.history.set_last_cell("solution_norm", self.step().norm())
       self.history.set_last_cell("reduced_chi_squared", self.chi_sq())
 
+      # test termination criteria before taking the next forward step
       if self.had_too_small_a_step():
         self.history.reason_for_termination = STEP_TOO_SMALL
+        break
+      if self.test_for_termination():
+        self.history.reason_for_termination = TARGET_ACHIEVED
+        break
+      if self.test_rmsd_convergence():
+        self.history.reason_for_termination = RMSD_CONVERGED
+        break
+      if self.n_iterations == self._max_iterations:
+        self.history.reason_for_termination = MAX_ITERATIONS
         break
 
       h = self.step()
@@ -690,15 +700,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       actual_decrease = self._f - objective_new
       rho = actual_decrease/expected_decrease
       if rho > 0:
-        # test termination criteria
-        if self.test_for_termination():
-          self.history.reason_for_termination = TARGET_ACHIEVED
-          break
-
-        if self.test_rmsd_convergence():
-          self.history.reason_for_termination = RMSD_CONVERGED
-          break
-
         self.mu *= max(1/3, 1 - (2*rho - 1)**3)
         nu = 2
       else:
@@ -709,10 +710,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
           break
         self.mu *= nu
         nu *= 2
-
-      if self.n_iterations == self._max_iterations:
-        self.history.reason_for_termination = MAX_ITERATIONS
-        break
 
       # prepare for next step
       self.build_up()
