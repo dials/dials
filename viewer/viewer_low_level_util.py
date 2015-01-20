@@ -23,7 +23,6 @@ class flex_3d_frame(wx.Frame):
     super(flex_3d_frame, self).__init__(parent, title = title,
           size = wx.DefaultSize)
 
-
   def frame_ini_img(self, in_upper_panel, text_data = None):
     self.img_panel = in_upper_panel
 
@@ -39,7 +38,6 @@ class flex_3d_frame(wx.Frame):
                         flag =  wx.EXPAND | wx.ALL, border = 3)
 
     self.my_sizer.SetMinSize((50, 20))
-
     self.SetSizer(self.my_sizer)
 
 
@@ -74,7 +72,6 @@ class TupTable(gridlib.PyGridTableBase):
     pass
 
 
-
 class MyGrid(gridlib.Grid):
 
   def __init__(self, parent_frame):
@@ -86,7 +83,6 @@ class MyGrid(gridlib.Grid):
 
     self.lst_keys = []
     self.data = []
-
 
     for key in table_in.keys():
       if(key != "shoebox"):
@@ -110,7 +106,6 @@ class MyGrid(gridlib.Grid):
 
     self.last_col_num = len(self.lst_keys) - 1
 
-
     self.data = tuple(zip(*self.data))
     self.EnableEditing(True)
     self.EnableDragGridSize(True)
@@ -121,7 +116,6 @@ class MyGrid(gridlib.Grid):
     self.Bind(gridlib.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
 
   def OnLabelLeftClick(self, evt):
-
 
     #timing_for_debugging = '''
     import time
@@ -135,7 +129,6 @@ class MyGrid(gridlib.Grid):
 
       print "evt.GetCol() =", evt.GetCol()
       self.set_my_table(self.data, evt.GetCol())
-
 
     evt.Skip()
 
@@ -169,7 +162,6 @@ class MyGrid(gridlib.Grid):
   def OnCellLeftClick(self, evt):
     self.repaint_img(evt.GetRow())
     evt.Skip()
-
 
   def repaint_img(self, clikd_row):
     print "clikd_row  =", clikd_row
@@ -206,7 +198,6 @@ class flex_arr_img_panel(wx.Panel):
     self.SetSizer(sizer)
     self.Show(True)
 
-
   def assign_row_pos(self):
 
     try:
@@ -233,37 +224,31 @@ class flex_arr_img_panel(wx.Panel):
       print "calling self.lst_bmp_obj.scaling"
       return self.lst_bmp_obj.scaling(scale = self.scale)
 
-
   def update_img_w_row_pos(self, num):
     self.row_pos = num
     self.assign_row_pos()
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
 
-
   def to_hide_nums(self):
     self.show_nums = False
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
-
 
   def to_show_nums(self):
     self.show_nums = True
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
 
-
   def to_show_mask(self):
     self.show_mask = True
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
 
-
   def to_hide_mask(self):
     self.show_mask = False
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_02.img_refresh(self.bmp_lst)
-
 
   def to_re_zoom(self, rot_sn):
     if( rot_sn > 0 ):
@@ -298,7 +283,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     aprox_len_pix = len(self.lst_2d_bmp) * 10
     self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
 
-
   def set_scroll_content(self):
 
     img_lst_vert_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -323,7 +307,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.SetSizer(img_lst_vert_sizer)
 
-
   def OnMouseWheel(self, event):
 
     #saving amount of scroll steps to do
@@ -345,7 +328,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     print "self.y_to_keep =", self.y_to_keep
     '''
 
-
   def img_refresh(self, bmp_lst_new):
     self.lst_2d_bmp = bmp_lst_new
     for child in self.GetChildren():
@@ -355,7 +337,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.Layout()
     self.parent_panel.Layout()
     self.Refresh()
-
 
   def OnIdle(self, event):
     if( self.scroll_rot != 0 ):
@@ -390,7 +371,6 @@ class buttons_panel(wx.Panel):
     self.my_sizer.SetMinSize((50, 20))
     self.SetSizer(self.my_sizer)
 
-
   def OnItsCheckbox(self, event):
     debugg_screen_log = '''
     print "OnItsCheckbox"
@@ -401,7 +381,6 @@ class buttons_panel(wx.Panel):
     else:
       self.parent_panel.to_hide_nums()
 
-
   def OnMskCheckbox(self, event):
     debugg_screen_log = '''
     print "OnMskCheckbox"
@@ -411,8 +390,6 @@ class buttons_panel(wx.Panel):
       self.parent_panel.to_show_mask()
     else:
       self.parent_panel.to_hide_mask()
-
-
 
 def bigger_size(str_label, lst_col):
   lng_label_ini = len(str_label)
@@ -434,6 +411,5 @@ def bigger_size(str_label, lst_col):
 
     if(lng_cel_zero > lng_label_ini):
       lng_final = lng_cel_zero
-
 
   return lng_final

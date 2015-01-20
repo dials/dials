@@ -24,6 +24,7 @@ class wxbmp_from_np_array(object):
     if(lst_data_in == [None] and lst_data_mask_in == [None] ):
       print "No Shoebox (in wxbmp_from_np_array)"
       self._ini_wx_bmp_lst = None
+
     else:
       self._ini_wx_bmp_lst = []
       for lst_pos in range(len(lst_data_in)):
@@ -52,7 +53,6 @@ class wxbmp_from_np_array(object):
           single_block_lst_01.append(data_sigle_img)
 
         self._ini_wx_bmp_lst.append(single_block_lst_01)
-
 
   def bmp_lst_scaled(self, scale = 1.0):
     if( self._ini_wx_bmp_lst == None):
@@ -105,11 +105,9 @@ class wxbmp_from_np_array(object):
 
     lc_fig.set_size_inches(xmax * .5, ymax * .5)
 
-
     ax = plt.Axes(lc_fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     lc_fig.add_axes(ax)
-
 
     a=lc_fig.gca()
     a.set_frame_on(False)
@@ -176,8 +174,6 @@ class wxbmp_from_np_array(object):
               plt.plot([xpos + 0.45, xpos - 0.45], [ypos + 0.45, ypos - 0.45],
                        color='gray', linewidth=l_wdt)
 
-
-
     if( show_nums != 0 ):
       for xpos in range(xmax):
         for ypos in range(ymax):
@@ -195,9 +191,6 @@ class wxbmp_from_np_array(object):
           plt.annotate(txt_dat, xy = (xpos - 0.5, ypos + 0.1), xycoords = 'data',
                        color = clr_chr, size = 9.)
 
-
-
-
     lc_fig.canvas.draw()
     width, height = lc_fig.canvas.get_width_height()
     np_buf = np.fromstring (lc_fig.canvas.tostring_rgb(), dtype=np.uint8)
@@ -208,9 +201,6 @@ class wxbmp_from_np_array(object):
     data_to_become_bmp = (self._wx_image, width, height)
 
     plt.close(lc_fig)
-
-
-
 
     return data_to_become_bmp
 

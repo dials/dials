@@ -14,6 +14,7 @@ from dials.array_family import flex
 import numpy as np
 
 from bitmap_from_numpy_w_matplotlib import wxbmp_from_np_array
+
 class wxbitmap_convert(object):
   '''
   The main duty of this class is to convert
@@ -75,22 +76,17 @@ class wxbitmap_convert(object):
         # might be a good idea to raise a runtime error here
         print "Got mixture of different type of data"
 
-
   def get_np(self):
     #returning numpy arrays in the rare case where they might be needed
     return self.lst_3d_data
-
-
 
   def get_wxbitmap_lst(self, show_nums = True, scale = 1.0):
     #returning wxbitmaps needed to be shown
     self.local_bmp = wxbmp_from_np_array(self.lst_3d_data, show_nums, self.lst_3d_mask)
     return self.scaling(scale)
 
-
   def scaling(self, scale = 1.0):
     #scaling the list of wxbitmap to be shown
     lst_img = self.local_bmp.bmp_lst_scaled(scale)
-
 
     return lst_img
