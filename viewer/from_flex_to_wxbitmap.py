@@ -24,12 +24,15 @@ class wxbitmap_convert(object):
   a list of WxBitmaps
   '''
   def __init__(self, data_in_n1, data_in_n2 = None):
-
+    log_msg = '''
     print "in data(wxbitmap_convert) ="
     print data_in_n1, data_in_n2
+    '''
 
     if(data_in_n1 == None and data_in_n2 == None):
+      log_msg = '''
       print "No shoebox in table"
+      '''
       self.lst_3d_data = [None]
       self.lst_3d_mask = [None]
 

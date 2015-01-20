@@ -10,6 +10,9 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+
 
 help_message = '''
 
@@ -63,6 +66,7 @@ class Script(object):
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     table = flatten_reflections(params.input.reflections)
+    print "params, options =", params, options
     if len(table) == 0:
       self.parser.print_help()
       return
