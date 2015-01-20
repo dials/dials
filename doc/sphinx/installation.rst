@@ -1,5 +1,8 @@
+Installation
+============
+
 Installer
-=========
+---------
 
 Nightly build installers are available for Linux and Mac OS and may be
 downloaded from http://cci.lbl.gov/dials/installers/ and
@@ -7,7 +10,7 @@ http://dials.diamond.ac.uk/builds/.  Builds for Microsoft Windows are not
 currently available, but will be added in the near future.
 
 Setting up a development environment on Linux
-----------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Prerequisites: make and change to a working directory to contain the new source
 code and build. Then download these bootstrap modules:
@@ -58,7 +61,7 @@ may be configured as in this example:
   libtbx.configure dials_regression
 
 Restarting the Base Install if One Component Fails
---------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It has required quite a bit of experimentation to get the "base" install
 correct. Here is a procedure to restart the base install if it dies in the
@@ -86,7 +89,7 @@ base:
     misc
 
 Creating a relocatable installer bundle on Linux
-------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Starting with the developer build just created, we can create a tarball
 suitable for public distribution. Caveat is that we build our 64-bit installer
@@ -110,10 +113,10 @@ This can be relocated to a new directory, untarred, then:
   ./install --prefix=[absolute path for relocated dials installation]
 
 Install DIALS from SVN on Linux
-===============================
+-------------------------------
 
 Dependencies
-------------
+~~~~~~~~~~~~
 
 In order to follow this process, you will need to following tools installed on
 your machine:
@@ -126,7 +129,7 @@ your machine:
 You will also need C/C++ and Fortran compilers.
 
 Installing Python
------------------
+~~~~~~~~~~~~~~~~~
 
 To get this started, create a directory to contain the cctbx build and get the
 auto_builder script
@@ -164,7 +167,7 @@ system python or install python from https://www.python.org/ and install the
 required packages manually.
 
 Getting the CCTBX and DIALS sources
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The cctbx provides a script to help in checking out the cctbx svn repository. To
 get started with this, go back to the cctbx root directory and download
@@ -211,10 +214,10 @@ necessary.
 You should now be good to go!
 
 Install DIALS from SVN on Windows
-=================================
+---------------------------------
 
 Dependencies
-------------
+~~~~~~~~~~~~
 
 In order to follow this process, you will need to following programs installed on
 your machine:
@@ -229,7 +232,7 @@ enviroment variable, just add it. You will also need a C/C++ compiler (e.g.
 visual sudio).
 
 Getting the CCTBX and DIALS sources
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To get this started, create a directory to contain the cctbx build.
 
