@@ -1,10 +1,113 @@
-Nightly Builds
-==============
+Installer
+=========
 
 Nightly build installers are available for Linux and Mac OS and may be
 downloaded from http://cci.lbl.gov/dials/installers/ and
 http://dials.diamond.ac.uk/builds/.  Builds for Microsoft Windows are not
 currently available, but will be added in the near future.
+
+Setting up a development environment on Linux
+----------------------------------------------
+
+Prerequisites: make and change to a working directory to contain the new source
+code and build. Then download these bootstrap modules:
+
+.. code-block:: none
+
+  svn export svn://svn.code.sf.net/p/cctbx/code/trunk/libtbx/auto_build/bootstrap.py
+  svn export svn://svn.code.sf.net/p/cctbx/code/trunk/libtbx/auto_build/bootstrap_public.py
+
+Both codes are needed; bootstrap.py provides the basic functions;
+bootstrap_public.py is a thin wrapper permitting general users to download all
+the source code with anonymous access to the Berkeley lab servers.
+
+Then:
+
+.. code-block:: none
+
+  python bootstrap_public.py --builder=dials
+
+Explanation: Several steps are performed: hot, update, base, build. If desired,
+they can be run individually at the command line:
+
+.. code-block:: none
+
+  python bootstrap_public.py --builder=dials hot
+  python bootstrap_public.py --builder=dials update
+  python bootstrap_public.py --builder=dials base
+  python bootstrap_public.py --builder=dials build
+
+:hot: downloads static tarballs containing prerequisite dependencies, to the module directory
+:update: anonymously checks out or updates source code for dials and cctbx, to the module directory
+:base: downloads and installs python and third party python packages to the base directory
+:build: configures and compiles dials and cctbx
+
+For subsequent login sessions, be sure to set the environment in order to use
+the command-line dispatchers:
+
+.. code-block:: none
+  
+  source build/setpaths.sh # or setpaths.csh for tcsh
+
+Additional packages can be installed in the modules directory, e.g., download
+the dials_regression tarball from the main dials web page. Additional modules
+may be configured as in this example:
+
+.. code-block:: none
+
+  libtbx.configure dials_regression
+
+Restarting the Base Install if One Component Fails
+--------------------------------------------------
+
+It has required quite a bit of experimentation to get the "base" install
+correct. Here is a procedure to restart the base install if it dies in the
+middle, and needs to be restarted. First, the top of the base output gives a
+list of python packages to be installed. On linux it looks something like this:
+
+.. code-block:: none
+  
+  python numpy hdf5 biopython freetype gettext glib expat fontconfig render pixman png tiff cairo gtk fonts wxpython matplotlib pyopengl imaging reportlab misc
+
+Identify the subset of packages that has failed to install; as an example
+assume that wxpython and subsequent packages still need to be installed. Then
+run the base installer using the just-installed python as the "with-python"
+base:
+
+.. code-block:: none
+
+  python modules/cctbx_project/libtbx/auto_build/install_base_packages.py \
+    --with-python=`pwd`/base/bin/python \
+    wxpython \
+    matplotlib \
+    pyopengl \
+    imaging \
+    reportlab \
+    misc
+
+Creating a relocatable installer bundle on Linux
+------------------------------------------------
+
+Starting with the developer build just created, we can create a tarball
+suitable for public distribution. Caveat is that we build our 64-bit installer
+on Centos 5.4, so that most conceivable users will be installing on a more
+modern OS back-compatible with the installer.
+
+Change to the working directory used above. Then:
+
+.. code-block:: none
+
+  ./modules/dials/installer/dials_installer.sh
+
+..creates an installer called tmp/dials-installer-dev.tar.gz
+
+This can be relocated to a new directory, untarred, then:
+
+.. code-block:: none
+  
+  cd dials-installer-dev
+  ./install -h [prints a help message]
+  ./install --prefix=[absolute path for relocated dials installation]
 
 Install DIALS from SVN on Linux
 ===============================
