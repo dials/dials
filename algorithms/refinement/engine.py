@@ -434,16 +434,16 @@ class AdaptLstbx(
     # Reset the state to construction time, i.e. no equations accumulated
     self.reset()
 
-    block_num=0
-    while not self._target.finished_residuals_and_gradients:
-      # get calculations from the target
-      residuals, self._jacobian, weights = \
-          self._target.compute_residuals_and_gradients(block_num)
-      block_num+=1
-
-      if objective_only:
-        self.add_residuals(residuals, weights)
-      else:
+    if objective_only:
+      residuals, weights = self._target.compute_residuals()
+      self.add_residuals(residuals, weights)
+    else:
+      block_num=0
+      while not self._target.finished_residuals_and_gradients:
+        # get calculations from the target
+        residuals, self._jacobian, weights = \
+            self._target.compute_residuals_and_gradients(block_num)
+        block_num+=1
         self.add_equations(residuals, self._jacobian, weights)
 
   def step_forward(self):
