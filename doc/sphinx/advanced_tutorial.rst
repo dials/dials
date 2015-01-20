@@ -599,7 +599,7 @@ The main product of this is the file ``refined_experiments.json``
   }
   input {
     experiments = bravais_setting_9.json
-    reflections = reflections_reindexed.pickle
+    reflections = reindexed_reflections.pickle
   }
 
   Configuring refiner
@@ -659,7 +659,7 @@ by the program :doc:`dials.integrate </programs/dials_integrate>`.
 
 ::
 
-  dials.integrate refined_experiments.json indexed.pickle
+  dials.integrate refined_experiments.json reindexed_reflections.pickle
 
 This program outputs a lot of information as integration progresses,
 concluding with a summary of the integration results.
