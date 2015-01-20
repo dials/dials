@@ -14,11 +14,13 @@ def run():
   path = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
   cmd = "dials.compare_orientation_matrices %s/experiments.json %s/regression_experiments.json" %(path, path)
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  assert not show_diff("\n".join(result.stdout_lines[7:]), """\
+  out = "\n".join(result.stdout_lines[7:])
+  out = out.replace("-0", "0")
+  assert not show_diff(out, """\
 Rotation matrix to transform crystal 1 to crystal 2
-{{1.000, -0.000, 0.000},
- {0.000, 1.000, -0.000},
- {-0.000, 0.000, 1.000}}
+{{1.000, 0.000, 0.000},
+ {0.000, 1.000, 0.000},
+ {0.000, 0.000, 1.000}}
 Euler angles (xyz): 0.00, 0.00, 0.00
 """)
 
