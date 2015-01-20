@@ -16,7 +16,7 @@ import matplotlib
 # Offline backend
 matplotlib.use("Agg")
 
-from matplotlib import pylab
+from matplotlib import pyplot
 
 from dials.array_family import flex
 
@@ -46,13 +46,129 @@ def ensure_required(rlist, required):
 
 def determine_grid_size(rlist, grid_size=None):
   from libtbx import Auto
-  if grid_size is not None and grid_size is not Auto:
-    return grid_size
   panel_ids = rlist['panel']
   n_panels = flex.max(panel_ids) + 1
+  if grid_size is not None and grid_size is not Auto:
+    assert (grid_size[0] * grid_size[1]) >= n_panels, (n_panels)
+    return grid_size
   n_cols = int(math.floor(math.sqrt(n_panels)))
   n_rows = int(math.ceil(n_panels / n_cols))
   return n_cols, n_rows
+
+
+class per_panel_plot(object):
+
+  title = None
+  filename = None
+  cbar_ylabel = None
+
+  def __init__(self, rlist, directory, grid_size=None, pixels_per_bin=10):
+
+    from os.path import join
+
+    min_x, max_x, min_y, max_y = self.get_min_max_xy(rlist)
+    panel_ids = rlist['panel']
+    crystal_ids = rlist['id']
+    n_crystals = flex.max(crystal_ids) + 1
+    n_panels = flex.max(panel_ids) + 1
+
+    n_cols, n_rows = determine_grid_size(
+      rlist, grid_size=grid_size)
+
+    from matplotlib import pyplot
+
+    for i_crystal in range(n_crystals):
+      if n_crystals > 1:
+        suffix = '_%i' %i_crystal
+      else:
+        suffix = ''
+      crystal_sel = (crystal_ids == i_crystal)
+      fig, axes = pyplot.subplots(
+        n_rows, n_cols)
+
+      if n_panels == 1:
+        axes = [[axes]]
+      elif n_cols == 1:
+        axes = [[ax] for ax in axes]
+      elif n_rows == 1:
+        axes_x = [axes]
+
+      self.gridsize = tuple(
+        int(math.ceil(i))
+        for i in (max_x/pixels_per_bin, max_y/pixels_per_bin))
+
+      clim = (1e8, 1e-8)
+
+      plots = []
+
+      i_panel = 0
+      for i_row in range(n_rows):
+        for i_col in range(n_cols):
+
+          panel_sel = (panel_ids == i_panel)
+          sel = (panel_sel & crystal_sel)
+          i_panel += 1
+
+          if n_panels > 1:
+            axes[i_row][i_col].set_title('Panel %d' %i_panel)
+            axes[i_row][i_col].set_title('Panel %d' %i_panel)
+
+          if (i_row+1) == n_rows:
+            axes[i_row][i_col].set_xlabel("x")
+            axes[i_row][i_col].set_xlabel("x")
+          else:
+            pyplot.setp(axes[i_row][i_col].get_xticklabels(), visible=False)
+
+          if i_col == 0:
+            axes[i_row][i_col].set_ylabel("y")
+            axes[i_row][i_col].set_ylabel("y")
+          else:
+            pyplot.setp(axes[i_row][i_col].get_yticklabels(), visible=False)
+
+          if sel.count(True) > 0:
+            ax = self.plot_one_panel(axes[i_row][i_col], rlist.select(sel))
+            plots.append(ax)
+            clim = (min(clim[0], ax.get_clim()[0]),
+                    max(clim[1], ax.get_clim()[1]))
+
+          axes[i_row][i_col].set_xlim(min_x, max_x)
+          axes[i_row][i_col].set_ylim(min_y, max_y)
+          axes[i_row][i_col].axes.set_aspect('equal')
+          axes[i_row][i_col].invert_yaxis()
+
+      for p in plots:
+        p.set_clim(clim)
+
+      default_size = fig.get_size_inches()
+      fig.set_size_inches((n_cols*default_size[0], n_rows*default_size[1]))
+
+      #pyplot.tight_layout()
+      if self.cbar_ylabel is not None:
+        cax = fig.add_axes([0.9, 0.1, 0.03, 0.8])
+        cbar = fig.colorbar(ax, cax=cax)
+        cbar.ax.set_ylabel(self.cbar_ylabel, fontsize=n_cols*10)
+        cbar.ax.tick_params(labelsize=n_cols*8)
+        if n_panels > 1:
+          fig.subplots_adjust(hspace=0.1/n_rows, right=0.8)
+
+      if self.title is not None:
+        fig.suptitle(self.title, fontsize=n_cols*12)
+      fig.savefig(join(directory, self.filename))
+      fig.set_size_inches(default_size)
+      pyplot.close()
+
+  def get_min_max_xy(self, rlist):
+    xc, yc, zc = rlist['xyzcal.px'].parts()
+    xo, yo, zo = rlist['xyzobs.px.value'].parts()
+
+    min_x = math.floor(min(flex.min(xc), flex.min(xo)))
+    min_y = math.floor(min(flex.min(yc), flex.min(yo)))
+    max_x = math.ceil(max(flex.max(xc), flex.max(xo)))
+    max_y = math.ceil(max(flex.max(yc), flex.max(yo)))
+    return min_x, max_x, min_y, max_y
+
+  def plot_one_panel(self, ax, rlist):
+    raise NotImplementedError()
 
 
 class StrongSpotsAnalyser(object):
@@ -122,7 +238,7 @@ class StrongSpotsAnalyser(object):
     ax.set_xlabel("Image #")
     ax.set_ylabel("# spots")
     pyplot.savefig(join(self.directory, "spots_per_image.png"))
-    pyplot.clf()
+    pyplot.close()
 
   def spot_count_per_panel(self, rlist):
     ''' Analyse the spot count per panel. '''
@@ -148,7 +264,7 @@ class StrongSpotsAnalyser(object):
     ax.set_xlabel("Panel #")
     ax.set_ylabel("# spots")
     pyplot.savefig(join(self.directory, "spots_per_panel.png"))
-    pyplot.clf()
+    pyplot.close()
 
 
 class CentroidAnalyser(object):
@@ -160,9 +276,9 @@ class CentroidAnalyser(object):
 
     # Set the directory
     self.directory = join(directory, "centroid")
+    ensure_directory(self.directory)
     self.grid_size = grid_size
     self.pixels_per_bin = pixels_per_bin
-    ensure_directory(self.directory)
 
     # Set the required fields
     self.required = [
@@ -205,9 +321,6 @@ class CentroidAnalyser(object):
       rlist = rlist.select(mask)
       Command.end(" Selected %d refined reflections" % len(rlist))
 
-    self.n_cols, self.n_rows = determine_grid_size(
-      rlist, grid_size=self.grid_size)
-
     # Look at differences in calculated/observed position
     print " Analysing centroid differences with I/Sigma > %s" %threshold
     self.centroid_diff_hist(rlist, threshold)
@@ -234,12 +347,13 @@ class CentroidAnalyser(object):
     yd = yo - yc
     zd = zo - zc
     diff = flex.sqrt(xd*xd + yd*yd + zd*zd)
-    pylab.title("Difference between observed and calculated")
-    cax = pylab.hist(diff, bins=20)
-    pylab.xlabel("Difference in position")
-    pylab.ylabel("# reflections")
-    pylab.savefig(join(self.directory, "centroid_diff_hist.png"))
-    pylab.clf()
+    fig = pyplot.figure()
+    pyplot.title("Difference between observed and calculated")
+    pyplot.hist(diff, bins=20)
+    pyplot.xlabel("Difference in position")
+    pyplot.ylabel("# reflections")
+    fig.savefig(join(self.directory, "centroid_diff_hist.png"))
+    pyplot.close()
 
   def centroid_diff_xy(self, rlist, threshold):
     ''' Look at the centroid difference in x, y '''
@@ -250,118 +364,45 @@ class CentroidAnalyser(object):
     mask = I_over_S > threshold
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
-    xc, yc, zc = rlist['xyzcal.px'].parts()
-    xo, yo, zo = rlist['xyzobs.px.value'].parts()
-    xd = xo - xc
-    yd = yo - yc
 
-    min_x = math.floor(min(flex.min(xc), flex.min(xo)))
-    min_y = math.floor(min(flex.min(yc), flex.min(yo)))
-    max_x = math.ceil(max(flex.max(xc), flex.max(xo)))
-    max_y = math.ceil(max(flex.max(yc), flex.max(yo)))
+    class diff_x_plot(per_panel_plot):
 
-    panel_ids = rlist['panel']
-    crystal_ids = rlist['id']
-    n_crystals = flex.max(crystal_ids) + 1
-    n_panels = flex.max(panel_ids) + 1
-    #n_cols = int(math.floor(math.sqrt(n_panels)))
-    #n_rows = int(math.ceil(n_panels / n_cols))
+      title = "Difference between observed and calculated in X"
+      filename = "centroid_diff_x.png"
+      cbar_ylabel = "Difference in x position"
 
-    from matplotlib import pyplot
+      def plot_one_panel(self, ax, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        xd = xo - xc
 
-    for i_crystal in range(n_crystals):
-      if n_crystals > 1:
-        suffix = '_%i' %i_crystal
-      else:
-        suffix = ''
-      crystal_sel = (crystal_ids == i_crystal)
-      fig_x, axes_x = pyplot.subplots(
-        self.n_rows, self.n_cols,
-        #sharex=True, sharey=True
-      )
-      fig_y, axes_y = pyplot.subplots(
-        self.n_rows, self.n_cols,
-        #sharex=True, sharey=True
-      )
+        hex_ax = ax.hexbin(
+          xc.as_numpy_array(), yc.as_numpy_array(),
+          C=xd.as_numpy_array(), gridsize=self.gridsize,
+        )
+        return hex_ax
 
-      if n_panels == 1:
-        axes_x = [[axes_x]]
-        axes_y = [[axes_y]]
-      elif self.n_cols == 1:
-        axes_x = [[ax] for ax in axes_x]
-        axes_y = [[ax] for ax in axes_y]
-      elif self.n_rows == 1:
-        axes_x = [axes_x]
-        axes_y = [axes_y]
+    class diff_y_plot(per_panel_plot):
 
-      min_xd = flex.min(xd.select(crystal_sel))
-      max_xd = flex.max(xd.select(crystal_sel))
-      min_yd = flex.min(yd.select(crystal_sel))
-      max_yd = flex.max(yd.select(crystal_sel))
+      title = "Difference between observed and calculated in Y"
+      filename = "centroid_diff_y.png"
+      cbar_ylabel = "Difference in y position"
 
-      gridsize = tuple(
-        int(math.ceil(i))
-        for i in (max_x/self.pixels_per_bin, max_y/self.pixels_per_bin))
-      #print gridsize
+      def plot_one_panel(self, ax, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        yd = yo - yc
 
-      i_panel = 0
-      for i_row in range(self.n_rows):
-        for i_col in range(self.n_cols):
-          panel_sel = (panel_ids == i_panel)
-          sel = (panel_sel & crystal_sel)
-          #print i_panel, crystal_sel.count(True), panel_sel.count(True), sel.count(True)
-          i_panel += 1
+        hex_ax = ax.hexbin(
+          xc.as_numpy_array(), yc.as_numpy_array(),
+          C=yd.as_numpy_array(), gridsize=self.gridsize,
+        )
+        return hex_ax
 
-          if n_panels > 1:
-            #print len(axes_x), len(axes_x[0]), self.n_rows, self.n_cols
-            axes_x[i_row][i_col].set_title('Panel %d' %i_panel)
-            axes_y[i_row][i_col].set_title('Panel %d' %i_panel)
-            #axes_x[i_row][i_col].set_title("Difference between observed and calculated in X")
-            #axes_y[i_row][i_col].set_title("Difference between observed and calculated in Y")
-
-          if (i_row+1) == self.n_rows:
-            axes_x[i_row][i_col].set_xlabel("x")
-            axes_y[i_row][i_col].set_xlabel("x")
-
-          if i_col == 0:
-            axes_x[i_row][i_col].set_ylabel("y")
-            axes_y[i_row][i_col].set_ylabel("y")
-
-          if sel.count(True) > 0:
-            cax_x = axes_x[i_row][i_col].hexbin(
-              xc.select(sel).as_numpy_array(), yc.select(sel).as_numpy_array(),
-              C=xd.select(sel).as_numpy_array(), gridsize=gridsize,
-              vmin=min_xd, vmax=max_xd
-            )
-
-            cax_y = axes_y[i_row][i_col].hexbin(
-              xc.select(sel).as_numpy_array(), yc.select(sel).as_numpy_array(),
-              C=yd.select(sel).as_numpy_array(), gridsize=gridsize,
-              vmin=min_yd, vmax=max_yd
-            )
-
-          axes_x[i_row][i_col].set_xlim(min_x, max_x)
-          axes_x[i_row][i_col].set_ylim(min_y, max_y)
-          axes_y[i_row][i_col].set_xlim(min_x, max_x)
-          axes_y[i_row][i_col].set_ylim(min_y, max_y)
-          axes_x[i_row][i_col].invert_yaxis()
-          axes_y[i_row][i_col].invert_yaxis()
-          #axes_x[i_row][i_col].axes.set_aspect('equal')
-          #axes_y[i_row][i_col].axes.set_aspect('equal')
-
-      cax = fig_x.add_axes([0.9, 0.1, 0.03, 0.8])
-      cbar_x = fig_x.colorbar(cax_x, cax=cax)
-      cbar_x.ax.set_ylabel("Difference in x position")
-      cax = fig_y.add_axes([0.9, 0.1, 0.03, 0.8])
-      cbar_y = fig_y.colorbar(cax_y, cax=cax)
-      cbar_y.ax.set_ylabel("Difference in y position")
-
-      for fig in (fig_x, fig_y):
-        fig.set_size_inches([max(self.n_cols, self.n_rows) * i
-                             for i in fig.get_size_inches()])
-      fig_x.savefig(join(self.directory, "centroid_diff_x.png"))
-      fig_y.savefig(join(self.directory, "centroid_diff_y.png"))
-      pylab.clf()
+    plot = diff_x_plot(rlist, self.directory, grid_size=self.grid_size,
+                       pixels_per_bin=self.pixels_per_bin)
+    plot = diff_y_plot(rlist, self.directory, grid_size=self.grid_size,
+                       pixels_per_bin=self.pixels_per_bin)
 
   def centroid_diff_z(self, rlist, threshold):
     ''' Look at the centroid difference in x, y '''
@@ -375,14 +416,15 @@ class CentroidAnalyser(object):
     xc, yc, zc = rlist['xyzcal.px'].parts()
     xo, yo, zo = rlist['xyzobs.px.value'].parts()
     zd = zo - zc
-    pylab.title("Difference between observed and calculated in Z")
-    cax = pylab.hexbin(zc, zd, gridsize=100)
-    pylab.xlabel("z")
-    pylab.ylabel("Difference in z position")
-    cbar = pylab.colorbar(cax)
+    fig = pyplot.figure()
+    pyplot.title("Difference between observed and calculated in Z")
+    cax = pyplot.hexbin(zc, zd, gridsize=100)
+    cax.axes.set_xlabel("z")
+    cax.axes.set_ylabel("Difference in z position")
+    cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# Reflections")
-    pylab.savefig(join(self.directory, "centroid_diff_z.png"))
-    pylab.clf()
+    fig.savefig(join(self.directory, "centroid_diff_z.png"))
+    pyplot.close()
 
   def centroid_mean_diff_vs_phi(self, rlist, threshold):
     from os.path import join
@@ -421,7 +463,7 @@ class CentroidAnalyser(object):
     from matplotlib import pyplot
     fig = pyplot.figure()
     ax = fig.add_subplot(311)
-    fig.subplots_adjust(hspace=0.5)
+    #fig.subplots_adjust(hspace=0.5)
     pyplot.axhline(0, color='grey')
     ax.scatter(phi, mean_residuals_x)
     ax.set_xlabel('phi (deg)')
@@ -437,7 +479,7 @@ class CentroidAnalyser(object):
     ax.set_xlabel('phi (deg)')
     ax.set_ylabel('mean $\Delta$ phi (deg)')
     pyplot.savefig(join(self.directory, "centroid_mean_diff_vs_phi.png"))
-    pyplot.clf()
+    pyplot.close()
 
   def centroid_xy_xz_zy_residuals(self, rlist, threshold):
     from os.path import join
@@ -449,124 +491,120 @@ class CentroidAnalyser(object):
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
 
-    xc, yc, zc = rlist['xyzcal.mm'].parts()
-    xo, yo, zo = rlist['xyzobs.mm.value'].parts()
 
-    dx = xc - xo
-    dy = yc - yo
-    dphi = zc - zo
+    class residuals_xy_plot(per_panel_plot):
 
-    min_dx = flex.min(dx)
-    max_dx = flex.max(dx)
-    min_dy = flex.min(dy)
-    max_dy = flex.max(dy)
-    min_dphi = flex.min(dphi)
-    max_dphi = flex.max(dphi)
-    #print min_dx, max_dx
-    #print min_dy, max_dy
-    #print min_dphi, max_dphi
+      title = "Centroid residuals in X and Y"
+      filename = "centroid_xy_residuals.png"
+      cbar_ylabel = None
 
-    panel_ids = rlist['panel']
-    crystal_ids = rlist['id']
-    n_crystals = flex.max(crystal_ids) + 1
-    n_panels = flex.max(panel_ids) + 1
-    n_cols = int(math.floor(math.sqrt(n_panels)))
-    n_rows = int(math.ceil(n_panels / n_cols))
+      def plot_one_panel(self, ax, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        dx = xc - xo
+        dy = yc - yo
 
-    from matplotlib import pyplot
+        ax.axhline(0, color='grey')
+        ax.axvline(0, color='grey')
+        ax_xy = ax.scatter(
+          dx.as_numpy_array(), dy.as_numpy_array(), c='b', alpha=0.3)
+        ax.set_aspect('equal')
+        return ax_xy
 
-    for i_crystal in range(n_crystals):
-      if n_crystals > 1:
-        suffix = '_%i' %i_crystal
-      else:
-        suffix = ''
-      crystal_sel = (crystal_ids == i_crystal)
-      fig_xy, axes_xy = pyplot.subplots(
-        n_rows, n_cols,
-        #sharex=True, sharey=True
-      )
-      fig_xz, axes_xz = pyplot.subplots(
-        n_rows, n_cols,
-        #sharex=True, sharey=True
-      )
-      fig_zy, axes_zy = pyplot.subplots(
-        n_rows, n_cols,
-        #sharex=True, sharey=True
-      )
+      def get_min_max_xy(self, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        dx = xc - xo
+        dy = yc - yo
 
-      if n_panels == 1:
-        axes_xy = [[axes_xy]]
-        axes_xz = [[axes_xz]]
-        axes_zy = [[axes_zy]]
+        min_x = math.floor(flex.min(dx))
+        min_y = math.floor(flex.min(dy))
+        max_x = math.ceil(flex.max(dx))
+        max_y = math.ceil(flex.max(dy))
+        return min_x, max_x, min_y, max_y
 
-      i_panel = 0
-      for i_row in range(n_rows):
-        for i_col in range(n_cols):
-          panel_sel = (panel_ids == i_panel)
+    class residuals_zy_plot(per_panel_plot):
 
-          axes_xy[i_row][i_col].axhline(0, color='grey')
-          axes_xy[i_row][i_col].axvline(0, color='grey')
-          ax_xy = axes_xy[i_row][i_col].scatter(
-            dx.select(panel_sel & crystal_sel).as_numpy_array(),
-            dy.select(panel_sel & crystal_sel).as_numpy_array(),
-            c='b', alpha=0.3, label='Panel %d' %i_panel)
-          axes_xy[i_row][i_col].axes.set_aspect('equal')
-          axes_xy[i_row][i_col].axes.set_xlim(min_dx, max_dx)
-          axes_xy[i_row][i_col].axes.set_ylim(min_dy, max_dy)
+      title = "Centroid residuals in Z and Y"
+      filename = "centroid_zy_residuals.png"
+      cbar_ylabel = None
 
-          axes_xz[i_row][i_col].axhline(0, color='grey')
-          axes_xz[i_row][i_col].axvline(0, color='grey')
-          ax_xz = axes_xz[i_row][i_col].scatter(
-            dx.select(panel_sel & crystal_sel).as_numpy_array(),
-            dphi.select(panel_sel & crystal_sel).as_numpy_array(),
-            c='b', alpha=0.3, label='Panel %d' %i_panel)
-          axes_xz[i_row][i_col].axes.set_xlim(min_dx, max_dx)
-          axes_xz[i_row][i_col].axes.set_ylim(min_dphi, max_dphi)
+      def plot_one_panel(self, ax, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        dy = yc - yo
+        dz = zc - zo
 
-          axes_zy[i_row][i_col].axhline(0, color='grey')
-          axes_zy[i_row][i_col].axvline(0, color='grey')
-          ax_zy = axes_zy[i_row][i_col].scatter(
-            dphi.select(panel_sel & crystal_sel).as_numpy_array(),
-            dy.select(panel_sel & crystal_sel).as_numpy_array(),
-            c='b', alpha=0.3, label='Panel %d' %i_panel)
-          axes_zy[i_row][i_col].axes.set_xlim(min_dphi, max_dphi)
-          axes_zy[i_row][i_col].axes.set_ylim(min_dy, max_dy)
+        ax.axhline(0, color='grey')
+        ax.axvline(0, color='grey')
+        ax_zy = ax.scatter(
+          dz.as_numpy_array(), dy.as_numpy_array(), c='b', alpha=0.3)
+        ax.set_aspect('equal')
 
-          if n_panels > 1:
-            axes_xy[i_row][i_col].set_title('Panel %d' %i_panel)
-            axes_xz[i_row][i_col].set_title('Panel %d' %i_panel)
-            axes_zy[i_row][i_col].set_title('Panel %d' %i_panel)
+        return ax_zy
 
-          if (i_row+1) == n_rows:
-            axes_xy[i_row][i_col].set_xlabel('$\Delta$(x) (mm)')
-            axes_xz[i_row][i_col].set_xlabel('$\Delta$(x) (mm)')
-            axes_zy[i_row][i_col].set_xlabel('$\Delta$(phi) (deg)')
-          if i_col == 0:
-            axes_xy[i_row][i_col].set_ylabel('$\Delta$(y) (mm)')
-            axes_xz[i_row][i_col].set_ylabel('$\Delta$(phi) (deg)')
-            axes_zy[i_row][i_col].set_ylabel('$\Delta$(y) (mm)')
-          i_panel += 1
+      def get_min_max_xy(self, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        dx = xc - xo
+        dy = yc - yo
+        dz = zc -zo
 
-      for fig in (fig_xy, fig_xz, fig_zy):
-        fig.set_size_inches([n_cols * i for i in fig.get_size_inches()])
-      fig_xy.savefig(
-        join(self.directory, "centroid_xy_residuals%s.png" %suffix))
-      fig_xz.savefig(
-        join(self.directory, "centroid_xz_residuals%s.png" %suffix))
-      fig_zy.savefig(
-        join(self.directory, "centroid_zy_residuals%s.png" %suffix))
-      pyplot.clf()
+        min_x = math.floor(flex.min(dz))
+        min_y = math.floor(flex.min(dy))
+        max_x = math.ceil(flex.max(dz))
+        max_y = math.ceil(flex.max(dy))
+        return min_x, max_x, min_y, max_y
+
+    class residuals_xz_plot(per_panel_plot):
+
+      title = "Centroid residuals in X and Z"
+      filename = "centroid_xz_residuals.png"
+      cbar_ylabel = None
+
+      def plot_one_panel(self, ax, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        dx = xc - xo
+        dz = zc - zo
+
+        ax.axhline(0, color='grey')
+        ax.axvline(0, color='grey')
+        ax_xz = ax.scatter(
+          dx.as_numpy_array(), dz.as_numpy_array(), c='b', alpha=0.3)
+        ax.set_aspect('equal')
+
+        return ax_xz
+
+      def get_min_max_xy(self, rlist):
+        xc, yc, zc = rlist['xyzcal.px'].parts()
+        xo, yo, zo = rlist['xyzobs.px.value'].parts()
+        dx = xc - xo
+        dz = zc - zo
+
+        min_x = math.floor(flex.min(dx))
+        min_y = math.floor(flex.min(dz))
+        max_x = math.ceil(flex.max(dx))
+        max_y = math.ceil(flex.max(dz))
+        return min_x, max_x, min_y, max_y
+
+    plot = residuals_xy_plot(rlist, self.directory, grid_size=self.grid_size)
+    plot = residuals_zy_plot(rlist, self.directory, grid_size=self.grid_size)
+    plot = residuals_xz_plot(rlist, self.directory, grid_size=self.grid_size)
+
 
 class BackgroundAnalyser(object):
   ''' Analyse the background. '''
 
-  def __init__(self, directory):
+  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
     ''' Setup the directory. '''
     from os.path import join
 
     # Set the directory
     self.directory = join(directory, "background")
     ensure_directory(self.directory)
+    self.grid_size = grid_size
+    self.pixels_per_bin = pixels_per_bin
 
     # Set the required fields
     self.required = [
@@ -635,40 +673,51 @@ class BackgroundAnalyser(object):
     ''' Analyse the background RMSD. '''
     from os.path import join
     MEAN = rlist['background.mean']
-    pylab.title("Background Model mean histogram")
-    pylab.hist(MEAN, bins=20)
-    pylab.xlabel("mean")
-    pylab.ylabel("# reflections")
-    pylab.savefig(join(self.directory, "background_model_mean_hist"))
-    pylab.clf()
+    fig = pyplot.figure()
+    pyplot.title("Background Model mean histogram")
+    pyplot.hist(MEAN, bins=20)
+    pyplot.xlabel("mean")
+    pyplot.ylabel("# reflections")
+    fig.savefig(join(self.directory, "background_model_mean_hist"))
+    pyplot.close()
 
   def mean_vs_xy(self, rlist):
     ''' Plot I/Sigma vs X/Y '''
-    from os.path import join
-    MEAN = rlist['background.mean']
-    x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Distribution of Background Model mean vs X/Y")
-    cax = pylab.hexbin(x, y, C=MEAN, gridsize=100)
-    pylab.xlabel("x")
-    pylab.ylabel("y")
-    cbar = pylab.colorbar(cax)
-    cbar.ax.set_ylabel("Background Model mean")
-    pylab.savefig(join(self.directory, "background_model_mean_vs_xy.png"))
-    pylab.clf()
+
+    class mean_vs_xy_plot(per_panel_plot):
+
+      title = "Distribution of Background Model mean vs X/Y"
+      filename = "background_model_mean_vs_xy.png"
+      cbar_ylabel = "Background Model mean"
+
+      def plot_one_panel(self, ax, rlist):
+        MEAN = rlist['background.mean']
+        x, y, z = rlist['xyzcal.px'].parts()
+
+        hex_ax = ax.hexbin(
+          x.as_numpy_array(), y.as_numpy_array(),
+          C=MEAN.as_numpy_array(), gridsize=self.gridsize,
+          vmin=0, vmax=1
+        )
+        return hex_ax
+
+    plot = mean_vs_xy_plot(rlist, self.directory, grid_size=self.grid_size,
+                           pixels_per_bin=self.pixels_per_bin)
 
   def mean_vs_z(self, rlist):
     ''' Plot I/Sigma vs Z. '''
     from os.path import join
     MEAN = rlist['background.mean']
     x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Distribution of Background Model mean vs Z")
-    cax = pylab.hexbin(z, MEAN, gridsize=100)
-    pylab.xlabel("z")
-    pylab.ylabel("Background Model mean")
-    cbar = pylab.colorbar(cax)
+    fig = pyplot.figure()
+    pyplot.title("Distribution of Background Model mean vs Z")
+    cax = pyplot.hexbin(z, MEAN, gridsize=100)
+    cax.axes.set_xlabel("z")
+    cax.axes.set_ylabel("Background Model mean")
+    cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "background_model_mean_vs_z.png"))
-    pylab.clf()
+    fig.savefig(join(self.directory, "background_model_mean_vs_z.png"))
+    pyplot.close()
 
   def mean_vs_ios(self, rlist):
     ''' Analyse the correlations. '''
@@ -680,14 +729,15 @@ class BackgroundAnalyser(object):
     mask = I_over_S > 0.1
     I_over_S = I_over_S.select(mask)
     MEAN = MEAN.select(mask)
-    pylab.title("Background Model mean vs Log I/Sigma")
-    cax = pylab.hexbin(flex.log(I_over_S), MEAN, gridsize=100)
-    cbar = pylab.colorbar(cax)
-    pylab.xlabel("Log I/Sigma")
-    pylab.ylabel("Background Model mean")
+    fig = pyplot.figure()
+    pyplot.title("Background Model mean vs Log I/Sigma")
+    cax = pyplot.hexbin(flex.log(I_over_S), MEAN, gridsize=100)
+    cbar = pyplot.colorbar(cax)
+    cax.axes.set_xlabel("Log I/Sigma")
+    cax.axes.set_ylabel("Background Model mean")
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "background_model_mean_vs_ios.png"))
-    pylab.clf()
+    fig.savefig(join(self.directory, "background_model_mean_vs_ios.png"))
+    pyplot.close()
 
   def rmsd_hist(self, rlist):
     ''' Analyse the background RMSD. '''
@@ -695,28 +745,38 @@ class BackgroundAnalyser(object):
     RMSD = flex.sqrt(rlist['background.mse'])
     MEAN = rlist['background.mean']
     RMSD = RMSD / MEAN
-    pylab.title("Background Model mean histogram")
-    pylab.hist(RMSD, bins=20)
-    pylab.xlabel("mean")
-    pylab.ylabel("# reflections")
-    pylab.savefig(join(self.directory, "background_model_cvrmsd_hist"))
-    pylab.clf()
+    fig = pyplot.figure()
+    pyplot.title("Background Model mean histogram")
+    pyplot.hist(RMSD, bins=20)
+    pyplot.xlabel("mean")
+    pyplot.ylabel("# reflections")
+    fig.savefig(join(self.directory, "background_model_cvrmsd_hist"))
+    pyplot.close()
 
   def rmsd_vs_xy(self, rlist):
     ''' Plot I/Sigma vs X/Y '''
-    from os.path import join
-    RMSD = flex.sqrt(rlist['background.mse'])
-    MEAN = rlist['background.mean']
-    RMSD = RMSD / MEAN
-    x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Distribution of Background Model CVRMSD vs X/Y")
-    cax = pylab.hexbin(x, y, C=RMSD, gridsize=100)
-    pylab.xlabel("x")
-    pylab.ylabel("y")
-    cbar = pylab.colorbar(cax)
-    cbar.ax.set_ylabel("Background Model CVRMSD")
-    pylab.savefig(join(self.directory, "background_model_cvrmsd_vs_xy.png"))
-    pylab.clf()
+
+    class rmsd_vs_xy_plot(per_panel_plot):
+
+      title = "Distribution of Background Model CVRMSD vs X/Y"
+      filename = "background_model_cvrmsd_vs_xy.png"
+      cbar_ylabel = "Background Model CVRMSD"
+
+      def plot_one_panel(self, ax, rlist):
+        RMSD = flex.sqrt(rlist['background.mse'])
+        MEAN = rlist['background.mean']
+        RMSD = RMSD / MEAN
+        x, y, z = rlist['xyzcal.px'].parts()
+
+        hex_ax = ax.hexbin(
+          x.as_numpy_array(), y.as_numpy_array(),
+          C=RMSD.as_numpy_array(), gridsize=self.gridsize,
+          vmin=0, vmax=1
+        )
+        return hex_ax
+
+    plot = rmsd_vs_xy_plot(rlist, self.directory, grid_size=self.grid_size,
+                           pixels_per_bin=self.pixels_per_bin)
 
   def rmsd_vs_z(self, rlist):
     ''' Plot I/Sigma vs Z. '''
@@ -725,14 +785,15 @@ class BackgroundAnalyser(object):
     MEAN = rlist['background.mean']
     RMSD = RMSD / MEAN
     x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Distribution of Background Model CVRMSD vs Z")
-    cax = pylab.hexbin(z, RMSD, gridsize=100)
-    pylab.xlabel("z")
-    pylab.ylabel("Background Model CVRMSD")
-    cbar = pylab.colorbar(cax)
+    fig = pyplot.figure()
+    pyplot.title("Distribution of Background Model CVRMSD vs Z")
+    cax = pyplot.hexbin(z, RMSD, gridsize=100)
+    cax.axes.set_xlabel("z")
+    cax.axes.set_ylabel("Background Model CVRMSD")
+    cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "background_model_cvrmsd_vs_z.png"))
-    pylab.clf()
+    fig.savefig(join(self.directory, "background_model_cvrmsd_vs_z.png"))
+    pyplot.close()
 
   def rmsd_vs_ios(self, rlist):
     ''' Analyse the correlations. '''
@@ -746,26 +807,29 @@ class BackgroundAnalyser(object):
     mask = I_over_S > 0.1
     I_over_S = I_over_S.select(mask)
     RMSD = RMSD.select(mask)
-    pylab.title("Background Model CVRMSD vs Log I/Sigma")
-    cax = pylab.hexbin(flex.log(I_over_S), RMSD, gridsize=100)
-    cbar = pylab.colorbar(cax)
-    pylab.xlabel("Log I/Sigma")
-    pylab.ylabel("Background Model CVRMSD")
+    fig = pyplot.figure()
+    pyplot.title("Background Model CVRMSD vs Log I/Sigma")
+    cax = pyplot.hexbin(flex.log(I_over_S), RMSD, gridsize=100)
+    cbar = pyplot.colorbar(cax)
+    cax.axes.set_xlabel("Log I/Sigma")
+    cax.axes.set_ylabel("Background Model CVRMSD")
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "background_model_cvrmsd_vs_ios.png"))
-    pylab.clf()
+    fig.savefig(join(self.directory, "background_model_cvrmsd_vs_ios.png"))
+    pyplot.close()
 
 
 class IntensityAnalyser(object):
   ''' Analyse the intensities. '''
 
-  def __init__(self, directory):
+  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
     ''' Set up the directory. '''
     from os.path import join
 
     # Set the directory
     self.directory = join(directory, "intensity")
     ensure_directory(self.directory)
+    self.grid_size = grid_size
+    self.pixels_per_bin = pixels_per_bin
 
     # Set the required fields
     self.required = [
@@ -810,7 +874,9 @@ class IntensityAnalyser(object):
     print " Analysing distribution of I/Sigma"
     self.i_over_s_hist(rlist)
     print " Analysing distribution of I/Sigma vs xy"
-    self.i_over_s_vs_xy(rlist)
+    self.i_over_s_vs_xy(rlist, "sum")
+    print " Analysing distribution of I/Sigma vs xy"
+    self.i_over_s_vs_xy(rlist, "prf")
     print " Analysing distribution of I/Sigma vs z"
     self.i_over_s_vs_z(rlist)
     print " Analysing number of background pixels used"
@@ -824,28 +890,40 @@ class IntensityAnalyser(object):
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
-    pylab.title("Log I/Sigma histogram")
-    pylab.hist(flex.log(I_over_S), bins=20)
-    pylab.xlabel("Log I/Sigma")
-    pylab.ylabel("# reflections")
-    pylab.savefig(join(self.directory, "ioversigma_hist"))
-    pylab.clf()
+    fig = pyplot.figure()
+    pyplot.title("Log I/Sigma histogram")
+    pyplot.hist(flex.log(I_over_S), bins=20)
+    pyplot.xlabel("Log I/Sigma")
+    pyplot.ylabel("# reflections")
+    fig.savefig(join(self.directory, "ioversigma_hist"))
+    pyplot.close()
 
-  def i_over_s_vs_xy(self, rlist):
+  def i_over_s_vs_xy(self, rlist, intensity_type):
     ''' Plot I/Sigma vs X/Y '''
-    from os.path import join
-    I = rlist['intensity.sum.value']
-    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
-    I_over_S = I / I_sig
-    x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Distribution of I/Sigma vs X/Y")
-    cax = pylab.hexbin(x, y, C=flex.log(I_over_S), gridsize=100)
-    pylab.xlabel("x")
-    pylab.ylabel("y")
-    cbar = pylab.colorbar(cax)
-    cbar.ax.set_ylabel("Log I/Sigma")
-    pylab.savefig(join(self.directory, "ioversigma_vs_xy.png"))
-    pylab.clf()
+
+    class i_over_s_vs_xy_plot(per_panel_plot):
+
+      title = "Distribution of I/Sigma vs X/Y"
+      filename = "ioversigma_%s_vs_xy.png" %intensity_type
+      cbar_ylabel = "Log I/Sigma"
+
+      def plot_one_panel(self, ax, rlist):
+        I_sig = flex.sqrt(rlist['intensity.%s.variance' %intensity_type])
+        sel = I_sig > 0
+        rlist = rlist.select(sel)
+        I_sig = I_sig.select(sel)
+        I = rlist['intensity.%s.value' %intensity_type]
+        I_over_S = I / I_sig
+        x, y, z = rlist['xyzcal.px'].parts()
+
+        hex_ax = ax.hexbin(
+          x.as_numpy_array(), y.as_numpy_array(),
+          C=flex.log(I_over_S), gridsize=self.gridsize,
+        )
+        return hex_ax
+
+    plot = i_over_s_vs_xy_plot(rlist, self.directory, grid_size=self.grid_size,
+                               pixels_per_bin=self.pixels_per_bin)
 
   def i_over_s_vs_z(self, rlist):
     ''' Plot I/Sigma vs Z. '''
@@ -854,50 +932,55 @@ class IntensityAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Distribution of I/Sigma vs Z")
-    cax = pylab.hexbin(z, flex.log(I_over_S), gridsize=100)
-    pylab.xlabel("z")
-    pylab.ylabel("Log I/Sigma")
-    cbar = pylab.colorbar(cax)
+    fig = pyplot.figure()
+    pyplot.title("Distribution of I/Sigma vs Z")
+    cax = pyplot.hexbin(z, flex.log(I_over_S), gridsize=100)
+    cax.axes.set_xlabel("z")
+    cax.axes.set_ylabel("Log I/Sigma")
+    cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "ioversigma_vs_z.png"))
-    pylab.clf()
+    fig.savefig(join(self.directory, "ioversigma_vs_z.png"))
+    pyplot.close()
 
   def num_background_hist(self, rlist):
     ''' Analyse the number of background pixels. '''
     from os.path import join
     if 'n_background' in rlist:
       N = rlist['n_background']
-      pylab.title("Num Background Pixel Histogram")
-      pylab.hist(N, bins=20)
-      pylab.xlabel("Number of pixels")
-      pylab.ylabel("# reflections")
-      pylab.savefig(join(self.directory, "n_background_hist.png"))
-      pylab.clf()
+      fig = pyplot.figure()
+      pyplot.title("Num Background Pixel Histogram")
+      pyplot.hist(N, bins=20)
+      pyplot.xlabel("Number of pixels")
+      pyplot.ylabel("# reflections")
+      fig.savefig(join(self.directory, "n_background_hist.png"))
+      pyplot.close()
 
   def num_foreground_hist(self, rlist):
     ''' Analyse the number of foreground pixels. '''
     from os.path import join
     if 'n_foreground' in rlist:
       N = rlist['n_foreground']
-      pylab.title("Num Foreground Pixel Histogram")
-      pylab.hist(N, bins=20)
-      pylab.xlabel("Number of pixels")
-      pylab.ylabel("# reflections")
-      pylab.savefig(join(self.directory, "n_foreground_hist.png"))
-      pylab.clf()
+      fig = pyplot.figure()
+      pyplot.title("Num Foreground Pixel Histogram")
+      pyplot.hist(N, bins=20)
+      pyplot.xlabel("Number of pixels")
+      pyplot.ylabel("# reflections")
+      fig.savefig(join(self.directory, "n_foreground_hist.png"))
+      pyplot.close()
 
 
 class ReferenceProfileAnalyser(object):
   ''' Analyse the reference profiles. '''
 
-  def __init__(self, directory):
+  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
     ''' Set up the directory. '''
     from os.path import join
 
     # Set the directory
     self.directory = join(directory, "reference")
     ensure_directory(self.directory)
+    self.grid_size = grid_size
+    self.pixels_per_bin = pixels_per_bin
 
     # Set the required fields
     self.required = [
@@ -974,66 +1057,89 @@ class ReferenceProfileAnalyser(object):
     from os.path import join
     mask = rlist.get_flags(rlist.flags.reference_spot)
     rlist = rlist.select(mask)
-    x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Reference profiles binned in X/Y")
-    cax = pylab.hexbin(x, y, gridsize=100)
-    pylab.xlabel("x")
-    pylab.ylabel("y")
-    cbar = pylab.colorbar(cax)
-    cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "reference_xy.png"))
-    pylab.clf()
+
+    class reference_xy_plot(per_panel_plot):
+
+      title = "Reference profiles binned in X/Y"
+      filename = "reference_xy.png"
+      cbar_ylabel = "# reflections"
+
+      def plot_one_panel(self, ax, rlist):
+        x, y, z = rlist['xyzcal.px'].parts()
+
+        hex_ax = ax.hexbin(
+          x.as_numpy_array(), y.as_numpy_array(), gridsize=self.gridsize,
+        )
+        return hex_ax
+
+    plot = reference_xy_plot(rlist, self.directory, grid_size=self.grid_size,
+                             pixels_per_bin=self.pixels_per_bin)
 
   def reference_z(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
     from os.path import join
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Reference profiles binned in Z")
-    cax = pylab.hist(z, bins=20)
-    pylab.xlabel("z")
-    pylab.ylabel("# reflections")
-    pylab.savefig(join(self.directory, "reference_z.png"))
-    pylab.clf()
+    fig = pyplot.figure()
+    pyplot.title("Reference profiles binned in Z")
+    pyplot.hist(z, bins=20)
+    pyplot.xlabel("z")
+    pyplot.ylabel("# reflections")
+    fig.savefig(join(self.directory, "reference_z.png"))
+    pyplot.close()
 
   def reflection_corr_hist(self, rlist, filename):
     ''' Analyse the correlations. '''
     from os.path import join
     corr = rlist['profile.correlation']
-    pylab.title("Reflection correlations histogram")
-    pylab.hist(corr, bins=20)
-    pylab.xlabel("Correlation with reference profile")
-    pylab.ylabel("# reflections")
-    pylab.savefig(join(self.directory, "%s_corr_hist" % filename))
-    pylab.clf()
+    fig = pyplot.figure()
+    pyplot.title("Reflection correlations histogram")
+    pyplot.hist(corr, bins=20)
+    pyplot.xlabel("Correlation with reference profile")
+    pyplot.ylabel("# reflections")
+    fig.savefig(join(self.directory, "%s_corr_hist" % filename))
+    pyplot.close()
 
   def reflection_corr_vs_xy(self, rlist, filename):
     ''' Analyse the correlations. '''
     from os.path import join
-    corr = rlist['profile.correlation']
-    x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Reflection correlations binned in X/Y")
-    cax = pylab.hexbin(x, y, C=corr, gridsize=100, vmin=0.0, vmax=1.0)
-    cbar = pylab.colorbar(cax)
-    pylab.xlabel("x")
-    pylab.ylabel("y")
-    cbar.ax.set_ylabel("Correlation with reference profile")
-    pylab.savefig(join(self.directory, "%s_corr_vs_xy.png" % filename))
-    pylab.clf()
+
+    tmp_filename = filename
+
+    class corr_vs_xy_plot(per_panel_plot):
+
+      title = "Reflection correlations binned in X/Y"
+      filename = "%s_corr_vs_xy.png" % tmp_filename
+      cbar_ylabel = "Correlation with reference profile"
+
+      def plot_one_panel(self, ax, rlist):
+        corr = rlist['profile.correlation']
+        x, y, z = rlist['xyzcal.px'].parts()
+
+        hex_ax = ax.hexbin(
+          x.as_numpy_array(), y.as_numpy_array(),
+          C=corr.as_numpy_array(), gridsize=self.gridsize,
+          vmin=0, vmax=1
+        )
+        return hex_ax
+
+    plot = corr_vs_xy_plot(rlist, self.directory, grid_size=self.grid_size,
+                           pixels_per_bin=self.pixels_per_bin)
 
   def reflection_corr_vs_z(self, rlist, filename):
     ''' Analyse the correlations. '''
     from os.path import join
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Reflection correlations vs Z")
-    cax = pylab.hexbin(z, corr, gridsize=100)
-    cbar = pylab.colorbar(cax)
-    pylab.xlabel("z")
-    pylab.ylabel("Correlation with reference profile")
+    fig = pyplot.figure()
+    pyplot.title("Reflection correlations vs Z")
+    cax = pyplot.hexbin(z, corr, gridsize=100)
+    cbar = pyplot.colorbar(cax)
+    cax.axes.set_xlabel("z")
+    cax.axes.set_ylabel("Correlation with reference profile")
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "%s_corr_vs_z.png" % filename))
-    pylab.clf()
+    fig.savefig(join(self.directory, "%s_corr_vs_z.png" % filename))
+    pyplot.close()
 
   def reflection_corr_vs_ios(self, rlist, filename):
     ''' Analyse the correlations. '''
@@ -1049,26 +1155,27 @@ class ReferenceProfileAnalyser(object):
     mask = I_over_S > 0.1
     I_over_S = I_over_S.select(mask)
     corr = corr.select(mask)
-    pylab.title("Reflection correlations vs Log I/Sigma")
-    cax = pylab.hexbin(flex.log(I_over_S), corr, gridsize=100)
-    cbar = pylab.colorbar(cax)
-    pylab.xlabel("Log I/Sigma")
-    pylab.ylabel("Correlation with reference profile")
+    fig = pyplot.figure()
+    pyplot.title("Reflection correlations vs Log I/Sigma")
+    cax = pyplot.hexbin(flex.log(I_over_S), corr, gridsize=100)
+    cbar = pyplot.colorbar(cax)
+    cax.axes.set_xlabel("Log I/Sigma")
+    cax.axes.set_ylabel("Correlation with reference profile")
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "%s_corr_vs_ios.png" % filename))
-    pylab.clf()
+    fig.savefig(join(self.directory, "%s_corr_vs_ios.png" % filename))
+    pyplot.close()
 
   def ideal_reflection_corr_hist(self, rlist, filename):
     ''' Analyse the correlations. '''
     from os.path import join
     if 'correlation.ideal.profile' in rlist:
       corr = rlist['correlation.ideal.profile']
-      pylab.title("Reflection correlations histogram")
-      pylab.hist(corr, bins=20)
-      pylab.xlabel("Correlation with reference profile")
-      pylab.ylabel("# reflections")
-      pylab.savefig(join(self.directory, "ideal_%s_corr_hist" % filename))
-      pylab.clf()
+      pyplot.title("Reflection correlations histogram")
+      pyplot.hist(corr, bins=20)
+      pyplot.xlabel("Correlation with reference profile")
+      pyplot.ylabel("# reflections")
+      pyplot.savefig(join(self.directory, "ideal_%s_corr_hist" % filename))
+      pyplot.close()
 
   def ideal_reflection_corr_vs_xy(self, rlist, filename):
     ''' Analyse the correlations. '''
@@ -1076,14 +1183,14 @@ class ReferenceProfileAnalyser(object):
     if 'correlation.ideal.profile' in rlist:
       corr = rlist['correlation.ideal.profile']
       x, y, z = rlist['xyzcal.px'].parts()
-      pylab.title("Reflection correlations binned in X/Y")
-      cax = pylab.hexbin(x, y, C=corr, gridsize=100, vmin=0.0, vmax=1.0)
-      cbar = pylab.colorbar(cax)
-      pylab.xlabel("x")
-      pylab.ylabel("y")
+      pyplot.title("Reflection correlations binned in X/Y")
+      cax = pyplot.hexbin(x, y, C=corr, gridsize=100, vmin=0.0, vmax=1.0)
+      cbar = pyplot.colorbar(cax)
+      pyplot.xlabel("x")
+      pyplot.ylabel("y")
       cbar.ax.set_ylabel("Correlation with reference profile")
-      pylab.savefig(join(self.directory, "ideal_%s_corr_vs_xy.png" % filename))
-      pylab.clf()
+      pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_xy.png" % filename))
+      pyplot.close()
 
   def ideal_reflection_corr_vs_z(self, rlist, filename):
     ''' Analyse the correlations. '''
@@ -1091,14 +1198,14 @@ class ReferenceProfileAnalyser(object):
     if 'correlation.ideal.profile' in rlist:
       corr = rlist['correlation.ideal.profile']
       x, y, z = rlist['xyzcal.px'].parts()
-      pylab.title("Reflection correlations vs Z")
-      cax = pylab.hexbin(z, corr, gridsize=100)
-      cbar = pylab.colorbar(cax)
-      pylab.xlabel("z")
-      pylab.ylabel("Correlation with reference profile")
+      pyplot.title("Reflection correlations vs Z")
+      cax = pyplot.hexbin(z, corr, gridsize=100)
+      cbar = pyplot.colorbar(cax)
+      pyplot.xlabel("z")
+      pyplot.ylabel("Correlation with reference profile")
       cbar.ax.set_ylabel("# reflections")
-      pylab.savefig(join(self.directory, "ideal_%s_corr_vs_z.png" % filename))
-      pylab.clf()
+      pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_z.png" % filename))
+      pyplot.close()
 
   def ideal_reflection_corr_vs_ios(self, rlist, filename):
     ''' Analyse the correlations. '''
@@ -1115,14 +1222,14 @@ class ReferenceProfileAnalyser(object):
       mask = I_over_S > 0.1
       I_over_S = I_over_S.select(mask)
       corr = corr.select(mask)
-      pylab.title("Reflection correlations vs Log I/Sigma")
-      cax = pylab.hexbin(flex.log(I_over_S), corr, gridsize=100)
-      cbar = pylab.colorbar(cax)
-      pylab.xlabel("Log I/Sigma")
-      pylab.ylabel("Correlation with reference profile")
+      pyplot.title("Reflection correlations vs Log I/Sigma")
+      cax = pyplot.hexbin(flex.log(I_over_S), corr, gridsize=100)
+      cbar = pyplot.colorbar(cax)
+      pyplot.xlabel("Log I/Sigma")
+      pyplot.ylabel("Correlation with reference profile")
       cbar.ax.set_ylabel("# reflections")
-      pylab.savefig(join(self.directory, "ideal_%s_corr_vs_ios.png" % filename))
-      pylab.clf()
+      pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_ios.png" % filename))
+      pyplot.close()
 
 
 class Analyser(object):
@@ -1134,11 +1241,14 @@ class Analyser(object):
     directory = join(directory, "analysis")
     self.analysers = [
       StrongSpotsAnalyser(directory),
-      CentroidAnalyser(directory, grid_size=grid_size,
-                       pixels_per_bin=pixels_per_bin),
-      BackgroundAnalyser(directory),
-      IntensityAnalyser(directory),
-      ReferenceProfileAnalyser(directory),
+      CentroidAnalyser(
+        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+      BackgroundAnalyser(
+        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+      IntensityAnalyser(
+        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+      ReferenceProfileAnalyser(
+        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
     ]
 
   def __call__(self, rlist):
