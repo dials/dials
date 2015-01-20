@@ -407,6 +407,7 @@ doc/sphinx/conf.py -text
 doc/sphinx/conventions.rst -text
 doc/sphinx/developer_tutorial.rst -text
 doc/sphinx/figures/E4.png -text
+doc/sphinx/figures/sv_crystal.png -text svneol=unset#unset
 doc/sphinx/index.rst -text
 doc/sphinx/installation.rst -text
 doc/sphinx/library_reference/algorithms/dials.algorithms.background.rst -text

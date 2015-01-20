@@ -798,7 +798,15 @@ fitting noise in the data. Figuring out the optimum number of points to use
 is challenging. Here we are happy with the default interval width of 36 degrees
 (like ``bin_size_fraction`` this is a parameter at ``expert_level = 1``).
 
-FIXME scan-varying refinement plots here.
+To view the smoothly varying crystal cell parameters use the following command::
+
+  dials.plot_scan_varying_crystal sv_refined_experiments.json
+
+The output of this program is still a little rough-and-ready, however the plot
+it produces :file:`sv_crystal.pdf` may be useful to check there are no
+huge changes to the cell.
+
+.. image:: figures/sv_crystal.png
 
 
 Integration
