@@ -246,6 +246,12 @@ class Target(object):
 
     return self._curv
 
+  def compute_residuals(self):
+    """return the vector of residuals plus their weights"""
+
+    self.update_matches()
+    return self._extract_residuals_and_weights(self._matches)
+
   def compute_residuals_and_gradients(self, block_num=0):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
