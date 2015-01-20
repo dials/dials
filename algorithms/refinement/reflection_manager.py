@@ -457,7 +457,7 @@ class ReflectionManager(object):
     rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
     st = simple_table(rows, header)
     info(st.format())
-    info("\n")
+    info("")
 
     if len(l) < 20:
       debug("Fewer than 20 reflections matched!")
@@ -482,7 +482,6 @@ class ReflectionManager(object):
                        e['xyzobs.mm.weights'][1],
                        e['xyzobs.mm.weights'][2] * DEG2RAD**2))
       debug(msg)
-    debug("\n")
     sl = self._sort_obs_by_residual(sl, angular=True)
     debug("\nReflections with the worst 20 angular residuals:")
     debug("H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, " + \
@@ -502,7 +501,7 @@ class ReflectionManager(object):
                                              e['xyzobs.mm.weights'][1],
                                              e['xyzobs.mm.weights'][2] * DEG2RAD**2))
       debug(msg)
-    debug("\n")
+    debug("")
 
     return
 
@@ -610,7 +609,7 @@ class StillsReflectionManager(ReflectionManager):
     w_x, w_y, _ = l['xyzobs.mm.weights'].parts()
     w_delpsi = l['delpsical.weights']
 
-    info("\nSummary statistics for observations matched to predictions:")
+    info("Summary statistics for observations matched to predictions:")
     header = ["", "Min", "Q1", "Med", "Q3", "Max"]
     rows = []
     row_data = five_number_summary(x_resid)
@@ -627,7 +626,6 @@ class StillsReflectionManager(ReflectionManager):
     rows.append(["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
     st = simple_table(rows, header)
     info(st.format())
-    info("\n")
 
     sl = self._sort_obs_by_residual(l)
     debug("Reflections with the worst 20 positional residuals:")

@@ -256,7 +256,7 @@ class Script(object):
         reflections, experiments)
 
     # Refine the geometry
-    info('Performing refinement')
+    info('Performing refinement...')
 
     # Refine and get the refinement history
     history = refiner.run()

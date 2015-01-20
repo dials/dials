@@ -561,9 +561,8 @@ class RefinerFactory(object):
     debug("Parameter order : name mapping")
     for i, e in enumerate(pred_param.get_param_names()):
       debug("Parameter %03d : %s", i, e)
-    debug("\n")
 
-    debug("Building reflection manager")
+    debug("\nBuilding reflection manager")
     debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
@@ -1234,8 +1233,7 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    info("\nRefinement steps")
-    info("----------------")
+    info("\nRefinement steps:")
 
     rmsd_multipliers = []
     header = ["Step", "Nref"]
@@ -1273,8 +1271,7 @@ class Refiner(object):
     nref = len(self.get_free_reflections())
     if nref < 10: return # don't do anything if very few refs
 
-    info("\nRMSDs for out-of-sample (free) reflections")
-    info("------------------------------------------")
+    info("\nRMSDs for out-of-sample (free) reflections:")
 
     rmsd_multipliers = []
     header = ["Step", "Nref"]
@@ -1306,8 +1303,7 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    info("\nRMSDs by experiment")
-    info("-------------------")
+    info("\nRMSDs by experiment:")
 
     header = ["Exp", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1375,8 +1371,7 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    info("\nRMSDs by panel")
-    info("--------------")
+    info("\nRMSDs by panel:")
 
     header = ["Panel", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1431,8 +1426,7 @@ class Refiner(object):
     # Do refinement and return history #
     ####################################
 
-    debug("\nExperimental models before refinement")
-    debug("-------------------------------------")
+    debug("\nExperimental models before refinement:")
     debug(str(self._beam))
     debug(str(self._detector))
     if self._goniometer: debug(str(self._goniometer))
@@ -1442,8 +1436,6 @@ class Refiner(object):
       msg += str(x)
       debug(msg)
 
-    info("\nRunning refinement")
-    info("------------------")
     self._refinery.run()
 
     self.print_step_table()
@@ -1479,8 +1471,7 @@ class Refiner(object):
         self._pred_param.set_model_state_uncertainties(
           u_cov_list, b_cov_list, iexp)
 
-    debug("\nExperimental models after refinement")
-    debug("------------------------------------")
+    debug("\nExperimental models after refinement:")
     debug(str(self._beam))
     debug(str(self._detector))
     if self._goniometer: debug(str(self._goniometer))

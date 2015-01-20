@@ -68,8 +68,7 @@ class ParameterReporter(object):
 
   def __str__(self):
 
-    s =  "Parameter Report\n"
-    s += "----------------\n"
+    s =  "Parameter Report:\n"
     if self._detector_parameterisations:
       s += "Detector parameters:\n"
       det_plists = [x.get_params()
