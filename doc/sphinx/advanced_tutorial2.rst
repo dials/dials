@@ -9,26 +9,6 @@ finding, indexing, refinement, integration, exporting to MTZ) or you can run the
 whole lot through :doc:`dials.process </programs/dials_process>`, which just
 chains them together (and incidentally does all of the processing in P1.)
 
-dials.process
--------------
-
-In the simplest case, :doc:`dials.process </programs/dials_process>`
-``/here/are/all/images*.cbf`` will do sensible processing, with a static model
-of the experiment and sample, and will output a reflection file integrated.mtz
-containing the intensity measurements assuming everything works correctly.
-Some sensible options to use are:
-
- - :samp:`scan_varying=true` - allow the crystal orientation and unit cell
-   constants to vary during the scan
- - :samp:`mp.nproc=1` - only use one processor (necessary currently for data in
-   NeXus files)
- - :samp:`intensity.algorithm=sum` - use summation integtration, other
-   algorithms are being added
- - :samp:`block_size=N` - for some N, split the data set into N degree blocks
-   for integration, so as not to overload the computer
- - :samp:`-i` - pass the images to process through the standard input e.g. from
-   :samp:`find . -name *.cbf` to avoid issues with limited command-line lengths
-
 Running the Individual Steps: Macromolecule
 -------------------------------------------
 
@@ -37,11 +17,6 @@ at Diamond Light Source which is available for download from |thaumatin|.
 
 .. |thaumatin| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10271.png
                :target: http://dx.doi.org/10.5281/zenodo.10271
-
-A complete example script can be found
-:download:`here<../user-tutorial/tutorial.sh>`, which can be run as follows::
-
-  ./tutorial.sh /path/to/data
 
 Import
 ^^^^^^
