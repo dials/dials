@@ -27,7 +27,7 @@ class wxbitmap_convert(object):
     log_msg = '''
     print "in data(wxbitmap_convert) ="
     print data_in_n1, data_in_n2
-    '''
+    #'''
 
     if(data_in_n1 == None and data_in_n2 == None):
       log_msg = '''
@@ -70,14 +70,36 @@ class wxbitmap_convert(object):
 
       elif( type(data_in_n1) is not list and type(data_in_n2) is not list ):
         #Got two blocks
+
         self.lst_3d_data = []
         self.lst_3d_mask = []
-        self.lst_3d_data.append(data_in_n1.as_numpy_array())
-        self.lst_3d_mask.append(data_in_n2.as_numpy_array())
+
+        img1_np = data_in_n1.as_numpy_array()
+        self.lst_3d_data.append(img1_np)
+
+        img2_np = data_in_n2.as_numpy_array()
+        self.lst_3d_mask.append(img2_np)
+
+
+        log_msg = '''
+        print "img1_np.shape =", img1_np.shape
+        '''
+
+        if( img1_np.shape[0] == 0 or img1_np.shape[1] == 0 or
+            img1_np.shape[2] == 0 or img2_np.shape[0] == 0 or
+            img2_np.shape[1] == 0 or img2_np.shape[2] == 0    ):
+
+          log_msg = '''
+          print "Empty array in reflection table"
+          '''
+          self.lst_3d_data = [None]
+          self.lst_3d_mask = [None]
 
       else:
         # might be a good idea to raise a runtime error here
         print "Got mixture of different type of data"
+
+    print "here final"
 
   def get_np(self):
     #returning numpy arrays in the rare case where they might be needed
