@@ -32,12 +32,12 @@ Some sensible options to explore are:
 
  - :samp:`scan_varying=true` - allow the crystal orientation and unit cell
    constants to vary during the scan
- - :samp:`mp.nproc=1` - only use one processor (necessary currently for data in
-   NeXus files)
- - :samp:`intensity.algorithm=sum` - use summation integration, other
-   algorithms are being added
+ - :samp:`mp.nproc=1` - only use one processor [#f1]_
+ - :samp:`intensity.algorithm=sum` - force summation integration instead of
+   the default profile fitting
  - :samp:`block_size=N` - for some N, split the data set into N degree blocks
-   for integration, so as not to overload the computer
+   for integration, so as not to overload the computer. A sensible default will
+   be chosen, but use this to override that choice.
  - :samp:`-i` - pass the images to process through the standard input e.g. from
    :samp:`find . -name *.cbf` to avoid issues with limited command-line lengths
 
@@ -163,3 +163,8 @@ run pointless and aimless to resort and scale the data viz:
   aimless hklin sorted.mtz hklout scaled.mtz
 
 For details on pointless and aimless please refer to the CCP4 documentation.
+
+
+.. rubric:: Footnotes
+
+.. [#f1] Currently necessary for data in HDF5 files
