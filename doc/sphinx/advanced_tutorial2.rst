@@ -788,57 +788,65 @@ Integration
 ^^^^^^^^^^^
 
 After the refinement is done the next step is integration, which is performed
-by the program :doc:`dials.integrate </programs/dials_integrate>`.
+by the program :doc:`dials.integrate </programs/dials_integrate>`. Mostly, the
+default parameters are fine, which will perform XDS-like 3D profile fitting. However,
+for datasets with very weak background, such as this, the default 'nsigma'
+background outlier rejection algorithm tends to underestimate the real background
+value. This is because that method is only really appropriate for values from
+a normal distribution, which is a poor approximation for a Poisson distibution
+with a small mean, and significant skewness.
 
 ::
 
-  dials.integrate sv_refined_experiments.json reindexed_reflections.pickle
+  dials.integrate sv_refined_experiments.json reindexed_reflections.pickle \
+  outlier.algorithm=null
 
 This program outputs a lot of information as integration progresses,
 concluding with a summary of the integration results.
 
 ::
 
-   Summary of integration results binned by resolution
-   ----------------------------------------------------------------------------------------------------------
-   d min |  d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
-         |        |        |        |        |       |       |       |       |    (sum) |    (prf) |
-   ----------------------------------------------------------------------------------------------------------
-    1.17 |   1.19 |    300 |      2 |      0 |     0 |   302 |   234 |  0.00 |     3.29 |     2.22 |     0.13
-    1.19 |   1.21 |   1060 |      5 |      0 |     0 |  1065 |   931 |  0.00 |     3.33 |     2.24 |     0.11
-    1.21 |   1.23 |   2270 |     13 |      0 |     0 |  2283 |  2093 |  0.00 |     3.41 |     2.30 |     0.12
-    1.23 |   1.26 |   3715 |     21 |      0 |     0 |  3736 |  3558 |  0.00 |     3.46 |     2.36 |     0.14
-    1.26 |   1.28 |   5340 |     31 |      0 |     0 |  5371 |  5148 |  0.00 |     3.53 |     2.43 |     0.16
-    1.28 |   1.31 |   7114 |     44 |      0 |     0 |  7158 |  6915 |  0.00 |     3.58 |     2.48 |     0.18
-    1.31 |   1.35 |   9365 |     56 |      0 |     0 |  9421 |  9163 |  0.00 |     3.68 |     2.58 |     0.21
-    1.35 |   1.38 |  12334 |     78 |      0 |     0 | 12412 | 12109 |  0.00 |     3.73 |     2.67 |     0.24
-    1.38 |   1.42 |  16756 |     97 |      0 |     0 | 16853 | 16484 |  0.01 |     3.56 |     2.61 |     0.26
-    1.42 |   1.47 |  19947 |    142 |      0 |     0 | 20089 | 19856 |  0.02 |     3.51 |     2.68 |     0.29
-    1.47 |   1.52 |  23311 |    467 |      0 |     0 | 23778 | 23522 |  0.03 |     3.43 |     2.75 |     0.33
-    1.52 |   1.58 |  23781 |    569 |      0 |     0 | 24350 | 24298 |  0.05 |     3.31 |     2.83 |     0.37
-    1.58 |   1.66 |  25217 |    552 |      0 |     0 | 25769 | 25720 |  0.07 |     3.23 |     3.01 |     0.44
-    1.66 |   1.74 |  23964 |    489 |      0 |     0 | 24453 | 24407 |  0.09 |     3.34 |     3.35 |     0.50
-    1.74 |   1.85 |  24490 |    483 |      0 |     0 | 24973 | 24939 |  0.12 |     3.87 |     4.03 |     0.56
-    1.85 |   2.00 |  25432 |    539 |      0 |     0 | 25971 | 25939 |  0.16 |     5.28 |     5.44 |     0.63
-    2.00 |   2.20 |  24462 |    448 |      0 |     0 | 24910 | 24889 |  0.20 |     7.08 |     7.22 |     0.69
-    2.20 |   2.51 |  25437 |    476 |      0 |     0 | 25913 | 25881 |  0.23 |     9.28 |     9.41 |     0.73
-    2.51 |   3.17 |  24970 |    497 |      0 |     0 | 25467 | 25427 |  0.31 |    12.96 |    13.16 |     0.75
-    3.17 | 151.26 |  25489 |    635 |      0 |     0 | 26124 | 26095 |  0.38 |    25.39 |    25.25 |     0.76
-   ----------------------------------------------------------------------------------------------------------
+  Summary of integration results binned by resolution
+  ----------------------------------------------------------------------------------------------------------
+  d min |  d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
+        |        |        |        |        |       |       |       |       |    (sum) |    (prf) |
+  ----------------------------------------------------------------------------------------------------------
+   1.17 |   1.19 |    300 |      2 |      0 |     0 |   302 |   231 |  0.04 |     0.39 |     0.54 |     0.11
+   1.19 |   1.21 |   1060 |      5 |      0 |     0 |  1065 |   920 |  0.04 |     0.44 |     0.53 |     0.10
+   1.21 |   1.23 |   2270 |     13 |      0 |     0 |  2283 |  2075 |  0.05 |     0.52 |     0.59 |     0.11
+   1.23 |   1.26 |   3715 |     21 |      0 |     0 |  3736 |  3525 |  0.05 |     0.55 |     0.67 |     0.13
+   1.26 |   1.28 |   5340 |     31 |      0 |     0 |  5371 |  5111 |  0.05 |     0.60 |     0.76 |     0.15
+   1.28 |   1.31 |   7114 |     44 |      0 |     0 |  7158 |  6853 |  0.06 |     0.65 |     0.83 |     0.17
+   1.31 |   1.35 |   9365 |     56 |      0 |     0 |  9421 |  9085 |  0.06 |     0.78 |     0.97 |     0.20
+   1.35 |   1.38 |  12334 |     78 |      0 |     0 | 12412 | 12016 |  0.07 |     0.92 |     1.13 |     0.23
+   1.38 |   1.42 |  16756 |     97 |      0 |     0 | 16853 | 16385 |  0.07 |     0.99 |     1.22 |     0.25
+   1.42 |   1.47 |  19947 |    142 |      0 |     0 | 20089 | 19763 |  0.08 |     1.21 |     1.46 |     0.29
+   1.47 |   1.52 |  23311 |    467 |      0 |     0 | 23778 | 23458 |  0.09 |     1.47 |     1.75 |     0.32
+   1.52 |   1.58 |  23781 |    569 |      0 |     0 | 24350 | 24260 |  0.09 |     1.75 |     2.06 |     0.37
+   1.58 |   1.66 |  25217 |    552 |      0 |     0 | 25769 | 25689 |  0.10 |     2.17 |     2.51 |     0.44
+   1.66 |   1.74 |  23964 |    489 |      0 |     0 | 24453 | 24411 |  0.12 |     2.70 |     3.07 |     0.50
+   1.74 |   1.85 |  24490 |    483 |      0 |     0 | 24973 | 24949 |  0.14 |     3.48 |     3.88 |     0.56
+   1.85 |   2.00 |  25432 |    539 |      0 |     0 | 25971 | 25949 |  0.18 |     4.84 |     5.27 |     0.63
+   2.00 |   2.20 |  24462 |    448 |      0 |     0 | 24910 | 24898 |  0.24 |     6.54 |     7.02 |     0.70
+   2.20 |   2.51 |  25437 |    476 |      0 |     0 | 25913 | 25896 |  0.28 |     8.77 |     9.22 |     0.74
+   2.51 |   3.17 |  24970 |    497 |      0 |     0 | 25467 | 25434 |  0.34 |    12.65 |    13.04 |     0.76
+   3.17 | 151.26 |  25489 |    635 |      0 |     0 | 26124 | 26090 |  0.41 |    25.22 |    25.18 |     0.76
+  ----------------------------------------------------------------------------------------------------------
 
-   Summary of integration results for the whole dataset
-   ----------------------------------------------
-   Number fully recorded                 | 369193
-   Number partially recorded             | 9024
-   Number with overloaded pixels         | 0
-   Number in powder rings                | 0
-   Number processed with summation       | 330398
-   Number processed with profile fitting | 327608
-   <Ibg>                                 | 0.13
-   <I/sigI> (summation)                  | 6.82
-   <I/sigI> (profile fitting)            | 6.56
-   <CC prf>                              | 0.43
-   ----------------------------------------------
+  Summary of integration results for the whole dataset
+  ----------------------------------------------
+  Number fully recorded                 | 369193
+  Number partially recorded             | 9024
+  Number with overloaded pixels         | 0
+  Number in powder rings                | 0
+  Number processed with summation       | 330398
+  Number processed with profile fitting | 326998
+  <Ibg>                                 | 0.17
+  <I/sigI> (summation)                  | 5.61
+  <I/sigI> (profile fitting)            | 5.97
+  <CC prf>                              | 0.43
+  ----------------------------------------------
+
 
 
 Exporting as MTZ
@@ -871,7 +879,7 @@ And this is the output, showing the reflection file statistics.
   Point group symbol from file: 4
   Number of batches: 540
   Number of crystals: 1
-  Number of Miller indices: 322570
+  Number of Miller indices: 321981
   Resolution range: 150.004 1.17
   History:
   Crystal 1:
@@ -885,21 +893,22 @@ And this is the output, showing the reflection file statistics.
       Id: 1
       Wavelength: 0.97625
       Number of columns: 14
-      label        #valid  %valid   min     max type
-      H            322570 100.00%  0.00   47.00 H: index h,k,l
-      K            322570 100.00%  0.00   46.00 H: index h,k,l
-      L            322570 100.00%  0.00  114.00 H: index h,k,l
-      M_ISYM       322570 100.00%  1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH        322570 100.00%  2.00  539.00 B: BATCH number
-      IPR          322570 100.00% -1.71 2861.59 J: intensity
-      SIGIPR       322570 100.00%  0.00   53.52 Q: standard deviation
-      I            322570 100.00% -7.09 3060.53 J: intensity
-      SIGI         322570 100.00%  0.07   55.44 Q: standard deviation
-      FRACTIONCALC 322570 100.00%  1.00    1.00 R: real
-      XDET         322570 100.00%  6.54 2456.31 R: real
-      YDET         322570 100.00%  5.78 2520.59 R: real
-      ROT          322570 100.00% 82.01  162.69 R: real
-      LP           322570 100.00%  0.00    0.76 R: real
+      label        #valid  %valid      min     max type
+      H            321981 100.00%     0.00   47.00 H: index h,k,l
+      K            321981 100.00%     0.00   46.00 H: index h,k,l
+      L            321981 100.00%     0.00  114.00 H: index h,k,l
+      M_ISYM       321981 100.00%     1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
+      BATCH        321981 100.00%     2.00  539.00 B: BATCH number
+      IPR          321981 100.00%  -281.32 2855.79 J: intensity
+      SIGIPR       321981 100.00%     0.04   53.47 Q: standard deviation
+      I            321981 100.00% -2244.44 3059.53 J: intensity
+      SIGI         321981 100.00%     0.09   71.90 Q: standard deviation
+      FRACTIONCALC 321981 100.00%     1.00    1.00 R: real
+      XDET         321981 100.00%     6.54 2456.31 R: real
+      YDET         321981 100.00%     5.78 2520.59 R: real
+      ROT          321981 100.00%    82.01  162.69 R: real
+      LP           321981 100.00%     0.00    0.76 R: real
+
 
 
 What to do Next
@@ -929,24 +938,24 @@ give you something like::
   Low resolution limit                      150.00    150.00      1.32
   High resolution limit                       1.30      7.12      1.30
 
-  Rmerge  (within I+/I-)                     0.066     0.024     0.219
-  Rmerge  (all I+ and I-)                    0.075     0.026     0.278
-  Rmeas (within I+/I-)                       0.081     0.029     0.302
-  Rmeas (all I+ & I-)                        0.084     0.029     0.345
-  Rpim (within I+/I-)                        0.046     0.016     0.207
-  Rpim (all I+ & I-)                         0.036     0.013     0.201
-  Rmerge in top intensity bin                0.029        -         -
-  Total number of observations              307316      2242      5493
-  Total number unique                        62350       499      2474
-  Mean((I)/sd(I))                             11.7      27.3       4.4
-  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.648
-  Completeness                                98.2      99.8      80.1
+  Rmerge  (within I+/I-)                     0.063     0.023     0.412
+  Rmerge  (all I+ and I-)                    0.071     0.026     0.483
+  Rmeas (within I+/I-)                       0.077     0.029     0.569
+  Rmeas (all I+ & I-)                        0.079     0.029     0.603
+  Rpim (within I+/I-)                        0.044     0.016     0.391
+  Rpim (all I+ & I-)                         0.034     0.013     0.355
+  Rmerge in top intensity bin                0.028        -         -
+  Total number of observations              306660      2245      5444
+  Total number unique                        62334       499      2465
+  Mean((I)/sd(I))                             14.2      48.7       1.0
+  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.711
+  Completeness                                98.2      99.8      79.8
   Multiplicity                                 4.9       4.5       2.2
 
-  Anomalous completeness                      92.3     100.0      47.8
+  Anomalous completeness                      92.2     100.0      47.5
   Anomalous multiplicity                       2.4       3.0       1.5
-  DelAnom correlation between half-sets      0.005     0.199     0.058
-  Mid-Slope of Anom Normal Probability       1.096       -         -
+  DelAnom correlation between half-sets     -0.000     0.321     0.015
+  Mid-Slope of Anom Normal Probability       0.722       -         -
 
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
