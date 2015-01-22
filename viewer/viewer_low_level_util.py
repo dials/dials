@@ -117,7 +117,7 @@ class MyGrid(gridlib.Grid):
 
   def OnLabelLeftClick(self, evt):
 
-    #timing_for_debugging = '''
+    timing_for_debugging = '''
     import time
     time1 = time.time()
     #'''
@@ -126,13 +126,14 @@ class MyGrid(gridlib.Grid):
       self.repaint_img(evt.GetRow())
 
     else:
-
+      log_msg = '''
       print "evt.GetCol() =", evt.GetCol()
+      '''
       self.set_my_table(self.data, evt.GetCol())
 
     evt.Skip()
 
-    #timing_for_debugging = '''
+    timing_for_debugging = '''
     time2 = time.time()
     timedif = time2 - time1
     print "timedif =", timedif
@@ -164,8 +165,10 @@ class MyGrid(gridlib.Grid):
     evt.Skip()
 
   def repaint_img(self, clikd_row):
+    log_msg = '''
     print "clikd_row  =", clikd_row
     print "new_row =", int(self.GetCellValue(clikd_row, self.last_col_num))
+    '''
     new_row = int(self.GetCellValue(clikd_row, self.last_col_num))
     self.parent_fr.img_panel.update_img_w_row_pos(new_row)
 
@@ -184,8 +187,9 @@ class flex_arr_img_panel(wx.Panel):
 
       self.table = data_in_one
       self.assign_row_pos()
-
+      log_msg = '''
       print "Is a Table"
+      '''
     else:
       self.first_lst_in, self.segn_lst_in = data_in_one, data_in_two
 

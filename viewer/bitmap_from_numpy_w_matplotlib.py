@@ -39,7 +39,9 @@ class wxbmp_from_np_array(object):
         if(lst_data_mask_in != None):
           data_3d_in_mask = lst_data_mask_in[lst_pos]
 
+        log_msg = '''
         print "len(data_3d_in) =", len(data_3d_in)
+        '''
         self.vl_max = np.amax(data_3d_in)
         self.vl_min = np.amin(data_3d_in)
         tmp_data2d = np.zeros( (xmax, ymax), 'double')

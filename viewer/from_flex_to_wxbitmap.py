@@ -99,7 +99,9 @@ class wxbitmap_convert(object):
         # might be a good idea to raise a runtime error here
         print "Got mixture of different type of data"
 
+    log_msg = '''
     print "here final"
+    '''
 
   def get_np(self):
     #returning numpy arrays in the rare case where they might be needed
