@@ -89,7 +89,7 @@ def run(args):
 
   if len(datablocks) == 0:
     if len(experiments) > 0:
-      imagesets = importer.experiments.imagesets()
+      imagesets = experiments.imagesets()
     else:
       parser.print_help()
       return
