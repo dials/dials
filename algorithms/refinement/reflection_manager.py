@@ -627,6 +627,10 @@ class StillsReflectionManager(ReflectionManager):
     st = simple_table(rows, header)
     info(st.format())
 
+    if len(l) < 20:
+      debug("Fewer than 20 reflections matched!")
+      return
+
     sl = self._sort_obs_by_residual(l)
     debug("Reflections with the worst 20 positional residuals:")
     debug("H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs")
