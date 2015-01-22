@@ -58,7 +58,7 @@ class indexer_fft3d(indexer_base):
       (self.reciprocal_space_grid>0).count(True)))
     self.fft()
     if self.params.debug:
-      self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
+      self.debug_write_ccp4_map(map_data=self.grid_real, file_name="fft3d.map")
     if self.params.fft3d.peak_search == 'flood_fill':
       self.find_peaks()
     elif self.params.fft3d.peak_search == 'clean':
@@ -281,8 +281,9 @@ class indexer_fft3d(indexer_base):
     sites_cart = xs.sites_cart()
     lengths = flex.double([matrix.col(sc).length() for sc in sites_cart])
     xs = xs.select(flex.sort_permutation(lengths))
-    with open('peaks.pdb', 'wb') as f:
-      print >> f, xs.as_pdb_file()
+    if self.params.debug:
+      with open('peaks.pdb', 'wb') as f:
+        print >> f, xs.as_pdb_file()
 
     vector_heights = flex.double()
 
