@@ -444,6 +444,9 @@ namespace flex_table_suite {
   template <typename T>
   dict getitem_row(const T &self, typename T::size_type n) {
     typedef typename T::const_iterator iterator;
+    if (n >= self.nrows()) {
+      throw std::runtime_error("array index out of bounds");
+    }
     dict result;
     element_to_object_visitor visitor(n);
     for (iterator it = self.begin(); it != self.end(); ++it) {
@@ -459,6 +462,9 @@ namespace flex_table_suite {
    */
   template <typename T>
   void delitem_row(T &self, typename T::size_type n) {
+    if (n >= self.nrows()) {
+      throw std::runtime_error("array index out of bounds");
+    }
     self.erase(n);
   }
 
@@ -470,6 +476,9 @@ namespace flex_table_suite {
    */
   template <typename T>
   void setitem_row(T &self, typename T::size_type n, dict row) {
+    if (n >= self.nrows()) {
+      throw std::runtime_error("array index out of bounds");
+    }
     typedef typename T::iterator iterator;
     object iteritems = row.iteritems();
     for (std::size_t i = 0; i < len(row); ++i) {
