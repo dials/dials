@@ -405,6 +405,7 @@ doc/sphinx/advanced_tutorial2.rst -text
 doc/sphinx/beginners_tutorial.rst -text
 doc/sphinx/conf.py -text
 doc/sphinx/conventions.rst -text
+doc/sphinx/data_files.rst -text
 doc/sphinx/developer_tutorial.rst -text
 doc/sphinx/figures/E4.png -text
 doc/sphinx/figures/sv_crystal.png -text svneol=unset#unset

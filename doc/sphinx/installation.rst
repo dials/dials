@@ -278,7 +278,7 @@ cctbx or run a cctbx program.
 You should now be good to go!
 
 Downloading the DIALS regression test data
-==========================================
+------------------------------------------
 
 To obtain the dials regression test data, needed for some of the dials tests,
 you will need access to the CCI server. Checkout the data into the cctbx source

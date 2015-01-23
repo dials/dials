@@ -12,6 +12,7 @@ DIALS
    :maxdepth: 1
 
    installation
+   data_files
    beginners_tutorial
    advanced_tutorial
    multi_lattice_tutorial
