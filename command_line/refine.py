@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.utils import Sorry
 
 help_message = '''
 
@@ -218,11 +219,26 @@ class Script(object):
     # FIXME should this also have a colorbar as legend?
     return plt
 
+  @staticmethod
+  def check_input(reflections):
+    '''Check the input is suitable for refinement. So far just check keys in
+    the reflection table. Maybe later check experiments have overlapping models
+    etc.'''
+
+    msg = "The supplied reflection table does not have the required data " + \
+      "column: {0}"
+    for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
+      if not reflections.has_key(key):
+        msg = msg.format(key)
+        raise Sorry(msg)
+
+    # FIXME add other things to be checked here
+    return
+
   def run(self):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
     from dials.util.options import flatten_reflections, flatten_experiments
-    from libtbx.utils import Sorry
     import cPickle as pickle
 
     from dials.util import log
@@ -245,6 +261,8 @@ class Script(object):
     if len(reflections) > 1:
       raise Sorry("Only one reflections list can be imported at present")
     reflections = reflections[0]
+
+    self.check_input(reflections)
 
     # Configure the logging
     log.config(params.refinement.verbosity,
