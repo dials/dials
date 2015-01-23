@@ -259,6 +259,7 @@ class Script(object):
 
   def sample_predictions(self, experiments, predicted, params):
     ''' Select a random sample of the predicted reflections to integrate. '''
+    from dials.array_family import flex
     nref_per_degree = params.sampling.reflections_per_degree
     min_sample_size = params.sampling.minimum_sample_size
     max_sample_size = params.sampling.maximum_sample_size
