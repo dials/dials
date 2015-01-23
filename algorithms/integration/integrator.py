@@ -1341,9 +1341,18 @@ class IntegratorFactory(object):
     from dials.interfaces import BackgroundIface
     from dials.interfaces import CentroidIface
     from dials.array_family import flex
+    from libtbx.utils import Abort
 
     # Check the input
     assert(len(experiments) == len(profile_model))
+
+    # Check each experiment has an imageset
+    for exp in experiments:
+      if exp.imageset is None:
+        raise Abort('''
+          One or more experiment does not contain an imageset. Access to the
+          image data is crucial for integration.
+        ''')
 
     # Initialise the strategy classes
     BackgroundAlgorithm = BackgroundIface.extension(
