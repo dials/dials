@@ -55,6 +55,10 @@ def generate_phil_scope():
           .type = float
           .help = "The block size in rotation angle (degrees)."
 
+        max_size = 5
+          .type = float(value_min=0.0)
+          .help = "The maximum size (in degrees) of an integration block"
+
         threshold = 0.99
           .type = float(value_min=0.0, value_max=1.0)
           .help = "For block size auto the block size is calculated by sorting"
@@ -480,6 +484,7 @@ class Manager(object):
                block_size=libtbx.Auto,
                block_size_units='degrees',
                block_size_threshold=0.99,
+               block_size_max=None,
                flatten=False,
                save_shoeboxes=False,
                max_mem_usage=0.5,
@@ -490,6 +495,7 @@ class Manager(object):
     self._block_size = block_size
     self._block_size_units = block_size_units
     self._block_size_threshold = block_size_threshold
+    self._block_size_max = block_size_max
     self._save_shoeboxes = save_shoeboxes
     self._max_mem_usage = max_mem_usage
     self._reference_selector = reference_selector
@@ -504,16 +510,7 @@ class Manager(object):
     ''' Enter the context manager. '''
     from itertools import groupby
     from math import ceil
-    if self._block_size == libtbx.Auto:
-      assert(self._block_size_threshold > 0)
-      assert(self._block_size_threshold <= 1.0)
-      self._reflections.compute_bbox(
-        self._experiments,
-        self._profile_model)
-      nframes = sorted([b[5] - b[4] for b in self._reflections['bbox']])
-      cutoff = int(self._block_size_threshold*len(nframes))
-      self._block_size = nframes[cutoff] * 2
-      self._block_size_units = 'frames'
+    self._compute_block_size()
     groups = groupby(
       range(len(self._experiments)),
       lambda x: (self._experiments[x].imageset,
@@ -608,6 +605,47 @@ class Manager(object):
   def time(self):
     ''' Return the timing information. '''
     return self._time
+
+  def _compute_block_size(self):
+    ''' Compute the integration block size. '''
+    from logging import info
+    if self._block_size == libtbx.Auto:
+      assert(self._block_size_threshold > 0)
+      assert(self._block_size_threshold <= 1.0)
+      self._reflections.compute_bbox(
+        self._experiments,
+        self._profile_model)
+      nframes = sorted([b[5] - b[4] for b in self._reflections['bbox']])
+      cutoff = int(self._block_size_threshold*len(nframes))
+      block_size = nframes[cutoff] * 2
+      block_size_max = 1
+      for e in self._experiments:
+        if e.scan:
+          phi0, dphi = e.scan.get_oscillation()
+          bm = int(ceil(self._block_size_max / dphi))
+          if bm > block_size_max:
+            block_size_max = bm
+      if block_size > block_size_max:
+        info('*' * 80)
+        info('WARNING: setting block size to %d frames')
+        info(' This may result in reflections being split across jobs')
+        info(' automatic block size = %d frames' % block_size)
+        info(' maximum block size = %d frames' % block_size_max)
+        info('*' * 80)
+        block_size = block_size_max
+      self._block_size = block_size
+      self._block_size_units = 'frames'
+    elif self._block_size_max is not None:
+      if self._block_size_units == 'frames':
+        assert(self._block_size < self._block_size_max)
+      elif self._block_size_units == 'degrees':
+        for e in self._experiments:
+          if e.scan:
+            phi0, dphi = e.scan.get_oscillation()
+            bm = int(ceil(self._block_size_max / dphi))
+            assert(self._block_size < self._block_size_max)
+      else:
+        raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
 
   def _print_summary(self, block_size, block_size_units):
     ''' Print a summary of the integration stuff. '''
@@ -913,6 +951,7 @@ class ManagerRot(Manager):
                block_size=libtbx.Auto,
                block_size_units='degrees',
                block_size_threshold=0.99,
+               block_size_max=None,
                min_zeta=0.05,
                powder_filter=None,
                flatten=False,
@@ -954,6 +993,7 @@ class ManagerRot(Manager):
       block_size=block_size,
       block_size_units=block_size_units,
       block_size_threshold=block_size_threshold,
+      block_size_max=block_size_max,
       flatten=flatten,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
@@ -1016,6 +1056,7 @@ class Integrator3D(Integrator):
                reflections,
                block_size=libtbx.Auto,
                block_size_threshold=0.99,
+               block_size_max=None,
                min_zeta=0.05,
                powder_filter=None,
                nthreads=1,
@@ -1035,6 +1076,7 @@ class Integrator3D(Integrator):
       reflections,
       block_size=block_size,
       block_size_threshold=block_size_threshold,
+      block_size_max=block_size_max,
       min_zeta=min_zeta,
       max_shoebox_overlap=max_shoebox_overlap,
       powder_filter=powder_filter,
@@ -1055,6 +1097,7 @@ class IntegratorFlat3D(Integrator):
                reflections,
                block_size=libtbx.Auto,
                block_size_threshold=0.99,
+               block_size_max=None,
                min_zeta=0.05,
                max_shoebox_overlap=1.0,
                powder_filter=None,
@@ -1074,6 +1117,7 @@ class IntegratorFlat3D(Integrator):
       reflections,
       block_size=block_size,
       block_size_threshold=block_size_threshold,
+      block_size_max=block_size_max,
       min_zeta=min_zeta,
       max_shoebox_overlap=max_shoebox_overlap,
       powder_filter=powder_filter,
@@ -1095,6 +1139,7 @@ class Integrator2D(Integrator):
                reflections,
                block_size=libtbx.Auto,
                block_size_threshold=0.99,
+               block_size_max=None,
                min_zeta=0.05,
                max_shoebox_overlap=1.0,
                powder_filter=None,
@@ -1114,6 +1159,7 @@ class Integrator2D(Integrator):
       reflections,
       block_size=block_size,
       block_size_threshold=block_size_threshold,
+      block_size_max=block_size_max,
       min_zeta=min_zeta,
       max_shoebox_overlap=max_shoebox_overlap,
       powder_filter=powder_filter,
@@ -1313,6 +1359,7 @@ class IntegratorFactory(object):
       reflections=reflections,
       block_size=params.integration.block.size,
       block_size_threshold=params.integration.block.threshold,
+      block_size_max=params.integration.block.max_size,
       min_zeta=params.integration.filter.min_zeta,
       max_shoebox_overlap=params.integration.filter.max_shoebox_overlap,
       powder_filter=powder_filter,
