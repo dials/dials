@@ -48,8 +48,8 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that the image headers are read, and a file describing
-their contents (:samp:`datablock.json`) is written. It's worth noting that if
-this file is changed subsequent processing (even with :samp:`dials.process`) can
+their contents (:ref:`datablock.json <datablock-json>`) is written. It's worth noting that if
+this file is changed subsequent processing (even with :doc:`dials.process </programs/dials_process>`) can
 use this.
 
 ::
@@ -80,7 +80,7 @@ Find Spots
 ^^^^^^^^^^
 
 The first "real" task in any DIALS processing will be the spot finding.
-Here we request multiple processors to speed up the spot-finding (nproc=4).
+Here we request multiple processors to speed up the spot-finding (:samp:`nproc=4`).
 
 ::
 
@@ -543,14 +543,14 @@ each Bravais setting...
 
 In this example we would continue processing (i.e. proceed to the refinement
 step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
-necessary to reindex the :samp:`indexed.pickle` file output by dials.index.
+necessary to reindex the :ref:`indexed.pickle <reflection_pickle>` file output by dials.index.
 However, in this case as the change of basis operator to the chosen setting
 is the identity operator (:samp:`a,b,c`) this step is not needed::
 
   dials.reindex indexed.pickle change_of_basis_op=a,b,c
 
-This outputs the file :samp:`reindexed_reflections.pickle` which should be
-used as input to downstream programs in place of :samp:`indexed.pickle`.
+This outputs the file :ref:`reindexed_reflections.pickle <reflection_pickle>` which should be
+used as input to downstream programs in place of :ref:`indexed.pickle <reflection_pickle>`.
 
 
 Refinement

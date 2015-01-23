@@ -3,7 +3,7 @@
 ### build documentation with: phenix.python `which sphinx-build` -b html source build/html
 
 #
-# CCTBX documentation build configuration file, created by
+# DIALS documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 24 15:08:40 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -187,7 +187,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'CCTBXdoc'
+htmlhelp_basename = 'DIALSdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -207,8 +207,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'CCTBX.tex', u'CCTBX Documentation',
-   u'Paul D. Adams', 'manual'),
+  ('index', 'dials_manual.tex', u'DIALS Manual',
+   u'DIALS', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

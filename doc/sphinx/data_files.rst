@@ -36,6 +36,8 @@ below.
 |                  | | refined_reflections.pickle | | integrated.pickle          |
 +------------------+------------------------------+------------------------------+
 
+.. _datablock-json:
+
 Datablock files
 ---------------
 
@@ -177,10 +179,12 @@ An example of a short file is shown below.
     }
   ]
 
+.. _experiments_json:
+
 Experiment list files
 ---------------------
 
-The datablock file is stored as a JSON file in ascii format. Whilst being human
+The experiment list file is stored as a JSON file in ascii format. Whilst being human
 readable (and editable), editing the file directly is generally not recommended.
 The file contains the location of any imported imagesets and the same
 experimental models contained in the datablock file (i.e. beam, detector,
@@ -347,6 +351,8 @@ An example of a short file is shown below.
       }
     ]
   }
+
+.. _reflection_pickle:
 
 Reflection files
 ----------------
