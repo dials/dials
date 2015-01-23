@@ -640,10 +640,9 @@ class Manager(object):
         assert(self._block_size < self._block_size_max)
       elif self._block_size_units == 'degrees':
         for e in self._experiments:
-          if e.scan:
-            phi0, dphi = e.scan.get_oscillation()
-            bm = int(ceil(self._block_size_max / dphi))
-            assert(self._block_size < self._block_size_max)
+          phi0, dphi = e.scan.get_oscillation()
+          bm = int(ceil(self._block_size_max / dphi))
+          assert(self._block_size < self._block_size_max)
       else:
         raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
 
