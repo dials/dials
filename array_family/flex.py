@@ -255,7 +255,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     h1 = self.select(sind)['miller_index']
     h2 = other.select(oind)['miller_index']
     mask = (h1 == h2)
-    self.set_flags(sind.select(mask), self.flags.reference_spot)
+    self.set_flags(
+      sind.select(mask),
+      self.flags.reference_spot)
+    self.set_flags(
+      sind.select(h2.get_flags(self.flags.strong)),
+      self.flags.strong)
+    self.set_flags(
+      sind.select(h2.get_flags(self.flags.indexed)),
+      self.flags.indexed)
+    self.set_flags(
+      sind.select(h2.get_flags(self.flags.used_in_refinement)),
+      self.flags.used_in_refinement)
     info("Matched %d reference spots with predicted reflections" %
                 mask.count(True))
     return mask
