@@ -24,6 +24,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/boost_python/slice.h>
+#include <scitbx/boost_python/utils.h>
 #include <dials/array_family/flex_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
@@ -445,7 +446,7 @@ namespace flex_table_suite {
   dict getitem_row(const T &self, typename T::size_type n) {
     typedef typename T::const_iterator iterator;
     if (n >= self.nrows()) {
-      throw std::runtime_error("array index out of bounds");
+      scitbx::boost_python::raise_index_error();
     }
     dict result;
     element_to_object_visitor visitor(n);
@@ -463,7 +464,7 @@ namespace flex_table_suite {
   template <typename T>
   void delitem_row(T &self, typename T::size_type n) {
     if (n >= self.nrows()) {
-      throw std::runtime_error("array index out of bounds");
+      scitbx::boost_python::raise_index_error();
     }
     self.erase(n);
   }
@@ -477,7 +478,7 @@ namespace flex_table_suite {
   template <typename T>
   void setitem_row(T &self, typename T::size_type n, dict row) {
     if (n >= self.nrows()) {
-      throw std::runtime_error("array index out of bounds");
+      scitbx::boost_python::raise_index_error();
     }
     typedef typename T::iterator iterator;
     object iteritems = row.iteritems();
