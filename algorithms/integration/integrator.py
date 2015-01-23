@@ -365,6 +365,11 @@ class Task(object):
     info("  Reference:   %d" % num_reference)
     info("  Total:       %d" % len(self._data))
     info("")
+    info(" Memory usage")
+    info("  Total system memory: %g GB" % (total_memory/1e9))
+    info("  Limit shoebox memory: %g GB" % (limit_memory/1e9))
+    info("  Requested shoebox memory: %g GB" % (nbytes/1e9))
+    info("")
 
     # Get the sub imageset
     imagesets = self._experiments.imagesets()
@@ -1351,6 +1356,11 @@ class IntegratorFactory(object):
     reference_selector = ReferenceSelector.from_params(
       params.integration.reference)
 
+    # Compute the maximum memory usage per job
+    max_mem_usage = params.integration.block.max_mem_usage
+    if params.integration.mp.method == 'multiprocessing':
+      max_mem_usage = max_mem_usage / params.integration.mp.nproc
+
     # Return an instantiation of the class
     return IntegratorClass(
       experiments=experiments,
@@ -1366,7 +1376,7 @@ class IntegratorFactory(object):
       nproc=params.integration.mp.nproc,
       mp_method=params.integration.mp.method,
       save_shoeboxes=params.integration.debug.save_shoeboxes,
-      max_mem_usage=params.integration.block.max_mem_usage,
+      max_mem_usage=max_mem_usage,
       reference_selector=reference_selector)
 
   @staticmethod
