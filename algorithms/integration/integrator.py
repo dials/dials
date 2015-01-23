@@ -55,7 +55,7 @@ def generate_phil_scope():
           .type = float
           .help = "The block size in rotation angle (degrees)."
 
-        max_size = 10
+        max_size = 5
           .type = float(value_min=0.0)
           .help = "The maximum size (in degrees) of an integration block"
 
@@ -632,11 +632,15 @@ class Manager(object):
           if bm > block_size_max:
             block_size_max = bm
       if block_size > block_size_max:
+        import bisect
+        ind = bisect.bisect_right(nframes, block_size_max/2.0)
+        perc = 100.0*(ind-1.0)/len(nframes)
         info('*' * 80)
         info('WARNING: setting block size to %d frames')
         info(' This may result in reflections being split across jobs')
         info(' automatic block size = %d frames' % block_size)
         info(' maximum block size = %d frames' % block_size_max)
+        info(' %.2f%% of reflections guaranteed to be in a single block' % perc)
         info('*' * 80)
         block_size = block_size_max
       self._block_size = block_size
