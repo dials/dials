@@ -309,8 +309,14 @@ class indexer_base(object):
     self.all_params = params
     self.refined_experiments = None
 
-    self.reflections.unset_flags(
-      flex.size_t_range(len(self.reflections)), reflections.flags.indexed)
+    if 'flags' in self.reflections:
+      strong_sel = self.reflections.get_flags(self.reflections.flags.strong)
+      if strong_sel.count(True) > 0:
+        self.reflections = self.reflections.select(strong_sel)
+    if 'flags' not in self.reflections or strong_sel.count(True) == 0:
+      # backwards compatibility for testing
+      self.reflections.set_flags(
+        flex.size_t_range(len(self.reflections)), self.reflections.flags.strong)
 
     self._setup_symmetry()
 

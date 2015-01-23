@@ -208,6 +208,9 @@ class SpotFinder(object):
       table['id'] = flex.size_t(table.nrows(), i)
       reflections.extend(table)
 
+    reflections.set_flags(
+      flex.size_t_range(len(reflections)), reflections.flags.strong)
+
     # Return the reflections
     return reflections
 
