@@ -162,12 +162,14 @@ namespace dials { namespace af {
       /**
        * Return the mapped variant type at the given element directly.
        */
-          mapped_type variant() const {
+      mapped_type variant() const {
         boost::shared_ptr<map_type> table = t_->table_;
         iterator it = table->find(k_);
-        DIALS_ASSERT(it != table->end());
+        if (it == table->end()) {
+          throw UnknownColumnError(k_.c_str());
+        }
         return it->second;
-          }
+      }
     };
 
     /** Get the size of each column */
