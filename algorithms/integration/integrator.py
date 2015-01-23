@@ -55,11 +55,11 @@ def generate_phil_scope():
           .type = float
           .help = "The block size in rotation angle (degrees)."
 
-        max_size = 5
+        max_size = 10
           .type = float(value_min=0.0)
           .help = "The maximum size (in degrees) of an integration block"
 
-        threshold = 0.99
+        threshold = 0.95
           .type = float(value_min=0.0, value_max=1.0)
           .help = "For block size auto the block size is calculated by sorting"
                   "reflections by the number of frames they cover and then"
@@ -614,6 +614,7 @@ class Manager(object):
   def _compute_block_size(self):
     ''' Compute the integration block size. '''
     from logging import info
+    from math import ceil
     if self._block_size == libtbx.Auto:
       assert(self._block_size_threshold > 0)
       assert(self._block_size_threshold <= 1.0)

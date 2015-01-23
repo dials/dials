@@ -252,20 +252,21 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from logging import info
     info("Matching reference spots with predicted reflections")
     sind, oind = self.match(other)
+    o2 = other.select(oind)
     h1 = self.select(sind)['miller_index']
-    h2 = other.select(oind)['miller_index']
+    h2 = o2['miller_index']
     mask = (h1 == h2)
     self.set_flags(
       sind.select(mask),
       self.flags.reference_spot)
     self.set_flags(
-      sind.select(h2.get_flags(self.flags.strong)),
+      sind.select(o2.get_flags(self.flags.strong)),
       self.flags.strong)
     self.set_flags(
-      sind.select(h2.get_flags(self.flags.indexed)),
+      sind.select(o2.get_flags(self.flags.indexed)),
       self.flags.indexed)
     self.set_flags(
-      sind.select(h2.get_flags(self.flags.used_in_refinement)),
+      sind.select(o2.get_flags(self.flags.used_in_refinement)),
       self.flags.used_in_refinement)
     info("Matched %d reference spots with predicted reflections" %
                 mask.count(True))
