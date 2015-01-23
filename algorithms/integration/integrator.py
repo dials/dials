@@ -303,6 +303,7 @@ class Task(object):
     from dials.util.command_line import heading
     from libtbx.introspection import machine_memory_info
     from libtbx.table_utils import format as table
+    from dials.algorithms.integration import statistics
     from logging import info
 
     # Get the start time
@@ -431,6 +432,15 @@ class Task(object):
 
     # Delete the shoeboxes
     del self._data["shoebox"]
+
+    # Print some stats
+    for stats in statistics.statistics(
+        self._data,
+        self._experiments,
+        image_summary=False,
+        resolution_summary=False,
+        whole_summary=True):
+      info(stats)
 
     # The total time
     total_time = time() - start_time
@@ -588,6 +598,8 @@ class Manager(object):
     assert(self._manager.finished())
     self._postprocess(self._manager.data())
     self._time.postprocess = self._postprocess.time
+    info('=' * 80)
+    info('\n')
     for stats in statistics.statistics(
         self._manager.data(),
         self._experiments):

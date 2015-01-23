@@ -313,43 +313,60 @@ class WholeSummary(object):
 class Summary(object):
   ''' A class to present a summary of integration results. '''
 
-  def __init__(self, index, data, experiment):
+  def __init__(self,
+               index,
+               data,
+               experiment,
+               image_summary=True,
+               resolution_summary=True,
+               whole_summary=True
+               ):
     ''' Initialise. '''
     self._index = index
-    self._image_summary = ImageSummary(data, experiment)
-    self._resolution_summary = ResolutionSummary(data, experiment)
-    self._whole_summary = WholeSummary(data, experiment)
+    if image_summary:
+      self._image_summary = ImageSummary(data, experiment)
+    else:
+      self._image_summary = None
+    if resolution_summary:
+      self._resolution_summary = ResolutionSummary(data, experiment)
+    else:
+      self._resolution_summary = None
+    if whole_summary:
+      self._whole_summary = WholeSummary(data, experiment)
+    else:
+      self._whole_summary = None
 
   def __str__(self):
     ''' Return as a string. '''
     from dials.util.command_line import heading
-    img_summary = self._image_summary.table()
-    res_summary = self._resolution_summary.table()
-    who_summary = self._whole_summary.table()
-    return (
-      '%s\n'
-      '\n'
-      '%s\n'
-      '\n'
-      ' Summary of integration results as a function of image number'
-      '\n%s\n\n'
-      ' Summary of integration results binned by resolution'
-      '\n%s\n\n'
-      ' Summary of integration results for the whole dataset'
-      '\n%s\n'
-    ) % ('=' * 80,
-         heading('Summary of integration results for experiment %d' %
-                 self._index),
-         img_summary,
-         res_summary,
-         who_summary)
+    text = heading('Summary of integration results for experiment %d' % self._index)
+    text += '\n\n'
+    if self._image_summary:
+      text += ' Summary of integration results as a function of image number'
+      text += '\n%s\n\n' % self._image_summary.table()
+    if self._resolution_summary:
+      text += ' Summary of integration results binned by resolution'
+      text += '\n%s\n\n' % self._resolution_summary.table()
+    if self._whole_summary:
+      text += ' Summary of integration results for the whole dataset'
+      text += '\n%s\n\n' % self._whole_summary.table()
+    return text
 
-
-def statistics(data, experiments):
+def statistics(data,
+               experiments,
+               image_summary=True,
+               resolution_summary=True,
+               whole_summary=True):
   ''' Return some simple statistics for a reflection table. '''
   tables = data.split_by_experiment_id()
   assert(len(tables) == len(experiments))
   summaries = []
   for index, (table, experiment) in enumerate(zip(tables, experiments)):
-    summaries.append(Summary(index, table, experiment))
+    summaries.append(Summary(
+      index,
+      table,
+      experiment,
+      image_summary=image_summary,
+      resolution_summary=resolution_summary,
+      whole_summary=whole_summary))
   return summaries
