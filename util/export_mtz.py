@@ -1,16 +1,29 @@
 from __future__ import division
 
-def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False):
+def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
+  '''Sum partial reflections; weighted sum for summation integration; weighted
+  average for profile fitted reflections. N.B. this will report total
+  partiality for the summed reflection.'''
+
+  return integrated_data
+
+def scale_partial_reflections(integrated_data, min_partiality=0.5):
+  '''Scale partial reflections (after summation) according to their estimated
+  partiality - for profile fitted reflections this will result in no change,
+  for summation integrated reflections will be scaled up by 1 / partiality
+  with error accordingly scaled. N.B. this will report the scaled up partiality
+  for the output reflection.'''
+
+  return integrated_data
+
+def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
+               include_partials=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
   from logging import info
 
   # for the moment assume (and assert) that we will convert data from exactly
   # one lattice...
-
-  # FIXME test to see if the model is scan varying, and if it is (which it can be)
-  # write out a different U matrix for each batch... This should be easy. N.B.
-  # should use U matrix from middle of batch (probably)
 
   # FIXME allow for more than one experiment in here: this is fine just add
   # multiple MTZ data sets (DIALS1...DIALSN) and multiple batch headers: one
@@ -35,6 +48,15 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False):
       integrated_data.del_selected(selection)
       info('Removing %d profile reflections with negative variance' % \
             selection.count(True))
+
+  # FIXME in here work on including partial reflections => at this stage best
+  # to split off the partial refections into a different selection & handle
+  # gracefully... better to work on a short list as will need to "pop" them &
+  # find matching parts to combine.
+
+  if include_partials:
+    integrated_data = sum_partial_reflections(integrated_data)
+    integrated_data = scale_partial_reflections(integrated_data)
 
   if 'partiality' in integrated_data:
     selection = integrated_data['partiality'] < 0.99
@@ -184,7 +206,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False):
   zdet = flex.double(z_px)
 
   # compute ROT values
-  rot = flex.double([experiment.scan.get_angle_from_image_index(z) for z in zdet])
+  rot = flex.double([experiment.scan.get_angle_from_image_index(z)
+                     for z in zdet])
 
   # compute BATCH values
   batch = flex.floor(zdet).iround() + 1
@@ -198,6 +221,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False):
   d = x.add_dataset('FROMDIALS', wavelength)
 
   # now add column information...
+
+  # FIXME add DIALS_FLAG which can include e.g. was partial etc.
 
   type_table = {'IPR': 'J', 'BGPKRATIOS': 'R', 'WIDTH': 'R', 'I': 'J',
                 'H': 'H', 'K': 'H', 'MPART': 'I', 'L': 'H', 'BATCH': 'B',

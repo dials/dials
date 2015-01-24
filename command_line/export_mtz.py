@@ -25,6 +25,9 @@ phil_scope = parse('''
   ignore_panels = False
     .type = bool
     .help = "Ignore multiple panels / detectors in output"
+  include_partials = False
+    .type = bool
+    .help = "Include partial reflections (scaled) in output"
 ''')
 
 def run(args):
@@ -54,7 +57,7 @@ def run(args):
   integrated_data = reflections[0]
   experiment_list = experiments
   m = export_mtz(integrated_data, experiment_list, params.hklout,
-                 params.ignore_panels)
+                 params.ignore_panels, params.include_partials)
   m.show_summary()
 
 
