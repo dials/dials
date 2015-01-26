@@ -123,7 +123,7 @@ class Script(object):
     from dials.util.command_line import heading
     from dials.util.options import flatten_reflections, flatten_experiments
     from dials.util import log
-    from logging import info
+    from logging import info, debug
     from time import time
     from libtbx.utils import Abort
 
@@ -150,6 +150,18 @@ class Script(object):
       params.verbosity,
       info='dials.integrate.log',
       debug='dials.integrate.debug.log')
+
+    # Print the experimental models
+    for i, exp in enumerate(experiments):
+      debug("Models for experiment %d" % i)
+      debug("")
+      debug(str(exp.beam))
+      debug(str(exp.detector))
+      if exp.goniometer:
+        debug(str(exp.goniometer))
+      if exp.scan:
+        debug(str(exp.scan))
+      debug(str(exp.crystal))
 
     info("=" * 80)
     info("")
