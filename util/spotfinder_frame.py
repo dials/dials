@@ -680,50 +680,54 @@ class SpotSettingsPanel (SettingsPanel) :
     self.brightness_ctrl.SetValue(self.settings.brightness)
     self.brightness_ctrl.SetTickFreq(25)
 
+
+    grid = wx.FlexGridSizer(cols=2, rows=8)
+    s.Add(grid)
+
     # Resolution rings control
     self.resolution_rings_ctrl = wx.CheckBox(self, -1, "Show resolution rings")
     self.resolution_rings_ctrl.SetValue(self.settings.show_resolution_rings)
-    s.Add(self.resolution_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.resolution_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Ice rings control
     self.ice_rings_ctrl = wx.CheckBox(self, -1, "Show ice rings")
     self.ice_rings_ctrl.SetValue(self.settings.show_ice_rings)
-    s.Add(self.ice_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.ice_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Center control
     self.center_ctrl = wx.CheckBox(self, -1, "Mark beam center")
     self.center_ctrl.SetValue(self.settings.show_beam_center)
-    s.Add(self.center_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.center_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Center of mass control
     self.ctr_mass = wx.CheckBox(self, -1, "Mark centers of mass")
     self.ctr_mass.SetValue(self.settings.show_ctr_mass)
-    s.Add(self.ctr_mass, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.ctr_mass, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Max pixel control
     self.max_pix = wx.CheckBox(self, -1, "Spot max pixels")
     self.max_pix.SetValue(self.settings.show_max_pix)
-    s.Add(self.max_pix, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.max_pix, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Spot pixels control
     self.all_pix = wx.CheckBox(self, -1, "Spot all pixels")
     self.all_pix.SetValue(self.settings.show_all_pix)
-    s.Add(self.all_pix, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.all_pix, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Spot shoebox control
     self.shoebox = wx.CheckBox(self, -1, "Draw reflection shoebox")
     self.shoebox.SetValue(self.settings.show_shoebox)
-    s.Add(self.shoebox, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.shoebox, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Spot predictions control
     self.predictions = wx.CheckBox(self, -1, "Show predictions")
     self.predictions.SetValue(self.settings.show_predictions)
-    s.Add(self.predictions, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.predictions, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Spot predictions control
     self.miller_indices = wx.CheckBox(self, -1, "Show hkl")
     self.miller_indices.SetValue(self.settings.show_miller_indices)
-    s.Add(self.miller_indices, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    grid.Add(self.miller_indices, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Minimum spot area control
     box = wx.BoxSizer(wx.HORIZONTAL)
