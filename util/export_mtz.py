@@ -8,22 +8,14 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
   if not 'partiality' in integrated_data:
     return integrated_data
 
-  # need to do something with these:
-  #
-  # background.mean     - not used in MTZ
-  # background.mse      - not used in MTZ
-  # profile.correlation - not used in MTZ
-  # xyzobs.mm.value     - not used in MTZ
-  # xyzobs.mm.variance  - not used in MTZ
-  # xyzobs.px.value     - not used in MTZ
-  # xyzobs.px.variance  - not used in MTZ
-  #
+  from dials.array_family import flex
+  from collections import defaultdict
+
   # rest of the columns are pretty well defined - these are all uniform for the
   # reflection so can just ignore other values:
   #
   # d
   # id
-  # bbox (needs expanding...)
   # entering
   # flags
   # lp
@@ -42,46 +34,90 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
   # intensity.sum.value
   # intensity.sum.variance
   # partiality
+  # bbox - this is not used...
   #
   # now just need to worry about those that I am actually outputting to the MTZ
   # file...
 
-  trash = { }
-
   isel = (integrated_data['partiality'] < 0.99).iselection()
 
+  if len(isel) == 0:
+    return integrated_data
+
+  delete = flex.size_t()
+  partial_map = defaultdict(list)
+
+  # create map of partial_id to reflections j
+
   for j in isel:
-    p_id = integrated_data['partial_id'][j]
-    if not p_id in trash:
-      trash[p_id] = []
-    trash[p_id].append(j)
+    partial_map[integrated_data['partial_id'][j]].append(j)
 
-  for p_id in sorted(trash):
-    if len(trash[p_id]) == 1:
+  # now work through this map - get total partiality for every reflection;
+  # here only consider reflections with > 1 component; if total partiality
+  # less than min_total_partiality discard all parts.
+
+  partial_ids = []
+
+  for p_id in partial_map:
+    if len(partial_map[p_id]) > 1:
+      partial_ids.append(p_id)
+
+  # work through multipart partials; compute those weighted values I need
+  # if total partiality less than min, delete. if summing, delete extra parts
+
+  for p_id in partial_ids:
+    p_tot = sum([integrated_data['partiality'][j] for j in partial_map[p_id]])
+    if p_tot < min_total_partiality:
+      for j in partial_map[p_id]:
+        delete.append(j)
       continue
-    p_tot = sum([integrated_data['partiality'][j] for j in trash[p_id]])
-    if p_tot >= min_total_partiality:
-      i_sum_tot = 0.0
-      i_sum_var = 0.0
-      i_prf_tot = 0.0
-      i_prf_var = 0.0
-      w_tot = 0.0
-      for j in trash[p_id]:
-        print p_id, integrated_data['zeta'][j]
-        i_sum_tot += integrated_data['intensity.sum.value'][j]
-        i_sum_var += integrated_data['intensity.sum.variance'][j]
-        i_prf = integrated_data['intensity.prf.value'][j]
-        i_prf_v = integrated_data['intensity.prf.variance'][j]
-        p = integrated_data['partiality'][j]
-        w = i_prf * i_prf / i_prf_v
-        w_tot += w
-        i_prf_tot += w * i_prf
-        i_prf_var += w * i_prf_v
-      i_prf_tot /= w_tot
-      i_prf_var /= w_tot
-      print p_id, p_tot, i_sum_tot, i_sum_var, i_prf_tot, i_prf_var
 
-  print 1/0
+    j0 = partial_map[p_id][0]
+    jrest = partial_map[p_id][1:]
+
+    prf_value = integrated_data['intensity.prf.value'][j0]
+    prf_variance = integrated_data['intensity.prf.variance'][j0]
+    sum_value = integrated_data['intensity.sum.value'][j0]
+    sum_variance = integrated_data['intensity.sum.variance'][j0]
+    partiality = integrated_data['partiality'][j0]
+    weight = prf_value * prf_value / prf_variance
+    prf_value *= weight
+    prf_variance *= weight
+
+    total_weight = weight
+
+    # weight profile fitted intensity and variance computed from weights
+    # proportional to (I/sig(I))^2; schedule for deletion spare parts
+
+    for j in jrest:
+      delete.append(j)
+
+      sum_value += integrated_data['intensity.sum.value'][j]
+      sum_variance += integrated_data['intensity.sum.variance'][j]
+      partiality += integrated_data['partiality'][j]
+
+
+      _prf_value = integrated_data['intensity.prf.value'][j]
+      _prf_variance = integrated_data['intensity.prf.variance'][j]
+
+      _weight = _prf_value * _prf_value / _prf_variance
+      prf_value += _weight * _prf_value
+      prf_variance += _weight * _prf_variance
+      total_weight += _weight
+
+    prf_value /= total_weight
+    prf_variance /= total_weight
+
+    # now write these back into original reflection
+
+    integrated_data['intensity.prf.value'][j0] = prf_value
+    integrated_data['intensity.prf.variance'][j0] = prf_variance
+    integrated_data['intensity.sum.value'][j0] = sum_value
+    integrated_data['intensity.sum.variance'][j0] = sum_variance
+    integrated_data['partiality'][j0] = partiality
+
+  integrated_data.del_selected(delete)
+
   return integrated_data
 
 def scale_partial_reflections(integrated_data, min_partiality=0.5):
