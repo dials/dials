@@ -325,6 +325,7 @@ command_line/plot_scan_varying_crystal.py -text
 command_line/predict.py -text
 command_line/print_test_reflections.py -text
 command_line/process.py -text
+command_line/reciprocal_lattice_viewer.py -text
 command_line/refine.py -text
 command_line/refine_bravais_settings.py -text
 command_line/reflection_viewer.py -text
@@ -809,7 +810,6 @@ scratch/rjg/run_dials_index.py -text
 scratch/rjg/split_mtz.py -text
 scratch/rjg/total_counts_per_image.py -text
 scratch/rjg/unit_cell_refinement.py -text
-scratch/rjg/view_reciprocal_lattice.py -text
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
