@@ -648,7 +648,7 @@ class Manager(object):
         ind = bisect.bisect_right(nframes, block_size_max/2.0)
         perc = 100.0*(ind-1.0)/len(nframes)
         info('*' * 80)
-        info('WARNING: setting block size to %d frames')
+        info('WARNING: setting block size to %d frames' % block_size_max)
         info(' This may result in reflections being split across jobs')
         info(' automatic block size = %d frames' % block_size)
         info(' maximum block size = %d frames' % block_size_max)
