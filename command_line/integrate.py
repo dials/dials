@@ -183,31 +183,43 @@ class Script(object):
       reference,
       params.scan_range)
 
-    # Compute the profile model
     # Predict the reflections
-    # Match the predictions with the reference
-    # Create the integrator
-    profile_model = ProfileModelFactory.create(params, experiments, reference)
     info("")
     info("=" * 80)
     info("")
     info(heading("Predicting reflections"))
     info("")
-    predicted = profile_model.predict_reflections(
+    predicted = flex.reflection_table.from_predictions_multi(
       experiments,
       dmin=params.prediction.dmin,
       dmax=params.prediction.dmax,
       margin=params.prediction.margin,
       force_static=params.prediction.force_static)
 
+    # Match reference with predicted
+    if reference:
+      matched, reference = predicted.match_with_reference(reference)
+      assert(len(matched) == len(predicted))
+      assert(matched.count(True) <= len(reference))
+      if matched.count(True) == 0:
+        raise Abort('''
+          Invalid input for reference reflections.
+          Zero reference spots were matched to predictions
+        ''')
+      elif matched.count(True) != len(reference):
+        info('')
+        info('*' * 80)
+        info('Warning: %d reference spots were not matched to predictions' % (
+          len(reference) - matched.count(True)))
+        info('*' * 80)
+        info('')
+
     # Select a random sample of the predicted reflections
     if not params.sampling.integrate_all_reflections:
       predicted = self.sample_predictions(experiments, predicted, params)
 
-    # Match reference with predicted
-    if reference:
-      matched = predicted.match_with_reference(reference)
-      assert(matched.count(True) > 0)
+    # Compute the profile model
+    profile_model = ProfileModelFactory.create(params, experiments, reference)
     del reference
 
     # Create the integrator
@@ -229,24 +241,35 @@ class Script(object):
     from dials.array_family import flex
     from logging import info
     from time import time
+    from libtbx.utils import Abort
     if reference is None:
       return None
     st = time()
     assert("miller_index" in reference)
     assert("id" in reference)
-    info('Removing reference spots with invalid coordinates')
-    info(' using %d reference spots' % len(reference))
-    mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
-    reference.del_selected(mask)
-    info(' removed %d with no coordinates' % mask.count(True))
+    info('Processing reference reflections')
+    info(' read %d strong spots' % len(reference))
+    mask = reference.get_flags(reference.flags.indexed)
+    reference.del_selected(mask == False)
+    if len(reference) == 0:
+      raise Abort('''
+        Invalid input for reference reflections.
+        Expected > %d indexed spots, got %d
+      ''' % (0, len(reference)))
     mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
-    reference.del_selected(mask)
-    info(' removed %d with no miller indices' % mask.count(True))
+    if mask.count(True) > 0:
+      raise Abort('''
+        Invalid input for reference reflections.
+        %d reference spots have invalid miller indices
+      ''' % mask.count(True))
     mask = flex.bool([x < 0 for x in reference['id']])
-    reference.del_selected(mask)
+    if mask.count(True) > 0:
+      raise Abort('''
+        Invalid input for reference reflections.
+        %d reference spots have an invalid experiment id
+      ''' % mask.count(True))
     reference['id'] = flex.size_t(list(reference['id']))
-    info(' removed %d with negative experiment id' % mask.count(True))
-    info(' using %d reference spots' % len(reference))
+    info(' using %d indexed reflections' % len(reference))
     info(' time taken: %g' % (time() - st))
     return reference
 

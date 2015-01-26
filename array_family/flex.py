@@ -268,9 +268,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.set_flags(
       sind.select(o2.get_flags(self.flags.used_in_refinement)),
       self.flags.used_in_refinement)
+    other = other.select(oind.select(mask))
+    for key, column in self.select(sind.select(mask)).cols():
+      other[key] = column
     info("Matched %d reference spots with predicted reflections" %
                 mask.count(True))
-    return mask
+    mask2 = flex.bool(len(self),False)
+    mask2.set_selected(sind.select(mask), True)
+    return mask2, other
 
   #def is_bbox_inside_image_range(self, experiment):
     #''' Check if bbox is within image range. '''
