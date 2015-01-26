@@ -5,6 +5,83 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
   average for profile fitted reflections. N.B. this will report total
   partiality for the summed reflection.'''
 
+  if not 'partiality' in integrated_data:
+    return integrated_data
+
+  # need to do something with these:
+  #
+  # background.mean     - not used in MTZ
+  # background.mse      - not used in MTZ
+  # profile.correlation - not used in MTZ
+  # xyzobs.mm.value     - not used in MTZ
+  # xyzobs.mm.variance  - not used in MTZ
+  # xyzobs.px.value     - not used in MTZ
+  # xyzobs.px.variance  - not used in MTZ
+  #
+  # rest of the columns are pretty well defined - these are all uniform for the
+  # reflection so can just ignore other values:
+  #
+  # d
+  # id
+  # bbox (needs expanding...)
+  # entering
+  # flags
+  # lp
+  # miller_index
+  # panel
+  # partial_id
+  # s1
+  # xyzcal.mm
+  # xyzcal.px
+  # zeta
+  #
+  # Then finally these need a weighted average:
+  #
+  # intensity.prf.value
+  # intensity.prf.variance
+  # intensity.sum.value
+  # intensity.sum.variance
+  # partiality
+  #
+  # now just need to worry about those that I am actually outputting to the MTZ
+  # file...
+
+  trash = { }
+
+  isel = (integrated_data['partiality'] < 0.99).iselection()
+
+  for j in isel:
+    p_id = integrated_data['partial_id'][j]
+    if not p_id in trash:
+      trash[p_id] = []
+    trash[p_id].append(j)
+
+  for p_id in sorted(trash):
+    if len(trash[p_id]) == 1:
+      continue
+    p_tot = sum([integrated_data['partiality'][j] for j in trash[p_id]])
+    if p_tot >= min_total_partiality:
+      i_sum_tot = 0.0
+      i_sum_var = 0.0
+      i_prf_tot = 0.0
+      i_prf_var = 0.0
+      w_tot = 0.0
+      for j in trash[p_id]:
+        print p_id, integrated_data['zeta'][j]
+        i_sum_tot += integrated_data['intensity.sum.value'][j]
+        i_sum_var += integrated_data['intensity.sum.variance'][j]
+        i_prf = integrated_data['intensity.prf.value'][j]
+        i_prf_v = integrated_data['intensity.prf.variance'][j]
+        p = integrated_data['partiality'][j]
+        w = i_prf * i_prf / i_prf_v
+        w_tot += w
+        i_prf_tot += w * i_prf
+        i_prf_var += w * i_prf_v
+      i_prf_tot /= w_tot
+      i_prf_var /= w_tot
+      print p_id, p_tot, i_sum_tot, i_sum_var, i_prf_tot, i_prf_var
+
+  print 1/0
   return integrated_data
 
 def scale_partial_reflections(integrated_data, min_partiality=0.5):
@@ -20,7 +97,12 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
                include_partials=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
+
+  from dials.util import log
   from logging import info
+
+  log.config(0, info='dials.export_mtz.log',
+             debug='dials.export_mtz.debug.log')
 
   # for the moment assume (and assert) that we will convert data from exactly
   # one lattice...
