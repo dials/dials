@@ -173,13 +173,13 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     super(MyGLWindow, self).__init__(*args, **kwds)
     self.points = flex.vec3_double()
     self.flag_show_minimum_covering_sphere = False
-    self.minimum_covering_sphere = minimum_covering_sphere(self.points)
+    self._compute_minimum_covering_sphere()
 
   def set_points(self, points):
     self.points = points
     self.points_display_list = None
     #self.draw_points()
-    self.minimum_covering_sphere = minimum_covering_sphere(self.points)
+    self._compute_minimum_covering_sphere()
     if not self.GL_uninitialised:
       self.fit_into_viewport()
 
@@ -187,10 +187,16 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
   def update_settings (self) :
     self.points_display_list = None
     self.draw_points()
-    self.minimum_covering_sphere = minimum_covering_sphere(self.points)
+    self._compute_minimum_covering_sphere()
     if not self.GL_uninitialised:
       self.fit_into_viewport()
     self.Refresh()
+
+  def _compute_minimum_covering_sphere(self):
+    n_points = min(1000, self.points.size())
+    isel = flex.random_permutation(self.points.size())[:n_points]
+    self.minimum_covering_sphere = minimum_covering_sphere(
+      self.points.select(isel))
 
 
 def run(args):
