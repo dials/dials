@@ -174,6 +174,7 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     self.points = flex.vec3_double()
     self.flag_show_minimum_covering_sphere = False
     self._compute_minimum_covering_sphere()
+    self.field_of_view_y = 0.001
 
   def set_points(self, points):
     self.points = points
