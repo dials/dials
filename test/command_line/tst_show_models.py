@@ -55,7 +55,7 @@ Crystal:
                 {-0.0000,  0.0000,  0.0252}}
     A = UB:    {{ 0.0197, -0.0127, -0.0034},
                 {-0.0043, -0.0008, -0.0248},
-                { 0.0124,  0.0200, -0.0032}}""")
+                { 0.0124,  0.0200, -0.0032}}""", strip_trailing_whitespace=True)
 
   path = os.path.join(
     dials_regression, "indexing_test_data", "i04_weak_data")
@@ -89,7 +89,7 @@ Goniometer:
     Rotation axis:   {1,0,0}
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
     Setting rotation:{1,0,0,0,1,0,0,0,1}
-""")
+""", strip_trailing_whitespace=True)
 
   path = os.path.join(
     dials_regression, "centroid_test_data", "centroid_*.cbf")
@@ -129,7 +129,7 @@ Goniometer:
     Rotation axis:   {1,0,0}
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
     Setting rotation:{1,0,0,0,1,0,0,0,1}
-""")
+""", strip_trailing_whitespace=True)
 
 
 if __name__ == '__main__':
