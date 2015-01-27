@@ -49,7 +49,7 @@ def random_panel(lim = (0, 50)):
   u2 = u2.rotate_around_origin(u1, random.uniform(-pi/2., pi/2.))
 
   return Panel("PAD", "Panel", u1, u2, o,
-          (lim[1]/200, lim[1]/200), (200, 200), (0, 2e20))
+          (lim[1]/200, lim[1]/200), (200, 200), (0, 2e20), 0.0, "")
 
 # local function required to make a 3x3 multi-panel detector
 def make_multi_panel(single_panel_detector):

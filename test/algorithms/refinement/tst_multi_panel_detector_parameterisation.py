@@ -92,7 +92,9 @@ def make_panel_in_array(array_elt, reference_panel):
           origin=origin,
           pixel_size=px_size,
           image_size=reference_panel.get_image_size(),
-          trusted_range=(0, 1.e6))
+          trusted_range=(0, 1.e6),
+          thickness=0.0,
+          material="")
 
 if __name__ == '__main__':
 

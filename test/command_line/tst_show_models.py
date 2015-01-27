@@ -21,6 +21,8 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,495976}
+  thickness: 0
+  material:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
@@ -65,6 +67,8 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,161977}
+  thickness: 0
+  material:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-210.76,205.277,-265.27}
@@ -103,6 +107,8 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,495976}
+  thickness: 0
+  material:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
