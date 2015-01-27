@@ -620,49 +620,50 @@ def import_reflections(outfile):
 
   # Export all the columns
   try:
-    col1 = diffraction['h']
-    col2 = diffraction['k']
-    col3 = diffraction['l']
-    reflections['miller_index'] = flex.miller_index(len(col1))
-    for i in range(len(col1)):
-      reflections['miller_index'][i] = (col1[i], col2[i], col3[i])
+    col1 = diffraction['h'].value
+    col2 = diffraction['k'].value
+    col3 = diffraction['l'].value
+    reflections['miller_index'] = flex.miller_index(
+      flex.int(col1),
+      flex.int(col2),
+      flex.int(col3))
   except Exception:
     pass
 
   try:
-    reflections['id'] = flex.size_t(diffraction['id'])
+    reflections['id'] = flex.size_t(diffraction['id'].value)
   except Exception:
     pass
 
   try:
-    reflections['intensity.sum.value'] = flex.double(diffraction['int_sum_val'])
-    reflections['intensity.sum.variance'] = flex.double(diffraction['int_sum_var'])
+    reflections['intensity.sum.value'] = flex.double(diffraction['int_sum_val'].value)
+    reflections['intensity.sum.variance'] = flex.double(diffraction['int_sum_var'].value)
   except Exception:
     pass
 
   try:
-    reflections['intensity.prf.value'] = flex.double(diffraction['int_prf_val'])
-    reflections['intensity.prf.variance'] = flex.double(diffraction['int_prf_var'])
+    reflections['intensity.prf.value'] = flex.double(diffraction['int_prf_val'].value)
+    reflections['intensity.prf.variance'] = flex.double(diffraction['int_prf_var'].value)
   except Exception:
     pass
 
   try:
-    reflections['lp'] = flex.double(diffraction['lp'])
+    reflections['lp'] = flex.double(diffraction['lp'].value)
   except Exception:
     pass
 
   try:
-    reflections['panel'] = flex.size_t(diffraction['det_module'])
+    reflections['panel'] = flex.size_t(diffraction['det_module'].value)
   except Exception:
     pass
 
   try:
-    col11 = diffraction['bbx0']
-    col12 = diffraction['bbx1']
-    col13 = diffraction['bby0']
-    col14 = diffraction['bby1']
-    col15 = diffraction['bbz0']
-    col16 = diffraction['bbz1']
+    col11 = diffraction['bbx0'].value
+    col12 = diffraction['bbx1'].value
+    col13 = diffraction['bby0'].value
+    col14 = diffraction['bby1'].value
+    col15 = diffraction['bbz0'].value
+    col16 = diffraction['bbz1'].value
     reflections['bbox'] = flex.int6(
       flex.int(col11),
       flex.int(col12),
@@ -674,9 +675,9 @@ def import_reflections(outfile):
     pass
 
   try:
-    col17 = diffraction['prd_px_x']
-    col18 = diffraction['prd_px_y']
-    col19 = diffraction['prd_frame']
+    col17 = diffraction['prd_px_x'].value
+    col18 = diffraction['prd_px_y'].value
+    col19 = diffraction['prd_frame'].value
     reflections['xyzcal.px'] = flex.vec3_double(
       flex.double(col17),
       flex.double(col18),
@@ -685,9 +686,9 @@ def import_reflections(outfile):
     pass
 
   try:
-    col20 = diffraction['prd_mm_x']
-    col21 = diffraction['prd_mm_y']
-    col22 = diffraction['prd_phi']
+    col20 = diffraction['prd_mm_x'].value
+    col21 = diffraction['prd_mm_y'].value
+    col22 = diffraction['prd_phi'].value
     reflections['xyzcal.mm'] = flex.vec3_double(
       flex.double(col20),
       flex.double(col21),
@@ -696,12 +697,12 @@ def import_reflections(outfile):
     pass
 
   try:
-    col23 = diffraction['obs_px_x_val']
-    col26 = diffraction['obs_px_x_var']
-    col24 = diffraction['obs_px_y_val']
-    col27 = diffraction['obs_px_y_var']
-    col25 = diffraction['obs_frame_val']
-    col28 = diffraction['obs_frame_var']
+    col23 = diffraction['obs_px_x_val'].value
+    col26 = diffraction['obs_px_x_var'].value
+    col24 = diffraction['obs_px_y_val'].value
+    col27 = diffraction['obs_px_y_var'].value
+    col25 = diffraction['obs_frame_val'].value
+    col28 = diffraction['obs_frame_var'].value
     reflections['xyzobs.px.value'] = flex.vec3_double(
       flex.double(col23),
       flex.double(col24),
@@ -714,12 +715,12 @@ def import_reflections(outfile):
     pass
 
   try:
-    col29 = diffraction['obs_mm_x_val']
-    col32 = diffraction['obs_mm_x_var']
-    col30 = diffraction['obs_mm_y_val']
-    col33 = diffraction['obs_mm_y_var']
-    col31 = diffraction['obs_phi_val']
-    col34 = diffraction['obs_phi_var']
+    col29 = diffraction['obs_mm_x_val'].value
+    col32 = diffraction['obs_mm_x_var'].value
+    col30 = diffraction['obs_mm_y_val'].value
+    col33 = diffraction['obs_mm_y_var'].value
+    col31 = diffraction['obs_phi_val'].value
+    col34 = diffraction['obs_phi_var'].value
     reflections['xyzobs.mm.value'] = flex.vec3_double(
       flex.double(col29),
       flex.double(col30),
@@ -732,32 +733,32 @@ def import_reflections(outfile):
     pass
 
   try:
-    reflections['partiality'] = flex.double(diffraction['partiality'])
+    reflections['partiality'] = flex.double(diffraction['partiality'].value)
   except Exception:
     pass
 
   try:
-    reflections['d'] = flex.double(diffraction['d'])
+    reflections['d'] = flex.double(diffraction['d'].value)
   except Exception:
     pass
 
   try:
-    reflections['background.mean'] = flex.double(diffraction['bkg_mean'])
+    reflections['background.mean'] = flex.double(diffraction['bkg_mean'].value)
   except Exception:
     pass
 
   try:
-    reflections['entering'] = flex.bool(map(bool,list(diffraction['entering'])))
+    reflections['entering'] = flex.bool(map(bool,list(diffraction['entering'].value)))
   except Exception:
     pass
 
   try:
-    reflections['flags'] = flex.int(diffraction['flags'])
+    reflections['flags'] = flex.int(diffraction['flags'].value)
   except Exception:
     pass
 
   try:
-    reflections['profile.correlation'] = flex.double(diffraction['prf_cc'])
+    reflections['profile.correlation'] = flex.double(diffraction['prf_cc'].value)
   except Exception:
     pass
 
@@ -810,6 +811,8 @@ def load(filename):
   # Import the reflection table data
   print 'Importing reflection data...'
   reflections = import_reflections(infile)
+
+  print "Loaded %d reflections" % len(reflections)
 
   # Return experiment and reflections
   return experiments, reflections
