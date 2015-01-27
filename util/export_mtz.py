@@ -127,6 +127,30 @@ def scale_partial_reflections(integrated_data, min_partiality=0.5):
   with error accordingly scaled. N.B. this will report the scaled up partiality
   for the output reflection.'''
 
+  # assert: in here there will be no multi-part partial reflections
+
+  if not 'partiality' in integrated_data:
+    return integrated_data
+
+  isel = (integrated_data['partiality'] < 1.0).iselection()
+
+  if len(isel) == 0:
+    return integrated_data
+
+  from dials.array_family import flex
+  delete = flex.size_t()
+
+  for j in isel:
+    if integrated_data['partiality'][j] < min_partiality:
+      delete.append(j)
+      continue
+    inv_p = 1.0 / integrated_data['partiality'][j]
+    integrated_data['intensity.sum.value'][j] *= inv_p
+    integrated_data['intensity.sum.variance'][j] *= inv_p
+    integrated_data['partiality'][j] *= 1.0
+
+  integrated_data.del_selected(delete)
+
   return integrated_data
 
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
