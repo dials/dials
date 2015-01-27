@@ -1,9 +1,13 @@
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+
 from __future__ import division
 from gltbx import wx_viewer
 import copy
 import wx
 import wxtbx.utils
 from gltbx.gl import *
+import gltbx
 from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
 import libtbx.phil
@@ -15,6 +19,10 @@ master_phil = libtbx.phil.parse("""
   reverse_phi = False
     .type = bool
     .optional = True
+  show_rotation_axis = False
+    .type = bool
+  show_beam_vector = False
+    .type = bool
 """)
 
 def settings () :
@@ -71,7 +79,7 @@ class ReciprocalLatticeViewer(wx.Frame):
     event.Skip()
 
   def create_viewer_panel (self) :
-    self.viewer = MyGLWindow(parent=self, size=(800,600),
+    self.viewer = MyGLWindow(settings=self.settings, parent=self, size=(800,600),
       style=wx.glcanvas.WX_GL_DOUBLEBUFFER,
       #orthographic=True
       )
@@ -86,6 +94,8 @@ class ReciprocalLatticeViewer(wx.Frame):
     self.goniometer = imageset.get_goniometer()
     self.reflections = reflections
     self.parameterise_models()
+    self.viewer.set_rotation_axis(self.goniometer.get_rotation_axis())
+    self.viewer.set_beam_vector(self.beam.get_s0())
     self.map_points_to_reciprocal_space()
 
   def parameterise_models(self):
@@ -135,6 +145,7 @@ class ReciprocalLatticeViewer(wx.Frame):
   def update_settings(self, *args, **kwds):
     self.map_points_to_reciprocal_space()
     self.viewer.update_settings(*args, **kwds)
+    #self.draw_rotation_axis()
 
 
 class settings_window (wxtbx.utils.SettingsPanel) :
@@ -146,6 +157,14 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.GetParent().viewer.OnChar(event)
 
   def add_controls (self) :
+    ctrls = self.create_controls(
+      setting="show_rotation_axis",
+      label="Show rotation axis")
+    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
+    ctrls = self.create_controls(
+      setting="show_beam_vector",
+      label="Show beam vector")
+    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
     ctrls = self.create_controls(
       setting="reverse_phi",
       label="Reverse phi direction")
@@ -169,9 +188,12 @@ class settings_window (wxtbx.utils.SettingsPanel) :
 
 class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
 
-  def __init__(self, *args, **kwds):
+  def __init__(self, settings, *args, **kwds):
     super(MyGLWindow, self).__init__(*args, **kwds)
+    self.settings = settings
     self.points = flex.vec3_double()
+    self.rotation_axis = None
+    self.beam_vector = None
     self.flag_show_minimum_covering_sphere = False
     self._compute_minimum_covering_sphere()
     self.field_of_view_y = 0.001
@@ -184,10 +206,16 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     if not self.GL_uninitialised:
       self.fit_into_viewport()
 
+  def set_rotation_axis(self, axis):
+    self.rotation_axis = axis
+
+  def set_beam_vector(self, beam):
+    self.beam_vector = beam
+
   #--- user input and settings
   def update_settings (self) :
     self.points_display_list = None
-    self.draw_points()
+    #self.DrawGL()
     self._compute_minimum_covering_sphere()
     if not self.GL_uninitialised:
       self.fit_into_viewport()
@@ -204,6 +232,38 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
       f = 0.01
     wx_viewer.show_points_and_lines_mixin.draw_cross_at(
       self, (x,y,z), color=color, f=f)
+
+  def DrawGL(self):
+    wx_viewer.show_points_and_lines_mixin.DrawGL(self)
+    if self.rotation_axis is not None and self.settings.show_rotation_axis:
+      self.draw_axis(self.rotation_axis, "phi")
+    if self.beam_vector is not None and self.settings.show_beam_vector:
+      self.draw_axis(self.beam_vector, "beam")
+
+  def draw_axis(self, axis, label):
+    s = self.minimum_covering_sphere
+    scale = max(max(s.box_max()), abs(min(s.box_min())))
+    gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
+    glDisable(GL_LIGHTING)
+    glColor3f(1.0, 1.0, 1.0)
+    #if (self.settings.black_background) :
+      #glColor3f(1.0, 1.0, 1.0)
+    #else :
+      #glColor3f(0.,0.,0.)
+    glLineWidth(1.0)
+    glBegin(GL_LINES)
+    glVertex3f(0.,0.,0.)
+    glVertex3f(axis[0]*scale, axis[1]*scale, axis[2]*scale)
+    glEnd()
+    glRasterPos3f(0.5+axis[0]*scale, 0.2+axis[1]*scale, 0.2+axis[2]*scale)
+    gltbx.fonts.ucs_bitmap_8x13.render_string(label)
+    glEnable(GL_LINE_STIPPLE)
+    glLineStipple(4, 0xAAAA)
+    glBegin(GL_LINES)
+    glVertex3f(0.,0.,0.)
+    glVertex3f(-axis[0]*scale, -axis[1]*scale, -axis[2]*scale)
+    glEnd()
+    glDisable(GL_LINE_STIPPLE)
 
 
 def run(args):
