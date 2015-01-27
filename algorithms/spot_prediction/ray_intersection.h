@@ -96,12 +96,6 @@ namespace dials { namespace algorithms {
   //};
 
 
-  struct Impact {
-    vec3<double> px;
-    vec3<double> mm;
-  };
-
-
   inline
   af::shared<bool> ray_intersection(
       const Detector &detector,
