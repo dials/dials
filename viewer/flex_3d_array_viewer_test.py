@@ -10,7 +10,7 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-
+from __future__ import division
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d
 from dials.algorithms.shoebox import MaskCode

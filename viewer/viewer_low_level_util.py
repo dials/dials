@@ -8,12 +8,11 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-
+from __future__ import division
 from dials.array_family import flex
 from from_flex_to_wxbitmap import wxbitmap_convert
 
 import wx
-#import numpy as np
 import wx.lib.scrolledpanel as scroll_pan
 import wx.grid as gridlib
 import math
@@ -34,8 +33,11 @@ class flex_3d_frame(wx.Frame):
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
     if( text_data != None ):
+      print "Hi with grid"
       self.my_sizer.Add(self.myGrid, proportion = 1,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
+    else:
+      print "Hi without grid"
 
     self.my_sizer.SetMinSize((50, 20))
     self.SetSizer(self.my_sizer)

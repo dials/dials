@@ -8,8 +8,6 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-
-
 from __future__ import division
 import wx
 from viewer_low_level_util import flex_3d_frame, flex_arr_img_panel, MyGrid
