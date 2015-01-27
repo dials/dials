@@ -301,6 +301,7 @@ command_line/export.py -text
 command_line/export_mosflm.py -text
 command_line/export_mtz.py -text
 command_line/export_nxmx.py -text
+command_line/export_nxmx_to_mtz.py -text
 command_line/export_spot_xds.py -text
 command_line/export_text.py -text
 command_line/export_xds.py -text

@@ -19,9 +19,6 @@ phil_scope = parse('''
   hklout = hklout.nxs
     .type = str
     .help = "The output NXmx file"
-  ignore_panels = False
-    .type = bool
-    .help = "Ignore multiple panels / detectors in output"
 ''')
 
 def run(args):
