@@ -456,7 +456,7 @@ if __name__ == '__main__':
   sensor = 'PAD'
   distance = 85
   beam_centre = (0, 0)
-  pixel_size =  (0.172, 0.172)
+  pixel_size = (0.172, 0.172)
   image_size = (487, 619)
 
   two_theta_angle = 30
