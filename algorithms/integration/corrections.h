@@ -15,6 +15,7 @@
 #include <vector>
 #include <scitbx/vec3.h>
 #include <dxtbx/model/beam.h>
+#include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
@@ -23,6 +24,7 @@ namespace dials { namespace algorithms {
 
   using scitbx::vec3;
   using dxtbx::model::Beam;
+  using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
 
   /**
@@ -71,6 +73,24 @@ namespace dials { namespace algorithms {
         pn_(beam.get_polarization_normal()),
         pf_(beam.get_polarization_fraction()),
         m2_(goniometer.get_rotation_axis()) {
+      // Deprecated constructor
+    }
+
+
+    /**
+     * @param beam The beam model.
+     * @param goniometer The goniometer model.
+     * @param detector The detector model.
+     */
+    Corrections(
+          const Beam &beam,
+          const Goniometer &goniometer,
+          const Detector &detector)
+      : s0_(beam.get_s0()),
+        pn_(beam.get_polarization_normal()),
+        pf_(beam.get_polarization_fraction()),
+        m2_(goniometer.get_rotation_axis()),
+        det(detector) {
     }
 
     /**
@@ -88,6 +108,7 @@ namespace dials { namespace algorithms {
     vec3<double> pn_;
     double pf_;
     vec3<double> m2_;
+    Detector det;
   };
 
 
