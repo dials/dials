@@ -34,14 +34,17 @@ class flex_3d_frame(wx.Frame):
 
     if( text_data != None ):
       print "Hi with grid"
-      self.my_sizer.Add(self.myGrid, proportion = 3,
+      self.my_sizer.Add(self.myGrid, proportion = 1,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
     else:
       print "Hi without grid"
 
-    self.my_sizer.SetMinSize((50, 20))
+    self.my_sizer.SetMinSize((900, 600))
     self.SetSizer(self.my_sizer)
+    self.my_sizer.Fit(self)
 
+        #panel.SetSizer(sizer)
+    #sizer.Fit(self)
 
 class TupTable(gridlib.PyGridTableBase):
   def __init__(self, data, rowLabels=None, colLabels=None):
@@ -199,7 +202,7 @@ class flex_arr_img_panel(wx.Panel):
     self.panel_01 = buttons_panel(self)
     self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
     sizer = wx.BoxSizer(wx.HORIZONTAL)
-    sizer.Add(self.panel_01, 0, wx.ALIGN_CENTRE)
+    sizer.Add(self.panel_01, 0, wx.EXPAND)
     sizer.Add(self.panel_02, 1, wx.EXPAND)
     self.SetSizer(sizer)
     self.Show(True)
@@ -380,7 +383,7 @@ class buttons_panel(wx.Panel):
       self.my_sizer.Add(Show_Msk_CheckBox, proportion = 0,
                         flag = wx.ALIGN_TOP, border = 5)
 
-    self.my_sizer.SetMinSize((50, 20))
+    self.my_sizer.SetMinSize((50, 300))
     self.SetSizer(self.my_sizer)
 
   def OnItsCheckbox(self, event):
