@@ -29,12 +29,12 @@ class flex_3d_frame(wx.Frame):
       self.myGrid = text_data
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-    self.my_sizer.Add(self.img_panel, proportion = 1,
+    self.my_sizer.Add(self.img_panel, proportion = 2,
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
     if( text_data != None ):
       print "Hi with grid"
-      self.my_sizer.Add(self.myGrid, proportion = 1,
+      self.my_sizer.Add(self.myGrid, proportion = 3,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
     else:
       print "Hi without grid"
