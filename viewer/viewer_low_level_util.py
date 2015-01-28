@@ -352,6 +352,15 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.Layout()
     self.parent_panel.Layout()
     self.Refresh()
+    print "from img_refr..."
+
+
+    #super(multi_img_scrollable, self).__init__(outer_panel)
+    #self.set_scroll_content()
+    #self.SetupScrolling()
+    #self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
+
+
 
   def OnIdle(self, event):
     if( self.scroll_rot != 0 ):
@@ -359,6 +368,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.scroll_rot = 0
       v_size_x, v_size_y = self.GetVirtualSize()
       self.Scroll(self.x_to_keep * v_size_x, self.y_to_keep * v_size_y)
+
+      print "from OnIdle..."
 
 
 class buttons_panel(wx.Panel):
