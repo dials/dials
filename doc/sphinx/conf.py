@@ -36,6 +36,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.pngmath',
+    'sphinx.ext.viewcode',
     'numpydoc',
     'libtbx.sphinx.phil',
     'libtbx.sphinx.python_string',
