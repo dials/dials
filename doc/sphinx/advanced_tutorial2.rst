@@ -7,10 +7,12 @@ Introduction
 DIALS processing may be performed by either running the individual tools (spot
 finding, indexing, refinement, integration, exporting to MTZ) or you can run the
 whole lot through :doc:`dials.process </programs/dials_process>`, which just
-chains them together (and incidentally does all of the processing in P1.)
+chains them together (and incidentally does all of the processing in P1). In
+this tutorial we will run through each of the steps in turn, checking the output
+as we go. We will also enforce the correct lattice symmetry.
 
-Running the Individual Steps: Macromolecule
--------------------------------------------
+Tutorial data
+-------------
 
 The following example uses a Thaumatin dataset collected using beamline I04
 at Diamond Light Source which is available for download from |thaumatin|.
@@ -56,6 +58,9 @@ Find Spots
 
 The first "real" task in any DIALS processing will be the spot finding.
 Here we request multiple processors to speed up the spot-finding (:samp:`nproc=4`).
+It takes a little while because we are finding spots on every image in the
+dataset. This reflects the modular philosophy of the DIALS toolkit and will
+enable us to do global refinement later on.
 
 ::
 
@@ -134,16 +139,21 @@ with a pink dot. The spot centre of mass is a red cross. This is usually close t
 the peak pixel, but slightly offset as the centroid algorithm allows to calculate
 the spot centre at a better precision than the pixel size and image angular 'width'.
 The strong pixels marked as being part of the peak are highlighted with a green
-dot. The reflection shoebox shown here is the smallest three dimensional box that
+dot. The reflection shoebox you see with a blue border is the smallest
+three dimensional box that
 can contain the continuous peak region, that is, there is no background border
 region displayed here.
+
+.. image:: figures/found_spot.png
 
 Indexing
 ^^^^^^^^
 
 The next step will be indexing of the strong spots, by default using a 3D FFT
 algorithm, although the 1D FFT algorithm can be selected using the parameter
-:samp:`indexing.method=fft1d`.
+:samp:`indexing.method=fft1d`. We will pass in all the strong spots found in
+the dataset - so no need to select subsets of images widely separated in
+:math:`\phi`.
 
 ::
 
@@ -457,14 +467,18 @@ primitive lattice using space group P1.
                   {-0.0153,  0.0051, -0.0024}}
 
 It is worth looking through this output to understand what the indexing program
-has done. Note that this output (minus the preamble about modified parameters)
+has done. Note that this log (minus the preamble about modified parameters)
 is automatically captured in the file :file:`dials.index.log`. There is also
-a great deal more information written into :file:`dials.index.debug.log`, but
+a somewhat more information written into :file:`dials.index.debug.log`, but
 this is probably only helpful if something has gone wrong and you are trying
 to track down why.
 
 Inspecting the log shows that the indexing step is done at fairly low
-resolution ``Setting d_min: 4.48575618871``. What follows are five macrocycles
+resolution: ``Setting d_min: 4.48575618871``. The resolution limit of data that
+can be used in indexing is determined by the size of the 3D FFT grid and the
+likely maximum cell dimension. Here we
+used :math:`256^3` grid points: ``FFT gridding: (256,256,256)``.
+What follows are five macrocycles
 of refinement at increasing resolution to bootstrap the indexing solution to as
 many of the strong reflections as possible. In each case you can see that only
 4049 reflections are used in the refinement job. The diffraction geometry is
@@ -473,7 +487,7 @@ crystal 'misset' angles and 6 triclinic cell parameters). The problem is thus
 hugely overdetermined. In order to save time, refinement uses a subset of the
 input reflections, by default using 50 reflections for every degree of the scan.
 
-Inspecting the log closely, we see that the first macrocyle of refinement makes
+Continuing to look through the log, we see that the first macrocyle of refinement makes
 a big improvement, reducing the positional RMSDs from 0.38 to 0.03 mm in X and
 0.37 to 0.04 mm in Y. The second macrocycle doesn't actually change the model
 at all. After extending to 3.5 Angstroms the current model still predicts
@@ -490,7 +504,7 @@ Angstroms, well beyond the highest resolution recorded 'strong' spot, which is
 nothing to do because the current model still predicts with low enough RMSDs
 right out to the maximum resolution of the dataset.
 
-Despite the high quality of this data, we notice from the summary statistics
+Despite the high quality of this data, we notice from the ``Summary statistics``
 tables that there there are some outliers appearing as resolution increases,
 especially in the last two macrocycles. In the final macrocyle we see the
 distribution of positional residuals in the Y direction is tight around the
@@ -552,7 +566,8 @@ In this example we would continue processing (i.e. proceed to the refinement
 step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
 necessary to reindex the :ref:`indexed.pickle <reflection_pickle>` file output by dials.index.
 However, in this case as the change of basis operator to the chosen setting
-is the identity operator (:samp:`a,b,c`) this step is not needed::
+is the identity operator (:samp:`a,b,c`) this step is not needed. We run it
+anyway to demonstrate its use::
 
   dials.reindex indexed.pickle change_of_basis_op=a,b,c
 
@@ -563,9 +578,10 @@ used as input to downstream programs in place of :ref:`indexed.pickle <reflectio
 Refinement
 ^^^^^^^^^^
 
-Although the model is already refined in indexing we can also add a refinement
+Although the model is already refined during indexing we can also add an
+explicit refinement
 step using :doc:`dials.refine </programs/dials_refine>` in here. This
-dataset is of exceptional quality and we wish to squeeze the best possible
+dataset is of exceptional quality and we are keen to squeeze the best possible
 results from it. During indexing we saw the presence of outliers that we would
 like to exclude from refinement, and we also used a subset of reflections. Now
 we will repeat using all indexed reflections in the dataset and with outlier
@@ -578,6 +594,7 @@ use this command::
 
   dials.refine -c -e 1
 
+Equivalent command-line options exist for all the main DIALS programs.
 Now, our refinement job is specified as::
 
   dials.refine bravais_setting_9.json reindexed_reflections.pickle \
@@ -778,11 +795,17 @@ To view the smoothly varying crystal cell parameters use the following command::
   dials.plot_scan_varying_crystal sv_refined_experiments.json
 
 The output of this program is still a little rough-and-ready, however the plot
-it produces :file:`sv_crystal.pdf` may be useful to check there are no
+it produces called :file:`sv_crystal.pdf` may be useful to check there are no
 huge changes to the cell.
 
 .. image:: figures/sv_crystal.png
 
+We see an overall increase in all three cell parameters, however the greatest
+change, in lengths *a* and *b*, is only about 0.02 Angstroms. If
+significant cell volume increases had been observed that might be indicative of
+radiation damage. However we can't yet conclude that there is no radiation
+damage from the lack of considerable change observed. We can at least see from
+this and the low finals refined RMSDs that this is a very well-behaved dataset.
 
 Integration
 ^^^^^^^^^^^
@@ -790,63 +813,153 @@ Integration
 After the refinement is done the next step is integration, which is performed
 by the program :doc:`dials.integrate </programs/dials_integrate>`. Mostly, the
 default parameters are fine, which will perform XDS-like 3D profile fitting. However,
-for datasets with very weak background, such as this, the default 'nsigma'
+for datasets with very weak background, such as this, the default :samp:`nsigma`
 background outlier rejection algorithm tends to underestimate the real background
 value. This is because that method is only really appropriate for values from
 a normal distribution, which is a poor approximation for a Poisson distibution
-with a small mean, and significant skewness.
+with a small mean, and significant skewness. For this reason we switch off
+all outlier rejection from the background calculation.
+
+From checking the output of :samp:`dials.integrate -c` we see that the full
+parameter to do this is given by :samp:`integration.background.simple.outlier.algorithm=null`
+but partial string matching can be used for command line parameters when the
+partial match is unambiguous. This saves a lot of typing!
+
+We will also increase the number of processors used to speed the job up.
 
 ::
 
   dials.integrate sv_refined_experiments.json reindexed_reflections.pickle \
-  outlier.algorithm=null
+  outlier.algorithm=null nproc=4
 
-This program outputs a lot of information as integration progresses,
-concluding with a summary of the integration results.
 
-::
+Checking the log output we see that after loading in the reference reflections
+from :file:`reindexed_reflections.pickle`,
+new predictions are made up to the highest resolution at the corner of the
+detector. This is fine, but if we wanted to we could have adjusted the
+resolution limits using parameters :samp:`dmin` and :samp:`dmax`. The predictions
+are made using the scan-varying crystal model recorded in
+:file:`sv_refined_experiments.json`. This ensures that prediction is made using
+the smoothly varying lattice and orientation that we determined in the refinement
+step. As this scan-varying model was determined in advance of integration, each
+of the integration jobs is independent and we can take advantage of true
+parallelism during processing.
+
+The profile model is then calculated from the reflections in
+:file:`reindexed_reflections.pickle`. First reflections with a too small 'zeta'
+factor are filtered out. This essentially removes reflections that are too
+close to the spindle axis. In general these reflections require significant
+Lorentz corrections and as a result have less trustworthy intensities anyway.
+From the remaining reflection shoeboxes, the average beam divergence and
+reflecting range is calculated, providing the two Guassian width parameters
+:math:`\sigma_D` and :math:`\sigma_M` used in the 3D profile model.
+
+Following this, the independent integration jobs are set up. These jobs overlap,
+so reflections are assigned to one or more jobs. What follows are blocks of
+information specific to each integration job.
+
+After these jobs are finished, the reflections are 'post-processed', which includes
+the application of the LP correction to the intensities. Then summary tables
+are printed giving quality statistic first by frame, and then by resolution bin.
+The latter of these tables and the final overall summary are reproduced here::
 
   Summary of integration results binned by resolution
   ----------------------------------------------------------------------------------------------------------
   d min |  d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
         |        |        |        |        |       |       |       |       |    (sum) |    (prf) |
   ----------------------------------------------------------------------------------------------------------
-   1.17 |   1.19 |    300 |      2 |      0 |     0 |   302 |   231 |  0.04 |     0.39 |     0.54 |     0.11
-   1.19 |   1.21 |   1060 |      5 |      0 |     0 |  1065 |   920 |  0.04 |     0.44 |     0.53 |     0.10
-   1.21 |   1.23 |   2270 |     13 |      0 |     0 |  2283 |  2075 |  0.05 |     0.52 |     0.59 |     0.11
-   1.23 |   1.26 |   3715 |     21 |      0 |     0 |  3736 |  3525 |  0.05 |     0.55 |     0.67 |     0.13
-   1.26 |   1.28 |   5340 |     31 |      0 |     0 |  5371 |  5111 |  0.05 |     0.60 |     0.76 |     0.15
-   1.28 |   1.31 |   7114 |     44 |      0 |     0 |  7158 |  6853 |  0.06 |     0.65 |     0.83 |     0.17
-   1.31 |   1.35 |   9365 |     56 |      0 |     0 |  9421 |  9085 |  0.06 |     0.78 |     0.97 |     0.20
-   1.35 |   1.38 |  12334 |     78 |      0 |     0 | 12412 | 12016 |  0.07 |     0.92 |     1.13 |     0.23
-   1.38 |   1.42 |  16756 |     97 |      0 |     0 | 16853 | 16385 |  0.07 |     0.99 |     1.22 |     0.25
-   1.42 |   1.47 |  19947 |    142 |      0 |     0 | 20089 | 19763 |  0.08 |     1.21 |     1.46 |     0.29
-   1.47 |   1.52 |  23311 |    467 |      0 |     0 | 23778 | 23458 |  0.09 |     1.47 |     1.75 |     0.32
-   1.52 |   1.58 |  23781 |    569 |      0 |     0 | 24350 | 24260 |  0.09 |     1.75 |     2.06 |     0.37
-   1.58 |   1.66 |  25217 |    552 |      0 |     0 | 25769 | 25689 |  0.10 |     2.17 |     2.51 |     0.44
-   1.66 |   1.74 |  23964 |    489 |      0 |     0 | 24453 | 24411 |  0.12 |     2.70 |     3.07 |     0.50
-   1.74 |   1.85 |  24490 |    483 |      0 |     0 | 24973 | 24949 |  0.14 |     3.48 |     3.88 |     0.56
-   1.85 |   2.00 |  25432 |    539 |      0 |     0 | 25971 | 25949 |  0.18 |     4.84 |     5.27 |     0.63
-   2.00 |   2.20 |  24462 |    448 |      0 |     0 | 24910 | 24898 |  0.24 |     6.54 |     7.02 |     0.70
-   2.20 |   2.51 |  25437 |    476 |      0 |     0 | 25913 | 25896 |  0.28 |     8.77 |     9.22 |     0.74
-   2.51 |   3.17 |  24970 |    497 |      0 |     0 | 25467 | 25434 |  0.34 |    12.65 |    13.04 |     0.76
-   3.17 | 151.26 |  25489 |    635 |      0 |     0 | 26124 | 26090 |  0.41 |    25.22 |    25.18 |     0.76
+   1.17 |   1.19 |    300 |      2 |      0 |     0 |   302 |   232 |  0.04 |     0.39 |     0.48 |     0.09
+   1.19 |   1.21 |   1060 |      5 |      0 |     0 |  1065 |   920 |  0.04 |     0.44 |     0.51 |     0.10
+   1.21 |   1.23 |   2270 |     13 |      0 |     0 |  2283 |  2071 |  0.05 |     0.51 |     0.55 |     0.10
+   1.23 |   1.26 |   3715 |     21 |      0 |     0 |  3736 |  3528 |  0.05 |     0.55 |     0.64 |     0.12
+   1.26 |   1.28 |   5340 |     31 |      0 |     0 |  5371 |  5097 |  0.05 |     0.60 |     0.72 |     0.14
+   1.28 |   1.31 |   7114 |     44 |      0 |     0 |  7158 |  6848 |  0.06 |     0.65 |     0.78 |     0.15
+   1.31 |   1.35 |   9364 |     57 |      0 |     0 |  9421 |  9077 |  0.06 |     0.78 |     0.91 |     0.18
+   1.35 |   1.38 |  12334 |     78 |      0 |     0 | 12412 | 12014 |  0.07 |     0.92 |     1.06 |     0.21
+   1.38 |   1.42 |  16753 |     97 |      0 |     0 | 16850 | 16368 |  0.07 |     0.99 |     1.15 |     0.23
+   1.42 |   1.47 |  19873 |    359 |      0 |     0 | 20232 | 19850 |  0.08 |     1.20 |     1.35 |     0.26
+   1.47 |   1.52 |  22915 |   1842 |      0 |     0 | 24757 | 24267 |  0.09 |     1.42 |     1.55 |     0.28
+   1.52 |   1.58 |  23408 |   1889 |      0 |     0 | 25297 | 25063 |  0.09 |     1.70 |     1.83 |     0.33
+   1.58 |   1.66 |  24837 |   1887 |      0 |     0 | 26724 | 26517 |  0.10 |     2.10 |     2.23 |     0.38
+   1.66 |   1.74 |  23592 |   1812 |      0 |     0 | 25404 | 25234 |  0.12 |     2.62 |     2.72 |     0.43
+   1.74 |   1.85 |  24094 |   1848 |      0 |     0 | 25942 | 25771 |  0.14 |     3.37 |     3.44 |     0.49
+   1.85 |   2.00 |  25042 |   1896 |      0 |     0 | 26938 | 26782 |  0.18 |     4.70 |     4.67 |     0.55
+   2.00 |   2.20 |  24122 |   1631 |      0 |     0 | 25753 | 25606 |  0.24 |     6.36 |     6.22 |     0.61
+   2.20 |   2.51 |  25031 |   1903 |      0 |     0 | 26934 | 26696 |  0.29 |     8.50 |     8.10 |     0.63
+   2.51 |   3.17 |  24614 |   1773 |      0 |     0 | 26387 | 26117 |  0.34 |    12.32 |    11.27 |     0.63
+   3.17 | 151.26 |  25141 |   1942 |      0 |     0 | 27083 | 26632 |  0.41 |    24.59 |    20.61 |     0.61
   ----------------------------------------------------------------------------------------------------------
 
   Summary of integration results for the whole dataset
   ----------------------------------------------
-  Number fully recorded                 | 369193
-  Number partially recorded             | 9024
+  Number fully recorded                 | 364716
+  Number partially recorded             | 26755
   Number with overloaded pixels         | 0
   Number in powder rings                | 0
-  Number processed with summation       | 330398
-  Number processed with profile fitting | 326998
+  Number processed with summation       | 340049
+  Number processed with profile fitting | 334690
   <Ibg>                                 | 0.17
-  <I/sigI> (summation)                  | 5.61
-  <I/sigI> (profile fitting)            | 5.97
-  <CC prf>                              | 0.43
+  <I/sigI> (summation)                  | 5.50
+  <I/sigI> (profile fitting)            | 5.15
+  <CC prf>                              | 0.37
   ----------------------------------------------
 
+Graphical analysis of the output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Much more information is available from the integration output in graphical form
+using the command
+
+::
+
+  dials.analyse_output integrated.pickle
+
+By default the plots will be written into a new directory :file:`analysis` with
+subdirectories for different types of analysis::
+
+  analysis
+  ├── background
+  ├── centroid
+  ├── intensity
+  ├── reference
+  └── strong
+
+Some of the most useful plots are
+
+* :file:`background/background_model_mean_vs_xy.png`, which shows the mean
+  background value as a function of detector position.
+
+* :file:`centroid/centroid_diff_x.png` and :file:`centroid/centroid_diff_y.png`,
+  which show the difference between predicted and observed reflection positions
+  in either X or Y as functions of detector position. From these plots it is very
+  easy to see whole tiles that are worse than their neighbours, and either whether
+  those tiles might be simply shifted or slightly rotated compared to the model
+  detector.
+
+  .. image:: figures/centroid_diff_x.png
+
+  .. image:: figures/centroid_diff_y.png
+
+* :file:`centroid/centroid_mean_diff_vs_phi.png`, which shows how the average
+  residuals in each of X, Y, and :math:`\phi` vary as a fuction of :math:`\phi`.
+  If scan-varying refinement has been successful in capturing the real changes
+  during the scan then we would expect these plots to be straight lines.
+
+  .. image:: figures/centroid_mean_diff_vs_phi.png
+
+* :file:`centroid/centroid_xy_residuals.png`, on which the X, Y residuals are shown
+  directly. The key point here is to look for a globular shape centred at 0.0.
+
+  .. image:: figures/centroid_xy_residuals.png
+
+* :file:`intensity/ioversigma_vs_z.png`. This reproduces the
+  :math:`\frac{I}{\sigma_I}` information versus frame number given in the log
+  file in a graphical form. Here we see that :math:`\frac{I}{\sigma_I}` is fairly
+  flat over the whole dataset, which we might use as an indication that there
+  were no bad frames, not much radiation damage occurred and that scale factors
+  are likely to be fairly uniform.
+
+  .. image:: figures/ioversigma_vs_z.png
 
 
 Exporting as MTZ

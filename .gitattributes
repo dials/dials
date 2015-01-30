@@ -410,6 +410,12 @@ doc/sphinx/conventions.rst -text
 doc/sphinx/data_files.rst -text
 doc/sphinx/developer_tutorial.rst -text
 doc/sphinx/figures/E4.png -text
+doc/sphinx/figures/centroid_diff_x.png -text svneol=unset#unset
+doc/sphinx/figures/centroid_diff_y.png -text svneol=unset#unset
+doc/sphinx/figures/centroid_mean_diff_vs_phi.png -text svneol=unset#unset
+doc/sphinx/figures/centroid_xy_residuals.png -text svneol=unset#unset
+doc/sphinx/figures/found_spot.png -text svneol=unset#unset
+doc/sphinx/figures/ioversigma_vs_z.png -text svneol=unset#unset
 doc/sphinx/figures/sv_crystal.png -text svneol=unset#unset
 doc/sphinx/index.rst -text
 doc/sphinx/installation.rst -text
