@@ -55,11 +55,11 @@ def generate_phil_scope():
           .type = float
           .help = "The block size in rotation angle (degrees)."
 
-        max_size = 5
+        max_size = 10
           .type = float(value_min=0.0)
           .help = "The maximum size (in degrees) of an integration block"
 
-        threshold = 0.95
+        threshold = 0.999
           .type = float(value_min=0.0, value_max=1.0)
           .help = "For block size auto the block size is calculated by sorting"
                   "reflections by the number of frames they cover and then"
