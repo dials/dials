@@ -403,7 +403,6 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tif
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 doc/sphinx/Makefile -text
 doc/sphinx/advanced_tutorial.rst -text
-doc/sphinx/advanced_tutorial2.rst -text
 doc/sphinx/beginners_tutorial.rst -text
 doc/sphinx/conf.py -text
 doc/sphinx/conventions.rst -text
