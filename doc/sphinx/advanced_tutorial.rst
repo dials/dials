@@ -1097,31 +1097,6 @@ the outer shell. Here is the summary from aimless.log:
   DelAnom correlation between half-sets      0.008     0.302    -0.082
   Mid-Slope of Anom Normal Probability       0.950       -         -
 
-  Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
-
-                                             Overall  InnerShell  OuterShell
-  Low resolution limit                      150.00    150.00      1.32
-  High resolution limit                       1.30      7.12      1.30
-
-  Rmerge  (within I+/I-)                     0.063     0.023     0.412
-  Rmerge  (all I+ and I-)                    0.071     0.026     0.483
-  Rmeas (within I+/I-)                       0.077     0.029     0.569
-  Rmeas (all I+ & I-)                        0.079     0.029     0.603
-  Rpim (within I+/I-)                        0.044     0.016     0.391
-  Rpim (all I+ & I-)                         0.034     0.013     0.355
-  Rmerge in top intensity bin                0.028        -         -
-  Total number of observations              306660      2245      5444
-  Total number unique                        62334       499      2465
-  Mean((I)/sd(I))                             14.2      48.7       1.0
-  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.711
-  Completeness                                98.2      99.8      79.8
-  Multiplicity                                 4.9       4.5       2.2
-
-  Anomalous completeness                      92.2     100.0      47.5
-  Anomalous multiplicity                       2.4       3.0       1.5
-  DelAnom correlation between half-sets     -0.000     0.321     0.015
-  Mid-Slope of Anom Normal Probability       0.722       -         -
-
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
 .. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html
