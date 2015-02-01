@@ -803,9 +803,10 @@ huge changes to the cell.
 We see an overall increase in all three cell parameters, however the greatest
 change, in lengths *a* and *b*, is only about 0.02 Angstroms. If
 significant cell volume increases had been observed that might be indicative of
-radiation damage. However we can't yet conclude that there is no radiation
-damage from the lack of considerable change observed. We can at least see from
-this and the low finals refined RMSDs that this is a very well-behaved dataset.
+radiation damage. However we can't yet conclude that there is *no* radiation
+damage from the *lack* of considerable change observed. We can at least see from
+this and the low final refined RMSDs that this is a very well-behaved dataset
+though.
 
 Integration
 ^^^^^^^^^^^
@@ -860,7 +861,7 @@ information specific to each integration job.
 
 After these jobs are finished, the reflections are 'post-processed', which includes
 the application of the LP correction to the intensities. Then summary tables
-are printed giving quality statistic first by frame, and then by resolution bin.
+are printed giving quality statistics first by frame, and then by resolution bin.
 The latter of these tables and the final overall summary are reproduced here::
 
   Summary of integration results binned by resolution
@@ -868,40 +869,40 @@ The latter of these tables and the final overall summary are reproduced here::
   d min |  d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
         |        |        |        |        |       |       |       |       |    (sum) |    (prf) |
   ----------------------------------------------------------------------------------------------------------
-   1.17 |   1.19 |    300 |      2 |      0 |     0 |   302 |   232 |  0.04 |     0.39 |     0.48 |     0.09
-   1.19 |   1.21 |   1060 |      5 |      0 |     0 |  1065 |   920 |  0.04 |     0.44 |     0.51 |     0.10
-   1.21 |   1.23 |   2270 |     13 |      0 |     0 |  2283 |  2071 |  0.05 |     0.51 |     0.55 |     0.10
-   1.23 |   1.26 |   3715 |     21 |      0 |     0 |  3736 |  3528 |  0.05 |     0.55 |     0.64 |     0.12
-   1.26 |   1.28 |   5340 |     31 |      0 |     0 |  5371 |  5097 |  0.05 |     0.60 |     0.72 |     0.14
-   1.28 |   1.31 |   7114 |     44 |      0 |     0 |  7158 |  6848 |  0.06 |     0.65 |     0.78 |     0.15
-   1.31 |   1.35 |   9364 |     57 |      0 |     0 |  9421 |  9077 |  0.06 |     0.78 |     0.91 |     0.18
-   1.35 |   1.38 |  12334 |     78 |      0 |     0 | 12412 | 12014 |  0.07 |     0.92 |     1.06 |     0.21
-   1.38 |   1.42 |  16753 |     97 |      0 |     0 | 16850 | 16368 |  0.07 |     0.99 |     1.15 |     0.23
-   1.42 |   1.47 |  19873 |    359 |      0 |     0 | 20232 | 19850 |  0.08 |     1.20 |     1.35 |     0.26
-   1.47 |   1.52 |  22915 |   1842 |      0 |     0 | 24757 | 24267 |  0.09 |     1.42 |     1.55 |     0.28
-   1.52 |   1.58 |  23408 |   1889 |      0 |     0 | 25297 | 25063 |  0.09 |     1.70 |     1.83 |     0.33
-   1.58 |   1.66 |  24837 |   1887 |      0 |     0 | 26724 | 26517 |  0.10 |     2.10 |     2.23 |     0.38
-   1.66 |   1.74 |  23592 |   1812 |      0 |     0 | 25404 | 25234 |  0.12 |     2.62 |     2.72 |     0.43
-   1.74 |   1.85 |  24094 |   1848 |      0 |     0 | 25942 | 25771 |  0.14 |     3.37 |     3.44 |     0.49
-   1.85 |   2.00 |  25042 |   1896 |      0 |     0 | 26938 | 26782 |  0.18 |     4.70 |     4.67 |     0.55
-   2.00 |   2.20 |  24122 |   1631 |      0 |     0 | 25753 | 25606 |  0.24 |     6.36 |     6.22 |     0.61
-   2.20 |   2.51 |  25031 |   1903 |      0 |     0 | 26934 | 26696 |  0.29 |     8.50 |     8.10 |     0.63
-   2.51 |   3.17 |  24614 |   1773 |      0 |     0 | 26387 | 26117 |  0.34 |    12.32 |    11.27 |     0.63
-   3.17 | 151.26 |  25141 |   1942 |      0 |     0 | 27083 | 26632 |  0.41 |    24.59 |    20.61 |     0.61
+   1.17 |   1.19 |    300 |      2 |      0 |     0 |   302 |   231 |  0.04 |     0.39 |     0.55 |     0.12
+   1.19 |   1.21 |   1060 |      5 |      0 |     0 |  1065 |   920 |  0.04 |     0.44 |     0.53 |     0.10
+   1.21 |   1.23 |   2270 |     13 |      0 |     0 |  2283 |  2070 |  0.05 |     0.51 |     0.59 |     0.11
+   1.23 |   1.26 |   3715 |     21 |      0 |     0 |  3736 |  3526 |  0.05 |     0.55 |     0.68 |     0.13
+   1.26 |   1.28 |   5340 |     31 |      0 |     0 |  5371 |  5100 |  0.05 |     0.60 |     0.77 |     0.15
+   1.28 |   1.31 |   7114 |     44 |      0 |     0 |  7158 |  6853 |  0.06 |     0.65 |     0.83 |     0.17
+   1.31 |   1.35 |   9364 |     57 |      0 |     0 |  9421 |  9084 |  0.06 |     0.78 |     0.98 |     0.20
+   1.35 |   1.38 |  12334 |     78 |      0 |     0 | 12412 | 12032 |  0.07 |     0.92 |     1.14 |     0.23
+   1.38 |   1.42 |  16753 |     97 |      0 |     0 | 16850 | 16375 |  0.07 |     0.99 |     1.23 |     0.25
+   1.42 |   1.47 |  19949 |    133 |      0 |     0 | 20082 | 19767 |  0.08 |     1.20 |     1.47 |     0.28
+   1.47 |   1.52 |  23398 |    197 |      0 |     0 | 23595 | 23291 |  0.09 |     1.48 |     1.77 |     0.33
+   1.52 |   1.58 |  23893 |    214 |      0 |     0 | 24107 | 24027 |  0.09 |     1.77 |     2.09 |     0.38
+   1.58 |   1.66 |  25325 |    219 |      0 |     0 | 25544 | 25475 |  0.10 |     2.18 |     2.54 |     0.44
+   1.66 |   1.74 |  24059 |    189 |      0 |     0 | 24248 | 24209 |  0.12 |     2.72 |     3.10 |     0.50
+   1.74 |   1.85 |  24579 |    202 |      0 |     0 | 24781 | 24764 |  0.14 |     3.51 |     3.92 |     0.57
+   1.85 |   2.00 |  25524 |    231 |      0 |     0 | 25755 | 25741 |  0.18 |     4.87 |     5.32 |     0.64
+   2.00 |   2.20 |  24533 |    215 |      0 |     0 | 24748 | 24743 |  0.24 |     6.57 |     7.07 |     0.71
+   2.20 |   2.51 |  25524 |    201 |      0 |     0 | 25725 | 25724 |  0.28 |     8.81 |     9.29 |     0.74
+   2.51 |   3.17 |  25048 |    242 |      0 |     0 | 25290 | 25288 |  0.34 |    12.70 |    13.11 |     0.76
+   3.17 | 151.26 |  25619 |    231 |      0 |     0 | 25850 | 25847 |  0.41 |    25.40 |    25.35 |     0.76
   ----------------------------------------------------------------------------------------------------------
 
   Summary of integration results for the whole dataset
   ----------------------------------------------
-  Number fully recorded                 | 364716
-  Number partially recorded             | 26755
+  Number fully recorded                 | 370357
+  Number partially recorded             | 4347
   Number with overloaded pixels         | 0
   Number in powder rings                | 0
-  Number processed with summation       | 340049
-  Number processed with profile fitting | 334690
+  Number processed with summation       | 328323
+  Number processed with profile fitting | 325067
   <Ibg>                                 | 0.17
-  <I/sigI> (summation)                  | 5.50
-  <I/sigI> (profile fitting)            | 5.15
-  <CC prf>                              | 0.37
+  <I/sigI> (summation)                  | 5.63
+  <I/sigI> (profile fitting)            | 6.00
+  <CC prf>                              | 0.44
   ----------------------------------------------
 
 Graphical analysis of the output
@@ -929,17 +930,6 @@ Some of the most useful plots are
 * :file:`background/background_model_mean_vs_xy.png`, which shows the mean
   background value as a function of detector position.
 
-* :file:`centroid/centroid_diff_x.png` and :file:`centroid/centroid_diff_y.png`,
-  which show the difference between predicted and observed reflection positions
-  in either X or Y as functions of detector position. From these plots it is very
-  easy to see whole tiles that are worse than their neighbours, and either whether
-  those tiles might be simply shifted or slightly rotated compared to the model
-  detector.
-
-  .. image:: figures/centroid_diff_x.png
-
-  .. image:: figures/centroid_diff_y.png
-
 * :file:`centroid/centroid_mean_diff_vs_phi.png`, which shows how the average
   residuals in each of X, Y, and :math:`\phi` vary as a fuction of :math:`\phi`.
   If scan-varying refinement has been successful in capturing the real changes
@@ -951,6 +941,32 @@ Some of the most useful plots are
   directly. The key point here is to look for a globular shape centred at 0.0.
 
   .. image:: figures/centroid_xy_residuals.png
+
+* :file:`centroid/centroid_diff_x.png` and :file:`centroid/centroid_diff_y.png`,
+  which show the difference between predicted and observed reflection positions
+  in either X or Y as functions of detector position. From these plots it is very
+  easy to see whole tiles that are worse than their neighbours, and either whether
+  those tiles might be simply shifted or slightly rotated compared to the model
+  detector.
+
+  .. image:: figures/centroid_diff_x.png
+
+  .. image:: figures/centroid_diff_y.png
+
+* :file:`reference/reflection_corr_vs_xy.png` and
+  :file:`reference/reference_corr_vs_xy.png`. These are useful companions to the
+  plots of centroid residual as a function of detector position displayed above.
+  Whereas the earlier plots show systematic errors in the positions and
+  orientations of tiles of a multi-panel detector, these plots indicate what
+  effect that (and any other position-specific systematic error) has on the
+  integrated data quality. The first of these plots shows the correlation
+  between reflections and their reference profiles for all reflections in the
+  dataset. The second shows only the correlations between the strong reference
+  reflections and their profiles (thus these are expected to be higher and do
+  not extend to such high resolution). The first plot is probably the most
+  useful, and that is reproduced here.
+
+  .. image:: figures/reflection_corr_vs_xy.png
 
 * :file:`intensity/ioversigma_vs_z.png`. This reproduces the
   :math:`\frac{I}{\sigma_I}` information versus frame number given in the log
@@ -981,7 +997,7 @@ And this is the output, showing the reflection file statistics.
 
   hklout = integrated.mtz
   input {
-    experiments = refined_experiments.json
+    experiments = ../refined_experiments.json
     reflections = integrated.pickle
   }
 
@@ -992,7 +1008,7 @@ And this is the output, showing the reflection file statistics.
   Point group symbol from file: 4
   Number of batches: 540
   Number of crystals: 1
-  Number of Miller indices: 321981
+  Number of Miller indices: 322903
   Resolution range: 150.004 1.17
   History:
   Crystal 1:
@@ -1007,21 +1023,20 @@ And this is the output, showing the reflection file statistics.
       Wavelength: 0.97625
       Number of columns: 14
       label        #valid  %valid      min     max type
-      H            321981 100.00%     0.00   47.00 H: index h,k,l
-      K            321981 100.00%     0.00   46.00 H: index h,k,l
-      L            321981 100.00%     0.00  114.00 H: index h,k,l
-      M_ISYM       321981 100.00%     1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH        321981 100.00%     2.00  539.00 B: BATCH number
-      IPR          321981 100.00%  -281.32 2855.79 J: intensity
-      SIGIPR       321981 100.00%     0.04   53.47 Q: standard deviation
-      I            321981 100.00% -2244.44 3059.53 J: intensity
-      SIGI         321981 100.00%     0.09   71.90 Q: standard deviation
-      FRACTIONCALC 321981 100.00%     1.00    1.00 R: real
-      XDET         321981 100.00%     6.54 2456.31 R: real
-      YDET         321981 100.00%     5.78 2520.59 R: real
-      ROT          321981 100.00%    82.01  162.69 R: real
-      LP           321981 100.00%     0.00    0.76 R: real
-
+      H            322903 100.00%     0.00   47.00 H: index h,k,l
+      K            322903 100.00%     0.00   46.00 H: index h,k,l
+      L            322903 100.00%     0.00  114.00 H: index h,k,l
+      M_ISYM       322903 100.00%     1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
+      BATCH        322903 100.00%     2.00  539.00 B: BATCH number
+      IPR          322903 100.00%  -275.94 2875.30 J: intensity
+      SIGIPR       322903 100.00%     0.04   53.65 Q: standard deviation
+      I            322903 100.00% -2244.44 3059.53 J: intensity
+      SIGI         322903 100.00%     0.09   71.90 Q: standard deviation
+      FRACTIONCALC 322903 100.00%     1.00    1.00 R: real
+      XDET         322903 100.00%     6.54 2456.31 R: real
+      YDET         322903 100.00%     5.78 2520.59 R: real
+      ROT          322903 100.00%    82.01  162.69 R: real
+      LP           322903 100.00%     0.00    0.76 R: real
 
 
 What to do Next
@@ -1040,10 +1055,47 @@ using ctruncate_::
   ctruncate -hklin scaled.mtz -hklout truncated.mtz \
   -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
 
-to get merged data for downstream analysis. The output from this will include
-the merging statistics which will give some idea of the data quality. Often
-passing in a sensible resolution limit to aimless is also helpful... this should
-give you something like::
+to get merged data for downstream analysis. The output from this includes
+the merging statistics which will give a better idea about data quality. It is
+easiest to view these logfiles using the program :program:`logview`, e.g.::
+
+  logview aimless.log
+
+Often passing in a sensible resolution limit to aimless is helpful. Here we
+assumed we ran first without a resolution limit to help decide where to cut
+the data. This indicated slightly anisotropic diffraction, with diffraction along
+the *c*\* direction a little better than *a*\* and *b*\* directions, which are
+equivalent. Diffraction quality is good, however completeness falls off sharply,
+especially in the *c*\* direction. Following this we chose to exclude all data
+at a resolution higher than 1.3 Angstroms, to ensure about 80% completeness in
+the outer shell. Here is the summary from aimless.log:
+
+::
+
+  Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
+
+                                             Overall  InnerShell  OuterShell
+  Low resolution limit                      150.00    150.00      1.32
+  High resolution limit                       1.30      7.12      1.30
+
+  Rmerge  (within I+/I-)                     0.063     0.024     0.413
+  Rmerge  (all I+ and I-)                    0.071     0.026     0.482
+  Rmeas (within I+/I-)                       0.077     0.030     0.571
+  Rmeas (all I+ & I-)                        0.078     0.030     0.602
+  Rpim (within I+/I-)                        0.044     0.017     0.393
+  Rpim (all I+ & I-)                         0.034     0.014     0.354
+  Rmerge in top intensity bin                0.029        -         -
+  Total number of observations              307775      2248      5448
+  Total number unique                        62333       499      2465
+  Mean((I)/sd(I))                             10.6      26.3       1.5
+  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.719
+  Completeness                                98.2      99.8      79.8
+  Multiplicity                                 4.9       4.5       2.2
+
+  Anomalous completeness                      92.2     100.0      47.5
+  Anomalous multiplicity                       2.4       3.0       1.5
+  DelAnom correlation between half-sets      0.008     0.302    -0.082
+  Mid-Slope of Anom Normal Probability       0.950       -         -
 
   Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
 
