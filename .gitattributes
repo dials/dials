@@ -432,6 +432,8 @@ doc/sphinx/library_reference/framework/index.rst -text
 doc/sphinx/library_reference/index.rst -text
 doc/sphinx/library_reference/interfaces/index.rst -text
 doc/sphinx/library_reference/util/index.rst -text
+doc/sphinx/metrology_corrections.rst -text
+doc/sphinx/multi_crystal_analysis.rst -text
 doc/sphinx/multi_lattice_tutorial.rst -text
 doc/sphinx/programs/dials_export_mtz.rst -text
 doc/sphinx/programs/dials_find_spots.rst -text
