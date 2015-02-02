@@ -80,7 +80,7 @@ class TupTable(gridlib.PyGridTableBase):
 class MyGrid(gridlib.Grid):
 
   def __init__(self, parent_frame):
-    """Constructor"""
+
     self.parent_fr = parent_frame
     super(MyGrid, self).__init__(parent_frame)
 
@@ -170,10 +170,6 @@ class MyGrid(gridlib.Grid):
     evt.Skip()
 
   def repaint_img(self, clikd_row):
-    log_msg = '''
-    print "clikd_row  =", clikd_row
-    print "new_row =", int(self.GetCellValue(clikd_row, self.last_col_num))
-    '''
     new_row = int(self.GetCellValue(clikd_row, self.last_col_num))
     self.parent_fr.img_panel.update_img_w_row_pos(new_row)
 
@@ -189,12 +185,9 @@ class flex_arr_img_panel(wx.Panel):
     self.scale = 1.0
 
     if( isinstance(data_in_one, flex.reflection_table) ):
-
       self.table = data_in_one
       self.assign_row_pos()
-      log_msg = '''
-      print "Is a Table"
-      '''
+
     else:
       self.first_lst_in, self.segn_lst_in = data_in_one, data_in_two
 
@@ -218,25 +211,16 @@ class flex_arr_img_panel(wx.Panel):
       self.first_lst_in, self.segn_lst_in = None, None
 
   def _mi_list_of_wxbitmaps(self, re_scaling = False):
-    log_msg = '''
-    print "flex_arr_img_panel.first_lst_in, flex_arr_img_panel.segn_lst_in ="
-    print
-    '''
+
     if( re_scaling == False ):
       if( self.show_mask == True ):
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
       else:
-        log_msg = '''
-        print "calling (self.lst_bmp_obj.get_wxbitmap_lst)"
-        '''
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
       return self.lst_bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
                                       scale = self.scale)
 
     else:
-      log_msg = '''
-      print "calling self.lst_bmp_obj.scaling"
-      '''
       return self.lst_bmp_obj.scaling(scale = self.scale)
 
   def update_img_w_row_pos(self, num):
@@ -335,14 +319,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.x_to_keep = float(self.x_to_keep) / float(v_size_x)
     self.y_to_keep = float(self.y_to_keep) / float(v_size_y)
 
-    debugg_screen_log = '''
-    print "self.GetVirtualSize() =", self.GetVirtualSize()
-    print "self.GetViewStart() =", self.GetViewStart()
-    print "self.GetScrollPixelsPerUnit() =", self.GetScrollPixelsPerUnit()
-    print "self.x_to_keep =", self.x_to_keep
-    print "self.y_to_keep =", self.y_to_keep
-    '''
-
   def img_refresh(self, bmp_lst_new):
     self.lst_2d_bmp = bmp_lst_new
     for child in self.GetChildren():
@@ -352,7 +328,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.Layout()
     self.parent_panel.Layout()
     self.Refresh()
-    print "from img_refr..."
 
 
     #super(multi_img_scrollable, self).__init__(outer_panel)
@@ -368,8 +343,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.scroll_rot = 0
       v_size_x, v_size_y = self.GetVirtualSize()
       self.Scroll(self.x_to_keep * v_size_x, self.y_to_keep * v_size_y)
-
-      print "from OnIdle..."
 
 
 class buttons_panel(wx.Panel):
@@ -398,20 +371,14 @@ class buttons_panel(wx.Panel):
     self.SetSizer(self.my_sizer)
 
   def OnItsCheckbox(self, event):
-    debugg_screen_log = '''
-    print "OnItsCheckbox"
-    print "event.IsChecked() =", event.IsChecked()
-    '''
+
     if(event.IsChecked() == True):
       self.parent_panel.to_show_nums()
     else:
       self.parent_panel.to_hide_nums()
 
   def OnMskCheckbox(self, event):
-    debugg_screen_log = '''
-    print "OnMskCheckbox"
-    print "event.IsChecked() =", event.IsChecked()
-    '''
+
     if(event.IsChecked() == True):
       self.parent_panel.to_show_mask()
     else:

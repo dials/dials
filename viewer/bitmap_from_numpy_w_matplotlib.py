@@ -22,9 +22,6 @@ class wxbmp_from_np_array(object):
 
   def __init__(self, lst_data_in, show_nums = True, lst_data_mask_in = None):
     if(lst_data_in == [None] and lst_data_mask_in == [None] ):
-      log_msg = '''
-      print "No Shoebox (in wxbmp_from_np_array)"
-      '''
       self._ini_wx_bmp_lst = None
 
     else:

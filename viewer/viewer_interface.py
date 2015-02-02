@@ -21,10 +21,6 @@ def extract_n_show(table):
 
 
 if __name__ == "__main__":
-  old_ver = '''
-  table = flex.reflection_table.from_pickle(sys.argv[1])
-  extract_n_show(table)
-  '''
 
   pick_name = sys.argv[1]
 
