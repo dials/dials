@@ -599,9 +599,9 @@ and :file:`analysis_lev1/centroid/centroid_diff_y.png` make it clear that
 despite poor coverage on some panels, the systematic shifts have been cleaned
 up by the refinement job.
 
-  .. image:: figures/centroid_diff_x_multi_panel_lev0.png
+  .. image:: figures/centroid_diff_x_multi_panel_lev1.png
 
-  .. image:: figures/centroid_diff_y_multi_panel_lev0.png
+  .. image:: figures/centroid_diff_y_multi_panel_lev1.png
 
 Acknowledgements
 ----------------
