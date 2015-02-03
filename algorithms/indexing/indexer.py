@@ -92,6 +92,11 @@ discover_better_experimental_model = False
       .type = float
       .help = "Angular tolerance (in degrees) in unit cell comparison."
       .expert_level = 1
+    max_delta = 5
+      .type = float(value_min=0)
+      .help = "Maximum allowed Le Page delta used in searching for basis vector"
+              "combinations that are consistent with the given symmetry."
+      .expert_level = 1
   }
   basis_vector_combinations {
     max_try = 50
@@ -916,9 +921,11 @@ class indexer_base(object):
       #print model.get_unit_cell()
       uc = model.get_unit_cell()
       if self.target_symmetry_primitive is not None:
+        max_delta = self.params.known_symmetry.max_delta
         from dials.algorithms.indexing.symmetry import find_matching_symmetry
         best_subgroup = find_matching_symmetry(
-          uc, self.target_symmetry_primitive.space_group())
+          uc, self.target_symmetry_primitive.space_group(),
+          max_delta=max_delta)
         cb_op_extra = None
         if best_subgroup is None:
           if self.target_symmetry_reference_setting is not None:
@@ -926,7 +933,8 @@ class indexer_base(object):
             # indexing hasn't found the centred unit cell instead of the
             # primitive cell
             best_subgroup = find_matching_symmetry(
-              uc, self.target_symmetry_reference_setting.space_group().build_derived_point_group())
+              uc, self.target_symmetry_reference_setting.space_group().build_derived_point_group(),
+              max_delta=max_delta)
             cb_op_extra = self.cb_op_reference_to_primitive
             if best_subgroup is None:
               continue
@@ -1155,7 +1163,8 @@ class indexer_base(object):
     from rstbx import dps_core # import dependency
     from rstbx.dps_core.lepage import iotbx_converter
 
-    items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=5.0)
+    max_delta = self.params.known_symmetry.max_delta
+    items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=max_delta)
     target_sg_ref = target_space_group.info().reference_setting().group()
     best_angular_difference = 1e8
     best_subgroup = None
