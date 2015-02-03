@@ -79,7 +79,7 @@ class Script(object):
           r_path = os.path.join(dirpath, r)
           pairs.append((e_path, r_path))
 
-    return pairs
+    return sorted(pairs, key = lambda x: x[0])
 
 
   def run(self):
