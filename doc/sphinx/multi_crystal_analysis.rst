@@ -9,7 +9,7 @@ identify isomorphous clusters that may be scaled and merged together to form a
 more complete multi-crystal dataset. Clustering in blend is based on the refined
 cell parameters from integration, so it is important that these are determined
 accurately. Unfortunately, for narrow wedges of data (where BLEND is most
-important) cell refinement may be complicated by issues such as the high
+useful) cell refinement may be complicated by issues such as the high
 correlation between e.g. the detector distance and the cell volume.
 
 .. _BLEND: http://www.ccp4.ac.uk/html/blend.html
@@ -45,7 +45,15 @@ features in the cctbx to make it easy to write scripts that take advantage
 of `parallel execution <http://cctbx.sourceforge.net/current/python/libtbx.easy_mp.html>`_.
 
 .. highlight:: python
-The script used to do this is reproduced here::
+The script we used to do this is reproduced below. You can copy this into a file,
+save it as :samp:`process_TehA.py` and then run it as follows::
+
+  time dials.python process_TehA.py /path/to/images/
+
+On a Linux desktop with a Core i7 CPU running at 3.07GHz it script took about 8
+minutes to run and successfully processed 41 datasets. If time is short, you
+might like to start running it now before reading the description of what the
+script does::
 
   #!/bin/env dials.python
   import os
@@ -143,7 +151,7 @@ The script used to do this is reproduced here::
       print result
 
 
-We will now briefly describe what is in this script. The first lines are
+We will now describe what is in this script. The first lines are
 just imports to bring in modules from the Python standard library as well as
 :samp:`easy_run` and :samp:`easy_mp` from :samp:`libtbx` (part of cctbx) and
 a class from the :samp:`dials.test` package that simplifies running commands in
@@ -202,7 +210,7 @@ and then we feed the refined :file:`P1_experiments.json` back into
 When :program:`dials.index` is passed an :file:`experiments.json` containing
 a crystal model rather than just a :file:`databock.json` then it automatically
 uses a :samp:`known_orientation` indexer, which avoids doing the basis vector
-search again. It uses the basis of the refined *P* 1 cell and just reassigns
+search again. It uses the basis of the refined *P* 1 cell and just assigns
 indices under the assumption of *H* 3 symmetry. The symmetry constraints are
 then enforced during the refinement steps carried out by :program:`dials.index`.
 This procedure gives us a greater success rate of indexing in *H* 3, and required
@@ -227,7 +235,7 @@ actually caring what the intensities are. In this case, the MTZ file is just a
 carrier for the globally refined unit cell!
 
 Following refinement we integrate the data in a very quick and dirty way, simply
-to get an MTZ file as quickly as possible. This is a terrible way to integrate
+to get an MTZ file as fast as possible. This is a terrible way to integrate
 data usually!::
 
   dials.integrate refined_experiments.json indexed.pickle intensity.algorithm=sum prediction.dmin=3 prediction.dmax=8
@@ -236,22 +244,22 @@ The :samp:`intensity.algorithm=sum` option ensures we only do summation integrat
 no profile fitting, while the :samp:`prediction.dmin=3` and
 :samp:`prediction.dmax=8` options only integrate data between 3 and 8 Angstroms.
 
+.. warning::
+
+  Do not use the data produced by this script for scaling and merging. More
+  careful processing should be done first!
+
 Finally we use :program:`dials.export` to create an MTZ file::
 
   dials.export_mtz refined_experiments.json integrated.pickle hklout=integrated.mtz
 
 After each of these major steps we check whether the last command ran successfully
 by checking for the existence of an expected output file. If the file does not
-exist we make no effort to rescue that dataset, we just return early from the
+exist we make no effort to rescue the dataset, we just return early from the
 :samp:`process_sweep` function, freeing up a process so that
 :samp:`parallel_map` can start up the next.
 
-We saved this as :samp:`process_TehA.py` and then ran it as follows::
-
-  time dials.python process_TehA.py /path/to/images/
-
-On a Linux desktop with a Core i7 CPU this script took XXXX minutes to run
-and successfully processed 41 datasets. Here is the output::
+Here is the output of a run of the script::
 
   Attempting to process the following datasets, with 7 processes
   0: /home/david/xray/TehA/xta30_1_*.cbf
@@ -402,15 +410,217 @@ and successfully processed 41 datasets. Here is the output::
   sweep_66/integrated.mtz
   sweep_68/integrated.mtz
 
-  real	8m31.718s
-  user	21m49.950s
-  sys	1m46.923s
+  real  8m31.718s
+  user  21m49.950s
+  sys 1m46.923s
 
-Check the unit cells
+Analysis of individually processed datasets
+-------------------------------------------
 
-  dials.show_models sweep_*/refined_experiments.json | grep "Unit cell"
+The paths to :file:`integrated.mtz` files can be copied directly into a file,
+say :file:`individual_mtzs.dat`, and passed to blend for analysis::
 
-We see one dataset has a hugely outlying cell. Let's remove that.
+  echo "\n" | blend -a individual_mtzs.dat
+
+The dendrogram resulting from clustering is shown here:
+
+  .. image:: figures/tree_01.png
+
+Immediately the dendrogram shows that datasets 7 and 28 are extreme outliers.
+From :file:`FINAL_list_of_files.dat` we can see that these refer to
+:file:`sweep_14/integrated.mtz` and :file:`sweep_47/integrated.mtz`.
+As we kept all the dials :file:`.log` files
+from DIALS processing we could investigate this further, however as these are
+only two sweeps out of 41, our time is better spent throwing them away and
+moving on. So, edit :file:`individual_mtzs.dat` to remove
+the lines :file:`sweep_14/integrated.mtz` and :file:`sweep_47/integrated.mtz`
+and rerun blend.
+
+Now the dendrogram looks better:
+
+  .. image:: figures/tree_02.png
+
+The Linear Cell Variation (LCV) is now less than 1%, with an absolute value
+of 0.42 Angstroms, indicating good isomorphism amongst all the remaining
+datasets.
+
+Joint processing
+----------------
+
+Now that we have done the BLEND analysis for individually processed datasets,
+we would like to do joint refinement of the crystals to reduce correlations
+between the detector or beam parameters with individual crystals. As motivation
+we may look at these correlations for one of these datasets. For example::
+
+  cd sweep_01
+  dials.refine experiments.json indexed.pickle \
+    track_parameter_correlation=true correlation_plot.filename=corrplot.png
+  cd ..
+
+The new file :file:`sweep_01/corrplot.png` shows correlations between parameters
+refined with this single 8 degree dataset. Clearly parameters like the
+detector distance and the crystal metrical matrix parameters are highly
+correlated.
+
+ .. image:: figures/sweep_01_corrplot.png
+
+Although the DIALS toolkit has a sophisticated mechanism for modelling
+multi-experiment data, the user interface for handling such data is still
+rather limited. In order to do joint refinement of the sweeps we need to combine them
+into a single multi-experiment :file:`experiments.json` and corresponding
+:file:`reflections.pickle`. Whilst doing this we want to reduce the separate
+detector, beam and goniometer models for each experiment into a single shared
+model of each type. The program :program:`dials.combine_experiments` can
+be used for this, but first we have to prepare an input file with a text editor
+listing the individual sweeps in order. We can use
+:file:`individual_mtzs.dat` as a template to start with. In our case the final
+file looks like this::
+
+input {
+  experiments = "sweep_01/refined_experiments.json"
+  experiments = "sweep_02/refined_experiments.json"
+  experiments = "sweep_03/refined_experiments.json"
+  experiments = "sweep_04/refined_experiments.json"
+  experiments = "sweep_06/refined_experiments.json"
+  experiments = "sweep_10/refined_experiments.json"
+  experiments = "sweep_15/refined_experiments.json"
+  experiments = "sweep_17/refined_experiments.json"
+  experiments = "sweep_18/refined_experiments.json"
+  experiments = "sweep_19/refined_experiments.json"
+  experiments = "sweep_20/refined_experiments.json"
+  experiments = "sweep_23/refined_experiments.json"
+  experiments = "sweep_24/refined_experiments.json"
+  experiments = "sweep_25/refined_experiments.json"
+  experiments = "sweep_26/refined_experiments.json"
+  experiments = "sweep_27/refined_experiments.json"
+  experiments = "sweep_28/refined_experiments.json"
+  experiments = "sweep_29/refined_experiments.json"
+  experiments = "sweep_30/refined_experiments.json"
+  experiments = "sweep_31/refined_experiments.json"
+  experiments = "sweep_32/refined_experiments.json"
+  experiments = "sweep_34/refined_experiments.json"
+  experiments = "sweep_35/refined_experiments.json"
+  experiments = "sweep_37/refined_experiments.json"
+  experiments = "sweep_43/refined_experiments.json"
+  experiments = "sweep_44/refined_experiments.json"
+  experiments = "sweep_49/refined_experiments.json"
+  experiments = "sweep_51/refined_experiments.json"
+  experiments = "sweep_52/refined_experiments.json"
+  experiments = "sweep_54/refined_experiments.json"
+  experiments = "sweep_55/refined_experiments.json"
+  experiments = "sweep_57/refined_experiments.json"
+  experiments = "sweep_59/refined_experiments.json"
+  experiments = "sweep_60/refined_experiments.json"
+  experiments = "sweep_61/refined_experiments.json"
+  experiments = "sweep_64/refined_experiments.json"
+  experiments = "sweep_65/refined_experiments.json"
+  experiments = "sweep_66/refined_experiments.json"
+  experiments = "sweep_68/refined_experiments.json"
+  reflections = "sweep_01/indexed.pickle"
+  reflections = "sweep_02/indexed.pickle"
+  reflections = "sweep_03/indexed.pickle"
+  reflections = "sweep_04/indexed.pickle"
+  reflections = "sweep_06/indexed.pickle"
+  reflections = "sweep_10/indexed.pickle"
+  reflections = "sweep_15/indexed.pickle"
+  reflections = "sweep_17/indexed.pickle"
+  reflections = "sweep_18/indexed.pickle"
+  reflections = "sweep_19/indexed.pickle"
+  reflections = "sweep_20/indexed.pickle"
+  reflections = "sweep_23/indexed.pickle"
+  reflections = "sweep_24/indexed.pickle"
+  reflections = "sweep_25/indexed.pickle"
+  reflections = "sweep_26/indexed.pickle"
+  reflections = "sweep_27/indexed.pickle"
+  reflections = "sweep_28/indexed.pickle"
+  reflections = "sweep_29/indexed.pickle"
+  reflections = "sweep_30/indexed.pickle"
+  reflections = "sweep_31/indexed.pickle"
+  reflections = "sweep_32/indexed.pickle"
+  reflections = "sweep_34/indexed.pickle"
+  reflections = "sweep_35/indexed.pickle"
+  reflections = "sweep_37/indexed.pickle"
+  reflections = "sweep_43/indexed.pickle"
+  reflections = "sweep_44/indexed.pickle"
+  reflections = "sweep_49/indexed.pickle"
+  reflections = "sweep_51/indexed.pickle"
+  reflections = "sweep_52/indexed.pickle"
+  reflections = "sweep_54/indexed.pickle"
+  reflections = "sweep_55/indexed.pickle"
+  reflections = "sweep_57/indexed.pickle"
+  reflections = "sweep_59/indexed.pickle"
+  reflections = "sweep_60/indexed.pickle"
+  reflections = "sweep_61/indexed.pickle"
+  reflections = "sweep_64/indexed.pickle"
+  reflections = "sweep_65/indexed.pickle"
+  reflections = "sweep_66/indexed.pickle"
+  reflections = "sweep_68/indexed.pickle"
+}
+
+We called this file :file:`experiments_and_reflections.phil` then run
+:program:`dials.combine_experiments` like this::
+
+  dials.combine_experiments_and_reflections experiments_and_reflections.phil \
+    reference_from_experiment.beam=0 \
+    reference_from_experiment.goniometer=0 \
+    reference_from_experiment.detector=0
+
+The :samp:`reference_from_experiment` options tell the program to replace all
+beam, goniometer and detector models in the input experiments with those
+models taken from the first experiment, i.e. experiment '0' using 0-based
+indexing. The output lists the number of reflections in each sweep contributing
+to the final :file:`combined_reflections.pickle`::
+
+  ---------------------
+  | Experiment | Nref |
+  ---------------------
+  | 0          | 1446 |
+  | 1          | 1422 |
+  | 2          | 1209 |
+  | 3          | 1376 |
+  | 4          | 452  |
+  | 5          | 1663 |
+  | 6          | 1528 |
+  | 7          | 1445 |
+  | 8          | 1275 |
+  | 9          | 239  |
+  | 10         | 1614 |
+  | 11         | 1052 |
+  | 12         | 1845 |
+  | 13         | 1495 |
+  | 14         | 2041 |
+  | 15         | 1308 |
+  | 16         | 1839 |
+  | 17         | 1828 |
+  | 18         | 1644 |
+  | 19         | 243  |
+  | 20         | 1061 |
+  | 21         | 2416 |
+  | 22         | 1884 |
+  | 23         | 949  |
+  | 24         | 3569 |
+  | 25         | 2967 |
+  | 26         | 935  |
+  | 27         | 1329 |
+  | 28         | 650  |
+  | 29         | 1324 |
+  | 30         | 633  |
+  | 31         | 1231 |
+  | 32         | 2131 |
+  | 33         | 2094 |
+  | 34         | 2141 |
+  | 35         | 1661 |
+  | 36         | 2543 |
+  | 37         | 2227 |
+  | 38         | 1138 |
+  ---------------------
+  Saving combined experiments to combined_experiments.json
+  Saving combined reflections to combined_reflections.pickle
+
+We may also inspect the contents of :file:`combined_experiments.json`, by using
+:program:`dials.show_models`, for example::
+
+
 
 Acknowledgements
 ----------------
