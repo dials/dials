@@ -80,10 +80,30 @@ class show_3d(object):
     app.MainLoop()
 
 class show_reflections(show_3d):
-  def __init__(self, table):
+  def __init__(self, table, two_windows = False):
     app = show_tabl_wx_app(redirect=False)
-    app.in_tabl(table)
+    app.in_tabl(table, two_windows)
     app.MainLoop()
+
+
+class show_tabl_wx_app(wx.App):
+
+  def OnInit(self):
+    self.frame = flex_3d_frame(None, 'DIALS reflections viewer _')
+    self.upper_panel = flex_arr_img_panel(self.frame)
+    self.data_grid = MyGrid(self.frame)
+    self.frame.frame_ini_img(self.upper_panel, self.data_grid)
+
+    return True
+
+  def in_tabl(self, table, two_windows):
+
+    if(two_windows == False):
+      self.upper_panel.ini_n_intro(table)
+      self.data_grid.ini_n_intro(table)
+
+      self.SetTopWindow(self.frame)
+      self.frame.Show()
 
 
 class show_3d_wx_app(wx.App):
@@ -97,23 +117,3 @@ class show_3d_wx_app(wx.App):
     self.upper_panel.ini_n_intro(flex_lst_one, flex_lst_two)
     self.SetTopWindow(self.frame)
     self.frame.Show()
-
-
-class show_tabl_wx_app(wx.App):
-  def OnInit(self):
-
-    self.frame = flex_3d_frame(None, 'DIALS reflections viewer _')
-    self.upper_panel = flex_arr_img_panel(self.frame)
-    self.data_grid = MyGrid(self.frame)
-    self.frame.frame_ini_img(self.upper_panel, self.data_grid)
-
-    return True
-
-  def in_tabl(self, table):
-
-    self.upper_panel.ini_n_intro(table)
-    self.data_grid.ini_n_intro(table)
-
-    self.SetTopWindow(self.frame)
-    self.frame.Show()
-
