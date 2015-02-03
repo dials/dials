@@ -989,7 +989,22 @@ The :file:`tree.png` resulting from this is very interesting.
 
   .. image:: figures/tree_03.png
 
-The LCV is now as low as
+The LCV is now as low as 0.36% (aLCV 0.27 Angstroms). This indicates an even
+higher degree of isomorphism than detected during after individual processing.
+So although joint refinement leads to slightly higher RMSDs for each experiment
+(as we expected) the resulting unit cells are more similar. It is worth
+remembering that no restraints were applied between unit cells in refinement.
+Given that we know that the detector and beam did not move between the data
+collections we might like to think that the joint refinement analysis is a more
+accurate depiction of reality, and thus the unit cells are closer to the truth.
+
+What to do next?
+----------------
+
+FIXME e.g.
+
+* go back and fix datasets that didn't index properly
+* integrate data properly for blend synthesis mode
 
 Acknowledgements
 ----------------
