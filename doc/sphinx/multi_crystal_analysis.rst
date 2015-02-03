@@ -51,7 +51,8 @@ save it as :samp:`process_TehA.py` and then run it as follows::
   time dials.python process_TehA.py /path/to/images/
 
 On a Linux desktop with a Core i7 CPU running at 3.07GHz it script took about 8
-minutes to run and successfully processed 41 datasets. If time is short, you
+minutes to run (though file i/o is a significant factor)
+and successfully processed 41 datasets. If time is short, you
 might like to start running it now before reading the description of what the
 script does. If time is *really* short then try uncommenting the line
 :samp:`tasklist = tasklist[0:35]` to reduce the number of datasets processed.::
@@ -68,7 +69,7 @@ script does. If time is *really* short then try uncommenting the line
     tuple, the first element of which is an integer job number and the
     second is the path to the images to process"""
 
-    num = task[0] + 1 # change first dataset number from 00 to 01
+    num = task[0]
     template = task[1]
 
     # create directory
@@ -131,6 +132,8 @@ script does. If time is *really* short then try uncommenting the line
 
     templates = [f[:-8] + "*.cbf" for f in logfiles]
     tasklist = list(enumerate(sorted(templates)))
+
+    if len(tasklist) == 0: sys.exit("No images found!")
 
     # uncomment the following line if short on time!
     #tasklist = tasklist[0:35]
@@ -341,51 +344,52 @@ Here is the output of a run of the script::
   70: /home/david/xray/TehA/xtal6_1_*.cbf
   71: /home/david/xray/TehA/xtal7_1_*.cbf
   72: /home/david/xray/TehA/xtal8_1_*.cbf
-  Job 07 failed in initial indexing
-  Job 05 failed in indexing
+  Job 06 failed in initial indexing
+  Job 04 failed in indexing
+  Job 07 failed in indexing
   Job 08 failed in indexing
-  Job 09 failed in indexing
   Job 12 failed in indexing
-  Job 13 failed in indexing
   Job 11 failed in indexing
-  Job 16 failed in initial indexing
-  Job 22 failed in initial indexing
+  Job 10 failed in indexing
+  Job 15 failed in initial indexing
+  Job 20 failed in initial indexing
   Job 21 failed in initial indexing
-  Job 33 failed in initial indexing
+  Job 32 failed in initial indexing
+  Job 37 failed in indexing
+  Job 35 failed in indexing
   Job 38 failed in indexing
-  Job 36 failed in indexing
   Job 39 failed in indexing
   Job 40 failed in indexing
   Job 41 failed in indexing
-  Job 42 failed in indexing
+  Job 44 failed in indexing
   Job 45 failed in indexing
-  Job 46 failed in indexing
-  Job 53 failed in initial indexing
-  Job 48 failed in indexing
-  Job 50 failed in indexing
-  Job 56 failed in initial indexing
-  Job 58 failed in initial indexing
+  Job 47 failed in indexing
+  Job 52 failed in initial indexing
+  Job 49 failed in indexing
+  Job 55 failed in initial indexing
+  Job 57 failed in initial indexing
+  Job 61 failed in indexing
   Job 62 failed in indexing
-  Job 63 failed in indexing
-  Job 71 failed in indexing
-  Job 67 failed in indexing
-  Job 70 failed in indexing
   Job 69 failed in indexing
-  Job 72 failed in initial indexing
-  Job 73 failed in indexing
+  Job 66 failed in indexing
+  Job 68 failed in indexing
+  Job 70 failed in indexing
+  Job 71 failed in initial indexing
+  Job 72 failed in indexing
   Successfully created the following MTZs:
+  sweep_00/integrated.mtz
   sweep_01/integrated.mtz
   sweep_02/integrated.mtz
   sweep_03/integrated.mtz
-  sweep_04/integrated.mtz
-  sweep_06/integrated.mtz
-  sweep_10/integrated.mtz
+  sweep_05/integrated.mtz
+  sweep_09/integrated.mtz
+  sweep_13/integrated.mtz
   sweep_14/integrated.mtz
-  sweep_15/integrated.mtz
+  sweep_16/integrated.mtz
   sweep_17/integrated.mtz
   sweep_18/integrated.mtz
   sweep_19/integrated.mtz
-  sweep_20/integrated.mtz
+  sweep_22/integrated.mtz
   sweep_23/integrated.mtz
   sweep_24/integrated.mtz
   sweep_25/integrated.mtz
@@ -395,30 +399,29 @@ Here is the output of a run of the script::
   sweep_29/integrated.mtz
   sweep_30/integrated.mtz
   sweep_31/integrated.mtz
-  sweep_32/integrated.mtz
+  sweep_33/integrated.mtz
   sweep_34/integrated.mtz
-  sweep_35/integrated.mtz
-  sweep_37/integrated.mtz
+  sweep_36/integrated.mtz
+  sweep_42/integrated.mtz
   sweep_43/integrated.mtz
-  sweep_44/integrated.mtz
-  sweep_47/integrated.mtz
-  sweep_49/integrated.mtz
+  sweep_46/integrated.mtz
+  sweep_48/integrated.mtz
+  sweep_50/integrated.mtz
   sweep_51/integrated.mtz
-  sweep_52/integrated.mtz
+  sweep_53/integrated.mtz
   sweep_54/integrated.mtz
-  sweep_55/integrated.mtz
-  sweep_57/integrated.mtz
+  sweep_56/integrated.mtz
+  sweep_58/integrated.mtz
   sweep_59/integrated.mtz
   sweep_60/integrated.mtz
-  sweep_61/integrated.mtz
+  sweep_63/integrated.mtz
   sweep_64/integrated.mtz
   sweep_65/integrated.mtz
-  sweep_66/integrated.mtz
-  sweep_68/integrated.mtz
+  sweep_67/integrated.mtz
 
-  real  8m31.718s
-  user  21m49.950s
-  sys 1m46.923s
+  real	7m46.071s
+  user	22m19.016s
+  sys	1m47.299s
 
 Analysis of individually processed datasets
 -------------------------------------------
@@ -434,12 +437,12 @@ The dendrogram resulting from clustering is shown here:
 
 Immediately the dendrogram shows that datasets 7 and 28 are extreme outliers.
 From :file:`FINAL_list_of_files.dat` we can see that these refer to
-:file:`sweep_14/integrated.mtz` and :file:`sweep_47/integrated.mtz`.
+:file:`sweep_13/integrated.mtz` and :file:`sweep_46/integrated.mtz`.
 As we kept all the dials :file:`.log` files
 from DIALS processing we could investigate this further, however as these are
 only two sweeps out of 41, our time is better spent throwing them away and
 moving on. So, edit :file:`individual_mtzs.dat` to remove
-the lines :file:`sweep_14/integrated.mtz` and :file:`sweep_47/integrated.mtz`
+the lines :file:`sweep_13/integrated.mtz` and :file:`sweep_46/integrated.mtz`
 and rerun blend.
 
 Now the dendrogram looks better:
@@ -458,17 +461,17 @@ we would like to do joint refinement of the crystals to reduce correlations
 between the detector or beam parameters with individual crystals. As motivation
 we may look at these correlations for one of these datasets. For example::
 
-  cd sweep_01
+  cd sweep_00
   dials.refine experiments.json indexed.pickle \
     track_parameter_correlation=true correlation_plot.filename=corrplot.png
   cd ..
 
-The new file :file:`sweep_01/corrplot.png` shows correlations between parameters
+The new file :file:`sweep_00/corrplot.png` shows correlations between parameters
 refined with this single 8 degree dataset. Clearly parameters like the
 detector distance and the crystal metrical matrix parameters are highly
 correlated.
 
- .. image:: figures/sweep_01_corrplot.png
+ .. image:: figures/sweep_00_corrplot.png
 
 Although the DIALS toolkit has a sophisticated mechanism for modelling
 multi-experiment data, the user interface for handling such data is still
@@ -482,86 +485,86 @@ listing the individual sweeps in order. We can use
 :file:`individual_mtzs.dat` as a template to start with. In our case the final
 file looks like this::
 
-input {
-  experiments = "sweep_01/refined_experiments.json"
-  experiments = "sweep_02/refined_experiments.json"
-  experiments = "sweep_03/refined_experiments.json"
-  experiments = "sweep_04/refined_experiments.json"
-  experiments = "sweep_06/refined_experiments.json"
-  experiments = "sweep_10/refined_experiments.json"
-  experiments = "sweep_15/refined_experiments.json"
-  experiments = "sweep_17/refined_experiments.json"
-  experiments = "sweep_18/refined_experiments.json"
-  experiments = "sweep_19/refined_experiments.json"
-  experiments = "sweep_20/refined_experiments.json"
-  experiments = "sweep_23/refined_experiments.json"
-  experiments = "sweep_24/refined_experiments.json"
-  experiments = "sweep_25/refined_experiments.json"
-  experiments = "sweep_26/refined_experiments.json"
-  experiments = "sweep_27/refined_experiments.json"
-  experiments = "sweep_28/refined_experiments.json"
-  experiments = "sweep_29/refined_experiments.json"
-  experiments = "sweep_30/refined_experiments.json"
-  experiments = "sweep_31/refined_experiments.json"
-  experiments = "sweep_32/refined_experiments.json"
-  experiments = "sweep_34/refined_experiments.json"
-  experiments = "sweep_35/refined_experiments.json"
-  experiments = "sweep_37/refined_experiments.json"
-  experiments = "sweep_43/refined_experiments.json"
-  experiments = "sweep_44/refined_experiments.json"
-  experiments = "sweep_49/refined_experiments.json"
-  experiments = "sweep_51/refined_experiments.json"
-  experiments = "sweep_52/refined_experiments.json"
-  experiments = "sweep_54/refined_experiments.json"
-  experiments = "sweep_55/refined_experiments.json"
-  experiments = "sweep_57/refined_experiments.json"
-  experiments = "sweep_59/refined_experiments.json"
-  experiments = "sweep_60/refined_experiments.json"
-  experiments = "sweep_61/refined_experiments.json"
-  experiments = "sweep_64/refined_experiments.json"
-  experiments = "sweep_65/refined_experiments.json"
-  experiments = "sweep_66/refined_experiments.json"
-  experiments = "sweep_68/refined_experiments.json"
-  reflections = "sweep_01/indexed.pickle"
-  reflections = "sweep_02/indexed.pickle"
-  reflections = "sweep_03/indexed.pickle"
-  reflections = "sweep_04/indexed.pickle"
-  reflections = "sweep_06/indexed.pickle"
-  reflections = "sweep_10/indexed.pickle"
-  reflections = "sweep_15/indexed.pickle"
-  reflections = "sweep_17/indexed.pickle"
-  reflections = "sweep_18/indexed.pickle"
-  reflections = "sweep_19/indexed.pickle"
-  reflections = "sweep_20/indexed.pickle"
-  reflections = "sweep_23/indexed.pickle"
-  reflections = "sweep_24/indexed.pickle"
-  reflections = "sweep_25/indexed.pickle"
-  reflections = "sweep_26/indexed.pickle"
-  reflections = "sweep_27/indexed.pickle"
-  reflections = "sweep_28/indexed.pickle"
-  reflections = "sweep_29/indexed.pickle"
-  reflections = "sweep_30/indexed.pickle"
-  reflections = "sweep_31/indexed.pickle"
-  reflections = "sweep_32/indexed.pickle"
-  reflections = "sweep_34/indexed.pickle"
-  reflections = "sweep_35/indexed.pickle"
-  reflections = "sweep_37/indexed.pickle"
-  reflections = "sweep_43/indexed.pickle"
-  reflections = "sweep_44/indexed.pickle"
-  reflections = "sweep_49/indexed.pickle"
-  reflections = "sweep_51/indexed.pickle"
-  reflections = "sweep_52/indexed.pickle"
-  reflections = "sweep_54/indexed.pickle"
-  reflections = "sweep_55/indexed.pickle"
-  reflections = "sweep_57/indexed.pickle"
-  reflections = "sweep_59/indexed.pickle"
-  reflections = "sweep_60/indexed.pickle"
-  reflections = "sweep_61/indexed.pickle"
-  reflections = "sweep_64/indexed.pickle"
-  reflections = "sweep_65/indexed.pickle"
-  reflections = "sweep_66/indexed.pickle"
-  reflections = "sweep_68/indexed.pickle"
-}
+  input {
+    experiments = "sweep_01/refined_experiments.json"
+    experiments = "sweep_02/refined_experiments.json"
+    experiments = "sweep_03/refined_experiments.json"
+    experiments = "sweep_04/refined_experiments.json"
+    experiments = "sweep_06/refined_experiments.json"
+    experiments = "sweep_10/refined_experiments.json"
+    experiments = "sweep_15/refined_experiments.json"
+    experiments = "sweep_17/refined_experiments.json"
+    experiments = "sweep_18/refined_experiments.json"
+    experiments = "sweep_19/refined_experiments.json"
+    experiments = "sweep_20/refined_experiments.json"
+    experiments = "sweep_23/refined_experiments.json"
+    experiments = "sweep_24/refined_experiments.json"
+    experiments = "sweep_25/refined_experiments.json"
+    experiments = "sweep_26/refined_experiments.json"
+    experiments = "sweep_27/refined_experiments.json"
+    experiments = "sweep_28/refined_experiments.json"
+    experiments = "sweep_29/refined_experiments.json"
+    experiments = "sweep_30/refined_experiments.json"
+    experiments = "sweep_31/refined_experiments.json"
+    experiments = "sweep_32/refined_experiments.json"
+    experiments = "sweep_34/refined_experiments.json"
+    experiments = "sweep_35/refined_experiments.json"
+    experiments = "sweep_37/refined_experiments.json"
+    experiments = "sweep_43/refined_experiments.json"
+    experiments = "sweep_44/refined_experiments.json"
+    experiments = "sweep_49/refined_experiments.json"
+    experiments = "sweep_51/refined_experiments.json"
+    experiments = "sweep_52/refined_experiments.json"
+    experiments = "sweep_54/refined_experiments.json"
+    experiments = "sweep_55/refined_experiments.json"
+    experiments = "sweep_57/refined_experiments.json"
+    experiments = "sweep_59/refined_experiments.json"
+    experiments = "sweep_60/refined_experiments.json"
+    experiments = "sweep_61/refined_experiments.json"
+    experiments = "sweep_64/refined_experiments.json"
+    experiments = "sweep_65/refined_experiments.json"
+    experiments = "sweep_66/refined_experiments.json"
+    experiments = "sweep_68/refined_experiments.json"
+    reflections = "sweep_01/indexed.pickle"
+    reflections = "sweep_02/indexed.pickle"
+    reflections = "sweep_03/indexed.pickle"
+    reflections = "sweep_04/indexed.pickle"
+    reflections = "sweep_06/indexed.pickle"
+    reflections = "sweep_10/indexed.pickle"
+    reflections = "sweep_15/indexed.pickle"
+    reflections = "sweep_17/indexed.pickle"
+    reflections = "sweep_18/indexed.pickle"
+    reflections = "sweep_19/indexed.pickle"
+    reflections = "sweep_20/indexed.pickle"
+    reflections = "sweep_23/indexed.pickle"
+    reflections = "sweep_24/indexed.pickle"
+    reflections = "sweep_25/indexed.pickle"
+    reflections = "sweep_26/indexed.pickle"
+    reflections = "sweep_27/indexed.pickle"
+    reflections = "sweep_28/indexed.pickle"
+    reflections = "sweep_29/indexed.pickle"
+    reflections = "sweep_30/indexed.pickle"
+    reflections = "sweep_31/indexed.pickle"
+    reflections = "sweep_32/indexed.pickle"
+    reflections = "sweep_34/indexed.pickle"
+    reflections = "sweep_35/indexed.pickle"
+    reflections = "sweep_37/indexed.pickle"
+    reflections = "sweep_43/indexed.pickle"
+    reflections = "sweep_44/indexed.pickle"
+    reflections = "sweep_49/indexed.pickle"
+    reflections = "sweep_51/indexed.pickle"
+    reflections = "sweep_52/indexed.pickle"
+    reflections = "sweep_54/indexed.pickle"
+    reflections = "sweep_55/indexed.pickle"
+    reflections = "sweep_57/indexed.pickle"
+    reflections = "sweep_59/indexed.pickle"
+    reflections = "sweep_60/indexed.pickle"
+    reflections = "sweep_61/indexed.pickle"
+    reflections = "sweep_64/indexed.pickle"
+    reflections = "sweep_65/indexed.pickle"
+    reflections = "sweep_66/indexed.pickle"
+    reflections = "sweep_68/indexed.pickle"
+  }
 
 We called this file :file:`experiments_and_reflections.phil` then run
 :program:`dials.combine_experiments` like this::
@@ -802,7 +805,7 @@ terminal.
 
 We can compare the RMSDs from individually refined experiments to those from
 the joint experiments. For example, look at the RSMDs for experiment 0, in the
-logfile :file:`sweep_01/dials.refine.log`::
+logfile :file:`sweep_00/dials.refine.log`::
 
   RMSDs by experiment:
   --------------------------------------------
