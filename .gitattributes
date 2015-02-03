@@ -420,6 +420,7 @@ doc/sphinx/figures/sv_crystal.png -text svneol=unset#unset
 doc/sphinx/figures/sweep_01_corrplot.png -text svneol=unset#unset
 doc/sphinx/figures/tree_01.png -text svneol=unset#unset
 doc/sphinx/figures/tree_02.png -text svneol=unset#unset
+doc/sphinx/figures/tree_03.png -text svneol=unset#unset
 doc/sphinx/index.rst -text
 doc/sphinx/installation.rst -text
 doc/sphinx/library_reference/algorithms/dials.algorithms.background.rst -text

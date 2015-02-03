@@ -53,7 +53,8 @@ save it as :samp:`process_TehA.py` and then run it as follows::
 On a Linux desktop with a Core i7 CPU running at 3.07GHz it script took about 8
 minutes to run and successfully processed 41 datasets. If time is short, you
 might like to start running it now before reading the description of what the
-script does::
+script does. If time is *really* short then try uncommenting the line
+:samp:`tasklist = tasklist[0:35]` to reduce the number of datasets processed.::
 
   #!/bin/env dials.python
   import os
@@ -93,7 +94,7 @@ script does::
 
       # static model refinement
       cmd = "dials.refine experiments.json indexed.pickle " + \
-            "do_outlier_rejection=true"
+            "do_outlier_rejection=true use_all_reflections=true"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("refined_experiments.json"):
         print "Job %02d failed in refinement" % num
@@ -131,9 +132,11 @@ script does::
     templates = [f[:-8] + "*.cbf" for f in logfiles]
     tasklist = list(enumerate(sorted(templates)))
 
+    # uncomment the following line if short on time!
+    #tasklist = tasklist[0:35]
+
     from libtbx import Auto
     nproc = easy_mp.get_processes(Auto)
-    print nproc
 
     print "Attempting to process the following datasets, with {} processes".format(nproc)
     for task in tasklist:
@@ -149,7 +152,6 @@ script does::
     print "Successfully created the following MTZs:"
     for result in good_results:
       print result
-
 
 We will now describe what is in this script. The first lines are
 just imports to bring in modules from the Python standard library as well as
@@ -218,7 +220,7 @@ no manual intervention.
 
 Following indexing we do scan-static cell refinement::
 
-  dials.refine experiments.json indexed.pickle do_outlier_rejection=true
+  dials.refine experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true
 
 Outlier rejection was switched on in an attempt to avoid any zingers or other
 errant spots from affecting our refined cells. Without analysing the data closer
@@ -226,6 +228,10 @@ it is not clear whether there are any particularly bad outliers here. We could r
 the whole analysis with this switched off if we want to investigate more closely,
 or look through all the :file:`dials.refine.log` files to see results of the
 outlier rejection step.
+
+We elected use all reflections rather than taking a random subset because these
+are narrow wedges and there are few reflections anyway. Taking a random subset
+is only a time-saving procedure, and it won't provide much benefit here anyway.
 
 We don't bother with the time-consuming step of scan-varying refinement, because
 it is the scan-static cell that will be written into the MTZ header. Scan-
@@ -420,7 +426,7 @@ Analysis of individually processed datasets
 The paths to :file:`integrated.mtz` files can be copied directly into a file,
 say :file:`individual_mtzs.dat`, and passed to blend for analysis::
 
-  echo "\n" | blend -a individual_mtzs.dat
+  echo "END" | blend -a individual_mtzs.dat
 
 The dendrogram resulting from clustering is shown here:
 
@@ -444,7 +450,7 @@ The Linear Cell Variation (LCV) is now less than 1%, with an absolute value
 of 0.42 Angstroms, indicating good isomorphism amongst all the remaining
 datasets.
 
-Joint processing
+Joint refinement
 ----------------
 
 Now that we have done the BLEND analysis for individually processed datasets,
@@ -560,7 +566,7 @@ input {
 We called this file :file:`experiments_and_reflections.phil` then run
 :program:`dials.combine_experiments` like this::
 
-  dials.combine_experiments_and_reflections experiments_and_reflections.phil \
+  dials.combine_experiments experiments_and_reflections.phil \
     reference_from_experiment.beam=0 \
     reference_from_experiment.goniometer=0 \
     reference_from_experiment.detector=0
@@ -620,7 +626,370 @@ to the final :file:`combined_reflections.pickle`::
 We may also inspect the contents of :file:`combined_experiments.json`, by using
 :program:`dials.show_models`, for example::
 
+  dials.show_models combined_experiments.json
 
+Useful though this is, it is clear how this could become unwieldy as the number
+of experiments increases. Work on better interfaces to multi-crystal (or
+generally, multi-experiment) data is ongoing within the DIALS project.
+Suggestions are always welcome!
+
+Now we have the joint experiments and reflections files we can run our multi-
+crystal refinement job. First we try outlier rejection, so that the refinement
+run is similar to the jobs we ran on individual datasets::
+
+  dials.refine combined_experiments.json combined_reflections.pickle \
+    do_outlier_rejection=true
+
+::
+
+  The following parameters have been modified:
+
+  refinement {
+    reflections {
+      do_outlier_rejection = true
+    }
+  }
+  input {
+    experiments = combined_experiments.json
+    reflections = combined_reflections.pickle
+  }
+
+  Configuring refiner
+
+  Summary statistics for observations matched to predictions:
+  ----------------------------------------------------------------------
+  |                   | Min    | Q1      | Med        | Q3     | Max   |
+  ----------------------------------------------------------------------
+  | Xc - Xo (mm)      | -14.61 | -0.8011 | -0.08364   | 0.7517 | 15.76 |
+  | Yc - Yo (mm)      | -21.55 | -0.4907 | -0.01917   | 0.4474 | 16.99 |
+  | Phic - Phio (deg) | -16.99 | -0.2279 | -0.0006402 | 0.2305 | 28.72 |
+  | X weights         | 108.4  | 129.6   | 132.2      | 133.8  | 135.2 |
+  | Y weights         | 114.8  | 133.8   | 134.7      | 135.1  | 135.2 |
+  | Phi weights       | 81.19  | 99.99   | 100        | 100    | 100   |
+  ----------------------------------------------------------------------
+
+  15921 reflections have been rejected as outliers
+  Traceback (most recent call last):
+    File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 370, in <module>
+      halraiser(e)
+    File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 368, in <module>
+      script.run()
+    File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 274, in run
+      reflections, experiments)
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 336, in from_parameters_data_experiments
+      verbosity=verbosity)
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 581, in _build_components
+      target = cls.config_target(params, experiments, refman, pred_param, do_stills)
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 1004, in config_target
+      options.jacobian_max_nref)
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/target.py", line 404, in __init__
+      self._reflection_manager.finalise()
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/reflection_manager.py", line 237, in finalise
+      self._check_too_few()
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/reflection_manager.py", line 262, in _check_too_few
+      raise RuntimeError(msg)
+  RuntimeError: Please report this error to dials-support@lists.sourceforge.net: Remaining number of reflections = 6, for experiment 19, which is below the configured limit for this reflection manager
+
+Oops! That wasn't good. Looking at the error we see that experiment 19 provides
+only 6 reflections to refinement, which is disallowed by a default
+parameters of :program:`dials.refine`, namely `minimum_number_of_reflections=20`.
+But from the output of :program:`dials.combine_experiments` we see that experiment
+19 has 243 indexed reflections. What happened? Well, forcing the individual
+experiments to share the beam and detector models of experiment 0 has led to some
+very poor predictions for some of these experiments. See the ``Summary statistics``
+table, where the worst positional residuals are greater than 20 mm! We may put this
+down to the very narrow wedges of data we have. Experiment 19 is one of the
+narrowest, with only 4 degrees of data. Outlier rejection is not a good idea here
+because it selectively removes reflections from the worst fitting experiments.
+
+Instead we try without outlier rejection::
+
+  dials.refine combined_experiments.json combined_reflections.pickle \
+    use_all_reflections=true \
+    output.experiments=refined_combined_experiments.json
+
+This worked much better::
+
+  The following parameters have been modified:
+
+  output {
+    experiments = refined_combined_experiments.json
+  }
+  refinement {
+    reflections {
+      use_all_reflections = true
+    }
+  }
+  input {
+    experiments = combined_experiments.json
+    reflections = combined_reflections.pickle
+  }
+
+  Configuring refiner
+
+  Summary statistics for observations matched to predictions:
+  ----------------------------------------------------------------------
+  |                   | Min    | Q1      | Med        | Q3     | Max   |
+  ----------------------------------------------------------------------
+  | Xc - Xo (mm)      | -14.61 | -0.8011 | -0.08364   | 0.7517 | 15.76 |
+  | Yc - Yo (mm)      | -21.55 | -0.4907 | -0.01917   | 0.4474 | 16.99 |
+  | Phic - Phio (deg) | -16.99 | -0.2279 | -0.0006402 | 0.2305 | 28.72 |
+  | X weights         | 108.4  | 129.6   | 132.2      | 133.8  | 135.2 |
+  | Y weights         | 114.8  | 133.8   | 134.7      | 135.1  | 135.2 |
+  | Phi weights       | 81.19  | 99.99   | 100        | 100    | 100   |
+  ----------------------------------------------------------------------
+
+  Performing refinement...
+
+  Refinement steps:
+  -----------------------------------------------
+  | Step | Nref  | RMSD_X  | RMSD_Y  | RMSD_Phi |
+  |      |       | (mm)    | (mm)    | (deg)    |
+  -----------------------------------------------
+  | 0    | 56703 | 1.6811  | 1.3938  | 1.3119   |
+  | 1    | 56703 | 1.3728  | 1.0393  | 0.70978  |
+  | 2    | 56703 | 1.1418  | 0.86757 | 0.65172  |
+  | 3    | 56703 | 0.87359 | 0.66465 | 0.57709  |
+  | 4    | 56703 | 0.60635 | 0.47194 | 0.44672  |
+  | 5    | 56703 | 0.37995 | 0.31262 | 0.28325  |
+  | 6    | 56703 | 0.22145 | 0.19743 | 0.16597  |
+  | 7    | 56703 | 0.17484 | 0.16522 | 0.12868  |
+  | 8    | 56703 | 0.17164 | 0.16306 | 0.12515  |
+  | 9    | 56703 | 0.1714  | 0.16287 | 0.12503  |
+  | 10   | 56703 | 0.1713  | 0.16277 | 0.12496  |
+  | 11   | 56703 | 0.17131 | 0.16274 | 0.12491  |
+  | 12   | 56703 | 0.17132 | 0.16273 | 0.12489  |
+  | 13   | 56703 | 0.17132 | 0.16273 | 0.12489  |
+  -----------------------------------------------
+  RMSD no longer decreasing
+
+  RMSDs by experiment:
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 1374 | 0.63135 | 0.40973 | 0.35223  |
+  | 1   | 1326 | 0.65259 | 0.39367 | 0.34253  |
+  | 2   | 1138 | 0.90566 | 0.85055 | 0.75363  |
+  | 3   | 1294 | 0.67156 | 0.5088  | 0.27957  |
+  | 4   | 406  | 0.76238 | 0.50361 | 0.3676   |
+  | 5   | 1578 | 1.0475  | 1.5447  | 0.93663  |
+  | 6   | 1452 | 0.64011 | 0.33055 | 0.34482  |
+  | 7   | 1372 | 1.0639  | 1.116   | 0.89393  |
+  | 8   | 1203 | 1.0557  | 1.4787  | 0.6994   |
+  | 9   | 213  | 2.0415  | 2.0383  | 1.3647   |
+  | 10  | 1543 | 0.7825  | 0.47977 | 0.5151   |
+  | 11  | 980  | 0.96061 | 1.1603  | 0.72562  |
+  | 12  | 1783 | 0.74111 | 0.84793 | 0.67643  |
+  | 13  | 1424 | 0.73923 | 0.51892 | 0.37183  |
+  | 14  | 1937 | 1.1602  | 1.4408  | 0.84359  |
+  | 15  | 1237 | 0.92553 | 0.50867 | 0.42323  |
+  | 16  | 1751 | 0.71129 | 0.37352 | 0.34289  |
+  | 17  | 1742 | 0.66178 | 0.40449 | 0.29842  |
+  | 18  | 1550 | 0.84153 | 1.2567  | 0.71992  |
+  | 19  | 222  | 1.1245  | 0.77295 | 0.95415  |
+  ---------------------------------------------
+  Table truncated to show the first 20 experiments only
+  Re-run with verbosity >= 2 to show all experiments
+  Saving refined experiments to refined_combined_experiments.json
+
+The overall final RMSDs are 0.17 mm in X, 0.16 mm in Y and 0.12 degrees in
+:math:`\phi`. The RMSDs per experiment are also shown, but only for the first
+20 experiments. Rerunning with :samp:`verbosity=2` does give the full table,
+but also produces a great deal more log output, so it would be easier to find
+in the file :file:`dials.refine.log` rather than scrolling up pages in your
+terminal.
+
+We can compare the RMSDs from individually refined experiments to those from
+the joint experiments. For example, look at the RSMDs for experiment 0, in the
+logfile :file:`sweep_01/dials.refine.log`::
+
+  RMSDs by experiment:
+  --------------------------------------------
+  | Exp | Nref | RMSD_X | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)   | (px)    | (images) |
+  --------------------------------------------
+  | 0   | 1342 | 0.534  | 0.30643 | 0.2561   |
+  --------------------------------------------
+
+Clearly allowing the detector and beam to refine only against this data lets
+the model better fit the observations, but is it a more accurate description of
+reality? Given that we *know* or can comfortably assume that the detector and
+beam did not move between data collections, then the constraints applied by
+joint refinement seem appropriate. For better parity with the original results
+perhaps we should use outlier rejection though. Now the models are close enough
+it is safe to do so::
+
+  dials.refine refined_combined_experiments.json combined_reflections.pickle \
+    use_all_reflections=true \
+    do_outlier_rejection=true \
+    output.experiments=refined_combined_experiments_outrej.json
+
+The RMSD tables resulting from this::
+
+  Refinement steps:
+  ------------------------------------------------
+  | Step | Nref  | RMSD_X  | RMSD_Y   | RMSD_Phi |
+  |      |       | (mm)    | (mm)     | (deg)    |
+  ------------------------------------------------
+  | 0    | 50112 | 0.10315 | 0.062074 | 0.058395 |
+  | 1    | 50112 | 0.10292 | 0.061742 | 0.057896 |
+  | 2    | 50112 | 0.10271 | 0.061592 | 0.057869 |
+  | 3    | 50112 | 0.1024  | 0.061383 | 0.057734 |
+  | 4    | 50112 | 0.10213 | 0.061227 | 0.057411 |
+  | 5    | 50112 | 0.10197 | 0.061185 | 0.057029 |
+  | 6    | 50112 | 0.10186 | 0.061202 | 0.056831 |
+  | 7    | 50112 | 0.10178 | 0.061214 | 0.056807 |
+  | 8    | 50112 | 0.10173 | 0.061164 | 0.056806 |
+  | 9    | 50112 | 0.10168 | 0.061055 | 0.056777 |
+  | 10   | 50112 | 0.10167 | 0.060948 | 0.056713 |
+  | 11   | 50112 | 0.1017  | 0.060897 | 0.05664  |
+  | 12   | 50112 | 0.10172 | 0.060884 | 0.056602 |
+  | 13   | 50112 | 0.10172 | 0.060882 | 0.056594 |
+  | 14   | 50112 | 0.10172 | 0.060882 | 0.056593 |
+  ------------------------------------------------
+  RMSD no longer decreasing
+
+  RMSDs by experiment:
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 1302 | 0.57135 | 0.34799 | 0.30443  |
+  | 1   | 1275 | 0.59907 | 0.34379 | 0.31076  |
+  | 2   | 1008 | 0.68104 | 0.4229  | 0.29659  |
+  | 3   | 1213 | 0.61056 | 0.4238  | 0.27042  |
+  | 4   | 373  | 0.6637  | 0.41751 | 0.28468  |
+  | 5   | 1425 | 0.53209 | 0.30844 | 0.25475  |
+  | 6   | 1426 | 0.51294 | 0.28226 | 0.23702  |
+  | 7   | 1236 | 0.65703 | 0.32861 | 0.27816  |
+  | 8   | 1091 | 0.54379 | 0.34609 | 0.25901  |
+  | 9   | 137  | 1.2479  | 0.48073 | 0.31642  |
+  | 10  | 1484 | 0.5417  | 0.33476 | 0.2514   |
+  | 11  | 906  | 0.56075 | 0.39302 | 0.26312  |
+  | 12  | 1697 | 0.53371 | 0.33843 | 0.25628  |
+  | 13  | 1353 | 0.59367 | 0.32434 | 0.27128  |
+  | 14  | 1765 | 0.55622 | 0.30903 | 0.25697  |
+  | 15  | 1101 | 0.67655 | 0.35542 | 0.31188  |
+  | 16  | 1633 | 0.56375 | 0.32634 | 0.30048  |
+  | 17  | 1654 | 0.53093 | 0.3281  | 0.26622  |
+  | 18  | 1401 | 0.51477 | 0.37377 | 0.27729  |
+  | 19  | 171  | 0.89704 | 0.38654 | 0.39885  |
+  ---------------------------------------------
+  Table truncated to show the first 20 experiments only
+  Re-run with verbosity >= 2 to show all experiments
+  Saving refined experiments to refined_combined_experiments_outrej.json
+
+Now we have RMSDs in X down to 0.1 mm, in Y to 0.06 mm and 0.06 degrees in
+:math:`\phi`. The RMSDs for experiment 0 are not so much worse than from the
+individual refinement job. We are happy with this result and move on to
+re-integrating the data to create MTZs for BLEND.
+
+Analysis of jointly refined datasets
+------------------------------------
+
+:program:`dials.integrate` will not work with our :file:`refined_combined_experiments_outrej.json`
+and :file:`combined_reflections.pickle` directly, so we have to separate these
+into individual files for each experiment. It is best to do this inside a new
+directory::
+
+  mkdir joint
+  cd !$
+  dials.split_experiments ../refined_combined_experiments_outrej.json ../combined_reflections.pickle
+
+This fills the directory with 39 individual :file:`experiments_##.json` and
+:file:`reflections_##.pickle` files. To integrate these quickly we want a script
+to run in parallel, similar to the one used previously::
+
+  #!/bin/env dials.python
+  import os
+  import sys
+  import glob
+  from libtbx import easy_run, easy_mp
+  from dials.test import cd
+
+  def process_sweep(task):
+    """Process a single sweep of data. The parameter 'task' will be a
+    tuple, the first element of which is an integer job number and the
+    second is the path to the directory containing the data"""
+
+    num = task[0]
+    datadir = task[1]
+
+    experiments_file = "experiments_%02d.json" % num
+    reflections_file = "reflections_%02d.pickle" % num
+    experiments_path = os.path.join(datadir, experiments_file)
+    reflections_path = os.path.join(datadir, reflections_file)
+
+    # create directory
+    with cd("sweep_%02d" % num):
+      # WARNING! Fast and dirty integration.
+      # Do not use the result for scaling/merging!
+      cmd = "dials.integrate %s %s " + \
+            "intensity.algorithm=sum prediction.dmin=3 prediction.dmax=8"
+      cmd = cmd % (experiments_path, reflections_path)
+      easy_run.fully_buffered(command=cmd)
+      if not os.path.isfile("integrated.pickle"):
+        print "Job %02d failed during integration" % num
+        return
+
+      # create MTZ
+      cmd = "dials.export_mtz %s integrated.pickle hklout=integrated.mtz"
+      cmd = cmd % experiments_path
+      easy_run.fully_buffered(command=cmd)
+      if not os.path.isfile("integrated.mtz"):
+        print "Job %02d failed during MTZ export" % num
+        return
+
+    # if we got this far, return the path to the MTZ
+    return "sweep_%02d/integrated.mtz" % num
+
+  if __name__ == "__main__":
+
+    if len(sys.argv) != 2:
+      sys.exit("Usage: dials.python integrate_joint_TehA.py ..")
+    data_dir = os.path.abspath(sys.argv[1])
+
+    pathname = os.path.join(data_dir, "experiments_*.json")
+    experiments = glob.glob(pathname)
+
+    templates = [data_dir for f in experiments]
+    tasklist = list(enumerate(sorted(templates)))
+
+    from libtbx import Auto
+    nproc = easy_mp.get_processes(Auto)
+
+    print "Attempting to process the following datasets, with {} processes".format(nproc)
+    for task in tasklist:
+      print "%d: %s/experiments%02d" % (task[0], task[1], task[0])
+
+    results = easy_mp.parallel_map(
+      func=process_sweep,
+      iterable=tasklist,
+      processes=nproc,
+      preserve_order=True)
+
+    good_results = [e for e in results if e is not None]
+    print "Successfully created the following MTZs:"
+    for result in good_results:
+      print result
+
+This, if saved as :file:`integrate_joint_TehA.py` in the new :file:`joint`
+directory can be run as follows::
+
+  dials.python integrate_joint_TehA.py .
+
+As expected this creates all 39 MTZs for the jointly refined sweeps without any
+problem. We can copy the paths to these into a new file, say
+:file:`joint_mtzs.dat`, and run blend::
+
+  echo "END" | blend -a joint_mtzs.dat
+
+The :file:`tree.png` resulting from this is very interesting.
+
+  .. image:: figures/tree_03.png
+
+The LCV is now as low as
 
 Acknowledgements
 ----------------
