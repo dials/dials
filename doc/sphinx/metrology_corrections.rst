@@ -21,8 +21,8 @@ Here we have access to a thaumatin dataset collected with low dose to avoid
 radiation damage and with the detector 400 mm from the sample to ensure the
 coverage of reflections extends right out to the corner of the images.
 
-Preparing for refinement
-------------------------
+Preparing for multi-tile refinement
+-----------------------------------
 
 Usually multi-panel detectors like the Pilatus P6M are treated as if they were
 single panels (with dead regions) in DIALS. Clearly, if we are to make corrections
@@ -200,28 +200,40 @@ The output of refinement in the highest resolution macrocycle is as follows::
 This refinement was performed moving all the panels as a rigid block, as usual.
 With overall positional RMSDs within 40% of the pixel size and a
 quarter of the image width in :math:`\phi` we can see straight away that we are
-dealing with a good quality
+dealing with a fairly good quality
 dataset. There are a few outliers of well over 1 mm on the detector surface and nearly
 1 degree in :math:`\phi` though, which we would prefer not to include in
 refinement. The outliers are not as bad if we had kept :samp:`min_spot_size=6`,
-but the detector coverage is worse in that case. At the moment we see that
-coverage of reflections on the outer panels is rather low, but so far
+but the detector coverage is worse in that case. Although from the indexing results
+it seems that coverage of reflections on the outer panels is rather low, so far
 we let refinement take a random subset of the data in order to index quicker,
 so there's no need to worry about that yet.
 
 Now we will refine the detector as a rigid block again, turning on outlier
 rejection and requesting to use all reflections to get the best we can out
-of the dataset::
+of the dataset. We will also keep the refined reflections file for analysis.
+The final parameter here, :samp:`close_to_spindle_cutoff=0.01` allows reflections
+closer to the spindle to be included in refinement (default value is 0.05, and
+if set to 0.0 no reflections will be rejected for being too close).
+Without this option, the central panels are very sparse::
 
-  dials.refine indexed.pickle experiments.json do_outlier_rejection=true use_all_reflections=true
+  dials.refine indexed.pickle experiments.json \
+   do_outlier_rejection=true use_all_reflections=true close_to_spindle_cutoff=0.01 \
+   output.reflections=refined_reflections_lev0.pickle \
+   output.experiments=refined_experiments_lev0.json
 
 Here is the output::
 
   The following parameters have been modified:
 
+  output {
+    reflections = refined_reflections_lev0.pickle
+    experiments = refined_experiments_lev0.json
+  }
   refinement {
     reflections {
       use_all_reflections = true
+      close_to_spindle_cutoff = 0.01
       do_outlier_rejection = true
     }
   }
@@ -233,29 +245,29 @@ Here is the output::
   Configuring refiner
 
   Summary statistics for observations matched to predictions:
-  --------------------------------------------------------------------------
-  |                   | Min     | Q1       | Med        | Q3      | Max    |
-  --------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -2.487  | -0.0424  | -0.0001972 | 0.04293 | 2.128  |
-  | Yc - Yo (mm)      | -1.697  | -0.03456 | 0.001844   | 0.03669 | 1.654  |
-  | Phic - Phio (deg) | -0.9622 | -0.06588 | -0.001969  | 0.06271 | 0.8323 |
-  | X weights         | 80.55   | 127.8    | 131.8      | 133.9   | 135.2  |
-  | Y weights         | 77.02   | 127.6    | 131.8      | 134     | 135.2  |
-  | Phi weights       | 26.58   | 32.59    | 32.65      | 32.65   | 32.65  |
-  --------------------------------------------------------------------------
+  -----------------------------------------------------------------------
+  |                   | Min    | Q1       | Med       | Q3      | Max   |
+  -----------------------------------------------------------------------
+  | Xc - Xo (mm)      | -2.487 | -0.04174 | 0.000276  | 0.0424  | 2.128 |
+  | Yc - Yo (mm)      | -1.75  | -0.03468 | 0.00168   | 0.03656 | 1.654 |
+  | Phic - Phio (deg) | -5.549 | -0.06627 | -0.002108 | 0.063   | 3.27  |
+  | X weights         | 80.55  | 127.9    | 131.9     | 134     | 135.2 |
+  | Y weights         | 77.02  | 127.7    | 131.9     | 134     | 135.2 |
+  | Phi weights       | 25.97  | 32.57    | 32.65     | 32.65   | 32.65 |
+  -----------------------------------------------------------------------
 
-  5849 reflections have been rejected as outliers
+  6375 reflections have been rejected as outliers
 
   Summary statistics for observations matched to predictions:
   --------------------------------------------------------------------------
   |                   | Min     | Q1       | Med        | Q3      | Max    |
   --------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.2933 | -0.04194 | -0.0004627 | 0.04169 | 0.3725 |
-  | Yc - Yo (mm)      | -0.2991 | -0.03369 | 0.001993   | 0.03605 | 0.339  |
-  | Phic - Phio (deg) | -0.3981 | -0.06553 | -0.002115  | 0.06205 | 0.4137 |
-  | X weights         | 80.55   | 127.9    | 131.9      | 134     | 135.2  |
-  | Y weights         | 77.02   | 127.8    | 131.8      | 134     | 135.2  |
-  | Phi weights       | 26.58   | 32.59    | 32.65      | 32.65   | 32.65  |
+  | Xc - Xo (mm)      | -0.2933 | -0.04128 | -3.167e-05 | 0.04112 | 0.3725 |
+  | Yc - Yo (mm)      | -0.4707 | -0.03376 | 0.001821   | 0.03588 | 0.4945 |
+  | Phic - Phio (deg) | -0.6965 | -0.06574 | -0.002213  | 0.06229 | 0.7919 |
+  | X weights         | 80.55   | 128      | 132        | 134     | 135.2  |
+  | Y weights         | 77.02   | 127.8    | 131.9      | 134.1   | 135.2  |
+  | Phi weights       | 26.58   | 32.57    | 32.65      | 32.65   | 32.65  |
   --------------------------------------------------------------------------
 
   Performing refinement...
@@ -265,15 +277,15 @@ Here is the output::
   | Step | Nref   | RMSD_X   | RMSD_Y   | RMSD_Phi |
   |      |        | (mm)     | (mm)     | (deg)    |
   --------------------------------------------------
-  | 0    | 181640 | 0.064502 | 0.056782 | 0.083589 |
-  | 1    | 181640 | 0.064332 | 0.056888 | 0.083668 |
-  | 2    | 181640 | 0.064055 | 0.057074 | 0.083787 |
-  | 3    | 181640 | 0.063711 | 0.057327 | 0.083944 |
-  | 4    | 181640 | 0.0635   | 0.057483 | 0.084045 |
-  | 5    | 181640 | 0.063432 | 0.057512 | 0.084096 |
-  | 6    | 181640 | 0.063413 | 0.057511 | 0.084131 |
-  | 7    | 181640 | 0.063408 | 0.057511 | 0.084143 |
-  | 8    | 181640 | 0.063408 | 0.057511 | 0.084144 |
+  | 0    | 186203 | 0.064091 | 0.057786 | 0.086136 |
+  | 1    | 186203 | 0.064045 | 0.057829 | 0.08608  |
+  | 2    | 186203 | 0.063949 | 0.05791  | 0.086068 |
+  | 3    | 186203 | 0.063825 | 0.058023 | 0.086026 |
+  | 4    | 186203 | 0.063734 | 0.058114 | 0.085958 |
+  | 5    | 186203 | 0.063682 | 0.058167 | 0.085909 |
+  | 6    | 186203 | 0.063654 | 0.058198 | 0.085887 |
+  | 7    | 186203 | 0.063645 | 0.058208 | 0.085882 |
+  | 8    | 186203 | 0.063644 | 0.05821  | 0.085882 |
   --------------------------------------------------
   RMSD no longer decreasing
 
@@ -282,7 +294,229 @@ Here is the output::
   | Exp | Nref   | RMSD_X  | RMSD_Y  | RMSD_Z   |
   |     |        | (px)    | (px)    | (images) |
   -----------------------------------------------
-  | 0   | 181640 | 0.36865 | 0.33436 | 0.24041  |
+  | 0   | 186203 | 0.37002 | 0.33843 | 0.24538  |
+  -----------------------------------------------
+
+  RMSDs by panel:
+  -----------------------------------------------
+  | Panel | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |       |      | (px)    | (px)    | (images) |
+  -----------------------------------------------
+  | 0     | 63   | 0.47216 | 0.59331 | 0.22352  |
+  | 1     | 1363 | 0.35019 | 0.46301 | 0.26549  |
+  | 2     | 3076 | 0.4128  | 0.40658 | 0.26659  |
+  | 3     | 1630 | 0.46232 | 0.39692 | 0.25547  |
+  | 4     | 112  | 0.39711 | 0.42575 | 0.23841  |
+  | 5     | 394  | 0.35145 | 0.51263 | 0.25474  |
+  | 6     | 3489 | 0.3238  | 0.48667 | 0.25694  |
+  | 7     | 6172 | 0.30869 | 0.27402 | 0.25323  |
+  | 8     | 3908 | 0.37309 | 0.38322 | 0.25577  |
+  | 9     | 680  | 0.46698 | 0.44533 | 0.24812  |
+  | 10    | 1178 | 0.33544 | 0.51129 | 0.26289  |
+  | 11    | 5690 | 0.28409 | 0.29009 | 0.24376  |
+  | 12    | 9385 | 0.36731 | 0.23495 | 0.23873  |
+  | 13    | 6878 | 0.31962 | 0.31088 | 0.23691  |
+  | 14    | 1749 | 0.43068 | 0.47078 | 0.25696  |
+  | 15    | 1870 | 0.29306 | 0.46181 | 0.26494  |
+  | 16    | 6328 | 0.19137 | 0.29002 | 0.21465  |
+  | 17    | 7599 | 0.17418 | 0.1739  | 0.22093  |
+  | 18    | 7072 | 0.36776 | 0.18662 | 0.20821  |
+  | 19    | 2609 | 0.37377 | 0.42663 | 0.24206  |
+  | 20    | 1806 | 0.40342 | 0.57026 | 0.32007  |
+  | 21    | 4247 | 0.35488 | 0.34512 | 0.19181  |
+  | 22    | 3558 | 0.21403 | 0.30996 | 0.20695  |
+  | 23    | 4103 | 0.36559 | 0.19154 | 0.17851  |
+  | 24    | 2270 | 0.25744 | 0.48077 | 0.26616  |
+  | 25    | 480  | 0.38505 | 1.0035  | 0.73284  |
+  | 26    | 930  | 0.15033 | 0.26661 | 0.34611  |
+  | 27    | 971  | 0.11836 | 0.19105 | 0.18709  |
+  | 28    | 975  | 0.11907 | 0.25901 | 0.30046  |
+  | 29    | 549  | 0.41024 | 0.95027 | 0.72705  |
+  | 30    | 1478 | 0.56625 | 0.3835  | 0.34664  |
+  | 31    | 3216 | 0.16373 | 0.19856 | 0.19257  |
+  | 32    | 2826 | 0.20149 | 0.14689 | 0.19485  |
+  | 33    | 3285 | 0.12942 | 0.30274 | 0.20848  |
+  | 34    | 1965 | 0.38874 | 0.45564 | 0.38875  |
+  | 35    | 1934 | 0.61707 | 0.35339 | 0.25067  |
+  | 36    | 5875 | 0.55413 | 0.29556 | 0.19246  |
+  | 37    | 5992 | 0.2137  | 0.12029 | 0.21502  |
+  | 38    | 6589 | 0.2254  | 0.21047 | 0.21193  |
+  | 39    | 2763 | 0.39851 | 0.41673 | 0.27272  |
+  | 40    | 1512 | 0.50654 | 0.36893 | 0.25051  |
+  | 41    | 6476 | 0.28308 | 0.21635 | 0.22668  |
+  | 42    | 9212 | 0.40577 | 0.18283 | 0.2252   |
+  | 43    | 7521 | 0.22936 | 0.29881 | 0.23864  |
+  | 44    | 2392 | 0.40816 | 0.42881 | 0.2751   |
+  | 45    | 611  | 0.56917 | 0.48084 | 0.26191  |
+  | 46    | 4379 | 0.42672 | 0.42447 | 0.25285  |
+  | 47    | 7749 | 0.29309 | 0.4378  | 0.24631  |
+  | 48    | 5470 | 0.67537 | 0.37528 | 0.25187  |
+  | 49    | 1210 | 0.42778 | 0.53938 | 0.27266  |
+  | 50    | 127  | 0.92194 | 0.45501 | 0.24629  |
+  | 51    | 2235 | 0.71785 | 0.33424 | 0.25781  |
+  | 52    | 4379 | 0.41055 | 0.38155 | 0.25735  |
+  | 53    | 2757 | 0.44268 | 0.40149 | 0.26646  |
+  | 54    | 327  | 0.52856 | 0.51306 | 0.28205  |
+  | 56    | 457  | 0.60967 | 0.429   | 0.26482  |
+  | 57    | 1507 | 0.70752 | 0.67612 | 0.25844  |
+  | 58    | 786  | 0.53669 | 0.50635 | 0.27127  |
+  | 59    | 39   | 0.43205 | 0.65796 | 0.25585  |
+  -----------------------------------------------
+  Saving refined experiments to refined_experiments_lev0.json
+  Saving refined reflections to refined_reflections_lev0.pickle
+
+Outlier rejection has cleaned up the positional residuals so now the greatest
+deviation is within 0.4 mm of the predicted position. The angular extreme is
+now just over 0.4 degrees. Coverage of the outer and central panels (where
+reflections are in the backstop shadow or thrown away for being too close
+to the spindle) is still a little low. Notably, panel 55 (a corner panel) is
+completely missing. If we had more datasets recorded at the same detector
+distance (and more time to process them) we could combine them in a multi-crystal
+joint refinement job to increase the coverage of panels further. However,
+for the purposes of this tutorial we will see what we can get with this single
+dataset.
+
+Before moving on to the multi-panel refinement job we will take a look at the
+refined reflections file::
+
+  dials.analyse_output refined_reflections.pickle grid_size=5,12
+
+Here we had to tell :program:`dials.analyse_output` about the arrangement of
+the panels, as it does not use the :file:`experiments.json` file so cannot
+figure this out itself.
+
+Here are the positional residual plots for X and Y, :file:`analysis/centroid/centroid_diff_x.png`
+and :file:`analysis/centroid/centroid_diff_y.png`. The multi-panel versions
+of these plots are not as compact as the single tile version presented in the
+:doc:`advanced_tutorial`. However, careful comparison of the plots is enough to
+show that the same pattern of shifts is present.
+
+  .. image:: figures/centroid_diff_x_multi_panel_lev0.png
+
+  .. image:: figures/centroid_diff_y_multi_panel_lev0.png
+
+Multi-tile refinement
+---------------------
+
+Now we repeat refinement, but we allow the panels to move independently. In
+DIALS multi-panel detectors are represented by a hierarchical model. The highest
+level :samp:`hieararchy_level=0` means to treat the whole detector unit as a
+rigid block. Some detectors, notably the CS-PAD used at LCLS beamlines, have a
+real hierarchy of a few levels deep. The Pilatus P6M has a very simple hierarchy,
+with a single lower level, :samp:`hieararchy_level=1`, in which every panel is
+treated separately. We now start from the previous refinement run
+specifying this hierarchy level::
+
+  dials.refine indexed.pickle refined_experiments.json do_outlier_rejection=true \
+   use_all_reflections=true output.reflections=refined_reflections_lev1.pickle \
+   close_to_spindle_cutoff=0.01 bin_size_fraction=0 hierarchy_level=1 \
+   output.experiments=refined_experiments_lev1.json
+
+You may have noticed that apart from :samp:`hierarchy_level=1` there was an
+additional parameter added to this command compared to the previous refinement run,
+namely :samp:`bin_size_fraction=0`. This sets the RMSD target for refinement to
+zero, so that refinement will never terminate because the RMSDs are 'good enough',
+only if they converge so that their rate of decrease on subsequent steps falls
+to zero. This is necessary because the extra freedom allowed by parameterising
+each panel individually allows the RMSDs to fall lower than the default target.
+There are 366 parameters in total for this refinement run. This can be seen
+by checking the file :file:`dials.refine.debug.log` once refinement is underway.
+
+.. warning::
+
+  This job took 17 minutes to run on a Linux desktop with a Core i7 CPU running
+  at 3.07GHz, and uses about 4 GB of RAM.
+
+Refinement is single-process at
+the moment, unfortunately, so we can't yet make use of parallelism here to
+speed the job up. The output is as follows::
+
+  The following parameters have been modified:
+
+  output {
+    experiments = refined_experiments_lev1.json
+    reflections = refined_reflections_lev1.pickle
+  }
+  refinement {
+    parameterisation {
+      detector {
+        hierarchy_level = 1
+      }
+    }
+    target {
+      bin_size_fraction = 0
+    }
+    reflections {
+      use_all_reflections = true
+      close_to_spindle_cutoff = 0.01
+      do_outlier_rejection = true
+    }
+  }
+  input {
+    experiments = refined_experiments.json
+    reflections = indexed.pickle
+  }
+
+  Configuring refiner
+
+  Summary statistics for observations matched to predictions:
+  ------------------------------------------------------------------------
+  |                   | Min    | Q1       | Med        | Q3      | Max   |
+  ------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -2.496 | -0.04178 | 0.0004518  | 0.04222 | 2.133 |
+  | Yc - Yo (mm)      | -1.903 | -0.03577 | 0.0006705  | 0.03588 | 1.656 |
+  | Phic - Phio (deg) | -5.576 | -0.06467 | -0.0007391 | 0.06414 | 3.292 |
+  | X weights         | 80.55  | 127.9    | 131.9      | 134     | 135.2 |
+  | Y weights         | 77.02  | 127.7    | 131.9      | 134     | 135.2 |
+  | Phi weights       | 25.97  | 32.57    | 32.65      | 32.65   | 32.65 |
+  ------------------------------------------------------------------------
+
+  6433 reflections have been rejected as outliers
+
+  Summary statistics for observations matched to predictions:
+  --------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med        | Q3      | Max    |
+  --------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.2916 | -0.04138 | 0.0001204  | 0.041   | 0.3683 |
+  | Yc - Yo (mm)      | -0.4838 | -0.03481 | 0.0008164  | 0.03518 | 0.4917 |
+  | Phic - Phio (deg) | -0.6969 | -0.06416 | -0.0008647 | 0.06351 | 0.7644 |
+  | X weights         | 80.55   | 128      | 132        | 134     | 135.2  |
+  | Y weights         | 77.02   | 127.8    | 131.9      | 134.1   | 135.2  |
+  | Phi weights       | 26.58   | 32.57    | 32.65      | 32.65   | 32.65  |
+  --------------------------------------------------------------------------
+
+  Performing refinement...
+
+  Refinement steps:
+  --------------------------------------------------
+  | Step | Nref   | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |        | (mm)     | (mm)     | (deg)    |
+  --------------------------------------------------
+  | 0    | 186145 | 0.063617 | 0.058127 | 0.085801 |
+  | 1    | 186145 | 0.056976 | 0.05538  | 0.085719 |
+  | 2    | 186145 | 0.049808 | 0.052619 | 0.085597 |
+  | 3    | 186145 | 0.04634  | 0.051408 | 0.085475 |
+  | 4    | 186145 | 0.045568 | 0.051142 | 0.085391 |
+  | 5    | 186145 | 0.04538  | 0.051014 | 0.085337 |
+  | 6    | 186145 | 0.045228 | 0.050729 | 0.085285 |
+  | 7    | 186145 | 0.045054 | 0.050076 | 0.085215 |
+  | 8    | 186145 | 0.044868 | 0.049034 | 0.085115 |
+  | 9    | 186145 | 0.044746 | 0.048167 | 0.085025 |
+  | 10   | 186145 | 0.044708 | 0.047833 | 0.08498  |
+  | 11   | 186145 | 0.044695 | 0.047759 | 0.084969 |
+  | 12   | 186145 | 0.04468  | 0.047738 | 0.084967 |
+  | 13   | 186145 | 0.044668 | 0.047726 | 0.084967 |
+  | 14   | 186145 | 0.044662 | 0.047721 | 0.084967 |
+  | 15   | 186145 | 0.04466  | 0.047719 | 0.084967 |
+  --------------------------------------------------
+  RMSD no longer decreasing
+
+  RMSDs by experiment:
+  -----------------------------------------------
+  | Exp | Nref   | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |        | (px)    | (px)    | (images) |
+  -----------------------------------------------
+  | 0   | 186145 | 0.25965 | 0.27743 | 0.24276  |
   -----------------------------------------------
 
   RMSDs by panel:
@@ -290,77 +524,87 @@ Here is the output::
   | Panel | Nref | RMSD_X   | RMSD_Y  | RMSD_Z   |
   |       |      | (px)     | (px)    | (images) |
   ------------------------------------------------
-  | 0     | 63   | 0.43761  | 0.59343 | 0.22242  |
-  | 1     | 1363 | 0.34575  | 0.46174 | 0.26593  |
-  | 2     | 3076 | 0.41044  | 0.40681 | 0.26674  |
-  | 3     | 1630 | 0.46819  | 0.40144 | 0.25618  |
-  | 4     | 112  | 0.39168  | 0.43874 | 0.2404   |
-  | 5     | 394  | 0.36022  | 0.51907 | 0.25565  |
-  | 6     | 3489 | 0.32483  | 0.48727 | 0.2574   |
-  | 7     | 6172 | 0.30681  | 0.27397 | 0.2534   |
-  | 8     | 3908 | 0.36528  | 0.38764 | 0.25624  |
-  | 9     | 680  | 0.45094  | 0.45795 | 0.25022  |
-  | 10    | 1178 | 0.32726  | 0.5171  | 0.26474  |
-  | 11    | 5690 | 0.2811   | 0.29208 | 0.24445  |
-  | 12    | 9385 | 0.36543  | 0.23363 | 0.23893  |
-  | 13    | 6878 | 0.31472  | 0.31484 | 0.23731  |
-  | 14    | 1749 | 0.44638  | 0.47916 | 0.25978  |
-  | 15    | 1870 | 0.28936  | 0.47177 | 0.26865  |
-  | 16    | 6328 | 0.19245  | 0.29027 | 0.21606  |
-  | 17    | 7599 | 0.17261  | 0.17213 | 0.22109  |
-  | 18    | 7072 | 0.36515  | 0.19168 | 0.20884  |
-  | 19    | 2609 | 0.38794  | 0.43612 | 0.24767  |
-  | 20    | 1806 | 0.41482  | 0.58552 | 0.33021  |
-  | 21    | 4247 | 0.35742  | 0.34731 | 0.19571  |
-  | 22    | 3558 | 0.21577  | 0.30826 | 0.20734  |
-  | 23    | 4103 | 0.36506  | 0.19519 | 0.1819   |
-  | 24    | 2270 | 0.24861  | 0.4954  | 0.2843   |
-  | 25    | 79   | 0.32992  | 0.70354 | 0.50852  |
-  | 26    | 210  | 0.15254  | 0.24686 | 0.24963  |
-  | 27    | 201  | 0.13616  | 0.18361 | 0.17548  |
-  | 28    | 167  | 0.095196 | 0.22282 | 0.22815  |
-  | 29    | 36   | 0.35193  | 0.50843 | 0.37494  |
-  | 30    | 1283 | 0.57562  | 0.37178 | 0.33153  |
-  | 31    | 2865 | 0.15601  | 0.20173 | 0.18891  |
-  | 32    | 2535 | 0.20577  | 0.14842 | 0.19661  |
-  | 33    | 2982 | 0.13275  | 0.31198 | 0.20958  |
-  | 34    | 1754 | 0.40887  | 0.44466 | 0.3884   |
-  | 35    | 1934 | 0.60375  | 0.36473 | 0.2557   |
-  | 36    | 5875 | 0.55012  | 0.29471 | 0.19304  |
-  | 37    | 5992 | 0.21294  | 0.11923 | 0.21505  |
-  | 38    | 6589 | 0.22515  | 0.21212 | 0.21398  |
-  | 39    | 2763 | 0.38378  | 0.41087 | 0.28153  |
-  | 40    | 1512 | 0.50435  | 0.37702 | 0.25212  |
-  | 41    | 6476 | 0.2759   | 0.22112 | 0.22689  |
-  | 42    | 9212 | 0.40231  | 0.18054 | 0.22522  |
-  | 43    | 7521 | 0.22574  | 0.29632 | 0.23973  |
-  | 44    | 2392 | 0.39211  | 0.42886 | 0.2795   |
-  | 45    | 611  | 0.56255  | 0.48595 | 0.26298  |
-  | 46    | 4379 | 0.41975  | 0.4279  | 0.25309  |
-  | 47    | 7749 | 0.28495  | 0.43514 | 0.24637  |
-  | 48    | 5470 | 0.66489  | 0.37512 | 0.25272  |
-  | 49    | 1210 | 0.42496  | 0.53357 | 0.27586  |
-  | 50    | 127  | 0.89456  | 0.46188 | 0.24677  |
-  | 51    | 2235 | 0.7014   | 0.33806 | 0.2579   |
-  | 52    | 4379 | 0.39793  | 0.38196 | 0.25756  |
-  | 53    | 2757 | 0.43811  | 0.39934 | 0.26732  |
-  | 54    | 327  | 0.53208  | 0.50801 | 0.28399  |
-  | 56    | 457  | 0.58832  | 0.43364 | 0.26501  |
-  | 57    | 1507 | 0.69138  | 0.66988 | 0.25896  |
-  | 58    | 786  | 0.52859  | 0.50638 | 0.27265  |
-  | 59    | 39   | 0.45783  | 0.65016 | 0.25962  |
+  | 0     | 64   | 0.32036  | 0.57819 | 0.22482  |
+  | 1     | 1361 | 0.34304  | 0.4111  | 0.26504  |
+  | 2     | 3079 | 0.3561   | 0.36483 | 0.26682  |
+  | 3     | 1632 | 0.37843  | 0.37838 | 0.25453  |
+  | 4     | 112  | 0.39065  | 0.39675 | 0.23706  |
+  | 5     | 394  | 0.30539  | 0.48132 | 0.25442  |
+  | 6     | 3490 | 0.29682  | 0.35249 | 0.25661  |
+  | 7     | 6178 | 0.28525  | 0.27486 | 0.25318  |
+  | 8     | 3909 | 0.31728  | 0.30551 | 0.25565  |
+  | 9     | 675  | 0.39465  | 0.42802 | 0.24507  |
+  | 10    | 1175 | 0.30057  | 0.46365 | 0.26215  |
+  | 11    | 5685 | 0.23485  | 0.27143 | 0.24326  |
+  | 12    | 9386 | 0.20171  | 0.18887 | 0.23872  |
+  | 13    | 6880 | 0.23494  | 0.23081 | 0.23689  |
+  | 14    | 1746 | 0.31911  | 0.40137 | 0.25357  |
+  | 15    | 1870 | 0.27575  | 0.44911 | 0.26334  |
+  | 16    | 6321 | 0.18338  | 0.21691 | 0.21382  |
+  | 17    | 7608 | 0.14673  | 0.13459 | 0.22118  |
+  | 18    | 7075 | 0.15323  | 0.1772  | 0.20816  |
+  | 19    | 2608 | 0.27977  | 0.40106 | 0.23663  |
+  | 20    | 1803 | 0.24748  | 0.54944 | 0.31271  |
+  | 21    | 4249 | 0.15151  | 0.21436 | 0.18971  |
+  | 22    | 3560 | 0.11336  | 0.12431 | 0.20676  |
+  | 23    | 4103 | 0.10087  | 0.16239 | 0.17534  |
+  | 24    | 2271 | 0.20061  | 0.46907 | 0.24929  |
+  | 25    | 476  | 0.26774  | 0.94809 | 0.69743  |
+  | 26    | 927  | 0.10167  | 0.22193 | 0.33398  |
+  | 27    | 974  | 0.097735 | 0.13559 | 0.1876   |
+  | 28    | 977  | 0.069491 | 0.1907  | 0.29589  |
+  | 29    | 549  | 0.19349  | 0.91362 | 0.67233  |
+  | 30    | 1474 | 0.31601  | 0.36268 | 0.32879  |
+  | 31    | 3209 | 0.13728  | 0.15038 | 0.18643  |
+  | 32    | 2829 | 0.10162  | 0.11078 | 0.19453  |
+  | 33    | 3276 | 0.10363  | 0.17357 | 0.2043   |
+  | 34    | 1951 | 0.20521  | 0.4038  | 0.36983  |
+  | 35    | 1931 | 0.37408  | 0.28915 | 0.24379  |
+  | 36    | 5869 | 0.18862  | 0.14476 | 0.1912   |
+  | 37    | 5991 | 0.13887  | 0.11716 | 0.21506  |
+  | 38    | 6591 | 0.15001  | 0.19861 | 0.21179  |
+  | 39    | 2763 | 0.25238  | 0.36458 | 0.26476  |
+  | 40    | 1511 | 0.47841  | 0.27181 | 0.24826  |
+  | 41    | 6461 | 0.27368  | 0.18468 | 0.22587  |
+  | 42    | 9213 | 0.19848  | 0.15776 | 0.22531  |
+  | 43    | 7521 | 0.21923  | 0.24706 | 0.2383   |
+  | 44    | 2390 | 0.32645  | 0.40052 | 0.27085  |
+  | 45    | 611  | 0.55212  | 0.29673 | 0.26008  |
+  | 46    | 4378 | 0.38894  | 0.24988 | 0.25198  |
+  | 47    | 7747 | 0.2824   | 0.2289  | 0.24614  |
+  | 48    | 5470 | 0.29905  | 0.31716 | 0.25135  |
+  | 49    | 1210 | 0.41311  | 0.47572 | 0.2691   |
+  | 50    | 127  | 0.69191  | 0.39228 | 0.2447   |
+  | 51    | 2231 | 0.47797  | 0.32129 | 0.25717  |
+  | 52    | 4378 | 0.38899  | 0.31331 | 0.25676  |
+  | 53    | 2758 | 0.39246  | 0.40955 | 0.26575  |
+  | 54    | 327  | 0.48186  | 0.52671 | 0.2798   |
+  | 56    | 458  | 0.57234  | 0.42803 | 0.2643   |
+  | 57    | 1507 | 0.494    | 0.41177 | 0.25741  |
+  | 58    | 786  | 0.48028  | 0.48906 | 0.26898  |
+  | 59    | 40   | 0.39499  | 0.38962 | 0.2466   |
   ------------------------------------------------
-  Saving refined experiments to refined_experiments.json
+  Saving refined experiments to refined_experiments_lev1.json
+  Saving refined reflections to refined_reflections_lev1.pickle
 
-Outlier rejection has cleaned up the positional residuals so now the greatest
-deviation is within 0.4 mm of the predicted position. The angular extreme is
-now just over 0.4 degrees. Coverage of the outer and central panels (where
-reflections are occluded by the backstop or thrown away for being too close
-to the spindle) is still a little low. Notably, panel 55 (a corner panel) is
-completely missing.
+Following refinement, we repeat the analysis of positional residuals::
+
+  mv analysis analysis_lev0
+  dials.analyse_output refined_reflections.pickle grid_size=5,12
+  mv analysis analysis_lev1
+
+The positional residual plots for X and Y,
+:file:`analysis_lev1/centroid/centroid_diff_x.png`
+and :file:`analysis_lev1/centroid/centroid_diff_y.png` make it clear that
+despite poor coverage on some panels, the systematic shifts have been cleaned
+up by the refinement job.
+
+  .. image:: figures/centroid_diff_x_multi_panel_lev0.png
+
+  .. image:: figures/centroid_diff_y_multi_panel_lev0.png
 
 Acknowledgements
 ----------------
 
-Dave Hall (Diamond Light Source) for collecting the data
+Dave Hall (Diamond Light Source) for collecting the data.
 
