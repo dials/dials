@@ -2,7 +2,11 @@ import cPickle as pickle
 from dials.array_family import flex
 import math
 
-table = pickle.load(open('integrated_reflections_table.pickle', 'rb'))
+#table = pickle.load(open('integrated_reflections_table.pickle', 'rb'))
+
+table = pickle.load(open('../../../../../../biweekly_exercises/running_tst/running_dials_22_jan_2015/indexed.pickle', 'rb'))
+show_reflections(table)
+
 old_example = '''
 print dir(table)
 print len(table)
