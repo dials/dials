@@ -31,6 +31,10 @@ from crystals of TehA, a well-diffracting integral membrane protein measured
 using *in situ* diffraction from crystallisation plates at room temperature.
 Each sweep provides between 4 and 10 degrees of data.
 
+This tutorial is relatively advanced in that it requires high level scripting
+of the DIALS command line programs, however candidate scripts are provided and
+the tutorial will hopefully be easy enough to follow.
+
 Individual processing
 ---------------------
 
@@ -699,7 +703,7 @@ run is similar to the jobs we ran on individual datasets::
 
 Oops! That wasn't good. Looking at the error we see that experiment 19 provides
 only 6 reflections to refinement, which is disallowed by a default
-parameters of :program:`dials.refine`, namely `minimum_number_of_reflections=20`.
+parameters of :program:`dials.refine`, namely ``minimum_number_of_reflections=20``.
 But from the output of :program:`dials.combine_experiments` we see that experiment
 19 has 243 indexed reflections. What happened? Well, forcing the individual
 experiments to share the beam and detector models of experiment 0 has led to some
@@ -1016,4 +1020,4 @@ FIXME e.g.
 Acknowledgements
 ----------------
 
-Danny Axford, Nien-Jen Hu, James Foadi, Hassanul Ghani Choudhury, So Iwata, Konstantinos Beis, Gwyndaf Evans & Yilmaz Alguel
+Danny Axford, Nien-Jen Hu, James Foadi, Hassanul Ghani Choudhury, So Iwata, Konstantinos Beis, Pierre Aller, Gwyndaf Evans & Yilmaz Alguel
