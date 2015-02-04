@@ -932,7 +932,7 @@ the tables of results binned by resolution we see that the improvements are limi
 to the low resolution, and the results are worse at high resolution. For example,
 we can make a quick plot of the profile fitting correlation coeffients.
 
-..image:: figures/CC_metrology_comparison.png
+  .. image:: figures/CC_metrology_comparison.png
 
 From this we see the crossover point at about :math:`\frac{1}{d_\textrm{min}^2} = 0.6`
 or a resolution of about 1.3 Angstroms.
