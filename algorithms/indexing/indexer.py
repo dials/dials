@@ -1058,8 +1058,8 @@ class indexer_base(object):
     import copy
     params = copy.deepcopy(self.all_params)
     params.refinement.parameterisation.crystal.scan_varying = False
-    params.refinement.parameterisation.detector.fix = "all"
-    params.refinement.parameterisation.beam.fix = "all"
+    #params.refinement.parameterisation.detector.fix = "all"
+    #params.refinement.parameterisation.beam.fix = "all"
     params.refinement.refinery.max_iterations = 1
     params.refinement.reflections.minimum_number_of_reflections = 1
 
