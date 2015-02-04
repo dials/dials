@@ -270,19 +270,35 @@ def run(args):
 
   from dials.util.options import OptionParser
   from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
 
   parser = OptionParser(
     phil=master_phil,
     read_datablocks=True,
+    read_experiments=True,
     read_reflections=True,
     check_format=False)
 
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)[0]
-  assert len(datablocks) == 1
-  imageset = datablocks[0].extract_imagesets()[0]
+
+  if len(datablocks) == 0:
+    if len(experiments) > 0:
+      imagesets = experiments.imagesets()
+    else:
+      parser.print_help()
+      return
+  elif len(datablocks) > 1:
+    raise Sorry("Only one DataBlock can be processed at a time")
+  else:
+    imagesets = datablocks[0].extract_imagesets()
+
+  if len(imagesets) > 1:
+    raise Sorry("Only one ImageSet can be processed at a time")
+  imageset = imagesets[0]
 
   import wxtbx.app
   a = wxtbx.app.CCTBXApp(0)
