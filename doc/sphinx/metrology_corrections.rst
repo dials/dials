@@ -945,8 +945,8 @@ we can make a quick plot of the profile fitting correlation coeffients.
 
   .. image:: figures/CC_metrology_comparison.png
 
-From this we see the crossover point at about :math:`\frac{1}{d_\textrm{min}^2} = 0.6`
-or a resolution of about 1.3 Angstroms.
+From this we see the crossover point at about :math:`\frac{1}{d_\textrm{mid}^2} = 0.55`
+or a resolution of about 1.35 Angstroms.
 
 So, finally, we conclude that although we have the means to do metrology analysis
 and corrections
