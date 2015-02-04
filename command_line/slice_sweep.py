@@ -146,7 +146,7 @@ def slice_datablocks(datablocks, scan_ranges):
     scans.extend(db.unique_scans())
 
   if len(scans) != len(scan_ranges):
-    raise Sorry("Unique scans in the input datablock list and supplued scan_ranges are not of the same length")
+    raise Sorry("Unique scans in the input datablock list and supplied scan_ranges are not of the same length")
 
   for scan, sr in zip(scans, scan_ranges):
     if sr is None: continue
