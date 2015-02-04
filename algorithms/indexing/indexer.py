@@ -245,6 +245,18 @@ include scope dials.algorithms.refinement.refiner.phil_scope
 master_params = master_phil_scope.fetch().extract()
 
 
+def filter_reflections_by_scan_range(reflections, scan_range):
+  reflections_in_scan_range = flex.bool(len(reflections), False)
+  frame_number = reflections['xyzobs.px.value'].parts()[2]
+
+  for scan_range in scan_range:
+    if scan_range is None: continue
+    range_start, range_end = scan_range
+    reflections_in_scan_range.set_selected(
+      (frame_number >= range_start) & (frame_number < range_end), True)
+  return reflections.select(reflections_in_scan_range)
+
+
 class vector_group(object):
   def __init__(self):
     self.vectors = []
@@ -751,22 +763,9 @@ class indexer_base(object):
         info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
 
   def filter_reflections_by_scan_range(self):
-    reflections_in_scan_range = flex.size_t()
-    for i_ref, refl in enumerate(self.reflections):
-      frame_number = refl['xyzobs.px.value'][2]
-
-      if len(self.params.scan_range):
-        reflections_in_range = False
-        for scan_range in self.params.scan_range:
-          if scan_range is None: continue
-          range_start, range_end = scan_range
-          if frame_number >= range_start and frame_number < range_end:
-            reflections_in_range = True
-            break
-        if not reflections_in_range:
-          continue
-      reflections_in_scan_range.append(i_ref)
-    self.reflections = self.reflections.select(reflections_in_scan_range)
+    if len(self.params.scan_range):
+      self.reflections = filter_reflections_by_scan_range(
+        self.reflections, self.params.scan_range)
 
   @staticmethod
   def map_spots_pixel_to_mm_rad(spots, detector, scan):
