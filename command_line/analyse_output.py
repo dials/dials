@@ -128,11 +128,12 @@ class per_panel_plot(object):
           if sel.count(True) > 0:
             rlist_sel = rlist.select(sel)
             if len(rlist_sel) <= 1:
-              continue
-            ax = self.plot_one_panel(axes[i_row][i_col], rlist_sel)
+              ax = pyplot.scatter([],[]) # create empty plot
+            else:
+              ax = self.plot_one_panel(axes[i_row][i_col], rlist_sel)
+              clim = (min(clim[0], ax.get_clim()[0]),
+                      max(clim[1], ax.get_clim()[1]))
             plots.append(ax)
-            clim = (min(clim[0], ax.get_clim()[0]),
-                    max(clim[1], ax.get_clim()[1]))
 
           axes[i_row][i_col].set_xlim(min_x, max_x)
           axes[i_row][i_col].set_ylim(min_y, max_y)
