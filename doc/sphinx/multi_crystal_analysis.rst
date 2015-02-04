@@ -1012,12 +1012,22 @@ accurate depiction of reality, and thus the unit cells are closer to the truth.
 What to do next?
 ----------------
 
-FIXME e.g.
+This has given us a good starting point for analysis with BLEND. However, because
+of the shortcuts we took with integration we are not yet ready to continue with
+BLEND's synthesis mode. At this point we might assess where we are and try a few
+things:
 
-* go back and fix datasets that didn't index properly
-* integrate data properly for blend synthesis mode
+* Go back and fix datasets that didn't index properly. We could edit our processing
+  script to attempt :samp:`method=fft1d` for example if the 3D FFT indexing was
+  unsuccessful.
+* Integrate data properly for BLEND's synthesis mode. We should remove the resolution
+  limits and allow :program:`dials.integrate` to do profile fitting as well as
+  summation integration.
 
 Acknowledgements
 ----------------
 
-Danny Axford, Nien-Jen Hu, James Foadi, Hassanul Ghani Choudhury, So Iwata, Konstantinos Beis, Pierre Aller, Gwyndaf Evans & Yilmaz Alguel
+The TehA project and original BLEND analysis was performed by scientists at Diamond
+Light Source and the Membrane Protein Laboratory. We thank the following for
+access to the data: Danny Axford, Nien-Jen Hu, James Foadi, Hassanul Ghani Choudhury, So Iwata,
+Konstantinos Beis, Pierre Aller, Gwyndaf Evans & Yilmaz Alguel

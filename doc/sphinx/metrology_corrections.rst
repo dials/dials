@@ -19,7 +19,7 @@ good diffraction data to refine against.
 
 Here we have access to a thaumatin dataset collected with low dose to avoid
 radiation damage and with the detector 400 mm from the sample to ensure the
-coverage of reflections extends right out to the corner of the images.
+coverage of reflections extends right out towards the corners of the images.
 
 Preparing for multi-tile refinement
 -----------------------------------
@@ -64,12 +64,16 @@ we can get, right out to the corners
 
 
 Now to index the data. Although it is a well-diffracting crystal, running indexing
-with defaults finds an approximate supercell with the *a* and *b* lengths slighly
-more than doubled. FIXME WHAT CAN WE DO HERE? We don't worry too much about that
-though, because if we pass in the known unit cell then it works just fine. We
+with defaults finds an approximate supercell with the *a* and *b* lengths slightly
+more than doubled. Inspection of the found spots with :program:`dials.reciprocal_lattice_viewer`
+shows curved lines of spots rather than a regular grid, indicating a poor starting
+model. There are plenty of things that can be done to get indexing to find the
+correct cell here. If you have time you might like to try a few options out.
+However, if not, we won't worry too much about it, because if we pass
+in the known unit cell for thaumatin then it works just fine. We
 also chose to apply tetragonal symmetry immediately::
 
-  dials.index datablock.json strong.pickle space_group="P 4" unit_cell="58.7 58.7 151.59 90 90 90"
+  dials.index datablock.json strong.pickle space_group="P 4" unit_cell="58 58 150 90 90 90"
 
 The output of refinement in the highest resolution macrocycle is as follows::
 
@@ -379,10 +383,10 @@ dataset.
 Before moving on to the multi-panel refinement job we will take a look at the
 refined reflections file::
 
-  dials.analyse_output refined_reflections.pickle grid_size=5,12
+  dials.analyse_output refined_reflections_lev0.pickle grid_size=5,12
 
 Here we had to tell :program:`dials.analyse_output` about the arrangement of
-the panels, as it does not use the :file:`experiments.json` file so cannot
+the panels, as it does not use the :file:`refined_experiments_lev0.json` file so cannot
 figure this out itself.
 
 Here are the positional residual plots for X and Y, :file:`analysis/centroid/centroid_diff_x.png`
@@ -407,7 +411,7 @@ with a single lower level, :samp:`hieararchy_level=1`, in which every panel is
 treated separately. We now start from the previous refinement run
 specifying this hierarchy level::
 
-  dials.refine indexed.pickle refined_experiments.json do_outlier_rejection=true \
+  dials.refine indexed.pickle refined_experiments_lev0.json do_outlier_rejection=true \
    use_all_reflections=true output.reflections=refined_reflections_lev1.pickle \
    close_to_spindle_cutoff=0.01 bin_size_fraction=0 hierarchy_level=1 \
    output.experiments=refined_experiments_lev1.json
@@ -602,6 +606,355 @@ up by the refinement job.
   .. image:: figures/centroid_diff_x_multi_panel_lev1.png
 
   .. image:: figures/centroid_diff_y_multi_panel_lev1.png
+
+Applying the corrected metrology
+--------------------------------
+
+Although we have corrected for small shifts and rotations apparently present from
+spot positions recorded in one dataset, what we would really like to do is apply
+these corrections to a different dataset. Short of rewriting the :program:`dxtbx`
+Format object for the detector to incorporate the corrections, we could try to
+'copy and paste' the detector from one dataset to the other.
+
+We will choose the standard tutorial data to try this, from the
+:doc:`advanced_tutorial`. First we have to process that data using the
+multi-panel version of the Pilatus P6M detector model. Assuming the environment
+variable :samp:`P6M_60_PANEL=1` is set in this terminal we just need to repeat
+the commands from the tutorial::
+
+  mkdir tutorial_data
+  cd !$
+  dials.import /path/to/th_8_2*cbf
+  dials.find_spots datablock.json nproc=4
+  dials.index datablock.json strong.pickle space_group="P4"
+  dials.refine experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0
+
+Note these are the overall RMSDs (comparable to the results from the
+:doc:`advanced_tutorial`, as we'd expect)::
+
+  RMSDs by experiment:
+  ----------------------------------------------
+  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |       | (px)    | (px)    | (images) |
+  ----------------------------------------------
+  | 0   | 53916 | 0.26341 | 0.21858 | 0.106    |
+  ----------------------------------------------
+
+Now we do the scan-varying refinement and integrate::
+
+  dials.refine refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.json
+  dials.integrate sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4
+  dials.export_mtz integrated.pickle sv_refined_experiments.json hklout=integrated.mtz ignore_panels=true
+  dials.analyse_output integrated.pickle
+
+From the end of :file:`dials.integrate.log`::
+
+  Summary of integration results binned by resolution
+  ----------------------------------------------------------------------------------------------------------
+  d min |  d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
+        |        |        |        |        |       |       |       |       |    (sum) |    (prf) |
+  ----------------------------------------------------------------------------------------------------------
+   1.17 |   1.19 |    324 |      3 |      0 |     0 |   327 |   260 |  0.04 |     0.37 |     0.54 |     0.11
+   1.19 |   1.21 |   1093 |      7 |      0 |     0 |  1100 |   984 |  0.04 |     0.43 |     0.54 |     0.09
+   1.21 |   1.23 |   2317 |     14 |      0 |     0 |  2331 |  2138 |  0.05 |     0.48 |     0.57 |     0.10
+   1.23 |   1.26 |   3776 |     27 |      0 |     0 |  3803 |  3581 |  0.05 |     0.53 |     0.66 |     0.12
+   1.26 |   1.28 |   5416 |     34 |      0 |     0 |  5450 |  5100 |  0.05 |     0.59 |     0.74 |     0.14
+   1.28 |   1.31 |   7235 |     54 |      0 |     0 |  7289 |  6806 |  0.06 |     0.64 |     0.81 |     0.16
+   1.31 |   1.35 |   9504 |     63 |      0 |     0 |  9567 |  8952 |  0.06 |     0.77 |     0.95 |     0.19
+   1.35 |   1.38 |  12495 |     87 |      0 |     0 | 12582 | 11826 |  0.07 |     0.90 |     1.11 |     0.21
+   1.38 |   1.42 |  16967 |    111 |      0 |     0 | 17078 | 16125 |  0.08 |     0.98 |     1.20 |     0.23
+   1.42 |   1.47 |  20187 |    153 |      0 |     0 | 20340 | 19437 |  0.08 |     1.20 |     1.43 |     0.27
+   1.47 |   1.52 |  23623 |    258 |      0 |     0 | 23881 | 22761 |  0.09 |     1.47 |     1.71 |     0.30
+   1.52 |   1.58 |  24126 |    271 |      0 |     0 | 24397 | 23289 |  0.10 |     1.75 |     2.03 |     0.35
+   1.58 |   1.66 |  25506 |    281 |      0 |     0 | 25787 | 24863 |  0.11 |     2.17 |     2.46 |     0.41
+   1.66 |   1.74 |  24269 |    241 |      0 |     0 | 24510 | 23389 |  0.12 |     2.71 |     3.01 |     0.46
+   1.74 |   1.85 |  24780 |    238 |      0 |     0 | 25018 | 24019 |  0.15 |     3.50 |     3.82 |     0.52
+   1.85 |   2.00 |  25710 |    278 |      0 |     0 | 25988 | 25059 |  0.19 |     4.87 |     5.20 |     0.59
+   2.00 |   2.20 |  24757 |    274 |      0 |     0 | 25031 | 24000 |  0.26 |     6.58 |     6.94 |     0.66
+   2.20 |   2.51 |  25673 |    252 |      0 |     0 | 25925 | 25119 |  0.29 |     8.84 |     9.15 |     0.69
+   2.51 |   3.17 |  25214 |    297 |      0 |     0 | 25511 | 24607 |  0.37 |    12.78 |    13.01 |     0.73
+   3.17 | 151.26 |  25766 |    303 |      0 |     0 | 26069 | 25226 |  0.45 |    25.48 |    25.36 |     0.74
+  ----------------------------------------------------------------------------------------------------------
+
+  Summary of integration results for the whole dataset
+  ----------------------------------------------
+  Number fully recorded                 | 338720
+  Number partially recorded             | 4747
+  Number with overloaded pixels         | 0
+  Number in powder rings                | 0
+  Number processed with summation       | 331984
+  Number processed with profile fitting | 317541
+  <Ibg>                                 | 0.18
+  <I/sigI> (summation)                  | 5.63
+  <I/sigI> (profile fitting)            | 5.92
+  <CC prf>                              | 0.43
+  ----------------------------------------------
+
+Now, how can we apply the metrology? Here we will use :program:`dials.combine_experiments`
+with the :samp:`reference_from_experiment.detector` option to overwrite the detector
+model from our :file:`experiments.json`. We don't really want the combined experiments
+file, only this side-effect, so we immediately split it again::
+
+  dials.combine_experiments experiments=../refined_experiments_lev1.json experiments=refined_experiments.json reflections=../refined_reflections_lev1.pickle reflections=indexed.pickle reference_from_experiment.detector=0
+  dials.split_experiments combined_experiments.json combined_reflections.pickle
+
+This results in a few files, of which :file:`experiments_1.json` is interesting.
+It contains the updated detector - but beware the detector distance is now
+completely wrong! It is at about 400 mm rather than 265 mm. We could correct that
+by editing :file:`experiments_1.json` directly, but actually there is no need.
+:program:`dials.refine` is *extremely forgiving* of bad starting geometry, though
+we should remember to fix the beam and crystal models::
+
+  dials.refine experiments_1.json indexed.pickle output.experiments=corrected_refined_experiments.json beam.fix=all crystal.fix=all
+
+A snippet from the log file shows that the detector distance offset was largely
+corrected in a single step::
+
+  Refinement steps:
+  ------------------------------------------------
+  | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |      | (mm)     | (mm)     | (deg)    |
+  ------------------------------------------------
+  | 0    | 4049 | 40.622   | 40.688   | 0.019202 |
+  | 1    | 4049 | 0.28874  | 0.30251  | 0.019202 |
+  | 2    | 4049 | 0.045937 | 0.045205 | 0.019202 |
+  ------------------------------------------------
+
+Now we'll let the crystal and beam refine along with the new detector to RMSD convergence::
+
+  dials.refine corrected_refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 output.experiments=corrected_refined_experiments.json
+
+Here is the output::
+
+  The following parameters have been modified:
+
+  output {
+    experiments = corrected_refined_experiments.json
+  }
+  refinement {
+    target {
+      bin_size_fraction = 0.0
+    }
+    reflections {
+      use_all_reflections = true
+      do_outlier_rejection = true
+    }
+  }
+  input {
+    experiments = corrected_refined_experiments.json
+    reflections = indexed.pickle
+  }
+
+  Configuring refiner
+
+  Summary statistics for observations matched to predictions:
+  -------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med       | Q3      | Max    |
+  -------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.4701 | -0.02988 | -0.01025  | 0.02159 | 0.6902 |
+  | Yc - Yo (mm)      | -0.7267 | -0.02846 | -0.005739 | 0.02339 | 1.247  |
+  | Phic - Phio (deg) | -1.409  | -0.01035 | 5.562e-05 | 0.01104 | 0.4029 |
+  | X weights         | 113.5   | 133.7    | 134.5     | 135     | 135.2  |
+  | Y weights         | 109.2   | 133.4    | 134.5     | 135     | 135.2  |
+  | Phi weights       | 155.5   | 175.8    | 177       | 177.5   | 177.8  |
+  -------------------------------------------------------------------------
+
+  2382 reflections have been rejected as outliers
+
+  Summary statistics for observations matched to predictions:
+  --------------------------------------------------------------------------
+  |                   | Min     | Q1        | Med       | Q3      | Max    |
+  --------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.1148 | -0.02997  | -0.01092  | 0.01966 | 0.331  |
+  | Yc - Yo (mm)      | -0.1397 | -0.02791  | -0.005742 | 0.02263 | 0.2531 |
+  | Phic - Phio (deg) | -0.1881 | -0.009998 | 0.0001419 | 0.0109  | 0.1176 |
+  | X weights         | 113.5   | 133.7     | 134.6     | 135     | 135.2  |
+  | Y weights         | 109.9   | 133.5     | 134.5     | 135     | 135.2  |
+  | Phi weights       | 158.2   | 175.9     | 177       | 177.5   | 177.8  |
+  --------------------------------------------------------------------------
+
+  Performing refinement...
+
+  Refinement steps:
+  -------------------------------------------------
+  | Step | Nref  | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |       | (mm)     | (mm)     | (deg)    |
+  -------------------------------------------------
+  | 0    | 53738 | 0.04524  | 0.04251  | 0.015875 |
+  | 1    | 53738 | 0.043495 | 0.041514 | 0.015395 |
+  | 2    | 53738 | 0.042657 | 0.040762 | 0.01535  |
+  | 3    | 53738 | 0.040455 | 0.038826 | 0.015287 |
+  | 4    | 53738 | 0.0356   | 0.034575 | 0.015251 |
+  | 5    | 53738 | 0.028146 | 0.027998 | 0.015246 |
+  | 6    | 53738 | 0.021919 | 0.022913 | 0.015245 |
+  | 7    | 53738 | 0.019867 | 0.021931 | 0.015256 |
+  | 8    | 53738 | 0.019579 | 0.02202  | 0.015267 |
+  | 9    | 53738 | 0.019553 | 0.02204  | 0.015269 |
+  | 10   | 53738 | 0.019552 | 0.022041 | 0.015269 |
+  -------------------------------------------------
+  RMSD no longer decreasing
+
+  RMSDs by experiment:
+  ----------------------------------------------
+  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |       | (px)    | (px)    | (images) |
+  ----------------------------------------------
+  | 0   | 53738 | 0.11368 | 0.12815 | 0.10179  |
+  ----------------------------------------------
+
+  RMSDs by panel:
+  -------------------------------------------------
+  | Panel | Nref | RMSD_X   | RMSD_Y   | RMSD_Z   |
+  |       |      | (px)     | (px)     | (images) |
+  -------------------------------------------------
+  | 2     | 18   | 0.18212  | 0.28586  | 0.12145  |
+  | 6     | 125  | 0.15295  | 0.24972  | 0.12934  |
+  | 7     | 609  | 0.1286   | 0.21324  | 0.12291  |
+  | 8     | 265  | 0.1243   | 0.21443  | 0.10878  |
+  | 11    | 1189 | 0.14339  | 0.19084  | 0.10244  |
+  | 12    | 2389 | 0.097393 | 0.16185  | 0.1081   |
+  | 13    | 1550 | 0.084417 | 0.14168  | 0.098364 |
+  | 14    | 148  | 0.14653  | 0.17253  | 0.11116  |
+  | 15    | 254  | 0.21387  | 0.15463  | 0.10746  |
+  | 16    | 2728 | 0.11345  | 0.15427  | 0.081722 |
+  | 17    | 4265 | 0.060489 | 0.1104   | 0.096919 |
+  | 18    | 2952 | 0.07167  | 0.092076 | 0.093342 |
+  | 19    | 565  | 0.1626   | 0.11391  | 0.11975  |
+  | 20    | 534  | 0.18454  | 0.16728  | 0.16016  |
+  | 21    | 2772 | 0.092555 | 0.12647  | 0.076534 |
+  | 22    | 2873 | 0.047736 | 0.10398  | 0.090391 |
+  | 23    | 2686 | 0.063075 | 0.074814 | 0.075038 |
+  | 24    | 729  | 0.16869  | 0.11128  | 0.14306  |
+  | 25    | 119  | 0.81495  | 0.29087  | 0.44711  |
+  | 26    | 406  | 0.080441 | 0.12121  | 0.098888 |
+  | 27    | 425  | 0.052654 | 0.15365  | 0.0754   |
+  | 28    | 364  | 0.06931  | 0.066238 | 0.073655 |
+  | 29    | 100  | 0.85448  | 0.22713  | 0.24889  |
+  | 30    | 579  | 0.21735  | 0.11564  | 0.18439  |
+  | 31    | 1994 | 0.061756 | 0.09509  | 0.068866 |
+  | 32    | 1924 | 0.091952 | 0.11146  | 0.083513 |
+  | 33    | 2166 | 0.088252 | 0.10009  | 0.085247 |
+  | 34    | 519  | 0.13737  | 0.16646  | 0.1872   |
+  | 35    | 634  | 0.16379  | 0.093519 | 0.12164  |
+  | 36    | 2835 | 0.067371 | 0.080697 | 0.081958 |
+  | 37    | 3737 | 0.094318 | 0.086918 | 0.10408  |
+  | 38    | 2806 | 0.098988 | 0.13001  | 0.082836 |
+  | 39    | 417  | 0.17099  | 0.18814  | 0.12774  |
+  | 40    | 227  | 0.20834  | 0.14785  | 0.10324  |
+  | 41    | 1817 | 0.082715 | 0.1174   | 0.10219  |
+  | 42    | 2385 | 0.1096   | 0.12543  | 0.10965  |
+  | 43    | 1589 | 0.12167  | 0.17861  | 0.099929 |
+  | 44    | 88   | 0.21088  | 0.2111   | 0.10221  |
+  | 45    | 28   | 0.19222  | 0.16491  | 0.16288  |
+  | 46    | 472  | 0.094714 | 0.15589  | 0.1232   |
+  | 47    | 1047 | 0.11775  | 0.17961  | 0.12234  |
+  | 48    | 307  | 0.12735  | 0.22443  | 0.11915  |
+  | 51    | 22   | 0.11972  | 0.18238  | 0.11037  |
+  | 52    | 80   | 0.12845  | 0.24552  | 0.1396   |
+  -------------------------------------------------
+  Saving refined experiments to corrected_refined_experiments.json
+
+As a reminder, before metrology correction we had these refined RMSDs from scan-
+static refinement::
+
+  RMSDs by experiment:
+  ----------------------------------------------
+  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |       | (px)    | (px)    | (images) |
+  ----------------------------------------------
+  | 0   | 53916 | 0.26341 | 0.21858 | 0.106    |
+  ----------------------------------------------
+
+After correction they are as follows::
+
+  RMSDs by experiment:
+  ----------------------------------------------
+  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  |     |       | (px)    | (px)    | (images) |
+  ----------------------------------------------
+  | 0   | 53738 | 0.11368 | 0.12815 | 0.10179  |
+  ----------------------------------------------
+
+Let's now do scan-varying refinement then integrate the dataset with corrected metrology::
+
+  dials.refine corrected_refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.json
+  dials.integrate corrected_sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.pickle
+  dials.export_mtz corrected_integrated.pickle corrected_sv_refined_experiments.json hklout=corrected_integrated.mtz ignore_panels=true
+  dials.analyse_output corrected_integrated.pickle
+
+From the integration log::
+
+  Summary of integration results binned by resolution
+  ----------------------------------------------------------------------------------------------------------
+  d min |  d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
+        |        |        |        |        |       |       |       |       |    (sum) |    (prf) |
+  ----------------------------------------------------------------------------------------------------------
+   1.17 |   1.19 |    340 |      3 |      0 |     0 |   343 |   278 |  0.04 |     0.28 |     0.41 |     0.06
+   1.19 |   1.21 |   1125 |      6 |      0 |     0 |  1131 |  1011 |  0.05 |     0.37 |     0.42 |     0.06
+   1.21 |   1.23 |   2346 |     13 |      0 |     0 |  2359 |  2176 |  0.05 |     0.47 |     0.49 |     0.07
+   1.23 |   1.26 |   3776 |     24 |      0 |     0 |  3800 |  3565 |  0.05 |     0.50 |     0.61 |     0.10
+   1.26 |   1.29 |   5448 |     37 |      0 |     0 |  5485 |  5123 |  0.05 |     0.58 |     0.71 |     0.12
+   1.29 |   1.32 |   7241 |     52 |      0 |     0 |  7293 |  6804 |  0.06 |     0.66 |     0.79 |     0.15
+   1.32 |   1.35 |   9522 |     71 |      0 |     0 |  9593 |  8986 |  0.06 |     0.77 |     0.94 |     0.19
+   1.35 |   1.38 |  12528 |     84 |      0 |     0 | 12612 | 11851 |  0.07 |     0.92 |     1.11 |     0.22
+   1.38 |   1.43 |  16954 |    113 |      0 |     0 | 17067 | 16130 |  0.08 |     1.01 |     1.22 |     0.24
+   1.43 |   1.47 |  20247 |    154 |      0 |     0 | 20401 | 19499 |  0.08 |     1.22 |     1.45 |     0.29
+   1.47 |   1.52 |  23553 |    267 |      0 |     0 | 23820 | 22740 |  0.09 |     1.50 |     1.74 |     0.33
+   1.52 |   1.58 |  24022 |    267 |      0 |     0 | 24289 | 23215 |  0.10 |     1.78 |     2.06 |     0.38
+   1.58 |   1.66 |  25479 |    286 |      0 |     0 | 25765 | 24860 |  0.11 |     2.19 |     2.49 |     0.44
+   1.66 |   1.74 |  24305 |    241 |      0 |     0 | 24546 | 23395 |  0.12 |     2.74 |     3.05 |     0.51
+   1.74 |   1.85 |  24742 |    236 |      0 |     0 | 24978 | 23965 |  0.15 |     3.54 |     3.87 |     0.58
+   1.85 |   2.00 |  25657 |    281 |      0 |     0 | 25938 | 24999 |  0.19 |     4.90 |     5.24 |     0.65
+   2.00 |   2.20 |  24755 |    268 |      0 |     0 | 25023 | 24005 |  0.26 |     6.61 |     6.97 |     0.72
+   2.20 |   2.52 |  25596 |    250 |      0 |     0 | 25846 | 25058 |  0.29 |     8.88 |     9.20 |     0.76
+   2.52 |   3.17 |  25140 |    298 |      0 |     0 | 25438 | 24540 |  0.37 |    12.81 |    13.04 |     0.78
+   3.17 | 151.25 |  25720 |    303 |      0 |     0 | 26023 | 25193 |  0.44 |    25.52 |    25.39 |     0.79
+  ----------------------------------------------------------------------------------------------------------
+
+  Summary of integration results for the whole dataset
+  ----------------------------------------------
+  Number fully recorded                 | 338446
+  Number partially recorded             | 4836
+  Number with overloaded pixels         | 0
+  Number in powder rings                | 0
+  Number processed with summation       | 331750
+  Number processed with profile fitting | 317393
+  <Ibg>                                 | 0.18
+  <I/sigI> (summation)                  | 5.65
+  <I/sigI> (profile fitting)            | 5.94
+  <CC prf>                              | 0.47
+  ----------------------------------------------
+
+By comparison with the previous results we can see that correcting the panel
+shifts and mis-orientations has improved the overall profile fitting
+mean :math:`\frac{I}{\sigma_I}` and correlation coefficients. However, comparing
+the tables of results binned by resolution we see that the improvements are limited
+to the low resolution, and the results are worse at high resolution. For example,
+we can make a quick plot of the profile fitting correlation coeffients.
+
+..image:: figures/CC_metrology_comparison.png
+
+From this we see the crossover point at about :math:`\frac{1}{d_\textrm{min}^2} = 0.6`
+or a resolution of about 1.3 Angstroms.
+
+So, finally, we conclude that although we have the means to do metrology analysis
+and corrections
+of modular detectors, we have learned that it is critical to use data that gives
+coverage right out to the corners of the detector so that we can apply the corrected metrology to
+other datasets effectively. With :program:`dials.refine` this could be achieved
+by joint refinement of data from multiple crystals, but it will take a significant
+time to run and use a lot of memory. It is best to do this right, and exactly once!
+
+What to do next
+---------------
+
+* Panel coverage was rather low in the corners. We could try combining more
+  metrology datasets together to improve coverage and make an effort at
+  factoring out crystal-dependent effects.
+* Once we are satisfied with the corrected detector model we can write the
+  changes directly back into the dxtbx Format object, so that they are available
+  immediately for any dataset, without having to perform the 'copy-and-paste'
+  operation presented here.
 
 Acknowledgements
 ----------------

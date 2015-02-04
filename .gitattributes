@@ -409,6 +409,7 @@ doc/sphinx/conf.py -text
 doc/sphinx/conventions.rst -text
 doc/sphinx/data_files.rst -text
 doc/sphinx/developer_tutorial.rst -text
+doc/sphinx/figures/CC_metrology_comparison.png -text svneol=unset#unset
 doc/sphinx/figures/E4.png -text
 doc/sphinx/figures/centroid_diff_x.png -text svneol=unset#unset
 doc/sphinx/figures/centroid_diff_x_multi_panel_lev0.png -text svneol=unset#unset
