@@ -31,7 +31,11 @@ from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 index_only_phil_str = """\
 indexing {
-discover_better_experimental_model = False
+  nproc = 1
+    .type = int(value_min=1)
+    .help = "The number of processes to use."
+
+  discover_better_experimental_model = False
     .type = bool
     .expert_level = 1
   min_cell = 20
@@ -971,89 +975,36 @@ class indexer_base(object):
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
 
-    from libtbx import group_args
-    class Solution(group_args):
-      pass
-
-    # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
-    class SolutionTracker(object):
-      def __init__(self):
-        self.all_solutions = []
-        self.volume_filtered = []
-
-      def append(self, item):
-        self.all_solutions.append(item)
-        self.update_analysis()
-
-      def __len__(self):
-        return len(self.volume_filtered)
-
-      def update_analysis(self):
-        # pre-filter out solutions that only account for a very small
-        # percentage of the indexed spots relative to the best one
-        max_n_indexed = max(s.n_indexed for s in self.all_solutions)
-        self.all_solutions = [
-          s for s in self.all_solutions
-          if s.n_indexed >= 0.05 * max_n_indexed] # 5 percent
-
-        self.best_likelihood = max(
-          s.model_likelihood for s in self.all_solutions)
-        offset = 0
-        while (self.best_likelihood + offset) <= 0:
-          offset += 1
-        self.close_solutions = [
-          s for s in self.all_solutions
-          if (s.model_likelihood+offset) >= (0.85 * (self.best_likelihood+offset))]
-
-        # filter by volume - prefer solutions with a smaller unit cell
-        self.min_volume = min(s.crystal.get_unit_cell().volume()
-                              for s in self.close_solutions)
-        self.volume_filtered = [
-          s for s in self.close_solutions
-          if s.crystal.get_unit_cell().volume() < (1.25 * self.min_volume)]
-
-        # filter by number of indexed reflections - prefer solutions that
-        # account for more of the diffracted spots
-        self.max_n_indexed = max(s.n_indexed for s in self.volume_filtered)
-        self.n_indexed_filtered = [
-          s for s in self.volume_filtered
-          if s.n_indexed >= 0.9 * self.max_n_indexed]
-
-        self.best_filtered_liklihood = max(
-          s.model_likelihood for s in self.n_indexed_filtered)
-
-      def best_solution(self):
-        solutions = [s for s in self.n_indexed_filtered
-                    if s.model_likelihood == self.best_filtered_liklihood]
-        return solutions[0]
-
-    # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
-    class SolutionTrackerSimple(object):
-      def __init__(self):
-        self.all_solutions = []
-
-      def append(self, item):
-        self.all_solutions.append(item)
-        self.update_analysis()
-
-      def __len__(self):
-        return len(self.all_solutions)
-
-      def update_analysis(self):
-        self.best_n_indexed = max(
-          s.n_indexed for s in self.all_solutions)
-
-      def best_solution(self):
-        solutions = [s for s in self.all_solutions
-                    if s.n_indexed == self.best_n_indexed]
-        return solutions[0]
-
     if self.params.basis_vector_combinations.metric == "model_likelihood":
       solutions = SolutionTracker()
     else:
       solutions = SolutionTrackerSimple()
 
-    n_indexed = flex.int()
+    def run_one_refinement(args):
+      params, reflections, experiments = args
+      from dials.algorithms.refinement import RefinerFactory
+      try:
+        logger = logging.getLogger()
+        disabled = logger.disabled
+        logger.disabled = True
+        refiner = RefinerFactory.from_parameters_data_experiments(
+          params, reflections, experiments,
+          verbosity=0)
+        refiner.run()
+      except RuntimeError, e:
+        #print e
+        return
+      else:
+        rmsds = refiner.rmsds()
+        xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
+        model_likelihood = 1.0 - xy_rmsds
+        soln = Solution(model_likelihood=model_likelihood,
+                        crystal=experiments.crystals()[0],
+                        rmsds=rmsds,
+                        n_indexed=len(reflections))
+        return soln
+      finally:
+        logger.disabled = disabled
 
     import copy
     params = copy.deepcopy(self.all_params)
@@ -1062,6 +1013,8 @@ class indexer_base(object):
     #params.refinement.parameterisation.beam.fix = "all"
     params.refinement.refinery.max_iterations = 1
     params.refinement.reflections.minimum_number_of_reflections = 1
+
+    args = []
 
     from dials.algorithms.indexing.compare_orientation_matrices \
          import difference_rotation_matrix_and_euler_angles
@@ -1075,7 +1028,6 @@ class indexer_base(object):
                               scan=self.imagesets[0].get_scan(),
                               crystal=cm)
       self.index_reflections(ExperimentList([experiment]), refl)
-      n_indexed.append((refl['id'] > -1).count(True))
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
@@ -1111,31 +1063,24 @@ class indexer_base(object):
           debug("skipping crystal: too similar to other crystals")
           continue
 
-      from dials.algorithms.refinement import RefinerFactory
-      try:
-        logger = logging.getLogger()
-        disabled = logger.disabled
-        logger.disabled = True
-        refiner = RefinerFactory.from_parameters_data_experiments(
-          params, refl.select(refl['id'] > -1), ExperimentList([experiment]),
-          verbosity=0)
-        refiner.run()
-      except RuntimeError, e:
-        #print e
+      args.append(
+        (params, refl.select(refl['id'] > -1), ExperimentList([experiment])))
+
+    from libtbx import easy_mp
+    results = easy_mp.parallel_map(
+      run_one_refinement,
+      args,
+      processes=self.params.nproc,
+      preserve_exception_message=True,
+    )
+
+    for soln in results:
+      if soln is None:
         continue
-      finally:
-        logger.disabled = disabled
-      rmsds = refiner.rmsds()
-      xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
-      model_likelihood = 1.0 - xy_rmsds
-      solutions.append(
-        Solution(model_likelihood=model_likelihood,
-                 crystal=cm,
-                 rmsds=rmsds,
-                 n_indexed=n_indexed[-1]))
-      debug("unit_cell: " + str(cm.get_unit_cell()))
-      debug("model_likelihood: %.2f" %model_likelihood)
-      debug("n_indexed: %i" %n_indexed[-1])
+      solutions.append(soln)
+      debug("unit_cell: " + str(soln.crystal.get_unit_cell()))
+      debug("model_likelihood: %.2f" %soln.model_likelihood)
+      debug("n_indexed: %i" %soln.n_indexed)
 
     if len(solutions):
       best_solution = solutions.best_solution()
@@ -1352,6 +1297,84 @@ class indexer_base(object):
 
   def find_lattices(self):
     raise NotImplementedError()
+
+
+from libtbx import group_args
+class Solution(group_args):
+  pass
+
+# Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
+class SolutionTracker(object):
+  def __init__(self):
+    self.all_solutions = []
+    self.volume_filtered = []
+
+  def append(self, item):
+    self.all_solutions.append(item)
+    self.update_analysis()
+
+  def __len__(self):
+    return len(self.volume_filtered)
+
+  def update_analysis(self):
+    # pre-filter out solutions that only account for a very small
+    # percentage of the indexed spots relative to the best one
+    max_n_indexed = max(s.n_indexed for s in self.all_solutions)
+    self.all_solutions = [
+      s for s in self.all_solutions
+      if s.n_indexed >= 0.05 * max_n_indexed] # 5 percent
+
+    self.best_likelihood = max(
+      s.model_likelihood for s in self.all_solutions)
+    offset = 0
+    while (self.best_likelihood + offset) <= 0:
+      offset += 1
+    self.close_solutions = [
+      s for s in self.all_solutions
+      if (s.model_likelihood+offset) >= (0.85 * (self.best_likelihood+offset))]
+
+    # filter by volume - prefer solutions with a smaller unit cell
+    self.min_volume = min(s.crystal.get_unit_cell().volume()
+                          for s in self.close_solutions)
+    self.volume_filtered = [
+      s for s in self.close_solutions
+      if s.crystal.get_unit_cell().volume() < (1.25 * self.min_volume)]
+
+    # filter by number of indexed reflections - prefer solutions that
+    # account for more of the diffracted spots
+    self.max_n_indexed = max(s.n_indexed for s in self.volume_filtered)
+    self.n_indexed_filtered = [
+      s for s in self.volume_filtered
+      if s.n_indexed >= 0.9 * self.max_n_indexed]
+
+    self.best_filtered_liklihood = max(
+      s.model_likelihood for s in self.n_indexed_filtered)
+
+  def best_solution(self):
+    solutions = [s for s in self.n_indexed_filtered
+                 if s.model_likelihood == self.best_filtered_liklihood]
+    return solutions[0]
+
+# Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
+class SolutionTrackerSimple(object):
+  def __init__(self):
+    self.all_solutions = []
+
+  def append(self, item):
+    self.all_solutions.append(item)
+    self.update_analysis()
+
+  def __len__(self):
+    return len(self.all_solutions)
+
+  def update_analysis(self):
+    self.best_n_indexed = max(
+      s.n_indexed for s in self.all_solutions)
+
+  def best_solution(self):
+    solutions = [s for s in self.all_solutions
+                 if s.n_indexed == self.best_n_indexed]
+    return solutions[0]
 
 
 def discover_better_experimental_model(spot_positions, detector, beam,
