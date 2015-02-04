@@ -645,7 +645,7 @@ Now we do the scan-varying refinement and integrate::
   dials.refine refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.json
   dials.integrate sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4
   dials.export_mtz integrated.pickle sv_refined_experiments.json hklout=integrated.mtz ignore_panels=true
-  dials.analyse_output integrated.pickle
+  dials.analyse_output integrated.pickle grid_size=5,12
 
 From the end of :file:`dials.integrate.log`::
 
@@ -689,6 +689,12 @@ From the end of :file:`dials.integrate.log`::
   <I/sigI> (profile fitting)            | 5.92
   <CC prf>                              | 0.43
   ----------------------------------------------
+
+The plot of correlations between strong (reference) reflections and the profiles
+used to fit them shows up the systematic effects of uncorrected tile shifts and
+misorientations:
+
+  .. image:: figures/reference_corr_vs_xy_multipanel_uncorrected.png
 
 Now, how can we apply the metrology? Here we will use :program:`dials.combine_experiments`
 with the :samp:`reference_from_experiment.detector` option to overwrite the detector
@@ -880,7 +886,7 @@ Let's now do scan-varying refinement then integrate the dataset with corrected m
   dials.refine corrected_refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.json
   dials.integrate corrected_sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.pickle
   dials.export_mtz corrected_integrated.pickle corrected_sv_refined_experiments.json hklout=corrected_integrated.mtz ignore_panels=true
-  dials.analyse_output corrected_integrated.pickle
+  dials.analyse_output corrected_integrated.pickle grid_size=5,12
 
 From the integration log::
 
@@ -924,6 +930,11 @@ From the integration log::
   <I/sigI> (profile fitting)            | 5.94
   <CC prf>                              | 0.47
   ----------------------------------------------
+
+We now have a nicer plot of correlations between profiles and the strong
+reflections(notwithstanding a few plotting artefacts):
+
+  .. image:: figures/reference_corr_vs_xy_multipanel_corrected.png
 
 By comparison with the previous results we can see that correcting the panel
 shifts and mis-orientations has improved the overall profile fitting
