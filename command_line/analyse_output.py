@@ -126,7 +126,10 @@ class per_panel_plot(object):
             pyplot.setp(axes[i_row][i_col].get_yticklabels(), visible=False)
 
           if sel.count(True) > 0:
-            ax = self.plot_one_panel(axes[i_row][i_col], rlist.select(sel))
+            rlist_sel = rlist.select(sel)
+            if len(rlist_sel) <= 1:
+              continue
+            ax = self.plot_one_panel(axes[i_row][i_col], rlist_sel)
             plots.append(ax)
             clim = (min(clim[0], ax.get_clim()[0]),
                     max(clim[1], ax.get_clim()[1]))
