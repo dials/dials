@@ -8,13 +8,21 @@ from cctbx.array_family import flex
 # from dials.util.command_line import Importer
 from dials.util.options import OptionParser
 from dials.util.options import flatten_datablocks, flatten_reflections
-from dials.algorithms.indexing.indexer import indexer_base
+from dials.algorithms.indexing.indexer \
+     import indexer_base, filter_reflections_by_scan_range
 
 master_phil_scope = iotbx.phil.parse("""
 nproc = Auto
   .type = int(value_min=1)
 plot_search_scope = False
   .type = bool
+scan_range = None
+  .help = "The range of images to use in indexing. Number of arguments"
+    "must be a factor of two. Specifying \"0 0\" will use all images"
+    "by default. The given range follows C conventions"
+    "(e.g. j0 <= j < j1)."
+  .type = ints(size=2)
+  .multiple = True
 """)
 
 master_params = master_phil_scope.fetch().extract()
@@ -242,10 +250,6 @@ def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
   args = [(imageset, spots, params)
           for imageset, spots in zip(imagesets, spot_lists_mm)]
 
-  #solution_lists = []
-  #for arg in args:
-    #solution_lists.append(run_dps(arg))
-
   from libtbx import easy_mp
   results = easy_mp.parallel_map(
     func=run_dps,
@@ -308,22 +312,13 @@ Parameters:
   for datablock in datablocks:
     imagesets.extend(datablock.extract_imagesets())
 
-  # importer = Importer(args, check_format=False)
-  # if len(importer.datablocks) == 0:
-  #   print "No DataBlock could be constructed"
-  #   return
-  # imagesets = []
-  # for datablock in importer.datablocks:
-  #   imagesets.extend(datablock.extract_imagesets())
   assert len(imagesets) > 0
-  # reflections = importer.reflections
   assert len(reflections) == len(imagesets)
-  # args = importer.unhandled_arguments
 
-  # cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  # working_phil = cmd_line.process_and_fetch(args=args)
-  # working_phil.show()
-  # params = working_phil.extract()
+  if params.scan_range is not None and len(params.scan_range) > 0:
+    reflections = [
+      filter_reflections_by_scan_range(refl, params.scan_range)
+      for refl in reflections]
 
   from rstbx.phil.phil_preferences import indexing_api_defs
   import iotbx.phil
