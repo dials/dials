@@ -44,7 +44,10 @@ def show_isig_rmsd(integrated_data):
     rmsd = flex.sqrt(flex.pow2(x_px_sel - x_opx_sel) +
                      flex.pow2(y_px_sel - y_opx_sel))
     n = len(i)
-    print '%d %d %.3f %3f' % (b, n, flex.sum(i_s) / n, flex.sum(rmsd) / n)
+    if n > 0:
+      print '%d %d %.3f %3f' % (b, n, flex.sum(i_s) / n, flex.sum(rmsd) / n)
+    else:
+      print '%d 0 0.0 0.0' % b
 
 if __name__ == '__main__':
   from dials.array_family import flex # import dependency
