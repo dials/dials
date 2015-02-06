@@ -129,7 +129,8 @@ script does. If time is *really* short then try uncommenting the line
 
     if len(sys.argv) != 2:
       sys.exit("Usage: dials.python process_TehA.py /path/to/images")
-    data_dir = sys.argv[1]
+
+    data_dir = os.path.abspath(sys.argv[1])
 
     pathname = os.path.join(data_dir, "*.log")
     logfiles = glob.glob(pathname)
@@ -423,9 +424,9 @@ Here is the output of a run of the script::
   sweep_65/integrated.mtz
   sweep_67/integrated.mtz
 
-  real	7m46.071s
-  user	22m19.016s
-  sys	1m47.299s
+  real  7m46.071s
+  user  22m19.016s
+  sys 1m47.299s
 
 Analysis of individually processed datasets
 -------------------------------------------
