@@ -53,33 +53,6 @@ class grid_frame(wx.Frame):
     wx.GetApp().ExitMainLoop()
 
 
-new = '''
-class flex_3d_frame(wx.Frame):
-  def __init__(self, parent, title):
-    super(flex_3d_frame, self).__init__(parent, title = title,
-          size = wx.DefaultSize)
-
-  def frame_ini_img(self, in_upper_panel):
-    self.img_panel = in_upper_panel
-
-
-    self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-    self.my_sizer.Add(self.img_panel, proportion = 2,
-                      flag =  wx.EXPAND | wx.ALL, border = 3)
-
-    self.my_sizer.SetMinSize((400, 200))
-    self.SetSizer(self.my_sizer)
-    self.my_sizer.Fit(self)
-    self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
-
-  def OnCloseWindow(self, event):
-    #wx.GetApp().Exit()
-    wx.GetApp().ExitMainLoop()
-
-#'''
-
-#######################################################################
-#legasy = '''
 class flex_3d_frame(wx.Frame):
   def __init__(self, parent, title):
     super(flex_3d_frame, self).__init__(parent, title = title,
@@ -110,10 +83,6 @@ class flex_3d_frame(wx.Frame):
   def OnCloseWindow(self, event):
     #wx.GetApp().Exit()
     wx.GetApp().ExitMainLoop()
-
-
-#'''
-
 
 
 class TupTable(gridlib.PyGridTableBase):
