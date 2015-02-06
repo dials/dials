@@ -218,6 +218,7 @@ class flex_arr_img_panel(wx.Panel):
     self.show_nums = True
     self.show_mask = True
     self.row_pos = 0
+    self.Pframe = parent_frame
 
   def ini_n_intro(self, data_in_one, data_in_two = None):
 
@@ -366,6 +367,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.set_scroll_content()
     self.Layout()
     self.parent_panel.Layout()
+    self.parent_panel.Pframe.Layout()
     self.Refresh()
 
 
