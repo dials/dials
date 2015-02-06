@@ -10,7 +10,7 @@ load the default version of DIALS by typing at the command line::
 
   $ module load dials
 
-The default version of DIALS (and xia2, etc.)is usually fixed at the start of
+The default version of DIALS (and xia2, etc.) is usually fixed at the start of
 a run, however more recent nightly builds of DIALS may be available::
 
   $ module avail dials
