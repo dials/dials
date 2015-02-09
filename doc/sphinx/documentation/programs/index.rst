@@ -14,4 +14,3 @@ Program documentation
    dials_refine
    dials_integrate
    dials_export_mtz
-

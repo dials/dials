@@ -12,9 +12,9 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-   advanced_tutorial
-   multi_crystal_analysis
-   metrology_corrections
+   documentation/tutorials/advanced_tutorial
+   documentation/tutorials/multi_crystal_analysis
+   documentation/tutorials/metrology_corrections
 
 General
 =======
@@ -23,9 +23,9 @@ General
    :maxdepth: 1
 
    Main documentation page <index>
-   programs/index
-   conventions
-   library_reference/index
+   documentation/programs/index
+   documnentation/conventions
+   documnentation/library_reference/index
 
 * :ref:`genindex`
 * :ref:`modindex`

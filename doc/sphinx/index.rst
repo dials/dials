@@ -1,32 +1,40 @@
 
-+++++++++++++++++++++++++++++++++++++
-DIALS
-+++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DIALS: Diffraction Integration for Advanced Light Sources
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. _introduction:
 
-.. note:: This documentation is a work in progress (much like the software).
-   It may, therefore be neither complete nor correct!
-
 .. toctree::
-   :maxdepth: 1
+   :hidden:
 
+   about
    installation
-   data_files
-   beginners_tutorial
-   advanced_tutorial
-   multi_lattice_tutorial
-   developer_tutorial
-   programs/index
-   conventions
-   library_reference/index
+   documentation/getting_started
+   documentation/index
+   publications
 
 Contact
 =======
 
-Indices and tables
-==================
+For feature requests, bug reports or any other information, please contact
+the DIALS developers at dials-support@lists.sourceforge.net.
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Funding
+=======
+
+DIALS development at `Diamond Light Source`_ is supported by the `BioStruct-X`_ EU grant,
+`Diamond Light Source`_, and `CCP4`_.
+
+DIALS development at `Lawrence Berkeley National Laboratory`_ is
+supported by `National Institutes of Health`_ / `National Institute of General Medical Sciences`_
+grant R01-GM095887.  Work at LBNL is performed under
+`Department of Energy`_ contract DE-AC02-05CH11231.
+
+.. _`BioStruct-X`: http://www.biostruct-x.org/
+.. _`CCP4`: http://www.ccp4.ac.uk/
+.. _`Diamond Light Source`: http://www.diamond.ac.uk/
+.. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
+.. _`National Institutes of Health`: http://www.nih.gov/
+.. _`National Institute of General Medical Sciences`: http://www.nigms.nih.gov/
+.. _`Department of Energy`: http://www.energy.gov/

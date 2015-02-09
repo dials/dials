@@ -1,5 +1,5 @@
-Beginners Tutorial
-==================
+Getting started
+===============
 
 The aim of this tutorial is to provide a quick start guide to running DIALS for
 integrating good quality synchrotron X-ray diffraction data. Many caveats apply
