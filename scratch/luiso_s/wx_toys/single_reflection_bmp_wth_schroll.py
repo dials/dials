@@ -11,7 +11,8 @@
 import wx
 import wx.lib.scrolledpanel as scroll_pan
 
-from dials.viewer.img_utilities import GetBitmap_from_np_array
+#from dials.viewer.img_utilities import GetBitmap_from_np_array
+from bitmap_from_numpy import GetBitmap_from_np_array
 
 from dials.scratch.luiso_s.wx_toys.bitmap_from_numpy_w_matplotlib_well_done \
      import build_np_img
