@@ -1,0 +1,21 @@
+{# Import the theme's layout. #}
+{% extends "!layout.html" %}
+
+<!-- 
+{# Add some extra stuff before and use existing with 'super()' call. #}
+{% block footer %}
+  {{ super() }}
+{% endblock %}
+ -->
+
+{% block header %}
+  <div class="logoheader container">
+  <img alt="DIALS" src="{{ pathto('_static/dials_header.png', 1) }}" />
+  </div>
+  {{ super() }}
+{% endblock %}
+
+{# Custom CSS overrides #}
+{% set bootswatch_css_custom = ['_static/dials-styles.css'] %}
+
+{% set css_files = css_files + ['_static/dials-styles.css'] %}

@@ -402,9 +402,15 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.png
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tiff -text
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 doc/sphinx/Makefile -text
+doc/sphinx/_static/dials-styles.css -text
+doc/sphinx/_static/dials_header.png -text svneol=unset#unset
+doc/sphinx/_templates/layout.html -text
 doc/sphinx/about.rst -text
 doc/sphinx/basel.rst -text
 doc/sphinx/conf.py -text
+doc/sphinx/conf_alabaster.py -text
+doc/sphinx/conf_bootstrap.py -text
+doc/sphinx/conf_scipy.py -text
 doc/sphinx/diamond.rst -text
 doc/sphinx/documentation/conventions.rst -text
 doc/sphinx/documentation/data_files.rst -text
