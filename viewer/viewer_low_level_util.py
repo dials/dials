@@ -310,6 +310,7 @@ class flex_arr_img_panel(wx.Panel):
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
   def __init__(self, outer_panel, bmp_lst_in):
+    print "from __init__ 01"
     super(multi_img_scrollable, self).__init__(outer_panel)
     self.parent_panel  = outer_panel
     self.lst_2d_bmp = bmp_lst_in
@@ -321,6 +322,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.SetBackgroundColour(wx.Colour(200, 200, 200))
     aprox_len_pix = len(self.lst_2d_bmp) * 10
     self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
+
+    print "from __init__ 02"
 
   def set_scroll_content(self):
 
@@ -345,6 +348,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
                              flag = wx.ALIGN_CENTER | wx.TOP, border = 6)
 
     self.SetSizer(img_lst_vert_sizer)
+    self.SetupScrolling()
+    print "set_scroll_content(self)"
 
   def OnMouseWheel(self, event):
 
@@ -359,23 +364,32 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.x_to_keep = float(self.x_to_keep) / float(v_size_x)
     self.y_to_keep = float(self.y_to_keep) / float(v_size_y)
 
+    print "OnMouseWheel"
+
+
   def img_refresh(self, bmp_lst_new):
     self.lst_2d_bmp = bmp_lst_new
     for child in self.GetChildren():
       child.Destroy()
 
     self.set_scroll_content()
+
+    tst_remove = '''
+    self.Refresh()
+    self.parent_panel.Refresh()
+    self.parent_panel.Pframe.Refresh()
+
     self.Layout()
     self.parent_panel.Layout()
     self.parent_panel.Pframe.Layout()
-    self.Refresh()
+
+    '''
+    self.SetupScrolling()
 
 
-    #super(multi_img_scrollable, self).__init__(outer_panel)
-    #self.set_scroll_content()
-    #self.SetupScrolling()
-    #self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
 
+
+    print "img_refresh(self, bmp_lst_new)"
 
 
   def OnIdle(self, event):
@@ -384,6 +398,9 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.scroll_rot = 0
       v_size_x, v_size_y = self.GetVirtualSize()
       self.Scroll(self.x_to_keep * v_size_x, self.y_to_keep * v_size_y)
+
+      print "OnIdle ; if( self.scroll_rot != 0 )"
+
 
 
 class buttons_panel(wx.Panel):

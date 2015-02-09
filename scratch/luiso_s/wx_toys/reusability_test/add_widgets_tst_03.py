@@ -24,6 +24,7 @@ from bitmap_from_numpy \
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     def __init__(self, outer_panel):
+        print "__init__ 01"
         super(multi_img_scrollable, self).__init__(outer_panel)
 
 
@@ -46,9 +47,11 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.mainSizer.Add(self.widgetSizer, 0, wx.CENTER|wx.ALL, 10)
 
         self.SetSizer(self.mainSizer)
-        #self.mainSizer.SetMinSize((400, 200))
+
 
         self.SetupScrolling()
+        print "__init__ 02"
+
 
     def onAddWidget(self, event):
         self.number_of_img += 1
@@ -82,6 +85,7 @@ class MyFrame(wx.Frame):
         panel = multi_img_scrollable(self)
 
         self.fSizer.Add(panel, 1, wx.EXPAND)
+        self.fSizer.SetMinSize((400, 200))
         self.SetSizer(self.fSizer)
         self.Fit()
         self.Show()
