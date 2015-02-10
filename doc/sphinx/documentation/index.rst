@@ -14,4 +14,5 @@ Documentation and tutorials for DIALS:
    tutorials/index
    programs/index
    conventions
+   installation_developer
    library_reference/index

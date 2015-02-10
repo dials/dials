@@ -417,6 +417,7 @@ doc/sphinx/documentation/conventions.rst -text
 doc/sphinx/documentation/data_files.rst -text
 doc/sphinx/documentation/getting_started.rst -text
 doc/sphinx/documentation/index.rst -text
+doc/sphinx/documentation/installation_developer.rst -text
 doc/sphinx/documentation/library_reference/algorithms/dials.algorithms.background.rst -text
 doc/sphinx/documentation/library_reference/algorithms/dials.algorithms.indexing.rst -text
 doc/sphinx/documentation/library_reference/algorithms/dials.algorithms.integration.rst -text
