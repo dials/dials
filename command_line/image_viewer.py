@@ -20,7 +20,7 @@ phil_scope = iotbx.phil.parse("""\
 image_viewer {
   brightness = 100
     .type = int
-  color_scheme = grayscale* rainbow heatmap invert
+  color_scheme = *grayscale rainbow heatmap invert
     .type = choice
   show_beam_center = True
     .type = bool
