@@ -627,6 +627,8 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings = self.GetParent().settings
     self.params = self.GetParent().params
     # CONTROLS 4: additional settings for derived class
+    self.settings.brightness = self.params.brightness
+    self.settings.color_scheme = self.params.color_scheme
     self.settings.show_spotfinder_spots = False
     self.settings.show_dials_spotfinder_spots = True
     self.settings.show_resolution_rings = self.params.show_resolution_rings
@@ -663,23 +665,34 @@ class SpotSettingsPanel (SettingsPanel) :
     grid.Add(self.zoom_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     txt11 = wx.StaticText(self, -1, "Color scheme:")
     grid.Add(txt11, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    color_schemes = ["grayscale","rainbow","heatmap","invert"]
     self.color_ctrl = wx.Choice(self, -1,
-      choices=["grayscale","rainbow","heatmap","invert"])
-    self.color_ctrl.SetSelection(0)
+      choices=color_schemes)
+    self.color_ctrl.SetSelection(color_schemes.index(self.params.color_scheme))
     grid.Add(self.color_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self._sizer.Fit(self)
+
+    from wxtbx.phil_controls.intctrl import IntCtrl
+    from wxtbx.phil_controls import EVT_PHIL_CONTROL
+
     box = wx.BoxSizer(wx.HORIZONTAL)
     s.Add(box)
-    txt2 = wx.StaticText(self, -1, "Brightness")
-    box.Add(txt2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.brightness_ctrl = wx.Slider(self, -1, size=(200,-1),
+    grid = wx.FlexGridSizer(cols=1, rows=2)
+    box.Add(grid)
+    txt2 = wx.StaticText(self, -1, "Brightness:")
+    grid.Add(txt2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.brightness_txt_ctrl = IntCtrl(
+      self, value=self.settings.brightness, name="brightness")
+    grid.Add(self.brightness_txt_ctrl, 0, wx.ALL, 5)
+    self.brightness_txt_ctrl.SetMin(1)
+    self.brightness_txt_ctrl.SetMax(500)
+    self.brightness_ctrl = wx.Slider(self, -1, size=(150,-1),
       style=wx.SL_AUTOTICKS|wx.SL_LABELS)
-    box.Add(self.brightness_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.brightness_ctrl.SetMin(1)
     self.brightness_ctrl.SetMax(500)
     self.brightness_ctrl.SetValue(self.settings.brightness)
     self.brightness_ctrl.SetTickFreq(25)
-
+    box.Add(self.brightness_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     grid = wx.FlexGridSizer(cols=2, rows=8)
     s.Add(grid)
@@ -731,8 +744,6 @@ class SpotSettingsPanel (SettingsPanel) :
 
     # Minimum spot area control
     box = wx.BoxSizer(wx.HORIZONTAL)
-    from wxtbx.phil_controls.intctrl import IntCtrl
-    from wxtbx.phil_controls import EVT_PHIL_CONTROL
     #self.minspotarea_ctrl = IntCtrl(self, -1, pos=(300,180), size=(80,-1),
       #value=self.GetParent().GetParent().horizons_phil.distl.minimum_spot_area,
       #name="Minimum spot area (pxls)")
@@ -794,6 +805,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.kernel_size_ctrl.SetMin(1)
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.brightness_txt_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_b_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_s_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.global_threshold_ctrl)
@@ -855,7 +867,15 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
       self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
       self.settings.zoom_level = self.zoom_ctrl.GetSelection()
-      self.settings.brightness = self.brightness_ctrl.GetValue()
+      # get brightness from slider or text box, whichever is different from
+      # the current value, then update the other input field so that both
+      # display the current value
+      if self.brightness_ctrl.GetValue() != self.settings.brightness:
+        self.settings.brightness = self.brightness_ctrl.GetValue()
+        self.brightness_txt_ctrl.SetValue(self.settings.brightness)
+      else:
+        self.settings.brightness = int(self.brightness_txt_ctrl.GetValue())
+        self.brightness_ctrl.SetValue(self.settings.brightness)
       self.settings.show_beam_center = self.center_ctrl.GetValue()
       self.settings.show_ctr_mass = self.ctr_mass.GetValue()
       self.settings.show_max_pix = self.max_pix.GetValue()
