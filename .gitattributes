@@ -404,6 +404,7 @@ doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 doc/sphinx/Makefile -text
 doc/sphinx/_static/dials-styles.css -text
 doc/sphinx/_static/dials_header.png -text svneol=unset#unset
+doc/sphinx/_static/dials_icon.png -text svneol=unset#unset
 doc/sphinx/_templates/layout.html -text
 doc/sphinx/about.rst -text
 doc/sphinx/basel.rst -text
