@@ -40,6 +40,7 @@ extensions = [
     'numpydoc',
     'libtbx.sphinx.phil',
     'libtbx.sphinx.python_string',
+    'libtbx.sphinx.pubmed',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -123,8 +124,10 @@ html_sidebars = {
 }
 
 html_theme_options = {
+  'logo': 'dials_icon.png',
   'github_button': False,
   'show_powered_by': False,
+  'description': 'Data Integration for Advanced Light Sources',
 }
 
 # The name for this set of Sphinx documents.  If None, it defaults to

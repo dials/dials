@@ -40,6 +40,7 @@ extensions = [
     'numpydoc',
     'libtbx.sphinx.phil',
     'libtbx.sphinx.python_string',
+    'libtbx.sphinx.pubmed',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
