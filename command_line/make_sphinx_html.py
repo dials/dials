@@ -20,5 +20,6 @@ if (__name__ == "__main__") :
   if op.exists(dest_dir) :
     shutil.rmtree(dest_dir)
   os.chdir(op.join(dials_dir, "doc", "sphinx"))
+  easy_run.call("make clean")
   easy_run.call("make html")
   shutil.move("build/html", dest_dir)
