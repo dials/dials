@@ -354,13 +354,22 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
     self.Layout()
+    self.Fit()
     self.parent_panel.Layout()
     self.parent_panel.Pframe.Layout()
 
+
+    not_to_use = '''
     self.Refresh()
     self.parent_panel.Refresh()
     self.parent_panel.Pframe.Refresh()
 
+
+
+
+    self.parent_panel.Fit()
+    self.parent_panel.Pframe.Fit()
+    '''
 
 
     print "set_scroll_content(self)"
