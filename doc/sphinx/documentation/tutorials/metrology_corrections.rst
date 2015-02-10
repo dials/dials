@@ -395,9 +395,9 @@ of these plots are not as compact as the single tile version presented in the
 :doc:`advanced_tutorial`. However, careful comparison of the plots is enough to
 show that the same pattern of shifts is present.
 
-  .. image:: figures/centroid_diff_x_multi_panel_lev0.png
+  .. image:: /figures/centroid_diff_x_multi_panel_lev0.png
 
-  .. image:: figures/centroid_diff_y_multi_panel_lev0.png
+  .. image:: /figures/centroid_diff_y_multi_panel_lev0.png
 
 Multi-tile refinement
 ---------------------
@@ -603,9 +603,9 @@ and :file:`analysis_lev1/centroid/centroid_diff_y.png` make it clear that
 despite poor coverage on some panels, the systematic shifts have been cleaned
 up by the refinement job.
 
-  .. image:: figures/centroid_diff_x_multi_panel_lev1.png
+  .. image:: /figures/centroid_diff_x_multi_panel_lev1.png
 
-  .. image:: figures/centroid_diff_y_multi_panel_lev1.png
+  .. image:: /figures/centroid_diff_y_multi_panel_lev1.png
 
 Applying the corrected metrology
 --------------------------------
@@ -694,7 +694,7 @@ The plot of correlations between strong (reference) reflections and the profiles
 used to fit them shows up the systematic effects of uncorrected tile shifts and
 misorientations:
 
-  .. image:: figures/reference_corr_vs_xy_multipanel_uncorrected.png
+  .. image:: /figures/reference_corr_vs_xy_multipanel_uncorrected.png
 
 Now, how can we apply the metrology? Here we will use :program:`dials.combine_experiments`
 with the :samp:`reference_from_experiment.detector` option to overwrite the detector
@@ -934,7 +934,7 @@ From the integration log::
 We now have a nicer plot of correlations between profiles and the strong
 reflections(notwithstanding a few plotting artefacts):
 
-  .. image:: figures/reference_corr_vs_xy_multipanel_corrected.png
+  .. image:: /figures/reference_corr_vs_xy_multipanel_corrected.png
 
 By comparison with the previous results we can see that correcting the panel
 shifts and mis-orientations has improved the overall profile fitting
@@ -943,7 +943,7 @@ the tables of results binned by resolution we see that the improvements are limi
 to the low resolution, and the results are worse at high resolution. For example,
 we can make a quick plot of the profile fitting correlation coeffients.
 
-  .. image:: figures/CC_metrology_comparison.png
+  .. image:: /figures/CC_metrology_comparison.png
 
 From this we see the crossover point at about :math:`\frac{1}{d_\textrm{mid}^2} = 0.55`
 or a resolution of about 1.35 Angstroms.

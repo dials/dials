@@ -144,7 +144,7 @@ three dimensional box that
 can contain the continuous peak region, that is, there is no background border
 region displayed here.
 
-.. image:: figures/found_spot.png
+.. image:: /figures/found_spot.png
 
 Indexing
 ^^^^^^^^
@@ -798,7 +798,7 @@ The output of this program is still a little rough-and-ready, however the plot
 it produces called :file:`sv_crystal.pdf` may be useful to check there are no
 huge changes to the cell.
 
-.. image:: figures/sv_crystal.png
+.. image:: /figures/sv_crystal.png
 
 We see an overall increase in all three cell parameters, however the greatest
 change, in lengths *a* and *b*, is only about 0.02 Angstroms. If
@@ -935,12 +935,12 @@ Some of the most useful plots are
   If scan-varying refinement has been successful in capturing the real changes
   during the scan then we would expect these plots to be straight lines.
 
-  .. image:: figures/centroid_mean_diff_vs_phi.png
+  .. image:: /figures/centroid_mean_diff_vs_phi.png
 
 * :file:`centroid/centroid_xy_residuals.png`, on which the X, Y residuals are shown
   directly. The key point here is to look for a globular shape centred at 0.0.
 
-  .. image:: figures/centroid_xy_residuals.png
+  .. image:: /figures/centroid_xy_residuals.png
 
 * :file:`centroid/centroid_diff_x.png` and :file:`centroid/centroid_diff_y.png`,
   which show the difference between predicted and observed reflection positions
@@ -949,9 +949,9 @@ Some of the most useful plots are
   those tiles might be simply shifted or slightly rotated compared to the model
   detector.
 
-  .. image:: figures/centroid_diff_x.png
+  .. image:: /figures/centroid_diff_x.png
 
-  .. image:: figures/centroid_diff_y.png
+  .. image:: /figures/centroid_diff_y.png
 
 * :file:`reference/reflection_corr_vs_xy.png` and
   :file:`reference/reference_corr_vs_xy.png`. These are useful companions to the
@@ -966,7 +966,7 @@ Some of the most useful plots are
   not extend to such high resolution). The first plot is probably the most
   useful, and that is reproduced here.
 
-  .. image:: figures/reflection_corr_vs_xy.png
+  .. image:: /figures/reflection_corr_vs_xy.png
 
 * :file:`intensity/ioversigma_vs_z.png`. This reproduces the
   :math:`\frac{I}{\sigma_I}` information versus frame number given in the log
@@ -975,7 +975,7 @@ Some of the most useful plots are
   were no bad frames, not much radiation damage occurred and that scale factors
   are likely to be fairly uniform.
 
-  .. image:: figures/ioversigma_vs_z.png
+  .. image:: /figures/ioversigma_vs_z.png
 
 
 Exporting as MTZ

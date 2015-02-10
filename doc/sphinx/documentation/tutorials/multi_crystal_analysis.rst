@@ -438,7 +438,7 @@ say :file:`individual_mtzs.dat`, and passed to blend for analysis::
 
 The dendrogram resulting from clustering is shown here:
 
-  .. image:: figures/tree_01.png
+  .. image:: /figures/tree_01.png
 
 Immediately the dendrogram shows that datasets 7 and 28 are extreme outliers.
 From :file:`FINAL_list_of_files.dat` we can see that these refer to
@@ -452,7 +452,7 @@ and rerun blend.
 
 Now the dendrogram looks better:
 
-  .. image:: figures/tree_02.png
+  .. image:: /figures/tree_02.png
 
 The Linear Cell Variation (LCV) is now less than 1%, with an absolute value
 of 0.42 Angstroms, indicating good isomorphism amongst all the remaining
@@ -476,7 +476,7 @@ refined with this single 8 degree dataset. Clearly parameters like the
 detector distance and the crystal metrical matrix parameters are highly
 correlated.
 
- .. image:: figures/sweep_00_corrplot.png
+ .. image:: /figures/sweep_00_corrplot.png
 
 Although the DIALS toolkit has a sophisticated mechanism for modelling
 multi-experiment data, the user interface for handling such data is still
@@ -999,7 +999,7 @@ problem. We can copy the paths to these into a new file, say
 
 The :file:`tree.png` resulting from this is very interesting.
 
-  .. image:: figures/tree_03.png
+  .. image:: /figures/tree_03.png
 
 The LCV is now as low as 0.36% (aLCV 0.27 Angstroms). This indicates an even
 higher degree of isomorphism than detected during after individual processing.
