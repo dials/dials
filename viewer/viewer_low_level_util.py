@@ -314,16 +314,13 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     super(multi_img_scrollable, self).__init__(outer_panel)
     self.parent_panel  = outer_panel
     self.lst_2d_bmp = bmp_lst_in
+    self.SetBackgroundColour(wx.Colour(200, 200, 200))
     self.set_scroll_content()
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
     self.Bind(wx.EVT_IDLE, self.OnIdle)
-    self.SetupScrolling()
+    #self.SetupScrolling()
     self.scroll_rot = 0
-    self.SetBackgroundColour(wx.Colour(200, 200, 200))
 
-    aprox_len_pix = len(self.lst_2d_bmp) * 10
-    self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
-    self.SetupScrolling()
     print "from __init__ 02"
 
   def set_scroll_content(self):
@@ -350,27 +347,13 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
     self.SetSizer(img_lst_vert_sizer)
-    #self.SetSizerAndFit(img_lst_vert_sizer)
-
-
     self.Layout()
-    self.Fit()
-    self.parent_panel.Layout()
-    self.parent_panel.Pframe.Layout()
+    #self.parent_panel.Layout()
+    #self.parent_panel.Pframe.Layout()
 
-
-    not_to_use = '''
-    self.Refresh()
-    self.parent_panel.Refresh()
-    self.parent_panel.Pframe.Refresh()
-
-
-
-
-    self.parent_panel.Fit()
-    self.parent_panel.Pframe.Fit()
-    '''
-
+    aprox_len_pix = len(self.lst_2d_bmp) * 10
+    self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
+    self.SetupScrolling()
 
     print "set_scroll_content(self)"
 
@@ -397,7 +380,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.set_scroll_content()
 
-    self.SetupScrolling()
+    #self.SetupScrolling()
 
     print "img_refresh(self, bmp_lst_new)"
 
