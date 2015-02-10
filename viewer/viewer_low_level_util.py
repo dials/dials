@@ -323,7 +323,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     aprox_len_pix = len(self.lst_2d_bmp) * 10
     self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
-
+    self.SetupScrolling()
     print "from __init__ 02"
 
   def set_scroll_content(self):
@@ -349,17 +349,19 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
                              flag = wx.ALIGN_CENTER | wx.TOP, border = 6)
 
 
-    self.SetSizerAndFit(img_lst_vert_sizer)
+    self.SetSizer(img_lst_vert_sizer)
+    #self.SetSizerAndFit(img_lst_vert_sizer)
 
-    self.Refresh()
-    self.parent_panel.Refresh()
-    self.parent_panel.Pframe.Refresh()
 
     self.Layout()
     self.parent_panel.Layout()
     self.parent_panel.Pframe.Layout()
 
-    self.SetupScrolling()
+    self.Refresh()
+    self.parent_panel.Refresh()
+    self.parent_panel.Pframe.Refresh()
+
+
 
     print "set_scroll_content(self)"
 
@@ -386,7 +388,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.set_scroll_content()
 
-    #self.SetupScrolling()
+    self.SetupScrolling()
 
     print "img_refresh(self, bmp_lst_new)"
 
