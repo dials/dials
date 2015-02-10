@@ -10,7 +10,9 @@
 
 {% block header %}
   <div class="logoheader container">
+  <a href="{{ pathto(master_doc) }}">
   <img alt="DIALS" src="{{ pathto('_static/dials_header.png', 1) }}" />
+  </a>
   </div>
   {{ super() }}
 {% endblock %}
