@@ -64,7 +64,8 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
   if params.d_min or params.d_max:
     ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
 
-  print '%d reflections analysed' % ms.size()
+  print 'Check symmetry operations on %d reflections:' % ms.size()
+  print ''
   print '%10s %6s %5s' % ('Symop', 'Nref', 'CC')
 
   true_symops = []
@@ -99,6 +100,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     for ltr in space_group.ltr():
       sg = sg.expand_ltr(ltr)
     sg_symbols = sg.match_tabulated_settings()
+    print ''
     print 'Derived point group from symmetry operations: %s' % \
       sg_symbols.hermann_mauguin()
 
@@ -133,8 +135,9 @@ def test_P1_crystal_indexing(reflections, experiment, params):
   if params.d_min or params.d_max:
     ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
 
-  print '%d reflections analysed' % ms.size()
-  print 'dH dK dL %10s %6s %5s' % ('Symop', 'Nref', 'CC')
+  print 'Checking HKL origin:'
+  print ''
+  print 'dH dK dL %6s %5s' % ('Nref', 'CC')
 
   g = params.grid_search_scope
 
@@ -157,8 +160,11 @@ def test_P1_crystal_indexing(reflections, experiment, params):
           intensity, intensity_rdx = rms.common_sets(ms)
           cc = intensity.correlation(intensity_rdx).coefficient()
 
-          print '%2d %2d %2d %10s %6d %.3f' % \
-            (h, k, l, smx, intensity.size(), cc)
+          if cc > params.symop_threshold or (h == k == l == 0):
+            print '%2d %2d %2d %6d %.3f' % \
+              (h, k, l, intensity.size(), cc)
+
+  print ''
 
   return
 
