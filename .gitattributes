@@ -1005,6 +1005,7 @@ util/ioutil.py -text
 util/log.py -text
 util/make_dist.phil -text
 util/nexus.py -text
+util/nexus/nx_diffraction.py -text
 util/options.py -text
 util/picklez.py -text
 util/pprint.py -text
