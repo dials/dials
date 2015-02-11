@@ -76,6 +76,7 @@ def run(args):
   from cctbx.miller import set as miller_set
 
   ms = miller_set(cs, original_miller_indices)
+  ms = ms.array(reflections['intensity.sum.value'])
 
   if params.d_min:
     ms = ms.resolution_filter(d_min=params.d_min)
@@ -86,10 +87,13 @@ def run(args):
     reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
       miller_indices)
     rms = miller_set(cs, reindexed_miller_indices)
+    rms = rms.array(reflections['intensity.sum.value'])
     if params.d_min:
       rms = rms.resolution_filter(d_min=params.d_min)
-    common = rms.common_set(ms)
-    print smx, common.size()
+    intensity, intensity_rdx = rms.common_sets(ms)
+    cc = intensity.correlation(intensity_rdx).coefficient()
+
+    print '%10s %.3f' % (smx, cc)
 
 if __name__ == '__main__':
   import sys
