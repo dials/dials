@@ -13,6 +13,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    documentation/getting_started
    documentation/index
    publications
+   License <license>
 
 Contact
 =======

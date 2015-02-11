@@ -471,6 +471,7 @@ doc/sphinx/figures/tree_02.png -text svneol=unset#unset
 doc/sphinx/figures/tree_03.png -text svneol=unset#unset
 doc/sphinx/index.rst -text
 doc/sphinx/installation.rst -text
+doc/sphinx/license.rst -text
 doc/sphinx/publications.rst -text
 doc/user-tutorial/multi_lattice_tutorial.sh -text
 doc/user-tutorial/tutorial.sh -text
