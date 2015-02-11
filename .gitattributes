@@ -286,6 +286,7 @@ array_family/sort_index.h -text
 command_line/__init__.py -text
 command_line/analyse_output.py -text
 command_line/background_lookup.py -text
+command_line/check_indexing_symmetry.py -text
 command_line/combine_experiments.py -text
 command_line/compare_mosflm_dials.py -text
 command_line/compare_mosflm_xds.py -text
@@ -318,7 +319,6 @@ command_line/image_viewer.py -text
 command_line/import.py -text
 command_line/import_xds.py -text
 command_line/index.py -text
-command_line/index_symops.py -text
 command_line/integrate.py -text
 command_line/make_sphinx_html.py -text
 command_line/merge_reflection_lists.py -text

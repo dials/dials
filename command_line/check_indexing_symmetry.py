@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.command_line.index_symops.py
+# dials.command_line.check_indexing_symmetry.py
 #
 #  Copyright (C) 2015 Diamond Light Source
 #
@@ -23,7 +23,8 @@ This program can be used to (i) generate the symmetry from the experiment
 and apply to the input reflections, and (ii) for each symop for that symmetry
 attempt to calculate the CC on that operation within the strong spot list.
 
-  dials.index_symops experiment.json indexed.pickle [d_min=3.0] [d_max=10.0]
+  dials.check_indexing_symmetry experiment.json indexed.pickle \
+    [d_min=3.0] [d_max=10.0]
 
 '''
 
@@ -103,6 +104,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     print ''
     print 'Derived point group from symmetry operations: %s' % \
       sg_symbols.hermann_mauguin()
+    print ''
 
   return
 
