@@ -28,6 +28,7 @@ from dials.algorithms.refinement.stills_detector_metrology import \
   StillsDetectorRefinerFactory
 from dials.algorithms.refinement.refinement_helpers import \
   get_panel_groups_at_depth, get_panel_ids_at_root
+from dials.util import log
 
 from libtbx.utils import Sorry
 from libtbx import easy_mp
@@ -313,7 +314,7 @@ class Script(object):
           beam.fix=all
           detector.fix=all
         }
-      reflections.do_outlier_rejection=True
+      reflections.do_outlier_rejection=False
       refinery.engine=LevMar
       verbosity=1
     }
@@ -356,6 +357,10 @@ class Script(object):
 
     print "Parsing input"
     params, options = self.parser.parse_args(show_diff_phil=True)
+
+    #Configure the logging
+    log.config(params.detector_phase.refinement.verbosity,
+      info='dials.refine.log', debug='dials.refine.debug.log')
 
     # Try to obtain the models and data
     if len(params.input.experiments) == 0:
