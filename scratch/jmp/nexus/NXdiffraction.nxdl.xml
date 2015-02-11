@@ -99,7 +99,7 @@
       <doc> The partiality of the reflection </doc>
     </field>
 
-    <field name="prd_frame" type="NX_FLOAT" minOccurs="1">
+    <field name="prd_frame" type="NX_FLOAT" units="frames" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -108,7 +108,7 @@
       </doc>
     </field>
 
-    <field name="prd_mm_x" type="NX_FLOAT" minOccurs="1">
+    <field name="prd_mm_x" type="NX_FLOAT" units="mm" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -118,7 +118,7 @@
       </doc>
     </field>
 
-    <field name="prd_mm_y" type="NX_FLOAT" minOccurs="1">
+    <field name="prd_mm_y" type="NX_FLOAT" units="mm" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -128,7 +128,7 @@
       </doc>
     </field>
 
-    <field name="prd_phi" type="NX_FLOAT" minOccurs="1">
+    <field name="prd_phi" type="NX_FLOAT" units="degrees" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -136,7 +136,7 @@
       </doc>
     </field>
 
-    <field name="prd_px_x" type="NX_FLOAT" minOccurs="1">
+    <field name="prd_px_x" type="NX_FLOAT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -146,7 +146,7 @@
       </doc>
     </field>
 
-    <field name="prd_px_y" type="NX_FLOAT" minOccurs="1">
+    <field name="prd_px_y" type="NX_FLOAT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -156,7 +156,7 @@
       </doc>
     </field>
     
-    <field name="obs_frame_val" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_frame_val" type="NX_FLOAT" units="frames" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -166,7 +166,7 @@
       </doc>
     </field>
 
-    <field name="obs_frame_var" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_frame_var" type="NX_FLOAT" units="frames2" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -176,7 +176,7 @@
       </doc>
     </field>
 
-    <field name="obs_px_x_val" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_px_x_val" type="NX_FLOAT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -186,7 +186,7 @@
       </doc>
     </field>
 
-    <field name="obs_px_x_var" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_px_x_var" type="NX_FLOAT" units="px2" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -196,7 +196,7 @@
       </doc>
     </field>
 
-    <field name="obs_px_y_val" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_px_y_val" type="NX_FLOAT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -206,7 +206,7 @@
       </doc>
     </field>
 
-    <field name="obs_px_y_var" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_px_y_var" type="NX_FLOAT" units="px2"  minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -216,7 +216,7 @@
       </doc>
     </field>
 
-    <field name="obs_phi_val" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_phi_val" type="NX_FLOAT" units="degrees" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -226,7 +226,7 @@
       </doc>
     </field>
 
-    <field name="obs_phi_var" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_phi_var" type="NX_FLOAT" units="degrees2" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -236,7 +236,7 @@
       </doc>
     </field>
 
-    <field name="obs_mm_x_val" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_mm_x_val" type="NX_FLOAT" units="mm" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -246,7 +246,7 @@
       </doc>
     </field>
 
-    <field name="obs_mm_x_var" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_mm_x_var" type="NX_FLOAT" units="mm2" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -256,7 +256,7 @@
       </doc>
     </field>
 
-    <field name="obs_mm_y_val" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_mm_y_val" type="NX_FLOAT" units="mm" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -266,7 +266,7 @@
       </doc>
     </field>
 
-    <field name="obs_mm_y_var" type="NX_FLOAT" minOccurs="1">
+    <field name="obs_mm_y_var" type="NX_FLOAT" units="mm2" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -276,7 +276,7 @@
       </doc>
     </field>
 
-    <field name="bbx0" type="NX_INT" minOccurs="1">
+    <field name="bbx0" type="NX_INT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -286,7 +286,7 @@
       </doc>
     </field>
 
-    <field name="bbx1" type="NX_INT" minOccurs="1">
+    <field name="bbx1" type="NX_INT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -296,7 +296,7 @@
       </doc>
     </field>
 
-    <field name="bby0" type="NX_INT" minOccurs="1">
+    <field name="bby0" type="NX_INT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -306,7 +306,7 @@
       </doc>
     </field>
 
-    <field name="bby1" type="NX_INT" minOccurs="1">
+    <field name="bby1" type="NX_INT" units="px" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -316,7 +316,7 @@
       </doc>
     </field>
 
-    <field name="bbz0" type="NX_INT" minOccurs="1">
+    <field name="bbz0" type="NX_INT" units="frames" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
@@ -326,7 +326,7 @@
       </doc>
     </field>
 
-    <field name="bbz1" type="NX_INT" minOccurs="1">
+    <field name="bbz1" type="NX_INT" units="frames" minOccurs="1">
       <attribute name="description">
         <doc> Describes the dataset </doc>
       </attribute>
