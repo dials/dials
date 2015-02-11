@@ -194,7 +194,7 @@ def dump(entry, reflections):
     except KeyError, e:
       print e
 
-  # Write the overlaps
+  # FIXME Write the overlaps (for testing at the moment)
   overlaps = [[] for i in range(len(reflections))]
   overlaps[0] = [1, 2, 3]
   overlaps[1] = [0, 4]
