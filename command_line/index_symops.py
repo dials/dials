@@ -113,10 +113,12 @@ def run(args):
     print '%10s %6d %.3f %s' % (smx, intensity.size(), cc, accept)
 
   if params.symop_threshold:
-    from cctbx.sgtbx import space_group
-    sg = space_group()
+    from cctbx.sgtbx import space_group as sgtbx_space_group
+    sg = sgtbx_space_group()
     for symop in true_symops:
       sg = sg.expand_smx(symop)
+    for ltr in space_group.ltr():
+      sg = sg.expand_ltr(ltr)
     sg_symbols = sg.match_tabulated_settings()
     print 'Derived point group from symmetry operations: %s' % \
       sg_symbols.hermann_mauguin()
