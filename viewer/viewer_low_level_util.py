@@ -343,11 +343,15 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     print "self.n_img(before cleanup) =", self.n_img
 
     if( self.n_img != 0 ):
-      print "cleanup of sizer"
       for t in range(self.n_img):
-        self.img_lst_v_sizer.Hide(t)
-        self.img_lst_v_sizer.Remove(t)
-        self.n_img -= 1
+        p = self.n_img - t - 1
+        print "p =", p
+        print "attempting to wipe sizer No ", p
+        self.img_lst_v_sizer.Hide(p)
+        self.img_lst_v_sizer.Remove(p)
+        print "sizer No ", p, "wiped"
+
+      self.n_img = 0
 
     print "self.n_img(after cleanup) =", self.n_img
 
