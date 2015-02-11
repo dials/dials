@@ -33,7 +33,10 @@ attempt to calculate the CC on that operation within the strong spot list.
 phil_scope = iotbx.phil.parse("""
 d_min = 0
   .type = float
-  .help = "Resolution limit to use for analysis"
+  .help = "High resolution limit to use for analysis"
+d_max = 0
+  .type = float
+  .help = "Low resolution limit to use for analysis"
 """, process_includes=True)
 
 
@@ -78,8 +81,11 @@ def run(args):
   ms = miller_set(cs, original_miller_indices)
   ms = ms.array(reflections['intensity.sum.value'])
 
-  if params.d_min:
-    ms = ms.resolution_filter(d_min=params.d_min)
+  if params.d_min or params.d_max:
+    ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+
+  print '%d reflections analysed' % ms.size()
+  print '%10s %6s %5s' % ('Symop', 'Nref', 'CC')
 
   for smx in space_group.smx():
     reindexed = deepcopy(reflections)
@@ -88,12 +94,12 @@ def run(args):
       miller_indices)
     rms = miller_set(cs, reindexed_miller_indices)
     rms = rms.array(reflections['intensity.sum.value'])
-    if params.d_min:
-      rms = rms.resolution_filter(d_min=params.d_min)
+    if params.d_min or params.d_max:
+      rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
     intensity, intensity_rdx = rms.common_sets(ms)
     cc = intensity.correlation(intensity_rdx).coefficient()
 
-    print '%10s %.3f' % (smx, cc)
+    print '%10s %6d %.3f' % (smx, intensity.size(), cc)
 
 if __name__ == '__main__':
   import sys
