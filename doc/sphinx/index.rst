@@ -15,6 +15,9 @@ DIALS: Diffraction Integration for Advanced Light Sources
    publications
    License <license>
 
+DIALS is a new software project for the analysis of crystallographic
+diffraction images.
+
 Contact
 =======
 
