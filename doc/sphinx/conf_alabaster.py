@@ -124,7 +124,7 @@ html_sidebars = {
 }
 
 html_theme_options = {
-  'logo': 'dials_icon.png',
+  #'logo': 'dials_icon.png',
   'github_button': False,
   'show_powered_by': False,
   'description': 'Data Integration for Advanced Light Sources',
