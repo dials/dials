@@ -34,6 +34,9 @@ d_min = 0
 d_max = 0
   .type = float
   .help = "Low resolution limit to use for analysis"
+symop_threshold = 0
+  .type = float
+  .help = "Thereshold above which we consider a symmetry operator true."
 """, process_includes=True)
 
 
@@ -64,6 +67,7 @@ def run(args):
   reflections = reflections[0]
 
   from copy import deepcopy
+  from dials.array_family import flex
 
   original_miller_indices = reflections['miller_index']
 
@@ -75,7 +79,8 @@ def run(args):
   from cctbx.miller import set as miller_set
 
   ms = miller_set(cs, original_miller_indices)
-  ms = ms.array(reflections['intensity.sum.value'])
+  ms = ms.array(reflections['intensity.sum.value'] /
+                flex.sqrt(reflections['intensity.sum.variance']))
 
   if params.d_min or params.d_max:
     ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
@@ -83,19 +88,38 @@ def run(args):
   print '%d reflections analysed' % ms.size()
   print '%10s %6s %5s' % ('Symop', 'Nref', 'CC')
 
+  true_symops = []
+
   for smx in space_group.smx():
     reindexed = deepcopy(reflections)
     miller_indices = reflections['miller_index']
     reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
       miller_indices)
     rms = miller_set(cs, reindexed_miller_indices)
-    rms = rms.array(reflections['intensity.sum.value'])
+    rms = rms.array(reflections['intensity.sum.value'] /
+                    flex.sqrt(reflections['intensity.sum.variance']))
     if params.d_min or params.d_max:
       rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
     intensity, intensity_rdx = rms.common_sets(ms)
     cc = intensity.correlation(intensity_rdx).coefficient()
 
-    print '%10s %6d %.3f' % (smx, intensity.size(), cc)
+    accept = ''
+
+    if params.symop_threshold:
+      if cc > params.symop_threshold:
+        true_symops.append(smx)
+        accept = '***'
+
+    print '%10s %6d %.3f %s' % (smx, intensity.size(), cc, accept)
+
+  if params.symop_threshold:
+    from cctbx.sgtbx import space_group
+    sg = space_group()
+    for symop in true_symops:
+      sg = sg.expand_smx(symop)
+    sg_symbols = sg.match_tabulated_settings()
+    print 'Derived point group from symmetry operations: %s' % \
+      sg_symbols.hermann_mauguin()
 
 if __name__ == '__main__':
   import sys
