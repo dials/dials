@@ -315,7 +315,22 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.parent_panel  = outer_panel
     self.lst_2d_bmp = bmp_lst_in
     self.SetBackgroundColour(wx.Colour(200, 200, 200))
+
+
+    self.n_img = 0
+    self.img_lst_v_sizer = wx.BoxSizer(wx.VERTICAL)
+
     self.set_scroll_content()
+
+    self.SetSizer(self.img_lst_v_sizer)
+    self.Layout()
+    #self.parent_panel.Layout()
+    #self.parent_panel.Pframe.Layout()
+    aprox_len_pix = len(self.lst_2d_bmp) * 10
+    self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
+    self.SetupScrolling()
+
+
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     #self.SetupScrolling()
@@ -325,7 +340,17 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
   def set_scroll_content(self):
 
-    img_lst_vert_sizer = wx.BoxSizer(wx.VERTICAL)
+    print "self.n_img(before cleanup) =", self.n_img
+
+    if( self.n_img != 0 ):
+      print "cleanup of sizer"
+      for t in range(self.n_img):
+        self.img_lst_v_sizer.Hide(t)
+        self.img_lst_v_sizer.Remove(t)
+        self.n_img -= 1
+
+    print "self.n_img(after cleanup) =", self.n_img
+
 
     for lst_1d in self.lst_2d_bmp:
       img_lst_hor_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -342,18 +367,12 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         img_lst_hor_sizer.Add(sigle_slice_sizer, proportion = 0,
                               flag = wx.ALIGN_CENTER | wx.ALL, border = 2)
 
-      img_lst_vert_sizer.Add(img_lst_hor_sizer, proportion = 0,
+      self.img_lst_v_sizer.Add(img_lst_hor_sizer, proportion = 0,
                              flag = wx.ALIGN_CENTER | wx.TOP, border = 6)
+      self.n_img += 1
 
-
-    self.SetSizer(img_lst_vert_sizer)
-    self.Layout()
-    #self.parent_panel.Layout()
-    #self.parent_panel.Pframe.Layout()
-
-    aprox_len_pix = len(self.lst_2d_bmp) * 10
-    self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
-    self.SetupScrolling()
+    #self.Layout()
+    self.parent_panel.Layout()
 
     print "set_scroll_content(self)"
 
