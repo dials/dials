@@ -7,3 +7,13 @@ div.logoheader {
   -moz-border-radius: 8px;
   padding: 0;
 }
+
+div.footer {
+  height: 50px;
+}
+
+img.logofooter {
+  height: 50px;
+  margin: 5px;
+  padding: 5px;
+}
