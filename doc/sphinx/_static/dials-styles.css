@@ -1,9 +1,9 @@
 div.logoheader {
   width: 940px;
-/*   margin: 30px auto 0 auto; */
   margin: 0 auto 0 auto;
   background-color: #061679;
   border: medium solid black;
   /* This makes the borders rounded on Mozilla, which pleases me */
   -moz-border-radius: 8px;
+  padding: 0;
 }
