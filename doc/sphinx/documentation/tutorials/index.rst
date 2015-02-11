@@ -8,6 +8,7 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
+   ../getting_started
    beginners_tutorial
    advanced_tutorial
    multi_lattice_tutorial
