@@ -1,5 +1,9 @@
 from __future__ import division
 
+# FIXME - Exposure time/epochs
+# FIXME - beam direction
+# FIXME - trusted range
+
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/applications/NXmx.nxdl.xml'
 
 def get_nx_class(handle, klass, path):
@@ -42,7 +46,7 @@ def get_nx_data(handle, path, data):
 def dump_beam(entry, beam):
   ''' Export the beam model. '''
   from scitbx import matrix
-  from math import sin, cos
+  from math import sin, cos, acos, pi
 
   EPS = 1e-7
 
@@ -57,20 +61,23 @@ def dump_beam(entry, beam):
   d = matrix.col(beam.get_direction())
   n = matrix.col(beam.get_polarization_normal())
   p = beam.get_polarization_fraction()
+
   assert(n.dot(d) < EPS)
+  axis = d.cross(matrix.col((0, 1, 0)))
   I = 1.0
   X = 0.0
-  W = n.dot(matrix.col((1, 0, 0))) / n.length()
+  W = acos(n.dot(axis) / n.length())
   S0 = I
   S1 = I*p*cos(2*W)*cos(2*X)
   S2 = I*p*sin(2*W)*cos(2*X)
   S3 = I*p*sin(2*X)
 
   # Set the beam parameters
+  nx_beam['direction'] = d.normalize()
   nx_beam['incident_wavelength'] = beam.get_wavelength()
   nx_beam['incident_polarization_stokes'] = (S0, S1, S2, S3)
 
-def dump_detector(entry, detector, beam, imageset):
+def dump_detector(entry, detector, beam, imageset, scan):
   from scitbx import matrix
 
   EPS = 1e-7
@@ -107,9 +114,9 @@ def dump_detector(entry, detector, beam, imageset):
   nx_detector['description'] = dtype
 
   # Make up some fake stuff
-  nx_detector['count_time'] = 0.0
+  nx_detector['count_time'] = scan.get_exposure_times().as_numpy_array()
   nx_detector['dead_time'] = 0.0
-  nx_detector['frame_time'] = 0.0
+  nx_detector['frame_time'] = scan.get_epochs().as_numpy_array()
   nx_detector['detector_readout_time'] = 0.0
   nx_detector['bit_depth_readout'] = 32
 
@@ -194,7 +201,6 @@ def dump_crystal(entry, crystal):
     num = crystal.num_scan_points
     unit_cell = flex.double(flex.grid(num, 6))
     orientation_matrix = flex.double(flex.grid(num, 9))
-    orientation_matrix = [[el[0:3],el[3:6],el[6:9]] for el in orientation_matrix]
     for i in range(num):
       __cell = crystal.get_unit_cell_at_scan_point(i).parameters()
       for j in range(6):
@@ -202,6 +208,10 @@ def dump_crystal(entry, crystal):
       __matrix = crystal.get_U_at_scan_point(i)
       for j in range(9):
         orientation_matrix[i,j] = __matrix[j]
+    orientation_matrix = [[tuple(orientation_matrix[i:i+1,0:3]),
+                           tuple(orientation_matrix[i:i+1,3:6]),
+                           tuple(orientation_matrix[i:i+1,6:9])] for i in range(num)]
+    unit_cell = [tuple(unit_cell[i:i+1,:]) for i in range(num)]
     average_unit_cell = crystal.get_unit_cell().parameters()
     average_orientation_matrix = crystal.get_U()
     average_orientation_matrix = [
@@ -211,8 +221,10 @@ def dump_crystal(entry, crystal):
 
   else:
     unit_cell = [crystal.get_unit_cell().parameters()]
-    orientation_matrix = [crystal.get_U().transpose()]
-    orientation_matrix = [[el[0:3],el[3:6],el[6:9]] for el in orientation_matrix]
+    orientation_matrix = [crystal.get_U()]
+    orientation_matrix = [[tuple(orientation_matrix[0][0:3]),
+                           tuple(orientation_matrix[0][3:6]),
+                           tuple(orientation_matrix[0][6:9])]]
     average_unit_cell = unit_cell[0]
     average_orientation_matrix = orientation_matrix[0]
 
@@ -224,7 +236,7 @@ def dump_crystal(entry, crystal):
 
   # Save the orientation matrix
   nx_sample['orientation_matrix'] = orientation_matrix
-  
+
   # Set an average unit cell etc for scan static stuff
   nx_sample['average_unit_cell'] = average_unit_cell
   nx_sample['average_unit_cell'].attrs['angles_units'] = 'deg'
@@ -278,7 +290,7 @@ def dump_details(entry):
 
 def load_beam(entry):
   from dxtbx.model import Beam
-  from math import sqrt, atan, cos, sin
+  from math import sqrt, atan, cos, sin, pi
   from scitbx import matrix
 
   EPS = 1e-7
@@ -287,18 +299,23 @@ def load_beam(entry):
   nx_sample = get_nx_sample(entry, "sample")
   nx_beam = get_nx_beam(nx_sample, "beam")
   wavelength = nx_beam['incident_wavelength'].value
+  direction = matrix.col(nx_beam['direction'])
   S0, S1, S2, S3 = tuple(nx_beam['incident_polarization_stokes'])
   I = S0
   p = sqrt(S1**2 + S2**2 + S3**2)/S0
   W = 0.5*atan(S2/S1)
   X = 0.5*atan(S3/sqrt(S1**2 + S2**2))
+  W += pi
   assert(abs(I - 1.0) < EPS)
   assert(abs(X) < EPS)
   assert(p >= 0.0 and p <= 1.0)
-  n = matrix.col((cos(W), sin(W), 0.0)).normalize()
+  axis1 = direction.cross(matrix.col((0, 1, 0)))
+  axis2 = direction.cross(axis1)
+  n = (axis2 * cos(W) + axis1 * sin(W)).normalize()
+  assert(abs(direction.dot(n)) < EPS)
 
   # Return the beam model
-  return Beam((0, 0, -1), wavelength, 0, 0, n, p)
+  return Beam(direction, wavelength, 0, 0, n, p)
 
 def load_detector(entry):
   from dxtbx.model import Detector
@@ -307,72 +324,62 @@ def load_detector(entry):
   # Get the detector module object
   nx_instrument = get_nx_instrument(entry, "instrument")
   nx_detector = get_nx_detector(nx_instrument, "detector")
-  module = get_nx_detector_module(nx_detector, "module0")
+  assert(nx_detector['depends_on'].value == '.')
+  material = nx_detector['sensor_material'].value
+  det_type = nx_detector['type'].value
+  thickness = nx_detector['sensor_thickness'].value
+  trusted_range = (0, nx_detector['saturation_value'].value)
 
-  # Set the data size
-  image_size = module['data_size']
-  
-  # Set the module offset
-  offset_length = module['module_offset'].value
-  assert(module['module_offset'].attrs['depends_on'] == translation_path)
-  assert(module['module_offset'].attrs['transformation_type'] == 'translation')
-  assert(module['module_offset'].attrs['units'] == 'mm')
-  offset_vector = matrix.col(module['module_offset'].attrs['vector'])
-  origin = offset_vector * offset_length
+  # The detector model
+  detector = Detector()
 
-  # The path for items below
-  module_offset_path = str('%s/%s' % (module.path(), 'module_offset'))
+  i = 0
+  while True:
+    try:
+      module = get_nx_detector_module(nx_detector, "module%d" % i)
+    except Exception:
+      break
+    # Set the data size
+    image_size = module['data_size']
 
-  # Write the fast pixel direction
-  pixel_size_x1 = module['fast_pixel_direction'].value
-  assert(module['fast_pixel_direction'].attrs['depends_on'] == module_offset_path)
-  assert(module['fast_pixel_direction'].attrs['transformation_type'] == 'translation')
-  assert(module['fast_pixel_direction'].attrs['units'] == 'mm')
-  fast_axis1 = tuple(module['fast_pixel_direction'].attrs['vector'])
+    # Set the module offset
+    offset_length = module['module_offset'].value
+    assert(module['module_offset'].attrs['depends_on'] == '.')
+    assert(module['module_offset'].attrs['transformation_type'] == 'translation')
+    assert(tuple(module['module_offset'].attrs['offset']) == (0, 0, 0))
+    offset_vector = matrix.col(module['module_offset'].attrs['vector'])
+    origin = offset_vector * offset_length
 
-  # Write the slow pixel direction
-  pixel_size_y1 = module['slow_pixel_direction'].value
-  assert(module['slow_pixel_direction'].attrs['depends_on'] == module_offset_path)
-  assert(module['slow_pixel_direction'].attrs['transformation_type'] == 'translation')
-  assert(module['slow_pixel_direction'].attrs['units'] == 'mm')
-  slow_axis1 = tuple(module['slow_pixel_direction'].attrs['vector'])
+    # Write the fast pixel direction
+    module_offset_path = module['module_offset'].name
+    pixel_size_x = module['fast_pixel_direction'].value
+    assert(module['fast_pixel_direction'].attrs['depends_on'] == module_offset_path)
+    assert(module['fast_pixel_direction'].attrs['transformation_type'] == 'translation')
+    assert(tuple(module['fast_pixel_direction'].attrs['offset']) == (0, 0, 0))
+    fast_axis = tuple(module['fast_pixel_direction'].attrs['vector'])
 
-  # Write the fast pixel size
-  pixel_size_x2 = module['fast_pixel_size'].value
-  assert(module['fast_pixel_size'].attrs['depends_on'] == module_offset_path)
-  assert(module['fast_pixel_size'].attrs['transformation_type'] == 'translation')
-  assert(module['fast_pixel_size'].attrs['units'] == 'mm')
-  fast_axis2 = tuple(module['fast_pixel_size'].attrs['vector'])
+    # Write the slow pixel direction
+    pixel_size_y = module['slow_pixel_direction'].value
+    assert(module['slow_pixel_direction'].attrs['depends_on'] == module_offset_path)
+    assert(module['slow_pixel_direction'].attrs['transformation_type'] == 'translation')
+    assert(tuple(module['slow_pixel_direction'].attrs['offset']) == (0, 0, 0))
+    slow_axis = tuple(module['slow_pixel_direction'].attrs['vector'])
 
-  # Write the slow pixel size
-  pixel_size_y2 = module['slow_pixel_size'].value
-  assert(module['slow_pixel_size'].attrs['depends_on'] == module_offset_path)
-  assert(module['slow_pixel_size'].attrs['transformation_type'] == 'translation')
-  assert(module['slow_pixel_size'].attrs['units'] == 'mm')
-  slow_axis2 = tuple(module['slow_pixel_size'].attrs['vector'])
+    # Get the pixel size and axis vectors
+    pixel_size = (pixel_size_x, pixel_size_y)
 
-  # Get the pixel size and axis vectors
-  assert(pixel_size_x1 == pixel_size_x2)
-  assert(pixel_size_y1 == pixel_size_y2)
-  assert(fast_axis1 == fast_axis2)
-  assert(slow_axis1 == slow_axis2)
-  pixel_size = (pixel_size_x1, pixel_size_y1)
-  fast_axis = fast_axis1
-  slow_axis = slow_axis1
-
-  # FIXME stuff not set
-  det_type = ''
-  name = ''
-  thickness = 0
-  material = ''
-  trusted_range = (0, 0)
+    # Create the panel
+    panel = detector.add_panel()
+    panel.set_frame(fast_axis, slow_axis, origin)
+    panel.set_pixel_size(pixel_size)
+    panel.set_image_size(image_size)
+    panel.set_type(det_type)
+    panel.set_thickness(thickness)
+    panel.set_material(material)
+    panel.set_trusted_range(trusted_range)
+    i += 1
 
   # Return the detector and panel
-  detector = Detector()
-  panel = detector.add_panel()
-  panel.set_frame(fast_axis, slow_axis, origin)
-  panel.set_pixel_size(pixel_size)
-  panel.set_image_size(image_size)
   return detector
 
 def load_goniometer(entry):
@@ -401,9 +408,13 @@ def load_scan(entry):
   assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
   assert(transformations['phi'].attrs['offset_units'] == 'mm')
   assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
-  image_range = (0, len(phi))
+  image_range = (1, len(phi))
   oscillation = (phi[0], phi[1] - phi[0])
-  return Scan(image_range, oscillation, deg=True)
+  nx_instrument = get_nx_instrument(entry, "instrument")
+  nx_detector = get_nx_detector(nx_instrument, "detector")
+  exposure_time = nx_detector['count_time']
+  epochs = nx_detector['frame_time']
+  return Scan(image_range, oscillation, exposure_time, epochs, deg=True)
 
 def load_crystal(entry):
   from dxtbx.model.crystal import crystal_model as Crystal
@@ -420,7 +431,7 @@ def load_crystal(entry):
 
   # Get depends on
   assert(nx_sample['depends_on'].value == nx_sample['transformations/phi'].name)
-  
+
   # Read the average unit cell data
   average_unit_cell = flex.double(numpy.array(nx_sample['average_unit_cell']))
   assert(nx_sample['average_unit_cell'].attrs['angles_units'] == 'deg')
@@ -434,10 +445,13 @@ def load_crystal(entry):
 
   # Get the real space vectors
   uc = uctbx.unit_cell(tuple(average_unit_cell))
+  U = matrix.sqr(average_orientation_matrix)
   B = matrix.sqr(uc.fractionalization_matrix()).transpose()
-  real_space_a = B[0:3]
-  real_space_b = B[3:6]
-  real_space_c = B[6:9]
+  A = U * B
+  A = A.inverse()
+  real_space_a = A[0:3]
+  real_space_b = A[3:6]
+  real_space_c = A[6:9]
 
   # Read the unit cell data
   unit_cell = flex.double(numpy.array(nx_sample['unit_cell']))
@@ -463,9 +477,9 @@ def load_crystal(entry):
   # Sort out scan points
   if unit_cell.all()[0] > 1:
     A_list = []
-    for i in range(len(unit_cell.all()[0])):
-      uc = uctbx.unit_cell(tuple(unit_cell[i,:]))
-      U = matrix.sqr(tuple(orientation_matrix[i,:,:]))
+    for i in range(unit_cell.all()[0]):
+      uc = uctbx.unit_cell(tuple(unit_cell[i:i+1,:]))
+      U = matrix.sqr(tuple(orientation_matrix[i:i+1,:,:]))
       B = matrix.sqr(uc.fractionalization_matrix()).transpose()
       A_list.append(U*B)
     crystal.set_A_at_scan_points(A_list)
@@ -488,8 +502,8 @@ def dump(entry, experiments):
   else:
     import numpy as np
     features = entry.create_dataset(
-      "features", 
-      (1,), 
+      "features",
+      (1,),
       maxshape=(None,),
       dtype=np.uint64)
     features[0] = 6
@@ -512,7 +526,8 @@ def dump(entry, experiments):
 
   # Dump the models
   dump_beam(nxmx, experiment.beam)
-  dump_detector(nxmx, experiment.detector, experiment.beam, experiment.imageset)
+  dump_detector(nxmx, experiment.detector, experiment.beam, experiment.imageset,
+                experiment.scan)
   dump_goniometer(nxmx, experiment.goniometer, experiment.scan)
   dump_crystal(nxmx, experiment.crystal)
 
@@ -525,11 +540,11 @@ def dump(entry, experiments):
 def load(entry):
   from dxtbx.model.experiment.experiment_list import ExperimentList
   from dxtbx.model.experiment.experiment_list import Experiment
-  
+
   # Check file contains the feature
   assert("features" in entry)
   assert(6 in entry['features'].value)
-  
+
   # Get the entry
   nxmx = entry['experiment0']
   assert(nxmx.attrs['NX_class'] == 'NXsubentry')

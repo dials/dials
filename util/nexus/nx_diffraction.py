@@ -251,8 +251,8 @@ def dump(entry, reflections):
   else:
     import numpy as np
     features = entry.create_dataset(
-      "features", 
-      (1,), 
+      "features",
+      (1,),
       maxshape=(None,),
       dtype=np.uint64)
     features[0] = 7
@@ -315,7 +315,7 @@ def load(entry):
     'xyzobs.px.value',
     'xyzobs.px.variance',
     'xyzobs.mm.value',
-    'xyzobs.px.variance',
+    'xyzobs.mm.variance',
     'background.mean',
     'intensity.sum.value',
     'intensity.sum.variance',
