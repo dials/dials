@@ -318,6 +318,7 @@ command_line/image_viewer.py -text
 command_line/import.py -text
 command_line/import_xds.py -text
 command_line/index.py -text
+command_line/index_symops.py -text
 command_line/integrate.py -text
 command_line/make_sphinx_html.py -text
 command_line/merge_reflection_lists.py -text
