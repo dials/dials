@@ -2,9 +2,9 @@
 #
 # dials.command_line.index_symops.py
 #
-#  Copyright (C) 2014 Diamond Light Source
+#  Copyright (C) 2015 Diamond Light Source
 #
-#  Author: Richard Gildea
+#  Author: Graeme Winter
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
