@@ -9,25 +9,24 @@ Prerequisites:  make and change to a working directory to contain the new source
 and build. Then download these bootstrap modules::
 
   svn export svn://svn.code.sf.net/p/cctbx/code/trunk/libtbx/auto_build/bootstrap.py
-  svn export svn://svn.code.sf.net/p/cctbx/code/trunk/libtbx/auto_build/bootstrap_public.py
-
-Both codes are needed; bootstrap.py provides the basic functions;  bootstrap_public.py is a thin wrapper permitting general users to download all the source code with anonymous access to the Berkeley lab servers.
 
 Then::
 
-  python bootstrap_public.py --builder=dials
+  python bootstrap.py --builder=dials
 
 Explanation:  Several steps are performed: hot, update, base, build.  If desired, they can be run individually at the command line::
 
-  python bootstrap_public.py --builder=dials hot
-  python bootstrap_public.py --builder=dials update
-  python bootstrap_public.py --builder=dials base
-  python bootstrap_public.py --builder=dials build
+  python bootstrap.py --builder=dials hot
+  python bootstrap.py --builder=dials update
+  python bootstrap.py --builder=dials base
+  python bootstrap.py --builder=dials build
 
 * "hot" downloads static tarballs containing prerequisite dependencies, to the module directory
 * "update" anonymously checks out or updates source code for dials and cctbx, to the module directory
 * "base" downloads and installs python and third party python packages to the base directory
 * "build" configures and compiles dials and cctbx
+
+If you are a developer with an account at cci.lbl.gov you can add --cciuser=<your cci user name>. This will allow you to make commits back to the source tree. Similarly, if you have a source forge account, you can add --sfuser=<your source forge user name>. The DIALS builder pulls code from repositories in both locations.
 
 For subsequent login sessions, be sure to set the environment in order to use the command-line dispatchers::
 
@@ -46,7 +45,8 @@ Here is a procedure to restart the base install if it dies in the middle, and ne
 restarted.  First, the top of the base output gives a list of python packages to be installed.
 On linux it looks something like this::
 
-  python numpy hdf5 biopython freetype gettext glib expat fontconfig render pixman png tiff cairo gtk fonts wxpython matplotlib pyopengl imaging reportlab misc
+  python numpy hdf5 biopython freetype gettext glib expat fontconfig render pixman png tiff cairo gtk fonts wxpython
+  matplotlib pyopengl imaging reportlab misc
 
 Identify the subset of packages that has failed to install; as an example assume that wxpython and subsequent packages still need to be
 installed.  Then run the base installer using the just-installed python as the "with-python" base::
@@ -72,6 +72,16 @@ This can be relocated to a new directory, untarred, then::
   cd dials-installer-dev
   ./install -h [prints a help message]
   ./install --prefix=[absolute path for relocated dials installation]
+
+Building Using Your Own Custom Python
+-------------------------------------
+
+Using your own python to configure and build DIALS requires the dependencies listed above to already be installed and properly configured. Instruct the builder to use your python thusly:
+
+  python bootstrap.py --builder=dials --with-python=<absolute path to your python binary>
+
+This will run the 'hot' and 'update' steps as normal, skip the 'base' step that would normally download and build python and necessary DIALS python dependencies, and finally run the 'build' step with the python you specified. Note that the DIALS team doesn't recommend this procedure, but it can be necessary if using DIALS in concert with other packages.
+
 
 Install DIALS from SVN on Windows
 =================================
