@@ -65,8 +65,19 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.widgetSizer.Add(bitmap_tmp, 0, wx.ALL, 5)
 
         self.frame.fSizer.Layout()
-        self.frame.Fit()
-        self.Refresh()
+        #self.frame.Fit()
+        #self.Refresh()
+
+        to_view = '''
+        self.SetSizer(img_lst_vert_sizer)
+        self.Layout()
+        #self.parent_panel.Layout()
+        #self.parent_panel.Pframe.Layout()
+        aprox_len_pix = len(self.lst_2d_bmp) * 10
+        self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
+        self.SetupScrolling()
+        '''
+
 
     def onRemoveWidget(self, event):
         if self.widgetSizer.GetChildren():
@@ -74,8 +85,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
             self.widgetSizer.Remove(self.number_of_img-1)
             self.number_of_img -= 1
             self.frame.fSizer.Layout()
-            self.frame.Fit()
-            self.Refresh()
+            #self.frame.Fit()
+            #self.Refresh()
             print "number_of_img =", self.number_of_img
 
 class MyFrame(wx.Frame):
