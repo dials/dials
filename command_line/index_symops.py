@@ -37,34 +37,13 @@ d_max = 0
 symop_threshold = 0
   .type = float
   .help = "Thereshold above which we consider a symmetry operator true."
+grid_search_scope = 0
+  .type = int
+  .help = "Search scope for testing misindexing on h, k, l."
 """, process_includes=True)
 
-
-def run(args):
-  import libtbx.load_env
-  usage = "%s [options] experiment.json indexed.pickle" % \
-    libtbx.env.dispatcher_name
-
-  parser = OptionParser(
-    usage=usage,
-    phil=phil_scope,
-    read_reflections=True,
-    read_experiments=True,
-    check_format=False,
-    epilog=help_message)
-
-  params, options = parser.parse_args(show_diff_phil=True)
-
-  reflections = flatten_reflections(params.input.reflections)
-  experiments = flatten_experiments(params.input.experiments)
-  if len(reflections) == 0 or len(experiments) == 0:
-    parser.print_help()
-    return
-  assert(len(reflections) == 1)
-  assert(len(experiments) == 1)
-  experiment = experiments[0]
+def test_crystal_pointgroup_symmetry(reflections, experiment, params):
   crystal = experiment.crystal
-  reflections = reflections[0]
 
   from copy import deepcopy
   from dials.array_family import flex
@@ -122,6 +101,94 @@ def run(args):
     sg_symbols = sg.match_tabulated_settings()
     print 'Derived point group from symmetry operations: %s' % \
       sg_symbols.hermann_mauguin()
+
+  return
+
+def offset_miller_indices(miller_indices, offset):
+  from dials.array_family import flex
+  return flex.miller_index(
+    *[mi.iround() for mi in (miller_indices.as_vec3_double() + offset).parts()])
+
+def test_P1_crystal_indexing(reflections, experiment, params):
+  if params.grid_search_scope == 0:
+    return
+
+  from copy import deepcopy
+  from dials.array_family import flex
+
+  original_miller_indices = reflections['miller_index']
+
+  crystal = experiment.crystal
+  space_group = crystal.get_space_group()
+  unit_cell = crystal.get_unit_cell()
+  from cctbx.crystal import symmetry as crystal_symmetry
+  cs = crystal_symmetry(unit_cell, space_group.type().lookup_symbol())
+
+  from cctbx.miller import set as miller_set
+
+  ms = miller_set(cs, original_miller_indices)
+  ms = ms.array(reflections['intensity.sum.value'] /
+                flex.sqrt(reflections['intensity.sum.variance']))
+
+  if params.d_min or params.d_max:
+    ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+
+  print '%d reflections analysed' % ms.size()
+  print 'dH dK dL %10s %6s %5s' % ('Symop', 'Nref', 'CC')
+
+  g = params.grid_search_scope
+
+  for h in range(-g, g + 1):
+    for k in range(-g, g + 1):
+      for l in range(-g, g + 1):
+
+        for smx in ['-x,-y,-z']:
+          reindexed = deepcopy(reflections)
+          # hkl offset doubled as equivalent of h0 + 1, hI - 1
+          miller_indices = offset_miller_indices(reflections['miller_index'],
+                                                 (2 * h, 2 * k, 2* l))
+          reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
+            miller_indices)
+          rms = miller_set(cs, reindexed_miller_indices)
+          rms = rms.array(reflections['intensity.sum.value'] /
+                          flex.sqrt(reflections['intensity.sum.variance']))
+          if params.d_min or params.d_max:
+            rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+          intensity, intensity_rdx = rms.common_sets(ms)
+          cc = intensity.correlation(intensity_rdx).coefficient()
+
+          print '%2d %2d %2d %10s %6d %.3f' % \
+            (h, k, l, smx, intensity.size(), cc)
+
+  return
+
+def run(args):
+  import libtbx.load_env
+  usage = "%s [options] experiment.json indexed.pickle" % \
+    libtbx.env.dispatcher_name
+
+  parser = OptionParser(
+    usage=usage,
+    phil=phil_scope,
+    read_reflections=True,
+    read_experiments=True,
+    check_format=False,
+    epilog=help_message)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+
+  reflections = flatten_reflections(params.input.reflections)
+  experiments = flatten_experiments(params.input.experiments)
+  if len(reflections) == 0 or len(experiments) == 0:
+    parser.print_help()
+    return
+  assert(len(reflections) == 1)
+  assert(len(experiments) == 1)
+  experiment = experiments[0]
+  reflections = reflections[0]
+
+  test_P1_crystal_indexing(reflections, experiment, params)
+  test_crystal_pointgroup_symmetry(reflections, experiment, params)
 
 if __name__ == '__main__':
   import sys
