@@ -997,7 +997,6 @@ util/command_line.py -text
 util/config.py -text
 util/create_dials_binary_installers.sh -text
 util/export_mtz.py -text
-util/export_nxmx.py -text
 util/export_text.py -text
 util/image.py -text
 util/installer.py -text

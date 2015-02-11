@@ -30,7 +30,7 @@ phil_scope = parse('''
 ''')
 
 def run(args):
-  from dials.util.export_nxmx import load
+  from dials.util.nexus import load
   from dials.util.export_mtz import export_mtz
   import libtbx.load_env
   from dials.util.options import OptionParser

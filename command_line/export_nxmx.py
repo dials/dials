@@ -27,6 +27,7 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
+  from dials.util.nexus import dump
 
   usage = '%s integrated.pickle experiments.json [options]' % (
               libtbx.env.dispatcher_name)
@@ -47,7 +48,7 @@ def run(args):
 
   integrated_data = reflections[0]
   experiment_list = experiments
-  m = export(
+  dump(
     experiment_list,
     integrated_data,
     params.hklout)
