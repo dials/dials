@@ -949,6 +949,7 @@ test/algorithms/spot_prediction/tst_stills_reflection_predictor.py -text
 test/array_family/tst_flex_pixel_list.py -text
 test/array_family/tst_flex_shoebox.py -text
 test/array_family/tst_reflection_table.py -text
+test/command_line/tst_check_indexing_symmetry.py -text
 test/command_line/tst_combine_experiments.py -text
 test/command_line/tst_compare.py -text
 test/command_line/tst_compare_orientation_matrices.py -text

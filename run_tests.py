@@ -21,6 +21,7 @@ tst_list = (
     "$D/test/command_line/tst_export_mosflm.py",
     "$D/test/command_line/tst_export_xds.py",
     "$D/test/command_line/tst_refine.py",
+    "$D/test/command_line/tst_check_indexing_symmetry.py",
     "$D/test/command_line/tst_create_profile_model.py",
     "$D/test/command_line/tst_sort_reflections.py",
     "$D/test/command_line/tst_plot_scan_varying_crystal.py",
