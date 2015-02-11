@@ -194,19 +194,27 @@ def dump_crystal(entry, crystal):
     num = crystal.num_scan_points
     unit_cell = flex.double(flex.grid(num, 6))
     orientation_matrix = flex.double(flex.grid(num, 9))
+    orientation_matrix = [[el[0:3],el[3:6],el[6:9]] for el in orientation_matrix]
     for i in range(num):
       __cell = crystal.get_unit_cell_at_scan_point(i).parameters()
       for j in range(6):
         unit_cell[i,j] = __cell[j]
-      __matrix = crystal.get_U_at_scan_point(i).transpose().elems
+      __matrix = crystal.get_U_at_scan_point(i)
       for j in range(9):
         orientation_matrix[i,j] = __matrix[j]
+    average_unit_cell = crystal.get_unit_cell().parameters()
+    average_orientation_matrix = crystal.get_U()
+    average_orientation_matrix = [
+      average_orientation_matrix[0:3],
+      average_orientation_matrix[3:6],
+      average_orientation_matrix[6:9]]
 
   else:
     unit_cell = [crystal.get_unit_cell().parameters()]
     orientation_matrix = [crystal.get_U().transpose()]
-
-  orientation_matrix = [[el[0:3],el[3:6],el[6:9]] for el in orientation_matrix]
+    orientation_matrix = [[el[0:3],el[3:6],el[6:9]] for el in orientation_matrix]
+    average_unit_cell = unit_cell[0]
+    average_orientation_matrix = orientation_matrix[0]
 
   # Save the unit cell data
   nx_sample['name'] = "FROM_DIALS"
@@ -216,6 +224,12 @@ def dump_crystal(entry, crystal):
 
   # Save the orientation matrix
   nx_sample['orientation_matrix'] = orientation_matrix
+  
+  # Set an average unit cell etc for scan static stuff
+  nx_sample['average_unit_cell'] = average_unit_cell
+  nx_sample['average_unit_cell'].attrs['angles_units'] = 'deg'
+  nx_sample['average_unit_cell'].attrs['length_units'] = 'angstrom'
+  nx_sample['average_orientation_matrix'] = average_orientation_matrix
 
   # Set depends on
   nx_sample['depends_on'] = nx_sample['transformations/phi'].name
@@ -262,16 +276,222 @@ def dump_details(entry):
   nx_note['description'] = 'Integration parameters'
   nx_note['data'] = 'dials.integrate refined_experiments.json indexed.pickle'
 
+def load_beam(entry):
+  from dxtbx.model import Beam
+  from math import sqrt, atan, cos, sin
+  from scitbx import matrix
+
+  EPS = 1e-7
+
+  # Get the nx_beam
+  nx_sample = get_nx_sample(entry, "sample")
+  nx_beam = get_nx_beam(nx_sample, "beam")
+  wavelength = nx_beam['incident_wavelength'].value
+  S0, S1, S2, S3 = tuple(nx_beam['incident_polarization_stokes'])
+  I = S0
+  p = sqrt(S1**2 + S2**2 + S3**2)/S0
+  W = 0.5*atan(S2/S1)
+  X = 0.5*atan(S3/sqrt(S1**2 + S2**2))
+  assert(abs(I - 1.0) < EPS)
+  assert(abs(X) < EPS)
+  assert(p >= 0.0 and p <= 1.0)
+  n = matrix.col((cos(W), sin(W), 0.0)).normalize()
+
+  # Return the beam model
+  return Beam((0, 0, -1), wavelength, 0, 0, n, p)
+
+def load_detector(entry):
+  from dxtbx.model import Detector
+  from scitbx import matrix
+
+  # Get the detector module object
+  nx_instrument = get_nx_instrument(entry, "instrument")
+  nx_detector = get_nx_detector(nx_instrument, "detector")
+  module = get_nx_detector_module(nx_detector, "module0")
+
+  # Set the data size
+  image_size = module['data_size']
+  
+  # Set the module offset
+  offset_length = module['module_offset'].value
+  assert(module['module_offset'].attrs['depends_on'] == translation_path)
+  assert(module['module_offset'].attrs['transformation_type'] == 'translation')
+  assert(module['module_offset'].attrs['units'] == 'mm')
+  offset_vector = matrix.col(module['module_offset'].attrs['vector'])
+  origin = offset_vector * offset_length
+
+  # The path for items below
+  module_offset_path = str('%s/%s' % (module.path(), 'module_offset'))
+
+  # Write the fast pixel direction
+  pixel_size_x1 = module['fast_pixel_direction'].value
+  assert(module['fast_pixel_direction'].attrs['depends_on'] == module_offset_path)
+  assert(module['fast_pixel_direction'].attrs['transformation_type'] == 'translation')
+  assert(module['fast_pixel_direction'].attrs['units'] == 'mm')
+  fast_axis1 = tuple(module['fast_pixel_direction'].attrs['vector'])
+
+  # Write the slow pixel direction
+  pixel_size_y1 = module['slow_pixel_direction'].value
+  assert(module['slow_pixel_direction'].attrs['depends_on'] == module_offset_path)
+  assert(module['slow_pixel_direction'].attrs['transformation_type'] == 'translation')
+  assert(module['slow_pixel_direction'].attrs['units'] == 'mm')
+  slow_axis1 = tuple(module['slow_pixel_direction'].attrs['vector'])
+
+  # Write the fast pixel size
+  pixel_size_x2 = module['fast_pixel_size'].value
+  assert(module['fast_pixel_size'].attrs['depends_on'] == module_offset_path)
+  assert(module['fast_pixel_size'].attrs['transformation_type'] == 'translation')
+  assert(module['fast_pixel_size'].attrs['units'] == 'mm')
+  fast_axis2 = tuple(module['fast_pixel_size'].attrs['vector'])
+
+  # Write the slow pixel size
+  pixel_size_y2 = module['slow_pixel_size'].value
+  assert(module['slow_pixel_size'].attrs['depends_on'] == module_offset_path)
+  assert(module['slow_pixel_size'].attrs['transformation_type'] == 'translation')
+  assert(module['slow_pixel_size'].attrs['units'] == 'mm')
+  slow_axis2 = tuple(module['slow_pixel_size'].attrs['vector'])
+
+  # Get the pixel size and axis vectors
+  assert(pixel_size_x1 == pixel_size_x2)
+  assert(pixel_size_y1 == pixel_size_y2)
+  assert(fast_axis1 == fast_axis2)
+  assert(slow_axis1 == slow_axis2)
+  pixel_size = (pixel_size_x1, pixel_size_y1)
+  fast_axis = fast_axis1
+  slow_axis = slow_axis1
+
+  # FIXME stuff not set
+  det_type = ''
+  name = ''
+  thickness = 0
+  material = ''
+  trusted_range = (0, 0)
+
+  # Return the detector and panel
+  detector = Detector()
+  panel = detector.add_panel()
+  panel.set_frame(fast_axis, slow_axis, origin)
+  panel.set_pixel_size(pixel_size)
+  panel.set_image_size(image_size)
+  return detector
+
+def load_goniometer(entry):
+  from dxtbx.model import Goniometer
+
+  # Write out the rotation axis and oscillation
+  nx_sample = get_nx_sample(entry, "sample")
+  transformations = get_nx_transformations(nx_sample, "transformations")
+  assert(transformations['phi'].attrs['depends_on'] == '.')
+  assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
+  assert(transformations['phi'].attrs['offset_units'] == 'mm')
+  assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
+  rotation_axis = tuple(transformations['phi'].attrs['vector'])
+
+  # Return the goniometer model
+  return Goniometer(rotation_axis)
+
+def load_scan(entry):
+  from dxtbx.model import Scan
+
+  # Write out the rotation axis and oscillation
+  nx_sample = get_nx_sample(entry, "sample")
+  transformations = get_nx_transformations(nx_sample, "transformations")
+  phi = transformations['phi']
+  assert(transformations['phi'].attrs['depends_on'] == '.')
+  assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
+  assert(transformations['phi'].attrs['offset_units'] == 'mm')
+  assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
+  image_range = (0, len(phi))
+  oscillation = (phi[0], phi[1] - phi[0])
+  return Scan(image_range, oscillation, deg=True)
+
+def load_crystal(entry):
+  from dxtbx.model.crystal import crystal_model as Crystal
+  from scitbx.array_family import flex
+  from scitbx import matrix
+  from cctbx import uctbx
+  import numpy
+
+  # Get the sample
+  nx_sample = get_nx_sample(entry, "sample")
+
+  # Set the space group
+  space_group_symbol = nx_sample['unit_cell_group'].value
+
+  # Get depends on
+  assert(nx_sample['depends_on'].value == nx_sample['transformations/phi'].name)
+  
+  # Read the average unit cell data
+  average_unit_cell = flex.double(numpy.array(nx_sample['average_unit_cell']))
+  assert(nx_sample['average_unit_cell'].attrs['angles_units'] == 'deg')
+  assert(nx_sample['average_unit_cell'].attrs['length_units'] == 'angstrom')
+  assert(len(average_unit_cell.all()) == 1)
+  assert(len(average_unit_cell) == 6)
+  average_orientation_matrix = flex.double(numpy.array(nx_sample['average_orientation_matrix']))
+  assert(len(average_orientation_matrix.all()) == 2)
+  assert(average_orientation_matrix.all()[0] == 3)
+  assert(average_orientation_matrix.all()[1] == 3)
+
+  # Get the real space vectors
+  uc = uctbx.unit_cell(tuple(average_unit_cell))
+  B = matrix.sqr(uc.fractionalization_matrix()).transpose()
+  real_space_a = B[0:3]
+  real_space_b = B[3:6]
+  real_space_c = B[6:9]
+
+  # Read the unit cell data
+  unit_cell = flex.double(numpy.array(nx_sample['unit_cell']))
+  assert(nx_sample['unit_cell'].attrs['angles_units'] == 'deg')
+  assert(nx_sample['unit_cell'].attrs['length_units'] == 'angstrom')
+
+  # Read the orientation matrix
+  orientation_matrix = flex.double(numpy.array(nx_sample['orientation_matrix']))
+  assert(len(unit_cell.all()) == 2)
+  assert(len(orientation_matrix.all()) == 3)
+  assert(unit_cell.all()[0] == orientation_matrix.all()[0])
+  assert(unit_cell.all()[1] == 6)
+  assert(orientation_matrix.all()[1] == 3)
+  assert(orientation_matrix.all()[2] == 3)
+
+  # Construct the crystal model
+  crystal = Crystal(
+    real_space_a,
+    real_space_b,
+    real_space_c,
+    space_group_symbol)
+
+  # Sort out scan points
+  if unit_cell.all()[0] > 1:
+    A_list = []
+    for i in range(len(unit_cell.all()[0])):
+      uc = uctbx.unit_cell(tuple(unit_cell[i,:]))
+      U = matrix.sqr(tuple(orientation_matrix[i,:,:]))
+      B = matrix.sqr(uc.fractionalization_matrix()).transpose()
+      A_list.append(U*B)
+    crystal.set_A_at_scan_points(A_list)
+  else:
+    assert(unit_cell.all_eq(average_unit_cell))
+    assert(orientation_matrix.all_eq(average_orientation_matrix))
+
+  # Return the crystal
+  return crystal
+
 def dump(entry, experiments):
   from dials.array_family import flex
 
   # Add the feature
   if "features" in entry:
-    assert(entry['features'].dtype == 'uint64')
-    entry['features'].append(6)
+    features = entry['features']
+    assert(features.dtype == 'uint64')
+    features.resize((len(features)+1,))
+    features[len(features)-1] = 6
   else:
     import numpy as np
-    features = entry.create_dataset("features", (1,), dtype=np.uint64)
+    features = entry.create_dataset(
+      "features", 
+      (1,), 
+      maxshape=(None,),
+      dtype=np.uint64)
     features[0] = 6
 
   # Create the entry
@@ -301,3 +521,35 @@ def dump(entry, experiments):
 
   # Link the data
   #nxmx['data'] = nxmx['instrument/detector/data']
+
+def load(entry):
+  from dxtbx.model.experiment.experiment_list import ExperimentList
+  from dxtbx.model.experiment.experiment_list import Experiment
+  
+  # Check file contains the feature
+  assert("features" in entry)
+  assert(6 in entry['features'].value)
+  
+  # Get the entry
+  nxmx = entry['experiment0']
+  assert(nxmx.attrs['NX_class'] == 'NXsubentry')
+
+  # Get the definition
+  definition = nxmx['definition']
+  assert(definition.value == 'NXmx')
+  assert(definition.attrs['version'] == 1)
+
+  # Create the experiment
+  experiment = Experiment()
+
+  # Read the models
+  experiment.beam = load_beam(nxmx)
+  experiment.detector = load_detector(nxmx)
+  experiment.goniometer = load_goniometer(nxmx)
+  experiment.scan = load_scan(nxmx)
+  experiment.crystal = load_crystal(nxmx)
+
+  # Return the experiment list
+  experiment_list = ExperimentList()
+  experiment_list.append(experiment)
+  return experiment_list

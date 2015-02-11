@@ -34,8 +34,6 @@ def make_vlen_uint(handle, name, data, description):
   return dset
 
 def write(handle, key, data):
-
-  # Write the column
   if   key == 'miller_index':
     col1, col2, col3 = zip(*list(data))
     dsc1 = 'The h component of the miller index'
@@ -165,16 +163,98 @@ def write(handle, key, data):
   else:
     raise KeyError('Column %s not written to file' % key)
 
+def read(handle, key):
+  from dials.array_family import flex
+  if   key == 'miller_index':
+    h = flex.int(handle['h'])
+    k = flex.int(handle['k'])
+    l = flex.int(handle['l'])
+    return flex.miller_index(h,k,l)
+  elif key == 'id':
+    return flex.size_t(map(int,handle['id']))
+  elif key == 'partial_id':
+    return flex.size_t(map(int,handle['reflection_id']))
+  elif key == 'entering':
+    return flex.bool(map(bool,handle['entering']))
+  elif key == 'flags':
+    return flex.size_t(map(int,handle['flags']))
+  elif key == 'panel':
+    return flex.size_t(map(int,handle['det_module']))
+  elif key == 'd':
+    return flex.double(handle['d'])
+  elif key == 'partiality':
+    return flex.double(handle['partiality'])
+  elif key == 'xyzcal.px':
+    x = flex.double(handle['prd_px_x'])
+    y = flex.double(handle['prd_px_y'])
+    z = flex.double(handle['prd_frame'])
+    return flex.vec3_double(x, y, z)
+  elif key == 'xyzcal.mm':
+    x = flex.double(handle['prd_mm_x'])
+    y = flex.double(handle['prd_mm_y'])
+    z = flex.double(handle['prd_phi'])
+    return flex.vec3_double(x, y, z)
+  elif key == 'bbox':
+    x0 = flex.int(handle['bbx0'])
+    x1 = flex.int(handle['bbx1'])
+    y0 = flex.int(handle['bby0'])
+    y1 = flex.int(handle['bby1'])
+    z0 = flex.int(handle['bbz0'])
+    z1 = flex.int(handle['bbz1'])
+    return flex.int6(x0, x1, y0, y1, z0, z1)
+  elif key == 'xyzobs.px.value':
+    x = flex.double(handle['obs_px_x_val'])
+    y = flex.double(handle['obs_px_y_val'])
+    z = flex.double(handle['obs_frame_val'])
+    return flex.vec3_double(x, y, z)
+  elif key == 'xyzobs.px.variance':
+    x = flex.double(handle['obs_px_x_var'])
+    y = flex.double(handle['obs_px_y_var'])
+    z = flex.double(handle['obs_frame_var'])
+    return flex.vec3_double(x, y, z)
+  elif key == 'xyzobs.mm.value':
+    x = flex.double(handle['obs_mm_x_val'])
+    y = flex.double(handle['obs_mm_y_val'])
+    z = flex.double(handle['obs_phi_val'])
+    return flex.vec3_double(x, y, z)
+  elif key == 'xyzobs.mm.variance':
+    x = flex.double(handle['obs_mm_x_var'])
+    y = flex.double(handle['obs_mm_y_var'])
+    z = flex.double(handle['obs_phi_var'])
+    return flex.vec3_double(x, y, z)
+  elif key == 'background.mean':
+    return flex.double(handle['bkg_mean'])
+  elif key == 'intensity.sum.value':
+    return flex.double(handle['int_sum_val'])
+  elif key == 'intensity.sum.variance':
+    return flex.double(handle['int_sum_var'])
+  elif key == 'intensity.prf.value':
+    return flex.double(handle['int_prf_val'])
+  elif key == 'intensity.prf.variance':
+    return flex.double(handle['int_prf_var'])
+  elif key == 'profile.correlation':
+    return flex.double(handle['prf_cc'])
+  elif key == 'lp':
+    return flex.double(handle['lp'])
+  else:
+    raise KeyError('Column %s not read from file' % key)
+
 def dump(entry, reflections):
   from dials.array_family import flex
 
   # Add the feature
   if "features" in entry:
-    assert(entry['features'].dtype == 'uint64')
-    entry['features'].append(7)
+    features = entry['features']
+    assert(features.dtype == 'uint64')
+    features.resize((len(features)+1,))
+    features[len(features)-1] = 7
   else:
     import numpy as np
-    features = entry.create_dataset("features", (1,), dtype=np.uint64)
+    features = entry.create_dataset(
+      "features", 
+      (1,), 
+      maxshape=(None,),
+      dtype=np.uint64)
     features[0] = 7
 
   # Create the entry
@@ -202,3 +282,58 @@ def dump(entry, reflections):
   overlaps[3] = [0, 2]
   overlaps[4] = [1]
   make_vlen_uint(diffraction, "overlaps", overlaps, 'Reflection overlap list')
+
+def load(entry):
+  from dials.array_family import flex
+
+  # Check the feature is present
+  assert("features" in entry)
+  assert(7 in entry["features"])
+
+  # Get the entry
+  diffraction = entry['diffraction']
+  assert(diffraction.attrs['NX_class'] == 'NXsubentry')
+
+  # Get the definition
+  definition = diffraction['definition']
+  assert(definition.value == 'NXdiffraction')
+  assert(definition.attrs['version'] == 1)
+
+  # The columns to try
+  columns = [
+    'miller_index',
+    'id',
+    'partial_id',
+    'entering',
+    'flags',
+    'panel',
+    'd',
+    'partiality',
+    'xyzcal.px',
+    'xyzcal.mm',
+    'bbox',
+    'xyzobs.px.value',
+    'xyzobs.px.variance',
+    'xyzobs.mm.value',
+    'xyzobs.px.variance',
+    'background.mean',
+    'intensity.sum.value',
+    'intensity.sum.variance',
+    'intensity.prf.value',
+    'intensity.prf.variance',
+    'profile.correlation',
+    'lp'
+  ]
+
+  # The reflection table
+  table = flex.reflection_table()
+
+  # For each column in the reflection table dump to file
+  for key in columns:
+    try:
+      table[key] = read(diffraction, key)
+    except KeyError, e:
+      print e
+
+  # Return the table
+  return table

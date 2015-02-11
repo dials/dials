@@ -10,3 +10,16 @@ def open(filename, mode='a'):
     entry = handle.create_group('entry')
     entry.attrs['NX_class'] = 'NXentry'
   return entry
+
+def load(filename):
+  from dials.util.nexus import nx_diffraction, nx_mx
+  entry = open(filename, "r")
+  exp = nx_mx.load(entry)
+  ref = nx_diffraction.load(entry)
+  return exp, ref
+
+def dump(experiments, reflections, filename):
+  from dials.util.nexus import nx_diffraction, nx_mx
+  entry = open(filename, "w")
+  nx_mx.dump(entry, experiments)
+  nx_diffraction.dump(entry, reflections)
