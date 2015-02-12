@@ -1,5 +1,15 @@
+body {
+  min-width: 640px;
+  margin-left: 10%;
+  margin-right: 10%;
+}
+
+div.document {
+  width: auto;
+}
+
 div.logoheader {
-  width: 940px;
+  width: auto;
   margin: 0 auto 0 auto;
   background-color: #061679;
   border: medium solid black;
