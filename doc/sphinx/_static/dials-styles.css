@@ -21,6 +21,7 @@ div.logoheader {
 
 div.footer {
   height: 50px;
+  width: auto;
 }
 
 img.logofooter {
