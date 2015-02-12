@@ -477,7 +477,10 @@ doc/sphinx/figures/tree_03.png -text svneol=unset#unset
 doc/sphinx/index.rst -text
 doc/sphinx/installation.rst -text
 doc/sphinx/license.rst -text
+doc/sphinx/links.rst -text
 doc/sphinx/publications.rst -text
+doc/sphinx/workshops/DIALS-1.rst -text
+doc/sphinx/workshops/dials3d.rst -text
 doc/user-tutorial/multi_lattice_tutorial.sh -text
 doc/user-tutorial/tutorial.sh -text
 doc/user-tutorial/tutorial.txt -text
