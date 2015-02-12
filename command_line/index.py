@@ -101,6 +101,12 @@ def run(args):
     known_crystal_models = experiments.crystals()
   else:
     known_crystal_models = None
+
+  if len(reflections) == 0:
+    raise Sorry("No reflection lists found in input")
+  if len(reflections) > 1:
+    raise Sorry("Multiple reflections lists provided in input")
+
   assert(len(reflections) == 1)
   reflections = reflections[0]
 
