@@ -22,4 +22,5 @@ if (__name__ == "__main__") :
   os.chdir(op.join(dials_dir, "doc", "sphinx"))
   easy_run.call("make clean")
   easy_run.call("make html")
+  print "Moving HTML pages to", dest_dir
   shutil.move("build/html", dest_dir)
