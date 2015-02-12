@@ -1,0 +1,46 @@
+Instructions to build the DIALS documentation pages using sphinx
+
+Assumptions:
+
+i)  you have the dials htdocs repository checked out:
+      svn+ssh://svn.code.sf.net/p/dials/htdocs/code/trunk
+ii) you have sphinx and dependencies (docutils, etc.) installed in your
+    cctbx.python.
+
+
+1) Install biopython if you don’t already have it (this is to populate the
+   publications section):
+
+$ curl http://biopython.org/DIST/biopython-1.65.tar.gz > biopython-1.65.tar.gz
+$ tar -xzvf biopython-1.65.tar.gz
+$ cd biopython-1.65
+$ dials.python setup.py build install
+
+
+[this step is only necessary if you want to use the alabaster theme]
+2) Get the alabaster sphinx theme:
+
+$ curl https://pypi.python.org/packages/source/a/alabaster/alabaster-0.6.3.tar.gz > alabaster-0.6.3.tar.gz
+$ tar -xzvf alabaster-0.6.3.tar.gz
+$ cd alabaster-0.6.3
+$ dials.python setup.py build install
+
+
+[this step is only necessary if you want to use the alabaster theme]
+3) Then replace the current sphinx configuration with the one using the alabaster theme:
+
+$ cd $(libtbx.find_in_repositories dials)/doc/sphinx
+$ mv conf.py conf_default.py
+$ ln -s conf_alabaster.py conf.py
+
+
+4) Build the documentation using the dev.dials.make_sphinx_html command which
+   builds the sphinx documentation and copies the output into the
+   sources/htdocs/doc directory.
+
+$ dev.dials.make_sphinx_html
+
+
+5) View the documentation! e.g. on mac:
+
+$ open $(libtbx.find_in_repositories htdocs)/doc/index.html
