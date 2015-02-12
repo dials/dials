@@ -44,7 +44,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+#templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -109,26 +109,27 @@ pygments_style = 'sphinx'
 
 # -- Options for HTML output ----------------------------------------------
 
-import alabaster
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
+html_theme = 'default'
 
-html_theme_path = [alabaster.get_path()]
-extensions.append('alabaster')
-html_theme = 'alabaster'
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        #'searchbox.html',
-        #'donate.html',
-    ]
-}
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+#html_theme_options = {
+  ##'sidebarbgcolor': '#061679',
+  #'sidebarbgcolor': 'white',
+  #'relbarbgcolor': '#02105E',
+  #'footerbgcolor': '#01093D',
+  #'headbgcolor': '#061679',
+  #'codebgcolor': '#E0E0E0',
+  #'headtextcolor': 'white',
+  #'sidebartextcolor': 'black',
+  #'sidebarlinkcolor': '#061679',
+#}
 
-html_theme_options = {
-  #'logo': 'dials_icon.png',
-  'github_button': False,
-  'show_powered_by': False,
-  'description': 'Data Integration for Advanced Light Sources',
-}
+# Add any paths that contain custom themes here, relative to this directory.
+#html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -144,12 +145,12 @@ html_theme_options = {
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = "dials_icon.png"
+html_favicon = "figures/dials_icon.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -181,7 +182,7 @@ html_static_path = ['_static']
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-html_show_sourcelink = False
+#html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True
