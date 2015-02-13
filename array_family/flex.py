@@ -132,7 +132,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   @staticmethod
   def from_h5(filename):
     ''' Read the reflections table from a HDF5 file. '''
-    from dials.util.nexus import NexusFile
+    from dials.util.nexus_old import NexusFile
     handle = NexusFile(filename, 'r')
     self = handle.get_reflections()
     handle.close()
@@ -220,7 +220,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
   def as_h5(self, filename):
     ''' Write the reflection table as a HDF5 file. '''
-    from dials.util.nexus import NexusFile
+    from dials.util.nexus_old import NexusFile
     handle = NexusFile(filename, 'w')
     handle.set_reflections(self)
     handle.close()
