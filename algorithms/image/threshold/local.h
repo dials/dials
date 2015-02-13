@@ -450,7 +450,7 @@ namespace dials { namespace algorithms {
           int k1 = j1*xsize;
 
           // Compute the number of points valid in the local area,
-          // the sum of the pixel values and the num of the squared pixel
+          // the sum of the pixel values and the sum of the squared pixel
           // values.
           double m = 0;
           double x = 0;
@@ -480,7 +480,7 @@ namespace dials { namespace algorithms {
 
           // Compute the thresholds
           dst[k] = false;
-          if (mask[k] && m >= min_count_ && x > threshold_) {
+          if (mask[k] && m >= min_count_ && src[k] > threshold_) {
             double a = m * y - x * x - x * (m-1);
             double b = m * src[k] - x;
             double c = x * nsig_b_ * std::sqrt(2*(m-1));
@@ -555,7 +555,7 @@ namespace dials { namespace algorithms {
 
           // Compute the thresholds
           dst[k] = false;
-          if (mask[k] && m >= min_count_ && x > threshold_) {
+          if (mask[k] && m >= min_count_ && src[k] > threshold_) {
             double a = m * y - x * x;
             double b = m * src[k] - x;
             double c = gain[k] * x * (m-1+nsig_b_ * std::sqrt(2*(m-1)));
