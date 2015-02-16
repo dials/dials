@@ -66,6 +66,7 @@ def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
   from dials.util import log
+  from logging import info
   usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
@@ -135,8 +136,10 @@ def run(args):
   refined_experiments = idxr.refined_experiments
   refined_reflections = idxr.refined_reflections
   if len(refined_experiments):
+    info("Saving refined experiments to %s" %params.output.experiments)
     idxr.export_as_json(refined_experiments,
                         file_name=params.output.experiments)
+    info("Saving refined reflections to %s" %params.output.reflections)
     idxr.export_reflections(
       refined_reflections, file_name=params.output.reflections)
 
