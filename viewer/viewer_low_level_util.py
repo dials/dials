@@ -353,7 +353,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     print "self.n_img(after cleanup) =", self.n_img
 
-
     for lst_1d in self.lst_2d_bmp:
       img_lst_hor_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -368,34 +367,14 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
                               flag = wx.ALIGN_CENTRE | wx.ALL, border = 2)
         img_lst_hor_sizer.Add(sigle_slice_sizer, proportion = 0,
                               flag = wx.ALIGN_CENTER | wx.ALL, border = 2)
-      old_one = '''
-      self.img_lst_v_sizer.Add(img_lst_hor_sizer, proportion = 0,
-                             flag = wx.ALIGN_CENTER | wx.TOP, border = 6)
-      '''
 
       self.img_lst_v_sizer.Add(img_lst_hor_sizer, 0, wx.CENTER|wx.ALL, 10)
-
-      example_compatible_with_mac = '''
-        self.mainSizer.Add(self.widgetSizer, 0, wx.CENTER|wx.ALL, 10)
-      '''
-
 
       self.n_img += 1
 
     #self.Layout()
     #self.parent_panel.Layout()
     self.parent_panel.Pframe.Layout()
-
-    example_compatible_with_mac = '''
-
-        if self.widgetSizer.GetChildren():
-            self.widgetSizer.Hide(self.number_of_img-1)
-            self.widgetSizer.Remove(self.number_of_img-1)
-            self.number_of_img -= 1
-            self.frame.fSizer.Layout()
-            print "number_of_img =", self.number_of_img
-
-    '''
 
     print "set_scroll_content(self)"
 
