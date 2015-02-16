@@ -1,5 +1,5 @@
 #
-#  DIALS viewer_frame
+#  DIALS viewer_frame test
 #
 #  Copyright (C) 2014 Diamond Light Source
 #
@@ -67,16 +67,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.frame.fSizer.Layout()
         #self.frame.Fit()
         #self.Refresh()
-
-        to_view = '''
-        self.SetSizer(img_lst_vert_sizer)
-        self.Layout()
-        #self.parent_panel.Layout()
-        #self.parent_panel.Pframe.Layout()
-        aprox_len_pix = len(self.lst_2d_bmp) * 10
-        self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
-        self.SetupScrolling()
-        '''
 
 
     def onRemoveWidget(self, event):

@@ -376,7 +376,19 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.n_img += 1
 
     #self.Layout()
-    self.parent_panel.Layout()
+    #self.parent_panel.Layout()
+    self.parent_panel.Pframe.Layout()
+
+    example_compatible_with_mac = '''
+
+        if self.widgetSizer.GetChildren():
+            self.widgetSizer.Hide(self.number_of_img-1)
+            self.widgetSizer.Remove(self.number_of_img-1)
+            self.number_of_img -= 1
+            self.frame.fSizer.Layout()
+            print "number_of_img =", self.number_of_img
+
+    '''
 
     print "set_scroll_content(self)"
 
