@@ -324,13 +324,13 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.set_scroll_content()
 
-    self.Layout()
+    #self.Layout()
     aprox_len_pix = len(self.lst_2d_bmp) * 10
 
     # imported from  example compatible with mac
     self.mainSizer.Add(self.img_lst_v_sizer, 0, wx.CENTER|wx.ALL, 10)
     self.SetSizer(self.mainSizer)
-    self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
+    #self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
     self.SetupScrolling()
 
 
