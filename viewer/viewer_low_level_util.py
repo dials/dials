@@ -316,7 +316,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.lst_2d_bmp = bmp_lst_in
     self.SetBackgroundColour(wx.Colour(200, 200, 200))
 
-    # imported from  example compatible with mac
     self.mainSizer = wx.BoxSizer(wx.VERTICAL)
 
     self.n_img = 0
@@ -324,19 +323,15 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.set_scroll_content()
 
-    #self.Layout()
     aprox_len_pix = len(self.lst_2d_bmp) * 10
 
-    # imported from  example compatible with mac
     self.mainSizer.Add(self.img_lst_v_sizer, 0, wx.CENTER|wx.ALL, 10)
     self.SetSizer(self.mainSizer)
-    #self.SetScrollbars(1, 1, aprox_len_pix * 10, aprox_len_pix * 10)
     self.SetupScrolling()
 
 
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
     self.Bind(wx.EVT_IDLE, self.OnIdle)
-    #self.SetupScrolling()
     self.scroll_rot = 0
 
     print "from __init__ 02"
@@ -421,13 +416,13 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
   def img_refresh(self, bmp_lst_new):
+
+    #for child in self.img_lst_v_sizer.GetChildren():
+    #  child.Destroy()
+
+
     self.lst_2d_bmp = bmp_lst_new
-    for child in self.GetChildren():
-      child.Destroy()
-
     self.set_scroll_content()
-
-    #self.SetupScrolling()
 
     print "img_refresh(self, bmp_lst_new)"
 
