@@ -603,13 +603,13 @@ def dump(entry, experiments):
     nxmx = entry.create_group("experiment_%d" % index)
     nxmx.attrs['NX_class'] = 'NXsubentry'
     nxmx['index'] = index
-    nxmx['index'].attrs['beam'] = id(experiment.beam)
+    nxmx['index'].attrs['source'] = id(experiment.beam)
     nxmx['index'].attrs['detector'] = id(experiment.detector)
     if experiment.goniometer is not None:
       nxmx['index'].attrs['goniometer'] = id(experiment.goniometer)
     if experiment.scan is not None:
       nxmx['index'].attrs['scan'] = id(experiment.scan)
-    nxmx['index'].attrs['crystal'] = id(experiment.crystal)
+    nxmx['index'].attrs['sample'] = id(experiment.crystal)
 
     # Create the definition
     definition = nxmx.create_dataset('definition', data='NXmx')
@@ -670,7 +670,7 @@ def load(entry):
     assert(definition.value == 'NXmx')
     assert(definition.attrs['version'] == 1)
 
-    b = nxmx['index'].attrs['beam']
+    b = nxmx['index'].attrs['source']
     d = nxmx['index'].attrs['detector']
     if "goniometer" in nxmx['index'].attrs:
       g = nxmx['index'].attrs['goniometer']
@@ -680,7 +680,7 @@ def load(entry):
       s = nxmx['index'].attrs['scan']
     else:
       s = None
-    c = nxmx['index'].attrs['crystal']
+    c = nxmx['index'].attrs['sample']
     index.append((b, d, g, s, c))
 
     # Create the experiment
