@@ -28,6 +28,7 @@ def run(args):
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   from dials.util.nexus import dump
+  from dials.util.nexus.nx_mx import convert_to_nexus_beam_direction
 
   usage = '%s integrated.pickle experiments.json [options]' % (
               libtbx.env.dispatcher_name)
@@ -47,7 +48,7 @@ def run(args):
     return
 
   integrated_data = reflections[0]
-  experiment_list = experiments
+  experiment_list = convert_to_nexus_beam_direction(experiments)
   dump(
     experiment_list,
     integrated_data,

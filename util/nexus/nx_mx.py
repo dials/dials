@@ -19,6 +19,8 @@ def convert_to_nexus_beam_direction(experiments):
 
   EPS = 1e-7
 
+  zaxis = matrix.col((0, 0, -1))
+
   # Find the beam direction each object depends on
   objects = defaultdict(list)
   for exp in experiments:
@@ -31,10 +33,10 @@ def convert_to_nexus_beam_direction(experiments):
   for key, value in objects.iteritems():
     value = list(set(value))
     d1 = matrix.col(value[0].get_direction()).normalize()
-    angle = acos(d1.dot(matrix.col((0, 0, 1))))
+    angle = acos(d1.dot(zaxis))
     if abs(angle) < EPS:
       continue
-    axis = d1.cross(matrix.col((0, 0, 1))).normalize()
+    axis = d1.cross(zaxis).normalize()
     for v in value:
       if abs(matrix.col(v.get_direction()).angle(d1)) > EPS:
         raise RuntimeError('''
@@ -47,13 +49,13 @@ def convert_to_nexus_beam_direction(experiments):
   # Rotate the beams
   for exp in experiments:
     d = matrix.col(exp.beam.get_direction()).normalize()
-    angle = acos(d.dot(matrix.col((0, 0, 1))))
+    angle = acos(d.dot(zaxis))
     if abs(angle) < EPS:
       continue
-    axis = d.cross(matrix.col((0, 0, 1))).normalize()
+    axis = d.cross(zaxis).normalize()
     exp.beam.rotate_around_origin(axis, angle, deg=False)
     d = matrix.col(exp.beam.get_direction())
-    assert(abs(d.angle(matrix.col((0, 0, 1)))) < EPS)
+    assert(abs(d.angle(zaxis)) < EPS)
 
   # Return converted experiments
   return experiments
@@ -133,9 +135,6 @@ def dump_beam(entry, beam):
 
   EPS = 1e-7
 
-  # Make sure that the direction is 0, 0, -1
-  assert(matrix.col(beam.get_direction()).dot(matrix.col((0, 0, -1))) < EPS)
-
   # Get the nx_beam
   nx_sample = get_nx_sample(entry, "sample")
   nx_beam = get_nx_beam(nx_sample, "beam")
@@ -145,7 +144,7 @@ def dump_beam(entry, beam):
   n = matrix.col(beam.get_polarization_normal()).normalize()
   p = beam.get_polarization_fraction()
   assert(abs(n.dot(d)) < EPS)
-  assert(abs(d.dot(matrix.col((0, 0, 1))) - 1) < EPS)
+  assert(abs(d.dot(matrix.col((0, 0, -1))) - 1) < EPS)
 
   # Get the polarization in stokes parameters
   S0, S1, S2, S3 = polarization_normal_to_stokes(n, p)
@@ -415,10 +414,10 @@ def load_beam(entry):
   wavelength = nx_beam['incident_wavelength'].value
   S0, S1, S2, S3 = tuple(nx_beam['incident_polarization_stokes'])
   n, p = polarization_stokes_to_normal(S0, S1, S2, S3)
-  assert(n.dot(matrix.col((0, 0, 1))) < EPS)
+  assert(n.dot(matrix.col((0, 0, -1))) < EPS)
 
   # Return the beam model
-  return Beam((0, 0, 1), wavelength, 0, 0, n, p)
+  return Beam((0, 0, -1), wavelength, 0, 0, n, p)
 
 def load_detector(entry):
   from dxtbx.model import Detector
