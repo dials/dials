@@ -194,16 +194,16 @@ def dump_detector(entry, detector, beam, imageset, scan):
   # Make up some fake stuff
   if scan is not None:
     nx_detector['timestamp'] = scan.get_epochs().as_numpy_array() # FIXME non-standard
-    nx_detector['dead_time'] = [0] * len(scan)
-    nx_detector['count_time'] = [0] * len(scan)
+    nx_detector['dead_time'] = [0.0] * len(scan)
+    nx_detector['count_time'] = [0.0] * len(scan)
     nx_detector['frame_time'] = scan.get_exposure_times().as_numpy_array()
-    nx_detector['detector_readout_time'] = [0] * len(scan)
+    nx_detector['detector_readout_time'] = [0.0] * len(scan)
   else:
-    nx_detector['timestamp'] = 0
-    nx_detector['dead_time'] = 0
-    nx_detector['count_time'] = 0
-    nx_detector['frame_time'] = 0
-    nx_detector['detector_readout_time'] = 0
+    nx_detector['timestamp'] = 0.0
+    nx_detector['dead_time'] = 0.0
+    nx_detector['count_time'] = 0.0
+    nx_detector['frame_time'] = 0.0
+    nx_detector['detector_readout_time'] = 0.0
   nx_detector['bit_depth_readout'] = 32
 
   # Create the detector depends on
