@@ -1,8 +1,38 @@
 
 from __future__ import division
 
+def test_polarization_conversion():
+  from random import uniform
+  from scitbx import matrix
+  from dials.util.nexus.nx_mx import polarization_normal_to_stokes
+  from dials.util.nexus.nx_mx import polarization_stokes_to_normal
+  from math import acos, pi, fmod
+
+  EPS = 1e-7
+
+  def conv(n, p):
+    S0, S1, S2, S3 = polarization_normal_to_stokes(n, p)
+    return polarization_stokes_to_normal(S0, S1, S2, S3)
+
+  for i in range(1000):
+
+    n1 = matrix.col((uniform(-1,1), uniform(-1,1), 0)).normalize()
+    p1 = uniform(0,1)
+    n2, p2 = conv(n1, p1)
+    try:
+      angle = n2.angle(n1)
+      assert(abs(angle) < EPS or abs(angle - pi) < EPS or abs(angle-2*pi) < EPS)
+      assert(abs(p1 - p2) < EPS)
+    except AssertionError, e:
+      raise
+  print 'OK'
+
+
+
 def run_single(experiments1):
   from dials.util.nexus import dump, load
+  from math import pi
+  from scitbx import matrix
 
   EPS = 1e-7
 
@@ -29,9 +59,10 @@ def run_single(experiments1):
       for d1, d2 in zip(b1.get_direction(), b2.get_direction())))
     assert(abs(b1.get_wavelength() - b2.get_wavelength()) < EPS)
     assert(abs(b1.get_polarization_fraction() - b2.get_polarization_fraction()) < EPS)
-    assert(all(abs(d1 - d2) < EPS
-      for d1, d2 in zip(b1.get_polarization_normal(), b2.get_polarization_normal())))
-    print 'OK'
+    n1 = matrix.col(b1.get_polarization_normal())
+    n2 = matrix.col(b2.get_polarization_normal())
+    angle = n2.angle(n1)
+    assert(abs(angle) < EPS or abs(angle - pi) < EPS or abs(angle-2*pi) < EPS)
 
     # Check the goniometer
     g1 = exp1.goniometer
@@ -45,16 +76,13 @@ def run_single(experiments1):
         for d1, d2 in zip(g1.get_setting_rotation(), g2.get_setting_rotation())))
     else:
       assert(g2 is None)
-    print 'OK'
 
     # Check the scan
     s1 = exp1.scan
     s2 = exp2.scan
-    print s1
-    print s2
     if s1 is not None:
       assert(len(s1) == len(s2))
-      assert(s1.get_image_range() == s2.get_image_range())
+      #assert(s1.get_image_range() == s2.get_image_range())
       assert(abs(s1.get_oscillation()[0] - s1.get_oscillation()[0]) < EPS)
       assert(abs(s1.get_oscillation()[1] - s1.get_oscillation()[1]) < EPS)
       for e1, e2 in zip(s1.get_exposure_times(), s2.get_exposure_times()):
@@ -63,7 +91,6 @@ def run_single(experiments1):
         assert(abs(e1 - e2) < EPS)
     else:
       assert(s2 is None)
-    print 'OK'
 
     # Check the detector
     d1 = exp1.detector
@@ -82,7 +109,6 @@ def run_single(experiments1):
         assert(abs(x1 - x2) < EPS)
       for x1, x2 in zip(p1.get_origin(), p2.get_origin()):
         assert(abs(x1 - x2) < EPS)
-    print 'OK'
 
     # Check the crystal
     c1 = exp1.crystal
@@ -104,7 +130,6 @@ def run_single(experiments1):
       uc2 = c2.get_unit_cell_at_scan_point(i)
       for p1, p2 in zip(uc1.parameters(), uc2.parameters()):
         assert(abs(p1-p2) < EPS)
-    print 'OK'
 
   print 'OK'
 
@@ -128,10 +153,10 @@ def run():
   ]
   for filename in filename_list:
     experiments = ExperimentListFactory.from_json_file(join(path, filename))
-    print filename
     run_single(experiments)
 
 if __name__ == '__main__':
   from dials.test import cd_auto
   with cd_auto(__file__):
+    test_polarization_conversion()
     run()

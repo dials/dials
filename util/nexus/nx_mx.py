@@ -9,6 +9,36 @@ from __future__ import division
 
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/applications/NXmx.nxdl.xml'
 
+def polarization_normal_to_stokes(n, p):
+  from math import sin, cos, atan2, pi
+  from scitbx import matrix
+  EPS = 1e-7
+  ax = matrix.col((1, 0, 0))
+  ay = matrix.col((0, 1, 0))
+  az = matrix.col((0, 0, 1))
+  n = matrix.col(n).normalize()
+  assert(abs(n.dot(az)) < EPS)
+  I = 1.0
+  X = 0.0
+  W = atan2(n.dot(ay), n.dot(ax)) - pi/2
+  S0 = I
+  S1 = I*p*cos(2*W)*cos(2*X)
+  S2 = I*p*sin(2*W)*cos(2*X)
+  S3 = I*p*sin(2*X)
+  return S0, S1, S2, S3
+
+def polarization_stokes_to_normal(S0, S1, S2, S3):
+  from math import sqrt, atan2, sin, cos
+  from scitbx import matrix
+  EPS = 1e-7
+  I = S0
+  p = sqrt(S1*S1+S2*S2+S3*S3) / S0
+  W = atan2(S2,S1) * 0.5
+  X = atan2(S3,sqrt(S1*S1+S2*S2)) * 0.5
+  assert(abs(X) < EPS)
+  n = matrix.col((-sin(W), cos(W), 0.0)).normalize()
+  return n, p
+
 def get_nx_class(handle, klass, path):
   if path in handle:
     group = handle[path]
@@ -70,13 +100,7 @@ def dump_beam(entry, beam):
   axis = d.cross(matrix.col((0, 0, 1))).normalize()
   n = n.rotate_around_origin(axis, angle, deg=False)
   assert(n.dot(matrix.col((0, 0, 1))) < EPS)
-  I = 1.0
-  X = 0.0
-  W = acos(n.dot(matrix.col((0, 1, 0))))
-  S0 = I
-  S1 = I*p*cos(2*W)*cos(2*X)
-  S2 = I*p*sin(2*W)*cos(2*X)
-  S3 = I*p*sin(2*X)
+  S0, S1, S2, S3 = polarization_normal_to_stokes(n, p)
 
   # Set the beam parameters
   nx_beam['direction'] = d.normalize() # FIXME Non-standard
@@ -344,20 +368,12 @@ def load_beam(entry):
   wavelength = nx_beam['incident_wavelength'].value
   direction = matrix.col(nx_beam['direction'])
   S0, S1, S2, S3 = tuple(nx_beam['incident_polarization_stokes'])
-  I = S0
-  p = sqrt(S1**2 + S2**2 + S3**2)/S0
-  W = 0.5*atan(S2/S1)
-  X = 0.5*atan(S3/sqrt(S1**2 + S2**2))
-  W += pi
-  assert(abs(I - 1.0) < EPS)
-  assert(abs(X) < EPS)
-  assert(p >= 0.0 and p <= 1.0)
-  n = matrix.col((cos(W), sin(W), 0)).normalize()
-  assert(abs(matrix.col((0,0,1)).dot(n)) < EPS)
-  angle = acos(matrix.col((0, 0, 1)).dot(direction))
+  n, p = polarization_stokes_to_normal(S0, S1, S2, S3)
+  assert(n.dot(matrix.col((0, 0, 1))) < EPS)
+  angle = acos(direction.dot(matrix.col((0, 0, 1))))
   axis = direction.cross(matrix.col((0, 0, 1))).normalize()
   n = n.rotate_around_origin(axis, -angle, deg=False)
-  assert(abs(direction.dot(n)) < EPS)
+  assert(n.dot(direction) < EPS)
 
   # Return the beam model
   return Beam(direction, wavelength, 0, 0, n, p)
