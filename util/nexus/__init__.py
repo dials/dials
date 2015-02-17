@@ -17,7 +17,7 @@ def load(filename):
   try:
     exp = nx_mx.load(entry)
   except Exception, e:
-    print e
+    raise
     exp = None
   try:
     ref = nx_diffraction.load(entry)

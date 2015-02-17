@@ -61,15 +61,18 @@ def dump_beam(entry, beam):
   nx_beam = get_nx_beam(nx_sample, "beam")
 
   # Generate the stokes polarization parameters
-  d = matrix.col(beam.get_direction())
-  n = matrix.col(beam.get_polarization_normal())
+  d = matrix.col(beam.get_direction()).normalize()
+  n = matrix.col(beam.get_polarization_normal()).normalize()
   p = beam.get_polarization_fraction()
 
   assert(n.dot(d) < EPS)
-  axis = d.cross(matrix.col((0, 1, 0)))
+  angle = acos(d.dot(matrix.col((0, 0, 1))))
+  axis = d.cross(matrix.col((0, 0, 1))).normalize()
+  n = n.rotate_around_origin(axis, angle, deg=False)
+  assert(n.dot(matrix.col((0, 0, 1))) < EPS)
   I = 1.0
   X = 0.0
-  W = acos(n.dot(axis) / n.length())
+  W = acos(n.dot(matrix.col((0, 1, 0))))
   S0 = I
   S1 = I*p*cos(2*W)*cos(2*X)
   S2 = I*p*sin(2*W)*cos(2*X)
@@ -182,6 +185,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
 def dump_goniometer(entry, goniometer, scan):
   ''' Export the goniometer model. '''
+  from scitbx import matrix
 
   if scan is None or goniometer is None:
     return
@@ -190,11 +194,32 @@ def dump_goniometer(entry, goniometer, scan):
   phi0, dphi = scan.get_oscillation(deg=True)
   phi = [phi0+dphi*i for i in range(len(scan))]
 
-  # Write out the rotation axis and oscillation
   nx_sample = get_nx_sample(entry, "sample")
   nx_transformations = get_nx_transformations(nx_sample, "transformations")
+
+  # Write out the rotation axis and oscillation
+  r = matrix.sqr(goniometer.get_setting_rotation())
+  q = r.r3_rotation_matrix_as_unit_quaternion()
+  angle, axis = q.unit_quaternion_as_axis_and_angle()
+  nx_transformations['setting_rotation'] = angle
+  nx_transformations['setting_rotation'].attrs['depends_on'] = '.'
+  nx_transformations['setting_rotation'].attrs['transformation_type'] = 'rotation'
+  nx_transformations['setting_rotation'].attrs['offset_units'] = 'mm'
+  nx_transformations['setting_rotation'].attrs['offset'] = (0.0, 0.0, 0.0)
+  nx_transformations['setting_rotation'].attrs['vector'] = axis
+
+  r = matrix.sqr(goniometer.get_fixed_rotation())
+  q = r.r3_rotation_matrix_as_unit_quaternion()
+  angle, axis = q.unit_quaternion_as_axis_and_angle()
+  nx_transformations['fixed_rotation'] = angle
+  nx_transformations['fixed_rotation'].attrs['depends_on'] = nx_transformations['setting_rotation'].name
+  nx_transformations['fixed_rotation'].attrs['transformation_type'] = 'rotation'
+  nx_transformations['fixed_rotation'].attrs['offset_units'] = 'mm'
+  nx_transformations['fixed_rotation'].attrs['offset'] = (0.0, 0.0, 0.0)
+  nx_transformations['fixed_rotation'].attrs['vector'] = axis
+
   nx_transformations['phi'] = phi
-  nx_transformations['phi'].attrs['depends_on'] = '.'
+  nx_transformations['phi'].attrs['depends_on'] = nx_transformations['fixed_rotation'].name
   nx_transformations['phi'].attrs['transformation_type'] = 'rotation'
   nx_transformations['phi'].attrs['offset_units'] = 'mm'
   nx_transformations['phi'].attrs['offset'] = (0.0, 0.0, 0.0)
@@ -308,7 +333,7 @@ def dump_details(entry):
 
 def load_beam(entry):
   from dxtbx.model import Beam
-  from math import sqrt, atan, cos, sin, pi
+  from math import sqrt, atan, cos, sin, pi, acos
   from scitbx import matrix
 
   EPS = 1e-7
@@ -327,9 +352,11 @@ def load_beam(entry):
   assert(abs(I - 1.0) < EPS)
   assert(abs(X) < EPS)
   assert(p >= 0.0 and p <= 1.0)
-  axis1 = direction.cross(matrix.col((0, 1, 0)))
-  axis2 = direction.cross(axis1)
-  n = (axis2 * cos(W) + axis1 * sin(W)).normalize()
+  n = matrix.col((cos(W), sin(W), 0)).normalize()
+  assert(abs(matrix.col((0,0,1)).dot(n)) < EPS)
+  angle = acos(matrix.col((0, 0, 1)).dot(direction))
+  axis = direction.cross(matrix.col((0, 0, 1))).normalize()
+  n = n.rotate_around_origin(axis, -angle, deg=False)
   assert(abs(direction.dot(n)) < EPS)
 
   # Return the beam model
@@ -403,6 +430,7 @@ def load_detector(entry):
 
 def load_goniometer(entry):
   from dxtbx.model import Goniometer
+  from scitbx import matrix
 
   # Write out the rotation axis and oscillation
   nx_sample = get_nx_sample(entry, "sample")
@@ -410,14 +438,32 @@ def load_goniometer(entry):
     transformations = get_nx_transformations(nx_sample, "transformations")
   except Exception:
     return None
-  assert(transformations['phi'].attrs['depends_on'] == '.')
+  assert(transformations['phi'].attrs['depends_on'] ==
+         transformations['fixed_rotation'].name)
   assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
   assert(transformations['phi'].attrs['offset_units'] == 'mm')
   assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
   rotation_axis = tuple(transformations['phi'].attrs['vector'])
 
+  assert(transformations['fixed_rotation'].attrs['depends_on'] ==
+         transformations['setting_rotation'].name)
+  assert(transformations['fixed_rotation'].attrs['transformation_type'] == 'rotation')
+  assert(transformations['fixed_rotation'].attrs['offset_units'] == 'mm')
+  assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
+  axis = matrix.col(transformations['fixed_rotation'].attrs['vector'])
+  angle = transformations['fixed_rotation'].value
+  fixed_rotation = axis.axis_and_angle_as_r3_rotation_matrix(angle)
+
+  assert(transformations['setting_rotation'].attrs['depends_on'] == '.')
+  assert(transformations['setting_rotation'].attrs['transformation_type'] == 'rotation')
+  assert(transformations['setting_rotation'].attrs['offset_units'] == 'mm')
+  assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
+  axis = matrix.col(transformations['setting_rotation'].attrs['vector'])
+  angle = transformations['setting_rotation'].value
+  setting_rotation = axis.axis_and_angle_as_r3_rotation_matrix(angle)
+
   # Return the goniometer model
-  return Goniometer(rotation_axis)
+  return Goniometer(rotation_axis, fixed_rotation, setting_rotation)
 
 def load_scan(entry):
   from dxtbx.model import Scan
@@ -429,7 +475,6 @@ def load_scan(entry):
   except Exception:
     return None
   phi = transformations['phi']
-  assert(transformations['phi'].attrs['depends_on'] == '.')
   assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
   assert(transformations['phi'].attrs['offset_units'] == 'mm')
   assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
