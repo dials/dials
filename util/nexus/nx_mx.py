@@ -1,8 +1,11 @@
 from __future__ import division
 
-# FIXME - Exposure time/epochs
-# FIXME - beam direction
-# FIXME - trusted range
+# FIXME - beam direction - Need to fix in dxtbx?
+
+# Extensions to NXMX
+#
+#  "detector/underload"
+#  "detector/timestamp"
 
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/applications/NXmx.nxdl.xml'
 
@@ -110,14 +113,16 @@ def dump_detector(entry, detector, beam, imageset, scan):
   nx_detector['distance'] = distance
   nx_detector['beam_centre_x'] = beam_centre_x
   nx_detector['beam_centre_y'] = beam_centre_y
-  nx_detector['saturation_value'] = int(trusted_range[1]) # FIXME
+  nx_detector['saturation_value'] = int(trusted_range[1])
+  nx_detector['underload'] = int(trusted_range[0]) # FIXME non-standard
   nx_detector['description'] = dtype
 
   # Make up some fake stuff
-  nx_detector['count_time'] = scan.get_exposure_times().as_numpy_array()
-  nx_detector['dead_time'] = 0.0
-  nx_detector['frame_time'] = scan.get_epochs().as_numpy_array()
-  nx_detector['detector_readout_time'] = 0.0
+  nx_detector['timestamp'] = scan.get_epochs().as_numpy_array()
+  nx_detector['dead_time'] = [0] * len(scan)
+  nx_detector['count_time'] = [0] * len(scan)
+  nx_detector['frame_time'] = scan.get_exposure_times().as_numpy_array()
+  nx_detector['detector_readout_time'] = [0] * len(scan)
   nx_detector['bit_depth_readout'] = 32
 
   # Creat some data for example file
@@ -328,7 +333,8 @@ def load_detector(entry):
   material = nx_detector['sensor_material'].value
   det_type = nx_detector['type'].value
   thickness = nx_detector['sensor_thickness'].value
-  trusted_range = (0, nx_detector['saturation_value'].value)
+  trusted_range = (nx_detector['underload'].value, nx_detector['saturation_value'].value)
+
 
   # The detector model
   detector = Detector()
@@ -412,8 +418,8 @@ def load_scan(entry):
   oscillation = (phi[0], phi[1] - phi[0])
   nx_instrument = get_nx_instrument(entry, "instrument")
   nx_detector = get_nx_detector(nx_instrument, "detector")
-  exposure_time = nx_detector['count_time']
-  epochs = nx_detector['frame_time']
+  exposure_time = nx_detector['frame_time']
+  epochs = nx_detector['timestamp']
   return Scan(image_range, oscillation, exposure_time, epochs, deg=True)
 
 def load_crystal(entry):

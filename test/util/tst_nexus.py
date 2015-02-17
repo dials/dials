@@ -107,6 +107,7 @@ def run():
     assert(p1.get_thickness() == p2.get_thickness())
     assert(p1.get_image_size() == p2.get_image_size())
     assert(p1.get_pixel_size() == p2.get_pixel_size())
+    assert(p1.get_trusted_range() == p2.get_trusted_range())
     for x1, x2 in zip(p1.get_fast_axis(), p2.get_fast_axis()):
       assert(abs(x1 - x2) < EPS)
     for x1, x2 in zip(p1.get_slow_axis(), p2.get_slow_axis()):
