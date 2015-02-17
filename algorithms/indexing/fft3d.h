@@ -118,43 +118,51 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(dirty_map.size() == dirty_beam.size());
     double max_db = af::max(dirty_beam);
     af::c_grid<3> accessor(dirty_map.accessor()); // index_type conversion
+
+    const int height = int(gridding_n_real[0]);
+    const int depth = int(gridding_n_real[1]);
+    const int width = int(gridding_n_real[2]);
+    const long height_depth = height * depth;
+
+    int max_idx = af::max_index(dirty_map);
+
     for (std::size_t i_peak=0; i_peak<n_peaks; i_peak++) {
 
       // Find the maximum value in the map - this is the next "peak"
-      const int max_idx = af::max_index(dirty_map);
       const index_t shift = accessor.index_nd(max_idx);
-      const double max_value = dirty_map[max_idx];
       peaks.push_back(vec3<int>(shift));
 
       // reposition the dirty beam on the current peak and subtract from
       // the dirty map
+      const double max_value = dirty_map[max_idx];
       const double scale = max_value/max_db * gamma;
-      const long n0 = long(gridding_n_real[0]);
-      const long n1 = long(gridding_n_real[0]);
-      const long n2 = long(gridding_n_real[0]);
-      const long n0_n1 = n0 * n1;
-      for (int i=0; i<gridding_n_real[0]; i++){
-        long i_db = i - shift[0];
-        if (i_db < 0) { i_db += n0; }
-        else if (i_db >= n0) { i_db -= n0; }
-        //DIALS_ASSERT(i_db >= 0 && i_db < n0);
-        const long ipart_dm = i * n0_n1;
-        const long ipart_db = i_db * n0_n1;
-        for (int j=0; j<gridding_n_real[1]; j++){
-          long j_db = j - shift[1];
-          if (j_db < 0) { j_db += n1; }
-          else if (j_db >= n1) { j_db -= n1; }
-          //DIALS_ASSERT(j_db >= 0 && j_db < n1);
-          const long ijpart_dm = ipart_dm + (long)j * (long)n1;
-          const long ijpart_db = ipart_db + (long)j_db * (long)n1;
-          for (int k=0; k<gridding_n_real[2]; k++){
-            long k_db = k - shift[2];
-            if (k_db < 0) { k_db += n2; }
-            else if (k_db >= n2) { k_db -= n2; }
-            //DIALS_ASSERT(k_db >= 0 && k_db < n1);
-            const long idx_dm = ijpart_dm + long(k);
-            const long idx_db = ijpart_db + long(k_db);
+      max_idx = 0; // reset for next cycle
+      for (int i=0; i<width; i++){
+        int i_db = i - shift[0];
+        if (i_db < 0) { i_db += width; }
+        else if (i_db >= width) { i_db -= width; }
+        //DIALS_ASSERT(i_db >= 0 && i_db < width);
+        const long ipart_dm = i * height_depth;
+        const long ipart_db = i_db * height_depth;
+        for (int j=0; j<height; j++){
+          int j_db = j - shift[1];
+          if (j_db < 0) { j_db += height; }
+          else if (j_db >= height) { j_db -= height; }
+          //DIALS_ASSERT(j_db >= 0 && j_db < height);
+          const long ijpart_dm = ipart_dm + j * depth;
+          const long ijpart_db = ipart_db + j_db * depth;
+          for (int k=0; k<depth; k++){
+            int k_db = k - shift[2];
+            if (k_db < 0) { k_db += depth; }
+            else if (k_db >= depth) { k_db -= depth; }
+            //DIALS_ASSERT(k_db >= 0 && k_db < depth);
+            const long idx_dm = ijpart_dm + k;
+            const long idx_db = ijpart_db + k_db;
             dirty_map[idx_dm] -= dirty_beam[idx_db] * scale;
+            if (dirty_map[max_idx] < dirty_map[idx_dm])
+            {
+              max_idx = idx_dm;
+            }
           }
         }
       }
