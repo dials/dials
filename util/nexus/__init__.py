@@ -14,12 +14,21 @@ def open(filename, mode='a'):
 def load(filename):
   from dials.util.nexus import nx_diffraction, nx_mx
   entry = open(filename, "r")
-  exp = nx_mx.load(entry)
-  ref = nx_diffraction.load(entry)
+  try:
+    exp = nx_mx.load(entry)
+  except Exception, e:
+    print e
+    exp = None
+  try:
+    ref = nx_diffraction.load(entry)
+  except Exception:
+    ref = None
   return exp, ref
 
 def dump(experiments, reflections, filename):
   from dials.util.nexus import nx_diffraction, nx_mx
   entry = open(filename, "w")
-  nx_mx.dump(entry, experiments)
-  nx_diffraction.dump(entry, reflections)
+  if experiments is not None:
+    nx_mx.dump(entry, experiments)
+  if reflections is not None:
+    nx_diffraction.dump(entry, reflections)

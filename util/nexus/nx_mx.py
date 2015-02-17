@@ -76,7 +76,7 @@ def dump_beam(entry, beam):
   S3 = I*p*sin(2*X)
 
   # Set the beam parameters
-  nx_beam['direction'] = d.normalize()
+  nx_beam['direction'] = d.normalize() # FIXME Non-standard
   nx_beam['incident_wavelength'] = beam.get_wavelength()
   nx_beam['incident_polarization_stokes'] = (S0, S1, S2, S3)
 
@@ -103,27 +103,37 @@ def dump_detector(entry, detector, beam, imageset, scan):
   assert([p.get_trusted_range() == trusted_range for p in detector].count(False) == 0)
 
   # Take the distance and beam centre from the first panel
-  distance = detector[0].get_distance()
-  beam_centre_x, beam_centre_y = detector[0].get_beam_centre(beam.get_s0())
+  #distance = detector[0].get_distance()
+  #beam_centre_x, beam_centre_y = detector[0].get_beam_centre(beam.get_s0())
 
   # Set the detector properties
   nx_detector['sensor_thickness'] = thickness
   nx_detector['sensor_material'] = material
   nx_detector['type'] = dtype
-  nx_detector['distance'] = distance
-  nx_detector['beam_centre_x'] = beam_centre_x
-  nx_detector['beam_centre_y'] = beam_centre_y
+  #nx_detector['distance'] = distance
+  #nx_detector['beam_centre_x'] = beam_centre_x
+  #nx_detector['beam_centre_y'] = beam_centre_y
   nx_detector['saturation_value'] = int(trusted_range[1])
   nx_detector['underload'] = int(trusted_range[0]) # FIXME non-standard
   nx_detector['description'] = dtype
 
   # Make up some fake stuff
-  nx_detector['timestamp'] = scan.get_epochs().as_numpy_array()
-  nx_detector['dead_time'] = [0] * len(scan)
-  nx_detector['count_time'] = [0] * len(scan)
-  nx_detector['frame_time'] = scan.get_exposure_times().as_numpy_array()
-  nx_detector['detector_readout_time'] = [0] * len(scan)
+  if scan is not None:
+    nx_detector['timestamp'] = scan.get_epochs().as_numpy_array() # FIXME non-standard
+    nx_detector['dead_time'] = [0] * len(scan)
+    nx_detector['count_time'] = [0] * len(scan)
+    nx_detector['frame_time'] = scan.get_exposure_times().as_numpy_array()
+    nx_detector['detector_readout_time'] = [0] * len(scan)
+  else:
+    nx_detector['timestamp'] = 0
+    nx_detector['dead_time'] = 0
+    nx_detector['count_time'] = 0
+    nx_detector['frame_time'] = 0
+    nx_detector['detector_readout_time'] = 0
   nx_detector['bit_depth_readout'] = 32
+
+  # Create the detector depends on
+  nx_detector['depends_on'] = '.'
 
   # Creat some data for example file
   #data = [im.as_numpy_array() for im in imageset]
@@ -145,9 +155,6 @@ def dump_detector(entry, detector, beam, imageset, scan):
     # Set the data size
     nx_module['data_size'] = image_size
     nx_module['data_origin'] = (-1, -1) # FIXME INVALID
-
-    # Create the detector depends on
-    nx_detector['depends_on'] = '.'
 
     # Set the module offset
     nx_module['module_offset'] = origin.length()
@@ -176,6 +183,9 @@ def dump_detector(entry, detector, beam, imageset, scan):
 def dump_goniometer(entry, goniometer, scan):
   ''' Export the goniometer model. '''
 
+  if scan is None or goniometer is None:
+    return
+
   # The angles for each image
   phi0, dphi = scan.get_oscillation(deg=True)
   phi = [phi0+dphi*i for i in range(len(scan))]
@@ -190,7 +200,7 @@ def dump_goniometer(entry, goniometer, scan):
   nx_transformations['phi'].attrs['offset'] = (0.0, 0.0, 0.0)
   nx_transformations['phi'].attrs['vector'] = goniometer.get_rotation_axis()
 
-def dump_crystal(entry, crystal):
+def dump_crystal(entry, crystal, scan):
   ''' Export the crystal model. '''
   from scitbx.array_family import flex
 
@@ -249,7 +259,10 @@ def dump_crystal(entry, crystal):
   nx_sample['average_orientation_matrix'] = average_orientation_matrix
 
   # Set depends on
-  nx_sample['depends_on'] = nx_sample['transformations/phi'].name
+  if scan is not None:
+    nx_sample['depends_on'] = nx_sample['transformations/phi'].name
+  else:
+    nx_sample['depends_on'] = '.'
 
 def dump_details(entry):
   from time import strftime
@@ -393,7 +406,10 @@ def load_goniometer(entry):
 
   # Write out the rotation axis and oscillation
   nx_sample = get_nx_sample(entry, "sample")
-  transformations = get_nx_transformations(nx_sample, "transformations")
+  try:
+    transformations = get_nx_transformations(nx_sample, "transformations")
+  except Exception:
+    return None
   assert(transformations['phi'].attrs['depends_on'] == '.')
   assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
   assert(transformations['phi'].attrs['offset_units'] == 'mm')
@@ -408,7 +424,10 @@ def load_scan(entry):
 
   # Write out the rotation axis and oscillation
   nx_sample = get_nx_sample(entry, "sample")
-  transformations = get_nx_transformations(nx_sample, "transformations")
+  try:
+    transformations = get_nx_transformations(nx_sample, "transformations")
+  except Exception:
+    return None
   phi = transformations['phi']
   assert(transformations['phi'].attrs['depends_on'] == '.')
   assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
@@ -436,7 +455,8 @@ def load_crystal(entry):
   space_group_symbol = nx_sample['unit_cell_group'].value
 
   # Get depends on
-  assert(nx_sample['depends_on'].value == nx_sample['transformations/phi'].name)
+  if nx_sample['depends_on'].value != '.':
+    assert(nx_sample['depends_on'].value == nx_sample['transformations/phi'].name)
 
   # Read the average unit cell data
   average_unit_cell = flex.double(numpy.array(nx_sample['average_unit_cell']))
@@ -514,34 +534,48 @@ def dump(entry, experiments):
       dtype=np.uint64)
     features[0] = 6
 
-  # Create the entry
-  assert(len(experiments) == 1)
-  assert("experiment0" not in entry)
-  nxmx = entry.create_group("experiment0")
-  nxmx.attrs['NX_class'] = 'NXsubentry'
-
-  # Create the definition
-  definition = nxmx.create_dataset('definition', data='NXmx')
-  definition.attrs['version'] = 1
-  definition.attrs['URL'] = schema_url
-
-  nxmx['title'] = 'FROM_DIALS'
-
   # Get the experiment
-  experiment = experiments[0]
+  for index, experiment in enumerate(experiments):
 
-  # Dump the models
-  dump_beam(nxmx, experiment.beam)
-  dump_detector(nxmx, experiment.detector, experiment.beam, experiment.imageset,
-                experiment.scan)
-  dump_goniometer(nxmx, experiment.goniometer, experiment.scan)
-  dump_crystal(nxmx, experiment.crystal)
+    # Create the entry
+    assert(("experiment_%d" % index) not in entry)
+    nxmx = entry.create_group("experiment_%d" % index)
+    nxmx.attrs['NX_class'] = 'NXsubentry'
+
+    # Create the definition
+    definition = nxmx.create_dataset('definition', data='NXmx')
+    definition.attrs['version'] = 1
+    definition.attrs['URL'] = schema_url
+
+    nxmx['title'] = 'FROM_DIALS'
+
+    # Dump the models
+    dump_beam(nxmx, experiment.beam)
+    dump_detector(nxmx, experiment.detector, experiment.beam, experiment.imageset,
+                  experiment.scan)
+    dump_goniometer(nxmx, experiment.goniometer, experiment.scan)
+    dump_crystal(nxmx, experiment.crystal, experiment.scan)
 
   # Dump some details
   dump_details(entry)
 
   # Link the data
   #nxmx['data'] = nxmx['instrument/detector/data']
+
+def find_nx_mx_entries(nx_file, entry):
+  '''
+  Find NXmx entries
+
+  '''
+  hits = []
+  def visitor(name, obj):
+    if "NX_class" in obj.attrs.keys():
+      if obj.attrs["NX_class"] in ["NXentry", "NXsubentry"]:
+        if "definition" in obj.keys():
+          if obj["definition"].value == "NXmx":
+            hits.append(obj)
+  nx_file[entry].visititems(visitor)
+  return hits
 
 def load(entry):
   from dxtbx.model.experiment.experiment_list import ExperimentList
@@ -551,26 +585,28 @@ def load(entry):
   assert("features" in entry)
   assert(6 in entry['features'].value)
 
-  # Get the entry
-  nxmx = entry['experiment0']
-  assert(nxmx.attrs['NX_class'] == 'NXsubentry')
-
-  # Get the definition
-  definition = nxmx['definition']
-  assert(definition.value == 'NXmx')
-  assert(definition.attrs['version'] == 1)
-
-  # Create the experiment
-  experiment = Experiment()
-
-  # Read the models
-  experiment.beam = load_beam(nxmx)
-  experiment.detector = load_detector(nxmx)
-  experiment.goniometer = load_goniometer(nxmx)
-  experiment.scan = load_scan(nxmx)
-  experiment.crystal = load_crystal(nxmx)
-
-  # Return the experiment list
   experiment_list = ExperimentList()
-  experiment_list.append(experiment)
-  return experiment_list
+
+  # Find all the experiments
+  entries = find_nx_mx_entries(entry, ".")
+
+  for nxmx in entries:
+
+    # Get the definition
+    definition = nxmx['definition']
+    assert(definition.value == 'NXmx')
+    assert(definition.attrs['version'] == 1)
+
+    # Create the experiment
+    experiment = Experiment()
+
+    # Read the models
+    experiment.beam = load_beam(nxmx)
+    experiment.detector = load_detector(nxmx)
+    experiment.goniometer = load_goniometer(nxmx)
+    experiment.scan = load_scan(nxmx)
+    experiment.crystal = load_crystal(nxmx)
+
+    # Return the experiment list
+    experiment_list.append(experiment)
+    return experiment_list
