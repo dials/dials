@@ -323,8 +323,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.set_scroll_content()
 
-    aprox_len_pix = len(self.lst_2d_bmp) * 10
-
     self.mainSizer.Add(self.img_lst_v_sizer, 0, wx.CENTER|wx.ALL, 10)
     self.SetSizer(self.mainSizer)
     self.SetupScrolling()
@@ -340,6 +338,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     print "self.n_img(before cleanup) =", self.n_img
 
+    old_way = '''
     if( self.n_img != 0 ):
       for t in range(self.n_img):
         p = self.n_img - t - 1
@@ -348,8 +347,11 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.img_lst_v_sizer.Hide(p)
         self.img_lst_v_sizer.Remove(p)
         print "sizer No ", p, "wiped"
-
       self.n_img = 0
+    '''
+    self.img_lst_v_sizer.Clear(True)
+
+
 
     print "self.n_img(after cleanup) =", self.n_img
 
@@ -360,7 +362,10 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
         slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
         slice_sub_info_txt = wx.StaticText(self, -1, slice_string)
+
         sigle_slice_sizer = wx.BoxSizer(wx.VERTICAL)
+        sigle_slice_sizer.Clear(True)
+
         sigle_slice_sizer.Add(local_bitmap, proportion = 0,
                               flag = wx.ALIGN_CENTRE | wx.ALL, border = 2)
         sigle_slice_sizer.Add(slice_sub_info_txt, proportion = 0,
@@ -372,8 +377,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
       self.n_img += 1
 
-    #self.Layout()
-    #self.parent_panel.Layout()
     self.parent_panel.Pframe.Layout()
 
     print "set_scroll_content(self)"
@@ -395,10 +398,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
   def img_refresh(self, bmp_lst_new):
-
-    #for child in self.img_lst_v_sizer.GetChildren():
-    #  child.Destroy()
-
 
     self.lst_2d_bmp = bmp_lst_new
     self.set_scroll_content()
