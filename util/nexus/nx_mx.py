@@ -541,6 +541,7 @@ def dump(entry, experiments):
     assert(("experiment_%d" % index) not in entry)
     nxmx = entry.create_group("experiment_%d" % index)
     nxmx.attrs['NX_class'] = 'NXsubentry'
+    nxmx.attrs['id'] = index
 
     # Create the definition
     definition = nxmx.create_dataset('definition', data='NXmx')
@@ -589,6 +590,8 @@ def load(entry):
 
   # Find all the experiments
   entries = find_nx_mx_entries(entry, ".")
+  if len(entries) > 1:
+    entries = sorted(entries, key=lambda x: x.attrs['id'])
 
   for nxmx in entries:
 
@@ -609,4 +612,4 @@ def load(entry):
 
     # Return the experiment list
     experiment_list.append(experiment)
-    return experiment_list
+  return experiment_list

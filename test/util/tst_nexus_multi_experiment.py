@@ -16,6 +16,7 @@ def run_single(experiments1):
   experiments2, reflections = load("hklout_%d.nxs" % run_single.count)
   assert(experiments2 is not None)
   assert(reflections is None)
+  assert(len(experiments2) == len(experiments1))
 
   print 'OK'
 
