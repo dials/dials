@@ -85,7 +85,7 @@ def run_single(experiments1, filename):
     s2 = exp2.scan
     if s1 is not None:
       assert(len(s1) == len(s2))
-      #assert(s1.get_image_range() == s2.get_image_range())
+      assert(s1.get_image_range() == s2.get_image_range())
       assert(abs(s1.get_oscillation()[0] - s1.get_oscillation()[0]) < EPS)
       assert(abs(s1.get_oscillation()[1] - s1.get_oscillation()[1]) < EPS)
       for e1, e2 in zip(s1.get_exposure_times(), s2.get_exposure_times()):

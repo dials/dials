@@ -1,12 +1,11 @@
 from __future__ import division
 
-# FIXME - beam direction - Need to fix in dxtbx?
-
 # Extensions to NXMX
 #
 #  "detector/underload" - trusted_range[0]
 #  "detector/timestamp" - epochs
 #  "entry/index" - experiment index and shared model indices
+#  "entry/template" - save location to external files (e.g. cbf)
 
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/applications/NXmx.nxdl.xml'
 
@@ -622,6 +621,7 @@ def load_crystal(entry):
 
 def dump(entry, experiments):
   from dials.array_family import flex
+  from dxtbx.imageset import ImageSet, ImageSweep
 
   # Add the feature
   if "features" in entry:
@@ -653,6 +653,21 @@ def dump(entry, experiments):
     if experiment.scan is not None:
       nxmx['index'].attrs['scan'] = id(experiment.scan)
     nxmx['index'].attrs['sample'] = id(experiment.crystal)
+
+    if experiment.imageset is None:
+      nxmx['template'] = ""
+      if experiment.scan is not None:
+        nxmx['template'].attrs['range'] = experiment.scan.get_image_range()
+    else:
+      from os.path import abspath
+      if isinstance(experiment.imageset, ImageSweep):
+        template = abspath(experiment.imageset.get_template())
+        nxmx['template'] = template
+        nxmx['template'].attrs['range'] = experiment.scan.get_image_range()
+      else:
+        template = [abspath(experiment.imageset.get_path(i)) for i in
+                    range(len(experiment.imageset))]
+        nxmx['template'] = template
 
     # Create the definition
     definition = nxmx.create_dataset('definition', data='NXmx')
@@ -726,6 +741,19 @@ def load(entry):
     c = nxmx['index'].attrs['sample']
     index.append((b, d, g, s, c))
 
+    # Get the tmeplate and imageset
+    try:
+      template = list(nxmx['template'])
+      image_range = None
+    except Exception:
+      template = nxmx['template'].value
+      if template == "":
+        template = None
+      if "range" in nxmx['template'].attrs:
+        image_range = nxmx['template'].attrs['range']
+      else:
+        image_range = None
+
     # Create the experiment
     experiment = Experiment()
 
@@ -735,6 +763,12 @@ def load(entry):
     experiment.goniometer = load_goniometer(nxmx)
     experiment.scan = load_scan(nxmx)
     experiment.crystal = load_crystal(nxmx)
+
+    # Set the image range
+    if image_range is not None and experiment.scan is not None:
+      num = image_range[1] - image_range[0] + 1
+      assert(num == len(experiment.scan))
+      experiment.scan.set_image_range(image_range)
 
     # Return the experiment list
     experiment_list.append(experiment)
