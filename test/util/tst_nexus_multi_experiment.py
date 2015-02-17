@@ -29,7 +29,7 @@ def test_polarization_conversion():
 
 
 
-def run_single(experiments1):
+def run_single(experiments1, filename):
   from dials.util.nexus import dump, load
   from math import pi
   from scitbx import matrix
@@ -42,13 +42,16 @@ def run_single(experiments1):
     run_single.count = 0
 
   # Dump the file
-  dump(experiments1, None, "hklout_%d.nxs" % run_single.count)
+  dump(experiments1, None, filename)
 
   # Load the file
-  experiments2, reflections = load("hklout_%d.nxs" % run_single.count)
+  experiments2, reflections = load(filename)
   assert(experiments2 is not None)
   assert(reflections is None)
   assert(len(experiments2) == len(experiments1))
+
+  index1 = []
+  index2 = []
 
   for exp1, exp2 in zip(experiments1, experiments2):
 
@@ -131,6 +134,49 @@ def run_single(experiments1):
       for p1, p2 in zip(uc1.parameters(), uc2.parameters()):
         assert(abs(p1-p2) < EPS)
 
+    index1.append((
+      id(exp1.beam),
+      id(exp1.detector),
+      id(exp1.goniometer),
+      id(exp1.scan),
+      id(exp1.crystal)))
+
+    index2.append((
+      id(exp2.beam),
+      id(exp2.detector),
+      id(exp2.goniometer),
+      id(exp2.scan),
+      id(exp2.crystal)))
+
+  # Get a list of all beam etc
+  beam1, detector1, goniometer1, scan1, crystal1 = zip(*index1)
+  beam2, detector2, goniometer2, scan2, crystal2 = zip(*index2)
+
+  # If any models are shared then check they are shard in both
+  num = len(beam1)
+  for i in range(0,num-1):
+    for j in range(1,num):
+      if (beam1[i] == beam1[j]):
+        assert(beam2[i] == beam2[j])
+      else:
+        assert(beam2[i] != beam2[j])
+      if (detector1[i] == detector1[j]):
+        assert(detector2[i] == detector2[j])
+      else:
+        assert(detector2[i] != detector2[j])
+      if (goniometer1[i] == goniometer1[j]):
+        assert(goniometer2[i] == goniometer2[j])
+      else:
+        assert(goniometer2[i] != goniometer2[j])
+      if (scan1[i] == scan1[j]):
+        assert(scan2[i] == scan2[j])
+      else:
+        assert(scan2[i] != scan2[j])
+      if (crystal1[i] == crystal1[j]):
+        assert(crystal2[i] == crystal2[j])
+      else:
+        assert(crystal2[i] != crystal2[j])
+
   print 'OK'
 
 def run():
@@ -144,16 +190,18 @@ def run():
     exit(0)
   path = join(dials_regression, "nexus_test_data", "shared_models")
   filename_list = [
-    'single.json',
-    'multiple_unrelated.json',
-    'multi_crystal.json',
-    'two_colour.json',
-    'multiple_sweeps.json',
-    'stills.json'
+    'single',
+    'multiple_unrelated',
+    'multi_crystal',
+    'two_colour',
+    'multiple_sweeps',
+    'stills'
   ]
   for filename in filename_list:
-    experiments = ExperimentListFactory.from_json_file(join(path, filename))
-    run_single(experiments)
+    filename_in = join(path, "%s.json" % filename)
+    filename_out = "%s.nxs" % filename
+    experiments = ExperimentListFactory.from_json_file(filename_in)
+    run_single(experiments, filename_out)
 
 if __name__ == '__main__':
   from dials.test import cd_auto

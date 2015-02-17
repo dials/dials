@@ -602,7 +602,14 @@ def dump(entry, experiments):
     assert(("experiment_%d" % index) not in entry)
     nxmx = entry.create_group("experiment_%d" % index)
     nxmx.attrs['NX_class'] = 'NXsubentry'
-    nxmx.attrs['id'] = index
+    nxmx['index'] = index
+    nxmx['index'].attrs['beam'] = id(experiment.beam)
+    nxmx['index'].attrs['detector'] = id(experiment.detector)
+    if experiment.goniometer is not None:
+      nxmx['index'].attrs['goniometer'] = id(experiment.goniometer)
+    if experiment.scan is not None:
+      nxmx['index'].attrs['scan'] = id(experiment.scan)
+    nxmx['index'].attrs['crystal'] = id(experiment.crystal)
 
     # Create the definition
     definition = nxmx.create_dataset('definition', data='NXmx')
@@ -652,7 +659,9 @@ def load(entry):
   # Find all the experiments
   entries = find_nx_mx_entries(entry, ".")
   if len(entries) > 1:
-    entries = sorted(entries, key=lambda x: x.attrs['id'])
+    entries = sorted(entries, key=lambda x: x['index'].value)
+
+  index = []
 
   for nxmx in entries:
 
@@ -660,6 +669,19 @@ def load(entry):
     definition = nxmx['definition']
     assert(definition.value == 'NXmx')
     assert(definition.attrs['version'] == 1)
+
+    b = nxmx['index'].attrs['beam']
+    d = nxmx['index'].attrs['detector']
+    if "goniometer" in nxmx['index'].attrs:
+      g = nxmx['index'].attrs['goniometer']
+    else:
+      g = None
+    if "scan" in nxmx['index'].attrs:
+      s = nxmx['index'].attrs['scan']
+    else:
+      s = None
+    c = nxmx['index'].attrs['crystal']
+    index.append((b, d, g, s, c))
 
     # Create the experiment
     experiment = Experiment()
@@ -673,4 +695,49 @@ def load(entry):
 
     # Return the experiment list
     experiment_list.append(experiment)
+
+  from collections import defaultdict
+  beam = defaultdict(list)
+  detector = defaultdict(list)
+  goniometer = defaultdict(list)
+  scan = defaultdict(list)
+  crystal = defaultdict(list)
+  for i, ind in enumerate(index):
+    beam[ind[0]].append(i)
+    detector[ind[1]].append(i)
+    goniometer[ind[2]].append(i)
+    scan[ind[3]].append(i)
+    crystal[ind[4]].append(i)
+
+  # Set all the shared beams
+  for key, value in beam.iteritems():
+    b1 = experiment_list[value[0]].beam
+    assert(all(experiment_list[v].beam == b1 for v in value[1:]))
+    for v in value[1:]:
+      experiment_list[v].beam = b1
+  # Set all the shared detectors
+  for key, value in detector.iteritems():
+    d1 = experiment_list[value[0]].detector
+    assert(all(experiment_list[v].detector == d1 for v in value[1:]))
+    for v in value[1:]:
+      experiment_list[v].detector = d1
+  # Set all the shared goniometer
+  for key, value in goniometer.iteritems():
+    g1 = experiment_list[value[0]].goniometer
+    assert(all(experiment_list[v].goniometer == g1 for v in value[1:]))
+    for v in value[1:]:
+      experiment_list[v].goniometer = g1
+  # Set all the shared scans
+  for key, value in scan.iteritems():
+    s1 = experiment_list[value[0]].scan
+    assert(all(experiment_list[v].scan == s1 for v in value[1:]))
+    for v in value[1:]:
+      experiment_list[v].scan = s1
+  # Set all the shared crystals
+  for key, value in crystal.iteritems():
+    c1 = experiment_list[value[0]].crystal
+    assert(all(experiment_list[v].crystal == c1 for v in value[1:]))
+    for v in value[1:]:
+      experiment_list[v].crystal = c1
+
   return experiment_list
