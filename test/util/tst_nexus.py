@@ -8,6 +8,7 @@ def run():
   from dials.array_family import flex
   from os.path import join
   import libtbx.load_env
+  from dials.util.nexus.nx_mx import convert_to_nexus_beam_direction
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
   except KeyError, e:
@@ -18,6 +19,9 @@ def run():
   # Read the experiments
   experiments1 = ExperimentListFactory.from_json_file(
     join(path, "refined_experiments.json"))
+
+  # Make sure beam direction is along (0, 0, 1)
+  experiments1 = convert_to_nexus_beam_direction(experiments1)
 
   # Read the reflections
   reflections1 = flex.reflection_table.from_pickle(
