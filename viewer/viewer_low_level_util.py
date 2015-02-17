@@ -32,9 +32,6 @@ class grid_frame(wx.Frame):
       self.myGrid = text_data
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-    #self.my_sizer.Add(self.img_panel, proportion = 2,
-    #                  flag =  wx.EXPAND | wx.ALL, border = 3)
-
 
     if( text_data != None ):
       self.my_sizer.Add(self.myGrid, proportion = 3,
@@ -69,11 +66,12 @@ class flex_3d_frame(wx.Frame):
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
     if( text_data != None ):
-      print "Hi with grid"
+      #print "Frame with grid"
       self.my_sizer.Add(self.myGrid, proportion = 3,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
-    else:
-      print "Hi without grid"
+    #else:
+      #print "Frame without grid"
+
 
     self.my_sizer.SetMinSize((400, 200))
     self.SetSizer(self.my_sizer)
@@ -310,7 +308,6 @@ class flex_arr_img_panel(wx.Panel):
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
   def __init__(self, outer_panel, bmp_lst_in):
-    print "from __init__ 01"
     super(multi_img_scrollable, self).__init__(outer_panel)
     self.parent_panel  = outer_panel
     self.lst_2d_bmp = bmp_lst_in
@@ -332,28 +329,9 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.scroll_rot = 0
 
-    print "from __init__ 02"
-
   def set_scroll_content(self):
 
-    print "self.n_img(before cleanup) =", self.n_img
-
-    old_way = '''
-    if( self.n_img != 0 ):
-      for t in range(self.n_img):
-        p = self.n_img - t - 1
-        print "p =", p
-        print "attempting to wipe sizer No ", p
-        self.img_lst_v_sizer.Hide(p)
-        self.img_lst_v_sizer.Remove(p)
-        print "sizer No ", p, "wiped"
-      self.n_img = 0
-    '''
     self.img_lst_v_sizer.Clear(True)
-
-
-
-    print "self.n_img(after cleanup) =", self.n_img
 
     for lst_1d in self.lst_2d_bmp:
       img_lst_hor_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -379,8 +357,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.parent_panel.Pframe.Layout()
 
-    print "set_scroll_content(self)"
-
   def OnMouseWheel(self, event):
 
     #saving amount of scroll steps to do
@@ -394,15 +370,10 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.x_to_keep = float(self.x_to_keep) / float(v_size_x)
     self.y_to_keep = float(self.y_to_keep) / float(v_size_y)
 
-    print "OnMouseWheel"
-
-
   def img_refresh(self, bmp_lst_new):
 
     self.lst_2d_bmp = bmp_lst_new
     self.set_scroll_content()
-
-    print "img_refresh(self, bmp_lst_new)"
 
 
   def OnIdle(self, event):
@@ -411,9 +382,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.scroll_rot = 0
       v_size_x, v_size_y = self.GetVirtualSize()
       self.Scroll(self.x_to_keep * v_size_x, self.y_to_keep * v_size_y)
-
-      print "OnIdle ; if( self.scroll_rot != 0 )"
-
 
 
 class buttons_panel(wx.Panel):
