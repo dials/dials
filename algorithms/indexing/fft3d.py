@@ -544,6 +544,10 @@ class indexer_fft3d(indexer_base):
     pyplot.show()
 
   def find_peaks_clean(self):
+    import omptbx
+    # doesn't seem to be any benefit to using more than say 8 threads
+    num_threads = min(8, omptbx.omp_get_num_procs(), self.params.nproc)
+    omptbx.omp_set_num_threads(num_threads)
     d_min = self.params.fft3d.reciprocal_space_grid.d_min
     rlgrid = 2 / (d_min * self.gridding[0])
 

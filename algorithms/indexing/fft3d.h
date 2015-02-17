@@ -137,6 +137,7 @@ namespace dials { namespace algorithms {
       const double max_value = dirty_map[max_idx];
       const double scale = max_value/max_db * gamma;
       max_idx = 0; // reset for next cycle
+      #pragma omp parallel for
       for (int i=0; i<width; i++){
         int i_db = i - shift[0];
         if (i_db < 0) { i_db += width; }
@@ -160,6 +161,7 @@ namespace dials { namespace algorithms {
             const long idx_db = ijpart_db + k_db;
             dirty_map[idx_dm] -= dirty_beam[idx_db] * scale;
             if (dirty_map[max_idx] < dirty_map[idx_dm])
+            #pragma omp critical(max_idx)
             {
               max_idx = idx_dm;
             }
