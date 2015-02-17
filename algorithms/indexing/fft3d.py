@@ -563,8 +563,6 @@ class indexer_fft3d(indexer_base):
       [scan.get_angle_from_array_index(i, deg=False) for i in range_]
       for range_ in scan_range]
 
-    from dials.algorithms.indexing import sampling_volume_map, clean_3d
-
     grid = flex.double(flex.grid(self.gridding), 0)
     sampling_volume_map(grid, flex.vec2_double(angle_ranges),
                         self.beam.get_s0(), self.goniometer.get_rotation_axis(),
@@ -584,10 +582,34 @@ class indexer_fft3d(indexer_base):
 
     dirty_beam = grid_real
     dirty_map = self.grid_real.deep_copy()
+    import time
+    t0 = time.time()
     peaks = clean_3d(dirty_beam, dirty_map, n_peaks, gamma=gamma)
+    t1 = time.time()
+    #print "clean_3d took %.2f s" %(t1-t0)
 
     reciprocal_lattice_points = self.reflections['rlp'].select(
       self.reflections_used_for_indexing)
+
+    peaks = self.optimise_peaks(peaks, reciprocal_lattice_points)
+
+    peaks_frac = flex.vec3_double()
+    for p in peaks:
+      peaks_frac.append((p[0]/self.gridding[0],
+                         p[1]/self.gridding[1],
+                         p[2]/self.gridding[2]))
+      #print p, peaks_frac[-1]
+
+    if self.params.debug:
+      self.debug_write_ccp4_map(grid, "sampling_volume.map")
+      self.debug_write_ccp4_map(grid_real, "sampling_volume_FFT.map")
+      self.debug_write_ccp4_map(dirty_map, "clean.map")
+
+    self.sites = peaks_frac
+
+    return
+
+  def optimise_peaks(self, peaks, reciprocal_lattice_points):
     # optimise the peak position using a grid search around the starting peak position
     optimised_peaks = flex.vec3_double()
     n_points = 4
@@ -609,20 +631,16 @@ class indexer_fft3d(indexer_base):
               max_value = f
               max_index = (i_coord, j_coord, k_coord)
       optimised_peaks.append(max_index)
-    peaks = optimised_peaks
+    return optimised_peaks
 
-    peaks_frac = flex.vec3_double()
-    for p in peaks:
-      peaks_frac.append((p[0]/self.gridding[0],
-                         p[1]/self.gridding[1],
-                         p[2]/self.gridding[2]))
-      #print p, peaks_frac[-1]
 
-    if self.params.debug:
-      self.debug_write_ccp4_map(grid, "sampling_volume.map")
-      self.debug_write_ccp4_map(grid_real, "sampling_volume_FFT.map")
-      self.debug_write_ccp4_map(dirty_map, "clean.map")
+def sampling_volume_map(data, angle_range, beam_vector, rotation_axis,
+                        rl_grid_spacing, d_min, b_iso):
+    from dials.algorithms.indexing import sampling_volume_map
+    return sampling_volume_map(
+      data, angle_range, beam_vector, rotation_axis, rl_grid_spacing, d_min, b_iso)
 
-    self.sites = peaks_frac
 
-    return
+def clean_3d(dirty_beam, dirty_map, n_peaks, gamma=1):
+  from dials.algorithms.indexing import clean_3d as _clean_3d
+  return _clean_3d(dirty_beam, dirty_map, n_peaks, gamma=gamma)
