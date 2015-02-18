@@ -480,7 +480,7 @@ namespace dials { namespace algorithms {
 
           // Compute the thresholds
           dst[k] = false;
-          if (mask[k] && m >= min_count_ && src[k] > threshold_) {
+          if (mask[k] && m >= min_count_ && x >= 0 && src[k] > threshold_) {
             double a = m * y - x * x - x * (m-1);
             double b = m * src[k] - x;
             double c = x * nsig_b_ * std::sqrt(2*(m-1));
@@ -555,7 +555,7 @@ namespace dials { namespace algorithms {
 
           // Compute the thresholds
           dst[k] = false;
-          if (mask[k] && m >= min_count_ && src[k] > threshold_) {
+          if (mask[k] && m >= min_count_ && x >= 0 && src[k] > threshold_) {
             double a = m * y - x * x;
             double b = m * src[k] - x;
             double c = gain[k] * x * (m-1+nsig_b_ * std::sqrt(2*(m-1)));
