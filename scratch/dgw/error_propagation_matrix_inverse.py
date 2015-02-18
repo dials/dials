@@ -213,7 +213,3 @@ if __name__ == '__main__':
 
   test_B_matrix()
   print "OK"
-
-
-
-
