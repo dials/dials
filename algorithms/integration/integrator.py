@@ -322,7 +322,8 @@ class Task(object):
                flatten=False,
                save_shoeboxes=False,
                max_mem_usage=0.5,
-               reference_selector=None):
+               reference_selector=None,
+               mask=None):
     '''
     Initialise the task.
 
@@ -345,7 +346,7 @@ class Task(object):
     self._flatten = flatten
     self._save_shoeboxes = save_shoeboxes
     self._max_mem_usage = max_mem_usage
-    self._mask = None
+    self._mask = mask
     self._reference_selector = reference_selector
 
   def __call__(self):
@@ -563,7 +564,8 @@ class Manager(object):
                flatten=False,
                save_shoeboxes=False,
                max_mem_usage=0.5,
-               reference_selector=None):
+               reference_selector=None,
+               mask=None):
     ''' Initialise the manager. '''
     self._finalized = False
     self._flatten = flatten
@@ -579,6 +581,7 @@ class Manager(object):
     self._experiments = experiments
     self._profile_model = profile_model
     self._reflections = reflections
+    self._mask = mask
     self._time = Manager.TimingInfo()
 
   def initialize(self):
@@ -636,7 +639,8 @@ class Manager(object):
       flatten=self._flatten,
       save_shoeboxes=self._save_shoeboxes,
       max_mem_usage=self._max_mem_usage,
-      reference_selector=self._reference_selector)
+      reference_selector=self._reference_selector,
+      mask=self._mask)
 
   def tasks(self):
     ''' Iterate through the tasks. '''
@@ -1041,6 +1045,7 @@ class ManagerRot(Manager):
                max_mem_usage=0.5,
                reference_selector=None,
                max_shoebox_overlap=1.0,
+               mask=None,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -1078,7 +1083,8 @@ class ManagerRot(Manager):
       flatten=flatten,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
 
 class ManagerStills(Manager):
@@ -1093,6 +1099,7 @@ class ManagerStills(Manager):
                max_mem_usage=0.5,
                powder_filter=None,
                reference_selector=None,
+               mask=None,
                **kwargs):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
@@ -1125,7 +1132,8 @@ class ManagerStills(Manager):
       flatten=False,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
 
 class Integrator3D(Integrator):
@@ -1147,6 +1155,7 @@ class Integrator3D(Integrator):
                max_mem_usage=0.5,
                reference_selector=None,
                max_shoebox_overlap=1.0,
+               mask=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1163,7 +1172,8 @@ class Integrator3D(Integrator):
       powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
     # Initialise the integrator
     super(Integrator3D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1188,6 +1198,7 @@ class IntegratorFlat3D(Integrator):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                reference_selector=None,
+               mask=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1205,7 +1216,8 @@ class IntegratorFlat3D(Integrator):
       flatten=True,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
     # Initialise the integrator
     super(IntegratorFlat3D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1230,6 +1242,7 @@ class Integrator2D(Integrator):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                reference_selector=None,
+               mask=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1247,7 +1260,8 @@ class Integrator2D(Integrator):
       partials=True,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
     # Initialise the integrator
     super(Integrator2D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1269,6 +1283,7 @@ class IntegratorSingle2D(Integrator):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                reference_selector=None,
+               mask=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1285,7 +1300,8 @@ class IntegratorSingle2D(Integrator):
       partials=True,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
     # Initialise the integrator
     super(IntegratorSingle2D, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1305,6 +1321,7 @@ class IntegratorStills(Integrator):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                reference_selector=None,
+               mask=None,
                **kwargs):
     ''' Initialise the manager and the integrator. '''
 
@@ -1316,7 +1333,8 @@ class IntegratorStills(Integrator):
       powder_filter=powder_filter,
       save_shoeboxes=save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
     # Initialise the integrator
     super(IntegratorStills, self).__init__(manager, nthreads, nproc, mp_method)
@@ -1423,6 +1441,10 @@ class IntegratorFactory(object):
           image data is crucial for integration.
         ''')
 
+    # Get the mask, gain etc
+    mask = params.integration.lookup.mask
+    #gain = params.integration.lookup.gain
+
     # Initialise the strategy classes
     BackgroundAlgorithm = BackgroundIface.extension(
       params.integration.background.algorithm)
@@ -1472,7 +1494,8 @@ class IntegratorFactory(object):
       mp_method=params.integration.mp.method,
       save_shoeboxes=params.integration.debug.save_shoeboxes,
       max_mem_usage=max_mem_usage,
-      reference_selector=reference_selector)
+      reference_selector=reference_selector,
+      mask=mask)
 
   @staticmethod
   def select_integrator(integrator_type):

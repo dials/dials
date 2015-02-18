@@ -591,15 +591,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     except Exception:
       frame0, frame1 = (0, len(imageset))
     extractor = ShoeboxExtractor(self, len(detector), frame0, frame1)
-    if mask is None:
-      image = imageset[0]
-      if not isinstance(image, tuple):
-        image = (image,)
-      mask = []
-      for i in range(len(image)):
-        tr = detector[i].get_trusted_range()
-        mask.append(image[i].as_double() > tr[0])
-      mask = tuple(mask)
     info(" Beginning to read images")
     read_time = 0
     extract_time = 0
@@ -607,12 +598,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       if verbose:
         info('  reading image %d' % i)
       st = time()
-      image = imageset[i]
+      image = imageset.get_image(i)
+      mask2 = imageset.get_mask(i)
+      if mask is not None:
+        assert(len(mask) == len(mask2))
+        mask2 = tuple(m1 & m2 for m1, m2 in zip(mask, mask2))
       read_time += time() - st
-      if not isinstance(image, tuple):
-        image = (image,)
       st = time()
-      extractor.next(make_image(image, mask))
+      extractor.next(make_image(image, mask2))
       extract_time += time() - st
       del image
     assert(extractor.finished())
