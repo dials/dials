@@ -17,13 +17,11 @@ from dxtbx.serialize.load import datablock # implicit import
 
 
 def reflections(infile):
-  ''' Load the given reflection file.
+  '''
+  Load the given reflection file.
 
-  Params:
-      infile The input filename or file object
-
-  Returns:
-      The reflection list
+  :params infile: The input filename or file object
+  :returns: The reflection list
 
   '''
   import cPickle as pickle
@@ -38,13 +36,11 @@ def reflections(infile):
     return pickle.load(infile)
 
 def reference(infile):
-  ''' Load the given reference profile file.
+  '''
+  Load the given reference profile file.
 
-  Params:
-      infile The input filename or file object
-
-  Returns:
-      The reflection list
+  :params infile: The input filename or file object
+  :returns: The reference list
 
   '''
   import cPickle as pickle

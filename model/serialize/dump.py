@@ -18,11 +18,11 @@ from dxtbx.serialize.dump import datablock # implicit import
 
 
 def reflections(obj, outfile):
-  ''' Dump the given object to file
+  '''
+  Dump the given object to file
 
-  Params:
-      obj The reflection list to dump
-      outfile The output file name or file object
+  :param obj: The reflection list to dump
+  :param outfile: The output file name or file object
 
   '''
   import cPickle as pickle
@@ -36,11 +36,11 @@ def reflections(obj, outfile):
     pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
 
 def reference(obj, outfile):
-  ''' Dump the given object to file
+  '''
+  Dump the given object to file
 
-  Params:
-      obj The reference list to dump
-      outfile The output file name or file object
+  :param obj: The reference list to dump
+  :param outfile: The output file name or file object
 
   '''
   import cPickle as pickle
