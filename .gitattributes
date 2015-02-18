@@ -432,6 +432,7 @@ doc/sphinx/documentation/library_reference/algorithms/dials.algorithms.profile_m
 doc/sphinx/documentation/library_reference/algorithms/dials.algorithms.refinement.rst -text
 doc/sphinx/documentation/library_reference/algorithms/dials.algorithms.spot_prediction.rst -text
 doc/sphinx/documentation/library_reference/algorithms/index.rst -text
+doc/sphinx/documentation/library_reference/array_family/index.rst -text
 doc/sphinx/documentation/library_reference/extensions/index.rst -text
 doc/sphinx/documentation/library_reference/framework/index.rst -text
 doc/sphinx/documentation/library_reference/index.rst -text

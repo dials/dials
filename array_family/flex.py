@@ -69,7 +69,10 @@ def default_centroid_algorithm():
 
 
 class reflection_table_aux(boost.python.injector, reflection_table):
-  ''' An injector class to add additional methods to the reflection table. '''
+  '''
+  An injector class to add additional methods to the reflection table.
+
+  '''
 
   # Set the default algorithms. These are set as class variables so that if they
   # are changed in the class, all new instances of reflection table will have

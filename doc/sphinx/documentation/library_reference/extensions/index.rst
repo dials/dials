@@ -3,7 +3,7 @@ Extensions
 
 .. contents:: Table of Contents
 
-.. automodule:: dials.extensions.general_background_ext
+.. automodule:: dials.extensions.simple_background_ext
     :members:
     :undoc-members:
     :show-inheritance:
@@ -18,17 +18,22 @@ Extensions
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.extensions.profile_fitting_rs_integration_ext
+.. automodule:: dials.extensions.fitrs_integration_ext
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.extensions.summation_3d_integration_ext
+.. automodule:: dials.extensions.summation_integration_ext
     :members:
     :undoc-members:
     :show-inheritance:
 
 .. automodule:: dials.extensions.simple_centroid_ext
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: dials.extensions.gaussian_rs_profile_model_ext
     :members:
     :undoc-members:
     :show-inheritance:

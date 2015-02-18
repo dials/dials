@@ -521,6 +521,12 @@ namespace dials { namespace af { namespace boost_python {
 
   void export_flex_reflection_table() {
 
+    // Set the do
+    docstring_options local_docstring_options;
+    local_docstring_options.enable_user_defined();
+    local_docstring_options.enable_py_signatures();
+    local_docstring_options.disable_cpp_signatures();
+
     // Define all the types we want to support in the table
     typedef reflection_table::mapped_type flex_types;
 
