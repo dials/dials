@@ -98,7 +98,8 @@ class XDSThresholdStrategy(ThresholdStrategy):
     self._min_count   = kwargs.get('min_count', 2)
     self._threshold   = kwargs.get('global_threshold', None)
 
-    assert [self._gain, self._gain_map].count(None) > 0
+    # Ensure only one gain is set
+    assert([self._gain, self._gain_map].count(None) > 0)
 
     # Create a buffer
     self.algorithm = {}
@@ -128,7 +129,9 @@ class XDSThresholdStrategy(ThresholdStrategy):
         self._min_count)
       self.algorithm[image.all()] = algorithm
 
+    # Set the gain
     if self._gain is not None:
+      assert(self._gain > 0)
       self._gain_map = flex.double(image.accessor(), self._gain)
       self._gain = None
 
