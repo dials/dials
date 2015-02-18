@@ -58,24 +58,17 @@ class Extract(object):
       plists = [PixelList(p.get_image_size()[::-1], startz)
         for p in self.imageset.get_detector()]
 
-      # Get the trusted ranges
-      trange = [p.get_trusted_range() for p in self.imageset.get_detector()]
-
       # Iterate through the range of images
-      for image in self.imageset[index[0]:index[1]]:
+      for ind in range(*index):
 
-        # Ensure image is a tuple of images (for multi-panel support)
-        if not isinstance(image, tuple):
-          image = (image,)
+        # Get the image and mask
+        image = self.imageset.get_image(ind)
+        mask = self.imageset.get_mask(ind)
 
         # Set the mask
-        if self.mask is None:
-          mask = []
-          for tr, im in zip(trange, image):
-            mask.append(im > int(tr[0]))
-        else:
-          assert(len(self.mask) == len(image))
-          mask = self.mask
+        if self.mask is not None:
+          assert(len(self.mask) == len(mask))
+          mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
         # Add the images to the pixel lists
         for pl, im, mk in zip(plists, image, mask):
