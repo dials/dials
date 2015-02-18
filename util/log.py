@@ -13,7 +13,14 @@ from __future__ import division
 import logging
 
 def config(verbosity=1, info='', debug=''):
-  ''' Configure the logging. '''
+  '''
+  Configure the logging.
+
+  :param verbosity: Set the verbosity
+  :param info: The info log file
+  :param debug: The debug log file
+
+  '''
   import logging.config
 
   # Debug or not
@@ -84,7 +91,10 @@ def config(verbosity=1, info='', debug=''):
   })
 
 def config_simple_stdout():
-  ''' Configure the logging. '''
+  '''
+  Configure the logging to just go to stdout
+
+  '''
   import logging.config
 
   # Configure the logging
@@ -122,10 +132,20 @@ class CacheHandler(logging.Handler):
   ''' A simple class to store log messages. '''
 
   def __init__(self):
+    '''
+    Initialise the handler
+
+    '''
     super(CacheHandler, self).__init__()
     self._messages = []
 
   def emit(self, record):
+    '''
+    Emit the message to a list
+
+    :param record: The log record
+
+    '''
     self._messages.append(record)
 
   def messages(self):
@@ -133,7 +153,10 @@ class CacheHandler(logging.Handler):
 
 
 def config_simple_cached():
-  ''' Configure the logging. '''
+  '''
+  Configure the logging to use a cache.
+
+  '''
   import logging.config
 
   # Configure the logging
@@ -163,21 +186,45 @@ class LoggerIO(object):
   ''' Wrap the logger with file type object '''
 
   def __init__(self, level):
+    '''
+    Initialise the logger io
+
+    :param level: The logging level
+
+    '''
     self.level = level
 
   def write(self, buf):
+    '''
+    Write to the logger
+
+    :param buf: The buffer
+
+    '''
     from logging import log
     log(self.level, buf)
 
   def flush(self):
+    '''
+    Flush (don't do anything)
+
+    '''
     pass
 
 
 def info_handle():
+  '''
+  :return: A handle to an INFO logger file object
+
+  '''
   from logging import INFO
   return LoggerIO(INFO)
 
 
 def debug_handle():
+  '''
+  :return: A handle to an DEBUG logger file object
+
+  '''
   from logging import DEBUG
   return LoggerIO(DEBUG)
