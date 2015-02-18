@@ -44,7 +44,14 @@ class FitrsIntegrationExt(IntensityIface):
     return phil
 
   def __init__(self, params, experiments, profile_model):
-    ''' Initialise the algorithm. '''
+    '''
+    Initialise the algorithm.
+
+    :param params: The input parameters
+    :param experiments: The list of experiments
+    :param profile_model: The profile model
+
+    '''
     from dials.algorithms.integration.fitrs.algorithm import IntegrationAlgorithm
     self._algorithm = IntegrationAlgorithm(
       experiments,
@@ -55,11 +62,21 @@ class FitrsIntegrationExt(IntensityIface):
       debug=params.integration.intensity.fitrs.debug)
 
   def compute_intensity(self, reflections):
-    ''' Compute the intensity. '''
+    '''
+    Compute the intensity.
+
+    :param reflections: The list of reflections
+
+    '''
     self._algorithm(reflections)
 
   @classmethod
   def type(cls, params, experiments):
-    ''' Return the type of the integrator. '''
-    return '3d'
+    '''
+    Return the type of the integrator.
 
+    :param params: The input parameters
+    :param experiments: The list of experiments
+
+    '''
+    return '3d'

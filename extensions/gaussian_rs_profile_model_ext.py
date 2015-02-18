@@ -26,11 +26,24 @@ class GaussianRSProfileModelExt(ProfileModelCreatorIface):
     return phil_scope
 
   def __init__(self):
+    '''
+    Initialise the profile model creator
+
+    '''
     from dials.algorithms.profile_model.gaussian_rs import ProfileModelList
     self._model = ProfileModelList()
 
   @classmethod
   def create(cls, params, experiments, reflections):
+    '''
+    Create the profile model.
+
+    :param params: The input parameters
+    :param experiments: The list of experiments
+    :param reflections: The list of reflections
+    :return: The profile model
+
+    '''
     from dials.algorithms.profile_model.gaussian_rs import Factory
     return Factory.create(params, experiments, reflections)
 

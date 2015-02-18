@@ -30,7 +30,12 @@ class SimpleCentroidExt(CentroidIface):
     self.experiments = experiments
 
   def compute_centroid(self, reflections):
-    ''' Compute the centroid. '''
+    '''
+    Compute the centroid.
+
+    :param reflections: The list of reflections
+
+    '''
     from logging import info
     from dials.array_family import flex
     from time import time

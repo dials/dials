@@ -36,16 +36,34 @@ class SummationIntegrationExt(IntensityIface):
     return phil
 
   def __init__(self, params, experiments, profile_model):
-    ''' Do nothing. This algorithm is a placeholder. '''
+    '''
+    Initialise the algorithm.
+
+    :param params: The input parameters
+    :param experiments: The list of experiments
+    :param profile_model: The profile model
+
+    '''
     pass
 
   def compute_intensity(self, reflections):
-    ''' Do nothing. This algorithm is a placeholder '''
+    '''
+    Compute the intensity.
+
+    :param reflections: The list of reflections
+
+    '''
     pass
 
   @classmethod
   def type(cls, params, experiments):
-    ''' Return the type of the integrator. '''
+    '''
+    Return the type of the integrator.
+
+    :param params: The input parameters
+    :param experiments: The list of experiments
+
+    '''
     from libtbx import Auto
     integrator_type = params.integration.intensity.sum.integrator
     if integrator_type == Auto or integrator_type == 'auto':

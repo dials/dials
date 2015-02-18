@@ -19,6 +19,11 @@ class NullBackgroundExt(BackgroundIface):
   name = 'null'
 
   def compute_background(self, reflections):
-    ''' Compute the background. '''
+    '''
+    Compute the background.
+
+    :param reflections: The list of reflections
+
+    '''
     from dials.algorithms.background import set_shoebox_background_value
     set_shoebox_background_value(reflections['shoebox'], 0)

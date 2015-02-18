@@ -13,7 +13,13 @@ from __future__ import division
 
 
 def import_sub_modules(paths):
-  ''' Import all sub modules. '''
+  '''
+  Import all sub modules.
+
+  :param paths: The list of module paths
+  :returns: A list of python modules
+
+  '''
   from pkgutil import walk_packages
 
   # Create a generator to walk through the sub packages
@@ -27,6 +33,12 @@ def import_sub_modules(paths):
   return modules
 
 def import_extensions():
+  '''
+  Import the extensions
+
+  :returns: The modules containing the python extensions
+
+  '''
   from dials.framework import env
   from os.path import dirname
 
@@ -37,7 +49,13 @@ def import_extensions():
   return import_sub_modules(paths)
 
 def grab_extensions(modules):
-  ''' Get a list of extensions. '''
+  '''
+  Get a list of extensions.
+
+  :param modules: The list of modules
+  :returns: The list of extensions
+
+  '''
   from dials.framework.interface import Interface
   from inspect import getmembers, isclass
   ext = []

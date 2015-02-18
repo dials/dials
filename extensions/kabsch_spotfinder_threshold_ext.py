@@ -68,7 +68,12 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
     return phil
 
   def __init__(self, params):
-    ''' Initialise the algorithm. '''
+    '''
+    Initialise the algorithm.
+
+    :param params: The input parameters
+
+    '''
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
     if params.spotfinder.threshold.xds.gain is not None:
       if params.spotfinder.lookup.gain_map is not None:
@@ -85,5 +90,12 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
       global_threshold=params.spotfinder.threshold.xds.global_threshold)
 
   def compute_threshold(self, image, mask):
-    ''' Compute the threshold. '''
+    '''
+    Compute the threshold.
+
+    :param image: The image to process
+    :param mask: The pixel mask on the image
+    :returns: A boolean mask showing foreground/background pixels
+
+    '''
     return self._algorithm(image, mask)

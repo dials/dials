@@ -94,7 +94,13 @@ class SimpleBackgroundExt(BackgroundIface):
     return phil
 
   def __init__(self, params, experiments):
-    ''' Initialise the algorithm. '''
+    '''
+    Initialise the algorithm.
+
+    :param params: The input parameters
+    :param experiments: The list of experiments
+
+    '''
     from libtbx.phil import parse
     from dials.algorithms.background.simple import BackgroundAlgorithm
 
@@ -129,5 +135,10 @@ class SimpleBackgroundExt(BackgroundIface):
     self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
 
   def compute_background(self, reflections):
-    ''' Compute the backgrond. '''
+    '''
+    Compute the background.
+
+    :param reflections: The list of reflections
+
+    '''
     self._algorithm.compute_background(reflections)
