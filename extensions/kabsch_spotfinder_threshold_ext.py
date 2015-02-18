@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.utils import Sorry
 from dials.interfaces import SpotFinderThresholdIface
 
 
@@ -24,6 +25,11 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
   def phil(cls):
     from libtbx.phil import parse
     phil = parse('''
+      gain = None
+        .type = float(value_min=0.0)
+        .help = "Use a flat gain map for the entire detector. Cannot be used"
+                "in conjunction with lookup.gain_map parameter."
+
       kernel_size = 3 3
         .help = "The size of the local area around the spot in which"
                 "to calculate the mean and variance. The kernel is"
@@ -64,9 +70,14 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
   def __init__(self, params):
     ''' Initialise the algorithm. '''
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
+    if params.spotfinder.threshold.xds.gain is not None:
+      if params.spotfinder.lookup.gain_map is not None:
+        raise Sorry("Cannot use gain and gain_map parameters simultaneously.")
+
     self._algorithm = XDSThresholdStrategy(
       kernel_size=params.spotfinder.threshold.xds.kernel_size,
-      gain=params.spotfinder.lookup.gain_map,
+      gain=params.spotfinder.threshold.xds.gain,
+      gain_map=params.spotfinder.lookup.gain_map,
       mask=params.spotfinder.lookup.mask,
       n_sigma_b=params.spotfinder.threshold.xds.sigma_background,
       n_sigma_s=params.spotfinder.threshold.xds.sigma_strong,

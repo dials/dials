@@ -79,10 +79,13 @@ class XDSThresholdStrategy(ThresholdStrategy):
     # Get the parameters
     self._kernel_size = kwargs.get('kernel_size', (3, 3))
     self._gain        = kwargs.get('gain')
+    self._gain_map    = kwargs.get('gain_map')
     self._n_sigma_b   = kwargs.get('n_sigma_b', 6)
     self._n_sigma_s   = kwargs.get('n_sigma_s', 3)
     self._min_count   = kwargs.get('min_count', 2)
     self._threshold   = kwargs.get('global_threshold', None)
+
+    assert [self._gain, self._gain_map].count(None) > 0
 
     # Create a buffer
     self.algorithm = {}
@@ -113,10 +116,14 @@ class XDSThresholdStrategy(ThresholdStrategy):
         self._min_count)
       self.algorithm[image.all()] = algorithm
 
+    if self._gain is not None:
+      self._gain_map = flex.double(image.accessor(), self._gain)
+      self._gain = None
+
     # Compute the threshold
     result = flex.bool(flex.grid(image.all()))
-    if self._gain:
-      algorithm(image, mask, self._gain, result)
+    if self._gain_map:
+      algorithm(image, mask, self._gain_map, result)
     else:
       algorithm(image, mask, result)
 
