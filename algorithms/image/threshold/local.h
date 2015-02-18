@@ -587,7 +587,9 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sizeof(T) <= sizeof(double));
 
       // Cast the buffer to the table type
-      af::ref< Data<T> > table((Data<T> *)&buffer_[0], buffer_.size());
+      af::ref< Data<T> > table(
+          reinterpret_cast<Data<T>*>(&buffer_[0]),
+          buffer_.size());
 
       // compute the summed area table
       compute_sat(table, src, mask);
