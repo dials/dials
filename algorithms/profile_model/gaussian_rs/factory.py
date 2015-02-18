@@ -11,11 +11,22 @@
 from __future__ import division
 
 class Factory(object):
-  ''' A factory class to compute the profile models. '''
+  '''
+  A factory class to compute the profile models.
+
+  '''
 
   @classmethod
   def compute_single(cls, experiment, reflections, min_zeta=0.05):
-    ''' Compute the profile model. '''
+    '''
+    Compute the profile model.
+
+    :param experiment: The experiment
+    :param reflections: The list of reflections
+    :param min_zeta: The minimum zeta value of reflection to use
+    :return: The profile model
+
+    '''
     from dials.algorithms.profile_model.gaussian_rs.calculator \
       import ProfileModelCalculator
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
@@ -27,7 +38,14 @@ class Factory(object):
 
   @classmethod
   def compute(cls, params, experiments, reflections):
-    ''' Compute the profile models. '''
+    '''
+    Compute the profile models.
+
+    :param experiments: The experiment list
+    :param reflections: The list of reflections
+    :return: The profile models
+
+    '''
     from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.util.command_line import heading
     from logging import info
@@ -63,7 +81,13 @@ class Factory(object):
 
   @classmethod
   def load(cls, params):
-    ''' Load from phil parameters. '''
+    '''
+    Load from phil parameters.
+
+    :param params: The input phil parameters
+    :return: The profile model list
+
+    '''
     from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.algorithms.profile_model.gaussian_rs import ProfileModel
     from math import pi
@@ -78,7 +102,15 @@ class Factory(object):
 
   @classmethod
   def create(cls, params, experiments, reflections):
-    ''' Create the profile models. '''
+    '''
+    Create the profile models.
+
+    :param params: The input phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection table
+    :return: The profile model
+
+    '''
     if len(params.profile.gaussian_rs.model) > 0:
       assert(len(params.profile.gaussian_rs.model) == len(experiments))
       model = Factory.load(params.profile)

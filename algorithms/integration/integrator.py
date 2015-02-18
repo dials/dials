@@ -24,7 +24,12 @@ job = _Job()
 
 
 def generate_phil_scope():
-  ''' Generate the phil scope. '''
+  '''
+  Generate the integration phil scope.
+
+  :return: The phil scope
+
+  '''
   import dials.extensions
   from dials.interfaces import BackgroundIface
   from dials.interfaces import IntensityIface
@@ -119,16 +124,17 @@ class Integrator(object):
   ''' Integrator interface class. '''
 
   def __init__(self, manager, nthreads=1, nproc=1, mp_method='multiprocessing'):
-    ''' Initialise the integrator.
+    '''
+    Initialise the integrator.
 
     The integrator requires a manager class implementing the IntegratorManager
     interface. This class executes all the workers in separate threads and
     accumulates the results to expose to the user.
 
-    Params:
-      manager The integration manager
-      nproc The number of processors
-      mp_method The multiprocessing method
+    :param manager: The integration manager
+    :param nthreads: The number of local threads per job
+    :param nproc: The number of processors
+    :param mp_method: The multiprocessing method
 
     '''
     assert(nthreads > 0)
@@ -146,10 +152,10 @@ class Integrator(object):
       ''')
 
   def integrate(self):
-    ''' Do all the integration tasks.
+    '''
+    Do all the integration tasks.
 
-    Returns
-      The integration results
+    :return: The integration results
 
     '''
     from time import time
@@ -215,7 +221,16 @@ class Integrator(object):
     return self._manager.result()
 
 def hist(data, width=80, symbol='#', prefix=''):
-  ''' A utility function to print a histogram of reflections on frames. '''
+  '''
+  A utility function to print a histogram of reflections on frames.
+
+  :param data: The data to histogram
+  :param width: The number of characters in each line
+  :param symbol: The plot symbol
+  :param prefix: String to prefix to each line
+  :return: The histogram string
+
+  '''
   from collections import defaultdict, Counter
   from math import log10, floor
   assert(len(data) > 0)
@@ -246,7 +261,16 @@ def hist(data, width=80, symbol='#', prefix=''):
       for key, value in zip(frame, count)))
 
 def frame_hist(bbox, width=80, symbol='#', prefix=''):
-  ''' A utility function to print a histogram of reflections on frames. '''
+  '''
+  A utility function to print a histogram of reflections on frames.
+
+  :param bbox: The bounding boxes
+  :param width: The width of each line
+  :param symbol: The histogram symbol
+  :param prefix: A string to prefix to each line
+  :return: The histogram string
+
+  '''
   return hist(
     [z for b in bbox for z in range(b[4], b[5])],
     width=width,
@@ -254,7 +278,16 @@ def frame_hist(bbox, width=80, symbol='#', prefix=''):
     prefix=prefix)
 
 def nframes_hist(bbox, width=80, symbol='#', prefix=''):
-  ''' A utility function to print a histogram of number of frames. '''
+  '''
+  A utility function to print a histogram of number of frames.
+
+  :param bbox: The bounding boxes
+  :param width: The width of each line
+  :param symbol: The histogram symbol
+  :param prefix: A string to prefix to each line
+  :return: The histogram string
+
+  '''
   return hist(
     [b[5] - b[4] for b in bbox],
     width=width,
@@ -266,7 +299,13 @@ class Result(object):
   ''' A class representing an integration result. '''
 
   def __init__(self, index, reflections):
-    ''' Initialise the data. '''
+    '''
+    Initialise the data.
+
+    :param index: The integration job index
+    :param reflections: The integrated reflections
+
+    '''
     self.index = index
     self.reflections = reflections
 
@@ -284,7 +323,20 @@ class Task(object):
                save_shoeboxes=False,
                max_mem_usage=0.5,
                reference_selector=None):
-    ''' Initialise the task. '''
+    '''
+    Initialise the task.
+
+    :param index: The index of the integration job
+    :param experiments: The list of experiments
+    :param profile_model: The profile model
+    :param data: The list of reflections
+    :param job: The frames to integrate
+    :param flatten: Flatten the shoeboxes
+    :param save_shoeboxes: Save the shoeboxes to file
+    :param max_mem_usage: The maximum fraction of system memory to use
+    :param reference_selector: The reference selector algorithm
+
+    '''
     self._index = index
     self._experiments = experiments
     self._profile_model = profile_model
@@ -297,7 +349,12 @@ class Task(object):
     self._reference_selector = reference_selector
 
   def __call__(self):
-    ''' Do the integration. '''
+    '''
+    Do the integration.
+
+    :return: The integrated data
+
+    '''
     from dials.array_family import flex
     from time import time
     from dials.util.command_line import heading
@@ -466,7 +523,10 @@ class Task(object):
     return result
 
   def _process(self):
-    ''' Process the data. '''
+    '''
+    Process the data.
+
+    '''
     from logging import info
     self._data.compute_mask(self._experiments, self._profile_model)
     self._data.integrate(
@@ -1335,7 +1395,16 @@ class IntegratorFactory(object):
 
   @staticmethod
   def create(params, experiments, profile_model, reflections):
-    ''' Create the integrator from the input configuration. '''
+    '''
+    Create the integrator from the input configuration.
+
+    :param params: The input phil parameters
+    :param experiments: The list of experiments
+    :param profile_model: The profile model
+    :param reflections: The reflections to integrate
+    :return: The integrator class
+
+    '''
     from dials.algorithms.integration.filtering import MultiPowderRingFilter
     from dials.interfaces import IntensityIface
     from dials.interfaces import BackgroundIface
@@ -1407,7 +1476,13 @@ class IntegratorFactory(object):
 
   @staticmethod
   def select_integrator(integrator_type):
-    ''' Select the integrator. '''
+    '''
+    Select the integrator
+
+    :param integrator_type: A string with the type of integrator class
+    :return: The integrator class
+
+    '''
     if integrator_type == '3d':
       IntegratorClass = Integrator3D
     elif integrator_type == 'flat3d':

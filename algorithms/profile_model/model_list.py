@@ -11,36 +11,67 @@
 from __future__ import division
 
 class ProfileModelList(object):
-  ''' A class to represent multiple profile models. '''
+  '''
+  A class to represent multiple profile models.
+
+  '''
 
   def __init__(self, models=None):
-    ''' Initialise the model list. '''
+    '''
+    Initialise the model list.
+
+    :param models: The profile models
+
+    '''
     if models is None:
       self._models = []
     else:
       self._models = models
 
   def __getitem__(self, index):
-    ''' Get a profile model. '''
+    '''
+    Get a profile model.
+
+    :param index: The list index
+    :return: A profile model or sublist
+
+    '''
     if isinstance(index, slice):
       return ProfileModelList(self._models[index])
     return self._models[index]
 
   def __len__(self):
-    ''' Return the number of models. '''
+    '''
+    :return: the number of models.
+
+    '''
     return len(self._models)
 
   def __iter__(self):
-    ''' Iterate through the models. '''
+    '''
+    Iterate through the models.
+
+    '''
     for i in range(len(self)):
       yield self[i]
 
   def append(self, model):
-    ''' Add another model. '''
+    '''
+    Add another model.
+
+    :param model: The profile model to append
+
+    '''
     self._models.append(model)
 
   def predict_reflections(self, experiments, **kwargs):
-    ''' Predict the reflections. '''
+    '''
+    Predict the reflections.
+
+    :param experiments: The experiment list
+    :return: The predicted reflections
+
+    '''
     from dials.array_family import flex
     result = flex.reflection_table()
     for index, (model, experiment) in enumerate(zip(self, experiments)):
@@ -50,7 +81,14 @@ class ProfileModelList(object):
     return result
 
   def compute_bbox(self, experiments, reflections, **kwargs):
-    ''' Compute the bounding boxes. '''
+    '''
+    Compute the bounding boxes.
+
+    :param experiments: The experiment list
+    :param reflections: The reflection table
+    :return: The bounding boxes
+
+    '''
     from dials.array_family import flex
     index_list = reflections.split_indices_by_experiment_id(len(experiments))
     assert(len(experiments) == len(self))
@@ -66,7 +104,14 @@ class ProfileModelList(object):
     return reflections['bbox']
 
   def compute_partiality(self, experiments, reflections, **kwargs):
-    ''' Compute the partiality. '''
+    '''
+    Compute the partiality.
+
+    :param experiments: The experiment list
+    :param reflections: The reflection table
+    :return: The partiality
+
+    '''
     from dials.array_family import flex
     index_list = reflections.split_indices_by_experiment_id(len(experiments))
     assert(len(experiments) == len(self))
@@ -82,7 +127,13 @@ class ProfileModelList(object):
     return reflections['partiality']
 
   def compute_mask(self, experiments, reflections, **kwargs):
-    ''' Compute the shoebox mask. '''
+    '''
+    Compute the shoebox mask.
+
+    :param experiments: The experiment list
+    :param reflections: The reflection table
+
+    '''
     from dials.array_family import flex
     index_list = reflections.split_indices_by_experiment_id(len(experiments))
     assert(len(experiments) == len(self))
@@ -94,6 +145,11 @@ class ProfileModelList(object):
         **kwargs)
 
   def dump(self):
-    ''' Dump the profile model to phil parameters. '''
+    '''
+    Dump the profile model to phil parameters.
+
+    :return: The phil parameters
+
+    '''
     from dials.algorithms.profile_model import factory
     return factory.phil_scope.fetch(sources=[model.dump() for model in self])

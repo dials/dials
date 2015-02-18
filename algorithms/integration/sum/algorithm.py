@@ -14,18 +14,17 @@ class IntegrationAlgorithm(object):
   '''A class to perform 3D summation integration'''
 
   def __init__(self, **kwargs):
-    '''Initialise algorithm.'''
+    '''
+    Initialise algorithm.
+
+    '''
     pass
 
   def __call__(self, reflections):
     '''Process the reflections.
 
-    Params:
-        experiment The experiment data
-        reflections The reflections to process
-
-    Returns:
-        The list of integrated reflections
+    :param reflections: The reflections to integrate
+    :return: The list of integrated reflections
 
     '''
     from logging import info

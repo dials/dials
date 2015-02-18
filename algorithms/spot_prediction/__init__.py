@@ -7,7 +7,14 @@ from dials_algorithms_spot_prediction_ext import *
 _ScanStaticReflectionPredictor = ScanStaticReflectionPredictor
 
 def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
-  ''' A constructor for the reflection predictor. '''
+  '''
+  A constructor for the reflection predictor.
+
+  :param experiment: The experiment to predict for
+  :param dmin: The maximum resolution to predict to
+  :return: The spot predictor
+
+  '''
 
   # Get dmin if it is not set
   if dmin is None:
@@ -32,7 +39,15 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
 _ScanVaryingReflectionPredictor = ScanVaryingReflectionPredictor
 
 def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
-  ''' A constructor for the reflection predictor. '''
+  '''
+  A constructor for the reflection predictor.
+
+  :param experiment: The experiment to predict for
+  :param dmin: The maximum resolution to predict to
+  :param margin: The margin for prediction
+  :return: The spot predictor
+
+  '''
 
   # Get dmin if it is not set
   if dmin is None:
@@ -57,7 +72,14 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
 _StillsReflectionPredictor = StillsReflectionPredictor
 
 def StillsReflectionPredictor(experiment, dmin=None, **kwargs):
-  ''' A constructor for the reflection predictor. '''
+  '''
+  A constructor for the reflection predictor.
+
+  :param experiment: The experiment to predict for
+  :param dmin: The maximum resolution to predict to
+  :return: The spot predictor
+
+  '''
 
   # Get dmin if it is not set
   if dmin is None:

@@ -12,11 +12,21 @@ from __future__ import division
 
 
 class Extract(object):
-  ''' Class to extract a batch of images '''
+  '''
+  Class to extract a batch of images
+
+  '''
 
   def __init__(self, imageset, threshold_image, mask):
-      ''' Initialise with imageset and threshold function, both need to be
-      picklable for this to be called using multiprocessing. '''
+      '''
+      Initialise with imageset and threshold function, both need to be picklable
+      for this to be called using multiprocessing.
+
+      :param imageset: The imageset to process
+      :param threshold_image: The threshold algorithm
+      :param mask: The mask to use
+
+      '''
       self.threshold_image = threshold_image
       self.imageset = imageset
       self.mask = mask
@@ -25,7 +35,13 @@ class Extract(object):
         assert(len(self.mask) == len(detector))
 
   def __call__(self, index):
-      ''' Extract pixels from a block of images. '''
+      '''
+      Extract pixels from a block of images.
+
+      :param index: The image indices to extract
+      :return: The extracted spots
+
+      '''
       from dials.model.data import PixelList
       from dxtbx.imageset import ImageSweep
 
@@ -70,35 +86,57 @@ class Extract(object):
 
 
 class ProgressUpdater(object):
-  ''' Class to update the progress bar from multi processing callback. '''
+  '''
+  Class to update the progress bar from multi processing callback.
+
+  '''
 
   def __init__(self, total):
-    ''' Initialise the progress bar. '''
+    '''
+    Initialise the progress bar.
+
+    :param total: The total to count up to
+
+    '''
     from dials.util.command_line import ProgressBar
     self.total = total
     self.num = 0
     self.progress = ProgressBar(title='Extracting strong pixels from images')
 
   def __call__(self, result):
-    ''' Update the progress bar. '''
+    '''
+    Update the progress bar.
+
+    :param result: The result
+
+    '''
     self.num += 1
     percent = 100.0 * (self.num+1) / self.total
     self.progress.update(percent)
 
   def finished(self):
-     ''' Finish the progress bar. '''
+     '''
+     Finish the progress bar.
+
+     '''
      self.progress.finished('Extracted strong pixels from images')
 
 
 class ExtractSpots(object):
-  ''' Class to find spots in an image and extract them into shoeboxes. '''
+  '''
+  Class to find spots in an image and extract them into shoeboxes.
+
+  '''
 
   def __init__(self, threshold_image, mask=None,
                mp_method='multiprocessing', nproc=1):
-    ''' Initialise the class with the strategy
+    '''
+    Initialise the class with the strategy
 
-    Params:
-        threshold_image The image thresholding strategy
+    :param threshold_image: The image thresholding strategy
+    :param mask: The mask to use
+    :param mp_method: The multi processing method
+    :param nproc: The number of processors
 
     '''
     # Set the required strategies
@@ -108,13 +146,11 @@ class ExtractSpots(object):
     self.nproc = nproc
 
   def __call__(self, imageset):
-    ''' Find the spots in the imageset
+    '''
+    Find the spots in the imageset
 
-    Params:
-        imageset The imageset to process
-
-    Returns:
-        The list of spot shoeboxes
+    :param imageset: The imageset to process
+    :return: The list of spot shoeboxes
 
     '''
     from dials.util.command_line import Command
@@ -162,7 +198,14 @@ class ExtractSpots(object):
     return shoeboxes
 
   def _calculate_blocks(self, imageset, nblocks):
-    ''' Calculate the blocks. '''
+    '''
+    Calculate the blocks.
+
+    :param imageset: The imageset
+    :param nblocks: The number of blocks to process in
+    :return: The block size
+
+    '''
     from math import ceil
     blocks = [0]
     imageset_length = len(imageset)
@@ -180,10 +223,20 @@ class ExtractSpots(object):
 
 
 class SpotFinder(object):
-  ''' A class to do spot finding and filtering. '''
+  '''
+  A class to do spot finding and filtering.
+
+  '''
 
   def __init__(self, find_spots=None, filter_spots=None, scan_range=None):
-    ''' Initialise the class. '''
+    '''
+    Initialise the class.
+
+    :param find_spots: The spot finding algorithm
+    :param filter_spots: The spot filtering algorithm
+    :param scan_range: The scan range to find spots over
+
+    '''
 
     # Set the spot finding and filter functions
     assert(find_spots != None and filter_spots != None)
@@ -192,7 +245,13 @@ class SpotFinder(object):
     self.scan_range = scan_range
 
   def __call__(self, datablock):
-    ''' Do the spot finding. '''
+    '''
+    Do the spot finding.
+
+    :param datablock: The datablock to process
+    :return: The observed spots
+
+    '''
     from dials.array_family import flex
     from logging import info
 
@@ -215,7 +274,13 @@ class SpotFinder(object):
     return reflections
 
   def _find_in_imageset(self, imageset):
-    ''' Do the spot finding. '''
+    '''
+    Do the spot finding.
+
+    :param imageset: The imageset to process
+    :return: The observed spots
+
+    '''
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep

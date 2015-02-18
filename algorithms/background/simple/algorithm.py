@@ -18,7 +18,14 @@ class BackgroundAlgorithm(object):
                outlier='nsigma',
                model='constant3d',
                **kwargs):
-    ''' Initialise the algorithm. '''
+    '''
+    Initialise the algorithm.
+
+    :param experiments: The list of experiments
+    :param outlier: The outlier rejection algorithm
+    :param model: The background model algorithm
+
+    '''
     from dials.algorithms.background.simple import Creator
     from dials.algorithms.background.simple import TruncatedOutlierRejector
     from dials.algorithms.background.simple import NSigmaOutlierRejector
@@ -65,7 +72,12 @@ class BackgroundAlgorithm(object):
     self._creator = Creator(modeller, rejector)
 
   def compute_background(self, reflections):
-    ''' Compute the backgrond. '''
+    '''
+    Compute the backgrond.
+
+    :param reflections: The list of reflections
+
+    '''
     from logging import info
     from dials.array_family import flex
     from time import time

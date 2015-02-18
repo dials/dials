@@ -21,7 +21,17 @@ class IntegrationAlgorithm(object):
                threshold=0.02,
                single_reference=False,
                debug=False):
-    '''Initialise algorithm.'''
+    '''
+    Initialise algorithm.
+
+    :param experiments: The list of experiments
+    :param profile model: The profile model
+    :param grid_size: The size of the kabsch space grid
+    :param threshold: The intensity fraction used for reference profiles
+    :param single_reference: Use a single reference profile
+    :param debug: Save debugging information
+
+    '''
     assert(len(experiments) == len(profile_model))
     self._experiments = experiments
     self._profile_model = profile_model
@@ -31,13 +41,11 @@ class IntegrationAlgorithm(object):
     self._debug = debug
 
   def __call__(self, reflections):
-    '''Process the reflections.
+    '''
+    Process the reflections.
 
-    Params:
-        reflections The reflections to process
-
-    Returns:
-        The list of integrated reflections
+    :param reflections: The reflections to process
+    :return: The list of integrated reflections
 
     '''
     from dials.algorithms.integration.fitrs import ReciprocalSpaceProfileFitting

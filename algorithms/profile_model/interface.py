@@ -14,19 +14,31 @@ from abc import abstractmethod, ABCMeta
 
 
 class ProfileModelIface(object):
-  ''' The interface definition for a list of profile models. '''
+  '''
+  The interface definition for a list of profile models.
+
+  '''
 
   __metaclass__ = ABCMeta
 
   @abstractmethod
   def predict_reflections(self, experiment, **kwargs):
-    ''' Given an experiment, predict the reflections. '''
+    '''
+    Given an experiment, predict the reflections.
+
+    :param experiment: The experiment
+
+    '''
     pass
 
   @abstractmethod
   def compute_partiality(self, experiment, reflections, **kwargs):
-    ''' Given an experiment and list of reflections, compute the
-    partiality of the reflections
+    '''
+    Given an experiment and list of reflections, compute the partiality of the
+    reflections
+
+    :param experiment: The experiment
+    :param reflections: The reflection table
 
     '''
     pass
@@ -41,14 +53,20 @@ class ProfileModelIface(object):
 
   @abstractmethod
   def compute_mask(self, experiment, reflections, **kwargs):
-    ''' Given an experiment and list of reflections, compute the
+    '''
+    Given an experiment and list of reflections, compute the
     foreground/background mask of the reflections.
+
+    :param experiment: The experiment
+    :param reflections: The reflection table
 
     '''
     pass
 
   @abstractmethod
   def dump(self):
-    ''' Dump and return the profile model to a phil scope object. '''
-    pass
+    '''
+    Dump and return the profile model to a phil scope object.
 
+    '''
+    pass

@@ -12,22 +12,37 @@ from __future__ import division
 
 
 class ThresholdStrategy(object):
-  '''Base class for spot finder threshold strategies.'''
+  '''
+  Base class for spot finder threshold strategies.
+
+  '''
 
   def __init__(self, **kwargs):
-    '''Initialise with key word arguments.'''
+    '''
+    Initialise with key word arguments.
+
+    '''
     pass
 
   def __call__(self, image):
-    '''Threshold the image.'''
+    '''
+    Threshold the image.
+
+    '''
     raise RuntimeError('Overload Me!')
 
 
 class UnimodalThresholdStrategy(ThresholdStrategy):
-  '''Unimodal histogram thresholding strategy.'''
+  '''
+  Unimodal histogram thresholding strategy.
+
+  '''
 
   def __init__(self, **kwargs):
-    '''Initialise the threshold.'''
+    '''
+    Initialise the threshold.
+
+    '''
 
     # Initialise the base class
     ThresholdStrategy.__init__(self, **kwargs)
@@ -39,14 +54,11 @@ class UnimodalThresholdStrategy(ThresholdStrategy):
     self._hrange = (0, int(trusted_range[1]))
 
   def __call__(self, image):
-    '''Calculate the threshold for this image.
+    '''
+    Calculate the threshold for this image.
 
-    Params:
-        image The image to process
-        trusted_range The trusted range of pixel values
-
-    Returns:
-        The threshold value
+    :param image: The image to process
+    :return: The thresholded image
 
     '''
     from dials.algorithms.image.threshold import maximum_deviation
@@ -63,13 +75,14 @@ class UnimodalThresholdStrategy(ThresholdStrategy):
 
 
 class XDSThresholdStrategy(ThresholdStrategy):
-  '''A class implementing a 'gain' threshold.'''
+  '''
+  A class implementing a 'gain' threshold.
+
+  '''
 
   def __init__(self, **kwargs):
-    '''Set the threshold algorithm up
-
-    Params:
-        kwargs The keyword arguments
+    '''
+    Set the threshold algorithm up
 
     '''
 
@@ -91,13 +104,12 @@ class XDSThresholdStrategy(ThresholdStrategy):
     self.algorithm = {}
 
   def __call__(self, image, mask):
-    '''Call the thresholding function
+    '''
+    Call the thresholding function
 
-    Params:
-        image The image to process
-
-    Returns:
-        The threshold image mask
+    :param image: The image to process
+    :param mask: The mask to use
+    :return: The thresholded image
 
     '''
     from dials.algorithms.image import threshold

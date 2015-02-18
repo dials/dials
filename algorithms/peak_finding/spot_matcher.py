@@ -15,7 +15,8 @@ class SpotMatcher(object):
   '''Match the observed with predicted spots.'''
 
   def __init__(self, max_separation=2):
-    '''Setup the algorithm
+    '''
+    Setup the algorithm
 
     :param max_separation: Max pixel dist between predicted and observed spot
 
@@ -24,7 +25,8 @@ class SpotMatcher(object):
     self._max_separation = max_separation
 
   def __call__(self, observed, predicted):
-    '''Match the observed reflections with the predicted.
+    '''i
+    Match the observed reflections with the predicted.
 
     :param observed: The list of observed reflections.
     :param predicted: The list of predicted reflections.
@@ -55,7 +57,8 @@ class SpotMatcher(object):
     return flex.size_t(index), flex.size_t([nn[i] for i in index])
 
   def _find_nearest_neighbours(self, observed, predicted):
-    '''Find the nearest predicted spot to the observed spot.
+    '''
+    Find the nearest predicted spot to the observed spot.
 
     :param observed: The observed reflections
     :param predicted: The predicted reflections
@@ -95,7 +98,8 @@ class SpotMatcher(object):
     return nn_all, dd_all
 
   def _find_nearest_neighbours_single(self, oxyz, pxyz):
-    '''Find the nearest predicted spot to the observed spot.
+    '''
+    Find the nearest predicted spot to the observed spot.
 
     :param observed: The observed reflections
     :param predicted: The predicted reflections
@@ -116,7 +120,8 @@ class SpotMatcher(object):
     return ann.nn, flex.sqrt(ann.distances)
 
   def _filter_by_distance(self, nn, dist):
-    '''Filter the matches by distance.
+    '''
+    Filter the matches by distance.
 
     :param nn: The nearest neighbour list
     :param dist: The distances
@@ -129,7 +134,8 @@ class SpotMatcher(object):
     return flex.int([i for i in index if dist[i] <= self._max_separation])
 
   def _filter_duplicates(self, index, nn, dist):
-    ''' Filter the matches to remove duplicates
+    '''
+    Filter the matches to remove duplicates
 
     :param index: The indices of valid spots
     :param nn: The nearest neighbour indices

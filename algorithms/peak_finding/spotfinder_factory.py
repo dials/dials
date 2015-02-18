@@ -123,17 +123,31 @@ def generate_phil_scope():
 phil_scope = generate_phil_scope()
 
 class FilterRunner(object):
-  ''' A class to run multiple filters in succession. '''
+  '''
+  A class to run multiple filters in succession.
+
+  '''
 
   def __init__(self, filters=None):
-    ''' Initialise with a list of filters. '''
+    '''
+    Initialise with a list of filters.
+
+    :param filters: The list of filters
+
+    '''
     if filters is None:
       self.filters=[]
     else:
       self.filters=filters
 
   def __call__(self, flags, **kwargs):
-    ''' Call the filters one by one. '''
+    '''
+    Call the filters one by one.
+
+    :param flags: The input flags
+    :returns: The filtered flags
+
+    '''
     flags = self.check_flags(flags, **kwargs)
     for f in self.filters:
       flags = f(flags, **kwargs)
@@ -141,8 +155,17 @@ class FilterRunner(object):
 
   def check_flags(self, flags, predictions=None, observations=None,
                   shoeboxes=None, **kwargs):
-    ''' Check the flags are set, if they're not then create a list
-    of Trues equal to the number of items given. '''
+    '''
+    Check the flags are set, if they're not then create a list
+    of Trues equal to the number of items given.
+
+    :param flags: The input flags
+    :param predictions: The predictions
+    :param observations: The observations
+    :param shoeboxes: The shoeboxes
+    :return: The filtered flags
+
+    '''
     from scitbx.array_family import flex
 
     # If flags are not set then create a list of Trues
@@ -169,21 +192,27 @@ class FilterRunner(object):
 
 
 class MinPixelsFilter(object):
-  ''' Filter the reflections by the number of pixels in the shoeboxes. '''
+  '''
+  Filter the reflections by the number of pixels in the shoeboxes.
+
+  '''
 
   def __init__(self, num, code):
-    ''' Initialise
+    '''
+    Initialise
 
-    Params:
-        num The minimum number of pixels allowed
-        code The mask code to use for comparison
+    :param num: The minimum number of pixels allowed
+    :param code: The mask code to use for comparison
 
     '''
     self.code = code
     self.num = num
 
   def run(self, flags, observations=None, shoeboxes=None, **kwargs):
-    ''' Run the filtering. '''
+    '''
+    Run the filtering.
+
+    '''
 
     # Get the number of mask values matching the code
     count = shoeboxes.count_mask_values(self.code)
@@ -192,7 +221,10 @@ class MinPixelsFilter(object):
     return flags.__and__(count >= self.num)
 
   def __call__(self, flags, **kwargs):
-    ''' Call the filter and print information. '''
+    '''
+    Call the filter and print information.
+
+    '''
     from logging import info
     info('Filtering {0} spots by number of pixels'.format(
         flags.count(True)))
@@ -205,16 +237,19 @@ class MinPixelsFilter(object):
 class PeakCentroidDistanceFilter(object):
 
   def __init__(self, maxd):
-    ''' Initialise
+    '''
+    Initialise
 
-    Params:
-        maxd The maximum distance allowed
+    :param maxd: The maximum distance allowed
 
     '''
     self.maxd = maxd
 
   def run(self, flags, observations=None, shoeboxes=None, **kwargs):
-    ''' Run the filtering. '''
+    '''
+    Run the filtering.
+
+    '''
 
     # Get the peak locations and the centroids and return the flags of
     # those closer than the min distance
@@ -236,11 +271,11 @@ class PeakCentroidDistanceFilter(object):
 class CentroidResolutionFilter(object):
 
   def __init__(self, d_min, d_max):
-    ''' Initialise
+    '''
+    Initialise
 
-    Params:
-        dmin The maximum resolution
-        dmax The minimum resolution
+    :param dmin: The maximum resolution
+    :param dmax: The minimum resolution
 
     '''
     if d_min == None:
@@ -254,7 +289,10 @@ class CentroidResolutionFilter(object):
       self.d_max = d_max
 
   def run(self, flags, sweep=None, observations=None, **kwargs):
-    ''' Run the filtering. '''
+    '''
+    Run the filtering.
+
+    '''
 
     # Get all the observation resolutions
     d = observations.resolution(sweep.get_beam(), sweep.get_detector())
@@ -629,17 +667,18 @@ class SpotDensityFilter(object):
 
 
 class SpotFinderFactory(object):
-  ''' Factory class to create spot finders '''
+  '''
+  Factory class to create spot finders
+
+  '''
 
   @staticmethod
   def from_parameters(params=None):
-    ''' Given a set of parameters, construct the spot finder
+    '''
+    Given a set of parameters, construct the spot finder
 
-    Params:
-        params The input parameters
-
-    Returns:
-        The spot finder instance
+    :param params: The input parameters
+    :returns: The spot finder instance
 
     '''
     from dials.algorithms.peak_finding.spot_finder import SpotFinder
@@ -666,13 +705,11 @@ class SpotFinderFactory(object):
 
   @staticmethod
   def configure_algorithm(params):
-    ''' Given a set of parameters, construct the spot finder
+    '''
+    Given a set of parameters, construct the spot finder
 
-    Params:
-        params The input parameters
-
-    Returns:
-        The spot finder instance
+    :param params: The input parameters
+    :returns: The spot finder instance
 
     '''
     from dials.algorithms.peak_finding.spot_finder import ExtractSpots
@@ -688,7 +725,13 @@ class SpotFinderFactory(object):
 
   @staticmethod
   def configure_threshold(params):
-    ''' Get the threshold strategy'''
+    '''
+    Get the threshold strategy
+
+    :param params: The input parameters
+    :return: The threshold algorithm
+
+    '''
     from dials.interfaces import SpotFinderThresholdIface
     Algorithm = SpotFinderThresholdIface.extension(
       params.spotfinder.threshold.algorithm)
@@ -696,7 +739,13 @@ class SpotFinderFactory(object):
 
   @staticmethod
   def configure_filter(params):
-    ''' Get the filter strategy. '''
+    '''
+    Get the filter strategy.
+
+    :param params: The input parameters
+    :return: The filter algorithm
+
+    '''
     from dials.algorithms import shoebox
     from cctbx import crystal
 
@@ -753,14 +802,11 @@ class SpotFinderFactory(object):
 
   @staticmethod
   def load_image(filename_or_data):
-    ''' Given a filename, load an image. If the data is already loaded,
-    return it.
+    '''
+    Given a filename, load an image. If the data is already loaded, return it.
 
-    Params:
-        filename_or_data The input filename (or data)
-
-    Returns:
-        The image or None
+    :param filename_or_data: The input filename (or data)
+    :return: The image or None
 
     '''
     import cPickle as pickle
