@@ -84,7 +84,6 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
       gain=params.spotfinder.threshold.xds.gain,
       gain_map=params.spotfinder.lookup.gain_map,
       mask=params.spotfinder.lookup.mask,
-      gain_constant=params.spotfinder.gain_constant,
       n_sigma_b=params.spotfinder.threshold.xds.sigma_background,
       n_sigma_s=params.spotfinder.threshold.xds.sigma_strong,
       min_count=params.spotfinder.threshold.xds.min_local,

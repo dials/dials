@@ -24,10 +24,6 @@ def generate_phil_scope():
     include scope dials.data.lookup.phil_scope
     include scope dials.data.multiprocessing.phil_scope
 
-    gain_constant = None
-      .help = "A constant gain value (will be overriden by any gain map lookup)"
-      .type = float
-
     scan_range = None
       .help = "The range of images to use in finding spots. Number of arguments"
               "must be a factor of two. Specifying \"0 0\" will use all images"
