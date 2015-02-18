@@ -323,11 +323,9 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.mainSizer.Add(self.img_lst_v_sizer, 0, wx.CENTER|wx.ALL, 10)
     self.SetSizer(self.mainSizer)
 
-    self.SetScrollRate(1, 1)
-
     self.SetupScrolling()
-
-
+    self.SetScrollRate(1, 1)
+    
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.scroll_rot = 0
