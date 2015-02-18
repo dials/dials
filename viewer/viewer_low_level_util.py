@@ -325,7 +325,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.SetupScrolling()
     self.SetScrollRate(1, 1)
-    
+
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.scroll_rot = 0
@@ -362,11 +362,11 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
   def OnMouseWheel(self, event):
 
-    #saving amount of scroll steps to do
+    #Getting amount of scroll steps to do
     sn_mov = math.copysign(1, float(event.GetWheelRotation()))
     self.scroll_rot += sn_mov
 
-    #saving relative position of scrolling area to keep after scrolling
+    #Getting relative position of scrolling area to keep after scrolling
     v_size_x, v_size_y = self.GetVirtualSize()
     self.Mouse_Pos_x, self.Mouse_Pos_y = event.GetPosition()
 
@@ -404,7 +404,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       x_scroll_increment, y_scroll_increment = self.GetScrollPixelsPerUnit()
       print "x_scroll_increment, y_scroll_increment", x_scroll_increment, y_scroll_increment
       new_scroll_pos_x = new_scroll_pos_x  / x_scroll_increment + 0.5
-      new_scroll_pos_x = new_scroll_pos_x  / x_scroll_increment + 0.5
+      new_scroll_pos_y = new_scroll_pos_y  / y_scroll_increment + 0.5
       '''
 
       self.Scroll(new_scroll_pos_x, new_scroll_pos_y)
