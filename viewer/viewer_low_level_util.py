@@ -322,6 +322,9 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.mainSizer.Add(self.img_lst_v_sizer, 0, wx.CENTER|wx.ALL, 10)
     self.SetSizer(self.mainSizer)
+
+    self.SetScrollRate(1, 1)
+
     self.SetupScrolling()
 
 
@@ -356,6 +359,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.n_img += 1
 
     self.parent_panel.Pframe.Layout()
+    self.SetScrollRate(1, 1)
+
 
   def OnMouseWheel(self, event):
 
@@ -365,10 +370,20 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     #saving relative position of scrolling area to keep after scrolling
     v_size_x, v_size_y = self.GetVirtualSize()
+    self.Mouse_Pos_x, self.Mouse_Pos_y = event.GetPosition()
 
-    self.x_to_keep, self.y_to_keep = self.GetViewStart()
-    self.x_to_keep = float(self.x_to_keep) / float(v_size_x)
-    self.y_to_keep = float(self.y_to_keep) / float(v_size_y)
+    View_start_x, View_start_y = self.GetViewStart()
+
+    No_longer_needed = '''
+    x_scroll_increment, y_scroll_increment = self.GetScrollPixelsPerUnit()
+    print "x_scroll_increment, y_scroll_increment", x_scroll_increment, y_scroll_increment
+    View_start_x = View_start_x * x_scroll_increment
+    View_start_y = View_start_y * y_scroll_increment
+    '''
+
+    self.x_uni = float( View_start_x + self.Mouse_Pos_x ) / float(v_size_x)
+    self.y_uni = float( View_start_y + self.Mouse_Pos_y ) / float(v_size_y)
+
 
   def img_refresh(self, bmp_lst_new):
 
@@ -378,10 +393,23 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
   def OnIdle(self, event):
     if( self.scroll_rot != 0 ):
+
+      self.SetScrollRate(1, 1)
+
       self.parent_panel.to_re_zoom(self.scroll_rot)
       self.scroll_rot = 0
       v_size_x, v_size_y = self.GetVirtualSize()
-      self.Scroll(self.x_to_keep * v_size_x, self.y_to_keep * v_size_y)
+      new_scroll_pos_x = float(self.x_uni * v_size_x - self.Mouse_Pos_x)
+      new_scroll_pos_y = float(self.y_uni * v_size_y - self.Mouse_Pos_y)
+
+      No_longer_needed = '''
+      x_scroll_increment, y_scroll_increment = self.GetScrollPixelsPerUnit()
+      print "x_scroll_increment, y_scroll_increment", x_scroll_increment, y_scroll_increment
+      new_scroll_pos_x = new_scroll_pos_x  / x_scroll_increment + 0.5
+      new_scroll_pos_x = new_scroll_pos_x  / x_scroll_increment + 0.5
+      '''
+
+      self.Scroll(new_scroll_pos_x, new_scroll_pos_y)
 
 
 class buttons_panel(wx.Panel):
