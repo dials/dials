@@ -48,9 +48,8 @@ def run(args):
     return
 
   integrated_data = reflections[0]
-  experiment_list = convert_to_nexus_beam_direction(experiments)
   dump(
-    experiment_list,
+    experiments,
     integrated_data,
     params.hklout)
 
