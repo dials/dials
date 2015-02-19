@@ -151,6 +151,9 @@ def get_nx_data(handle, path, data):
   handle[path] = data
   return handle[path]
 
+def get_nx_dials(handle, path):
+  return get_nx_class(handle, "NXdials", path)
+
 def dump_beam(entry, beam):
   ''' Export the beam model. '''
   from scitbx import matrix
@@ -670,17 +673,20 @@ def dump(entry, experiments):
     assert(("experiment_%d" % index) not in entry)
     nxmx = entry.create_group("experiment_%d" % index)
     nxmx.attrs['NX_class'] = 'NXsubentry'
-    nxmx['index'] = index
-    nxmx['index'].attrs['source'] = experiment.beam_id
-    nxmx['index'].attrs['detector'] = experiment.detector_id
+
+    # Get the dials specific stuff
+    nx_dials = get_nx_dials(nxmx, "dials")
+    nx_dials['index'] = index
+    nx_dials['index'].attrs['source'] = experiment.beam_id
+    nx_dials['index'].attrs['detector'] = experiment.detector_id
     if experiment.goniometer is not None:
-      nxmx['index'].attrs['goniometer'] = experiment.goniometer_id
+      nx_dials['index'].attrs['goniometer'] = experiment.goniometer_id
     if experiment.scan is not None:
-      nxmx['index'].attrs['scan'] = experiment.scan_id
-    nxmx['index'].attrs['sample'] = experiment.crystal_id
+      nx_dials['index'].attrs['scan'] = experiment.scan_id
+    nx_dials['index'].attrs['sample'] = experiment.crystal_id
 
     # Write out the original orientation (dials specific)
-    imgcif_transform = get_nx_transformations(nxmx, "imgcif_transform")
+    imgcif_transform = get_nx_transformations(nx_dials, "imgcif_transform")
     imgcif_transform['angle'] = -rotations[index][1]
     imgcif_transform['angle'].attrs['transformation_type'] = 'rotation'
     imgcif_transform['angle'].attrs['vector'] = rotations[index][0]
@@ -690,19 +696,19 @@ def dump(entry, experiments):
 
     # Create the imageset template
     if experiment.imageset is None:
-      nxmx['template'] = ""
+      nx_dials['template'] = ""
       if experiment.scan is not None:
-        nxmx['template'].attrs['range'] = experiment.scan.get_image_range()
+        nx_dials['template'].attrs['range'] = experiment.scan.get_image_range()
     else:
       from os.path import abspath
       if isinstance(experiment.imageset, ImageSweep):
         template = abspath(experiment.imageset.get_template())
-        nxmx['template'] = template
-        nxmx['template'].attrs['range'] = experiment.scan.get_image_range()
+        nx_dials['template'] = template
+        nx_dials['template'].attrs['range'] = experiment.scan.get_image_range()
       else:
         template = [abspath(experiment.imageset.get_path(i)) for i in
                     range(len(experiment.imageset))]
-        nxmx['template'] = template
+        nx_dials['template'] = template
 
     # Create the definition
     definition = nxmx.create_dataset('definition', data='NXmx')
@@ -752,7 +758,7 @@ def load(entry):
   # Find all the experiments
   entries = find_nx_mx_entries(entry, ".")
   if len(entries) > 1:
-    entries = sorted(entries, key=lambda x: x['index'].value)
+    entries = sorted(entries, key=lambda x: x['dials/index'].value)
 
   index = []
   rotations = []
@@ -763,22 +769,25 @@ def load(entry):
     assert(definition.value == 'NXmx')
     assert(definition.attrs['version'] == 1)
 
-    b = nxmx['index'].attrs['source']
-    d = nxmx['index'].attrs['detector']
-    if "goniometer" in nxmx['index'].attrs:
-      g = nxmx['index'].attrs['goniometer']
+    # Get dials specific stuff
+    nx_dials = get_nx_dials(nxmx, "dials")
+
+    # Set index
+    b = nx_dials['index'].attrs['source']
+    d = nx_dials['index'].attrs['detector']
+    if "goniometer" in nx_dials['index'].attrs:
+      g = nx_dials['index'].attrs['goniometer']
     else:
       g = None
-    if "scan" in nxmx['index'].attrs:
-      s = nxmx['index'].attrs['scan']
+    if "scan" in nx_dials['index'].attrs:
+      s = nx_dials['index'].attrs['scan']
     else:
       s = None
-    c = nxmx['index'].attrs['sample']
+    c = nx_dials['index'].attrs['sample']
     index.append((b, d, g, s, c))
 
     # Get the original orientation (dials specific)
-    imgcif_transform = get_nx_transformations(nxmx,
-                                                    "imgcif_transform")
+    imgcif_transform = get_nx_transformations(nx_dials,  "imgcif_transform")
     angle = imgcif_transform['angle'].value
     assert(imgcif_transform['angle'].attrs['transformation_type'] == 'rotation')
     axis = imgcif_transform['angle'].attrs['vector']
@@ -789,14 +798,14 @@ def load(entry):
 
     # Get the tmeplate and imageset
     try:
-      template = list(nxmx['template'])
+      template = list(nx_dials['template'])
       image_range = None
     except Exception:
-      template = nxmx['template'].value
+      template = nx_dials['template'].value
       if template == "":
         template = None
-      if "range" in nxmx['template'].attrs:
-        image_range = nxmx['template'].attrs['range']
+      if "range" in nx_dials['template'].attrs:
+        image_range = nx_dials['template'].attrs['range']
       else:
         image_range = None
 
