@@ -10,56 +10,79 @@ from __future__ import division
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/applications/NXmx.nxdl.xml'
 
 def convert_to_nexus_beam_direction(experiments):
-  from dxtbx.model import Detector
-  from dxtbx.model import Goniometer
-  from dxtbx.model.crystal import crystal_model as Crystal
   from collections import defaultdict
   from scitbx import matrix
   from math import acos
+  from copy import deepcopy
 
   EPS = 1e-7
 
   zaxis = matrix.col((0, 0, -1))
 
-  # Find the beam direction each object depends on
-  objects = defaultdict(list)
-  for exp in experiments:
-    objects[exp.detector].append(exp.beam)
-    objects[exp.goniometer].append(exp.beam)
-    objects[exp.crystal].append(exp.beam)
+  class Dummy:
+    pass
+  experiments2 = []
 
-  # Ensure that objects which are shared have beam in same direction
-  # Compute axis and angle needed to rotate vectors and apply rotation
-  for key, value in objects.iteritems():
-    value = list(set(value))
-    d1 = matrix.col(value[0].get_direction()).normalize()
-    angle = acos(d1.dot(zaxis))
-    if abs(angle) < EPS:
-      continue
-    axis = d1.cross(zaxis).normalize()
-    for v in value:
-      if abs(matrix.col(v.get_direction()).angle(d1)) > EPS:
-        raise RuntimeError('''
-          Error converting to nexus beam direction.
-           Shared models depend on different beam directions
-        ''')
-    if key is not None:
-      key.rotate_around_origin(axis, angle, deg=False)
+  # Save the sharedness as the id
+  for exp in experiments:
+    exp.beam_id = id(exp.beam)
+    exp.detector_id = id(exp.detector)
+    exp.goniometer_id = id(exp.goniometer)
+    exp.scan_id = id(exp.scan)
+    exp.crystal_id = id(exp.crystal)
+    exp2 = Dummy()
+    exp2.beam_id = id(exp.beam)
+    exp2.detector_id = id(exp.detector)
+    exp2.goniometer_id = id(exp.goniometer)
+    exp2.scan_id = id(exp.scan)
+    exp2.crystal_id = id(exp.crystal)
+    experiments2.append(exp2)
+
+  # Copy all models
+  for exp, exp2 in zip(experiments, experiments2):
+    exp2.beam = deepcopy(exp.beam)
+    exp2.detector = deepcopy(exp.detector)
+    exp2.goniometer = deepcopy(exp.goniometer)
+    exp2.scan = deepcopy(exp.scan)
+    exp2.crystal = deepcopy(exp.crystal)
+    exp2.imageset = exp.imageset
+  experiments = experiments2
 
   # Rotate the beams
+  rotations = []
   for exp in experiments:
     d = matrix.col(exp.beam.get_direction()).normalize()
-    angle = acos(d.dot(zaxis))
+    angle = d.angle(zaxis, deg=False)
     if abs(angle) < EPS:
+      rotations.append(((0, 0, 0), 0))
       continue
     axis = d.cross(zaxis).normalize()
     exp.beam.rotate_around_origin(axis, angle, deg=False)
+    exp.detector.rotate_around_origin(axis, angle, deg=False)
+    if exp.goniometer:
+      exp.goniometer.rotate_around_origin(axis, angle, deg=False)
+    exp.crystal.rotate_around_origin(axis, angle, deg=False)
     d = matrix.col(exp.beam.get_direction())
     assert(abs(d.angle(zaxis)) < EPS)
+    rotations.append((axis, angle))
 
   # Return converted experiments
-  return experiments
+  return experiments, rotations
 
+def convert_from_nexus_beam_direction(experiments, rotations):
+  from scitbx import matrix
+  EPS = 1e-7
+
+  zaxis = matrix.col((0, 0, -1))
+  for exp, (axis, angle) in zip(experiments, rotations):
+    d = matrix.col(exp.beam.get_direction()).normalize()
+    assert(abs(d.angle(zaxis)) < EPS)
+    exp.beam.rotate_around_origin(axis, angle, deg=False)
+    exp.detector.rotate_around_origin(axis, angle, deg=False)
+    if exp.goniometer:
+      exp.goniometer.rotate_around_origin(axis, angle, deg=False)
+    exp.crystal.rotate_around_origin(axis, angle, deg=False)
+  return experiments
 
 def polarization_normal_to_stokes(n, p):
   from math import sin, cos, atan2, pi
@@ -237,7 +260,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
     nx_module['module_offset'].attrs['vector'] = origin.normalize()
 
     # The path for items below
-    module_offset_path = nx_module['module_offset'].name
+    module_offset_path = str(nx_module['module_offset'].name)
 
     # Write the fast pixel direction
     nx_module['fast_pixel_direction'] = pixel_size[0]
@@ -282,14 +305,14 @@ def dump_goniometer(entry, goniometer, scan):
   q = r.r3_rotation_matrix_as_unit_quaternion()
   angle, axis = q.unit_quaternion_as_axis_and_angle()
   nx_transformations['fixed_rotation'] = angle
-  nx_transformations['fixed_rotation'].attrs['depends_on'] = nx_transformations['setting_rotation'].name
+  nx_transformations['fixed_rotation'].attrs['depends_on'] = str(nx_transformations['setting_rotation'].name)
   nx_transformations['fixed_rotation'].attrs['transformation_type'] = 'rotation'
   nx_transformations['fixed_rotation'].attrs['offset_units'] = 'mm'
   nx_transformations['fixed_rotation'].attrs['offset'] = (0.0, 0.0, 0.0)
   nx_transformations['fixed_rotation'].attrs['vector'] = axis
 
   nx_transformations['phi'] = phi
-  nx_transformations['phi'].attrs['depends_on'] = nx_transformations['fixed_rotation'].name
+  nx_transformations['phi'].attrs['depends_on'] = str(nx_transformations['fixed_rotation'].name)
   nx_transformations['phi'].attrs['transformation_type'] = 'rotation'
   nx_transformations['phi'].attrs['offset_units'] = 'mm'
   nx_transformations['phi'].attrs['offset'] = (0.0, 0.0, 0.0)
@@ -355,7 +378,7 @@ def dump_crystal(entry, crystal, scan):
 
   # Set depends on
   if scan is not None:
-    nx_sample['depends_on'] = nx_sample['transformations/phi'].name
+    nx_sample['depends_on'] = str(nx_sample['transformations/phi'].name)
   else:
     nx_sample['depends_on'] = '.'
 
@@ -622,6 +645,9 @@ def dump(entry, experiments):
   from dials.array_family import flex
   from dxtbx.imageset import ImageSet, ImageSweep
 
+  # Rotate the experiments such that beam direction is along (0, 0, -1)
+  experiments, rotations = convert_to_nexus_beam_direction(experiments)
+
   # Add the feature
   if "features" in entry:
     features = entry['features']
@@ -645,14 +671,24 @@ def dump(entry, experiments):
     nxmx = entry.create_group("experiment_%d" % index)
     nxmx.attrs['NX_class'] = 'NXsubentry'
     nxmx['index'] = index
-    nxmx['index'].attrs['source'] = id(experiment.beam)
-    nxmx['index'].attrs['detector'] = id(experiment.detector)
+    nxmx['index'].attrs['source'] = experiment.beam_id
+    nxmx['index'].attrs['detector'] = experiment.detector_id
     if experiment.goniometer is not None:
-      nxmx['index'].attrs['goniometer'] = id(experiment.goniometer)
+      nxmx['index'].attrs['goniometer'] = experiment.goniometer_id
     if experiment.scan is not None:
-      nxmx['index'].attrs['scan'] = id(experiment.scan)
-    nxmx['index'].attrs['sample'] = id(experiment.crystal)
+      nxmx['index'].attrs['scan'] = experiment.scan_id
+    nxmx['index'].attrs['sample'] = experiment.crystal_id
 
+    # Write out the original orientation (dials specific)
+    imgcif_transform = get_nx_transformations(nxmx, "imgcif_transform")
+    imgcif_transform['angle'] = -rotations[index][1]
+    imgcif_transform['angle'].attrs['transformation_type'] = 'rotation'
+    imgcif_transform['angle'].attrs['vector'] = rotations[index][0]
+    imgcif_transform['angle'].attrs['offset'] = (0, 0, 0)
+    imgcif_transform['angle'].attrs['offset_units'] = 'mm'
+    imgcif_transform['angle'].attrs['depends_on'] = '.'
+
+    # Create the imageset template
     if experiment.imageset is None:
       nxmx['template'] = ""
       if experiment.scan is not None:
@@ -719,7 +755,7 @@ def load(entry):
     entries = sorted(entries, key=lambda x: x['index'].value)
 
   index = []
-
+  rotations = []
   for nxmx in entries:
 
     # Get the definition
@@ -739,6 +775,17 @@ def load(entry):
       s = None
     c = nxmx['index'].attrs['sample']
     index.append((b, d, g, s, c))
+
+    # Get the original orientation (dials specific)
+    imgcif_transform = get_nx_transformations(nxmx,
+                                                    "imgcif_transform")
+    angle = imgcif_transform['angle'].value
+    assert(imgcif_transform['angle'].attrs['transformation_type'] == 'rotation')
+    axis = imgcif_transform['angle'].attrs['vector']
+    assert(tuple(imgcif_transform['angle'].attrs['offset']) == (0, 0, 0))
+    assert(imgcif_transform['angle'].attrs['offset_units'] == 'mm')
+    assert(imgcif_transform['angle'].attrs['depends_on'] == '.')
+    rotations.append((axis, angle))
 
     # Get the tmeplate and imageset
     try:
@@ -771,6 +818,9 @@ def load(entry):
 
     # Return the experiment list
     experiment_list.append(experiment)
+
+  # Convert from nexus beam direction
+  experiment_list = convert_from_nexus_beam_direction(experiment_list,rotations)
 
   from collections import defaultdict
   beam = defaultdict(list)

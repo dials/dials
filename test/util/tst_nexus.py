@@ -20,9 +20,6 @@ def run():
   experiments1 = ExperimentListFactory.from_json_file(
     join(path, "refined_experiments.json"))
 
-  # Make sure beam direction is along (0, 0, 1)
-  experiments1 = convert_to_nexus_beam_direction(experiments1)
-
   # Read the reflections
   reflections1 = flex.reflection_table.from_pickle(
     join(path, "integrated.pickle"))

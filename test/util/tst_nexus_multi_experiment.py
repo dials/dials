@@ -202,7 +202,6 @@ def run():
     filename_in = join(path, "%s.json" % filename)
     filename_out = "%s.nxs" % filename
     experiments = ExperimentListFactory.from_json_file(filename_in)
-    experiments = convert_to_nexus_beam_direction(experiments)
     run_single(experiments, filename_out)
 
 if __name__ == '__main__':
