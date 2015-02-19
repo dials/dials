@@ -182,7 +182,6 @@ def run_single(experiments1, filename):
 def run():
   from dxtbx.model.experiment.experiment_list import ExperimentListFactory
   from os.path import join
-  from dials.util.nexus.nx_mx import convert_to_nexus_beam_direction
   import libtbx.load_env
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')

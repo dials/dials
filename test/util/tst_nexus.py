@@ -8,7 +8,6 @@ def run():
   from dials.array_family import flex
   from os.path import join
   import libtbx.load_env
-  from dials.util.nexus.nx_mx import convert_to_nexus_beam_direction
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
   except KeyError, e:
