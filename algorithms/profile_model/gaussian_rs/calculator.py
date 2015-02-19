@@ -294,6 +294,7 @@ class ScanVaryingProfileModelCalculator(object):
   def __init__(self, experiment, reflections, min_zeta=0.05):
     ''' Calculate the profile model. '''
     from logging import info
+    from copy import deepcopy
 
     # Check input has what we want
     assert(experiment is not None)
@@ -316,6 +317,11 @@ class ScanVaryingProfileModelCalculator(object):
       mask = flex.abs(zeta) < min_zeta
       reflections.del_selected(mask)
       info(' selected %d reflections' % len(reflections))
+
+    # Get the partial indices
+    reflections = deepcopy(reflections).split_partials()
+    print indices
+    1/0
 
     # Calculate the E.S.D of the beam divergence
     info('Calculating E.S.D Beam Divergence.')

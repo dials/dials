@@ -17,9 +17,9 @@ class Factory(object):
   '''
 
   @classmethod
-  def compute_single(cls, 
-                     experiment, 
-                     reflections, 
+  def compute_single(cls,
+                     experiment,
+                     reflections,
                      min_zeta=0.05,
                      scan_varying=False):
     '''
@@ -36,8 +36,8 @@ class Factory(object):
       import ProfileModelCalculator
     from dials.algorithms.profile_model.gaussian_rs.calculator \
       import ScanVaryingProfileModelCalculator
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
-    from dials.algorithms.profile_model.gaussian_rs import ScanVaryingProfileModel
+    from dials.algorithms.profile_model.gaussian_rs.model import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs.model import ScanVaryingProfileModel
     if not scan_varying:
       calculator = ProfileModelCalculator(experiment, reflections, min_zeta)
       n_sigma = 3
@@ -81,7 +81,7 @@ class Factory(object):
 
     # Compute the profile models
     min_zeta = params.gaussian_rs.filter.min_zeta
-    scan_varying = params.gaurssian_rs.scan_varying
+    scan_varying = params.gaussian_rs.scan_varying
     profile_model_list = ProfileModelList()
     for exp, ref in zip(experiments, reflections_split):
       model = Factory.compute_single(exp, ref, min_zeta, scan_varying)
@@ -102,8 +102,8 @@ class Factory(object):
 
     '''
     from dials.algorithms.profile_model.model_list import ProfileModelList
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
-    from dials.algorithms.profile_model.gaussian_rs import ScanVaryingProfileModel
+    from dials.algorithms.profile_model.gaussian_rs.model import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs.model import ScanVaryingProfileModel
     from dials.array_family import flex
     from math import pi
     dtor = pi / 180.0

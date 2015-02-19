@@ -197,6 +197,7 @@ class ProfileModel(ProfileModelIface):
         self.sigma_m(deg=True))
     return factory.phil_scope.fetch(source=parse(phil_str))
 
+
 class ScanVaryingProfileModel(ProfileModelIface):
   ''' A class to encapsulate the profile model. '''
 
