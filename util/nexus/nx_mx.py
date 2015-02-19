@@ -480,7 +480,7 @@ def load_detector(entry):
     origin = offset_vector * offset_length
 
     # Write the fast pixel direction
-    module_offset_path = module['module_offset'].name
+    module_offset_path = str(module['module_offset'].name)
     pixel_size_x = module['fast_pixel_direction'].value
     assert(module['fast_pixel_direction'].attrs['depends_on'] == module_offset_path)
     assert(module['fast_pixel_direction'].attrs['transformation_type'] == 'translation')
@@ -522,14 +522,14 @@ def load_goniometer(entry):
   except Exception:
     return None
   assert(transformations['phi'].attrs['depends_on'] ==
-         transformations['fixed_rotation'].name)
+         str(transformations['fixed_rotation'].name))
   assert(transformations['phi'].attrs['transformation_type'] == 'rotation')
   assert(transformations['phi'].attrs['offset_units'] == 'mm')
   assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
   rotation_axis = tuple(transformations['phi'].attrs['vector'])
 
   assert(transformations['fixed_rotation'].attrs['depends_on'] ==
-         transformations['setting_rotation'].name)
+         str(transformations['setting_rotation'].name))
   assert(transformations['fixed_rotation'].attrs['transformation_type'] == 'rotation')
   assert(transformations['fixed_rotation'].attrs['offset_units'] == 'mm')
   assert(tuple(transformations['phi'].attrs['offset']) == (0, 0, 0))
@@ -584,7 +584,7 @@ def load_crystal(entry):
 
   # Get depends on
   if nx_sample['depends_on'].value != '.':
-    assert(nx_sample['depends_on'].value == nx_sample['transformations/phi'].name)
+    assert(nx_sample['depends_on'].value == str(nx_sample['transformations/phi'].name))
 
   # Read the average unit cell data
   average_unit_cell = flex.double(numpy.array(nx_sample['average_unit_cell']))
