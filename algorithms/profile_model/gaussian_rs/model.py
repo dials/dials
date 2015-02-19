@@ -213,6 +213,7 @@ class ScanVaryingProfileModel(ProfileModelIface):
     assert(self._n_sigma > 0)
     assert(self._sigma_b.all_gt(0))
     assert(self._sigma_m.all_gt(0))
+    assert(len(self._sigma_b) == len(self._sigma_m))
 
   def sigma_b(self, index=None, deg=True):
     ''' Return sigma_b. '''

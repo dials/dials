@@ -287,3 +287,59 @@ class ProfileModelCalculator(object):
   def sigma_m(self):
     ''' Return the E.S.D reflecting range. '''
     return self._sigma_m
+
+class ScanVaryingProfileModelCalculator(object):
+  ''' Class to help calculate the profile model. '''
+
+  def __init__(self, experiment, reflections, min_zeta=0.05):
+    ''' Calculate the profile model. '''
+    from logging import info
+
+    # Check input has what we want
+    assert(experiment is not None)
+    assert(reflections is not None)
+    assert("miller_index" in reflections)
+    assert("s1" in reflections)
+    assert("shoebox" in reflections)
+    assert("xyzobs.px.value" in reflections)
+    assert("xyzcal.mm" in reflections)
+
+    # Compute the zeta factory and filter based on zeta
+    if experiment.goniometer is not None:
+      zeta = reflections.compute_zeta(experiment)
+
+      # Filter based on zeta value
+      info('Filtering reflections with zeta < %g' % min_zeta)
+      info(' using %d reflections' % len(reflections))
+
+      from scitbx.array_family import flex
+      mask = flex.abs(zeta) < min_zeta
+      reflections.del_selected(mask)
+      info(' selected %d reflections' % len(reflections))
+
+    # Calculate the E.S.D of the beam divergence
+    info('Calculating E.S.D Beam Divergence.')
+    beam_divergence = ComputeEsdBeamDivergence(experiment.detector, reflections)
+
+    # Set the sigma b
+    self._sigma_b = beam_divergence.sigma()
+
+    # FIXME Calculate properly
+    if experiment.goniometer is None or experiment.scan is None:
+      self._sigma_m = 0.00001
+    else:
+
+      # Calculate the E.S.D of the reflecting range
+      info('Calculating E.S.D Reflecting Range.')
+      reflecting_range = ComputeEsdReflectingRange(experiment, reflections)
+
+      # Set the sigmas
+      self._sigma_m = reflecting_range.sigma()
+
+  def sigma_b(self):
+    ''' Return the E.S.D beam divergence. '''
+    return self._sigma_b
+
+  def sigma_m(self):
+    ''' Return the E.S.D reflecting range. '''
+    return self._sigma_m
