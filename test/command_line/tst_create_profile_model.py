@@ -17,6 +17,8 @@ class Test(object):
   def run(self):
     from os.path import join
     from libtbx import easy_run
+    from dials.algorithms.profile_model.factory import phil_scope
+    from libtbx.phil import parse
 
     # Call dials.create_profile_model
     easy_run.fully_buffered([
@@ -26,12 +28,12 @@ class Test(object):
     ]).raise_if_errors()
 
     with open('profile.phil', 'r') as infile:
-      for line in infile.readlines():
-        tokens = line.split("=")
-        if "sigma_b" in tokens[0]:
-          sigma_b = float(tokens[1])
-        if "sigma_m" in tokens[0]:
-          sigma_m = float(tokens[1])
+      text = '\n'.join(infile.readlines())
+      params = phil_scope.fetch(parse(text)).extract()
+      assert(params.profile.gaussian_rs.scan_varying == False)
+      assert(len(params.profile.gaussian_rs.model) == 1)
+      sigma_b = params.profile.gaussian_rs.model[0].sigma_b
+      sigma_m = params.profile.gaussian_rs.model[0].sigma_m
       eps = 1e-6
       assert(abs(sigma_b - 0.02262206634) < eps)
       assert(abs(sigma_m - 0.0774177) < eps)
