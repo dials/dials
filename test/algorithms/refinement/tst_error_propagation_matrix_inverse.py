@@ -14,7 +14,7 @@ from scitbx import matrix
 from scitbx.array_family import flex
 import random
 from dials.algorithms.refinement.refinement_helpers import \
-  covariances_of_matrix_inverse
+  matrix_inverse_error_propagation
 
 """Implementation of the propagation of errors formula for matrix inversion
 given in Lefebvre et al. (1999) http://arxiv.org/abs/hep-ex/9909031. As in
@@ -126,7 +126,7 @@ def test_lefebvre():
   # Now analytical formula
   cov_mat = flex.double(flex.grid(4, 4), 0.0)
   cov_mat.matrix_diagonal_set_in_place(flex.double([e**2 for e in sig_mat]))
-  cov_inv_mat = covariances_of_matrix_inverse(mat, cov_mat)
+  cov_inv_mat = matrix_inverse_error_propagation(mat, cov_mat)
 
   # Get fractional differences
   frac = (cov_inv_mat_MC - cov_inv_mat) / cov_inv_mat_MC
@@ -167,7 +167,7 @@ def test_B_matrix():
   cov_B.matrix_diagonal_set_in_place(flex.double([e**2 for e in sig_B]))
 
   # Now can use the analytical formula
-  cov_invB = covariances_of_matrix_inverse(Bmat, cov_B)
+  cov_invB = matrix_inverse_error_propagation(Bmat, cov_B)
 
   # Get fractional differences
   frac = flex.double(flex.grid(n**2, n**2), 0.0)
