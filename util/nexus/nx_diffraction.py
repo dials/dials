@@ -8,7 +8,7 @@ def make_dataset(handle, name, dtype, data, description):
     name,
     (len(data),),
     dtype=dtype,
-    data=data.as_numpy_array())
+    data=data.as_numpy_array().astype(dtype))
   dset.attrs['description'] = description
   return dset
 
@@ -172,20 +172,20 @@ def write(handle, key, data):
 def read(handle, key):
   from dials.array_family import flex
   if   key == 'miller_index':
-    h = flex.int(handle['h'][:])
-    k = flex.int(handle['k'][:])
-    l = flex.int(handle['l'][:])
+    h = flex.int(list(handle['h'][:]))
+    k = flex.int(list(handle['k'][:]))
+    l = flex.int(list(handle['l'][:]))
     return flex.miller_index(h,k,l)
   elif key == 'id':
-    return flex.size_t(map(int,handle['id'][:]))
+    return flex.size_t(map(int,list(handle['id'][:])))
   elif key == 'partial_id':
-    return flex.size_t(map(int,handle['reflection_id'][:]))
+    return flex.size_t(map(int,list(handle['reflection_id'][:])))
   elif key == 'entering':
-    return flex.bool(map(bool,handle['entering'][:]))
+    return flex.bool(map(bool,list(handle['entering'][:])))
   elif key == 'flags':
-    return flex.size_t(map(int,handle['flags'][:]))
+    return flex.size_t(map(int,list(handle['flags'][:])))
   elif key == 'panel':
-    return flex.size_t(map(int,handle['det_module'][:]))
+    return flex.size_t(map(int,list(handle['det_module'][:])))
   elif key == 'd':
     return flex.double(handle['d'][:])
   elif key == 'partiality':
@@ -201,12 +201,12 @@ def read(handle, key):
     z = flex.double(handle['prd_phi'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'bbox':
-    x0 = flex.int(handle['bbx0'][:])
-    x1 = flex.int(handle['bbx1'][:])
-    y0 = flex.int(handle['bby0'][:])
-    y1 = flex.int(handle['bby1'][:])
-    z0 = flex.int(handle['bbz0'][:])
-    z1 = flex.int(handle['bbz1'][:])
+    x0 = flex.int(list(handle['bbx0'][:]))
+    x1 = flex.int(list(handle['bbx1'][:]))
+    y0 = flex.int(list(handle['bby0'][:]))
+    y1 = flex.int(list(handle['bby1'][:]))
+    z0 = flex.int(list(handle['bbz0'][:]))
+    z1 = flex.int(list(handle['bbz1'][:]))
     return flex.int6(x0, x1, y0, y1, z0, z1)
   elif key == 'xyzobs.px.value':
     x = flex.double(handle['obs_px_x_val'][:])
