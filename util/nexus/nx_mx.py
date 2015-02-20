@@ -399,33 +399,37 @@ def dump_details(entry):
   nx_process['version'] = 1
   nx_process['date'] = strftime('%Y-%m-%dT%H:%M:%S')
 
-  nx_note = get_nx_note(nx_process, '0_spot_finding')
+  nx_note = get_nx_note(nx_process, 'spot_finding')
   nx_note['author'] = 'dials.find_spots'
   nx_note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
   nx_note['type'] = 'text/plain'
   nx_note['description'] = 'Spot finding parameters'
   nx_note['data'] = 'dials.find_spots datablock.json'
+  nx_note['sequence_index'] = 0
 
-  nx_note = get_nx_note(nx_process, '1_indexing')
+  nx_note = get_nx_note(nx_process, 'indexing')
   nx_note['author'] = 'dials.index'
   nx_note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
   nx_note['type'] = 'text/plain'
   nx_note['description'] = 'Indexing parameters'
   nx_note['data'] = 'dials.index datablock.json strong.pickle'
+  nx_note['sequence_index'] = 1
 
-  nx_note = get_nx_note(nx_process, '2_refinement')
+  nx_note = get_nx_note(nx_process, 'refinement')
   nx_note['author'] = 'dials.refine'
   nx_note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
   nx_note['type'] = 'text/plain'
   nx_note['description'] = 'Refinement parameters'
   nx_note['data'] = 'dials.refine experiments.json indexed.pickle'
+  nx_note['sequence_index'] = 2
 
-  nx_note = get_nx_note(nx_process, '3_integration')
+  nx_note = get_nx_note(nx_process, 'integration')
   nx_note['author'] = 'dials.integrate'
   nx_note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
   nx_note['type'] = 'text/plain'
   nx_note['description'] = 'Integration parameters'
   nx_note['data'] = 'dials.integrate refined_experiments.json indexed.pickle'
+  nx_note['sequence_index'] = 3
 
 def load_beam(entry):
   from dxtbx.model import Beam
