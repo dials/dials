@@ -27,7 +27,7 @@ class SimpleBackgroundExt(BackgroundIface):
       outlier
         .help = "Outlier rejection prior to background fit"
       {
-        algorithm = null *nsigma truncated normal mosflm
+        algorithm = null *nsigma truncated normal mosflm tukey
           .help = "The outlier rejection algorithm."
           .type = choice
 
@@ -80,6 +80,18 @@ class SimpleBackgroundExt(BackgroundIface):
                     "to use in rejecting outliers from background calculation."
             .type = float
         }
+
+        tukey
+          .help = "Parameters for tukey outlier rejector"
+          .expert_level = 1
+        {
+          lower = 1.5
+            .help = "Lower IQR multiplier"
+            .type = float
+          upper = 1.5
+            .help = "Upper IQR multiplier"
+            .type = float
+        }
       }
 
       model
@@ -130,6 +142,9 @@ class SimpleBackgroundExt(BackgroundIface):
     elif params.outlier.algorithm == 'mosflm':
       kwargs['fraction'] = params.outlier.mosflm.fraction
       kwargs['n_sigma'] = params.outlier.mosflm.n_sigma
+    elif params.outlier.algorithm == 'tukey':
+      kwargs['lower'] = params.outlier.tukey.lower
+      kwargs['upper'] = params.outlier.tukey.upper
 
     # Create the algorithm
     self._algorithm = BackgroundAlgorithm(experiments, **kwargs)

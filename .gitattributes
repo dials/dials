@@ -21,6 +21,7 @@ algorithms/background/simple/normal_outlier_rejector.h -text
 algorithms/background/simple/nsigma_outlier_rejector.h -text
 algorithms/background/simple/outlier_rejector.h -text
 algorithms/background/simple/truncated_outlier_rejector.h -text
+algorithms/background/simple/tukey_outlier_rejector.h -text
 algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text
 algorithms/background_lookup/detector_noise.py -text

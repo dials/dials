@@ -15,6 +15,7 @@
 #include <dials/algorithms/background/simple/truncated_outlier_rejector.h>
 #include <dials/algorithms/background/simple/nsigma_outlier_rejector.h>
 #include <dials/algorithms/background/simple/mosflm_outlier_rejector.h>
+#include <dials/algorithms/background/simple/tukey_outlier_rejector.h>
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {
@@ -88,6 +89,13 @@ namespace dials { namespace algorithms { namespace background {
       .def(init<double, double>((
         boost::python::arg("fraction")=1.0,
         boost::python::arg("n_sigma")=3)));
+
+    class_<TukeyOutlierRejector, bases<OutlierRejector> >(
+        "TukeyOutlierRejector", no_init)
+      .def(init<double,double>((
+        boost::python::arg("lower") = 1.5,
+        boost::python::arg("upper") = 1.5)));
+
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python

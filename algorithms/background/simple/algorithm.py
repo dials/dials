@@ -31,6 +31,7 @@ class BackgroundAlgorithm(object):
     from dials.algorithms.background.simple import NSigmaOutlierRejector
     from dials.algorithms.background.simple import NormalOutlierRejector
     from dials.algorithms.background.simple import MosflmOutlierRejector
+    from dials.algorithms.background.simple import TukeyOutlierRejector
     from dials.algorithms.background.simple import Constant2dModeller
     from dials.algorithms.background.simple import Constant3dModeller
     from dials.algorithms.background.simple import Linear2dModeller
@@ -65,6 +66,10 @@ class BackgroundAlgorithm(object):
         return MosflmOutlierRejector(
           kwargs.get("fraction", 1.0),
           kwargs.get("n_sigma", 4.0))
+      elif outlier == 'tukey':
+        return TukeyOutlierRejector(
+          kwargs.get("lower", 1.5),
+          kwargs.get("upper", 1.5))
       raise RuntimeError("Unexpected outlier rejector %s" % outlier.algorithm)
 
     modeller = select_modeller()
