@@ -70,7 +70,7 @@ namespace dials { namespace algorithms { namespace background {
       DIALS_ASSERT(q1i < mid && mid < q3i && q3i < data.size());
       double q1 = data[q1i];
       double q3 = data[q3i];
-      DIALS_ASSERT(q3 > q1);
+      DIALS_ASSERT(q3 >= q1);
       double iqr = q3 - q1;
       double lower_bound = q1 - lower_ * iqr;
       double upper_bound = q3 + upper_ * iqr;
