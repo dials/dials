@@ -124,6 +124,14 @@ def calc_analytical_covariances(mat, cov_mat):
     for beta in range(n):
       for a in range(n):
         for b in range(n):
+
+          # index into inv_cov_mat after flattening inv_mat
+          u = alpha * n + beta
+          v = a * n + b
+          # skip elements in the lower triangle
+          if v < u: continue
+
+          # The element u,v of the result is the calculation
           # cov(m^-1[alpha, beta], m^-1[a, b])
           elt = 0.0
           for i in range(n):
@@ -136,10 +144,9 @@ def calc_analytical_covariances(mat, cov_mat):
                   elt += inv_mat[alpha, i] * inv_mat[j, beta] * \
                        inv_mat[a, k] * inv_mat[l, b] * \
                        cov_mat[x, y]
-          # index into inv_cov_mat after flattening inv_mat
-          x = alpha * n + beta
-          y = a * n + b
-          inv_cov_mat[x, y] = elt
+          inv_cov_mat[u, v] = elt
+
+  inv_cov_mat.matrix_copy_upper_to_lower_triangle_in_place()
   return inv_cov_mat
 
 
@@ -154,7 +161,8 @@ def test_lefebvre():
   inv_p_mats = [m.inverse() for m in p_mats]
 
   # Here use the more exact formula for population covariance as we know the
-  # expected means
+  # true means rather than sample covariance where we calculate the means
+  # from the data
   cov_inv_mat_MC = calc_monte_carlo_population_covariances(inv_p_mats,
     mean_matrix=mat.inverse())
 
@@ -163,10 +171,15 @@ def test_lefebvre():
   cov_mat.matrix_diagonal_set_in_place(flex.double([e**2 for e in sig_mat]))
   cov_inv_mat = calc_analytical_covariances(mat, cov_mat)
 
+  # Get fractional differences
   frac = (cov_inv_mat_MC - cov_inv_mat) / cov_inv_mat_MC
 
-  # assert all fractional errors are within 5%
-  assert all([e < 0.05 for e in frac])
+  # assert all fractional errors are within 5%. When the random seed is allowed
+  # to vary this fails about 7 times in every 100 runs. This is mainly due to
+  # the random variation in the MC method itself, as with just 10000 samples
+  # one MC estimate compared to another MC estimate regularly has some
+  # fractional errors greater than 5%.
+  assert all([abs(e) < 0.05 for e in frac])
 
   return
 
@@ -186,11 +199,7 @@ def test_B_matrix():
   # sigma of 1% of the element value
   perturbed_Bmats = [perturb_mat(Bmat, fraction_sd=0.01) for i in range(10000)]
   invBs = [m.inverse() for m in perturbed_Bmats]
-  #cov_invB = calc_monte_carlo_covariances(invBs)
   cov_invB_MC = calc_monte_carlo_population_covariances(invBs, inv_Bmat)
-
-  print "Monte Carlo"
-  print cov_invB_MC.as_scitbx_matrix()
 
   # Now calculate using the analytical formula. First need the covariance
   # matrix of B itself. This is the diagonal matrix of errors applied in the
@@ -203,13 +212,30 @@ def test_B_matrix():
   # Now can use the analytical formula
   cov_invB = calc_analytical_covariances(Bmat, cov_B)
 
-  print "Analytical"
-  print cov_invB.as_scitbx_matrix()
+  # Get fractional differences
+  frac = flex.double(flex.grid(n**2, n**2), 0.0)
+  for i in range(frac.all()[0]):
+    for j in range(frac.all()[1]):
+      e1 = cov_invB_MC[i,j]
+      e2 = cov_invB[i,j]
+      if e1 < 1e-10: continue # avoid divide-by-zero errors below
+      if e2 < 1e-10: continue # avoid elements that are supposed to be zero
+      frac[i,j] = (e1 - e2) / e1
+
+  # assert all fractional errors are within 5%
+  assert all([abs(e) < 0.05 for e in frac])
+
+  return
 
 if __name__ == '__main__':
 
+  # set random seet to avoid rare test failures
+  random.seed(42)
+
+  # run the Lefebvre paper test
   test_lefebvre()
   print "OK"
 
+  # run a similar test for a B matrix
   test_B_matrix()
   print "OK"
