@@ -820,4 +820,7 @@ class SpotFinderFactory(object):
       return filename_or_data
 
     # Read the image and return the image data
-    return pickle.load(open(filename_or_data))
+    image = pickle.load(open(filename_or_data))
+    if not isinstance(image, tuple):
+      image = (image,)
+    return image

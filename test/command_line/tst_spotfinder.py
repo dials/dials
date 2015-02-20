@@ -53,6 +53,29 @@ def exercise_spotfinder():
     assert len(reflections) == 679, len(reflections)
   print 'OK'
 
+  # Now with a user defined mask
+  template = glob(os.path.join(data_dir, "centroid*.cbf"))
+  args = ["dials.find_spots", ' '.join(template), "output.reflections=spotfinder.pickle",
+          "output.shoeboxes=True",
+          "lookup.mask=%s" % os.path.join(data_dir, "mask.pickle")]
+  result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
+  assert os.path.exists("spotfinder.pickle")
+  with open("spotfinder.pickle", "rb") as f:
+    reflections = pickle.load(f)
+    from dxtbx.datablock import DataBlockFactory
+    datablocks = DataBlockFactory.from_json_file(os.path.join(data_dir,
+                                                              "datablock.json"))
+    assert(len(datablocks) == 1)
+    imageset = datablocks[0].extract_imagesets()[0]
+    detector = imageset.get_detector()
+    beam = imageset.get_beam()
+    for x, y, z in reflections['xyzobs.px.value']:
+      d = detector[0].get_resolution_at_pixel(beam.get_s0(), (x, y))
+      assert(d >= 3)
+
+  print 'OK'
+
+
   # now with XFEL stills
   data_dir = libtbx.env.find_in_repositories(
     relative_path="dials_regression/spotfinding_test_data",
@@ -65,6 +88,8 @@ def exercise_spotfinder():
     reflections = pickle.load(f)
     assert len(reflections) == 2643, len(reflections)
   print 'OK'
+
+
 
 def exercise_polygon():
   from dials.algorithms.peak_finding.spotfinder_factory import polygon
