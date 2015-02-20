@@ -166,3 +166,26 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     # only a single crystal is parameterised here, so no multi_state_elt
     # argument is allowed
     return matrix.sqr(self._model.get_B())
+
+  def set_state_uncertainties(self, var_cov, multi_state_elt=None):
+
+    from dials.algorithms.refinement.refinement_helpers import \
+        matrix_inverse_error_propagation
+
+    # var_cov is the covariance matrix of elements of the B matrix. Convert
+    # to covariance matrix of inverse B:
+    B = self.get_state()
+    Binv = B.inverse()
+    cov_Binv = matrix_inverse_error_propagation(B, var_cov)
+
+    # The real space unit cell lengths are given by
+    # a = (Binv * matrix.col((1,0,0))).length()
+    # b = (Binv * matrix.col((0,1,0))).length()
+    # c = (Binv * matrix.col((0,0,1))).length()
+
+    # TODO The estimated errors are calculated by error propagation from
+    # cov_Binv
+
+    # TODO cell angles. How?
+
+    return
