@@ -666,13 +666,17 @@ def dump(entry, experiments):
       dtype=np.uint64)
     features[0] = 6
 
+  exp_names = []
+
   # Get the experiment
   for index, experiment in enumerate(experiments):
+
 
     # Create the entry
     assert(("experiment_%d" % index) not in entry)
     nxmx = entry.create_group("experiment_%d" % index)
     nxmx.attrs['NX_class'] = 'NXsubentry'
+    exp_names.append(str(nxmx.name))
 
     # Get the dials specific stuff
     nx_dials = get_nx_dials(nxmx, "dials")
@@ -686,13 +690,13 @@ def dump(entry, experiments):
     nx_dials['index'].attrs['sample'] = experiment.crystal_id
 
     # Write out the original orientation (dials specific)
-    imgcif_transform = get_nx_transformations(nx_dials, "imgcif_transform")
-    imgcif_transform['angle'] = -rotations[index][1]
-    imgcif_transform['angle'].attrs['transformation_type'] = 'rotation'
-    imgcif_transform['angle'].attrs['vector'] = rotations[index][0]
-    imgcif_transform['angle'].attrs['offset'] = (0, 0, 0)
-    imgcif_transform['angle'].attrs['offset_units'] = 'mm'
-    imgcif_transform['angle'].attrs['depends_on'] = '.'
+    transformations = get_nx_transformations(nx_dials, "transformations")
+    transformations['angle'] = -rotations[index][1]
+    transformations['angle'].attrs['transformation_type'] = 'rotation'
+    transformations['angle'].attrs['vector'] = rotations[index][0]
+    transformations['angle'].attrs['offset'] = (0, 0, 0)
+    transformations['angle'].attrs['offset_units'] = 'mm'
+    transformations['angle'].attrs['depends_on'] = '.'
 
     # Create the imageset template
     if experiment.imageset is None:
@@ -730,6 +734,8 @@ def dump(entry, experiments):
   # Link the data
   #nxmx['data'] = nxmx['instrument/detector/data']
 
+  return exp_names
+
 def find_nx_mx_entries(nx_file, entry):
   '''
   Find NXmx entries
@@ -745,7 +751,7 @@ def find_nx_mx_entries(nx_file, entry):
   nx_file[entry].visititems(visitor)
   return hits
 
-def load(entry):
+def load(entry, exp_index):
   from dxtbx.model.experiment.experiment_list import ExperimentList
   from dxtbx.model.experiment.experiment_list import Experiment
 
@@ -760,9 +766,16 @@ def load(entry):
   if len(entries) > 1:
     entries = sorted(entries, key=lambda x: x['dials/index'].value)
 
+  assert(len(entries) == len(exp_index))
+  for nxmx, name in zip(entries, exp_index):
+    assert(nxmx.name == name)
+
   index = []
   rotations = []
-  for nxmx in entries:
+  for name in exp_index:
+
+    # Get the entry
+    nxmx = entry.file[name]
 
     # Get the definition
     definition = nxmx['definition']
@@ -787,13 +800,13 @@ def load(entry):
     index.append((b, d, g, s, c))
 
     # Get the original orientation (dials specific)
-    imgcif_transform = get_nx_transformations(nx_dials,  "imgcif_transform")
-    angle = imgcif_transform['angle'].value
-    assert(imgcif_transform['angle'].attrs['transformation_type'] == 'rotation')
-    axis = imgcif_transform['angle'].attrs['vector']
-    assert(tuple(imgcif_transform['angle'].attrs['offset']) == (0, 0, 0))
-    assert(imgcif_transform['angle'].attrs['offset_units'] == 'mm')
-    assert(imgcif_transform['angle'].attrs['depends_on'] == '.')
+    transformations = get_nx_transformations(nx_dials,  "transformations")
+    angle = transformations['angle'].value
+    assert(transformations['angle'].attrs['transformation_type'] == 'rotation')
+    axis = transformations['angle'].attrs['vector']
+    assert(tuple(transformations['angle'].attrs['offset']) == (0, 0, 0))
+    assert(transformations['angle'].attrs['offset_units'] == 'mm')
+    assert(transformations['angle'].attrs['depends_on'] == '.')
     rotations.append((axis, angle))
 
     # Get the tmeplate and imageset

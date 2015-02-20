@@ -239,7 +239,7 @@ def read(handle, key):
   else:
     raise KeyError('Column %s not read from file' % key)
 
-def dump(entry, reflections):
+def dump(entry, reflections, experiments):
   from dials.array_family import flex
 
   # Add the feature
@@ -266,6 +266,11 @@ def dump(entry, reflections):
   definition = diffraction.create_dataset('definition', data='NXdiffraction')
   definition.attrs['version'] = 1
   definition.attrs['URL'] = schema_url
+
+  diffraction['experiments'] = experiments
+
+  if reflections is None:
+    return
 
   # For each column in the reflection table dump to file
   for key, data in reflections.cols():
@@ -299,6 +304,9 @@ def load(entry):
   assert(definition.value == 'NXdiffraction')
   assert(definition.attrs['version'] == 1)
 
+  # The paths to the experiments
+  experiments = list(diffraction['experiments'])
+
   # The columns to try
   columns = [
     'miller_index',
@@ -326,14 +334,17 @@ def load(entry):
   ]
 
   # The reflection table
-  table = flex.reflection_table()
+  table = None
 
   # For each column in the reflection table dump to file
   for key in columns:
     try:
-      table[key] = read(diffraction, key)
+      col = read(diffraction, key)
+      if table is None:
+        table = flex.reflection_table()
+      table[key] = col
     except KeyError, e:
-      print e
+      pass
 
   # Return the table
-  return table
+  return table, experiments
