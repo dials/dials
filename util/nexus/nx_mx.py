@@ -652,6 +652,8 @@ def dump(entry, experiments):
   from dials.array_family import flex
   from dxtbx.imageset import ImageSet, ImageSweep
 
+  print "Dumping NXmx"
+
   # Rotate the experiments such that beam direction is along (0, 0, -1)
   experiments, rotations = convert_to_nexus_beam_direction(experiments)
 
@@ -758,6 +760,8 @@ def find_nx_mx_entries(nx_file, entry):
 def load(entry, exp_index):
   from dxtbx.model.experiment.experiment_list import ExperimentList
   from dxtbx.model.experiment.experiment_list import Experiment
+
+  print "Loading NXmx"
 
   # Check file contains the feature
   assert("features" in entry)

@@ -3,25 +3,26 @@ from __future__ import division
 
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXdiffraction.nxdl.xml'
 
-def make_uint(handle, name, data, description):
-  dset = handle.create_dataset(name, (len(data),), dtype="uint64", data=data)
+def make_dataset(handle, name, dtype, data, description):
+  dset = handle.create_dataset(
+    name,
+    (len(data),),
+    dtype=dtype,
+    data=data.as_numpy_array())
   dset.attrs['description'] = description
   return dset
+
+def make_uint(handle, name, data, description):
+  return make_dataset(handle, name, "uint64", data, description)
 
 def make_int(handle, name, data, description):
-  dset = handle.create_dataset(name, (len(data),), dtype="int64", data=data)
-  dset.attrs['description'] = description
-  return dset
+  return make_dataset(handle, name, "int64", data, description)
 
 def make_bool(handle, name, data, description):
-  dset = handle.create_dataset(name, (len(data),), dtype="bool", data=data)
-  dset.attrs['description'] = description
-  return dset
+  return make_dataset(handle, name, "bool", data, description)
 
 def make_float(handle, name, data, description):
-  dset = handle.create_dataset(name, (len(data),), dtype="float64", data=data)
-  dset.attrs['description'] = description
-  return dset
+  return make_dataset(handle, name, "float64", data, description)
 
 def make_vlen_uint(handle, name, data, description):
   import h5py
@@ -29,13 +30,18 @@ def make_vlen_uint(handle, name, data, description):
   dtype = h5py.special_dtype(vlen=np.dtype("uint64"))
   dset = handle.create_dataset(name, (len(data),), dtype=dtype)
   for i, d in enumerate(data):
-    dset[i] = d
+    if len(d) > 0:
+      dset[i] = d
   dset.attrs['description'] = description
   return dset
 
 def write(handle, key, data):
+  from dials.array_family import flex
   if   key == 'miller_index':
     col1, col2, col3 = zip(*list(data))
+    col1 = flex.int(col1)
+    col2 = flex.int(col2)
+    col3 = flex.int(col3)
     dsc1 = 'The h component of the miller index'
     dsc2 = 'The k component of the miller index'
     dsc3 = 'The l component of the miller index'
@@ -166,81 +172,83 @@ def write(handle, key, data):
 def read(handle, key):
   from dials.array_family import flex
   if   key == 'miller_index':
-    h = flex.int(handle['h'])
-    k = flex.int(handle['k'])
-    l = flex.int(handle['l'])
+    h = flex.int(handle['h'][:])
+    k = flex.int(handle['k'][:])
+    l = flex.int(handle['l'][:])
     return flex.miller_index(h,k,l)
   elif key == 'id':
-    return flex.size_t(map(int,handle['id']))
+    return flex.size_t(map(int,handle['id'][:]))
   elif key == 'partial_id':
-    return flex.size_t(map(int,handle['reflection_id']))
+    return flex.size_t(map(int,handle['reflection_id'][:]))
   elif key == 'entering':
-    return flex.bool(map(bool,handle['entering']))
+    return flex.bool(map(bool,handle['entering'][:]))
   elif key == 'flags':
-    return flex.size_t(map(int,handle['flags']))
+    return flex.size_t(map(int,handle['flags'][:]))
   elif key == 'panel':
-    return flex.size_t(map(int,handle['det_module']))
+    return flex.size_t(map(int,handle['det_module'][:]))
   elif key == 'd':
-    return flex.double(handle['d'])
+    return flex.double(handle['d'][:])
   elif key == 'partiality':
-    return flex.double(handle['partiality'])
+    return flex.double(handle['partiality'][:])
   elif key == 'xyzcal.px':
-    x = flex.double(handle['prd_px_x'])
-    y = flex.double(handle['prd_px_y'])
-    z = flex.double(handle['prd_frame'])
+    x = flex.double(handle['prd_px_x'][:])
+    y = flex.double(handle['prd_px_y'][:])
+    z = flex.double(handle['prd_frame'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzcal.mm':
-    x = flex.double(handle['prd_mm_x'])
-    y = flex.double(handle['prd_mm_y'])
-    z = flex.double(handle['prd_phi'])
+    x = flex.double(handle['prd_mm_x'][:])
+    y = flex.double(handle['prd_mm_y'][:])
+    z = flex.double(handle['prd_phi'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'bbox':
-    x0 = flex.int(handle['bbx0'])
-    x1 = flex.int(handle['bbx1'])
-    y0 = flex.int(handle['bby0'])
-    y1 = flex.int(handle['bby1'])
-    z0 = flex.int(handle['bbz0'])
-    z1 = flex.int(handle['bbz1'])
+    x0 = flex.int(handle['bbx0'][:])
+    x1 = flex.int(handle['bbx1'][:])
+    y0 = flex.int(handle['bby0'][:])
+    y1 = flex.int(handle['bby1'][:])
+    z0 = flex.int(handle['bbz0'][:])
+    z1 = flex.int(handle['bbz1'][:])
     return flex.int6(x0, x1, y0, y1, z0, z1)
   elif key == 'xyzobs.px.value':
-    x = flex.double(handle['obs_px_x_val'])
-    y = flex.double(handle['obs_px_y_val'])
-    z = flex.double(handle['obs_frame_val'])
+    x = flex.double(handle['obs_px_x_val'][:])
+    y = flex.double(handle['obs_px_y_val'][:])
+    z = flex.double(handle['obs_frame_val'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.px.variance':
-    x = flex.double(handle['obs_px_x_var'])
-    y = flex.double(handle['obs_px_y_var'])
-    z = flex.double(handle['obs_frame_var'])
+    x = flex.double(handle['obs_px_x_var'][:])
+    y = flex.double(handle['obs_px_y_var'][:])
+    z = flex.double(handle['obs_frame_var'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.mm.value':
-    x = flex.double(handle['obs_mm_x_val'])
-    y = flex.double(handle['obs_mm_y_val'])
-    z = flex.double(handle['obs_phi_val'])
+    x = flex.double(handle['obs_mm_x_val'][:])
+    y = flex.double(handle['obs_mm_y_val'][:])
+    z = flex.double(handle['obs_phi_val'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.mm.variance':
-    x = flex.double(handle['obs_mm_x_var'])
-    y = flex.double(handle['obs_mm_y_var'])
-    z = flex.double(handle['obs_phi_var'])
+    x = flex.double(handle['obs_mm_x_var'][:])
+    y = flex.double(handle['obs_mm_y_var'][:])
+    z = flex.double(handle['obs_phi_var'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'background.mean':
-    return flex.double(handle['bkg_mean'])
+    return flex.double(handle['bkg_mean'][:])
   elif key == 'intensity.sum.value':
-    return flex.double(handle['int_sum_val'])
+    return flex.double(handle['int_sum_val'][:])
   elif key == 'intensity.sum.variance':
-    return flex.double(handle['int_sum_var'])
+    return flex.double(handle['int_sum_var'][:])
   elif key == 'intensity.prf.value':
-    return flex.double(handle['int_prf_val'])
+    return flex.double(handle['int_prf_val'][:])
   elif key == 'intensity.prf.variance':
-    return flex.double(handle['int_prf_var'])
+    return flex.double(handle['int_prf_var'][:])
   elif key == 'profile.correlation':
-    return flex.double(handle['prf_cc'])
+    return flex.double(handle['prf_cc'][:])
   elif key == 'lp':
-    return flex.double(handle['lp'])
+    return flex.double(handle['lp'][:])
   else:
     raise KeyError('Column %s not read from file' % key)
 
 def dump(entry, reflections, experiments):
   from dials.array_family import flex
+
+  print "Dumping NXdiffraction"
 
   # Add the feature
   if "features" in entry:
@@ -290,6 +298,8 @@ def dump(entry, reflections, experiments):
 
 def load(entry):
   from dials.array_family import flex
+
+  print "Loading NXdiffraction"
 
   # Check the feature is present
   assert("features" in entry)
