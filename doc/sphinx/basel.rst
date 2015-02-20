@@ -12,7 +12,7 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-   documentation/tutorials/advanced_tutorial
+   documentation/tutorials/processing_in_detail_tutorial
    documentation/tutorials/multi_crystal_analysis
    documentation/tutorials/metrology_corrections
 

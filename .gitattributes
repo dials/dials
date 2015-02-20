@@ -450,12 +450,12 @@ doc/sphinx/documentation/programs/dials_refine.rst -text
 doc/sphinx/documentation/programs/dials_refine_bravais_settings.rst -text
 doc/sphinx/documentation/programs/dials_reindex.rst -text
 doc/sphinx/documentation/programs/index.rst -text
-doc/sphinx/documentation/tutorials/advanced_tutorial.rst -text
 doc/sphinx/documentation/tutorials/developer_tutorial.rst -text
 doc/sphinx/documentation/tutorials/index.rst -text
 doc/sphinx/documentation/tutorials/metrology_corrections.rst -text
 doc/sphinx/documentation/tutorials/multi_crystal_analysis.rst -text
 doc/sphinx/documentation/tutorials/multi_lattice_tutorial.rst -text
+doc/sphinx/documentation/tutorials/processing_in_detail_tutorial.rst -text
 doc/sphinx/documentation/tutorials/small_molecule_tutorial.rst -text
 doc/sphinx/figures/CC_metrology_comparison.png -text svneol=unset#unset
 doc/sphinx/figures/E4.png -text

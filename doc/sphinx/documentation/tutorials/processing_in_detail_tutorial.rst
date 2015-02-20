@@ -1,5 +1,5 @@
-Advanced Tutorial
-=================
+Processing in Detail
+====================
 
 Introduction
 ------------

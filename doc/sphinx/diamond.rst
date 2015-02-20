@@ -28,14 +28,14 @@ For the following tutorials we suggest using the latest version of DIALS::
 
   $ module load dials/dev-208
 
-The thaumatin dataset used in the :doc:`advanced_tutorial` is centrally
+The thaumatin dataset used in the :doc:`processing_in_detail_tutorial` is centrally
 available on the Diamond filesystem at
 :samp:`/dls/mx-scratch/dials_tutorial/i04_thaumatin/`.
 
 .. toctree::
    :maxdepth: 1
 
-   documentation/tutorials/advanced_tutorial
+   documentation/tutorials/processing_in_detail_tutorial
    documentation/tutorials/multi_crystal_analysis
    documentation/tutorials/metrology_corrections
 
@@ -130,24 +130,24 @@ within xia2_. You can use xia2_ just as before, simply replacing
   IMAGES (USER) 1 to 540
   MTZ file: /dls/mx-scratch/rjgildea/tmp/insulin/DEFAULT/NATIVE/SWEEP1/integrate/10_integrated.mtz
   For AUTOMATIC/DEFAULT/NATIVE
-  High resolution limit                   	  1.35	  5.23	  1.35
-  Low resolution limit                    	 50.00	 50.00	  1.40
-  Completeness                            	 99.7	 99.9	 97.5
-  Multiplicity                            	  5.2	  4.9	  3.0
-  I/sigma                                 	 12.8	 32.9	  2.1
-  Rmerge                                  	0.063	0.026	0.371
-  Rmeas(I)                                	0.078	0.033	0.524
-  Rmeas(I+/-)                             	0.077	0.032	0.497
-  Rpim(I)                                 	0.033	0.014	0.283
-  Rpim(I+/-)                              	0.044	0.018	0.328
-  CC half                                 	0.999	0.999	0.810
-  Wilson B factor                         	8.469
-  Anomalous completeness                  	 96.9	 99.9	 75.7
-  Anomalous multiplicity                  	  2.6	  3.0	  1.8
-  Anomalous correlation                   	-0.007	 0.089	 0.014
-  Anomalous slope                         	0.956	0.000	0.000
-  Total observations                      	293318	5742	16079
-  Total unique                            	56672	1160	5308
+  High resolution limit                       1.35    5.23    1.35
+  Low resolution limit                       50.00   50.00    1.40
+  Completeness                               99.7  99.9  97.5
+  Multiplicity                                5.2   4.9   3.0
+  I/sigma                                    12.8  32.9   2.1
+  Rmerge                                    0.063 0.026 0.371
+  Rmeas(I)                                  0.078 0.033 0.524
+  Rmeas(I+/-)                               0.077 0.032 0.497
+  Rpim(I)                                   0.033 0.014 0.283
+  Rpim(I+/-)                                0.044 0.018 0.328
+  CC half                                   0.999 0.999 0.810
+  Wilson B factor                           8.469
+  Anomalous completeness                     96.9  99.9  75.7
+  Anomalous multiplicity                      2.6   3.0   1.8
+  Anomalous correlation                     -0.007   0.089   0.014
+  Anomalous slope                           0.956 0.000 0.000
+  Total observations                        293318  5742  16079
+  Total unique                              56672 1160  5308
   Assuming spacegroup: P 41 21 2
   Other likely alternatives are:
   P 43 21 2
