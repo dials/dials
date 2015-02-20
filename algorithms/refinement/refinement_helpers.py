@@ -181,4 +181,4 @@ def matrix_inverse_error_propagation(mat, cov_mat):
           inv_cov_mat[u, v] = elt
 
   inv_cov_mat.matrix_copy_upper_to_lower_triangle_in_place()
-  return inv_cov_mat
+  return inv_cov_mat.as_scitbx_matrix()

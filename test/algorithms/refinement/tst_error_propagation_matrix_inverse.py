@@ -127,6 +127,7 @@ def test_lefebvre():
   cov_mat = matrix.diag([e**2 for e in sig_mat])
 
   cov_inv_mat = matrix_inverse_error_propagation(mat, cov_mat)
+  cov_inv_mat = cov_inv_mat.as_flex_double_matrix()
 
   # Get fractional differences
   frac = (cov_inv_mat_MC - cov_inv_mat) / cov_inv_mat_MC
@@ -167,6 +168,7 @@ def test_B_matrix():
 
   # Now can use the analytical formula
   cov_invB = matrix_inverse_error_propagation(Bmat, cov_B)
+  cov_invB = cov_invB.as_flex_double_matrix()
 
   # Get fractional differences
   frac = flex.double(flex.grid(n**2, n**2), 0.0)
