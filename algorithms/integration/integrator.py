@@ -72,7 +72,7 @@ def generate_phil_scope():
                   "that 100*threshold % of reflections are guarenteed to be"
                   "fully contained in 1 block"
 
-        max_mem_usage = 0.5
+        max_mem_usage = 0.75
           .type = float(value_min=0.0,value_max=1.0)
           .help = "The maximum percentage of total physical memory to use for"
                   "allocating shoebox arrays."
