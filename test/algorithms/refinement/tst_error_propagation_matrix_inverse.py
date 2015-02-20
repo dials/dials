@@ -124,8 +124,8 @@ def test_lefebvre():
     mean_matrix=mat.inverse())
 
   # Now analytical formula
-  cov_mat = flex.double(flex.grid(4, 4), 0.0)
-  cov_mat.matrix_diagonal_set_in_place(flex.double([e**2 for e in sig_mat]))
+  cov_mat = matrix.diag([e**2 for e in sig_mat])
+
   cov_inv_mat = matrix_inverse_error_propagation(mat, cov_mat)
 
   # Get fractional differences
@@ -162,9 +162,8 @@ def test_B_matrix():
   # matrix of B itself. This is the diagonal matrix of errors applied in the
   # simulation.
   n = Bmat.n_rows()
-  cov_B = flex.double(flex.grid(n**2, n**2), 0.0)
   sig_B = Bmat * 0.01
-  cov_B.matrix_diagonal_set_in_place(flex.double([e**2 for e in sig_B]))
+  cov_B = matrix.diag([e**2 for e in sig_B])
 
   # Now can use the analytical formula
   cov_invB = matrix_inverse_error_propagation(Bmat, cov_B)

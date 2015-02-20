@@ -143,11 +143,14 @@ def matrix_inverse_error_propagation(mat, cov_mat):
 
   # initialise covariance matrix
   assert mat.is_square()
+  assert cov_mat.is_square()
   n = mat.n_rows()
+  assert cov_mat.n_rows() == n**2
 
   # use flex for nice 2D indexing
   inv_mat = flex.double(mat.inverse())
   inv_mat.reshape(flex.grid(n, n))
+  cov_mat = cov_mat.as_flex_double_matrix()
 
   inv_cov_mat = flex.double(flex.grid(n**2,n**2), 0.0)
   for alpha in range(n):
