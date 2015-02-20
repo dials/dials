@@ -133,7 +133,7 @@ def get_panel_ids_at_root(panel_list, group):
   except AttributeError: # we got down to Panels
     return [panel_list.index(group)]
 
-def calc_analytical_covariances(mat, cov_mat):
+def covariances_of_matrix_inverse(mat, cov_mat):
   """Implement analytical formula of Lefebvre et al. (1999)
   http://arxiv.org/abs/hep-ex/9909031 to calculate the covariances of elements
   of mat^-1, given the covariances of mat itself. This is not the most efficient
