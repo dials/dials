@@ -682,6 +682,9 @@ class indexer_base(object):
       if not self.params.multiple_lattice_search.recycle_unindexed_reflections:
         break
 
+    if not 'refined_experiments' in locals():
+      raise Sorry("None of the experiments could refine.")
+
     # XXX currently need to store the imageset otherwise we can't read the experiment list back in
     for expt in refined_experiments:
       expt.imageset = self.sweep
