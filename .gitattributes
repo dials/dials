@@ -800,7 +800,6 @@ scratch/luiso_s/test_code/view_background_algrm.py -text
 scratch/luiso_s/test_flex_n_mix.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
-scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
 scratch/luiso_s/wx_toys/ArtProvider_tst.py -text
 scratch/luiso_s/wx_toys/__init__.py -text
