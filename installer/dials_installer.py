@@ -33,7 +33,8 @@ class installer(install_distribution.installer):
     'tntbx',
     'clipper',
     # dials
-    'dials'
+    'dials',
+    'xia2',
   ]
 
 if (__name__ == "__main__") :
