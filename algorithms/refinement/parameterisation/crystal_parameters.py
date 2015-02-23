@@ -180,9 +180,6 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     O = Bt.inverse()
     cov_O = matrix_inverse_error_propagation(Bt, var_cov)
 
-    crystal = self._model
-    uc = crystal.get_unit_cell()
-
     # The real space unit cell vectors are given by
     vec_a = (O * matrix.col((1,0,0)))
     vec_b = (O * matrix.col((0,1,0)))
@@ -192,11 +189,25 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
 
     # The estimated errors are calculated by error propagation from cov_O
 
-    jacobian_t = matrix.col((vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0))
+    jacobian_t = matrix.rec(
+      (vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0,
+       0, vec_b[0]/b, 0, 0, vec_b[1]/b, 0, 0, vec_b[2]/b, 0,
+       0, 0, vec_c[0]/c, 0, 0, vec_c[1]/c, 0, 0, vec_c[2]/c), (9, 3))
     jacobian = jacobian_t.transpose()
 
-    # this is a 1*1 matrix, so turn it into a scalar
-    var_a = (jacobian * cov_O * jacobian_t)[0]
+    # this is a 3*3 covariance matrix, we want the variances, down the diagonal
+    cov_cell = (jacobian * cov_O * jacobian_t)
+    var_a, var_b, var_c = cov_cell[0], cov_cell[4], cov_cell[8]
+
+    # FIXME These estimates are not tested (how can we even do so? Use semi-
+    # synthetic datasets perhaps and look at true scatter?) plus we have nowhere
+    # to store this information. So for now just output to the debug log
+    from logging import debug
+    from math import sqrt
+    debug("Refined cell lengths and estimated standard deviations:")
+    debug("a: {0:f} +/- ({1:f})".format(a, sqrt(var_a)))
+    debug("b: {0:f} +/- ({1:f})".format(b, sqrt(var_b)))
+    debug("c: {0:f} +/- ({1:f})".format(c, sqrt(var_c)))
 
     # TODO cell angles. How?
 
