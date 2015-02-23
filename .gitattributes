@@ -602,6 +602,7 @@ scratch/gw/corrections18000.png -text
 scratch/gw/corrections8000.png -text
 scratch/gw/dqe.py -text
 scratch/gw/dx.png -text
+scratch/gw/dx.py -text
 scratch/gw/dy.png -text
 scratch/gw/gridscan.py -text
 scratch/gw/multitile_pilatus_6m_i04/DLS6MSN100.cbft -text
