@@ -14,7 +14,7 @@ help_message = '''
 '''
 
 phil_scope = iotbx.phil.parse("""
-i_sigi_cutoff = 0.5
+i_sigi_cutoff = 0.1
   .type = float(value_min=0.000001)
 plot=False
   .type = bool
@@ -72,7 +72,7 @@ def run(args):
     sigmas=sigmas).set_observation_type_xray_intensity()
 
   #miller_array.setup_binner(n_bins=50, reflections_per_bin=100)
-  miller_array.setup_binner(auto_binning=True)
+  miller_array.setup_binner(auto_binning=True, n_bins=20)
   result = miller_array.i_over_sig_i(use_binning=True)
   result.show()
 
