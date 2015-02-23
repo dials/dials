@@ -1,3 +1,37 @@
+sage_calculations = '''
+sage: k1 = var('k1')
+sage: k2 = var('k2')
+sage: k3 = var('k3')
+sage: K = matrix([[0, -k3, k2], [k3, 0, -k1], [-k2, k1, 0]])
+sage: K
+[  0 -k3  k2]
+[ k3   0 -k1]
+[-k2  k1   0]
+sage: t = var('t')
+sage: I = matrix.identity(3)
+sage: R = I + sin(t) * K + (1 - cos(t)) * K * K
+sage: dR1 = derivative(R, k1)
+sage: dR2 = derivative(R, k2)
+sage: dR3 = derivative(R, k3)
+sage: dR1
+[                0  -k2*(cos(t) - 1)  -k3*(cos(t) - 1)]
+[ -k2*(cos(t) - 1) 2*k1*(cos(t) - 1)           -sin(t)]
+[ -k3*(cos(t) - 1)            sin(t) 2*k1*(cos(t) - 1)]
+sage: dR2
+[2*k2*(cos(t) - 1)  -k1*(cos(t) - 1)            sin(t)]
+[ -k1*(cos(t) - 1)                 0  -k3*(cos(t) - 1)]
+[          -sin(t)  -k3*(cos(t) - 1) 2*k2*(cos(t) - 1)]
+sage: dR3
+[2*k3*(cos(t) - 1)           -sin(t)  -k1*(cos(t) - 1)]
+[           sin(t) 2*k3*(cos(t) - 1)  -k2*(cos(t) - 1)]
+[ -k1*(cos(t) - 1)  -k2*(cos(t) - 1)                 0]
+sage: dRt = derivative(R, t)
+sage: dRt
+[-k2^2*sin(t) - k3^2*sin(t)   k1*k2*sin(t) - k3*cos(t)   k1*k3*sin(t) + k2*cos(t)]
+[  k1*k2*sin(t) + k3*cos(t) -k1^2*sin(t) - k3^2*sin(t)   k2*k3*sin(t) - k1*cos(t)]
+[  k1*k3*sin(t) - k2*cos(t)   k2*k3*sin(t) + k1*cos(t) -k1^2*sin(t) - k2^2*sin(t)]
+'''
+
 def skew_symm(v):
   '''Make matrix [v]_x from v. Essentially multiply vector by SO(3) basis
   set Lx, Ly, Lz. Equation (2) from Gallego & Yezzi paper.'''
@@ -10,6 +44,24 @@ def skew_symm(v):
   v1, v2, v3 = v.elems
 
   return v1 * L1 + v2 * L2 + v3 * L3
+
+def dR_dki_gw(t, k):
+  from scitbx import matrix
+  from math import sin, cos
+
+  k1, k2, k3 = k.elems
+  
+  dR1 = matrix.sqr((0, -k2*(cos(t) - 1), -k3*(cos(t) - 1),
+                    -k2*(cos(t) - 1), 2*k1*(cos(t) - 1), -sin(t),
+                    -k3*(cos(t) - 1), sin(t), 2*k1*(cos(t) - 1)))
+  dR2 = matrix.sqr((2*k2*(cos(t) - 1), -k1*(cos(t) - 1), sin(t),
+                    -k1*(cos(t) - 1), 0, -k3*(cos(t) - 1),
+                    -sin(t), -k3*(cos(t) - 1), 2*k2*(cos(t) - 1)))
+  dR3 = matrix.sqr((2*k3*(cos(t) - 1), -sin(t), -k1*(cos(t) - 1),
+                    sin(t), 2*k3*(cos(t) - 1), -k2*(cos(t) - 1),
+                    -k1*(cos(t) - 1), -k2*(cos(t) - 1), 0))
+
+  return dR1, dR2, dR3
 
 def dR_dki_7(t, k):
   '''Compute derivative matrices dR/dk_i for rotation about axis k of
@@ -113,13 +165,15 @@ def dx():
   print ndR1
 
   # now call on derivative calculation
-  dR1_7 = dR_dki_7(t, k)[0]
-  dR1_9 = dR_dki_9(t, k)[0]
-
-  print dR1_7 * dR1_9.inverse()
-
+  dR1 = dR_dki_gw(t, k)[0]
 
   print 'Sums:'
-  print dR1_9
+  print dR1
+
+  # now call on derivative calculation
+  dR1 = dR_dki_7(t, k)[0]
+
+  print 'Sums7:'
+  print dR1
 
 dx()
