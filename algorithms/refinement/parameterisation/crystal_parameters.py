@@ -172,19 +172,31 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     from dials.algorithms.refinement.refinement_helpers import \
         matrix_inverse_error_propagation
 
-    # var_cov is the covariance matrix of elements of the B matrix. Convert
-    # to covariance matrix of inverse B:
+    # var_cov is the covariance matrix of elements of the B matrix. It is also
+    # the covariance of its transpose. From B = (O^-1)^T we can convert this
+    # to the covariance matrix of the real space orthogonalisation matrix
     B = self.get_state()
-    Binv = B.inverse()
-    cov_Binv = matrix_inverse_error_propagation(B, var_cov)
+    Bt = B.transpose()
+    O = Bt.inverse()
+    cov_O = matrix_inverse_error_propagation(Bt, var_cov)
 
-    # The real space unit cell lengths are given by
-    # a = (Binv * matrix.col((1,0,0))).length()
-    # b = (Binv * matrix.col((0,1,0))).length()
-    # c = (Binv * matrix.col((0,0,1))).length()
+    crystal = self._model
+    uc = crystal.get_unit_cell()
 
-    # TODO The estimated errors are calculated by error propagation from
-    # cov_Binv
+    # The real space unit cell vectors are given by
+    vec_a = (O * matrix.col((1,0,0)))
+    vec_b = (O * matrix.col((0,1,0)))
+    vec_c = (O * matrix.col((0,0,1)))
+
+    a, b, c = vec_a.length(), vec_b.length(), vec_c.length()
+
+    # The estimated errors are calculated by error propagation from cov_O
+
+    jacobian_t = matrix.col((vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0))
+    jacobian = jacobian_t.transpose()
+
+    # this is a 1*1 matrix, so turn it into a scalar
+    var_a = (jacobian * cov_O * jacobian_t)[0]
 
     # TODO cell angles. How?
 
