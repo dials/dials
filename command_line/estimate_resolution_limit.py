@@ -16,6 +16,8 @@ help_message = '''
 phil_scope = iotbx.phil.parse("""
 i_sigi_cutoff = 0.5
   .type = float(value_min=0.000001)
+plot=False
+  .type = bool
 """, process_includes=True)
 
 
@@ -44,7 +46,6 @@ def run(args):
   assert(len(reflections) == 1)
   reflections = reflections[0]
 
-  # XXX what about intensity.sum.prf?
   intensities = reflections['intensity.sum.value']
   variances = reflections['intensity.sum.variance']
   if 'intensity.prf.value' in reflections:
@@ -70,13 +71,15 @@ def run(args):
     data=intensities,
     sigmas=sigmas).set_observation_type_xray_intensity()
 
-  miller_array.setup_binner(reflections_per_bin=100)
+  #miller_array.setup_binner(n_bins=50, reflections_per_bin=100)
+  miller_array.setup_binner(auto_binning=True)
   result = miller_array.i_over_sig_i(use_binning=True)
   result.show()
 
   from cctbx import uctbx
   d_star_sq_centre = result.binner.bin_centers(2)
-  i_over_sig_i = flex.double(result.data[1:-1])
+  i_over_sig_i = flex.double(
+    [d if d is not None else 0 for d in result.data[1:-1]])
   sel = (i_over_sig_i > 0)
   d_star_sq_centre = d_star_sq_centre.select(sel)
   i_over_sig_i = i_over_sig_i.select(sel)
@@ -95,32 +98,32 @@ def run(args):
   estimated_d_min = uctbx.d_star_sq_as_d(x_cutoff)
   print "estimated d_min: %.2f" %estimated_d_min
 
-  from matplotlib import pyplot
-  fig = pyplot.figure()
-  ax = fig.add_subplot(1,1,1)
+  if params.plot:
+    from matplotlib import pyplot
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1,1,1)
 
-  ax.plot(
-    list(d_star_sq_centre),
-    list(log_i_over_sig_i),
-    label=r"i_over_sig_i")
-  ax.plot(pyplot.xlim(), [(m * x + c) for x in pyplot.xlim()], color='red')
-  ax.plot([x_cutoff, x_cutoff], pyplot.ylim(), color='grey', linestyle='dashed')
-  ax.plot(pyplot.xlim(), [y_cutoff, y_cutoff], color='grey', linestyle='dashed')
-  ax.set_xlabel("d_star_sq")
-  ax.set_ylabel("i_over_sig_i")
+    ax.plot(
+      list(d_star_sq_centre),
+      list(log_i_over_sig_i),
+      label=r"ln(I/sigI)")
+    ax.plot(pyplot.xlim(), [(m * x + c) for x in pyplot.xlim()], color='red')
+    ax.plot([x_cutoff, x_cutoff], pyplot.ylim(), color='grey', linestyle='dashed')
+    ax.plot(pyplot.xlim(), [y_cutoff, y_cutoff], color='grey', linestyle='dashed')
+    ax.set_xlabel("d_star_sq")
+    ax.set_ylabel("ln(I/sigI)")
 
-  ax_ = ax.twiny() # ax2 is responsible for "top" axis and "right" axis
-  xticks = ax.get_xticks()
-  xlim = ax.get_xlim()
-  xticks_d = [
-    uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks ]
-  xticks_ = [ds2/(xlim[1]-xlim[0]) for ds2 in xticks]
-  ax_.set_xticks(xticks)
-  ax_.set_xlim(ax.get_xlim())
-  ax_.set_xlabel(r"Resolution ($\AA$)")
-  ax_.set_xticklabels(["%.1f" %d for d in xticks_d])
-
-  pyplot.show()
+    ax_ = ax.twiny() # ax2 is responsible for "top" axis and "right" axis
+    xticks = ax.get_xticks()
+    xlim = ax.get_xlim()
+    xticks_d = [
+      uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks ]
+    xticks_ = [ds2/(xlim[1]-xlim[0]) for ds2 in xticks]
+    ax_.set_xticks(xticks)
+    ax_.set_xlim(ax.get_xlim())
+    ax_.set_xlabel(r"Resolution ($\AA$)")
+    ax_.set_xticklabels(["%.1f" %d for d in xticks_d])
+    pyplot.savefig("estimate_resolution_limit.png")
 
 if __name__ == '__main__':
   import sys
