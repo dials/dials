@@ -333,11 +333,21 @@ class ScanVaryingProfileModelCalculator(object):
     reflection_list = dict((key, reflections.select(flex.size_t(value)))
                            for key, value in index_list.iteritems())
 
+    # The range of frames
+    z0, z1 = experiment.scan.get_array_range()
+    min_z = min(index_list.iterkeys())
+    max_z = max(index_list.iterkeys())
+    assert(z0 == min_z)
+    assert(z1 == max_z+1)
+
     # Compute for all frames
     self._num = []
-    self._sigma_b = flex.double()
-    self._sigma_m = flex.double()
-    for i, reflections in reflection_list.iteritems():
+    sigma_b = []
+    sigma_m = []
+    for i in range(z0, z1):
+
+      # Get reflections at the index
+      reflections = reflection_list[i]
 
       self._num.append(len(reflections))
 
@@ -347,13 +357,47 @@ class ScanVaryingProfileModelCalculator(object):
       beam_divergence = ComputeEsdBeamDivergence(experiment.detector, reflections)
 
       # Set the sigma b
-      self._sigma_b.append(beam_divergence.sigma())
+      sigma_b.append(beam_divergence.sigma())
 
       # Calculate the E.S.D of the reflecting range
       reflecting_range = ComputeEsdReflectingRange(experiment, reflections)
 
       # Set the sigmas
-      self._sigma_m.append(reflecting_range.sigma())
+      sigma_m.append(reflecting_range.sigma())
+
+    def convolve(data, kernel):
+      assert(len(kernel) & 1)
+      result = []
+      mid = len(kernel) // 2
+      for i in range(len(data)):
+        r = 0
+        for j in range(len(kernel)):
+          k = i - mid + j
+          if k < 0:
+            r += kernel[j] * data[0]
+          elif k >= len(data):
+            r += kernel[j] * data[-1]
+          else:
+            r += kernel[j] * data[k]
+        result.append(r)
+      return result
+
+    def gaussian_kernel(n):
+      from math import exp
+      assert(n & 1)
+      mid = n // 2
+      sigma = mid / 3.0
+      kernel = []
+      for i in range(n):
+        kernel.append(exp(-(i-mid)**2 / (2*sigma**2)))
+      kernel = [k / sum(kernel) for k in kernel]
+      return kernel
+
+    kernel = gaussian_kernel(51)
+    sigma_b_new = convolve(sigma_b, kernel)
+    sigma_m_new = convolve(sigma_m, kernel)
+    self._sigma_b = flex.double(sigma_b_new)
+    self._sigma_m = flex.double(sigma_m_new)
 
   def num(self):
     ''' The number of reflections used. '''
