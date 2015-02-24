@@ -202,13 +202,19 @@ class SpotFrame(XrayFrame) :
       return (x_rot, y_rot)
 
     resolution_text_data = []
+    if self.settings.color_scheme > 1 : # heatmap or invert
+      textcolour = 'white'
+    else:
+      textcolour = 'black'
     if unit_cell is None and space_group is None:
       for d, pxl in zip(spacings, L_pixels):
         for angle in (45, 135, 225, 315):
           x, y = rotate_around_point(
             (center[0], center[1]+pxl), center, angle, deg=True)
           resolution_text_data.append(
-            (x, y, "%.2f" %d, {'placement':'cc', 'colour': 'red'}))
+            (x, y, "%.2f" %d, {
+              'placement':'cc', 'colour': 'red',
+              'textcolour': textcolour}))
 
     # Remove the old resolution text layer, and draw a new one.
     if (hasattr(self, "_resolution_text_layer") and self._resolution_text_layer is not None):
