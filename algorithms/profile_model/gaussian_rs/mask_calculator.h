@@ -113,7 +113,6 @@ namespace gaussian_rs {
                      const af::const_ref<double> &delta_b,
                      const af::const_ref<double> &delta_m)
       : detector_(detector),
-        scan_(scan),
         m2_(gonio.get_rotation_axis()),
         s0_(beam.get_s0()),
         phi0_(scan.get_oscillation()[0]),
@@ -206,9 +205,9 @@ namespace gaussian_rs {
       double delta_m_r2 = 0.0;
       if (delta_b_r_.size() == 1) {
         delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
-        delta_b_r2 = delta_m_r_[0]*delta_m_r_[0];
+        delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
       } else {
-        int frame0 = scan_.get_array_range()[0];
+        int frame0 = index0_;
         int index = (int)std::floor(frame) - frame0;
         if (index < 0) {
           delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
@@ -299,9 +298,9 @@ namespace gaussian_rs {
       double delta_m_r2 = 0.0;
       if (delta_b_r_.size() == 1) {
         delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
-        delta_b_r2 = delta_m_r_[0]*delta_m_r_[0];
+        delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
       } else {
-        int frame0 = scan_.get_array_range()[0];
+        int frame0 = index0_;
         int index = (int)std::floor(frame) - frame0;
         if (index < 0) {
           delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
@@ -357,7 +356,6 @@ namespace gaussian_rs {
     }
 
     Detector detector_;
-    Scan scan_;
     vec3<double> m2_;
     vec3<double> s0_;
     double phi0_;
