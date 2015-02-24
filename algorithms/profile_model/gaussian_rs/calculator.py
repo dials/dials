@@ -393,11 +393,13 @@ class ScanVaryingProfileModelCalculator(object):
       kernel = [k / sum(kernel) for k in kernel]
       return kernel
 
+    # Smooth the parameters
     kernel = gaussian_kernel(51)
     sigma_b_new = convolve(sigma_b, kernel)
     sigma_m_new = convolve(sigma_m, kernel)
     self._sigma_b = flex.double(sigma_b_new)
     self._sigma_m = flex.double(sigma_m_new)
+    assert(len(self._sigma_b) == len(self._sigma_m))
 
   def num(self):
     ''' The number of reflections used. '''

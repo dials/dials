@@ -86,6 +86,18 @@ namespace boost_python {
         arg("scan"),
         arg("delta_divergence"),
         arg("delta_mosaicity"))))
+      .def(init <const Beam&,
+                 const Detector&,
+                 const Goniometer&,
+                 const Scan&,
+                 const af::const_ref<double>,
+                 const af::const_ref<double> > ((
+        arg("beam"),
+        arg("detector"),
+        arg("goniometer"),
+        arg("scan"),
+        arg("delta_divergence"),
+        arg("delta_mosaicity"))))
       ;
 
     class_ <BBoxCalculator2D, bases<BBoxCalculatorIface> >(

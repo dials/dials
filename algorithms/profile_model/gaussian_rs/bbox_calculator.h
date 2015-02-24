@@ -89,10 +89,37 @@ namespace gaussian_rs {
         m2_(gonio.get_rotation_axis()),
         detector_(detector),
         scan_(scan),
-        delta_divergence_(delta_divergence),
-        delta_mosaicity_(delta_mosaicity) {
+        delta_divergence_(1, delta_divergence),
+        delta_mosaicity_(1, delta_mosaicity) {
       DIALS_ASSERT(delta_divergence > 0.0);
       DIALS_ASSERT(delta_mosaicity > 0.0);
+    }
+
+    /**
+     * Initialise the bounding box calculation.
+     * @param beam The beam parameters
+     * @param detector The detector parameters
+     * @param goniometer The goniometer parameters
+     * @param delta_divergence The xds delta_divergence parameter
+     * @param delta_mosaicity The xds delta_mosaicity parameter
+     */
+    BBoxCalculator3D(const Beam &beam,
+                     const Detector &detector,
+                     const Goniometer &gonio,
+                     const Scan &scan,
+                     const af::const_ref<double> &delta_divergence,
+                     const af::const_ref<double> &delta_mosaicity)
+      : s0_(beam.get_s0()),
+        m2_(gonio.get_rotation_axis()),
+        detector_(detector),
+        scan_(scan),
+        delta_divergence_(delta_divergence.begin(), delta_divergence.end()),
+        delta_mosaicity_(delta_mosaicity.begin(), delta_mosaicity.end()) {
+      DIALS_ASSERT(delta_divergence.all_gt(0.0));
+      DIALS_ASSERT(delta_mosaicity.all_gt(0.0));
+      DIALS_ASSERT(delta_divergence_.size() == delta_mosaicity_.size());
+      DIALS_ASSERT(delta_divergence_.size() == scan.get_num_images());
+      DIALS_ASSERT(delta_divergence_.size() > 0);
     }
 
     /**
@@ -128,8 +155,25 @@ namespace gaussian_rs {
       CoordinateSystem xcs(m2_, s0_, s1, phi);
 
       // Get the divergence and mosaicity for this point
-      double delta_d = delta_divergence_;
-      double delta_m = delta_mosaicity_;
+      double delta_d = 0.0;
+      double delta_m = 0.0;
+      if (delta_divergence_.size() == 1) {
+        delta_d = delta_divergence_[0];
+        delta_m = delta_mosaicity_[0];
+      } else {
+        int frame0 = scan_.get_array_range()[0];
+        int index = frame - frame0;
+        if (index < 0) {
+          delta_d = delta_divergence_.front();
+          delta_m = delta_mosaicity_.front();
+        } else if (index >= delta_divergence_.size()) {
+          delta_d = delta_divergence_.back();
+          delta_m = delta_mosaicity_.back();
+        } else {
+          delta_d = delta_divergence_[index];
+          delta_m = delta_mosaicity_[index];
+        }
+      }
 
       // Calculate the beam vectors at the following xds coordinates:
       //   (-delta_d, -delta_d, 0)
@@ -206,8 +250,8 @@ namespace gaussian_rs {
     vec3<double> m2_;
     Detector detector_;
     Scan scan_;
-    double delta_divergence_;
-    double delta_mosaicity_;
+    af::shared<double> delta_divergence_;
+    af::shared<double> delta_mosaicity_;
   };
 
 
