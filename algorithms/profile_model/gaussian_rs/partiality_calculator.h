@@ -88,8 +88,29 @@ namespace gaussian_rs {
       : s0_(beam.get_s0()),
         m2_(gonio.get_rotation_axis()),
         scan_(scan),
-        sigma_m_(sigma_m) {
+        sigma_m_(1, sigma_m) {
       DIALS_ASSERT(sigma_m > 0.0);
+    }
+
+    /**
+     * Initialise the partiality calculation.
+     * @param beam The beam parameters
+     * @param goniometer The goniometer parameters
+     * @param scan The scan parameters
+     * @param sigma_mosaicity The xds sigma_mosaicity parameter
+     */
+    PartialityCalculator3D(
+          const Beam &beam,
+          const Goniometer &gonio,
+          const Scan &scan,
+          const af::const_ref<double> &sigma_m)
+      : s0_(beam.get_s0()),
+        m2_(gonio.get_rotation_axis()),
+        scan_(scan),
+        sigma_m_(sigma_m.begin(), sigma_m.end()) {
+      DIALS_ASSERT(sigma_m.all_gt(0.0));
+      DIALS_ASSERT(sigma_m.size() == scan.get_num_images());
+      DIALS_ASSERT(sigma_m.size() > 0);
     }
 
     /**
@@ -107,6 +128,22 @@ namespace gaussian_rs {
       DIALS_ASSERT(s1.length_sq() > 0);
       DIALS_ASSERT(bbox[4] < bbox[5]);
 
+      // Get the mosaicity at this point
+      double sigma_m = 0.0;
+      if (sigma_m_.size() == 1) {
+        sigma_m = sigma_m_[0];
+      } else {
+        int frame0 = scan_.get_array_range()[0];
+        int index = (int)std::floor(frame) - frame0;
+        if (index < 0) {
+          sigma_m = sigma_m_.front();
+        } else if (index >= sigma_m_.size()) {
+          sigma_m = sigma_m_.back();
+        } else {
+          sigma_m = sigma_m_[index];
+        }
+      }
+
       // Get the rotation angle
       double phi = scan_.get_angle_from_array_index(frame);
       double phia = scan_.get_angle_from_array_index(bbox[4]);
@@ -114,7 +151,7 @@ namespace gaussian_rs {
 
       // Compute the partiality
       double zeta = profile_model::gaussian_rs::zeta_factor(m2_.normalize(), s0_, s1);
-      double c = std::abs(zeta) / (sqrt(2.0) * sigma_m_);
+      double c = std::abs(zeta) / (sqrt(2.0) * sigma_m);
       double p = 0.5 * (erf(c * (phib - phi)) - erf(c * (phia - phi)));
       DIALS_ASSERT(p >= 0.0 && p <= 1.0);
       return p;
@@ -146,7 +183,7 @@ namespace gaussian_rs {
     vec3<double> s0_;
     vec3<double> m2_;
     Scan scan_;
-    double sigma_m_;
+    af::shared<double> sigma_m_;
   };
 
 

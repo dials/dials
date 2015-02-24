@@ -122,15 +122,16 @@ class Factory(object):
     from dials.array_family import flex
     from math import pi
     dtor = pi / 180.0
-    assert(len(params.gaussian_rs.model) > 0)
     profile_model_list = ProfileModelList()
     if params.gaussian_rs.scan_varying:
-      for i in range(len(params.gaussian_rs.model)):
+      assert(len(params.gaussian_rs.scan_varying_model) > 0)
+      for i in range(len(params.gaussian_rs.scan_varying_model)):
         profile_model_list.append(ProfileModel(
           params.gaussian_rs.scan_varying_model[i].n_sigma,
           flex.double(params.gaussian_rs.scan_varying_model[i].sigma_b) * dtor,
           flex.double(params.gaussian_rs.scan_varying_model[i].sigma_m) * dtor))
     else:
+      assert(len(params.gaussian_rs.model) > 0)
       for i in range(len(params.gaussian_rs.model)):
         profile_model_list.append(ProfileModel(
           params.gaussian_rs.model[i].n_sigma,
@@ -149,10 +150,16 @@ class Factory(object):
     :return: The profile model
 
     '''
-    if len(params.profile.gaussian_rs.model) > 0:
-      assert(len(params.profile.gaussian_rs.model) == len(experiments))
-      model = Factory.load(params.profile)
+    model = None
+    if params.profile.gaussian_rs.scan_varying == True:
+      if len(params.profile.gaussian_rs.scan_varying_model) > 0:
+        assert(len(params.profile.gaussian_rs.scan_varying_model) == len(experiments))
+        model = Factory.load(params.profile)
     else:
+      if len(params.profile.gaussian_rs.model) > 0:
+        assert(len(params.profile.gaussian_rs.model) == len(experiments))
+        model = Factory.load(params.profile)
+    if model is None:
       assert(reflections is not None)
       model = Factory.compute(params.profile, experiments, reflections)
     return model

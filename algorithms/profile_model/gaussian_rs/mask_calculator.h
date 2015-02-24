@@ -91,8 +91,46 @@ namespace gaussian_rs {
         index1_(scan.get_array_range()[1]){
       DIALS_ASSERT(delta_b > 0.0);
       DIALS_ASSERT(delta_m > 0.0);
-      delta_b_r_ = 1.0 / delta_b;
-      delta_m_r_ = 1.0 / delta_m;
+      delta_b_r_.resize(1);
+      delta_m_r_.resize(1);
+      delta_b_r_[0] = 1.0 / delta_b;
+      delta_m_r_[0] = 1.0 / delta_m;
+    }
+
+    /**
+     * Initialise the stuff needed to create the mask.
+     * @param beam The beam model
+     * @param detector The detector model
+     * @param gonio The goniometer model
+     * @param scan The scan model
+     * @param delta_b nsigma * sigma_divergence
+     * @param delta_m nsigma * mosaicity
+     */
+    MaskCalculator3D(const Beam &beam,
+                     const Detector &detector,
+                     const Goniometer &gonio,
+                     const Scan &scan,
+                     const af::const_ref<double> &delta_b,
+                     const af::const_ref<double> &delta_m)
+      : detector_(detector),
+        scan_(scan),
+        m2_(gonio.get_rotation_axis()),
+        s0_(beam.get_s0()),
+        phi0_(scan.get_oscillation()[0]),
+        dphi_(scan.get_oscillation()[1]),
+        index0_(scan.get_array_range()[0]),
+        index1_(scan.get_array_range()[1]){
+      DIALS_ASSERT(delta_b.all_gt(0.0));
+      DIALS_ASSERT(delta_m.all_gt(0.0));
+      DIALS_ASSERT(delta_m.size() == scan.get_num_images());
+      DIALS_ASSERT(delta_m.size() == delta_b.size());
+      DIALS_ASSERT(delta_m.size() > 0);
+      delta_b_r_.resize(delta_b.size());
+      delta_m_r_.resize(delta_m.size());
+      for (std::size_t i = 0; i < delta_b.size(); ++i) {
+        delta_b_r_[i] = 1.0 / delta_b[i];
+        delta_m_r_[i] = 1.0 / delta_m[i];
+      }
     }
 
     /**
@@ -163,9 +201,26 @@ namespace gaussian_rs {
       int ysize = y1 - y0;
       int zsize = z1 - z0;
 
-      /* DIALS_ASSERT(z >= z0 && z < z1); */
-      double delta_b_r2 = delta_b_r_ * delta_b_r_;
-      /* double delta_m_r2 = delta_m_r_ * delta_m_r_; */
+      // Get the divergence and mosaicity for this point
+      double delta_b_r2 = 0.0;
+      double delta_m_r2 = 0.0;
+      if (delta_b_r_.size() == 1) {
+        delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
+        delta_b_r2 = delta_m_r_[0]*delta_m_r_[0];
+      } else {
+        int frame0 = scan_.get_array_range()[0];
+        int index = (int)std::floor(frame) - frame0;
+        if (index < 0) {
+          delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
+          delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
+        } else if (index >= delta_b_r_.size()) {
+          delta_b_r2 = delta_b_r_.back()*delta_b_r_.back();
+          delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
+        } else {
+          delta_b_r2 = delta_b_r_[index]*delta_b_r_[index];
+          delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
+        }
+      }
 
       // Get the panel
       const Panel& panel = detector_[panel_number];
@@ -239,9 +294,26 @@ namespace gaussian_rs {
       int ysize = y1 - y0;
       int zsize = z1 - z0;
 
-      /* DIALS_ASSERT(z >= z0 && z < z1); */
-      double delta_b_r2 = delta_b_r_ * delta_b_r_;
-      /* double delta_m_r2 = delta_m_r_[z-index0_] * delta_m_r_[z-index0_]; */
+      // Get the divergence and mosaicity for this point
+      double delta_b_r2 = 0.0;
+      double delta_m_r2 = 0.0;
+      if (delta_b_r_.size() == 1) {
+        delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
+        delta_b_r2 = delta_m_r_[0]*delta_m_r_[0];
+      } else {
+        int frame0 = scan_.get_array_range()[0];
+        int index = (int)std::floor(frame) - frame0;
+        if (index < 0) {
+          delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
+          delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
+        } else if (index >= delta_b_r_.size()) {
+          delta_b_r2 = delta_b_r_.back()*delta_b_r_.back();
+          delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
+        } else {
+          delta_b_r2 = delta_b_r_[index]*delta_b_r_[index];
+          delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
+        }
+      }
 
       // Get the panel
       const Panel& panel = detector_[panel_number];
@@ -285,14 +357,15 @@ namespace gaussian_rs {
     }
 
     Detector detector_;
+    Scan scan_;
     vec3<double> m2_;
     vec3<double> s0_;
     double phi0_;
     double dphi_;
     int index0_;
     int index1_;
-    double delta_b_r_;
-    double delta_m_r_;
+    af::shared<double> delta_b_r_;
+    af::shared<double> delta_m_r_;
   };
 
 

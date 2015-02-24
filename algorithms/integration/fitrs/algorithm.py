@@ -74,14 +74,25 @@ class IntegrationAlgorithm(object):
 
     # Add the specs
     for experiment, model in zip(self._experiments, self._profile_model):
+
+      # Get the sigmas
+      sigma_b = model.sigma_b(deg=False)
+      sigma_m = model.sigma_m(deg=False)
+      n_sigma = model.n_sigma()
+      if isinstance(sigma_b, flex.double):
+        assert(len(sigma_b) == len(sigma_m))
+        sigma_b = sum(sigma_b) / len(sigma_b)
+        sigma_m = sum(sigma_m) / len(sigma_m)
+
+      # Add the spec
       algorithm.add(Spec(
         experiment.beam,
         experiment.detector,
         experiment.goniometer,
         experiment.scan,
-        model.sigma_b(deg=False),
-        model.sigma_m(deg=False),
-        model.n_sigma()))
+        sigma_b,
+        sigma_m,
+        n_sigma))
 
     # Perform the integration
     profiles = algorithm.execute(reflections)

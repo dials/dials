@@ -162,7 +162,7 @@ namespace gaussian_rs {
         delta_m = delta_mosaicity_[0];
       } else {
         int frame0 = scan_.get_array_range()[0];
-        int index = frame - frame0;
+        int index = (int)std::floor(frame) - frame0;
         if (index < 0) {
           delta_d = delta_divergence_.front();
           delta_m = delta_mosaicity_.front();

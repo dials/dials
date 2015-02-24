@@ -348,6 +348,6 @@ class ScanVaryingProfileModel(ProfileModelIface):
       }
       ''' % (
         self.n_sigma(),
-        str(["%g" % v for v in self.sigma_b(deg=True)]),
-        str(["%g" % v for v in self.sigma_m(deg=True)]))
+        ','.join(["%g" % v for v in self.sigma_b(deg=True)]),
+        ','.join(["%g" % v for v in self.sigma_m(deg=True)]))
     return factory.phil_scope.fetch(source=parse(phil_str))

@@ -154,6 +154,14 @@ namespace boost_python {
         arg("goniometer"),
         arg("scan"),
         arg("delta_m"))))
+      .def(init <const Beam&,
+                 const Goniometer&,
+                 const Scan&,
+                 const af::const_ref<double>& > ((
+        arg("beam"),
+        arg("goniometer"),
+        arg("scan"),
+        arg("delta_m"))))
       ;
 
     class_ <PartialityCalculator2D, bases<PartialityCalculatorIface> >(
@@ -178,6 +186,18 @@ namespace boost_python {
                  const Scan&,
                  double,
                  double > ((
+        arg("beam"),
+        arg("detector"),
+        arg("goniometer"),
+        arg("scan"),
+        arg("delta_divergence"),
+        arg("delta_mosaicity"))))
+      .def(init <const Beam&,
+                 const Detector&,
+                 const Goniometer&,
+                 const Scan&,
+                 const af::const_ref<double>&,
+                 const af::const_ref<double>& > ((
         arg("beam"),
         arg("detector"),
         arg("goniometer"),
