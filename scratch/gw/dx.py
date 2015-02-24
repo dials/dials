@@ -1,33 +1,10 @@
 #!/usr/bin/env dials.python
 #
-# Play area trying to derive useful derivatives for Rodrigues rotation formula
+# Play area trying to derive useful derivatives for Rodrigues rotation formula:
+#
 # http://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
-
-sage_script = '''
-r = var('r')
-s = var('s')
-
-k1 = cos(r) * sin(s)
-k2 = sin(r) * sin(s)
-k3 = cos(s)
-K = matrix([[0, -k3, k2], [k3, 0, -k1], [-k2, k1, 0]])
-t = var('t')
-I = matrix.identity(3)
-
-R = I + sin(t) * K + (1 - cos(t)) * K * K
-
-dRdr = diff(R, r)
-dRds = diff(R, s)
-
-for i in range(3):
-  for j in range(3):
-    print dRdr[i,j].trig_reduce().full_simplify()
-
-for i in range(3):
-  for j in range(3):
-    print dRds[i,j].trig_reduce().full_simplify()
-
-'''
+#
+# Details including sage script in dx.tex
 
 def skew_symm(v):
   '''Make matrix [v]_x from v. Essentially multiply vector by SO(3) basis
@@ -42,38 +19,53 @@ def skew_symm(v):
 
   return v1 * L1 + v2 * L2 + v3 * L3
 
-def dR_dki_gw(r, s, t):
+def dR_drs_fd(r, s, t):
+  # perform finite difference calculation of dR/dk1 as
+  # (1/2 eps) * (R(k1+eps) - R(k1-eps))
+
+  eps = 1.0e-8
+
+  Rpls = Rtk(t, krs(r + eps, s))
+  Rmns = Rtk(t, krs(r - eps, s))
+  ndRr = (0.5 / eps) * (Rpls - Rmns)
+
+  Rpls = Rtk(t, krs(r, s + eps))
+  Rmns = Rtk(t, krs(r, s - eps))
+  ndRs = (0.5 / eps) * (Rpls - Rmns)
+
+  return ndRr, ndRs
+
+def dR_drs_calc(r, s, t):
   from scitbx import matrix
   from math import sin, cos
 
-  cr = cos(r)
-  sr = sin(r)
-  cs = cos(s)
-  ss = sin(s)
-  ct = cos(t)
-  st = sin(t)
+  # pre-compile some useful values (makes code which follows slightly easier
+  # to read
+
+  cr = cos(r); sr = sin(r); cs = cos(s); ss = sin(s); ct = cos(t); st = sin(t)
+  cr2 = cos(r * 2); sr2 = sin(r * 2); cs2 = cos(s * 2); ss2 = sin(s * 2)
 
   dRdr = matrix.sqr([
-    -1/2*(cos(2*s)*sin(2*r) - sin(2*r))*ct + 1/2*cos(2*s)*sin(2*r) - cr*sr,
-    cr**2 - 1/2*cos(2*r)*cos(2*s) + 1/2*(cos(2*r)*cos(2*s) - cos(2*r))*ct - 1/2,
-    1/2*ct*sr*sin(2*s) + cr*ss*st - 1/2*sr*sin(2*s),
-    cr**2 - 1/2*cos(2*r)*cos(2*s) + 1/2*(cos(2*r)*cos(2*s) - cos(2*r))*ct - 1/2,
-    1/2*(cos(2*s)*sin(2*r) - sin(2*r))*ct - 1/2*cos(2*s)*sin(2*r) + cr*sr,
-    -1/2*cr*ct*sin(2*s) + sr*ss*st + 1/2*cr*sin(2*s),
-    1/2*ct*sr*sin(2*s) - cr*ss*st - 1/2*sr*sin(2*s),
-    -1/2*cr*ct*sin(2*s) - sr*ss*st + 1/2*cr*sin(2*s),
+    -1/2*(cs2*sr2 - sr2)*ct + 1/2*cs2*sr2 - cr*sr,
+    cr**2 - 1/2*cr2*cs2 + 1/2*(cr2*cs2 - cr2)*ct - 1/2,
+    1/2*ct*sr*ss2 + cr*ss*st - 1/2*sr*ss2,
+    cr**2 - 1/2*cr2*cs2 + 1/2*(cr2*cs2 - cr2)*ct - 1/2,
+    1/2*(cs2*sr2 - sr2)*ct - 1/2*cs2*sr2 + cr*sr,
+    -1/2*cr*ct*ss2 + sr*ss*st + 1/2*cr*ss2,
+    1/2*ct*sr*ss2 - cr*ss*st - 1/2*sr*ss2,
+    -1/2*cr*ct*ss2 - sr*ss*st + 1/2*cr*ss2,
     0])
 
   dRds = matrix.sqr([
-    -1/2*(cos(2*r) + 1)*ct*sin(2*s) + 1/2*cos(2*r)*sin(2*s) + cs*ss,
-    -1/2*ct*sin(2*r)*sin(2*s) + 1/2*sin(2*r)*sin(2*s) + ss*st,
-    -cr*cos(2*s)*ct + cs*sr*st + cr*cos(2*s),
-    -1/2*ct*sin(2*r)*sin(2*s) + 1/2*sin(2*r)*sin(2*s) - ss*st,
-    1/2*(cos(2*r) - 1)*ct*sin(2*s) - 1/2*cos(2*r)*sin(2*s) + cs*ss,
-    -cos(2*s)*ct*sr - cr*cs*st + cos(2*s)*sr,
-    -cr*cos(2*s)*ct - cs*sr*st + cr*cos(2*s),
-    -cos(2*s)*ct*sr + cr*cs*st + cos(2*s)*sr,
-    ct*sin(2*s) - 2*cs*ss])
+    -1/2*(cr2 + 1)*ct*ss2 + 1/2*cr2*ss2 + cs*ss,
+    -1/2*ct*sr2*ss2 + 1/2*sr2*ss2 + ss*st,
+    -cr*cs2*ct + cs*sr*st + cr*cs2,
+    -1/2*ct*sr2*ss2 + 1/2*sr2*ss2 - ss*st,
+    1/2*(cr2 - 1)*ct*ss2 - 1/2*cr2*ss2 + cs*ss,
+    -cs2*ct*sr - cr*cs*st + cs2*sr,
+    -cr*cs2*ct - cs*sr*st + cr*cs2,
+    -cs2*ct*sr + cr*cs*st + cs2*sr,
+    ct*ss2 - 2*cs*ss])
 
   return dRdr, dRds
 
@@ -89,7 +81,7 @@ def Rtk(t, k):
 
   R = I + s * K + (1 - c) * K * K
 
-  # make sure answer is right
+  # make sure answer agrees with scitbx matrix calculations (optional)
   # zero = R.inverse() * k.axis_and_angle_as_r3_rotation_matrix(t) - I
   # assert sum(zero.elems) < 1.0e-8
 
@@ -103,10 +95,9 @@ def krs(r, s):
   k3 = cos(s)
   return scitbx.matrix.col((k1, k2, k3))
 
-def dx():
+def work():
   import random
   import math
-  import scitbx.matrix
 
   # pick random rotation axis & angle - pick spherical coordinate basis to make
   # life easier in performing finite difference calculations
@@ -114,40 +105,19 @@ def dx():
   t = math.pi * random.random()
   r = 2 * math.pi * random.random()
   s = math.pi * random.random()
-  k = krs(r, s)
 
-  # perform finite difference calculation of dR/dk1 as
-  # (1/2 eps) * (R(k1+eps) - R(k1-eps))
-
-  eps = 1.0e-8
-
-  Rpls = Rtk(t, krs(r + eps, s))
-  Rmns = Rtk(t, krs(r - eps, s))
-  ndRr = (0.5 / eps) * (Rpls - Rmns)
-
-  Rpls = Rtk(t, krs(r, s + eps))
-  Rmns = Rtk(t, krs(r, s - eps))
-  ndRs = (0.5 / eps) * (Rpls - Rmns)
+  # finite difference version
+  ndRr, ndRs = dR_drs_fd(r, s, t)
 
   # now call on derivative calculation
-  dRr, dRs = dR_dki_gw(r, s, t)
+  dRr, dRs = dR_drs_calc(r, s, t)
 
-  print 'Numerical dR/dr:'
-  print ndRr
+  assert sum((ndRr - dRr).elems) < 1.0e-7
+  assert sum((ndRs - dRs).elems) < 1.0e-7
 
-  print 'Sums dR/dr:'
-  print dRr
-
-  print 'Numerical dR/ds:'
-  print ndRs
-
-  print 'Sums dR/ds:'
-  print dRs
-
-  I = scitbx.matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
-
-  print 'Summed differences:'
-  print sum((ndRr - dRr).elems)
-  print sum((ndRs - dRs).elems)
+def dx():
+  for j in range(100):
+    work()
+  print 'OK'
 
 dx()
