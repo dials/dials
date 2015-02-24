@@ -237,6 +237,7 @@ namespace dials { namespace af { namespace boost_python {
     // Check the input
     DIALS_ASSERT(self.is_consistent());
     DIALS_ASSERT(self.contains("bbox"));
+    DIALS_ASSERT(self.contains("shoebox") == false);
 
     // Compute the number of partials
     af::const_ref<int6> bbox = self["bbox"];
@@ -280,6 +281,91 @@ namespace dials { namespace af { namespace boost_python {
 
     // Set the new bounding boxes
     flex_table_suite::setitem_column(self, "bbox", bbox_new.const_ref());
+    flex_table_suite::setitem_column(self, "partial_id", indices.const_ref());
+  }
+
+  /**
+   * Split the reflection table in partials.
+   */
+  template <typename T>
+  void split_partials_with_shoebox(T self) {
+
+    // Check the input
+    DIALS_ASSERT(self.is_consistent());
+    DIALS_ASSERT(self.contains("bbox"));
+    DIALS_ASSERT(self.contains("shoebox"));
+    DIALS_ASSERT(self.contains("panel"));
+
+    // Compute the number of partials
+    af::const_ref< Shoebox<> > sbox = self["shoebox"];
+    af::const_ref<int6> bbox = self["bbox"];
+    af::const_ref<std::size_t> panel = self["panel"];
+    std::size_t num_full = bbox.size();
+    std::size_t num_partial = 0;
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+      DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+      DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+      num_partial += (bbox[i][5] - bbox[i][4]);
+    }
+    DIALS_ASSERT(num_partial >= num_full);
+
+    // If num partial is the same as num full exit early
+    if (num_partial == num_full) {
+      return;
+    }
+
+    // Create the new bounding boxes and indices
+    af::shared< Shoebox<> > sbox_new(num_partial);
+    af::shared<int6> bbox_new(num_partial);
+    af::shared<std::size_t> indices(num_partial);
+    std::size_t j = 0;
+    for (std::size_t i = 0; i < num_full; ++i) {
+      const Shoebox<> &s1 = sbox[i];
+      int6 b = bbox[i];
+      DIALS_ASSERT(s1.is_consistent());
+      DIALS_ASSERT(s1.bbox[0] == b[0] && s1.bbox[1] == b[1]);
+      DIALS_ASSERT(s1.bbox[2] == b[2] && s1.bbox[3] == b[3]);
+      DIALS_ASSERT(s1.bbox[4] == b[4] && s1.bbox[5] == b[5]);
+      std::size_t first = 0;
+      for (int z = bbox[i][4]; z < bbox[i][5]; ++z) {
+        DIALS_ASSERT(j < num_partial);
+        bbox_new[j] = b;
+        bbox_new[j][4] = z;
+        bbox_new[j][5] = z + 1;
+        indices[j] = i;
+        Shoebox<> s2(panel[i], bbox_new[j]);
+        s2.allocate();
+        DIALS_ASSERT(s2.is_consistent());
+        std::size_t last = first + s2.data.size();
+        std::copy(
+            s1.data.begin() + first,
+            s1.data.begin() + last,
+            s2.data.begin());
+        std::copy(
+            s1.mask.begin() + first,
+            s1.mask.begin() + last,
+            s2.mask.begin());
+        std::copy(
+            s1.background.begin() + first,
+            s1.background.begin() + last,
+            s2.background.begin());
+        sbox_new[j] = s2;
+        j++;
+        first = last;
+      }
+    }
+    DIALS_ASSERT(j == num_partial);
+
+    // Resize the reflection table
+    self.resize(num_partial);
+
+    // Reorder the reflections
+    flex_table_suite::reorder(self, indices.const_ref());
+
+    // Set the new bounding boxes
+    flex_table_suite::setitem_column(self, "bbox", bbox_new.const_ref());
+    flex_table_suite::setitem_column(self, "shoebox", sbox_new.const_ref());
     flex_table_suite::setitem_column(self, "partial_id", indices.const_ref());
   }
 
@@ -485,6 +571,8 @@ namespace dials { namespace af { namespace boost_python {
           &unset_flags_by_index<flex_table_type>)
         .def("split_partials",
           &split_partials<flex_table_type>)
+        .def("split_partials_with_shoebox",
+          &split_partials_with_shoebox<flex_table_type>)
         .def("split_partial_indices",
           &split_partial_indices<flex_table_type>)
         .def("split_by_experiment_id",

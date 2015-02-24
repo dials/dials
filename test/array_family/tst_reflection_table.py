@@ -30,6 +30,7 @@ class Test(object):
     self.tst_split_by_experiment_id()
     self.tst_split_indices_by_experiment_id()
     self.tst_split_partials()
+    self.tst_split_partials_with_shoebox()
 
   def tst_init(self):
     from dials.array_family import flex
@@ -966,6 +967,79 @@ class Test(object):
       assert(abs(r1['value3'] - r2['value3']) < EPS)
       assert(r1['bbox'] == r2['bbox'])
       assert(r1['partial_id'] == r2['partial_id'])
+
+    print 'OK'
+
+  def tst_split_partials_with_shoebox(self):
+    from dials.array_family import flex
+    from random import randint, uniform
+    from dials.model.data import Shoebox
+    r = flex.reflection_table()
+    r['value1'] = flex.double()
+    r['value2'] = flex.int()
+    r['value3'] = flex.double()
+    r['bbox'] = flex.int6()
+    r['panel'] = flex.size_t()
+    r['shoebox'] = flex.shoebox()
+    expected = []
+    for i in range(100):
+      x0 = randint(0, 100)
+      x1 = x0 + randint(1, 10)
+      y0 = randint(0, 100)
+      y1 = y0 + randint(1, 10)
+      z0 = randint(0, 100)
+      z1 = z0 + randint(1, 10)
+      v1 = uniform(0, 100)
+      v2 = randint(0, 100)
+      v3 = uniform(0, 100)
+      sbox = Shoebox(0, (x0, x1, y0, y1, z0, z1))
+      sbox.allocate()
+      assert(sbox.is_consistent())
+      w = x1 - x0
+      h = y1 - y0
+      for z in range(z0, z1):
+        for y in range(y0, y1):
+          for x in range(x0, x1):
+            sbox.data[z-z0,y-y0,x-x0] = x+y*w+z*w*h
+      r.append({
+        'value1' : v1,
+        'value2' : v2,
+        'value3' : v3,
+        'bbox' : (x0, x1, y0, y1, z0, z1),
+        'panel' : 0,
+        'shoebox' : sbox
+      })
+      for z in range(z0, z1):
+        sbox = Shoebox(0, (x0, x1, y0, y1, z, z+1))
+        sbox.allocate()
+        assert(sbox.is_consistent())
+        w = x1 - x0
+        h = y1 - y0
+        for y in range(y0, y1):
+          for x in range(x0, x1):
+            sbox.data[0,y-y0,x-x0] = x+y*w+z*w*h
+        expected.append({
+          'value1' : v1,
+          'value2' : v2,
+          'value3' : v3,
+          'bbox' : (x0, x1, y0, y1, z, z+1),
+          'partial_id' : i,
+          'panel' : 0,
+          'shoebox' : sbox
+        })
+
+    r.split_partials_with_shoebox()
+    assert(len(r) == len(expected))
+    EPS = 1e-7
+    for r1, r2 in zip(r, expected):
+      assert(abs(r1['value1'] - r2['value1']) < EPS)
+      assert(r1['value2'] == r2['value2'])
+      assert(abs(r1['value3'] - r2['value3']) < EPS)
+      assert(r1['bbox'] == r2['bbox'])
+      assert(r1['partial_id'] == r2['partial_id'])
+      assert(r1['panel'] == r2['panel'])
+      assert(r1['shoebox'].data.as_double().as_1d().all_approx_equal(
+        r2['shoebox'].data.as_double().as_1d()))
 
     print 'OK'
 
