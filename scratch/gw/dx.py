@@ -102,7 +102,7 @@ def work():
   # pick random rotation axis & angle - pick spherical coordinate basis to make
   # life easier in performing finite difference calculations
 
-  t = math.pi * random.random()
+  t = 2 * math.pi * random.random()
   r = 2 * math.pi * random.random()
   s = math.pi * random.random()
 
