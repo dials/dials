@@ -201,9 +201,10 @@ class ProfileModel(ProfileModelIface):
 class ScanVaryingProfileModel(ProfileModelIface):
   ''' A class to encapsulate the profile model. '''
 
-  def __init__(self, n_sigma, sigma_b, sigma_m, deg=False):
+  def __init__(self, n_sigma, sigma_b, sigma_m, deg=False, num_used=None):
     ''' Initialise with the parameters. '''
     from math import pi
+    self._num_used = num_used
     self._n_sigma = n_sigma
     if deg == True:
       self._sigma_b = sigma_b * pi / 180.0
@@ -231,9 +232,9 @@ class ScanVaryingProfileModel(ProfileModelIface):
     ''' Return sigma_m. '''
     from math import pi
     if index is None:
-      sigma_m = self._sigma_m[index]
-    else:
       sigma_m = self._sigma_m
+    else:
+      sigma_m = self._sigma_m[index]
     if deg == True:
       return sigma_m * 180.0 / pi
     return sigma_m
@@ -249,6 +250,16 @@ class ScanVaryingProfileModel(ProfileModelIface):
   def delta_m(self, index=None, deg=True):
     ''' Return delta_m. '''
     return self.sigma_m(index, deg=deg) * self.n_sigma()
+
+  def num_used(self, index=None):
+    ''' Return number of reflections used. '''
+    if index is None:
+      return self._num_used
+    return self._num_used[index]
+
+  def __len__(self):
+    assert(len(self._sigma_m) == len(self._sigma_b))
+    return len(self._sigma_m)
 
   def predict_reflections(self, experiment, dmin=None, dmax=None, margin=1,
                           force_static=False, **kwargs):

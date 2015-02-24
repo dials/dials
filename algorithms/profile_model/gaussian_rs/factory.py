@@ -49,7 +49,8 @@ class Factory(object):
       n_sigma = 3
       sigma_b = calculator.sigma_b()
       sigma_m = calculator.sigma_m()
-      return ScanVaryingProfileModel(n_sigma, sigma_b, sigma_m)
+      num = calculator.num()
+      return ScanVaryingProfileModel(n_sigma, sigma_b, sigma_m, num_used=num)
 
   @classmethod
   def compute(cls, params, experiments, reflections):
@@ -64,6 +65,7 @@ class Factory(object):
     from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.util.command_line import heading
     from logging import info
+    from libtbx.table_utils import format as table
     assert(len(experiments) > 0)
 
     info("=" * 80)
@@ -85,8 +87,21 @@ class Factory(object):
     profile_model_list = ProfileModelList()
     for exp, ref in zip(experiments, reflections_split):
       model = Factory.compute_single(exp, ref, min_zeta, scan_varying)
-      info(" Sigma_b: %.3f degrees" % model.sigma_b(deg=True))
-      info(" Sigma_m: %.3f degrees" % model.sigma_m(deg=True))
+      if scan_varying == False:
+        info(" Sigma_b: %.3f degrees" % model.sigma_b(deg=True))
+        info(" Sigma_m: %.3f degrees" % model.sigma_m(deg=True))
+      else:
+        rows = [["Frame",
+                 "# Reflections",
+                 "Sigma B",
+                 "Sigma M"]]
+        for i in range(len(model)):
+          rows.append([
+            '%d' % i,
+            '%d' % model.num_used(i),
+            '%.3f' % model.sigma_b(i, deg=True),
+            '%.3f' % model.sigma_m(i, deg=True)])
+        print table(rows, has_header=True, justify='right', prefix=' ')
       profile_model_list.append(model)
 
     # Return the profile models

@@ -295,6 +295,8 @@ class ScanVaryingProfileModelCalculator(object):
     ''' Calculate the profile model. '''
     from logging import info
     from copy import deepcopy
+    from collections import defaultdict
+    from dials.array_family import flex
 
     # Check input has what we want
     assert(experiment is not None)
@@ -318,29 +320,44 @@ class ScanVaryingProfileModelCalculator(object):
       reflections.del_selected(mask)
       info(' selected %d reflections' % len(reflections))
 
-    # Get the partial indices
-    reflections = deepcopy(reflections).split_partials()
-    print indices
-    1/0
+    # Split the reflections into partials
+    reflections = deepcopy(reflections)
+    reflections.split_partials_with_shoebox()
 
-    # Calculate the E.S.D of the beam divergence
-    info('Calculating E.S.D Beam Divergence.')
-    beam_divergence = ComputeEsdBeamDivergence(experiment.detector, reflections)
+    # Get a list of reflections for each frame
+    bbox = reflections['bbox']
+    index_list = defaultdict(list)
+    for i, (x0, x1, y0, y1, z0, z1) in enumerate(bbox):
+      assert(z1 == z0 + 1)
+      index_list[z0].append(i)
+    reflection_list = dict((key, reflections.select(flex.size_t(value)))
+                           for key, value in index_list.iteritems())
 
-    # Set the sigma b
-    self._sigma_b = beam_divergence.sigma()
+    # Compute for all frames
+    self._num = []
+    self._sigma_b = flex.double()
+    self._sigma_m = flex.double()
+    for i, reflections in reflection_list.iteritems():
 
-    # FIXME Calculate properly
-    if experiment.goniometer is None or experiment.scan is None:
-      self._sigma_m = 0.00001
-    else:
+      self._num.append(len(reflections))
+
+      info('Computing profile model for frame %d' % i)
+
+      # Calculate the E.S.D of the beam divergence
+      beam_divergence = ComputeEsdBeamDivergence(experiment.detector, reflections)
+
+      # Set the sigma b
+      self._sigma_b.append(beam_divergence.sigma())
 
       # Calculate the E.S.D of the reflecting range
-      info('Calculating E.S.D Reflecting Range.')
       reflecting_range = ComputeEsdReflectingRange(experiment, reflections)
 
       # Set the sigmas
-      self._sigma_m = reflecting_range.sigma()
+      self._sigma_m.append(reflecting_range.sigma())
+
+  def num(self):
+    ''' The number of reflections used. '''
+    return self._num
 
   def sigma_b(self):
     ''' Return the E.S.D beam divergence. '''
