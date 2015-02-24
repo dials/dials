@@ -35,6 +35,23 @@ def dR_drs_fd(r, s, t):
 
   return ndRr, ndRs
 
+def dR_dki(t, k):
+  '''This is equation (7) from Gallego & Yezzi'''
+  from scitbx import matrix
+  from math import sin, cos
+
+  K = skew_symm(k)
+
+  e = (matrix.col((1, 0, 0)),
+       matrix.col((0, 1, 0)),
+       matrix.col((0, 0, 1)))
+
+  return [
+    t * (cos(t) * k[i] * K + sin(t) * k[i] * K * K +
+      (sin(t)/t) * skew_symm(e[i] - k[i] * k) +
+      ((1 - cos(t)) / t) * (e[i] * k.transpose() + k * e[i].transpose() -
+                            2 * k[i] * k * k.transpose())) for i in range(3)]
+
 def dR_drs_calc(r, s, t):
   from scitbx import matrix
   from math import sin, cos
@@ -95,6 +112,22 @@ def krs(r, s):
   k3 = cos(s)
   return scitbx.matrix.col((k1, k2, k3))
 
+def dk_dr(r, s):
+  from math import sin, cos
+  import scitbx.matrix
+  k1 = -sin(r) * sin(s)
+  k2 = cos(r) * sin(s)
+  k3 = 0
+  return scitbx.matrix.col((k1, k2, k3))
+
+def dk_ds(r, s):
+  from math import sin, cos
+  import scitbx.matrix
+  k1 = cos(r) * cos(s)
+  k2 = sin(r) * cos(s)
+  k3 = -sin(s)
+  return scitbx.matrix.col((k1, k2, k3))
+
 def work():
   import random
   import math
@@ -120,4 +153,52 @@ def dx():
     work()
   print 'OK'
 
-dx()
+# dx()
+
+def work():
+  import random
+  import math
+  from scitbx import matrix
+
+  # pick random rotation axis & angle - pick spherical coordinate basis to make
+  # life easier in performing finite difference calculations
+
+  t = 2 * math.pi * random.random()
+  r = 2 * math.pi * random.random()
+  s = math.pi * random.random()
+  k = krs(r, s)
+
+  # finite difference version
+  ndRr, ndRs = dR_drs_fd(r, s, t)
+
+  # now call on derivative calculation
+  dRr, dRs = dR_drs_calc(r, s, t)
+
+  dRk = dR_dki(t, k)
+
+  dkdr = dk_dr(r, s)
+  dkds = dk_ds(r, s)
+
+  print 'dR/dr'
+  print 'FD'
+  print ndRr
+  print 'Analytical (new)'
+  m = matrix.sqr((0, 0, 0, 0, 0, 0, 0, 0, 0))
+  for i in range(3):
+    m += dkdr[i] * dRk[i]
+  print m
+  print 'Analytical (old)'
+  print dRr
+
+  print 'dR/ds'
+  print 'FD'
+  print ndRs
+  print 'Analytical (new)'
+  m = matrix.sqr((0, 0, 0, 0, 0, 0, 0, 0, 0))
+  for i in range(3):
+    m += dkds[i] * dRk[i]
+  print m
+  print 'Analytical (old)'
+  print dRs
+
+work()
