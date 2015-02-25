@@ -14,7 +14,7 @@ class installer(install_distribution.installer):
   product_name = "DIALS"
   dest_dir_prefix = "dials"
   make_apps = []
-  configure_modules = ["dials"]
+  configure_modules = ["dials", "xia2"]
   include_gui_packages = True
   base_package_options = ["--dials"]
   installer_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
