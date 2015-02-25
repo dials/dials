@@ -52,6 +52,28 @@ def dR_dki(t, k):
       ((1 - cos(t)) / t) * (e[i] * k.transpose() + k * e[i].transpose() -
                             2 * k[i] * k * k.transpose())) for i in range(3)]
 
+def gallego_yezzi_eqn9(t, k):
+  '''This is equation (9) from Gallego & Yezzi'''
+
+  from scitbx import matrix
+  from math import sin, cos
+
+  v = t*k
+  R = k.axis_and_angle_as_r3_rotation_matrix(t, deg=False)
+  I3 = matrix.identity(3)
+
+  V = skew_symm(v)
+
+  e = (matrix.col((1, 0, 0)),
+       matrix.col((0, 1, 0)),
+       matrix.col((0, 0, 1)))
+
+  term1 = [skew_symm(v.cross((I3 - R) * e[i])) for i in range(3)]
+
+  return [
+    (1./t) * (v[i] * V + term1[i]) * R for i in range(3)]
+
+
 def dR_drs_calc(r, s, t):
   from scitbx import matrix
   from math import sin, cos
@@ -174,7 +196,11 @@ def work():
   # now call on derivative calculation
   dRr, dRs = dR_drs_calc(r, s, t)
 
+  # G&Y eqn 7
   dRk = dR_dki(t, k)
+
+  # G&Y eqn 9
+  dRk2 = gallego_yezzi_eqn9(t, k)
 
   dkdr = dk_dr(r, s)
   dkds = dk_ds(r, s)
@@ -182,10 +208,15 @@ def work():
   print 'dR/dr'
   print 'FD'
   print ndRr
-  print 'Analytical (new)'
+  print 'Analytical (G&Y 7)'
   m = matrix.sqr((0, 0, 0, 0, 0, 0, 0, 0, 0))
   for i in range(3):
     m += dkdr[i] * dRk[i]
+  print m
+  print 'Analytical (G&Y 9)'
+  m = matrix.sqr((0, 0, 0, 0, 0, 0, 0, 0, 0))
+  for i in range(3):
+    m += dkdr[i] * dRk2[i]
   print m
   print 'Analytical (old)'
   print dRr
@@ -193,10 +224,15 @@ def work():
   print 'dR/ds'
   print 'FD'
   print ndRs
-  print 'Analytical (new)'
+  print 'Analytical (G&Y 7)'
   m = matrix.sqr((0, 0, 0, 0, 0, 0, 0, 0, 0))
   for i in range(3):
     m += dkds[i] * dRk[i]
+  print m
+  print 'Analytical (G&Y 9)'
+  m = matrix.sqr((0, 0, 0, 0, 0, 0, 0, 0, 0))
+  for i in range(3):
+    m += dkds[i] * dRk2[i]
   print m
   print 'Analytical (old)'
   print dRs
