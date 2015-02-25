@@ -237,4 +237,27 @@ def work():
   print 'Analytical (old)'
   print dRs
 
+  # Finally test the direct derivative of a rotated vector wrt the axis elements
+  # versus finite differences
+
+  # make a random vector to rotate
+  u = matrix.col((
+    random.random(),
+    random.random(),
+    random.random()))
+
+  # calc derivatives of rotated vector (Gallego & Yezzi equn 8)
+  from dials.algorithms.refinement.refinement_helpers import dRq_de
+  dr_de = dRq_de(t, k, u)
+  print
+  print "d[r]/d[e], where [r] = [R][u] is a rotation about [e] (G&Y 8)"
+  print dr_de
+
+  print "Compare with FD calculation"
+  dr_de_FD = [dR_ki * u for dR_ki in dRk]
+  dr_de_FD = [elt for vec in dr_de_FD for elt in vec] # flatten list
+  dr_de_FD = matrix.sqr(dr_de_FD).transpose() # make a matrix
+  print dr_de_FD
+
+
 work()

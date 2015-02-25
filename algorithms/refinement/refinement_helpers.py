@@ -45,6 +45,44 @@ def dR_from_axis_and_angle(axis, angle, deg=False):
                   sa * axis[2] * axis[1] - ca * axis[0],
                   sa * axis[2] * axis[2] - sa)))
 
+def skew_symm(v):
+  '''Make matrix [v]_x from v. Essentially multiply vector by SO(3) basis
+  set Lx, Ly, Lz. Equation (2) from Gallego & Yezzi paper.'''
+  import scitbx.matrix
+
+  L1 = scitbx.matrix.sqr((0, 0, 0, 0, 0, -1, 0, 1, 0))
+  L2 = scitbx.matrix.sqr((0, 0, 1, 0, 0, 0, -1, 0, 0))
+  L3 = scitbx.matrix.sqr((0, -1, 0, 1, 0, 0, 0, 0, 0))
+
+  v1, v2, v3 = v.elems
+
+  return v1 * L1 + v2 * L2 + v3 * L3
+
+def dRq_de(theta, e, q):
+  '''Calculate derivative of rotated vector r = R*q with respect to the elements
+  of the rotation axis e, where the angle of rotation is theta.
+
+  Implementation of Equation (8) from Gallego & Yezzi.'''
+
+  from scitbx import matrix
+
+  # ensure e is unit vector
+  e = e.normalize()
+
+  # rotation matrix
+  R = e.axis_and_angle_as_r3_rotation_matrix(theta, deg=False)
+
+  # rotation vector v
+  v = theta * e
+
+  qx = skew_symm(q)
+  vx = skew_symm(v)
+  vvt = v*v.transpose()
+  Rt = R.transpose()
+  I3 = matrix.identity(3)
+
+  return (-1./theta) * R * qx * (vvt + (Rt - I3) * vx)
+
 def random_param_shift(vals, sigmas):
   """Add a random (normal) shift to a parameter set, for testing"""
 
