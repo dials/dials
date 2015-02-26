@@ -38,23 +38,66 @@ the tutorial will hopefully be easy enough to follow.
 Individual processing
 ---------------------
 
+We start with a directory full of images. It is easy enough to figure out
+which files belong with which sweep from the filename templates, however note
+that the pattern between templates is not totally consistent. Most of the sweeps
+start with the prefix :samp:`xtal`, but some have just :samp:`xta`. One way of
+getting around this annoyance would be to use the fact that each dataset has
+a single :samp:`*.log` file associated with it and identify the different
+datasets that way. However, we would prefer to come up with a protocol that
+would work more generally, not just for the TehA data. Happily we  can just
+let DIALS figure it out for us::
+
+  dials.import /path/to/TehA/*.cbf
+
+  The following parameters have been modified:
+
+  input {
+    datablock = <image files>
+  }
+
+  --------------------------------------------------------------------------------
+  DataBlock 0
+    format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>
+    num images: 2711
+    num sweeps: 73
+    num stills: 0
+  --------------------------------------------------------------------------------
+  Writing datablocks to datablock.json
+
+With a single command we have determined that there are 73 individual sweeps
+comprising 2711 total images. Running the following command will give us
+information about each one of these datasets::
+
+  dials.show_models datablock.json
+
+That was a smooth start, but now things get abruptly more difficult.
 Before we perform the joint analysis, we want to do the individual analysis
 to compare to. This will also give us intermediate files so that we don't have
 to start from scratch when setting up the joint refinement job. Essentially
 we just want to run a sequence of DIALS commands to process each recorded sweep.
-This is an ideal job for scripting, which could be done in BASH, tcsh, perl,
+However we can't (currently) split the datablock into individual sweeps with
+a single command. We will have to start again with :program:`dials.import` for
+each sweep individually - but we really don't want to run this manually 73
+times.
+
+The solution is to write a script that will take the :samp:`datablock.json` as
+input, extract the filename templates, and run the same processing commands
+for each dataset. This script could be written in BASH, tcsh, perl,
 ruby - whatever you feel most comfortable with. However here we will use Python,
 or more specifically :program:`dials.python` because we will take advantage of
 features in the cctbx to make it easy to write scripts that take advantage
 of `parallel execution <http://cctbx.sourceforge.net/current/python/libtbx.easy_mp.html>`_.
+Also we would like to read :samp:`datablock.json` with the DIALS API rather than
+extracting the sweep templates using something like :program:`grep`.
 
 .. highlight:: python
 The script we used to do this is reproduced below. You can copy this into a file,
 save it as :samp:`process_TehA.py` and then run it as follows::
 
-  time dials.python process_TehA.py /path/to/images/
+  time dials.python process_TehA.py datablock.json
 
-On a Linux desktop with a Core i7 CPU running at 3.07GHz it script took about 8
+On a Linux desktop with a Core i7 CPU running at 3.07GHz the script took about 8
 minutes to run (though file i/o is a significant factor)
 and successfully processed 41 datasets. If time is short, you
 might like to start running it now before reading the description of what the
@@ -66,19 +109,20 @@ script does. If time is *really* short then try uncommenting the line
   import sys
   import glob
   from libtbx import easy_run, easy_mp
+  from dxtbx.datablock import DataBlockFactory
   from dials.test import cd
 
   def process_sweep(task):
     """Process a single sweep of data. The parameter 'task' will be a
     tuple, the first element of which is an integer job number and the
-    second is the path to the images to process"""
+    second is the filename template of the images to process"""
 
     num = task[0]
     template = task[1]
 
     # create directory
     with cd("sweep_%02d" % num):
-      cmd = "dials.import {0}".format(template)
+      cmd = "dials.import template={0}".format(template)
       easy_run.fully_buffered(command=cmd)
       easy_run.fully_buffered(command="dials.find_spots datablock.json")
 
@@ -128,14 +172,13 @@ script does. If time is *really* short then try uncommenting the line
   if __name__ == "__main__":
 
     if len(sys.argv) != 2:
-      sys.exit("Usage: dials.python process_TehA.py /path/to/images")
+      sys.exit("Usage: dials.python process_TehA.py datablock.json")
 
-    data_dir = os.path.abspath(sys.argv[1])
-
-    pathname = os.path.join(data_dir, "*.log")
-    logfiles = glob.glob(pathname)
-
-    templates = [f[:-8] + "*.cbf" for f in logfiles]
+    datablock_path = os.path.abspath(sys.argv[1])
+    datablock = DataBlockFactory.from_serialized_format(datablock_path,
+      check_format=False)[0]
+    sweeps = datablock.extract_sweeps()
+    templates = [e.get_template() for e in sweeps]
     tasklist = list(enumerate(sorted(templates)))
 
     if len(tasklist) == 0: sys.exit("No images found!")
@@ -163,7 +206,8 @@ script does. If time is *really* short then try uncommenting the line
 
 We will now describe what is in this script. The first lines are
 just imports to bring in modules from the Python standard library as well as
-:samp:`easy_run` and :samp:`easy_mp` from :samp:`libtbx` (part of cctbx) and
+:samp:`easy_run` and :samp:`easy_mp` from :samp:`libtbx` (part of cctbx),
+:samp:`DataBlockFactory` from :samp:`dxtbx` to read in the datablock and
 a class from the :samp:`dials.test` package that simplifies running commands in
 a new directory. Following that is a definition for the function
 :samp:`process_sweep` which will perform all the steps required to process one
@@ -172,20 +216,10 @@ dataset from images to unmerged MTZ. The code block under::
   if __name__ == "__main__":
 
 are the lines that are executed when the script starts. First we check that the
-script has been passed a path to images. Having looked at the directory
-containing images we realised that each dataset is associated with a log file,
-so a quick way to identify all the distinct datasets is just to list the
-:file:`*.log` files in the data directory. As an alternative we could have run::
-
-  dials.import /path/to/images/*.cbf
-
-As this would have created a datablock listing all of the individual datasets
-found, from which we could have extracted the ImageSweep templates. This would
-have been a more general solution, but for this case the existence of the
-:file:`.log` files gave us a simple alternative.
-
-After manipulating the :file:`.log` filenames we have templates for each of the
-datasets. We want to pass each of these into :samp:`process_sweep`, but instead
+script has been passed a path to a datablock. We then extract the 73 sweeps
+from this into a list, then get the filename templates from each element in the
+list. We associate each of these templates with a number to form a list of
+'tasks' to pass into :samp:`process_sweep`, but instead
 of doing this in serial we can use :samp:`easy_mp` to run in parallel. This will
 be okay because inside :samp:`process_sweep`, we ensure that all results are
 written into a new directory. First we use a facility of the :samp:`easy_mp`
@@ -201,7 +235,7 @@ directory, then change back to the old directory afterwards. If the directory
 already exists, this will fail with an error.
 
 The commands that are run inside the managed block are usual dials commands,
-familiar from the earlier tutorial. There are a couple of interesting points
+familiar from other tutorials. There are a couple of interesting points
 to note though. We know that the correct space group is *H* 3, but it turns out
 that if we ask :program:`dials.index` to find an *H* 3 cell right from the start
 then many of the sweeps fail to index. This is simply because the initial models
@@ -275,110 +309,110 @@ exist we make no effort to rescue the dataset, we just return early from the
 
 Here is the output of a run of the script::
 
-  Attempting to process the following datasets, with 7 processes
-  0: /home/david/xray/TehA/xta30_1_*.cbf
-  1: /home/david/xray/TehA/xta31_1_*.cbf
-  2: /home/david/xray/TehA/xta32_1_*.cbf
-  3: /home/david/xray/TehA/xta33_1_*.cbf
-  4: /home/david/xray/TehA/xta34_1_*.cbf
-  5: /home/david/xray/TehA/xta9_1_*.cbf
-  6: /home/david/xray/TehA/xta9_2_*.cbf
-  7: /home/david/xray/TehA/xtal10_1_*.cbf
-  8: /home/david/xray/TehA/xtal11_1_*.cbf
-  9: /home/david/xray/TehA/xtal12_1_*.cbf
-  10: /home/david/xray/TehA/xtal12_2_*.cbf
-  11: /home/david/xray/TehA/xtal13_1_*.cbf
-  12: /home/david/xray/TehA/xtal14_1_*.cbf
-  13: /home/david/xray/TehA/xtal15_1_*.cbf
-  14: /home/david/xray/TehA/xtal16_1_*.cbf
-  15: /home/david/xray/TehA/xtal17_1_*.cbf
-  16: /home/david/xray/TehA/xtal18_1_*.cbf
-  17: /home/david/xray/TehA/xtal19_1_*.cbf
-  18: /home/david/xray/TehA/xtal1_1_*.cbf
-  19: /home/david/xray/TehA/xtal20_1_*.cbf
-  20: /home/david/xray/TehA/xtal21_1_*.cbf
-  21: /home/david/xray/TehA/xtal22_1_*.cbf
-  22: /home/david/xray/TehA/xtal23_1_*.cbf
-  23: /home/david/xray/TehA/xtal24_1_*.cbf
-  24: /home/david/xray/TehA/xtal25_1_*.cbf
-  25: /home/david/xray/TehA/xtal26_1_*.cbf
-  26: /home/david/xray/TehA/xtal26_2_*.cbf
-  27: /home/david/xray/TehA/xtal27_1_*.cbf
-  28: /home/david/xray/TehA/xtal28_1_*.cbf
-  29: /home/david/xray/TehA/xtal29_1_*.cbf
-  30: /home/david/xray/TehA/xtal2_1_*.cbf
-  31: /home/david/xray/TehA/xtal35_1_*.cbf
-  32: /home/david/xray/TehA/xtal36_1_*.cbf
-  33: /home/david/xray/TehA/xtal37_1_*.cbf
-  34: /home/david/xray/TehA/xtal37_2_*.cbf
-  35: /home/david/xray/TehA/xtal38_1_*.cbf
-  36: /home/david/xray/TehA/xtal39_1_*.cbf
-  37: /home/david/xray/TehA/xtal3_2_*.cbf
-  38: /home/david/xray/TehA/xtal40_1_*.cbf
-  39: /home/david/xray/TehA/xtal40_2_*.cbf
-  40: /home/david/xray/TehA/xtal40_3_*.cbf
-  41: /home/david/xray/TehA/xtal40_4_*.cbf
-  42: /home/david/xray/TehA/xtal41_1_*.cbf
-  43: /home/david/xray/TehA/xtal42_1_*.cbf
-  44: /home/david/xray/TehA/xtal43_1_*.cbf
-  45: /home/david/xray/TehA/xtal44_1_*.cbf
-  46: /home/david/xray/TehA/xtal45_1_*.cbf
-  47: /home/david/xray/TehA/xtal46_1_*.cbf
-  48: /home/david/xray/TehA/xtal47_1_*.cbf
-  49: /home/david/xray/TehA/xtal48_1_*.cbf
-  50: /home/david/xray/TehA/xtal49_1_*.cbf
-  51: /home/david/xray/TehA/xtal4_3_*.cbf
-  52: /home/david/xray/TehA/xtal50_1_*.cbf
-  53: /home/david/xray/TehA/xtal50_2_*.cbf
-  54: /home/david/xray/TehA/xtal51_1_*.cbf
-  55: /home/david/xray/TehA/xtal52_1_*.cbf
-  56: /home/david/xray/TehA/xtal53_1_*.cbf
-  57: /home/david/xray/TehA/xtal54_1_*.cbf
-  58: /home/david/xray/TehA/xtal55_1_*.cbf
-  59: /home/david/xray/TehA/xtal55_2_*.cbf
-  60: /home/david/xray/TehA/xtal56_1_*.cbf
-  61: /home/david/xray/TehA/xtal56_2_*.cbf
-  62: /home/david/xray/TehA/xtal57_1_*.cbf
-  63: /home/david/xray/TehA/xtal58_1_*.cbf
-  64: /home/david/xray/TehA/xtal58_2_*.cbf
-  65: /home/david/xray/TehA/xtal58_3_*.cbf
-  66: /home/david/xray/TehA/xtal59_1_*.cbf
-  67: /home/david/xray/TehA/xtal5_1_*.cbf
-  68: /home/david/xray/TehA/xtal60_1_*.cbf
-  69: /home/david/xray/TehA/xtal60_2_*.cbf
-  70: /home/david/xray/TehA/xtal6_1_*.cbf
-  71: /home/david/xray/TehA/xtal7_1_*.cbf
-  72: /home/david/xray/TehA/xtal8_1_*.cbf
-  Job 06 failed in initial indexing
+  Attempting to process the following datasets, with 5 processes
+  0: /home/david/xray/TehA/xta30_1_####.cbf
+  1: /home/david/xray/TehA/xta31_1_####.cbf
+  2: /home/david/xray/TehA/xta32_1_####.cbf
+  3: /home/david/xray/TehA/xta33_1_####.cbf
+  4: /home/david/xray/TehA/xta34_1_####.cbf
+  5: /home/david/xray/TehA/xta9_1_####.cbf
+  6: /home/david/xray/TehA/xta9_2_####.cbf
+  7: /home/david/xray/TehA/xtal10_1_####.cbf
+  8: /home/david/xray/TehA/xtal11_1_####.cbf
+  9: /home/david/xray/TehA/xtal12_1_####.cbf
+  10: /home/david/xray/TehA/xtal12_2_####.cbf
+  11: /home/david/xray/TehA/xtal13_1_####.cbf
+  12: /home/david/xray/TehA/xtal14_1_####.cbf
+  13: /home/david/xray/TehA/xtal15_1_####.cbf
+  14: /home/david/xray/TehA/xtal16_1_####.cbf
+  15: /home/david/xray/TehA/xtal17_1_####.cbf
+  16: /home/david/xray/TehA/xtal18_1_####.cbf
+  17: /home/david/xray/TehA/xtal19_1_####.cbf
+  18: /home/david/xray/TehA/xtal1_1_####.cbf
+  19: /home/david/xray/TehA/xtal20_1_####.cbf
+  20: /home/david/xray/TehA/xtal21_1_####.cbf
+  21: /home/david/xray/TehA/xtal22_1_####.cbf
+  22: /home/david/xray/TehA/xtal23_1_####.cbf
+  23: /home/david/xray/TehA/xtal24_1_####.cbf
+  24: /home/david/xray/TehA/xtal25_1_####.cbf
+  25: /home/david/xray/TehA/xtal26_1_####.cbf
+  26: /home/david/xray/TehA/xtal26_2_####.cbf
+  27: /home/david/xray/TehA/xtal27_1_####.cbf
+  28: /home/david/xray/TehA/xtal28_1_####.cbf
+  29: /home/david/xray/TehA/xtal29_1_####.cbf
+  30: /home/david/xray/TehA/xtal2_1_####.cbf
+  31: /home/david/xray/TehA/xtal35_1_####.cbf
+  32: /home/david/xray/TehA/xtal36_1_####.cbf
+  33: /home/david/xray/TehA/xtal37_1_####.cbf
+  34: /home/david/xray/TehA/xtal37_2_####.cbf
+  35: /home/david/xray/TehA/xtal38_1_####.cbf
+  36: /home/david/xray/TehA/xtal39_1_####.cbf
+  37: /home/david/xray/TehA/xtal3_2_####.cbf
+  38: /home/david/xray/TehA/xtal40_1_####.cbf
+  39: /home/david/xray/TehA/xtal40_2_####.cbf
+  40: /home/david/xray/TehA/xtal40_3_####.cbf
+  41: /home/david/xray/TehA/xtal40_4_####.cbf
+  42: /home/david/xray/TehA/xtal41_1_####.cbf
+  43: /home/david/xray/TehA/xtal42_1_####.cbf
+  44: /home/david/xray/TehA/xtal43_1_####.cbf
+  45: /home/david/xray/TehA/xtal44_1_####.cbf
+  46: /home/david/xray/TehA/xtal45_1_####.cbf
+  47: /home/david/xray/TehA/xtal46_1_####.cbf
+  48: /home/david/xray/TehA/xtal47_1_####.cbf
+  49: /home/david/xray/TehA/xtal48_1_####.cbf
+  50: /home/david/xray/TehA/xtal49_1_####.cbf
+  51: /home/david/xray/TehA/xtal4_3_####.cbf
+  52: /home/david/xray/TehA/xtal50_1_####.cbf
+  53: /home/david/xray/TehA/xtal50_2_####.cbf
+  54: /home/david/xray/TehA/xtal51_1_####.cbf
+  55: /home/david/xray/TehA/xtal52_1_####.cbf
+  56: /home/david/xray/TehA/xtal53_1_####.cbf
+  57: /home/david/xray/TehA/xtal54_1_####.cbf
+  58: /home/david/xray/TehA/xtal55_1_####.cbf
+  59: /home/david/xray/TehA/xtal55_2_####.cbf
+  60: /home/david/xray/TehA/xtal56_1_####.cbf
+  61: /home/david/xray/TehA/xtal56_2_####.cbf
+  62: /home/david/xray/TehA/xtal57_1_####.cbf
+  63: /home/david/xray/TehA/xtal58_1_####.cbf
+  64: /home/david/xray/TehA/xtal58_2_####.cbf
+  65: /home/david/xray/TehA/xtal58_3_####.cbf
+  66: /home/david/xray/TehA/xtal59_1_####.cbf
+  67: /home/david/xray/TehA/xtal5_1_####.cbf
+  68: /home/david/xray/TehA/xtal60_1_####.cbf
+  69: /home/david/xray/TehA/xtal60_2_####.cbf
+  70: /home/david/xray/TehA/xtal6_1_####.cbf
+  71: /home/david/xray/TehA/xtal7_1_####.cbf
+  72: /home/david/xray/TehA/xtal8_1_####.cbf
   Job 04 failed in indexing
+  Job 06 failed in initial indexing
   Job 07 failed in indexing
   Job 08 failed in indexing
-  Job 12 failed in indexing
   Job 11 failed in indexing
   Job 10 failed in indexing
+  Job 13 failed in indexing
+  Job 12 failed in indexing
   Job 15 failed in initial indexing
-  Job 20 failed in initial indexing
   Job 21 failed in initial indexing
+  Job 20 failed in initial indexing
   Job 32 failed in initial indexing
   Job 37 failed in indexing
   Job 35 failed in indexing
   Job 38 failed in indexing
   Job 39 failed in indexing
-  Job 40 failed in indexing
   Job 41 failed in indexing
-  Job 44 failed in indexing
+  Job 40 failed in indexing
   Job 45 failed in indexing
+  Job 44 failed in indexing
   Job 47 failed in indexing
   Job 52 failed in initial indexing
-  Job 49 failed in indexing
+  Job 49 failed in initial indexing
   Job 55 failed in initial indexing
   Job 57 failed in initial indexing
   Job 61 failed in indexing
   Job 62 failed in indexing
   Job 69 failed in indexing
-  Job 66 failed in indexing
-  Job 68 failed in indexing
   Job 70 failed in indexing
+  Job 68 failed in indexing
   Job 71 failed in initial indexing
   Job 72 failed in indexing
   Successfully created the following MTZs:
@@ -388,7 +422,6 @@ Here is the output of a run of the script::
   sweep_03/integrated.mtz
   sweep_05/integrated.mtz
   sweep_09/integrated.mtz
-  sweep_13/integrated.mtz
   sweep_14/integrated.mtz
   sweep_16/integrated.mtz
   sweep_17/integrated.mtz
@@ -422,11 +455,13 @@ Here is the output of a run of the script::
   sweep_63/integrated.mtz
   sweep_64/integrated.mtz
   sweep_65/integrated.mtz
+  sweep_66/integrated.mtz
   sweep_67/integrated.mtz
 
-  real  7m46.071s
-  user  22m19.016s
-  sys 1m47.299s
+  real	7m45.656s
+  user	25m32.532s
+  sys	1m34.090s
+
 
 Analysis of individually processed datasets
 -------------------------------------------
@@ -440,14 +475,14 @@ The dendrogram resulting from clustering is shown here:
 
   .. image:: /figures/tree_01.png
 
-Immediately the dendrogram shows that datasets 7 and 28 are extreme outliers.
-From :file:`FINAL_list_of_files.dat` we can see that these refer to
-:file:`sweep_13/integrated.mtz` and :file:`sweep_46/integrated.mtz`.
+Immediately the dendrogram shows that dataset 27 is an extreme outlier.
+From :file:`FINAL_list_of_files.dat` we can see that this refers to
+:file:`sweep_46/integrated.mtz`.
 As we kept all the dials :file:`.log` files
-from DIALS processing we could investigate this further, however as these are
-only two sweeps out of 41, our time is better spent throwing them away and
-moving on. So, edit :file:`individual_mtzs.dat` to remove
-the lines :file:`sweep_13/integrated.mtz` and :file:`sweep_46/integrated.mtz`
+from DIALS processing we could investigate this further, however as this is
+only one sweep out of 41, we decide just to throw it away and
+move on. So, edit :file:`individual_mtzs.dat` to remove
+the line :file:`sweep_46/integrated.mtz`
 and rerun blend.
 
 Now the dendrogram looks better:
@@ -455,7 +490,7 @@ Now the dendrogram looks better:
   .. image:: /figures/tree_02.png
 
 The Linear Cell Variation (LCV) is now less than 1%, with an absolute value
-of 0.42 Angstroms, indicating good isomorphism amongst all the remaining
+of 1.03 Angstroms, indicating good isomorphism amongst all the remaining
 datasets.
 
 Joint refinement
@@ -491,89 +526,88 @@ listing the individual sweeps in order. We can use
 file looks like this::
 
   input {
-    experiments = "/home/david/TehA_processing/sweep_00/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_01/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_02/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_03/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_05/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_09/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_13/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_14/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_16/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_17/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_18/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_19/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_22/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_23/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_24/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_25/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_26/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_27/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_28/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_29/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_30/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_31/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_33/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_34/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_36/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_42/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_43/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_46/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_48/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_50/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_51/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_53/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_54/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_56/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_58/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_59/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_60/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_63/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_64/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_65/refined_experiments.json"
-    experiments = "/home/david/TehA_processing/sweep_67/refined_experiments.json"
-    reflections = "/home/david/TehA_processing/sweep_00/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_01/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_02/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_03/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_05/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_09/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_13/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_14/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_16/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_17/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_18/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_19/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_22/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_23/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_24/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_25/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_26/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_27/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_28/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_29/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_30/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_31/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_33/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_34/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_36/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_42/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_43/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_46/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_48/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_50/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_51/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_53/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_54/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_56/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_58/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_59/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_60/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_63/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_64/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_65/indexed.pickle"
-    reflections = "/home/david/TehA_processing/sweep_67/indexed.pickle"
+    experiments = "sweep_00/refined_experiments.json"
+    experiments = "sweep_01/refined_experiments.json"
+    experiments = "sweep_02/refined_experiments.json"
+    experiments = "sweep_03/refined_experiments.json"
+    experiments = "sweep_05/refined_experiments.json"
+    experiments = "sweep_09/refined_experiments.json"
+    experiments = "sweep_14/refined_experiments.json"
+    experiments = "sweep_16/refined_experiments.json"
+    experiments = "sweep_17/refined_experiments.json"
+    experiments = "sweep_18/refined_experiments.json"
+    experiments = "sweep_19/refined_experiments.json"
+    experiments = "sweep_22/refined_experiments.json"
+    experiments = "sweep_23/refined_experiments.json"
+    experiments = "sweep_24/refined_experiments.json"
+    experiments = "sweep_25/refined_experiments.json"
+    experiments = "sweep_26/refined_experiments.json"
+    experiments = "sweep_27/refined_experiments.json"
+    experiments = "sweep_28/refined_experiments.json"
+    experiments = "sweep_29/refined_experiments.json"
+    experiments = "sweep_30/refined_experiments.json"
+    experiments = "sweep_31/refined_experiments.json"
+    experiments = "sweep_33/refined_experiments.json"
+    experiments = "sweep_34/refined_experiments.json"
+    experiments = "sweep_36/refined_experiments.json"
+    experiments = "sweep_42/refined_experiments.json"
+    experiments = "sweep_43/refined_experiments.json"
+    experiments = "sweep_48/refined_experiments.json"
+    experiments = "sweep_50/refined_experiments.json"
+    experiments = "sweep_51/refined_experiments.json"
+    experiments = "sweep_53/refined_experiments.json"
+    experiments = "sweep_54/refined_experiments.json"
+    experiments = "sweep_56/refined_experiments.json"
+    experiments = "sweep_58/refined_experiments.json"
+    experiments = "sweep_59/refined_experiments.json"
+    experiments = "sweep_60/refined_experiments.json"
+    experiments = "sweep_63/refined_experiments.json"
+    experiments = "sweep_64/refined_experiments.json"
+    experiments = "sweep_65/refined_experiments.json"
+    experiments = "sweep_66/refined_experiments.json"
+    experiments = "sweep_67/refined_experiments.json"
+    reflections = "sweep_00/indexed.pickle"
+    reflections = "sweep_01/indexed.pickle"
+    reflections = "sweep_02/indexed.pickle"
+    reflections = "sweep_03/indexed.pickle"
+    reflections = "sweep_05/indexed.pickle"
+    reflections = "sweep_09/indexed.pickle"
+    reflections = "sweep_14/indexed.pickle"
+    reflections = "sweep_16/indexed.pickle"
+    reflections = "sweep_17/indexed.pickle"
+    reflections = "sweep_18/indexed.pickle"
+    reflections = "sweep_19/indexed.pickle"
+    reflections = "sweep_22/indexed.pickle"
+    reflections = "sweep_23/indexed.pickle"
+    reflections = "sweep_24/indexed.pickle"
+    reflections = "sweep_25/indexed.pickle"
+    reflections = "sweep_26/indexed.pickle"
+    reflections = "sweep_27/indexed.pickle"
+    reflections = "sweep_28/indexed.pickle"
+    reflections = "sweep_29/indexed.pickle"
+    reflections = "sweep_30/indexed.pickle"
+    reflections = "sweep_31/indexed.pickle"
+    reflections = "sweep_33/indexed.pickle"
+    reflections = "sweep_34/indexed.pickle"
+    reflections = "sweep_36/indexed.pickle"
+    reflections = "sweep_42/indexed.pickle"
+    reflections = "sweep_43/indexed.pickle"
+    reflections = "sweep_48/indexed.pickle"
+    reflections = "sweep_50/indexed.pickle"
+    reflections = "sweep_51/indexed.pickle"
+    reflections = "sweep_53/indexed.pickle"
+    reflections = "sweep_54/indexed.pickle"
+    reflections = "sweep_56/indexed.pickle"
+    reflections = "sweep_58/indexed.pickle"
+    reflections = "sweep_59/indexed.pickle"
+    reflections = "sweep_60/indexed.pickle"
+    reflections = "sweep_63/indexed.pickle"
+    reflections = "sweep_64/indexed.pickle"
+    reflections = "sweep_65/indexed.pickle"
+    reflections = "sweep_66/indexed.pickle"
+    reflections = "sweep_67/indexed.pickle"
   }
+
 
 We called this file :file:`experiments_and_reflections.phil` then run
 :program:`dials.combine_experiments` like this::
@@ -597,9 +631,9 @@ to the final :file:`combined_reflections.pickle`::
   | 2          | 1209 |
   | 3          | 1376 |
   | 4          | 452  |
-  | 5          | 1663 |
+  | 5          | 1664 |
   | 6          | 1528 |
-  | 7          | 1445 |
+  | 7          | 1448 |
   | 8          | 1275 |
   | 9          | 239  |
   | 10         | 1614 |
@@ -614,23 +648,24 @@ to the final :file:`combined_reflections.pickle`::
   | 19         | 243  |
   | 20         | 1061 |
   | 21         | 2416 |
-  | 22         | 1884 |
+  | 22         | 1885 |
   | 23         | 949  |
   | 24         | 3569 |
   | 25         | 2967 |
   | 26         | 935  |
   | 27         | 1329 |
   | 28         | 650  |
-  | 29         | 1324 |
+  | 29         | 1325 |
   | 30         | 633  |
-  | 31         | 1231 |
+  | 31         | 1233 |
   | 32         | 2131 |
   | 33         | 2094 |
   | 34         | 2141 |
   | 35         | 1661 |
-  | 36         | 2543 |
+  | 36         | 2544 |
   | 37         | 2227 |
-  | 38         | 1138 |
+  | 38         | 982  |
+  | 39         | 1138 |
   ---------------------
   Saving combined experiments to combined_experiments.json
   Saving combined reflections to combined_reflections.pickle
@@ -650,7 +685,7 @@ crystal refinement job. First we try outlier rejection, so that the refinement
 run is similar to the jobs we ran on individual datasets::
 
   dials.refine combined_experiments.json combined_reflections.pickle \
-    do_outlier_rejection=true
+    use_all_reflections=true do_outlier_rejection=true
 
 ::
 
@@ -669,18 +704,18 @@ run is similar to the jobs we ran on individual datasets::
   Configuring refiner
 
   Summary statistics for observations matched to predictions:
-  ----------------------------------------------------------------------
-  |                   | Min    | Q1      | Med        | Q3     | Max   |
-  ----------------------------------------------------------------------
-  | Xc - Xo (mm)      | -14.61 | -0.8011 | -0.08364   | 0.7517 | 15.76 |
-  | Yc - Yo (mm)      | -21.55 | -0.4907 | -0.01917   | 0.4474 | 16.99 |
-  | Phic - Phio (deg) | -16.99 | -0.2279 | -0.0006402 | 0.2305 | 28.72 |
-  | X weights         | 108.4  | 129.6   | 132.2      | 133.8  | 135.2 |
-  | Y weights         | 114.8  | 133.8   | 134.7      | 135.1  | 135.2 |
-  | Phi weights       | 81.19  | 99.99   | 100        | 100    | 100   |
-  ----------------------------------------------------------------------
+  ---------------------------------------------------------------------
+  |                   | Min    | Q1      | Med       | Q3     | Max   |
+  ---------------------------------------------------------------------
+  | Xc - Xo (mm)      | -14.68 | -0.8191 | -0.0739   | 0.7823 | 15.85 |
+  | Yc - Yo (mm)      | -21.75 | -0.5103 | -0.01936  | 0.4596 | 17.19 |
+  | Phic - Phio (deg) | -17.36 | -0.2058 | 0.0004136 | 0.2091 | 28.12 |
+  | X weights         | 233    | 359.2   | 379.4     | 392.9  | 405.6 |
+  | Y weights         | 264.7  | 392.9   | 401.3     | 404.4  | 405.6 |
+  | Phi weights       | 177    | 299.9   | 300       | 300    | 300   |
+  ---------------------------------------------------------------------
 
-  15921 reflections have been rejected as outliers
+  16559 reflections have been rejected as outliers
   Traceback (most recent call last):
     File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 370, in <module>
       halraiser(e)
@@ -688,11 +723,11 @@ run is similar to the jobs we ran on individual datasets::
       script.run()
     File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 274, in run
       reflections, experiments)
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 336, in from_parameters_data_experiments
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 340, in from_parameters_data_experiments
       verbosity=verbosity)
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 581, in _build_components
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 585, in _build_components
       target = cls.config_target(params, experiments, refman, pred_param, do_stills)
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 1004, in config_target
+    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 1008, in config_target
       options.jacobian_max_nref)
     File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/target.py", line 404, in __init__
       self._reflection_manager.finalise()
@@ -700,10 +735,10 @@ run is similar to the jobs we ran on individual datasets::
       self._check_too_few()
     File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/reflection_manager.py", line 262, in _check_too_few
       raise RuntimeError(msg)
-  RuntimeError: Please report this error to dials-support@lists.sourceforge.net: Remaining number of reflections = 6, for experiment 19, which is below the configured limit for this reflection manager
+  RuntimeError: Please report this error to dials-support@lists.sourceforge.net: Remaining number of reflections = 8, for experiment 19, which is below the configured limit for this reflection manager
 
 Oops! That wasn't good. Looking at the error we see that experiment 19 provides
-only 6 reflections to refinement, which is disallowed by a default
+only 8 reflections to refinement, which is disallowed by a default
 parameters of :program:`dials.refine`, namely ``minimum_number_of_reflections=20``.
 But from the output of :program:`dials.combine_experiments` we see that experiment
 19 has 243 indexed reflections. What happened? Well, forcing the individual
@@ -740,16 +775,16 @@ This worked much better::
   Configuring refiner
 
   Summary statistics for observations matched to predictions:
-  ----------------------------------------------------------------------
-  |                   | Min    | Q1      | Med        | Q3     | Max   |
-  ----------------------------------------------------------------------
-  | Xc - Xo (mm)      | -14.61 | -0.8011 | -0.08364   | 0.7517 | 15.76 |
-  | Yc - Yo (mm)      | -21.55 | -0.4907 | -0.01917   | 0.4474 | 16.99 |
-  | Phic - Phio (deg) | -16.99 | -0.2279 | -0.0006402 | 0.2305 | 28.72 |
-  | X weights         | 108.4  | 129.6   | 132.2      | 133.8  | 135.2 |
-  | Y weights         | 114.8  | 133.8   | 134.7      | 135.1  | 135.2 |
-  | Phi weights       | 81.19  | 99.99   | 100        | 100    | 100   |
-  ----------------------------------------------------------------------
+  ---------------------------------------------------------------------
+  |                   | Min    | Q1      | Med       | Q3     | Max   |
+  ---------------------------------------------------------------------
+  | Xc - Xo (mm)      | -14.68 | -0.8191 | -0.0739   | 0.7823 | 15.85 |
+  | Yc - Yo (mm)      | -21.75 | -0.5103 | -0.01936  | 0.4596 | 17.19 |
+  | Phic - Phio (deg) | -17.36 | -0.2058 | 0.0004136 | 0.2091 | 28.12 |
+  | X weights         | 233    | 359.2   | 379.4     | 392.9  | 405.6 |
+  | Y weights         | 264.7  | 392.9   | 401.3     | 404.4  | 405.6 |
+  | Phi weights       | 177    | 299.9   | 300       | 300    | 300   |
+  ---------------------------------------------------------------------
 
   Performing refinement...
 
@@ -758,20 +793,20 @@ This worked much better::
   | Step | Nref  | RMSD_X  | RMSD_Y  | RMSD_Phi |
   |      |       | (mm)    | (mm)    | (deg)    |
   -----------------------------------------------
-  | 0    | 56703 | 1.6811  | 1.3938  | 1.3119   |
-  | 1    | 56703 | 1.3728  | 1.0393  | 0.70978  |
-  | 2    | 56703 | 1.1418  | 0.86757 | 0.65172  |
-  | 3    | 56703 | 0.87359 | 0.66465 | 0.57709  |
-  | 4    | 56703 | 0.60635 | 0.47194 | 0.44672  |
-  | 5    | 56703 | 0.37995 | 0.31262 | 0.28325  |
-  | 6    | 56703 | 0.22145 | 0.19743 | 0.16597  |
-  | 7    | 56703 | 0.17484 | 0.16522 | 0.12868  |
-  | 8    | 56703 | 0.17164 | 0.16306 | 0.12515  |
-  | 9    | 56703 | 0.1714  | 0.16287 | 0.12503  |
-  | 10   | 56703 | 0.1713  | 0.16277 | 0.12496  |
-  | 11   | 56703 | 0.17131 | 0.16274 | 0.12491  |
-  | 12   | 56703 | 0.17132 | 0.16273 | 0.12489  |
-  | 13   | 56703 | 0.17132 | 0.16273 | 0.12489  |
+  | 0    | 57629 | 1.6886  | 1.3984  | 1.2926   |
+  | 1    | 57629 | 1.3726  | 1.0295  | 0.69528  |
+  | 2    | 57629 | 1.1462  | 0.86286 | 0.64657  |
+  | 3    | 57629 | 0.88257 | 0.6659  | 0.5764   |
+  | 4    | 57629 | 0.61437 | 0.47405 | 0.44825  |
+  | 5    | 57629 | 0.38414 | 0.31317 | 0.28436  |
+  | 6    | 57629 | 0.22337 | 0.19783 | 0.16576  |
+  | 7    | 57629 | 0.1759  | 0.16573 | 0.12827  |
+  | 8    | 57629 | 0.17255 | 0.16354 | 0.12475  |
+  | 9    | 57629 | 0.17228 | 0.16336 | 0.12463  |
+  | 10   | 57629 | 0.17217 | 0.16325 | 0.12457  |
+  | 11   | 57629 | 0.17218 | 0.16322 | 0.12452  |
+  | 12   | 57629 | 0.17219 | 0.16322 | 0.1245   |
+  | 13   | 57629 | 0.17219 | 0.16321 | 0.1245   |
   -----------------------------------------------
   RMSD no longer decreasing
 
@@ -780,26 +815,26 @@ This worked much better::
   | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
   |     |      | (px)    | (px)    | (images) |
   ---------------------------------------------
-  | 0   | 1374 | 0.63135 | 0.40973 | 0.35223  |
-  | 1   | 1326 | 0.65259 | 0.39367 | 0.34253  |
-  | 2   | 1138 | 0.90566 | 0.85055 | 0.75363  |
-  | 3   | 1294 | 0.67156 | 0.5088  | 0.27957  |
-  | 4   | 406  | 0.76238 | 0.50361 | 0.3676   |
-  | 5   | 1578 | 1.0475  | 1.5447  | 0.93663  |
-  | 6   | 1452 | 0.64011 | 0.33055 | 0.34482  |
-  | 7   | 1372 | 1.0639  | 1.116   | 0.89393  |
-  | 8   | 1203 | 1.0557  | 1.4787  | 0.6994   |
-  | 9   | 213  | 2.0415  | 2.0383  | 1.3647   |
-  | 10  | 1543 | 0.7825  | 0.47977 | 0.5151   |
-  | 11  | 980  | 0.96061 | 1.1603  | 0.72562  |
-  | 12  | 1783 | 0.74111 | 0.84793 | 0.67643  |
-  | 13  | 1424 | 0.73923 | 0.51892 | 0.37183  |
-  | 14  | 1937 | 1.1602  | 1.4408  | 0.84359  |
-  | 15  | 1237 | 0.92553 | 0.50867 | 0.42323  |
-  | 16  | 1751 | 0.71129 | 0.37352 | 0.34289  |
-  | 17  | 1742 | 0.66178 | 0.40449 | 0.29842  |
-  | 18  | 1550 | 0.84153 | 1.2567  | 0.71992  |
-  | 19  | 222  | 1.1245  | 0.77295 | 0.95415  |
+  | 0   | 1374 | 0.63002 | 0.40512 | 0.35154  |
+  | 1   | 1325 | 0.65204 | 0.38951 | 0.34116  |
+  | 2   | 1138 | 0.90682 | 0.85212 | 0.75447  |
+  | 3   | 1294 | 0.67566 | 0.51293 | 0.27902  |
+  | 4   | 406  | 0.76138 | 0.50378 | 0.36697  |
+  | 5   | 1579 | 1.059   | 1.5602  | 0.93859  |
+  | 6   | 1452 | 0.63949 | 0.32975 | 0.3447   |
+  | 7   | 1376 | 1.0682  | 1.1586  | 0.90346  |
+  | 8   | 1203 | 1.0566  | 1.4784  | 0.69921  |
+  | 9   | 213  | 2.0411  | 2.0389  | 1.3643   |
+  | 10  | 1543 | 0.78169 | 0.47908 | 0.51499  |
+  | 11  | 980  | 0.96025 | 1.16    | 0.72548  |
+  | 12  | 1783 | 0.74162 | 0.84784 | 0.6762   |
+  | 13  | 1424 | 0.73974 | 0.51861 | 0.37127  |
+  | 14  | 1937 | 1.1603  | 1.4405  | 0.84322  |
+  | 15  | 1237 | 0.92314 | 0.50443 | 0.42126  |
+  | 16  | 1751 | 0.71062 | 0.37032 | 0.34264  |
+  | 17  | 1742 | 0.6608  | 0.40137 | 0.2978   |
+  | 18  | 1550 | 0.84246 | 1.2565  | 0.71967  |
+  | 19  | 222  | 1.1222  | 0.77297 | 0.95399  |
   ---------------------------------------------
   Table truncated to show the first 20 experiments only
   Re-run with verbosity >= 2 to show all experiments
@@ -818,10 +853,10 @@ logfile :file:`sweep_00/dials.refine.log`::
 
   RMSDs by experiment:
   --------------------------------------------
-  | Exp | Nref | RMSD_X | RMSD_Y  | RMSD_Z   |
-  |     |      | (px)   | (px)    | (images) |
+  | Exp | Nref | RMSD_X  | RMSD_Y | RMSD_Z   |
+  |     |      | (px)    | (px)   | (images) |
   --------------------------------------------
-  | 0   | 1342 | 0.534  | 0.30643 | 0.2561   |
+  | 0   | 1000 | 0.57553 | 0.3374 | 0.26322  |
   --------------------------------------------
 
 Clearly allowing the detector and beam to refine only against this data lets
@@ -844,21 +879,21 @@ The RMSD tables resulting from this::
   | Step | Nref  | RMSD_X  | RMSD_Y   | RMSD_Phi |
   |      |       | (mm)    | (mm)     | (deg)    |
   ------------------------------------------------
-  | 0    | 50112 | 0.10315 | 0.062074 | 0.058395 |
-  | 1    | 50112 | 0.10292 | 0.061742 | 0.057896 |
-  | 2    | 50112 | 0.10271 | 0.061592 | 0.057869 |
-  | 3    | 50112 | 0.1024  | 0.061383 | 0.057734 |
-  | 4    | 50112 | 0.10213 | 0.061227 | 0.057411 |
-  | 5    | 50112 | 0.10197 | 0.061185 | 0.057029 |
-  | 6    | 50112 | 0.10186 | 0.061202 | 0.056831 |
-  | 7    | 50112 | 0.10178 | 0.061214 | 0.056807 |
-  | 8    | 50112 | 0.10173 | 0.061164 | 0.056806 |
-  | 9    | 50112 | 0.10168 | 0.061055 | 0.056777 |
-  | 10   | 50112 | 0.10167 | 0.060948 | 0.056713 |
-  | 11   | 50112 | 0.1017  | 0.060897 | 0.05664  |
-  | 12   | 50112 | 0.10172 | 0.060884 | 0.056602 |
-  | 13   | 50112 | 0.10172 | 0.060882 | 0.056594 |
-  | 14   | 50112 | 0.10172 | 0.060882 | 0.056593 |
+  | 0    | 50918 | 0.10361 | 0.06205  | 0.05831  |
+  | 1    | 50918 | 0.10333 | 0.061719 | 0.057777 |
+  | 2    | 50918 | 0.10311 | 0.061549 | 0.057746 |
+  | 3    | 50918 | 0.10277 | 0.061306 | 0.057601 |
+  | 4    | 50918 | 0.10246 | 0.061116 | 0.057267 |
+  | 5    | 50918 | 0.10228 | 0.061063 | 0.056877 |
+  | 6    | 50918 | 0.10215 | 0.061081 | 0.05668  |
+  | 7    | 50918 | 0.10208 | 0.061099 | 0.05666  |
+  | 8    | 50918 | 0.10204 | 0.061066 | 0.056661 |
+  | 9    | 50918 | 0.10201 | 0.060985 | 0.056634 |
+  | 10   | 50918 | 0.102   | 0.0609   | 0.056573 |
+  | 11   | 50918 | 0.10203 | 0.060857 | 0.056504 |
+  | 12   | 50918 | 0.10205 | 0.060845 | 0.056468 |
+  | 13   | 50918 | 0.10206 | 0.060843 | 0.05646  |
+  | 14   | 50918 | 0.10206 | 0.060843 | 0.05646  |
   ------------------------------------------------
   RMSD no longer decreasing
 
@@ -867,30 +902,28 @@ The RMSD tables resulting from this::
   | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
   |     |      | (px)    | (px)    | (images) |
   ---------------------------------------------
-  | 0   | 1302 | 0.57135 | 0.34799 | 0.30443  |
-  | 1   | 1275 | 0.59907 | 0.34379 | 0.31076  |
-  | 2   | 1008 | 0.68104 | 0.4229  | 0.29659  |
-  | 3   | 1213 | 0.61056 | 0.4238  | 0.27042  |
-  | 4   | 373  | 0.6637  | 0.41751 | 0.28468  |
-  | 5   | 1425 | 0.53209 | 0.30844 | 0.25475  |
-  | 6   | 1426 | 0.51294 | 0.28226 | 0.23702  |
-  | 7   | 1236 | 0.65703 | 0.32861 | 0.27816  |
-  | 8   | 1091 | 0.54379 | 0.34609 | 0.25901  |
-  | 9   | 137  | 1.2479  | 0.48073 | 0.31642  |
-  | 10  | 1484 | 0.5417  | 0.33476 | 0.2514   |
-  | 11  | 906  | 0.56075 | 0.39302 | 0.26312  |
-  | 12  | 1697 | 0.53371 | 0.33843 | 0.25628  |
-  | 13  | 1353 | 0.59367 | 0.32434 | 0.27128  |
-  | 14  | 1765 | 0.55622 | 0.30903 | 0.25697  |
-  | 15  | 1101 | 0.67655 | 0.35542 | 0.31188  |
-  | 16  | 1633 | 0.56375 | 0.32634 | 0.30048  |
-  | 17  | 1654 | 0.53093 | 0.3281  | 0.26622  |
-  | 18  | 1401 | 0.51477 | 0.37377 | 0.27729  |
-  | 19  | 171  | 0.89704 | 0.38654 | 0.39885  |
+  | 0   | 1304 | 0.57371 | 0.34681 | 0.30517  |
+  | 1   | 1275 | 0.60022 | 0.34285 | 0.30982  |
+  | 2   | 1004 | 0.67823 | 0.41947 | 0.29667  |
+  | 3   | 1211 | 0.61019 | 0.42341 | 0.26994  |
+  | 4   | 374  | 0.66814 | 0.41793 | 0.28288  |
+  | 5   | 1429 | 0.53542 | 0.30974 | 0.25422  |
+  | 6   | 1426 | 0.51288 | 0.282   | 0.23681  |
+  | 7   | 1237 | 0.65645 | 0.32797 | 0.27486  |
+  | 8   | 1090 | 0.54471 | 0.34442 | 0.2591   |
+  | 9   | 137  | 1.2492  | 0.48144 | 0.31548  |
+  | 10  | 1483 | 0.54167 | 0.33374 | 0.25129  |
+  | 11  | 907  | 0.56563 | 0.39174 | 0.26267  |
+  | 12  | 1697 | 0.53376 | 0.33867 | 0.25553  |
+  | 13  | 1354 | 0.59745 | 0.32363 | 0.27096  |
+  | 14  | 1766 | 0.55775 | 0.30882 | 0.25687  |
+  | 15  | 1109 | 0.68372 | 0.35892 | 0.31     |
+  | 16  | 1636 | 0.5659  | 0.3262  | 0.30059  |
+  | 17  | 1656 | 0.53262 | 0.32716 | 0.26653  |
+  | 18  | 1401 | 0.51543 | 0.37366 | 0.2767   |
+  | 19  | 172  | 0.90236 | 0.38946 | 0.39827  |
   ---------------------------------------------
   Table truncated to show the first 20 experiments only
-  Re-run with verbosity >= 2 to show all experiments
-  Saving refined experiments to refined_combined_experiments_outrej.json
 
 Now we have RMSDs in X down to 0.1 mm, in Y to 0.06 mm and 0.06 degrees in
 :math:`\phi`. The RMSDs for experiment 0 are not so much worse than from the
@@ -991,7 +1024,7 @@ directory can be run as follows::
 
   dials.python integrate_joint_TehA.py .
 
-As expected this creates all 39 MTZs for the jointly refined sweeps without any
+As expected this creates all 40 MTZs for the jointly refined sweeps without any
 problem. We can copy the paths to these into a new file, say
 :file:`joint_mtzs.dat`, and run blend::
 
@@ -1001,7 +1034,7 @@ The :file:`tree.png` resulting from this is very interesting.
 
   .. image:: /figures/tree_03.png
 
-The LCV is now as low as 0.36% (aLCV 0.27 Angstroms). This indicates an even
+The LCV is now as low as 0.36% (aLCV 0.6 Angstroms). This indicates an even
 higher degree of isomorphism than detected during after individual processing.
 So although joint refinement leads to slightly higher RMSDs for each experiment
 (as we expected) the resulting unit cells are more similar. It is worth
