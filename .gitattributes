@@ -407,6 +407,7 @@ doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 doc/sphinx/Makefile -text
 doc/sphinx/README -text
 doc/sphinx/_static/CCP4-logo-plain.png -text svneol=unset#unset
+doc/sphinx/_static/LBL-logo-wide.jpeg -text
 doc/sphinx/_static/LBL-logo.png -text svneol=unset#unset
 doc/sphinx/_static/STFC_logo.png -text svneol=unset#unset
 doc/sphinx/_static/dials-styles.css -text
