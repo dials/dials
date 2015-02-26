@@ -7,6 +7,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
 
 .. toctree::
    :hidden:
+   :maxdepth: 1
 
    about
    installation
