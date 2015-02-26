@@ -187,7 +187,7 @@ class ReflectionManager(object):
     # select only the accepted reflections to manage
     self._reflections = reflections.select(flex.size_t(refs_to_keep))
 
-    # keep minimum number of observations to allow as working set
+    # keep minimum number of observations per experiment to allow as working set
     self._min_num_obs = min_num_obs
 
     # fail if there are too few reflections in the manager (the check also needs
@@ -529,7 +529,7 @@ class ReflectionManager(object):
       sub_matches = matches.select(sub_sel)
       sub_imatches = all_imatches.select(sub_sel)
 
-      if len(sub_matches) >= 20:
+      if len(sub_matches) >= self._min_num_obs:
         x_resid = sub_matches['x_resid']
         y_resid = sub_matches['y_resid']
         phi_resid = sub_matches['phi_resid']
@@ -670,7 +670,7 @@ class StillsReflectionManager(ReflectionManager):
       sub_matches = matches.select(sub_sel)
       sub_imatches = all_imatches.select(sub_sel)
 
-      if len(sub_matches) >= 20:
+      if len(sub_matches) >= self._min_num_obs:
         x_resid = sub_matches['x_resid']
         y_resid = sub_matches['y_resid']
         delpsi = sub_matches['delpsical.rad']

@@ -245,8 +245,12 @@ refinement
       .expert_level = 1
 
     minimum_number_of_reflections = 20
-      .help = "The minimum number of input observations to allow a reflection"
-              "manager to be constructed for."
+      .help = "The minimum number of input observations per experiment below"
+              "which a reflection manager will not be constructed. This number"
+              "is also used to determine the minimum number of reflections per"
+              "panel to allow perform outlier rejection to be performed. Below"
+              "this, all reflections on the panel are rejected as potential"
+              "outliers"
       .type = int(value_min=0)
 
     close_to_spindle_cutoff = 0.05
