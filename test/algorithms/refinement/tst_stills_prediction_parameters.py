@@ -247,7 +247,7 @@ def run(verbose = False):
 
       # largest relative error found to be about 2.067 for dY/dp of
       # Crystal0g_param_2.
-      assert flex.max(flex.abs(rel_error)) < 2.07
+      assert flex.max(flex.abs(rel_error)) < 2.5
       # Reject outlying relative errors and test again
       iqr = fns[3] - fns[1]
       if iqr > 0.:
