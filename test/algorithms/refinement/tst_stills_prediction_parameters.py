@@ -196,8 +196,8 @@ def run(verbose = False):
       denom = a + b
 
       fns = five_number_summary(abs_error)
-      if verbose: print "  summary of absolute errors: %9.6f %9.6f %9.6f " + \
-        "%9.6f %9.6f" % fns
+      if verbose: print ("  summary of absolute errors: %9.6f %9.6f %9.6f " + \
+        "%9.6f %9.6f") % fns
       assert flex.max(flex.abs(abs_error)) < 0.0003
       # largest absolute error found to be about 0.00025 for dX/dp of
       # Crystal0g_param_3. Reject outlying absolute errors and test again.
@@ -208,8 +208,8 @@ def run(verbose = False):
         sel = sel1 & sel2
         tst = flex.abs(abs_error.select(sel))
         n_outliers = sel.count(False)
-        if verbose: print "  {0} outliers rejected, leaving greatest " + \
-          "absolute error: {1:9.6f}".format(n_outliers, flex.max(tst))
+        if verbose: print ("  {0} outliers rejected, leaving greatest " + \
+          "absolute error: {1:9.6f}").format(n_outliers, flex.max(tst))
         # largest absolute error now 0.000062
         assert flex.max(tst) < 0.00007
 
@@ -234,8 +234,8 @@ def run(verbose = False):
       rel_error = 2. * abs_error/denom
 
       fns = five_number_summary(rel_error)
-      if verbose: print "  summary of relative errors: %9.6f %9.6f %9.6f " + \
-        "%9.6f %9.6f" % fns
+      if verbose: print ("  summary of relative errors: %9.6f %9.6f %9.6f " + \
+        "%9.6f %9.6f") % fns
 
       # NB certain reflections give bad relative errors for parameters
       # of the crystal model. For instance, reflections directed largely along
@@ -245,9 +245,14 @@ def run(verbose = False):
       # the calculation breaks down for certain subclasses of reflection. This
       # is not well understood yet.
 
-      # largest relative error found to be about 2.067 for dY/dp of
+      # largest relative error found to be about 2.057 for dY/dp of
       # Crystal0g_param_2.
-      assert flex.max(flex.abs(rel_error)) < 2.5
+      try:
+        assert flex.max(flex.abs(rel_error)) < 2.5
+      except AssertionError as e:
+        e.args += ("extreme relative error value:",
+                   flex.max(flex.abs(rel_error)))
+        raise e
       # Reject outlying relative errors and test again
       iqr = fns[3] - fns[1]
       if iqr > 0.:
@@ -256,8 +261,8 @@ def run(verbose = False):
         sel = sel1 & sel2
         tst = flex.abs(rel_error.select(sel))
         n_outliers = sel.count(False)
-        if verbose: print "  {0} outliers rejected, leaving greatest " + \
-          "relative error: {1:9.6f}".format(n_outliers, flex.max(tst))
+        if verbose: print ("  {0} outliers rejected, leaving greatest " + \
+          "relative error: {1:9.6f}").format(n_outliers, flex.max(tst))
         # largest relative error now 0.007169 for dX/dp of Beam0Mu1
         assert flex.max(tst) < 0.0075
 
