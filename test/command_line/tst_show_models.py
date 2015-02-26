@@ -98,6 +98,7 @@ Goniometer:
   assert len(g) > 0, path
   cmd = "dials.show_models %s" %(' '.join(g))
   result = easy_run.fully_buffered(cmd).raise_if_errors()
+
   assert (
     "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
     in result.stdout_lines), result.show_stdout()
@@ -107,8 +108,8 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,495976}
-  thickness: 0
-  material:
+  thickness: 0.32
+  material: Si
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
