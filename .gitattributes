@@ -418,7 +418,6 @@ doc/sphinx/_templates/layout.html -text
 doc/sphinx/about.rst -text
 doc/sphinx/basel.rst -text
 doc/sphinx/conf.py -text
-doc/sphinx/conf_alabaster.py -text
 doc/sphinx/conf_bootstrap.py -text
 doc/sphinx/conf_scipy.py -text
 doc/sphinx/diamond.rst -text
