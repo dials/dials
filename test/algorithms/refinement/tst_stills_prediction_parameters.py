@@ -215,18 +215,18 @@ def run(verbose = False):
 
       # Completely skip parameters with FD gradients all zero (e.g. gradients of
       # DeltaPsi for detector parameters)
-      sel1 = flex.abs(a) < 1.e-20
+      sel1 = flex.abs(a) < 1.e-10
       if sel1.all_eq(True):
         continue
 
       # otherwise just remove particular reflections with FD or analytical
       # gradients of zero from the relative error calculation. The calculation
       # can't be done for these reflections
-      sel2 = flex.abs(b) < 1.e-20
+      sel2 = flex.abs(b) < 1.e-10
       sel = sel1 | sel2
       remove_refs = reflections.select(sel)
-      # check not too many reflections were removed this way (< 5%)
-      assert len(remove_refs) < 0.05 * len(reflections)
+      # check not too many reflections were removed this way (< 10%)
+      assert len(remove_refs) < 0.1 * len(reflections)
 
       # calculate relative errors
       abs_error = abs_error.select(sel == False)
