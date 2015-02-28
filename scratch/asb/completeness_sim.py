@@ -12,21 +12,54 @@ from dxtbx.model.experiment.experiment_list import Experiment
 from cctbx import miller
 from math import sqrt
 
-# Set up dxtbx models, starting with a detector with a single panel, similar to a CSPAD
-#detector=detector_factory.simple('SENSOR_UNKNOWN',100,(97.075,97.075),'+x','-y',(0.11,0.11),(1765,1765))
+"""
+This script attempts to answer how many single shot still images
+are needed for a 95% complete lysozyme dataset with 4 fold redunancy
+to 2 angstroms.  Random orientation matrices are generated, then
+given a detector and beam model and a simple mosaicity model,
+refelctions are predicted.  The reflections are added to a
+miller set.  The program exits when the above requirements are
+met and reports how many images are required.
 
-# Here's the MarCCD at XPP
+A CSPAD CBF is used for the detecotor model to simulate the gaps
+in the CSPAD.  This adds 50-100 images to the total.  A simple
+CSPAD detector model is available, as is a MARCCD model.
+
+Finally, the program attempts to determine the strength of the
+anomalous signal using models provided by Tom Twilliger.
+
+Run the program with no parameters:
+libtbx.python completeness_sim.py
+
+Future work:
+-add I/sigma effects. This program assumes a redundancy of 4
+is enough, after postrefinement, to completely correct intensities
+to full reflection equivalents.  Therefore it reports an absolute
+minimum number of images when the reality is almost certainly higher.
+"""
+
+# Set up dxtbx models, starting with a detector. Here we simulate
+# the gaps in a CSPAD by using a CSPAD CBF
+import dxtbx, libtbx.load_env, os
+img_root = libtbx.env.find_in_repositories("dials_regression")
+if img_root is not None:
+  img_path = os.path.join(img_root, "spotfinding_test_data/idx-s00-20131106040304531.cbf")
+else:
+  img_path = None
+
+if img_path is not None and os.path.exists(img_path):
+  img = dxtbx.load(img_path)
+  detector = img.get_detector()
+  # Manually push the detector in to 100 mm
+  h = detector.hierarchy()
+  h.set_local_frame(h.get_fast_axis(), h.get_slow_axis(), (0,0,-100))
+else:
+  # If dials_regression not present, use a simple detector with a single panel, similar to a CSPAD
+  detector=detector_factory.simple('SENSOR_UNKNOWN',100,(97.075,97.075),'+x','-y',(0.11,0.11),(1765,1765))
+
+# Here's the MarCCD at XPP if desired.
 #detector=detector_factory.simple('SENSOR_UNKNOWN',150,(162.5,162.5),'+x','-y',(0.079346,0.079346),(4096,4096))
 
-# Here we simulate the gaps in a CSPAD by using a CSPAD CBF
-import dxtbx, libtbx.load_env, os
-img_path = os.path.join(libtbx.env.find_in_repositories("dials_regression"), "spotfinding_test_data/idx-s00-20131106040304531.cbf")
-img = dxtbx.load(img_path)
-detector = img.get_detector()
-
-# Manually push the detector in to 100 mm
-h = detector.hierarchy()
-h.set_local_frame(h.get_fast_axis(), h.get_slow_axis(), (0,0,-100))
 
 # Beam model
 wavelength=1.32 # from Boutet 2012
