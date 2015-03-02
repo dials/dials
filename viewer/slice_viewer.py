@@ -81,6 +81,7 @@ class show_3d(object):
     app.MainLoop()
 
 
+
 class show_3d_wx_app(wx.App):
 
   def OnInit(self):
@@ -116,11 +117,13 @@ class show_tabl_2fr_wx_app(wx.App):
     self.ImgFrame = flex_3d_frame(None, 'DIALS reflections viewer IMG')
     self.flex_panel = flex_arr_img_panel(self.ImgFrame)
     self.ImgFrame.frame_ini_img(self.flex_panel)
+    self.ImgFrame.table_exist = True
 
     self.GridFrame = grid_frame(None, 'DIALS reflections viewer Grd')
     self.info_panel = flex_arr_img_panel(self.GridFrame)
     self.data_grid = MyGrid(self.GridFrame)
     self.GridFrame.frame_ini_img(self.flex_panel, self.data_grid)
+
 
     return True
 

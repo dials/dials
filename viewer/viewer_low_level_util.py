@@ -36,8 +36,7 @@ class grid_frame(wx.Frame):
     if( text_data != None ):
       self.my_sizer.Add(self.myGrid, proportion = 3,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
-    else:
-      print "Showing flex array only"
+
 
 
     self.my_sizer.SetMinSize((900, 600))
@@ -46,20 +45,28 @@ class grid_frame(wx.Frame):
     self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
 
   def OnCloseWindow(self, event):
-    #wx.GetApp().Exit()
-    wx.GetApp().ExitMainLoop()
+    wx.GetApp().Exit()
+
 
 
 class flex_3d_frame(wx.Frame):
   def __init__(self, parent, title):
     super(flex_3d_frame, self).__init__(parent, title = title,
           size = wx.DefaultSize)
+    self.table_exist = False
 
   def frame_ini_img(self, in_upper_panel, text_data = None):
     self.img_panel = in_upper_panel
+    self.myGrid = None
 
     if( text_data != None ):
       self.myGrid = text_data
+      print "text_data != None"
+      print "text_data =", text_data
+
+    else:
+      print "Showing flex array only"
+
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
     self.my_sizer.Add(self.img_panel, proportion = 2,
@@ -79,8 +86,12 @@ class flex_3d_frame(wx.Frame):
     self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
 
   def OnCloseWindow(self, event):
-    #wx.GetApp().Exit()
-    wx.GetApp().ExitMainLoop()
+    if( self.table_exist == False ):
+      print "from flex_3d_frame self.myGrid = None"
+      event.Skip()
+    else:
+      print "from flex_3d_frame self.myGrid .NEQ. None"
+      wx.GetApp().Exit()
 
 
 class TupTable(gridlib.PyGridTableBase):
@@ -325,10 +336,21 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.SetupScrolling()
     self.SetScrollRate(1, 1)
-
+    self.Mouse_Pos_x = -1
+    self.Mouse_Pos_y = -1
+    self.old_Mouse_Pos_x = -1
+    self.old_Mouse_Pos_y = -1
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+    self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+    self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButDown)
+    self.Bind(wx.EVT_LEFT_UP, self.OnLeftButUp)
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.scroll_rot = 0
+
+  def OnLeftButDown(self):
+    self.Bdwn = True
+  def OnLeftButUp(self):
+    self.Bdwn = False
 
   def set_scroll_content(self):
 
@@ -358,6 +380,17 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     self.parent_panel.Pframe.Layout()
     self.SetScrollRate(1, 1)
+  def OnMouseMotion(self, event):
+
+    self.Mouse_Pos_x, self.Mouse_Pos_y = event.GetPosition()
+
+
+
+
+
+
+
+
 
 
   def OnMouseWheel(self, event):
@@ -406,8 +439,17 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       new_scroll_pos_x = new_scroll_pos_x  / x_scroll_increment + 0.5
       new_scroll_pos_y = new_scroll_pos_y  / y_scroll_increment + 0.5
       '''
-
       self.Scroll(new_scroll_pos_x, new_scroll_pos_y)
+
+    else:
+      if(self.old_Mouse_Pos_x != -1 and self.old_Mouse_Pos_y != -1):
+        #print "need to move IMG"
+        pass
+
+
+      self.old_Mouse_Pos_x = self.Mouse_Pos_x
+      self.old_Mouse_Pos_y = self.Mouse_Pos_y
+
 
 
 class buttons_panel(wx.Panel):
