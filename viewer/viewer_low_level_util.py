@@ -61,11 +61,6 @@ class flex_3d_frame(wx.Frame):
 
     if( text_data != None ):
       self.myGrid = text_data
-      print "text_data != None"
-      print "text_data =", text_data
-
-    else:
-      print "Showing flex array only"
 
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -73,11 +68,8 @@ class flex_3d_frame(wx.Frame):
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
     if( text_data != None ):
-      #print "Frame with grid"
       self.my_sizer.Add(self.myGrid, proportion = 3,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
-    #else:
-      #print "Frame without grid"
 
 
     self.my_sizer.SetMinSize((400, 200))

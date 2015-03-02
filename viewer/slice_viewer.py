@@ -99,7 +99,6 @@ class show_3d_wx_app(wx.App):
 class show_reflections(show_3d):
   def __init__(self, table, two_windows = False):
     #two_windows = True
-    print "from show_reflections"
     print "two_windows =", two_windows
 
     if(two_windows == True):
