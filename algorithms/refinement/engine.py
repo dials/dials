@@ -308,13 +308,35 @@ class AdaptLbfgs(Refinery):
     return
 
   def compute_functional_and_gradients(self):
+    L, dL_dp, _ = self.compute_functional_gradients_and_curvatures()
+    self._f = L
+    self._g = flex.double(dL_dp)
+    return self._f, self._g
+
+  def compute_functional_gradients_and_curvatures(self):
 
     self.prepare_for_step()
 
-    # compute target function and its gradients
-    self._f, self._g = self._target.compute_functional_and_gradients()
+    blocks = self._target.split_matches_into_blocks(nproc = self._nproc)
+    if self._nproc > 1:
+      print "calling parallel map"
+      task_results = easy_mp.parallel_map(
+        func=self._target.compute_functional_gradients_and_curvatures,
+        iterable=blocks,
+        processes=self._nproc,
+        method="multiprocessing",
+        #preserve_exception_message=True
+        )
 
-    return self._f, flex.double(self._g)
+    else:
+      task_results = [self._target. \
+        compute_functional_gradients_and_curvatures(block) for block in blocks]
+
+    # reduce blockwise results
+    flist, glist, clist = zip(*task_results)
+    glist = zip(*glist)
+    clist = zip(*clist)
+    return sum(flist), [sum(g) for g in glist], [sum(c) for c in clist]
 
   def callback_after_step(self, minimizer):
     """
@@ -334,6 +356,10 @@ class AdaptLbfgs(Refinery):
       return True
 
     return False
+
+  def set_nproc(self, nproc):
+    self._nproc = nproc
+    return
 
   def run_lbfgs(self, curvatures=False):
     """
@@ -382,22 +408,20 @@ class LBFGScurvs(AdaptLbfgs):
 
   def compute_functional_gradients_diag(self):
 
-    f, g = self.compute_functional_and_gradients()
-    curvs = self.curvatures()
+    L, dL_dp, curvs = self.compute_functional_gradients_and_curvatures()
+    self._f = L
+    self._g = flex.double(dL_dp)
 
-    diags = 1. / curvs
+    # Curvatures of zero will cause a crash, because their inverse is taken.
+    assert all([c > 0.0 for c in curvs])
+
+    diags = 1. / flex.double(curvs)
 
     if self._verbosity > 2:
       msg = "  curv: " +  "%.5f " * len(tuple(curvs))
       debug(msg, *curvs)
 
-    return self._f, flex.double(self._g), diags
-
-  def curvatures(self):
-
-    # This relies on compute_functional_and_gradients being called first
-    # (in order to set the parameters and update predictions).
-    return(flex.double(self._target.curvatures()))
+    return self._f, self._g, diags
 
 
 class AdaptLstbx(
@@ -487,10 +511,7 @@ class AdaptLstbx(
           )
 
       else:
-        #i =0
         for block in blocks:
-          #print i
-          #i+=1
           residuals, self._jacobian, weights = \
             self._target.compute_residuals_and_gradients(block)
           self.add_equations(residuals, self._jacobian, weights)

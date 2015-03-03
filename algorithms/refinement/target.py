@@ -189,23 +189,28 @@ class Target(object):
 
     return
 
-  def compute_functional_and_gradients(self):
+  def compute_functional_gradients_and_curvatures(self, block=None):
     """calculate the value of the target function and its gradients. Set
     approximate curvatures as a side-effect"""
 
-    self._nref = len(self._matches)
+    self.update_matches()
+    if block is not None:
+      matches = block
+    else:
+      matches = self._matches
+    nref = len(matches)
 
     # This is a hack for the case where nref=0. This should not be necessary
     # if bounds are provided for parameters to stop the algorithm exploring
     # unreasonable regions of parameter space where no predictions exist.
     # Unfortunately the L-BFGS line search does make such extreme trials.
-    if self._nref == 0:
+    if nref == 0:
       self._curv = [1.] * len(self._prediction_parameterisation)
       return 1.e12, [1.] * len(self._prediction_parameterisation)
 
-    residuals, weights = self._extract_residuals_and_weights(self._matches)
+    residuals, weights = self._extract_residuals_and_weights(matches)
     w_resid = weights * residuals
-    residuals2 = self._extract_squared_residuals(self._matches)
+    residuals2 = self._extract_squared_residuals(matches)
 
     # calculate target function
     L = 0.5 * flex.sum(weights * residuals2)
@@ -216,24 +221,22 @@ class Target(object):
       curvature = flex.sum(weights * grads * grads)
       return dL_dp, curvature, None
 
-    dL_dp, curvs, _ = self.calculate_gradients(
+    dL_dp, curvs, _ = self.calculate_gradients(matches,
         callback=process_one_gradient)
 
-    self._curv = curvs
+    return (L, dL_dp, curvs)
 
-    return (L, dL_dp)
-
-  def curvatures(self):
-    """First order approximation to the diagonal of the Hessian based on the
-    least squares form of the target"""
-
-    # relies on compute_functional_and_gradients being called first to set
-    # self._curv
-
-    # Curvatures of zero will cause a crash, because their inverse is taken.
-    assert all([c > 0.0 for c in self._curv])
-
-    return self._curv
+  #def curvatures(self):
+  #  """First order approximation to the diagonal of the Hessian based on the
+  #  least squares form of the target"""
+  #
+  #  # relies on compute_functional_and_gradients being called first to set
+  #  # self._curv
+  #
+  #  # Curvatures of zero will cause a crash, because their inverse is taken.
+  #  assert all([c > 0.0 for c in self._curv])
+  #
+  #  return self._curv
 
   def compute_residuals(self):
     """return the vector of residuals plus their weights"""
@@ -258,8 +261,7 @@ class Target(object):
       start = block_num * blocksize
       end = (block_num + 1) * blocksize
       blocks.append(self._matches[start:end])
-    block_num += 1
-    start = block_num * blocksize
+    start = (nblocks - 1) * blocksize
     end = len(self._matches)
     blocks.append(self._matches[start:end])
     return blocks

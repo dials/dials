@@ -199,11 +199,7 @@ mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
 
 # get the functional and gradients
 mytarget.predict()
-L, dL_dp = mytarget.compute_functional_and_gradients()
-try:
-  curvs = mytarget.curvatures()
-except AttributeError:
-  curvs = None
+L, dL_dp, curvs = mytarget.compute_functional_gradients_and_curvatures()
 
 ####################################
 # Do FD calculation for comparison #
@@ -223,11 +219,6 @@ def get_fd_gradients(target, pred_param, deltas):
   fd_grad = []
   fd_curvs = []
 
-  try:
-    do_curvs = callable(target.curvatures)
-  except AttributeError:
-    do_curvs = False
-
   for i in range(len(deltas)):
     val = p_vals[i]
 
@@ -236,22 +227,21 @@ def get_fd_gradients(target, pred_param, deltas):
     pred_param.set_param_vals(p_vals)
     target.predict()
 
-    rev_state = target.compute_functional_and_gradients()
+    rev_state = target.compute_functional_gradients_and_curvatures()
 
     p_vals[i] += deltas[i]
     pred_param.set_param_vals(p_vals)
 
     target.predict()
 
-    fwd_state = target.compute_functional_and_gradients()
+    fwd_state = target.compute_functional_gradients_and_curvatures()
 
     # finite difference estimation of first derivatives
     fd_grad.append((fwd_state[0] - rev_state[0]) / deltas[i])
 
     # finite difference estimation of curvatures, using the analytical
     # first derivatives
-    if do_curvs:
-      fd_curvs.append((fwd_state[1][i] - rev_state[1][i]) / deltas[i])
+    fd_curvs.append((fwd_state[1][i] - rev_state[1][i]) / deltas[i])
 
     # set parameter back to centred value
     p_vals[i] = val
