@@ -48,7 +48,7 @@ class DetectorRefiner(object):
       detector.hierarchy_level=1
       sparse=True
     }
-    target.jacobian_max_nref=100000
+    target.gradient_calculation_blocksize=100000
     reflections.do_outlier_rejection=True
     reflections.minimum_number_of_reflections=1
   }""")

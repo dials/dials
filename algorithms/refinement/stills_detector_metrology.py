@@ -202,7 +202,7 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 
     target = targ(experiments, ref_predictor, refman, pred_param,
                     options.bin_size_fraction, absolute_cutoffs,
-                    options.jacobian_max_nref)
+                    options.gradient_calculation_blocksize)
 
     return target
 

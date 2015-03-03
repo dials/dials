@@ -212,8 +212,8 @@ refinement
               "Phi. The units are (mm, mm, rad)."
       .type = floats(size=3, value_min=0.)
 
-    jacobian_max_nref = None
-      .help = "Maximum number of reflections to use for Jacobian calculation."
+    gradient_calculation_blocksize = None
+      .help = "Maximum number of reflections to use for gradient calculation."
               "If there are more reflections than this in the manager then"
               "the minimiser must do the full calculation in blocks."
       .type = int(value_min=1)
@@ -1032,7 +1032,7 @@ class RefinerFactory(object):
 
     target = targ(experiments, ref_predictor, refman, pred_param,
                     options.bin_size_fraction, absolute_cutoffs,
-                    options.jacobian_max_nref)
+                    options.gradient_calculation_blocksize)
 
     return target
 

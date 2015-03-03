@@ -31,10 +31,10 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
                prediction_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None,
-               jacobian_max_nref=None):
+               gradient_calculation_blocksize=None):
 
     Target.__init__(self, experiments, reflection_predictor, ref_man,
-                    prediction_parameterisation, jacobian_max_nref)
+                    prediction_parameterisation, gradient_calculation_blocksize)
 
     # Set up the RMSD achieved criterion. For simplicity, we take models from
     # the first Experiment only. If this is not appropriate for refinement over

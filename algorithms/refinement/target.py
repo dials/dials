@@ -45,7 +45,7 @@ class Target(object):
   rmsd_units = ["mm", "mm", "rad"]
 
   def __init__(self, experiments, reflection_predictor, ref_manager,
-               prediction_parameterisation, jacobian_max_nref=None):
+               prediction_parameterisation, gradient_calculation_blocksize=None):
 
     self._reflection_predictor = reflection_predictor
     self._experiments = experiments
@@ -58,7 +58,7 @@ class Target(object):
 
     # Keep maximum number of reflections used for Jacobian calculation, if
     # a cutoff is required
-    self._jacobian_max_nref = jacobian_max_nref
+    self._gradient_calculation_blocksize = gradient_calculation_blocksize
 
     return
 
@@ -215,20 +215,10 @@ class Target(object):
       dL_dp = flex.sum(w_resid * grads)
       curvature = flex.sum(weights * grads * grads)
       return dL_dp, curvature, None
-      #return dX, dY, dZ # FOR TEST, JUST PASS THROUGH
 
     dL_dp, curvs, _ = self.calculate_gradients(
         callback=process_one_gradient)
 
-    # prepare list of gradients and curvatures
-    #dL_dp = [0.] * len(self._prediction_parameterisation)
-    #self._curv = [0.] * len(self._prediction_parameterisation)
-
-    #for i in range(len(self._prediction_parameterisation)):
-    #  dX, dY, dZ = dX_dp[i], dY_dp[i], dZ_dp[i]
-    #  grads = self._concatenate_gradients(dX, dY, dZ)
-    #  dL_dp[i] = flex.sum(w_resid * grads)
-    #  self._curv[i] = flex.sum(weights * grads * grads)
     self._curv = curvs
 
     return (L, dL_dp)
@@ -253,13 +243,13 @@ class Target(object):
 
   def split_matches_into_blocks(self, nproc=1):
     """Return a list of the matches, split into blocks according to the
-    jacobian_max_nref parameter and the number of processes (if relevant).
+    gradient_calculation_blocksize parameter and the number of processes (if relevant).
     The number of blocks will be set such that the total number of reflections
-    being processed by concurrent processes does not exceed jacobian_max_nref"""
+    being processed by concurrent processes does not exceed gradient_calculation_blocksize"""
 
     self.update_matches()
-    if self._jacobian_max_nref:
-      nblocks = int(ceil(len(self._matches) * nproc / self._jacobian_max_nref))
+    if self._gradient_calculation_blocksize:
+      nblocks = int(ceil(len(self._matches) * nproc / self._gradient_calculation_blocksize))
     else:
       nblocks = nproc
     blocksize = int(ceil(len(self._matches) / nblocks))
@@ -391,10 +381,10 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
                prediction_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None,
-               jacobian_max_nref=None):
+               gradient_calculation_blocksize=None):
 
     Target.__init__(self, experiments, reflection_predictor, ref_man,
-                    prediction_parameterisation, jacobian_max_nref)
+                    prediction_parameterisation, gradient_calculation_blocksize)
 
     # Set up the RMSD achieved criterion. For simplicity, we take models from
     # the first Experiment only. If this is not appropriate for refinement over
