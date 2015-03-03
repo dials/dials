@@ -12,7 +12,7 @@ principally Target and ReflectionManager."""
 
 # python and cctbx imports
 from __future__ import division
-from math import pi, sqrt
+from math import pi, sqrt, ceil
 from cctbx.array_family import flex
 import abc
 
@@ -257,21 +257,21 @@ class Target(object):
     The number of blocks will be set such that the total number of reflections
     being processed by concurrent processes does not exceed jacobian_max_nref"""
 
-    # FIXME, make this cleverer so that we never end up with one tiny block
-    # at the end
     self.update_matches()
     if self._jacobian_max_nref:
-      blocksize = int(max(self._jacobian_max_nref / nproc, 1))
+      nblocks = int(ceil(len(self._matches) * nproc / self._jacobian_max_nref))
     else:
-      blocksize = int(max(len(self._matches) / nproc, 1))
-    block_num = 0
+      nblocks = nproc
+    blocksize = int(ceil(len(self._matches) / nblocks))
     blocks = []
-    while True:
+    for block_num in range(nblocks - 1):
       start = block_num * blocksize
       end = (block_num + 1) * blocksize
       blocks.append(self._matches[start:end])
-      if end >= len(self._matches): break
-      block_num += 1
+    block_num += 1
+    start = block_num * blocksize
+    end = len(self._matches)
+    blocks.append(self._matches[start:end])
     return blocks
 
   def compute_residuals_and_gradients(self, block=None):
