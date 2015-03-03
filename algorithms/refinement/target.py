@@ -252,20 +252,31 @@ class Target(object):
     self.update_matches()
     return self._extract_residuals_and_weights(self._matches)
 
-  def compute_residuals_and_gradients(self, block_num=0):
+  def split_matches_into_blocks(self):
+    """Return a list of the matches, split into blocks according to the
+    jacobian_max_nref parameter"""
+
+    self.update_matches()
+    if self._jacobian_max_nref:
+      block_num = 0
+      blocks = []
+      while True:
+        start = block_num * self._jacobian_max_nref
+        end = (block_num + 1) * self._jacobian_max_nref
+        blocks.append(self._matches[start:end])
+        if end >= len(self._matches): break
+        block_num += 1
+    return blocks
+
+  def compute_residuals_and_gradients(self, block=None):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
 
     self.update_matches()
-    if self._jacobian_max_nref:
-      start = block_num * self._jacobian_max_nref
-      end = (block_num + 1) * self._jacobian_max_nref
-      matches = self._matches[start:end]
-      self._finished_residuals_and_gradients = True if \
-        end >= len(self._matches) else False
+    if block is not None:
+      matches = block
     else:
       matches = self._matches
-      self._finished_residuals_and_gradients = True
 
     # Here we hardcode *three* types of residual, which might correspond to
     # X, Y, Phi (scans case) or X, Y, DeltaPsi (stills case).

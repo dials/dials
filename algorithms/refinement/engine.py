@@ -438,13 +438,12 @@ class AdaptLstbx(
       residuals, weights = self._target.compute_residuals()
       self.add_residuals(residuals, weights)
     else:
-      block_num=0
-      while not self._target.finished_residuals_and_gradients:
-        # get calculations from the target
+      blocks = self._target.split_matches_into_blocks()
+      for block in blocks:
         residuals, self._jacobian, weights = \
-            self._target.compute_residuals_and_gradients(block_num)
-        block_num+=1
+          self._target.compute_residuals_and_gradients(block)
         self.add_equations(residuals, self._jacobian, weights)
+    return
 
   def step_forward(self):
     self.old_x = self.x.deep_copy()
