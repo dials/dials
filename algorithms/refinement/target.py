@@ -59,7 +59,6 @@ class Target(object):
     # Keep maximum number of reflections used for Jacobian calculation, if
     # a cutoff is required
     self._jacobian_max_nref = jacobian_max_nref
-    self._finished_residuals_and_gradients = False
 
     return
 
@@ -189,15 +188,6 @@ class Target(object):
       self._matches = self._reflection_manager.get_matches()
 
     return
-
-  @property
-  def finished_residuals_and_gradients(self):
-    """used when looping through subsets of the full jacobian to determine when
-    to break the loop. Reset flag whenever called"""
-
-    val = self._finished_residuals_and_gradients
-    self._finished_residuals_and_gradients = False
-    return val
 
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients. Set
