@@ -492,11 +492,9 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     # we want the wavelength
     self._wavelength = 1. / self._s0.norms()
 
-    # Set up the lists of derivatives: a separate array over reflections for
-    # each free parameter
+    # Set up empty lists in which to store gradients
     m = len(reflections)
-    n = len(self) # number of free parameters
-    dX_dp, dY_dp, dDeltaPsi_dp = self._prepare_gradient_vectors(m, n)
+    dX_dp, dY_dp, dDeltaPsi_dp = [], [], []
 
     # determine experiment to indices mappings once, here
     experiment_to_idx = []
@@ -526,11 +524,18 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # Get panel numbers of the affected reflections
       panel = reflections['panel'].select(isel)
 
+      # Extend derivative vectors for this detector parameterisation
+      dX_dp, dY_dp, dDeltaPsi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dDeltaPsi_dp, m, dp.num_free())
+
       # loop through the panels in this detector
       for panel_id, _ in enumerate(detector):
 
         # get the right subset of array indices to set for this panel
         sub_isel = isel.select(panel == panel_id)
+        if len(sub_isel) == 0:
+          # if no reflections intersect this panel, skip calculation
+          continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
         dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
@@ -562,6 +567,15 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       isel = flex.size_t()
       for exp_id in bp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this beam parameterisation
+      dX_dp, dY_dp, dDeltaPsi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dDeltaPsi_dp, m, bp.num_free())
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += bp.num_free()
+        continue
 
       # Get required data from those reflections
       s0 = self._s0.select(isel)
@@ -599,6 +613,15 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlop.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this crystal orientation parameterisation
+      dX_dp, dY_dp, dDeltaPsi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dDeltaPsi_dp, m, xlop.num_free())
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += xlop.num_free()
+        continue
 
       # Get required data from those reflections
       B = self._B.select(isel)
@@ -640,6 +663,15 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlucp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this crystal unit cell parameterisation
+      dX_dp, dY_dp, dDeltaPsi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dDeltaPsi_dp, m, xlucp.num_free())
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += xlucp.num_free()
+        continue
 
       # Get required data from those reflections
       U = self._U.select(isel)

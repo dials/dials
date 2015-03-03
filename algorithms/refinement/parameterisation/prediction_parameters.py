@@ -356,13 +356,14 @@ class PredictionParameterisation(object):
     return self._get_gradients_core(reflections, D, s0, U, B, axis)
 
   @staticmethod
-  def _prepare_gradient_vectors(m, n):
-    """set up lists of vectors to store calculated gradients in. This method
-    may be overriden by a derived class to e.g. use sparse vectors"""
+  def _extend_gradient_vectors(dX_dp, dY_dp, dZ_dp, m, n):
+    """Extend lists dX_dp, dY_dp and dZ_dp by n empty vectors of size m.
+    This method may be overriden by a derived class to e.g. use sparse
+    vectors"""
 
-    dX_dp = [flex.double(m, 0.) for p in range(n)]
-    dY_dp = [flex.double(m, 0.) for p in range(n)]
-    dZ_dp = [flex.double(m, 0.) for p in range(n)]
+    dX_dp.extend([flex.double(m, 0.) for p in range(n)])
+    dY_dp.extend([flex.double(m, 0.) for p in range(n)])
+    dZ_dp.extend([flex.double(m, 0.) for p in range(n)])
 
     return dX_dp, dY_dp, dZ_dp
 
@@ -380,13 +381,15 @@ class SparseGradientVectorMixin(object):
   prediction formula"""
 
   @staticmethod
-  def _prepare_gradient_vectors(m, n):
+  def _extend_gradient_vectors(dX_dp, dY_dp, dZ_dp, m, n):
+    """extend the lists dX_dp, dY_dp and dZ_dp by n empty vectors of size m
+    Sparse vector version."""
 
     from scitbx import sparse
 
-    dX_dp = [sparse.matrix_column(m) for p in range(n)]
-    dY_dp = [sparse.matrix_column(m) for p in range(n)]
-    dZ_dp = [sparse.matrix_column(m) for p in range(n)]
+    dX_dp.extend([sparse.matrix_column(m) for p in range(n)])
+    dY_dp.extend([sparse.matrix_column(m) for p in range(n)])
+    dZ_dp.extend([sparse.matrix_column(m) for p in range(n)])
 
     return dX_dp, dY_dp, dZ_dp
 
@@ -468,11 +471,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
       raise e
 
-    # Set up the lists of derivatives: a separate array over reflections for
-    # each free parameter
+    # Set up empty lists in which to store gradients
     m = len(reflections)
-    n = len(self) # number of free parameters
-    dX_dp, dY_dp, dphi_dp = self._prepare_gradient_vectors(m, n)
+    dX_dp, dY_dp, dphi_dp = [], [], []
 
     # determine experiment to indices mappings once, here
     experiment_to_idx = []
@@ -485,8 +486,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # reset a pointer to the parameter number
     self._iparam = 0
 
-  ### Work through the parameterisations, calculating their contributions
-  ### to derivatives d[pv]/dp and d[phi]/dp
+    ### Work through the parameterisations, calculating their contributions
+    ### to derivatives d[pv]/dp and d[phi]/dp
 
     # loop over the detector parameterisations
     for dp in self._detector_parameterisations:
@@ -501,6 +502,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # Get panel numbers of the affected reflections
       panel = reflections['panel'].select(isel)
+
+      # Extend derivative vectors for this detector parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, dp.num_free())
 
       # loop through the panels in this detector
       for panel_id, _ in enumerate(exp.detector):
@@ -542,6 +547,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       for exp_id in bp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
 
+      # Extend derivative vectors for this beam parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, bp.num_free())
+
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
         self._iparam += bp.num_free()
@@ -577,6 +586,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlop.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this crystal orientation parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, xlop.num_free())
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
@@ -618,6 +631,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlucp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this crystal unit cell parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, xlucp.num_free())
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation

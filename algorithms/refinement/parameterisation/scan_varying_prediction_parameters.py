@@ -239,11 +239,9 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
       raise e
 
-    # Set up the lists of derivatives: a separate array over reflections for
-    # each free parameter
+    # Set up empty lists in which to store gradients
     m = len(reflections)
-    n = len(self) # number of free parameters
-    dX_dp, dY_dp, dphi_dp = self._prepare_gradient_vectors(m, n)
+    dX_dp, dY_dp, dphi_dp = [], [], []
 
     # determine experiment to indices mappings once, here
     experiment_to_idx = []
@@ -273,6 +271,10 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       # Get panel numbers of the affected reflections
       panel = reflections['panel'].select(isel)
 
+      # Extend derivative vectors for this detector parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, dp.num_free())
+
       # loop through the panels in this detector
       for panel_id, _ in enumerate(exp.detector):
 
@@ -292,6 +294,9 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
         sub_v_w_inv = self._v_w_inv.select(sub_isel)
         dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
           sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p)
+
+        # use a local parameter index pointer because we set all derivatives
+        # for this panel before moving on to the next
         iparam = self._iparam
         for dX, dY in zip(dX_ddet_p, dY_ddet_p):
           dX_dp[iparam].set_selected(sub_isel, dX)
@@ -309,6 +314,10 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       isel = flex.size_t()
       for exp_id in bp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this beam parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, bp.num_free())
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
@@ -345,6 +354,10 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlop.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this crystal orientation parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, xlop.num_free())
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
@@ -389,6 +402,10 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlucp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this crystal unit cell parameterisation
+      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
+          dX_dp, dY_dp, dphi_dp, m, xlucp.num_free())
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
