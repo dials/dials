@@ -383,8 +383,6 @@ class SparseGradientVectorMixin(object):
   def _prepare_gradient_vectors(m, n):
 
     from scitbx import sparse
-    """set up lists of vectors to store calculated gradients in. This method
-    may be overriden by a derived class to e.g. use sparse vectors"""
 
     dX_dp = [sparse.matrix_column(m) for p in range(n)]
     dY_dp = [sparse.matrix_column(m) for p in range(n)]
