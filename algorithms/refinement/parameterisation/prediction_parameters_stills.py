@@ -446,7 +446,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
   """
 
-  def _get_gradients_core(self, reflections, D, s0, U, B, axis):
+  def _get_gradients_core(self, reflections, D, s0, U, B, axis, callback=None):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
     with scattering vector s that intersects panel panel_id. That is,
@@ -557,6 +557,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           # increment the local parameter index pointer
           iparam += 1
 
+      if callback is not None:
+        iparam = self._iparam
+        for i in range(dp.num_free()):
+          dX_dp[iparam], dY_dp[iparam], dDeltaPsi_dp[iparam] = \
+            callback(dX_dp[iparam], dY_dp[iparam], dDeltaPsi_dp[iparam])
+          iparam += 1
+
       # increment the parameter index pointer to the last detector parameter
       self._iparam += dp.num_free()
 
@@ -603,6 +610,9 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
         dX_dp[self._iparam].set_selected(isel, dX)
         dY_dp[self._iparam].set_selected(isel, dY)
+        if callback is not None:
+          dX_dp[self._iparam], dY_dp[self._iparam], dDeltaPsi_dp[self._iparam] = \
+            callback(dX_dp[self._iparam], dY_dp[self._iparam], dDeltaPsi_dp[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
@@ -653,6 +663,9 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
         dX_dp[self._iparam].set_selected(isel, dX)
         dY_dp[self._iparam].set_selected(isel, dY)
+        if callback is not None:
+          dX_dp[self._iparam], dY_dp[self._iparam], dDeltaPsi_dp[self._iparam] = \
+            callback(dX_dp[self._iparam], dY_dp[self._iparam], dDeltaPsi_dp[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
@@ -703,6 +716,9 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
         dX_dp[self._iparam].set_selected(isel, dX)
         dY_dp[self._iparam].set_selected(isel, dY)
+        if callback is not None:
+          dX_dp[self._iparam], dY_dp[self._iparam], dDeltaPsi_dp[self._iparam] = \
+            callback(dX_dp[self._iparam], dY_dp[self._iparam], dDeltaPsi_dp[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 

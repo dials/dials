@@ -146,7 +146,7 @@ class Target(object):
     # predict
     return self._predict_core(reflections)
 
-  def calculate_gradients(self, reflections=None):
+  def calculate_gradients(self, reflections=None, callback=None):
     """delegate to the prediction_parameterisation object to calculate
     gradients for all the matched reflections, or just for those specified"""
 
@@ -154,10 +154,10 @@ class Target(object):
 
     if reflections:
       gradients = self._prediction_parameterisation.get_gradients(
-        reflections)
+        reflections, callback)
     else:
       gradients = self._prediction_parameterisation.get_gradients(
-        self._matches)
+        self._matches, callback)
 
     return gradients
 
@@ -210,17 +210,26 @@ class Target(object):
     # calculate target function
     L = 0.5 * flex.sum(weights * residuals2)
 
-    dX_dp, dY_dp, dZ_dp = self.calculate_gradients()
+    def process_one_gradient(dX, dY, dZ):
+      grads = self._concatenate_gradients(dX, dY, dZ)
+      dL_dp = flex.sum(w_resid * grads)
+      curvature = flex.sum(weights * grads * grads)
+      return dL_dp, curvature, None
+      #return dX, dY, dZ # FOR TEST, JUST PASS THROUGH
+
+    dL_dp, curvs, _ = self.calculate_gradients(
+        callback=process_one_gradient)
 
     # prepare list of gradients and curvatures
-    dL_dp = [0.] * len(self._prediction_parameterisation)
-    self._curv = [0.] * len(self._prediction_parameterisation)
+    #dL_dp = [0.] * len(self._prediction_parameterisation)
+    #self._curv = [0.] * len(self._prediction_parameterisation)
 
-    for i in range(len(self._prediction_parameterisation)):
-      dX, dY, dZ = dX_dp[i], dY_dp[i], dZ_dp[i]
-      grads = self._concatenate_gradients(dX, dY, dZ)
-      dL_dp[i] = flex.sum(w_resid * grads)
-      self._curv[i] = flex.sum(weights * grads * grads)
+    #for i in range(len(self._prediction_parameterisation)):
+    #  dX, dY, dZ = dX_dp[i], dY_dp[i], dZ_dp[i]
+    #  grads = self._concatenate_gradients(dX, dY, dZ)
+    #  dL_dp[i] = flex.sum(w_resid * grads)
+    #  self._curv[i] = flex.sum(weights * grads * grads)
+    self._curv = curvs
 
     return (L, dL_dp)
 

@@ -308,7 +308,7 @@ class PredictionParameterisation(object):
 
     return
 
-  def get_gradients(self, reflections):
+  def get_gradients(self, reflections, callback=None):
     """
     Calculate gradients of the prediction formula with respect to each
     of the parameters of the contained models, for all of the reflections.
@@ -353,7 +353,7 @@ class PredictionParameterisation(object):
       if exp.goniometer:
         axis.set_selected(isel, exp.goniometer.get_rotation_axis())
 
-    return self._get_gradients_core(reflections, D, s0, U, B, axis)
+    return self._get_gradients_core(reflections, D, s0, U, B, axis, callback)
 
   @staticmethod
   def _extend_gradient_vectors(dX_dp, dY_dp, dZ_dp, m, n):
@@ -395,7 +395,7 @@ class SparseGradientVectorMixin(object):
 
 class XYPhiPredictionParameterisation(PredictionParameterisation):
 
-  def _get_gradients_core(self, reflections, D, s0, U, B, axis):
+  def _get_gradients_core(self, reflections, D, s0, U, B, axis, callback=None):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
     that reflects at rotation angle phi with scattering vector s that
@@ -536,6 +536,13 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
           # increment the local parameter index pointer
           iparam += 1
 
+      if callback is not None:
+        iparam = self._iparam
+        for i in range(dp.num_free()):
+          dX_dp[iparam], dY_dp[iparam], dphi_dp[iparam] = \
+            callback(dX_dp[iparam], dY_dp[iparam], dphi_dp[iparam])
+          iparam += 1
+
       # increment the parameter index pointer to the last detector parameter
       self._iparam += dp.num_free()
 
@@ -576,6 +583,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         dphi_dp[self._iparam].set_selected(isel, dphi)
         dX_dp[self._iparam].set_selected(isel, dX)
         dY_dp[self._iparam].set_selected(isel, dY)
+        if callback is not None:
+          dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam] = \
+            callback(dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
@@ -621,6 +631,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         dphi_dp[self._iparam].set_selected(isel, dphi)
         dX_dp[self._iparam].set_selected(isel, dX)
         dY_dp[self._iparam].set_selected(isel, dY)
+        if callback is not None:
+          dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam] = \
+            callback(dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
@@ -666,6 +679,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         dphi_dp[self._iparam].set_selected(isel, dphi)
         dX_dp[self._iparam].set_selected(isel, dX)
         dY_dp[self._iparam].set_selected(isel, dY)
+        if callback is not None:
+          dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam] = \
+            callback(dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
