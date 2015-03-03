@@ -630,6 +630,16 @@ class RefinerFactory(object):
         params.refinement.parameterisation.sparse = True
       else:
         params.refinement.parameterisation.sparse = False
+      if params.refinement.mp.nproc > 1:
+        # sparse vectors cannot be pickled, so can't use easy_mp here
+        params.refinement.parameterisation.sparse = False
+    # Check incompatible selection
+    elif params.refinement.parameterisation.sparse and \
+      params.refinement.mp.nproc > 1:
+        warning("Could not set sparse=True and nproc={0}".format(
+          params.refinement.mp.nproc))
+        warning("Resetting sparse=False")
+        params.refinement.parameterisation.sparse = False
     sparse = params.refinement.parameterisation.sparse
 
     # Shorten paths
