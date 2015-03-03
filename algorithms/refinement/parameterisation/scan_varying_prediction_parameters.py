@@ -70,16 +70,18 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       reflections['b_matrix'] = flex.mat3_double(nref)
 
     # set columns in the reflection table to store the derivative of state for
-    # each reflection.
-    max_free_U_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
-    max_free_B_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
+    # each reflection, if needed
     null = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
-    for i in range(max_free_U_params):
-      colname = "dU_dp{0}".format(i)
-      reflections[colname] = flex.mat3_double(nref, null)
-    for i in range(max_free_B_params):
-      colname = "dB_dp{0}".format(i)
-      reflections[colname] = flex.mat3_double(nref, null)
+    if not reflections.has_key("dU_dp0"):
+      max_free_U_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
+      for i in range(max_free_U_params):
+        colname = "dU_dp{0}".format(i)
+        reflections[colname] = flex.mat3_double(nref, null)
+    if not reflections.has_key("dB_dp0"):
+      max_free_B_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
+      for i in range(max_free_B_params):
+        colname = "dB_dp{0}".format(i)
+        reflections[colname] = flex.mat3_double(nref, null)
 
     return
 
@@ -276,6 +278,9 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
         # get the right subset of array indices to set for this panel
         sub_isel = isel.select(panel == panel_id)
+        if len(sub_isel) == 0:
+          # if no reflections intersect this panel, skip calculation
+          continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
         dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
@@ -304,6 +309,11 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       isel = flex.size_t()
       for exp_id in bp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += bp.num_free()
+        continue
 
       # Get required data from those reflections
       r = self._r.select(isel)
@@ -335,6 +345,11 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlop.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += xlop.num_free()
+        continue
 
       # Get required data from those reflections
       axis = self._axis.select(isel)
@@ -374,6 +389,11 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlucp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += xlucp.num_free()
+        continue
 
       # Get required data from those reflections
       axis = self._axis.select(isel)

@@ -507,6 +507,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
         # get the right subset of array indices to set for this panel
         sub_isel = isel.select(panel == panel_id)
+        if len(sub_isel) == 0:
+          # if no reflections intersect this panel, skip calculation
+          continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
         dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
@@ -539,6 +542,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       for exp_id in bp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
 
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += bp.num_free()
+        continue
+
       # Get required data from those reflections
       r = self._r.select(isel)
       e_X_r = self._e_X_r.select(isel)
@@ -569,6 +577,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlop.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += xlop.num_free()
+        continue
 
       # Get required data from those reflections
       axis = self._axis.select(isel)
@@ -605,6 +618,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       isel = flex.size_t()
       for exp_id in xlucp.get_experiment_ids():
         isel.extend(experiment_to_idx[exp_id])
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation
+        self._iparam += xlucp.num_free()
+        continue
 
       # Get required data from those reflections
       axis = self._axis.select(isel)
