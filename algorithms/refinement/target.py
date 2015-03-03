@@ -242,20 +242,27 @@ class Target(object):
     self.update_matches()
     return self._extract_residuals_and_weights(self._matches)
 
-  def split_matches_into_blocks(self):
+  def split_matches_into_blocks(self, nproc=1):
     """Return a list of the matches, split into blocks according to the
-    jacobian_max_nref parameter"""
+    jacobian_max_nref parameter and the number of processes (if relevant).
+    The number of blocks will be set such that the total number of reflections
+    being processed by concurrent processes does not exceed jacobian_max_nref"""
 
+    # FIXME, make this cleverer so that we never end up with one tiny block
+    # at the end
     self.update_matches()
     if self._jacobian_max_nref:
-      block_num = 0
-      blocks = []
-      while True:
-        start = block_num * self._jacobian_max_nref
-        end = (block_num + 1) * self._jacobian_max_nref
-        blocks.append(self._matches[start:end])
-        if end >= len(self._matches): break
-        block_num += 1
+      blocksize = int(max(self._jacobian_max_nref / nproc, 1))
+    else:
+      blocksize = int(max(len(self._matches) / nproc, 1))
+    block_num = 0
+    blocks = []
+    while True:
+      start = block_num * blocksize
+      end = (block_num + 1) * blocksize
+      blocks.append(self._matches[start:end])
+      if end >= len(self._matches): break
+      block_num += 1
     return blocks
 
   def compute_residuals_and_gradients(self, block=None):

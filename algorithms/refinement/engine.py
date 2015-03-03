@@ -17,6 +17,7 @@ from logging import info, debug
 from scitbx import lbfgs
 from scitbx.array_family import flex
 import libtbx
+from libtbx import easy_mp
 import sys
 
 # use lstbx classes
@@ -152,6 +153,9 @@ class Refinery(object):
     self.history.add_column("parameter_vector_norm")#flex.double()
     self.history.add_column("rmsd")
 
+    # number of processes to use, for engines that support multiprocessing
+    self._nproc = 1
+
     self.prepare_for_step()
 
   def get_num_steps(self):
@@ -270,6 +274,13 @@ class Refinery(object):
       return False
 
     return l1 > l2 and n1 <= n2
+
+  def set_nproc(self, nproc):
+    """to be implemented only by derived classes that support multiprocessing"""
+
+    raise NotImplementedError()
+    self._nproc = nproc
+    return
 
   def run(self):
     """
@@ -412,6 +423,10 @@ class AdaptLstbx(
 
     normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
 
+  def set_nproc(self, nproc):
+    self._nproc = nproc
+    return
+
   def restart(self):
     self.x = self.x_0.deep_copy()
     self.old_x = None
@@ -438,11 +453,47 @@ class AdaptLstbx(
       residuals, weights = self._target.compute_residuals()
       self.add_residuals(residuals, weights)
     else:
-      blocks = self._target.split_matches_into_blocks()
-      for block in blocks:
-        residuals, self._jacobian, weights = \
-          self._target.compute_residuals_and_gradients(block)
-        self.add_equations(residuals, self._jacobian, weights)
+      blocks = self._target.split_matches_into_blocks(nproc = self._nproc)
+
+      if self._nproc > 1:
+
+        # ensure the jacobian is not tracked
+        self._jacobian = None
+
+        # processing functions
+        def task_wrapper(block):
+          residuals, jacobian, weights = \
+            self._target.compute_residuals_and_gradients(block)
+          return dict(residuals=residuals,
+                      jacobian=jacobian,
+                      weights=weights)
+        def callback_wrapper(result):
+          self.add_equations(result['residuals'],
+                             result['jacobian'],
+                             result['weights'])
+          # no longer need the result
+          result['residuals'] = None
+          result['jacobian'] = None
+          result['weights'] = None
+          return
+
+        task_results = easy_mp.parallel_map(
+          func=task_wrapper,
+          iterable=blocks,
+          processes=self._nproc,
+          callback=callback_wrapper,
+          method="multiprocessing",
+          #preserve_exception_message=True
+          )
+
+      else:
+        #i =0
+        for block in blocks:
+          #print i
+          #i+=1
+          residuals, self._jacobian, weights = \
+            self._target.compute_residuals_and_gradients(block)
+          self.add_equations(residuals, self._jacobian, weights)
     return
 
   def step_forward(self):

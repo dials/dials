@@ -14,7 +14,7 @@
 what should usually be used to construct a Refiner."""
 
 from __future__ import division
-from logging import info, debug
+from logging import info, debug, warning
 
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.array_family import flex # import dependency
@@ -26,6 +26,13 @@ phil_scope = parse('''
 refinement
   .help = "Parameters to configure the refinement"
 {
+
+  mp {
+    nproc = 1
+      .type = int(value_min=1)
+      .help = "The number of processes to use. Only applicable to certain"
+              "choices of refinement engine!"
+  }
 
   verbosity = 1
     .help = "verbosity level"
@@ -866,7 +873,7 @@ class RefinerFactory(object):
 
     debug("Selected refinement engine type: %s", options.engine)
 
-    return refinery(target = target,
+    engine = refinery(target = target,
             prediction_parameterisation = pred_param,
             log = options.log,
             verbosity = verbosity,
@@ -875,6 +882,16 @@ class RefinerFactory(object):
             track_parameter_correlation = options.track_parameter_correlation,
             track_out_of_sample_rmsd = options.track_out_of_sample_rmsd,
             max_iterations = options.max_iterations)
+
+    if params.refinement.mp.nproc > 1:
+      nproc = params.refinement.mp.nproc
+      try:
+        engine.set_nproc(nproc)
+      except NotImplementedError:
+        warning("Could not set nproc={0} for refinement engine of type {1}".format(
+          nproc, options.engine))
+
+    return engine
 
   @staticmethod
   def config_refman(params, reflections, experiments, do_stills, verbosity):
