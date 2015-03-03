@@ -228,6 +228,8 @@ def run(verbose = False):
       # check not too many reflections were removed this way (< 10%)
       assert len(remove_refs) < 0.1 * len(reflections), \
         '%d < 0.1 * %d' % (len(remove_refs), len(reflections))
+      if verbose:
+        print ("removed %d of %d reflections" % (len(remove_refs), len(reflections)))
 
       # calculate relative errors
       abs_error = abs_error.select(sel == False)
@@ -273,5 +275,5 @@ def run(verbose = False):
 if __name__ == "__main__":
 
   # switch this to true to see summary output
-  run(verbose=False)
+  run(verbose=True)
   print "OK"
