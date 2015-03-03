@@ -319,7 +319,6 @@ class AdaptLbfgs(Refinery):
 
     blocks = self._target.split_matches_into_blocks(nproc = self._nproc)
     if self._nproc > 1:
-      print "calling parallel map"
       task_results = easy_mp.parallel_map(
         func=self._target.compute_functional_gradients_and_curvatures,
         iterable=blocks,
