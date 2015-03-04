@@ -79,10 +79,10 @@ class flex_3d_frame(wx.Frame):
 
   def OnCloseWindow(self, event):
     if( self.table_exist == False ):
-      print "from flex_3d_frame self.myGrid = None"
+      #print "from flex_3d_frame self.myGrid = None"
       event.Skip()
     else:
-      print "from flex_3d_frame self.myGrid .NEQ. None"
+      #print "from flex_3d_frame self.myGrid .NEQ. None"
       wx.GetApp().Exit()
 
 
@@ -128,6 +128,7 @@ class MyGrid(gridlib.Grid):
 
     self.lst_keys = []
     self.data = []
+    self.sorted_flags = []
 
     for key in table_in.keys():
       if(key != "shoebox"):
@@ -145,9 +146,11 @@ class MyGrid(gridlib.Grid):
 
         self.lst_keys.append(col_label)
         self.data.append(col_content)
+        self.sorted_flags.append(True)
 
-    self.data.append(range(len(table_in)))
     self.lst_keys.append("lst pos")
+    self.data.append(range(len(table_in)))
+    self.sorted_flags.append(True)
 
     self.last_col_num = len(self.lst_keys) - 1
 
@@ -155,7 +158,7 @@ class MyGrid(gridlib.Grid):
     self.EnableEditing(True)
     self.EnableDragGridSize(True)
 
-    self.set_my_table(self.data, self.last_col_num)
+    self.set_my_table(self.last_col_num)
 
     self.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
     self.Bind(gridlib.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
@@ -169,12 +172,8 @@ class MyGrid(gridlib.Grid):
 
     if(evt.GetCol() == -1):
       self.repaint_img(evt.GetRow())
-
     else:
-      log_msg = '''
-      print "evt.GetCol() =", evt.GetCol()
-      '''
-      self.set_my_table(self.data, evt.GetCol())
+      self.set_my_table(evt.GetCol())
 
     evt.Skip()
 
@@ -184,12 +183,27 @@ class MyGrid(gridlib.Grid):
     print "timedif =", timedif
     #'''
 
-  def set_my_table(self, tupldata_in, col_to_sort):
+  def set_my_table(self, col_to_sort):
+
+    self.sorted_flags[col_to_sort] = not self.sorted_flags[col_to_sort]
+
+
 
     try:
-      tupldata = sorted(tupldata_in, key=lambda x: float(x[col_to_sort]))
+      tupldata = sorted(self.data, key=lambda x: int(x[col_to_sort]),
+                        reverse = self.sorted_flags[col_to_sort])
+      print "using key=lambda x: int(x[col_to_sort])"
+
     except:
-      tupldata = sorted(tupldata_in, key=lambda x: x[col_to_sort])
+      try:
+        tupldata = sorted(self.data, key=lambda x: float(x[col_to_sort]),
+                          reverse = self.sorted_flags[col_to_sort])
+        print "using key=lambda x: float(x[col_to_sort])"
+      except:
+        tupldata = sorted(self.data, key=lambda x:
+                          tuple(eval(str(x[col_to_sort]))),
+                          reverse = self.sorted_flags[col_to_sort])
+        print "using key=lambda x: tuple(x[col_to_sort])"
 
     colLabels = tuple(self.lst_keys)
     rowLabels = tuple(range(len(tupldata)))
@@ -310,10 +324,10 @@ class flex_arr_img_panel(wx.Panel):
 
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
-  def __init__(self, outer_panel, bmp_lst_in):
+  def __init__(self, outer_panel, i_bmp_in):
     super(multi_img_scrollable, self).__init__(outer_panel)
     self.parent_panel  = outer_panel
-    self.lst_2d_bmp = bmp_lst_in
+    self.lst_2d_bmp = i_bmp_in
     self.SetBackgroundColour(wx.Colour(200, 200, 200))
 
     self.mainSizer = wx.BoxSizer(wx.VERTICAL)
@@ -339,10 +353,26 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.Bind(wx.EVT_IDLE, self.OnIdle)
     self.scroll_rot = 0
 
-  def OnLeftButDown(self):
+    not_working = '''
+
+    for child in self.GetChildren():
+      child.Bind(wx.EVT_MOUSE, self.OnLeftButDown)
+
+    for lst_1d in self.lst_2d_bmp:
+      for i_bmp in lst_1d:
+        print "i_bmp =", i_bmp
+        #i_bmp.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButDown)
+    '''
+
+  def OnLeftButDown(self, event):
+    #print "OnLeftButDown(self)"
     self.Bdwn = True
-  def OnLeftButUp(self):
+    self.old_Mouse_Pos_x, self.old_Mouse_Pos_y = event.GetPosition()
+
+  def OnLeftButUp(self, event):
     self.Bdwn = False
+    Mouse_Pos_x, Mouse_Pos_y = event.GetPosition()
+    #print "Mouse_Pos_x, Mouse_Pos_y =", Mouse_Pos_x, Mouse_Pos_y
 
   def set_scroll_content(self):
 
@@ -351,8 +381,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     for lst_1d in self.lst_2d_bmp:
       img_lst_hor_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-      for i, bmp_lst in enumerate(lst_1d):
-        local_bitmap = wx.StaticBitmap(self, bitmap = bmp_lst)
+      for i, i_bmp in enumerate(lst_1d):
+        local_bitmap = wx.StaticBitmap(self, bitmap = i_bmp)
         slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
         slice_sub_info_txt = wx.StaticText(self, -1, slice_string)
 
@@ -375,13 +405,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
   def OnMouseMotion(self, event):
 
     self.Mouse_Pos_x, self.Mouse_Pos_y = event.GetPosition()
-
-
-
-
-
-
-
+    #print "OnMouseMotion(self, event)"
 
 
 
@@ -408,9 +432,9 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     self.y_uni = float( View_start_y + self.Mouse_Pos_y ) / float(v_size_y)
 
 
-  def img_refresh(self, bmp_lst_new):
+  def img_refresh(self, i_bmp_new):
 
-    self.lst_2d_bmp = bmp_lst_new
+    self.lst_2d_bmp = i_bmp_new
     self.set_scroll_content()
 
 
