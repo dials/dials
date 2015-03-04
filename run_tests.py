@@ -77,7 +77,6 @@ tst_list = (
     "$D/test/algorithms/refinement/tst_prediction_parameters.py",
     "$D/test/algorithms/refinement/tst_finite_diffs.py",
     "$D/test/algorithms/refinement/tst_scan_varying_prediction_parameters.py",
-    "$D/test/algorithms/refinement/tst_stills_prediction_parameters.py",
     "$D/test/algorithms/refinement/tst_beam_parameters.py",
     "$D/test/algorithms/refinement/tst_crystal_parameters.py",
     "$D/test/algorithms/refinement/tst_detector_parameters.py",
