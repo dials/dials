@@ -239,9 +239,9 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
       raise e
 
-    # Set up empty lists in which to store gradients
+    # Set up empty list in which to store gradients
     m = len(reflections)
-    dX_dp, dY_dp, dphi_dp = [], [], []
+    results = []
 
     # determine experiment to indices mappings once, here
     experiment_to_idx = []
@@ -272,8 +272,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       panel = reflections['panel'].select(isel)
 
       # Extend derivative vectors for this detector parameterisation
-      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
-          dX_dp, dY_dp, dphi_dp, m, dp.num_free())
+      results = self._extend_gradient_vectors(results, m, dp.num_free(),
+        keys=self._grad_names)
 
       # loop through the panels in this detector
       for panel_id, _ in enumerate(exp.detector):
@@ -299,16 +299,15 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
         # for this panel before moving on to the next
         iparam = self._iparam
         for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-          dX_dp[iparam].set_selected(sub_isel, dX)
-          dY_dp[iparam].set_selected(sub_isel, dY)
+          results[iparam]['dX_dp'].set_selected(sub_isel, dX)
+          results[iparam]['dY_dp'].set_selected(sub_isel, dY)
           # increment the local parameter index pointer
           iparam += 1
 
       if callback is not None:
         iparam = self._iparam
         for i in range(dp.num_free()):
-          dX_dp[iparam], dY_dp[iparam], dphi_dp[iparam] = \
-            callback(dX_dp[iparam], dY_dp[iparam], dphi_dp[iparam])
+          results[iparam] = callback(results[iparam])
           iparam += 1
 
       # increment the parameter index pointer to the last detector parameter
@@ -323,8 +322,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
         isel.extend(experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this beam parameterisation
-      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
-          dX_dp, dY_dp, dphi_dp, m, bp.num_free())
+      results = self._extend_gradient_vectors(results, m, bp.num_free(),
+        keys=self._grad_names)
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
@@ -348,12 +347,12 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
       for dX, dY, dphi in zip(dX_dbeam_p, dY_dbeam_p, dphi_dbeam_p):
-        dphi_dp[self._iparam].set_selected(isel, dphi)
-        dX_dp[self._iparam].set_selected(isel, dX)
-        dY_dp[self._iparam].set_selected(isel, dY)
+        results[self._iparam][self._grad_names[0]].set_selected(sub_isel, dX)
+        results[self._iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+        results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
+
         if callback is not None:
-          dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam] = \
-            callback(dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam])
+          results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
@@ -366,8 +365,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
         isel.extend(experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this crystal orientation parameterisation
-      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
-          dX_dp, dY_dp, dphi_dp, m, xlop.num_free())
+      results = self._extend_gradient_vectors(results, m, xlop.num_free(),
+        keys=self._grad_names)
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
@@ -399,12 +398,11 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
       for dX, dY, dphi in zip(dX_dxlo_p, dY_dxlo_p, dphi_dxlo_p):
-        dphi_dp[self._iparam].set_selected(isel, dphi)
-        dX_dp[self._iparam].set_selected(isel, dX)
-        dY_dp[self._iparam].set_selected(isel, dY)
+        results[self._iparam][self._grad_names[0]].set_selected(sub_isel, dX)
+        results[self._iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+        results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
-          dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam] = \
-            callback(dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam])
+          results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
@@ -417,8 +415,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
         isel.extend(experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this crystal unit cell parameterisation
-      dX_dp, dY_dp, dphi_dp = self._extend_gradient_vectors(
-          dX_dp, dY_dp, dphi_dp, m, xlucp.num_free())
+      results = self._extend_gradient_vectors(results, m, xlucp.num_free(),
+        keys=self._grad_names)
 
       if len(isel) == 0:
         # if no reflections are in this experiment, skip calculation
@@ -449,16 +447,15 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
       for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
-        dphi_dp[self._iparam].set_selected(isel, dphi)
-        dX_dp[self._iparam].set_selected(isel, dX)
-        dY_dp[self._iparam].set_selected(isel, dY)
+        results[self._iparam][self._grad_names[0]].set_selected(sub_isel, dX)
+        results[self._iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+        results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
-          dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam] = \
-            callback(dX_dp[self._iparam], dY_dp[self._iparam], dphi_dp[self._iparam])
+          results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
 
-    return (dX_dp, dY_dp, dphi_dp)
+    return results
 
   def _xl_orientation_derivatives(self, dU_dxlo_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, B, D):
     """helper function to extend the derivatives lists by

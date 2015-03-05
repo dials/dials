@@ -41,6 +41,7 @@ class Target(object):
   """
 
   __metaclass__  = abc.ABCMeta
+  _grad_names = ['dX_dp', 'dY_dp', 'dphi_dp']
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
   rmsd_units = ["mm", "mm", "rad"]
 
@@ -215,14 +216,25 @@ class Target(object):
     # calculate target function
     L = 0.5 * flex.sum(weights * residuals2)
 
-    def process_one_gradient(dX, dY, dZ):
+    def process_one_gradient(result):
+      # copy gradients out of the result
+      dX = result[self._grad_names[0]]
+      dY = result[self._grad_names[1]]
+      dZ = result[self._grad_names[2]]
+      # reset result
+      for k in result.keys():
+        result[k] = None
+      # add new keys
       grads = self._concatenate_gradients(dX, dY, dZ)
-      dL_dp = flex.sum(w_resid * grads)
-      curvature = flex.sum(weights * grads * grads)
-      return dL_dp, curvature, None
+      result['dL_dp'] = flex.sum(w_resid * grads)
+      result['curvature'] = flex.sum(weights * grads * grads)
+      return result
 
-    dL_dp, curvs, _ = self.calculate_gradients(matches,
+    results = self.calculate_gradients(matches,
         callback=process_one_gradient)
+
+    dL_dp = [result['dL_dp'] for result in results]
+    curvs = [result['curvature'] for result in results]
 
     return (L, dL_dp, curvs)
 
@@ -278,7 +290,10 @@ class Target(object):
 
     # Here we hardcode *three* types of residual, which might correspond to
     # X, Y, Phi (scans case) or X, Y, DeltaPsi (stills case).
-    dX_dp, dY_dp, dZ_dp = self.calculate_gradients(matches)
+    gradients = self.calculate_gradients(matches)
+    dX_dp = [g[self._grad_names[0]] for g in gradients]
+    dY_dp = [g[self._grad_names[1]] for g in gradients]
+    dZ_dp = [g[self._grad_names[2]] for g in gradients]
 
     residuals, weights = self._extract_residuals_and_weights(matches)
 

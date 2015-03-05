@@ -180,9 +180,9 @@ for i in range(len(deltas)):
   phi_grads /= deltas[i]
 
   # compare with analytical calculation
-  assert approx_equal(x_grads, an_grads[0][i], eps=5.e-6)
-  assert approx_equal(y_grads, an_grads[1][i], eps=5.e-6)
-  assert approx_equal(phi_grads, an_grads[2][i], eps=5.e-6)
+  assert approx_equal(x_grads, an_grads[i]["dX_dp"], eps=5.e-6)
+  assert approx_equal(y_grads, an_grads[i]["dY_dp"], eps=5.e-6)
+  assert approx_equal(phi_grads, an_grads[i]["dphi_dp"], eps=5.e-6)
 
 # return to the initial state
 pred_param.set_param_vals(p_vals)

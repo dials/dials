@@ -210,11 +210,11 @@ for i in range(len(deltas)):
   y_grads /= deltas[i]
   phi_grads /= deltas[i]
 
-  for n, (a,b) in enumerate(zip(x_grads, an_grads[0][i])):
+  for n, (a,b) in enumerate(zip(x_grads, an_grads[i]["dX_dp"])):
     assert approx_equal(a, b, eps=5.e-6)
-  for n, (a,b) in enumerate(zip(y_grads, an_grads[1][i])):
+  for n, (a,b) in enumerate(zip(y_grads, an_grads[i]["dY_dp"])):
     assert approx_equal(a, b, eps=5.e-6)
-  for n, (a,b) in enumerate(zip(phi_grads, an_grads[2][i])):
+  for n, (a,b) in enumerate(zip(phi_grads, an_grads[i]["dphi_dp"])):
     assert approx_equal(a, b, eps=5.e-6)
 
   # compare with analytical calculation

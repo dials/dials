@@ -187,10 +187,10 @@ def run(verbose = False):
     if verbose: print "\n\nParameter {0}: {1}". format(i,  p_names[i])
     grads = (x_grads, y_grads, delpsi_grads)
 
-    for idx, name in enumerate(["dX/dp", "dY/dp", "d[DeltaPsi]/dp"]):
+    for idx, name in enumerate(["dX_dp", "dY_dp", "dDeltaPsi_dp"]):
       if verbose: print name
       a = grads[idx]
-      b = an_grads[idx][i]
+      b = an_grads[i][name]
 
       abs_error = a - b
       denom = a + b
