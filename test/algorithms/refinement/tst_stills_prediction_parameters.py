@@ -16,6 +16,7 @@ from __future__ import division
 import sys
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.phil import parse
+from scitbx.math import five_number_summary
 
 #### dials imports
 from dials.array_family import flex
@@ -183,7 +184,6 @@ def run(verbose = False):
     delpsi_grads /= deltas[i]
 
     # compare FD with analytical calculations
-    from scitbx.math import five_number_summary
     if verbose: print "\n\nParameter {0}: {1}". format(i,  p_names[i])
     grads = (x_grads, y_grads, delpsi_grads)
 
@@ -199,19 +199,25 @@ def run(verbose = False):
       if verbose: print ("  summary of absolute errors: %9.6f %9.6f %9.6f " + \
         "%9.6f %9.6f") % fns
       assert flex.max(flex.abs(abs_error)) < 0.0003
-      # largest absolute error found to be about 0.00025 for dX/dp of
+      # largest absolute error found to be about 0.00025 for dY/dp of
       # Crystal0g_param_3. Reject outlying absolute errors and test again.
       iqr = fns[3] - fns[1]
-      if iqr > 0.:
-        sel1 = abs_error < fns[3] + 1.5 * iqr
-        sel2 = abs_error > fns[1] - 1.5 * iqr
-        sel = sel1 & sel2
-        tst = flex.abs(abs_error.select(sel))
-        n_outliers = sel.count(False)
-        if verbose: print ("  {0} outliers rejected, leaving greatest " + \
-          "absolute error: {1:9.6f}").format(n_outliers, flex.max(tst))
-        # largest absolute error now 0.000062
-        assert flex.max(tst) < 0.00007
+
+      # skip further stats on errors with an iqr of near zero, e.g. dDeltaPsi_dp
+      # for detector parameters, which are all equal to zero
+      if iqr < 1.e-10:
+        continue
+
+      sel1 = abs_error < fns[3] + 1.5 * iqr
+      sel2 = abs_error > fns[1] - 1.5 * iqr
+      sel = sel1 & sel2
+      tst = flex.max_index(flex.abs(abs_error.select(sel)))
+      tst_val = abs_error.select(sel)[tst]
+      n_outliers = sel.count(False)
+      if verbose: print ("  {0} outliers rejected, leaving greatest " + \
+        "absolute error: {1:9.6f}").format(n_outliers, tst_val)
+      # largest absolute error now 0.000062 for dX/dp of Crystal0g_param_3
+      assert abs(tst_val) < 0.00007
 
       # Completely skip parameters with FD gradients all zero (e.g. gradients of
       # DeltaPsi for detector parameters)
@@ -219,55 +225,43 @@ def run(verbose = False):
       if sel1.all_eq(True):
         continue
 
-      # otherwise just remove particular reflections with FD or analytical
-      # gradients of zero from the relative error calculation. The calculation
-      # can't be done for these reflections
-      sel2 = flex.abs(b) < 1.e-10
-      sel = sel1 | sel2
-      remove_refs = reflections.select(sel)
-      # check not too many reflections were removed this way (< 10%)
-      assert len(remove_refs) < 0.1 * len(reflections), \
-        '%d < 0.1 * %d' % (len(remove_refs), len(reflections))
-      if verbose:
-        print ("removed %d of %d reflections" % (len(remove_refs), len(reflections)))
-
-      # calculate relative errors
-      abs_error = abs_error.select(sel == False)
-      denom = denom.select(sel == False)
-      rel_error = 2. * abs_error/denom
-
-      fns = five_number_summary(rel_error)
-      if verbose: print ("  summary of relative errors: %9.6f %9.6f %9.6f " + \
+      # otherwise calculate normalised errors, by dividing absolute errors by
+      # the IQR (more stable than relative error calculation)
+      norm_error = abs_error / iqr
+      fns = five_number_summary(norm_error)
+      if verbose: print ("  summary of normalised errors: %9.6f %9.6f %9.6f " + \
         "%9.6f %9.6f") % fns
-
-      # NB certain reflections give bad relative errors for parameters
-      # of the crystal model. For instance, reflections directed largely along
-      # the fast axis of the detector give poor dY/dp for Crystal0Phi1, the
-      # misset around the X axis. Other reflections are much better, indicating
-      # that the problem is not with the gradient calculation per se, but that
-      # the calculation breaks down for certain subclasses of reflection. This
-      # is not well understood yet.
-
-      # largest relative error found to be about 2.057 for dY/dp of
-      # Crystal0g_param_2.
+      # largest normalised error found to be about 25.7 for dY/dp of
+      # Crystal0g_param_3.
       try:
-        assert flex.max(flex.abs(rel_error)) < 2.5
+        assert flex.max(flex.abs(norm_error)) < 30
       except AssertionError as e:
-        e.args += ("extreme relative error value:",
-                   flex.max(flex.abs(rel_error)))
+        e.args += ("extreme normalised error value: {0}".format(
+                   flex.max(flex.abs(norm_error))),)
         raise e
-      # Reject outlying relative errors and test again
+
+      # Reject outlying normalised errors and test again
       iqr = fns[3] - fns[1]
       if iqr > 0.:
-        sel1 = rel_error < fns[3] + 1.5 * iqr
-        sel2 = rel_error > fns[1] - 1.5 * iqr
+        sel1 = norm_error < fns[3] + 1.5 * iqr
+        sel2 = norm_error > fns[1] - 1.5 * iqr
         sel = sel1 & sel2
-        tst = flex.abs(rel_error.select(sel))
+        tst = flex.max_index(flex.abs(norm_error.select(sel)))
+        tst_val = norm_error.select(sel)[tst]
         n_outliers = sel.count(False)
+
+        # most outliers found for for dY/dp of Crystal0g_param_3 (which had
+        # largest errors, so no surprise there).
+        try:
+          assert n_outliers < 250
+        except AssertionError as e:
+          e.args += ("too many outliers rejected: {0}".format(n_outliers),)
+          raise e
+
         if verbose: print ("  {0} outliers rejected, leaving greatest " + \
-          "relative error: {1:9.6f}").format(n_outliers, flex.max(tst))
-        # largest relative error now 0.007169 for dX/dp of Beam0Mu1
-        assert flex.max(tst) < 0.0075
+          "normalised error: {1:9.6f}").format(n_outliers, tst_val)
+        # largest normalied error now about -4. for dX/dp of Detector0Tau1
+        assert abs(tst_val) < 4.5
 
   # return to the initial state
   pred_param.set_param_vals(p_vals)
@@ -275,5 +269,9 @@ def run(verbose = False):
 if __name__ == "__main__":
 
   # switch this to true to see summary output
-  run(verbose=True)
+  run(verbose=False)
+
+  # In comparison with FD approximations, the worst gradients by far are dX/dp
+  # and dY/dp for parameter Crystal0g_param_3. Is this to do with the geometry
+  # of the test case?
   print "OK"
