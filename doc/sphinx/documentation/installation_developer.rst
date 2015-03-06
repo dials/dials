@@ -82,15 +82,16 @@ Using your own python to configure and build DIALS requires the dependencies lis
 
 This will run the 'hot' and 'update' steps as normal, skip the 'base' step that would normally download and build python and necessary DIALS python dependencies, and finally run the 'build' step with the python you specified. Note that the DIALS team doesn't recommend this procedure, but it can be necessary if using DIALS in concert with other packages.
 
+.. _build_dials_windows:
 
-Install DIALS from SVN on Windows
-=================================
+Installing DIALS from SVN on Windows
+====================================
 
 Dependencies
 ------------
 
-In order to follow this process, you will need to following programs installed on
-your machine:
+In order to follow this process, you will need the following programs
+installed on your machine:
 
  - 64bit python (https://www.python.org/downloads/release/python-278/)
  - HDF5 (http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/hdf5-1.8.14-win64-vs2012-shared.zip)
