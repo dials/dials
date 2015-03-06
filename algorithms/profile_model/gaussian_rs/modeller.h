@@ -369,8 +369,8 @@ namespace dials { namespace algorithms {
       bool bbox_valid =
         sbox.bbox[0] >= 0 &&
         sbox.bbox[2] >= 0 &&
-        sbox.bbox[1] <= spec_.image_size(sbox.panel)[0] &&
-        sbox.bbox[3] <= spec_.image_size(sbox.panel)[1];
+        sbox.bbox[1] <= spec_.image_size(sbox.panel)[1] &&
+        sbox.bbox[3] <= spec_.image_size(sbox.panel)[0];
 
       // Check if all pixels are valid
       bool pixels_valid = true;
@@ -401,8 +401,8 @@ namespace dials { namespace algorithms {
       bool bbox_valid =
         sbox.bbox[0] >= 0 &&
         sbox.bbox[2] >= 0 &&
-        sbox.bbox[1] <= spec_.image_size(sbox.panel)[0] &&
-        sbox.bbox[3] <= spec_.image_size(sbox.panel)[1];
+        sbox.bbox[1] <= spec_.image_size(sbox.panel)[1] &&
+        sbox.bbox[3] <= spec_.image_size(sbox.panel)[0];
 
       // Check if all pixels are valid
       bool pixels_valid = true;
