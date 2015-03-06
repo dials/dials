@@ -222,6 +222,9 @@ class Script(object):
     profile_model = ProfileModelFactory.create(params, experiments, reference)
     del reference
 
+    # Compute the bounding box
+    predicted.compute_bbox(experiments, profile_model)
+
     # Create the integrator
     info("")
     integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)

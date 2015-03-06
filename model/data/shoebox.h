@@ -213,6 +213,22 @@ namespace dials { namespace model {
       return result;
     }
 
+    /** @return True/False whether the shoeboxes are allocated */
+    bool is_allocated() const {
+      DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(data.accessor().all_eq(background.accessor()));
+      if (data.size() == 0) {
+        return false;
+      } else {
+        if (flat) {
+          DIALS_ASSERT(data.accessor().all_eq(size_flat()));
+        } else {
+          DIALS_ASSERT(data.accessor().all_eq(size()));
+        }
+      }
+      return true;
+    }
+
     /**
      * Check if the bounding box has points outside the image range.
      * @param image_size The image size

@@ -15,22 +15,25 @@ class Test(object):
     self.tst_pickle()
 
   def tst_getters(self):
-    from dials.algorithms.integration.profile import GridSampler
+    from dials.algorithms.profile_model.modeller import GridSampler
     width = 1000
     height = 1000
-    depth = 10
+    scan_range = (2, 12)
+    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
-    sampler = GridSampler((width, height, depth), (nx, ny, nz))
-    volume_size = sampler.volume_size()
+    sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
+    image_size = sampler.image_size()
+    scan_range = sampler.scan_range()
     grid_size = sampler.grid_size()
     step_size = sampler.step_size()
     size = len(sampler)
 
-    assert(width == volume_size[0])
-    assert(height == volume_size[1])
-    assert(depth == volume_size[2])
+    assert(width == image_size[0])
+    assert(height == image_size[1])
+    assert(scan_range[0] == scan_range[0])
+    assert(scan_range[1] == scan_range[1])
     assert(nx == grid_size[0])
     assert(ny == grid_size[1])
     assert(nz == grid_size[2])
@@ -41,14 +44,15 @@ class Test(object):
     print 'OK'
 
   def tst_indexing(self):
-    from dials.algorithms.integration.profile import GridSampler
+    from dials.algorithms.profile_model.modeller import GridSampler
     width = 1000
     height = 1000
-    depth = 10
+    scan_range = (2, 12)
+    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
-    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+    sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
     xstep, ystep, zstep = sampler.step_size()
     xind = [[i for i in range(nx)]] * ny * nz
     yind = [[j] * nx for j in range(ny)] * nz
@@ -59,11 +63,12 @@ class Test(object):
 
     xp = [(x + 0.5) * xstep for x in xind]
     yp = [(y + 0.5) * ystep for y in yind]
-    zp = [(z + 0.5) * zstep for z in zind]
+    zp = [(z + 0.5) * zstep + scan_range[0] for z in zind]
 
     eps = 1e-10
 
-    for x0, y0, z0, (x1, y1, z1) in zip(xp, yp, zp, sampler):
+    for x0, y0, z0, i in zip(xp, yp, zp, range(len(sampler))):
+      x1, y1, z1 = sampler.coord(i)
       assert(abs(x0 - x1) <= eps)
       assert(abs(y0 - y1) <= eps)
       assert(abs(z0 - z1) <= eps)
@@ -72,23 +77,25 @@ class Test(object):
 
 
   def tst_nearest(self):
-    from random import randint
-    from dials.algorithms.integration.profile import GridSampler
+    from random import uniform
+    from dials.algorithms.profile_model.modeller import GridSampler
+    from math import floor
     width = 1000
     height = 1000
-    depth = 10
+    scan_range = (2, 12)
+    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
-    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+    sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
 
     for i in range(1000):
-      x = randint(0, 1000)
-      y = randint(0, 1000)
-      z = randint(0, 10)
-      i = int((x+0.5) * nx // 1000)
-      j = int((y+0.5) * ny // 1000)
-      k = int((z+0.5) * nz // 10)
+      x = uniform(0, 1000)
+      y = uniform(0, 1000)
+      z = uniform(*scan_range)
+      i = int(floor(x / (width / nx)))
+      j = int(floor(y / (height / ny)))
+      k = int(floor((z-scan_range[0]) / (depth / nz)))
       if i >= nx:
         i = nx - 1
       if j >= ny:
@@ -102,23 +109,25 @@ class Test(object):
     print 'OK'
 
   def tst_nearest_n(self):
-    from random import randint
-    from dials.algorithms.integration.profile import GridSampler
+    from random import uniform
+    from dials.algorithms.profile_model.modeller import GridSampler
+    from math import floor
     width = 1000
     height = 1000
-    depth = 10
+    scan_range = (2, 12)
+    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
-    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+    sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
 
     for i in range(1000):
-      x = randint(0, 1000)
-      y = randint(0, 1000)
-      z = randint(0, 10)
-      i = int((x+0.5) * nx // 1000)
-      j = int((y+0.5) * ny // 1000)
-      k = int((z+0.5) * nz // 10)
+      x = uniform(0, 1000)
+      y = uniform(0, 1000)
+      z = uniform(*scan_range)
+      i = int(floor(x * nx / width))
+      j = int(floor(y * ny / height))
+      k = int(floor((z-scan_range[0]) * nz / depth))
       if i >= nx:
         i = nx - 1
       if j >= ny:
@@ -127,46 +136,36 @@ class Test(object):
         k = nz - 1
       index0 = i + j * nx + k * nx * ny
       index1 = sampler.nearest_n((x, y, z))
-      assert(index0 == index1[0])
-      c = 1
-      if i > 0:
-        assert(index1[c] == index0 - 1)
-        c += 1
-      if j > 0:
-        assert(index1[c] == index0 - nx)
-        c += 1
-      if k > 0:
-        assert(index1[c] == index0 - nx * ny)
-        c += 1
-      if i < nx-1:
-        assert(index1[c] == index0 + 1)
-        c += 1
-      if j < ny-1:
-        assert(index1[c] == index0 + nx)
-        c += 1
-      if k < nz-1:
-        assert(index1[c] == index0 + nx * ny)
-        c += 1
-      assert(c == len(index1))
+      assert(len(set(index1)) == len(index1))
+      assert(index0 == index1[-1])
+      for ind in index1:
+        ii = ind % nx
+        jk = ind // nx
+        jj = jk % ny
+        kk = jk // ny
+        assert(abs(ii - i) <= 1)
+        assert(abs(jj - j) <= 1)
+        assert(abs(kk - k) <= 1)
 
     print 'OK'
 
   def tst_weights(self):
-    from dials.algorithms.integration.profile import GridSampler
+    from dials.algorithms.profile_model.modeller import GridSampler
     from scitbx import matrix
     from math import log, exp
     width = 1000
     height = 1000
-    depth = 10
+    scan_range = (2, 12)
+    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
-    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+    sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
 
     # Check the weight at the coord in 1.0
     eps = 1e-7
     for i in range(len(sampler)):
-      coord = sampler[i]
+      coord = sampler.coord(i)
       weight = sampler.weight(i, coord)
       assert(abs(weight - 1.0) < eps)
 
@@ -183,39 +182,39 @@ class Test(object):
           l5 = (i + 0) + ((j - 1) + (k + 0) * ny) * nx
           l6 = (i + 0) + ((j + 0) + (k + 1) * ny) * nx
           l7 = (i + 0) + ((j + 0) + (k - 1) * ny) * nx
-          coord1 = matrix.col(sampler[l1])
+          coord1 = matrix.col(sampler.coord(l1))
           if i < nx-1:
-            coord = matrix.col(sampler[l2])
+            coord = matrix.col(sampler.coord(l2))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
             weight = sampler.weight(l1, ( coord + coord1 )/2.0)
             assert(abs(weight - 0.5) < eps)
           if i > 0:
-            coord = matrix.col(sampler[l3])
+            coord = matrix.col(sampler.coord(l3))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
             weight = sampler.weight(l1, ( coord1 + coord )/2.0)
             assert(abs(weight - 0.5) < eps)
           if j < ny-1:
-            coord = matrix.col(sampler[l4])
+            coord = matrix.col(sampler.coord(l4))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
             weight = sampler.weight(l1, ( coord + coord1 )/2.0)
             assert(abs(weight - 0.5) < eps)
           if j > 0:
-            coord = matrix.col(sampler[l5])
+            coord = matrix.col(sampler.coord(l5))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
             weight = sampler.weight(l1, ( coord1 + coord )/2.0)
             assert(abs(weight - 0.5) < eps)
           if k < nz-1:
-            coord = matrix.col(sampler[l6])
+            coord = matrix.col(sampler.coord(l6))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
             weight = sampler.weight(l1, ( coord + coord1 )/2.0)
             assert(abs(weight - 0.5) < eps)
           if k > 0:
-            coord = matrix.col(sampler[l7])
+            coord = matrix.col(sampler.coord(l7))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
             weight = sampler.weight(l1, ( coord1 + coord )/2.0)
@@ -224,33 +223,35 @@ class Test(object):
     print 'OK'
 
   def tst_self_consistent(self):
-    from dials.algorithms.integration.profile import GridSampler
+    from dials.algorithms.profile_model.modeller import GridSampler
     width = 1000
     height = 1000
-    depth = 10
+    scan_range = (2, 12)
+    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
-    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+    sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
 
     for i in range(len(sampler)):
-      coord = sampler[i]
+      coord = sampler.coord(i)
       index = sampler.nearest(coord)
       assert(index == i)
 
     print 'OK'
 
   def tst_pickle(self):
-    from dials.algorithms.integration.profile import GridSampler
+    from dials.algorithms.profile_model.modeller import GridSampler
     import tempfile
     import cPickle as pickle
     width = 1000
     height = 1000
-    depth = 10
+    scan_range = (2, 12)
+    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
-    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+    sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
 
     tf = tempfile.TemporaryFile()
     pickle.dump(sampler, tf)
@@ -258,7 +259,7 @@ class Test(object):
     tf.seek(0)
     sampler2 = pickle.load(tf)
 
-    assert(sampler.volume_size() == sampler2.volume_size())
+    assert(sampler.image_size() == sampler2.image_size())
     assert(sampler.grid_size() == sampler2.grid_size())
 
     print 'OK'

@@ -239,20 +239,22 @@ namespace gaussian_rs {
       // (c1 / delta_b)^2 + (c2 / delta_b)^2 <= 1
       // Mark those points within as Foreground and those without as
       // Background.
+
+      af::versa< double, af::c_grid<2> > dxy_array(af::c_grid<2>(ysize+1,xsize+1));
+      for (int j = 0; j <= ysize; ++j) {
+        for (int i = 0; i <= xsize; ++i) {
+          vec2<double> gxy = cs.from_beam_vector(
+              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
+          dxy_array(j,i) = (gxy[0]*gxy[0] + gxy[1]*gxy[1]) * delta_b_r2;
+        }
+      }
+
       for (int j = 0; j < ysize; ++j) {
         for (int i = 0; i < xsize; ++i) {
-          vec2<double> gxy1 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
-          vec2<double> gxy2 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j+1)).normalize() * s0_length);
-          vec2<double> gxy3 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j)).normalize() * s0_length);
-          vec2<double> gxy4 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j+1)).normalize() * s0_length);
-          double dxy1 = (gxy1[0]*gxy1[0] + gxy1[1]*gxy1[1]) * delta_b_r2;
-          double dxy2 = (gxy2[0]*gxy2[0] + gxy2[1]*gxy2[1]) * delta_b_r2;
-          double dxy3 = (gxy3[0]*gxy3[0] + gxy3[1]*gxy3[1]) * delta_b_r2;
-          double dxy4 = (gxy4[0]*gxy4[0] + gxy4[1]*gxy4[1]) * delta_b_r2;
+          double dxy1 = dxy_array(j,i);
+          double dxy2 = dxy_array(j+1,i);
+          double dxy3 = dxy_array(j,i+1);
+          double dxy4 = dxy_array(j+1,i+1);
           double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
           for (std::size_t k = 0; k < zsize; ++k) {
             if (z0 + (int)k >= index0_ && z0 + (int)k < index1_) {
@@ -334,20 +336,20 @@ namespace gaussian_rs {
       // (c1 / delta_b)^2 + (c2 / delta_b)^2 <= 1
       // Mark those points within as Foreground and those without as
       // Background.
+      af::versa< double, af::c_grid<2> > dxy_array(af::c_grid<2>(ysize+1,xsize+1));
+      for (int j = 0; j <= ysize; ++j) {
+        for (int i = 0; i <= xsize; ++i) {
+          vec2<double> gxy = cs.from_beam_vector(
+              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
+          dxy_array(j,i) = (gxy[0]*gxy[0] + gxy[1]*gxy[1]) * delta_b_r2;
+        }
+      }
       for (int j = 0; j < ysize; ++j) {
         for (int i = 0; i < xsize; ++i) {
-          vec2<double> gxy1 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
-          vec2<double> gxy2 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j+1)).normalize() * s0_length);
-          vec2<double> gxy3 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j)).normalize() * s0_length);
-          vec2<double> gxy4 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j+1)).normalize() * s0_length);
-          double dxy1 = (gxy1[0]*gxy1[0] + gxy1[1]*gxy1[1]) * delta_b_r2;
-          double dxy2 = (gxy2[0]*gxy2[0] + gxy2[1]*gxy2[1]) * delta_b_r2;
-          double dxy3 = (gxy3[0]*gxy3[0] + gxy3[1]*gxy3[1]) * delta_b_r2;
-          double dxy4 = (gxy4[0]*gxy4[0] + gxy4[1]*gxy4[1]) * delta_b_r2;
+          double dxy1 = dxy_array(j,i);
+          double dxy2 = dxy_array(j+1,i);
+          double dxy3 = dxy_array(j,i+1);
+          double dxy4 = dxy_array(j+1,i+1);
           double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
           int mask_value = (dxy <= 1.0) ? Foreground : Background;
           mask(0, j, i) |= mask_value;
@@ -441,20 +443,20 @@ namespace gaussian_rs {
       // (c1 / delta_b)^2 + (c2 / delta_b)^2 <= 1
       // Mark those points within as Foreground and those without as
       // Background.
+      af::versa< double, af::c_grid<2> > dxy_array(af::c_grid<2>(ysize+1,xsize+1));
+      for (int j = 0; j <= ysize; ++j) {
+        for (int i = 0; i <= xsize; ++i) {
+          vec2<double> gxy = cs.from_beam_vector(
+              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
+          dxy_array(j,i) = (gxy[0]*gxy[0] + gxy[1]*gxy[1]) * delta_b_r2;
+        }
+      }
       for (int j = 0; j < ysize; ++j) {
         for (int i = 0; i < xsize; ++i) {
-          vec2<double> gxy1 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
-          vec2<double> gxy2 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j+1)).normalize() * s0_length);
-          vec2<double> gxy3 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j)).normalize() * s0_length);
-          vec2<double> gxy4 = cs.from_beam_vector(
-              panel.get_pixel_lab_coord(vec2<double>(x0+i+1, y0+j+1)).normalize() * s0_length);
-          double dxy1 = (gxy1[0]*gxy1[0] + gxy1[1]*gxy1[1]) * delta_b_r2;
-          double dxy2 = (gxy2[0]*gxy2[0] + gxy2[1]*gxy2[1]) * delta_b_r2;
-          double dxy3 = (gxy3[0]*gxy3[0] + gxy3[1]*gxy3[1]) * delta_b_r2;
-          double dxy4 = (gxy4[0]*gxy4[0] + gxy4[1]*gxy4[1]) * delta_b_r2;
+          double dxy1 = dxy_array(j,i);
+          double dxy2 = dxy_array(j+1,i);
+          double dxy3 = dxy_array(j,i+1);
+          double dxy4 = dxy_array(j+1,i+1);
           double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
           int mask_value = (dxy <= 1.0) ? Foreground : Background;
           mask(0, j, i) |= mask_value;

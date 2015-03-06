@@ -33,7 +33,7 @@ Some sensible options to explore are:
  - :samp:`scan_varying=true` - allow the crystal orientation and unit cell
    constants to vary during the scan
  - :samp:`mp.nproc=1` - only use one processor [#f1]_
- - :samp:`intensity.algorithm=sum` - force summation integration instead of
+ - :samp:`profile_fitting=False` - force summation integration instead of
    the default profile fitting
  - :samp:`block_size=N` - for some N, split the data set into N degree blocks
    for integration, so as not to overload the computer. A sensible default will
@@ -142,8 +142,7 @@ actual algorithm to be used for peak integration e.g. sum3d or fft3d.
 
 .. code-block:: none
 
-  dials.integrate outlier.algorithm=null intensity.algorithm=fitrs \
-    refined_experiments.json indexed.pickle
+  dials.integrate outlier.algorithm=null refined_experiments.json indexed.pickle
 
 This reads the indexed reflections to determine strong reflections for profile
 fitting and integrates the data in refined_experiments.json, using the default

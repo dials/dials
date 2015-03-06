@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/algorithms/integration/processor.h>
 #include <dials/algorithms/integration/integrator.h>
 
 using namespace boost::python;
@@ -135,6 +136,15 @@ namespace dials { namespace algorithms { namespace boost_python {
         data, "partial_id", indices.const_ref());
   }
 
+  /**
+   * Wrapper class to allow python function to inherit
+   */
+  struct ExecutorWrapper : Executor, wrapper<Executor> {
+    void process(int frame, af::reflection_table data) {
+      this->get_override("process")(frame, data);
+    }
+  };
+
   BOOST_PYTHON_MODULE(dials_algorithms_integration_integrator_ext)
   {
     class_<GroupList::Group>("Group", no_init)
@@ -183,6 +193,29 @@ namespace dials { namespace algorithms { namespace boost_python {
           return_internal_reference<>())
       .def("data", &ReflectionManager::data)
       ;
+
+    class_<ExecutorWrapper, boost::noncopyable>("Executor")
+      .def("process", pure_virtual(&Executor::process))
+      ;
+
+    class_<ShoeboxProcessor>("ShoeboxProcessor", no_init)
+      .def(init<af::reflection_table,
+                std::size_t,
+                int,
+                int,
+                bool>())
+      .def("next", &ShoeboxProcessor::next<double>)
+      .def("next", &ShoeboxProcessor::next<int>)
+      .def("frame0", &ShoeboxProcessor::frame0)
+      .def("frame1", &ShoeboxProcessor::frame1)
+      .def("frame", &ShoeboxProcessor::frame)
+      .def("nframes", &ShoeboxProcessor::nframes)
+      .def("npanels", &ShoeboxProcessor::npanels)
+      .def("finished", &ShoeboxProcessor::finished)
+      .def("extract_time", &ShoeboxProcessor::extract_time)
+      .def("process_time", &ShoeboxProcessor::process_time)
+      ;
+
   }
 
 }}} // namespace = dials::algorithms::boost_python

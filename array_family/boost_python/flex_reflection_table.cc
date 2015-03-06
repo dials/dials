@@ -600,6 +600,7 @@ namespace dials { namespace af { namespace boost_python {
         .value("in_powder_ring", InPowderRing)
         .value("bad_shoebox", BadShoebox)
         .value("bad_spot", BadSpot)
+        .value("used_in_modelling", UsedInModelling)
         ;
 
       // return the wrapped class

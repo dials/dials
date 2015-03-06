@@ -398,8 +398,7 @@ namespace dials { namespace algorithms {
           : jobs_(jobs) {
       DIALS_ASSERT(jobs_.size() > 0);
 
-      typedef std::pair<std::size_t, bool> job_type;
-      typedef std::vector<job_type> job_list_type;
+      typedef std::vector<std::size_t> job_list_type;
 
       // Check all the reflections are in range
       for (std::size_t i = 0; i < bbox.size(); ++i) {
@@ -433,9 +432,6 @@ namespace dials { namespace algorithms {
             int jz0 = jobs_[j].frames()[0];
             int jz1 = jobs_[j].frames()[1];
             if (z0 >= jz0 && z1 <= jz1) {
-              if (f & af::ReferenceSpot) {
-                indices[j].push_back(job_type(index, false));
-              }
               double zc = (z1 + z0) / 2.0;
               double jc = (jz1 + jz0) / 2.0;
               double d = std::abs(zc - jc);
@@ -450,13 +446,7 @@ namespace dials { namespace algorithms {
           int jz1 = jobs_[jmin].frames()[1];
           DIALS_ASSERT(inside == true);
           DIALS_ASSERT(z0 >= jz0 && z1 <= jz1);
-          if (f & af::ReferenceSpot) {
-            DIALS_ASSERT(indices[jmin].size() > 0);
-            DIALS_ASSERT(indices[jmin].back().first == index);
-            indices[jmin].back().second = true;
-          } else {
-            indices[jmin].push_back(job_type(index, true));
-          }
+          indices[jmin].push_back(index);
         }
       }
 
@@ -472,14 +462,12 @@ namespace dials { namespace algorithms {
 
       // Compute indices
       indices_.resize(offset_.back());
-      mask_.resize(offset_.back());
       std::size_t k = 0;
       for (std::size_t i = 0; i < indices.size(); ++i) {
         const job_list_type& ind = indices[i];
         for (std::size_t j = 0; j < ind.size(); ++j, ++k) {
           DIALS_ASSERT(k < indices_.size());
-          indices_[k] = ind[j].first;
-          mask_[k] = ind[j].second;
+          indices_[k] = ind[j];
           DIALS_ASSERT(indices_[k] < bbox.size());
         }
       }
@@ -515,24 +503,9 @@ namespace dials { namespace algorithms {
       return af::const_ref<std::size_t> (&indices_[off], num);
     }
 
-    /**
-     * Get the mask for each job
-     */
-    af::const_ref<bool> mask(std::size_t index) const {
-      DIALS_ASSERT(index < offset_.size()-1);
-      std::size_t i0 = offset_[index];
-      std::size_t i1 = offset_[index+1];
-      DIALS_ASSERT(i1 >= i0);
-      std::size_t off = i0;
-      std::size_t num = i1 - i0;
-      DIALS_ASSERT(off + num <= mask_.size());
-      return af::const_ref<bool> (&mask_[off], num);
-    }
-
     JobList jobs_;
     af::shared<std::size_t> offset_;
     af::shared<std::size_t> indices_;
-    af::shared<bool> mask_;
   };
 
 
@@ -596,20 +569,9 @@ namespace dials { namespace algorithms {
       // Check the input
       DIALS_ASSERT(index < finished_.size());
       af::const_ref<std::size_t> ind = lookup_.indices(index);
-      af::const_ref<bool> msk = lookup_.mask(index);
-      DIALS_ASSERT(ind.size() == msk.size());
 
       // Extract the reflection table
       af::reflection_table result = select_rows_index(data_, ind);
-
-      // Extract the flags and set those reflections that are not to be
-      // processed.
-      af::ref<std::size_t> flags = result["flags"];
-      for (std::size_t i = 0; i < flags.size(); ++i) {
-        if (msk[i] == false) {
-          flags[i] |= af::DontIntegrate;
-        }
-      }
 
       // Make sure that the experiment ids start at zero
       tiny<int,2> expr = job(index).expr();
@@ -639,8 +601,6 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(index < finished_.size());
       DIALS_ASSERT(finished_[index] == false);
       af::const_ref<std::size_t> ind = lookup_.indices(index);
-      af::const_ref<bool> msk = lookup_.mask(index);
-      DIALS_ASSERT(ind.size() == msk.size());
       DIALS_ASSERT(ind.size() == result.size());
 
       // Rejig the experiment ids again
@@ -655,7 +615,7 @@ namespace dials { namespace algorithms {
       }
 
       // Set the result
-      set_selected_rows_index_mask(data_, ind, msk, result);
+      set_selected_rows_index(data_, ind, result);
 
       // Set finished flag
       finished_[index] = true;

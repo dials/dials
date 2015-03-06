@@ -27,7 +27,6 @@ def exercise_1():
                   "n_macro_cycles=5",
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
-                  "integration.block.max_size=10",
                   "integration.block.threshold=0.99",
                   "template=%s" % os.path.join(data_dir, "hg_###.mar1600"),
                   ]
@@ -72,7 +71,6 @@ def exercise_2():
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
                   "refinement.reflections.use_all_reflections=True",
-                  "integration.block.max_size=10",
                   "integration.block.threshold=0.99",
                   "template=%s" % os.path.join(data_dir, "insulin_1_###.img"),
                   ]

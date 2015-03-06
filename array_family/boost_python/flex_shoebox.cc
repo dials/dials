@@ -49,11 +49,12 @@ namespace dials { namespace af { namespace boost_python {
   typename af::flex< Shoebox<FloatType> >::type* from_panel_and_bbox(
       const af::const_ref<std::size_t> panel,
       const af::const_ref<int6> bbox,
-      bool allocate) {
+      bool allocate,
+      bool flatten) {
     DIALS_ASSERT(panel.size() == bbox.size());
     af::shared< Shoebox<FloatType> > result(panel.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = Shoebox<FloatType>(panel[i], bbox[i]);
+      result[i] = Shoebox<FloatType>(panel[i], bbox[i], flatten);
       if (allocate) {
         result[i].allocate();
       }
@@ -727,7 +728,8 @@ namespace dials { namespace af { namespace boost_python {
           default_call_policies(), (
             boost::python::arg("panel"),
             boost::python::arg("bbox"),
-            boost::python::arg("allocate")=false)))
+            boost::python::arg("allocate")=false,
+            boost::python::arg("flatten")=false)))
         .def("allocate",
           &allocate<FloatType>)
         .def("allocate_with_value",

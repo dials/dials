@@ -38,7 +38,6 @@ class Script(object):
     from dials.interfaces import ProfileModelCreatorIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import CentroidIface
-    from dials.interfaces import IntensityIface
     from dials.interfaces import SpotFinderThresholdIface
 
     # Parse the command line arguments
@@ -49,7 +48,6 @@ class Script(object):
       ProfileModelCreatorIface,
       BackgroundIface,
       CentroidIface,
-      IntensityIface,
       SpotFinderThresholdIface
     ]
 

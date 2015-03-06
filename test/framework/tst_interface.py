@@ -33,20 +33,18 @@ class Test(object):
 
     # Should have three interfaces
     interfaces = list(Interface.interfaces())
-    assert(len(interfaces) == 5)
+    assert(len(interfaces) == 4)
 
     # Ensure all the interfaces we expect are there
     from dials.interfaces import ProfileModelCreatorIface
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
-    from dials.interfaces import IntensityIface
 
     assert(ProfileModelCreatorIface in interfaces)
     assert(SpotFinderThresholdIface in interfaces)
     assert(CentroidIface in interfaces)
     assert(BackgroundIface in interfaces)
-    assert(IntensityIface in interfaces)
 
     # Should have no extensions
     for iface in interfaces:
@@ -62,11 +60,10 @@ class Test(object):
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
-    from dials.interfaces import IntensityIface
 
     # Should have four interfaces
     interfaces = list(Interface.interfaces())
-    assert(len(interfaces) == 5)
+    assert(len(interfaces) == 4)
 
     # Check we have the expected number of extensions for each interface
     extensions = list(ProfileModelCreatorIface.extensions())
@@ -77,8 +74,6 @@ class Test(object):
     assert(len(extensions) > 0)
     extensions = list(BackgroundIface.extensions())
     assert(len(extensions) > 0)
-    extensions = list(IntensityIface.extensions())
-    assert(len(extensions) > 0)
 
     # Check the interface contain the expected extensions
     from dials.extensions import GaussianRSProfileModelExt
@@ -86,8 +81,6 @@ class Test(object):
     from dials.extensions import SimpleCentroidExt
     from dials.extensions import NullBackgroundExt
     from dials.extensions import SimpleBackgroundExt
-    from dials.extensions import SummationIntegrationExt
-    from dials.extensions import FitrsIntegrationExt
 
     extensions = list(ProfileModelCreatorIface.extensions())
     assert(GaussianRSProfileModelExt in extensions)
@@ -98,9 +91,6 @@ class Test(object):
     extensions = list(BackgroundIface.extensions())
     assert(NullBackgroundExt in extensions)
     assert(SimpleBackgroundExt in extensions)
-    extensions = list(IntensityIface.extensions())
-    assert(SummationIntegrationExt in extensions)
-    assert(FitrsIntegrationExt in extensions)
 
     # Test passed
     print 'OK'

@@ -259,7 +259,6 @@ class TestReflectionManager(object):
 
     from random import randint, seed, choice
     seed(0)
-    self.expected = [[] for i in range(12)]
     self.processed = [[] for i in range(12)]
     for i in range(self.nrefl):
       x0 = randint(0, self.width-10)
@@ -273,13 +272,9 @@ class TestReflectionManager(object):
         if pos == 'left':
           z0 = j - zs
           z1 = j
-          if k > 0:
-            self.expected[k-1].append(m)
         elif pos == 'right':
           z0 = j
           z1 = j + zs
-          if k < 11:
-            self.expected[k+1].append(m)
         else:
           z0 = j - zs // 2
           z1 = j + zs // 2
@@ -289,7 +284,6 @@ class TestReflectionManager(object):
           "bbox" : bbox,
           "flags" : flex.reflection_table.flags.reference_spot
         })
-        self.expected[k].append(m)
         self.processed[k].append(m)
 
       # Add reflection to ignore
@@ -350,18 +344,18 @@ class TestReflectionManager(object):
     data9 = executor.split(9)
     data10 = executor.split(10)
     data11 = executor.split(11)
-    assert(len(data0) == len(self.expected[0]))
-    assert(len(data1) == len(self.expected[1]))
-    assert(len(data2) == len(self.expected[2]))
-    assert(len(data3) == len(self.expected[3]))
-    assert(len(data4) == len(self.expected[4]))
-    assert(len(data5) == len(self.expected[5]))
-    assert(len(data6) == len(self.expected[6]))
-    assert(len(data7) == len(self.expected[7]))
-    assert(len(data8) == len(self.expected[8]))
-    assert(len(data9) == len(self.expected[9]))
-    assert(len(data10) == len(self.expected[10]))
-    assert(len(data11) == len(self.expected[11]))
+    assert(len(data0) == len(self.processed[0]))
+    assert(len(data1) == len(self.processed[1]))
+    assert(len(data2) == len(self.processed[2]))
+    assert(len(data3) == len(self.processed[3]))
+    assert(len(data4) == len(self.processed[4]))
+    assert(len(data5) == len(self.processed[5]))
+    assert(len(data6) == len(self.processed[6]))
+    assert(len(data7) == len(self.processed[7]))
+    assert(len(data8) == len(self.processed[8]))
+    assert(len(data9) == len(self.processed[9]))
+    assert(len(data10) == len(self.processed[10]))
+    assert(len(data11) == len(self.processed[11]))
 
     # Add some results
     data0["data"] = flex.double(len(data0), 1)
@@ -443,20 +437,26 @@ class TestIntegrator3D(object):
 
   def run(self):
     from dials.algorithms.integration.integrator import Integrator3D
+    from dials.algorithms.integration.integrator import phil_scope
     import StringIO
     import sys
+    from libtbx.phil import parse
+
+    params = phil_scope.fetch(parse('''
+      integration.block.size=%d
+      integration.mp.nproc=%d
+      integration.profile_fitting=False
+    ''' % (5, self.nproc))).extract()
 
     output = StringIO.StringIO()
     stdout = sys.stdout
     sys.stdout = output
-
     try:
       integrator = Integrator3D(
         self.exlist,
         self.profile_model,
         self.rlist,
-        block_size=5,
-        nproc=self.nproc)
+        params)
       result = integrator.integrate()
     except Exception:
       print output
@@ -616,6 +616,7 @@ class TestSummation(object):
         integration.intensity.algorithm=sum
         integration.intensity.sum.integrator=%s
         integration.block.size=0.5
+        integration.profile_fitting=False
       ''' % integrator_type)
 
       params = master_phil_scope.fetch(source=phil_scope).extract()

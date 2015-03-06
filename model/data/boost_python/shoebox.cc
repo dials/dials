@@ -204,6 +204,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("size", &shoebox_type::size)
       .def("size_flat", &shoebox_type::size_flat)
       .def("is_consistent", &shoebox_type::is_consistent)
+      .def("is_allocated", &shoebox_type::is_allocated)
       .def("is_bbox_within_image_volume",
         &shoebox_type::is_bbox_within_image_volume, (
           arg("image_size"), arg("scan_range")))

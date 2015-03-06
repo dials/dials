@@ -39,7 +39,7 @@ class Test(object):
       'dials.integrate',
       join(self.path, 'experiments.json'),
       join(self.path, 'profile.phil'),
-      'intensity.algorithm=sum',
+      'profile_fitting=False',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -69,8 +69,8 @@ class Test(object):
       'dials.integrate',
       join(self.path, 'experiments.json'),
       join(self.path, 'profile.phil'),
-      'intensity.algorithm=sum',
-      'intensity.sum.integrator=3d',
+      'profile_fitting=False',
+      'integration.integrator=3d',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -143,8 +143,8 @@ class Test(object):
       'dials.integrate',
       'experiments.json',
       'profile.phil',
-      'intensity.algorithm=sum',
-      'intensity.sum.integrator=3d',
+      'profile_fitting=False',
+      'integration.integrator=3d',
     ]).raise_if_errors()
 
     from math import pi
@@ -193,7 +193,7 @@ class Test(object):
       'dials.integrate',
       join(self.path, 'experiments.json'),
       join(self.path, 'profile.phil'),
-      'intensity.algorithm=sum',
+      'profile_fitting=False',
       'sampling.integrate_all_reflections=False',
     ]).raise_if_errors()
 
@@ -206,7 +206,7 @@ class Test(object):
       'dials.integrate',
       join(self.path, 'experiments.json'),
       join(self.path, 'profile.phil'),
-      'intensity.algorithm=sum',
+      'profile_fitting=False',
       'sampling.integrate_all_reflections=False',
       'sampling.minimum_sample_size=500',
     ]).raise_if_errors()

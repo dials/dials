@@ -25,12 +25,8 @@ env.SharedLibrary(
   LIBS=env["LIBS"])
 
 env.SharedLibrary(
-  target='#/lib/dials_algorithms_integration_fitrs_ext', 
+  target='#/lib/dials_algorithms_integration_fit_ext', 
   source=[
-    'fitrs/boost_python/fitrs.cc',
-    'fitrs/boost_python/integration_fitrs_ext.cc'
+    'fit/boost_python/ext.cc',
   ],
   LIBS=env["LIBS"])
-
-env.SConscript('profile/SConscript', exports={ 'env' : env })
-

@@ -27,6 +27,7 @@ class ProfileModelList(object):
       self._models = []
     else:
       self._models = models
+    self._profiles = None
 
   def __getitem__(self, index):
     '''
@@ -153,3 +154,25 @@ class ProfileModelList(object):
     '''
     from dials.algorithms.profile_model import factory
     return factory.phil_scope.fetch(sources=[model.dump() for model in self])
+
+  def modeller(self, experiments):
+    '''
+    Return a multi experiment modeller
+
+    '''
+    from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
+    modeller = MultiExpProfileModeller()
+    for exp, model in zip(experiments, self):
+      modeller.add(model.modeller(exp))
+    return modeller
+
+  def profiles(self, data=None):
+    if data is not None:
+      self._profiles = data
+    return self._profiles
+
+  def has_profile_fitting(self):
+    result = True
+    for profile in self:
+      result = result and profile.has_profile_fitting()
+    return result

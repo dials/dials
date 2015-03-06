@@ -81,17 +81,8 @@ class Masker3DProfile(MaskerBase):
     '''
     reflections = super(Masker3DProfile, self).__call__(reflections, adjacency_list)
 
-    from logging import info
-    from time import time
-
     # Mask the foreground region
-    start_time = time()
-    info('')
-    info(' Beginning foreground mask calculation')
-    info('  using %d reflections' % len(reflections))
     self._profile_model.compute_mask(self._experiments, reflections)
-    info('  successfully processed %d reflections' % len(reflections))
-    info('  time taken: %g seconds' % (time() - start_time))
 
     # Return the reflections
     return reflections
@@ -131,10 +122,7 @@ class MaskerEmpirical(MaskerBase):
 
     if self.mask_empirical:
       # Mask the foreground region
-      info('Masking foreground pixels')
       self.mask_empirical(reflections)
-      info('Masked foreground pixels for {0} reflections'.format(
-        len(reflections)))
 
     # Return the reflections
     return reflections

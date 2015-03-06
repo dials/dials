@@ -70,3 +70,19 @@ class ProfileModelIface(object):
 
     '''
     pass
+
+  # FIXME Make Abtract
+  def modeller(self, experiment):
+    '''
+    Return the profile modeller
+
+    '''
+    return None
+
+  # FIXME Make Abtract
+  def has_profile_fitting(self):
+    '''
+    Return whether we want to do profile fitting
+
+    '''
+    return False

@@ -30,6 +30,9 @@ phil_scope = parse('''
     model
       .multiple = True
     {
+      has_profile_fitting = True
+        .type = bool
+
       n_sigma = 3
         .help = "The number of standard deviations of the beam divergence and the"
                 "mosaicity to use for the bounding box size."
@@ -60,6 +63,26 @@ phil_scope = parse('''
         .help = "The E.S.D. of the reflecting range"
         .type = floats
     }
+
+    modelling {
+
+      scan_step = 5
+        .type = float
+        .help = "Space between profiles in degrees"
+
+      grid_size = 5
+        .type = int
+        .help = "The size of the profile grid."
+
+      threshold = 0.02
+        .type = float
+        .help = "The threshold to use in reference profile"
+
+      grid_method = single *regular_grid circular_grid
+        .type = choice
+        .help = "Select the profile grid method"
+
+    }
   }
 
 ''')
@@ -67,7 +90,16 @@ phil_scope = parse('''
 class ProfileModel(ProfileModelIface):
   ''' A class to encapsulate the profile model. '''
 
-  def __init__(self, n_sigma, sigma_b, sigma_m, deg=False):
+  def __init__(self,
+               n_sigma,
+               sigma_b,
+               sigma_m,
+               scan_step=5,
+               grid_size=5,
+               threshold=0.2,
+               grid_method="regular_grid",
+               deg=False,
+               profile_fitting=True):
     ''' Initialise with the parameters. '''
     from math import pi
     self._n_sigma = n_sigma
@@ -77,6 +109,11 @@ class ProfileModel(ProfileModelIface):
     else:
       self._sigma_b = sigma_b
       self._sigma_m = sigma_m
+    self._scan_step = scan_step
+    self._grid_size = grid_size
+    self._threshold = threshold
+    self._grid_method = grid_method
+    self._profile_fitting = profile_fitting
     assert(self._n_sigma > 0)
     assert(self._sigma_b > 0)
     assert(self._sigma_m > 0)
@@ -106,6 +143,9 @@ class ProfileModel(ProfileModelIface):
   def delta_m(self, deg=True):
     ''' Return delta_m. '''
     return self.sigma_m(deg) * self.n_sigma()
+
+  def has_profile_fitting(self):
+    return self._profile_fitting
 
   def predict_reflections(self, experiment, dmin=None, dmax=None, margin=1,
                           force_static=False, **kwargs):
@@ -185,23 +225,73 @@ class ProfileModel(ProfileModelIface):
       profile {
         gaussian_rs {
           model {
-            n_sigma=%g
+            has_profile_fitting=%x
+            n_sigma=%r
             sigma_b=%g
             sigma_m=%g
           }
         }
       }
       ''' % (
+        self.has_profile_fitting(),
         self.n_sigma(),
         self.sigma_b(deg=True),
         self.sigma_m(deg=True))
     return factory.phil_scope.fetch(source=parse(phil_str))
 
+  def modeller(self, experiment):
+    '''
+    Get the modeller
+
+    '''
+    from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
+    from math import ceil
+
+    # Return if no scan or gonio
+    if experiment.scan is None or experiment.goniometer is None:
+      return None
+
+    # Compute the scan step
+    phi0, phi1 = experiment.scan.get_oscillation_range(deg=True)
+    assert(phi1 > phi0)
+    phi_range = phi1 - phi0
+    num_scan_points = int(ceil(phi_range / self._scan_step))
+    assert(num_scan_points > 0)
+
+    # Create the grid method
+    grid_method = int(GaussianRSProfileModeller.GridMethod.names[self._grid_method].real)
+
+    # Create the modeller
+    modeller = GaussianRSProfileModeller(
+      experiment.beam,
+      experiment.detector,
+      experiment.goniometer,
+      experiment.scan,
+      self.sigma_b(deg=False),
+      self.sigma_m(deg=False),
+      self.n_sigma(),
+      self._grid_size,
+      num_scan_points,
+      self._threshold,
+      grid_method)
+
+    # Return the modeller
+    return modeller
+
 
 class ScanVaryingProfileModel(ProfileModelIface):
   ''' A class to encapsulate the profile model. '''
 
-  def __init__(self, n_sigma, sigma_b, sigma_m, deg=False, num_used=None):
+  def __init__(self,
+               n_sigma,
+               sigma_b,
+               sigma_m,
+               deg=False,
+               num_used=None,
+               scan_step=5,
+               grid_size=5,
+               threshold=0.2,
+               grid_method="regular_grid"):
     ''' Initialise with the parameters. '''
     from math import pi
     self._num_used = num_used
@@ -212,6 +302,10 @@ class ScanVaryingProfileModel(ProfileModelIface):
     else:
       self._sigma_b = sigma_b
       self._sigma_m = sigma_m
+    self._scan_step = scan_step
+    self._grid_size = grid_size
+    self._threshold = threshold
+    self._grid_method = grid_method
     assert(self._n_sigma > 0)
     assert(self._sigma_b.all_gt(0))
     assert(self._sigma_m.all_gt(0))
@@ -260,6 +354,9 @@ class ScanVaryingProfileModel(ProfileModelIface):
   def __len__(self):
     assert(len(self._sigma_m) == len(self._sigma_b))
     return len(self._sigma_m)
+
+  def has_profile_fitting(self):
+    return True
 
   def predict_reflections(self, experiment, dmin=None, dmax=None, margin=1,
                           force_static=False, **kwargs):
@@ -351,3 +448,36 @@ class ScanVaryingProfileModel(ProfileModelIface):
         ','.join(["%g" % v for v in self.sigma_b(deg=True)]),
         ','.join(["%g" % v for v in self.sigma_m(deg=True)]))
     return factory.phil_scope.fetch(source=parse(phil_str))
+
+  def modeller(self, experiment):
+    '''
+    Get the modeller
+
+    '''
+    from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
+
+    # Return if no scan or gonio
+    if experiment.scan is None or experiment.goniometer is None:
+      return None
+
+    # Compute the scan step
+    oscillation = experiment.scan_get_oscillation_range(deg=True)
+    num_scan_points = int(ceil(oscillation / self._scan_step))
+    assert(num_scan_points > 0)
+
+    # Create the modeller
+    modeller = GaussianRSProfileModeller(
+      experiment.beam,
+      experiment.detector,
+      experiment.goniometer,
+      experiment.scan,
+      self.sigma_b(deg=False)[0],
+      self.sigma_m(deg=False)[0],
+      self.n_sigma(),
+      self._grid_size,
+      num_scan_points,
+      self._threshold,
+      GaussianRSProfileModeller.GridMethod.names[self._grid_method])
+
+    # Return the modeller
+    return modeller

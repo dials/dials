@@ -27,20 +27,12 @@ class IntegrationAlgorithm(object):
     :return: The list of integrated reflections
 
     '''
-    from logging import info
     from dials.array_family import flex
-    from time import time
 
     # Integrate and return the reflections
-    start_time = time()
-    info('')
-    info(' Beginning integration by summation')
-    info('  using %d reflections' % len(reflections))
     intensity = reflections['shoebox'].summed_intensity()
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
     success = intensity.observed_success()
     reflections.set_flags(success, reflections.flags.integrated_sum)
-    info('  successfully processed %d reflections' % success.count(True))
-    info('  time taken: %g seconds' % (time() - start_time))
     return reflections

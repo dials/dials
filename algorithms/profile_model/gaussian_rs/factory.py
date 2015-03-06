@@ -18,6 +18,7 @@ class Factory(object):
 
   @classmethod
   def compute_single(cls,
+                     params,
                      experiment,
                      reflections,
                      min_zeta=0.05,
@@ -39,18 +40,38 @@ class Factory(object):
     from dials.algorithms.profile_model.gaussian_rs.model import ProfileModel
     from dials.algorithms.profile_model.gaussian_rs.model import ScanVaryingProfileModel
     if not scan_varying:
+      if experiment.scan is None or experiment.goniometer is None:
+        profile_fitting = False
+      else:
+        profile_fitting = True
       calculator = ProfileModelCalculator(experiment, reflections, min_zeta)
       n_sigma = 3
       sigma_b = calculator.sigma_b()
       sigma_m = calculator.sigma_m()
-      return ProfileModel(n_sigma, sigma_b, sigma_m)
+      return ProfileModel(
+        n_sigma=n_sigma,
+        sigma_b=sigma_b,
+        sigma_m=sigma_m,
+        grid_size=params.gaussian_rs.modelling.grid_size,
+        scan_step=params.gaussian_rs.modelling.scan_step,
+        threshold=params.gaussian_rs.modelling.threshold,
+        grid_method=params.gaussian_rs.modelling.grid_method,
+        profile_fitting=profile_fitting)
     else:
       calculator = ScanVaryingProfileModelCalculator(experiment, reflections, min_zeta)
       n_sigma = 3
       sigma_b = calculator.sigma_b()
       sigma_m = calculator.sigma_m()
       num = calculator.num()
-      return ScanVaryingProfileModel(n_sigma, sigma_b, sigma_m, num_used=num)
+      return ScanVaryingProfileModel(
+        n_sigma=n_sigma,
+        sigma_b=sigma_b,
+        sigma_m=sigma_m,
+        num_used=num,
+        grid_size=params.gaussian_rs.modelling.grid_size,
+        scan_step=params.gaussian_rs.modelling.scan_step,
+        threshold=params.gaussian_rs.modelling.threshold,
+        grid_method=params.gaussian_rs.modelling.grid_method)
 
   @classmethod
   def compute(cls, params, experiments, reflections):
@@ -86,7 +107,7 @@ class Factory(object):
     scan_varying = params.gaussian_rs.scan_varying
     profile_model_list = ProfileModelList()
     for exp, ref in zip(experiments, reflections_split):
-      model = Factory.compute_single(exp, ref, min_zeta, scan_varying)
+      model = Factory.compute_single(params, exp, ref, min_zeta, scan_varying)
       if scan_varying == False:
         info(" Sigma_b: %.3f degrees" % model.sigma_b(deg=True))
         info(" Sigma_m: %.3f degrees" % model.sigma_m(deg=True))
@@ -126,17 +147,26 @@ class Factory(object):
     if params.gaussian_rs.scan_varying:
       assert(len(params.gaussian_rs.scan_varying_model) > 0)
       for i in range(len(params.gaussian_rs.scan_varying_model)):
-        profile_model_list.append(ProfileModel(
-          params.gaussian_rs.scan_varying_model[i].n_sigma,
-          flex.double(params.gaussian_rs.scan_varying_model[i].sigma_b) * dtor,
-          flex.double(params.gaussian_rs.scan_varying_model[i].sigma_m) * dtor))
+        profile_model_list.append(ScanVaryingProfileModel(
+          n_sigma=params.gaussian_rs.scan_varying_model[i].n_sigma,
+          sigma_b=flex.double(params.gaussian_rs.scan_varying_model[i].sigma_b) * dtor,
+          sigma_m=flex.double(params.gaussian_rs.scan_varying_model[i].sigma_m) * dtor,
+          grid_size=params.gaussian_rs.modelling.grid_size,
+          scan_step=params.gaussian_rs.modelling.scan_step,
+          threshold=params.gaussian_rs.modelling.threshold,
+          grid_method=params.gaussian_rs.modelling.grid_method))
     else:
       assert(len(params.gaussian_rs.model) > 0)
       for i in range(len(params.gaussian_rs.model)):
         profile_model_list.append(ProfileModel(
-          params.gaussian_rs.model[i].n_sigma,
-          params.gaussian_rs.model[i].sigma_b * dtor,
-          params.gaussian_rs.model[i].sigma_m * dtor))
+          n_sigma=params.gaussian_rs.model[i].n_sigma,
+          sigma_b=params.gaussian_rs.model[i].sigma_b * dtor,
+          sigma_m=params.gaussian_rs.model[i].sigma_m * dtor,
+          grid_size=params.gaussian_rs.modelling.grid_size,
+          scan_step=params.gaussian_rs.modelling.scan_step,
+          threshold=params.gaussian_rs.modelling.threshold,
+          grid_method=params.gaussian_rs.modelling.grid_method,
+          profile_fitting=params.gaussian_rs.model[i].has_profile_fitting))
     return profile_model_list
 
   @classmethod

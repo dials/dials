@@ -17,7 +17,7 @@ class Test(object):
 
   def tst_identical(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 
@@ -45,7 +45,7 @@ class Test(object):
 
   def tst_scaled(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 
@@ -73,7 +73,7 @@ class Test(object):
 
   def tst_with_flat_background(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 
@@ -102,7 +102,7 @@ class Test(object):
 
   def tst_with_noisy_flat_background(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 
@@ -132,7 +132,7 @@ class Test(object):
 
   def tst_identical_partial(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 
@@ -166,7 +166,7 @@ class Test(object):
 
   def tst_scaled_partial(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 
@@ -200,7 +200,7 @@ class Test(object):
 
   def tst_with_flat_background_partial(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 
@@ -236,7 +236,7 @@ class Test(object):
 
   def tst_with_noisy_flat_background_partial(self):
 
-    from dials.algorithms.integration.profile import fit_profile
+    from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
     from tst_profile_helpers import gaussian
 

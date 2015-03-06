@@ -1,5 +1,5 @@
 /*
- * interface.h
+ * shoebox_extractor.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *

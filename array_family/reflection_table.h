@@ -71,7 +71,10 @@ namespace dials { namespace af {
     BadShoebox       = Overloaded | OverlappedBg | OverlappedFg | InPowderRing,
 
     // Bad spot
-    BadSpot = BadShoebox
+    BadSpot = BadShoebox,
+
+    // Profile Modelling
+    UsedInModelling  = (1 << 14),
   };
 
 }} // namespace dials::af

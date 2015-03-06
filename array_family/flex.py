@@ -31,11 +31,11 @@ def strategy(cls, params=None):
   :return: A function to instantiate the strategy
 
   '''
-  from functools import wraps
-  @wraps(cls)
-  def call(self, *args):
-    return cls(params, *args)
-  return call
+  class Strategy(cls):
+    name = ''
+    def __init__(self, *args):
+      super(Strategy, self).__init__(params, *args)
+  return Strategy
 
 def default_background_algorithm():
   '''
@@ -46,16 +46,6 @@ def default_background_algorithm():
   '''
   from dials.extensions import SimpleBackgroundExt
   return strategy(SimpleBackgroundExt)
-
-def default_intensity_algorithm():
-  '''
-  Get the default intensity algorithm.
-
-  :return: The default intensity algorithm
-
-  '''
-  from dials.extensions import SummationIntegrationExt
-  return strategy(SummationIntegrationExt)
 
 def default_centroid_algorithm():
   '''
@@ -80,7 +70,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   # only the instance will have the modified algorithms and new instances will
   # have the defaults
   _background_algorithm = default_background_algorithm()
-  _intensity_algorithm = default_intensity_algorithm()
   _centroid_algorithm = default_centroid_algorithm()
 
   @staticmethod
@@ -502,16 +491,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     self._centroid_algorithm(experiments).compute_centroid(self)
 
-  def compute_intensity(self, experiments, profile_model):
-    '''
-    Helper function to compute the intensity.
-
-    :param experiments: The list of experiments
-    :param profile_model: The profile model
-
-    '''
-    self._intensity_algorithm(experiments, profile_model).compute_intensity(self)
-
   def compute_summed_intensity(self):
     '''
     Compute intensity via summation integration.
@@ -520,6 +499,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.algorithms.integration.sum import IntegrationAlgorithm
     algorithm = IntegrationAlgorithm()
     algorithm(self)
+
+  def compute_fitted_intensity(self, experiments, profile_model):
+    '''
+    Helper function to compute the intensity.
+
+    :param experiments: The list of experiments
+    :param profile_model: The profile model
+
+    '''
+    profiles = profile_model.profiles()
+    if profiles is not None:
+      profiles.fit(self)
 
   def compute_corrections(self, experiments):
     '''
@@ -530,8 +521,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     from dials.algorithms.integration import Corrections, CorrectionsMulti
-    from logging import info
-    info("Calculating lp correction")
     compute = CorrectionsMulti()
     for experiment in experiments:
       compute.append(Corrections(
@@ -539,7 +528,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         experiment.goniometer))
     lp = compute.lp(self['id'], self['s1'])
     self['lp'] = lp
-    info("Calculated lp correction")
     return lp
 
   def integrate(self, experiments, profile_model, reference_selector=None):
@@ -556,7 +544,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.compute_summed_intensity()
     if reference_selector is not None:
       reference_selector(self)
-    self.compute_intensity(experiments, profile_model)
+    self.compute_fitted_intensity(experiments, profile_model)
 
   def compute_mask(self, experiments, profile_model):
     '''

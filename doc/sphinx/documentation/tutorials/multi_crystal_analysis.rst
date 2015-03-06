@@ -152,7 +152,7 @@ script does. If time is *really* short then try uncommenting the line
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
       cmd = "dials.integrate refined_experiments.json indexed.pickle " + \
-            "intensity.algorithm=sum prediction.dmin=3 prediction.dmax=8"
+            "profile_fitting=False prediction.dmin=3 prediction.dmax=8"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.pickle"):
         print "Job %02d failed during integration" % num
@@ -286,9 +286,9 @@ Following refinement we integrate the data in a very quick and dirty way, simply
 to get an MTZ file as fast as possible. This is a terrible way to integrate
 data usually!::
 
-  dials.integrate refined_experiments.json indexed.pickle intensity.algorithm=sum prediction.dmin=3 prediction.dmax=8
+  dials.integrate refined_experiments.json indexed.pickle profile_fitting=False prediction.dmin=3 prediction.dmax=8
 
-The :samp:`intensity.algorithm=sum` option ensures we only do summation integration,
+The :samp:`profile_fitting=False` option ensures we only do summation integration,
 no profile fitting, while the :samp:`prediction.dmin=3` and
 :samp:`prediction.dmax=8` options only integrate data between 3 and 8 Angstroms.
 
@@ -971,7 +971,7 @@ to run in parallel, similar to the one used previously::
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
       cmd = "dials.integrate %s %s " + \
-            "intensity.algorithm=sum prediction.dmin=3 prediction.dmax=8"
+            "profile_fitting=False prediction.dmin=3 prediction.dmax=8"
       cmd = cmd % (experiments_path, reflections_path)
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.pickle"):

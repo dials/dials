@@ -16,6 +16,7 @@
 #include <dials/algorithms/profile_model/gaussian_rs/mask_calculator.h>
 #include <dials/algorithms/profile_model/gaussian_rs/ideal_profile.h>
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
+#include <dials/algorithms/profile_model/gaussian_rs/modeller.h>
 
 namespace dials {
 namespace algorithms {
@@ -58,8 +59,107 @@ namespace boost_python {
     return result;
   }
 
+  struct GaussianRSProfileModellerPickleSuite : boost::python::pickle_suite {
+
+    static
+    boost::python::tuple getinitargs(const GaussianRSProfileModeller& obj) {
+      return boost::python::make_tuple(
+          obj.beam(),
+          obj.detector(),
+          obj.goniometer(),
+          obj.scan(),
+          obj.sigma_b(),
+          obj.sigma_m(),
+          obj.n_sigma(),
+          obj.grid_size(),
+          obj.num_scan_points(),
+          obj.threshold(),
+          obj.grid_method());
+    }
+
+    static
+    boost::python::tuple getstate(const GaussianRSProfileModeller& obj) {
+      typedef GaussianRSProfileModeller::data_type data_type;
+      typedef GaussianRSProfileModeller::mask_type mask_type;
+      boost::python::list data_list;
+      boost::python::list mask_list;
+      for (std::size_t i = 0; i < obj.size(); ++i) {
+        try {
+          data_list.append(obj.data(i));
+          mask_list.append(obj.mask(i));
+        } catch(dials::error) {
+          data_list.append(data_type());
+          mask_list.append(mask_type());
+        }
+      }
+      return boost::python::make_tuple(
+          data_list,
+          mask_list,
+          obj.finalized());
+    }
+
+    static
+    void setstate(GaussianRSProfileModeller& obj, boost::python::tuple state) {
+      typedef GaussianRSProfileModeller::data_type data_type;
+      typedef GaussianRSProfileModeller::mask_type mask_type;
+      DIALS_ASSERT(boost::python::len(state) == 3);
+      boost::python::list data_list = extract<boost::python::list>(state[0]);
+      boost::python::list mask_list = extract<boost::python::list>(state[1]);
+      bool finalized = extract<bool>(state[2]);
+      DIALS_ASSERT(boost::python::len(data_list) == boost::python::len(mask_list));
+      DIALS_ASSERT(boost::python::len(data_list) == obj.size());
+      for (std::size_t i = 0; i < obj.size(); ++i) {
+        af::flex_double d = boost::python::extract<af::flex_double>(data_list[i]);
+        af::flex_bool   m = boost::python::extract<af::flex_bool>(mask_list[i]);
+        DIALS_ASSERT(d.accessor().all().size() == 3);
+        DIALS_ASSERT(m.accessor().all().size() == 3);
+        obj.set_data(i, data_type(d.handle(), af::c_grid<3>(d.accessor())));
+        obj.set_mask(i, mask_type(m.handle(), af::c_grid<3>(m.accessor())));
+      }
+      obj.set_finalized(finalized);
+    }
+  };
+  void export_modeller() {
+
+    typedef class_<
+      GaussianRSProfileModeller,
+      bases<
+        EmpiricalProfileModeller
+        >
+      > class_type;
+
+    class_type result("GaussianRSProfileModeller", no_init);
+
+    result
+      .def(init<
+          const Beam&,
+          const Detector&,
+          const Goniometer&,
+          const Scan&,
+          double,
+          double,
+          double,
+          std::size_t,
+          std::size_t,
+          double,
+          int>())
+      .def_pickle(GaussianRSProfileModellerPickleSuite())
+      ;
+
+    scope in_modeller = result;
+
+    enum_<GaussianRSProfileModeller::GridMethod>("GridMethod")
+      .value("single", GaussianRSProfileModeller::Single)
+      .value("regular_grid", GaussianRSProfileModeller::RegularGrid)
+      .value("circular_grid", GaussianRSProfileModeller::CircularGrid)
+      ;
+
+  }
+
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_ext)
   {
+    export_modeller();
+
     class_ <BBoxCalculatorIface, boost::noncopyable>(
         "BBoxCalculatorIface", no_init)
       .def("__call__", &BBoxCalculatorIface::single, (

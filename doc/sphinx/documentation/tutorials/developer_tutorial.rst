@@ -159,54 +159,54 @@ The algorithm should fill the shoebox.background values and return the
 reflection list.
 
 
-Intensity algorithms
-^^^^^^^^^^^^^^^^^^^^
+.. Intensity algorithms
+.. ^^^^^^^^^^^^^^^^^^^^
 
-Algorithms for computing the reflection intensities should implement the
-following interface. An example can be found under
-"dials/extensions/summation_integration_ext.py".
+.. Algorithms for computing the reflection intensities should implement the
+.. following interface. An example can be found under
+.. "dials/extensions/summation_integration_ext.py".
 
-.. code-block:: python
+.. .. code-block:: python
 
-  class IntensityIface(interface.Interface):
+..   class IntensityIface(interface.Interface):
 
-    def __init__(self, params, experiments, profile_model):
-      pass
+..     def __init__(self, params, experiments, profile_model):
+..       pass
 
-    @interface.abstractmethod
-    def type(self, params, experiments):
-      pass
+..     @interface.abstractmethod
+..     def type(self, params, experiments):
+..       pass
 
-    @interface.abstractmethod
-    def compute_intensity(self, reflections):
-      pass
+..     @interface.abstractmethod
+..     def compute_intensity(self, reflections):
+..       pass
 
-The algorithm is configured through phil parameters, the list of experiments and
-the list of profile models. The extension should also provide a
-:samp:`@classmethod` named type which returns the type of integrator to use. The
-supported return values for this function as shown below. Some algorithms may
-choose to configure the appropriate type of integrator from the input phil
-parameters and experiment list. Others may support only a single type of
-integrator.
+.. The algorithm is configured through phil parameters, the list of experiments and
+.. the list of profile models. The extension should also provide a
+.. :samp:`@classmethod` named type which returns the type of integrator to use. The
+.. supported return values for this function as shown below. Some algorithms may
+.. choose to configure the appropriate type of integrator from the input phil
+.. parameters and experiment list. Others may support only a single type of
+.. integrator.
 
- +----------+------------+-------------------------------+
- | Value    | Experiment | Description                   |
- +==========+============+===============================+
- | 3d       | rotation   | 3D shoeboxes                  |
- +----------+------------+-------------------------------+
- | flat3d   | rotation   | 3D shoeboxes flattend         |
- +----------+------------+-------------------------------+
- | 2d       | rotation   | 2D partials                   |
- +----------+------------+-------------------------------+
- | single2d | rotation   | 2D partials on a single image |
- +----------+------------+-------------------------------+
- | stills   | stills     | 2D partials on a single image |
- +----------+------------+-------------------------------+
+..  +----------+------------+-------------------------------+
+..  | Value    | Experiment | Description                   |
+..  +==========+============+===============================+
+..  | 3d       | rotation   | 3D shoeboxes                  |
+..  +----------+------------+-------------------------------+
+..  | flat3d   | rotation   | 3D shoeboxes flattend         |
+..  +----------+------------+-------------------------------+
+..  | 2d       | rotation   | 2D partials                   |
+..  +----------+------------+-------------------------------+
+..  | single2d | rotation   | 2D partials on a single image |
+..  +----------+------------+-------------------------------+
+..  | stills   | stills     | 2D partials on a single image |
+..  +----------+------------+-------------------------------+
 
-Finally, the extension should provide a :samp:`compute_intensity` method which
-takes a list of reflections with extracted shoebox data. The algorithm should
-fill the "intensity.prf.value" and "intensity.prf.variance" columns in the
-reflection table and return it.
+.. Finally, the extension should provide a :samp:`compute_intensity` method which
+.. takes a list of reflections with extracted shoebox data. The algorithm should
+.. fill the "intensity.prf.value" and "intensity.prf.variance" columns in the
+.. reflection table and return it.
 
 Deploying algorithms
 --------------------
