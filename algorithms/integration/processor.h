@@ -19,7 +19,7 @@
 #include <numeric>
 #include <list>
 #include <vector>
-#include <boost/chrono.hpp>
+#include <ctime>
 #include <dials/model/data/image.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/array_family/reflection_table.h>
@@ -31,6 +31,15 @@ namespace dials { namespace algorithms {
   using model::Image;
   using model::Shoebox;
   using model::Valid;
+
+  /**
+   * The cctbx build system is too messed up to figure out how to build
+   * boost::system need by boost::chrono. Therefore just use system clock
+   * to get a timestamp in ms
+   */
+  double timestamp() {
+    return ((double)clock()) / ((double)CLOCKS_PER_SEC);
+  }
 
   /**
    * A base class for executor callbacks
@@ -115,8 +124,6 @@ namespace dials { namespace algorithms {
     void next(const Image<T> &image, Executor &executor) {
       using dials::af::boost_python::flex_table_suite::select_rows_index;
       using dials::af::boost_python::flex_table_suite::set_selected_rows_index;
-      typedef boost::chrono::duration<double> seconds;
-      typedef boost::chrono::high_resolution_clock::time_point timestamp;
       typedef Shoebox<>::float_type float_type;
       typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
       typedef af::ref<int,        af::c_grid<3> > sbox_mask_type;
@@ -124,7 +131,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(image.npanels() == npanels_);
 
       // Get the initial time
-      timestamp start_time = boost::chrono::high_resolution_clock::now();
+      double start_time = timestamp();
 
       // For each image, extract shoeboxes of reflections recorded.
       // Allocate data where necessary
@@ -192,12 +199,12 @@ namespace dials { namespace algorithms {
       }
 
       // Update timing info
-      timestamp end_time = boost::chrono::high_resolution_clock::now();
-      extract_time_ += ((seconds)(end_time - start_time)).count();
+      double end_time = timestamp();
+      extract_time_ += end_time - start_time;
 
       // Process all the reflections and set the reflections
       if (process_indices.size() > 0) {
-        timestamp start_time = boost::chrono::high_resolution_clock::now();
+        double start_time = timestamp();
         af::const_ref<std::size_t> ind = process_indices.const_ref();
         af::reflection_table reflections = select_rows_index(data_, ind);
         executor.process(frame_, reflections);
@@ -207,8 +214,8 @@ namespace dials { namespace algorithms {
             shoebox[ind[i]].deallocate();
           }
         }
-        timestamp end_time = boost::chrono::high_resolution_clock::now();
-        process_time_ += ((seconds)(end_time - start_time)).count();
+        double end_time = timestamp();
+        process_time_ += end_time - start_time;
       }
 
       // Update the frame counter
