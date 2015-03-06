@@ -118,33 +118,34 @@ class StillsDetectorRefinerFactory(RefinerFactory):
                        xl_ori_params, xl_uc_params)
 
     else: # doing scans
-      if crystal_options.scan_varying:
-        if crystal_options.UB_model_per == "reflection":
-          #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-          #  import VaryingCrystalPredictionParameterisation as PredParam
-          raise NotImplementedError("currently only for stills")
-        elif crystal_options.UB_model_per == "image":
-          #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-          #  import VaryingCrystalPredictionParameterisationFast as PredParam
-          raise NotImplementedError("currently only for stills")
-        else:
-          raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
-                             " is not a recognised option")
-        pred_param = PredParam(
-              experiments,
-              det_params, beam_params, xl_ori_params, xl_uc_params)
-      else:
-        if sparse:
-          #from dials.algorithms.refinement.parameterisation.prediction_parameters \
-          #  import XYPhiPredictionParameterisationSparse as PredParam
-          raise NotImplementedError("currently only for stills")
-        else:
-          #from dials.algorithms.refinement.parameterisation.prediction_parameters \
-          #  import XYPhiPredictionParameterisation as PredParam
-          raise NotImplementedError("currently only for stills")
-        pred_param = PredParam(
-            experiments,
-            det_params, beam_params, xl_ori_params, xl_uc_params)
+      raise NotImplementedError("currently only for stills")
+      #if crystal_options.scan_varying:
+      #  if crystal_options.UB_model_per == "reflection":
+      #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+      #    #  import VaryingCrystalPredictionParameterisation as PredParam
+      #    raise NotImplementedError("currently only for stills")
+      #  elif crystal_options.UB_model_per == "image":
+      #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+      #    #  import VaryingCrystalPredictionParameterisationFast as PredParam
+      #    raise NotImplementedError("currently only for stills")
+      #  else:
+      #    raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
+      #                       " is not a recognised option")
+      #  pred_param = PredParam(
+      #        experiments,
+      #        det_params, beam_params, xl_ori_params, xl_uc_params)
+      #else:
+      #  if sparse:
+      #    #from dials.algorithms.refinement.parameterisation.prediction_parameters \
+      #    #  import XYPhiPredictionParameterisationSparse as PredParam
+      #    raise NotImplementedError("currently only for stills")
+      #  else:
+      #    #from dials.algorithms.refinement.parameterisation.prediction_parameters \
+      #    #  import XYPhiPredictionParameterisation as PredParam
+      #    raise NotImplementedError("currently only for stills")
+      #  pred_param = PredParam(
+      #      experiments,
+      #      det_params, beam_params, xl_ori_params, xl_uc_params)
 
     # Parameter reporting
     param_reporter = par.ParameterReporter(det_params, beam_params,
@@ -191,14 +192,15 @@ class StillsDetectorRefinerFactory(RefinerFactory):
       else:
         targ = LeastSquaresStillsDetector
     else:
-      if sparse:
-        raise NotImplementedError("currently only for stills")
-        #from dials.algorithms.refinement.target \
-        #  import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
-      else:
-        raise NotImplementedError("currently only for stills")
-        #from dials.algorithms.refinement.target \
-        #  import LeastSquaresPositionalResidualWithRmsdCutoff as targ
+      raise NotImplementedError("currently only for stills")
+      #if sparse:
+      #  raise NotImplementedError("currently only for stills")
+      #  #from dials.algorithms.refinement.target \
+      #  #  import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
+      #else:
+      #  raise NotImplementedError("currently only for stills")
+      #  #from dials.algorithms.refinement.target \
+      #  #  import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
     target = targ(experiments, ref_predictor, refman, pred_param,
                     options.bin_size_fraction, absolute_cutoffs,
@@ -209,7 +211,7 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 
 class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation):
 
-  def get_gradients(self, reflections):
+  def get_gradients(self, reflections, callback=None):
     """
     Calculate gradients of the prediction formula with respect to each
     of the parameters of the detector, for all of the reflections.
@@ -248,9 +250,9 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
       # axis array
       #if exp.goniometer:
       #  axis.set_selected(isel, exp.goniometer.get_rotation_axis())
-    return self._get_gradients_core(reflections, D)
+    return self._get_gradients_core(reflections, D, callback)
 
-  def _get_gradients_core(self, reflections, D):
+  def _get_gradients_core(self, reflections, D, callback=None):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
     with scattering vector s that intersects panel panel_id. That is,
@@ -296,11 +298,9 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
     # we want the wavelength
     #self._wavelength = 1. / self._s0.norms()
 
-    # Set up the lists of derivatives: a separate array over reflections for
-    # each free parameter
+    # Set up empty list in which to store gradients
     m = len(reflections)
-    n = len(self) # number of free parameters
-    dX_dp, dY_dp, dDeltaPsi_dp = self._prepare_gradient_vectors(m, n)
+    results = []
 
     # determine experiment to indices mappings once, here
     experiment_to_idx = []
@@ -330,11 +330,18 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
       # Get panel numbers of the affected reflections
       panel = reflections['panel'].select(isel)
 
+      # Extend derivative vectors for this detector parameterisation
+      results = self._extend_gradient_vectors(results, m, dp.num_free(),
+        keys=self._grad_names)
+
       # loop through the panels in this detector
       for panel_id, _ in enumerate(detector):
 
         # get the right subset of array indices to set for this panel
         sub_isel = isel.select(panel == panel_id)
+        if len(sub_isel) == 0:
+          # if no reflections intersect this panel, skip calculation
+          continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
         dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
@@ -351,15 +358,21 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
         # for this panel before moving on to the next
         iparam = self._iparam
         for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-          dX_dp[iparam].set_selected(sub_isel, dX)
-          dY_dp[iparam].set_selected(sub_isel, dY)
+          results[iparam][self._grad_names[0]].set_selected(sub_isel, dX)
+          results[iparam][self._grad_names[1]].set_selected(sub_isel, dY)
           # increment the local parameter index pointer
+          iparam += 1
+
+      if callback is not None:
+        iparam = self._iparam
+        for i in range(dp.num_free()):
+          results[iparam] = callback(results[iparam])
           iparam += 1
 
       # increment the parameter index pointer to the last detector parameter
       self._iparam += dp.num_free()
 
-    return (dX_dp, dY_dp, dDeltaPsi_dp)
+    return results
 
 class StillsDetectorPredictionParameterisationSparse(SparseGradientVectorMixin,
   StillsDetectorPredictionParameterisation):
