@@ -270,16 +270,23 @@ refinement
       .type = float(value_min = 0)
       .expert_level = 1
 
-    do_outlier_rejection = False
-      .help = "Whether refinement should attempt to reject outliers. Warning:"
-              "by default we assume the user code will have already done this!"
-      .type = bool
+    outlier_rejection
+      .help = "Outlier rejection after initial reflection prediction."
+    {
+      algorithm = *null tukey
+        .help = "Outlier rejection algorithm"
+        .type = choice
 
-    iqr_multiplier = 1.5
-      .help = "The IQR multiplier used to detect outliers. A value of 1.5 gives"
-              "Tukey's rule for outlier detection"
-      .type = float(value_min = 0.)
-      .expert_level = 1
+      tukey
+        .help = "Options for the tukey outlier rejector"
+      {
+        iqr_multiplier = 1.5
+          .help = "The IQR multiplier used to detect outliers. A value of 1.5"
+                  "gives Tukey's rule for outlier detection"
+          .type = float(value_min = 0.)
+          .expert_level = 1
+      }
+    }
 
     block_width = 1.0
       .help = "Width of a reflection 'block' (in degrees) determining how fine-"
@@ -942,8 +949,8 @@ class RefinerFactory(object):
       assert options.weighting_strategy.override != "stills"
 
     # do outlier rejection?
-    if options.do_outlier_rejection:
-      iqr_multiplier=options.iqr_multiplier
+    if options.outlier_rejection.algorithm == "tukey":
+      iqr_multiplier=options.outlier_rejection.tukey.iqr_multiplier
     else:
       iqr_multiplier=None
 

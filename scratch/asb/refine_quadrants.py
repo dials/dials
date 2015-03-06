@@ -79,7 +79,7 @@ refinement{
     sparse=True
   }
   target.gradient_calculation_blocksize=100000
-  reflections.do_outlier_rejection=True
+  reflections.outlier_rejection.algorithm=tukey
   reflections.minimum_number_of_reflections=1
 }""")
 from dials.data.refinement import phil_scope as master_phil
