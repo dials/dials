@@ -8,7 +8,7 @@ class Test(object):
       dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
       print 'FAIL: dials_regression not configured'
-      return
+      raise
 
     import os
     path = os.path.join(

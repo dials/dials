@@ -12,7 +12,7 @@ class Test(object):
       dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
       print 'FAIL: dials_regression not configured'
-      return
+      raise
 
     # The directory path
     path = join(
