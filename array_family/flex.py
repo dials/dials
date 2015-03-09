@@ -337,7 +337,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
-    match = SpotMatcher(max_separation=1)
+    match = SpotMatcher(max_separation=2)
     oind, sind = match(other, self)
     return sind, oind
 
@@ -351,11 +351,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from logging import info
     info("Matching reference spots with predicted reflections")
+    info(' %d observed reflections input' % len(other))
+    info(' %d reflections predicted' % len(self))
     sind, oind = self.match(other)
     o2 = other.select(oind)
     h1 = self.select(sind)['miller_index']
     h2 = o2['miller_index']
     mask = (h1 == h2)
+    info(' %d reflections matched' % len(o2))
+    info(' %d reflections accepted' % mask.count(True))
     self.set_flags(
       sind.select(mask),
       self.flags.reference_spot)
@@ -371,8 +375,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     other = other.select(oind.select(mask))
     for key, column in self.select(sind.select(mask)).cols():
       other[key] = column
-    info("Matched %d reference spots with predicted reflections" %
-                mask.count(True))
     mask2 = flex.bool(len(self),False)
     mask2.set_selected(sind.select(mask), True)
     return mask2, other
