@@ -152,7 +152,7 @@ script does. If time is *really* short then try uncommenting the line
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
       cmd = "dials.integrate refined_experiments.json indexed.pickle " + \
-            "profile_fitting=False prediction.dmin=3 prediction.dmax=8"
+            "profile_fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.pickle"):
         print "Job %02d failed during integration" % num
@@ -286,11 +286,15 @@ Following refinement we integrate the data in a very quick and dirty way, simply
 to get an MTZ file as fast as possible. This is a terrible way to integrate
 data usually!::
 
-  dials.integrate refined_experiments.json indexed.pickle profile_fitting=False prediction.dmin=3 prediction.dmax=8
+  dials.integrate refined_experiments.json indexed.pickle profile_fitting=False prediction.dmin=8.0 prediction.dmax=8.1
 
 The :samp:`profile_fitting=False` option ensures we only do summation integration,
-no profile fitting, while the :samp:`prediction.dmin=3` and
-:samp:`prediction.dmax=8` options only integrate data between 3 and 8 Angstroms.
+no profile fitting, while the :samp:`prediction.dmin=8.0` and
+:samp:`prediction.dmax=8.1` options only integrate data between 8.0 and 8.1 Angstroms.
+As a result very few reflections will be integrated. The MTZ file here is just
+being used as a carrier of the cell information into blend. By restricting the
+resolution range this way we are making it obvious that the content of the file
+is useless for any other purpose.
 
 .. warning::
 
@@ -971,7 +975,7 @@ to run in parallel, similar to the one used previously::
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
       cmd = "dials.integrate %s %s " + \
-            "profile_fitting=False prediction.dmin=3 prediction.dmax=8"
+            "profile_fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
       cmd = cmd % (experiments_path, reflections_path)
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.pickle"):
