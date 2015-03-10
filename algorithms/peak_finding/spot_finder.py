@@ -295,8 +295,9 @@ class SpotFinder(object):
     spots_all = []
     for scan in scan_range:
       j0, j1 = scan
-      assert(j1 > j0 and j0 >= max_scan_range[0] and j1 <= max_scan_range[1])
+      assert(j1 >= j0 and j0 > max_scan_range[0] and j1 <= max_scan_range[1])
       info('\nFinding spots in image {0} to {1}...'.format(j0, j1))
+      j0 -= 1
       if isinstance(imageset, ImageSweep):
         j0 -= imageset.get_array_range()[0]
         j1 -= imageset.get_array_range()[0]
