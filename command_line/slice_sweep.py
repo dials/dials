@@ -69,13 +69,6 @@ phil_scope = parse('''
     .multiple = True
 
 ''')
-#''', process_includes=True)
-
-def update_scan(scan, scan_range):
-  new_osc = scan.get_image_oscillation(scan_range[0])
-  scan.set_image_range(scan_range)
-  scan.set_oscillation(new_osc)
-  return scan
 
 def slice_experiments(experiments, scan_ranges):
   '''
@@ -98,7 +91,10 @@ def slice_experiments(experiments, scan_ranges):
     if sr[0] < im_range[0] or sr[1] > im_range[1]:
       raise IndexError("requested slice outside current scan range")
 
-    exp.scan = update_scan(exp.scan, sr)
+    # slicing uses the array range, not the image range
+    beg = sr[0] - 1
+    end = sr[1]
+    exp.scan.swap(exp.scan[beg:end])
 
   return experiments
 
@@ -161,7 +157,10 @@ def slice_datablocks(datablocks, scan_ranges):
     if sr[0] < im_range[0] or sr[1] > im_range[1]:
       raise IndexError("requested slice outside current scan range")
 
-    scan = update_scan(scan, sr)
+    # slicing uses the array range, not the image range
+    beg = sr[0] - 1
+    end = sr[1]
+    scan.swap(scan[beg:end])
 
   return datablocks
 
