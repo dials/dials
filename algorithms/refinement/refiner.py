@@ -27,7 +27,9 @@ refinement
   .help = "Parameters to configure the refinement"
 {
 
-  mp {
+  mp
+    .expert_level = 1
+  {
     nproc = 1
       .type = int(value_min=1)
       .help = "The number of processes to use. Only applicable to certain"
