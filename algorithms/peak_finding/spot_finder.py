@@ -287,7 +287,7 @@ class SpotFinder(object):
 
     # Get list of scan ranges
     if not self.scan_range or self.scan_range[0] is None:
-      scan_range = [max_scan_range]
+      scan_range = [(max_scan_range[0]+1, max_scan_range[1])]
     else:
       scan_range = self.scan_range
 
