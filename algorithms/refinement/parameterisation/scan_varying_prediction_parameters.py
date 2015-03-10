@@ -347,8 +347,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
       for dX, dY, dphi in zip(dX_dbeam_p, dY_dbeam_p, dphi_dbeam_p):
-        results[self._iparam][self._grad_names[0]].set_selected(sub_isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
         results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
 
         if callback is not None:
@@ -398,8 +398,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
       for dX, dY, dphi in zip(dX_dxlo_p, dY_dxlo_p, dphi_dxlo_p):
-        results[self._iparam][self._grad_names[0]].set_selected(sub_isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
         results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
@@ -447,8 +447,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
       for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
-        results[self._iparam][self._grad_names[0]].set_selected(sub_isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
         results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
