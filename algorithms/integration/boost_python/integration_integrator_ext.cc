@@ -204,6 +204,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                 int,
                 int,
                 bool>())
+      .def("compute_max_memory_usage",
+          &ShoeboxProcessor::compute_max_memory_usage)
       .def("next", &ShoeboxProcessor::next<double>)
       .def("next", &ShoeboxProcessor::next<int>)
       .def("frame0", &ShoeboxProcessor::frame0)

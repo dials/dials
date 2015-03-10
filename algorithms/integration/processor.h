@@ -116,6 +116,40 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Compute the maximum memory that will be used by shoeboxes
+     * @return The number of GB
+     */
+    std::size_t compute_max_memory_usage() const {
+      std::size_t max_memory_usage = 0;
+      std::size_t cur_memory_usage = 0;
+      for (int frame = frame0_; frame < frame1_; ++frame) {
+        std::size_t memory_to_free = 0;
+        for (std::size_t p = 0; p < npanels_; ++p) {
+          af::const_ref<std::size_t> ind = indices(frame, p);
+          for (std::size_t i = 0; i < ind.size(); ++i) {
+            DIALS_ASSERT(ind[i] < shoebox.size());
+            Shoebox<>& sbox = shoebox[ind[i]];
+            std::size_t nbytes = sbox.size() * (
+                sizeof(Shoebox<>::float_type) +
+                sizeof(Shoebox<>::float_type) +
+                sizeof(int));
+            if (frame == sbox.bbox[4]) {
+              cur_memory_usage += nbytes;
+            }
+            if (frame == sbox.bbox[5]-1) {
+              memory_to_free += nbytes;
+            }
+          }
+        }
+        DIALS_ASSERT(memory_to_free <= cur_memory_usage);
+        max_memory_usage = std::max(max_memory_usage, cur_memory_usage);
+        cur_memory_usage -= memory_to_free;
+      }
+      DIALS_ASSERT(cur_memory_usage == 0);
+      return max_memory_usage;
+    }
+
+    /**
      * Extract the pixels from the image and copy to the relevant shoeboxes.
      * @param image The image to process
      * @param frame The current image frame

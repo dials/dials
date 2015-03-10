@@ -59,6 +59,11 @@ def generate_phil_scope():
         .help = "If the number of processors is 1 and force is False, then the"
                 "number of blocks may be set to 1. If force is True then the"
                 "block size is always calculated."
+
+      max_memory_usage = 0.75
+        .type = float(value_min=0.0,value_max=1.0)
+        .help = "The maximum percentage of total physical memory to use for"
+                "allocating shoebox arrays."
     }
 
     shoebox {
@@ -245,6 +250,7 @@ class Task(object):
                mask=None,
                flatten=False,
                save_shoeboxes=False,
+               max_memory_usage=0.75,
                executor=None):
     '''
     Initialise the task.
@@ -268,6 +274,7 @@ class Task(object):
     self.mask = mask
     self.flatten = flatten
     self.save_shoeboxes = save_shoeboxes
+    self.max_memory_usage = max_memory_usage
     self.executor = executor
 
   def __call__(self):
@@ -280,6 +287,7 @@ class Task(object):
     from dials.array_family import flex
     from time import time
     from dials.model.data import make_image
+    from libtbx.introspection import machine_memory_info
 
     # Get the start time
     start_time = time()
@@ -328,6 +336,28 @@ class Task(object):
       frame0,
       frame1,
       self.save_shoeboxes)
+
+    # Compute percentage of max available. The function is not portable to
+    # windows so need to add a check if the function fails. On windows no
+    # warning will be printed
+    memory_info = machine_memory_info()
+    total_memory = memory_info.memory_total()
+    sbox_memory = processor.compute_max_memory_usage()
+    if total_memory is not None:
+      assert(total_memory > 0)
+      assert(self.max_mem_usage >  0.0)
+      assert(self.max_mem_usage <= 1.0)
+      limit_memory = total_memory * self.max_mem_usage
+      if sbox_memory > limit_memory:
+        raise RuntimeError('''
+        There was a problem allocating memory for shoeboxes. Possible solutions
+        include increasing the percentage of memory allowed for shoeboxes or
+        decreasing the block size. This could also be caused by a highly mosaic
+        crystal model - is your crystal really this mosaic?
+          Total system memory: %g GB
+          Limit shoebox memory: %g GB
+          Requested shoebox memory: %g GB
+        ''' % (total_memory/1e9, limit_memory/1e9, sbox_memory/1e9))
 
     # Loop through the imageset, extract pixels and process reflections
     read_time = 0.0
@@ -403,6 +433,12 @@ class Manager(object):
     self.block_size_force = params.block.force
     self.save_shoeboxes = params.debug.save_shoeboxes
 
+    # Set the memory usage per processor
+    if (params.mp.method == 'multiprocessing' and params.mp.nproc > 1):
+      self.max_memory_usage = params.block.max_memory_usage / params.mp.nproc
+    else:
+      self.max_memory_usage = params.block.max_memory_usage
+
     # Set the finalized flag to False
     self.finalized = False
 
@@ -456,6 +492,7 @@ class Manager(object):
       mask=self.mask,
       flatten=self.flatten,
       save_shoeboxes=self.save_shoeboxes,
+      max_memory_usage=self.max_memory_usage,
       executor=self.executor)
 
   def tasks(self):
