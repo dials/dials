@@ -122,14 +122,20 @@ namespace dials { namespace algorithms {
     std::size_t compute_max_memory_usage() const {
       std::size_t max_memory_usage = 0;
       std::size_t cur_memory_usage = 0;
+      af::const_ref< Shoebox<> > shoebox =
+        data_.get< Shoebox<> >("shoebox").const_ref();
       for (int frame = frame0_; frame < frame1_; ++frame) {
         std::size_t memory_to_free = 0;
         for (std::size_t p = 0; p < npanels_; ++p) {
           af::const_ref<std::size_t> ind = indices(frame, p);
           for (std::size_t i = 0; i < ind.size(); ++i) {
             DIALS_ASSERT(ind[i] < shoebox.size());
-            Shoebox<>& sbox = shoebox[ind[i]];
-            std::size_t nbytes = sbox.size() * (
+            const Shoebox<>& sbox = shoebox[ind[i]];
+            std::size_t size = sbox.xsize() * sbox.ysize();
+            if (!flatten_) {
+              size *= sbox.zsize();
+            }
+            std::size_t nbytes = size * (
                 sizeof(Shoebox<>::float_type) +
                 sizeof(Shoebox<>::float_type) +
                 sizeof(int));
