@@ -39,6 +39,11 @@ class Factory(object):
       import ScanVaryingProfileModelCalculator
     from dials.algorithms.profile_model.gaussian_rs.model import ProfileModel
     from dials.algorithms.profile_model.gaussian_rs.model import ScanVaryingProfileModel
+    if len(reflections) < params.gaussian_rs.min_spots:
+      raise RuntimeError('''
+        Too few reflections for profile modelling:
+          expected > %d, got %d
+        ''' % (params.gaussian_rs.min_spots, len(reflections)))
     if not scan_varying:
       if experiment.scan is None or experiment.goniometer is None:
         profile_fitting = False

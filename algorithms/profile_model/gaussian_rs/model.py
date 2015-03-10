@@ -20,6 +20,10 @@ phil_scope = parse('''
         .type = bool
         .help = "Calculate a scan varying model"
 
+    min_spots = 100
+        .type = int(value_min=0)
+        .help = "The minimum number of spots needed to do the profile modelling"
+
     filter
     {
       min_zeta = 0.05
