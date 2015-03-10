@@ -177,6 +177,7 @@ class InitializerRot(object):
     Do some pre-processing.
 
     '''
+    from dials.algorithms.integration.filtering import MultiPowderRingFilter
     from dials.array_family import flex
     from scitbx.array_family import shared
 
@@ -190,10 +191,12 @@ class InitializerRot(object):
     num_ignore = mask.count(True)
     reflections.set_flags(mask, reflections.flags.dont_integrate)
 
-    # Filter the reflections by powder rings FIXME
-    #if self.powder_filter is not None:
-    #  mask = self.powder_filter(reflections['d'])
-    #  reflections.set_flags(mask, reflections.flags.in_powder_ring)
+    # Filter the reflections by powder ring
+    powder_filter = MultiPowderRingFilter.from_params(
+      self.params.integration.filter)
+    if powder_filter is not None:
+      mask = powder_filter(reflections['d'])
+      reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
 
 class InitializerStills(object):
@@ -219,6 +222,7 @@ class InitializerStills(object):
     Do some pre-processing.
 
     '''
+    from dials.algorithms.integration.filtering import MultiPowderRingFilter
     from dials.array_family import flex
 
     # Compute some reflection properties
@@ -229,10 +233,12 @@ class InitializerStills(object):
     z0, z1 = reflections['bbox'].parts()[4:6]
     assert((z1 - z0).all_eq(1))
 
-    # Filter the reflections by powder rings FIXME
-    #if self.powder_filter is not None:
-    #  mask = self.powder_filter(reflections['d'])
-    #  reflections.set_flags(mask, reflections.flags.in_powder_ring)
+    # Filter the reflections by powder ring
+    powder_filter = MultiPowderRingFilter.from_params(
+      self.params.integration.filter)
+    if powder_filter is not None:
+      mask = powder_filter(reflections['d'])
+      reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
 
 class FinalizerRot(object):
