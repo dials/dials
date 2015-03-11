@@ -26,8 +26,9 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using dials::model::Shoebox;
+  using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformSpec;
-  using dials::algorithms::profile_model::gaussian_rs::transform::Forward;
+  using dials::algorithms::profile_model::gaussian_rs::transform::TransformForward;
 
   /**
    * A base class to initialize the sampler
@@ -117,6 +118,17 @@ namespace dials { namespace algorithms {
     boost::shared_ptr<SamplerIface> sampler_;
   };
 
+  namespace detail {
+
+    struct check_mask_code {
+      int mask_code;
+      check_mask_code(int code) : mask_code(code) {}
+      bool operator()(int a) const {
+        return ((a & mask_code) == mask_code);
+      }
+    };
+
+  }
 
   /**
    * The profile modeller for the gaussian rs profile model
@@ -256,8 +268,36 @@ namespace dials { namespace algorithms {
         // Check if we want to use this reflection
         if (check1(flags[i], partiality[i], sbox[i])) {
 
+          // Create the coordinate system
+          vec3<double> m2 = spec_.goniometer().get_rotation_axis();
+          vec3<double> s0 = spec_.beam().get_s0();
+          CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
+
+          // Create the data array
+          af::versa< double, af::c_grid<3> > data(sbox[i].data.accessor());
+          std::transform(
+              sbox[i].data.begin(),
+              sbox[i].data.end(),
+              sbox[i].background.begin(),
+              data.begin(),
+              std::minus<double>());
+
+          // Create the mask array
+          af::versa< bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
+          std::transform(
+              sbox[i].mask.begin(),
+              sbox[i].mask.end(),
+              mask.begin(),
+              detail::check_mask_code(Valid | Foreground));
+
           // Compute the transform
-          Forward<double> transform(spec_, s1[i], xyzmm[i][2], sbox[i], true);
+          TransformForward<double> transform(
+              spec_,
+              cs,
+              sbox[i].bbox,
+              sbox[i].panel,
+              data.const_ref(),
+              mask.const_ref());
 
           // Get the indices and weights of the profiles
           af::shared<std::size_t> indices = sampler_->nearest_n(xyzpx[i]);
@@ -322,8 +362,44 @@ namespace dials { namespace algorithms {
             data_const_reference p = data(index).const_ref();
             mask_const_reference m = mask(index).const_ref();
 
+            // Create the coordinate system
+            vec3<double> m2 = spec_.goniometer().get_rotation_axis();
+            vec3<double> s0 = spec_.beam().get_s0();
+            CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
+
+            // Create the data array
+            af::versa< double, af::c_grid<3> > data(sbox[i].data.accessor());
+            std::copy(
+                sbox[i].data.begin(),
+                sbox[i].data.end(),
+                data.begin());
+
+            // Create the background array
+            af::versa< double, af::c_grid<3> > background(sbox[i].background.accessor());
+            std::copy(
+                sbox[i].background.begin(),
+                sbox[i].background.end(),
+                background.begin());
+
+            // Create the mask array
+            af::versa< bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
+            std::transform(
+                sbox[i].mask.begin(),
+                sbox[i].mask.end(),
+                mask.begin(),
+                detail::check_mask_code(Valid | Foreground));
+
+            // Compute the transform
+            TransformForward<double> transform(
+                spec_,
+                cs,
+                sbox[i].bbox,
+                sbox[i].panel,
+                data.const_ref(),
+                background.const_ref(),
+                mask.const_ref());
+
             // Get the transformed shoebox
-            Forward<double> transform(spec_, s1[i], xyzmm[i][2], sbox[i], false);
             data_const_reference c = transform.profile().const_ref();
             data_const_reference b = transform.background().const_ref();
 

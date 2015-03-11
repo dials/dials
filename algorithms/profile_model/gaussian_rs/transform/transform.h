@@ -171,62 +171,35 @@ namespace transform {
    *  print forward.background()
    */
   template <typename FloatType = double>
-  class Forward {
+  class TransformForward {
   public:
 
     typedef FloatType float_type;
     typedef TransformSpec transform_spec_type;
 
-    Forward() {}
+    TransformForward() {}
 
-    Forward(const TransformSpec &spec,
-            const vec3<double> &s1, double phi, int6 bbox, std::size_t panel,
-            const af::const_ref< FloatType, af::c_grid<3> > &image,
-            const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, s1, phi, bbox, panel);
-      call(spec.detector()[panel], image, mask);
-    }
-
-    Forward(const TransformSpec &spec,
-            const vec3<double> &s1, double phi, int6 bbox, std::size_t panel,
-            const af::const_ref< FloatType, af::c_grid<3> > &image,
-            const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
-            const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(spec, s1, phi, bbox, panel);
-      call(spec.detector()[panel], image, bkgrd, mask);
-    }
-
-    Forward(const TransformSpec &spec,
-            const vec3<double> &s1, double phi,
-            const Shoebox<> &shoebox,
-            bool subtract_background) {
-      init(spec, s1, phi, shoebox.bbox, shoebox.panel);
-      call(spec.detector()[shoebox.panel], shoebox, subtract_background);
-    }
-
-    Forward(const TransformSpec &spec,
-            const CoordinateSystem &cs, int6 bbox, std::size_t panel,
-            const af::const_ref< FloatType, af::c_grid<3> > &image,
-            const af::const_ref< bool, af::c_grid<3> > &mask) {
+    TransformForward(
+        const TransformSpec &spec,
+        const CoordinateSystem &cs,
+        int6 bbox,
+        std::size_t panel,
+        const af::const_ref< FloatType, af::c_grid<3> > &image,
+        const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(spec, cs, bbox, panel);
       call(spec.detector()[panel], image, mask);
     }
 
-    Forward(const TransformSpec &spec,
-            const CoordinateSystem &cs, int6 bbox, std::size_t panel,
-            const af::const_ref< FloatType, af::c_grid<3> > &image,
-            const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
-            const af::const_ref< bool, af::c_grid<3> > &mask) {
+    TransformForward(
+        const TransformSpec &spec,
+        const CoordinateSystem &cs,
+        int6 bbox,
+        std::size_t panel,
+        const af::const_ref< FloatType, af::c_grid<3> > &image,
+        const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
+        const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(spec, cs, bbox, panel);
       call(spec.detector()[panel], image, bkgrd, mask);
-    }
-
-    Forward(const TransformSpec &spec,
-            const CoordinateSystem &cs,
-            const Shoebox<> &shoebox,
-            bool subtract_background) {
-      init(spec, cs, shoebox.bbox, shoebox.panel);
-      call(spec.detector()[shoebox.panel], shoebox, subtract_background);
     }
 
     /** @returns The transformed profile */
@@ -239,26 +212,7 @@ namespace transform {
       return background_;
     }
 
-    /** @returns The z fraction */
-    af::versa< FloatType, af::c_grid<2> > zfraction() const {
-      return zfraction_arr_;
-    }
-
   private:
-
-    /** Initialise using the beam vector and rotation angle */
-    void init(const TransformSpec &spec,
-              const vec3<double> &s1,
-              double phi,
-              int6 bbox,
-              std::size_t panel) {
-      CoordinateSystem cs(
-          spec.goniometer().get_rotation_axis(),
-          spec.beam().get_s0(),
-          s1,
-          phi);
-      init(spec, cs, bbox, panel);
-    }
 
     /** Initialise using a coordinate system struct */
     void init(const TransformSpec &spec,
@@ -407,32 +361,6 @@ namespace transform {
     }
 
     /**
-     * Call the transform with the shoebox
-     */
-    void call(const Panel &panel, const Shoebox<> &shoebox, bool subtract_background) {
-      af::versa< bool, af::c_grid<3> > mask(shoebox.mask.accessor());
-      af::ref< bool, af::c_grid<3> > mask_ref = mask.ref();
-      af::const_ref< int, af::c_grid<3> > temp_ref = shoebox.mask.const_ref();
-      int mask_code = Valid | Foreground;
-      for (std::size_t i = 0; i < mask_ref.size(); ++i) {
-        mask_ref[i] = (temp_ref[i] & mask_code) == mask_code ? 1 : 0;
-      }
-      af::versa< FloatType, af::c_grid<3> > data(shoebox.data.accessor());
-      std::copy(shoebox.data.begin(), shoebox.data.end(), data.begin());
-
-      if (subtract_background) {
-        for (std::size_t i = 0; i < data.size(); ++i) {
-          data[i] -= shoebox.background[i];
-        }
-        call(panel, data.const_ref(), mask_ref);
-      } else {
-        af::versa< FloatType, af::c_grid<3> > bgrd(shoebox.background.accessor());
-        std::copy(shoebox.background.begin(), shoebox.background.end(), bgrd.begin());
-        call(panel, data.const_ref(), bgrd.const_ref(), mask_ref);
-      }
-    }
-
-    /**
      * Get a grid coordinate from an image coordinate
      * @param j The y index
      * @param i The x index
@@ -441,8 +369,6 @@ namespace transform {
     vec2<double> gc(const Panel &panel,
                     std::size_t j,
                     std::size_t i) const {
-      /* DIALS_ASSERT(y0_ + j >= 0 && y0_ + j < s1_map.accessor()[0]); */
-      /* DIALS_ASSERT(x0_ + i >= 0 && x0_ + i < s1_map.accessor()[1]); */
       vec3<double> sp = panel.get_pixel_lab_coord(vec2<double>(x0_+i,y0_+j));
       vec3<double> ds = sp.normalize() * s1_.length() - s1_;
       return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],

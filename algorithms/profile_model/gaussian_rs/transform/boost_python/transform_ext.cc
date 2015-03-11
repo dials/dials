@@ -73,18 +73,9 @@ namespace boost_python {
   template <typename FloatType>
   void forward_wrapper(const char *name) {
 
-    typedef Forward<FloatType> ForwardType;
+    typedef TransformForward<FloatType> TransformForwardType;
 
-    class_<ForwardType>(name, no_init)
-      .def(init<const TransformSpec&,
-                const vec3<double>&, double, int6, std::size_t,
-                const af::const_ref< FloatType, af::c_grid<3> >&,
-                const af::const_ref< bool, af::c_grid<3> >& >())
-      .def(init<const TransformSpec&,
-                const vec3<double>&, double, int6, std::size_t,
-                const af::const_ref< FloatType, af::c_grid<3> >&,
-                const af::const_ref< FloatType, af::c_grid<3> >&,
-                const af::const_ref< bool, af::c_grid<3> >& >())
+    class_<TransformForwardType>(name, no_init)
       .def(init<const TransformSpec&,
                 const CoordinateSystem&, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
@@ -94,9 +85,9 @@ namespace boost_python {
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
-      .def("profile", &ForwardType::profile)
-      .def("background", &ForwardType::background)
-      .def("zfraction", &ForwardType::zfraction);
+      .def("profile", &TransformForwardType::profile)
+      .def("background", &TransformForwardType::background)
+      ;
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_transform_ext)
@@ -195,7 +186,7 @@ namespace boost_python {
       .def("grid_centre", &TransformSpec::grid_centre)
       ;
 
-    forward_wrapper<double>("Forward");
+    forward_wrapper<double>("TransformForward");
   }
 
 }}}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python
