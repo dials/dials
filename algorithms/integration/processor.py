@@ -288,6 +288,7 @@ class Task(object):
     from time import time
     from dials.model.data import make_image
     from libtbx.introspection import machine_memory_info
+    from logging import info
 
     # Get the start time
     start_time = time()
@@ -358,6 +359,12 @@ class Task(object):
           Limit shoebox memory: %g GB
           Requested shoebox memory: %g GB
         ''' % (total_memory/1e9, limit_memory/1e9, sbox_memory/1e9))
+      else:
+        info(' Memory usage:')
+        info('  Total system memory: %g GB' % (total_memory/1e9))
+        info('  Limit shoebox memory: %g GB' % (limit_memory/1e9))
+        info('  Requested shoebox memory: %g GB' % (sbox_memory/1e9))
+        info('')
 
     # Loop through the imageset, extract pixels and process reflections
     read_time = 0.0
