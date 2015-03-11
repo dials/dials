@@ -71,7 +71,7 @@ namespace boost_python {
   /* } */
 
   template <typename FloatType>
-  void forward_wrapper(const char *name) {
+  void transform_forward_wrapper(const char *name) {
 
     typedef TransformForward<FloatType> TransformForwardType;
 
@@ -87,6 +87,23 @@ namespace boost_python {
                 const af::const_ref< bool, af::c_grid<3> >& >())
       .def("profile", &TransformForwardType::profile)
       .def("background", &TransformForwardType::background)
+      ;
+  }
+
+  void transform_forward_no_model_wrapper(const char *name) {
+
+    class_<TransformForwardNoModel>(name, no_init)
+      .def(init<const TransformSpec&,
+                const CoordinateSystem&, int6, std::size_t,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< bool, af::c_grid<3> >& >())
+      .def(init<const TransformSpec&,
+                const CoordinateSystem&, int6, std::size_t,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< bool, af::c_grid<3> >& >())
+      .def("profile", &TransformForwardNoModel::profile)
+      .def("background", &TransformForwardNoModel::background)
       ;
   }
 
@@ -186,7 +203,8 @@ namespace boost_python {
       .def("grid_centre", &TransformSpec::grid_centre)
       ;
 
-    forward_wrapper<double>("TransformForward");
+    transform_forward_wrapper<double>("TransformForward");
+    transform_forward_no_model_wrapper("TransformForwardNoModel");
   }
 
 }}}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

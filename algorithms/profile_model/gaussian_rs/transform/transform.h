@@ -43,10 +43,23 @@ namespace transform {
   using dials::model::Foreground;
   using dials::model::Valid;
   using dials::model::Shoebox;
-  using dials::algorithms::polygon::spatial_interpolation::vert4;
+  using dials::algorithms::polygon::simple_area;
+  using dials::algorithms::polygon::clip::vert4;
+  using dials::algorithms::polygon::clip::vert8;
+  using dials::algorithms::polygon::clip::quad_with_convex_quad;
+  using dials::algorithms::polygon::spatial_interpolation::reverse_quad_inplace_if_backward;
   using dials::algorithms::polygon::spatial_interpolation::Match;
   using dials::algorithms::polygon::spatial_interpolation::quad_to_grid;
 
+  template <typename T>
+  T min4(T a, T b, T c, T d) {
+    return std::min(std::min(a,b), std::min(c,d));
+  }
+
+  template <typename T>
+  T max4(T a, T b, T c, T d) {
+    return std::max(std::max(a,b), std::max(c,d));
+  }
 
   /**
    * A class to construct the specification for the transform. Once instantiated
@@ -384,6 +397,198 @@ namespace transform {
     af::versa< FloatType, af::c_grid<3> > profile_;
     af::versa< FloatType, af::c_grid<3> > background_;
     af::versa< FloatType, af::c_grid<2> > zfraction_arr_;
+  };
+
+
+  class TransformForwardNoModel {
+  public:
+
+    TransformForwardNoModel() {}
+
+    TransformForwardNoModel(
+        const TransformSpec &spec,
+        const CoordinateSystem &cs,
+        int6 bbox,
+        std::size_t panel,
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< bool, af::c_grid<3> > &mask) {
+      af::versa< double, af::c_grid<3> > bkgrd;
+      init(spec, cs, bbox, panel, image, bkgrd.const_ref(), mask);
+    }
+
+    TransformForwardNoModel(
+        const TransformSpec &spec,
+        const CoordinateSystem &cs,
+        int6 bbox,
+        std::size_t panel,
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< double, af::c_grid<3> > &bkgrd,
+        const af::const_ref< bool, af::c_grid<3> > &mask) {
+      init(spec, cs, bbox, panel, image, bkgrd, mask);
+    }
+
+    /** @returns The transformed profile */
+    af::versa< double, af::c_grid<3> > profile() const {
+      return data_;
+    }
+
+    /** @returns The transformed background (if set) */
+    af::versa< double, af::c_grid<3> > background() const {
+      return background_;
+    }
+
+  private:
+
+    void init(
+        const TransformSpec &spec,
+        const CoordinateSystem &cs,
+        int6 bbox,
+        std::size_t panel,
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< double, af::c_grid<3> > &bkgrd,
+        const af::const_ref< bool, af::c_grid<3> > &mask) {
+
+      // Check if we're using background
+      bool use_background = bkgrd.size() > 0;
+
+      // Check the input
+      if (use_background) {
+        DIALS_ASSERT(image.accessor().all_eq(bkgrd.accessor()));
+      }
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+
+      // Init the arrays
+      af::c_grid<3> accessor(spec.grid_size());
+      data_ = af::versa< double, af::c_grid<3> >(accessor, 0);
+      if (use_background) {
+        background_ = af::versa< double, af::c_grid<3> >(accessor, 0);
+      }
+
+      // Get the bbox size
+      std::size_t xs = bbox[1] - bbox[0];
+      std::size_t ys = bbox[3] - bbox[2];
+      std::size_t zs = bbox[5] - bbox[4];
+
+      // Compute the deltas
+      double delta_b = spec.sigma_b() * spec.n_sigma();
+      double delta_m = spec.sigma_m() * spec.n_sigma();
+
+      // Compute the grid step and offset
+      double xoff = -delta_b;
+      double yoff = -delta_b;
+      double zoff = -delta_m;
+      double xstep = (2.0 * delta_b) / data_.accessor()[2];
+      double ystep = (2.0 * delta_b) / data_.accessor()[1];
+      double zstep = (2.0 * delta_m) / data_.accessor()[0];
+
+      // Get the panel
+      const Panel &dp = spec.detector()[panel];
+
+      // Compute the detector coordinates of each point on the grid
+      af::versa< vec2<double>, af::c_grid<2> > xy(af::c_grid<2>(
+            data_.accessor()[1] + 1,
+            data_.accessor()[2] + 1));
+      for (std::size_t j = 0; j <= data_.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i <= data_.accessor()[2]; ++i) {
+          double c1 = xoff + i * xstep;
+          double c2 = yoff + j * ystep;
+          vec3<double> s1p = cs.to_beam_vector(vec2<double>(c1,c2));
+          vec2<double> xyp = dp.get_ray_intersection_px(s1p);
+          xyp[0] -= bbox[0];
+          xyp[1] -= bbox[2];
+          xy(j,i) = xyp;
+        }
+      }
+
+      // Compute the frame numbers of each slice on the grid
+      af::shared<double> z(data_.accessor()[0]+1);
+      for (std::size_t k = 0; k <= data_.accessor()[0]; ++k) {
+        double c3 = zoff + k * zstep;
+        double phip = cs.to_rotation_angle_fast(c3);
+        z[k] = spec.scan().get_array_index_from_angle(phip) - bbox[4];
+        DIALS_ASSERT(z[k] >= 0 && z[k] <= zs);
+      }
+
+      // Get a list of pairs of overlapping polygons
+      for (std::size_t j = 0; j < data_.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i < data_.accessor()[2]; ++i) {
+          vec2<double> xy00 = xy(j,i);
+          vec2<double> xy01 = xy(j,i+1);
+          vec2<double> xy11 = xy(j+1,i+1);
+          vec2<double> xy10 = xy(j+1,i);
+          int x0 = std::floor(min4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int x1 = std::ceil (max4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int y0 = std::floor(min4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          int y1 = std::ceil (max4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          DIALS_ASSERT(x0 < x1);
+          DIALS_ASSERT(y0 < y1);
+          DIALS_ASSERT(x0 >= 0 && x1 <= xs);
+          DIALS_ASSERT(y0 >= 0 && y1 <= ys);
+          vert4 p1(xy00, xy01, xy11, xy10);
+          reverse_quad_inplace_if_backward(p1);
+          for (std::size_t jj = y0; jj < y1; ++jj) {
+            for (std::size_t ii = x0; ii < x1; ++ii) {
+              vec2<double> xy200(ii,jj);
+              vec2<double> xy201(ii,jj+1);
+              vec2<double> xy211(ii+1,jj+1);
+              vec2<double> xy210(ii+1,jj);
+              vert4 p2(xy200, xy201, xy211, xy210);
+              reverse_quad_inplace_if_backward(p2);
+              vert8 p3 = quad_with_convex_quad(p1, p2);
+              double area = simple_area(p3);
+              const double EPS = 1e-7;
+              if (area < 0.0) {
+                DIALS_ASSERT(area > -EPS);
+                area = 0.0;
+              }
+              if (area > 1.0) {
+                DIALS_ASSERT(area <= (1.0 + EPS));
+                area = 1.0;
+              }
+              DIALS_ASSERT(0.0 <= area && area <= 1.0);
+              if (area > 0) {
+                for (std::size_t k = 0; k < data_.accessor()[0]; ++k) {
+                  double f00 = std::min(z[k], z[k+1]);
+                  double f01 = std::max(z[k], z[k+1]);
+                  DIALS_ASSERT(f01 > f00);
+                  int z0 = std::max((int)0, (int)std::floor(f00));
+                  int z1 = std::min((int)zs, (int)std::ceil(f01));
+                  DIALS_ASSERT(z0 >= 0 && z1 <= (int)zs);
+                  for (int kk = z0; kk < z1; ++kk) {
+                    if (mask(kk,jj,ii)) {
+                      std::size_t f10 = kk;
+                      std::size_t f11 = kk+1;
+                      double f0 = std::max(f00, (double)f10);
+                      double f1 = std::min(f01, (double)f11);
+                      double fraction = f1 > f0 ? (f1 - f0) / 1.0 : 0.0;
+                      DIALS_ASSERT(fraction <= 1.0);
+                      DIALS_ASSERT(fraction >= 0.0);
+                      data_(k,j,i) += fraction * area * image(kk,jj,ii);
+                      if (use_background) {
+                        background_(k,j,i) += fraction * area * bkgrd(kk,jj,ii);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    af::versa< double, af::c_grid<3> > data_;
+    af::versa< double, af::c_grid<3> > background_;
+
+  };
+
+
+  class TransformReverseNoModel {
+
+
   };
 
 }}}}} // namespace dials::algorithms::profile_model::gaussian_rs::transform
