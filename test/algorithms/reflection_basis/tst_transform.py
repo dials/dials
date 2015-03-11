@@ -631,7 +631,7 @@ class Test(object):
     #self.tst_reverse = TestReverse(filename)
 
   def run(self):
-    # self.tst_forward()
+    self.tst_forward()
     self.tst_forward_no_model()
     #self.tst_reverse()
 
