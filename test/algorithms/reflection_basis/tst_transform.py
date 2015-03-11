@@ -143,7 +143,7 @@ class TestForward(object):
             mask[k,j,i] = inside
 
       # Transform the image to the grid
-      transformed = transform.Forward(self.spec, cs, bbox, 0, image.as_double(), mask)
+      transformed = transform.TransformForward(self.spec, cs, bbox, 0, image.as_double(), mask)
       grid = transformed.profile()
 
       # Get the sums and ensure they're the same
@@ -327,7 +327,7 @@ class TestForward(object):
             mask[k,j,i] = inside
 
       # Transform the image to the grid
-      transformed = transform.Forward(self.spec, cs, bbox, 0, image.as_double(),
+      transformed = transform.TransformForward(self.spec, cs, bbox, 0, image.as_double(),
                                       background.as_double(), mask)
       igrid = transformed.profile()
       bgrid = transformed.background()

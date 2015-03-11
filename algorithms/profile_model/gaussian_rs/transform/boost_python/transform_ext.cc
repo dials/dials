@@ -215,6 +215,7 @@ namespace boost_python {
 
     transform_forward_wrapper<double>("TransformForward");
     transform_forward_no_model_wrapper("TransformForwardNoModel");
+    transform_reverse_no_model_wrapper("TransformReverseNoModel");
   }
 
 }}}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

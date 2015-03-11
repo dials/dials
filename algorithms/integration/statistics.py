@@ -45,17 +45,23 @@ class ImageSummary(object):
     except:
       array_range = (0, len(experiment.imageset))
 
+    keys = []
+    for key in ['bbox',
+                'background.mean',
+                'partiality',
+                'intensity.sum.value',
+                'intensity.sum.variance',
+                'intensity.prf.value',
+                'intensity.prf.variance',
+                'profile.correlation',
+                'flags']:
+      if key in data:
+        keys.append(key)
+    assert(len(keys) > 0)
+
     # Get arrays for each frame
     data = data.select(data.get_flags(data.flags.integrated, all=False))
-    data = data.select(flex.std_string(['bbox',
-                        'background.mean',
-                        'partiality',
-                        'intensity.sum.value',
-                        'intensity.sum.variance',
-                        'intensity.prf.value',
-                        'intensity.prf.variance',
-                        'profile.correlation',
-                        'flags']))
+    data = data.select(flex.std_string(keys))
     data.split_partials()
     frames = data['bbox'].parts()[4]
 
