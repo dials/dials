@@ -41,66 +41,55 @@ namespace boost_python {
         s1_map.handle(), af::c_grid<2>(s1_map.accessor())));
   }
 
-  template <typename FloatType>
-  boost::shared_ptr< TransformSpec<FloatType> >
-    init_forward_from_experiment(
-      object experiment, double sigma_b, double sigma_m,
-      double nsigma, std::size_t grid_size) {
-    return boost::shared_ptr< TransformSpec<FloatType> >(
-      new TransformSpec<FloatType>(
+  boost::shared_ptr<TransformSpec>
+    make_transform_spec_from_experiment(
+      object experiment,
+      double sigma_b,
+      double sigma_m,
+      double nsigma,
+      std::size_t grid_size) {
+    return boost::shared_ptr<TransformSpec>(
+      new TransformSpec(
         extract<Beam>(experiment.attr("beam")),
         extract<Detector>(experiment.attr("detector")),
         extract<Goniometer>(experiment.attr("goniometer")),
         extract<Scan>(experiment.attr("scan")),
-        sigma_b, sigma_m, nsigma, grid_size));
+        sigma_b,
+        sigma_m,
+        nsigma,
+        grid_size));
   }
 
-  template <typename FloatType>
-  af::versa< vec3<double>, af::c_grid<2> > transform_spec_s1_map(
-      const TransformSpec<FloatType> &self,
-      std::size_t panel) {
-    af::const_ref< vec3<double>, af::c_grid<2> > array = self.s1_map(panel);
-    af::versa< vec3<double>, af::c_grid<2> > result(array.accessor());
-    std::copy(array.begin(), array.end(), result.begin());
-    return result;
-  }
+  /* template <typename FloatType> */
+  /* af::versa< vec3<double>, af::c_grid<2> > transform_spec_s1_map( */
+  /*     const TransformSpec &self, */
+  /*     std::size_t panel) { */
+  /*   af::const_ref< vec3<double>, af::c_grid<2> > array = self.s1_map(panel); */
+  /*   af::versa< vec3<double>, af::c_grid<2> > result(array.accessor()); */
+  /*   std::copy(array.begin(), array.end(), result.begin()); */
+  /*   return result; */
+  /* } */
 
   template <typename FloatType>
   void forward_wrapper(const char *name) {
 
     typedef Forward<FloatType> ForwardType;
-    typedef TransformSpec<FloatType> TransformSpecType;
-
-    class_<TransformSpecType>("TransformSpec", no_init)
-      .def(init<const Beam &, const Detector &,
-                const Goniometer &, const Scan &,
-                double, double, double, std::size_t>())
-      .def("__init__", make_constructor(
-        &init_forward_from_experiment<FloatType>))
-      .def("m2", &TransformSpecType::m2)
-      .def("s0", &TransformSpecType::s0)
-      .def("image_size", &TransformSpecType::image_size)
-      .def("grid_size", &TransformSpecType::grid_size)
-      .def("step_size", &TransformSpecType::step_size)
-      .def("grid_centre", &TransformSpecType::grid_centre)
-      /* .def("s1_map", &transform_spec_s1_map<FloatType> ) */
-      ;
 
     class_<ForwardType>(name, no_init)
-      .def(init<const TransformSpec<FloatType>&,
+      .def(init<const TransformSpec&,
                 const vec3<double>&, double, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
-      .def(init<const TransformSpec<FloatType>&,
+      .def(init<const TransformSpec&,
                 const vec3<double>&, double, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
-      .def(init<const TransformSpec<FloatType>&,
+      .def(init<const TransformSpec&,
                 const CoordinateSystem&, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< bool, af::c_grid<3> >& >())
-      .def(init<const TransformSpec<FloatType>&,
+      .def(init<const TransformSpec&,
                 const CoordinateSystem&, int6, std::size_t,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
                 const af::const_ref< FloatType, af::c_grid<3> >&,
@@ -186,6 +175,25 @@ namespace boost_python {
           arg("frames"),
           arg("phi"),
           arg("zeta")));
+
+    class_<TransformSpec>("TransformSpec", no_init)
+      .def(init<const Beam&,
+                const Detector&,
+                const Goniometer&,
+                const Scan&,
+                double,
+                double,
+                double,
+                std::size_t>())
+      .def("__init__", make_constructor(
+        &make_transform_spec_from_experiment))
+      .def("sigma_b", &TransformSpec::sigma_b)
+      .def("sigma_m", &TransformSpec::sigma_m)
+      .def("n_sigma", &TransformSpec::n_sigma)
+      .def("grid_size", &TransformSpec::grid_size)
+      .def("step_size", &TransformSpec::step_size)
+      .def("grid_centre", &TransformSpec::grid_centre)
+      ;
 
     forward_wrapper<double>("Forward");
   }
