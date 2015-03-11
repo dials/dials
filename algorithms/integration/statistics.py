@@ -30,6 +30,7 @@ class ImageSummary(object):
 
   def __init__(self, data, experiment):
     ''' Compute stats. '''
+    from dials.array_family import flex
 
     # Check some table columns
     assert("flags" in data)
@@ -46,6 +47,15 @@ class ImageSummary(object):
 
     # Get arrays for each frame
     data = data.select(data.get_flags(data.flags.integrated, all=False))
+    data = data.select(flex.std_string(['bbox',
+                        'background.mean',
+                        'partiality',
+                        'intensity.sum.value',
+                        'intensity.sum.variance',
+                        'intensity.prf.value',
+                        'intensity.prf.variance',
+                        'profile.correlation',
+                        'flags']))
     data.split_partials()
     frames = data['bbox'].parts()[4]
 
