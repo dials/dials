@@ -587,8 +587,153 @@ namespace transform {
 
 
   class TransformReverseNoModel {
+  public:
 
+    TransformReverseNoModel() {}
 
+    TransformReverseNoModel(
+        const TransformSpec &spec,
+        const CoordinateSystem &cs,
+        int6 bbox,
+        std::size_t panel,
+        const af::const_ref< double, af::c_grid<3> > &data) {
+      init(spec, cs, bbox, panel, data);
+    }
+
+    /** @returns The transformed profile */
+    af::versa< double, af::c_grid<3> > profile() const {
+      return profile_;
+    }
+
+  private:
+
+    void init(
+        const TransformSpec &spec,
+        const CoordinateSystem &cs,
+        int6 bbox,
+        std::size_t panel,
+        const af::const_ref< double, af::c_grid<3> > &data) {
+
+      DIALS_ASSERT(data.accessor().all_eq(spec.grid_size()));
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+
+      // Create the profile array
+      std::size_t xs = bbox[1] - bbox[0];
+      std::size_t ys = bbox[3] - bbox[2];
+      std::size_t zs = bbox[5] - bbox[4];
+      profile_ = af::versa< double, af::c_grid<3> >(
+          af::c_grid<3>(zs, ys, xs), 0);
+
+      // Compute the deltas
+      double delta_b = spec.sigma_b() * spec.n_sigma();
+      double delta_m = spec.sigma_m() * spec.n_sigma();
+
+      // Compute the grid step and offset
+      double xoff = -delta_b;
+      double yoff = -delta_b;
+      double zoff = -delta_m;
+      double xstep = (2.0 * delta_b) / data.accessor()[2];
+      double ystep = (2.0 * delta_b) / data.accessor()[1];
+      double zstep = (2.0 * delta_m) / data.accessor()[0];
+
+      // Get the panel
+      const Panel &dp = spec.detector()[panel];
+
+      // Compute the detector coordinates of each point on the grid
+      af::versa< vec2<double>, af::c_grid<2> > xy(af::c_grid<2>(
+            data.accessor()[1] + 1,
+            data.accessor()[2] + 1));
+      for (std::size_t j = 0; j <= data.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i <= data.accessor()[2]; ++i) {
+          double c1 = xoff + i * xstep;
+          double c2 = yoff + j * ystep;
+          vec3<double> s1p = cs.to_beam_vector(vec2<double>(c1,c2));
+          vec2<double> xyp = dp.get_ray_intersection_px(s1p);
+          xyp[0] -= bbox[0];
+          xyp[1] -= bbox[2];
+          xy(j,i) = xyp;
+        }
+      }
+
+      // Compute the frame numbers of each slice on the grid
+      af::shared<double> z(data.accessor()[0]+1);
+      for (std::size_t k = 0; k <= data.accessor()[0]; ++k) {
+        double c3 = zoff + k * zstep;
+        double phip = cs.to_rotation_angle_fast(c3);
+        z[k] = spec.scan().get_array_index_from_angle(phip) - bbox[4];
+      }
+
+      // Get a list of pairs of overlapping polygons
+      for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+        for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+          vec2<double> xy00 = xy(j,i);
+          vec2<double> xy01 = xy(j,i+1);
+          vec2<double> xy11 = xy(j+1,i+1);
+          vec2<double> xy10 = xy(j+1,i);
+          int x0 = std::floor(min4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int x1 = std::ceil (max4(xy00[0], xy01[0], xy11[0], xy10[0]));
+          int y0 = std::floor(min4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          int y1 = std::ceil (max4(xy00[1], xy01[1], xy11[1], xy10[1]));
+          DIALS_ASSERT(x0 < x1);
+          DIALS_ASSERT(y0 < y1);
+          DIALS_ASSERT(x0 >= 0 && x1 <= xs);
+          DIALS_ASSERT(y0 >= 0 && y1 <= ys);
+          vert4 p1(xy00, xy01, xy11, xy10);
+          double p1_area = simple_area(p1);
+          DIALS_ASSERT(p1_area > 0);
+          reverse_quad_inplace_if_backward(p1);
+          for (std::size_t jj = y0; jj < y1; ++jj) {
+            for (std::size_t ii = x0; ii < x1; ++ii) {
+              vec2<double> xy200(ii,jj);
+              vec2<double> xy201(ii,jj+1);
+              vec2<double> xy211(ii+1,jj+1);
+              vec2<double> xy210(ii+1,jj);
+              vert4 p2(xy200, xy201, xy211, xy210);
+              reverse_quad_inplace_if_backward(p2);
+              vert8 p3 = quad_with_convex_quad(p1, p2);
+              double area = simple_area(p3);
+              area /= p1_area;
+              const double EPS = 1e-7;
+              if (area < 0.0) {
+                DIALS_ASSERT(area > -EPS);
+                area = 0.0;
+              }
+              if (area > 1.0) {
+                DIALS_ASSERT(area <= (1.0 + EPS));
+                area = 1.0;
+              }
+              DIALS_ASSERT(0.0 <= area && area <= 1.0);
+              if (area > 0) {
+                for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
+                  double f00 = std::min(z[k], z[k+1]);
+                  double f01 = std::max(z[k], z[k+1]);
+                  DIALS_ASSERT(f01 > f00);
+                  double fr = f01 - f00;
+                  int z0 = std::max((int)0, (int)std::floor(f00));
+                  int z1 = std::min((int)zs, (int)std::ceil(f01));
+                  DIALS_ASSERT(z0 >= 0 && z1 <= (int)zs);
+                  for (int kk = z0; kk < z1; ++kk) {
+                    std::size_t f10 = kk;
+                    std::size_t f11 = kk+1;
+                    double f0 = std::max(f00, (double)f10);
+                    double f1 = std::min(f01, (double)f11);
+                    double fraction = f1 > f0 ? (f1 - f0) / fr : 0.0;
+                    DIALS_ASSERT(fraction <= 1.0);
+                    DIALS_ASSERT(fraction >= 0.0);
+                    double value = fraction * area * data(k,j,i);
+                    profile_(kk,jj,ii) += value;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    af::versa<double, af::c_grid<3> > profile_;
   };
 
 }}}}} // namespace dials::algorithms::profile_model::gaussian_rs::transform

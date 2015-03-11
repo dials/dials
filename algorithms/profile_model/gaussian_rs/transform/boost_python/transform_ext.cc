@@ -107,6 +107,16 @@ namespace boost_python {
       ;
   }
 
+  void transform_reverse_no_model_wrapper(const char *name) {
+
+    class_<TransformReverseNoModel>(name, no_init)
+      .def(init<const TransformSpec&,
+                const CoordinateSystem&, int6, std::size_t,
+                const af::const_ref< double, af::c_grid<3> >&>())
+      .def("profile", &TransformReverseNoModel::profile)
+      ;
+  }
+
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_transform_ext)
   {
     af::versa< vec3<double>, af::c_grid<2> > (*overload1)(const Panel&,
