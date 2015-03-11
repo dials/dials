@@ -293,7 +293,7 @@ namespace transform {
           spec.scan().get_oscillation()[1],
           spec.sigma_m(),
           spec.n_sigma(),
-          spec.grid_size()[2]);
+          spec.grid_size()[2] / 2);
       zfraction_arr_ = map_frames(zrange, cs.phi(), cs.zeta());
     }
 
