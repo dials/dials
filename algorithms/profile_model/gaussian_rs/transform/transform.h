@@ -400,6 +400,9 @@ namespace transform {
   };
 
 
+  /**
+   * A class to do a forward transform with no phi model
+   */
   class TransformForwardNoModel {
   public:
 
@@ -586,6 +589,9 @@ namespace transform {
   };
 
 
+  /**
+   * A class to do a reverse transform with no phi model
+   */
   class TransformReverseNoModel {
   public:
 
