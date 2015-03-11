@@ -53,10 +53,15 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
         .expert_level = 1
 
       min_local = 2
-        .help = "The number of pixels in the local area of each pixel needed"
-                "to do the thresholding. Setting to 0 or less means that all"
-                "the pixels under the kernel are needed. The minimum allowable"
-                "number is 2"
+        .help = "The minimum number of pixels under the image processing kernel"
+                "that are need to do the thresholding operation. Setting the"
+                "value between 2 and the total number of pixels under the"
+                "kernel will force the algorithm to use that number as the"
+                "minimum. If the value is less than or equal to zero, then"
+                "the algorithm will use all pixels under the kernel. In"
+                "effect this will add a border of pixels which are always"
+                "classed as background around the edge of the image and around"
+                "any masked out pixels."
         .type = int
         .expert_level = 1
 
