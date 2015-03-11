@@ -512,7 +512,6 @@ namespace transform {
         double c3 = zoff + k * zstep;
         double phip = cs.to_rotation_angle_fast(c3);
         z[k] = spec.scan().get_array_index_from_angle(phip) - bbox[4];
-        DIALS_ASSERT(z[k] >= 0 && z[k] <= zs);
       }
 
       // Get a list of pairs of overlapping polygons
@@ -528,8 +527,10 @@ namespace transform {
           int y1 = std::ceil (max4(xy00[1], xy01[1], xy11[1], xy10[1]));
           DIALS_ASSERT(x0 < x1);
           DIALS_ASSERT(y0 < y1);
-          DIALS_ASSERT(x0 >= 0 && x1 <= xs);
-          DIALS_ASSERT(y0 >= 0 && y1 <= ys);
+          if (x0 <  0) x0 = 0;
+          if (y0 <  0) y0 = 0;
+          if (x1 > xs) x1 = xs;
+          if (y1 > ys) y1 = ys;
           vert4 p1(xy00, xy01, xy11, xy10);
           reverse_quad_inplace_if_backward(p1);
           for (std::size_t jj = y0; jj < y1; ++jj) {
@@ -684,8 +685,10 @@ namespace transform {
           int y1 = std::ceil (max4(xy00[1], xy01[1], xy11[1], xy10[1]));
           DIALS_ASSERT(x0 < x1);
           DIALS_ASSERT(y0 < y1);
-          DIALS_ASSERT(x0 >= 0 && x1 <= xs);
-          DIALS_ASSERT(y0 >= 0 && y1 <= ys);
+          if (x0 <  0) x0 = 0;
+          if (y0 <  0) y0 = 0;
+          if (x1 > xs) x1 = xs;
+          if (y1 > ys) y1 = ys;
           vert4 p1(xy00, xy01, xy11, xy10);
           double p1_area = simple_area(p1);
           DIALS_ASSERT(p1_area > 0);
