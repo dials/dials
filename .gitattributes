@@ -253,6 +253,7 @@ algorithms/spot_prediction/stills_ray_predictor.h -text
 algorithms/statistics/SConscript -text
 algorithms/statistics/__init__.py -text
 algorithms/statistics/boost_python/statistics_ext.cc -text
+algorithms/statistics/correlation.h -text
 algorithms/statistics/kolmogorov_smirnov_one_sided_distribution.h -text
 algorithms/statistics/kolmogorov_smirnov_test.h -text
 algorithms/statistics/kolmogorov_smirnov_two_sided_distribution.h -text

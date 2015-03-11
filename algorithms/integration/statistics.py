@@ -290,9 +290,24 @@ class WholeSummary(object):
       self.num_prf = flags_prf.count(True)
       self.cor_prf = flex.mean(data['profile.correlation'])
     except Exception:
-        self.ios_prf = 0.0
-        self.num_prf = 0
-        self.cor_prf = 0
+      self.ios_prf = 0.0
+      self.num_prf = 0
+      self.cor_prf = 0
+
+    try:
+      from dials.algorithms.statistics import pearson_correlation_coefficient
+      from dials.algorithms.statistics import spearman_correlation_coefficient
+      flags_sum = data.get_flags(data.flags.integrated_sum)
+      flags_prf = data.get_flags(data.flags.integrated_prf)
+      flags = flags_sum & flags_prf
+      assert(flags.count(True) > 0)
+      I_sum = data['intensity.sum.value'].select(flags)
+      I_prf = data['intensity.prf.value'].select(flags)
+      self.cc_pearson = pearson_correlation_coefficient(I_sum, I_prf)
+      self.cc_spearman = spearman_correlation_coefficient(I_sum, I_prf)
+    except Exception, e:
+      self.cc_pearson = 0.0
+      self.cc_spearman = 0.0
 
   def table(self):
     ''' Produce a table of results. '''
@@ -306,7 +321,9 @@ class WholeSummary(object):
             ["<Ibg>",                                 '%.2f' % self.i_bg],
             ["<I/sigI> (summation)",                  '%.2f' % self.ios_sum],
             ["<I/sigI> (profile fitting)",            '%.2f' % self.ios_prf],
-            ["<CC prf>",                              '%.2f' % self.cor_prf]]
+            ["<CC prf>",                              '%.2f' % self.cor_prf],
+            ["CC_pearson sum/prf",                    '%.2f' % self.cc_pearson],
+            ["CC_spearman sum/prf",                   '%.2f' % self.cc_spearman]]
     return table(rows, justify='left', prefix=' ')
 
 
