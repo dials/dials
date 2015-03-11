@@ -20,6 +20,9 @@ if have_dials_regression:
   dials_regression = libtbx.env.find_in_repositories(
     relative_path="dials_regression",
     test=os.path.isdir)
+else:
+  print 'SKIP: dials_regression not configured'
+  exit(0)
 
 
 def random_rotation(angle_min=0, angle_max=360):
