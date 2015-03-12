@@ -198,6 +198,12 @@ class InitializerRot(object):
       mask = powder_filter(reflections['d'])
       reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
+    # Find any overlaps
+    overlaps = reflections.find_overlaps(self.experiments)
+
+    # Return reflections and overlaps
+    return reflections, overlaps
+
 
 class InitializerStills(object):
   '''
@@ -239,6 +245,12 @@ class InitializerStills(object):
     if powder_filter is not None:
       mask = powder_filter(reflections['d'])
       reflections.set_flags(mask, reflections.flags.in_powder_ring)
+
+    # Find any overlaps
+    overlaps = reflections.find_overlaps(self.experiments)
+
+    # Return reflections and overlaps
+    return reflections, overlaps
 
 
 class FinalizerRot(object):
@@ -571,7 +583,7 @@ class Integrator(object):
       self.experiments,
       self.profile_model,
       self.params)
-    initialize(self.reflections)
+    self.reflections, self.overlaps = initialize(self.reflections)
 
     # Check if we want to do some profile fitting
     if (self.params.integration.profile_fitting and

@@ -18,7 +18,7 @@ class Test(object):
     self.experiments = ExperimentListFactory.from_json_file(path)
 
   def run(self):
-    
+
     from dials.array_family import flex
     from math import acos, atan2, sqrt, atan, pi, sin, cos
     from scitbx import  matrix
@@ -39,7 +39,7 @@ class Test(object):
         print x
         X.append(x / (1 - z))
         Y.append(y / (1 - z))
-        
+
     from matplotlib import pylab
     pylab.scatter(X, Y)
     pylab.show()
@@ -49,7 +49,7 @@ class Test(object):
     # A  = self.experiments[0].crystal.get_A()
     # dphi = self.experiments[0].scan.get_oscillation_range()
     # s1_list = []
-    
+
     # zaxis = matrix.col((0, 0, -1))
     # angle = s0.normalize().angle(zaxis, deg=False)
     # axis = s0.normalize().cross(zaxis).normalize()
