@@ -261,7 +261,7 @@ class indexer_fft3d(indexer_base):
     vectors = unique_vectors
 
     # choose the shortest vectors
-    vectors = vectors[:30]
+    #vectors = vectors[:30]
 
     self.candidate_basis_vectors = vectors
 
