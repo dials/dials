@@ -672,6 +672,7 @@ class Integrator(object):
       self.experiments,
       self.profile_model,
       self.reflections,
+      self.overlaps,
       self.params.integration)
     processor.executor = executor
 
