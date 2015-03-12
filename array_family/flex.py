@@ -548,7 +548,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       reference_selector(self)
     self.compute_fitted_intensity(experiments, profile_model)
 
-  def compute_mask(self, experiments, profile_model):
+  def compute_mask(self, experiments, profile_model, overlaps=None):
     '''
     Apply a mask to the shoeboxes.
 
@@ -558,7 +558,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from dials.algorithms.shoebox import Masker3DProfile
     mask_profiles = Masker3DProfile(experiments, profile_model)
-    mask_profiles(self, None)
+    mask_profiles(self, overlaps)
 
   def extract_shoeboxes(self, imageset, mask=None, nthreads=1, verbose=False):
     '''

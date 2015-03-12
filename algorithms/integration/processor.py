@@ -705,7 +705,7 @@ class ManagerRot(Manager):
   ''' Specialize the manager for oscillation data using the oscillation pre and
   post processors. '''
 
-  def __init__(self, experiments, profile_model, reflections, overlaps, params):
+  def __init__(self, experiments, profile_model, reflections, params):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
     # Ensure we have the correct type of data
@@ -725,7 +725,7 @@ class ManagerStills(Manager):
   ''' Specialize the manager for stills data using the stills pre and post
   processors. '''
 
-  def __init__(self, experiments, profile_model, reflections, overlaps, params):
+  def __init__(self, experiments, profile_model, reflections, params):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
     # Ensure we have the correct type of data
@@ -744,7 +744,7 @@ class ManagerStills(Manager):
 class Processor3D(Processor):
   ''' Top level processor for 3D processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, overlaps, params):
+  def __init__(self, experiments, profile_model, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
@@ -752,7 +752,7 @@ class Processor3D(Processor):
     params.shoebox.flatten = False
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections, overlaps, params)
+    manager = ManagerRot(experiments, profile_model, reflections, params)
 
     # Initialise the processor
     super(Processor3D, self).__init__(manager, params)
@@ -761,7 +761,7 @@ class Processor3D(Processor):
 class ProcessorFlat3D(Processor):
   ''' Top level processor for flat 2D processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, overlaps, params):
+  def __init__(self, experiments, profile_model, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
@@ -769,7 +769,7 @@ class ProcessorFlat3D(Processor):
     params.shoebox.partials = False
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections, overlaps, params)
+    manager = ManagerRot(experiments, profile_model, reflections, params)
 
     # Initialise the processor
     super(ProcessorFlat3D, self).__init__(manager, params)
@@ -778,14 +778,14 @@ class ProcessorFlat3D(Processor):
 class Processor2D(Processor):
   ''' Top level processor for 2D processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, overlaps, params):
+  def __init__(self, experiments, profile_model, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
     params.shoebox.partials = True
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections, overlaps, params)
+    manager = ManagerRot(experiments, profile_model, reflections, params)
 
     # Initialise the processor
     super(Processor2D, self).__init__(manager, params)
@@ -794,7 +794,7 @@ class Processor2D(Processor):
 class ProcessorSingle2D(Processor):
   ''' Top level processor for still image processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, overlaps, params):
+  def __init__(self, experiments, profile_model, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some of the parameters
@@ -804,7 +804,7 @@ class ProcessorSingle2D(Processor):
     params.shoebox.flatten = False
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections, overlaps, params)
+    manager = ManagerRot(experiments, profile_model, reflections,  params)
 
     # Initialise the processor
     super(ProcessorSingle2D, self).__init__(manager, params)
@@ -813,7 +813,7 @@ class ProcessorSingle2D(Processor):
 class ProcessorStills(Processor):
   ''' Top level processor for still image processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, overlaps, params):
+  def __init__(self, experiments, profile_model, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
@@ -823,7 +823,7 @@ class ProcessorStills(Processor):
     params.shoebox.flatten = False
 
     # Create the processing manager
-    manager = ManagerStills(experiments, profile_model, reflections, overlaps, params)
+    manager = ManagerStills(experiments, profile_model, reflections, params)
 
     # Initialise the processor
     super(ProcessorStills, self).__init__(manager, params)
