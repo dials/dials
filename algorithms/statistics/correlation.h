@@ -13,7 +13,7 @@
 #define DIALS_ALGORITHMS_STATISTICS_CORRELATION_H
 
 #include <algorithm>
-#include <error.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
