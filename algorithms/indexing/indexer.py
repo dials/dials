@@ -45,6 +45,9 @@ indexing {
   max_cell = Auto
     .type = float(value_min=0)
     .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
+  max_cell_multiplier = 1.5
+    .type = float(value_min=0)
+    .help = "Multiply the estimated maximum basis vector length by this value."
   nearest_neighbor_percentile = 0.05
     .type = float(value_min=0)
     .help = "Percentile of NN histogram to use for max cell determination."
@@ -729,7 +732,7 @@ class indexer_base(object):
     if self.params.max_cell is libtbx.Auto:
       if self.params.known_symmetry.unit_cell is not None:
         uc_params = self.target_symmetry_primitive.unit_cell().parameters()
-        self.params.max_cell = 1.5 * max(uc_params[:3])
+        self.params.max_cell = self.params.max_cell_multiplier * max(uc_params[:3])
       else:
         # The nearest neighbour analysis gets fooled when the same part of
         # reciprocal space has been measured twice as this introduced small
@@ -741,6 +744,7 @@ class indexer_base(object):
         phi_deg = self.reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
         if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
           NN = neighbor_analysis(self.reflections['rlp'],
+                                 tolerance=self.params.max_cell_multiplier,
                                  percentile=self.params.nearest_neighbor_percentile)
           self.params.max_cell = NN.max_cell
         else:
@@ -757,7 +761,8 @@ class indexer_base(object):
               continue
             try:
               NN = neighbor_analysis(
-                rlp, percentile=self.params.nearest_neighbor_percentile)
+                rlp, tolerance=self.params.max_cell_multiplier,
+                percentile=self.params.nearest_neighbor_percentile)
               max_cell.append(NN.max_cell)
             except AssertionError:
               continue
