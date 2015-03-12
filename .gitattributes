@@ -158,6 +158,7 @@ algorithms/profile_model/modeller/modeller_interface.h -text
 algorithms/profile_model/modeller/multi_experiment_modeller.h -text
 algorithms/profile_model/modeller/sampler_interface.h -text
 algorithms/profile_model/modeller/single_sampler.h -text
+algorithms/profile_model/modeller/stereographic_projection_sampler.h -text
 algorithms/refinement/README -text
 algorithms/refinement/SConscript -text
 algorithms/refinement/__init__.py -text
@@ -885,6 +886,7 @@ test/algorithms/integration/profile/tst_multi_experiment_modeller.py -text
 test/algorithms/integration/profile/tst_profile_fitting.py -text
 test/algorithms/integration/profile/tst_profile_helpers.py -text
 test/algorithms/integration/profile/tst_single_sampler.py -text
+test/algorithms/integration/profile/tst_stereographic_projection_sampler.py -text
 test/algorithms/integration/test_integration_summation_2d.py -text
 test/algorithms/integration/tst_corrections.py -text
 test/algorithms/integration/tst_interface.py -text
