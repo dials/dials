@@ -130,7 +130,7 @@ def exercise_1():
                 "debug=True"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.05, 0.04, 0.0003)
+  expected_rmsds = (0.05, 0.04, 0.00032)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,

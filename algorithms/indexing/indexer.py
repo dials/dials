@@ -45,7 +45,7 @@ indexing {
   max_cell = Auto
     .type = float(value_min=0)
     .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
-  max_cell_multiplier = 1.5
+  max_cell_multiplier = 1.3
     .type = float(value_min=0)
     .help = "Multiply the estimated maximum basis vector length by this value."
   nearest_neighbor_percentile = 0.05
