@@ -52,6 +52,17 @@ class SpotXDSImporter(object):
       table = table.select(flags)
     Command.end('Removed invalid reflections, %d remaining' % len(table))
 
+    # Fill empty standard columns
+    if params.add_standard_columns:
+      Command.start('Adding standard columns')
+      rt = flex.reflection_table.empty_standard(len(table))
+      rt.update(table)
+      table = rt
+      # set variances to unity
+      table['xyzobs.mm.variance'] = flex.vec3_double(len(table), (1,1,1))
+      table['xyzobs.px.variance'] = flex.vec3_double(len(table), (1,1,1))
+      Command.end('Standard columns added')
+
     # Output the table to pickle file
     if params.output.filename is None:
       params.output.filename = 'spot_xds.pickle'
@@ -280,6 +291,11 @@ class Script(object):
       remove_invalid = False
         .type = bool
         .help = "Remove non-index reflections (if miller indices are present)"
+
+      add_standard_columns = False
+        .type = bool
+        .help = "Add empty standard columns to the reflections. Note columns"
+                "for centroid variances are set to contain 1s, not 0s"
     ''')
 
     # The option parser
