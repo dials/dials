@@ -192,6 +192,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("job", &ReflectionManager::job,
           return_internal_reference<>())
       .def("data", &ReflectionManager::data)
+      .def("num_reflections", &ReflectionManager::num_reflections)
       ;
 
     class_<ExecutorWrapper, boost::noncopyable>("Executor")

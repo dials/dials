@@ -560,6 +560,14 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * @returns The number of reflections in a job
+     */
+    std::size_t num_reflections(std::size_t index) const {
+      DIALS_ASSERT(index < finished_.size());
+      return lookup_.indices(index).size();
+    }
+
+    /**
      * @returns The reflections for a particular block.
      */
     af::reflection_table split(std::size_t index) {

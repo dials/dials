@@ -671,14 +671,25 @@ class Manager(object):
 
     # Compute the task table
     if self.experiments.all_stills():
-      rows = [["#", "Group", "Frame From", "Frame To"]]
+      rows = [["#",
+               "Group",
+               "Frame From",
+               "Frame To",
+               "# Reflections"]]
       for i in range(len(self)):
         job = self.manager.job(i)
         group = job.index()
         f0, f1 = job.frames()
-        rows.append([str(i), str(group), str(f0), str(f1)])
+        n = self.manager.num_reflections(i)
+        rows.append([str(i), str(group), str(f0), str(f1), str(n)])
     elif self.experiments.all_sweeps():
-      rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
+      rows = [["#",
+               "Group",
+               "Frame From",
+               "Frame To",
+               "Angle From",
+               "Angle To",
+               "# Reflections"]]
       for i in range(len(self)):
         job = self.manager.job(i)
         group = job.index()
@@ -687,7 +698,8 @@ class Manager(object):
         scan = self.experiments[expr[0]].scan
         p0 = scan.get_angle_from_array_index(f0)
         p1 = scan.get_angle_from_array_index(f1)
-        rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
+        n = self.manager.num_reflections(i)
+        rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1), str(n)])
     else:
       raise RuntimeError('Experiments must be all sweeps or all stills')
 
