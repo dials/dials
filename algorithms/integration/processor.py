@@ -209,9 +209,8 @@ class Processor(object):
         preserve_exception_message=True)
       task_results, output = zip(*task_results)
     else:
-      task_results = [task() for task in self.manager.tasks()]
-      for result in task_results:
-        self.manager.accumulate(result)
+      for task in self.manager.tasks():
+        self.manager.accumulate(task())
     self.manager.finalize()
     end_time = time()
     self.manager.time.user_time = end_time - start_time
