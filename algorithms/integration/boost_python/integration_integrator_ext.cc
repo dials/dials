@@ -137,6 +137,85 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   /**
+   * Compute the memory for each job
+   */
+  af::shared<std::size_t> job_list_shoebox_memory(
+      const JobList &self,
+      af::reflection_table data,
+      bool flatten) {
+
+    // Check the input
+    DIALS_ASSERT(data.is_consistent());
+    DIALS_ASSERT(data.contains("bbox"));
+    DIALS_ASSERT(data.contains("id"));
+    DIALS_ASSERT(data.contains("flags"));
+    DIALS_ASSERT(self.size() > 0);
+    DIALS_ASSERT(data.size() > 0);
+
+    // Get the bounding boxes
+    af::const_ref<int6> bbox = data["bbox"];
+    af::const_ref<std::size_t> id = data["id"];
+    af::const_ref<std::size_t> flags = data["flags"];
+
+    // Check all the reflections are in range
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+      DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+      DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+    }
+
+    // Create the lookup
+    ReflectionLookup lookup(id, flags, bbox, self);
+
+    // Compute the memory for each job
+    af::shared<std::size_t> result(lookup.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      int frame0 = lookup.job(i).frames()[0];
+      int frame1 = lookup.job(i).frames()[1];
+      DIALS_ASSERT(frame1 > frame0);
+      af::const_ref<std::size_t> indices = lookup.indices(i);
+      af::shared<std::size_t> memory_to_alloc(frame1 - frame0, 0);
+      af::shared<std::size_t> memory_to_free(frame1 - frame0, 0);
+      for (std::size_t j = 0; j < indices.size(); ++j) {
+        DIALS_ASSERT(indices[j] < bbox.size());
+        int6 b = bbox[indices[j]];
+        DIALS_ASSERT(b[4] >= frame0);
+        DIALS_ASSERT(b[5] <= frame1);
+        DIALS_ASSERT(b[5] > b[4]);
+        DIALS_ASSERT(b[3] > b[2]);
+        DIALS_ASSERT(b[1] > b[0]);
+        std::size_t xsize = b[1] - b[0];
+        std::size_t ysize = b[3] - b[2];
+        std::size_t zsize = b[5] - b[4];
+        std::size_t size = xsize * ysize;
+        if (!flatten) {
+          size *= zsize;
+        }
+        std::size_t nbytes = size * (
+            sizeof(Shoebox<>::float_type) +
+            sizeof(Shoebox<>::float_type) +
+            sizeof(int));
+        memory_to_alloc[b[4] - frame0] += nbytes;
+        memory_to_free[b[5] - frame0 - 1] += nbytes;
+      }
+      std::size_t max_memory_usage = 0;
+      std::size_t cur_memory_usage = 0;
+      for (int frame = frame0; frame < frame1; ++frame) {
+        std::size_t j = frame - frame0;
+        cur_memory_usage += memory_to_alloc[j];
+        DIALS_ASSERT(memory_to_free[j] <= cur_memory_usage);
+        max_memory_usage = std::max(max_memory_usage, cur_memory_usage);
+        cur_memory_usage -= memory_to_free[j];
+      }
+      DIALS_ASSERT(cur_memory_usage == 0);
+      result[i] = max_memory_usage;
+    }
+
+    // Return the result
+    return result;
+  }
+
+  /**
    * Wrapper class to allow python function to inherit
    */
   struct ExecutorWrapper : Executor, wrapper<Executor> {
@@ -178,6 +257,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__getitem__", &JobList::operator[],
           return_internal_reference<>())
       .def("split", &job_list_split)
+      .def("shoebox_memory", &job_list_shoebox_memory)
       ;
 
     class_<ReflectionManager>("ReflectionManager", no_init)

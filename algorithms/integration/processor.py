@@ -46,7 +46,7 @@ def generate_phil_scope():
         .type = choice
         .help = "The units of the block size"
 
-      threshold = 0.999
+      threshold = 0.99
         .type = float(value_min=0.0, value_max=1.0)
         .help = "For block size auto the block size is calculated by sorting"
                 "reflections by the number of frames they cover and then"
@@ -125,7 +125,7 @@ class TimingInfo(object):
 class Processor(object):
   ''' Processor interface class. '''
 
-  def __init__(self, manager, params):
+  def __init__(self, manager):
     '''
     Initialise the processor.
 
@@ -138,11 +138,6 @@ class Processor(object):
 
     '''
     self.manager = manager
-    self.nthreads = params.mp.nthreads
-    self.nproc = params.mp.nproc
-    self.mp_method = params.mp.method
-    assert self.nthreads > 0, "Number of threads must be > 0"
-    assert self.nproc > 0,    "Number of processors must be > 0"
 
   @property
   def executor(self):
@@ -176,15 +171,16 @@ class Processor(object):
     from logging import info
 
     start_time = time()
-    job.nthreads = self.nthreads
     self.manager.initialize()
+    mp_method = self.manager.mp_method
+    mp_nproc = min(len(self.manager), self.manager.mp_nproc)
+    mp_nthreads = self.manager.mp_nthreads
+    assert mp_nproc > 0, "Invalid number of processors"
+    job.nthreads = mp_nthreads
     info(self.manager.summary())
-    num_proc = len(self.manager)
-    if self.nproc > 0:
-      num_proc = min(num_proc, self.nproc)
     info(' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
-      self.mp_method, num_proc, self.nthreads))
-    if num_proc > 1:
+      mp_method, mp_nproc, mp_nthreads))
+    if mp_nproc > 1:
       def process_output(result):
         import logging
         for message in result[1]:
@@ -204,9 +200,9 @@ class Processor(object):
       easy_mp.parallel_map(
         func=execute_task,
         iterable=list(self.manager.tasks()),
-        processes=num_proc,
+        processes=mp_nproc,
         callback=process_output,
-        method=self.mp_method,
+        method=mp_method,
         preserve_order=True,
         preserve_exception_message=True)
     else:
@@ -446,11 +442,13 @@ class Manager(object):
     self.block_size_force = params.block.force
     self.save_shoeboxes = params.debug.save_shoeboxes
 
-    # Set the memory usage per processor
-    if (params.mp.method == 'multiprocessing' and params.mp.nproc > 1):
-      self.max_memory_usage = params.block.max_memory_usage / params.mp.nproc
-    else:
-      self.max_memory_usage = params.block.max_memory_usage
+    # Save some multiprocessing stuff
+    self.mp_nproc = params.mp.nproc
+    self.mp_method = params.mp.method
+    self.mp_nthreads = params.mp.nthreads
+
+    # Initialise the max memory usage
+    self.max_memory_usage = params.block.max_memory_usage
 
     # Set the finalized flag to False
     self.finalized = False
@@ -471,10 +469,11 @@ class Manager(object):
     # Ensure the reflections contain bounding boxes
     assert "bbox" in self.reflections, "Reflections have no bbox"
 
-    # Compute the block size
+    # Compute the block size and processors
     self.compute_blocks()
     self.compute_jobs()
     self.split_reflections()
+    self.compute_processors()
 
     # Create the reflection manager
     self.manager = ReflectionManager(self.jobs, self.reflections)
@@ -662,6 +661,44 @@ class Manager(object):
       self.experiments,
       self.profile_model)
 
+  def compute_processors(self):
+    '''
+    Compute the number of processors
+
+    '''
+    from libtbx.introspection import machine_memory_info
+    from math import floor
+    from dials.array_family import flex
+
+    # Set the memory usage per processor
+    if (self.mp_method == 'multiprocessing' and self.mp_nproc > 1):
+
+      # Get the maximum shoebox memory
+      max_memory = flex.max(self.jobs.shoebox_memory(
+        self.reflections, self.flatten))
+
+      # Compute percentage of max available. The function is not portable to
+      # windows so need to add a check if the function fails. On windows no
+      # warning will be printed
+      memory_info = machine_memory_info()
+      total_memory = memory_info.memory_total()
+      if total_memory is not None:
+        assert total_memory > 0, "Your system appears to have no memory!"
+        limit_memory = total_memory * self.max_memory_usage
+        njobs = int(floor(limit_memory / max_memory))
+        if njobs < 1:
+          raise RuntimeError('''
+            No enough memory to run integration jobs. Possible solutions
+            include increasing the percentage of memory allowed for shoeboxes or
+            decreasing the block size.
+              Total system memory: %g GB
+              Limit shoebox memory: %g GB
+              Max shoebox memory: %g GB
+          ''' % (total_memory/1e9, limit_memory/1e9, max_memory/1e9))
+        else:
+          self.mp_nproc = min(self.mp_nproc, njobs)
+          self.max_memory_usage = self.max_memory_usage / self.mp_nproc
+
   def summary(self):
     '''
     Get a summary of the processing
@@ -774,7 +811,7 @@ class Processor3D(Processor):
     manager = ManagerRot(experiments, profile_model, reflections, params)
 
     # Initialise the processor
-    super(Processor3D, self).__init__(manager, params)
+    super(Processor3D, self).__init__(manager)
 
 
 class ProcessorFlat3D(Processor):
@@ -791,7 +828,7 @@ class ProcessorFlat3D(Processor):
     manager = ManagerRot(experiments, profile_model, reflections, params)
 
     # Initialise the processor
-    super(ProcessorFlat3D, self).__init__(manager, params)
+    super(ProcessorFlat3D, self).__init__(manager)
 
 
 class Processor2D(Processor):
@@ -807,7 +844,7 @@ class Processor2D(Processor):
     manager = ManagerRot(experiments, profile_model, reflections, params)
 
     # Initialise the processor
-    super(Processor2D, self).__init__(manager, params)
+    super(Processor2D, self).__init__(manager)
 
 
 class ProcessorSingle2D(Processor):
@@ -826,7 +863,7 @@ class ProcessorSingle2D(Processor):
     manager = ManagerRot(experiments, profile_model, reflections,  params)
 
     # Initialise the processor
-    super(ProcessorSingle2D, self).__init__(manager, params)
+    super(ProcessorSingle2D, self).__init__(manager)
 
 
 class ProcessorStills(Processor):
@@ -845,4 +882,4 @@ class ProcessorStills(Processor):
     manager = ManagerStills(experiments, profile_model, reflections, params)
 
     # Initialise the processor
-    super(ProcessorStills, self).__init__(manager, params)
+    super(ProcessorStills, self).__init__(manager)
