@@ -141,8 +141,8 @@ class Processor(object):
     self.nthreads = params.mp.nthreads
     self.nproc = params.mp.nproc
     self.mp_method = params.mp.method
-    assert(self.nthreads > 0)
-    assert(self.nproc > 0)
+    assert(self.nthreads > 0, "Number of threads must be > 0")
+    assert(self.nproc > 0,    "Number of processors must be > 0")
 
   @property
   def executor(self):
@@ -197,7 +197,7 @@ class Processor(object):
         log.config_simple_cached()
         result = task()
         handlers = logging.getLogger().handlers
-        assert(len(handlers) == 1)
+        assert(len(handlers) == 1, "Invalid number of logging handlers")
         return result, handlers[0].messages()
       task_results = easy_mp.parallel_map(
         func=execute_task,
@@ -265,7 +265,7 @@ class Task(object):
     :param executor: The executor class
 
     '''
-    assert(executor is not None)
+    assert(executor is not None, "No executor given")
     self.index = index
     self.job = job
     self.experiments = experiments
@@ -276,6 +276,8 @@ class Task(object):
     self.save_shoeboxes = save_shoeboxes
     self.max_memory_usage = max_memory_usage
     self.executor = executor
+    assert(self.max_memory_usage >  0.0, "Max memory % must be > 0")
+    assert(self.max_memory_usage <= 1.0, "Max memory % must be < 1")
 
   def __call__(self):
     '''
@@ -298,23 +300,26 @@ class Task(object):
 
     # Get the sub imageset
     imagesets = self.experiments.imagesets()
-    assert(len(imagesets) == 1)
+    assert(len(imagesets) == 1, "Task can only handle 1 imageset")
     imageset = imagesets[0]
     frame00, frame01 = self.job
     try:
       frame10, frame11 = imageset.get_array_range()
     except Exception:
       frame10, frame11 = (0, len(imageset))
-    assert(frame00 < frame01)
-    assert(frame10 < frame11)
-    assert(frame00 >= frame10)
-    assert(frame01 <= frame11)
-    index0 = frame00 - frame10
-    index1 = index0 + (frame01 - frame00)
-    assert(index0 < index1)
-    assert(index0 >= 0)
-    assert(index1 <= len(imageset))
-    imageset = imageset[index0:index1]
+    try:
+      assert(frame00 < frame01)
+      assert(frame10 < frame11)
+      assert(frame00 >= frame10)
+      assert(frame01 <= frame11)
+      index0 = frame00 - frame10
+      index1 = index0 + (frame01 - frame00)
+      assert(index0 < index1)
+      assert(index0 >= 0)
+      assert(index1 <= len(imageset))
+      imageset = imageset[index0:index1]
+    except Exception:
+      raise RuntimeError('Programmer Error: bad array range')
     try:
       frame0, frame1 = imageset.get_array_range()
     except Exception:
@@ -345,7 +350,7 @@ class Task(object):
     total_memory = memory_info.memory_total()
     sbox_memory = processor.compute_max_memory_usage()
     if total_memory is not None:
-      assert(total_memory > 0)
+      assert(total_memory > 0, "Your system appears to have no memory!")
       assert(self.max_memory_usage >  0.0)
       assert(self.max_memory_usage <= 1.0)
       limit_memory = total_memory * self.max_memory_usage
@@ -373,13 +378,13 @@ class Task(object):
       image = imageset.get_image(i)
       mask = imageset.get_mask(i)
       if self.mask is not None:
-        assert(len(mask) == len(self.mask))
+        assert(len(mask) == len(self.mask), "Mask/Image are incorrect size")
         mask = tuple(m1 & m2 for m1, m2 in zip(self.mask, mask))
       read_time += time() - st
       processor.next(make_image(image, mask), self.executor)
       del image
       del mask
-    assert(processor.finished())
+    assert(processor.finished(), "Data processor is not finished")
 
     # Optionally save the shoeboxes
     if self.save_shoeboxes:
@@ -463,7 +468,7 @@ class Manager(object):
     start_time = time()
 
     # Ensure the reflections contain bounding boxes
-    assert("bbox" in self.reflections)
+    assert("bbox" in self.reflections, "Reflections have no bbox")
 
     # Compute the block size
     self.compute_blocks()
@@ -484,9 +489,9 @@ class Manager(object):
     job = self.manager.job(index)
     frames = job.frames()
     expr_id = job.expr()
-    assert(expr_id[1] > expr_id[0])
-    assert(expr_id[0] >= 0)
-    assert(expr_id[1] <= len(self.experiments))
+    assert(expr_id[1] > expr_id[0], "Invalid experiment id")
+    assert(expr_id[0] >= 0, "Invalid experiment id")
+    assert(expr_id[1] <= len(self.experiments), "Invalid experiment id")
     expriments = self.experiments[expr_id[0]:expr_id[1]]
     profile_model = self.profile_model[expr_id[0]:expr_id[1]]
     reflections = self.manager.split(index)
@@ -530,7 +535,7 @@ class Manager(object):
     start_time = time()
 
     # Check manager is finished
-    assert(self.manager.finished())
+    assert(self.manager.finished(), "Manager is not finished")
 
     # Update the time and finalized flag
     self.time.finalize = time() - start_time
@@ -543,7 +548,7 @@ class Manager(object):
     :return: The result
 
     '''
-    assert(self.finalized == True)
+    assert(self.finalized == True, "Manager is not finalized")
     return self.manager.data(), self.data
 
   def finished(self):
@@ -577,8 +582,8 @@ class Manager(object):
           self.block_size_force == False):
         self.block_size = None
       else:
-        assert(self.block_size_threshold > 0)
-        assert(self.block_size_threshold <= 1.0)
+        assert(self.block_size_threshold > 0, "Threshold must be > 0")
+        assert(self.block_size_threshold <= 1.0, "Threshold must be < 1")
         nframes = sorted([b[5] - b[4] for b in self.reflections['bbox']])
         cutoff = int(self.block_size_threshold*len(nframes))
         block_size = nframes[cutoff] * 2
@@ -606,7 +611,7 @@ class Manager(object):
       imgs = expr.imageset
       array_range = (0, len(imgs))
       if scan is not None:
-        assert(len(imgs) == len(scan))
+        assert(len(imgs) == len(scan), "Invalid scan range")
         array_range = scan.get_array_range()
       if self.block_size is None:
         block_size_frames = array_range[1] - array_range[0]
@@ -621,7 +626,7 @@ class Manager(object):
       else:
         raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
       self.jobs.add((i0, i1), array_range, block_size_frames)
-    assert(len(self.jobs) > 0)
+    assert(len(self.jobs) > 0, "Invalid number of jobs")
 
   def split_reflections(self):
     '''
@@ -636,7 +641,7 @@ class Manager(object):
       num_full = len(self.reflections)
       self.reflections.split_partials()
       num_partial = len(self.reflections)
-      assert(num_partial >= num_full)
+      assert(num_partial >= num_full, "Invalid number of partials")
       if (num_partial > num_full):
         info(' Split %d reflections into %d partial reflections\n' % (
           num_full,
@@ -645,7 +650,7 @@ class Manager(object):
       num_full = len(self.reflections)
       self.jobs.split(self.reflections)
       num_partial = len(self.reflections)
-      assert(num_partial >= num_full)
+      assert(num_partial >= num_full, "Invalid number of partials")
       if (num_partial > num_full):
         num_split = num_partial - num_full
         info(' Split %d reflections overlapping job boundaries\n' % num_split)
