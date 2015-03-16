@@ -70,7 +70,7 @@ def generate_phil_scope():
     }
   ''', process_includes=True)
   main_scope = phil_scope.get_without_substitution("integration")
-  assert(len(main_scope) == 1)
+  assert len(main_scope) == 1
   main_scope = main_scope[0]
   main_scope.adopt_scope(BackgroundIface.phil_scope())
   main_scope.adopt_scope(CentroidIface.phil_scope())
@@ -92,8 +92,8 @@ def hist(data, width=80, symbol='#', prefix=''):
   '''
   from collections import defaultdict, Counter
   from math import log10, floor
-  assert(len(data) > 0, "Need > 0 reflections")
-  assert(width > 0, "Width should be > 0")
+  assert len(data) > 0, "Need > 0 reflections"
+  assert width > 0, "Width should be > 0"
   count = Counter(data)
   count = count.items()
   count.sort()
@@ -102,17 +102,17 @@ def hist(data, width=80, symbol='#', prefix=''):
   max_frame = max(frame)
   min_count = min(count)
   max_count = max(count)
-  assert(max_count > 0, "Max should be > 0")
-  assert(min_count >= 0, "Min should be >= 0")
+  assert max_count > 0, "Max should be > 0"
+  assert min_count >= 0, "Min should be >= 0"
   if max_frame == 0:
     num_frame_zeros = 1
   else:
     num_frame_zeros = int(floor(log10(max_frame))) + 1
   num_count_zeros = int(floor(log10(max_count))) + 1
-  assert(num_frame_zeros > 0, "Num should be > 0")
-  assert(num_count_zeros > 0, "Num should be > 0")
+  assert num_frame_zeros > 0, "Num should be > 0"
+  assert num_count_zeros > 0, "Num should be > 0"
   num_hist = width - (num_frame_zeros + num_count_zeros + 5) - len(prefix)
-  assert(num_hist > 0, "num_hist should be > 0")
+  assert num_hist > 0, "num_hist should be > 0"
   fmt = '%s%%-%dd [%%-%dd]: %%s' % (prefix, num_frame_zeros, num_count_zeros)
   scale = float(num_hist) / max_count
   return '\n'.join((
@@ -231,7 +231,7 @@ class InitializerStills(object):
 
     # Check the bounding boxes are all 1 frame in width
     z0, z1 = reflections['bbox'].parts()[4:6]
-    assert((z1 - z0).all_eq(1), "bbox is invalid")
+    assert (z1 - z0).all_eq(1), "bbox is invalid"
 
     # Filter the reflections by powder ring
     powder_filter = MultiPowderRingFilter.from_params(
@@ -615,10 +615,10 @@ class Integrator(object):
       #self.reflections.set_selected(selection, reference)
 
       # Finalize the profile model
-      assert(len(modeller_list) > 0, "No modellers")
+      assert len(modeller_list) > 0, "No modellers"
       modeller = None
       for index, mod in modeller_list.iteritems():
-        assert(mod is not None, "mod is none")
+        assert mod is not None, "mod is none"
         if modeller is None:
           modeller = mod
         else:
