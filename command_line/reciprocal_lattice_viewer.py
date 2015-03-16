@@ -23,6 +23,8 @@ master_phil = libtbx.phil.parse("""
     .type = bool
   show_beam_vector = False
     .type = bool
+  d_min = None
+    .type = float(value_min=0.0)
 """)
 
 def settings () :
@@ -139,6 +141,9 @@ class ReciprocalLatticeViewer(wx.Frame):
       self.reflections, self.detector, self.scan)
     indexer.indexer_base.map_centroids_to_reciprocal_space(
       reflections, self.detector, self.beam, goniometer)
+    if self.settings.d_min is not None:
+      d_spacings = 1/reflections['rlp'].norms()
+      reflections = reflections.select(d_spacings > self.settings.d_min)
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)
 
@@ -157,6 +162,19 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.GetParent().viewer.OnChar(event)
 
   def add_controls (self) :
+    # d_min control
+    from wx.lib.agw import floatspin
+    self.d_min_ctrl = floatspin.FloatSpin(parent=self, increment=0.05, digits=2)
+    self.d_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.d_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"High resolution:")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.d_min_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeResolution, self.d_min_ctrl)
+
     ctrls = self.create_controls(
       setting="show_rotation_axis",
       label="Show rotation axis")
@@ -183,6 +201,10 @@ class settings_window (wxtbx.utils.SettingsPanel) :
 
   def OnSetScale (self, event) :
     self.settings.scale = (self.scale_ctrl.GetValue() + 4) / 4
+    self.parent.update_settings()
+
+  def OnChangeResolution (self, event) :
+    self.settings.d_min = self.d_min_ctrl.GetValue()
     self.parent.update_settings()
 
 
@@ -217,8 +239,8 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     self.points_display_list = None
     #self.DrawGL()
     self._compute_minimum_covering_sphere()
-    if not self.GL_uninitialised:
-      self.fit_into_viewport()
+    #if not self.GL_uninitialised:
+      #self.fit_into_viewport()
     self.Refresh()
 
   def _compute_minimum_covering_sphere(self):
