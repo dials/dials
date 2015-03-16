@@ -592,15 +592,12 @@ class indexer_base(object):
         info("")
         self.indexed_reflections = (self.reflections['id'] > -1)
 
-        if self.params.debug:
-          sel = flex.bool(len(self.reflections), False)
-          lengths = 1/self.reflections['rlp'].norms()
-          isel = (lengths >= self.d_min).iselection()
-          sel.set_selected(isel, True)
-          sel.set_selected(self.reflections['id'] > -1, False)
-          self.unindexed_reflections = self.reflections.select(sel)
-          self.export_reflections(
-            self.unindexed_reflections, "unindexed.pickle")
+        sel = flex.bool(len(self.reflections), False)
+        lengths = 1/self.reflections['rlp'].norms()
+        isel = (lengths >= self.d_min).iselection()
+        sel.set_selected(isel, True)
+        sel.set_selected(self.reflections['id'] > -1, False)
+        self.unindexed_reflections = self.reflections.select(sel)
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error

@@ -142,6 +142,9 @@ def run(args):
     info("Saving refined reflections to %s" %params.output.reflections)
     idxr.export_reflections(
       refined_reflections, file_name=params.output.reflections)
+    info("Saving refined reflections to unindexed.pickle")
+    idxr.export_reflections(
+      idxr.unindexed_reflections, "unindexed.pickle")
 
   return
 
