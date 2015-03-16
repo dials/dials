@@ -265,7 +265,7 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     glEnd()
     glDisable(GL_LINE_STIPPLE)
 
-  def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.25):
+  def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
     super(MyGLWindow, self).rotate_view(
       x1, y1, x2, y2, shift_down=shift_down, scale=scale)
 
