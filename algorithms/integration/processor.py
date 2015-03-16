@@ -266,6 +266,9 @@ class Task(object):
 
     '''
     assert executor is not None, "No executor given"
+    assert len(reflections) > 0, "Zero reflections given"
+    assert max_memory_usage >  0.0, "Max memory % must be > 0"
+    assert max_memory_usage <= 1.0, "Max memory % must be < 1"
     self.index = index
     self.job = job
     self.experiments = experiments
@@ -276,8 +279,6 @@ class Task(object):
     self.save_shoeboxes = save_shoeboxes
     self.max_memory_usage = max_memory_usage
     self.executor = executor
-    assert self.max_memory_usage >  0.0, "Max memory % must be > 0"
-    assert self.max_memory_usage <= 1.0, "Max memory % must be < 1"
 
   def __call__(self):
     '''
@@ -495,6 +496,7 @@ class Manager(object):
     expriments = self.experiments[expr_id[0]:expr_id[1]]
     profile_model = self.profile_model[expr_id[0]:expr_id[1]]
     reflections = self.manager.split(index)
+    assert len(reflections) > 0, "No reflections in job %d" % index
     return Task(
       index=index,
       job=frames,
