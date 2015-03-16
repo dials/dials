@@ -190,6 +190,8 @@ class Processor(object):
         for message in result[1]:
           logging.log(message.levelno, message.msg)
         self.manager.accumulate(result[0])
+        result[0].reflections = None
+        result[0].data = None
       def execute_task(task):
         from cStringIO import StringIO
         from dials.util import log
@@ -199,7 +201,7 @@ class Processor(object):
         handlers = logging.getLogger().handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
         return result, handlers[0].messages()
-      task_results = easy_mp.parallel_map(
+      easy_mp.parallel_map(
         func=execute_task,
         iterable=list(self.manager.tasks()),
         processes=num_proc,
@@ -207,7 +209,6 @@ class Processor(object):
         method=self.mp_method,
         preserve_order=True,
         preserve_exception_message=True)
-      task_results, output = zip(*task_results)
     else:
       for task in self.manager.tasks():
         self.manager.accumulate(task())
