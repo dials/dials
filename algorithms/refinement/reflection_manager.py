@@ -285,19 +285,6 @@ class ReflectionManager(object):
 
     return
 
-  def _calculate_weights(self):
-    """set 'statistical weights', that is w(x) = 1/var(x)"""
-    # TODO Plug-in to allow different weighting schemes
-
-    weights = (self._reflections['xyzobs.mm.variance']).deep_copy()
-    parts = weights.parts()
-    for w in parts:
-      sel = w > 0.
-      w.set_selected(sel, 1./w.select(sel))
-    self._reflections['xyzobs.mm.weights'] = flex.vec3_double(*parts)
-
-    return
-
   def _id_refs_to_keep(self, obs_data):
     """Create a selection of observations that pass certain conditions.
 
