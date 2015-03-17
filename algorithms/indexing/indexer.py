@@ -441,7 +441,10 @@ class indexer_base(object):
     self.reflections_input = self.reflections
     self.reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
-      sel = (self.reflections_input['id'] == i)
+      if 'imageset_id' in self.reflections_input:
+        sel = (self.reflections_input['imageset_id'] == i)
+      else:
+        sel = (self.reflections_input['id'] == i)
       self.reflections.extend(self.map_spots_pixel_to_mm_rad(
         self.reflections_input.select(sel),
         imageset.get_detector(), imageset.get_scan()))
