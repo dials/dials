@@ -54,6 +54,8 @@ output {
     .type = path
   reflections = indexed.pickle
     .type = path
+  unindexed_reflections = unindexed.pickle
+    .type = path
 }
 
 verbosity = 1
@@ -144,7 +146,7 @@ def run(args):
       refined_reflections, file_name=params.output.reflections)
     info("Saving refined reflections to unindexed.pickle")
     idxr.export_reflections(
-      idxr.unindexed_reflections, "unindexed.pickle")
+      idxr.unindexed_reflections, file_name=params.output.unindexed_reflections)
 
   return
 
