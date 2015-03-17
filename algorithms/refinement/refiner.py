@@ -281,12 +281,12 @@ refinement
 
       tukey
         .help = "Options for the tukey outlier rejector"
+        .expert_level = 1
       {
         iqr_multiplier = 1.5
           .help = "The IQR multiplier used to detect outliers. A value of 1.5"
                   "gives Tukey's rule for outlier detection"
           .type = float(value_min = 0.)
-          .expert_level = 1
       }
     }
 
