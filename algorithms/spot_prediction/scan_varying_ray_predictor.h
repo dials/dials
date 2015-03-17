@@ -58,10 +58,11 @@ namespace dials { namespace algorithms {
      * @param dmin The resolution limit
      */
     ScanVaryingRayPredictor(
-          vec3<double> s0, vec3<double> m2,
+          vec3<double> s0, vec3<double> m2, int frame0,
           vec2<double> dphi, double dmin)
       : s0_(s0),
         m2_(m2.normalize()),
+        frame0_(frame0),
         dphi_(dphi),
         s0_mag_(s0.length()),
         dmin_(dmin) {
@@ -127,7 +128,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the scattering vector and rotation angle
       vec3<double> s1 = r1 + alpha * dr + s0_;
-      double angle = dphi_[0] + (image + alpha * step) * dphi_[1];
+      double angle = dphi_[0] + (image - frame0_ + alpha * step) * dphi_[1];
 
       // Return the ray
       return Ray(s1, angle, starts_outside);
@@ -137,6 +138,7 @@ namespace dials { namespace algorithms {
   private:
     vec3<double> s0_;
     vec3<double> m2_;
+    int frame0_;
     vec2<double> dphi_;
     double s0_mag_;
     double dmin_;

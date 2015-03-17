@@ -36,10 +36,12 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_ <ScanVaryingRayPredictor> ("ScanVaryingRayPredictor", no_init)
       .def(init <vec3<double>,
                  vec3<double>,
+                 int,
                  vec2<double>,
                  double> ((
         arg("s0"),
         arg("m2"),
+        arg("frame0"),
         arg("dphi"),
         arg("dmin"))))
       .def("__call__", &predict, (

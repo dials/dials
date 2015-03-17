@@ -341,6 +341,7 @@ namespace dials { namespace algorithms {
         predict_rays_(
             beam.get_s0(),
             goniometer.get_rotation_axis(),
+            scan.get_array_range()[0],
             scan.get_oscillation(),
             dmin) {}
 
