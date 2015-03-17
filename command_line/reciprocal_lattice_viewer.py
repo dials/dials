@@ -141,9 +141,12 @@ class ReciprocalLatticeViewer(wx.Frame):
       self.reflections, self.detector, self.scan)
     indexer.indexer_base.map_centroids_to_reciprocal_space(
       reflections, self.detector, self.beam, goniometer)
+    d_spacings = 1/reflections['rlp'].norms()
     if self.settings.d_min is not None:
-      d_spacings = 1/reflections['rlp'].norms()
       reflections = reflections.select(d_spacings > self.settings.d_min)
+    else:
+      self.settings.d_min = flex.min(d_spacings)
+      self.settings_panel.d_min_ctrl.SetValue(self.settings.d_min)
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)
 
