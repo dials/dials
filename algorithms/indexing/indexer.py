@@ -386,7 +386,8 @@ class indexer_base(object):
                 subgroup['ref_subsym'].unit_cell().is_similar_to(target_unit_cell) or
                 subgroup['ref_subsym'].primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
                 subgroup['best_subsym'].primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
-                subgroup['best_subsym'].minimum_cell().unit_cell().is_similar_to(target_unit_cell)):
+                subgroup['best_subsym'].minimum_cell().unit_cell().is_similar_to(
+                  target_unit_cell.minimum_cell())):
                 continue
               if subgroup['max_angular_difference'] < best_angular_difference:
                 best_subgroup = subgroup
@@ -733,6 +734,7 @@ class indexer_base(object):
       if self.params.known_symmetry.unit_cell is not None:
         uc_params = self.target_symmetry_primitive.unit_cell().parameters()
         self.params.max_cell = self.params.max_cell_multiplier * max(uc_params[:3])
+        info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
       else:
         # The nearest neighbour analysis gets fooled when the same part of
         # reciprocal space has been measured twice as this introduced small
