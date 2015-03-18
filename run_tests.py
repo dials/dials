@@ -6,6 +6,7 @@ tst_list = (
     "$D/test/command_line/tst_find_spots_server_client.py",
     ["$D/test/command_line/tst_dials_process.py", "1"],
     ["$D/test/command_line/tst_dials_process.py", "2"],
+    "$D/test/tst_scan_varying_integration_bug.py",
     "$D/test/tst_phil.py",
     "$D/test/framework/tst_interface.py",
     "$D/test/util/tst_nexus.py",
