@@ -234,8 +234,45 @@ class Result(object):
     self.reflections = reflections
     self.data = data
 
+
+def NullTask(object):
+  '''
+  A class to perform a null task.
+
+  '''
+  def __init__(self, index, reflections):
+    '''
+    Initialise the task
+
+    :param index: The index of the processing job
+    :param experiments: The list of experiments
+    :param profile_model: The profile model
+    :param reflections: The list of reflections
+
+    '''
+    self.index = index
+    self.reflections = reflections
+
+  def __call__(self):
+    '''
+    Do the processing.
+
+    :return: The processed data
+
+    '''
+    result = Result(self.index, self.reflections, None)
+    result.read_time = read_time
+    result.extract_time = processor.extract_time()
+    result.process_time = processor.process_time()
+    result.total_time = time() - start_time
+    return result
+
+
 class Task(object):
-  ''' A class to perform a processing task. '''
+  '''
+  A class to perform a processing task.
+
+  '''
 
   def __init__(self,
                index,
@@ -359,13 +396,13 @@ class Task(object):
         crystal model - is your crystal really this mosaic?
           Total system memory: %g GB
           Limit shoebox memory: %g GB
-          Requested shoebox memory: %g GB
+          Required shoebox memory: %g GB
         ''' % (total_memory/1e9, limit_memory/1e9, sbox_memory/1e9))
       else:
         info(' Memory usage:')
         info('  Total system memory: %g GB' % (total_memory/1e9))
         info('  Limit shoebox memory: %g GB' % (limit_memory/1e9))
-        info('  Requested shoebox memory: %g GB' % (sbox_memory/1e9))
+        info('  Required shoebox memory: %g GB' % (sbox_memory/1e9))
         info('')
 
     # Loop through the imageset, extract pixels and process reflections
@@ -486,6 +523,7 @@ class Manager(object):
     Get a task.
 
     '''
+    from logging import warn
     job = self.manager.job(index)
     frames = job.frames()
     expr_id = job.expr()
@@ -495,18 +533,24 @@ class Manager(object):
     expriments = self.experiments[expr_id[0]:expr_id[1]]
     profile_model = self.profile_model[expr_id[0]:expr_id[1]]
     reflections = self.manager.split(index)
-    assert len(reflections) > 0, "No reflections in job %d" % index
-    return Task(
-      index=index,
-      job=frames,
-      experiments=expriments,
-      profile_model=profile_model,
-      reflections=reflections,
-      mask=self.mask,
-      flatten=self.flatten,
-      save_shoeboxes=self.save_shoeboxes,
-      max_memory_usage=self.max_memory_usage,
-      executor=self.executor)
+    if len(reflections) == 0:
+      warn("*** WARNING: no reflections in job %d ***" % index)
+      task = NullTask(
+        index=index,
+        reflections=reflections)
+    else:
+      task = Task(
+        index=index,
+        job=frames,
+        experiments=expriments,
+        profile_model=profile_model,
+        reflections=reflections,
+        mask=self.mask,
+        flatten=self.flatten,
+        save_shoeboxes=self.save_shoeboxes,
+        max_memory_usage=self.max_memory_usage,
+        executor=self.executor)
+    return task
 
   def tasks(self):
     '''
