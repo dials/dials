@@ -86,6 +86,10 @@ phil_scope = parse('''
         .type = choice
         .help = "Select the profile grid method"
 
+      fit_method = *reciprocal_space detector_space
+        .type = choice
+        .help = "The fitting method"
+
     }
   }
 
@@ -102,6 +106,7 @@ class ProfileModel(ProfileModelIface):
                grid_size=5,
                threshold=0.2,
                grid_method="regular_grid",
+               fit_method="reciprocal_space",
                deg=False,
                profile_fitting=True):
     ''' Initialise with the parameters. '''
@@ -117,6 +122,7 @@ class ProfileModel(ProfileModelIface):
     self._grid_size = grid_size
     self._threshold = threshold
     self._grid_method = grid_method
+    self._fit_method = fit_method
     self._profile_fitting = profile_fitting
     assert(self._n_sigma > 0)
     assert(self._sigma_b > 0)
@@ -264,6 +270,7 @@ class ProfileModel(ProfileModelIface):
 
     # Create the grid method
     grid_method = int(GaussianRSProfileModeller.GridMethod.names[self._grid_method].real)
+    fit_method = int(GaussianRSProfileModeller.FitMethod.names[self._fit_method].real)
 
     # Create the modeller
     modeller = GaussianRSProfileModeller(
@@ -277,7 +284,8 @@ class ProfileModel(ProfileModelIface):
       self._grid_size,
       num_scan_points,
       self._threshold,
-      grid_method)
+      grid_method,
+      fit_method)
 
     # Return the modeller
     return modeller
@@ -295,7 +303,8 @@ class ScanVaryingProfileModel(ProfileModelIface):
                scan_step=5,
                grid_size=5,
                threshold=0.2,
-               grid_method="regular_grid"):
+               grid_method="regular_grid",
+               fit_method="reciprocal_space"):
     ''' Initialise with the parameters. '''
     from math import pi
     self._num_used = num_used
@@ -310,6 +319,7 @@ class ScanVaryingProfileModel(ProfileModelIface):
     self._grid_size = grid_size
     self._threshold = threshold
     self._grid_method = grid_method
+    self._fit_method = fit_method
     assert(self._n_sigma > 0)
     assert(self._sigma_b.all_gt(0))
     assert(self._sigma_m.all_gt(0))
@@ -469,6 +479,10 @@ class ScanVaryingProfileModel(ProfileModelIface):
     num_scan_points = int(ceil(oscillation / self._scan_step))
     assert(num_scan_points > 0)
 
+    # Create the grid method
+    grid_method = int(GaussianRSProfileModeller.GridMethod.names[self._grid_method].real)
+    fit_method = int(GaussianRSProfileModeller.FitMethod.names[self._fit_method].real)
+
     # Create the modeller
     modeller = GaussianRSProfileModeller(
       experiment.beam,
@@ -481,7 +495,8 @@ class ScanVaryingProfileModel(ProfileModelIface):
       self._grid_size,
       num_scan_points,
       self._threshold,
-      GaussianRSProfileModeller.GridMethod.names[self._grid_method])
+      grid_method,
+      fit_method)
 
     # Return the modeller
     return modeller

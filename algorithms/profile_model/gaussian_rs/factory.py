@@ -61,6 +61,7 @@ class Factory(object):
         scan_step=params.gaussian_rs.modelling.scan_step,
         threshold=params.gaussian_rs.modelling.threshold,
         grid_method=params.gaussian_rs.modelling.grid_method,
+        fit_method=params.gaussian_rs.modelling.fit_method,
         profile_fitting=profile_fitting)
     else:
       calculator = ScanVaryingProfileModelCalculator(experiment, reflections, min_zeta)
@@ -76,7 +77,8 @@ class Factory(object):
         grid_size=params.gaussian_rs.modelling.grid_size,
         scan_step=params.gaussian_rs.modelling.scan_step,
         threshold=params.gaussian_rs.modelling.threshold,
-        grid_method=params.gaussian_rs.modelling.grid_method)
+        grid_method=params.gaussian_rs.modelling.grid_method,
+        fit_method=params.gaussian_rs.modelling.fit_method)
 
   @classmethod
   def compute(cls, params, experiments, reflections):
@@ -159,7 +161,8 @@ class Factory(object):
           grid_size=params.gaussian_rs.modelling.grid_size,
           scan_step=params.gaussian_rs.modelling.scan_step,
           threshold=params.gaussian_rs.modelling.threshold,
-          grid_method=params.gaussian_rs.modelling.grid_method))
+          grid_method=params.gaussian_rs.modelling.grid_method,
+          fit_method=params.gaussian_rs.modelling.fit_method))
     else:
       assert(len(params.gaussian_rs.model) > 0)
       for i in range(len(params.gaussian_rs.model)):
@@ -171,6 +174,7 @@ class Factory(object):
           scan_step=params.gaussian_rs.modelling.scan_step,
           threshold=params.gaussian_rs.modelling.threshold,
           grid_method=params.gaussian_rs.modelling.grid_method,
+          fit_method=params.gaussian_rs.modelling.fit_method,
           profile_fitting=params.gaussian_rs.model[i].has_profile_fitting))
     return profile_model_list
 
