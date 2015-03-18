@@ -123,7 +123,8 @@ namespace transform {
       j1 - j0, (2 * grid_size_e3_ + 1)), af::init_functor_null<FloatType>());
 
     // A constant used in the solution to the integrals below.
-    double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
+    DIALS_ASSERT(mosaicity_ > 0);
+    double sigr2 = std::abs(zeta) / (std::sqrt(2.0) * mosaicity_);
 
     // Loop over all j data frames in the region around the reflection
     for (int i = 0, j = j0; j < j1; ++j) {
@@ -268,7 +269,7 @@ namespace transform {
       af::init_functor_null<FloatType>());
 
     // A constant used in the solution to the integrals below.
-    double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
+    double sigr2 = std::abs(zeta) / (std::sqrt(2.0) * mosaicity_);
 
     // Loop over all v3 grid points in the profile
     for (int i = 0, v3 = v30; v3 < v31; ++v3) {
