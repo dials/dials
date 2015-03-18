@@ -601,6 +601,7 @@ namespace dials { namespace af { namespace boost_python {
         .value("bad_shoebox", BadShoebox)
         .value("bad_spot", BadSpot)
         .value("used_in_modelling", UsedInModelling)
+        .value("centroid_outlier", CentroidOutlier)
         ;
 
       // return the wrapped class

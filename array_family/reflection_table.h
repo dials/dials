@@ -75,6 +75,9 @@ namespace dials { namespace af {
 
     // Profile Modelling
     UsedInModelling  = (1 << 14),
+
+    // Centroid outlier
+    CentroidOutlier = (1 << 15),
   };
 
 }} // namespace dials::af
