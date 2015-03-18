@@ -41,7 +41,8 @@ phil_scope = parse('''
 
     reflections = None
       .type = str
-      .help = "The filename for output of refined reflections"
+      .help = "The filename for output of reflections used in refinement"
+      .expert_level = 1
 
     centroids = None
       .type = str
