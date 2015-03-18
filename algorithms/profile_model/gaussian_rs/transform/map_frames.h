@@ -269,6 +269,7 @@ namespace transform {
       af::init_functor_null<FloatType>());
 
     // A constant used in the solution to the integrals below.
+    DIALS_ASSERT(mosaicity_ > 0);
     double sigr2 = std::abs(zeta) / (std::sqrt(2.0) * mosaicity_);
 
     // Loop over all v3 grid points in the profile
