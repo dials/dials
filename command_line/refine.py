@@ -325,7 +325,11 @@ class Script(object):
       if preds.has_key('entering'):
         indexed['entering'] = preds['entering']
 
-      # FIXME redo outlier rejection and copy over used in refinement flags
+      # set used in refinement flag
+      mask = refiner.selection_used_for_refinement()
+      indexed.set_flags(mask, indexed.flags.used_in_refinement)
+
+      # FIXME redo outlier rejection
       info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
       indexed.as_pickle(params.output.reflections)
