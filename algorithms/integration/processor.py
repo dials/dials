@@ -235,7 +235,7 @@ class Result(object):
     self.data = data
 
 
-def NullTask(object):
+class NullTask(object):
   '''
   A class to perform a null task.
 
@@ -261,10 +261,10 @@ def NullTask(object):
 
     '''
     result = Result(self.index, self.reflections, None)
-    result.read_time = read_time
-    result.extract_time = processor.extract_time()
-    result.process_time = processor.process_time()
-    result.total_time = time() - start_time
+    result.read_time = 0
+    result.extract_time = 0
+    result.process_time = 0
+    result.total_time = 0
     return result
 
 

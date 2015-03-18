@@ -618,7 +618,8 @@ class Integrator(object):
       assert len(modeller_list) > 0, "No modellers"
       modeller = None
       for index, mod in modeller_list.iteritems():
-        assert mod is not None, "mod is none"
+        if mod is None:
+          continue
         if modeller is None:
           modeller = mod
         else:
