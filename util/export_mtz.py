@@ -280,8 +280,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     # be much different at the end - however only exist if time-varying refinement
     # was used
     if experiment.crystal.num_scan_points:
-      _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(b)
-      _U = experiment.crystal.get_U_at_scan_point(b)
+      _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(b-image_range[0])
+      _U = experiment.crystal.get_U_at_scan_point(b-image_range[0])
     else:
       _unit_cell = unit_cell
       _U = U

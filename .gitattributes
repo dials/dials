@@ -993,6 +993,7 @@ test/model/data/tst_prediction.py -text
 test/model/data/tst_shoebox.py -text
 test/tst_phil.py -text
 test/tst_plot_reflections.py -text
+test/tst_scan_varying_integration_bug.py -text
 test/util/tst_nexus.py -text
 test/util/tst_nexus_multi_experiment.py -text
 util/__init__.py -text
