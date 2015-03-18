@@ -225,7 +225,7 @@ class ReflectionManager(object):
     self.print_stats_on_matches()
 
     # flag potential outliers
-    rejection_occurred = self._reject_outliers()
+    rejection_occurred = self._flag_outliers()
 
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
@@ -233,8 +233,9 @@ class ReflectionManager(object):
     if rejection_occurred: msg += " or marked as outliers"
     debug(msg)
 
-    self._reflections = self._reflections.select(self._reflections.get_flags(
-                      self._reflections.flags.used_in_refinement))
+    has_pred = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
+    inlier = ~self._reflections.get_flags(self._reflections.flags.centroid_outlier)
+    self._reflections = self._reflections.select(has_pred & inlier)
     self._check_too_few()
 
     debug("%d reflections remain in the manager", len(self._reflections))
@@ -492,8 +493,8 @@ class ReflectionManager(object):
 
     return
 
-  def _reject_outliers(self):
-    """Unset the use flag on matches with extreme (outlying) residuals.
+  def _flag_outliers(self):
+    """Set the centroid outlier flag on matches with extreme (outlying) residuals.
 
     Outlier detection finds values more than _iqr_multiplier times the
     interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
@@ -544,20 +545,20 @@ class ReflectionManager(object):
         # get positions of outliers from the original matches
         ioutliers = sub_imatches.select(sel_out)
       else:
-        debug("Only %d reflections on panel %d. All of these rejected " + \
+        debug("Only %d reflections on panel %d. All of these flagged " + \
               "as possible outliers.",
           len(sub_matches), pnl)
         ioutliers = sub_imatches
 
-      # set those reflections to not be used
-      self._reflections.unset_flags(ioutliers,
-        self._reflections.flags.used_in_refinement)
+      # set those reflections as outliers
+      self._reflections.set_flags(ioutliers,
+        self._reflections.flags.centroid_outlier)
 
       nreject += len(ioutliers)
 
     if nreject == 0: return False
 
-    info("%d reflections have been rejected as outliers", nreject)
+    info("%d reflections have been flagged as outliers", nreject)
 
     return True
 
@@ -633,8 +634,8 @@ class StillsReflectionManager(ReflectionManager):
 
     return
 
-  def _reject_outliers(self):
-    """Unset the use flag on matches with extreme (outlying) residuals.
+  def _flag_outliers(self):
+    """Set the centroid outlier flag on matches with extreme (outlying) residuals.
 
     Outlier detection finds values more than _iqr_multiplier times the
     interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
@@ -685,20 +686,20 @@ class StillsReflectionManager(ReflectionManager):
         # get positions of outliers from the original matches
         ioutliers = sub_imatches.select(sel_out)
       else:
-        debug("Only %d reflections on panel %d. All of these rejected " + \
+        debug("Only %d reflections on panel %d. All of these flagged " + \
               "as possible outliers.",
           len(sub_matches), pnl)
         ioutliers = sub_imatches
 
-      # set those reflections to not be used
-      self._reflections.unset_flags(ioutliers,
-        self._reflections.flags.used_in_refinement)
+      # set those reflections as outliers
+      self._reflections.set_flags(ioutliers,
+        self._reflections.flags.centroid_outlier)
 
       nreject += len(ioutliers)
 
     if nreject == 0: return False
 
-    info("%d reflections have been rejected as outliers" % nreject)
+    info("%d reflections have been flagged as outliers" % nreject)
 
     return True
 
