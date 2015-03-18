@@ -8,19 +8,20 @@ from cctbx import uctbx
 import libtbx.load_env
 have_xia2_regression = libtbx.env.has_module("xia2_regression")
 if have_xia2_regression:
-  xia2_regression = libtbx.env.find_in_repositories(
-    relative_path="xia2_regression",
-    test=os.path.isdir)
+  xia2_regression = libtbx.env.under_build("xia2_regression")
 
 def exercise_1():
-  data_dir = os.path.join(xia2_regression, "X4_wide")
+  data_dir = os.path.join(xia2_regression, "test_data/X4_wide")
   cwd = os.path.abspath(os.curdir)
   tmp_dir = open_tmp_directory()
   os.chdir(tmp_dir)
   print tmp_dir
 
+  g = sorted(glob.glob(os.path.join(data_dir, "X4_wide_M1S4_2_00*.cbf")))
+  assert len(g) == 90, len(g)
+
   commands = [
-    "dials.import $build/xia2_regression/test_data/X4_wide/X4_wide_M1S4_2_00*.cbf",
+    "dials.import %s" %" ".join(g),
     "dials.slice_sweep datablock.json scan_range=45,90",
     "dials.find_spots datablock_45_90.json",
     "dials.index datablock_45_90.json strong.pickle space_group=P41212",
