@@ -54,7 +54,7 @@ output {
     .type = path
   reflections = indexed.pickle
     .type = path
-  unindexed_reflections = unindexed.pickle
+  unindexed_reflections = None
     .type = path
 }
 
@@ -144,9 +144,11 @@ def run(args):
     info("Saving refined reflections to %s" %params.output.reflections)
     idxr.export_reflections(
       refined_reflections, file_name=params.output.reflections)
-    info("Saving refined reflections to unindexed.pickle")
-    idxr.export_reflections(
-      idxr.unindexed_reflections, file_name=params.output.unindexed_reflections)
+    if params.output.unindexed_reflections is not None:
+      info("Saving unindexed reflections to %s"
+           %params.output.unindexed_reflections)
+      idxr.export_reflections(idxr.unindexed_reflections,
+                              file_name=params.output.unindexed_reflections)
 
   return
 
