@@ -180,11 +180,12 @@ class ReflectionManager(object):
 
     # exclude reflections that fail some inclusion criteria (currently just
     # close to spindle)
-    self._input_size = len(reflections)
     refs_to_keep = self._id_refs_to_keep(reflections)
     self._accepted_refs_size = len(refs_to_keep)
 
-    # select only the accepted reflections to manage
+    # put full list of indexed reflections aside and select only the accepted
+    # reflections to manage
+    self._indexed = reflections
     self._reflections = reflections.select(flex.size_t(refs_to_keep))
 
     # keep minimum number of observations per experiment to allow as working set
@@ -366,12 +367,6 @@ class ReflectionManager(object):
 
     return
 
-  def get_input_size(self):
-    """Return the number of observations in the initial list supplied
-    as input"""
-
-    return self._input_size
-
   def get_accepted_refs_size(self):
     """Return the number of observations that pass inclusion criteria and
     can potentially be used for refinement"""
@@ -402,6 +397,11 @@ class ReflectionManager(object):
       sort_obs.sort('key', reverse=True)
       del sort_obs['key']
     return sort_obs
+
+  def get_indexed(self):
+    """Return the reflections passed in as input"""
+
+    return self._indexed
 
   def get_matches(self):
     """For every observation used in refinement return (a copy of) all data"""

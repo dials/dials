@@ -1534,7 +1534,7 @@ class Refiner(object):
 
     from scitbx.array_family import flex
     matches = self._refman.get_matches()
-    selection = flex.bool(self._refman.get_input_size(), False)
+    selection = flex.bool(len(self._refman.get_indexed()), False)
 
     try: # new reflection table format for matches
       isel = matches['iobs']
@@ -1544,6 +1544,12 @@ class Refiner(object):
         selection[m.iobs] = True
 
     return selection
+
+  def predict_for_indexed(self):
+    """perform prediction for all the indexed reflections passed into
+    refinement"""
+
+    return self.predict_for_reflection_table(self._refman.get_indexed())
 
   def predict_for_reflection_table(self, reflections):
     """perform prediction for all reflections in the supplied table"""

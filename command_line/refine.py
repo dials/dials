@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from copy import deepcopy
 from libtbx.utils import Sorry
 
 help_message = '''
@@ -39,10 +40,9 @@ phil_scope = parse('''
       .type = str
       .help = "The filename for refined experimental models"
 
-    reflections = None
+    reflections = refined.pickle
       .type = str
-      .help = "The filename for output of reflections used in refinement"
-      .expert_level = 1
+      .help = "The filename for reflections with updated predictions"
 
     centroids = None
       .type = str
@@ -310,12 +310,25 @@ class Script(object):
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 
-    # Write out refined reflections, if requested
+    # Save reflections with updated predictions if requested (allow to switch
+    # this off if it is a time-consuming step)
     if params.output.reflections:
-      matches = refiner.get_matches()
-      info('Saving refined reflections to {0}'.format(
+      # Update predictions for all indexed reflections
+      info('Updating predictions for indexed reflections')
+      indexed = deepcopy(reflections)
+      preds = refiner.predict_for_indexed()
+
+      # just copy over the columns of interest
+      indexed['s1'] = preds['s1']
+      indexed['xyzcal.mm'] = preds['xyzcal.mm']
+      indexed['xyzcal.px'] = preds['xyzcal.px']
+      if preds.has_key('entering'):
+        indexed['entering'] = preds['entering']
+
+      # FIXME redo outlier rejection and copy over used in refinement flags
+      info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
-      matches.as_pickle(params.output.reflections)
+      indexed.as_pickle(params.output.reflections)
 
     if params.output.correlation_plot.filename is not None:
       from os.path import splitext
