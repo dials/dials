@@ -202,7 +202,7 @@ refinement
               "of absolute values to use as the cutoffs"
       .type = choice
 
-    bin_size_fraction = 0.33333
+    bin_size_fraction = 0.2
       .help = "Cut off in the natural discrete units of positional data, viz.,"
               "(pixel width, pixel height, image thickness in phi) to use to"
               "determine when the RMSD target is achieved. Only used if"
