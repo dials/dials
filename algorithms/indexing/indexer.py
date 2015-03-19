@@ -455,7 +455,11 @@ class indexer_base(object):
     self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
 
-    self.find_max_cell()
+    try:
+      self.find_max_cell()
+    except AssertionError, e:
+      if "too few spots" in str(e).lower():
+        raise Sorry(e)
 
     if self.params.sigma_phi_deg is not None:
       var_x, var_y, _ = self.reflections['xyzobs.mm.variance'].parts()

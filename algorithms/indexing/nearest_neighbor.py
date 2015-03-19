@@ -17,7 +17,8 @@ class neighbor_analysis(object):
       query.append(spot[1])
       query.append(spot[2])
 
-    assert len(rs_vectors)>NEAR # Can't do nearest neighbor with too few spots
+    assert len(rs_vectors)>NEAR, (
+      "Too few spots (%d) for nearest neighbour analysis." %len(rs_vectors))
 
     IS_adapt = AnnAdaptor(data=query,dim=3,k=1)
     IS_adapt.query(query)
