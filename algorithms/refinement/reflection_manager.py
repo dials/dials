@@ -183,32 +183,32 @@ class ReflectionManager(object):
     refs_to_keep = self._id_refs_to_keep(reflections)
     self._accepted_refs_size = len(refs_to_keep)
 
-    # put full list of indexed reflections aside and select only the accepted
-    # reflections to manage
-    self._indexed = reflections
-    self._reflections = reflections.select(flex.size_t(refs_to_keep))
-
     # keep minimum number of observations per experiment to allow as working set
     self._min_num_obs = min_num_obs
+
+    # set entering flags for all reflections
+    reflections['entering'] = calculate_entering_flags(reflections,
+      self._experiments)
+
+    # set observed frame numbers for all reflections if not already present
+    self._calculate_frame_numbers(reflections)
+
+    # reset all use flags
+    self.reset_accepted_reflections(reflections)
+
+    # put full list of indexed reflections aside and select only the reflections
+    # that were not excluded to manage
+    self._indexed = reflections
+    self._reflections = reflections.select(flex.size_t(refs_to_keep))
 
     # fail if there are too few reflections in the manager (the check also needs
     # to be repeated after outlier rejection and subsetting)
     self._check_too_few()
 
-    # set entering flags for all reflections
-    self._reflections['entering'] = calculate_entering_flags(self._reflections,
-      self._experiments)
-
-    # set observed frame numbers for all reflections if not already present
-    self._calculate_frame_numbers()
-
-    # set weights for all reflections
+    # set weights for all kept reflections
     if weighting_strategy_override is not None:
       self._weighting_strategy = weighting_strategy_override
     self._weighting_strategy.calculate_weights(self._reflections)
-
-    # reset all use flags
-    self.reset_accepted_reflections()
 
     # not known until the manager is finalised
     self._sample_size = None
@@ -264,25 +264,25 @@ class ReflectionManager(object):
         raise RuntimeError(msg)
     return
 
-  def _calculate_frame_numbers(self):
-    """calculate observed frame numbers for all reflections, if not already
+  def _calculate_frame_numbers(self, reflections):
+    """calculate observed frame numbers for reflections, if not already
     set"""
 
-    if self._reflections.has_key('xyzobs.px.value'): return
+    if reflections.has_key('xyzobs.px.value'): return
 
     # Frames are not set, so set them, with dummy observed pixel values
-    frames = flex.double(len(self._reflections), 0.)
+    frames = flex.double(len(reflections), 0.)
     for iexp, exp in enumerate(self._experiments):
       scan = exp.scan
       if not scan: continue
-      sel = self._reflections['id'] == iexp
-      xyzobs = self._reflections["xyzobs.mm.value"].select(sel)
+      sel = reflections['id'] == iexp
+      xyzobs = reflections["xyzobs.mm.value"].select(sel)
       angles = xyzobs.parts()[2]
       to_update = scan.get_array_index_from_angle(angles, deg=False)
       frames.set_selected(sel, to_update)
-    self._reflections['xyzobs.px.value'] = flex.vec3_double(
-            flex.double(len(self._reflections), 0.),
-            flex.double(len(self._reflections), 0.),
+    reflections['xyzobs.px.value'] = flex.vec3_double(
+            flex.double(len(reflections), 0.),
+            flex.double(len(reflections), 0.),
             frames)
 
     return
@@ -563,12 +563,15 @@ class ReflectionManager(object):
     return True
 
 
-  def reset_accepted_reflections(self):
+  def reset_accepted_reflections(self, reflections=None):
     """Reset use flags for all observations in preparation for a new set of
     predictions"""
 
-    mask = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
-    self._reflections.unset_flags(mask, self._reflections.flags.used_in_refinement)
+    # if not passing in reflections, take the internally managed table
+    if reflections is None: reflections = self._reflections
+
+    mask = reflections.get_flags(reflections.flags.used_in_refinement)
+    reflections.unset_flags(mask, reflections.flags.used_in_refinement)
     return
 
   def get_obs(self):
