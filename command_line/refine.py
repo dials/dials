@@ -44,6 +44,13 @@ phil_scope = parse('''
       .type = str
       .help = "The filename for reflections with updated predictions"
 
+    matches = None
+      .type = str
+      .help = "The filename for output of the reflection table for reflections"
+              "used in refinement, containing extra columns used internally."
+              "Intended for debugging purposes only"
+      .expert_level = 2
+
     centroids = None
       .type = str
       .help = "The filename for the table of centroids at the end of"
@@ -333,6 +340,13 @@ class Script(object):
       info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
       indexed.as_pickle(params.output.reflections)
+
+    # For debugging, if requested save matches to file
+    if params.output.matches:
+      matches = refiner.get_matches()
+      info('Saving matches (use for debugging purposes) to {0}'.format(
+        params.output.matches))
+      matches.as_pickle(params.output.matches)
 
     if params.output.correlation_plot.filename is not None:
       from os.path import splitext
