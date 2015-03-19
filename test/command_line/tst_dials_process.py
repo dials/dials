@@ -24,7 +24,6 @@ def exercise_1():
   cmd = " ".join(["dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
                   "indexing.known_symmetry.space_group=\"Hall: %s\"" %hall_symbol.replace('"', '\\"'),
-                  "n_macro_cycles=5",
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
                   "integration.block.threshold=0.99",
@@ -51,7 +50,6 @@ def exercise_1():
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().hall_symbol() == hall_symbol
   assert approx_equal(mtz_object.n_reflections(), 24465, eps=2e3)
-  # assert approx_equal(mtz_object.n_reflections(), 21875, eps=1e2)
   os.chdir(cwd)
 
 
@@ -67,10 +65,8 @@ def exercise_2():
   cmd = " ".join(["dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
                   "indexing.known_symmetry.space_group=\"Hall: %s\"" %hall_symbol,
-                  "n_macro_cycles=5",
                   "maximum_spot_error=3",
                   "maximum_phi_error=2",
-                  "refinement.reflections.use_all_reflections=True",
                   "integration.block.threshold=0.99",
                   "template=%s" % os.path.join(data_dir, "insulin_1_###.img"),
                   ]
