@@ -22,9 +22,9 @@ def exercise_1():
 
   commands = [
     "dials.import %s" %" ".join(g),
-    "dials.slice_sweep datablock.json scan_range=45,90",
-    "dials.find_spots datablock_45_90.json",
-    "dials.index datablock_45_90.json strong.pickle space_group=P41212",
+    "dials.slice_sweep datablock.json scan_range=80,90",
+    "dials.find_spots datablock_80_90.json",
+    "dials.index datablock_80_90.json strong.pickle space_group=P41212",
     "dials.refine experiments.json indexed.pickle scan_varying=True",
     "dials.integrate refined_experiments.json indexed.pickle",
     "dials.export_mtz refined_experiments.json integrated.pickle"
@@ -43,13 +43,13 @@ def exercise_1():
     'H', 'K', 'L', 'M_ISYM', 'BATCH', 'IPR', 'SIGIPR', 'I', 'SIGI',
     'FRACTIONCALC', 'XDET', 'YDET', 'ROT', 'LP']
 
-  assert len(mtz_object.batches()) == 46
+  assert len(mtz_object.batches()) == 11
   batch = mtz_object.batches()[0]
   expected_unit_cell = uctbx.unit_cell(
     (42.4892, 42.4892, 39.7846, 90, 90, 90))
   assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
   assert mtz_object.space_group().type().lookup_symbol() == "P 41 21 2"
-  assert approx_equal(mtz_object.n_reflections(), 38859, eps=2e3)
+  assert approx_equal(mtz_object.n_reflections(), 7446, eps=2e3)
   os.chdir(cwd)
 
 def run(args):
