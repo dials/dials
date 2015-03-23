@@ -255,10 +255,12 @@ class IntegrationReport(object):
 
     # Initialise the dictionary
     self._report = OrderedDict()
+    self._report['integration'] = []
 
     # Generate an integration report for each experiment
     for i, (expr, data) in enumerate(zip(experiments, tables)):
-      self._report[i] = generate_integration_report(expr, data)
+      self._report['integration'].append(
+        generate_integration_report(expr, data))
 
   def as_dict(self):
     '''
@@ -291,8 +293,8 @@ class IntegrationReport(object):
              "<I/sigI>\n (sum)",
              "<I/sigI>\n (prf)",
              "<CC prf>"]]
-    for j in sorted(self._report):
-      report = self._report[j]['image']
+    for j, report in enumerate(self._report['integration']):
+      report = report['image']
       for i in range(len(report['bins'])-1):
         rows.append([
           '%d'   % j,
@@ -322,8 +324,8 @@ class IntegrationReport(object):
              "<I/sigI>\n (sum)",
              "<I/sigI>\n (prf)",
              "<CC prf>"]]
-    for j in sorted(self._report):
-      report = self._report[j]['resolution']
+    for j, report in enumerate(self._report['integration']):
+      report = report['resolution']
       for i in range(len(report['bins'])-1):
         rows.append([
           '%d'   % j,
@@ -342,8 +344,8 @@ class IntegrationReport(object):
 
     # Create the overall table
     overall_tables = []
-    for j in sorted(self._report):
-      report = self._report[j]['overall']
+    for j, report in enumerate(self._report['integration']):
+      report = report['overall']
       rows = [["number fully recorded",                 '%d'   % report["n_full"]],
               ["number partially recorded",             '%d'   % report["n_partial"]],
               ["number with overloaded pixels",         '%d'   % report["n_overload"]],
