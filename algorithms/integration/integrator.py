@@ -468,6 +468,7 @@ class IntegratorExecutor(Executor):
 
     '''
     from logging import info
+    from dials.algorithms.shoebox import MaskCode
 
     # Check if pixels are overloaded
     reflections.is_overloaded(self.experiments)
@@ -480,6 +481,17 @@ class IntegratorExecutor(Executor):
     reflections.compute_centroid(self.experiments)
     reflections.compute_summed_intensity()
     reflections.compute_fitted_intensity(self.experiments, self.profile_model)
+
+    # Compute the number of background/foreground pixels
+    sbox = reflections['shoebox']
+    code1 = MaskCode.Valid
+    code2 = MaskCode.Background | code1
+    code3 = MaskCode.BackgroundUsed | code2
+    code4 = MaskCode.Foreground | code1
+    reflections['num_pixels.valid'] = sbox.count_mask_values(code1)
+    reflections['num_pixels.background'] = sbox.count_mask_values(code2)
+    reflections['num_pixels.background_used'] = sbox.count_mask_values(code3)
+    reflections['num_pixels.foreground'] = sbox.count_mask_values(code4)
 
     # Print some info
     fmt = ' Integrated % 5d (sum) + % 5d (prf) /% 5d reflections on image %d'
