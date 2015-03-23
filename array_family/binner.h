@@ -62,6 +62,34 @@ namespace dials { namespace af {
 
     /**
      * @param y The quantity
+     * @returns The sum of y in each bin
+     */
+    af::shared<int> sum(const af::const_ref<int> &y) const {
+      DIALS_ASSERT(y.size() == index_.size());
+      af::shared<int> result(nbins_, 0);
+      for (std::size_t i = 0; i < y.size(); ++i) {
+        DIALS_ASSERT(index_[i] < nbins_);
+        result[index_[i]] += y[i];
+      }
+      return result;
+    }
+
+    /**
+     * @param y The quantity
+     * @returns The sum of y in each bin
+     */
+    af::shared<int> sum(const af::const_ref<bool> &y) const {
+      DIALS_ASSERT(y.size() == index_.size());
+      af::shared<int> result(nbins_, 0);
+      for (std::size_t i = 0; i < y.size(); ++i) {
+        DIALS_ASSERT(index_[i] < nbins_);
+        result[index_[i]] += (int)y[i];
+      }
+      return result;
+    }
+
+    /**
+     * @param y The quantity
      * @returns The mean of y in each bin
      */
     af::shared<double> mean(const af::const_ref<double> &y) const {
@@ -137,6 +165,13 @@ namespace dials { namespace af {
 
       // Return the indexer
       return BinIndexer(bins_.size(), index);
+    }
+
+    /**
+     * @returns The number of bins
+     */
+    std::size_t size() const {
+      return bins_.size();
     }
 
 

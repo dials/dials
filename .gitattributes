@@ -98,6 +98,7 @@ algorithms/integration/integrator.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/processor.h -text
 algorithms/integration/processor.py -text
+algorithms/integration/report.py -text
 algorithms/integration/statistics.py -text
 algorithms/integration/sum/__init__.py -text
 algorithms/integration/sum/algorithm.py -text

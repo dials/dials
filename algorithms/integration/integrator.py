@@ -529,17 +529,21 @@ class Integrator(object):
     self.profile_model = profile_model
     self.reflections = reflections
     self.params = params
+    self.report = None
 
   def integrate(self):
     '''
     Integrate the data
 
     '''
-    from dials.algorithms.integration.statistics import statistics
+    from dials.algorithms.integration.report import IntegrationReport
     from dials.algorithms.integration.statistics import modeller_statistics
     from dials.util.command_line import heading
     from logging import info, debug
     from dials.util import pprint
+
+    # Init the report
+    self.report = None
 
     # Heading
     info("=" * 80)
@@ -678,12 +682,10 @@ class Integrator(object):
       self.params)
     finalize(self.reflections)
 
-    # Print out some statistics
+    # Create the integration report
+    self.report = IntegrationReport(self.experiments, self.reflections)
     info("")
-    for summary in statistics(
-        self.reflections,
-        self.experiments):
-      info(str(summary))
+    info(self.report.as_str(prefix=' '))
 
     # Print the time info
     info(str(time_info))

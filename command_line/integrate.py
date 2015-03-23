@@ -43,7 +43,8 @@ Examples::
 
 # Create the phil scope
 from libtbx.phil import parse
-phil_scope = parse('''
+phil_scope = parse(
+'''
 
   output {
     profile_model = 'profile_model.phil'
@@ -53,6 +54,10 @@ phil_scope = parse('''
     reflections = 'integrated.pickle'
       .type = str
       .help = "The integrated output filename"
+
+    report = None
+      .type = str
+      .help = "The integration report filename"
   }
 
   scan_range = None
@@ -235,6 +240,12 @@ class Script(object):
     # Save the reflections
     self.save_reflections(reflections, params.output.reflections)
     self.save_profile_model(profile_model, params.output.profile_model)
+
+    # Write a report if requested
+    if params.output.report is not None:
+      import json
+      with open(params.output.report, "w") as outfile:
+        json.dump(integrator.report.as_dict(), outfile, indent=2)
 
     # Print the total time taken
     info("\nTotal time taken: %f" % (time() - start_time))

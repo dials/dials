@@ -16,11 +16,31 @@ namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
 
+  af::shared<double> sum_double(
+      const BinIndexer &self,
+      const af::const_ref<double> &data) {
+    return self.sum(data);
+  }
+
+  af::shared<int> sum_int(
+      const BinIndexer &self,
+      const af::const_ref<int> &data) {
+    return self.sum(data);
+  }
+
+  af::shared<int> sum_bool(
+      const BinIndexer &self,
+      const af::const_ref<bool> &data) {
+    return self.sum(data);
+  }
+
   void export_flex_binner() {
 
     class_<BinIndexer>("BinIndexer", no_init)
       .def("count", &BinIndexer::count)
-      .def("sum", &BinIndexer::sum)
+      .def("sum", &sum_double)
+      .def("sum", &sum_int)
+      .def("sum", &sum_bool)
       .def("mean", &BinIndexer::mean)
       ;
 
@@ -28,9 +48,9 @@ namespace dials { namespace af { namespace boost_python {
       .def(init<const af::const_ref<double>&>())
       .def("bins", &Binner::bins)
       .def("indexer", &Binner::indexer)
+      .def("__len__", &Binner::size)
       ;
 
   }
 
 }}} // namespace dials::af::boost_python
-
