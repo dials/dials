@@ -55,6 +55,18 @@ phil_scope = parse(
       .type = str
       .help = "The integrated output filename"
 
+    phil = 'dials.integrate.phil'
+      .type = str
+      .help = "The output phil file"
+
+    log = 'dials.integrate.log'
+      .type = str
+      .help = "The log filename"
+
+    debug_log = 'dials.integrate.debug.log'
+      .type = str
+      .help = "The debug log filename"
+
     report = None
       .type = str
       .help = "The integration report filename"
@@ -150,11 +162,15 @@ class Script(object):
     elif len(experiments.imagesets()) > 1 or len(experiments.detectors()) > 1:
       raise Abort('experiment list contains > 1 imageset or detector')
 
+    # Save phil parameters
+    with open(params.output.phil, "w") as outfile:
+      outfile.write(self.parser.diff_phil.as_str())
+
     # Configure logging
     log.config(
       params.verbosity,
-      info='dials.integrate.log',
-      debug='dials.integrate.debug.log')
+      info=params.output.log,
+      debug=params.output.debug_log)
 
     # Print the experimental models
     for i, exp in enumerate(experiments):
