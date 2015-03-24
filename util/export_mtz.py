@@ -154,7 +154,7 @@ def scale_partial_reflections(integrated_data, min_partiality=0.5):
   return integrated_data
 
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
-               include_partials=False):
+               include_partials=False, min_isigi=None):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -190,6 +190,23 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
       integrated_data.del_selected(selection)
       info('Removing %d profile reflections with negative variance' % \
             selection.count(True))
+
+  if min_isigi is not None:
+
+    selection = (
+      integrated_data['intensity.sum.value']/
+      integrated_data['intensity.sum.variance']) < min_isigi
+    integrated_data.del_selected(selection)
+    info('Removing %d reflections with I/Sig(I) < %s' %(
+      selection.count(True), min_isigi))
+
+    if 'intensity.prf.variance' in integrated_data:
+      selection = (
+        integrated_data['intensity.prf.value']/
+        integrated_data['intensity.prf.variance']) < min_isigi
+      integrated_data.del_selected(selection)
+      info('Removing %d profile reflections with I/Sig(I) < %s' %(
+        selection.count(True), min_isigi))
 
   # FIXME in here work on including partial reflections => at this stage best
   # to split off the partial refections into a different selection & handle
