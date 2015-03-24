@@ -38,6 +38,14 @@ namespace dials { namespace af {
   };
 
   /**
+   * Init to zero
+   */
+  template <typename ElementType>
+  ElementType init_zero() {
+    return ElementType();
+  }
+
+  /**
    * A class to represent a column-centric table. I.e. a table in which the
    * data is represented as a list of columns. It is created with a variant
    * type of column data. It can be instantiated as follows:
@@ -77,7 +85,7 @@ namespace dials { namespace af {
         iterator it = table->lower_bound(k_);
         if (it == table->end() || table->key_comp()(k_, it->first)) {
           it = table->insert(it, map_value_type(k_,
-            mapped_type(af::shared<T>(n))));
+            mapped_type(af::shared<T>(n, init_zero<T>()))));
         }
         af::shared<T> this_column = boost::get< af::shared<T> >(it->second);
         for (std::size_t i = 0; i < this_column.size(); ++i) {
@@ -136,7 +144,7 @@ namespace dials { namespace af {
         iterator it = table->lower_bound(k_);
         if (it == table->end() || table->key_comp()(k_, it->first)) {
           it = table->insert(it, map_value_type(k_,
-            mapped_type(af::shared<T>(n))));
+            mapped_type(af::shared<T>(n, init_zero<T>()))));
         }
         return boost::get< af::shared<T> >(it->second);
       }

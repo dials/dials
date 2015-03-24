@@ -27,6 +27,33 @@ namespace dials { namespace af {
   using scitbx::af::int6;
   using model::Shoebox;
 
+
+  template <> inline
+  vec2<double> init_zero< vec2<double> >() {
+    return vec2<double>(0.0,0.0);
+  }
+
+  template <> inline
+  vec3<double> init_zero< vec3<double> >() {
+    return vec3<double>(0.0,0.0,0.0);
+  }
+
+  template <> inline
+  mat3<double> init_zero< mat3<double> >() {
+    return mat3<double>(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+  }
+
+  template <> inline
+  int6 init_zero<int6>() {
+    return int6(0,0,0,0,0,0);
+  }
+
+  template <> inline
+  cctbx::miller::index<> init_zero< cctbx::miller::index<> >() {
+    return cctbx::miller::index<>(0,0,0);
+  }
+
+
   typedef flex_type_generator<
     bool,
     int,
