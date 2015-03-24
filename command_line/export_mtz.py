@@ -39,6 +39,8 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
+  from dials.util import log
+  info_handle = log.info_handle()
 
   usage = '%s integrated.pickle experiments.json [options]' % (
               libtbx.env.dispatcher_name)
@@ -51,6 +53,10 @@ def run(args):
     phil=phil_scope,
     epilog=help_message)
   params, options = parser.parse_args(show_diff_phil=True)
+
+  # Configure the logging
+  log.config(info='dials.export_mtz.log', debug='dials.export_mtz.debug.log')
+
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
   if len(reflections) == 0 or len(experiments) == 0:

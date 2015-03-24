@@ -158,12 +158,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
-  from dials.util import log
   from logging import info
   from dials.array_family import flex
-
-  log.config(0, info='dials.export_mtz.log',
-             debug='dials.export_mtz.debug.log')
 
   # for the moment assume (and assert) that we will convert data from exactly
   # one lattice...
