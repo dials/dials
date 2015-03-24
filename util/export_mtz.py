@@ -160,6 +160,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
   from dials.util import log
   from logging import info
+  from dials.array_family import flex
 
   log.config(0, info='dials.export_mtz.log',
              debug='dials.export_mtz.debug.log')
@@ -195,7 +196,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
     selection = (
       integrated_data['intensity.sum.value']/
-      integrated_data['intensity.sum.variance']) < min_isigi
+      flex.sqrt(integrated_data['intensity.sum.variance'])) < min_isigi
     integrated_data.del_selected(selection)
     info('Removing %d reflections with I/Sig(I) < %s' %(
       selection.count(True), min_isigi))
@@ -203,7 +204,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     if 'intensity.prf.variance' in integrated_data:
       selection = (
         integrated_data['intensity.prf.value']/
-        integrated_data['intensity.prf.variance']) < min_isigi
+        flex.sqrt(integrated_data['intensity.prf.variance'])) < min_isigi
       integrated_data.del_selected(selection)
       info('Removing %d profile reflections with I/Sig(I) < %s' %(
         selection.count(True), min_isigi))
