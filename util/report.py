@@ -12,6 +12,43 @@
 from __future__ import division
 
 
+class Array(object):
+  '''
+  A class to represent an array
+
+  '''
+  def __init__(self):
+    '''
+    Initialise the array
+
+    '''
+    self.title = ''
+    self.data = None
+
+  def as_dict(self):
+    '''
+    Return as a dictionary
+
+    :return: The dictionary
+
+    '''
+    from collections import OrderedDict
+    result = OrderedDict()
+    result['title'] = self.title
+    result['shape'] = self.data.all()
+    result['data'] = list(self.data)
+    return result
+
+  def as_str(self, prefix=''):
+    '''
+    Return as a string
+
+    :return: The string
+
+    '''
+    return ''
+
+
 class Table(object):
   '''
   A class to represent a table
@@ -70,6 +107,7 @@ class Table(object):
     ]
     return '\n'.join(text)
 
+
 class Report(object):
   '''
   A class to represent the report
@@ -82,6 +120,16 @@ class Report(object):
 
     '''
     self.tables = []
+    self.arrays = []
+
+  def add_array(self, array):
+    '''
+    Add an array to the report
+
+    :param array: The array to add
+
+    '''
+    self.arrays.append(array)
 
   def add_table(self, table):
     '''
@@ -100,6 +148,7 @@ class Report(object):
 
     '''
     self.tables.extend(other.tables)
+    self.arrays.extend(other.arrays)
 
   def as_dict(self):
     '''
@@ -111,6 +160,7 @@ class Report(object):
     from collections import OrderedDict
     result = OrderedDict()
     result['tables'] = [ table.as_dict() for table in self.tables ]
+    result['arrays'] = [ array.as_dict() for array in self.arrays ]
     return result
 
   def as_str(self, prefix=''):

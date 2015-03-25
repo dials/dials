@@ -10,7 +10,7 @@
 from __future__ import division
 from dials.array_family import flex
 from dials.array_family.flex import Binner
-from dials.util.report import Report, Table
+from dials.util.report import Report, Table, Array
 
 
 def flex_ios(val, var):
@@ -458,3 +458,13 @@ class ProfileModelReport(Report):
 
     # Add the table
     self.add_table(table)
+
+    # Add the profiles
+    for i in range(len(profiles)):
+      model = profiles[i]
+      for j in range(len(model)):
+        if model.valid(j):
+          array = Array()
+          array.title = 'Profile model (id: %d, profile: %d)' % (i, j)
+          array.data = model.data(j)
+          self.add_array(array)
