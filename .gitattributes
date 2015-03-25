@@ -1016,6 +1016,7 @@ util/options.py -text
 util/picklez.py -text
 util/pprint.py -text
 util/pycbf_extra.py -text
+util/report.py -text
 util/show_version.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text
