@@ -350,7 +350,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     from math import pi
-    import __builtin__
+    from collections import defaultdict
     from logging import info
     info("Matching reference spots with predicted reflections")
     info(' %d observed reflections input' % len(other))
@@ -358,32 +358,54 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     # Get the miller index, entering flag and turn number for
     # Both sets of reflections
+    i1 = self['id']
     h1 = self['miller_index']
     e1 = self['entering'].as_int()
-    p1 = self['xyzcal.mm'].parts()[2]
-    n1 = floor(p1 / (2 * pi))
+    x1, y1, z1 = self['xyzcal.px'].parts()
+    p1 = self['panel']
+
+    i2 = other['id']
     h2 = other['miller_index']
     e2 = other['entering'].as_int()
-    p2 = other['xyzcal.mm'].parts()[2]
-    n2 = floor(p2 / (2 * pi))
+    x2, y2, z2 = other['xyzcal.px'].parts()
+    p2 = other['panel']
+
+    class Match(object):
+      def __init__(self):
+        self.a = []
+        self.b = []
 
     # Create the match lookup
-    lookup = {}
+    lookup = defaultdict(Match)
     for i in range(len(self)):
-      item = h1[i] + (e1[i], __builtin__.int(n1[i]))
-      assert(item not in lookup)
-      lookup[item] = (i, False)
+      item = h1[i] + (e1[i], i1[i], p1[i])
+      lookup[item].a.append(i)
+
+    # Add matches from input reflections
+    for i in range(len(other)):
+      item = h2[i] + (e2[i], i2[i], p2[i])
+      if item in lookup:
+        lookup[item].b.append(i)
 
     # Create the list of matches
     match1 = []
     match2 = []
-    for i in range(len(other)):
-      item = h2[i] + (e2[i], __builtin__.int(n2[i]))
-      if item in lookup:
-        value = lookup[item]
-        assert(value[1] is False)
-        lookup[item] = (value[0], True)
-        match1.append(value[0])
+    for item, value in lookup.iteritems():
+      if len(value.b) == 0:
+        continue
+      elif len(value.a) == 1 and len(value.b) == 1:
+        match1.append(value.a[0])
+        match2.append(value.b[0])
+      else:
+        d = []
+        for i in value.a:
+          for j in value.b:
+            dx = x1[i]-x2[j]
+            dy = y1[i]-y2[j]
+            dz = z1[i]-z2[j]
+            d.append((i,j,dx**2 + dy**2 + dz**2))
+        i, j, d = min(d, key=lambda x: x[2])
+        match1.append(i)
         match2.append(i)
 
     # Select everything which matches
