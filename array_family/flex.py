@@ -349,15 +349,58 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The matches
 
     '''
+    from math import pi
+    import __builtin__
     from logging import info
     info("Matching reference spots with predicted reflections")
     info(' %d observed reflections input' % len(other))
     info(' %d reflections predicted' % len(self))
-    sind, oind = self.match(other)
+
+    # Get the miller index, entering flag and turn number for
+    # Both sets of reflections
+    h1 = self['miller_index']
+    e1 = self['entering'].as_int()
+    p1 = self['xyzcal.mm'].parts()[2]
+    n1 = floor(p1 / (2 * pi))
+    h2 = other['miller_index']
+    e2 = other['entering'].as_int()
+    p2 = other['xyzcal.mm'].parts()[2]
+    n2 = floor(p2 / (2 * pi))
+
+    # Create the match lookup
+    lookup = {}
+    for i in range(len(self)):
+      item = h1[i] + (e1[i], __builtin__.int(n1[i]))
+      assert(item not in lookup)
+      lookup[item] = (i, False)
+
+    # Create the list of matches
+    match1 = []
+    match2 = []
+    for i in range(len(other)):
+      item = h2[i] + (e2[i], __builtin__.int(n2[i]))
+      if item in lookup:
+        value = lookup[item]
+        assert(value[1] is False)
+        lookup[item] = (value[0], True)
+        match1.append(value[0])
+        match2.append(i)
+
+    # Select everything which matches
+    sind = flex.size_t(match1)
+    oind = flex.size_t(match2)
+    s2 = self.select(sind)
     o2 = other.select(oind)
-    h1 = self.select(sind)['miller_index']
+    h1 = s2['miller_index']
     h2 = o2['miller_index']
-    mask = (h1 == h2)
+    e1 = s2['entering']
+    e2 = o2['entering']
+    assert(h1 == h2)
+    assert(e1 == e2)
+    x1, y1, z1 = s2['xyzcal.px'].parts()
+    x2, y2, z2 = o2['xyzcal.px'].parts()
+    distance = flex.sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+    mask = distance < 2
     info(' %d reflections matched' % len(o2))
     info(' %d reflections accepted' % mask.count(True))
     self.set_flags(
