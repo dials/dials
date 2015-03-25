@@ -289,13 +289,11 @@ class IntegrationReport(object):
     assert(len(tables) == len(experiments))
 
     # Initialise the dictionary
-    self._report = OrderedDict()
-    self._report['integration'] = []
+    self._report = []
 
     # Generate an integration report for each experiment
     for i, (expr, data) in enumerate(zip(experiments, tables)):
-      self._report['integration'].append(
-        generate_integration_report(expr, data))
+      self._report.append(generate_integration_report(expr, data))
 
   def as_dict(self):
     '''
@@ -328,7 +326,7 @@ class IntegrationReport(object):
              "<I/sigI>\n (sum)",
              "<I/sigI>\n (prf)",
              "<CC prf>"]]
-    for j, report in enumerate(self._report['integration']):
+    for j, report in enumerate(self._report):
       report = report['image']
       for i in range(len(report['bins'])-1):
         rows.append([
@@ -359,7 +357,7 @@ class IntegrationReport(object):
              "<I/sigI>\n (sum)",
              "<I/sigI>\n (prf)",
              "<CC prf>"]]
-    for j, report in enumerate(self._report['integration']):
+    for j, report in enumerate(self._report):
       report = report['resolution']
       for i in range(len(report['bins'])-1):
         rows.append([
@@ -379,7 +377,7 @@ class IntegrationReport(object):
 
     # Create the overall table
     overall_tables = []
-    for j, report in enumerate(self._report['integration']):
+    for j, report in enumerate(self._report):
       report = report['summary']
       summary = report['overall']
       high = report['high']
@@ -438,8 +436,7 @@ class ProfileModelReport(object):
     from collections import OrderedDict
 
     # Init the report
-    self._report = OrderedDict()
-    self._report['profile_model'] = []
+    self._report = []
 
     # Get the modeller
     profiles = profile_model.profiles()
@@ -451,7 +448,7 @@ class ProfileModelReport(object):
       summary['valid'] = [model.valid(i) for i in range(len(model))]
       summary['coord'] = [model.coord(i) for i in range(len(model))]
       summary['n_reflections'] = [model.n_reflections(i) for i in range(len(model))]
-      self._report['profile_model'].append(summary)
+      self._report.append(summary)
 
   def as_dict(self):
     '''
@@ -479,7 +476,7 @@ class ProfileModelReport(object):
              "Y (px)",
              "Z (im)",
              "# reflections"]]
-    for j, report in enumerate(self._report['profile_model']):
+    for j, report in enumerate(self._report):
       for i in range(len(report['valid'])):
         rows.append([
           '%d'   % j,
