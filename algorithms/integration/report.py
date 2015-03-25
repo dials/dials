@@ -247,6 +247,12 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   hl_binner = high_low_resolution_binner.indexer(data['d'])
   high_summary = overall_report(select(data, hl_binner.indices(0)))
   low_summary = overall_report(select(data, hl_binner.indices(1)))
+  high_summary['dmin'] = high_low_resolution_binner.bins()[0]
+  high_summary['dmax'] = high_low_resolution_binner.bins()[1]
+  low_summary['dmin'] = high_low_resolution_binner.bins()[1]
+  low_summary['dmax'] = high_low_resolution_binner.bins()[2]
+  overall['dmin'] = high_summary['dmin']
+  overall['dmax'] = low_summary['dmax']
 
   # Create the overall report
   summary = OrderedDict([
@@ -383,6 +389,8 @@ class IntegrationReport(object):
       high = report['high']
       low = report['low']
       desc_fmt_key = [
+        ("dmin",                                  '%.2f', 'dmin'),
+        ('dmax',                                  '%.2f', 'dmax'),
         ("number fully recorded",                 '%d'  , "n_full"),
         ("number partially recorded",             '%d'  , "n_partial"),
         ("number with overloaded pixels",         '%d'  , "n_overload"),
