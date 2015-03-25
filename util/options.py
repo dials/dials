@@ -535,9 +535,16 @@ class OptionParser(OptionParserBase):
       exit(0)
 
     # Parse the phil parameters
-    params, args = self._phil_parser.parse_args(
-      args, options.verbose > 0,
-      return_unhandled=return_unhandled)
+    try:
+      params, args = self._phil_parser.parse_args(
+        args, options.verbose > 0,
+        return_unhandled=return_unhandled)
+    except Exception:
+      raise RuntimeError(
+        '''
+        Import failed. There was a problem with one or more of the
+        following arguments:\n%s
+        ''' % '\n'.join('          %s' % a for a in args))
 
     # Print the diff phil
     if show_diff_phil:
