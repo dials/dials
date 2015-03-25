@@ -456,7 +456,10 @@ class Task(object):
         output = output.select(output.get_flags(flag))
         I = output[Icol]
         V = output[Vcol]
-        assert(V.all_gt(0))
+        assert(V.all_ge(0))
+        output = output.select(V > 0)
+        I = output[Icol]
+        V = output[Vcol]
         IOS = I / flex.sqrt(V)
         if self.params.debug.select.i_over_sigma_lt is not None:
           mask = IOS < self.params.debug.select.i_over_sigma_lt
