@@ -84,6 +84,22 @@ def generate_phil_scope():
         .type = bool
         .help = "Save shoeboxes after each processing task."
 
+      select {
+
+        using = *sum prf
+          .type = choice
+          .help = "Select using which intensities"
+
+        i_over_sigma_lt = None
+          .type = float
+          .help = "Select reflections with I/Sigma < value"
+
+        i_over_sigma_gt = None
+          .type = float
+          .help = "Select reflections with I/Sigma > value"
+
+      }
+
     }
   ''', process_includes=True)
 
@@ -280,6 +296,7 @@ class Task(object):
                experiments,
                profile_model,
                reflections,
+               params,
                mask=None,
                flatten=False,
                save_shoeboxes=False,
@@ -292,6 +309,7 @@ class Task(object):
     :param experiments: The list of experiments
     :param profile_model: The profile model
     :param reflections: The list of reflections
+    :param params: The processing parameters
     :param job: The frames to integrate
     :param flatten: Flatten the shoeboxes
     :param save_shoeboxes: Save the shoeboxes to file
@@ -307,6 +325,7 @@ class Task(object):
     self.experiments = experiments
     self.profile_model = profile_model
     self.reflections = reflections
+    self.params = params
     self.mask = mask
     self.flatten = flatten
     self.save_shoeboxes = save_shoeboxes
@@ -423,7 +442,29 @@ class Task(object):
     # Optionally save the shoeboxes
     if self.save_shoeboxes:
       filename = 'shoeboxes_%d.pickle' % self.index
-      self.reflections.as_pickle(filename)
+      output = self.reflections
+      if (self.params.debug.select.i_over_sigma_lt is not None or
+          self.params.debug.select.i_over_sigma_gt is not None):
+        if self.params.debug.select.using == 'sum':
+          flag = output.flags.integrated_sum
+          Icol = 'intensity.sum.value'
+          Vcol = 'intensity.sum.variance'
+        else:
+          flag = output.flags.integrated_prf
+          Icol = 'intensity.prf.value'
+          Vcol = 'intensity.prf.variance'
+        output = output.select(output.get_flags(flag))
+        I = output[Icol]
+        V = output[Vcol]
+        assert(V.all_gt(0))
+        IOS = I / flex.sqrt(V)
+        if self.params.debug.select.i_over_sigma_lt is not None:
+          mask = IOS < self.params.debug.select.i_over_sigma_lt
+          output = output.select(mask)
+        if self.params.debug.select.i_over_sigma_gt is not None:
+          mask = IOS > self.params.debug.select.i_over_sigma_gt
+          output = output.select(mask)
+      output.as_pickle(filename)
 
     # Delete the shoeboxes
     del self.reflections['shoebox']
@@ -478,6 +519,7 @@ class Manager(object):
     self.block_size_threshold = params.block.threshold
     self.block_size_force = params.block.force
     self.save_shoeboxes = params.debug.save_shoeboxes
+    self.params = params
 
     # Save some multiprocessing stuff
     self.mp_nproc = params.mp.nproc
@@ -545,6 +587,7 @@ class Manager(object):
         experiments=expriments,
         profile_model=profile_model,
         reflections=reflections,
+        params=self.params,
         mask=self.mask,
         flatten=self.flatten,
         save_shoeboxes=self.save_shoeboxes,

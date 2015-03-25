@@ -616,6 +616,10 @@ class Integrator(object):
       if len(reference) == 0:
         info("** Skipping profile modelling - no reference profiles given **")
 
+      # Dont save shoeboxes in modelling
+      debug_save_shoeboxes = self.params.integration.debug.save_shoeboxes
+      self.params.integration.debug.save_shoeboxes = False
+
       # Create the data processor
       executor = ProfileModellerExecutor(
         self.experiments,
@@ -629,6 +633,8 @@ class Integrator(object):
 
       # Process the reference profiles
       reference, modeller_list, time_info = processor.process()
+
+      self.params.integration.debug.save_shoeboxes = debug_save_shoeboxes
 
       # Set the reference spots info
       #self.reflections.set_selected(selection, reference)
