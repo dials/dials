@@ -729,12 +729,10 @@ class Integrator(object):
     Return the report of the processing
 
     '''
-    from collections import OrderedDict
-    result = OrderedDict()
-    if self.profile_model_report is not None:
-      result['profile_model'] = self.profile_model_report.as_dict()
-    if self.integration_report is not None:
-      result['integration'] = self.integration_report.as_dict()
+    from dials.util.report import Report
+    result = Report()
+    result.combine(self.profile_model_report)
+    result.combine(self.integration_report)
     return result
 
   def summary(self, block_size, block_size_units):

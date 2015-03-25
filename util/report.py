@@ -34,20 +34,41 @@ class Table(object):
 
     '''
     from collections import OrderedDict
+    cols = OrderedDict()
+    for col in self.cols:
+      assert(len(col) == 2)
+      cols[col[0]] = col[1]
     rows = []
     for row in self.rows:
       row_out = OrderedDict()
       for j in range(len(row)):
-        row_out[self.cols[j]] = row[j]
+        row_out[self.cols[j][0]] = row[j]
       rows.append(row_out)
 
     # Create the output
     result = OrderedDict()
     result['title'] = self.title
-    result['cols'] = self.cols
+    result['cols'] = cols
     result['rows'] = rows
     return result
 
+  def as_str(self, prefix=''):
+    '''
+    Return the table as a string
+
+    :return: The string
+
+    '''
+    from libtbx.table_utils import format as table
+    rows = [[col[1] for col in self.cols]]
+    for i in range(len(self.rows)):
+      rows.append([str(x) for x in self.rows[i]])
+    text = [
+      prefix + self.title,
+      table(rows, has_header=True, justify='left', prefix=prefix),
+      ''
+    ]
+    return '\n'.join(text)
 
 class Report(object):
   '''
@@ -89,8 +110,17 @@ class Report(object):
     '''
     from collections import OrderedDict
     result = OrderedDict()
-    result['tables'] = [ table.as_dict() for table in self.tables]
+    result['tables'] = [ table.as_dict() for table in self.tables ]
     return result
+
+  def as_str(self, prefix=''):
+    '''
+    Return the report as a string
+
+    :return: The string
+
+    '''
+    return '\n'.join([table.as_str(prefix) for table in self.tables])
 
   def as_json(self):
     '''
@@ -137,6 +167,7 @@ class Report(object):
 
     # Return the XML document
     return doc.toprettyxml(indent="  ")
+
 
   def as_file(self, filename):
     '''

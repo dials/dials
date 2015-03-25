@@ -69,7 +69,7 @@ phil_scope = parse(
 
     report = None
       .type = str
-      .help = "The integration report filename"
+      .help = "The integration report filename (*.xml or *.json)"
   }
 
   scan_range = None
@@ -259,9 +259,7 @@ class Script(object):
 
     # Write a report if requested
     if params.output.report is not None:
-      import json
-      with open(params.output.report, "w") as outfile:
-        json.dump(integrator.report(), outfile, indent=2)
+      integrator.report().as_file(params.output.report)
 
     # Print the total time taken
     info("\nTotal time taken: %f" % (time() - start_time))

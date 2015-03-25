@@ -10,6 +10,7 @@
 from __future__ import division
 from dials.array_family import flex
 from dials.array_family.flex import Binner
+from dials.util.report import Report, Table
 
 
 def flex_ios(val, var):
@@ -274,7 +275,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     ("image", image)])
 
 
-class IntegrationReport(object):
+class IntegrationReport(Report):
   '''
   A class to store the integration report
 
@@ -290,52 +291,39 @@ class IntegrationReport(object):
     '''
     from collections import OrderedDict
 
+    # Initialise the report class
+    super(IntegrationReport, self).__init__()
+
     # Split the tables by experiment id
     tables = reflections.split_by_experiment_id()
     assert(len(tables) == len(experiments))
 
     # Initialise the dictionary
-    self._report = []
+    report_list = []
 
     # Generate an integration report for each experiment
     for i, (expr, data) in enumerate(zip(experiments, tables)):
-      self._report.append(generate_integration_report(expr, data))
+      report_list.append(generate_integration_report(expr, data))
 
-  def as_dict(self):
-    '''
-    Return the report as a dictionary
-
-    :return: The report dictionary
-
-    '''
-    return self._report
-
-  def as_str(self, prefix=''):
-    '''
-    Return the report as a string
-
-    :return: The report string
-
-    '''
-    from libtbx.table_utils import format as table
-
-    # Create the image table
-    rows = [["Id",
-             "Image",
-             "# full",
-             "# part",
-             "# over",
-             "# ice",
-             "# sum",
-             "# prf",
-             "<Ibg>",
-             "<I/sigI>\n (sum)",
-             "<I/sigI>\n (prf)",
-             "<CC prf>"]]
-    for j, report in enumerate(self._report):
+    # Construct the per image table
+    table = Table()
+    table.title = "Summary vs image number"
+    table.cols.append(('id', 'ID'))
+    table.cols.append(('image', 'Image'))
+    table.cols.append(('n_full', '# full'))
+    table.cols.append(('n_part', '# part'))
+    table.cols.append(('n_over', '# over'))
+    table.cols.append(('n_ice', '# ice'))
+    table.cols.append(('n_sum', '# sum'))
+    table.cols.append(('n_prf', '# prf'))
+    table.cols.append(('ibg', '<Ibg>'))
+    table.cols.append(('ios_sum', '<I/sigI>\n (sum)'))
+    table.cols.append(('ios_prf', '<I/sigI>\n (prf)'))
+    table.cols.append(('cc_prf', '<CC prf>'))
+    for j, report in enumerate(report_list):
       report = report['image']
       for i in range(len(report['bins'])-1):
-        rows.append([
+        table.rows.append([
           '%d'   % j,
           '%d'   % report['bins'][i],
           '%d'   % report['n_full'][i],
@@ -348,27 +336,29 @@ class IntegrationReport(object):
           '%.2f' % report['ios_sum'][i],
           '%.2f' % report['ios_prf'][i],
           '%.2f' % report['cc_prf'][i]])
-    image_table = table(rows, has_header=True, justify='right', prefix=prefix)
+    self.add_table(table)
 
-    # Create the resolution table
-    rows = [["Id",
-             "d min",
-             "# full",
-             "# part",
-             "# over",
-             "# ice",
-             "# sum",
-             "# prf",
-             "<Ibg>",
-             "<I/sigI>\n (sum)",
-             "<I/sigI>\n (prf)",
-             "<CC prf>"]]
-    for j, report in enumerate(self._report):
+    # Construct the per resolution table
+    table = Table()
+    table.title = "Summary vs resolution"
+    table.cols.append(('id', 'ID'))
+    table.cols.append(('dmin', 'd min'))
+    table.cols.append(('n_full', '# full'))
+    table.cols.append(('n_part', '# part'))
+    table.cols.append(('n_over', '# over'))
+    table.cols.append(('n_ice', '# ice'))
+    table.cols.append(('n_sum', '# sum'))
+    table.cols.append(('n_prf', '# prf'))
+    table.cols.append(('ibg', '<Ibg>'))
+    table.cols.append(('ios_sum', '<I/sigI>\n (sum)'))
+    table.cols.append(('ios_prf', '<I/sigI>\n (prf)'))
+    table.cols.append(('cc_prf', '<CC prf>'))
+    for j, report in enumerate(report_list):
       report = report['resolution']
       for i in range(len(report['bins'])-1):
-        rows.append([
+        table.rows.append([
           '%d'   % j,
-          '%.2f' % report['bins'][i],
+          '%d'   % report['bins'][i],
           '%d'   % report['n_full'][i],
           '%d'   % report['n_partial'][i],
           '%d'   % report['n_overload'][i],
@@ -379,15 +369,21 @@ class IntegrationReport(object):
           '%.2f' % report['ios_sum'][i],
           '%.2f' % report['ios_prf'][i],
           '%.2f' % report['cc_prf'][i]])
-    resolution_table = table(rows, has_header=True, justify='right', prefix=prefix)
+    self.add_table(table)
 
     # Create the overall table
-    overall_tables = []
-    for j, report in enumerate(self._report):
+    for j, report in enumerate(report_list):
       report = report['summary']
       summary = report['overall']
       high = report['high']
       low = report['low']
+
+      table = Table()
+      table.title = "Summary for experiment %d" % i
+      table.cols.append(('item', 'Item'))
+      table.cols.append(('overall', 'Overall'))
+      table.cols.append(('low', 'Low'))
+      table.cols.append(('high', 'High'))
       desc_fmt_key = [
         ("dmin",                                  '%.2f', 'dmin'),
         ('dmax',                                  '%.2f', 'dmax'),
@@ -404,29 +400,12 @@ class IntegrationReport(object):
         ("cc_pearson sum/prf",                    '%.2f', "cc_pearson_sum_prf"),
         ("cc_spearman sum/prf",                   '%.2f', "cc_spearman_sum_prf")
       ]
-      rows = [['item', 'overall', 'low', 'high']]
       for desc, fmt, key in desc_fmt_key:
-        rows.append([desc, fmt % summary[key], fmt % low[key], fmt % high[key]])
-      overall_tables.append((j, table(rows, has_header=True, justify='left', prefix=prefix)))
-
-    # Create the text
-    text = [
-      prefix + 'Summary vs image number',
-      image_table,
-      '\n',
-      prefix + 'Summary vs resolution',
-      resolution_table,
-      '\n']
-    for i, table in overall_tables:
-      text.append(prefix + 'Summary for experiment %d' % i)
-      text.append(table)
-      text.append('\n')
-
-    # Return the text
-    return '\n'.join(text)
+        table.rows.append([desc, fmt % summary[key], fmt % low[key], fmt % high[key]])
+      self.add_table(table)
 
 
-class ProfileModelReport(object):
+class ProfileModelReport(Report):
   '''
   A class to store the profile model report
 
@@ -443,8 +422,23 @@ class ProfileModelReport(object):
     '''
     from collections import OrderedDict
 
-    # Init the report
-    self._report = []
+    # Initialise the report class
+    super(ProfileModelReport, self).__init__()
+
+    # Create the table
+    table = Table()
+
+    # Set the title
+    table.title = 'Summary of profile model'
+
+    # Add the columns
+    table.cols.append(('id', 'ID'))
+    table.cols.append(('profile', 'Profile'))
+    table.cols.append(('created', 'Created'))
+    table.cols.append(('x', 'X (px)'))
+    table.cols.append(('y', 'Y (px)'))
+    table.cols.append(('z', 'Z (im)'))
+    table.cols.append(('n_reflections', '# reflections'))
 
     # Get the modeller
     profiles = profile_model.profiles()
@@ -452,55 +446,15 @@ class ProfileModelReport(object):
     # Create the summary for each profile model
     for i in range(len(profiles)):
       model = profiles[i]
-      summary = OrderedDict()
-      summary['valid'] = [model.valid(i) for i in range(len(model))]
-      summary['coord'] = [model.coord(i) for i in range(len(model))]
-      summary['n_reflections'] = [model.n_reflections(i) for i in range(len(model))]
-      self._report.append(summary)
-
-  def as_dict(self):
-    '''
-    Return the report as a dictionary
-
-    :return: The report dictionary
-
-    '''
-    return self._report
-
-  def as_str(self, prefix=''):
-    '''
-    Return the report as a string
-
-    :return: The report string
-
-    '''
-    from libtbx.table_utils import format as table
-
-    # Create the image table
-    rows = [["Id",
-             "Profile",
-             "Created",
-             "X (px)",
-             "Y (px)",
-             "Z (im)",
-             "# reflections"]]
-    for j, report in enumerate(self._report):
-      for i in range(len(report['valid'])):
-        rows.append([
-          '%d'   % j,
+      for j in range(len(model)):
+        table.rows.append([
           '%d'   % i,
-          '%r'   % report['valid'][i],
-          '%.2f' % report['coord'][i][0],
-          '%.2f' % report['coord'][i][1],
-          '%.2f' % report['coord'][i][2],
-          '%d'   % report['n_reflections'][i]])
-    summary_table = table(rows, has_header=True, justify='right', prefix=prefix)
+          '%d'   % j,
+          '%s'   % model.valid(j),
+          '%.2f' % model.coord(j)[0],
+          '%.2f' % model.coord(j)[1],
+          '%.2f' % model.coord(j)[2],
+          '%d'   % model.n_reflections(j)])
 
-    # Create the text
-    text = [
-      'Summary of profile model',
-      summary_table
-    ]
-
-    # Return the text string
-    return '\n'.join(text)
+    # Add the table
+    self.add_table(table)
