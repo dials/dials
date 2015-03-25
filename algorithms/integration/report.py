@@ -142,6 +142,31 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     # Return the binned report
     return report
 
+  def resolution_bins(experiment, hkl, nbins):
+
+    # Create the crystal symmetry object
+    cs = crystal.symmetry(
+      space_group=experiment.crystal.get_space_group(),
+      unit_cell=experiment.crystal.get_unit_cell())
+
+    # Create the resolution binner object
+    ms = miller.set(cs, hkl)
+    ms.setup_binner(n_bins=nbins)
+    binner = ms.binner()
+    brange = list(binner.range_used())
+    bins = [binner.bin_d_range(brange[0])[0]]
+    for i in brange:
+      bins.append(binner.bin_d_range(i)[1])
+    return flex.double(reversed(bins))
+
+  def select(data, indices):
+
+    # Select rows from columns
+    result = {}
+    for key, value in data.iteritems():
+      result[key] = value.select(indices)
+    return result
+
   # Check the required columns are there
   assert("miller_index" in reflections)
   assert("d" in reflections)
@@ -192,21 +217,19 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   except Exception:
     pass
 
-  # Create the crystal symmetry object
-  cs = crystal.symmetry(
-    space_group=experiment.crystal.get_space_group(),
-    unit_cell=experiment.crystal.get_unit_cell())
+  # Create the resolution binner
+  high_low_resolution_binner = Binner(
+    resolution_bins(
+      experiment,
+      data['miller_index'],
+      2))
 
-  # Create the resolution binner object
-  ms = miller.set(cs, data['miller_index'])
-  ms.setup_binner(n_bins=n_resolution_bins)
-  binner = ms.binner()
-  brange = list(binner.range_used())
-  bins = [binner.bin_d_range(brange[0])[0]]
-  for i in brange:
-    bins.append(binner.bin_d_range(i)[1])
-  bins = flex.double(reversed(bins))
-  resolution_binner = Binner(bins)
+  # Create the resolution binner
+  resolution_binner = Binner(
+    resolution_bins(
+      experiment,
+      data['miller_index'],
+      n_resolution_bins))
 
   # Create the frame binner object
   try:
@@ -220,6 +243,18 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   # Create the overall report
   overall = overall_report(data)
 
+  # Create high/low resolution reports
+  hl_binner = high_low_resolution_binner.indexer(data['d'])
+  high_summary = overall_report(select(data, hl_binner.indices(0)))
+  low_summary = overall_report(select(data, hl_binner.indices(1)))
+
+  # Create the overall report
+  summary = OrderedDict([
+    ('overall', overall),
+    ('low', low_summary),
+    ('high', high_summary)
+  ])
+
   # Create a report binned by resolution
   resolution = binned_report(resolution_binner, data['d'], data)
 
@@ -228,7 +263,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
   # Return the report
   return OrderedDict([
-    ("overall", overall),
+    ("summary", summary),
     ("resolution", resolution),
     ("image", image)])
 
@@ -345,20 +380,28 @@ class IntegrationReport(object):
     # Create the overall table
     overall_tables = []
     for j, report in enumerate(self._report['integration']):
-      report = report['overall']
-      rows = [["number fully recorded",                 '%d'   % report["n_full"]],
-              ["number partially recorded",             '%d'   % report["n_partial"]],
-              ["number with overloaded pixels",         '%d'   % report["n_overload"]],
-              ["number in powder rings",                '%d'   % report["n_ice"]],
-              ["number processed with summation",       '%d'   % report["n_summed"]],
-              ["number processed with profile fitting", '%d'   % report["n_fitted"]],
-              ["<ibg>",                                 '%.2f' % report["mean_background"]],
-              ["<i/sigi> (summation)",                  '%.2f' % report["ios_sum"]],
-              ["<i/sigi> (profile fitting)",            '%.2f' % report["ios_prf"]],
-              ["<cc prf>",                              '%.2f' % report["cc_prf"]],
-              ["cc_pearson sum/prf",                    '%.2f' % report["cc_pearson_sum_prf"]],
-              ["cc_spearman sum/prf",                   '%.2f' % report["cc_spearman_sum_prf"]]]
-      overall_tables.append((j, table(rows, justify='left', prefix=prefix)))
+      report = report['summary']
+      summary = report['overall']
+      high = report['high']
+      low = report['low']
+      desc_fmt_key = [
+        ("number fully recorded",                 '%d'  , "n_full"),
+        ("number partially recorded",             '%d'  , "n_partial"),
+        ("number with overloaded pixels",         '%d'  , "n_overload"),
+        ("number in powder rings",                '%d'  , "n_ice"),
+        ("number processed with summation",       '%d'  , "n_summed"),
+        ("number processed with profile fitting", '%d'  , "n_fitted"),
+        ("<ibg>",                                 '%.2f', "mean_background"),
+        ("<i/sigi> (summation)",                  '%.2f', "ios_sum"),
+        ("<i/sigi> (profile fitting)",            '%.2f', "ios_prf"),
+        ("<cc prf>",                              '%.2f', "cc_prf"),
+        ("cc_pearson sum/prf",                    '%.2f', "cc_pearson_sum_prf"),
+        ("cc_spearman sum/prf",                   '%.2f', "cc_spearman_sum_prf")
+      ]
+      rows = [['item', 'overall', 'low', 'high']]
+      for desc, fmt, key in desc_fmt_key:
+        rows.append([desc, fmt % summary[key], fmt % low[key], fmt % high[key]])
+      overall_tables.append((j, table(rows, has_header=True, justify='left', prefix=prefix)))
 
     # Create the text
     text = [

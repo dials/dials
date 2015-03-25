@@ -37,6 +37,7 @@ namespace dials { namespace af { namespace boost_python {
   void export_flex_binner() {
 
     class_<BinIndexer>("BinIndexer", no_init)
+      .def("indices", &BinIndexer::indices)
       .def("count", &BinIndexer::count)
       .def("sum", &sum_double)
       .def("sum", &sum_int)

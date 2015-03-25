@@ -35,6 +35,22 @@ namespace dials { namespace af {
     }
 
     /**
+     * Get the indices for items in a bin
+     * @param index The bin number
+     * @return The indices
+     */
+    af::shared<std::size_t> indices(std::size_t index) {
+      DIALS_ASSERT(index < nbins_);
+      af::shared<std::size_t> result;
+      for (std::size_t i = 0; i < index_.size(); ++i) {
+        if (index_[i] == index) {
+          result.push_back(i);
+        }
+      }
+      return result;
+    }
+
+    /**
      * @returns A count of the values in each bin
      */
     af::shared<std::size_t> count() const {
