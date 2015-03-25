@@ -418,3 +418,84 @@ class IntegrationReport(object):
 
     # Return the text
     return '\n'.join(text)
+
+
+class ProfileModelReport(object):
+  '''
+  A class to store the profile model report
+
+  '''
+
+  def __init__(self, experiments, profile_model, reflections):
+    '''
+    Create the integration report
+
+    :param experiments: The experiment list
+    :param profile_model: The profile model
+    :param reflections: The reflection table
+
+    '''
+    from collections import OrderedDict
+
+    # Init the report
+    self._report = OrderedDict()
+    self._report['profile_model'] = []
+
+    # Get the modeller
+    profiles = profile_model.profiles()
+
+    # Create the summary for each profile model
+    for i in range(len(profiles)):
+      model = profiles[i]
+      summary = OrderedDict()
+      summary['valid'] = [model.valid(i) for i in range(len(model))]
+      summary['coord'] = [model.coord(i) for i in range(len(model))]
+      summary['n_reflections'] = [model.n_reflections(i) for i in range(len(model))]
+      self._report['profile_model'].append(summary)
+
+  def as_dict(self):
+    '''
+    Return the report as a dictionary
+
+    :return: The report dictionary
+
+    '''
+    return self._report
+
+  def as_str(self, prefix=''):
+    '''
+    Return the report as a string
+
+    :return: The report string
+
+    '''
+    from libtbx.table_utils import format as table
+
+    # Create the image table
+    rows = [["Id",
+             "Profile",
+             "Created",
+             "X (px)",
+             "Y (px)",
+             "Z (im)",
+             "# reflections"]]
+    for j, report in enumerate(self._report['profile_model']):
+      for i in range(len(report['valid'])):
+        rows.append([
+          '%d'   % j,
+          '%d'   % i,
+          '%r'   % report['valid'][i],
+          '%.2f' % report['coord'][i][0],
+          '%.2f' % report['coord'][i][1],
+          '%.2f' % report['coord'][i][2],
+          '%d'   % report['n_reflections'][i]])
+    summary_table = table(rows, has_header=True, justify='right', prefix=prefix)
+
+    # Create the text
+    text = [
+      'Summary of profile model',
+      summary_table
+    ]
+
+    # Return the text string
+    return '\n'.join(text)

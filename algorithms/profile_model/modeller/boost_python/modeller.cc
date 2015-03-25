@@ -121,6 +121,8 @@ namespace dials { namespace algorithms { namespace boost_python {
           int3,
           double>())
       .def("add", &EmpiricalProfileModeller::add)
+      .def("valid", &EmpiricalProfileModeller::valid)
+      .def("n_reflections", &EmpiricalProfileModeller::n_reflections)
       ;
 
     class_<MultiExpProfileModeller>("MultiExpProfileModeller")

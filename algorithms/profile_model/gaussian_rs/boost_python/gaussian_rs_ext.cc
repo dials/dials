@@ -84,7 +84,9 @@ namespace boost_python {
       typedef GaussianRSProfileModeller::mask_type mask_type;
       boost::python::list data_list;
       boost::python::list mask_list;
+      boost::python::list nref_list;
       for (std::size_t i = 0; i < obj.size(); ++i) {
+        nref_list.append(obj.n_reflections(i));
         try {
           data_list.append(obj.data(i));
           mask_list.append(obj.mask(i));
@@ -96,6 +98,7 @@ namespace boost_python {
       return boost::python::make_tuple(
           data_list,
           mask_list,
+          nref_list,
           obj.finalized());
     }
 
@@ -103,12 +106,14 @@ namespace boost_python {
     void setstate(GaussianRSProfileModeller& obj, boost::python::tuple state) {
       typedef GaussianRSProfileModeller::data_type data_type;
       typedef GaussianRSProfileModeller::mask_type mask_type;
-      DIALS_ASSERT(boost::python::len(state) == 3);
+      DIALS_ASSERT(boost::python::len(state) == 4);
       boost::python::list data_list = extract<boost::python::list>(state[0]);
       boost::python::list mask_list = extract<boost::python::list>(state[1]);
-      bool finalized = extract<bool>(state[2]);
+      boost::python::list nref_list = extract<boost::python::list>(state[2]);
+      bool finalized = extract<bool>(state[3]);
       DIALS_ASSERT(boost::python::len(data_list) == boost::python::len(mask_list));
       DIALS_ASSERT(boost::python::len(data_list) == obj.size());
+      DIALS_ASSERT(boost::python::len(nref_list) == obj.size());
       for (std::size_t i = 0; i < obj.size(); ++i) {
         af::flex_double d = boost::python::extract<af::flex_double>(data_list[i]);
         af::flex_bool   m = boost::python::extract<af::flex_bool>(mask_list[i]);
@@ -116,6 +121,7 @@ namespace boost_python {
         DIALS_ASSERT(m.accessor().all().size() == 3);
         obj.set_data(i, data_type(d.handle(), af::c_grid<3>(d.accessor())));
         obj.set_mask(i, mask_type(m.handle(), af::c_grid<3>(m.accessor())));
+        obj.set_n_reflections(i, boost::python::extract<std::size_t>(nref_list[i]));
       }
       obj.set_finalized(finalized);
     }
@@ -145,6 +151,7 @@ namespace boost_python {
           double,
           int,
           int>())
+      .def("coord", &GaussianRSProfileModeller::coord)
       .def_pickle(GaussianRSProfileModellerPickleSuite())
       ;
 

@@ -37,6 +37,7 @@ namespace dials { namespace algorithms {
             double threshold)
         : data_(n),
           mask_(n),
+          n_reflections_(n, 0),
           accessor_(af::c_grid<3>(
                 datasize[0],
                 datasize[1],
@@ -82,6 +83,7 @@ namespace dials { namespace algorithms {
           for (std::size_t i = 0; i < data.size(); ++i) {
             data[i] += weight * profile[i] / sum_data;
           }
+          n_reflections_[index]++;
         }
       }
     }
@@ -105,6 +107,7 @@ namespace dials { namespace algorithms {
       // Loop through all the profiles. If needed, allocate them, then
       // add the pixel values from the other modeller to this
       for (std::size_t i = 0; i < data_.size(); ++i) {
+        n_reflections_[i] += obj->n_reflections_[i];
         if (obj->data_[i].size() != 0) {
           if (data_[i].size() == 0) {
             data_[i] = data_type(accessor_, 0);
@@ -169,6 +172,11 @@ namespace dials { namespace algorithms {
       mask_[index] = value;
     }
 
+    void set_n_reflections(std::size_t index, std::size_t value) {
+      DIALS_ASSERT(index < n_reflections_.size());
+      n_reflections_[index] = value;
+    }
+
     /**
      * @return The profile at the index
      */
@@ -192,6 +200,22 @@ namespace dials { namespace algorithms {
      */
     std::size_t size() const {
       return data_.size();
+    }
+
+    /**
+     * @return Is the profile valid
+     */
+    bool valid(std::size_t index) const {
+      DIALS_ASSERT(index < mask_.size());
+      return mask_[index].size() != 0;
+    }
+
+    /**
+     * @return The number of reflections used
+     */
+    std::size_t n_reflections(std::size_t index) const {
+      DIALS_ASSERT(index < n_reflections_.size());
+      return n_reflections_[index];
     }
 
   protected:
@@ -233,6 +257,7 @@ namespace dials { namespace algorithms {
 
     af::shared<data_type> data_;
     af::shared<mask_type> mask_;
+    af::shared<std::size_t> n_reflections_;
     af::c_grid<3> accessor_;
     double threshold_;
     bool finalized_;

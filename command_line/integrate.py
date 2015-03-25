@@ -261,7 +261,7 @@ class Script(object):
     if params.output.report is not None:
       import json
       with open(params.output.report, "w") as outfile:
-        json.dump(integrator.report.as_dict(), outfile, indent=2)
+        json.dump(integrator.report(), outfile, indent=2)
 
     # Print the total time taken
     info("\nTotal time taken: %f" % (time() - start_time))

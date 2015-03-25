@@ -541,7 +541,8 @@ class Integrator(object):
     self.profile_model = profile_model
     self.reflections = reflections
     self.params = params
-    self.report = None
+    self.profile_model_report = None
+    self.integration_report = None
 
   def integrate(self):
     '''
@@ -549,13 +550,15 @@ class Integrator(object):
 
     '''
     from dials.algorithms.integration.report import IntegrationReport
+    from dials.algorithms.integration.report import ProfileModelReport
     from dials.algorithms.integration.statistics import modeller_statistics
     from dials.util.command_line import heading
     from logging import info, debug
     from dials.util import pprint
 
     # Init the report
-    self.report = None
+    self.profile_model_report = None
+    self.integration_report = None
 
     # Heading
     info("=" * 80)
@@ -656,12 +659,19 @@ class Integrator(object):
             debug("** NO PROFILE **")
 
       # Print out some statistics
+      # info("")
+      # for summary in modeller_statistics(
+      #     self.reflections,
+      #     self.experiments,
+      #     self.profile_model):
+      #   info(str(summary))
+
+      self.profile_model_report = ProfileModelReport(
+        self.experiments,
+        self.profile_model,
+        self.reflections)
       info("")
-      for summary in modeller_statistics(
-          self.reflections,
-          self.experiments,
-          self.profile_model):
-        info(str(summary))
+      info(self.profile_model_report.as_str(prefix=' '))
 
       # Print the time info
       info("")
@@ -695,9 +705,11 @@ class Integrator(object):
     finalize(self.reflections)
 
     # Create the integration report
-    self.report = IntegrationReport(self.experiments, self.reflections)
+    self.integration_report = IntegrationReport(
+      self.experiments,
+      self.reflections)
     info("")
-    info(self.report.as_str(prefix=' '))
+    info(self.integration_report.as_str(prefix=' '))
 
     # Print the time info
     info(str(time_info))
@@ -705,6 +717,19 @@ class Integrator(object):
 
     # Return the reflections
     return self.reflections
+
+  def report(self):
+    '''
+    Return the report of the processing
+
+    '''
+    from collections import OrderedDict
+    result = OrderedDict()
+    if self.profile_model_report is not None:
+      result['profile_model'] = self.profile_model_report.as_dict()
+    if self.integration_report is not None:
+      result['integration'] = self.integration_report.as_dict()
+    return result
 
   def summary(self, block_size, block_size_units):
     ''' Print a summary of the integration stuff. '''

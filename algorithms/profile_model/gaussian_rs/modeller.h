@@ -253,6 +253,10 @@ namespace dials { namespace algorithms {
       return fit_method_;
     }
 
+    vec3<double> coord(std::size_t index) const {
+      return sampler_->coord(index);
+    }
+
     /**
      * Model the profiles from the reflections
      * @param reflections The reflection list
