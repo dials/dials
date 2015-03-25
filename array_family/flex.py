@@ -352,6 +352,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from math import pi
     from collections import defaultdict
     from logging import info
+    import __builtin__
     info("Matching reference spots with predicted reflections")
     info(' %d observed reflections input' % len(other))
     info(' %d reflections predicted' % len(self))
@@ -404,9 +405,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             dy = y1[i]-y2[j]
             dz = z1[i]-z2[j]
             d.append((i,j,dx**2 + dy**2 + dz**2))
-        i, j, d = min(d, key=lambda x: x[2])
+        i, j, d = __builtin__.min(d, key=lambda x: x[2])
         match1.append(i)
-        match2.append(i)
+        match2.append(j)
 
     # Select everything which matches
     sind = flex.size_t(match1)
