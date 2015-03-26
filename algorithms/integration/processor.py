@@ -456,7 +456,7 @@ class Task(object):
         output = output.select(output.get_flags(flag))
         I = output[Icol]
         V = output[Vcol]
-        assert(V.all_ge(0))
+        assert V.all_ge(0), "Some variances < 0"
         output = output.select(V > 0)
         I = output[Icol]
         V = output[Vcol]

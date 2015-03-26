@@ -551,7 +551,6 @@ class Integrator(object):
     '''
     from dials.algorithms.integration.report import IntegrationReport
     from dials.algorithms.integration.report import ProfileModelReport
-    from dials.algorithms.integration.statistics import modeller_statistics
     from dials.util.command_line import heading
     from logging import info, debug
     from dials.util import pprint
@@ -664,14 +663,7 @@ class Integrator(object):
           except Exception:
             debug("** NO PROFILE **")
 
-      # Print out some statistics
-      # info("")
-      # for summary in modeller_statistics(
-      #     self.reflections,
-      #     self.experiments,
-      #     self.profile_model):
-      #   info(str(summary))
-
+      # Print the modeller report
       self.profile_model_report = ProfileModelReport(
         self.experiments,
         self.profile_model,
