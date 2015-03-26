@@ -813,6 +813,7 @@ scratch/luiso_s/wx_toys/add_widgets_in_run_time.py -text
 scratch/luiso_s/wx_toys/bitmap_01.py -text
 scratch/luiso_s/wx_toys/bitmap__w_sizers.py -text
 scratch/luiso_s/wx_toys/bitmap_from_numpy.py -text
+scratch/luiso_s/wx_toys/bitmap_from_numpy_boosted.py -text
 scratch/luiso_s/wx_toys/dual_frame.py -text
 scratch/luiso_s/wx_toys/grid_tst.py -text
 scratch/luiso_s/wx_toys/grid_tst_01.py -text
