@@ -431,7 +431,8 @@ class Task(object):
       image = imageset.get_image(i)
       mask = imageset.get_mask(i)
       if self.mask is not None:
-        assert len(mask) == len(self.mask), "Mask/Image are incorrect size"
+        assert len(mask) == len(self.mask), \
+          "Mask/Image are incorrect size %d %d" % (len(mask),  len(self.mask))
         mask = tuple(m1 & m2 for m1, m2 in zip(self.mask, mask))
       read_time += time() - st
       processor.next(make_image(image, mask), self.executor)
