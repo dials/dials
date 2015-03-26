@@ -83,7 +83,14 @@ class Script(object):
 
     self._debug = params.output.debug
 
+    # Decomposition axes
+    self._e1 = params.orientation_decomposition.e1
+    self._e2 = params.orientation_decomposition.e2
+    self._e3 = params.orientation_decomposition.e3
+
     for icrystal, crystal in enumerate(crystals):
+
+      icrystal_suffix = icrystal if len(crystals) > 1 else None
 
       if crystal.num_scan_points == 0:
         print "Ignoring scan-static crystal"
@@ -94,8 +101,7 @@ class Script(object):
       cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
       dat = [(t,) + e.parameters() + (e.volume(),) \
              for (t, e) in zip(scan_pts, cells)]
-      icrystal_suffix = icrystal if len(crystals) > 1 else None
-      self.plot_cell(dat, icrystal_suffix=icrystal_suffix)
+      self.plot_cell(dat, icrystal_suffix)
 
       if self._debug:
         print "Crystal {0}".format(icrystal)
@@ -106,9 +112,19 @@ class Script(object):
 
       # orientation plot
       Umats = [crystal.get_U_at_scan_point(t) for t in scan_pts]
-      # TODO XXX
+      angles = [solve_r3_rotation_for_angles_given_axes(U,
+        self._e1, self._e2, self._e3, deg=True) for U in Umats]
+      dat = [(t,) + a for (t, a) in zip(scan_pts, angles)]
+      self.plot_orientation(dat, icrystal_suffix)
 
-  def plot_cell(self, dat, icrystal_suffix):
+      if self._debug:
+        print "Crystal {0}".format(icrystal)
+        print "Image\tphi1\tphi2\tphi3"
+        msg = "\t".join(["%.6f"] * 4)
+        for line in dat:
+          print msg % line
+
+  def plot_cell(self, dat, icrystal=None):
     try:
       import matplotlib.pyplot as plt
       import matplotlib.gridspec as gridspec
@@ -174,8 +190,47 @@ class Script(object):
     plt.title('Cell volume')
 
     basename = os.path.join(self._directory, "unit_cell")
-    if icrystal_suffix is not None: basename += "_{0}".format(
-      icrystal_suffix)
+    if icrystal is not None: basename += "_{0}".format(
+      icrystal)
+    plt.savefig(basename + self._format)
+
+  def plot_orientation(self, dat, icrystal=None):
+    try:
+      import matplotlib.pyplot as plt
+      import matplotlib.gridspec as gridspec
+    except ImportError as e:
+      print "matplotlib modules not available", e
+      return None
+
+    from math import floor, ceil
+    image, phi1, phi2, phi3 = zip(*dat)
+    fig = plt.figure(figsize=(13, 10))
+    gs = gridspec.GridSpec(3, 1, wspace=0.4, hspace=0.6)
+
+    ax = plt.subplot(gs[0, 0])
+    ax.ticklabel_format(useOffset=False)
+    plt.plot(image, phi1)
+    plt.xlabel('Image')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
+    plt.title(r'$\phi_1$')
+
+    ax = plt.subplot(gs[1, 0])
+    ax.ticklabel_format(useOffset=False)
+    plt.plot(image, phi2)
+    plt.xlabel('Image')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
+    plt.title(r'$\phi_2$')
+
+    ax = plt.subplot(gs[2, 0])
+    ax.ticklabel_format(useOffset=False)
+    plt.plot(image, phi3)
+    plt.xlabel('Image')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
+    plt.title(r'$\phi_3$')
+
+    basename = os.path.join(self._directory, "orientation")
+    if icrystal is not None: basename += "_{0}".format(
+      icrystal)
     plt.savefig(basename + self._format)
 
 if __name__ == '__main__':
