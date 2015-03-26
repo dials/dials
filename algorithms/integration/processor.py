@@ -404,8 +404,8 @@ class Task(object):
     sbox_memory = processor.compute_max_memory_usage()
     if total_memory is not None:
       assert total_memory > 0, "Your system appears to have no memory!"
-      assert self.max_memory_usage >  0.0
-      assert self.max_memory_usage <= 1.0
+      assert self.max_memory_usage >  0.0, "maximum memory usage must be > 0"
+      assert self.max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
       limit_memory = total_memory * self.max_memory_usage
       if sbox_memory > limit_memory:
         raise RuntimeError('''
