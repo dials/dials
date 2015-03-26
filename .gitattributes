@@ -310,6 +310,7 @@ command_line/export_text.py -text
 command_line/export_xds.py -text
 command_line/extract_shoeboxes.py -text
 command_line/filter_good_intensities.py -text
+command_line/find_hot_pixels.py -text
 command_line/find_overlaps.py -text
 command_line/find_spots.py -text
 command_line/find_spots_client.py -text
