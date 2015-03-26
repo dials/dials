@@ -26,7 +26,6 @@ Find hot pixels from custom dials.find_spots run, i.e.
 Will return a hot_pixel.pickle mask for use in integration.
 '''
 
-
 def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
@@ -68,6 +67,8 @@ def run(args):
 
   mask = hot_pixel_mask(imagesets[0], reflections)
   pickle.dump(mask, open(params.output.mask, 'w'))
+
+  print 'Wrote hot pixel mask to %s' % params.output.mask
   return
 
 def hot_pixel_mask(imageset, reflections):
