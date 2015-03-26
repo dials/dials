@@ -66,7 +66,7 @@ def run(args):
   reflections = reflections[0]
 
   mask = hot_pixel_mask(imagesets[0], reflections)
-  pickle.dump(mask, open(params.output.mask, 'w'))
+  pickle.dump(mask, open(params.output.mask, 'w'), pickle.HIGHEST_PROTOCOL)
 
   print 'Wrote hot pixel mask to %s' % params.output.mask
   return
@@ -77,14 +77,14 @@ def hot_pixel_mask(imageset, reflections):
 
   from dials.array_family import flex
 
-  mask = flex.bool(flex.grid(imageset.get_image_size()), True)
+  mask = flex.bool(flex.grid(reversed(imageset.get_image_size())), True)
 
   for x, y in xylist:
-    mask[x, y] = False
+    mask[y, x] = False
 
   print 'Found %d hot pixels' % len(xylist)
 
-  return mask
+  return (mask,)
 
 def filter_reflections(reflections, depth):
   xylist = []

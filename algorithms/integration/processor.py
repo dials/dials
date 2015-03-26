@@ -434,6 +434,7 @@ class Task(object):
         assert len(mask) == len(self.mask), \
           "Mask/Image are incorrect size %d %d" % (len(mask),  len(self.mask))
         mask = tuple(m1 & m2 for m1, m2 in zip(self.mask, mask))
+
       read_time += time() - st
       processor.next(make_image(image, mask), self.executor)
       del image
@@ -509,7 +510,12 @@ class Manager(object):
     self.experiments = experiments
     self.profile_model = profile_model
     self.reflections = reflections
-    self.mask = params.lookup.mask
+
+    if params.lookup.mask:
+      import cPickle as pickle
+      self.mask = pickle.load(open(params.lookup.mask))
+    else:
+      self.mask = None
 
     # Other data
     self.data = {}
