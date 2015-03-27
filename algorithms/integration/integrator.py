@@ -375,10 +375,8 @@ class InitializerStills(object):
     assert (z1 - z0).all_eq(1), "bbox is invalid"
 
     # Filter the reflections by powder ring
-    powder_filter = MultiPowderRingFilter.from_params(
-      self.params.integration.filter)
-    if powder_filter is not None:
-      mask = powder_filter(reflections['d'])
+    if self.params.filter.powder_filter is not None:
+      mask = self.params.filter.powder_filter(reflections['d'])
       reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
 
