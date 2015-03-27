@@ -21,6 +21,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dials::model::Foreground;
   using dials::model::Strong;
   using dials::model::BackgroundUsed;
+  using dials::model::Overlapped;
 
 }}}; // namespace dials::algorithms::shoebox
 

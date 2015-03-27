@@ -24,7 +24,9 @@ namespace dials { namespace algorithms { namespace shoebox {
       .value("Background", Background)
       .value("Foreground", Foreground)
       .value("Strong", Strong)
-      .value("BackgroundUsed", BackgroundUsed);
+      .value("BackgroundUsed", BackgroundUsed)
+      .value("Overlapped", Overlapped)
+      ;
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python
