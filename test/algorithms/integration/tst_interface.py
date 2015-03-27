@@ -438,6 +438,7 @@ class TestIntegrator3D(object):
   def run(self):
     from dials.algorithms.integration.integrator import Integrator3D
     from dials.algorithms.integration.integrator import phil_scope
+    from dials.algorithms.integration.integrator import Parameters
     import StringIO
     import sys
     from libtbx.phil import parse
@@ -456,7 +457,7 @@ class TestIntegrator3D(object):
         self.exlist,
         self.profile_model,
         self.rlist,
-        params)
+        Parameters.from_phil(params.integration))
       result = integrator.integrate()
     except Exception:
       print output
