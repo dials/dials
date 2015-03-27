@@ -505,23 +505,7 @@ class Manager(object):
     self.data = {}
 
     # Save some parameters
-    # self.mp_nproc = params.mp.nproc
-    # self.partials = params.shoebox.partials
-    # self.flatten = params.shoebox.flatten
-    # self.block_size = params.block.size
-    # self.block_size_units = params.block.units
-    # self.block_size_threshold = params.block.threshold
-    # self.block_size_force = params.block.force
-    # self.save_shoeboxes = params.debug.output
     self.params = params
-
-    # Save some multiprocessing stuff
-    # self.mp_nproc = params.mp.nproc
-    # self.mp_method = params.mp.method
-    # self.mp_nthreads = params.mp.nthreads
-
-    # Initialise the max memory usage
-    # self.max_memory_usage = params.block.max_memory_usage
 
     # Set the finalized flag to False
     self.finalized = False
@@ -582,10 +566,6 @@ class Manager(object):
         profile_model=profile_model,
         reflections=reflections,
         params=self.params,
-        # mask=self.mask,
-        # flatten=self.flatten,
-        # save_shoeboxes=self.save_shoeboxes,
-        # max_memory_usage=self.max_memory_usage,
         executor=self.executor)
     return task
 
