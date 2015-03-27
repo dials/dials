@@ -24,6 +24,10 @@ def generate_phil_scope():
     include scope dials.data.lookup.phil_scope
     include scope dials.data.multiprocessing.phil_scope
 
+    write_hot_mask = False
+      .type = bool
+      .help = "Write the hot mask"
+
     scan_range = None
       .help = "The range of images to use in finding spots. Number of arguments"
               "must be a factor of two. Specifying \"0 0\" will use all images"
@@ -701,7 +705,8 @@ class SpotFinderFactory(object):
     return SpotFinder(
       find_spots=find_spots,
       filter_spots=filter_spots,
-      scan_range=params.spotfinder.scan_range)
+      scan_range=params.spotfinder.scan_range,
+      write_hot_mask=params.spotfinder.write_hot_mask)
 
   @staticmethod
   def configure_algorithm(params):

@@ -221,7 +221,8 @@ class SpotFinder(object):
 
   '''
 
-  def __init__(self, find_spots=None, filter_spots=None, scan_range=None):
+  def __init__(self, find_spots=None, filter_spots=None, scan_range=None,
+               write_hot_mask=True):
     '''
     Initialise the class.
 
@@ -236,6 +237,7 @@ class SpotFinder(object):
     self.find_spots = find_spots
     self.filter_spots = filter_spots
     self.scan_range = scan_range
+    self.write_hot_mask = write_hot_mask
 
   def __call__(self, datablock):
     '''
@@ -247,6 +249,7 @@ class SpotFinder(object):
     '''
     from dials.array_family import flex
     from logging import info
+    import cPickle as pickle
 
     # Loop through all the imagesets and find the strong spots
     reflections = flex.reflection_table()
@@ -256,9 +259,14 @@ class SpotFinder(object):
       info('-' * 80)
       info('Finding strong spots in imageset %d' % i)
       info('-' * 80)
-      table = self._find_in_imageset(imageset)
+      table, hot_mask = self._find_in_imageset(imageset)
       table['id'] = flex.size_t(table.nrows(), i)
       reflections.extend(table)
+
+      # Write the hot mask
+      if self.write_hot_mask:
+        with open("hot_mask_%d.pickle" % i, "w") as outfile:
+          pickle.dump(hot_mask, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
     reflections.set_flags(
       flex.size_t_range(len(reflections)), reflections.flags.strong)
@@ -319,6 +327,30 @@ class SpotFinder(object):
     # Create the observations
     observed = flex.observation(shoeboxes.panels(), centroid, intensity)
 
+    # Find spots which cover the whole scan range
+    bbox = flex.int6([sbox.bbox for sbox in shoeboxes])
+    z0, z1 = bbox.parts()[4:6]
+    zr = z1 - z0
+    assert zr.all_gt(0)
+    possible_hot_spots = (zr == len(imageset))
+    num_possible_hot_spots = possible_hot_spots.count(True)
+    info('Found %d possible hot spots' % num_possible_hot_spots)
+
+    # Create the hot pixel mask
+    hot_mask = tuple(flex.bool(flex.grid(p.get_image_size()[::-1]), True) for p
+                     in imageset.get_detector())
+    if num_possible_hot_spots > 0:
+      hot_shoeboxes = shoeboxes.select(possible_hot_spots)
+      for sbox in hot_shoeboxes:
+        x0, x1, y0, y1 = sbox.bbox[0:4]
+        m = sbox.mask
+        p = sbox.panel
+        for y in range(m.all()[1]):
+          for x in range(m.all()[2]):
+            if m[:,y:y+1,x:x+1].all_ne(0):
+              hot_mask[p][y0+y,x0+x] = False
+    info('Found %d possible hot pixel(s)' % hot_mask.count(False))
+
     # Filter the reflections and select only the desired spots
     flags = self.filter_spots(None,
         sweep=imageset,
@@ -328,4 +360,4 @@ class SpotFinder(object):
     shoeboxes = shoeboxes.select(flags)
 
     # Return as a reflection list
-    return flex.reflection_table(observed, shoeboxes)
+    return flex.reflection_table(observed, shoeboxes), hot_mask
