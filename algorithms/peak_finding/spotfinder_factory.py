@@ -24,7 +24,7 @@ def generate_phil_scope():
     include scope dials.data.lookup.phil_scope
     include scope dials.data.multiprocessing.phil_scope
 
-    write_hot_mask = False
+    write_hot_mask = True
       .type = bool
       .help = "Write the hot mask"
 
