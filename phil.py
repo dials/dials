@@ -117,12 +117,54 @@ class ReflectionTableConverters(object):
     return [libtbx.phil.tokenizer.word(value=value)]
 
 
+class ReflectionTableSelectorConverters(object):
+  ''' A phil converter for the reflection table selector class. '''
+
+  phil_type = "reflection_table_selector"
+
+  cache = {}
+
+  def __str__(self):
+    return self.phil_type
+
+  def from_string(self, s):
+    from dials.array_family import flex
+    if (s is None):
+      return None
+    import re
+    regex = r"^\s*([\w\.]+)\s*(<=|!=|==|>=|<|>|&)\s*(.+)\s*$"
+    matches = re.findall(regex, s)
+    if len(matches) == 0:
+      raise RuntimeError('%s is not a valid selection' % s)
+    elif len(matches) > 1:
+      raise RuntimeError('%s is not a single selection' % s)
+    else:
+      match = matches[0]
+    assert(len(match) == 3)
+    col, op, value = match
+    return flex.reflection_table_selector(col, op, value)
+
+  def from_words(self, words, master):
+    return self.from_string(libtbx.phil.str_from_words(words=words))
+
+  def as_words(self, python_object, master):
+    if (python_object is None):
+      value = "None"
+    else:
+      value = "%s%s%s" % (python_object.column,
+                          python_object.op_string,
+                          python_object.value)
+    return [libtbx.phil.tokenizer.word(value=value)]
+
+
 # Create the default converter registry with the extract converters
 default_converter_registry = libtbx.phil.extended_converter_registry(
   additional_converters=[
     DataBlockConverters,
     ExperimentListConverters,
-    ReflectionTableConverters])
+    ReflectionTableConverters,
+    ReflectionTableSelectorConverters
+  ])
 
 
 def parse(

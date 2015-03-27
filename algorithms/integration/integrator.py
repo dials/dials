@@ -15,8 +15,9 @@ from dials.algorithms.integration.processor import ProcessorFlat3D
 from dials.algorithms.integration.processor import Processor2D
 from dials.algorithms.integration.processor import ProcessorSingle2D
 from dials.algorithms.integration.processor import ProcessorStills
+from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
-from iotbx import phil
+from dials import phil
 import libtbx
 
 
@@ -35,7 +36,59 @@ def generate_phil_scope():
 
     integration {
 
-      include scope dials.algorithms.integration.processor.phil_scope
+      include scope dials.data.multiprocessing.phil_scope
+      include scope dials.data.lookup.phil_scope
+
+      block {
+
+        size = auto
+          .type = float
+          .help = "The block size in rotation angle (degrees)."
+
+        units = *degrees radians frames
+          .type = choice
+          .help = "The units of the block size"
+
+        threshold = 0.99
+          .type = float(value_min=0.0, value_max=1.0)
+          .help = "For block size auto the block size is calculated by sorting"
+                  "reflections by the number of frames they cover and then"
+                  "selecting the block size to be 2*nframes[threshold] such"
+                  "that 100*threshold % of reflections are guarenteed to be"
+                  "fully contained in 1 block"
+
+        force = False
+          .type = bool
+          .help = "If the number of processors is 1 and force is False, then the"
+                  "number of blocks may be set to 1. If force is True then the"
+                  "block size is always calculated."
+
+        max_memory_usage = 0.75
+          .type = float(value_min=0.0,value_max=1.0)
+          .help = "The maximum percentage of total physical memory to use for"
+                  "allocating shoebox arrays."
+      }
+
+      debug {
+
+        during = modelling *integration
+          .type = choice
+          .help = "Do debugging during modelling or integration"
+
+        output = False
+          .type = bool
+          .help = "Save shoeboxes after each processing task."
+
+        select = None
+          .type = reflection_table_selector
+          .help = "A string specifying the selection. The string should be of the"
+                  "form: select=${COLUMN}[<|<=|==|!=|>=|>]${VALUE}. In addition"
+                  "to the items in the reflection table, the following implicit"
+                  "columns are defined if the necessary data is there:"
+                  " intensity.sum.i_over_sigma"
+                  " intensity.prf.i_over_sigma"
+
+      }
 
       integrator = *auto 3d flat3d 2d single2d stills
         .type = choice
@@ -154,6 +207,97 @@ def nframes_hist(bbox, width=80, symbol='#', prefix=''):
     prefix=prefix)
 
 
+class Parameters(object):
+  '''
+  A class to represent the integration parameters
+
+  '''
+
+  class Filter(object):
+    '''
+    Filter parameters
+
+    '''
+    def __init__(self):
+      self.min_zeta = 0.05
+      self.powder_filter = None
+
+  def __init__(self):
+    '''
+    Initialize
+
+    '''
+    from dials.algorithms.integration import processor
+    self.modelling = processor.Parameters()
+    self.integration = processor.Parameters()
+    self.filter = Parameters.Filter()
+    self.profile_fitting = True
+
+  @staticmethod
+  def from_phil(params):
+    '''
+    Convert the phil parameters
+
+    '''
+    from dials.algorithms.integration import processor
+    from dials.algorithms.integration.filtering import MultiPowderRingFilter
+
+    # Init the parameters
+    result = Parameters()
+
+    # Create the multi processing parameters
+    mp = processor.Parameters.MultiProcessing()
+    mp.method = params.mp.method
+    mp.nproc = params.mp.nproc
+    mp.nthreads = params.mp.nthreads
+
+    # Set the lookup parameters
+    lookup = processor.Parameters.Lookup()
+    lookup.mask = params.lookup.mask
+    lookup.gain_map = params.lookup.gain_map
+    lookup.dark_map = params.lookup.dark_map
+
+    # Set the block parameters
+    block = processor.Parameters.Block()
+    block.size = params.block.size
+    block.units = params.block.units
+    block.threshold = params.block.threshold
+    block.force = params.block.force
+    block.max_memory_usage = params.block.max_memory_usage
+
+    # Debug in modelling or integration
+    if params.debug.during == 'modelling':
+      debug_modelling = True
+    else:
+      debug_modelling = False
+
+    # Set the modelling processor parameters
+    result.modelling.mp = mp
+    result.modelling.lookup = lookup
+    result.modelling.block = block
+    result.modelling.debug = processor.Parameters.Debug()
+    result.modelling.debug.output = debug_modelling
+    result.modelling.debug.select = params.debug.select
+
+    # Set the integration processor parameters
+    result.integration.mp = mp
+    result.integration.lookup = lookup
+    result.integration.block = block
+    result.integration.debug.output = not debug_modelling
+    result.integration.debug.select = params.debug.select
+
+    # Get the min zeta filter
+    result.filter.min_zeta = params.filter.min_zeta
+    result.filter.powder_filter = MultiPowderRingFilter.from_params(
+      params.filter)
+
+    # Set the profile fitting parameter
+    result.profile_fitting = params.profile_fitting
+
+    # Return the result
+    return result
+
+
 class InitializerRot(object):
   '''
   A pre-processing class for oscillation data.
@@ -177,7 +321,6 @@ class InitializerRot(object):
     Do some pre-processing.
 
     '''
-    from dials.algorithms.integration.filtering import MultiPowderRingFilter
     from dials.array_family import flex
     from scitbx.array_family import shared
 
@@ -187,15 +330,13 @@ class InitializerRot(object):
     reflections.compute_bbox(self.experiments, self.profile_model)
 
     # Filter the reflections by zeta
-    mask = flex.abs(reflections['zeta']) < self.params.integration.filter.min_zeta
+    mask = flex.abs(reflections['zeta']) < self.params.filter.min_zeta
     num_ignore = mask.count(True)
     reflections.set_flags(mask, reflections.flags.dont_integrate)
 
     # Filter the reflections by powder ring
-    powder_filter = MultiPowderRingFilter.from_params(
-      self.params.integration.filter)
-    if powder_filter is not None:
-      mask = powder_filter(reflections['d'])
+    if self.params.filter.powder_filter is not None:
+      mask = self.params.filter.powder_filter(reflections['d'])
       reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
 
@@ -596,7 +737,7 @@ class Integrator(object):
     initialize(self.reflections)
 
     # Check if we want to do some profile fitting
-    if (self.params.integration.profile_fitting and
+    if (self.params.profile_fitting and
         self.profile_model.has_profile_fitting()):
 
       info("=" * 80)
@@ -615,25 +756,20 @@ class Integrator(object):
       if len(reference) == 0:
         info("** Skipping profile modelling - no reference profiles given **")
 
-      # Dont save shoeboxes in modelling
-      debug_save_shoeboxes = self.params.integration.debug.save_shoeboxes
-      self.params.integration.debug.save_shoeboxes = False
-
       # Create the data processor
       executor = ProfileModellerExecutor(
         self.experiments,
         self.profile_model)
-      processor = self.ProcessorClass(
+      processor = ProcessorBuilder(
+        self.ProcessorClass,
         self.experiments,
         self.profile_model,
         reference,
-        self.params.integration)
+        self.params.modelling).build()
       processor.executor = executor
 
       # Process the reference profiles
       reference, modeller_list, time_info = processor.process()
-
-      self.params.integration.debug.save_shoeboxes = debug_save_shoeboxes
 
       # Set the reference spots info
       #self.reflections.set_selected(selection, reference)
@@ -685,11 +821,12 @@ class Integrator(object):
     executor = IntegratorExecutor(
       self.experiments,
       self.profile_model)
-    processor = self.ProcessorClass(
+    processor = ProcessorBuilder(
+      self.ProcessorClass,
       self.experiments,
       self.profile_model,
       self.reflections,
-      self.params.integration)
+      self.params.integration).build()
     processor.executor = executor
 
     # Process the reflections
@@ -830,6 +967,7 @@ class IntegratorFactory(object):
     from dials.interfaces import CentroidIface
     from dials.array_family import flex
     from libtbx.utils import Abort
+    import cPickle as pickle
 
     # Check the input
     if len(experiments) != len(profile_model):
@@ -843,6 +981,12 @@ class IntegratorFactory(object):
           One or more experiment does not contain an imageset. Access to the
           image data is crucial for integration.
         ''')
+
+    # Read the mask in if necessary
+    if params.integration.lookup.mask is not None:
+      if type(params.integration.lookup.mask) == str:
+        with open(params.integraton.lookup.mask) as infile:
+          params.integration.lookup.mask = pickle.load(infile)
 
     # Initialise the strategy classes
     BackgroundAlgorithm = BackgroundIface.extension(
@@ -876,4 +1020,8 @@ class IntegratorFactory(object):
       raise RuntimeError("Unknown integration type")
 
     # Return an instantiation of the class
-    return IntegratorClass(experiments, profile_model, reflections, params)
+    return IntegratorClass(
+      experiments,
+      profile_model,
+      reflections,
+      Parameters.from_phil(params.integration))

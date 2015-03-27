@@ -10,7 +10,7 @@
 
 from __future__ import division
 from dials_algorithms_integration_integrator_ext import *
-from iotbx import phil
+from dials import phil
 import libtbx
 
 
@@ -23,91 +23,108 @@ class _Job(object):
 job = _Job()
 
 
-def generate_phil_scope():
+class Parameters(object):
   '''
-  Generate the processing phil scope.
-
-  :return: The phil scope
+  Class to handle parameters for the processor
 
   '''
 
-  phil_scope = phil.parse('''
+  class MultiProcessing(object):
+    '''
+    Multi processing parameters
 
-    include scope dials.data.multiprocessing.phil_scope
-    include scope dials.data.lookup.phil_scope
+    '''
+    def __init__(self):
+      self.method = "multiprocessing"
+      self.nproc = 1
+      self.nthreads = 1
 
-    block {
+    def update(self, other):
+      self.method = other.method
+      self.nproc = other.nproc
+      self.nthreads = other.nthreads
 
-      size = auto
-        .type = float
-        .help = "The block size in rotation angle (degrees)."
+  class Lookup(object):
+    '''
+    Lookup parameters
 
-      units = *degrees radians frames
-        .type = choice
-        .help = "The units of the block size"
+    '''
+    def __init__(self):
+      self.mask = None
+      self.gain_map = None
+      self.dark_map = None
 
-      threshold = 0.99
-        .type = float(value_min=0.0, value_max=1.0)
-        .help = "For block size auto the block size is calculated by sorting"
-                "reflections by the number of frames they cover and then"
-                "selecting the block size to be 2*nframes[threshold] such"
-                "that 100*threshold % of reflections are guarenteed to be"
-                "fully contained in 1 block"
+    def update(self, other):
+      self.mask = other.mask
+      self.gain_map = other.gain_map
+      self.dark_map = other.dark_map
 
-      force = False
-        .type = bool
-        .help = "If the number of processors is 1 and force is False, then the"
-                "number of blocks may be set to 1. If force is True then the"
-                "block size is always calculated."
+  class Block(object):
+    '''
+    Block parameters
 
-      max_memory_usage = 0.75
-        .type = float(value_min=0.0,value_max=1.0)
-        .help = "The maximum percentage of total physical memory to use for"
-                "allocating shoebox arrays."
-    }
+    '''
+    def __init__(self):
+      self.size = libtbx.Auto
+      self.units = 'degrees'
+      self.threshold = 0.99
+      self.force = False
+      self.max_memory_usage = 0.75
 
-    shoebox {
+    def update(self, other):
+      self.size = other.size
+      self.units = other.units
+      self.threshold = other.threshold
+      self.force = other.force
+      self.max_memory_usage = other.max_memory_usage
 
-      flatten = False
-        .type = bool
-        .help = "Flatten shoeboxes"
+  class Shoebox(object):
+    '''
+    Shoebox parameters
 
-      partials = False
-        .type = bool
-        .help = "Split reflections into partials"
+    '''
+    def __init__(self):
+      self.flatten = False
+      self.partials = False
 
-    }
+    def update(self, other):
+      self.flatten = other.flatten
+      self.partials = other.partials
 
-    debug {
+  class Debug(object):
+    '''
+    Debug parameters
 
-      save_shoeboxes = False
-        .type = bool
-        .help = "Save shoeboxes after each processing task."
+    '''
+    def __init__(self):
+      self.output = False
+      self.select = None
 
-      select {
+    def update(self, other):
+      self.output = other.output
+      self.select = other.select
 
-        using = *sum prf
-          .type = choice
-          .help = "Select using which intensities"
+  def __init__(self):
+    '''
+    Initialize the parameters
 
-        i_over_sigma_lt = None
-          .type = float
-          .help = "Select reflections with I/Sigma < value"
+    '''
+    self.mp = Parameters.MultiProcessing()
+    self.lookup = Parameters.Lookup()
+    self.block = Parameters.Block()
+    self.shoebox = Parameters.Shoebox()
+    self.debug = Parameters.Debug()
 
-        i_over_sigma_gt = None
-          .type = float
-          .help = "Select reflections with I/Sigma > value"
+  def update(self, other):
+    '''
+    Update the parameters
 
-      }
-
-    }
-  ''', process_includes=True)
-
-  # Return the phil scope
-  return phil_scope
-
-# The processor phil scope
-phil_scope = generate_phil_scope()
+    '''
+    self.mp.update(other.mp)
+    self.lookup.update(other.lookup)
+    self.block.update(other.block)
+    self.shoebox.update(other.shoebox)
+    self.debug.update(other.debug)
 
 
 class TimingInfo(object):
@@ -137,6 +154,7 @@ class TimingInfo(object):
       ["User time"        , "%.2f seconds" % (self.user)       ],
     ]
     return table(rows, justify='right', prefix=' ')
+
 
 class Processor(object):
   ''' Processor interface class. '''
@@ -188,9 +206,9 @@ class Processor(object):
 
     start_time = time()
     self.manager.initialize()
-    mp_method = self.manager.mp_method
-    mp_nproc = min(len(self.manager), self.manager.mp_nproc)
-    mp_nthreads = self.manager.mp_nthreads
+    mp_method = self.manager.params.mp.method
+    mp_nproc = min(len(self.manager), self.manager.params.mp.nproc)
+    mp_nthreads = self.manager.params.mp.nthreads
     assert mp_nproc > 0, "Invalid number of processors"
     job.nthreads = mp_nthreads
     info(self.manager.summary())
@@ -297,10 +315,6 @@ class Task(object):
                profile_model,
                reflections,
                params,
-               mask=None,
-               flatten=False,
-               save_shoeboxes=False,
-               max_memory_usage=0.75,
                executor=None):
     '''
     Initialise the task.
@@ -318,18 +332,14 @@ class Task(object):
     '''
     assert executor is not None, "No executor given"
     assert len(reflections) > 0, "Zero reflections given"
-    assert max_memory_usage >  0.0, "Max memory % must be > 0"
-    assert max_memory_usage <= 1.0, "Max memory % must be < 1"
+    assert params.block.max_memory_usage >  0.0, "Max memory % must be > 0"
+    assert params.block.max_memory_usage <= 1.0, "Max memory % must be < 1"
     self.index = index
     self.job = job
     self.experiments = experiments
     self.profile_model = profile_model
     self.reflections = reflections
     self.params = params
-    self.mask = mask
-    self.flatten = flatten
-    self.save_shoeboxes = save_shoeboxes
-    self.max_memory_usage = max_memory_usage
     self.executor = executor
 
   def __call__(self):
@@ -386,7 +396,7 @@ class Task(object):
       self.reflections['panel'],
       self.reflections['bbox'],
       allocate=False,
-      flatten=self.flatten)
+      flatten=self.params.shoebox.flatten)
 
     # Create the processor
     processor = ShoeboxProcessor(
@@ -394,7 +404,7 @@ class Task(object):
       len(imageset.get_detector()),
       frame0,
       frame1,
-      self.save_shoeboxes)
+      self.params.debug.output)
 
     # Compute percentage of max available. The function is not portable to
     # windows so need to add a check if the function fails. On windows no
@@ -404,9 +414,9 @@ class Task(object):
     sbox_memory = processor.compute_max_memory_usage()
     if total_memory is not None:
       assert total_memory > 0, "Your system appears to have no memory!"
-      assert self.max_memory_usage >  0.0, "maximum memory usage must be > 0"
-      assert self.max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
-      limit_memory = total_memory * self.max_memory_usage
+      assert self.params.block.max_memory_usage >  0.0, "maximum memory usage must be > 0"
+      assert self.params.block.max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
+      limit_memory = total_memory * self.params.block.max_memory_usage
       if sbox_memory > limit_memory:
         raise RuntimeError('''
         There was a problem allocating memory for shoeboxes. Possible solutions
@@ -430,10 +440,12 @@ class Task(object):
       st = time()
       image = imageset.get_image(i)
       mask = imageset.get_mask(i)
-      if self.mask is not None:
-        assert len(mask) == len(self.mask), \
-          "Mask/Image are incorrect size %d %d" % (len(mask),  len(self.mask))
-        mask = tuple(m1 & m2 for m1, m2 in zip(self.mask, mask))
+      if self.params.lookup.mask is not None:
+        assert len(mask) == len(self.params.lookup.mask), \
+          "Mask/Image are incorrect size %d %d" % (
+            len(mask),
+            len(self.params.lookup.mask))
+        mask = tuple(m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask))
 
       read_time += time() - st
       processor.next(make_image(image, mask), self.executor)
@@ -442,33 +454,11 @@ class Task(object):
     assert processor.finished(), "Data processor is not finished"
 
     # Optionally save the shoeboxes
-    if self.save_shoeboxes:
+    if self.params.debug.output:
       filename = 'shoeboxes_%d.pickle' % self.index
       output = self.reflections
-      if (self.params.debug.select.i_over_sigma_lt is not None or
-          self.params.debug.select.i_over_sigma_gt is not None):
-        if self.params.debug.select.using == 'sum':
-          flag = output.flags.integrated_sum
-          Icol = 'intensity.sum.value'
-          Vcol = 'intensity.sum.variance'
-        else:
-          flag = output.flags.integrated_prf
-          Icol = 'intensity.prf.value'
-          Vcol = 'intensity.prf.variance'
-        output = output.select(output.get_flags(flag))
-        I = output[Icol]
-        V = output[Vcol]
-        assert V.all_ge(0), "Some variances < 0"
-        output = output.select(V > 0)
-        I = output[Icol]
-        V = output[Vcol]
-        IOS = I / flex.sqrt(V)
-        if self.params.debug.select.i_over_sigma_lt is not None:
-          mask = IOS < self.params.debug.select.i_over_sigma_lt
-          output = output.select(mask)
-        if self.params.debug.select.i_over_sigma_gt is not None:
-          mask = IOS > self.params.debug.select.i_over_sigma_gt
-          output = output.select(mask)
+      if self.params.debug.select is not None:
+        output = output.select(self.params.debug.select(output))
       output.as_pickle(filename)
 
     # Delete the shoeboxes
@@ -511,33 +501,27 @@ class Manager(object):
     self.profile_model = profile_model
     self.reflections = reflections
 
-    if params.lookup.mask:
-      import cPickle as pickle
-      self.mask = pickle.load(open(params.lookup.mask))
-    else:
-      self.mask = None
-
     # Other data
     self.data = {}
 
     # Save some parameters
-    self.mp_nproc = params.mp.nproc
-    self.partials = params.shoebox.partials
-    self.flatten = params.shoebox.flatten
-    self.block_size = params.block.size
-    self.block_size_units = params.block.units
-    self.block_size_threshold = params.block.threshold
-    self.block_size_force = params.block.force
-    self.save_shoeboxes = params.debug.save_shoeboxes
+    # self.mp_nproc = params.mp.nproc
+    # self.partials = params.shoebox.partials
+    # self.flatten = params.shoebox.flatten
+    # self.block_size = params.block.size
+    # self.block_size_units = params.block.units
+    # self.block_size_threshold = params.block.threshold
+    # self.block_size_force = params.block.force
+    # self.save_shoeboxes = params.debug.output
     self.params = params
 
     # Save some multiprocessing stuff
-    self.mp_nproc = params.mp.nproc
-    self.mp_method = params.mp.method
-    self.mp_nthreads = params.mp.nthreads
+    # self.mp_nproc = params.mp.nproc
+    # self.mp_method = params.mp.method
+    # self.mp_nthreads = params.mp.nthreads
 
     # Initialise the max memory usage
-    self.max_memory_usage = params.block.max_memory_usage
+    # self.max_memory_usage = params.block.max_memory_usage
 
     # Set the finalized flag to False
     self.finalized = False
@@ -598,10 +582,10 @@ class Manager(object):
         profile_model=profile_model,
         reflections=reflections,
         params=self.params,
-        mask=self.mask,
-        flatten=self.flatten,
-        save_shoeboxes=self.save_shoeboxes,
-        max_memory_usage=self.max_memory_usage,
+        # mask=self.mask,
+        # flatten=self.flatten,
+        # save_shoeboxes=self.save_shoeboxes,
+        # max_memory_usage=self.max_memory_usage,
         executor=self.executor)
     return task
 
@@ -674,19 +658,19 @@ class Manager(object):
     '''
     from logging import info
     from math import ceil, pi
-    if self.block_size == libtbx.Auto:
-      if (self.mp_nproc == 1 and
-          self.save_shoeboxes == False and
-          self.block_size_force == False):
-        self.block_size = None
+    if self.params.block.size == libtbx.Auto:
+      if (self.params.mp.nproc == 1 and
+          self.params.debug.output == False and
+          self.params.block.force == False):
+        self.params.block.size = None
       else:
-        assert self.block_size_threshold > 0, "Threshold must be > 0"
-        assert self.block_size_threshold <= 1.0, "Threshold must be < 1"
+        assert self.params.block.threshold > 0, "Threshold must be > 0"
+        assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
         nframes = sorted([b[5] - b[4] for b in self.reflections['bbox']])
-        cutoff = int(self.block_size_threshold*len(nframes))
+        cutoff = int(self.params.block.threshold*len(nframes))
         block_size = nframes[cutoff] * 2
-        self.block_size = block_size
-        self.block_size_units = 'frames'
+        self.params.block.size = block_size
+        self.params.block.units = 'frames'
 
   def compute_jobs(self):
     '''
@@ -711,16 +695,16 @@ class Manager(object):
       if scan is not None:
         assert len(imgs) == len(scan), "Invalid scan range"
         array_range = scan.get_array_range()
-      if self.block_size is None:
+      if self.params.block.size is None:
         block_size_frames = array_range[1] - array_range[0]
-      elif self.block_size_units == 'radians':
+      elif self.params.block.units == 'radians':
         phi0, dphi = scan.get_oscillation(deg=False)
-        block_size_frames = int(ceil(self.block_size / dphi))
-      elif self.block_size_units == 'degrees':
+        block_size_frames = int(ceil(self.params.block.size / dphi))
+      elif self.params.block.units == 'degrees':
         phi0, dphi = scan.get_oscillation()
-        block_size_frames = int(ceil(self.block_size / dphi))
-      elif self.block_size_units == 'frames':
-        block_size_frames = int(ceil(self.block_size))
+        block_size_frames = int(ceil(self.params.block.size / dphi))
+      elif self.params.block.units == 'frames':
+        block_size_frames = int(ceil(self.params.block.size))
       else:
         raise RuntimeError('Unknown block_size_units = %s' % block_size_units)
       self.jobs.add((i0, i1), array_range, block_size_frames)
@@ -735,7 +719,7 @@ class Manager(object):
 
     # Optionally split the reflection table into partials, otherwise,
     # split over job boundaries
-    if self.partials:
+    if self.params.shoebox.partials:
       num_full = len(self.reflections)
       self.reflections.split_partials()
       num_partial = len(self.reflections)
@@ -768,11 +752,11 @@ class Manager(object):
     from dials.array_family import flex
 
     # Set the memory usage per processor
-    if (self.mp_method == 'multiprocessing' and self.mp_nproc > 1):
+    if (self.params.mp.method == 'multiprocessing' and self.params.mp.nproc > 1):
 
       # Get the maximum shoebox memory
       max_memory = flex.max(self.jobs.shoebox_memory(
-        self.reflections, self.flatten))
+        self.reflections, self.params.shoebox.flatten))
 
       # Compute percentage of max available. The function is not portable to
       # windows so need to add a check if the function fails. On windows no
@@ -781,7 +765,7 @@ class Manager(object):
       total_memory = memory_info.memory_total()
       if total_memory is not None:
         assert total_memory > 0, "Your system appears to have no memory!"
-        limit_memory = total_memory * self.max_memory_usage
+        limit_memory = total_memory * self.params.block.max_memory_usage
         njobs = int(floor(limit_memory / max_memory))
         if njobs < 1:
           raise RuntimeError('''
@@ -793,8 +777,8 @@ class Manager(object):
               Max shoebox memory: %g GB
           ''' % (total_memory/1e9, limit_memory/1e9, max_memory/1e9))
         else:
-          self.mp_nproc = min(self.mp_nproc, njobs)
-          self.max_memory_usage = self.max_memory_usage / self.mp_nproc
+          self.params.mp.nproc = min(self.params.mp.nproc, njobs)
+          self.params.block.max_memory_usage /= self.params.mp.nproc
 
   def summary(self):
     '''
@@ -841,10 +825,10 @@ class Manager(object):
     task_table = table(rows, has_header=True, justify="right", prefix=" ")
 
     # The format string
-    if self.block_size is None:
+    if self.params.block.size is None:
       block_size = "auto"
     else:
-      block_size = str(self.block_size)
+      block_size = str(self.params.block.size)
     fmt = (
       'Processing reflections in the following blocks of images:\n'
       '\n'
@@ -852,7 +836,8 @@ class Manager(object):
       '\n'
       '%s\n'
     )
-    return fmt % (block_size, self.block_size_units, task_table)
+    return fmt % (block_size, self.params.block.units, task_table)
+
 
 class ManagerRot(Manager):
   ''' Specialize the manager for oscillation data using the oscillation pre and
@@ -980,3 +965,47 @@ class ProcessorStills(Processor):
 
     # Initialise the processor
     super(ProcessorStills, self).__init__(manager)
+
+
+class ProcessorBuilder(object):
+  '''
+  A class to simplify building the processor
+
+  '''
+
+  def __init__(self,
+               Class,
+               experiments,
+               profile_model,
+               reflections,
+               params=None):
+    '''
+    Initialize with the required input
+
+    :param Class: The input class
+    :param experiments: The input experiments
+    :param profile_model: The profile model
+    :param reflections: The reflections
+    :param params: Optionally input parameters
+
+    '''
+    self.Class = Class
+    self.experiments = experiments
+    self.profile_model = profile_model
+    self.reflections = reflections
+    self.params = Parameters()
+    if params is not None:
+      self.params.update(params)
+
+  def build(self):
+    '''
+    Build the class
+
+    :return: The processor class
+
+    '''
+    return self.Class(
+      self.experiments,
+      self.profile_model,
+      self.reflections,
+      self.params)

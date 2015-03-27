@@ -766,3 +766,126 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         mask[z0:z1,y0:y1,x0:x1] = m2
       result[i] = (1.0*mask.count(True)) / mask.size()
     return result
+
+
+class reflection_table_selector(object):
+  '''
+  A class to select columns from reflection table.
+
+  This is mainly useful for specifying selections from phil parameters
+
+  '''
+  def __init__(self, column, op, value):
+    '''
+    Initialise the selector
+
+    :param col: The column name
+    :param op: The operator
+    :param value: The value
+
+    '''
+    import operator
+
+    # Set the column and value
+    self.column = column
+    self.value = value
+
+    # Set the operator
+    if type(op) == str:
+      if op == '<':
+        self.op = operator.lt
+      elif op == '<=':
+        self.op = operator.le
+      elif op == '==':
+        self.op = operator.eq
+      elif op == '!=':
+        self.op = operator.ne
+      elif op == '>=':
+        self.op = operator.ge
+      elif op == '>':
+        self.op = operator.gt
+      elif op == '&':
+        self.op = operator.and_
+      else:
+        raise RuntimeError('Unknown operator')
+    else:
+      self.op = op
+
+  @property
+  def op_string(self):
+    '''
+    Return the operator as a string
+
+    '''
+    import operator
+    if self.op == operator.lt:
+      string = '<'
+    elif self.op == operator.le:
+      string = '<='
+    elif self.op == operator.eq:
+      string = '=='
+    elif self.op == operator.ne:
+      string = '!='
+    elif self.op == operator.ge:
+      string = '>='
+    elif self.op == operator.gt:
+      string = '>'
+    elif self.op == operator.and_:
+      string = '&'
+    else:
+      raise RuntimeError('Unknown operator')
+    return string
+
+  def __call__(self, reflections):
+    '''
+    Select the reflections
+
+    :param reflections: The reflections
+
+    :return: The selection as a mask
+
+    '''
+    import __builtin__
+    if self.column == 'intensity.sum.i_over_sigma':
+      I = reflections['intensity.sum.value']
+      V = reflections['intensity.sum.variance']
+      mask1 = V > 0
+      I = I.select(mask1)
+      V = V.select(mask1)
+      data = I / flex.sqrt(V)
+    elif self.column == 'intensity.prf.i_over_sigma':
+      I = reflections['intensity.prf.value']
+      V = reflections['intensity.prf.variance']
+      mask1 = V > 0
+      I = I.select(mask1)
+      V = V.select(mask1)
+      data = I / flex.sqrt(V)
+    else:
+      mask1 = None
+      data = reflections[self.column]
+    if type(data) == double:
+      value = __builtin__.float(self.value)
+    elif type(data) == int:
+      value = __builtin__.int(self.value)
+    elif type(data) == size_t:
+      value = __builtin__.int(self.value)
+    elif type(data) == std_string:
+      value = self.value
+    elif type(data) == vec3_double:
+      raise RuntimeError("Comparison not implemented")
+    elif type(data) == vec2_double:
+      raise RuntimeError("Comparison not implemented")
+    elif type(data) == mat3_double:
+      raise RuntimeError("Comparison not implemented")
+    elif type(data) == int6:
+      raise RuntimeError("Comparison not implemented")
+    elif type(data) == shoebox:
+      raise RuntimeError("Comparison not implemented")
+    else:
+      raise RuntimeError('Unknown column type')
+    mask2 = self.op(data, self.value)
+    if mask1 is not None:
+      mask1.set_selected(size_t(range(len(mask1))).select(mask1), mask2)
+    else:
+      mask1 = mask2
+    return mask1
