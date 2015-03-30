@@ -12,7 +12,7 @@ from __future__ import division
 import math
 from scitbx import matrix
 
-"""Python conversion of Rotation::euler_explicit method from Pointless"""
+"""A Python version of the Rotation::euler_explicit method from Pointless"""
 
 def solve_r3_rotation_for_angles_given_axes(R, e1, e2, e3,
   smaller_phi2_solution=True, deg=False):
@@ -87,9 +87,15 @@ def solve_r3_rotation_for_angles_given_axes(R, e1, e2, e3,
   if phi2b > math.pi: phi2b -= 2.0*math.pi
   elif phi2b < -math.pi: phi2b += 2.0*math.pi
   if smaller_phi2_solution:
-    phi2 = min(phi2a, phi2b)
+    if abs(phi2a) < abs(phi2b):
+      phi2 = phi2a
+    else:
+      phi2 = phi2b
   else:
-    phi2 = max(phi2a, phi2b)
+    if abs(phi2a) > abs(phi2b):
+      phi2 = phi2a
+    else:
+      phi2 = phi2b
   # ** Step 2 ** Calculation of phi1
   R2 = e2.axis_and_angle_as_r3_rotation_matrix(phi2, deg=False)
   R2inv = R2.transpose()
