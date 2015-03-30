@@ -43,13 +43,13 @@ phil_scope = parse('''
             "as whether the rotations are relative to the reference"
             "orientation, taken from the static crystal model"
   {
-    e1 = 0. 0. 1.
+    e1 = 1. 0. 0.
       .type = floats(size = 3)
 
     e2 = 0. 1. 0.
       .type = floats(size = 3)
 
-    e3 = 1. 0. 0.
+    e3 = 0. 0. 1.
       .type = floats(size = 3)
 
     relative_to_static_orientation = True
@@ -122,14 +122,17 @@ class Script(object):
         # factor out static U
         Uinv = crystal.get_U().inverse()
         Umats = [U*Uinv for U in Umats]
+      # NB e3 and e1 definitions for the crystal are swapped compared
+      # with those used inside the solve_r3_rotation_for_angles_given_axes
+      # method
       angles = [solve_r3_rotation_for_angles_given_axes(U,
-        self._e1, self._e2, self._e3, deg=True) for U in Umats]
+        self._e3, self._e2, self._e1, deg=True) for U in Umats]
       dat = [(t,) + a for (t, a) in zip(scan_pts, angles)]
       self.plot_orientation(dat, icrystal_suffix)
 
       if self._debug:
         print "Crystal {0}".format(icrystal)
-        print "Image\tphi1\tphi2\tphi3"
+        print "Image\tphi3\tphi2\tphi1"
         msg = "\t".join(["%.6f"] * 4)
         for line in dat:
           print msg % line
@@ -213,7 +216,7 @@ class Script(object):
       return None
 
     from math import floor, ceil
-    image, phi1, phi2, phi3 = zip(*dat)
+    image, phi3, phi2, phi1 = zip(*dat)
     fig = plt.figure(figsize=(13, 10))
     gs = gridspec.GridSpec(3, 1, wspace=0.4, hspace=0.6)
 
