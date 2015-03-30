@@ -37,17 +37,23 @@ phil_scope = parse('''
   }
 
   orientation_decomposition
-    .help = "Axes about which to decompose the orientation matrix into"
-            "three rotations, the angles of which will be reported"
+    .help = "Options determining how the orientation matrix"
+            "decomposition is done. The axes about which to decompose"
+            "the matrix into three rotations are chosen here, as well"
+            "as whether the rotations are relative to the reference"
+            "orientation, taken from the static crystal model"
   {
-    e1 = 1. 0. 0.
+    e1 = 0. 0. 1.
       .type = floats(size = 3)
 
     e2 = 0. 1. 0.
       .type = floats(size = 3)
 
-    e3 = 0. 0. 1.
+    e3 = 1. 0. 0.
       .type = floats(size = 3)
+
+    relative_to_static_orientation = True
+      .type = bool
   }
 ''')
 
@@ -112,6 +118,10 @@ class Script(object):
 
       # orientation plot
       Umats = [crystal.get_U_at_scan_point(t) for t in scan_pts]
+      if params.orientation_decomposition.relative_to_static_orientation:
+        # factor out static U
+        Uinv = crystal.get_U().inverse()
+        Umats = [U*Uinv for U in Umats]
       angles = [solve_r3_rotation_for_angles_given_axes(U,
         self._e1, self._e2, self._e3, deg=True) for U in Umats]
       dat = [(t,) + a for (t, a) in zip(scan_pts, angles)]
