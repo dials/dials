@@ -764,6 +764,7 @@ scratch/luiso_s/test_code/example_matmul.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_mix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_np_nditer.py -text
 scratch/luiso_s/test_code/example_one_liner.py -text
+scratch/luiso_s/test_code/example_test_slower_than_np_nditer.py -text
 scratch/luiso_s/test_code/flex_ref_opr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain

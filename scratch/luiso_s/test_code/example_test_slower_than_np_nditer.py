@@ -99,31 +99,28 @@ if(__name__ == "__main__"):
   ints_min = np.min(a)
   ints_max = np.max(a)
 
+
   block_size = float(ints_max - ints_min) / 3.0
   rim_n1 = ints_min + block_size
   rim_n2 = ints_max - block_size
 
-  '''
 
-  for x in np.nditer(b_red[:,:], op_flags=['readwrite'], flags=['external_loop']):
-    x[...] = red_func(x, ints_min, rim_n1, rim_n2, ints_max, block_size)
 
-  for x in np.nditer(b_green[:,:], op_flags=['readwrite'], flags=['external_loop']):
-    x[...] = green_func(x, ints_min, rim_n1, rim_n2, ints_max, block_size)
+  for col in range(len(b_red[0,:])):
+    for row in range(len(b_red[:,0])):
+      b_red[row, col] = red_func(b_red[row, col], ints_min,
+                                 rim_n1 , rim_n2, ints_max, block_size)
 
-  for x in np.nditer(b_blue[:,:], op_flags=['readwrite'], flags=['external_loop']):
-    x[...] = blue_func(x, ints_min, rim_n1, rim_n2, ints_max, block_size)
 
-  '''
+  for col in range(len(b_green[0,:])):
+    for row in range(len(b_green[:,0])):
+      b_green[row, col] = green_func(b_green[row, col], ints_min,
+                                     rim_n1, rim_n2, ints_max, block_size)
 
-  for x in np.nditer(b_red[:,:], op_flags=['readwrite']):
-    x[...] = red_func(x, ints_min, rim_n1, rim_n2, ints_max, block_size)
-
-  for x in np.nditer(b_green[:,:], op_flags=['readwrite']):
-    x[...] = green_func(x, ints_min, rim_n1, rim_n2, ints_max, block_size)
-
-  for x in np.nditer(b_blue[:,:], op_flags=['readwrite']):
-    x[...] = blue_func(x, ints_min, rim_n1, rim_n2, ints_max, block_size)
+  for col in range(len(b_blue[0,:])):
+    for row in range(len(b_blue[:,0])):
+      b_blue[row, col] = blue_func(b_blue[row, col], ints_min,
+                                   rim_n1, rim_n2, ints_max, block_size)
 
 
   b[:,:,0] = b_red[:,:]
