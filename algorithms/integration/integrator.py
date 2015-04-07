@@ -265,25 +265,22 @@ class Parameters(object):
     block.force = params.block.force
     block.max_memory_usage = params.block.max_memory_usage
 
-    # Debug in modelling or integration
-    if params.debug.during == 'modelling':
-      debug_modelling = True
-    else:
-      debug_modelling = False
-
     # Set the modelling processor parameters
     result.modelling.mp = mp
     result.modelling.lookup = lookup
     result.modelling.block = block
     result.modelling.debug = processor.Parameters.Debug()
-    result.modelling.debug.output = debug_modelling
+    if params.debug.during == 'modelling':
+      result.modelling.debug.output = params.debug.output
     result.modelling.debug.select = params.debug.select
 
     # Set the integration processor parameters
     result.integration.mp = mp
     result.integration.lookup = lookup
     result.integration.block = block
-    result.integration.debug.output = not debug_modelling
+    result.integration.debug = processor.Parameters.Debug()
+    if params.debug.during == 'integration':
+      result.integration.debug.output = params.debug.output
     result.integration.debug.select = params.debug.select
 
     # Get the min zeta filter
