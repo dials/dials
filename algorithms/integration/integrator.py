@@ -103,7 +103,7 @@ def generate_phil_scope():
 
         validation {
 
-          number_of_partitions = 2
+          number_of_partitions = 1
             .type = int(value_min=1)
             .help = "The number of subsamples to take from the reference spots."
                     "If the value is 1, then no validation is performed."
@@ -939,6 +939,8 @@ class Integrator(object):
             reference['profile.index'] = flex.size_t(indices)
           if num_folds < 1:
             num_folds = 1
+        else:
+          num_folds = 1
 
         # Create the data processor
         executor = ProfileModellerExecutor(
