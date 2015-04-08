@@ -27,7 +27,7 @@ class Test(object):
       'dials.integrate',
       join(self.path, 'experiments.json'),
       join(self.path, 'profile.phil'),
-      'profile_fitting=False',
+      'profile.fitting=False',
     ]).raise_if_errors()
 
   def run(self):

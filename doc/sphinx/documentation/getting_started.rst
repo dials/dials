@@ -33,7 +33,7 @@ Some sensible options to explore are:
  - :samp:`scan_varying=true` - allow the crystal orientation and unit cell
    constants to vary during the scan
  - :samp:`mp.nproc=1` - only use one processor [#f1]_
- - :samp:`profile_fitting=False` - force summation integration instead of
+ - :samp:`profile.fitting=False` - force summation integration instead of
    the default profile fitting
  - :samp:`block_size=N` - for some N, split the data set into N degree blocks
    for integration, so as not to overload the computer. A sensible default will

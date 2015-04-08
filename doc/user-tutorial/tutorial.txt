@@ -105,7 +105,7 @@ pixels in the background determination) the reflection profile parameters
 (used to define the reflection mask, and by default discovered automatically)
 and the actual algorithm to be used for peak integration e.g. sum3d or fft3d.
 
-  dials.integrate outlier.algorithm=null profile_fitting=True \
+  dials.integrate outlier.algorithm=null profile.fitting=True \
     refined_experiments.json -r indexed.pickle
 
 This reads the indexed reflections to determine strong reflections for profile

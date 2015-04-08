@@ -71,7 +71,7 @@ dials.refine bravais_setting_9.json reindexed_reflections.pickle \
 # methods. pass reference reflections from indexing in to determine the
 # profile parameters...
 
-dials.integrate outlier.algorithm=null profile_fitting=True \
+dials.integrate outlier.algorithm=null profile.fitting=True \
   input.experiments=refined_experiments.json \
   input.reflections=reindexed_reflections.pickle \
   nproc=$nproc

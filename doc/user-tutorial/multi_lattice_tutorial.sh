@@ -68,7 +68,7 @@ dials.refine experiments.json indexed.pickle \
 # methods. pass reference reflections from indexing in to determine the
 # profile parameters...
 
-dials.integrate outlier.algorithm=null profile_fitting=True \
+dials.integrate outlier.algorithm=null profile.fitting=True \
   input.experiments=refined_experiments.json \
   input.reflections=indexed.pickle \
   nproc=$nproc
