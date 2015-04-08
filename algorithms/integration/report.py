@@ -468,3 +468,69 @@ class ProfileModelReport(Report):
           array.title = 'Profile model (id: %d, profile: %d)' % (i, j)
           array.data = model.data(j)
           self.add_array(array)
+
+
+class ProfileValidationReport(Report):
+  '''
+  A class to store the profile validation report
+
+  '''
+
+  def __init__(self, experiments, profile_model, reflections, num_folds):
+    '''
+    Create the integration report
+
+    :param experiments: The experiment list
+    :param profile_model: The profile model
+    :param reflections: The reflection table
+
+    '''
+    from collections import OrderedDict
+
+    # Initialise the report class
+    super(ProfileValidationReport, self).__init__()
+
+    # Create the table
+    table = Table()
+
+    # Set the title
+    table.title = 'Summary of profile validation '
+
+    # Add the columns
+    table.cols.append(('id', 'ID'))
+    table.cols.append(('subsample', 'Sub-sample'))
+    table.cols.append(('n_valid', '# validated'))
+    table.cols.append(('cc', '<CC>'))
+    table.cols.append(('rmsd', '<RMSD>'))
+
+    # Get the modeller
+    profiles = profile_model.profiles()
+
+    # Split the reflections
+    reflection_tables = reflections.split_by_experiment_id()
+    assert len(reflection_tables) == len(experiments)
+
+    # Create the summary for each profile model
+    for i in range(len(profiles)):
+      model = profiles[i]
+      reflection_table = reflection_tables[i]
+      index = reflection_table['profile.index']
+      cc = reflection_table['profile.correlation']
+      for j in range(num_folds):
+        mask = index == j
+        num_validated = mask.count(True)
+        if num_validated == 0:
+          mean_cc = 0
+          mean_rmsd = 0
+        else:
+          mean_cc = flex.mean(cc.select(mask))
+          mean_rmsd = 0
+        table.rows.append([
+          '%d'   % i,
+          '%d'   % j,
+          '%d'   % num_validated,
+          '%.2f' % mean_cc,
+          '%.2f' % mean_rmsd])
+
+    # Add the table
+    self.add_table(table)

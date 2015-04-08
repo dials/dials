@@ -853,12 +853,16 @@ class Integrator(object):
     '''
     from dials.algorithms.integration.report import IntegrationReport
     from dials.algorithms.integration.report import ProfileModelReport
+    from dials.algorithms.integration.report import ProfileValidationReport
     from dials.util.command_line import heading
     from logging import info, debug
     from dials.util import pprint
-    from random import shuffle
+    from random import shuffle, seed
     from math import floor, ceil
     from dials.array_family import flex
+
+    # Ensure we get the same random sample each time
+    seed(0)
 
     # Init the report
     self.profile_model_report = None
@@ -926,21 +930,21 @@ class Integrator(object):
           n = len(reference)
           k_max = int(floor(n / self.params.profile.validation.min_partition_size))
           if k_max < self.params.profile.validation.number_of_partitions:
-            k = k_max
+            num_folds = k_max
           else:
-            k = self.params.profile.validation.number_of_partitions
-          if k > 1:
-            indices = (list(range(k)) * int(ceil(n/k)))[0:n]
+            num_folds = self.params.profile.validation.number_of_partitions
+          if num_folds > 1:
+            indices = (list(range(num_folds)) * int(ceil(n/num_folds)))[0:n]
             shuffle(indices)
             reference['profile.index'] = flex.size_t(indices)
-          if k < 1:
-            k = 1
+          if num_folds < 1:
+            num_folds = 1
 
         # Create the data processor
         executor = ProfileModellerExecutor(
           self.experiments,
           self.profile_model,
-          number_of_partitions=k)
+          number_of_partitions=num_folds)
         processor = ProcessorBuilder(
           self.ProcessorClass,
           self.experiments,
@@ -957,51 +961,34 @@ class Integrator(object):
 
         # Finalize the profile models for validation
         assert len(modeller_list) > 0, "No modellers"
-        modeller_list_new = []
+        modeller_partial = []
         for index, mod in modeller_list.iteritems():
           if mod is None:
             continue
-          if len(modeller_list_new) == 0:
-            modeller_list_new = mod
+          if len(modeller_partial) == 0:
+            modeller_partial = mod
           else:
             for i, m in mod:
-              modeller_list_new[i].accumulate(m)
-        modeller_list = [modeller.copy() for modeller in
-                         modeller_list_new]
-        for modeller in modeller_list:
-          modeller.finalize()
-
-        # Create the data processor
-        executor = ProfileValidatorExecutor(
-          self.experiments,
-          self.profile_model,
-          modeller_list)
-        processor = ProcessorBuilder(
-          self.ProcessorClass,
-          self.experiments,
-          self.profile_model,
-          reference,
-          self.params.modelling).build()
-        processor.executor = executor
-
-        # Process the reference profiles
-        reference, validation, time_info = processor.process()
-
-        # Finalize the profile models for integration
-        modeller = None
-        for mod in modeller_list_new:
-          if mod is None:
-            continue
+              modeller_partial[i].accumulate(m)
+        modeller_full = None
+        modeller_partial_temp = []
+        for modeller in modeller_partial:
           if modeller is None:
-            modeller = mod
+            continue
+          if modeller_full is None:
+            modeller_full = modeller
           else:
-            modeller.accumulate(mod)
-        modeller.finalize()
-        self.profile_model.profiles(modeller)
+            modeller_full.accumulate(modeller)
+          modeller = modeller.copy()
+          modeller.finalize()
+          modeller_partial_temp.append(modeller)
+        modeller_partial = modeller_partial_temp
+        modeller_full.finalize()
+        self.profile_model.profiles(modeller_full)
 
         # Print profiles
-        for i in range(len(modeller)):
-          m = modeller[i]
+        for i in range(len(modeller_full)):
+          m = modeller_full[i]
           debug("")
           debug("Profiles for experiment %d" % i)
           for j in range(len(m)):
@@ -1015,7 +1002,7 @@ class Integrator(object):
         self.profile_model_report = ProfileModelReport(
           self.experiments,
           self.profile_model,
-          self.reflections)
+          reference)
         info("")
         info(self.profile_model_report.as_str(prefix=' '))
 
@@ -1023,6 +1010,39 @@ class Integrator(object):
         info("")
         info(str(time_info))
         info("")
+
+        # If we have more than 1 fold then do the validation
+        if num_folds > 1:
+
+          # Create the data processor
+          executor = ProfileValidatorExecutor(
+            self.experiments,
+            self.profile_model,
+            modeller_partial)
+          processor = ProcessorBuilder(
+            self.ProcessorClass,
+            self.experiments,
+            self.profile_model,
+            reference,
+            self.params.modelling).build()
+          processor.executor = executor
+
+          # Process the reference profiles
+          reference, validation, time_info = processor.process()
+
+          # Print the modeller report
+          self.profile_validation_report = ProfileValidationReport(
+            self.experiments,
+            self.profile_model,
+            reference,
+            num_folds)
+          info("")
+          info(self.profile_validation_report.as_str(prefix=' '))
+
+          # Print the time info
+          info("")
+          info(str(time_info))
+          info("")
 
     info("=" * 80)
     info("")
