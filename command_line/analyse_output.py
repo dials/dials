@@ -8,6 +8,8 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+#
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import division
 import math
@@ -17,9 +19,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 from matplotlib import pyplot
-
 from dials.array_family import flex
-
 
 def ensure_directory(path):
   ''' Make the directory if not already there. '''
