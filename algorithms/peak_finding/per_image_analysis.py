@@ -29,7 +29,7 @@ def map_to_reciprocal_space(reflections, imageset):
 
   return reflections
 
-def get_histogram(d_star_sq, target_n_per_bin=10, max_slots=20, min_slots=5):
+def get_histogram(d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
   n_slots = len(d_star_sq)//target_n_per_bin
   n_slots = min(n_slots, max_slots)
   n_slots = max(n_slots, min_slots)
@@ -64,22 +64,23 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
 
   i_slot_max = flex.max_index(hist.slots())
 
-  for i_slot, slot in enumerate(hist.slot_infos()):
-    sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
-    if sel.count(True) == 0:
-      if i_slot > i_slot_max:
-        hist = get_histogram(d_star_sq.select(d_star_sq < slot.low_cutoff))
-        break
+  #for i_slot, slot in enumerate(hist.slot_infos()):
+    #sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
+    #if sel.count(True) == 0:
+      #if i_slot > i_slot_max:
+        #hist = get_histogram(d_star_sq.select(d_star_sq < slot.low_cutoff))
+        #break
 
   low_percentile_limit = 0.05
   upper_percentile_limit = 1-low_percentile_limit
   for i_slot, slot in enumerate(hist.slot_infos()):
     sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
     if sel.count(True) == 0:
-      if i_slot > i_slot_max:
-        break
-      else:
-        continue
+      continue
+      #if i_slot > i_slot_max:
+        #break
+      #else:
+        #continue
     log_i_over_sigi_sel = log_i_over_sigi.select(sel)
     d_star_sq_sel = d_star_sq.select(sel)
     perm = flex.sort_permutation(log_i_over_sigi_sel)
@@ -91,6 +92,7 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     d_star_sq_lower.append(d_star_sq_sel[i_upper])
     weights.append(slot.n)
 
+  weights = flex.double(weights.size(), 1)
   fit_upper = flex.linear_regression(
     d_star_sq_upper, log_i_sigi_upper, weights=weights)
   m_upper = fit_upper.slope()
