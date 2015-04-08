@@ -95,9 +95,25 @@ def generate_phil_scope():
         .help = "The integrator to use."
         .expert_level=3
 
-      profile_fitting = True
-        .type = bool
-        .help = "Use profile fitting if available"
+      profile {
+
+        fitting = True
+          .type = bool
+          .help = "Use profile fitting if available"
+
+        validation {
+
+          number_of_partitions = 2
+            .type = int(value_min=1)
+            .help = "The number of subsamples to take from the reference spots."
+                    "If the value is 1, then no validation is performed."
+
+          min_partition_size = 100
+            .type = int(value_min=1)
+            .help = "The minimum number of spots to use in each subsample."
+
+        }
+      }
 
       filter
         .expert_level = 1
@@ -222,6 +238,22 @@ class Parameters(object):
       self.min_zeta = 0.05
       self.powder_filter = None
 
+  class Profile(object):
+    '''
+    Profile parameters
+
+    '''
+
+    class Validation(object):
+
+      def __init__(self):
+        self.number_of_partitions = 2
+        self.min_partition_size = 100
+
+    def __init__(self):
+      self.fitting = True
+      self.validation = Parameters.Profile.Validation()
+
   def __init__(self):
     '''
     Initialize
@@ -231,7 +263,7 @@ class Parameters(object):
     self.modelling = processor.Parameters()
     self.integration = processor.Parameters()
     self.filter = Parameters.Filter()
-    self.profile_fitting = True
+    self.profile = Parameters.Profile()
 
   @staticmethod
   def from_phil(params):
@@ -269,7 +301,6 @@ class Parameters(object):
     result.modelling.mp = mp
     result.modelling.lookup = lookup
     result.modelling.block = block
-    result.modelling.debug = processor.Parameters.Debug()
     if params.debug.during == 'modelling':
       result.modelling.debug.output = params.debug.output
     result.modelling.debug.select = params.debug.select
@@ -278,7 +309,6 @@ class Parameters(object):
     result.integration.mp = mp
     result.integration.lookup = lookup
     result.integration.block = block
-    result.integration.debug = processor.Parameters.Debug()
     if params.debug.during == 'integration':
       result.integration.debug.output = params.debug.output
     result.integration.debug.select = params.debug.select
@@ -288,8 +318,12 @@ class Parameters(object):
     result.filter.powder_filter = MultiPowderRingFilter.from_params(
       params.filter)
 
-    # Set the profile fitting parameter
-    result.profile_fitting = params.profile_fitting
+    # Set the profile fitting parameters
+    result.profile.fitting = params.profile.fitting
+    result.profile.validation.number_of_partitions = \
+      params.profile.validation.number_of_partitions
+    result.profile.validation.min_partition_size = \
+      params.profile.validation.min_partition_size
 
     # Return the result
     return result
@@ -431,7 +465,7 @@ class ProfileModellerExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments, profile_model):
+  def __init__(self, experiments, profile_model, number_of_partitions):
     '''
     Initialise the executor
 
@@ -441,6 +475,8 @@ class ProfileModellerExecutor(Executor):
     '''
     self.experiments = experiments
     self.profile_model = profile_model
+    self.number_of_partitions = number_of_partitions
+    assert self.number_of_partitions > 0, "Invalid number of partitions"
     super(ProfileModellerExecutor, self).__init__()
 
   def initialize(self, frame0, frame1, reflections):
@@ -484,7 +520,8 @@ class ProfileModellerExecutor(Executor):
       info('')
 
     # Create the modeller
-    self.modeller = self.profile_model.modeller(self.experiments)
+    self.modellers = [self.profile_model.modeller(self.experiments)
+                      for i in range(self.number_of_partitions)]
 
   def process(self, frame, reflections):
     '''
@@ -508,7 +545,13 @@ class ProfileModellerExecutor(Executor):
     reflections.compute_summed_intensity()
 
     # Do the profile modelling
-    self.modeller.model(reflections)
+    for i, modeller in enumerate(self.modellers):
+      if 'profile.index' not in reflections:
+        subsample = reflections
+      else:
+        mask = reflections['profile.index'] != i
+        subsample = reflections.select(mask)
+      modeller.model(subsample)
 
     # Print some info
     fmt = ' Modelled % 5d / % 5d reflection profiles on image %d'
@@ -528,7 +571,7 @@ class ProfileModellerExecutor(Executor):
     :return: the modeller
 
     '''
-    return self.modeller
+    return self.modellers
 
 
 class IntegratorExecutor(Executor):
@@ -690,6 +733,9 @@ class Integrator(object):
     from dials.util.command_line import heading
     from logging import info, debug
     from dials.util import pprint
+    from random import shuffle
+    from math import floor, ceil
+    from dials.array_family import flex
 
     # Init the report
     self.profile_model_report = None
@@ -732,7 +778,7 @@ class Integrator(object):
     initialize(self.reflections)
 
     # Check if we want to do some profile fitting
-    if (self.params.profile_fitting and
+    if (self.params.profile.fitting == True and
         self.profile_model.has_profile_fitting()):
 
       info("=" * 80)
@@ -750,62 +796,80 @@ class Integrator(object):
       # Check if we need to skip
       if len(reference) == 0:
         info("** Skipping profile modelling - no reference profiles given **")
+      else:
 
-      # Create the data processor
-      executor = ProfileModellerExecutor(
-        self.experiments,
-        self.profile_model)
-      processor = ProcessorBuilder(
-        self.ProcessorClass,
-        self.experiments,
-        self.profile_model,
-        reference,
-        self.params.modelling).build()
-      processor.executor = executor
+        # Try to set up the validation
+        if self.params.profile.validation.number_of_partitions > 1:
+          n = len(reference)
+          k_max = int(floor(n / self.params.profile.validation.min_partition_size))
+          if k_max < self.params.profile.validation.number_of_partitions:
+            k = k_max
+          else:
+            k = self.params.profile.validation.number_of_partitions
+          if k > 1:
+            indices = (list(range(k)) * int(ceil(n/k)))[0:n]
+            shuffle(indices)
+            reference['profile.index'] = flex.size_t(indices)
+          if k < 1:
+            k = 1
 
-      # Process the reference profiles
-      reference, modeller_list, time_info = processor.process()
+        # Create the data processor
+        executor = ProfileModellerExecutor(
+          self.experiments,
+          self.profile_model,
+          number_of_partitions=k)
+        processor = ProcessorBuilder(
+          self.ProcessorClass,
+          self.experiments,
+          self.profile_model,
+          reference,
+          self.params.modelling).build()
+        processor.executor = executor
 
-      # Set the reference spots info
-      #self.reflections.set_selected(selection, reference)
+        # Process the reference profiles
+        reference, modeller_list, time_info = processor.process()
 
-      # Finalize the profile model
-      assert len(modeller_list) > 0, "No modellers"
-      modeller = None
-      for index, mod in modeller_list.iteritems():
-        if mod is None:
-          continue
-        if modeller is None:
-          modeller = mod
-        else:
-          modeller.accumulate(mod)
-      modeller.finalize()
-      self.profile_model.profiles(modeller)
+        # Set the reference spots info
+        #self.reflections.set_selected(selection, reference)
 
-      # Print profiles
-      for i in range(len(modeller)):
-        m = modeller[i]
-        debug("")
-        debug("Profiles for experiment %d" % i)
-        for j in range(len(m)):
-          debug("Profile %d" % j)
-          try:
-            debug(pprint.profile3d(m.data(j)))
-          except Exception:
-            debug("** NO PROFILE **")
+        # Finalize the profile model
+        assert len(modeller_list) > 0, "No modellers"
+        modeller = None
+        for index, mod in modeller_list.iteritems():
+          if mod is None:
+            continue
+          for m in mod:
+            if modeller is None:
+              modeller = m
+            else:
+              modeller.accumulate(m)
+        modeller.finalize()
+        self.profile_model.profiles(modeller)
 
-      # Print the modeller report
-      self.profile_model_report = ProfileModelReport(
-        self.experiments,
-        self.profile_model,
-        self.reflections)
-      info("")
-      info(self.profile_model_report.as_str(prefix=' '))
+        # Print profiles
+        for i in range(len(modeller)):
+          m = modeller[i]
+          debug("")
+          debug("Profiles for experiment %d" % i)
+          for j in range(len(m)):
+            debug("Profile %d" % j)
+            try:
+              debug(pprint.profile3d(m.data(j)))
+            except Exception:
+              debug("** NO PROFILE **")
 
-      # Print the time info
-      info("")
-      info(str(time_info))
-      info("")
+        # Print the modeller report
+        self.profile_model_report = ProfileModelReport(
+          self.experiments,
+          self.profile_model,
+          self.reflections)
+        info("")
+        info(self.profile_model_report.as_str(prefix=' '))
+
+        # Print the time info
+        info("")
+        info(str(time_info))
+        info("")
 
     info("=" * 80)
     info("")
