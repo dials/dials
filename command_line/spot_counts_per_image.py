@@ -1,3 +1,6 @@
+from __future__ import division
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_datablocks
 from dials.algorithms.peak_finding import per_image_analysis
