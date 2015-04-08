@@ -394,6 +394,7 @@ namespace dials { namespace algorithms {
       af::ref<double> intensity_val = reflections["intensity.prf.value"];
       af::ref<double> intensity_var = reflections["intensity.prf.variance"];
       af::ref<double> reference_cor = reflections["profile.correlation"];
+      af::ref<double> reference_rmsd = reflections["profile.rmsd"];
 
       // Loop through all the reflections and process them
       for (std::size_t i = 0; i < reflections.size(); ++i) {
@@ -403,6 +404,7 @@ namespace dials { namespace algorithms {
         intensity_val[i] = 0.0;
         intensity_var[i] = -1.0;
         reference_cor[i] = 0.0;
+        reference_rmsd[i] = 0.0;
         flags[i] &= ~af::IntegratedPrf;
 
         // Check if we want to use this reflection
@@ -464,6 +466,7 @@ namespace dials { namespace algorithms {
             intensity_val[i] = fit.intensity();
             intensity_var[i] = fit.variance();
             reference_cor[i] = fit.correlation();
+            reference_rmsd[i] = fit.rmsd();
 
             // Set the integrated flag
             flags[i] |= af::IntegratedPrf;

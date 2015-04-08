@@ -70,6 +70,7 @@ namespace dials { namespace algorithms {
       intensity_ = I[0];
       variance_ = I[1];
       correlation_ = compute_correlation(p, m, c, b);
+      rmsd_ = compute_rmsd(I[0], p, m, c, b);
     }
 
     /**
@@ -105,6 +106,13 @@ namespace dials { namespace algorithms {
      */
     double error() const {
       return error_;
+    }
+
+    /**
+     * @returns The rmsd in the fit
+     */
+    double rmsd() const {
+      return rmsd_;
     }
 
   private:
@@ -189,11 +197,46 @@ namespace dials { namespace algorithms {
       return result;
     }
 
+    /**
+     * Compute the rmsd between the profile and reference
+     */
+    double
+    compute_rmsd(double I,
+                 const af::const_ref<FloatType, af::c_grid<3> > &p,
+                 const af::const_ref<bool, af::c_grid<3> > &m,
+                 const af::const_ref<FloatType, af::c_grid<3> > &c,
+                 const af::const_ref<FloatType, af::c_grid<3> > &b) const {
+      double sum = 0.0;
+      double ymax = 0.0;
+      double ymin = 0.0;
+      std::size_t count = 0;
+      for (std::size_t i = 0; i < p.size(); ++i) {
+        if (m[i]) {
+          double y = (c[i] - b[i]);
+          if (count == 0) {
+            ymax = y;
+            ymin = y;
+          } else {
+            if (ymax < y) ymax = y;
+            if (ymin > y) ymin = y;
+          }
+          double x = I * p[i] - y;
+          sum += x * x;
+          count++;
+        }
+      }
+      DIALS_ASSERT(count > 0);
+      DIALS_ASSERT(ymax > ymin);
+      sum /= count;
+      return std::sqrt(sum) / (ymax - ymin);
+    }
+
     double intensity_;
     double variance_;
     double correlation_;
     std::size_t niter_;
     double error_;
+    double rmsd_;
   };
 
 }}

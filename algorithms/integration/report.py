@@ -501,7 +501,7 @@ class ProfileValidationReport(Report):
     table.cols.append(('subsample', 'Sub-sample'))
     table.cols.append(('n_valid', '# validated'))
     table.cols.append(('cc', '<CC>'))
-    table.cols.append(('rmsd', '<RMSD>'))
+    table.cols.append(('nrmsd', '<NRMSD>'))
 
     # Get the modeller
     profiles = profile_model.profiles()
@@ -514,23 +514,27 @@ class ProfileValidationReport(Report):
     for i in range(len(profiles)):
       model = profiles[i]
       reflection_table = reflection_tables[i]
+      reflection_table = reflection_table.select(
+        reflection_table.get_flags(
+          reflection_table.flags.integrated_prf))
       index = reflection_table['profile.index']
       cc = reflection_table['profile.correlation']
+      nrmsd = reflection_table['profile.rmsd']
       for j in range(num_folds):
         mask = index == j
         num_validated = mask.count(True)
         if num_validated == 0:
           mean_cc = 0
-          mean_rmsd = 0
+          mean_nrmsd = 0
         else:
           mean_cc = flex.mean(cc.select(mask))
-          mean_rmsd = 0
+          mean_nrmsd = flex.mean(nrmsd.select(mask))
         table.rows.append([
           '%d'   % i,
           '%d'   % j,
           '%d'   % num_validated,
           '%.2f' % mean_cc,
-          '%.2f' % mean_rmsd])
+          '%.2f' % mean_nrmsd])
 
     # Add the table
     self.add_table(table)
