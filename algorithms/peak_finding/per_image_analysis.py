@@ -122,8 +122,10 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     d = c_lower
     assert intersection == ((d-c_)/(a-b), (a*d-b*c_)/(a-b))
 
-    inside = points_inside_envelope(
-      d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
+    #inside = points_inside_envelope(
+      #d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
+
+    inside = points_below_line(d_star_sq, log_i_over_sigi, m_upper, c_upper)
 
     if inside.count(True) > 0:
       d_star_sq_estimate = flex.max(d_star_sq.select(inside))
@@ -171,18 +173,11 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
   return resolution_estimate
 
 
-def points_inside_envelope(d_star_sq, log_i_over_sigi,
-                           m_upper, c_upper,
-                           m_lower, c_lower):
-
-  points_upper = (0, c_upper, 1, m_upper*1 + c_upper)
-  points_lower = (0, c_lower, 1, m_lower*1 + c_lower)
+def points_below_line(d_star_sq, log_i_over_sigi, m, c):
 
   from scitbx import matrix
-  p1 = matrix.col((0, c_upper))
-  p2 = matrix.col(( 1, m_upper*1 + c_upper))
-  p3 = matrix.col((0, c_lower))
-  p4 = matrix.col(( 1, m_lower*1 + c_lower))
+  p1 = matrix.col((0, c))
+  p2 = matrix.col(( 1, m*1 + c))
 
   def side(p1, p2, p):
     diff = p2 - p1
@@ -195,10 +190,18 @@ def points_inside_envelope(d_star_sq, log_i_over_sigi,
   inside = flex.bool(len(d_star_sq), False)
   for i, (x, y) in enumerate(zip(d_star_sq, log_i_over_sigi)):
     p = matrix.col((x, y))
-    if side(p1, p2, p) < 0 and side(p3, p4, p) > 0:
+    if side(p1, p2, p) < 0:
       inside[i] = True
 
   return inside
+
+
+def points_inside_envelope(d_star_sq, log_i_over_sigi,
+                           m_upper, c_upper,
+                           m_lower, c_lower):
+
+  return (points_below_line(d_star_sq, log_i_over_sigi, m_upper, c_upper) &
+          ~points_below_line(d_star_sq, log_i_over_sigi, m_lower, c_lower))
 
 
 def filter_ice_rings(reflections, imageset):
