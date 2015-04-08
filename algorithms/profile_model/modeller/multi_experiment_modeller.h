@@ -202,6 +202,81 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Do the profile validation
+     * @param reflections
+     */
+    void validate(af::reflection_table reflections) const {
+
+      using af::boost_python::flex_table_suite::select_rows_index;
+      using af::boost_python::flex_table_suite::set_selected_rows_index;
+
+      // Check some stuff
+      DIALS_ASSERT(size() > 0);
+      DIALS_ASSERT(reflections.size() > 0);
+      DIALS_ASSERT(reflections.contains("id"));
+
+      // Get the experiment id
+      af::const_ref<std::size_t> id = reflections["id"];
+
+      // Compute the number of reflections for each experiment
+      std::vector<std::size_t> num1(size(), 0);
+      for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] < num1.size());
+        num1[id[i]]++;
+      }
+
+      // Compute the offset array
+      std::vector<std::size_t> offset(1, 0);
+      std::partial_sum(num1.begin(), num1.end(), std::back_inserter(offset));
+      DIALS_ASSERT(offset.size() == num1.size() + 1);
+      DIALS_ASSERT(offset.back() == id.size());
+
+      // Compute the indices
+      std::vector<std::size_t> indices(id.size());
+      std::vector<std::size_t> num2(num1.size(), 0);
+      for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] < num1.size());
+        std::size_t o1 = offset[id[i]];
+        std::size_t o2 = offset[id[i]+1];
+        std::size_t n1 = num1[id[i]];
+        std::size_t n2 = num2[id[i]];
+        std::size_t j = o1 + n2;
+        DIALS_ASSERT(j < o2);
+        DIALS_ASSERT(n2 < n1);
+        indices[j] = i;
+        num2[id[i]]++;
+      }
+
+      // Check we've assigned everything
+      for (std::size_t i = 0; i < num1.size(); ++i) {
+        DIALS_ASSERT(num1[i] == num2[i]);
+      }
+
+      // Process all the reflections
+      for (std::size_t i = 0; i < modellers_.size(); ++i) {
+
+        // Get the indices
+        std::size_t o1 = offset[i];
+        std::size_t o2 = offset[i+1];
+        DIALS_ASSERT(o2 <= indices.size());
+        DIALS_ASSERT(o1 < o2);
+        std::size_t n = o2 - o1;
+
+        // The indices
+        af::const_ref<std::size_t> ind(&indices[o1], n);
+
+        // Get the reflections
+        af::reflection_table subset = select_rows_index(reflections, ind);
+
+        // Do the fitting
+        modellers_[i]->validate(subset);
+
+        // Set any results
+        set_selected_rows_index(reflections, ind, subset);
+      }
+    }
+
+    /**
      * Add the profiles from another modeller
      * @param other The other modeller
      */

@@ -56,6 +56,9 @@ namespace dials { namespace algorithms {
 
     virtual
     void fit(af::reflection_table) const = 0;
+
+    virtual
+    void validate(af::reflection_table) const = 0;
   };
 
 }} // namespace dials::algorithms

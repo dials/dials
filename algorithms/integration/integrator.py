@@ -532,6 +532,7 @@ class ProfileModellerExecutor(Executor):
 
     '''
     from logging import info
+    from dials.array_family import flex
 
     # Check if pixels are overloaded
     reflections.is_overloaded(self.experiments)
@@ -547,11 +548,14 @@ class ProfileModellerExecutor(Executor):
     # Do the profile modelling
     for i, modeller in enumerate(self.modellers):
       if 'profile.index' not in reflections:
-        subsample = reflections
+        modeller.model(reflections)
       else:
         mask = reflections['profile.index'] != i
-        subsample = reflections.select(mask)
-      modeller.model(subsample)
+        indices = flex.size_t(range(len(mask))).select(mask)
+        if len(indices) > 0:
+          subsample = reflections.select(indices)
+          modeller.model(subsample)
+          reflections.set_selected(indices, subsample)
 
     # Print some info
     fmt = ' Modelled % 5d / % 5d reflection profiles on image %d'
@@ -572,6 +576,125 @@ class ProfileModellerExecutor(Executor):
 
     '''
     return self.modellers
+
+
+class ProfileValidatorExecutor(Executor):
+  '''
+  The class to do profile validation calculations
+
+  '''
+
+  def __init__(self, experiments, profile_model, modellers):
+    '''
+    Initialise the executor
+
+    :param experiments: The experiment list
+    :param profile_model: The profile model
+
+    '''
+    self.experiments = experiments
+    self.profile_model = profile_model
+    self.modellers = modellers
+    super(ProfileValidatorExecutor, self).__init__()
+
+  def initialize(self, frame0, frame1, reflections):
+    '''
+    Initialise the processing for a job
+
+    :param frame0: The first frame in the job
+    :param frame1: The last frame in the job
+    :param reflections: The reflections that will be processed
+
+    '''
+    from logging import info
+
+    # Get some info
+    EPS = 1e-7
+    full_value = (0.997300203937 - EPS)
+    fully_recorded = reflections['partiality'] > full_value
+    npart = fully_recorded.count(False)
+    nfull = fully_recorded.count(True)
+    nice = reflections.get_flags(reflections.flags.in_powder_ring).count(True)
+    ntot = len(reflections)
+
+    # Write some output
+    info(" Beginning modelling job %d" % job.index)
+    info("")
+    info(" Frames: %d -> %d" % (frame0, frame1))
+    info("")
+    info(" Number of reflections")
+    info("  Partial:     %d" % npart)
+    info("  Full:        %d" % nfull)
+    info("  In ice ring: %d" % nice)
+    info("  Total:       %d" % ntot)
+    info("")
+
+    # Print a histogram of reflections on frames
+    if frame1 - frame0 > 1:
+      info(' The following histogram shows the number of reflections predicted')
+      info(' to have all or part of their intensity on each frame.')
+      info('')
+      info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
+      info('')
+
+    self.results = None
+
+  def process(self, frame, reflections):
+    '''
+    Process the data
+
+    :param frame: The frame being processed
+    :param reflections: The reflections to process
+
+    '''
+    from logging import info
+    from dials.array_family import flex
+
+    # Check if pixels are overloaded
+    reflections.is_overloaded(self.experiments)
+
+    # Compute the shoebox mask
+    reflections.compute_mask(self.experiments, self.profile_model)
+
+    # Process the data
+    reflections.compute_background(self.experiments)
+    reflections.compute_centroid(self.experiments)
+    reflections.compute_summed_intensity()
+
+    # Do the profile validation
+    self.results = []
+    for i, modeller in enumerate(self.modellers):
+      mask = reflections['profile.index'] != i
+      indices = flex.size_t(range(len(mask))).select(mask)
+      if len(indices) > 0:
+        subsample = reflections.select(indices)
+        modeller.validate(subsample)
+        reflections.set_selected(indices, subsample)
+        corr = subsample['profile.correlation']
+        mean_corr = flex.mean(corr)
+      else:
+        mean_corr = None
+      self.results.append(mean_corr)
+
+    # Print some info
+    fmt = ' Validated % 5d / % 5d reflection profiles on image %d'
+    nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
+    ntot = len(reflections)
+    info(fmt % (nmod, ntot, frame))
+
+  def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
+    pass
+
+  def data(self):
+    '''
+    :return: the modeller
+
+    '''
+    return self.results
 
 
 class IntegratorExecutor(Executor):
@@ -832,17 +955,46 @@ class Integrator(object):
         # Set the reference spots info
         #self.reflections.set_selected(selection, reference)
 
-        # Finalize the profile model
+        # Finalize the profile models for validation
         assert len(modeller_list) > 0, "No modellers"
-        modeller = None
+        modeller_list_new = []
         for index, mod in modeller_list.iteritems():
           if mod is None:
             continue
-          for m in mod:
-            if modeller is None:
-              modeller = m
-            else:
-              modeller.accumulate(m)
+          if len(modeller_list_new) == 0:
+            modeller_list_new = mod
+          else:
+            for i, m in mod:
+              modeller_list_new[i].accumulate(m)
+        for modeller in modeller_list_new:
+          modeller.finalize()
+        modeller_list = modeller_list_new
+
+        # Create the data processor
+        executor = ProfileValidatorExecutor(
+          self.experiments,
+          self.profile_model,
+          modeller_list)
+        processor = ProcessorBuilder(
+          self.ProcessorClass,
+          self.experiments,
+          self.profile_model,
+          reference,
+          self.params.modelling).build()
+        processor.executor = executor
+
+        # Process the reference profiles
+        reference, validation, time_info = processor.process()
+
+        # Finalize the profile models for integration
+        modeller = None
+        for mod in modeller_list:
+          if mod is None:
+            continue
+          if modeller is None:
+            modeller = mod
+          else:
+            modeller.accumulate(mod)
         modeller.finalize()
         self.profile_model.profiles(modeller)
 

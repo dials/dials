@@ -27,6 +27,14 @@ namespace dials { namespace algorithms { namespace boost_python {
       this->get_override("model")(reflections);
     }
 
+    void fit(af::reflection_table reflections) {
+      this->get_override("fit")(reflections);
+    }
+
+    void validate(af::reflection_table reflections) const {
+      this->get_override("validate")(reflections);
+    }
+
     void accumulate(boost::shared_ptr<ProfileModellerIface> other) {
       this->get_override("accumulate")(other);
     }
@@ -74,6 +82,10 @@ namespace dials { namespace algorithms { namespace boost_python {
       this->get_override("fit")(reflections);
     }
 
+    void validate(af::reflection_table reflections) const {
+      this->get_override("validate")(reflections);
+    }
+
   };
 
   struct MultiExpProfileModellerPickleSuite : boost::python::pickle_suite {
@@ -104,6 +116,8 @@ namespace dials { namespace algorithms { namespace boost_python {
            boost::shared_ptr<ProfileModellerIfaceWrapper>,
            boost::noncopyable>("ProfileModellerIface")
       .def("model", pure_virtual(&ProfileModellerIface::model))
+      .def("fit", pure_virtual(&ProfileModellerIface::fit))
+      .def("validate", pure_virtual(&ProfileModellerIface::validate))
       .def("accumulate", pure_virtual(&ProfileModellerIface::accumulate))
       .def("finalize", pure_virtual(&ProfileModellerIface::finalize))
       .def("finalized", pure_virtual(&ProfileModellerIface::finalized))
@@ -133,6 +147,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("finalize", &MultiExpProfileModeller::finalize)
       .def("finalized", &MultiExpProfileModeller::finalized)
       .def("fit", &MultiExpProfileModeller::fit)
+      .def("validate", &MultiExpProfileModeller::validate)
       .def("__len__", &MultiExpProfileModeller::size)
       .def_pickle(MultiExpProfileModellerPickleSuite());
       ;

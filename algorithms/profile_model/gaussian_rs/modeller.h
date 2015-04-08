@@ -357,6 +357,23 @@ namespace dials { namespace algorithms {
      * Return a profile fitter
      * @return The profile fitter class
      */
+    void validate(af::reflection_table reflections) const {
+      switch (fit_method_) {
+      case ReciprocalSpace:
+        fit_reciprocal_space(reflections);
+        break;
+      case DetectorSpace:
+        fit_detector_space(reflections);
+        break;
+      default:
+        DIALS_ERROR("Unknown fitting method");
+      };
+    }
+
+    /**
+     * Return a profile fitter
+     * @return The profile fitter class
+     */
     void fit_reciprocal_space(af::reflection_table reflections) const {
 
       // Check input is OK
