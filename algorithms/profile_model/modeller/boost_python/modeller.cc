@@ -62,6 +62,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     void fit(af::reflection_table reflections) const {
       this->get_override("fit")(reflections);
     }
+
+    pointer copy() const {
+      return this->get_override("copy")();
+    }
   };
 
   struct EmpiricalProfileModellerWrapper
@@ -84,6 +88,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     void validate(af::reflection_table reflections) const {
       this->get_override("validate")(reflections);
+    }
+
+    pointer copy() const {
+      return this->get_override("copy")();
     }
 
   };
@@ -124,6 +132,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("data", pure_virtual(&ProfileModellerIface::data))
       .def("mask", pure_virtual(&ProfileModellerIface::mask))
       .def("size", pure_virtual(&ProfileModellerIface::size))
+      .def("copy", pure_virtual(&ProfileModellerIface::copy))
       .def("__len__", pure_virtual(&ProfileModellerIface::size))
       ;
 
@@ -149,6 +158,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("fit", &MultiExpProfileModeller::fit)
       .def("validate", &MultiExpProfileModeller::validate)
       .def("__len__", &MultiExpProfileModeller::size)
+      .def("copy", &MultiExpProfileModeller::copy)
       .def_pickle(MultiExpProfileModellerPickleSuite());
       ;
   }

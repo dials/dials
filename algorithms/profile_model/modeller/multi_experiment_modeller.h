@@ -26,7 +26,7 @@ namespace dials { namespace algorithms {
   class MultiExpProfileModeller {
   public:
 
-    typedef boost::shared_ptr<ProfileModellerIface> modeller_pointer;
+    typedef ProfileModellerIface::pointer modeller_pointer;
 
     /**
      * Initialize the multi experiment profile modeller
@@ -315,6 +315,17 @@ namespace dials { namespace algorithms {
      */
     std::size_t size() const {
       return modellers_.size();
+    }
+
+    /**
+     * Do a deep copy
+     */
+    MultiExpProfileModeller copy() const {
+      MultiExpProfileModeller result;
+      for (std::size_t i = 0; i < modellers_.size(); ++i) {
+        result.modellers_.push_back(modellers_[i]->copy());
+      }
+      return result;
     }
 
   private:

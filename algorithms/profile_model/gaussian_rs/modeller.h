@@ -581,6 +581,39 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /**
+     * @return a copy of the profile modller
+     */
+    pointer copy() const {
+      GaussianRSProfileModeller result(
+          beam_,
+          detector_,
+          goniometer_,
+          scan_,
+          sigma_b_,
+          sigma_m_,
+          n_sigma_,
+          grid_size_,
+          num_scan_points_,
+          threshold_,
+          grid_method_,
+          fit_method_);
+      result.finalized_ = finalized_;
+      result.n_reflections_.assign(
+          n_reflections_.begin(),
+          n_reflections_.end());
+      for (std::size_t i = 0; i < data_.size(); ++i) {
+        if (data_[i].size() > 0) {
+          result.data_[i] = data_type(accessor_, 0);
+          result.mask_[i] = mask_type(accessor_, true);
+          std::copy(data_[i].begin(), data_[i].end(), result.data_[i].begin());
+          std::copy(mask_[i].begin(), mask_[i].end(), result.mask_[i].begin());
+        }
+      }
+      return pointer(new GaussianRSProfileModeller(result));
+    }
+
+
   private:
 
     /**

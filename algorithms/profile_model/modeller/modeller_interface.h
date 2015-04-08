@@ -29,6 +29,7 @@ namespace dials { namespace algorithms {
     typedef af::ref< bool,   af::c_grid<3> > mask_reference;
     typedef af::const_ref< double, af::c_grid<3> > data_const_reference;
     typedef af::const_ref< bool,   af::c_grid<3> > mask_const_reference;
+    typedef boost::shared_ptr<ProfileModellerIface> pointer;
 
     virtual
     ~ProfileModellerIface() {}
@@ -59,6 +60,9 @@ namespace dials { namespace algorithms {
 
     virtual
     void validate(af::reflection_table) const = 0;
+
+    virtual
+    pointer copy() const = 0;
   };
 
 }} // namespace dials::algorithms

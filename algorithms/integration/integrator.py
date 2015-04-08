@@ -966,9 +966,10 @@ class Integrator(object):
           else:
             for i, m in mod:
               modeller_list_new[i].accumulate(m)
-        for modeller in modeller_list_new:
+        modeller_list = [modeller.copy() for modeller in
+                         modeller_list_new]
+        for modeller in modeller_list:
           modeller.finalize()
-        modeller_list = modeller_list_new
 
         # Create the data processor
         executor = ProfileValidatorExecutor(
@@ -988,7 +989,7 @@ class Integrator(object):
 
         # Finalize the profile models for integration
         modeller = None
-        for mod in modeller_list:
+        for mod in modeller_list_new:
           if mod is None:
             continue
           if modeller is None:
