@@ -5,6 +5,16 @@ from libtbx import group_args
 from cctbx import sgtbx, uctbx
 from dials.array_family import flex
 
+try:
+  import matplotlib
+
+  # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+  matplotlib.use('Agg') # use a non-interactive backend
+  from matplotlib import pyplot
+except ImportError:
+  pyplot = None
+
+
 def map_to_reciprocal_space(reflections, imageset):
   detector = imageset.get_detector()
   scan = imageset.get_scan()
@@ -123,7 +133,8 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
   #resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
   if plot_filename is not None:
-    from matplotlib import pyplot
+    if pyplot is None:
+      raise Sorry("matplotlib must be installed to generate a plot.")
     fig = pyplot.figure()
     ax = fig.add_subplot(1,1,1)
     ax.scatter(d_star_sq, log_i_over_sigi, marker='+')
@@ -211,7 +222,8 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
   hist = get_histogram(d_star_sq)
 
   if plot_filename is not None:
-    from matplotlib import pyplot
+    if pyplot is None:
+      raise Sorry("matplotlib must be installed to generate a plot.")
     fig = pyplot.figure()
     ax = fig.add_subplot(1,1,1)
     ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
@@ -256,7 +268,8 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
       slots.append(0)
 
   if plot_filename is not None:
-    from matplotlib import pyplot
+    if pyplot is None:
+      raise Sorry("matplotlib must be installed to generate a plot.")
     fig = pyplot.figure()
     ax = fig.add_subplot(1,1,1)
     #ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
@@ -280,9 +293,10 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
 
 
 def plot_ordered_d_star_sq(reflections, imageset):
+  if pyplot is None:
+    raise Sorry("matplotlib must be installed to generate a plot.")
   d_star_sq = flex.pow2(reflections['rlp'].norms())
 
-  from matplotlib import pyplot
   perm = flex.sort_permutation(d_star_sq)
   pyplot.scatter(list(range(len(perm))), list(d_star_sq.select(perm)), marker='+')
   pyplot.show()
@@ -384,15 +398,10 @@ def plot_stats(stats, filename='per_image_analysis.png'):
   n_spots_no_ice = stats.n_spots_no_ice
   n_spots_4A = stats.n_spots_4A
   estimated_d_min = flex.double(stats.estimated_d_min)
-  try:
-    import matplotlib
-    matplotlib.use('Agg') # use a non-interactive backend
-    # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-    from matplotlib import pyplot
-  except ImportError:
-    raise Sorry('matplotlib must be installed to generate a plot.')
 
   i_image = flex.int(list(range(1, len(n_spots_total)+1)))
+  if pyplot is None:
+    raise Sorry("matplotlib must be installed to generate a plot.")
   fig = pyplot.figure()
   ax1 = fig.add_subplot(111)
   sc1 = ax1.scatter(
