@@ -305,9 +305,9 @@ def plot_ordered_d_star_sq(reflections, imageset):
 def stats_single_image(imageset, reflections, i=None, plot=False):
   reflections = map_to_reciprocal_space(reflections, imageset)
   if plot and i is not None:
-    filename = "i_over_sigi_vs_resolution_%d.png" %i
-    hist_filename = "spot_count_vs_resolution_%d.png" %i
-    extra_filename = "log_sum_i_sigi_vs_resolution_%d.png" %i
+    filename = "i_over_sigi_vs_resolution_%d.png" %(i+1)
+    hist_filename = "spot_count_vs_resolution_%d.png" %(i+1)
+    extra_filename = "log_sum_i_sigi_vs_resolution_%d.png" %(i+1)
   else:
     filename = None
     hist_filename = None
