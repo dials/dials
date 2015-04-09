@@ -358,7 +358,7 @@ class IntegrationReport(Report):
       for i in range(len(report['bins'])-1):
         table.rows.append([
           '%d'   % j,
-          '%d'   % report['bins'][i],
+          '%.2f' % report['bins'][i],
           '%d'   % report['n_full'][i],
           '%d'   % report['n_partial'][i],
           '%d'   % report['n_overload'][i],
@@ -379,7 +379,7 @@ class IntegrationReport(Report):
       low = report['low']
 
       table = Table()
-      table.title = "Summary for experiment %d" % i
+      table.title = "Summary for experiment %d" % j
       table.cols.append(('item', 'Item'))
       table.cols.append(('overall', 'Overall'))
       table.cols.append(('low', 'Low'))
