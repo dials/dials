@@ -15,7 +15,7 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 
-from dials.scratch.dgw.rotation_decomposition import \
+from dials.algorithms.refinement.rotation_decomposition import \
   solve_r3_rotation_for_angles_given_axes
 from dials.command_line.analyse_output import ensure_directory
 

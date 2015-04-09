@@ -17,7 +17,7 @@ import random
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
 
-from dials.scratch.dgw.rotation_decomposition import \
+from dials.algorithms.refinement.rotation_decomposition import \
   solve_r3_rotation_for_angles_given_axes
 
 def test_rotation_matrices(phi1, phi2, phi3):
