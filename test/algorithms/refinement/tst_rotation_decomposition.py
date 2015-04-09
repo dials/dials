@@ -136,7 +136,7 @@ def test_random_axes_and_angles():
 
 if __name__ == '__main__':
 
-  n_tests=100000
+  n_tests=100
 
   # tests using principal axes, and angles in the range +/-30 deg
   for i in range(n_tests):
