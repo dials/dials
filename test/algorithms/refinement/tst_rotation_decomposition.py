@@ -130,7 +130,7 @@ def test_random_axes_and_angles():
   # one of sol1 or sol2 should match
   tst = (phi1, phi2, phi3)
   assert any([approx_equal(sol1, tst, out=None),
-              approx_equal(sol2, tst, out=None)]):
+              approx_equal(sol2, tst, out=None)])
 
   return
 
