@@ -88,6 +88,7 @@ tst_list = (
     "$D/test/algorithms/refinement/tst_stills_refinement.py",
     "$D/test/algorithms/refinement/tst_refine_multi_stills.py",
     "$D/test/algorithms/refinement/tst_error_propagation_matrix_inverse.py",
+    "$D/test/algorithms/refinement/tst_rotation_decomposition.py",
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/image/filter/tst_summed_area.py",
     "$D/test/algorithms/image/filter/tst_mean_and_variance.py",
