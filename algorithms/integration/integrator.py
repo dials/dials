@@ -970,7 +970,7 @@ class Integrator(object):
           if len(modeller_partial) == 0:
             modeller_partial = mod
           else:
-            for i, m in mod:
+            for i, m in enumerate(mod):
               modeller_partial[i].accumulate(m)
         modeller_full = None
         modeller_partial_temp = []
