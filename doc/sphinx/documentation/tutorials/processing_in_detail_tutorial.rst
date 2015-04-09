@@ -173,26 +173,26 @@ primitive lattice using space group P1.
     reflections = strong.pickle
   }
 
-  Found max_cell: 229.7 Angstrom
-  Setting d_min: 4.48575618871
+  Found max_cell: 199.1 Angstrom
+  Setting d_min: 3.88778695204
   FFT gridding: (256,256,256)
-  Number of centroids used: 8627
-  model 1 (7863 reflections):
+  Number of centroids used: 13282
+  model 1 (13227 reflections):
   Crystal:
-      Unit cell: (58.179, 58.461, 149.622, 90.337, 90.317, 90.560)
+      Unit cell: (57.604, 58.025, 149.904, 89.691, 89.825, 89.768)
       Space group: P 1
-      U matrix:  {{-0.2595,  0.3410,  0.9035},
-                  { 0.3839,  0.8949, -0.2275},
-                  {-0.8862,  0.2878, -0.3632}}
-      B matrix:  {{ 0.0172,  0.0000,  0.0000},
-                  { 0.0002,  0.0171,  0.0000},
-                  { 0.0001,  0.0001,  0.0067}}
-      A = UB:    {{-0.0043,  0.0059,  0.0060},
-                  { 0.0067,  0.0153, -0.0015},
-                  {-0.0152,  0.0049, -0.0024}}
+      U matrix:  {{ 0.3455, -0.2615, -0.9013},
+                  { 0.8912,  0.3922,  0.2278},
+                  { 0.2939, -0.8819,  0.3685}}
+      B matrix:  {{ 0.0174,  0.0000,  0.0000},
+                  {-0.0001,  0.0172,  0.0000},
+                  {-0.0001, -0.0001,  0.0067}}
+      A = UB:    {{ 0.0061, -0.0044, -0.0060},
+                  { 0.0154,  0.0067,  0.0015},
+                  { 0.0051, -0.0152,  0.0025}}
 
 
-  757 unindexed reflections
+  41 unindexed reflections
 
   ################################################################################
   Starting refinement (macro-cycle 1)
@@ -200,16 +200,16 @@ primitive lattice using space group P1.
 
 
   Summary statistics for observations matched to predictions:
-  -----------------------------------------------------------------------
-  |                   | Min     | Q1       | Med      | Q3     | Max    |
-  -----------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.7665 | -0.4922  | -0.05848 | 0.1489 | 0.4568 |
-  | Yc - Yo (mm)      | -0.8621 | -0.4161  | 0.04831  | 0.2403 | 0.5781 |
-  | Phic - Phio (deg) | -0.442  | -0.01297 | 0.1146   | 0.2693 | 0.9865 |
-  | X weights         | 113.8   | 134.7    | 135      | 135.1  | 135.2  |
-  | Y weights         | 119.2   | 134.9    | 135.1    | 135.2  | 135.2  |
-  | Phi weights       | 162.5   | 177.1    | 177.5    | 177.7  | 177.8  |
-  -----------------------------------------------------------------------
+  -------------------------------------------------------------------------
+  |                   | Min     | Q1      | Med      | Q3        | Max    |
+  -------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.5997 | -0.3171 | -0.2353  | -0.1522   | 0.6011 |
+  | Yc - Yo (mm)      | -1.184  | -0.2289 | -0.09807 | -0.008457 | 0.3844 |
+  | Phic - Phio (deg) | -0.7938 | -0.1812 | -0.0362  | 0.06264   | 0.7968 |
+  | X weights         | 253.5   | 401.7   | 404.2    | 405.1     | 405.6  |
+  | Y weights         | 260.5   | 402.6   | 404.5    | 405.3     | 405.6  |
+  | Phi weights       | 416.1   | 527.9   | 531      | 532.2     | 533.3  |
+  -------------------------------------------------------------------------
 
 
   Refinement steps:
@@ -217,11 +217,14 @@ primitive lattice using space group P1.
   | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
   |      |      | (mm)     | (mm)     | (deg)    |
   ------------------------------------------------
-  | 0    | 4049 | 0.38369  | 0.37431  | 0.23548  |
-  | 1    | 4049 | 0.12009  | 0.11387  | 0.18697  |
-  | 2    | 4049 | 0.088057 | 0.081596 | 0.14271  |
-  | 3    | 4049 | 0.048008 | 0.048841 | 0.076388 |
-  | 4    | 4049 | 0.026475 | 0.035665 | 0.02821  |
+  | 0    | 4049 | 0.26289  | 0.17719  | 0.1821   |
+  | 1    | 4049 | 0.042615 | 0.045835 | 0.096025 |
+  | 2    | 4049 | 0.038331 | 0.043512 | 0.053594 |
+  | 3    | 4049 | 0.036176 | 0.042359 | 0.032431 |
+  | 4    | 4049 | 0.034808 | 0.040253 | 0.023344 |
+  | 5    | 4049 | 0.033692 | 0.037341 | 0.018083 |
+  | 6    | 4049 | 0.032377 | 0.034582 | 0.016841 |
+  | 7    | 4049 | 0.031501 | 0.033056 | 0.016667 |
   ------------------------------------------------
   RMSD target achieved
 
@@ -230,25 +233,25 @@ primitive lattice using space group P1.
   | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
   |     |      | (px)    | (px)    | (images) |
   ---------------------------------------------
-  | 0   | 4049 | 0.15392 | 0.20735 | 0.18806  |
+  | 0   | 4049 | 0.18314 | 0.19219 | 0.11112  |
   ---------------------------------------------
-  Increasing resolution to 3.5 Angstrom
-  model 1 (18444 reflections):
+  Increasing resolution to 2.9 Angstrom
+  model 1 (31986 reflections):
   Crystal:
-      Unit cell: (57.728, 57.789, 149.916, 90.036, 90.022, 90.045)
+      Unit cell: (57.805, 57.782, 150.024, 90.003, 89.981, 89.990)
       Space group: P 1
-      U matrix:  {{-0.2595,  0.3443,  0.9023},
-                  { 0.3901,  0.8920, -0.2281},
-                  {-0.8834,  0.2928, -0.3658}}
+      U matrix:  {{ 0.3454, -0.2591, -0.9020},
+                  { 0.8915,  0.3909,  0.2291},
+                  { 0.2933, -0.8832,  0.3660}}
       B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  { 0.0000,  0.0173,  0.0000},
-                  { 0.0000,  0.0000,  0.0067}}
-      A = UB:    {{-0.0045,  0.0060,  0.0060},
-                  { 0.0068,  0.0154, -0.0015},
-                  {-0.0153,  0.0051, -0.0024}}
+                  {-0.0000,  0.0173,  0.0000},
+                  {-0.0000,  0.0000,  0.0067}}
+      A = UB:    {{ 0.0060, -0.0045, -0.0060},
+                  { 0.0154,  0.0068,  0.0015},
+                  { 0.0051, -0.0153,  0.0024}}
 
 
-  86 unindexed reflections
+  121 unindexed reflections
 
   ################################################################################
   Starting refinement (macro-cycle 2)
@@ -257,14 +260,14 @@ primitive lattice using space group P1.
 
   Summary statistics for observations matched to predictions:
   --------------------------------------------------------------------------
-  |                   | Min     | Q1        | Med       | Q3      | Max    |
+  |                   | Min     | Q1       | Med        | Q3      | Max    |
   --------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.2878 | -0.04705  | -0.006913 | 0.01925 | 0.2118 |
-  | Yc - Yo (mm)      | -0.7567 | -0.04353  | -0.01401  | 0.01291 | 0.267  |
-  | Phic - Phio (deg) | -1.018  | -0.005569 | 0.008174  | 0.02477 | 0.9063 |
-  | X weights         | 110.6   | 134.7     | 135       | 135.1   | 135.2  |
-  | Y weights         | 114     | 134.8     | 135.1     | 135.2   | 135.2  |
-  | Phi weights       | 160.2   | 177.2     | 177.5     | 177.7   | 177.8  |
+  | Xc - Xo (mm)      | -0.2821 | -0.02348 | -0.002085  | 0.03725 | 0.2655 |
+  | Yc - Yo (mm)      | -0.7087 | -0.02207 | -0.001341  | 0.01982 | 0.2813 |
+  | Phic - Phio (deg) | -1.053  | -0.01024 | -0.0003781 | 0.01023 | 0.9065 |
+  | X weights         | 229.3   | 399.6    | 403.3      | 404.8   | 405.6  |
+  | Y weights         | 210.9   | 399.5    | 403.3      | 404.8   | 405.6  |
+  | Phi weights       | 399.5   | 526.6    | 530.5      | 532.1   | 533.3  |
   --------------------------------------------------------------------------
 
 
@@ -273,34 +276,44 @@ primitive lattice using space group P1.
   | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
   |      |      | (mm)     | (mm)     | (deg)    |
   ------------------------------------------------
-  | 0    | 4049 | 0.053588 | 0.049049 | 0.0335   |
+  | 0    | 4049 | 0.04046  | 0.035062 | 0.016443 |
+  | 1    | 4049 | 0.039277 | 0.034359 | 0.016479 |
+  | 2    | 4049 | 0.039221 | 0.034184 | 0.016431 |
+  | 3    | 4049 | 0.039096 | 0.033931 | 0.016391 |
+  | 4    | 4049 | 0.038792 | 0.033558 | 0.016366 |
+  | 5    | 4049 | 0.038204 | 0.032931 | 0.016353 |
+  | 6    | 4049 | 0.037521 | 0.03224  | 0.01632  |
+  | 7    | 4049 | 0.037146 | 0.03194  | 0.016279 |
+  | 8    | 4049 | 0.037058 | 0.031931 | 0.01627  |
+  | 9    | 4049 | 0.037049 | 0.031938 | 0.016269 |
+  | 10   | 4049 | 0.037049 | 0.031939 | 0.016269 |
   ------------------------------------------------
-  RMSD target achieved
+  RMSD no longer decreasing
 
   RMSDs by experiment:
-  ---------------------------------------------
-  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |      | (px)    | (px)    | (images) |
-  ---------------------------------------------
-  | 0   | 4049 | 0.31156 | 0.28517 | 0.22334  |
-  ---------------------------------------------
-  Increasing resolution to 2.5 Angstrom
-  model 1 (47501 reflections):
+  --------------------------------------------
+  | Exp | Nref | RMSD_X | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)   | (px)    | (images) |
+  --------------------------------------------
+  | 0   | 4049 | 0.2154 | 0.18569 | 0.10846  |
+  --------------------------------------------
+  Increasing resolution to 1.9 Angstrom
+  model 1 (91948 reflections):
   Crystal:
-      Unit cell: (57.728, 57.789, 149.916, 90.036, 90.022, 90.045)
+      Unit cell: (57.815, 57.779, 150.032, 90.018, 89.995, 89.987)
       Space group: P 1
-      U matrix:  {{-0.2595,  0.3443,  0.9023},
-                  { 0.3901,  0.8920, -0.2281},
-                  {-0.8834,  0.2928, -0.3658}}
+      U matrix:  {{ 0.3455, -0.2589, -0.9020},
+                  { 0.8914,  0.3909,  0.2293},
+                  { 0.2932, -0.8833,  0.3658}}
       B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  { 0.0000,  0.0173,  0.0000},
-                  { 0.0000,  0.0000,  0.0067}}
-      A = UB:    {{-0.0045,  0.0060,  0.0060},
-                  { 0.0068,  0.0154, -0.0015},
-                  {-0.0153,  0.0051, -0.0024}}
+                  {-0.0000,  0.0173,  0.0000},
+                  {-0.0000,  0.0000,  0.0067}}
+      A = UB:    {{ 0.0060, -0.0045, -0.0060},
+                  { 0.0154,  0.0068,  0.0015},
+                  { 0.0051, -0.0153,  0.0024}}
 
 
-  137 unindexed reflections
+  309 unindexed reflections
 
   ################################################################################
   Starting refinement (macro-cycle 3)
@@ -308,16 +321,16 @@ primitive lattice using space group P1.
 
 
   Summary statistics for observations matched to predictions:
-  ----------------------------------------------------------------------------
-  |                   | Min     | Q1        | Med       | Q3        | Max    |
-  ----------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.3519 | -0.0555   | -0.001571 | 0.0559    | 0.3489 |
-  | Yc - Yo (mm)      | -0.7567 | -0.08436  | -0.03925  | -0.001229 | 0.267  |
-  | Phic - Phio (deg) | -1.018  | -0.006324 | 0.009059  | 0.02707   | 0.9063 |
-  | X weights         | 101.4   | 134.1     | 134.8     | 135.1     | 135.2  |
-  | Y weights         | 103.4   | 134       | 134.8     | 135.1     | 135.2  |
-  | Phi weights       | 157.8   | 176.8     | 177.4     | 177.7     | 177.8  |
-  ----------------------------------------------------------------------------
+  --------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med        | Q3      | Max    |
+  --------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.4729 | -0.02289 | 0.008137   | 0.0387  | 0.6873 |
+  | Yc - Yo (mm)      | -1.421  | -0.02119 | 0.002495   | 0.02561 | 1.281  |
+  | Phic - Phio (deg) | -1.434  | -0.01349 | -0.0007786 | 0.01238 | 0.9047 |
+  | X weights         | 179.9   | 383.7    | 397        | 403.2   | 405.6  |
+  | Y weights         | 171     | 377.3    | 394.4      | 402.5   | 405.6  |
+  | Phi weights       | 318.9   | 520.1    | 529.5      | 533.3   | 533.3  |
+  --------------------------------------------------------------------------
 
 
   Refinement steps:
@@ -325,39 +338,44 @@ primitive lattice using space group P1.
   | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
   |      |      | (mm)     | (mm)     | (deg)    |
   ------------------------------------------------
-  | 0    | 4049 | 0.076108 | 0.080995 | 0.031115 |
-  | 1    | 4049 | 0.065334 | 0.062245 | 0.033363 |
-  | 2    | 4049 | 0.064364 | 0.060599 | 0.031324 |
-  | 3    | 4049 | 0.062474 | 0.057821 | 0.027249 |
-  | 4    | 4049 | 0.058481 | 0.052493 | 0.022337 |
-  | 5    | 4049 | 0.051417 | 0.043149 | 0.019344 |
+  | 0    | 4049 | 0.048284 | 0.043291 | 0.024544 |
+  | 1    | 4049 | 0.046364 | 0.042412 | 0.024789 |
+  | 2    | 4049 | 0.046319 | 0.042245 | 0.024662 |
+  | 3    | 4049 | 0.046228 | 0.041887 | 0.024539 |
+  | 4    | 4049 | 0.04606  | 0.041289 | 0.024444 |
+  | 5    | 4049 | 0.045965 | 0.040565 | 0.024374 |
+  | 6    | 4049 | 0.04602  | 0.040007 | 0.024329 |
+  | 7    | 4049 | 0.046084 | 0.039749 | 0.024309 |
+  | 8    | 4049 | 0.046109 | 0.039694 | 0.024306 |
+  | 9    | 4049 | 0.046114 | 0.039689 | 0.024305 |
+  | 10   | 4049 | 0.046114 | 0.039688 | 0.024305 |
   ------------------------------------------------
-  RMSD target achieved
+  RMSD no longer decreasing
 
   RMSDs by experiment:
-  ---------------------------------------------
-  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |      | (px)    | (px)    | (images) |
-  ---------------------------------------------
-  | 0   | 4049 | 0.29894 | 0.25087 | 0.12896  |
-  ---------------------------------------------
-  Increasing resolution to 1.5 Angstrom
-  model 1 (113986 reflections):
+  --------------------------------------------
+  | Exp | Nref | RMSD_X | RMSD_Y  | RMSD_Z   |
+  |     |      | (px)   | (px)    | (images) |
+  --------------------------------------------
+  | 0   | 4049 | 0.2681 | 0.23075 | 0.16204  |
+  --------------------------------------------
+  Increasing resolution to 0.9 Angstrom
+  model 1 (114690 reflections):
   Crystal:
-      Unit cell: (57.782, 57.797, 150.013, 90.028, 90.012, 90.001)
+      Unit cell: (57.814, 57.785, 150.036, 90.014, 89.991, 89.988)
       Space group: P 1
-      U matrix:  {{-0.2594,  0.3449,  0.9021},
-                  { 0.3909,  0.8916, -0.2285},
-                  {-0.8831,  0.2933, -0.3661}}
+      U matrix:  {{ 0.3454, -0.2589, -0.9020},
+                  { 0.8914,  0.3909,  0.2292},
+                  { 0.2933, -0.8833,  0.3658}}
       B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  { 0.0000,  0.0173,  0.0000},
-                  { 0.0000,  0.0000,  0.0067}}
-      A = UB:    {{-0.0045,  0.0060,  0.0060},
-                  { 0.0068,  0.0154, -0.0015},
-                  {-0.0153,  0.0051, -0.0024}}
+                  {-0.0000,  0.0173,  0.0000},
+                  {-0.0000,  0.0000,  0.0067}}
+      A = UB:    {{ 0.0060, -0.0045, -0.0060},
+                  { 0.0154,  0.0068,  0.0015},
+                  { 0.0051, -0.0153,  0.0024}}
 
 
-  328 unindexed reflections
+  342 unindexed reflections
 
   ################################################################################
   Starting refinement (macro-cycle 4)
@@ -365,16 +383,16 @@ primitive lattice using space group P1.
 
 
   Summary statistics for observations matched to predictions:
-  ------------------------------------------------------------------------
-  |                   | Min     | Q1       | Med      | Q3      | Max    |
-  ------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.4481 | -0.04225 | 0.002675 | 0.05481 | 0.5976 |
-  | Yc - Yo (mm)      | -1.203  | -0.08534 | -0.02826 | 0.01359 | 1.462  |
-  | Phic - Phio (deg) | -1.446  | -0.01371 | 0.001714 | 0.01714 | 0.9092 |
-  | X weights         | 81.12   | 131.3    | 133.8    | 134.9   | 135.2  |
-  | Y weights         | 87.23   | 130      | 133.3    | 134.7   | 135.2  |
-  | Phi weights       | 145.2   | 176.2    | 177.4    | 177.8   | 177.8  |
-  ------------------------------------------------------------------------
+  --------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med        | Q3      | Max    |
+  --------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.5349 | -0.03342 | -0.004698  | 0.03183 | 0.6688 |
+  | Yc - Yo (mm)      | -1.409  | -0.02779 | -0.0004348 | 0.02336 | 1.265  |
+  | Phic - Phio (deg) | -1.424  | -0.01409 | -6.861e-05 | 0.0144  | 0.9046 |
+  | X weights         | 135.2   | 371.6    | 393.4      | 402.6   | 405.6  |
+  | Y weights         | 153.1   | 361.8    | 389        | 401.2   | 405.6  |
+  | Phi weights       | 318.9   | 519.5    | 530.4      | 533.3   | 533.3  |
+  --------------------------------------------------------------------------
 
 
   Refinement steps:
@@ -382,89 +400,44 @@ primitive lattice using space group P1.
   | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
   |      |      | (mm)     | (mm)     | (deg)    |
   ------------------------------------------------
-  | 0    | 4049 | 0.080234 | 0.097167 | 0.028632 |
-  | 1    | 4049 | 0.077529 | 0.084989 | 0.028778 |
-  | 2    | 4049 | 0.076159 | 0.083021 | 0.028573 |
-  | 3    | 4049 | 0.072759 | 0.078706 | 0.02818  |
-  | 4    | 4049 | 0.065409 | 0.069857 | 0.027744 |
-  | 5    | 4049 | 0.055575 | 0.057951 | 0.027327 |
-  | 6    | 4049 | 0.050327 | 0.05123  | 0.027053 |
+  | 0    | 4049 | 0.049701 | 0.047766 | 0.026101 |
+  | 1    | 4049 | 0.049518 | 0.047234 | 0.025985 |
+  | 2    | 4049 | 0.04946  | 0.046987 | 0.025939 |
+  | 3    | 4049 | 0.049369 | 0.046646 | 0.025902 |
+  | 4    | 4049 | 0.049268 | 0.046296 | 0.025895 |
+  | 5    | 4049 | 0.049185 | 0.046    | 0.025901 |
+  | 6    | 4049 | 0.049136 | 0.045853 | 0.025917 |
+  | 7    | 4049 | 0.049117 | 0.045808 | 0.025936 |
+  | 8    | 4049 | 0.049113 | 0.045798 | 0.025944 |
+  | 9    | 4049 | 0.049113 | 0.045797 | 0.025945 |
   ------------------------------------------------
-  RMSD target achieved
-
-  RMSDs by experiment:
-  --------------------------------------------
-  | Exp | Nref | RMSD_X | RMSD_Y  | RMSD_Z   |
-  |     |      | (px)   | (px)    | (images) |
-  --------------------------------------------
-  | 0   | 4049 | 0.2926 | 0.29785 | 0.18035  |
-  --------------------------------------------
-  Increasing resolution to 0.5 Angstrom
-  model 1 (114691 reflections):
-  Crystal:
-      Unit cell: (57.786, 57.800, 150.027, 90.018, 90.003, 89.996)
-      Space group: P 1
-      U matrix:  {{-0.2592,  0.3453,  0.9020},
-                  { 0.3910,  0.8915, -0.2289},
-                  {-0.8831,  0.2934, -0.3660}}
-      B matrix:  {{ 0.0173,  0.0000,  0.0000},
-                  {-0.0000,  0.0173,  0.0000},
-                  { 0.0000,  0.0000,  0.0067}}
-      A = UB:    {{-0.0045,  0.0060,  0.0060},
-                  { 0.0068,  0.0154, -0.0015},
-                  {-0.0153,  0.0051, -0.0024}}
-
-
-  341 unindexed reflections
-
-  ################################################################################
-  Starting refinement (macro-cycle 5)
-  ################################################################################
-
-
-  Summary statistics for observations matched to predictions:
-  -------------------------------------------------------------------------
-  |                   | Min     | Q1       | Med       | Q3      | Max    |
-  -------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.5604 | -0.03285 | -0.003436 | 0.03071 | 0.6503 |
-  | Yc - Yo (mm)      | -1.412  | -0.02725 | 0.001642  | 0.02774 | 1.255  |
-  | Phic - Phio (deg) | -1.408  | -0.01358 | 0.0004774 | 0.01514 | 0.9071 |
-  | X weights         | 81.12   | 131.2    | 133.8     | 134.9   | 135.2  |
-  | Y weights         | 87.23   | 130      | 133.3     | 134.7   | 135.2  |
-  | Phi weights       | 145.2   | 176.2    | 177.5     | 177.8   | 177.8  |
-  -------------------------------------------------------------------------
-
-
-  Refinement steps:
-  -----------------------------------------------
-  | Step | Nref | RMSD_X  | RMSD_Y   | RMSD_Phi |
-  |      |      | (mm)    | (mm)     | (deg)    |
-  -----------------------------------------------
-  | 0    | 4049 | 0.05131 | 0.046971 | 0.028166 |
-  -----------------------------------------------
-  RMSD target achieved
+  RMSD no longer decreasing
 
   RMSDs by experiment:
   ---------------------------------------------
   | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
   |     |      | (px)    | (px)    | (images) |
   ---------------------------------------------
-  | 0   | 4049 | 0.29831 | 0.27309 | 0.18777  |
+  | 0   | 4049 | 0.28554 | 0.26626 | 0.17297  |
   ---------------------------------------------
   Final refined crystal models:
-  model 1 (114691 reflections):
+  model 1 (114690 reflections):
   Crystal:
-      Unit cell: (57.786, 57.800, 150.027, 90.018, 90.003, 89.996)
+      Unit cell: (57.802, 57.779, 150.018, 90.010, 89.993, 89.989)
       Space group: P 1
-      U matrix:  {{-0.2592,  0.3453,  0.9020},
-                  { 0.3910,  0.8915, -0.2289},
-                  {-0.8831,  0.2934, -0.3660}}
+      U matrix:  {{ 0.3455, -0.2590, -0.9020},
+                  { 0.8914,  0.3909,  0.2292},
+                  { 0.2932, -0.8832,  0.3659}}
       B matrix:  {{ 0.0173,  0.0000,  0.0000},
                   {-0.0000,  0.0173,  0.0000},
-                  { 0.0000,  0.0000,  0.0067}}
-      A = UB:    {{-0.0045,  0.0060,  0.0060},
-                  { 0.0068,  0.0154, -0.0015},
-                  {-0.0153,  0.0051, -0.0024}}
+                  {-0.0000,  0.0000,  0.0067}}
+      A = UB:    {{ 0.0060, -0.0045, -0.0060},
+                  { 0.0154,  0.0068,  0.0015},
+                  { 0.0051, -0.0153,  0.0024}}
+
+  Saving refined experiments to experiments.json
+  Saving refined reflections to indexed.pickle
+
 
 It is worth looking through this output to understand what the indexing program
 has done. Note that this log (minus the preamble about modified parameters)
@@ -474,11 +447,11 @@ this is probably only helpful if something has gone wrong and you are trying
 to track down why.
 
 Inspecting the log shows that the indexing step is done at fairly low
-resolution: ``Setting d_min: 4.48575618871``. The resolution limit of data that
+resolution: ``Setting d_min: 3.88778695204``. The resolution limit of data that
 can be used in indexing is determined by the size of the 3D FFT grid and the
 likely maximum cell dimension. Here we
 used :math:`256^3` grid points: ``FFT gridding: (256,256,256)``.
-What follows are five macrocycles
+What follows are four macrocycles
 of refinement at increasing resolution to bootstrap the indexing solution to as
 many of the strong reflections as possible. In each case you can see that only
 4049 reflections are used in the refinement job. The diffraction geometry is
@@ -488,25 +461,24 @@ hugely overdetermined. In order to save time, refinement uses a subset of the
 input reflections, by default using 50 reflections for every degree of the scan.
 
 Continuing to look through the log, we see that the first macrocyle of refinement makes
-a big improvement, reducing the positional RMSDs from 0.38 to 0.03 mm in X and
-0.37 to 0.04 mm in Y. The second macrocycle doesn't actually change the model
-at all. After extending to 3.5 Angstroms the current model still predicts
-all reflections with RMSDs within one third of the pixel size and one third of
-the angular width. Refinement terminates immediately, as by default this is
-considered a good enough model to proceed. This is fairly unusual, and is an
-indication of the very high quality of this particular dataset. After extending
-to 2.5 Angstroms the current model ceases to be good enough to predict the
-high resolution reflections. Refinement optimises the model until again the
-predictions are within the RMSD target. The same occurs after extending to
-1.5 Angstroms. In the final macrocyle, the resolution limit is extended to 0.5
-Angstroms, well beyond the highest resolution recorded 'strong' spot, which is
-1.17 Angstroms. Refinement has
-nothing to do because the current model still predicts with low enough RMSDs
-right out to the maximum resolution of the dataset.
+a big improvement, reducing the positional RMSDs from 0.26 to 0.03 mm in X and
+0.17 to 0.03 mm in Y. The second macrocycle includes more reflections, after
+extending to 2.9 Angstroms. The current model now shows slightly worse RMSDs
+at the start, now that the higher resolution reflections are included, but refinement reduces
+these from 0.040 to 0.037 mm in X and from 0.035 to 0.032 mm in Y.
+A similar situation is observed when the resolution is extended again to 1.9 Angstroms.
+The RMSDs start higher again, now that more reflections are included, but refinement
+is able to drive these down a little, from 0.048 to 0.046 mm in X and 0.043 to 0.040 mm in Y.
+The final macrocycle includes data out to 0.9 Angstroms, which is well beyond
+the highest resolution recorded 'strong' spot. Nevertheless, more reflections
+have been included so refinement acts again to improve the models slightly
+including this higher-resolution information. The final model provides
+rmsds of 0.049 mm in X, 0.046 mm in Y and 0.026 degrees in :math:`\phi`, corresponding
+to 0.29 pixels in X, 0.27 pixels in Y and 0.17 image widths in :math:`\phi`.
 
 Despite the high quality of this data, we notice from the ``Summary statistics``
-tables that there there are some outliers appearing as resolution increases,
-especially in the last two macrocycles. In the final macrocyle we see the
+tables that there there are some outliers appearing as resolution increases.
+In the final macrocyle we see the
 distribution of positional residuals in the Y direction is tight around the
 median, except for extreme values both positive and negative of more than 1 mm.
 The angular residuals show a similar pattern with half the data having residuals
@@ -549,18 +521,18 @@ each Bravais setting...
   -------------------------------------------------------------------------------------------------------------
   Solution Metric fit  rmsd #spots  crystal_system                                 unit_cell  volume      cb_op
   -------------------------------------------------------------------------------------------------------------
-         9  0.0197 dg 0.069   4049   tetragonal tP  57.79  57.79 150.01  90.00  90.00  90.00  500936      a,b,c
-         8  0.0197 dg 0.069   4049 orthorhombic oC  81.72  81.73 150.01  90.00  90.00  90.00 1001961  a-b,a+b,c
-         7  0.0167 dg 0.069   4049 orthorhombic oP  57.78  57.79 150.01  90.00  90.00  90.00  500920      a,b,c
-         6  0.0197 dg 0.068   4049   monoclinic mC  81.72  81.73 150.01  90.00  89.99  90.00 1001915  a-b,a+b,c
-         5  0.0184 dg 0.069   4049   monoclinic mC  81.73  81.72 150.01  90.00  90.01  90.00 1001960 a+b,-a+b,c
-         4  0.0167 dg 0.069   4049   monoclinic mP  57.78  57.79 150.01  90.00  90.00  90.00  500920      a,b,c
-         3  0.0160 dg 0.069   4049   monoclinic mP  57.78 150.01  57.80  90.00  89.99  90.00  500960   -a,-c,-b
-         2  0.0051 dg 0.067   4049   monoclinic mP  57.79  57.78 150.01  90.00  90.01  90.00  500911   -b,-a,-c
-         1  0.0000 dg 0.067   4049    triclinic aP  57.78  57.79 150.01  90.01  90.00  90.00  500930      a,b,c
+         9  0.0258 dg 0.070   4049   tetragonal tP  57.78  57.78 149.99  90.00  90.00  90.00  500719      a,b,c
+         8  0.0258 dg 0.069   4049 orthorhombic oC  81.72  81.73 150.01  90.00  90.00  90.00 1001925  a-b,a+b,c
+         7  0.0148 dg 0.068   4049 orthorhombic oP  57.78  57.76 149.98  90.00  90.00  90.00  500612      a,b,c
+         6  0.0231 dg 0.068   4049   monoclinic mC  81.73  81.74 150.03  90.00  89.99  90.00 1002292  a-b,a+b,c
+         5  0.0258 dg 0.069   4049   monoclinic mC  81.73  81.72 150.01  90.00  89.99  90.00 1001933 a+b,-a+b,c
+         4  0.0131 dg 0.068   4049   monoclinic mP  57.77  57.79 150.00  90.00  90.01  90.00  500757   -b,-a,-c
+         3  0.0148 dg 0.068   4049   monoclinic mP  57.79  57.77 150.00  90.00  89.99  90.00  500789      a,b,c
+         2  0.0120 dg 0.068   4049   monoclinic mP  57.77 150.00  57.79  90.00  89.99  90.00  500842      b,c,a
+         1  0.0000 dg 0.067   4049    triclinic aP  57.80  57.78 150.02  90.01  89.99  89.99  501027      a,b,c
   -------------------------------------------------------------------------------------------------------------
-  usr+sys time: 0.84 seconds
-  wall clock time: 3.92 seconds
+  usr+sys time: 0.87 seconds
+  wall clock time: 8.55 seconds
 
 In this example we would continue processing (i.e. proceed to the refinement
 step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
@@ -585,9 +557,7 @@ dataset is of exceptional quality and we are keen to squeeze the best possible
 results from it. During indexing we saw the presence of outliers that we would
 like to exclude from refinement, and we also used a subset of reflections. Now
 we will repeat using all indexed reflections in the dataset and with outlier
-rejection switched on. To force refinement to continue until the RMSDs converge
-we also have to use the expert parameter ``bin_size_fraction`` to set the
-RMSD target to zero in each dimension.
+rejection switched on.
 
 As an aside, to show all the options up to and including ``expert_level = 1``
 use this command::
@@ -598,21 +568,21 @@ Equivalent command-line options exist for all the main DIALS programs.
 Now, our refinement job is specified as::
 
   dials.refine bravais_setting_9.json reindexed_reflections.pickle \
-  do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0
+  outlier_rejection.algorithm=tukey use_all_reflections=true
 
-The main product of this is the file ``refined_experiments.json``
+The main product of this are the files ``refined_experiments.json`` and
+``refined.pickle``.
 
 ::
 
   The following parameters have been modified:
 
   refinement {
-    target {
-      bin_size_fraction = 0.0
-    }
     reflections {
       use_all_reflections = true
-      do_outlier_rejection = true
+      outlier_rejection {
+        algorithm = null *tukey
+      }
     }
   }
   input {
@@ -623,30 +593,30 @@ The main product of this is the file ``refined_experiments.json``
   Configuring refiner
 
   Summary statistics for observations matched to predictions:
-  --------------------------------------------------------------------------
-  |                   | Min     | Q1        | Med       | Q3      | Max    |
-  --------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.5507 | -0.03321  | -0.002888 | 0.03001 | 0.637  |
-  | Yc - Yo (mm)      | -1.399  | -0.02472  | 0.005981  | 0.03653 | 1.233  |
-  | Phic - Phio (deg) | -1.325  | -0.007418 | 0.009094  | 0.02602 | 0.9122 |
-  | X weights         | 81.12   | 131.2     | 133.8     | 134.9   | 135.2  |
-  | Y weights         | 87.23   | 130       | 133.3     | 134.7   | 135.2  |
-  | Phi weights       | 145.2   | 176.2     | 177.5     | 177.8   | 177.8  |
-  --------------------------------------------------------------------------
+  -------------------------------------------------------------------------
+  |                   | Min     | Q1       | Med       | Q3      | Max    |
+  -------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.5281 | -0.0342  | -0.002737 | 0.03274 | 0.6464 |
+  | Yc - Yo (mm)      | -1.393  | -0.02842 | 0.0005028 | 0.03071 | 1.246  |
+  | Phic - Phio (deg) | -1.415  | -0.01382 | 0.0009439 | 0.0159  | 0.9129 |
+  | X weights         | 135.2   | 371.6    | 393.4     | 402.6   | 405.6  |
+  | Y weights         | 153.1   | 361.8    | 389       | 401.2   | 405.6  |
+  | Phi weights       | 318.9   | 519.5    | 530.4     | 533.3   | 533.3  |
+  -------------------------------------------------------------------------
 
-  7083 reflections have been rejected as outliers
+  7002 reflections have been flagged as outliers
 
   Summary statistics for observations matched to predictions:
-  ----------------------------------------------------------------------------
-  |                   | Min      | Q1        | Med       | Q3      | Max     |
-  ----------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.128   | -0.03177  | -0.002246 | 0.02981 | 0.1248  |
-  | Yc - Yo (mm)      | -0.1166  | -0.02258  | 0.006746  | 0.03612 | 0.1284  |
-  | Phic - Phio (deg) | -0.05757 | -0.006447 | 0.009248  | 0.02549 | 0.07616 |
-  | X weights         | 81.12    | 131.6     | 133.9     | 134.9   | 135.2   |
-  | Y weights         | 87.23    | 130.5     | 133.5     | 134.7   | 135.2   |
-  | Phi weights       | 151.7    | 176.2     | 177.4     | 177.8   | 177.8   |
-  ----------------------------------------------------------------------------
+  ---------------------------------------------------------------------------
+  |                   | Min      | Q1       | Med       | Q3      | Max     |
+  ---------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.1346  | -0.03315 | -0.002133 | 0.03256 | 0.1331  |
+  | Yc - Yo (mm)      | -0.1171  | -0.02688 | 0.00085   | 0.02992 | 0.1194  |
+  | Phic - Phio (deg) | -0.05839 | -0.01266 | 0.00123   | 0.01547 | 0.06047 |
+  | X weights         | 135.2    | 375.2    | 394.4     | 402.7   | 405.6   |
+  | Y weights         | 153.1    | 366.4    | 390.6     | 401.5   | 405.6   |
+  | Phi weights       | 318.9    | 519.4    | 530.1     | 533.3   | 533.3   |
+  ---------------------------------------------------------------------------
 
   Performing refinement...
 
@@ -655,16 +625,15 @@ The main product of this is the file ``refined_experiments.json``
   | Step | Nref   | RMSD_X   | RMSD_Y   | RMSD_Phi |
   |      |        | (mm)     | (mm)     | (deg)    |
   --------------------------------------------------
-  | 0    | 106166 | 0.046254 | 0.045243 | 0.025933 |
-  | 1    | 106166 | 0.046351 | 0.043847 | 0.025663 |
-  | 2    | 106166 | 0.046487 | 0.043469 | 0.024823 |
-  | 3    | 106166 | 0.04664  | 0.043091 | 0.023777 |
-  | 4    | 106166 | 0.046604 | 0.04279  | 0.023083 |
-  | 5    | 106166 | 0.046362 | 0.042563 | 0.022884 |
-  | 6    | 106166 | 0.046168 | 0.042453 | 0.022823 |
-  | 7    | 106166 | 0.046131 | 0.042435 | 0.022791 |
-  | 8    | 106166 | 0.046133 | 0.042435 | 0.022783 |
-  | 9    | 106166 | 0.046134 | 0.042435 | 0.022782 |
+  | 0    | 106245 | 0.046664 | 0.042696 | 0.021981 |
+  | 1    | 106245 | 0.046834 | 0.042375 | 0.022009 |
+  | 2    | 106245 | 0.046871 | 0.042322 | 0.021985 |
+  | 3    | 106245 | 0.046909 | 0.042277 | 0.021947 |
+  | 4    | 106245 | 0.046939 | 0.042241 | 0.02191  |
+  | 5    | 106245 | 0.046971 | 0.042198 | 0.021891 |
+  | 6    | 106245 | 0.047    | 0.042163 | 0.021885 |
+  | 7    | 106245 | 0.047011 | 0.042152 | 0.021884 |
+  | 8    | 106245 | 0.047012 | 0.04215  | 0.021883 |
   --------------------------------------------------
   RMSD no longer decreasing
 
@@ -673,15 +642,17 @@ The main product of this is the file ``refined_experiments.json``
   | Exp | Nref   | RMSD_X  | RMSD_Y  | RMSD_Z   |
   |     |        | (px)    | (px)    | (images) |
   -----------------------------------------------
-  | 0   | 106166 | 0.26822 | 0.24671 | 0.15188  |
+  | 0   | 106245 | 0.27333 | 0.24506 | 0.14589  |
   -----------------------------------------------
   Saving refined experiments to refined_experiments.json
+  Updating predictions for indexed reflections
+  Saving reflections with updated predictions to refined.pickle
 
 The effectiveness of outlier rejection can be seen from the second summary
-statistics table. Now the positional residuals are all within 0.13 mm and the
-worst angular residual is just 0.08 degrees. After removing reflections too
+statistics table. Now the positional residuals are all within 0.14 mm and the
+worst angular residual is just 0.06 degrees. After removing reflections too
 close to the spindle and doing outlier rejection, refinement still has
-106166 reflections to work with, amounting to 93% of the reflections in
+106245 reflections to work with, amounting to 93% of the reflections in
 :file:`reindexed_reflections.pickle`.
 
 We have done the best we can with a static model for the experiment. However,
@@ -693,8 +664,8 @@ effects we can extend our parameterisation to obtain a smoothed 'scan-varying'
 model for both the crystal orientation and unit cell. To do this, we run a
 further refinement job starting from the output of the previous job::
 
-  dials.refine refined_experiments.json reindexed_reflections.pickle \
-  do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 \
+  dials.refine refined_experiments.json refined.pickle \
+  outlier_rejection.algorithm=tukey use_all_reflections=true  \
   scan_varying=true output.experiments=sv_refined_experiments.json
 
 Note we also overrode the default experiments output filename to avoid
@@ -712,17 +683,16 @@ this job is::
         scan_varying = true
       }
     }
-    target {
-      bin_size_fraction = 0.0
-    }
     reflections {
       use_all_reflections = true
-      do_outlier_rejection = true
+      outlier_rejection {
+        algorithm = null *tukey
+      }
     }
   }
   input {
     experiments = refined_experiments.json
-    reflections = reindexed_reflections.pickle
+    reflections = refined.pickle
   }
 
   Configuring refiner
@@ -731,27 +701,27 @@ this job is::
   --------------------------------------------------------------------------
   |                   | Min     | Q1       | Med        | Q3      | Max    |
   --------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.5293 | -0.03473 | -0.003837  | 0.03123 | 0.6389 |
-  | Yc - Yo (mm)      | -1.404  | -0.02975 | -0.001021  | 0.02837 | 1.241  |
-  | Phic - Phio (deg) | -1.391  | -0.0146  | -1.287e-05 | 0.01505 | 0.909  |
-  | X weights         | 81.12   | 131.2    | 133.8      | 134.9   | 135.2  |
-  | Y weights         | 87.23   | 130      | 133.3      | 134.7   | 135.2  |
-  | Phi weights       | 145.2   | 176.2    | 177.5      | 177.8   | 177.8  |
+  | Xc - Xo (mm)      | -0.5273 | -0.03485 | -0.003623  | 0.03184 | 0.6418 |
+  | Yc - Yo (mm)      | -1.4    | -0.02935 | -0.0006238 | 0.02901 | 1.246  |
+  | Phic - Phio (deg) | -1.41   | -0.01482 | -0.0002073 | 0.01475 | 0.9106 |
+  | X weights         | 135.2   | 371.6    | 393.4      | 402.6   | 405.6  |
+  | Y weights         | 153.1   | 361.8    | 389        | 401.2   | 405.6  |
+  | Phi weights       | 318.9   | 519.5    | 530.4      | 533.3   | 533.3  |
   --------------------------------------------------------------------------
 
-  7383 reflections have been rejected as outliers
+  7215 reflections have been flagged as outliers
 
   Summary statistics for observations matched to predictions:
-  ----------------------------------------------------------------------------
-  |                   | Min      | Q1       | Med        | Q3      | Max     |
-  ----------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.1336  | -0.03358 | -0.003266  | 0.03098 | 0.1301  |
-  | Yc - Yo (mm)      | -0.1169  | -0.02791 | -0.0004259 | 0.02792 | 0.1155  |
-  | Phic - Phio (deg) | -0.05908 | -0.01349 | 0.0002028  | 0.01452 | 0.05951 |
-  | X weights         | 81.12    | 131.7    | 133.9      | 134.9   | 135.2   |
-  | Y weights         | 87.23    | 130.6    | 133.5      | 134.8   | 135.2   |
-  | Phi weights       | 145.2    | 176.2    | 177.4      | 177.8   | 177.8   |
-  ----------------------------------------------------------------------------
+  ---------------------------------------------------------------------------
+  |                   | Min      | Q1       | Med        | Q3      | Max    |
+  ---------------------------------------------------------------------------
+  | Xc - Xo (mm)      | -0.1348  | -0.03374 | -0.003056  | 0.03165 | 0.1318 |
+  | Yc - Yo (mm)      | -0.1168  | -0.02759 | -0.0001738 | 0.02832 | 0.1165 |
+  | Phic - Phio (deg) | -0.05917 | -0.01363 | 3.539e-05  | 0.01426 | 0.0591 |
+  | X weights         | 135.2    | 375.3    | 394.5      | 402.8   | 405.6  |
+  | Y weights         | 153.1    | 366.6    | 390.6      | 401.5   | 405.6  |
+  | Phi weights       | 318.9    | 519.4    | 530.1      | 533.3   | 533.3  |
+  ---------------------------------------------------------------------------
 
   Performing refinement...
 
@@ -760,15 +730,15 @@ this job is::
   | Step | Nref   | RMSD_X   | RMSD_Y   | RMSD_Phi |
   |      |        | (mm)     | (mm)     | (deg)    |
   --------------------------------------------------
-  | 0    | 105866 | 0.046597 | 0.042037 | 0.021935 |
-  | 1    | 105866 | 0.046312 | 0.039654 | 0.021821 |
-  | 2    | 105866 | 0.046342 | 0.039558 | 0.021805 |
-  | 3    | 105866 | 0.046339 | 0.039496 | 0.021757 |
-  | 4    | 105866 | 0.04631  | 0.039487 | 0.021633 |
-  | 5    | 105866 | 0.046283 | 0.03951  | 0.021464 |
-  | 6    | 105866 | 0.046274 | 0.039521 | 0.021379 |
-  | 7    | 105866 | 0.046273 | 0.039523 | 0.021368 |
-  | 8    | 105866 | 0.046272 | 0.039523 | 0.021367 |
+  | 0    | 106028 | 0.046722 | 0.042096 | 0.021847 |
+  | 1    | 106028 | 0.046434 | 0.039706 | 0.021777 |
+  | 2    | 106028 | 0.046445 | 0.039653 | 0.021761 |
+  | 3    | 106028 | 0.046452 | 0.039618 | 0.021707 |
+  | 4    | 106028 | 0.04646  | 0.039596 | 0.02158  |
+  | 5    | 106028 | 0.046465 | 0.039588 | 0.021416 |
+  | 6    | 106028 | 0.046466 | 0.039587 | 0.021335 |
+  | 7    | 106028 | 0.046466 | 0.039587 | 0.021326 |
+  | 8    | 106028 | 0.046466 | 0.039587 | 0.021325 |
   --------------------------------------------------
   RMSD no longer decreasing
 
@@ -777,9 +747,11 @@ this job is::
   | Exp | Nref   | RMSD_X  | RMSD_Y  | RMSD_Z   |
   |     |        | (px)    | (px)    | (images) |
   -----------------------------------------------
-  | 0   | 105866 | 0.26902 | 0.22978 | 0.14245  |
+  | 0   | 106028 | 0.27015 | 0.23016 | 0.14217  |
   -----------------------------------------------
   Saving refined experiments to sv_refined_experiments.json
+  Updating predictions for indexed reflections
+  Saving reflections with updated predictions to refined.pickle
 
 In this case we didn't alter the default choices that affect scan-varying
 refinement, the most important of which is the number of intervals into which
@@ -788,17 +760,17 @@ used by the Gaussian smoother. More samples allows sharper changes to the model,
 but overdoing this will lead to unphysical changes to the model that are just
 fitting noise in the data. Figuring out the optimum number of points to use
 is challenging. Here we are happy with the default interval width of 36 degrees
-(like ``bin_size_fraction`` this is a parameter at ``expert_level = 1``).
+(this is a parameter at ``expert_level = 1``).
 
 To view the smoothly varying crystal cell parameters use the following command::
 
   dials.plot_scan_varying_crystal sv_refined_experiments.json
 
-The output of this program is still a little rough-and-ready, however the plot
-it produces called :file:`sv_crystal.pdf` may be useful to check there are no
-huge changes to the cell.
+This program creates a directory :file:`scan-varying_crystal` containing
+plots :file`orientation.png` and :file:`unit_cell.png`. The latter of these
+is useful to check that changes to the cell during processing appear reasonable.
 
-.. image:: /figures/sv_crystal.png
+.. image:: /figures/unit_cell.png
 
 We see an overall increase in all three cell parameters, however the greatest
 change, in lengths *a* and *b*, is only about 0.02 Angstroms. If
@@ -830,12 +802,12 @@ We will also increase the number of processors used to speed the job up.
 
 ::
 
-  dials.integrate sv_refined_experiments.json reindexed_reflections.pickle \
+  dials.integrate sv_refined_experiments.json refined.pickle \
   outlier.algorithm=null nproc=4
 
 
 Checking the log output we see that after loading in the reference reflections
-from :file:`reindexed_reflections.pickle`,
+from :file:`refined.pickle`,
 new predictions are made up to the highest resolution at the corner of the
 detector. This is fine, but if we wanted to we could have adjusted the
 resolution limits using parameters :samp:`dmin` and :samp:`dmax`. The predictions
@@ -847,7 +819,7 @@ of the integration jobs is independent and we can take advantage of true
 parallelism during processing.
 
 The profile model is then calculated from the reflections in
-:file:`reindexed_reflections.pickle`. First reflections with a too small 'zeta'
+:file:`refined.pickle`. First reflections with a too small 'zeta'
 factor are filtered out. This essentially removes reflections that are too
 close to the spindle axis. In general these reflections require significant
 Lorentz corrections and as a result have less trustworthy intensities anyway.
@@ -864,46 +836,52 @@ the application of the LP correction to the intensities. Then summary tables
 are printed giving quality statistics first by frame, and then by resolution bin.
 The latter of these tables and the final overall summary are reproduced here::
 
-  Summary of integration results binned by resolution
-  ----------------------------------------------------------------------------------------------------------
-  d min |  d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
-        |        |        |        |        |       |       |       |       |    (sum) |    (prf) |
-  ----------------------------------------------------------------------------------------------------------
-   1.17 |   1.19 |    300 |      2 |      0 |     0 |   302 |   231 |  0.04 |     0.39 |     0.55 |     0.12
-   1.19 |   1.21 |   1060 |      5 |      0 |     0 |  1065 |   920 |  0.04 |     0.44 |     0.53 |     0.10
-   1.21 |   1.23 |   2270 |     13 |      0 |     0 |  2283 |  2070 |  0.05 |     0.51 |     0.59 |     0.11
-   1.23 |   1.26 |   3715 |     21 |      0 |     0 |  3736 |  3526 |  0.05 |     0.55 |     0.68 |     0.13
-   1.26 |   1.28 |   5340 |     31 |      0 |     0 |  5371 |  5100 |  0.05 |     0.60 |     0.77 |     0.15
-   1.28 |   1.31 |   7114 |     44 |      0 |     0 |  7158 |  6853 |  0.06 |     0.65 |     0.83 |     0.17
-   1.31 |   1.35 |   9364 |     57 |      0 |     0 |  9421 |  9084 |  0.06 |     0.78 |     0.98 |     0.20
-   1.35 |   1.38 |  12334 |     78 |      0 |     0 | 12412 | 12032 |  0.07 |     0.92 |     1.14 |     0.23
-   1.38 |   1.42 |  16753 |     97 |      0 |     0 | 16850 | 16375 |  0.07 |     0.99 |     1.23 |     0.25
-   1.42 |   1.47 |  19949 |    133 |      0 |     0 | 20082 | 19767 |  0.08 |     1.20 |     1.47 |     0.28
-   1.47 |   1.52 |  23398 |    197 |      0 |     0 | 23595 | 23291 |  0.09 |     1.48 |     1.77 |     0.33
-   1.52 |   1.58 |  23893 |    214 |      0 |     0 | 24107 | 24027 |  0.09 |     1.77 |     2.09 |     0.38
-   1.58 |   1.66 |  25325 |    219 |      0 |     0 | 25544 | 25475 |  0.10 |     2.18 |     2.54 |     0.44
-   1.66 |   1.74 |  24059 |    189 |      0 |     0 | 24248 | 24209 |  0.12 |     2.72 |     3.10 |     0.50
-   1.74 |   1.85 |  24579 |    202 |      0 |     0 | 24781 | 24764 |  0.14 |     3.51 |     3.92 |     0.57
-   1.85 |   2.00 |  25524 |    231 |      0 |     0 | 25755 | 25741 |  0.18 |     4.87 |     5.32 |     0.64
-   2.00 |   2.20 |  24533 |    215 |      0 |     0 | 24748 | 24743 |  0.24 |     6.57 |     7.07 |     0.71
-   2.20 |   2.51 |  25524 |    201 |      0 |     0 | 25725 | 25724 |  0.28 |     8.81 |     9.29 |     0.74
-   2.51 |   3.17 |  25048 |    242 |      0 |     0 | 25290 | 25288 |  0.34 |    12.70 |    13.11 |     0.76
-   3.17 | 151.26 |  25619 |    231 |      0 |     0 | 25850 | 25847 |  0.41 |    25.40 |    25.35 |     0.76
-  ----------------------------------------------------------------------------------------------------------
+  Summary vs resolution
+  ------------------------------------------------------------------------------------------------------
+  ID | d min | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
+     |       |        |        |        |       |       |       |       |  (sum)   |  (prf)   |
+  ------------------------------------------------------------------------------------------------------
+  0  | 1     | 351    | 3      | 0      | 0     | 263   | 199   | 0.04  | 0.37     | 0.53     | 0.09
+  0  | 1     | 1122   | 5      | 0      | 0     | 996   | 872   | 0.04  | 0.43     | 0.53     | 0.08
+  0  | 1     | 2479   | 13     | 0      | 0     | 2215  | 2018  | 0.05  | 0.52     | 0.59     | 0.09
+  0  | 1     | 4061   | 27     | 0      | 0     | 3658  | 3474  | 0.05  | 0.56     | 0.69     | 0.11
+  0  | 1     | 5882   | 33     | 0      | 0     | 5276  | 5060  | 0.05  | 0.59     | 0.76     | 0.12
+  0  | 1     | 8000   | 46     | 0      | 0     | 7100  | 6850  | 0.06  | 0.65     | 0.84     | 0.14
+  0  | 1     | 10549  | 61     | 0      | 0     | 9364  | 9112  | 0.06  | 0.78     | 0.98     | 0.17
+  0  | 1     | 13780  | 82     | 0      | 0     | 12256 | 11951 | 0.07  | 0.91     | 1.14     | 0.20
+  0  | 1     | 18748  | 107    | 0      | 0     | 16727 | 16373 | 0.07  | 0.99     | 1.23     | 0.22
+  0  | 1     | 22396  | 162    | 0      | 0     | 20130 | 19919 | 0.08  | 1.20     | 1.48     | 0.25
+  0  | 1     | 26177  | 694    | 0      | 0     | 23687 | 23373 | 0.09  | 1.46     | 1.76     | 0.29
+  0  | 1     | 27776  | 885    | 0      | 0     | 24489 | 24354 | 0.09  | 1.75     | 2.09     | 0.34
+  0  | 1     | 28056  | 820    | 0      | 0     | 25781 | 25667 | 0.10  | 2.16     | 2.53     | 0.39
+  0  | 1     | 28135  | 785    | 0      | 0     | 24629 | 24518 | 0.12  | 2.67     | 3.08     | 0.45
+  0  | 1     | 28267  | 755    | 0      | 0     | 25090 | 24975 | 0.14  | 3.48     | 3.92     | 0.52
+  0  | 1     | 28388  | 859    | 0      | 0     | 25955 | 25834 | 0.18  | 4.80     | 5.29     | 0.59
+  0  | 1     | 28456  | 932    | 0      | 0     | 24994 | 24889 | 0.24  | 6.51     | 7.05     | 0.66
+  0  | 2     | 28745  | 813    | 0      | 0     | 26045 | 25942 | 0.28  | 8.76     | 9.26     | 0.69
+  0  | 2     | 28814  | 803    | 0      | 0     | 25523 | 25419 | 0.34  | 12.62    | 13.07    | 0.71
+  0  | 3     | 28982  | 1096   | 0      | 0     | 26204 | 26081 | 0.41  | 25.20    | 25.26    | 0.72
+  ------------------------------------------------------------------------------------------------------
 
-  Summary of integration results for the whole dataset
-  ----------------------------------------------
-  Number fully recorded                 | 370357
-  Number partially recorded             | 4347
-  Number with overloaded pixels         | 0
-  Number in powder rings                | 0
-  Number processed with summation       | 328323
-  Number processed with profile fitting | 325067
-  <Ibg>                                 | 0.17
-  <I/sigI> (summation)                  | 5.63
-  <I/sigI> (profile fitting)            | 6.00
-  <CC prf>                              | 0.44
-  ----------------------------------------------
+  Summary for experiment 19
+  ----------------------------------------------------------------
+  Item                                  | Overall | Low    | High
+  ----------------------------------------------------------------
+  dmin                                  | 1.17    | 1.47   | 1.17
+  dmax                                  | 151.25  | 151.25 | 1.47
+  number fully recorded                 | 369164  | 281796 | 87368
+  number partially recorded             | 8981    | 8442   | 539
+  number with overloaded pixels         | 0       | 0      | 0
+  number in powder rings                | 0       | 0      | 0
+  number processed with summation       | 330382  | 252397 | 77985
+  number processed with profile fitting | 326880  | 251052 | 75828
+  <ibg>                                 | 0.17    | 0.20   | 0.07
+  <i/sigi> (summation)                  | 5.61    | 7.07   | 0.91
+  <i/sigi> (profile fitting)            | 6.00    | 7.46   | 1.13
+  <cc prf>                              | 0.46    | 0.54   | 0.19
+  cc_pearson sum/prf                    | 1.00    | 1.00   | 0.89
+  cc_spearman sum/prf                   | 0.96    | 0.98   | 0.77
+  ----------------------------------------------------------------
 
 Graphical analysis of the output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -997,10 +975,15 @@ And this is the output, showing the reflection file statistics.
 
   hklout = integrated.mtz
   input {
-    experiments = ../refined_experiments.json
+    experiments = refined_experiments.json
     reflections = integrated.pickle
   }
 
+  Removing 23974 reflections with negative variance
+  Removing 27291 profile reflections with negative variance
+  Removing 2 reflections with I/Sig(I) < -5.0
+  Removing 0 profile reflections with I/Sig(I) < -5.0
+  Removing 4034 incomplete reflections
   Title: from dials.export_mtz
   Space group symbol from file: P4
   Space group number from file: 75
@@ -1008,35 +991,35 @@ And this is the output, showing the reflection file statistics.
   Point group symbol from file: 4
   Number of batches: 540
   Number of crystals: 1
-  Number of Miller indices: 322903
-  Resolution range: 150.004 1.17
+  Number of Miller indices: 322844
+  Resolution range: 149.997 1.16993
   History:
   Crystal 1:
     Name: XTAL
     Project: DIALS
     Id: 1
-    Unit cell: (57.7852, 57.7852, 150.004, 90, 90, 90)
+    Unit cell: (57.7818, 57.7818, 149.997, 90, 90, 90)
     Number of datasets: 1
     Dataset 1:
       Name: FROMDIALS
       Id: 1
       Wavelength: 0.97625
       Number of columns: 14
-      label        #valid  %valid      min     max type
-      H            322903 100.00%     0.00   47.00 H: index h,k,l
-      K            322903 100.00%     0.00   46.00 H: index h,k,l
-      L            322903 100.00%     0.00  114.00 H: index h,k,l
-      M_ISYM       322903 100.00%     1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH        322903 100.00%     2.00  539.00 B: BATCH number
-      IPR          322903 100.00%  -275.94 2875.30 J: intensity
-      SIGIPR       322903 100.00%     0.04   53.65 Q: standard deviation
-      I            322903 100.00% -2244.44 3059.53 J: intensity
-      SIGI         322903 100.00%     0.09   71.90 Q: standard deviation
-      FRACTIONCALC 322903 100.00%     1.00    1.00 R: real
-      XDET         322903 100.00%     6.54 2456.31 R: real
-      YDET         322903 100.00%     5.78 2520.59 R: real
-      ROT          322903 100.00%    82.01  162.69 R: real
-      LP           322903 100.00%     0.00    0.76 R: real
+      label        #valid  %valid    min     max type
+      H            322844 100.00%   0.00   46.00 H: index h,k,l
+      K            322844 100.00%   0.00   47.00 H: index h,k,l
+      L            322844 100.00%   0.00  114.00 H: index h,k,l
+      M_ISYM       322844 100.00%   1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
+      BATCH        322844 100.00%   2.00  539.00 B: BATCH number
+      IPR          322844 100.00%  -1.79 2860.10 J: intensity
+      SIGIPR       322844 100.00%   0.04   53.51 Q: standard deviation
+      I            322844 100.00% -24.60 3059.53 J: intensity
+      SIGI         322844 100.00%   0.09   55.45 Q: standard deviation
+      FRACTIONCALC 322844 100.00%   1.00    1.00 R: real
+      XDET         322844 100.00%   6.54 2456.33 R: real
+      YDET         322844 100.00%   5.78 2520.61 R: real
+      ROT          322844 100.00%  82.01  162.69 R: real
+      LP           322844 100.00%   0.00    0.76 R: real
 
 
 What to do Next
@@ -1076,26 +1059,26 @@ the outer shell. Here is the summary from aimless.log:
 
                                              Overall  InnerShell  OuterShell
   Low resolution limit                      150.00    150.00      1.32
-  High resolution limit                       1.30      7.12      1.30
+  High resolution limit                       1.30      6.88      1.30
 
-  Rmerge  (within I+/I-)                     0.063     0.024     0.413
-  Rmerge  (all I+ and I-)                    0.071     0.026     0.482
-  Rmeas (within I+/I-)                       0.077     0.030     0.571
-  Rmeas (all I+ & I-)                        0.078     0.030     0.602
-  Rpim (within I+/I-)                        0.044     0.017     0.393
-  Rpim (all I+ & I-)                         0.034     0.014     0.354
+  Rmerge  (within I+/I-)                     0.063     0.024     0.421
+  Rmerge  (all I+ and I-)                    0.071     0.027     0.489
+  Rmeas (within I+/I-)                       0.077     0.030     0.580
+  Rmeas (all I+ & I-)                        0.079     0.030     0.610
+  Rpim (within I+/I-)                        0.044     0.017     0.398
+  Rpim (all I+ & I-)                         0.034     0.014     0.357
   Rmerge in top intensity bin                0.029        -         -
-  Total number of observations              307775      2248      5448
-  Total number unique                        62333       499      2465
-  Mean((I)/sd(I))                             10.6      26.3       1.5
-  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.719
-  Completeness                                98.2      99.8      79.8
-  Multiplicity                                 4.9       4.5       2.2
+  Total number of observations              307606      2538      5907
+  Total number unique                        62350       552      2647
+  Mean((I)/sd(I))                             10.7      27.0       1.5
+  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.708
+  Completeness                                98.2      99.8      80.6
+  Multiplicity                                 4.9       4.6       2.2
 
-  Anomalous completeness                      92.2     100.0      47.5
+  Anomalous completeness                      92.3     100.0      48.1
   Anomalous multiplicity                       2.4       3.0       1.5
-  DelAnom correlation between half-sets      0.008     0.302    -0.082
-  Mid-Slope of Anom Normal Probability       0.950       -         -
+  DelAnom correlation between half-sets      0.013     0.187    -0.003
+  Mid-Slope of Anom Normal Probability       0.954       -         -
 
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
