@@ -921,6 +921,7 @@ test/algorithms/refinement/tst_ref_passage_categorisation.py -text
 test/algorithms/refinement/tst_refine_multi_stills.py -text
 test/algorithms/refinement/tst_refine_multi_wedges.py -text
 test/algorithms/refinement/tst_refinement_regression.py -text
+test/algorithms/refinement/tst_rotation_decomposition.py -text
 test/algorithms/refinement/tst_scan_varying_model_parameters.py -text
 test/algorithms/refinement/tst_scan_varying_prediction_parameters.py -text
 test/algorithms/refinement/tst_stills_prediction_parameters.py -text
