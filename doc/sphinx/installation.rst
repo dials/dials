@@ -12,6 +12,22 @@ currently available, but will be added in the near future.
 For instructions on compiling from source or setting up a DIALS development
 environment, see :doc:`/documentation/installation_developer`.
 
+Download the latest nightly build:
+----------------------------------
+
+.. button::
+   :text: Mac installer
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-darwin-x86_64.tar.gz
+
+.. button::
+   :text: Linux installer
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.gz
+
+.. button::
+   :text: Source installer
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-source.tar.gz
+
+
 Mac graphical binary installers
 -------------------------------
 

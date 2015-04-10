@@ -41,7 +41,10 @@ extensions = [
     'libtbx.sphinx.phil',
     'libtbx.sphinx.python_string',
     'libtbx.sphinx.pubmed',
+    'button',
 ]
+
+sys.path.insert(0, os.path.abspath('.'))
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

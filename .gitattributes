@@ -412,6 +412,7 @@ doc/sphinx/_static/CCP4-logo-plain.png -text svneol=unset#unset
 doc/sphinx/_static/LBL-logo-wide.jpeg -text
 doc/sphinx/_static/LBL-logo.png -text svneol=unset#unset
 doc/sphinx/_static/STFC_logo.png -text svneol=unset#unset
+doc/sphinx/_static/button.css -text
 doc/sphinx/_static/dials-styles.css -text
 doc/sphinx/_static/dials_header.png -text svneol=unset#unset
 doc/sphinx/_static/dials_icon.png -text svneol=unset#unset
@@ -419,6 +420,7 @@ doc/sphinx/_static/diamond_logo.png -text svneol=unset#unset
 doc/sphinx/_templates/layout.html -text
 doc/sphinx/about.rst -text
 doc/sphinx/basel.rst -text
+doc/sphinx/button.py -text
 doc/sphinx/conf.py -text
 doc/sphinx/conf_bootstrap.py -text
 doc/sphinx/conf_scipy.py -text
