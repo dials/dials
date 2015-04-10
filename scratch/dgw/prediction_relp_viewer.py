@@ -116,12 +116,10 @@ class MyGLWindow2(MyGLWindow):
       self.points_display_list = gltbx.gl_managed.display_list()
       self.points_display_list.compile()
       glLineWidth(1)
-      print "first set of points:", len(self.points)
       for point in self.points:
-        self.draw_cross_at(point)
-      print "second set of points:", len(self.points2)
+        self.draw_cross_at(point, f=0.1)
       for point in self.points2:
-        self.draw_cross_at(point, color=(1,0,0))
+        self.draw_cross_at(point, color=(1,0,0), f=0.1)
       self.points_display_list.end()
     self.points_display_list.call()
 
@@ -153,7 +151,9 @@ def run(args):
   # first set
   mask, _ = reflections2.match_with_reference(reflections)
   reflections2 = reflections2.select(~mask)
-  print len(reflections2)
+  print "{0} reflections from the second set do not match the first". \
+    format(len(reflections2))
+  #reflections2 = reflections2.select(reflections2["miller_index"] == (-7,2,-25))
 
   if len(datablocks) == 0:
     if len(experiments) > 0:
