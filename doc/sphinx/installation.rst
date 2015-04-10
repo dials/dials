@@ -48,9 +48,9 @@ Mac and Linux binary installers
 In addition to the Mac graphical installers, we provide binary ``tar.gz`` files
 for various Mac and Linux platforms, e.g.::
 
-  curl http://cci.lbl.gov/dials/installers/dev-239/dials-installer-dev-239-intel-linux-2.6-x86_64-centos5.tar.gz > dials-installer.tar.gz
-  tar -xzf dials-installer.tar.gz
-  cd dials-installer
+  curl http://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.gz > dials-linux-x86_64.tar.gz
+  tar -xzf dials-linux-x86_64.tar.gz
+  cd dials-installer-dev
 
 Then to install in the /usr/local directory (you may need to add a ``sudo``
 before the command)::
