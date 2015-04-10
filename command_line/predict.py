@@ -50,6 +50,7 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
+      check_format=False,
       read_experiments=True)
 
   def run(self):
