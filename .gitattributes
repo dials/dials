@@ -577,6 +577,7 @@ scratch/dgw/prediction/README -text
 scratch/dgw/prediction/__init__.py -text
 scratch/dgw/prediction/obsolete_predictors.py -text
 scratch/dgw/prediction/tst.py -text
+scratch/dgw/prediction_relp_viewer.py -text
 scratch/dgw/refinement/__init__.py -text
 scratch/dgw/refinement/align_multipanel_detector.py -text
 scratch/dgw/refinement/calculate_intersections.py -text
