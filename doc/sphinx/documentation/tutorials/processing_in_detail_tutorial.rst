@@ -767,7 +767,7 @@ To view the smoothly varying crystal cell parameters use the following command::
   dials.plot_scan_varying_crystal sv_refined_experiments.json
 
 This program creates a directory :file:`scan-varying_crystal` containing
-plots :file`orientation.png` and :file:`unit_cell.png`. The latter of these
+plots :file:`orientation.png` and :file:`unit_cell.png`. The latter of these
 is useful to check that changes to the cell during processing appear reasonable.
 
 .. image:: /figures/unit_cell.png
