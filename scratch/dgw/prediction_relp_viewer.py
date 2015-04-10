@@ -9,7 +9,7 @@ class PredRelpViewer(ReciprocalLatticeViewer):
   # modified from dials.algorithms.indexing.indexer to map predictions
   # from pixels to mm, rather than observations
   @staticmethod
-  def map_spots_pixel_to_mm_rad(reflections, detector, scan):
+  def map_spots_pixel_to_mm_rad(spots, detector, scan):
     from dials.algorithms.centroid import centroid_px_to_mm_panel
     ## ideally don't copy, but have separate spot attributes for mm and pixel
     import copy
@@ -118,7 +118,7 @@ def run(args):
   import wxtbx.app
   a = wxtbx.app.CCTBXApp(0)
   a.settings = params
-  f = ReciprocalLatticeViewer(
+  f = PredRelpViewer(
     None, -1, "Prediction reciprocal lattice viewer", size=(1024,768))
   f.load_models(imageset, reflections)
   f.Show()
