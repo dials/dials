@@ -840,6 +840,8 @@ scratch/luiso_s/wx_toys/test_show_reflection.py -text
 scratch/luiso_s/wx_toys/test_wx_text.py -text
 scratch/luiso_s/wx_toys/text_pyplot.py -text
 scratch/luiso_s/wx_toys/toilet_output.py -text
+scratch/luiso_s/wx_toys/wx_bitmap_no_compile/bitmap_from_numpy_hot_colour_palete.py -text
+scratch/luiso_s/wx_toys/wx_bitmap_no_compile/looping.py -text
 scratch/luiso_s/wx_toys/wx_h_world.py -text
 scratch/luiso_s/wx_toys/wx_h_world_01.py -text
 scratch/luiso_s/wx_toys/wx_sizers_and_np_arays.py -text
