@@ -17,7 +17,7 @@ Download the latest nightly build:
 
 .. button::
    :text: Mac installer
-   :link: http://dials.diamond.ac.uk/diamond_builds/dials-darwin-x86_64.tar.gz
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.10.3.tar.gz
 
 .. button::
    :text: Linux installer
