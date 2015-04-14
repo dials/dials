@@ -356,9 +356,11 @@ def stats_imageset(imageset, reflections, plot=False):
   image_number = reflections['xyzobs.px.value'].parts()[2]
   image_number = flex.floor(image_number)
 
+  start, end = imageset.get_array_range()
   for i in range(len(imageset)):
     stats = stats_single_image(
-      imageset[i:i+1], reflections.select(image_number==i), i=i, plot=plot)
+      imageset[i:i+1],
+      reflections.select(image_number==i+start), i=i+start, plot=plot)
     n_spots_total.append(stats.n_spots_total)
     n_spots_no_ice.append(stats.n_spots_no_ice)
     n_spots_4A.append(stats.n_spots_4A)
