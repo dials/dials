@@ -554,6 +554,9 @@ def plot_stats(stats, filename='per_image_analysis.png'):
     s=10, color='red', marker='^', alpha=0.5, label='Estimated d_min'))
   ax2.set_ylabel(u'Resolution (\u00c5)')
   ax2.set_xlim((0, len(n_spots_total)))
+  ylim = ax2.get_ylim()
+  ylim = (math.floor(ylim[0]), math.ceil(ylim[1]))
+  ax2.set_ylim(ylim)
   ax2.invert_yaxis()
 
   # Use mode="fixed" as mode="expand" causes floating point error on some
