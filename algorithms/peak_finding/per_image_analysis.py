@@ -60,6 +60,59 @@ def get_histogram(d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
   return flex.histogram(d_star_sq, n_slots=n_slots)
 
 
+def outlier_rejection(reflections):
+  # http://scripts.iucr.org/cgi-bin/paper?ba0032
+  if len(reflections) == 1:
+    return reflections
+  intensities = reflections['intensity.sum.value']
+  variances = reflections['intensity.sum.variance']
+
+  i_max = flex.max_index(intensities)
+
+  sel = flex.bool(len(reflections), True)
+  sel[i_max] = False
+
+  i_test = intensities[i_max]
+  var_test = variances[i_max]
+
+  intensities_subset = intensities.select(sel)
+  var_subset = variances.select(sel)
+
+  var_prior = var_test + 1/flex.sum(1/var_subset)
+  p_prior = 1/math.sqrt(2*math.pi * var_prior) * math.exp(
+    -(i_test - flex.mean(intensities_subset))**2/(2 * var_prior))
+  #print p_prior
+
+  if p_prior > 1e-10:
+    return reflections
+
+  return outlier_rejection(reflections.select(sel))
+
+
+def wilson_outliers(reflections, ice_sel=None, p_cutoff=1e-2):
+  # http://scripts.iucr.org/cgi-bin/paper?ba0032
+  if ice_sel is None:
+    ice_sel = flex.bool(len(reflections), False)
+
+  E_cutoff = math.sqrt(-math.log(p_cutoff))
+  intensities = reflections['intensity.sum.value']
+  variances = reflections['intensity.sum.variance']
+
+  Sigma_n = flex.mean(intensities.select(~ice_sel))
+  normalised_amplitudes = flex.sqrt(intensities)/math.sqrt(Sigma_n)
+
+  outliers = normalised_amplitudes >= E_cutoff
+
+  if outliers.count(True):
+    # iterative outlier rejection
+    inliers = ~outliers
+    outliers.set_selected(
+      inliers, wilson_outliers(
+        reflections.select(inliers), ice_sel.select(inliers)))
+
+  return outliers
+
+
 def estimate_resolution_limit(reflections, imageset, ice_sel=None,
                               plot_filename=None):
 
@@ -95,20 +148,43 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None,
 
   outliers_all = flex.bool(len(reflections), False)
 
-  low_percentile_limit = 0.05
+  low_percentile_limit = 0.1
   upper_percentile_limit = 1-low_percentile_limit
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
   for i_slot, slot in enumerate(binner.bins):
-    sel = ~(ice_sel) & (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
+    sel_all = (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
+    sel = ~(ice_sel) & sel_all
+    #sel = ~(ice_sel) & (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
+
+    print "%.2f" %(sel.count(True)/sel_all.count(True))
 
     if sel.count(True) == 0:
+      #outliers_all.set_selected(sel_all & ice_sel, True)
       continue
       #if i_slot > i_slot_max:
         #break
       #else:
         #continue
 
-    isel = sel.iselection()
+    outliers = wilson_outliers(
+      reflections.select(sel_all), ice_sel=ice_sel.select(sel_all))
+    #print "rejecting %d wilson outliers" %outliers.count(True)
+    outliers_all.set_selected(sel_all, outliers)
+
+    #if sel.count(True)/sel_all.count(True) < 0.25:
+      #outliers_all.set_selected(sel_all & ice_sel, True)
+
+    #from scitbx.math import median_statistics
+    #intensities_sel = intensities.select(sel)
+    #stats = median_statistics(intensities_sel)
+    #z_score = 0.6745 * (intensities_sel - stats.median)/stats.median_absolute_deviation
+    #outliers = z_score > 3.5
+    #perm = flex.sort_permutation(intensities_sel)
+    ##print ' '.join('%.2f' %v for v in intensities_sel.select(perm))
+    ##print ' '.join('%.2f' %v for v in z_score.select(perm))
+    ##print
+
+    isel = sel_all.iselection().select(~(outliers) & ~(ice_sel).select(sel_all))
     log_i_over_sigi_sel = log_i_over_sigi.select(isel)
     d_star_sq_sel = d_star_sq.select(isel)
 
@@ -120,7 +196,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None,
     d_star_sq_upper.append(d_star_sq_sel[i_lower])
     d_star_sq_lower.append(d_star_sq_sel[i_upper])
 
-  fit_upper = flex.linear_regression( d_star_sq_upper, log_i_sigi_upper)
+  fit_upper = flex.linear_regression(d_star_sq_upper, log_i_sigi_upper)
   m_upper = fit_upper.slope()
   c_upper = fit_upper.y_intercept()
   fit_lower = flex.linear_regression(d_star_sq_lower, log_i_sigi_lower)
@@ -380,7 +456,7 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     reflections, imageset, plot_filename=extra_filename)
   if n_spots_no_ice > 10:
     estimated_d_min = estimate_resolution_limit(
-      reflections_no_ice, imageset, plot_filename=filename)
+      reflections_all, imageset, ice_sel, plot_filename=filename)
   else:
     estimated_d_min = -1.0
 
