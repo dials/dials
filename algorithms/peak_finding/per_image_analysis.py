@@ -15,6 +15,30 @@ except ImportError:
   pyplot = None
 
 
+class slot(object):
+  def __init__(self, d_min, d_max):
+    self.d_min = d_min
+    self.d_max = d_max
+
+class binner_equal_population(object):
+  def __init__(self, d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
+    from libtbx.math_utils import nearest_integer as nint
+    n_slots = len(d_star_sq)//target_n_per_bin
+    if max_slots is not None:
+      n_slots = min(n_slots, max_slots)
+    if min_slots is not None:
+      n_slots = max(n_slots, min_slots)
+    self.bins = []
+    n_per_bin = len(d_star_sq)/n_slots
+    d_star_sq_sorted = flex.sorted(d_star_sq)
+    d_sorted = uctbx.d_star_sq_as_d(d_star_sq_sorted)
+    d_max = d_sorted[0]
+    for i in range(n_slots):
+      d_min = d_sorted[nint((i+1)*n_per_bin)-1]
+      self.bins.append(slot(d_min, d_max))
+      d_max = d_min
+      #print self.bins[-1].d_max, self.bins[-1].d_min
+
 def map_to_reciprocal_space(reflections, imageset):
   detector = imageset.get_detector()
   scan = imageset.get_scan()
@@ -36,7 +60,12 @@ def get_histogram(d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
   return flex.histogram(d_star_sq, n_slots=n_slots)
 
 
-def estimate_resolution_limit(reflections, imageset, plot_filename=None):
+def estimate_resolution_limit(reflections, imageset, ice_sel=None,
+                              plot_filename=None):
+
+  if ice_sel is None:
+    ice_sel = flex.bool(len(reflections), False)
+
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
@@ -46,11 +75,13 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
   sel = variances > 0
   intensities = intensities.select(sel)
   variances = intensities.select(sel)
+  ice_sel = ice_sel.select(sel)
 
   i_over_sigi = intensities/flex.sqrt(variances)
   log_i_over_sigi = flex.log(i_over_sigi)
 
-  fit = flex.linear_regression(d_star_sq, log_i_over_sigi)
+  fit = flex.linear_regression(
+    d_star_sq.select(~ice_sel), log_i_over_sigi.select(~ice_sel))
   m = fit.slope()
   c = fit.y_intercept()
 
@@ -58,31 +89,29 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
   d_star_sq_lower = flex.double()
   log_i_sigi_upper = flex.double()
   d_star_sq_upper = flex.double()
-  weights = flex.double()
 
-  hist = get_histogram(d_star_sq)
+  binner = binner_equal_population(
+    d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5)
 
-  i_slot_max = flex.max_index(hist.slots())
-
-  #for i_slot, slot in enumerate(hist.slot_infos()):
-    #sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
-    #if sel.count(True) == 0:
-      #if i_slot > i_slot_max:
-        #hist = get_histogram(d_star_sq.select(d_star_sq < slot.low_cutoff))
-        #break
+  outliers_all = flex.bool(len(reflections), False)
 
   low_percentile_limit = 0.05
   upper_percentile_limit = 1-low_percentile_limit
-  for i_slot, slot in enumerate(hist.slot_infos()):
-    sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
+  d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
+  for i_slot, slot in enumerate(binner.bins):
+    sel = ~(ice_sel) & (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
+
     if sel.count(True) == 0:
       continue
       #if i_slot > i_slot_max:
         #break
       #else:
         #continue
-    log_i_over_sigi_sel = log_i_over_sigi.select(sel)
-    d_star_sq_sel = d_star_sq.select(sel)
+
+    isel = sel.iselection()
+    log_i_over_sigi_sel = log_i_over_sigi.select(isel)
+    d_star_sq_sel = d_star_sq.select(isel)
+
     perm = flex.sort_permutation(log_i_over_sigi_sel)
     i_lower = perm[int(math.floor(low_percentile_limit * len(perm)))]
     i_upper = perm[int(math.floor(upper_percentile_limit * len(perm)))]
@@ -90,15 +119,11 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     log_i_sigi_upper.append(log_i_over_sigi_sel[i_upper])
     d_star_sq_upper.append(d_star_sq_sel[i_lower])
     d_star_sq_lower.append(d_star_sq_sel[i_upper])
-    weights.append(slot.n)
 
-  weights = flex.double(weights.size(), 1)
-  fit_upper = flex.linear_regression(
-    d_star_sq_upper, log_i_sigi_upper, weights=weights)
+  fit_upper = flex.linear_regression( d_star_sq_upper, log_i_sigi_upper)
   m_upper = fit_upper.slope()
   c_upper = fit_upper.y_intercept()
-  fit_lower = flex.linear_regression(
-    d_star_sq_lower, log_i_sigi_lower, weights=weights)
+  fit_lower = flex.linear_regression(d_star_sq_lower, log_i_sigi_lower)
   m_lower = fit_lower.slope()
   c_lower = fit_lower.y_intercept()
 
@@ -126,6 +151,7 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
       #d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
 
     inside = points_below_line(d_star_sq, log_i_over_sigi, m_upper, c_upper)
+    inside = inside & ~outliers_all
 
     if inside.count(True) > 0:
       d_star_sq_estimate = flex.max(d_star_sq.select(inside))
@@ -144,18 +170,35 @@ def estimate_resolution_limit(reflections, imageset, plot_filename=None):
     ax.scatter(d_star_sq, log_i_over_sigi, marker='+')
     ax.scatter(d_star_sq.select(inside), log_i_over_sigi.select(inside),
                marker='+', color='green')
+    ax.scatter(d_star_sq.select(ice_sel),
+               log_i_over_sigi.select(ice_sel),
+               marker='+', color='black')
+    ax.scatter(d_star_sq.select(outliers_all),
+               log_i_over_sigi.select(outliers_all),
+               marker='+', color='grey')
     ax.scatter(d_star_sq_upper, log_i_sigi_upper, marker='+', color='red')
     ax.scatter(d_star_sq_lower, log_i_sigi_lower, marker='+', color='red')
 
-    ax.scatter([intersection[0]], [intersection[1]], marker='x', s=50, color='b')
+    if (intersection[0] <= ax.get_xlim()[1] and
+        intersection[1] <= ax.get_ylim()[1]):
+      ax.scatter([intersection[0]], [intersection[1]], marker='x', s=50, color='b')
     #ax.hexbin(d_star_sq, log_i_over_sigi, gridsize=30)
-    ax.plot(pyplot.xlim(), [(m * x + c) for x in pyplot.xlim()])
-    ax.plot(pyplot.xlim(), [(m_upper * x + c_upper) for x in pyplot.xlim()], color='red')
-    ax.plot(pyplot.xlim(), [(m_lower * x + c_lower) for x in pyplot.xlim()], color='red')
+    xlim = pyplot.xlim()
+    ax.plot(xlim, [(m * x + c) for x in xlim])
+    ax.plot(xlim, [(m_upper * x + c_upper) for x in xlim], color='red')
+    ax.plot(xlim, [(m_lower * x + c_lower) for x in xlim], color='red')
     ax.set_xlabel('d_star_sq')
     ax.set_ylabel('ln(I/sigI)')
-    ax.set_xlim((max(-ax.get_xlim()[1], -0.05), ax.get_xlim()[1]))
+    ax.set_xlim((max(-xlim[1], -0.05), xlim[1]))
     ax.set_ylim((0, ax.get_ylim()[1]))
+
+    for i_slot, slot in enumerate(binner.bins):
+      if i_slot == 0:
+        ax.vlines(uctbx.d_as_d_star_sq(slot.d_max), 0, ax.get_ylim()[1],
+                  linestyle='dotted', color='grey')
+      ax.vlines(uctbx.d_as_d_star_sq(slot.d_min), 0, ax.get_ylim()[1],
+                linestyle='dotted', color='grey')
+
     ax_ = ax.twiny() # ax2 is responsible for "top" axis and "right" axis
     xticks = ax.get_xticks()
     xlim = ax.get_xlim()
@@ -204,7 +247,7 @@ def points_inside_envelope(d_star_sq, log_i_over_sigi,
           ~points_below_line(d_star_sq, log_i_over_sigi, m_lower, c_lower))
 
 
-def filter_ice_rings(reflections, imageset):
+def ice_rings_selection(reflections, imageset):
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
@@ -219,7 +262,7 @@ def filter_ice_rings(reflections, imageset):
     unit_cell, space_group, d_min, width)
 
   ice_sel = ice_filter(d_spacings)
-  return reflections.select(~ice_sel)
+  return ice_sel
 
 
 def resolution_histogram(reflections, imageset, plot_filename=None):
@@ -323,17 +366,18 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
 
   #plot_ordered_d_star_sq(reflections, imageset)
   reflections_all = reflections
-  reflections_no_ice = filter_ice_rings(reflections_all, imageset)
+  ice_sel = ice_rings_selection(reflections_all, imageset)
+  reflections_no_ice = reflections_all.select(~ice_sel)
   n_spots_total = len(reflections_all)
   n_spots_no_ice = len(reflections_no_ice)
   n_spot_4A = (d_spacings > 4).count(True)
   intensities = reflections_no_ice['intensity.sum.value']
   total_intensity = flex.sum(intensities)
   #print i
-  #resolution_histogram(
-    #reflections, imageset, plot_filename=hist_filename)
-  #log_sum_i_sigi_vs_resolution(
-    #reflections, imageset, plot_filename=extra_filename)
+  resolution_histogram(
+    reflections, imageset, plot_filename=hist_filename)
+  log_sum_i_sigi_vs_resolution(
+    reflections, imageset, plot_filename=extra_filename)
   if n_spots_no_ice > 10:
     estimated_d_min = estimate_resolution_limit(
       reflections_no_ice, imageset, plot_filename=filename)

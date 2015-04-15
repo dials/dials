@@ -78,7 +78,7 @@ def exercise_client():
          == sorted([150, 142, 151, 161, 151, 167, 164, 161, 146]), spot_counts_no_ice
   d_min = sorted([float(node.childNodes[0].data)
                   for node in xmldoc.getElementsByTagName('d_min')])
-  assert d_min == sorted([1.56, 1.98, 1.76, 1.61, 1.61, 1.61, 1.57, 1.56, 1.61]), d_min
+  assert d_min == sorted([1.56, 1.57, 1.61, 1.61, 1.61, 1.61, 1.61, 1.78, 1.98]), d_min
 
 
 if __name__ == '__main__':
