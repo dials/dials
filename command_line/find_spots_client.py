@@ -88,6 +88,8 @@ if __name__ == '__main__':
 
   args = sys.argv[1:]
 
+  args.extend(sys.stdin.read().splitlines())
+
   filenames = [arg for arg in args if os.path.isfile(arg)]
   args = [arg for arg in args if not arg in filenames]
 
