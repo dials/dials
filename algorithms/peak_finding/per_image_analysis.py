@@ -410,26 +410,28 @@ def plot_stats(stats, filename='per_image_analysis.png'):
   if pyplot is None:
     raise Sorry("matplotlib must be installed to generate a plot.")
   fig = pyplot.figure()
+  plots = []
   ax1 = fig.add_subplot(111)
-  sc1 = ax1.scatter(
+  plots.append(ax1.scatter(
     list(i_image), list(n_spots_total),
-    s=5, color='orange', marker='o', alpha=0.4, label='#spots (total)')
-  sc2 = ax1.scatter(
-    list(i_image), n_spots_4A,
-    s=5, color='green', marker='o', alpha=0.4, label=u'#spots (to 4\u00c5)')
-  sc3 = ax1.scatter(
+    s=5, color='orange', marker='o', alpha=0.4, label='#spots (total)'))
+  if n_spots_4A is not None:
+    plots.append(ax1.scatter(
+      list(i_image), n_spots_4A,
+      s=5, color='green', marker='o', alpha=0.4, label=u'#spots (to 4\u00c5)'))
+  plots.append(ax1.scatter(
     list(i_image), n_spots_no_ice,
-    s=5, color='blue', marker='o', alpha=0.4, label='#spots (no ice)')
+    s=5, color='blue', marker='o', alpha=0.4, label='#spots (no ice)'))
   ax1.set_xlabel('Image #')
   ax1.set_ylabel('# spots')
   ax1.set_xlim((0.0, len(n_spots_total)))
   ax1.set_ylim(bottom=-0.2)
   ax2 = ax1.twinx()
   sel = (estimated_d_min < 50.0) & (n_spots_total > 20) & (estimated_d_min > 0) # XXX
-  sc4 = ax2.scatter(
+  plots.append(ax2.scatter(
     list(i_image.select(sel)),
     list(estimated_d_min.select(sel)),
-    s=10, color='red', marker='^', alpha=0.5, label='Estimated d_min')
+    s=10, color='red', marker='^', alpha=0.5, label='Estimated d_min'))
   ax2.set_ylabel(u'Resolution (\u00c5)')
   ax2.set_xlim((0, len(n_spots_total)))
   ax2.invert_yaxis()
@@ -437,7 +439,6 @@ def plot_stats(stats, filename='per_image_analysis.png'):
   # Use mode="fixed" as mode="expand" causes floating point error on some
   # versions of matplotlib.
   # See https://github.com/matplotlib/matplotlib/pull/1864
-  plots = (sc1, sc2, sc3, sc4)
   plot_labels = [plot.get_label() for plot in plots]
   lgd = pyplot.legend(
     plots,

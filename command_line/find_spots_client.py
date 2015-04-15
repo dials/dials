@@ -14,7 +14,7 @@ def nproc():
   from libtbx.introspection import number_of_processors
   return number_of_processors(return_value_if_unknown=-1)
 
-def work_all(host, port, filenames, params):
+def work_all(host, port, filenames, params, plot=False):
   from multiprocessing.pool import ThreadPool as thread_pool
   pool = thread_pool(processes=nproc())
   threads = { }
@@ -24,6 +24,35 @@ def work_all(host, port, filenames, params):
   for filename in filenames:
     results[filename] = threads[filename].get()
     print results[filename]
+
+  if plot:
+
+    from xml.dom import minidom
+    from scitbx.array_family import flex
+    from libtbx import group_args
+    from dials.algorithms.peak_finding.per_image_analysis import plot_stats
+
+    def get_xml_item(xmldoc, item):
+      return xmldoc.childNodes[0].getElementsByTagName(item)[0].childNodes[0].data
+
+    estimated_d_min = flex.double()
+    n_spots_total = flex.int()
+    n_spots_no_ice = flex.int()
+
+    for filename in filenames:
+      xml_str = results[filename]
+      xmldoc = minidom.parseString(xml_str)
+      estimated_d_min.append(float(get_xml_item(xmldoc, 'd_min')))
+      n_spots_total.append(int(get_xml_item(xmldoc, 'spot_count')))
+      n_spots_no_ice.append(int(get_xml_item(xmldoc, 'spot_count_no_ice')))
+
+    stats = group_args(n_spots_total=n_spots_total,
+                       n_spots_no_ice=n_spots_no_ice,
+                       n_spots_4A=None,
+                       total_intensity=None,
+                       estimated_d_min=estimated_d_min)
+    plot_stats(stats)
+
   return
 
 def stop(host, port, nproc):
@@ -48,6 +77,8 @@ host = localhost
   .type = str
 port = 1701
   .type = int(value_min=1)
+plot = False
+  .type = bool
 """)
 
 if __name__ == '__main__':
@@ -76,4 +107,4 @@ if __name__ == '__main__':
     if len(filenames) == 1:
       print work(params.host, params.port, filenames[0], args)
     else:
-      work_all(params.host, params.port, filenames, args)
+      work_all(params.host, params.port, filenames, args, plot=params.plot)
