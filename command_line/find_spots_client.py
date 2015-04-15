@@ -83,12 +83,16 @@ plot = False
 
 if __name__ == '__main__':
   import os
+  import select
   import sys
   import libtbx.load_env
 
   args = sys.argv[1:]
 
-  args.extend(sys.stdin.read().splitlines())
+  if os.name is not 'nt':
+    r, w, x = select.select([sys.stdin], [], [], 0)
+    if len(r) > 0:
+      args.extend([l.strip() for rr in r for l in rr.readlines()])
 
   filenames = [arg for arg in args if os.path.isfile(arg)]
   args = [arg for arg in args if not arg in filenames]
