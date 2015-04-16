@@ -593,9 +593,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     for experiment in experiments:
       compute.append(Corrections(
         experiment.beam,
-        experiment.goniometer))
+        experiment.goniometer,
+        experiment.detector))
     lp = compute.lp(self['id'], self['s1'])
     self['lp'] = lp
+    if experiment.detector[0].get_mu() > 0:
+      dqe = compute.dqe(self['id'], self['s1'], self['panel'])
+      self['dqe'] = dqe
     return lp
 
   def integrate(self, experiments, profile_model, reference_selector=None):

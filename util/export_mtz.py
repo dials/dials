@@ -383,7 +383,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   type_table = {'IPR': 'J', 'BGPKRATIOS': 'R', 'WIDTH': 'R', 'I': 'J',
                 'H': 'H', 'K': 'H', 'MPART': 'I', 'L': 'H', 'BATCH': 'B',
                 'M_ISYM': 'Y', 'SIGI': 'Q', 'FLAG': 'I', 'XDET': 'R', 'LP': 'R',
-                'YDET': 'R', 'SIGIPR': 'Q', 'FRACTIONCALC': 'R', 'ROT': 'R'}
+                'YDET': 'R', 'SIGIPR': 'Q', 'FRACTIONCALC': 'R', 'ROT': 'R',
+                'DQE': 'R'}
 
   # derive index columns from original indices with
   #
@@ -407,21 +408,33 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     batch.as_double().as_float())
 
   lp = integrated_data['lp']
+  if 'dqe' in integrated_data:
+    dqe = integrated_data['dqe']
+  else:
+    dqe = None
   I_profile = None
   V_profile = None
   I_sum = None
   V_sum = None
   if 'intensity.prf.value' in integrated_data:
-    I_profile = integrated_data['intensity.prf.value'] * lp
-    V_profile = integrated_data['intensity.prf.variance'] * lp
+    if dqe:
+      I_profile = integrated_data['intensity.prf.value'] * lp / dqe
+      V_profile = integrated_data['intensity.prf.variance'] * lp / dqe
+    else:
+      I_profile = integrated_data['intensity.prf.value'] * lp
+      V_profile = integrated_data['intensity.prf.variance'] * lp
     d.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
     d.add_column('SIGIPR', type_table['SIGI']).set_values(
       flex.sqrt(V_profile).as_float())
     # Trap negative variances
     assert V_profile.all_gt(0)
   if 'intensity.sum.value' in integrated_data:
-    I_sum = integrated_data['intensity.sum.value'] * lp
-    V_sum = integrated_data['intensity.sum.variance'] * lp
+    if dqe:
+      I_sum = integrated_data['intensity.sum.value'] * lp / dqe
+      V_sum = integrated_data['intensity.sum.variance'] * lp / dqe
+    else:
+      I_sum = integrated_data['intensity.sum.value'] * lp
+      V_sum = integrated_data['intensity.sum.variance'] * lp
     d.add_column('I', type_table['I']).set_values(I_sum.as_float())
     d.add_column('SIGI', type_table['SIGI']).set_values(
       flex.sqrt(V_sum).as_float())
@@ -435,6 +448,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   d.add_column('YDET', type_table['YDET']).set_values(ydet.as_float())
   d.add_column('ROT', type_table['ROT']).set_values(rot.as_float())
   d.add_column('LP', type_table['LP']).set_values(lp.as_float())
+  if dqe:
+    d.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
 
   m.write(hklout)
 

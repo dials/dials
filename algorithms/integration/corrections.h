@@ -55,6 +55,23 @@ namespace dials { namespace algorithms {
     return L / P;
   }
 
+  /**
+   * Compute the DQE correction for a single reflection
+   * @param mu attenuation coefficient (/cm as per standards)
+   * @param t0 thickness of sensor in mm
+   * @param s1 direction of diffracted ray
+   * @param n detector / panel normal for this reflection
+   * @returns DQE term which needs to be divided by (i.e. is efficiency)
+   */
+
+  double dqe_correction(
+    double mu,
+    double t0,
+    vec3<double> s1,
+    vec3<double> n) {
+    double t = 0.1 * t0 / cos(n.angle(s1));
+    return 1.0 - exp(-mu * t);
+  }
 
   /**
    * A class to perform corrections to the intensities.
@@ -90,7 +107,9 @@ namespace dials { namespace algorithms {
         pn_(beam.get_polarization_normal()),
         pf_(beam.get_polarization_fraction()),
         m2_(goniometer.get_rotation_axis()),
-        det(detector) {
+        det_(detector) {
+          mu_ = detector[0].get_mu();
+          t0_ = detector[0].get_thickness();
     }
 
     /**
@@ -102,13 +121,25 @@ namespace dials { namespace algorithms {
       return lp_correction(s0_, pn_, pf_, m2_, s1);
     }
 
+    /**
+     * Perform the DQE correction
+     * @param s1 The incident beam vector
+     * @param p The panel for this reflection
+     * @returns DQE term which needs to be divided by (i.e. is efficiency)
+     */
+    double dqe(vec3<double> s1, size_t p) const {
+      return dqe_correction(mu_, t0_, s1, det_[p].get_normal());
+    }
+
   private:
 
     vec3<double> s0_;
     vec3<double> pn_;
     double pf_;
     vec3<double> m2_;
-    Detector det;
+    Detector det_;
+    double mu_;
+    double t0_;
   };
 
 
@@ -146,6 +177,26 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < id.size(); ++i) {
         DIALS_ASSERT(id[i] < compute_.size());
         result[i] = compute_[id[i]].lp(s1[i]);
+      }
+      return result;
+    }
+
+    /**
+     * Perform the DQE correction.
+     * @param id The list of experiments ids
+     * @param s1 The list of indcident beam vectors
+     * @param p The list of panels
+     */
+    af::shared<double> dqe(
+        const af::const_ref<std::size_t> &id,
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref<std::size_t> &p) const {
+      DIALS_ASSERT(id.size() == s1.size());
+      DIALS_ASSERT(id.size() == p.size());
+      af::shared<double> result(id.size(), 0);
+      for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] < compute_.size());
+        result[i] = compute_[id[i]].dqe(s1[i], p[i]);
       }
       return result;
     }

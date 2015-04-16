@@ -27,10 +27,19 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("m2"),
           arg("s1")));
 
+    def("dqe_correction", &dqe_correction, (
+          arg("mu"),
+          arg("t0"),
+          arg("s1"),
+          arg("n")));
+
     class_<Corrections>("Corrections", no_init)
       .def(init< const Beam&,
-                 const Goniometer& >())
+                 const Goniometer&,
+                 const Detector& >())
       .def("lp", &Corrections::lp, (
+            arg("s1")))
+      .def("dqe", &Corrections::lp, (
             arg("s1")))
       ;
 
@@ -38,6 +47,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("append", &CorrectionsMulti::push_back)
       .def("__len__", &CorrectionsMulti::size)
       .def("lp", &CorrectionsMulti::lp)
+      .def("dqe", &CorrectionsMulti::dqe)
       ;
   }
 

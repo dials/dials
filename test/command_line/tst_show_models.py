@@ -23,6 +23,7 @@ Panel:
   trusted_range: {-1,495976}
   thickness: 0
   material:
+  mu: 0
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
@@ -69,6 +70,7 @@ Panel:
   trusted_range: {-1,161977}
   thickness: 0
   material:
+  mu: 0
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-210.76,205.277,-265.27}
@@ -110,6 +112,7 @@ Panel:
   trusted_range: {-1,495976}
   thickness: 0.32
   material: Si
+  mu: 39.6038
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}

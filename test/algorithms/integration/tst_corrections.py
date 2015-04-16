@@ -31,7 +31,8 @@ class Test(object):
     for experiment in self.exlist:
       corrector.append(Corrections(
         experiment.beam,
-        experiment.goniometer))
+        experiment.goniometer,
+        experiment.detector))
 
     lp1 = corrector.lp(self.rlist['id'], self.rlist['s1'])
 
