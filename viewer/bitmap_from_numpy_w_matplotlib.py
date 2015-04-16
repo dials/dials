@@ -27,6 +27,7 @@ class wxbmp_from_np_array(object):
     else:
       self._ini_wx_bmp_lst = []
       for lst_pos in range(len(lst_data_in)):
+        print "lst_pos =", lst_pos
         data_3d_in = lst_data_in[lst_pos]
         xmax = data_3d_in.shape[1]
         ymax = data_3d_in.shape[2]
@@ -46,6 +47,7 @@ class wxbmp_from_np_array(object):
         z_dp = data_3d_in.shape[0]
         single_block_lst_01 = []
         for z in range(z_dp):
+          print "z =", z
           tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
           if(lst_data_mask_in != None):
             tmp_data2d_mask[:, :] = data_3d_in_mask[z:z + 1, :, :]
@@ -215,5 +217,12 @@ class wxbmp_from_np_array(object):
     NewW = int(width * scale)
     NewH = int(height * scale)
     to_become_bmp = to_become_bmp.Scale(NewW, NewH, wx.IMAGE_QUALITY_NORMAL)
+
+
     wxBitmap = to_become_bmp.ConvertToBitmap()
+
+    imported_from_blog_n_to_consider = '''
+    c1 = wx.BitmapButton(self, -1, wx.Bitmap('/home/full/path/to/A.png'))
+    '''
+
     return wxBitmap
