@@ -29,8 +29,9 @@ def run():
   assert os.path.exists("spot_counts.png")
 
   assert (
-    "|image | #spots | #spots_no_ice | #spots_4A | total_intensity | d_min | d_min (distl method 1)|"
-    in result.stdout_lines)
+    "|image | #spots | #spots_no_ice | #spots_4A | total_intensity |" + \
+    " d_min | d_min (distl method 1) | d_min (distl method 2)|"
+    in result.stdout_lines), result.stdout_lines
 
 
 if __name__ == '__main__':

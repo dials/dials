@@ -39,6 +39,36 @@ class binner_equal_population(object):
       d_max = d_min
       #print self.bins[-1].d_max, self.bins[-1].d_min
 
+
+class binner_d_star_cubed(object):
+
+  def __init__(self, d_spacings, target_n_per_bin=25, max_slots=40, min_slots=20):
+    d_spacings_sorted = flex.sorted(d_spacings, reverse=True)
+    d_star_cubed_sorted = flex.pow(1/d_spacings_sorted, 3)
+
+    # choose bin volume such that lowest resolution shell contains 5% of the
+    # spots, or 25, whichever is greater
+    low_res_count = int(
+      math.ceil(max(target_n_per_bin, 0.05*len(d_spacings))))
+    bin_step = d_star_cubed_sorted[low_res_count] - d_star_cubed_sorted[0]
+    n_slots = int(
+      math.ceil((d_star_cubed_sorted[-1] - d_star_cubed_sorted[0])/bin_step))
+
+    #n_slots = len(d_spacings_sorted)//target_n_per_bin
+    if max_slots is not None:
+      n_slots = min(n_slots, max_slots)
+    if min_slots is not None:
+      n_slots = max(n_slots, min_slots)
+    bin_step = (d_star_cubed_sorted[-1] - d_star_cubed_sorted[0])/n_slots
+
+    self.bins = []
+    ds3_max = d_star_cubed_sorted[0]
+    for i in range(n_slots):
+      ds3_min = d_star_cubed_sorted[0] + (i+1) * bin_step
+      self.bins.append(slot(1/ds3_min**(1/3), 1/ds3_max**(1/3)))
+      ds3_max = ds3_min
+
+
 def map_to_reciprocal_space(reflections, imageset):
   detector = imageset.get_detector()
   scan = imageset.get_scan()
@@ -372,11 +402,11 @@ def estimate_resolution_limit_distl_method1(
   d_g = d_subset[p_g]
 
   noisiness = 0
-  for i in range(len(slopes)):
-    for j in range(i+1, len(slopes)):
+  n = len(ds3_subset)
+  for i in range(n-1):
+    for j in range(i+1, n-1):
       if slopes[i] >= slopes[j]:
         noisiness += 1
-  n = len(ds3_subset)
   noisiness /= ((n-1)*(n-2)/2)
 
   if plot_filename is not None:
@@ -396,6 +426,79 @@ def estimate_resolution_limit_distl_method1(
     pyplot.close()
 
   return d_g, noisiness
+
+
+def estimate_resolution_limit_distl_method2(
+  reflections, imageset, ice_sel=None, plot_filename=None):
+
+  # Implementation of Method 2 (section 2.4.4) of:
+  # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
+  # J. Appl. Cryst. (2006). 39, 112-119
+  # http://dx.doi.org/10.1107/S0021889805040677
+
+  if ice_sel is None:
+    ice_sel = flex.bool(len(reflections), False)
+
+  variances = reflections['intensity.sum.variance']
+
+  sel = variances > 0
+  intensities = reflections['intensity.sum.value']
+  variances = variances.select(sel)
+  ice_sel = ice_sel.select(sel)
+  reflections = reflections.select(sel)
+  intensities = reflections['intensity.sum.value']
+  d_star_sq = flex.pow2(reflections['rlp'].norms())
+  d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
+  d_star_cubed = flex.pow(reflections['rlp'].norms(), 3)
+
+  binner = binner_d_star_cubed(d_spacings)
+
+  bin_counts = flex.size_t()
+
+  for i_slot, slot in enumerate(binner.bins):
+    sel_all = (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
+    #sel = ~(ice_sel) & sel_all
+    sel = sel_all
+
+    bin_counts.append(sel.count(True))
+
+  print list(bin_counts)
+  t0 = (bin_counts[0] + bin_counts[1])/2
+
+  mu = 0.15
+
+  for i in range(len(bin_counts)-1):
+    tj = bin_counts[i]
+    tj1 = bin_counts[i+1]
+    if (tj < (mu * t0)) and (tj1 < (mu * t0)):
+      break
+
+  d_min = binner.bins[i].d_min
+  noisiness = 0
+  m = len(bin_counts)
+  for i in range(m):
+    for j in range(i+1, m):
+      if bin_counts[i] <= bin_counts[j]:
+        noisiness += 1
+  noisiness /= (0.5 * m * (m-1))
+
+  if plot_filename is not None:
+    if pyplot is None:
+      raise Sorry("matplotlib must be installed to generate a plot.")
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.scatter(range(len(bin_counts)), bin_counts)
+    #ax.set_xlabel('')
+    ax.set_ylabel('number of spots in shell')
+    xlim = pyplot.xlim()
+    ylim = pyplot.ylim()
+    ax.vlines(i, ylim[0], ylim[1], colors='red')
+    pyplot.xlim(0, xlim[1])
+    pyplot.ylim(0, ylim[1])
+    pyplot.savefig(plot_filename)
+    pyplot.close()
+
+  return d_min, noisiness
 
 def points_below_line(d_star_sq, log_i_over_sigi, m, c):
 
@@ -538,11 +641,13 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     hist_filename = "spot_count_vs_resolution_%d.png" %(i+1)
     extra_filename = "log_sum_i_sigi_vs_resolution_%d.png" %(i+1)
     distl_method_1_filename = "distl_method_1_%d.png" %(i+1)
+    distl_method_2_filename = "distl_method_2_%d.png" %(i+1)
   else:
     filename = None
     hist_filename = None
     extra_filename = None
     distl_method_1_filename = None
+    distl_method_2_filename = None
 
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
@@ -567,6 +672,9 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     d_min_distl_method_1, noisiness_method_1 \
       = estimate_resolution_limit_distl_method1(
         reflections_all, imageset, ice_sel, plot_filename=distl_method_1_filename)
+    d_min_distl_method_2, noisiness_method_2 = \
+      estimate_resolution_limit_distl_method2(
+        reflections_all, imageset, ice_sel, plot_filename=distl_method_2_filename)
   else:
     estimated_d_min = -1.0
 
@@ -575,7 +683,10 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
                     n_spots_4A=n_spot_4A,
                     total_intensity=total_intensity,
                     estimated_d_min=estimated_d_min,
-                    d_min_distl_method_1=d_min_distl_method_1)
+                    d_min_distl_method_1=d_min_distl_method_1,
+                    noisiness_method_1=noisiness_method_1,
+                    d_min_distl_method_2=d_min_distl_method_2,
+                    noisiness_method_2=noisiness_method_2)
 
 def stats_imageset(imageset, reflections, plot=False):
   n_spots_total = []
@@ -584,6 +695,9 @@ def stats_imageset(imageset, reflections, plot=False):
   total_intensity = []
   estimated_d_min = []
   d_min_distl_method_1 = []
+  d_min_distl_method_2 = []
+  noisiness_method_1 = []
+  noisiness_method_2 = []
 
   image_number = reflections['xyzobs.px.value'].parts()[2]
   image_number = flex.floor(image_number)
@@ -599,13 +713,19 @@ def stats_imageset(imageset, reflections, plot=False):
     total_intensity.append(stats.total_intensity)
     estimated_d_min.append(stats.estimated_d_min)
     d_min_distl_method_1.append(stats.d_min_distl_method_1)
+    noisiness_method_1.append(stats.noisiness_method_1)
+    d_min_distl_method_2.append(stats.d_min_distl_method_2)
+    noisiness_method_2.append(stats.noisiness_method_2)
 
   return group_args(n_spots_total=n_spots_total,
                     n_spots_no_ice=n_spots_no_ice,
                     n_spots_4A=n_spots_4A,
                     total_intensity=total_intensity,
                     estimated_d_min=estimated_d_min,
-                    d_min_distl_method_1=d_min_distl_method_1)
+                    d_min_distl_method_1=d_min_distl_method_1,
+                    noisiness_method_1=noisiness_method_1,
+                    d_min_distl_method_2=d_min_distl_method_2,
+                    noisiness_method_2=noisiness_method_2)
 
 
 def table(stats):
@@ -615,7 +735,11 @@ def table(stats):
   total_intensity = stats.total_intensity
   estimated_d_min = stats.estimated_d_min
   d_min_distl_method_1 = stats.d_min_distl_method_1
-  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "total_intensity", "d_min", "d_min (distl method 1)")]
+  noisiness_method_1 = stats.noisiness_method_1
+  d_min_distl_method_2 = stats.d_min_distl_method_2
+  noisiness_method_2 = stats.noisiness_method_2
+  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "total_intensity",
+           "d_min", "d_min (distl method 1)", "d_min (distl method 2)")]
   for i_image in range(len(n_spots_total)):
     rows.append((str(int(i_image)+1),
                  str(n_spots_total[i_image]),
@@ -623,7 +747,10 @@ def table(stats):
                  str(n_spots_4A[i_image]),
                  "%.0f" %total_intensity[i_image],
                  "%.2f" %estimated_d_min[i_image],
-                 "%.2f" %d_min_distl_method_1[i_image]))
+                 "%.2f (%.2f)" %(
+                   d_min_distl_method_1[i_image], noisiness_method_1[i_image]),
+                 "%.2f (%.2f)" %(
+                   d_min_distl_method_2[i_image], noisiness_method_2[i_image])))
   return rows
 
 def print_table(stats, out=None):
