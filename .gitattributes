@@ -597,6 +597,12 @@ scratch/gw/adaptive_cubic_spline.py -text
 scratch/gw/attic/brute_force_calibration.py -text
 scratch/gw/biostruct-25.py -text
 scratch/gw/bootstrap_linux_dev127.sh -text
+scratch/gw/cbf_viewer/analyser.py -text
+scratch/gw/cbf_viewer/launcher.py -text
+scratch/gw/cbf_viewer/modeller.py -text
+scratch/gw/cbf_viewer/shadowed_pixels.py -text
+scratch/gw/cbf_viewer/shadowmapper.py -text
+scratch/gw/cbf_viewer/viewer.py -text
 scratch/gw/corrections10000.png -text
 scratch/gw/corrections12000.png -text
 scratch/gw/corrections14000.png -text
