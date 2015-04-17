@@ -4,11 +4,11 @@
 namespace dials { namespace scratch { namespace boost_python {
   using namespace boost::python;
 
-  void rgb_ext();
+  void dials_viewer_ext();
 
-  BOOST_PYTHON_MODULE(rgb_ext)
+  BOOST_PYTHON_MODULE(dials_viewer_ext)
   {
-    rgb_ext();
+    dials_viewer_ext();
   }
 
 }}}

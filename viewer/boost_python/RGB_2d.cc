@@ -14,7 +14,7 @@
 namespace dials { namespace viewer { namespace boost_python {
   using namespace boost::python;
 
-  void rgb_ext(){
+  void dials_viewer_ext(){
     def("hello_tst", &hello_tst);
 
   }
