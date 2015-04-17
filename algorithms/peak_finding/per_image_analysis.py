@@ -368,7 +368,8 @@ def estimate_resolution_limit_distl_method1(
   # ice-rings are present.
 
   slopes = (ds3_subset[1:] - ds3_subset[0])/(x[1:]-x[0])
-  p_m = flex.max_index(slopes) + 1
+  skip_first = 3
+  p_m = flex.max_index(slopes[skip_first:]) + 1 + skip_first
 
   # (ii)
 
