@@ -127,7 +127,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None,
 
   sel = variances > 0
   intensities = intensities.select(sel)
-  variances = intensities.select(sel)
+  variances = variances.select(sel)
   ice_sel = ice_sel.select(sel)
 
   i_over_sigi = intensities/flex.sqrt(variances)
@@ -156,7 +156,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None,
     sel = ~(ice_sel) & sel_all
     #sel = ~(ice_sel) & (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
 
-    print "%.2f" %(sel.count(True)/sel_all.count(True))
+    #print "%.2f" %(sel.count(True)/sel_all.count(True))
 
     if sel.count(True) == 0:
       #outliers_all.set_selected(sel_all & ice_sel, True)
@@ -291,6 +291,111 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None,
 
   return resolution_estimate
 
+
+
+def estimate_resolution_limit_distl_method1(
+  reflections, imageset, ice_sel=None, plot_filename=None):
+
+  # Implementation of Method 1 (section 2.4.4) of:
+  # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
+  # J. Appl. Cryst. (2006). 39, 112-119
+  # http://dx.doi.org/10.1107/S0021889805040677
+
+  if ice_sel is None:
+    ice_sel = flex.bool(len(reflections), False)
+
+  variances = reflections['intensity.sum.variance']
+
+  sel = variances > 0
+  intensities = reflections['intensity.sum.value']
+  variances = intensities.select(sel)
+  ice_sel = ice_sel.select(sel)
+  reflections = reflections.select(sel)
+  intensities = reflections['intensity.sum.value']
+  d_star_sq = flex.pow2(reflections['rlp'].norms())
+  d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
+  d_star_cubed = flex.pow(reflections['rlp'].norms(), 3)
+
+  step = 2
+  while len(reflections)/step > 40:
+    step += 1
+
+  order = flex.sort_permutation(d_spacings, reverse=True)
+
+  ds3_subset = flex.double()
+  d_subset = flex.double()
+  for i in range(len(reflections)//step):
+    ds3_subset.append(d_star_cubed[order[i*step]])
+    d_subset.append(d_spacings[order[i*step]])
+
+  x = flex.double(range(len(ds3_subset)))
+
+  # (i)
+  # Usually, Pm is the last point, that is, m = n. But m could be smaller than
+  # n if an unusually high number of spots are detected around a certain
+  # intermediate resolution. In that case, our search for the image resolution
+  # does not go outside the spot 'bump;. This is particularly useful when
+  # ice-rings are present.
+
+  slopes = (ds3_subset[1:] - ds3_subset[0])/(x[1:]-x[0])
+  p_m = flex.max_index(slopes) + 1
+
+  # (ii)
+
+  from scitbx import matrix
+  x1 = matrix.col((0, ds3_subset[0]))
+  x2 = matrix.col((p_m, ds3_subset[p_m]))
+
+  gaps = flex.double([0])
+  v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
+
+  for i in range(1, p_m):
+    x0 = matrix.col((i, ds3_subset[i]))
+    r = x1 - x0
+    g = abs(v.dot(r))
+    gaps.append(g)
+
+  mv = flex.mean_and_variance(gaps)
+  s = mv.unweighted_sample_standard_deviation()
+
+  # (iii)
+
+  p_k = flex.max_index(gaps)
+  g_k = gaps[p_k]
+  p_g = p_k
+  for i in range(p_k+1, len(gaps)):
+    g_i = gaps[i]
+    if g_i > (g_k - 0.5 * s):
+      p_g = i
+
+  ds3_g = ds3_subset[p_g]
+  d_g = d_subset[p_g]
+
+  noisiness = 0
+  for i in range(len(slopes)):
+    for j in range(i+1, len(slopes)):
+      if slopes[i] >= slopes[j]:
+        noisiness += 1
+  n = len(ds3_subset)
+  noisiness /= ((n-1)*(n-2)/2)
+
+  if plot_filename is not None:
+    if pyplot is None:
+      raise Sorry("matplotlib must be installed to generate a plot.")
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.scatter(range(len(ds3_subset)), ds3_subset)
+    #ax.set_xlabel('')
+    ax.set_ylabel('D^-3')
+    xlim = pyplot.xlim()
+    ylim = pyplot.ylim()
+    ax.vlines(p_g, ylim[0], ylim[1], colors='red')
+    pyplot.xlim(0, xlim[1])
+    pyplot.ylim(0, ylim[1])
+    pyplot.savefig(plot_filename)
+    pyplot.close()
+
+  return d_g, noisiness
 
 def points_below_line(d_star_sq, log_i_over_sigi, m, c):
 
@@ -432,6 +537,7 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     filename = "i_over_sigi_vs_resolution_%d.png" %(i+1)
     hist_filename = "spot_count_vs_resolution_%d.png" %(i+1)
     extra_filename = "log_sum_i_sigi_vs_resolution_%d.png" %(i+1)
+    distl_method_1_filename = "distl_method_1_%d.png" %(i+1)
   else:
     filename = None
     hist_filename = None
@@ -457,6 +563,9 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
   if n_spots_no_ice > 10:
     estimated_d_min = estimate_resolution_limit(
       reflections_all, imageset, ice_sel, plot_filename=filename)
+    d_min_distl_method_1, noisiness_method_1 \
+      = estimate_resolution_limit_distl_method1(
+        reflections_all, imageset, ice_sel, plot_filename=distl_method_1_filename)
   else:
     estimated_d_min = -1.0
 
@@ -464,7 +573,8 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
                     n_spots_no_ice=n_spots_no_ice,
                     n_spots_4A=n_spot_4A,
                     total_intensity=total_intensity,
-                    estimated_d_min=estimated_d_min)
+                    estimated_d_min=estimated_d_min,
+                    d_min_distl_method_1=d_min_distl_method_1)
 
 def stats_imageset(imageset, reflections, plot=False):
   n_spots_total = []
@@ -472,6 +582,7 @@ def stats_imageset(imageset, reflections, plot=False):
   n_spots_4A = []
   total_intensity = []
   estimated_d_min = []
+  d_min_distl_method_1 = []
 
   image_number = reflections['xyzobs.px.value'].parts()[2]
   image_number = flex.floor(image_number)
@@ -486,12 +597,14 @@ def stats_imageset(imageset, reflections, plot=False):
     n_spots_4A.append(stats.n_spots_4A)
     total_intensity.append(stats.total_intensity)
     estimated_d_min.append(stats.estimated_d_min)
+    d_min_distl_method_1.append(stats.d_min_distl_method_1)
 
   return group_args(n_spots_total=n_spots_total,
                     n_spots_no_ice=n_spots_no_ice,
                     n_spots_4A=n_spots_4A,
                     total_intensity=total_intensity,
-                    estimated_d_min=estimated_d_min)
+                    estimated_d_min=estimated_d_min,
+                    d_min_distl_method_1=d_min_distl_method_1)
 
 
 def table(stats):
@@ -500,14 +613,16 @@ def table(stats):
   n_spots_4A = stats.n_spots_4A
   total_intensity = stats.total_intensity
   estimated_d_min = stats.estimated_d_min
-  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "total_intensity", "d_min")]
+  d_min_distl_method_1 = stats.d_min_distl_method_1
+  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "total_intensity", "d_min", "d_min (distl method 1)")]
   for i_image in range(len(n_spots_total)):
     rows.append((str(int(i_image)+1),
                  str(n_spots_total[i_image]),
                  str(n_spots_no_ice[i_image]),
                  str(n_spots_4A[i_image]),
                  "%.0f" %total_intensity[i_image],
-                 "%.2f" %estimated_d_min[i_image]))
+                 "%.2f" %estimated_d_min[i_image],
+                 "%.2f" %d_min_distl_method_1[i_image]))
   return rows
 
 def print_table(stats, out=None):
