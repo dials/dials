@@ -29,7 +29,7 @@ def run():
   assert os.path.exists("spot_counts.png")
 
   assert (
-    "|image | #spots | #spots_no_ice | #spots_4A | total_intensity | d_min|"
+    "|image | #spots | #spots_no_ice | #spots_4A | total_intensity | d_min | d_min (distl method 1)|"
     in result.stdout_lines)
 
 

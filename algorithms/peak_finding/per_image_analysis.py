@@ -316,7 +316,7 @@ def estimate_resolution_limit_distl_method1(
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
   d_star_cubed = flex.pow(reflections['rlp'].norms(), 3)
 
-  step = 2
+  step = 5
   while len(reflections)/step > 40:
     step += 1
 
