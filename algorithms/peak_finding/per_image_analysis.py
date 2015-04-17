@@ -308,7 +308,7 @@ def estimate_resolution_limit_distl_method1(
 
   sel = variances > 0
   intensities = reflections['intensity.sum.value']
-  variances = intensities.select(sel)
+  variances = variances.select(sel)
   ice_sel = ice_sel.select(sel)
   reflections = reflections.select(sel)
   intensities = reflections['intensity.sum.value']
@@ -542,6 +542,7 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     filename = None
     hist_filename = None
     extra_filename = None
+    distl_method_1_filename = None
 
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
