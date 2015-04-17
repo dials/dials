@@ -43,6 +43,8 @@ class handler(server_base.BaseHTTPRequestHandler):
         '<spot_count>%s</spot_count>' % stats.n_spots_total,
         '<spot_count_no_ice>%s</spot_count_no_ice>' % stats.n_spots_no_ice,
         '<d_min>%.2f</d_min>' % stats.estimated_d_min,
+        '<d_min_method_1>%.2f</d_min_method_1>' % stats.d_min_distl_method_1,
+        '<d_min_method_2>%.2f</d_min_method_2>' % stats.d_min_distl_method_2,
         '<total_intensity>%.0f</total_intensity>' % stats.total_intensity,
       ]
       s.wfile.write('<response>\n%s\n</response>' % ('\n'.join(response)))

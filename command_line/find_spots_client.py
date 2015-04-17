@@ -36,6 +36,8 @@ def work_all(host, port, filenames, params, plot=False):
       return xmldoc.childNodes[0].getElementsByTagName(item)[0].childNodes[0].data
 
     estimated_d_min = flex.double()
+    d_min_distl_method_1 = flex.double()
+    d_min_distl_method_2 = flex.double()
     n_spots_total = flex.int()
     n_spots_no_ice = flex.int()
 
@@ -43,6 +45,8 @@ def work_all(host, port, filenames, params, plot=False):
       xml_str = results[filename]
       xmldoc = minidom.parseString(xml_str)
       estimated_d_min.append(float(get_xml_item(xmldoc, 'd_min')))
+      d_min_distl_method_1.append(float(get_xml_item(xmldoc, 'd_min_method_1')))
+      d_min_distl_method_2.append(float(get_xml_item(xmldoc, 'd_min_method_2')))
       n_spots_total.append(int(get_xml_item(xmldoc, 'spot_count')))
       n_spots_no_ice.append(int(get_xml_item(xmldoc, 'spot_count_no_ice')))
 
@@ -50,7 +54,9 @@ def work_all(host, port, filenames, params, plot=False):
                        n_spots_no_ice=n_spots_no_ice,
                        n_spots_4A=None,
                        total_intensity=None,
-                       estimated_d_min=estimated_d_min)
+                       estimated_d_min=estimated_d_min,
+                       d_min_distl_method_1=d_min_distl_method_1,
+                       d_min_distl_method_2=d_min_distl_method_2)
     plot_stats(stats)
 
   return

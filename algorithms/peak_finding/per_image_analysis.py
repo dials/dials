@@ -769,6 +769,8 @@ def plot_stats(stats, filename='per_image_analysis.png'):
   n_spots_no_ice = stats.n_spots_no_ice
   n_spots_4A = stats.n_spots_4A
   estimated_d_min = flex.double(stats.estimated_d_min)
+  d_min_distl_method_1 = flex.double(stats.d_min_distl_method_1)
+  d_min_distl_method_2 = flex.double(stats.d_min_distl_method_2)
 
   i_image = flex.int(list(range(1, len(n_spots_total)+1)))
   if pyplot is None:
@@ -796,6 +798,14 @@ def plot_stats(stats, filename='per_image_analysis.png'):
     list(i_image.select(sel)),
     list(estimated_d_min.select(sel)),
     s=10, color='red', marker='^', alpha=0.5, label='Estimated d_min'))
+  plots.append(ax2.scatter(
+    list(i_image.select(sel)),
+    list(d_min_distl_method_1.select(sel)),
+    s=10, color='purple', marker='x', alpha=0.5, label='d_min (distl method 1)'))
+  plots.append(ax2.scatter(
+    list(i_image.select(sel)),
+    list(d_min_distl_method_2.select(sel)),
+    s=10, color='grey', marker='+', alpha=0.5, label='d_min (distl method 2)'))
   ax2.set_ylabel(u'Resolution (\u00c5)')
   ax2.set_xlim((0, len(n_spots_total)))
   ylim = ax2.get_ylim()
