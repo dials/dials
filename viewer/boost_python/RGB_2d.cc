@@ -10,12 +10,13 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/viewer/boost_python/rgb_2D.h>
+#include <dials/viewer/rgb_2D.h>
+
 namespace dials { namespace viewer { namespace boost_python {
   using namespace boost::python;
+  void dials_viewer(){
 
-  void dials_viewer_ext(){
-    def("hello_tst", &hello_tst);
+    def("hello_tst_vw", &hello_tst_vw);
 
   }
 
