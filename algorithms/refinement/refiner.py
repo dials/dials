@@ -272,7 +272,7 @@ refinement
       .type = float(value_min = 0)
       .expert_level = 1
 
-    outlier_rejection
+    outlier
       .help = "Outlier rejection after initial reflection prediction."
     {
       algorithm = *null tukey

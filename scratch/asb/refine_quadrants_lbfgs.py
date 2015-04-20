@@ -79,7 +79,7 @@ refinement{
     sparse=True
   }
   target.gradient_calculation_blocksize=10000
-  reflections.outlier_rejection.algorithm=tukey
+  reflections.outlier.algorithm=tukey
   reflections.minimum_number_of_reflections=1
   refinery.engine=LBFGScurvs
 }""")

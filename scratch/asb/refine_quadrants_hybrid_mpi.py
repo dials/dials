@@ -50,7 +50,7 @@ class DetectorRefiner(object):
       sparse=True
     }
     target.gradient_calculation_blocksize=100000
-    reflections.outlier_rejection.algorithm=tukey
+    reflections.outlier.algorithm=tukey
     reflections.minimum_number_of_reflections=1
     refinery.engine=LBFGScurvs
   }""")
@@ -76,7 +76,7 @@ class CrystalRefiners(object):
       beam.fix=all
       detector.fix=all
     }
-    reflections.outlier_rejection.algorithm=tukey
+    reflections.outlier.algorithm=tukey
     reflections.minimum_number_of_reflections=1
     refinery.engine=LBFGScurvs
   }""")

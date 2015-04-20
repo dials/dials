@@ -568,7 +568,7 @@ Equivalent command-line options exist for all the main DIALS programs.
 Now, our refinement job is specified as::
 
   dials.refine bravais_setting_9.json reindexed_reflections.pickle \
-  outlier_rejection.algorithm=tukey use_all_reflections=true
+  outlier.algorithm=tukey use_all_reflections=true
 
 The main product of this are the files ``refined_experiments.json`` and
 ``refined.pickle``.
@@ -580,7 +580,7 @@ The main product of this are the files ``refined_experiments.json`` and
   refinement {
     reflections {
       use_all_reflections = true
-      outlier_rejection {
+      outlier {
         algorithm = null *tukey
       }
     }
@@ -665,7 +665,7 @@ model for both the crystal orientation and unit cell. To do this, we run a
 further refinement job starting from the output of the previous job::
 
   dials.refine refined_experiments.json refined.pickle \
-  outlier_rejection.algorithm=tukey use_all_reflections=true  \
+  outlier.algorithm=tukey use_all_reflections=true  \
   scan_varying=true output.experiments=sv_refined_experiments.json
 
 Note we also overrode the default experiments output filename to avoid
@@ -685,7 +685,7 @@ this job is::
     }
     reflections {
       use_all_reflections = true
-      outlier_rejection {
+      outlier {
         algorithm = null *tukey
       }
     }

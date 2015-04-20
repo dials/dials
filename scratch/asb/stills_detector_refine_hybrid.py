@@ -314,7 +314,7 @@ class Script(object):
           beam.fix=all
           detector.fix=all
         }
-      reflections.outlier_rejection.algorithm=null
+      reflections.outlier.algorithm=null
       refinery.engine=LevMar
       verbosity=1
     }
@@ -327,7 +327,7 @@ class Script(object):
         }
       target.gradient_calculation_blocksize=100000
       reflections{
-        outlier_rejection.algorithm=tukey
+        outlier.algorithm=tukey
         weighting_strategy.override=stills
         weighting_strategy.delpsi_constant=1000000
         minimum_number_of_reflections=0

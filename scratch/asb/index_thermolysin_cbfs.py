@@ -31,13 +31,13 @@ def do_work(path):
   easy_run.call(cmd)
   if not os.path.exists(spots): return
 
-  cmd = "dials.index input.reflections=%s input.datablock=%s method=fft1d beam.fix=all detector.fix=all known_symmetry.unit_cell=93,93,130,90,90,120 known_symmetry.space_group=P6122 n_macro_cycles=5 d_min_final=0.5 refinement.reflections.outlier_rejection.algorithm=tukey refinement.reflections.weighting_strategy.override=stills refinement.reflections.weighting_strategy.delpsi_constant=1000000  output.experiments=%s output.reflections=%s"%(spots, datablock, experiments, indexed)
+  cmd = "dials.index input.reflections=%s input.datablock=%s method=fft1d beam.fix=all detector.fix=all known_symmetry.unit_cell=93,93,130,90,90,120 known_symmetry.space_group=P6122 n_macro_cycles=5 d_min_final=0.5 refinement.reflections.outlier.algorithm=tukey refinement.reflections.weighting_strategy.override=stills refinement.reflections.weighting_strategy.delpsi_constant=1000000  output.experiments=%s output.reflections=%s"%(spots, datablock, experiments, indexed)
   print cmd
   easy_run.call(cmd)
   if not os.path.exists(experiments): return
   if not os.path.exists(indexed): return
 
-  cmd = "dials.refine weighting_strategy.override=stills weighting_strategy.delpsi_constant=1000000 reflections.outlier_rejection.algorithm=tukey %s %s  output.experiments_filename=%s"%(experiments, indexed, refined)
+  cmd = "dials.refine weighting_strategy.override=stills weighting_strategy.delpsi_constant=1000000 reflections.outlier.algorithm=tukey %s %s  output.experiments_filename=%s"%(experiments, indexed, refined)
   print cmd
   easy_run.call(cmd)
   if not os.path.exists(refined): return
