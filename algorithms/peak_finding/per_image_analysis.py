@@ -49,7 +49,8 @@ class binner_d_star_cubed(object):
     # choose bin volume such that lowest resolution shell contains 5% of the
     # spots, or 25, whichever is greater
     low_res_count = int(
-      math.ceil(max(target_n_per_bin, 0.05*len(d_spacings))))
+      math.ceil(min(max(target_n_per_bin, 0.05*len(d_spacings)),
+                    0.25*len(d_spacings))))
     bin_step = d_star_cubed_sorted[low_res_count] - d_star_cubed_sorted[0]
     n_slots = int(
       math.ceil((d_star_cubed_sorted[-1] - d_star_cubed_sorted[0])/bin_step))
@@ -346,7 +347,7 @@ def estimate_resolution_limit_distl_method1(
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
   d_star_cubed = flex.pow(reflections['rlp'].norms(), 3)
 
-  step = 5
+  step = 2
   while len(reflections)/step > 40:
     step += 1
 
@@ -463,7 +464,7 @@ def estimate_resolution_limit_distl_method2(
 
     bin_counts.append(sel.count(True))
 
-  print list(bin_counts)
+  #print list(bin_counts)
   t0 = (bin_counts[0] + bin_counts[1])/2
 
   mu = 0.15
