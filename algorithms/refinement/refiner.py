@@ -951,8 +951,8 @@ class RefinerFactory(object):
       assert options.weighting_strategy.override != "stills"
 
     # do outlier rejection?
-    if options.outlier_rejection.algorithm == "tukey":
-      iqr_multiplier=options.outlier_rejection.tukey.iqr_multiplier
+    if options.outlier.algorithm == "tukey":
+      iqr_multiplier=options.outlier.tukey.iqr_multiplier
     else:
       iqr_multiplier=None
 
