@@ -19,5 +19,4 @@ namespace dials { namespace viewer { namespace boost_python {
     def("hello_tst_vw", &hello_tst_vw);
 
   }
-
 }}}

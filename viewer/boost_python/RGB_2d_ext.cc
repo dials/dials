@@ -19,5 +19,4 @@ namespace dials { namespace viewer { namespace boost_python {
     dials_viewer();
 
   }
-
 }}}

@@ -19,7 +19,6 @@ namespace dials { namespace viewer { namespace boost_python {
         int a=15;
         return a;
   }
-
 }}}
 
 #endif
