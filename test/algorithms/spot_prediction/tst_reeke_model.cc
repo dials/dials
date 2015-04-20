@@ -112,27 +112,21 @@ public:
     compute_constant_with_p cp(perm.rlv_beg, perm.rlv_end,
         input.axis, input.source);
 
-    DIALS_ASSERT(almost_equal(cp.cp[0], 0.0004, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[1], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[2], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[3], -8e-6, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[4], -7.99878156125113e-06, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[5], -1.6e-7, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[6], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[7], 1.396192514982681e-07, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[8], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[9], -1.6e-7, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[10], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[11], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[12], 0.0004, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[13], 0.0004, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[14], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[15], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[16], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[17], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[18], -0.0006980962574913405, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[19], 0.04, 1e-7));
-    DIALS_ASSERT(almost_equal(cp.cp[20], 0.039993907806255655, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[0], 0.0004, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[1], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[2], -8e-6, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[3], -1.6e-7, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[4], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[5], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[6], -1.6e-7, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[7], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[8], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[9], 0.0004, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[10], 0.0004, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[11], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[12], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[13], 0.0, 1e-7));
+    DIALS_ASSERT(almost_equal(cp.cp_beg[14], 0.04, 1e-7));
 
     std::cout << "OK" << std::endl;
   }

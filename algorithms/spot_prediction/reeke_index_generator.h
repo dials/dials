@@ -171,32 +171,46 @@ namespace reeke_detail {
       transpose_multiply(pp_beg, pp_beg, 3, 4, 4, t_beg);
       transpose_multiply(pp_end, pp_end, 3, 4, 4, t_end);
 
-      // quantities that are constant with p
-      cp.resize(21);
-      cp[0] = t_beg[10]; // 0,0
-      cp[1] = t_beg[11] * t_beg[11]; // 1,0
-      cp[2] = t_end[11] * t_end[11]; // 1,1
-      cp[3] = t_beg[2] * t_beg[11] - t_beg[3] * t_beg[10]; // 2,0
-      cp[4] = t_end[2] * t_end[11] - t_end[3] * t_end[10]; // 2,1
-      cp[5] = t_beg[2] * t_beg[2] - t_beg[0] * t_beg[10]; // 3,0
-      cp[6] = t_beg[6] * t_beg[11] - t_beg[7] * t_beg[10]; // 4,0
-      cp[7] = t_end[6] * t_end[11] - t_end[7] * t_end[10]; // 4,1
-      cp[8] = t_beg[2] * t_beg[6] - t_beg[1] * t_beg[10]; // 5,0
-      cp[9] = t_beg[6] * t_beg[6] - t_beg[5] * t_beg[10]; // 6,0
-      cp[10] = 2.0 * t_beg[2]; // 7,0
-      cp[11] = 2.0 * t_beg[6]; // 8,0
-      cp[12] = t_beg[0]; // 9,0
-      cp[13] = t_beg[5]; // 10,0
-      cp[14] = 2.0 * t_beg[1]; //11,0
-      cp[15] = 2.0 * t_beg[11]; //12,0
-      cp[16] = 2.0 * t_end[11]; // 12,1
-      cp[17] = 2.0 * t_beg[7]; // 13,0
-      cp[18] = 2.0 * t_end[7]; // 13,1
-      cp[19] = 2.0 * t_beg[3]; // 14,0
-      cp[20] = 2.0 * t_end[3]; // 14,1
+      // quantities that are constant with p, beginning setting
+      cp_beg.resize(15);
+      cp_beg[0] = t_beg[10];
+      cp_beg[1] = t_beg[11] * t_beg[11];
+      cp_beg[2] = t_beg[2] * t_beg[11] - t_beg[3] * t_beg[10];
+      cp_beg[3] = t_beg[2] * t_beg[2] - t_beg[0] * t_beg[10];
+      cp_beg[4] = t_beg[6] * t_beg[11] - t_beg[7] * t_beg[10];
+      cp_beg[5] = t_beg[2] * t_beg[6] - t_beg[1] * t_beg[10];
+      cp_beg[6] = t_beg[6] * t_beg[6] - t_beg[5] * t_beg[10];
+      cp_beg[7] = 2.0 * t_beg[2];
+      cp_beg[8] = 2.0 * t_beg[6];
+      cp_beg[9] = t_beg[0];
+      cp_beg[10] = t_beg[5];
+      cp_beg[11] = 2.0 * t_beg[1];
+      cp_beg[12] = 2.0 * t_beg[11];
+      cp_beg[13] = 2.0 * t_beg[7];
+      cp_beg[14] = 2.0 * t_beg[3];
+
+      // quantities that are constant with p, end setting
+      cp_end.resize(15);
+      cp_end[0] = t_end[10];
+      cp_end[1] = t_end[11] * t_end[11];
+      cp_end[2] = t_end[2] * t_end[11] - t_end[3] * t_end[10];
+      cp_end[3] = t_end[2] * t_end[2] - t_end[0] * t_end[10];
+      cp_end[4] = t_end[6] * t_end[11] - t_end[7] * t_end[10];
+      cp_end[5] = t_end[2] * t_end[6] - t_end[1] * t_end[10];
+      cp_end[6] = t_end[6] * t_end[6] - t_end[5] * t_end[10];
+      cp_end[7] = 2.0 * t_end[2];
+      cp_end[8] = 2.0 * t_end[6];
+      cp_end[9] = t_end[0];
+      cp_end[10] = t_end[5];
+      cp_end[11] = 2.0 * t_end[1];
+      cp_end[12] = 2.0 * t_end[11];
+      cp_end[13] = 2.0 * t_end[7];
+      cp_end[14] = 2.0 * t_end[3];
+
     }
 
-    af::small<double, 21> cp;
+    af::small<double, 15> cp_beg;
+    af::small<double, 15> cp_end;
   };
 
 } // namespace reeke_detail
@@ -244,7 +258,8 @@ namespace reeke_detail {
       // Compute the variables that are constant with p
       reeke_detail::compute_constant_with_p compute_cp(
           perm.rlv_beg, perm.rlv_end, axis, source);
-      cp_ = compute_cp.cp;
+      cp_beg_ = compute_cp.cp_beg;
+      cp_end_ = compute_cp.cp_end;
 
       // Compute and initialise the p limits
       compute_p_limits(perm.rlv_beg, perm.rlv_end);
@@ -313,23 +328,29 @@ namespace reeke_detail {
 
       af::small< vec2<int>, 2> result;
 
-      // quantities that vary with p but are constant with q
-      af::tiny<double,5> cq(5);
-      cq[0] = p * cp_[10];
-      cq[1] = p*p * cp_[12];
-      cq[2] = p * cp_[14];
-      cq[3] = p * cp_[19];
-      cq[4] = p * cp_[20];
+      // quantities that vary with p but are constant with q, beginning setting
+      af::tiny<double,4> cq_beg(4);
+      cq_beg[0] = p * cp_beg_[7];
+      cq_beg[1] = p*p * cp_beg_[9];
+      cq_beg[2] = p * cp_beg_[11];
+      cq_beg[3] = p * cp_beg_[14];
+
+      // quantities that vary with p but are constant with q, end setting
+      af::tiny<double,4> cq_end(4);
+      cq_end[0] = p * cp_end_[7];
+      cq_end[1] = p*p * cp_end_[9];
+      cq_end[2] = p * cp_end_[11];
+      cq_end[3] = p * cp_end_[14];
 
       // Get the resolution limits
-      boost::optional< vec2<int> > res_r_lim = resolution_r_limits(p, q, cq);
+      boost::optional< vec2<int> > res_r_lim = resolution_r_limits(p, q, cq_beg);
       if (!res_r_lim) {
         return result;
       }
 
       // Get the ewald sphere limits and restrict loops according to the
       // resolution limit
-      af::small< vec2<int>, 2> ewald_r_lim = ewald_sphere_r_limits(p, q, cq);
+      af::small< vec2<int>, 2> ewald_r_lim = ewald_sphere_r_limits(p, q, cq_beg, cq_end);
       for (std::size_t i = 0; i < ewald_r_lim.size(); ++i) {
         if ((*res_r_lim)[0] > ewald_r_lim[i][0]) {
           ewald_r_lim[i][0] = (*res_r_lim)[0];
@@ -487,9 +508,9 @@ namespace reeke_detail {
     boost::optional< vec2<int> > resolution_q_limits(int p) {
 
       // Find the resolution limits. Set up the quadratic to solve
-      double a = cp_[9];
-      double b = 2.0 * p * cp_[8];
-      double c = p*p * cp_[5] + cp_[0] * dstarmax2_;
+      double a = cp_beg_[6];
+      double b = 2.0 * p * cp_beg_[5];
+      double c = p*p * cp_beg_[3] + cp_beg_[0] * dstarmax2_;
       af::small<double, 2> limits = reeke_detail::solve_quad(a, b, c);
       if (limits.size() == 0) {
         return boost::optional< vec2<int> >();
@@ -508,14 +529,15 @@ namespace reeke_detail {
     boost::optional< vec2<int> > ewald_sphere_q_limits(int p) {
 
       // Ewald sphere limits for the beginning setting
-      double a = cp_[9];
-      double b = 2.0 * (cp_[6] + p * cp_[8]);
-      double c = cp_[1] + p * (2 * cp_[3] + p * cp_[5]);
+      double a = cp_beg_[6];
+      double b = 2.0 * (cp_beg_[4] + p * cp_beg_[5]);
+      double c = cp_beg_[1] + p * (2 * cp_beg_[2] + p * cp_beg_[3]);
       af::small<double, 2> limits_beg = reeke_detail::solve_quad(a, b, c);
 
       // Ewald sphere limits for the end setting
-      b = 2.0 * (cp_[7] + p * cp_[8]);
-      c = cp_[2] + p * (2 * cp_[4] + p * cp_[5]);
+      a = cp_end_[6];
+      b = 2.0 * (cp_end_[4] + p * cp_end_[5]);
+      c = cp_end_[1] + p * (2 * cp_end_[2] + p * cp_end_[3]);
       af::small<double, 2> limits_end = reeke_detail::solve_quad(a, b, c);
 
       // Determine the overall Ewald limits
@@ -540,12 +562,12 @@ namespace reeke_detail {
      * @returns The resolution r limits
      */
     boost::optional< vec2<int> > resolution_r_limits(
-        double p, double q, af::tiny<double, 5> cq) {
+        double p, double q, af::tiny<double, 4> cq) {
 
       // First the resolution limits. Set up the quadratic to solve
-      double a = cp_[0];
-      double b = cq[0] + q * cp_[11];
-      double c = cq[1] + q * q * cp_[13] + q * cq[2] - dstarmax2_;
+      double a = cp_beg_[0];
+      double b = cq[0] + q * cp_beg_[8];
+      double c = cq[1] + q * q * cp_beg_[10] + q * cq[2] - dstarmax2_;
       af::small<double, 2> limits = reeke_detail::solve_quad(a, b, c);
       if (limits.size() == 0) {
         return boost::optional< vec2<int> >();
@@ -562,17 +584,18 @@ namespace reeke_detail {
      * @returns The ewald sphere r limits
      */
     af::small< vec2<int>, 2> ewald_sphere_r_limits(
-        double p, double q, af::tiny<double, 5> cq) {
+        double p, double q, af::tiny<double, 4> cq_beg, af::tiny<double, 4> cq_end) {
 
       // Ewald sphere limits for the beginning setting
-      double a = cp_[0];
-      double b = cq[0] + q * cp_[11] + cp_[15];
-      double c = cq[1] + q * (cq[2] + cp_[17]) + q*q * cp_[13] + cq[3];
+      double a = cp_beg_[0];
+      double b = cq_beg[0] + q * cp_beg_[8] + cp_beg_[12];
+      double c = cq_beg[1] + q * (cq_beg[2] + cp_beg_[13]) + q*q * cp_beg_[10] + cq_beg[3];
       af::small<double, 2> limits_beg = reeke_detail::solve_quad(a, b, c);
 
       // Ewald sphere limits for the end setting
-      b = cq[0] + q * cp_[11] + cp_[15];
-      c = cq[1] + q * (cq[2] + cp_[18]) + q*q * cp_[13] + cq[4];
+      a = cp_end_[0];
+      b = cq_end[0] + q * cp_end_[8] + cp_end_[12];
+      c = cq_end[1] + q * (cq_end[2] + cp_end_[13]) + q*q * cp_end_[10] + cq_end[3];
       af::small<double, 2> limits_end = reeke_detail::solve_quad(a, b, c);
 
       // Set up two loops, one for each range swept out by a point of
@@ -606,7 +629,8 @@ namespace reeke_detail {
 
     mat3<std::size_t> permutation_;
     vec3<double> source_, axis_;
-    af::small<double, 21> cp_;
+    af::small<double, 15> cp_beg_;
+    af::small<double, 15> cp_end_;
     vec2<int> p_lim_;
     double dstarmax_, dstarmax2_;
     double wavelength_, wavelength_sq_;

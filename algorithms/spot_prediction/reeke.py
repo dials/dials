@@ -114,25 +114,39 @@ class reeke_model:
     t_beg = (pp_beg.transpose() * pp_beg).as_list_of_lists()
     t_end = (pp_end.transpose() * pp_end).as_list_of_lists()
 
-    # quantities that are constant with p
+    # quantities that are constant with p, beginning orientation
+    self._cp_beg = [t_beg[2][2],
+                    t_beg[2][3]**2,
+                    t_beg[0][2] * t_beg[2][3] - t_beg[0][3] * t_beg[2][2],
+                    t_beg[0][2]**2 - t_beg[0][0] * t_beg[2][2],
+                    t_beg[1][2] * t_beg[2][3] - t_beg[1][3] * t_beg[2][2],
+                    t_beg[0][2] * t_beg[1][2] - t_beg[0][1] * t_beg[2][2],
+                    t_beg[1][2]**2 - t_beg[1][1] * t_beg[2][2],
+                    2.0 * t_beg[0][2],
+                    2.0 * t_beg[1][2],
+                    t_beg[0][0],
+                    t_beg[1][1],
+                    2.0 * t_beg[0][1],
+                    2.0 * t_beg[2][3],
+                    2.0 * t_beg[1][3],
+                    2.0 * t_beg[0][3]]
 
-    self._cp = [(t_beg[2][2]), \
-                (t_beg[2][3]**2, t_end[2][3]**2), \
-                (t_beg[0][2] * t_beg[2][3] - t_beg[0][3] * t_beg[2][2], \
-                 t_end[0][2] * t_end[2][3] - t_end[0][3] * t_end[2][2]), \
-                (t_beg[0][2]**2 - t_beg[0][0] * t_beg[2][2]), \
-                (t_beg[1][2] * t_beg[2][3] - t_beg[1][3] * t_beg[2][2], \
-                 t_end[1][2] * t_end[2][3] - t_end[1][3] * t_end[2][2]), \
-                (t_beg[0][2] * t_beg[1][2] - t_beg[0][1] * t_beg[2][2]),
-                (t_beg[1][2]**2 - t_beg[1][1] * t_beg[2][2]), \
-                (2.0 * t_beg[0][2]), \
-                (2.0 * t_beg[1][2]), \
-                (t_beg[0][0]), \
-                (t_beg[1][1]), \
-                (2.0 * t_beg[0][1]), \
-                (2.0 * t_beg[2][3], 2.0 * t_end[2][3]), \
-                (2.0 * t_beg[1][3], 2.0 * t_end[1][3]), \
-                (2.0 * t_beg[0][3], 2.0 * t_end[0][3])]
+    # quantities that are constant with p, end orientation
+    self._cp_end = [t_end[2][2],
+                    t_end[2][3]**2,
+                    t_end[0][2] * t_end[2][3] - t_end[0][3] * t_end[2][2],
+                    t_end[0][2]**2 - t_end[0][0] * t_end[2][2],
+                    t_end[1][2] * t_end[2][3] - t_end[1][3] * t_end[2][2],
+                    t_end[0][2] * t_end[1][2] - t_end[0][1] * t_end[2][2],
+                    t_end[1][2]**2 - t_end[1][1] * t_end[2][2],
+                    2.0 * t_end[0][2],
+                    2.0 * t_end[1][2],
+                    t_end[0][0],
+                    t_end[1][1],
+                    2.0 * t_end[0][1],
+                    2.0 * t_end[2][3],
+                    2.0 * t_end[1][3],
+                    2.0 * t_end[0][3]]
 
     ## The following are set during the generation of indices
 
@@ -331,9 +345,9 @@ class reeke_model:
     Return the appropriate overall limits."""
 
     # First the resolution limits. Set up the quadratic to solve
-    a = self._cp[6]
-    b = 2.0 * p * self._cp[5]
-    c = p**2 * self._cp[3] + self._cp[0] * self._dstarmax2
+    a = self._cp_beg[6]
+    b = 2.0 * p * self._cp_beg[5]
+    c = p**2 * self._cp_beg[3] + self._cp_beg[0] * self._dstarmax2
 
     res_q_lim = solve_quad(a, b, c)
     res_q_lim = sorted([item for item in res_q_lim \
@@ -346,14 +360,15 @@ class reeke_model:
                  int(res_q_lim[-1]) + max(self._margin, 1)]
 
     # Ewald sphere limits for the beginning setting
-    b = 2.0 * (self._cp[4][0] + p * self._cp[5])
-    c = self._cp[1][0] + p * (2 * self._cp[2][0] + p * self._cp[3])
+    b = 2.0 * (self._cp_beg[4] + p * self._cp_beg[5])
+    c = self._cp_beg[1] + p * (2 * self._cp_beg[2] + p * self._cp_beg[3])
 
     ewald_q_lim_beg = solve_quad(a, b, c)
 
     # Ewald sphere limits for the end setting
-    b = 2.0 * (self._cp[4][1] + p * self._cp[5])
-    c = self._cp[1][1] + p * (2 * self._cp[2][1] + p * self._cp[3])
+    a = self._cp_end[6]
+    b = 2.0 * (self._cp_end[4] + p * self._cp_end[5])
+    c = self._cp_end[1] + p * (2 * self._cp_end[2] + p * self._cp_end[3])
 
     ewald_q_lim_end = solve_quad(a, b, c)
 
@@ -373,15 +388,15 @@ class reeke_model:
 
     return q_lim
 
-  def _r_limits(self, p, q, cq):
+  def _r_limits(self, p, q, cq_beg, cq_end):
     """Calculate the values of r at which lines of constant p, q intersect
     the resolution limiting and the Ewald spheres, and return the
     appropriate overall limits"""
 
     # First the resolution limits. Set up the quadratic to solve
-    a = self._cp[0]
-    b = cq[0] + q * self._cp[8]
-    c = cq[1] + q**2 * self._cp[10] + q * cq[2] - self._dstarmax2
+    a = self._cp_beg[0]
+    b = cq_beg[0] + q * self._cp_beg[8]
+    c = cq_beg[1] + q**2 * self._cp_beg[10] + q * cq_beg[2] - self._dstarmax2
 
     res_r_lim = solve_quad(a, b, c)
     res_r_lim = sorted([item for item in res_r_lim if item is not None])
@@ -393,18 +408,19 @@ class reeke_model:
                  int(res_r_lim[-1]) + max(self._margin, 1)]
 
     # Ewald sphere limits for the beginning setting
-    b =  cq[0] + q * self._cp[8] + self._cp[12][0]
-    c =  cq[1] + q * (cq[2] + self._cp[13][0]) + \
-         q**2 * self._cp[10] + cq[3][0]
+    b = cq_beg[0] + q * self._cp_beg[8] + self._cp_beg[12]
+    c = cq_beg[1] + q * (cq_beg[2] + self._cp_beg[13]) + \
+        q**2 * self._cp_beg[10] + cq_beg[3]
 
     ewald_r_lim_beg = solve_quad(a, b, c)
     ewald_r_lim_beg = [item for item in ewald_r_lim_beg \
                        if item is not None]
 
     # Ewald sphere limits for the end setting
-    b = cq[0] + q * self._cp[8] + self._cp[12][0]
-    c =  cq[1] + q * (cq[2] + self._cp[13][1]) + \
-         q**2 * self._cp[10] + cq[3][1]
+    a = self._cp_end[0]
+    b = cq_end[0] + q * self._cp_end[8] + self._cp_end[12]
+    c = cq_end[1] + q * (cq_end[2] + self._cp_end[13]) + \
+        q**2 * self._cp_end[10] + cq_end[3]
 
     ewald_r_lim_end = solve_quad(a, b, c)
     ewald_r_lim_end = [item for item in ewald_r_lim_end \
@@ -473,11 +489,17 @@ class reeke_model:
 
     for p in range(p_lim[0], p_lim[1] + 1):
 
-      # quantities that vary with p but are constant with q
-      cq = [(p * self._cp[7]), \
-            (p**2 * self._cp[9]), \
-            (p * self._cp[11]), \
-            (p * self._cp[14][0], p * self._cp[14][1])]
+      # quantities that vary with p but are constant with q, beginning setting
+      cq_beg = [(p * self._cp_beg[7]),
+                (p**2 * self._cp_beg[9]),
+                (p * self._cp_beg[11]),
+                (p * self._cp_beg[14])]
+
+      # quantities that vary with p but are constant with q, end setting
+      cq_end = [(p * self._cp_end[7]),
+                (p**2 * self._cp_end[9]),
+                (p * self._cp_end[11]),
+                (p * self._cp_end[14])]
 
       # find the limiting values of q
       q_lim = self._q_limits(p)
@@ -486,7 +508,7 @@ class reeke_model:
       for q in range(q_lim[0], q_lim[1] + 1):
 
         # find the limiting values of r
-        r_lim = self._r_limits(p, q, cq)
+        r_lim = self._r_limits(p, q, cq_beg, cq_end)
         if r_lim is None: continue
 
         # make list of trials, removing any duplicates
