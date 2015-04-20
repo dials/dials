@@ -16,7 +16,10 @@ def run():
     print "Skipping tst_find_spots_server_client: dials_regression not available."
     return
 
-  server_command = "dials.find_spots_server"
+  import random
+  port = random.randint(1024, 49152)
+
+  server_command = "dials.find_spots_server port=%i" %port
 
   def start_server(server_command):
     result = easy_run.fully_buffered(command=server_command)
@@ -29,7 +32,7 @@ def run():
   time.sleep(1) # need to give server chance to start
 
   try:
-    exercise_client()
+    exercise_client(port=port)
 
   finally:
     client_stop_command = "dials.find_spots_client stop"
@@ -37,13 +40,14 @@ def run():
     #result.show_stdout()
     p.terminate()
 
-def exercise_client():
+def exercise_client(port):
   import glob
   data_dir = os.path.join(dials_regression, "centroid_test_data")
   filenames = glob.glob(os.path.join(data_dir, "*.cbf"))
   assert len(filenames) > 0
   client_command = " ".join(
     ["dials.find_spots_client",
+     "port=%i" %port,
      "min_spot_size=3",
      filenames[0]]
   )
