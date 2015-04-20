@@ -1,9 +1,9 @@
 /*
- * shoebox_ext.cc
+ * RGB_2d.cc
  *
- *  Copyright (C) 2013 Diamond Light Source
+ *  Copyright (C) 2015 Diamond Light Source
  *
- *  Author: James Parkhurst
+ *  Author: Luis Fuentes-Montero (Luiso)
  *
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.

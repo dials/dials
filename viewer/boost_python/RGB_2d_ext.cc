@@ -1,3 +1,13 @@
+/*
+ * RGB_2d_ext.cc
+ *
+ *  Copyright (C) 2015 Diamond Light Source
+ *
+ *  Author: Luis Fuentes-Montero (Luiso)
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
