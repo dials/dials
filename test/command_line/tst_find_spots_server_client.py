@@ -17,7 +17,7 @@ def run():
     return
 
   import random
-  port = random.randint(1024, 49152)
+  port = random.randint(10000, 49152)
 
   server_command = "dials.find_spots_server port=%i" %port
 
@@ -35,7 +35,7 @@ def run():
     exercise_client(port=port)
 
   finally:
-    client_stop_command = "dials.find_spots_client stop"
+    client_stop_command = "dials.find_spots_client port=%i stop" %port
     result = easy_run.fully_buffered(command=client_stop_command).raise_if_errors()
     #result.show_stdout()
     p.terminate()
