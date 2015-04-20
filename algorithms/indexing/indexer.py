@@ -1025,7 +1025,7 @@ class indexer_base(object):
     params.refinement.parameterisation.crystal.scan_varying = False
     #params.refinement.parameterisation.detector.fix = "all"
     #params.refinement.parameterisation.beam.fix = "all"
-    params.refinement.refinery.max_iterations = 2
+    params.refinement.refinery.max_iterations = 5
     params.refinement.reflections.minimum_number_of_reflections = 1
 
     args = []
