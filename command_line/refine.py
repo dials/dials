@@ -299,7 +299,7 @@ class Script(object):
         text = refiner.get_param_reporter().varying_params_vs_image_number(
             scan.get_array_range())
         if text:
-          info("Writing scan-varying parameter table to '{0}'".format(
+          info("Writing scan-varying parameter table to {0}".format(
             params.output.parameter_table))
           f = open(params.output.parameter_table,"w")
           f.write(text)
