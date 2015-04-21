@@ -15,8 +15,6 @@
 namespace dials { namespace viewer { namespace boost_python {
   using namespace boost::python;
   void dials_viewer(){
-
-    def("hello_tst_vw", &hello_tst_vw);
     def("gen_img", &gen_img, (arg("data2d")));
   }
 }}}

@@ -18,12 +18,6 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_double;
   using scitbx::af::flex_grid;
 
-  int hello_tst_vw() {
-        std::cout << "hi there \n";
-        int a=15;
-        return a;
-  }
-
 
   flex_double gen_img(flex_double & data2d) {
     int ncol=data2d.accessor().all()[1];
