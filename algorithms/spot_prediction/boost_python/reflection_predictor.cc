@@ -61,7 +61,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_stills_reflection_predictor() {
 
-    typedef StillsReflectionPredictor Predictor;
+    typedef StillsDeltaPsiReflectionPredictor Predictor;
 
     af::reflection_table (Predictor::*predict_all)() const =
       &Predictor::operator();
@@ -78,7 +78,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         const af::const_ref< cctbx::miller::index<> >&,
         const af::const_ref<std::size_t>&) = &Predictor::operator();
 
-    class_<Predictor>("StillsReflectionPredictor", no_init)
+    class_<Predictor>("StillsDeltaPsiReflectionPredictor", no_init)
       .def(init<
           const Beam&,
           const Detector&,

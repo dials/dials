@@ -69,7 +69,7 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
 
 
 # Override constructor with factory
-_StillsReflectionPredictor = StillsReflectionPredictor
+_StillsReflectionPredictor = StillsDeltaPsiReflectionPredictor
 
 def StillsReflectionPredictor(experiment, dmin=None, **kwargs):
   '''

@@ -628,7 +628,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to do stills prediction.
    */
-  class StillsReflectionPredictor {
+  class StillsDeltaPsiReflectionPredictor {
 
     typedef cctbx::miller::index<> miller_index;
 
@@ -637,7 +637,7 @@ namespace dials { namespace algorithms {
     /**
      * Initialise the predictor
      */
-    StillsReflectionPredictor(
+    StillsDeltaPsiReflectionPredictor(
         const Beam &beam,
         const Detector &detector,
         mat3<double> ub,
