@@ -679,6 +679,10 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
         reflections_all, imageset, ice_sel, plot_filename=distl_method_2_filename)
   else:
     estimated_d_min = -1.0
+    d_min_distl_method_1 = -1.0
+    noisiness_method_1 = -1.0
+    d_min_distl_method_2 = -1.0
+    noisiness_method_2 = -1.0
 
   return group_args(n_spots_total=n_spots_total,
                     n_spots_no_ice=n_spots_no_ice,
