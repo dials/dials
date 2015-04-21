@@ -16,15 +16,17 @@
 
 namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_double;
+  using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
 
-  flex_double gen_img(flex_double & data2d) {
+  flex_int gen_img(flex_double & data2d) {
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
     double max = 1, min = -1, loc_cel, dif = 0;
 
-    flex_double bmp_dat(flex_grid<>(nrow, ncol),0);
+
+    flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
     for (int row = 0; row < nrow ; row++) {
       for (int col = 0; col < ncol; col++) {
@@ -41,7 +43,7 @@ namespace dials { namespace viewer { namespace boost_python {
             min = loc_cel;
             }
           }
-        bmp_dat(row, col) = data2d(row, col);
+        scaled_array(row, col) = data2d(row, col);
       }
     }
 
@@ -52,61 +54,62 @@ namespace dials { namespace viewer { namespace boost_python {
 
     for (int row = 0; row < nrow ; row++) {
       for (int col = 0; col < ncol; col++) {
-        bmp_dat(row, col) = 255.0 * ( ( bmp_dat(row, col) - min ) / dif );
+        scaled_array(row, col) = 255.0 * 3 * ( ( scaled_array(row, col) - min ) / dif );
       }
     }
 
 
-    /*
+    int red_byte[255 * 3];
+    int green_byte[255 * 3];
+    int blue_byte[255 * 3];
 
-  width = np.size( data2d_scale[0:1, :] )
-  height = np.size( data2d_scale[:, 0:1] )
-  img_array = np.empty( (height ,width, 3), 'int')
+    for (int i = 0; i < 255; i++){
+      red_byte[i] = i;
+      green_byte[i + 255] = i;
+      blue_byte[i + 255 * 2 ] = i;
+    }
 
-  img_array_r = np.empty( (height, width), 'int')
-  img_array_g = np.empty( (height, width), 'int')
-  img_array_b = np.empty( (height, width), 'int')
+    for (int i = 255; i < 255 * 3; i++){
+      red_byte[i] = 255;
+      //red_byte[255:255 * 3] = 255
+    }
 
-  scaled_i = np.empty( (height, width), 'int')
+    for (int i = 0; i < 255; i++){
+      green_byte[i] = 0;
+      //green_byte[0:255] = 0
+    }
 
-  red_byte = np.empty( (255 * 3), 'int')
-  green_byte = np.empty( (255 * 3), 'int')
-  blue_byte = np.empty( (255 * 3), 'int')
+    for (int i = 255 * 2; i < 255 * 3; i++){
+      green_byte[i] = 255;
+      //green_byte[255 * 2 : 255 * 3] = 255
+    }
 
-  for i in xrange(255):
-    red_byte[i] = i
-    green_byte[i + 255] = i
-    blue_byte[i + 255 * 2 ] = i
+    for (int i = 0; i < 255 * 2; i++){
+      blue_byte[i] = 0;
+      //blue_byte[0:255 * 2] = 0
+    }
 
 
-  red_byte[255:255 * 3] = 255
-  green_byte[0:255] = 0
-  green_byte[255 * 2 : 255 * 3] = 255
-  blue_byte[0:255 * 2] = 0
 
-  blue_byte[764] = 255
-  red_byte[764] = 255
-  green_byte[764] = 255
 
-  scaled_i[:,:] = data2d_scale[:,:]
 
-  img_array_r[:,:] = scaled_i[:,:]
-  for x in np.nditer(img_array_r[:,:], op_flags=['readwrite'], flags=['external_loop']):
-    x[...] = red_byte[x]
+    blue_byte[764] = 255;
+    green_byte[764] = 255;
+    red_byte[764] = 255;
 
-  img_array_g[:,:] = scaled_i[:,:]
-  for x in np.nditer(img_array_g[:,:], op_flags=['readwrite'], flags=['external_loop']):
-    x[...] = green_byte[x]
 
-  img_array_b[:,:] = scaled_i[:,:]
-  for x in np.nditer(img_array_b[:,:], op_flags=['readwrite'], flags=['external_loop']):
-    x[...] = blue_byte[x]
 
-  img_array[:, :, 0] = img_array_r[:,:]
-  img_array[:, :, 1] = img_array_g[:,:]
-  img_array[:, :, 2] = img_array_b[:,:]
-  print ("From Python call")
-    */
+    flex_int bmp_dat(flex_grid<>(nrow, ncol, 3),0);
+
+    for (int row = 0; row < nrow ; row++) {
+      for (int col = 0; col < ncol; col++) {
+        bmp_dat(row, col, 0) = red_byte[int(scaled_array(row, col))];
+        bmp_dat(row, col, 1) = green_byte[int(scaled_array(row, col))];
+        bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
+      }
+    }
+
+
 
   return bmp_dat;
   }
