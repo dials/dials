@@ -68,9 +68,6 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
     margin)
 
 
-# Override constructor with factory
-_StillsReflectionPredictor = StillsDeltaPsiReflectionPredictor
-
 def StillsReflectionPredictor(experiment, dmin=None, **kwargs):
   '''
   A constructor for the reflection predictor.
@@ -86,7 +83,21 @@ def StillsReflectionPredictor(experiment, dmin=None, **kwargs):
     dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
 
   # Create the reflection predictor
-  return _StillsReflectionPredictor(
+  try:
+    if experiment.crystal._ML_half_mosaicity_deg is not None and experiment.crystal._ML_domain_size_ang is not None:
+      return NaveStillsReflectionPredictor(
+        experiment.beam,
+        experiment.detector,
+        experiment.crystal.get_A(),
+        experiment.crystal.get_unit_cell(),
+        experiment.crystal.get_space_group().type(),
+        dmin,
+        experiment.crystal._ML_half_mosaicity_deg,
+        experiment.crystal._ML_domain_size_ang)
+  except AttributeError:
+    pass
+
+  return StillsDeltaPsiReflectionPredictor(
     experiment.beam,
     experiment.detector,
     experiment.crystal.get_A(),

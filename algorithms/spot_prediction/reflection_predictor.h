@@ -643,7 +643,7 @@ namespace dials { namespace algorithms {
         mat3<double> ub,
         const cctbx::uctbx::unit_cell &unit_cell,
         const cctbx::sgtbx::space_group_type &space_group_type,
-        double dmin)
+        const double &dmin)
       : beam_(beam),
         detector_(detector),
         ub_(ub),
@@ -876,8 +876,33 @@ namespace dials { namespace algorithms {
     mat3<double> ub_;
     cctbx::uctbx::unit_cell unit_cell_;
     cctbx::sgtbx::space_group_type space_group_type_;
-    double dmin_;
+    const double dmin_;
     StillsRayPredictor predict_ray_;
+  };
+
+  class NaveStillsReflectionPredictor : public StillsDeltaPsiReflectionPredictor {
+    /**
+      * Initialise the predictor
+      */
+  public:
+
+    NaveStillsReflectionPredictor(
+        const Beam &beam,
+        const Detector &detector,
+        mat3<double> ub,
+        const cctbx::uctbx::unit_cell &unit_cell,
+        const cctbx::sgtbx::space_group_type &space_group_type,
+        const double &dmin,
+        const double &ML_half_mosaicity_deg,
+        const double &ML_domain_size_ang)
+      : StillsDeltaPsiReflectionPredictor(beam,
+        detector, ub, unit_cell, space_group_type, dmin),
+        ML_half_mosaicity_deg_(ML_half_mosaicity_deg),
+        ML_domain_size_ang_(ML_domain_size_ang) {}
+
+  private:
+    const double ML_half_mosaicity_deg_;
+    const double ML_domain_size_ang_;
   };
 }} // namespace dials::algorithms
 
