@@ -381,12 +381,14 @@ class indexer_base(object):
             if bravais_t == target_bravais_t:
               # allow for the cell to be given as best cell, reference setting
               # primitive settings, or minimum cell
+              best_subsym = subgroup['best_subsym']
+              ref_subsym = best_subsym.as_reference_setting()
               if not (
-                subgroup['best_subsym'].unit_cell().is_similar_to(target_unit_cell) or
-                subgroup['ref_subsym'].unit_cell().is_similar_to(target_unit_cell) or
-                subgroup['ref_subsym'].primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
-                subgroup['best_subsym'].primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
-                subgroup['best_subsym'].minimum_cell().unit_cell().is_similar_to(
+                best_subsym.unit_cell().is_similar_to(target_unit_cell) or
+                ref_subsym.unit_cell().is_similar_to(target_unit_cell) or
+                ref_subsym.primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
+                best_subsym.primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
+                best_subsym.minimum_cell().unit_cell().is_similar_to(
                   target_unit_cell.minimum_cell())):
                 continue
               if subgroup['max_angular_difference'] < best_angular_difference:
