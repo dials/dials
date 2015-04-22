@@ -866,6 +866,7 @@ scratch/rjg/plot_virtual_powder_pattern.py -text
 scratch/rjg/run_dials_index.py -text
 scratch/rjg/split_mtz.py -text
 scratch/rjg/total_counts_per_image.py -text
+scratch/rjg/tst_min_cell_stability.py -text
 scratch/rjg/unit_cell_refinement.py -text
 test/SConscript -text
 test/__init__.py -text
