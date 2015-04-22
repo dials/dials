@@ -33,6 +33,7 @@ namespace dials { namespace algorithms {
   using boost::shared_ptr;
   using scitbx::math::r3_rotation::axis_and_angle_as_matrix;
   using scitbx::constants::two_pi;
+  using scitbx::constants::pi_180;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Panel;
@@ -807,7 +808,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(table.is_consistent());
     }
 
-  private:
+  protected:
 
     /**
      * Predict reflections for the given HKL.
@@ -823,6 +824,8 @@ namespace dials { namespace algorithms {
       double delpsi = predict_ray_.get_delpsi();
       append_for_ray(p, h, ray, panel, delpsi);
     }
+
+  private:
 
     /**
      * Predict the reflection for the given ray data.
@@ -871,6 +874,8 @@ namespace dials { namespace algorithms {
       return coord;
     }
 
+  protected:
+
     Beam beam_;
     Detector detector_;
     mat3<double> ub_;
@@ -881,6 +886,8 @@ namespace dials { namespace algorithms {
   };
 
   class NaveStillsReflectionPredictor : public StillsDeltaPsiReflectionPredictor {
+
+    typedef cctbx::miller::index<> miller_index;
     /**
       * Initialise the predictor
       */
@@ -899,6 +906,41 @@ namespace dials { namespace algorithms {
         detector, ub, unit_cell, space_group_type, dmin),
         ML_half_mosaicity_deg_(ML_half_mosaicity_deg),
         ML_domain_size_ang_(ML_domain_size_ang) {}
+
+    /**
+     * Predict reflections for UB, using the Nave models from Nave 2014, JSR
+     * as implemented in Sauter 2014, Akta D, equations 16-17
+     * @param ub The UB matrix
+     * @returns A reflection table.
+     */
+    af::reflection_table for_ub(const mat3<double> &ub) {
+
+      // Create the reflection table and the local container
+      af::reflection_table table;
+      stills_prediction_data predictions(table);
+
+      // Create the index generate and loop through the indices. For each index,
+      // predict the rays and append to the reflection table
+      IndexGenerator indices(unit_cell_, space_group_type_, dmin_);
+      for (;;) {
+        miller_index h = indices.next();
+        if (h.is_zero()) {
+          break;
+        }
+        double d = unit_cell_.d(h);
+        double deltapsi_model = (d/ML_domain_size_ang_) + (ML_half_mosaicity_deg_*pi_180/2); // equation 16
+
+        Ray ray;
+        ray = predict_ray_(h, ub);
+        double delpsi = std::abs(predict_ray_.get_delpsi());
+        if(delpsi < deltapsi_model) // equation 17
+          append_for_index(predictions, ub, h);
+      }
+
+      // Return the reflection table
+      return table;
+    }
+
 
   private:
     const double ML_half_mosaicity_deg_;
