@@ -35,7 +35,7 @@ print "gen_img(arr_2d).as_numpy_array() = \n", gen_img(arr_2d).as_numpy_array()
 
 
 
-hi = hello('California')
+hi = hello()
 
 print hi.greet()
-print hi.invite()
+
