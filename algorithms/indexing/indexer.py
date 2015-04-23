@@ -374,6 +374,7 @@ class indexer_base(object):
           cs = crystal.symmetry(
             unit_cell=target_unit_cell, space_group=target_space_group,
             assert_is_compatible_unit_cell=False)
+          target_best_cell = cs.best_cell().unit_cell()
           subgroups = lattice_symmetry.metric_subgroups(cs, max_delta=0.1)
           for subgroup in subgroups.result_groups:
             bravais_t = bravais_lattice(
@@ -389,7 +390,8 @@ class indexer_base(object):
                 ref_subsym.primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
                 best_subsym.primitive_setting().unit_cell().is_similar_to(target_unit_cell) or
                 best_subsym.minimum_cell().unit_cell().is_similar_to(
-                  target_unit_cell.minimum_cell())):
+                  target_unit_cell.minimum_cell()) or
+                best_subsym.unit_cell().is_similar_to(target_best_cell)):
                 continue
               if subgroup['max_angular_difference'] < best_angular_difference:
                 best_subgroup = subgroup
