@@ -90,9 +90,6 @@ namespace dials { namespace viewer { namespace boost_python {
     }
 
 
-
-
-
     blue_byte[764] = 255;
     green_byte[764] = 255;
     red_byte[764] = 255;
@@ -110,9 +107,23 @@ namespace dials { namespace viewer { namespace boost_python {
     }
 
 
-
   return bmp_dat;
   }
+
+  // A friendly class.
+  class hello
+  {
+    public:
+      hello(const std::string& country) { this->country = country; }
+      std::string greet() const { return "Hello from " + country; }
+    private:
+      std::string country;
+  };
+
+  std::string invite(const hello& w) {
+    return w.greet() + "! Please come soon!";
+  }
+
 
 }}}
 
