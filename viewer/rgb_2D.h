@@ -115,7 +115,9 @@ namespace dials { namespace viewer { namespace boost_python {
   {
     public:
       hello() {  }
-      std::string greet() const { return "Hello";}
+      std::string greet() {
+        return "Hello";
+      }
     private:
       std::string country;
   };
