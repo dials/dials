@@ -15,7 +15,7 @@ from __future__ import division
 from dials.array_family import flex
 
 import boost.python
-from dials_viewer_ext import gen_img, hello
+from dials_viewer_ext import gen_img, rgb_img
 
 if(__name__ == "__main__"):
 
@@ -34,8 +34,6 @@ print "arr_2d.as_numpy_array() = \n", arr_2d.as_numpy_array()
 print "gen_img(arr_2d).as_numpy_array() = \n", gen_img(arr_2d).as_numpy_array()
 
 
-
-hi = hello()
-
-print hi.greet()
+wx_bmp_arr = rgb_img()
+print wx_bmp_arr.gen_bmp(arr_2d).as_numpy_array()
 

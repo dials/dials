@@ -7,8 +7,7 @@ import time
 #from looping import loops_2d
 from dials.array_family import flex
 
-from dials_viewer_ext import gen_img
-
+from dials_viewer_ext import gen_img, rgb_img
 
 
 def GetBitmap_from_np_array(data2d):
@@ -16,7 +15,10 @@ def GetBitmap_from_np_array(data2d):
 
   time1 = time.time()
 
-  img_array_tmp = gen_img(data2d).as_numpy_array()
+  #img_array_tmp = gen_img(data2d).as_numpy_array()
+
+  wx_bmp_arr = rgb_img()
+  img_array_tmp = wx_bmp_arr.gen_bmp(data2d).as_numpy_array()
 
   width = np.size(  img_array_tmp[0:1, :, 0:1] )
   height = np.size( img_array_tmp[:, 0:1, 0:1] )
