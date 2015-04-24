@@ -14,7 +14,7 @@
 
 namespace dials { namespace viewer { namespace boost_python {
   using namespace boost::python;
-  void dials_viewer_ext(){
+  void export_dials_viewer(){
     //def("gen_img", &gen_img, (arg("data2d")));
     class_<rgb_img>("rgb_img")
         .def("gen_bmp", &rgb_img::gen_bmp, (arg("data2d")));

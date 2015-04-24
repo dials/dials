@@ -15,6 +15,7 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
+
   void export_shoebox();
   void export_observation();
   void export_prediction();

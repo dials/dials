@@ -13,9 +13,8 @@
 
 namespace dials { namespace viewer { namespace boost_python {
   using namespace boost::python;
-  void dials_viewer_ext();
-
+  void export_dials_viewer();
   BOOST_PYTHON_MODULE(dials_viewer_ext){
-    dials_viewer_ext();
+    export_dials_viewer();
   }
 }}}

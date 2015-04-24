@@ -34,10 +34,10 @@ namespace dials { namespace viewer { namespace boost_python {
   {
 
     private:
-
       int red_byte[255 * 3];
       int green_byte[255 * 3];
       int blue_byte[255 * 3];
+
     public:
       rgb_img() {
 
@@ -103,7 +103,8 @@ namespace dials { namespace viewer { namespace boost_python {
 
         for (int row = 0; row < nrow ; row++) {
           for (int col = 0; col < ncol; col++) {
-            scaled_array(row, col) = 255.0 * 3 * ( ( scaled_array(row, col) - min ) / dif );
+            scaled_array(row, col) = 255.0 * 3 * (( scaled_array(row, col) - min)
+                                                          / dif );
           }
         }
 

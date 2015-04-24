@@ -1044,7 +1044,6 @@ viewer/__init__.py -text
 viewer/bitmap_from_numpy_w_matplotlib.py -text
 viewer/boost_python/RGB_2d.cc -text
 viewer/boost_python/RGB_2d_ext.cc -text
-viewer/boost_python/__init__.py -text
 viewer/boost_tst.py -text
 viewer/flex_3d_array_viewer_test.py -text
 viewer/from_flex_to_wxbitmap.py -text
