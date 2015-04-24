@@ -13,7 +13,7 @@ from scitbx import matrix
 
 class Test(object):
 
-  def __init__(self):
+  def __init__(self, test_nave_model = False):
 
     # Set up experimental models with regular geometry
     from dxtbx.model.experiment import beam_factory
@@ -49,6 +49,10 @@ class Test(object):
     b = matrix.col((0, 100, 0))
     c = matrix.col((0, 0, 100))
     self.crystal = crystal_model(a, b, c, space_group_symbol = "P 1")
+
+    if test_nave_model:
+      self.crystal._ML_half_mosaicity_deg = 500
+      self.crystal._ML_domain_size_ang = 0.2
 
     # Collect these models in an Experiment (ignoring the goniometer)
     from dxtbx.model.experiment.experiment_list import Experiment
@@ -126,4 +130,7 @@ class Test(object):
 if __name__ == '__main__':
 
   test = Test()
+  test.run()
+
+  test = Test(test_nave_model=True)
   test.run()
