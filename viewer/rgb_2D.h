@@ -19,7 +19,7 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
-
+  /*
   flex_int gen_img(flex_double & data2d) {
 
     int ncol=data2d.accessor().all()[1];
@@ -28,7 +28,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
     return bmp_dat;
   }
-
+  */
 
   class rgb_img
   {
@@ -117,7 +117,6 @@ namespace dials { namespace viewer { namespace boost_python {
             bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
           }
         }
-
 
       return bmp_dat;
       }

@@ -1,7 +1,7 @@
 
 Import('env')
 
-import libtbx, os
+
 
 sources = [
     'boost_python/RGB_2d.cc',
@@ -11,5 +11,3 @@ env.SharedLibrary(
     target='#/lib/dials_viewer_ext',
     source=sources,
     LIBS=env["LIBS"])
-
-

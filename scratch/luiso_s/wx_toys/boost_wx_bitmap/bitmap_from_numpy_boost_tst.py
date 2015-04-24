@@ -7,7 +7,8 @@ import time
 #from looping import loops_2d
 from dials.array_family import flex
 
-from dials_viewer_ext import gen_img, rgb_img
+#from dials_viewer_ext import gen_img, rgb_img
+from dials_viewer_ext import rgb_img
 
 
 def GetBitmap_from_np_array(data2d):
