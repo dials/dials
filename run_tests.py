@@ -3,6 +3,7 @@ from libtbx import test_utils
 import libtbx.load_env
 
 tst_list = (
+    "$D/test/command_line/tst_merge_cbf.py",
     "$D/test/command_line/tst_find_spots_server_client.py",
     ["$D/test/command_line/tst_dials_process.py", "1"],
     ["$D/test/command_line/tst_dials_process.py", "2"],

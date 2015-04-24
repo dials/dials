@@ -325,6 +325,7 @@ command_line/import_xds.py -text
 command_line/index.py -text
 command_line/integrate.py -text
 command_line/make_sphinx_html.py -text
+command_line/merge_cbf.py -text
 command_line/merge_reflection_lists.py -text
 command_line/plot_reflections.py -text
 command_line/plot_scan_varying_crystal.py -text
@@ -987,6 +988,7 @@ test/command_line/tst_generate_mask.py -text
 test/command_line/tst_import.py -text
 test/command_line/tst_import_xds.py -text
 test/command_line/tst_integrate.py -text
+test/command_line/tst_merge_cbf.py -text
 test/command_line/tst_merge_reflection_lists.py -text
 test/command_line/tst_plot_scan_varying_crystal.py -text
 test/command_line/tst_predict.py -text
