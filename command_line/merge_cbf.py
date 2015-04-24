@@ -78,7 +78,7 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
       elif 'Content-MD5' in record:
         pass
       elif '# Angle_increment' in record:
-        new_header.append('# Angle_increment %.4f deg.' %out_oscillation)
+        new_header.append('# Angle_increment %.4f deg.\r\n' %out_oscillation)
       else:
         new_header.append('%s\n' % record)
 
