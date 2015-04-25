@@ -2,7 +2,6 @@ import numpy as np
 
 def loops_2d(data2d_scale):
 
-
   width = np.size( data2d_scale[0:1, :] )
   height = np.size( data2d_scale[:, 0:1] )
   img_array = np.empty( (height ,width, 3), 'int')
