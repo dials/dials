@@ -258,8 +258,8 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     self.points_display_list = None
     #self.draw_points()
     self._compute_minimum_covering_sphere()
-    if not self.GL_uninitialised:
-      self.fit_into_viewport()
+    #if not self.GL_uninitialised:
+      #self.fit_into_viewport()
 
   def set_rotation_axis(self, axis):
     self.rotation_axis = axis
