@@ -1,8 +1,6 @@
 
 Import('env')
 
-
-
 sources = [
     'boost_python/RGB_2d.cc',
     'boost_python/RGB_2d_ext.cc']
