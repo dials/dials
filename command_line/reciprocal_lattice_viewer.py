@@ -25,6 +25,8 @@ master_phil = libtbx.phil.parse("""
     .type = bool
   d_min = None
     .type = float(value_min=0.0)
+  display = *all unindexed indexed
+    .type = choice
 """)
 
 def settings () :
@@ -138,8 +140,17 @@ class ReciprocalLatticeViewer(wx.Frame):
     self.dp.set_param_vals(self.detector_parameters)
     self.bp.set_param_vals(self.beam_parameters)
 
+    reflections = self.reflections
+
+    indexed_sel = (reflections['miller_index'] != (0,0,0))
+
+    if self.settings.display == 'indexed':
+      reflections = reflections.select(indexed_sel)
+    elif self.settings.display == 'unindexed':
+      reflections = reflections.select(~indexed_sel)
+
     reflections = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-      self.reflections, self.detector, self.scan)
+      reflections, self.detector, self.scan)
     indexer.indexer_base.map_centroids_to_reciprocal_space(
       reflections, self.detector, self.beam, goniometer)
     d_spacings = 1/reflections['rlp'].norms()
@@ -192,6 +203,18 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       label="Reverse phi direction")
     self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
 
+
+    from wxtbx.segmentedctrl import SegmentedRadioControl, SEGBTN_HORIZONTAL
+    self.btn = SegmentedRadioControl(self, style=SEGBTN_HORIZONTAL)
+    self.btn.AddSegment("all")
+    self.btn.AddSegment("indexed")
+    self.btn.AddSegment("unindexed")
+    self.btn.SetSelection(
+      ["all", "indexed", "unindexed"].index(self.settings.display))
+
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeDisplay, self.btn)
+    self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
+
   def add_value_widgets (self, sizer) :
     sizer.Add(wx.StaticText(self.panel, -1, "Value:"), 0,
       wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -211,6 +234,12 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.settings.d_min = self.d_min_ctrl.GetValue()
     self.parent.update_settings()
 
+  def OnChangeDisplay(self, event):
+    for i, display in enumerate(("all", "indexed", "unindexed")):
+      if self.btn.values[i]:
+        self.settings.display = display
+        break
+    self.parent.update_settings()
 
 class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
 
@@ -313,7 +342,10 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
-  reflections = flatten_reflections(params.input.reflections)[0]
+  reflections_all = flatten_reflections(params.input.reflections)
+  reflections = reflections_all[0]
+  for ref in reflections_all[1:]:
+    reflections.extend(ref)
 
   if len(datablocks) == 0:
     if len(experiments) > 0:
