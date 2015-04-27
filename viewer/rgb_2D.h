@@ -19,16 +19,113 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
+
+
   /*
+  {0,0,0,0,0,0,0}
+  {0,1,1,1,0,0,0}
+  {0,0,0,1,0,0,0}
+  {0,0,0,1,0,0,0}
+  {0,0,0,1,0,0,0}
+  {0,1,1,1,1,1,0}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,0,1,1,1,1,0}
+  {0,1,0,0,0,1,1}
+  {0,0,0,0,1,1,0}
+  {0,0,0,1,1,0,0}
+  {0,1,1,1,1,1,1}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,0,1,1,1,1,0}
+  {0,1,0,0,0,1,1}
+  {0,0,0,1,1,1,0}
+  {0,0,0,0,0,1,1}
+  {0,1,1,1,1,1,0}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,0,0,0,1,1,0}
+  {0,0,0,1,1,1,0}
+  {0,0,1,1,0,1,0}
+  {0,1,1,1,1,1,1}
+  {0,0,0,0,0,1,0}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,1,1,1,1,1,0}
+  {0,1,0,0,0,0,0}
+  {0,1,1,1,1,1,1}
+  {0,0,0,0,0,0,1}
+  {0,1,1,1,1,1,1}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,0,1,1,1,1,0}
+  {0,1,1,0,0,0,0}
+  {0,1,1,1,1,1,1}
+  {0,1,1,0,0,0,1}
+  {0,0,1,1,1,1,1}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,1,1,1,1,1,1}
+  {0,0,0,0,0,1,1}
+  {0,0,0,0,1,1,0}
+  {0,0,0,1,1,0,0}
+  {0,0,1,1,0,0,0}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,0,1,1,1,1,0}
+  {0,1,1,0,0,1,1}
+  {0,0,1,1,1,1,0}
+  {0,1,1,0,0,1,1}
+  {0,0,1,1,1,1,0}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,0,1,1,1,1,0}
+  {0,1,1,0,0,1,1}
+  {0,1,1,1,1,1,1}
+  {0,0,0,0,0,1,1}
+  {0,1,1,1,1,1,0}
+  {0,0,0,0,0,0,0}
+
+  {0,0,0,0,0,0,0}
+  {0,0,1,1,1,1,0}
+  {0,1,1,0,0,1,1}
+  {0,1,0,0,1,0,1}
+  {0,1,0,1,0,0,1}
+  {0,0,1,1,1,1,0}
+  {0,0,0,0,0,0,0}
+  */
+
+
   flex_int gen_img(flex_double & data2d) {
 
-    int ncol=data2d.accessor().all()[1];
-    int nrow=data2d.accessor().all()[0];
-    flex_int bmp_dat(flex_grid<>(nrow, ncol, 3),0);
+    int ndept=data2d.accessor().all()[0];
+    flex_int bmp_dat(flex_grid<>(7, 7, ndept),0);
+
+    int arr_2d[7][7] = {{0,0,0,0,0,0,0},
+                        {0,1,1,1,0,0,0},
+                        {0,0,0,1,0,0,0},
+                        {0,0,0,1,0,0,0},
+                        {0,0,0,1,0,0,0},
+                        {0,1,1,1,1,1,0},
+                        {0,0,0,0,0,0,0}};
+
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        bmp_dat(col, row, 0) = arr_2d[col][row];
+      }
+    }
 
     return bmp_dat;
   }
-  */
+
 
   class rgb_img
   {
@@ -74,9 +171,9 @@ namespace dials { namespace viewer { namespace boost_python {
         int ncol=data2d.accessor().all()[1];
         int nrow=data2d.accessor().all()[0];
         double max = 1, min = -1, loc_cel, dif = 0;
-
+        std::cout << "\n here 01 \n";
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
-
+        std::cout << "\n here 02 \n";
         for (int row = 0; row < nrow ; row++) {
           for (int col = 0; col < ncol; col++) {
 
@@ -108,6 +205,7 @@ namespace dials { namespace viewer { namespace boost_python {
           }
         }
 
+        std::cout << "\n here 03 \n";
 
         flex_int bmp_dat(flex_grid<>(nrow, ncol, 3),0);
 
@@ -118,6 +216,7 @@ namespace dials { namespace viewer { namespace boost_python {
             bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
           }
         }
+        std::cout << "\n here 04 \n";
 
       return bmp_dat;
       }
