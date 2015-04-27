@@ -27,6 +27,8 @@ master_phil = libtbx.phil.parse("""
     .type = float(value_min=0.0)
   display = *all unindexed indexed
     .type = choice
+  marker_size = 1
+    .type = int(value_min=1)
 """)
 
 def settings () :
@@ -188,7 +190,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     label = wx.StaticText(self,-1,"High resolution:")
     box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.d_min_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeResolution, self.d_min_ctrl)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.d_min_ctrl)
 
     ctrls = self.create_controls(
       setting="show_rotation_axis",
@@ -204,6 +206,18 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
 
 
+    self.marker_size_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0,
+                                          min_val=1)
+    self.marker_size_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.marker_size_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Marker size:")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.marker_size_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.marker_size_ctrl)
+
     from wxtbx.segmentedctrl import SegmentedRadioControl, SEGBTN_HORIZONTAL
     self.btn = SegmentedRadioControl(self, style=SEGBTN_HORIZONTAL)
     self.btn.AddSegment("all")
@@ -212,7 +226,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.btn.SetSelection(
       ["all", "indexed", "unindexed"].index(self.settings.display))
 
-    self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeDisplay, self.btn)
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeSettings, self.btn)
     self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
 
   def add_value_widgets (self, sizer) :
@@ -222,24 +236,15 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       style=wx.TE_READONLY)
     sizer.Add(self.value_info, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
-  def OnChangeColor (self, event) :
-    self.settings.color_scheme = str(self.color_ctrl.GetStringSelection())
-    self.parent.update_settings()
-
-  def OnSetScale (self, event) :
-    self.settings.scale = (self.scale_ctrl.GetValue() + 4) / 4
-    self.parent.update_settings()
-
-  def OnChangeResolution (self, event) :
+  def OnChangeSettings(self, event):
     self.settings.d_min = self.d_min_ctrl.GetValue()
-    self.parent.update_settings()
-
-  def OnChangeDisplay(self, event):
+    self.settings.marker_size = self.marker_size_ctrl.GetValue()
     for i, display in enumerate(("all", "indexed", "unindexed")):
       if self.btn.values[i]:
         self.settings.display = display
         break
     self.parent.update_settings()
+
 
 class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
 
@@ -284,7 +289,7 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
 
   def draw_cross_at(self, (x,y,z), color=(1,1,1), f=None):
     if f is None:
-      f = 0.01
+      f = 0.01 * self.settings.marker_size
     wx_viewer.show_points_and_lines_mixin.draw_cross_at(
       self, (x,y,z), color=color, f=f)
 
