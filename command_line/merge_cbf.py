@@ -86,6 +86,7 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
 
     with open(out_image, 'wb') as f:
       f.write(''.join(new_header) + start_tag + compressed + tailer)
+      print '%s written' % out_image
 
   return
 
