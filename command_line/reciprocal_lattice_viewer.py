@@ -144,12 +144,12 @@ class ReciprocalLatticeViewer(wx.Frame):
 
     reflections = self.reflections
 
-    indexed_sel = (reflections['miller_index'] != (0,0,0))
-
-    if self.settings.display == 'indexed':
-      reflections = reflections.select(indexed_sel)
-    elif self.settings.display == 'unindexed':
-      reflections = reflections.select(~indexed_sel)
+    if reflections.has_key('miller_index'):
+      indexed_sel = (reflections['miller_index'] != (0,0,0))
+      if self.settings.display == 'indexed':
+        reflections = reflections.select(indexed_sel)
+      elif self.settings.display == 'unindexed':
+        reflections = reflections.select(~indexed_sel)
 
     reflections = indexer.indexer_base.map_spots_pixel_to_mm_rad(
       reflections, self.detector, self.scan)
