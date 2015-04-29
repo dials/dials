@@ -61,6 +61,8 @@ class per_panel_plot(object):
   title = None
   filename = None
   cbar_ylabel = None
+  xlabel = 'x'
+  ylabel = 'y'
 
   def __init__(self, rlist, directory, grid_size=None, pixels_per_bin=10):
 
@@ -114,14 +116,12 @@ class per_panel_plot(object):
             axes[i_row][i_col].set_title('Panel %d' %i_panel)
 
           if (i_row+1) == n_rows:
-            axes[i_row][i_col].set_xlabel("x")
-            axes[i_row][i_col].set_xlabel("x")
+            axes[i_row][i_col].set_xlabel(self.xlabel)
           else:
             pyplot.setp(axes[i_row][i_col].get_xticklabels(), visible=False)
 
           if i_col == 0:
-            axes[i_row][i_col].set_ylabel("y")
-            axes[i_row][i_col].set_ylabel("y")
+            axes[i_row][i_col].set_ylabel(self.ylabel)
           else:
             pyplot.setp(axes[i_row][i_col].get_yticklabels(), visible=False)
 
@@ -527,6 +527,8 @@ class CentroidAnalyser(object):
       title = "Centroid residuals in X and Y"
       filename = "centroid_xy_residuals.png"
       cbar_ylabel = None
+      xlabel = 'X'
+      ylabel = 'Y'
 
       def plot_one_panel(self, ax, rlist):
         xc, yc, zc = rlist['xyzcal.px'].parts()
@@ -558,6 +560,8 @@ class CentroidAnalyser(object):
       title = "Centroid residuals in Z and Y"
       filename = "centroid_zy_residuals.png"
       cbar_ylabel = None
+      xlabel = 'Z'
+      ylabel = 'Y'
 
       def plot_one_panel(self, ax, rlist):
         xc, yc, zc = rlist['xyzcal.px'].parts()
@@ -591,6 +595,8 @@ class CentroidAnalyser(object):
       title = "Centroid residuals in X and Z"
       filename = "centroid_xz_residuals.png"
       cbar_ylabel = None
+      xlabel = 'X'
+      ylabel = 'Z'
 
       def plot_one_panel(self, ax, rlist):
         xc, yc, zc = rlist['xyzcal.px'].parts()
