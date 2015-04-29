@@ -96,6 +96,20 @@ class Target(object):
     # put back in the reflections
     reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
 
+    # update xyzcal.px with the correct z_px values in keeping with above
+    experiments = self._reflection_predictor._experiments
+    for i, expt in enumerate(experiments):
+      scan = expt.scan
+      sel = (reflections['id'] == i)
+      x_px, y_px, z_px = reflections['xyzcal.px'].select(sel).parts()
+      if scan is not None:
+        z_px = scan.get_array_index_from_angle(phi_calc.select(sel), deg=False)
+      else:
+        # must be a still image, z centroid not meaningful
+        z_px = phi_calc.select(sel)
+      xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
+      reflections['xyzcal.px'].set_selected(sel, xyzcal_px)
+
     # calculate residuals and assign columns
     reflections['x_resid'] = x_calc - x_obs
     reflections['x_resid2'] = reflections['x_resid']**2
