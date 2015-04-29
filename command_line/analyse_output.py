@@ -447,9 +447,12 @@ class CentroidAnalyser(object):
     dy = yc - yo
     dphi = zc - zo
 
-    mean_residuals_x = []
-    mean_residuals_y = []
-    mean_residuals_phi = []
+    mean_residuals_x = flex.double()
+    mean_residuals_y = flex.double()
+    mean_residuals_phi = flex.double()
+    rmsd_x = flex.double()
+    rmsd_y = flex.double()
+    rmsd_phi = flex.double()
     frame = []
     phi_obs_deg = (180/math.pi) * zo
     phi = []
@@ -462,6 +465,9 @@ class CentroidAnalyser(object):
       mean_residuals_x.append(flex.mean(dx.select(sel)))
       mean_residuals_y.append(flex.mean(dy.select(sel)))
       mean_residuals_phi.append(flex.mean(dphi.select(sel)))
+      rmsd_x.append(math.sqrt(flex.mean_sq(dx.select(sel))))
+      rmsd_y.append(math.sqrt(flex.mean_sq(dy.select(sel))))
+      rmsd_phi.append(math.sqrt(flex.mean_sq(dphi.select(sel))))
       phi.append(i_phi)
 
     from matplotlib import pyplot
@@ -483,6 +489,26 @@ class CentroidAnalyser(object):
     ax.set_xlabel('phi (deg)')
     ax.set_ylabel('mean $\Delta$ phi (deg)')
     pyplot.savefig(join(self.directory, "centroid_mean_diff_vs_phi.png"))
+    pyplot.close()
+
+    fig = pyplot.figure()
+    ax = fig.add_subplot(311)
+    #fig.subplots_adjust(hspace=0.5)
+    pyplot.axhline(flex.mean(rmsd_x), color='grey')
+    ax.scatter(phi, rmsd_x)
+    ax.set_xlabel('phi (deg)')
+    ax.set_ylabel('rmsd x (mm)')
+    ax = fig.add_subplot(312)
+    pyplot.axhline(flex.mean(rmsd_y), color='grey')
+    ax.scatter(phi, rmsd_y)
+    ax.set_xlabel('phi (deg)')
+    ax.set_ylabel('rmsd y (mm)')
+    ax = fig.add_subplot(313)
+    pyplot.axhline(flex.mean(rmsd_phi), color='grey')
+    ax.scatter(phi, rmsd_phi)
+    ax.set_xlabel('phi (deg)')
+    ax.set_ylabel('rmsd phi (deg)')
+    pyplot.savefig(join(self.directory, "centroid_rmsd_vs_phi.png"))
     pyplot.close()
 
   def centroid_xy_xz_zy_residuals(self, rlist, threshold):
