@@ -42,7 +42,12 @@ def build_np_img(width=64, height=64):
 
   for x in range(width):
     for y in range(height):
-      data2d[x, y] += (x * 2 + y * 2)
+      if(x<5 and y < 5):
+        data2d[x, y] += (x * 0.2 + y * 0.2)
+      else:
+        data2d[x, y] += (x + y  + 20)
+
+  data2d[6, 6] = 100
 
   return data2d
 
@@ -64,7 +69,9 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width = 800, height = 1800)
+    #data2d = build_np_img(width = 800, height = 1800)
+    data2d = build_np_img(width = 17, height = 17)
+
     bitmap = GetBitmap_from_np_array(data2d)
 
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)

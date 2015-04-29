@@ -164,9 +164,9 @@ namespace dials { namespace viewer { namespace boost_python {
   {
 
     private:
-      int red_byte[255 * 3];
-      int green_byte[255 * 3];
-      int blue_byte[255 * 3];
+      int red_byte[255 * 3 + 1];
+      int green_byte[255 * 3 + 1];
+      int blue_byte[255 * 3 + 1];
 
     public:
       rgb_img() {
@@ -193,9 +193,17 @@ namespace dials { namespace viewer { namespace boost_python {
           blue_byte[i] = 0;
         }
 
-        blue_byte[764] = 255;
-        green_byte[764] = 255;
-        red_byte[764] = 255;
+        blue_byte[765] = 255;
+        green_byte[765] = 255;
+        red_byte[765] = 255;
+
+
+        std::cout << "\n blue_byte = \n";
+        for (int i = 0; i < 255 * 3 + 1; i++){
+          std::cout << "i =" << i << ", red =" << red_byte[i] <<
+                     ", green =" << green_byte[i] <<
+                     ", blue =" << blue_byte[i] << "\n";
+        }
 
       }
 
@@ -203,6 +211,10 @@ namespace dials { namespace viewer { namespace boost_python {
 
         int ncol=data2d.accessor().all()[1];
         int nrow=data2d.accessor().all()[0];
+        bool auto_zoom = false;
+        if(ncol < 20 and nrow < 20){
+          auto_zoom = true;
+        }
         double max = 1, min = -1, loc_cel, dif = 0;
         std::cout << "\n here 01 \n";
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
@@ -214,14 +226,14 @@ namespace dials { namespace viewer { namespace boost_python {
             if(row == 0 and col == 0){
               max = loc_cel;
               min = loc_cel;
-            } else {
+            }else{
               if(loc_cel > max){
                 max = loc_cel;
-                }
+              }
               if(loc_cel < min){
                 min = loc_cel;
-                }
               }
+            }
             scaled_array(row, col) = data2d(row, col);
           }
         }
@@ -239,14 +251,36 @@ namespace dials { namespace viewer { namespace boost_python {
         }
 
         std::cout << "\n here 03 \n";
-
+        /*
         flex_int bmp_dat(flex_grid<>(nrow, ncol, 3),0);
+        if(auto_zoom == true){
+        */
+
+          flex_int bmp_dat(flex_grid<>(nrow * 50, ncol * 50, 3),0);
+                  std::cout << "\n auto_zoom == true \n";
+
+        //}
+
 
         for (int row = 0; row < nrow ; row++) {
           for (int col = 0; col < ncol; col++) {
-            bmp_dat(row, col, 0) = red_byte[int(scaled_array(row, col))];
-            bmp_dat(row, col, 1) = green_byte[int(scaled_array(row, col))];
-            bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
+            if(auto_zoom == true){
+
+              for(int pix_row = row * 50; pix_row < row * 50 + 50; pix_row++){
+                for(int pix_col = col * 50; pix_col < col * 50 + 50; pix_col++){
+
+                  bmp_dat(pix_row, pix_col, 0) = red_byte[int(scaled_array(row, col))];
+                  bmp_dat(pix_row, pix_col, 1) = green_byte[int(scaled_array(row, col))];
+                  bmp_dat(pix_row, pix_col, 2) = blue_byte[int(scaled_array(row, col))];
+                }
+              }
+
+            }else{
+              bmp_dat(row, col, 0) = red_byte[int(scaled_array(row, col))];
+              bmp_dat(row, col, 1) = green_byte[int(scaled_array(row, col))];
+              bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
+            }
+
           }
         }
         std::cout << "\n here 04 \n";
