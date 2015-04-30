@@ -197,13 +197,14 @@ namespace dials { namespace viewer { namespace boost_python {
         green_byte[765] = 255;
         red_byte[765] = 255;
 
-
-        std::cout << "\n blue_byte = \n";
+        //debugging prints
+        /*
         for (int i = 0; i < 255 * 3 + 1; i++){
           std::cout << "i =" << i << ", red =" << red_byte[i] <<
                      ", green =" << green_byte[i] <<
                      ", blue =" << blue_byte[i] << "\n";
         }
+        */
 
       }
 
@@ -212,6 +213,7 @@ namespace dials { namespace viewer { namespace boost_python {
         int ncol=data2d.accessor().all()[1];
         int nrow=data2d.accessor().all()[0];
         bool auto_zoom = false;
+        int px_scale = 0;
         if(ncol < 20 and nrow < 20){
           auto_zoom = true;
         }
@@ -251,23 +253,25 @@ namespace dials { namespace viewer { namespace boost_python {
         }
 
         std::cout << "\n here 03 \n";
-        /*
-        flex_int bmp_dat(flex_grid<>(nrow, ncol, 3),0);
+
+        //flex_int bmp_dat(flex_grid<>(nrow, ncol, 3),0);
         if(auto_zoom == true){
-        */
+          px_scale = 50;
+        }else{
+          px_scale = 1;
+        }
 
-          flex_int bmp_dat(flex_grid<>(nrow * 50, ncol * 50, 3),0);
+
+          flex_int bmp_dat(flex_grid<>(nrow * px_scale, ncol * px_scale, 3),0);
                   std::cout << "\n auto_zoom == true \n";
-
-        //}
 
 
         for (int row = 0; row < nrow ; row++) {
           for (int col = 0; col < ncol; col++) {
             if(auto_zoom == true){
 
-              for(int pix_row = row * 50; pix_row < row * 50 + 50; pix_row++){
-                for(int pix_col = col * 50; pix_col < col * 50 + 50; pix_col++){
+              for(int pix_row = row * px_scale; pix_row < row * px_scale + px_scale; pix_row++){
+                for(int pix_col = col * px_scale; pix_col < col * px_scale + px_scale; pix_col++){
 
                   bmp_dat(pix_row, pix_col, 0) = red_byte[int(scaled_array(row, col))];
                   bmp_dat(pix_row, pix_col, 1) = green_byte[int(scaled_array(row, col))];
