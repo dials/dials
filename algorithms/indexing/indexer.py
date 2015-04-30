@@ -110,9 +110,18 @@ indexing {
       .type = int(value_min=1)
       .help = "Number of putative basis vector combinations to try."
       .expert_level = 1
-    metric = *model_likelihood n_indexed
-      .type = choice
+    filter
       .expert_level = 1
+    {
+      check_doubled_cell = True
+        .type = bool
+      likelihood_cutoff = 0.8
+        .type = float(value_min=0, value_max=1)
+      volume_cutoff = 1.25
+        .type = float(value_min=1)
+      n_indexed_cutoff = 0.9
+        .type = float(value_min=0, value_max=1)
+    }
   }
   index_assignment {
     method = *simple local
@@ -993,10 +1002,12 @@ class indexer_base(object):
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
 
-    if self.params.basis_vector_combinations.metric == "model_likelihood":
-      solutions = SolutionTracker()
-    else:
-      solutions = SolutionTrackerSimple()
+    filter_params = self.params.basis_vector_combinations.filter
+    solutions = SolutionTracker(
+      check_doubled_cell=filter_params.check_doubled_cell,
+      likelihood_cutoff=filter_params.likelihood_cutoff,
+      volume_cutoff=filter_params.volume_cutoff,
+      n_indexed_cutoff=filter_params.n_indexed_cutoff)
 
     def run_one_refinement(args):
       params, reflections, experiments = args
@@ -1323,75 +1334,100 @@ class Solution(group_args):
 
 # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
 class SolutionTracker(object):
-  def __init__(self):
+  def __init__(self, check_doubled_cell=True, likelihood_cutoff=0.8,
+               volume_cutoff=1.25, n_indexed_cutoff=0.9):
+    self.check_doubled_cell = check_doubled_cell
+    self.likelihood_cutoff = likelihood_cutoff
+    self.volume_cutoff = volume_cutoff
+    self.n_indexed_cutoff = n_indexed_cutoff
     self.all_solutions = []
-    self.volume_filtered = []
+    self.filtered_solutions = []
 
   def append(self, item):
     self.all_solutions.append(item)
     self.update_analysis()
 
   def __len__(self):
-    return len(self.volume_filtered)
+    return len(self.filtered_solutions)
+
+  def filter_doubled_cell(self, solutions):
+    from dials.algorithms.indexing.compare_orientation_matrices import difference_rotation_matrix_and_euler_angles
+    accepted_solutions = []
+    for i1, s1 in enumerate(solutions):
+      doubled_cell = False
+      for (m1,m2,m3) in ((2,1,1), (1,2,1), (1,1,2), (2,2,1), (2,1,2), (1,2,2), (2,2,2)):
+        if doubled_cell:
+          break
+        a, b, c = s1.crystal.get_real_space_vectors()
+        new_cryst = Crystal(real_space_a=1/m1*a,
+                            real_space_b=1/m2*b,
+                            real_space_c=1/m3*c,
+                            space_group=s1.crystal.get_space_group())
+        new_unit_cell = new_cryst.get_unit_cell()
+        for s2 in solutions:
+          if s2 is s1:
+            continue
+          if new_unit_cell.is_similar_to(s2.crystal.get_unit_cell(),
+                                         relative_length_tolerance=0.05):
+            R, ea, cb = difference_rotation_matrix_and_euler_angles(new_cryst, s2.crystal)
+            if ((max(ea) < 1) and
+                (s1.model_likelihood < (1.5 * s2.model_likelihood))):
+              doubled_cell = True
+              break
+
+      if not doubled_cell:
+        accepted_solutions.append(s1)
+
+    return accepted_solutions
+
+  def filter_by_likelihood(self, solutions):
+    best_likelihood = max(s.model_likelihood for s in solutions)
+    offset = 0
+    while (best_likelihood + offset) <= 0:
+      offset += 1
+    return [
+      s for s in solutions
+      if (s.model_likelihood+offset) >= (self.likelihood_cutoff * (best_likelihood+offset))]
+
+  def filter_by_volume(self, solutions):
+    # filter by volume - prefer solutions with a smaller unit cell
+    min_volume = min(s.crystal.get_unit_cell().volume()
+                          for s in solutions)
+    return [
+      s for s in solutions
+      if s.crystal.get_unit_cell().volume() < (self.volume_cutoff * min_volume)]
+
+  def filter_by_n_indexed(self, solutions, n_indexed_cutoff=None):
+    if n_indexed_cutoff is None:
+      n_indexed_cutoff = self.n_indexed_cutoff
+    # filter by number of indexed reflections - prefer solutions that
+    # account for more of the diffracted spots
+    max_n_indexed = max(s.n_indexed for s in solutions)
+    return [s for s in solutions
+            if s.n_indexed >= n_indexed_cutoff * max_n_indexed]
 
   def update_analysis(self):
     # pre-filter out solutions that only account for a very small
     # percentage of the indexed spots relative to the best one
-    max_n_indexed = max(s.n_indexed for s in self.all_solutions)
-    self.all_solutions = [
-      s for s in self.all_solutions
-      if s.n_indexed >= 0.05 * max_n_indexed] # 5 percent
+    self.filtered_solutions = self.filter_by_n_indexed(
+      self.all_solutions, n_indexed_cutoff=0.05) # 5 percent
 
-    self.best_likelihood = max(
-      s.model_likelihood for s in self.all_solutions)
-    offset = 0
-    while (self.best_likelihood + offset) <= 0:
-      offset += 1
-    self.close_solutions = [
-      s for s in self.all_solutions
-      if (s.model_likelihood+offset) >= (0.85 * (self.best_likelihood+offset))]
+    self.filtered_solutions = self.filter_doubled_cell(self.filtered_solutions)
 
-    # filter by volume - prefer solutions with a smaller unit cell
-    self.min_volume = min(s.crystal.get_unit_cell().volume()
-                          for s in self.close_solutions)
-    self.volume_filtered = [
-      s for s in self.close_solutions
-      if s.crystal.get_unit_cell().volume() < (1.25 * self.min_volume)]
+    self.filtered_solutions = self.filter_by_likelihood(self.filtered_solutions)
 
-    # filter by number of indexed reflections - prefer solutions that
-    # account for more of the diffracted spots
-    self.max_n_indexed = max(s.n_indexed for s in self.volume_filtered)
-    self.n_indexed_filtered = [
-      s for s in self.volume_filtered
-      if s.n_indexed >= 0.9 * self.max_n_indexed]
+    self.filtered_solutions = self.filter_by_volume(self.filtered_solutions)
 
+    self.filtered_solutions = self.filter_by_n_indexed(self.filtered_solutions)
+
+    return
+
+  def best_solution(self):
     self.best_filtered_liklihood = max(
-      s.model_likelihood for s in self.n_indexed_filtered)
+      s.model_likelihood for s in self.filtered_solutions)
 
-  def best_solution(self):
-    solutions = [s for s in self.n_indexed_filtered
+    solutions = [s for s in self.filtered_solutions
                  if s.model_likelihood == self.best_filtered_liklihood]
-    return solutions[0]
-
-# Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
-class SolutionTrackerSimple(object):
-  def __init__(self):
-    self.all_solutions = []
-
-  def append(self, item):
-    self.all_solutions.append(item)
-    self.update_analysis()
-
-  def __len__(self):
-    return len(self.all_solutions)
-
-  def update_analysis(self):
-    self.best_n_indexed = max(
-      s.n_indexed for s in self.all_solutions)
-
-  def best_solution(self):
-    solutions = [s for s in self.all_solutions
-                 if s.n_indexed == self.best_n_indexed]
     return solutions[0]
 
 

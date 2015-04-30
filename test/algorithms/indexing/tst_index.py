@@ -525,7 +525,6 @@ def exercise_14():
       "unit_cell=\"%s %s %s %s %s %s\"" %expected_unit_cell.parameters())
     extra_args.append("space_group=\"Hall: %s\"" %expected_hall_symbol)
     extra_args.append("indexing.method=%s" %method)
-    extra_args.append("basis_vector_combinations.metric=n_indexed")
     extra_args.append("treat_single_image_as_still=False")
 
 
