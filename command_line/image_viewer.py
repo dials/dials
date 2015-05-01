@@ -55,6 +55,9 @@ image_viewer {
     .type = int
   gain = 1
     .type = float(value_min=0)
+  sum_images = 1
+    .type = int(value_min=1)
+    .expert_level = 2
 }
 """)
 

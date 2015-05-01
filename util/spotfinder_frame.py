@@ -230,6 +230,30 @@ class SpotFrame(XrayFrame) :
       colour='red',
       fontsize=15)
 
+  def sum_images(self):
+    if self.params.sum_images > 1:
+      image = self.pyslip.tiles.raw_image
+      detector = image.get_detector()
+      if len(detector) == 1:
+        raw_data = [image.get_raw_data()]
+      else:
+        raw_data = [image.get_raw_data(i) for i in range(len(detector))]
+
+      i_frame = self.image_chooser.GetClientData(
+        self.image_chooser.GetSelection()).index
+      imageset = self.image_chooser.GetClientData(i_frame).image_set
+
+      for i in range(1, self.params.sum_images):
+        if (i_frame + i) >= len(imageset): break
+        raw_data_i = [imageset[i_frame + i]]
+        for j, rd in enumerate(raw_data):
+          rd += raw_data_i[j]
+
+      self.pyslip.tiles.set_image_data(raw_data)
+
+      self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
+      self.update_statusbar() # XXX Not always working?
+      self.Layout()
 
   def show_filters(self):
     from dials.algorithms.image.threshold import KabschDebug
@@ -414,7 +438,9 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<vector_text_layer>',
           colour='#F62817')
-    self.show_filters()
+    self.sum_images()
+    if self.params.sum_images == 1:
+      self.show_filters()
     if self.settings.show_resolution_rings:
       self.draw_resolution_rings()
     elif self.settings.show_ice_rings:
