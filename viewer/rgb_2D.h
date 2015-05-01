@@ -13,6 +13,7 @@
 #define DIALS_RGB_IMG_BUILDER_H
 #include <iostream>
 #include <scitbx/array_family/flex_types.h>
+#include <cmath>
 
 namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_double;
@@ -211,11 +212,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
         int ncol=data2d.accessor().all()[1];
         int nrow=data2d.accessor().all()[0];
-        bool auto_zoom = false;
-        int px_scale = 0;
-        if(ncol < 20 and nrow < 20){
-          auto_zoom = true;
-        }
+
         double max = 1, min = -1, loc_cel, dif = 0;
         std::cout << "\n here 01 \n";
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
@@ -252,17 +249,31 @@ namespace dials { namespace viewer { namespace boost_python {
         }
 
         std::cout << "\n here 03 \n";
+        bool auto_zoom = false;
+        int px_scale = 0;
 
-        //flex_int bmp_dat(flex_grid<>(nrow, ncol, 3),0);
+        if(ncol < 200 and nrow < 200){
+          auto_zoom = true;
+        }
+
+        float diagn;
         if(auto_zoom == true){
-          px_scale = 50;
+          if(ncol < 20 and nrow < 20){
+            px_scale = 50;
+          }else{
+            diagn = sqrt(ncol * ncol + nrow * nrow);
+            px_scale = (500.0 / diagn);
+          }
+
+
         }else{
           px_scale = 1;
         }
 
 
+
           flex_int bmp_dat(flex_grid<>(nrow * px_scale, ncol * px_scale, 3),0);
-                  std::cout << "\n auto_zoom == true \n";
+                  std::cout << "\n auto_zoom == true \n" << "px_scale =" << px_scale << "\n";
 
 
         for (int row = 0; row < nrow ; row++) {

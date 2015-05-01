@@ -66,7 +66,7 @@ class MyFrame(wx.Frame):
     self.panel = wx.Panel(self)
 
     #data2d = build_np_img(width = 800, height = 1800)
-    data2d = build_np_img(width = 150, height = 250)
+    data2d = build_np_img(width = 142, height = 263)
 
     bitmap = GetBitmap_from_np_array(data2d)
 
