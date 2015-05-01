@@ -102,7 +102,6 @@ namespace dials { namespace viewer { namespace boost_python {
       }
     }
 
-
     int arr_2d_6[7][7] = {{0,0,0,0,0,0,0},
                           {0,0,1,1,1,1,0},
                           {0,1,1,0,0,0,0},
@@ -155,7 +154,6 @@ namespace dials { namespace viewer { namespace boost_python {
       }
     }
 
-
     return bmp_dat;
   }
 
@@ -198,13 +196,14 @@ namespace dials { namespace viewer { namespace boost_python {
         red_byte[765] = 255;
 
         //debugging prints
-        /*
+
         for (int i = 0; i < 255 * 3 + 1; i++){
           std::cout << "i =" << i << ", red =" << red_byte[i] <<
                      ", green =" << green_byte[i] <<
                      ", blue =" << blue_byte[i] << "\n";
         }
-        */
+
+
 
       }
 
