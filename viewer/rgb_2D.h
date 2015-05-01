@@ -262,7 +262,7 @@ namespace dials { namespace viewer { namespace boost_python {
             px_scale = 50;
           }else{
             diagn = sqrt(ncol * ncol + nrow * nrow);
-            px_scale = (500.0 / diagn);
+            px_scale = (1000.0 / diagn);
           }
 
 
