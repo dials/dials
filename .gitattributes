@@ -770,6 +770,8 @@ scratch/luiso_s/old_viewer/viewer_utilities.py -text
 scratch/luiso_s/old_viewer/viewer_utilities_tst.py -text
 scratch/luiso_s/test_code/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/brach01_tst/branch02_tst/caller.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/cpp_exmp/num_to_str.cpp -text
+scratch/luiso_s/test_code/cpp_exmp/str_to_num.cpp -text
 scratch/luiso_s/test_code/example_matmul.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_mix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_np_nditer.py -text
