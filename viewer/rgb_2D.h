@@ -12,6 +12,7 @@
 #ifndef DIALS_RGB_IMG_BUILDER_H
 #define DIALS_RGB_IMG_BUILDER_H
 #include <iostream>
+#include <string>     // std::string, std::to_string
 #include <scitbx/array_family/flex_types.h>
 #include <cmath>
 
@@ -19,6 +20,16 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_double;
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
+
+  flex_int gen_str_tst(flex_double & data_num) {
+
+    flex_int bmp_dat(flex_grid<>(7, 7, 10),0);
+    std::cout << "\nYes\n";
+
+    //char cad[50];
+    return bmp_dat;
+  }
+
 
   flex_int gen_img(flex_double & data2d) {
 
@@ -155,6 +166,8 @@ namespace dials { namespace viewer { namespace boost_python {
       }
     }
 
+
+
     return bmp_dat;
   }
 
@@ -198,12 +211,13 @@ namespace dials { namespace viewer { namespace boost_python {
 
         //debugging prints
 
+        /*
         for (int i = 0; i < 255 * 3 + 1; i++){
           std::cout << "i =" << i << ", red =" << red_byte[i] <<
                      ", green =" << green_byte[i] <<
                      ", blue =" << blue_byte[i] << "\n";
         }
-
+        */
 
 
       }

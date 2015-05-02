@@ -16,7 +16,7 @@ from dials.array_family import flex
 
 import boost.python
 #from dials_viewer_ext import gen_img, rgb_img
-from dials_viewer_ext import rgb_img
+from dials_viewer_ext import rgb_img, gen_str_tst
 if(__name__ == "__main__"):
 
   size_xyz = 7
@@ -37,3 +37,9 @@ print "arr_2d.as_numpy_array() = \n", arr_2d.as_numpy_array()
 wx_bmp_arr = rgb_img()
 print wx_bmp_arr.gen_bmp(arr_2d).as_numpy_array()
 
+print "testing new Cpp code"
+arr_1d = flex.double(flex.grid(10), 00)
+for i in xrange(10):
+  arr_1d[i] = 99.0 * float(i * i)
+
+print "gen_str_tst(arr_1d).as_numpy_array() = \n", gen_str_tst(arr_1d).as_numpy_array()
