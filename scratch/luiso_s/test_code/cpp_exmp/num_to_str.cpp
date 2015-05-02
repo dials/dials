@@ -7,7 +7,7 @@ int main ()
   char asc_str [50];
 
   int i_nm = 1235434567;
-  sprintf (asc_str, "%f ", i_nm);
+  sprintf (asc_str, "%d ", i_nm);
   std::cout << "\nasc_str = " << asc_str << "\n\n";
 
   double dl_nm = 8876576.465654654;
