@@ -42,5 +42,5 @@ if(__name__ == "__main__"):
   arr_1d = flex.double(flex.grid(10), 00)
   for i in xrange(10):
     arr_1d[i] = 99.0 * float(i * i)
-
-  print "gen_str_tst(arr_1d).as_numpy_array() = \n", gen_str_tst(arr_1d).as_numpy_array()
+  gen_str_tst(arr_1d)
+  #print "gen_str_tst(arr_1d).as_numpy_array() = \n", gen_str_tst(arr_1d).as_numpy_array()

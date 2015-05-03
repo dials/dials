@@ -24,7 +24,12 @@ namespace dials { namespace viewer { namespace boost_python {
   flex_int gen_str_tst(flex_double & data_num) {
 
     flex_int bmp_dat(flex_grid<>(7, 7, 10),0);
-    std::cout << "\nYes\n";
+
+    int npos=data_num.accessor().all()[0];
+    std::cout << "\nnpos ="<< npos << "\n";
+    //for (int pos = 0; pos < npos; pos++) {
+    //  std::cout << "num =" << data_num(pos) << "\n";
+    //}
 
     //char cad[50];
     return bmp_dat;
