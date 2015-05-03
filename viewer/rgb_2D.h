@@ -287,19 +287,27 @@ namespace dials { namespace viewer { namespace boost_python {
 
 
           flex_int bmp_dat(flex_grid<>(nrow * px_scale, ncol * px_scale, 3),0);
-                  std::cout << "\n auto_zoom == true \n" << "px_scale =" << px_scale << "\n";
+                  std::cout << "\n auto_zoom == true \n" << "px_scale ="
+                            << px_scale << "\n";
 
 
         for (int row = 0; row < nrow ; row++) {
           for (int col = 0; col < ncol; col++) {
             if(auto_zoom == true){
 
-              for(int pix_row = row * px_scale; pix_row < row * px_scale + px_scale; pix_row++){
-                for(int pix_col = col * px_scale; pix_col < col * px_scale + px_scale; pix_col++){
+              for(int pix_row = row * px_scale;
+                  pix_row < row * px_scale + px_scale;
+                  pix_row++){
+                for(int pix_col = col * px_scale;
+                    pix_col < col * px_scale + px_scale;
+                    pix_col++){
 
-                  bmp_dat(pix_row, pix_col, 0) = red_byte[int(scaled_array(row, col))];
-                  bmp_dat(pix_row, pix_col, 1) = green_byte[int(scaled_array(row, col))];
-                  bmp_dat(pix_row, pix_col, 2) = blue_byte[int(scaled_array(row, col))];
+                  bmp_dat(pix_row, pix_col, 0) = red_byte[int(
+                                                 scaled_array(row, col))];
+                  bmp_dat(pix_row, pix_col, 1) = green_byte[int(
+                                                 scaled_array(row, col))];
+                  bmp_dat(pix_row, pix_col, 2) = blue_byte[int(
+                                                 scaled_array(row, col))];
                 }
               }
 

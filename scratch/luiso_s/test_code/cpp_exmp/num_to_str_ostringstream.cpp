@@ -15,4 +15,4 @@ int main()
   std::cout << "strValue = " << strValue << std::endl;
 
   return 0;
-}  
+}
