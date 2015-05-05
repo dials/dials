@@ -249,6 +249,10 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
   # def num_total(self): inherited unchanged from ModelParameterisation
 
+  def num_sets(self):
+    """the number of parameter sets"""
+    return self._num_sets
+
   @abc.abstractmethod
   def compose(self, t):
     """compose the model state at image number t from its initial state and

@@ -732,25 +732,36 @@ class RefinerFactory(object):
         xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
                                                         experiment_ids=exp_ids)
 
+      # get number of fixable units, either parameters or parameter sets in
+      # the scan-varying case
+      try:
+        num_ori = xl_ori_param.num_sets()
+      except AttributeError:
+        num_ori = xl_ori_param.num_total()
+      try:
+        num_uc = xl_uc_param.num_sets()
+      except AttributeError:
+        num_uc = xl_uc_param.num_total()
+
       if crystal_options.fix:
         if crystal_options.fix == "all":
-          xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
-          xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+          xl_ori_param.set_fixed([True] * num_ori)
+          xl_uc_param.set_fixed([True] * num_uc)
         elif crystal_options.fix == "cell":
-          xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+          xl_uc_param.set_fixed([True] * num_uc)
         elif crystal_options.fix == "orientation":
-          xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
+          xl_ori_param.set_fixed([True] * num_ori)
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("crystal_options.fix value not recognised")
 
       if crystal_options.cell_fix_list:
         to_fix = [True if i in crystal_options.cell_fix_list else False \
-                  for i in range(xl_uc_param.num_total())]
+                  for i in range(num_uc)]
         xl_uc_param.set_fixed(to_fix)
 
       if crystal_options.orientation_fix_list:
         to_fix = [True if i in crystal_options.orientation_fix_list else False \
-                  for i in range(xl_ori_param.num_total())]
+                  for i in range(num_ori)]
         xl_ori_param.set_fixed(to_fix)
 
       if xl_ori_param.num_free() > 0:

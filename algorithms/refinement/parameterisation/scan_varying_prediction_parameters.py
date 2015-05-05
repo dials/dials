@@ -72,12 +72,12 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # set columns in the reflection table to store the derivative of state for
     # each reflection, if needed
     null = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
-    if not reflections.has_key("dU_dp0"):
+    if self._xl_orientation_parameterisations and not reflections.has_key("dU_dp0"):
       max_free_U_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
       for i in range(max_free_U_params):
         colname = "dU_dp{0}".format(i)
         reflections[colname] = flex.mat3_double(nref, null)
-    if not reflections.has_key("dB_dp0"):
+    if self._xl_unit_cell_parameterisations and not reflections.has_key("dB_dp0"):
       max_free_B_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
       for i in range(max_free_B_params):
         colname = "dB_dp{0}".format(i)
@@ -145,10 +145,10 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     # model states at current frame
     U = self._get_state_from_parameterisation(xl_op, obs_image_number)
-    if U is None: U = exp.crystal.get_U()
+    if U is None: U = self._experiments[experiment_id].crystal.get_U()
 
     B = self._get_state_from_parameterisation(xl_ucp, obs_image_number)
-    if B is None: B = exp.crystal.get_B()
+    if B is None: B = self._experiments[experiment_id].crystal.get_B()
 
     return U*B
 
