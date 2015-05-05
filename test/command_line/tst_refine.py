@@ -42,10 +42,7 @@ def test1():
   for pth in (experiments_path, pickle_path):
     assert os.path.exists(pth)
 
-  # have to reduce bin_size_fraction from the default otherwise this test
-  # terminates without taking any steps with RMSD target achieved.
-  cmd = "dials.refine " + experiments_path + " " + pickle_path + \
-  " bin_size_fraction=0.001"
+  cmd = "dials.refine " + experiments_path + " " + pickle_path
   print cmd
 
   # work in a temporary directory
