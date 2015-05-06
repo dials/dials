@@ -57,16 +57,16 @@ class refined_settings_list(list):
       import sys
       out = sys.stdout
 
-    table_data = [["Solution","Metric fit","rmsd","#spots",
-                   "crystal_system","unit_cell","volume", "cb_op"]]
+    table_data = [["Solution","Metric fit","rmsd", "#spots",
+                   "lattice","unit_cell","volume", "cb_op"]]
     for item in self:
       uc = item.refined_crystal.get_unit_cell()
       P = uc.parameters()
       table_data.append(['%6d'%item.setting_number,
-                         "%(max_angular_difference)6.4f dg"%item,
+                         "%(max_angular_difference)6.4f"%item,
                          "%5.3f"%item.rmsd,
                          "%d"%item.Nmatches,
-                         "%(system)s %(bravais)s"%item,
+                         "%(bravais)s"%item,
                          "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f"%P,
                          "%.0f"%uc.volume(),
                          "%s"%item['cb_op_inp_best'].as_abc()])
