@@ -42,9 +42,8 @@ Examples::
 '''
 
 phil_scope = iotbx.phil.parse("""
-change_of_basis_op = None
+change_of_basis_op = a,b,c
   .type = str
-  .optional = False
 space_group = None
   .type = space_group
   .help = "The space group to be applied AFTER applying the change of basis "
