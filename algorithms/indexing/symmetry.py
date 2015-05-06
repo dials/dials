@@ -200,6 +200,7 @@ def refine_subgroup(args):
     ccs, nrefs = get_symop_correlation_coefficients(ms)
     subgroup.correlation_coefficients = ccs
     subgroup.cc_nrefs = nrefs
+    ccs = ccs.select(nrefs > 10)
     if len(ccs) > 1:
       subgroup.max_cc = flex.max(ccs[1:])
       subgroup.min_cc = flex.min(ccs[1:])
