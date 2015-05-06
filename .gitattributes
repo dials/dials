@@ -988,6 +988,7 @@ test/command_line/tst_discover_better_experimental_model.py -text
 test/command_line/tst_export.py -text
 test/command_line/tst_export_mosflm.py -text
 test/command_line/tst_export_xds.py -text
+test/command_line/tst_filter_reflections.py -text
 test/command_line/tst_find_spots_server_client.py -text
 test/command_line/tst_generate_mask.py -text
 test/command_line/tst_import.py -text
