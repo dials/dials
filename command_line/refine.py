@@ -395,6 +395,8 @@ class Script(object):
     # Write out refinement history, if requested
     if params.output.history:
       with open(params.output.history, 'wb') as handle:
+        info('Saving refinement step history to {0}'.format(
+          params.output.history))
         pickle.dump(history, handle)
 
     return
