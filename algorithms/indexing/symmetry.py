@@ -49,6 +49,8 @@ class refined_settings_list(list):
         'cb_op':item['cb_op_inp_best'].as_abc(),
         'max_cc':item.max_cc,
         'min_cc':item.min_cc,
+        'correlation_coefficients':list(item.correlation_coefficients),
+        'cc_nrefs':list(item.cc_nrefs),
         }
 
     return result
