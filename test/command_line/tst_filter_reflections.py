@@ -21,7 +21,6 @@ import os
 import shutil
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
-from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 import cPickle as pickle
 
 def test1():
