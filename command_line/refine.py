@@ -276,6 +276,10 @@ class Script(object):
     log.config(params.refinement.verbosity,
       info='dials.refine.log', debug='dials.refine.debug.log')
 
+    # Modify options if necessary
+    if params.output.correlation_plot.filename is not None:
+      params.refinement.refinery.track_parameter_correlation = True
+
     # Get the refiner
     info('Configuring refiner')
     refiner = RefinerFactory.from_parameters_data_experiments(params,
@@ -336,7 +340,7 @@ class Script(object):
       mask = refiner.selection_used_for_refinement()
       indexed.set_flags(mask, indexed.flags.used_in_refinement)
 
-      # FIXME redo outlier rejection
+      # FIXME redo outlier rejection on the new predictions with updated geometry
       info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
       indexed.as_pickle(params.output.reflections)
@@ -371,6 +375,7 @@ class Script(object):
         corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
         plt = self.parameter_correlation_plot(corrmat, labels)
         if plt is not None:
+          info('Saving parameter correlation plot to {}'.format(plot_fname))
           plt.savefig(plot_fname)
           num_plots += 1
 
@@ -378,6 +383,7 @@ class Script(object):
             mat_fname = fname_base + ".pickle"
             with open(mat_fname, 'wb') as handle:
               py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
+              info('Saving parameter correlation matrix to {0}'.format(mat_fname))
               pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
 
       if num_plots == 0:
