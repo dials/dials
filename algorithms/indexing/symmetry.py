@@ -46,7 +46,9 @@ class refined_settings_list(list):
         'nspots':item.Nmatches,
         'bravais':item['bravais'],
         'unit_cell':uc.parameters(),
-        'cb_op':item['cb_op_inp_best'].as_abc()
+        'cb_op':item['cb_op_inp_best'].as_abc(),
+        'max_cc':item.max_cc,
+        'min_cc':item.min_cc,
         }
 
     return result
@@ -57,14 +59,18 @@ class refined_settings_list(list):
       import sys
       out = sys.stdout
 
-    table_data = [["Solution","Metric fit","rmsd", "#spots",
+    table_data = [["Solution","Metric fit","rmsd", "min/max cc", "#spots",
                    "lattice","unit_cell","volume", "cb_op"]]
     for item in self:
       uc = item.refined_crystal.get_unit_cell()
       P = uc.parameters()
+      min_max_cc_str = "-/-"
+      if item.min_cc is not None and item.max_cc is not None:
+        min_max_cc_str = "%.3f/%.3f" %(item.min_cc, item.max_cc)
       table_data.append(['%6d'%item.setting_number,
                          "%(max_angular_difference)6.4f"%item,
                          "%5.3f"%item.rmsd,
+                         min_max_cc_str,
                          "%d"%item.Nmatches,
                          "%(bravais)s"%item,
                          "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f"%P,
@@ -143,6 +149,9 @@ def refined_settings_factory_from_refined_triclinic(
 
 def refine_subgroup(args):
   assert len(args) == 5
+  from dials.command_line.check_indexing_symmetry \
+       import get_symop_correlation_coefficients
+
   params, subgroup, used_reflections, experiment, refiner_verbosity = args
 
   used_reflections = copy.deepcopy(used_reflections)
@@ -155,6 +164,8 @@ def refine_subgroup(args):
   from dials.algorithms.indexing.refinement import refine
   from dxtbx.model.experiment.experiment_list import ExperimentList
   experiments = ExperimentList([experiment])
+  subgroup.max_cc = None
+  subgroup.min_cc = None
   try:
     refinery, refined, outliers = refine(
       params, used_reflections, experiments, verbosity=refiner_verbosity)
@@ -179,6 +190,19 @@ def refine_subgroup(args):
     subgroup.beam = refinery.get_beam()
     subgroup.detector = refinery.get_detector()
     subgroup.refined_crystal = refinery.get_crystal()
+    cs = crystal.symmetry(
+        unit_cell=subgroup.refined_crystal.get_unit_cell(),
+        space_group=subgroup.refined_crystal.get_space_group())
+    from cctbx import miller
+    ms = miller.set(cs, used_reflections['miller_index'])
+    ms = ms.array(used_reflections['intensity.sum.value'] /
+                flex.sqrt(used_reflections['intensity.sum.variance']))
+    ccs, nrefs = get_symop_correlation_coefficients(ms)
+    subgroup.correlation_coefficients = ccs
+    subgroup.cc_nrefs = nrefs
+    if len(ccs) > 1:
+      subgroup.max_cc = flex.max(ccs[1:])
+      subgroup.min_cc = flex.min(ccs[1:])
   return subgroup
 
 from cctbx.sgtbx import subgroups

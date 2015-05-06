@@ -43,10 +43,30 @@ grid_search_scope = 0
   .help = "Search scope for testing misindexing on h, k, l."
 """, process_includes=True)
 
+
+def get_symop_correlation_coefficients(miller_array):
+  from copy import deepcopy
+  from scitbx.array_family import flex
+  from cctbx import miller
+  corr_coeffs = flex.double()
+  n_refs = flex.int()
+  space_group = miller_array.space_group()
+  for smx in space_group.smx():
+    miller_indices = miller_array.indices()
+    reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
+      miller_indices)
+    rms = miller.set(miller_array, reindexed_miller_indices)
+    rms = rms.array(miller_array.data())
+    intensity, intensity_rdx = rms.common_sets(miller_array)
+    cc = intensity.correlation(intensity_rdx).coefficient()
+    corr_coeffs.append(cc)
+    n_refs.append(intensity.size())
+  return corr_coeffs, n_refs
+
+
 def test_crystal_pointgroup_symmetry(reflections, experiment, params):
   crystal = experiment.crystal
 
-  from copy import deepcopy
   from dials.array_family import flex
 
   original_miller_indices = reflections['miller_index']
@@ -63,7 +83,10 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
                 flex.sqrt(reflections['intensity.sum.variance']))
 
   if params.d_min or params.d_max:
-    ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+    d_spacings = ms.d_spacings().data()
+    sel = (d_spacings >= params.d_min) & (d_spacings <= params.d_max)
+    ms = ms.select(sel)
+    reflections = reflections.select(sel)
 
   print 'Check symmetry operations on %d reflections:' % ms.size()
   print ''
@@ -71,27 +94,15 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
   true_symops = []
 
-  for smx in space_group.smx():
-    reindexed = deepcopy(reflections)
-    miller_indices = reflections['miller_index']
-    reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
-      miller_indices)
-    rms = miller_set(cs, reindexed_miller_indices)
-    rms = rms.array(reflections['intensity.sum.value'] /
-                    flex.sqrt(reflections['intensity.sum.variance']))
-    if params.d_min or params.d_max:
-      rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
-    intensity, intensity_rdx = rms.common_sets(ms)
-    cc = intensity.correlation(intensity_rdx).coefficient()
+  ccs, n_refs = get_symop_correlation_coefficients(ms)
 
+  for smx, cc, n_ref in zip(space_group.smx(), ccs, n_refs):
     accept = ''
-
     if params.symop_threshold:
       if cc > params.symop_threshold:
         true_symops.append(smx)
         accept = '***'
-
-    print '%10s %6d %.3f %s' % (smx, intensity.size(), cc, accept)
+    print '%10s %6d %.3f %s' % (smx, n_ref, cc, accept)
 
   if params.symop_threshold:
     from cctbx.sgtbx import space_group as sgtbx_space_group
