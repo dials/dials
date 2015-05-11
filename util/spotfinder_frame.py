@@ -133,7 +133,8 @@ class SpotFrame(XrayFrame) :
     from cctbx import uctbx
     import math
 
-    image = self.pyslip.tiles.raw_image
+    image = self.image_chooser.GetClientData(
+      self.image_chooser.GetSelection()).image_set
     detector = image.get_detector()
     beam = image.get_beam()
 
