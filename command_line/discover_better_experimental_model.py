@@ -29,6 +29,8 @@ mm_search_scope = 4.0
 wide_search_binning = 5
   .help = "Modify the coarseness of the wide grid search for the beam centre."
   .type = float(value_min=0)
+output = optimized_datablock.json
+  .type = path
 """)
 
 master_params = master_phil_scope.fetch().extract()
@@ -388,7 +390,7 @@ Parameters:
     imageset.set_detector(new_detector)
     imageset.set_beam(new_beam)
   from dxtbx.serialize import dump
-  dump.datablock(datablock, 'optimized_datablock.json')
+  dump.datablock(datablock, params.output)
 
 
 if __name__ == '__main__':
