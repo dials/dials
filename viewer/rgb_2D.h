@@ -21,69 +21,56 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
+
+  //int get_digits(double dl_nm){
+  void get_digits( double nm, int (&num_dg)[11]){
+
+    //int &num_dg[11];
+
+    char asc_str[11];
+
+    std::string str;
+    std::cout << "nm =" << nm << "\n";
+    sprintf (asc_str, "           ");
+
+    sprintf (asc_str, "%g", nm);
+    std::cout << "asc_str = <<" << asc_str << ">>\n\n";
+    str = asc_str;
+
+    for (int i = 0; i < 11; i++){
+      str = asc_str[i];
+      num_dg[i] = asc_str[i] - 48;
+      std::cout << " {" << asc_str[i] << "} " << "["<< num_dg[i] <<"],";
+    }
+
+    //return num_dg;
+  }
+
+
   flex_int gen_str_tst(flex_double & data_num) {
 
     flex_int bmp_dat(flex_grid<>(7, 7, 10),0);
     int npos=data_num.accessor().all()[0];
-    char asc_str [50];
+    int digit_val[11];
+
     double dl_nm;
-    long tmp_tst, lng_nm;
 
-    std::string str;
-    std::cout << "The size of str is " << str.length() << " bytes.\n";
 
-    std::cout << "\nnpos =" << npos << "\n\n";
+
     for (int pos = 0; pos < npos; pos++) {
       dl_nm = data_num(pos, 0);
+      //digit_val = get_digits(dl_nm);
+      get_digits(dl_nm, digit_val);
 
-      tmp_tst = int(dl_nm);
-      sprintf (asc_str, "%d ", tmp_tst);
-      str = asc_str;
-      lng_nm = str.length();
-      std::cout << "length(int) =" << lng_nm << "\n";
+      std::cout << "\n______________________________________\n";
 
-
-
-
-      std::cout << "(std::cout)num =" << data_num(pos, 0) << "\n";
-      printf ("(printf) %f\n", dl_nm);
-/*
- *
-        //printf(" %3d ", int(data2d(row,col)));
-
-        //[ 5 ] = minimum width (no maximum given)
-        //[ 2 ] = precision after the period
-        printf("%6.2f ", data2d(row,col));
- *
- *
-*/
-
-      if(lng_nm < 4){
-        sprintf (asc_str, "%6.2f", dl_nm);
-      }else if(lng_nm >= 4 and lng_nm <=6){
-        sprintf (asc_str, "%d", tmp_tst);
-      }else{
-        sprintf (asc_str, "%e", tmp_tst);
-      }
-
-      std::cout << "asc_str = " << asc_str << "\n\n";
 
     }
 
-    /*
-    int i_nm = 1235434567;
-    sprintf (asc_str, "%d ", i_nm);
-    std::cout << "\nasc_str = " << asc_str << "\n\n";
-
-    double dl_nm = 8876576.465654654;
-    sprintf (asc_str, "%f ", dl_nm);
-    std::cout << "\nasc_str = " << asc_str << "\n\n";
-    */
-
-
-    //char cad[50];
     return bmp_dat;
   }
+
+
 
 
   flex_int gen_img(flex_double & data2d) {
