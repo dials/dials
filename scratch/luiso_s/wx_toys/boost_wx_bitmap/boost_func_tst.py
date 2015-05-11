@@ -21,7 +21,7 @@ if(__name__ == "__main__"):
   lst_flex = []
   lst_flex_norm = []
 
-  depth = 10
+  depth = 16
 
   arr_1d = flex.double(flex.grid(depth), 00)
 

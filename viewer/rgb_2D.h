@@ -21,13 +21,11 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
+  int get_digits( double nm, int (&dgt_num)[12]){
 
-  //int get_digits(double dl_nm){
-  void get_digits( double nm, int (&num_dg)[11]){
+    int err_cod = 0;
 
-    //int &num_dg[11];
-
-    char asc_str[11];
+    char asc_str[12];
 
     std::string str;
     std::cout << "nm =" << nm << "\n";
@@ -37,13 +35,37 @@ namespace dials { namespace viewer { namespace boost_python {
     std::cout << "asc_str = <<" << asc_str << ">>\n\n";
     str = asc_str;
 
-    for (int i = 0; i < 11; i++){
+    for (int i = 0; i < 12; i++){
       str = asc_str[i];
-      num_dg[i] = asc_str[i] - 48;
-      std::cout << " {" << asc_str[i] << "} " << "["<< num_dg[i] <<"],";
+      dgt_num[i] = asc_str[i] - 48;
+
+      if( dgt_num[i] < 0 or dgt_num[i] > 9 ){
+        if( str == "." ){
+          dgt_num[i] = 10;
+        }else if( str == "e" ){
+          dgt_num[i] = 11;
+        }else if( str == "+" ){
+          dgt_num[i] = 12;
+        }else if( str == "-" ){
+          dgt_num[i] = 13;
+        }else if( str == " " ){
+          dgt_num[i] = 14;
+        }else if( asc_str[i] == 0 ){
+          dgt_num[i] = 15;
+        }else{
+          std::cout << "\nfound \'" << str << "\' and not converted";
+          err_cod = asc_str[i];
+          std::cout << "\n char(" << err_cod << ") found\n";
+          err_cod = 1;
+        }
+      }
+
+    std::cout << " {" << asc_str[i] << "} " << "["<< dgt_num[i] <<"],";
     }
 
-    //return num_dg;
+    std::cout << "\nerr_cod =" << err_cod << "\n";
+
+    return err_cod;
   }
 
 
@@ -51,7 +73,8 @@ namespace dials { namespace viewer { namespace boost_python {
 
     flex_int bmp_dat(flex_grid<>(7, 7, 10),0);
     int npos=data_num.accessor().all()[0];
-    int digit_val[11];
+    int digit_val[12];
+    int err_conv = 0;
 
     double dl_nm;
 
@@ -59,8 +82,11 @@ namespace dials { namespace viewer { namespace boost_python {
 
     for (int pos = 0; pos < npos; pos++) {
       dl_nm = data_num(pos, 0);
-      //digit_val = get_digits(dl_nm);
-      get_digits(dl_nm, digit_val);
+
+      err_conv = get_digits(dl_nm, digit_val);
+      if(err_conv == 1){
+        std::cout << "\nerror converting\n";
+      }
 
       std::cout << "\n______________________________________\n";
 
@@ -207,7 +233,126 @@ namespace dials { namespace viewer { namespace boost_python {
         bmp_dat(col, row, 9) = arr_2d_9[col][row];
       }
     }
+///////////////////////////////////////////////////////////////////////
 
+    int arr_2d_point[7][7] = {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,1,1,0,0,0},
+                              {0,0,1,1,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        bmp_dat(col, row, 10) = arr_2d_point[col][row];
+      }
+    }
+
+    int arr_2d_e[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,1,0,0,1,0},
+                          {0,1,1,1,1,1,0},
+                          {0,1,1,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        bmp_dat(col, row, 11) = arr_2d_e[col][row];
+      }
+    }
+
+    int arr_2d_plus[7][7] =  {{0,0,0,0,0,0,0},
+                              {0,0,0,1,0,0,0},
+                              {0,0,0,1,0,0,0},
+                              {0,1,1,1,1,1,0},
+                              {0,0,0,1,0,0,0},
+                              {0,0,0,1,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        bmp_dat(col, row, 12) = arr_2d_plus[col][row];
+      }
+    }
+
+    int arr_2d_minus[7][7] = {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,1,1,1,1,1,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        bmp_dat(col, row, 13) = arr_2d_minus[col][row];
+      }
+    }
+
+    int arr_2d_space[7][7] = {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        bmp_dat(col, row, 14) = arr_2d_space[col][row];
+      }
+    }
+
+    int arr_2d_null[7][7] =  {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        bmp_dat(col, row, 15) = arr_2d_null[col][row];
+      }
+    }
+/*
+
+0,0,0,0,0,0,0
+0,0,0,0,0,0,0
+0,0,0,0,0,0,0
+0,0,0,0,0,0,0
+0,0,1,1,0,0,0
+0,0,1,1,0,0,0
+0,0,0,0,0,0,0
+
+
+0,0,0,0,0,0,0
+0,0,1,1,1,1,0
+0,1,1,0,0,1,0
+0,1,1,1,1,1,0
+0,1,1,0,0,0,0
+0,0,1,1,1,1,0
+0,0,0,0,0,0,0
+
+
+
+0,0,0,0,0,0,0
+0,0,0,1,0,0,0
+0,0,0,1,0,0,0
+0,1,1,1,1,1,0
+0,0,0,1,0,0,0
+0,0,0,1,0,0,0
+0,0,0,0,0,0,0
+
+
+0,0,0,0,0,0,0
+0,0,0,0,0,0,0
+0,0,0,0,0,0,0
+0,1,1,1,1,1,0
+0,0,0,0,0,0,0
+0,0,0,0,0,0,0
+0,0,0,0,0,0,0
+
+*/
+
+/////////////////////////////////////////////////////////////////////////
 
 
     return bmp_dat;

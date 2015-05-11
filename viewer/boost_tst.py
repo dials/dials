@@ -43,6 +43,6 @@ if(__name__ == "__main__"):
   arr_1d = flex.double(flex.grid(size_lng, 1), 00)
   for i in xrange(size_lng):
     var = i * .5
-    arr_1d[i, 0] = .2 * var * var * var + 0.00000001
+    arr_1d[i, 0] = -.2 * var * var * var + 0.00000001
   gen_str_tst(arr_1d)
   #print "gen_str_tst(arr_1d).as_numpy_array() = \n", gen_str_tst(arr_1d).as_numpy_array()
