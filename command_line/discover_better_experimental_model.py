@@ -271,6 +271,12 @@ def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
     discoverer = better_experimental_model_discovery(
       imagesets, spot_lists_mm, solution_lists, amax_list, params)
     new_detector = discoverer.optimize_origin_offset_local_scope()
+    old_beam_centre = detector.get_ray_intersection(beam.get_s0())[1]
+    new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())[1]
+    print "Old beam centre: %.2f mm, %.2f mm" %old_beam_centre
+    print "New beam centre: %.2f mm, %.2f mm" %new_beam_centre
+    print "Shift: %.2f mm, %.2f mm" %(
+      matrix.col(old_beam_centre)-matrix.col(new_beam_centre)).elems
     return new_detector, beam
   elif params.indexing.improve_local_scope=="S0_vector":
     raise NotImplementedError()
