@@ -16,7 +16,12 @@ if have_dials_regression:
     relative_path="dials_regression",
     test=os.path.isdir)
 
-def exercise():
+have_xia2_regression = libtbx.env.has_module("xia2_regression")
+if have_xia2_regression:
+  xia2_regression = libtbx.env.under_build("xia2_regression")
+
+
+def exercise_1():
   if not have_dials_regression:
     print "Skipping exercise(): dials_regression not available."
     return
@@ -61,11 +66,83 @@ def exercise():
   # this is a bug in discover_better_experimental_model.
   os.chdir(cwd)
 
-def run():
-  exercise()
+def exercise_2():
+
+  if not have_xia2_regression:
+    print "Skipping exercise_2(): xia2_regression not available."
+    return
+
+  curdir = os.path.abspath(os.curdir)
+  print curdir
+
+  data_dir = os.path.join(xia2_regression, "test_data", "i04_bag_training")
+
+  import glob
+  g = glob.glob(os.path.join(data_dir, "*.cbf"))
+
+  # beam centre from image headers: 205.28,210.76 mm
+  args = ["dials.import", "mosflm_beam_centre=207,212"] + g
+  command = " ".join(args)
+  #print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists('datablock.json')
+
+  # spot-finding, just need a subset of the data
+  args = ["dials.find_spots", "datablock.json",
+          "scan_range=1,10", "scan_range=531,540"]
+  command = " ".join(args)
+  print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists('strong.pickle')
+
+  # actually run the beam centre search
+  args = ["dials.discover_better_experimental_model", "datablock.json",
+          "strong.pickle"]
+  command = " ".join(args)
+  print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  result.show_stdout()
+  assert os.path.exists('optimized_datablock.json')
+
+  # look at the results
+  from dxtbx.serialize import load
+  datablocks = load.datablock("datablock.json", check_format=False)
+  original_imageset = datablocks[0].extract_imagesets()[0]
+  optimized_datablock = load.datablock('optimized_datablock.json',
+                                       check_format=False)
+  detector_1 = original_imageset.get_detector()
+  detector_2 = optimized_datablock[0].unique_detectors()[0]
+  shift = (matrix.col(detector_1[0].get_origin()) -
+           matrix.col(detector_2[0].get_origin()))
+  print shift
+
+  # check we can actually index the resulting optimized datablock
+  from dials.test.algorithms.indexing.tst_index import run_one_indexing
+  from cctbx import uctbx
+  expected_unit_cell = uctbx.unit_cell(
+    (57.780, 57.800, 150.017, 89.991, 89.990, 90.007))
+  expected_rmsds = (0.06, 0.05, 0.001)
+  expected_hall_symbol = ' P 1'
+  result = run_one_indexing(
+    os.path.join(curdir, 'strong.pickle'),
+    os.path.join(curdir, 'optimized_datablock.json'), [],
+    expected_unit_cell, expected_rmsds, expected_hall_symbol)
+
+
+def run(args):
+  exercises = (exercise_1, exercise_2)
+  if len(args):
+    args = [int(arg) for arg in args]
+    for arg in args: assert arg > 0
+    exercises = [exercises[arg-1] for arg in args]
+
+  for exercise in exercises:
+    exercise()
+
   print "OK"
 
 if __name__ == '__main__':
+  import sys
   from dials.test import cd_auto
   with cd_auto(__file__):
-    run()
+    run(sys.argv[1:])

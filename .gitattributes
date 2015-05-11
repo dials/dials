@@ -897,6 +897,7 @@ test/algorithms/image/filter/tst_median.py -text
 test/algorithms/image/filter/tst_summed_area.py -text
 test/algorithms/image/threshold/tst_local.py -text
 test/algorithms/image/tst_centroid.py -text
+test/algorithms/indexing/__init__.py -text
 test/algorithms/indexing/tst_assign_indices.py -text
 test/algorithms/indexing/tst_compare_orientation_matrices.py -text
 test/algorithms/indexing/tst_index.py -text

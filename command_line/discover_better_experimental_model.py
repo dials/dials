@@ -23,13 +23,20 @@ scan_range = None
     "(e.g. j0 <= j < j1)."
   .type = ints(size=2)
   .multiple = True
+mm_search_scope = 4.0
+  .help = "Global radius of origin offset search."
+  .type = float(value_min=0)
+wide_search_binning = 5
+  .help = "Modify the coarseness of the wide grid search for the beam centre."
+  .type = float(value_min=0)
 """)
 
 master_params = master_phil_scope.fetch().extract()
 
 
 class better_experimental_model_discovery(object):
-  def __init__(self, imagesets, spot_lists, solution_lists, amax_lists, horizon_phil):
+  def __init__(self, imagesets, spot_lists, solution_lists,
+               amax_lists, horizon_phil, wide_search_binning=1):
     from libtbx import adopt_init_args
     adopt_init_args(self, locals())
 
@@ -52,18 +59,52 @@ class better_experimental_model_discovery(object):
     beamr0 = s0.cross(axis).normalize()
     beamr1 = beamr0.cross(s0).normalize()
     beamr2 = beamr1.cross(s0).normalize()
+    #beamr1 = matrix.col(detector[0].get_fast_axis())
+    #beamr2 = matrix.col(detector[0].get_slow_axis())
+    #beamr0 = beamr1.cross(beamr2).normalize()
 
     assert approx_equal(s0.dot(beamr1), 0.)
     assert approx_equal(s0.dot(beamr2), 0.)
     assert approx_equal(beamr2.dot(beamr1), 0.)
     # so the orthonormal vectors are self.S0_vector, beamr1 and beamr2
 
+    if self.horizon_phil.indexing.mm_search_scope:
+      scope = self.horizon_phil.indexing.mm_search_scope
+      plot_px_sz = self.imagesets[0].get_detector()[0].get_pixel_size()[0]
+      plot_px_sz *= self.wide_search_binning
+      grid = max(1,int(scope/plot_px_sz))
+      widegrid = 2 * grid + 1
+      scores = flex.double()
+      for y in xrange(-grid,grid+1):
+        for x in xrange(-grid,grid+1):
+          new_origin_offset = x*plot_px_sz*beamr1 + y*plot_px_sz*beamr2
+          score = 0
+          for i in range(len(self.imagesets)):
+            score += self.get_origin_offset_score(new_origin_offset,
+                                                  self.solution_lists[i],
+                                                  self.amax_lists[i],
+                                                  self.spot_lists[i],
+                                                  self.imagesets[i])
+          scores.append(score)
+
+      plot_max = flex.max(scores)
+      idx_max = flex.max_index(scores)
+
+      def igrid(x): return x - (widegrid//2)
+      idxs = [igrid(i)*plot_px_sz for i in xrange(widegrid)]
+
+      wide_search_offset = (idxs[idx_max%widegrid])*beamr1 + (idxs[idx_max//widegrid])*beamr2
+
+    else:
+      wide_search_offset = None
+
     # DO A SIMPLEX MINIMIZATION
     from scitbx.simplex import simplex_opt
     class test_simplex_method(object):
-      def __init__(selfOO):
+      def __init__(selfOO, wide_search_offset=None):
         selfOO.starting_simplex=[]
         selfOO.n = 2
+        selfOO.wide_search_offset = wide_search_offset
         for ii in range(selfOO.n+1):
           selfOO.starting_simplex.append(flex.random_double(selfOO.n))
         selfOO.optimizer = simplex_opt( dimension=selfOO.n,
@@ -71,9 +112,14 @@ class better_experimental_model_discovery(object):
                                       evaluator = selfOO,
                                       tolerance=1e-7)
         selfOO.x = selfOO.optimizer.get_solution()
+        selfOO.offset = selfOO.x[0]*0.2*beamr1 + selfOO.x[1]*0.2*beamr2
+        if selfOO.wide_search_offset is not None:
+          selfOO.offset += selfOO.wide_search_offset
 
       def target(selfOO, vector):
         trial_origin_offset = vector[0]*0.2*beamr1 + vector[1]*0.2*beamr2
+        if selfOO.wide_search_offset is not None:
+          trial_origin_offset += selfOO.wide_search_offset
         target = 0
         for i in range(len(self.imagesets)):
           target -= self.get_origin_offset_score(trial_origin_offset,
@@ -83,9 +129,8 @@ class better_experimental_model_discovery(object):
                                                  self.imagesets[i])
         return target
 
-    MIN = test_simplex_method()
-    new_offset =  MIN.x[0]*0.2*beamr1 + MIN.x[1]*0.2*beamr2
-    # not used in global_scope implementation
+    MIN = test_simplex_method(wide_search_offset=wide_search_offset)
+    new_offset = MIN.offset
 
     if self.horizon_phil.indexing.plot_search_scope:
       scope = self.horizon_phil.indexing.mm_search_scope
@@ -119,7 +164,7 @@ class better_experimental_model_discovery(object):
         plt.clabel(CS, inline=1, fontsize=10, fmt="%6.3f")
         plt.title("Wide scope search for detector origin offset")
         plt.scatter([0.0],[0.0],color='g',marker='o')
-        plt.scatter([0.2*MIN.x[0]] , [0.2*MIN.x[1]],color='r',marker='*')
+        plt.scatter([new_offset[0]] , [new_offset[1]],color='r',marker='*')
         plt.scatter([idxs[idx_max%widegrid]] , [idxs[idx_max//widegrid]],color='k',marker='s')
         plt.axes().set_aspect("equal")
         plt.xlabel("offset (mm) along beamr1 vector")
@@ -130,7 +175,7 @@ class better_experimental_model_discovery(object):
         trial_origin_offset =  (idxs[idx_max%widegrid])*beamr1 + (idxs[idx_max//widegrid])*beamr2
         return trial_origin_offset
 
-      new_offset = show_plot(widegrid = 2 * grid + 1, excursi = scores)
+      show_plot(widegrid = 2 * grid + 1, excursi = scores)
 
     return dps_extended.get_new_detector(self.imagesets[0].get_detector(), new_offset)
 
@@ -237,7 +282,8 @@ def run_dps(args):
   return dict(solutions=flex.vec3_double([s.dvec for s in DPS.getSolutions()]),amax=DPS.amax)
 
 
-def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
+def discover_better_experimental_model(imagesets, spot_lists, params,
+                                       nproc=1, wide_search_binning=1):
   assert len(imagesets) == len(spot_lists)
   assert len(imagesets) > 0
   # XXX should check that all the detector and beam objects are the same
@@ -269,7 +315,8 @@ def discover_better_experimental_model(imagesets, spot_lists, params, nproc=1):
   # perform calculation
   if params.indexing.improve_local_scope == "origin_offset":
     discoverer = better_experimental_model_discovery(
-      imagesets, spot_lists_mm, solution_lists, amax_list, params)
+      imagesets, spot_lists_mm, solution_lists, amax_list, params,
+      wide_search_binning=wide_search_binning)
     new_detector = discoverer.optimize_origin_offset_local_scope()
     old_beam_centre = detector.get_ray_intersection(beam.get_s0())[1]
     new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())[1]
@@ -332,9 +379,11 @@ Parameters:
     input_string=indexing_api_defs).extract()
   # for development, we want an exhaustive plot of beam probability map:
   hardcoded_phil.indexing.plot_search_scope = params.plot_search_scope
+  hardcoded_phil.indexing.mm_search_scope = params.mm_search_scope
 
   new_detector, new_beam = discover_better_experimental_model(
-    imagesets, reflections, hardcoded_phil, nproc=params.nproc)
+    imagesets, reflections, hardcoded_phil, nproc=params.nproc,
+    wide_search_binning=params.wide_search_binning)
   for imageset in imagesets:
     imageset.set_detector(new_detector)
     imageset.set_beam(new_beam)
