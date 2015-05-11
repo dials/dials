@@ -12,7 +12,7 @@
 #ifndef DIALS_RGB_IMG_BUILDER_H
 #define DIALS_RGB_IMG_BUILDER_H
 #include <iostream>
-#include <string>     // std::string, std::to_string
+#include <string>
 #include <scitbx/array_family/flex_types.h>
 #include <cmath>
 
@@ -233,7 +233,6 @@ namespace dials { namespace viewer { namespace boost_python {
         bmp_dat(col, row, 9) = arr_2d_9[col][row];
       }
     }
-///////////////////////////////////////////////////////////////////////
 
     int arr_2d_point[7][7] = {{0,0,0,0,0,0,0},
                               {0,0,0,0,0,0,0},
@@ -312,48 +311,6 @@ namespace dials { namespace viewer { namespace boost_python {
         bmp_dat(col, row, 15) = arr_2d_null[col][row];
       }
     }
-/*
-
-0,0,0,0,0,0,0
-0,0,0,0,0,0,0
-0,0,0,0,0,0,0
-0,0,0,0,0,0,0
-0,0,1,1,0,0,0
-0,0,1,1,0,0,0
-0,0,0,0,0,0,0
-
-
-0,0,0,0,0,0,0
-0,0,1,1,1,1,0
-0,1,1,0,0,1,0
-0,1,1,1,1,1,0
-0,1,1,0,0,0,0
-0,0,1,1,1,1,0
-0,0,0,0,0,0,0
-
-
-
-0,0,0,0,0,0,0
-0,0,0,1,0,0,0
-0,0,0,1,0,0,0
-0,1,1,1,1,1,0
-0,0,0,1,0,0,0
-0,0,0,1,0,0,0
-0,0,0,0,0,0,0
-
-
-0,0,0,0,0,0,0
-0,0,0,0,0,0,0
-0,0,0,0,0,0,0
-0,1,1,1,1,1,0
-0,0,0,0,0,0,0
-0,0,0,0,0,0,0
-0,0,0,0,0,0,0
-
-*/
-
-/////////////////////////////////////////////////////////////////////////
-
 
     return bmp_dat;
   }
@@ -395,16 +352,6 @@ namespace dials { namespace viewer { namespace boost_python {
         blue_byte[765] = 255;
         green_byte[765] = 255;
         red_byte[765] = 255;
-
-        //debugging prints
-
-        /*
-        for (int i = 0; i < 255 * 3 + 1; i++){
-          std::cout << "i =" << i << ", red =" << red_byte[i] <<
-                     ", green =" << green_byte[i] <<
-                     ", blue =" << blue_byte[i] << "\n";
-        }
-        */
 
 
       }
@@ -512,7 +459,6 @@ namespace dials { namespace viewer { namespace boost_python {
       }
 
   };
-
 
 
 }}}
