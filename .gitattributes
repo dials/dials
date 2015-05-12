@@ -545,6 +545,19 @@ model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/shoebox.h -text
+nexus/SConscript -text
+nexus/__init__.py -text
+nexus/boost_python/nexus_ext.cc -text
+nexus/nxattenuator.h -text
+nexus/nxbeam.h -text
+nexus/nxdata.h -text
+nexus/nxdetector.h -text
+nexus/nxdetector_module.h -text
+nexus/nxinstrument.h -text
+nexus/nxmx.h -text
+nexus/nxsample.h -text
+nexus/reader.h -text
+nexus/serialize.h -text
 /phil.py -text
 /run_tests.py -text
 scratch/__init__.py -text
@@ -1019,6 +1032,7 @@ test/model/data/tst_observation.py -text
 test/model/data/tst_pixel_list.py -text
 test/model/data/tst_prediction.py -text
 test/model/data/tst_shoebox.py -text
+test/nexus/tst_nexus.py -text
 test/tst_phil.py -text
 test/tst_plot_reflections.py -text
 test/tst_scan_varying_integration_bug.py -text

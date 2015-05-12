@@ -1,0 +1,9 @@
+
+Import('env')
+
+env.SharedLibrary(
+  target='#/lib/dials_nexus_ext', 
+  source=[
+    'boost_python/nexus_ext.cc',
+  ],
+  LIBS=env["LIBS"] + ['hdf5', 'hdf5_hl', 'hdf5_cpp', 'hdf5_hl_cpp'])
