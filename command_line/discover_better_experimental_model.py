@@ -1,4 +1,6 @@
 from __future__ import division
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import math
 from logging import info, debug
@@ -26,7 +28,7 @@ scan_range = None
 mm_search_scope = 4.0
   .help = "Global radius of origin offset search."
   .type = float(value_min=0)
-wide_search_binning = 5
+wide_search_binning = 2
   .help = "Modify the coarseness of the wide grid search for the beam centre."
   .type = float(value_min=0)
 output = optimized_datablock.json
@@ -89,13 +91,24 @@ class better_experimental_model_discovery(object):
                                                   self.imagesets[i])
           scores.append(score)
 
-      plot_max = flex.max(scores)
-      idx_max = flex.max_index(scores)
-
       def igrid(x): return x - (widegrid//2)
+
       idxs = [igrid(i)*plot_px_sz for i in xrange(widegrid)]
 
-      wide_search_offset = (idxs[idx_max%widegrid])*beamr1 + (idxs[idx_max//widegrid])*beamr2
+      # if there are several similarly high scores, then choose the closest
+      # one to the current beam centre
+      potential_offsets = flex.vec3_double()
+      sel = scores > (0.9*flex.max(scores))
+      for i in sel.iselection():
+        offset = (idxs[i%widegrid])*beamr1 + (idxs[i//widegrid])*beamr2
+        potential_offsets.append(offset.elems)
+        #print offset.length(), scores[i]
+      wide_search_offset = matrix.col(
+        potential_offsets[flex.min_index(potential_offsets.norms())])
+
+      #plot_max = flex.max(scores)
+      #idx_max = flex.max_index(scores)
+      #wide_search_offset = (idxs[idx_max%widegrid])*beamr1 + (idxs[idx_max//widegrid])*beamr2
 
     else:
       wide_search_offset = None

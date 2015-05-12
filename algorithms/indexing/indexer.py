@@ -41,7 +41,7 @@ indexing {
     .help = "Global radius of origin offset search."
     .type = float(value_min=0)
     .expert_level = 1
-  wide_search_binning = 5
+  wide_search_binning = 2
     .help = "Modify the coarseness of the wide grid search for the beam centre."
     .type = float(value_min=0)
     .expert_level = 1
