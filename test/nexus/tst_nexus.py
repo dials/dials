@@ -11,3 +11,4 @@ if __name__ == '__main__':
   print nxmx[0].title
   print nxmx[0].instrument[0].detector[0].sensor_material
   print len(nxmx[0].instrument[0].detector[0].count_time)
+  print nxmx[0].instrument[0].detector[0].module[0].data_size

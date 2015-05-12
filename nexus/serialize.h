@@ -3,10 +3,15 @@
 #define DIALS_NEXUS_SERIALIZE_H
 
 #include <string>
+#include <scitbx/vec2.h>
+#include <scitbx/vec3.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace nexus {
+
+  using scitbx::vec2;
+  using scitbx::vec3;
 
   std::string dataset_name(const H5::DataSet& ds) {
       size_t len = H5Iget_name(ds.getId(),NULL,0);
@@ -138,7 +143,34 @@ namespace dials { namespace nexus {
     }
 
   };
-  
+
+  template <>
+  struct serialize< vec2<int> > {
+
+    template <typename Handle>
+    static
+    vec2<int> load(const Handle &dataset) {
+      vec2<int> result;
+      H5::DataType datatype = dataset.getDataType();
+      H5::DataSpace dataspace = dataset.getSpace();
+      DIALS_ASSERT(dataspace.isSimple());
+      vec2<int> ndims = dataspace.getSimpleExtentNdims();
+      DIALS_ASSERT(ndims == 1);
+      hsize_t dims = 0;
+      dataspace.getSimpleExtentDims(&dims);
+      DIALS_ASSERT(dims == 2);
+      dataset.read(&result[0], H5::PredType::NATIVE_INT);
+      return result;
+    }
+
+    template <typename Handle>
+    static
+    void dump(const vec2<int> &obj, Handle &handle) {
+
+    }
+
+  };
+
   template <>
   struct serialize<af::shared<double> > {
 
@@ -192,7 +224,7 @@ namespace dials { namespace nexus {
     }
 
   };
-  
+
   template <>
   struct serialize< af::versa<int, af::c_grid<2> > > {
 
