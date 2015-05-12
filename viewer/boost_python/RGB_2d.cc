@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/viewer/rgb_2D.h>
+//#include <dials/viewer/fonts_2D.h>
 
 namespace dials { namespace viewer { namespace boost_python {
   using namespace boost::python;
