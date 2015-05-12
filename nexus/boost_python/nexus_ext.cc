@@ -10,9 +10,12 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <boost_adaptbx/optional_conversions.h>
 #include <boost/function.hpp>
+#include <boost_adaptbx/optional_conversions.h>
+#include <scitbx/array_family/boost_python/flex_wrapper.h>
+#include <H5Cpp.h>
 #include <dials/nexus/nxmx.h>
+#include <dials/error.h>
 
 namespace dials { namespace nexus { namespace boost_python {
 
@@ -81,8 +84,37 @@ namespace dials { namespace nexus { namespace boost_python {
 
   }
 
-  NXmx load(const char *filename) {
-    return NXmx();
+
+  af::shared<NXmx> load(const char *filename) {
+
+    // Turn off printing errors
+    H5::Exception::dontPrint();
+
+    // The result
+    af::shared<NXmx> result;
+
+    // Open the hdf file
+    H5::H5File handle(filename, H5F_ACC_RDONLY);
+
+    // Initialize the entries list
+    af::shared<H5::Group> entries;
+
+    // Find and load the nxmx entries
+    find_nx_entries(handle, std::back_inserter(entries));
+
+    // Check the entries for recognized classes
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+      if (is_nxmx_entry(entries[i])) {
+        try {
+          result.push_back(serialize<NXmx>::load(entries[i]));
+        } catch (H5::Exception e) {
+          throw std::runtime_error(e.getDetailMsg());
+        }
+      }
+    }
+
+    // Return the result
+    return result;
   };
 
   void dump(const NXmx &obj, const char *filename) {
@@ -95,6 +127,7 @@ namespace dials { namespace nexus { namespace boost_python {
   BOOST_PYTHON_MODULE(dials_nexus_ext)
   {
     using boost_adaptbx::optional_conversions::to_and_from_python;
+    using scitbx::af::boost_python::flex_wrapper;
 
     class_<NXattenuator>("NXattenuator")
       .add_property(
@@ -318,11 +351,11 @@ namespace dials { namespace nexus { namespace boost_python {
           "sample",
           detail::make_getter(&NXmx::sample),
           detail::make_setter(&NXmx::sample))
-      .add_property(
-          "data",
-          detail::make_getter(&NXmx::data),
-          detail::make_setter(&NXmx::data))
       ;
+
+    flex_wrapper<NXmx>::plain("flex_nxmx");
+    flex_wrapper<NXinstrument>::plain("flex_nxinstrument");
+    flex_wrapper<NXsample>::plain("flex_nxsample");
 
     // Expose the optional values
     to_and_from_python< boost::optional< vec3<double> > >();
@@ -330,8 +363,6 @@ namespace dials { namespace nexus { namespace boost_python {
     to_and_from_python< boost::optional< af::tiny<double,4> > >();
     to_and_from_python< boost::optional<NXattenuator> >();
     to_and_from_python< boost::optional<NXdetector> >();
-    to_and_from_python< boost::optional<NXinstrument> >();
-    to_and_from_python< boost::optional<NXsample> >();
     to_and_from_python< boost::optional<NXbeam> >();
     to_and_from_python< boost::optional<NXdata> >();
 

@@ -2,20 +2,11 @@
 from __future__ import division
 
 if __name__ == '__main__':
-  from dials.nexus import Reader
+  from dials.nexus import load
 
   filename = '/home/upc86896/Data/NXmx/example.nxs'
 
-  reader = Reader(filename)
+  nxmx = load(filename)
 
-  nxmx = reader.nxmx()
-
-
-  print nxmx
-
-  print nxmx.title()
-  print nxmx.start_time()
-  print nxmx.end_time()
-  print nxmx.instrument()
-  print nxmx.sample()
-  print nxmx.data()
+  print nxmx[0].title
+  print nxmx[0].instrument

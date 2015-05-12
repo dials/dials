@@ -5,6 +5,7 @@
 #define DIALS_NEXUS_NXSAMPLE_H
 
 #include <string>
+#include <boost/optional.hpp>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/array_family/tiny.h>
 #include <scitbx/vec3.h>
@@ -28,6 +29,23 @@ namespace dials { namespace nexus {
     af::shared< mat3<double> > orientation_matrix;
     af::shared< af::tiny<double,6> > unit_cell;
     boost::optional<NXbeam> beam;
+
+  };
+
+  template <>
+  struct serialize<NXsample> {
+
+    template <typename Handle>
+    static
+    NXsample load(const Handle &handle) {
+      return NXsample();
+    }
+
+    template <typename Handle>
+    static
+    void dump(const NXsample &obj, Handle &handle) {
+
+    }
 
   };
 
