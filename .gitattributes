@@ -730,6 +730,16 @@ scratch/jmp/misc/test_to_dict.py -text
 scratch/jmp/misc/test_transform.py -text
 scratch/jmp/mp_test.h -text
 scratch/jmp/mp_test.py -text
+scratch/jmp/mrf/3 -text
+scratch/jmp/mrf/bootstrap.py -text
+scratch/jmp/mrf/fill.py -text
+scratch/jmp/mrf/gen.py -text
+scratch/jmp/mrf/gen.r -text
+scratch/jmp/mrf/gen2.py -text
+scratch/jmp/mrf/gen3.py -text
+scratch/jmp/mrf/nbinom.py -text
+scratch/jmp/mrf/sim.py -text
+scratch/jmp/mrf/test_p.py -text
 scratch/jmp/mtz2/__init__.py -text
 scratch/jmp/mtz2/mtz2.py -text
 scratch/jmp/new_extract/new_extract.py -text
