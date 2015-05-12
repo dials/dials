@@ -1,20 +1,25 @@
 
 Import('env')
 
-sources = [
-    'boost_python/helpers.cc',
-    'boost_python/background_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_background_ext', 
-    source=sources,
+    source = [
+      'boost_python/helpers.cc',
+      'boost_python/background_ext.cc'
+      ],
     LIBS=env["LIBS"])
 
-sources = [
-    'simple/boost_python/outlier_rejector.cc',
-    'simple/boost_python/modeller.cc',
-    'simple/boost_python/creator.cc',
-    'simple/boost_python/background_simple_ext.cc']
-
 env.SharedLibrary(target='#/lib/dials_algorithms_background_simple_ext', 
-    source=sources,
+    source = [
+      'simple/boost_python/outlier_rejector.cc',
+      'simple/boost_python/modeller.cc',
+      'simple/boost_python/creator.cc',
+      'simple/boost_python/background_simple_ext.cc'
+      ],
+    LIBS=env["LIBS"])
+
+env.SharedLibrary(target='#/lib/dials_algorithms_background_glm_ext', 
+    source = [
+      'glm/boost_python/ext.cc'
+      ],
     LIBS=env["LIBS"])
