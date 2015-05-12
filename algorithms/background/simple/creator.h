@@ -66,18 +66,22 @@ namespace dials { namespace algorithms { namespace background {
      */
     af::shared<bool> operator()(
         const af::const_ref< Shoebox<FloatType> > &shoeboxes,
-        af::ref<double> mse) const {
+        af::ref<double> mse,
+        af::ref<double> dispersion) const {
       af::shared<bool> result(shoeboxes.size(), true);
-      #pragma omp parallel for
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         try {
-          mse[i] = this->operator()(shoeboxes[i]);
+          af::tiny<FloatType,2> r = this->operator()(shoeboxes[i]);
+          mse[i] = r[0];
+          dispersion[i] = r[1];
         } catch (dials::error) {
           result[i] = false;
           mse[i] = 0.0;
+          dispersion[i] = 0.0;
         } catch (std::runtime_error) {
           result[i] = false;
           mse[i] = 0.0;
+          dispersion[i] = 0.0;
         }
       }
       return result;
@@ -87,7 +91,7 @@ namespace dials { namespace algorithms { namespace background {
      * Create the background for the shoebox
      * @param shoebox The shoebox
      */
-    FloatType operator()(Shoebox<FloatType> shoebox) const {
+    af::tiny<FloatType,2> operator()(Shoebox<FloatType> shoebox) const {
       return this->operator()(
           shoebox.data.const_ref(),
           shoebox.mask.ref(),
@@ -100,7 +104,7 @@ namespace dials { namespace algorithms { namespace background {
      * @param mask The shoebox mask values
      * @param background The shoebox background
      */
-    FloatType operator()(
+    af::tiny<FloatType,2> operator()(
         const af::const_ref< FloatType, af::c_grid<3> > &data_in,
         af::ref< int, af::c_grid<3> > mask,
         af::ref< FloatType, af::c_grid<3> > background) const {
@@ -137,6 +141,8 @@ namespace dials { namespace algorithms { namespace background {
 
       // Populate the background shoebox
       double mse = 0.0;
+      double sum1 = 0.0;
+      double sum2 = 0.0;
       std::size_t count = 0;
       for (std::size_t k = 0; k < background.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < background.accessor()[1]; ++j) {
@@ -145,14 +151,19 @@ namespace dials { namespace algorithms { namespace background {
             if (bgmask(k, j, i)) {
               double tmp = (background(k,j,i) - data(k,j,i));
               mse += tmp * tmp;
+              sum1 += data(k,j,i);
+              sum2 += data(k,j,i)*data(k,j,i);
               count += 1;
             }
           }
         }
       }
       DIALS_ASSERT(count > 0);
+      double mean = sum1 / count;
+      double var = sum2 / count - sum1*sum1;
+      double dispersion = mean > 0 ? var / mean : 0;
       mse /= count;
-      return mse;
+      return af::tiny<FloatType,2>(mse, dispersion);
     }
 
   private:

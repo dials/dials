@@ -22,26 +22,28 @@ namespace dials { namespace algorithms { namespace background {
       const Creator<FloatType> &self,
       const af::const_ref< Shoebox<FloatType> > &sbox) {
     af::shared<double> mse(sbox.size());
-    return self(sbox, mse.ref());
+    af::shared<double> dispersion(sbox.size());
+    return self(sbox, mse.ref(), dispersion.ref());
   }
 
   template <typename FloatType>
   af::shared<bool> call_2(
       const Creator<FloatType> &self,
       const af::const_ref< Shoebox<FloatType> > &sbox,
-      af::ref<double> mse) {
-    return self(sbox, mse);
+      af::ref<double> mse,
+      af::ref<double> dispersion) {
+    return self(sbox, mse, dispersion);
   }
 
   template <typename FloatType>
-  FloatType call_3(
+  af::tiny<FloatType,2> call_3(
       const Creator<FloatType> &self,
       Shoebox<FloatType> shoebox) {
     return self(shoebox);
   }
 
   template <typename FloatType>
-  FloatType call_4(
+  af::tiny<FloatType,2> call_4(
       const Creator<FloatType> &self,
       const af::const_ref< FloatType, af::c_grid<3> > &data,
       af::ref< int, af::c_grid<3> > mask,

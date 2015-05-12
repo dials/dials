@@ -87,8 +87,10 @@ class BackgroundAlgorithm(object):
 
     # Do the background subtraction
     reflections['background.mse'] = flex.double(len(reflections))
+    reflections['background.dispersion'] = flex.double(len(reflections))
     success = self._creator(
       reflections['shoebox'],
-      reflections['background.mse'])
+      reflections['background.mse'],
+      reflections['background.dispersion'])
     reflections['background.mean'] = reflections['shoebox'].mean_background()
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
