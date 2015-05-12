@@ -15,7 +15,7 @@ from __future__ import division
 from dials.array_family import flex
 
 import boost.python
-from dials_viewer_ext import gen_img
+from dials_viewer_ext import gen_font_img
 
 if(__name__ == "__main__"):
   lst_flex = []
@@ -33,5 +33,5 @@ if(__name__ == "__main__"):
 
 
 print "arr_2d.as_numpy_array() = \n", arr_2d.as_numpy_array()
-print "gen_img(arr_2d).as_numpy_array() = \n", gen_img(arr_2d).as_numpy_array()
+print "gen_font_img(arr_2d).as_numpy_array() = \n", gen_font_img(arr_2d).as_numpy_array()
 

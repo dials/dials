@@ -7,7 +7,7 @@ import time
 #from looping import loops_2d
 from dials.array_family import flex
 
-#from dials_viewer_ext import gen_img, rgb_img
+#from dials_viewer_ext import gen_font_img, rgb_img
 from dials_viewer_ext import rgb_img
 
 
@@ -16,7 +16,7 @@ def GetBitmap_from_np_array(data2d):
 
   time1 = time.time()
 
-  #img_array_tmp = gen_img(data2d).as_numpy_array()
+  #img_array_tmp = gen_font_img(data2d).as_numpy_array()
 
   wx_bmp_arr = rgb_img()
   img_array_tmp = wx_bmp_arr.gen_bmp(data2d).as_numpy_array()
@@ -36,12 +36,12 @@ def GetBitmap_from_np_array(data2d):
   return wxBitmap
 
 
-def build_np_img(width=64, height=64):
+def build_np_img(nrow=64, ncol=64):
 
-  data2d = flex.double(flex.grid(width, height), 0)
+  data2d = flex.double(flex.grid(nrow, ncol), 0)
 
-  for x in range(width):
-    for y in range(height):
+  for x in range(nrow):
+    for y in range(ncol):
       data2d[x, y] += (x * 1.5 + y * 1.5)
 
 
@@ -65,8 +65,8 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    #data2d = build_np_img(width = 800, height = 1800)
-    data2d = build_np_img(width = 5, height = 13)
+    #data2d = build_np_img(nrow = 800, ncol = 1800)
+    data2d = build_np_img(nrow = 8, ncol = 14)
 
     bitmap = GetBitmap_from_np_array(data2d)
 
