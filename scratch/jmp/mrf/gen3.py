@@ -76,7 +76,10 @@ def glm2(y):
 
   beta = matrix.col([0])
 
-  for i in range(10):
+  maxiter = 10
+  accuracy = 1e-3
+
+  for iter in range(maxiter):
 
     ni = flex.double([1.0 for xx in x])
     sni = flex.sqrt(ni)
@@ -130,14 +133,18 @@ def glm2(y):
     DiagB = EpsiS /(sni*sV) * w * (ni*dmu_deta)**2
     B = matrix.diag(DiagB)
     H = (X.transpose() * B * X) / len(y)
-    beta_new = beta + H.inverse() * EEq
-    # print beta_new
-    print beta_new, flex.exp(flex.double(X * beta))[0]
+    dbeta = H.inverse() * EEq
+    beta_new = beta + dbeta
 
+    relE = sqrt(sum([d*d for d in dbeta])/max(1e-20, sum([d*d for d in beta])))
     beta = beta_new
 
+    print relE
+    if relE < accuracy:
+      break
+
+
   weights = [min(1, c / abs(r)) for r in residPS]
-  print weights
 
   eta = flex.double(X*beta)
 
@@ -153,10 +160,6 @@ if __name__ == '__main__':
   seed(0)
   means1 = []
   means2 = []
-
-  X = [0, 0, 1, 3, 0, 0, 2, 1, 2, 1]
-  glm2(X)
-  exit(0)
 
   for k in range(10):
     print k

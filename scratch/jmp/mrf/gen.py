@@ -71,15 +71,6 @@ def glm33(x, p):
     r = [xx - mu for xx in x]
     D = [rr*rr / (1 * MSE) * (hh / (1-hh)**2) for rr, hh in zip(r, H)]
     N = sum(1 for d in D if d > 4 / len(x))
-    from scipy.special import iv
-    I0 = iv(0,2*mu)
-    S = [log(I0) + lgamma(xx+1) - mu - xx*log(mu) for xx in x]
-    print "S max: ", max(S)
-
-    # print "DMAX: ", max(D), 4 / len(x), N
-    # from matplotlib import pylab
-    # pylab.hist(D)
-    # pylab.show()
     beta = (X.transpose() * W * X).inverse() * X.transpose()*W*z
     if abs(beta[0] - beta0) < 1e-3:
       break
