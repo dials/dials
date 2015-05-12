@@ -360,7 +360,6 @@ namespace dials { namespace nexus { namespace boost_python {
     flex_wrapper<NXdetector>::plain("flex_nxdetector");
 
     // Expose the optional values
-    to_and_from_python< boost::optional< vec3<double> > >();
     to_and_from_python< boost::optional< mat3<double> > >();
     to_and_from_python< boost::optional< af::tiny<double,4> > >();
     to_and_from_python< boost::optional<NXattenuator> >();

@@ -22,6 +22,23 @@ namespace dials { namespace nexus {
 
   };
 
+  template <>
+  struct serialize<NXdetector_module> {
+
+    template <typename Handle>
+    static
+    NXdetector_module load(const Handle &handle) {
+      return NXdetector_module();
+    }
+
+    template <typename Handle>
+    static
+    void dump(const NXdetector_module &obj, Handle &handle) {
+
+    }
+
+  };
+
 }} // namespace dials::nexus
 
 #endif // DIALS_NEXUS_NXDETECTOR_MODULE_H

@@ -3,9 +3,19 @@
 #define DIALS_NEXUS_SERIALIZE_H
 
 #include <string>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace nexus {
+
+  std::string dataset_name(const H5::DataSet& ds) {
+      size_t len = H5Iget_name(ds.getId(),NULL,0);
+      char buffer[len];
+      H5Iget_name(ds.getId(),buffer,len+1);
+      std::string n = buffer;
+      return n;
+  }
+
 
   template <typename T>
   struct serialize {
@@ -43,6 +53,114 @@ namespace dials { namespace nexus {
     template <typename Handle>
     static
     void dump(const std::string &obj, Handle &handle) {
+
+    }
+
+  };
+
+  template <>
+  struct serialize<bool> {
+
+    template <typename Handle>
+    static
+    bool load(const Handle &dataset) {
+      bool result;
+      H5::DataType datatype = dataset.getDataType();
+      H5::DataSpace dataspace = dataset.getSpace();
+      DIALS_ASSERT(dataspace.isSimple());
+      bool ndims = dataspace.getSimpleExtentNdims();
+      DIALS_ASSERT(ndims == 1);
+      hsize_t dims = 0;
+      dataspace.getSimpleExtentDims(&dims);
+      DIALS_ASSERT(dims == 1);
+      dataset.read(&result, H5::PredType::NATIVE_HBOOL);
+      return result;
+    }
+
+    template <typename Handle>
+    static
+    void dump(const bool &obj, Handle &handle) {
+
+    }
+
+  };
+
+  template <>
+  struct serialize<int> {
+
+    template <typename Handle>
+    static
+    int load(const Handle &dataset) {
+      int result;
+      H5::DataType datatype = dataset.getDataType();
+      H5::DataSpace dataspace = dataset.getSpace();
+      DIALS_ASSERT(dataspace.isSimple());
+      int ndims = dataspace.getSimpleExtentNdims();
+      DIALS_ASSERT(ndims == 1);
+      hsize_t dims = 0;
+      dataspace.getSimpleExtentDims(&dims);
+      DIALS_ASSERT(dims == 1);
+      dataset.read(&result, H5::PredType::NATIVE_INT);
+      return result;
+    }
+
+    template <typename Handle>
+    static
+    void dump(const int &obj, Handle &handle) {
+
+    }
+
+  };
+
+  template <>
+  struct serialize<double> {
+
+    template <typename Handle>
+    static
+    double load(const Handle &dataset) {
+      double result;
+      H5::DataType datatype = dataset.getDataType();
+      H5::DataSpace dataspace = dataset.getSpace();
+      DIALS_ASSERT(dataspace.isSimple());
+      int ndims = dataspace.getSimpleExtentNdims();
+      DIALS_ASSERT(ndims == 1);
+      hsize_t dims = 0;
+      dataspace.getSimpleExtentDims(&dims);
+      DIALS_ASSERT(dims == 1);
+      dataset.read(&result, H5::PredType::NATIVE_DOUBLE);
+      return result;
+    }
+
+    template <typename Handle>
+    static
+    void dump(const double &obj, Handle &handle) {
+
+    }
+
+  };
+
+  template <>
+  struct serialize<af::shared<double> > {
+
+    template <typename Handle>
+    static
+    af::shared<double>  load(const Handle &dataset) {
+      af::shared<double>  result;
+      H5::DataType datatype = dataset.getDataType();
+      H5::DataSpace dataspace = dataset.getSpace();
+      DIALS_ASSERT(dataspace.isSimple());
+      int ndims = dataspace.getSimpleExtentNdims();
+      DIALS_ASSERT(ndims == 1);
+      hsize_t dims = 0;
+      dataspace.getSimpleExtentDims(&dims);
+      result.resize(dims);
+      dataset.read(&result[0], H5::PredType::NATIVE_DOUBLE);
+      return result;
+    }
+
+    template <typename Handle>
+    static
+    void dump(const af::shared<double>  &obj, Handle &handle) {
 
     }
 
