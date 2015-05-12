@@ -502,6 +502,7 @@ doc/user/manual.tex -text
 /error.h -text
 extensions/__init__.py -text
 extensions/gaussian_rs_profile_model_ext.py -text
+extensions/glm_background_ext.py -text
 extensions/kabsch_spotfinder_threshold_ext.py -text
 extensions/null_background_ext.py -text
 extensions/simple_background_ext.py -text
