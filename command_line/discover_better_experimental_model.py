@@ -35,6 +35,9 @@ output = optimized_datablock.json
 
 master_params = master_phil_scope.fetch().extract()
 
+import random
+flex.set_random_seed(42)
+random.seed(42)
 
 class better_experimental_model_discovery(object):
   def __init__(self, imagesets, spot_lists, solution_lists,
