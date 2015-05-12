@@ -138,7 +138,7 @@ namespace dials { namespace nexus {
     }
 
   };
-
+  
   template <>
   struct serialize<af::shared<double> > {
 
@@ -161,6 +161,60 @@ namespace dials { namespace nexus {
     template <typename Handle>
     static
     void dump(const af::shared<double>  &obj, Handle &handle) {
+
+    }
+
+  };
+
+  template <>
+  struct serialize< af::versa<double, af::c_grid<2> > > {
+
+    template <typename Handle>
+    static
+    af::versa<double, af::c_grid<2> >  load(const Handle &dataset) {
+      af::versa<double, af::c_grid<2> >  result;
+      H5::DataType datatype = dataset.getDataType();
+      H5::DataSpace dataspace = dataset.getSpace();
+      DIALS_ASSERT(dataspace.isSimple());
+      int ndims = dataspace.getSimpleExtentNdims();
+      DIALS_ASSERT(ndims == 2);
+      hsize_t dims[2] = {0,0};
+      dataspace.getSimpleExtentDims(dims);
+      result.resize(af::c_grid<2>(dims[0], dims[1]));
+      dataset.read(&result[0], H5::PredType::NATIVE_DOUBLE);
+      return result;
+    }
+
+    template <typename Handle>
+    static
+    void dump(const af::versa<double, af::c_grid<2> >  &obj, Handle &handle) {
+
+    }
+
+  };
+  
+  template <>
+  struct serialize< af::versa<int, af::c_grid<2> > > {
+
+    template <typename Handle>
+    static
+    af::versa<int, af::c_grid<2> >  load(const Handle &dataset) {
+      af::versa<int, af::c_grid<2> >  result;
+      H5::DataType datatype = dataset.getDataType();
+      H5::DataSpace dataspace = dataset.getSpace();
+      DIALS_ASSERT(dataspace.isSimple());
+      int ndims = dataspace.getSimpleExtentNdims();
+      DIALS_ASSERT(ndims == 2);
+      hsize_t dims[2] = { 0, 0};
+      dataspace.getSimpleExtentDims(dims);
+      result.resize(af::c_grid<2>(dims[0], dims[1]));
+      dataset.read(&result[0], H5::PredType::NATIVE_INT);
+      return result;
+    }
+
+    template <typename Handle>
+    static
+    void dump(const af::versa<int, af::c_grid<2> >  &obj, Handle &handle) {
 
     }
 

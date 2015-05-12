@@ -106,6 +106,18 @@ namespace dials { namespace nexus {
               result.pixel_mask_applied = serialize<bool>::load(dset);
             } else if (name == "countrate_correction_applied_applied") {
               result.countrate_correction_applied_applied = serialize<bool>::load(dset);
+            } else if (name == "angular_calibration") {
+              result.angular_calibration = serialize< 
+                af::versa< double, af::c_grid<2> > >::load(dset);
+            } else if (name == "flatfield") {
+              result.flatfield = serialize< 
+                af::versa< double, af::c_grid<2> > >::load(dset);
+            } else if (name == "flatfield_error") {
+              result.flatfield_error = serialize< 
+                af::versa< double, af::c_grid<2> > >::load(dset);
+            } else if (name == "pixel_mask") {
+              result.pixel_mask = serialize< 
+                af::versa< int, af::c_grid<2> > >::load(dset);
             }
           }
           break;
