@@ -99,7 +99,7 @@ def glm2(y):
 
     H = flex.floor(mu*ni - c*sni*sV)
     K = flex.floor(mu*ni + c*sni*sV)
-
+    # print min(H)
     dpH  = flex.double([poisson(mui).pmf(Hi)   for mui,Hi in zip(mu,H)])
     dpH1 = flex.double([poisson(mui).pmf(Hi-1) for mui,Hi in zip(mu,H)])
     dpK  = flex.double([poisson(mui).pmf(Ki)   for mui,Ki in zip(mu,K)])
@@ -133,13 +133,15 @@ def glm2(y):
     DiagB = EpsiS /(sni*sV) * w * (ni*dmu_deta)**2
     B = matrix.diag(DiagB)
     H = (X.transpose() * B * X) / len(y)
+
+
     dbeta = H.inverse() * EEq
     beta_new = beta + dbeta
 
-    relE = sqrt(sum([d*d for d in dbeta])/max(1e-20, sum([d*d for d in beta])))
+    relE = sqrt(sum([d*d for d in dbeta])/max(1e-10, sum([d*d for d in beta])))
     beta = beta_new
 
-    print relE
+    # print relE
     if relE < accuracy:
       break
 
@@ -149,7 +151,7 @@ def glm2(y):
   eta = flex.double(X*beta)
 
   mu = flex.exp(eta)
-  return mu[0]
+  return beta
 
 
 if __name__ == '__main__':
@@ -157,18 +159,29 @@ if __name__ == '__main__':
   from dials.array_family import flex
   from random import uniform
   from numpy.random import poisson, seed
+  from scitbx.glmtbx import robust_glm
   seed(0)
   means1 = []
   means2 = []
 
   for k in range(10):
     print k
-    a = list(poisson(0.1, 100))
-    print a
+    a = list(poisson(100, 100))
     # a[4] = 10
     # a[50] = 100
     means1.append(sum(a)/len(a))
-    means2.append(glm2(a))
+    # means2.append(glm2(a))
+
+    X = flex.double([1] * len(a))
+    X.reshape(flex.grid(len(a), 1))
+
+    Y = flex.double(a)
+    B = flex.double([0])
+
+    result = robust_glm(X, Y, B, family="poisson")
+    print list(result.parameters())
+    print list(glm2(a))
+
 
   from matplotlib import pylab
   print "MOM1: ", sum(means1) / len(means1)

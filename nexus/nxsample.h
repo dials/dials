@@ -38,7 +38,54 @@ namespace dials { namespace nexus {
     template <typename Handle>
     static
     NXsample load(const Handle &handle) {
-      return NXsample();
+      NXsample result;
+
+      // Process the objects in the group
+      for (std::size_t i = 0; i < handle.getNumObjs(); ++i) {
+
+        // Get the name of the object
+        std::string name = handle.getObjnameByIdx(i);
+
+        switch (handle.getObjTypeByIdx(i)) {
+        case H5G_GROUP:
+          {
+            H5::Group group = handle.openGroup(name);
+            if (is_nx_class(group, "NXbeam")) {
+              result.beam.push_back(serialize<NXbeam>::load(group));
+            }
+          }
+          break;
+
+        case H5G_DATASET:
+          {
+            H5::DataSet dset = handle.openDataSet(name);
+            if (name == "name") {
+              result.name = serialize<std::string>::load(dset);
+            } else if (name == "chemical_formula") {
+              result.chemical_formula = serialize<std::string>::load(dset);
+            } else if (name == "temperature") {
+              result.temperature = serialize<double>::load(dset);
+            } else if (name == "unit_cell_class") {
+              result.unit_cell_class = serialize< af::shared<std::string> >::load(dset);
+            } else if (name == "unit_cell_group") {
+              result.unit_cell_group = serialize< af::shared<std::string> >::load(dset);
+            } else if (name == "sample_orientation") {
+              result.sample_orientation = serialize< vec3<double> >::load(dset);
+            } else if (name == "orientation_matrix") {
+              result.orientation_matrix = serialize<af::shared< mat3<double> > >::load(dset);
+            } else if (name == "unit_cell") {
+              result.unit_cell = serialize<af::shared< af::tiny<double,6> > >::load(dset);
+            }
+          }
+          break;
+
+        default:
+          break;
+        };
+      }
+
+      // Return the NXsample object
+      return result;
     }
 
     template <typename Handle>

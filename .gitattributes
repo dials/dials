@@ -737,6 +737,8 @@ scratch/jmp/mrf/gen.py -text
 scratch/jmp/mrf/gen.r -text
 scratch/jmp/mrf/gen2.py -text
 scratch/jmp/mrf/gen3.py -text
+scratch/jmp/mrf/gen4.py -text
+scratch/jmp/mrf/gen5.py -text
 scratch/jmp/mrf/nbinom.py -text
 scratch/jmp/mrf/sim.py -text
 scratch/jmp/mrf/test_p.py -text

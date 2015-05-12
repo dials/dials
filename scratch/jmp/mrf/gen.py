@@ -58,8 +58,7 @@ def glm33(x, p):
     n = beta0
     mu = exp(n)
 
-
-    z = [n + (xx - mu) / mu for xx in x]
+    z = [(xx - mu) / mu for xx in x]
     w = [pp * mu for pp in p]
 
     W = matrix.diag(w)
@@ -71,12 +70,20 @@ def glm33(x, p):
     r = [xx - mu for xx in x]
     D = [rr*rr / (1 * MSE) * (hh / (1-hh)**2) for rr, hh in zip(r, H)]
     N = sum(1 for d in D if d > 4 / len(x))
-    beta = (X.transpose() * W * X).inverse() * X.transpose()*W*z
-    if abs(beta[0] - beta0) < 1e-3:
-      break
-    beta0 = beta[0]
+    # print X.transpose()*W*z
+    # print (W*X)[0]
+    # print (X.transpose()*W*X).inverse()[0]
+    delta = (X.transpose() * W * X).inverse() * X.transpose()*W*z
+    # print delta
 
-  return exp(beta[0])
+    relE = sqrt(sum([d*d for d in delta])/max(1e-10, sum([d*d for d in [beta0]])))
+    beta0 = beta0 + delta[0]
+
+    # print relE
+    if relE < 1e-3:
+      break
+
+  return exp(beta0)
 
 def simple(x):
   from numpy import median
@@ -117,6 +124,8 @@ if __name__ == '__main__':
   from dials.array_family import flex
   from random import uniform
   from numpy.random import poisson, seed
+  from scitbx.glmtbx import glm as glmc
+  from math import exp
   seed(0)
   means1 = []
   means3 = []
@@ -125,7 +134,7 @@ if __name__ == '__main__':
     # print "---"
     a = list(poisson(1, 100))
 
-    a[4] = 1000
+    # a[4] = 1000
     # a[5] = 100
 
     mean_m, weight_m, res_m = m_estimate(a)
@@ -136,7 +145,15 @@ if __name__ == '__main__':
     means1.append(sum(a)/len(a))
     means3.append(mtl(a))
     mean_m = glm3(a)
-    print k, mean_m
+
+    X = flex.double([1]*len(a))
+    X.reshape(flex.grid(len(a), 1))
+    Y = flex.double(a)
+    B = flex.double([0])
+    P = flex.double([1] * len(a))
+    v = glmc(X, Y, B, P, max_iter=100)
+
+    print k, mean_m, exp(v.parameters()[0])
     means4.append(mean_m)
 
   from matplotlib import pylab
