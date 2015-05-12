@@ -22,7 +22,9 @@ namespace dials { namespace algorithms { namespace background {
     class_<Creator>("Creator", no_init)
       .def(init<
           double,
-          std::size_t>())
+          std::size_t>((
+              arg("tuning_constant"),
+              arg("max_iter"))))
       .def("__call__", &Creator::operator())
       ;
   }

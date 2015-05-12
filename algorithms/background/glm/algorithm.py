@@ -23,8 +23,8 @@ class BackgroundAlgorithm(object):
     :param tuning_constant: The robust tuning constant
 
     '''
-    from dials.algorithms.background.glm import Modeller
-    self._model = Modeller(
+    from dials.algorithms.background.glm import Creator
+    self._create = Creator(
       tuning_constant=tuning_constant,
       max_iter=100)
 
@@ -38,6 +38,7 @@ class BackgroundAlgorithm(object):
     from dials.array_family import flex
 
     # Do the background subtraction
-    success = self._model(reflections['shoebox'])
-    reflections['background.mean'] = reflections['shoebox'].background[0]
+    success = self._create(reflections['shoebox'])
+    reflections['background.mean'] = flex.double(
+      [sbox.background[0] for sbox in reflections['shoebox']])
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
