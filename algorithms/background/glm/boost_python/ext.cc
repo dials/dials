@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/algorithms/background/glm/robust_poisson_mean.h>
 #include <dials/algorithms/background/glm/creator.h>
 
 namespace dials { namespace algorithms { namespace background {
@@ -19,6 +20,24 @@ namespace dials { namespace algorithms { namespace background {
 
   BOOST_PYTHON_MODULE(dials_algorithms_background_glm_ext)
   {
+    class_<RobustPoissonMean>("RobustPoissonMean", no_init)
+      .def(init<const af::const_ref<double>&,
+                double,
+                double,
+                double,
+                std::size_t>((
+                  arg("Y"),
+                  arg("mean0"),
+                  arg("c")=1.345,
+                  arg("tolerance")=1e-3,
+                  arg("max_iter")=100)))
+      .def("mean", &RobustPoissonMean::mean)
+      .def("niter", &RobustPoissonMean::niter)
+      .def("error", &RobustPoissonMean::error)
+      .def("converged", &RobustPoissonMean::converged)
+      ;
+
+
     class_<Creator>("Creator", no_init)
       .def(init<
           double,

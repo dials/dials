@@ -11,6 +11,7 @@ algorithms/background/glm/__init__.py -text
 algorithms/background/glm/algorithm.py -text
 algorithms/background/glm/boost_python/ext.cc -text
 algorithms/background/glm/creator.h -text
+algorithms/background/glm/robust_poisson_mean.h -text
 algorithms/background/helpers.h -text
 algorithms/background/simple/__init__.py -text
 algorithms/background/simple/algorithm.py -text

@@ -18,13 +18,11 @@ class SimpleBackgroundExt(BackgroundIface):
 
   name = 'glm'
 
-  default = True
-
   @classmethod
   def phil(cls):
     from libtbx.phil import parse
     phil = parse('''
-                 
+
       robust {
         tuning_constant = 1.345
           .type = float
