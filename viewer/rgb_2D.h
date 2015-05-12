@@ -13,8 +13,8 @@
 #define DIALS_RGB_IMG_BUILDER_H
 #include <iostream>
 #include <string>
-#include <scitbx/array_family/flex_types.h>
 #include <cmath>
+#include <scitbx/array_family/flex_types.h>
 #include <dials/viewer/fonts_2D.h>
 
 namespace dials { namespace viewer { namespace boost_python {
@@ -55,15 +55,17 @@ namespace dials { namespace viewer { namespace boost_python {
     err_conv = get_font_img_array(font_vol);
 
     std::cout << "\n ndept =" << ndept << "\n";
-
-    for (int i = 0; i < 7; i++){
-      for (int j = 0; j < 7; j++){
-        for (int k = 0; k < ndept; k ++){
-          std::cout << "i,j,k =" << i << ", " << j << ", " << k << "\n";
-          font_3d_img(i,j,k) = font_vol[i][j][k];
+    if(err_conv == 0){
+      for (int i = 0; i < 7; i++){
+        for (int j = 0; j < 7; j++){
+          for (int k = 0; k < ndept; k ++){
+            //std::cout << "i,j,k =" << i << ", " << j << ", " << k << "\n";
+            font_3d_img(i,j,k) = font_vol[i][j][k];
+          }
         }
       }
     }
+
 
 
     return font_3d_img;
@@ -134,7 +136,7 @@ namespace dials { namespace viewer { namespace boost_python {
                 min = loc_cel;
               }
             }
-            scaled_array(row, col) = data2d(row, col);
+            //scaled_array(row, col) = data2d(row, col);
           }
         }
 
@@ -143,45 +145,50 @@ namespace dials { namespace viewer { namespace boost_python {
 
         dif = max - min;
 
-        for (int row = 0; row < nrow ; row++) {
+        for (int row = 0; row < nrow; row++) {
           for (int col = 0; col < ncol; col++) {
+            /*
             scaled_array(row, col) = 255.0 * 3 * (( scaled_array(row, col) - min)
+                                                          / dif );
+            */
+            scaled_array(row, col) = 255.0 * 3 * (( data2d(row, col) - min)
                                                           / dif );
           }
         }
 
         std::cout << "\n here 03 \n";
-        bool auto_zoom = false;
+        //bool auto_zoom = false;
         int px_scale = 0;
 
+        std::cout << "ncol, nrow = " << ncol << ", " << nrow << "\n";
         if(ncol < 200 and nrow < 200){
-          auto_zoom = true;
-        }
+          //auto_zoom = true;
 
-        float diagn;
-        if(auto_zoom == true){
-          if(ncol < 20 and nrow < 20){
-            px_scale = 50;
-          }else{
-            diagn = sqrt(ncol * ncol + nrow * nrow);
-            px_scale = (1000.0 / diagn);
-          }
-
-
+          float diagn;
+            if(ncol < 20 and nrow < 20){
+              px_scale = 85;
+              std::cout << "less than (20 * 20) pixels \n";
+            }else{
+              diagn = sqrt(ncol * ncol + nrow * nrow);
+              px_scale = (1000.0 / diagn);
+              std::cout << "scale = " << px_scale << "\n";
+            }
         }else{
-          px_scale = 1;
+            px_scale = 1;
         }
-
-
 
           flex_int bmp_dat(flex_grid<>(nrow * px_scale, ncol * px_scale, 3),0);
                   std::cout << "\n auto_zoom == true \n" << "px_scale ="
                             << px_scale << "\n";
 
 
-        for (int row = 0; row < nrow ; row++) {
+        int digit_val[12];
+        int err_conv = 0;
+
+
+        for (int row = 0; row < nrow; row++) {
           for (int col = 0; col < ncol; col++) {
-            if(auto_zoom == true){
+            if(px_scale > 1){
 
               for(int pix_row = row * px_scale;
                   pix_row < row * px_scale + px_scale;
@@ -197,6 +204,18 @@ namespace dials { namespace viewer { namespace boost_python {
                   bmp_dat(pix_row, pix_col, 2) = blue_byte[int(
                                                  scaled_array(row, col))];
                 }
+              }
+
+              err_conv = get_digits(data2d(row, col), digit_val);
+              if(err_conv == 0){
+                std::cout << "data2d(row, col) = " << data2d(row, col) << "\n"
+                          <<"digit_val: \n";
+                for(int dg_num = 0;
+                    dg_num < 12 and digit_val[dg_num] != 15;
+                    dg_num++){
+                  std::cout << " " << digit_val[dg_num] << ", ";
+                }
+                std::cout << "\n";
               }
 
             }else{

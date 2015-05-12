@@ -13,8 +13,9 @@
 #define DIALS_RGB_LOW_LEVEL_H
 #include <iostream>
 #include <string>
-#include <scitbx/array_family/flex_types.h>
 #include <cmath>
+#include <scitbx/array_family/flex_types.h>
+
 
   using scitbx::af::flex_double;
   using scitbx::af::flex_int;
@@ -274,15 +275,13 @@
         }
       }
 
-    std::cout << " {" << asc_str[i] << "} " << "["<< dgt_num[i] <<"],";
+    //std::cout << " {" << asc_str[i] << "} " << "["<< dgt_num[i] <<"],";
     }
 
-    std::cout << "\nerr_cod =" << err_cod << "\n";
+    //std::cout << "\nerr_cod =" << err_cod << "\n";
 
     return err_cod;
   }
-
-
 
 
 #endif
