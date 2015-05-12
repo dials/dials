@@ -29,7 +29,6 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
     env.SConscript('array_family/SConscript', exports={ 'env' : env })
     env.SConscript('algorithms/SConscript', exports={ 'env' : env })
     env.SConscript('viewer/SConscript', exports={ 'env' : env })
-
-    # NOTE: This script removes libs - must be last
+    #env.SConscript('nexus/SConscript', exports={ 'env' : env })
     env.SConscript('test/SConscript', exports={ 'env' : env })
 

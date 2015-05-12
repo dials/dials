@@ -160,7 +160,9 @@ namespace dials { namespace algorithms { namespace background {
       }
       DIALS_ASSERT(count > 0);
       double mean = sum1 / count;
-      double var = sum2 / count - sum1*sum1;
+      double var = sum2 / count - mean*mean;
+      DIALS_ASSERT(mean >= 0);
+      DIALS_ASSERT(var >= 0);
       double dispersion = mean > 0 ? var / mean : 0;
       mse /= count;
       return af::tiny<FloatType,2>(mse, dispersion);

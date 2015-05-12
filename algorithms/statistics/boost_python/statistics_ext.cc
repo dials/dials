@@ -15,6 +15,7 @@
 #include <dials/algorithms/statistics/kolmogorov_smirnov_one_sided_distribution.h>
 #include <dials/algorithms/statistics/kolmogorov_smirnov_two_sided_distribution.h>
 #include <dials/algorithms/statistics/kolmogorov_smirnov_test.h>
+#include <dials/algorithms/statistics/poisson_test.h>
 #include <dials/algorithms/statistics/correlation.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
@@ -72,6 +73,8 @@ namespace dials { namespace algorithms { namespace boost_python {
         &kolmogorov_smirnov_test_standard_normal<double>, (
           arg("data"),
           arg("type") = "two_sided"));
+
+    def("poisson_expected_max_counts", &poisson_expected_max_counts);
 
 
     def("spearman_correlation_coefficient",

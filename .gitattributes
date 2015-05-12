@@ -260,6 +260,7 @@ algorithms/statistics/kolmogorov_smirnov_one_sided_distribution.h -text
 algorithms/statistics/kolmogorov_smirnov_test.h -text
 algorithms/statistics/kolmogorov_smirnov_two_sided_distribution.h -text
 algorithms/statistics/ks_test.py -text
+algorithms/statistics/poisson_test.h -text
 algorithms/statistics/temp.py -text
 array_family/SConscript -text
 array_family/__init__.py -text
