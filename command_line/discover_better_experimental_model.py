@@ -1,11 +1,11 @@
 from __future__ import division
 
 import math
+from logging import info, debug
 from libtbx.phil import command_line
 import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex
-# from dials.util.command_line import Importer
 from dials.util.options import OptionParser
 from dials.util.options import flatten_datablocks, flatten_reflections
 from dials.algorithms.indexing.indexer \
@@ -64,9 +64,6 @@ class better_experimental_model_discovery(object):
     beamr0 = s0.cross(axis).normalize()
     beamr1 = beamr0.cross(s0).normalize()
     beamr2 = beamr1.cross(s0).normalize()
-    #beamr1 = matrix.col(detector[0].get_fast_axis())
-    #beamr2 = matrix.col(detector[0].get_slow_axis())
-    #beamr0 = beamr1.cross(beamr2).normalize()
 
     assert approx_equal(s0.dot(beamr1), 0.)
     assert approx_equal(s0.dot(beamr2), 0.)
@@ -203,8 +200,7 @@ class better_experimental_model_discovery(object):
        from -1.0 to 1.0"""
     import cmath
     from rstbx.dps_core import Direction, Directional_FFT
-    nh = min ( solutions.size(), 20) # extended API
-    #solutions = self.getSolutions() #extended API
+    nh = min(solutions.size(), 20) # extended API
     sum_score = 0.0
     for t in xrange(nh):
       #if t!=unique:continue
@@ -242,10 +238,6 @@ def run_dps(args):
   spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
     spots=spots, detector=detector, scan=scan)
 
-  #from dials.algorithms.indexing.indexer import Indexer
-  #spots_mm = Indexer._map_spots_pixel_to_mm_rad(
-    #spots=spots, detector=detector, scan=scan)
-
   # derive a max_cell from mm spots
   # derive a grid sampling from spots
 
@@ -278,13 +270,14 @@ def run_dps(args):
   #plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
   #plt.show()
 
-  print "Running DPS"
+  info("Running DPS")
 
   DPS.index(raw_spot_input=data,
             panel_addresses=flex.int([s['panel'] for s in spots_mm]))
-  print "Found %i solutions" %len(DPS.getSolutions()),
-  print "with max unit cell %7.2f Angstroms."%(DPS.amax)
-  return dict(solutions=flex.vec3_double([s.dvec for s in DPS.getSolutions()]),amax=DPS.amax)
+  info("Found %i solutions with max unit cell %7.2f Angstroms." %(
+    len(DPS.getSolutions()), DPS.amax))
+  return dict(solutions=flex.vec3_double(
+    [s.dvec for s in DPS.getSolutions()]), amax=DPS.amax)
 
 
 def discover_better_experimental_model(imagesets, spot_lists, params,
@@ -325,36 +318,23 @@ def discover_better_experimental_model(imagesets, spot_lists, params,
     new_detector = discoverer.optimize_origin_offset_local_scope()
     old_beam_centre = detector.get_ray_intersection(beam.get_s0())[1]
     new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())[1]
-    print "Old beam centre: %.2f mm, %.2f mm" %old_beam_centre
-    print "New beam centre: %.2f mm, %.2f mm" %new_beam_centre
-    print "Shift: %.2f mm, %.2f mm" %(
-      matrix.col(old_beam_centre)-matrix.col(new_beam_centre)).elems
+    info("Old beam centre: %.2f mm, %.2f mm" %old_beam_centre)
+    info("New beam centre: %.2f mm, %.2f mm" %new_beam_centre)
+    info("Shift: %.2f mm, %.2f mm" %(
+      matrix.col(old_beam_centre)-matrix.col(new_beam_centre)).elems)
     return new_detector, beam
   elif params.indexing.improve_local_scope=="S0_vector":
     raise NotImplementedError()
-    #new_S0_vector = DPS.optimize_S0_local_scope()
-    #import copy
-    #new_beam = copy.copy(beam)
-    #new_beam.set_s0(new_S0_vector)
-    #return detector, new_beam
 
 
 def run(args):
-  if len(args) == 0:
-    from libtbx.utils import Usage
-    import libtbx.load_env
-    from cStringIO import StringIO
-    usage_message = """\
-%s datablock.json strong.pickle [options]
-
-Parameters:
-""" %libtbx.env.dispatcher_name
-    s = StringIO()
-    master_phil_scope.show(out=s)
-    usage_message += s.getvalue()
-    raise Usage(usage_message)
+  import libtbx.load_env
+  from libtbx.utils import Sorry
+  from dials.util import log
+  usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
+    usage=usage,
     phil=master_phil_scope,
     read_datablocks=True,
     read_reflections=True,
@@ -363,9 +343,12 @@ Parameters:
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
   reflections = flatten_reflections(params.input.reflections)
+
+  # Configure the logging
+  log.config(info='dials.discover_better_experimental_model.log')
+
   if len(datablocks) == 0:
-    print "No DataBlock could be constructed"
-    return
+    raise Sorry("No DataBlock could be constructed")
   imagesets = []
   for datablock in datablocks:
     imagesets.extend(datablock.extract_imagesets())
