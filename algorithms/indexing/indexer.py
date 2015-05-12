@@ -34,9 +34,16 @@ indexing {
   nproc = 1
     .type = int(value_min=1)
     .help = "The number of processes to use."
-
   discover_better_experimental_model = False
     .type = bool
+    .expert_level = 1
+  mm_search_scope = 4.0
+    .help = "Global radius of origin offset search."
+    .type = float(value_min=0)
+    .expert_level = 1
+  wide_search_binning = 5
+    .help = "Modify the coarseness of the wide grid search for the beam centre."
+    .type = float(value_min=0)
     .expert_level = 1
   min_cell = 20
     .type = float(value_min=0)
@@ -465,6 +472,27 @@ class indexer_base(object):
     self.filter_reflections_by_scan_range()
     if len(self.reflections) == 0:
       raise Sorry("No reflections left to index!")
+
+    if self.params.discover_better_experimental_model:
+
+      from dials.command_line.discover_better_experimental_model \
+           import discover_better_experimental_model
+
+      from rstbx.phil.phil_preferences import indexing_api_defs
+      import iotbx.phil
+      hardcoded_phil = iotbx.phil.parse(
+        input_string=indexing_api_defs).extract()
+      hardcoded_phil.indexing.mm_search_scope = self.params.mm_search_scope
+
+      new_detector, new_beam = discover_better_experimental_model(
+        [self.imagesets[0]], [self.reflections], hardcoded_phil, nproc=self.params.nproc,
+        wide_search_binning=self.params.wide_search_binning)
+
+      self.sweep.set_detector(new_detector)
+      self.sweep.set_beam(new_beam)
+      self.detector = new_detector
+      self.beam = new_beam
+
     self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
 
@@ -490,15 +518,6 @@ class indexer_base(object):
 
     had_refinement_error = False
     have_similar_crystal_models = False
-
-    if self.params.discover_better_experimental_model:
-      opt_detector, opt_beam = self.discover_better_experimental_model(
-        self.reflections, self.detector, self.beam, self.goniometer,
-        self.imagesets[0].get_scan())
-      self.sweep.set_detector(opt_detector)
-      self.sweep.set_beam(opt_beam)
-      self.detector = opt_detector
-      self.beam = opt_beam
 
     while True:
       self.d_min = self.params.refinement_protocol.d_min_start
@@ -874,24 +893,6 @@ class indexer_base(object):
           -rot_angle))
       else:
         spots_mm['rlp'].set_selected(sel, S)
-
-  @staticmethod
-  def discover_better_experimental_model(reflections, detector, beam,
-                                         goniometer, scan):
-    from rstbx.phil.phil_preferences import indexing_api_defs
-    import iotbx.phil
-    hardcoded_phil = iotbx.phil.parse(
-      input_string=indexing_api_defs).extract()
-    params = hardcoded_phil
-    import copy
-
-    opt_detector, opt_beam = discover_better_experimental_model(
-      copy.deepcopy(reflections), detector, beam,
-      goniometer=goniometer, scan=scan, params=hardcoded_phil)
-    info("DISCOVERED BETTER MODEL:")
-    info(opt_detector)
-    info(opt_beam)
-    return opt_detector, opt_beam
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
                                           max_combinations=1):
@@ -1429,70 +1430,6 @@ class SolutionTracker(object):
     solutions = [s for s in self.filtered_solutions
                  if s.model_likelihood == self.best_filtered_liklihood]
     return solutions[0]
-
-
-def discover_better_experimental_model(spot_positions, detector, beam,
-                                       goniometer, scan, params):
-  '''Given an attempt at indexing derive a more likely model for the
-  experimental geometry.'''
-
-  # Spot_positions: Centroid positions for spotfinder spots, in pixels
-  # Return value: Corrected for parallax, converted to mm
-
-  spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
-    spots=spot_positions, detector=detector, scan=scan)
-
-  # derive a max_cell from mm spots
-  # derive a grid sampling from spots
-
-  from rstbx.indexing_api.lattice import DPS_primitive_lattice
-  # max_cell: max possible cell in Angstroms; set to None, determine from data
-  # recommended_grid_sampling_rad: grid sampling in radians; guess for now
-
-  DPS = DPS_primitive_lattice(max_cell = None,
-                              recommended_grid_sampling_rad = None,
-                              horizon_phil = params)
-  from scitbx import matrix
-  DPS.S0_vector = matrix.col(beam.get_s0())
-  DPS.inv_wave = 1./beam.get_wavelength()
-  if goniometer is None:
-    DPS.axis = matrix.col((1,0,0))
-  else:
-    DPS.axis = matrix.col(goniometer.get_rotation_axis())
-  DPS.set_detector(detector)
-
-  # transform input into what Nick needs
-  # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
-
-  data = flex.vec3_double()
-  for spot in spots_mm:
-    data.append((spot['xyzobs.mm.value'][0],
-                 spot['xyzobs.mm.value'][1],
-                 spot['xyzobs.mm.value'][2]*180./math.pi))
-
-  #from matplotlib import pyplot as plt
-  #plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
-  #plt.show()
-
-  DPS.index(raw_spot_input = data, panel_addresses = flex.int([s['panel'] for s in spots_mm]))
-
-  # for development, we want an exhaustive plot of beam probability map:
-  params.indexing.plot_search_scope = False
-
-  # perform calculation
-  if params.indexing.improve_local_scope=="origin_offset":
-    #new_detector = optimize_origin_offset_local_scope([DPS])
-    new_detector = DPS.optimize_origin_offset_local_scope()
-    return new_detector, beam
-  elif params.indexing.improve_local_scope=="S0_vector":
-    new_S0_vector = DPS.optimize_S0_local_scope()
-    import copy
-    new_beam = copy.copy(beam)
-    new_beam.set_s0(new_S0_vector)
-    return detector, new_beam
-
-  #NKS TO DO: implement rigorous scope instead of local scope.
-
 
 
 def optimise_basis_vectors(reciprocal_lattice_points, vectors):
