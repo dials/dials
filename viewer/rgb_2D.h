@@ -28,10 +28,7 @@ namespace dials { namespace viewer { namespace boost_python {
     int npos=data_num.accessor().all()[0];
     int digit_val[12];
     int err_conv = 0;
-
     double dl_nm;
-
-
 
     for (int pos = 0; pos < npos; pos++) {
       dl_nm = data_num(pos, 0);
@@ -43,229 +40,33 @@ namespace dials { namespace viewer { namespace boost_python {
 
       std::cout << "\n______________________________________\n";
 
-
     }
 
     return bmp_dat;
   }
 
 
-
-
-  flex_int gen_img(flex_double & data2d) {
+  flex_int gen_font_img(flex_double & data2d) {
 
     int ndept=data2d.accessor().all()[0];
-    flex_int bmp_dat(flex_grid<>(7, 7, ndept),0);
+    flex_int font_3d_img(flex_grid<>(7, 7, ndept),0);
+    int err_conv = 0;
+    int font_vol[7][7][16];
+    err_conv = get_font_img_array(font_vol);
 
-    int arr_2d_0[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,1,1,0,0,1,1},
-                          {0,1,0,0,1,0,1},
-                          {0,1,0,1,0,0,1},
-                          {0,0,1,1,1,1,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 0) = arr_2d_0[col][row];
+    std::cout << "\n ndept =" << ndept << "\n";
+
+    for (int i = 0; i < 7; i++){
+      for (int j = 0; j < 7; j++){
+        for (int k = 0; k < ndept; k ++){
+          std::cout << "i,j,k =" << i << ", " << j << ", " << k << "\n";
+          font_3d_img(i,j,k) = font_vol[i][j][k];
+        }
       }
     }
 
-    int arr_2d_1[7][7] = {{0,0,0,0,0,0,0},
-                          {0,1,1,1,0,0,0},
-                          {0,0,0,1,0,0,0},
-                          {0,0,0,1,0,0,0},
-                          {0,0,0,1,0,0,0},
-                          {0,1,1,1,1,1,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 1) = arr_2d_1[col][row];
-      }
-    }
 
-    int arr_2d_2[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,1,0,0,0,1,1},
-                          {0,0,0,0,1,1,0},
-                          {0,0,0,1,1,0,0},
-                          {0,1,1,1,1,1,1},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 2) = arr_2d_2[col][row];
-      }
-    }
-
-    int arr_2d_3[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,1,0,0,0,1,1},
-                          {0,0,0,1,1,1,0},
-                          {0,0,0,0,0,1,1},
-                          {0,1,1,1,1,1,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 3) = arr_2d_3[col][row];
-      }
-    }
-
-    int arr_2d_4[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,0,0,1,1,0},
-                          {0,0,0,1,1,1,0},
-                          {0,0,1,1,0,1,0},
-                          {0,1,1,1,1,1,1},
-                          {0,0,0,0,0,1,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 4) = arr_2d_4[col][row];
-      }
-    }
-
-    int arr_2d_5[7][7] = {{0,0,0,0,0,0,0},
-                          {0,1,1,1,1,1,0},
-                          {0,1,0,0,0,0,0},
-                          {0,1,1,1,1,1,1},
-                          {0,0,0,0,0,0,1},
-                          {0,1,1,1,1,1,1},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 5) = arr_2d_5[col][row];
-      }
-    }
-
-    int arr_2d_6[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,1,1,0,0,0,0},
-                          {0,1,1,1,1,1,1},
-                          {0,1,1,0,0,0,1},
-                          {0,0,1,1,1,1,1},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 6) = arr_2d_6[col][row];
-      }
-    }
-
-    int arr_2d_7[7][7] = {{0,0,0,0,0,0,0},
-                          {0,1,1,1,1,1,1},
-                          {0,0,0,0,0,1,1},
-                          {0,0,0,0,1,1,0},
-                          {0,0,0,1,1,0,0},
-                          {0,0,1,1,0,0,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 7) = arr_2d_7[col][row];
-      }
-    }
-
-    int arr_2d_8[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,1,1,0,0,1,1},
-                          {0,0,1,1,1,1,0},
-                          {0,1,1,0,0,1,1},
-                          {0,0,1,1,1,1,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 8) = arr_2d_8[col][row];
-      }
-    }
-
-    int arr_2d_9[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,1,1,0,0,1,1},
-                          {0,1,1,1,1,1,1},
-                          {0,0,0,0,0,1,1},
-                          {0,1,1,1,1,1,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 9) = arr_2d_9[col][row];
-      }
-    }
-
-    int arr_2d_point[7][7] = {{0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,1,1,0,0,0},
-                              {0,0,1,1,0,0,0},
-                              {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 10) = arr_2d_point[col][row];
-      }
-    }
-
-    int arr_2d_e[7][7] = {{0,0,0,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,1,1,0,0,1,0},
-                          {0,1,1,1,1,1,0},
-                          {0,1,1,0,0,0,0},
-                          {0,0,1,1,1,1,0},
-                          {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 11) = arr_2d_e[col][row];
-      }
-    }
-
-    int arr_2d_plus[7][7] =  {{0,0,0,0,0,0,0},
-                              {0,0,0,1,0,0,0},
-                              {0,0,0,1,0,0,0},
-                              {0,1,1,1,1,1,0},
-                              {0,0,0,1,0,0,0},
-                              {0,0,0,1,0,0,0},
-                              {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 12) = arr_2d_plus[col][row];
-      }
-    }
-
-    int arr_2d_minus[7][7] = {{0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,1,1,1,1,1,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 13) = arr_2d_minus[col][row];
-      }
-    }
-
-    int arr_2d_space[7][7] = {{0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 14) = arr_2d_space[col][row];
-      }
-    }
-
-    int arr_2d_null[7][7] =  {{0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0},
-                              {0,0,0,0,0,0,0}};
-    for (int row = 0; row < 7 ; row++) {
-      for (int col = 0; col < 7; col++) {
-        bmp_dat(col, row, 15) = arr_2d_null[col][row];
-      }
-    }
-
-    return bmp_dat;
+    return font_3d_img;
   }
 
 

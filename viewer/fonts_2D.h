@@ -9,18 +9,231 @@
  *  included in the root directory of this package.
  */
 
-//#ifndef DIALS_RGB_IMG_BUILDER_H
-//#define DIALS_RGB_IMG_BUILDER_H
+#ifndef DIALS_RGB_LOW_LEVEL_H
+#define DIALS_RGB_LOW_LEVEL_H
 #include <iostream>
 #include <string>
 #include <scitbx/array_family/flex_types.h>
 #include <cmath>
 
-//namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_double;
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
+  int get_font_img_array( int (&font_bw_img)[7][7][16]){
+
+    int err_cod = 0;
+
+    int arr_2d_0[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,1,0,0,1,1},
+                          {0,1,0,0,1,0,1},
+                          {0,1,0,1,0,0,1},
+                          {0,0,1,1,1,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][0] = arr_2d_0[col][row];
+      }
+    }
+
+    int arr_2d_1[7][7] = {{0,0,0,0,0,0,0},
+                          {0,1,1,1,0,0,0},
+                          {0,0,0,1,0,0,0},
+                          {0,0,0,1,0,0,0},
+                          {0,0,0,1,0,0,0},
+                          {0,1,1,1,1,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][1] = arr_2d_1[col][row];
+      }
+    }
+
+    int arr_2d_2[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,0,0,0,1,1},
+                          {0,0,0,0,1,1,0},
+                          {0,0,0,1,1,0,0},
+                          {0,1,1,1,1,1,1},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][2] = arr_2d_2[col][row];
+      }
+    }
+
+    int arr_2d_3[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,0,0,0,1,1},
+                          {0,0,0,1,1,1,0},
+                          {0,0,0,0,0,1,1},
+                          {0,1,1,1,1,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][3] = arr_2d_3[col][row];
+      }
+    }
+
+    int arr_2d_4[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,0,0,1,1,0},
+                          {0,0,0,1,1,1,0},
+                          {0,0,1,1,0,1,0},
+                          {0,1,1,1,1,1,1},
+                          {0,0,0,0,0,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][4] = arr_2d_4[col][row];
+      }
+    }
+
+    int arr_2d_5[7][7] = {{0,0,0,0,0,0,0},
+                          {0,1,1,1,1,1,0},
+                          {0,1,0,0,0,0,0},
+                          {0,1,1,1,1,1,1},
+                          {0,0,0,0,0,0,1},
+                          {0,1,1,1,1,1,1},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][5] = arr_2d_5[col][row];
+      }
+    }
+
+    int arr_2d_6[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,1,0,0,0,0},
+                          {0,1,1,1,1,1,1},
+                          {0,1,1,0,0,0,1},
+                          {0,0,1,1,1,1,1},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][6] = arr_2d_6[col][row];
+      }
+    }
+
+    int arr_2d_7[7][7] = {{0,0,0,0,0,0,0},
+                          {0,1,1,1,1,1,1},
+                          {0,0,0,0,0,1,1},
+                          {0,0,0,0,1,1,0},
+                          {0,0,0,1,1,0,0},
+                          {0,0,1,1,0,0,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][7] = arr_2d_7[col][row];
+      }
+    }
+
+    int arr_2d_8[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,1,0,0,1,1},
+                          {0,0,1,1,1,1,0},
+                          {0,1,1,0,0,1,1},
+                          {0,0,1,1,1,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][8] = arr_2d_8[col][row];
+      }
+    }
+
+    int arr_2d_9[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,1,0,0,1,1},
+                          {0,1,1,1,1,1,1},
+                          {0,0,0,0,0,1,1},
+                          {0,1,1,1,1,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][9] = arr_2d_9[col][row];
+      }
+    }
+
+    int arr_2d_point[7][7] = {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,1,1,0,0,0},
+                              {0,0,1,1,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][10] = arr_2d_point[col][row];
+      }
+    }
+
+    int arr_2d_e[7][7] = {{0,0,0,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,1,1,0,0,1,0},
+                          {0,1,1,1,1,1,0},
+                          {0,1,1,0,0,0,0},
+                          {0,0,1,1,1,1,0},
+                          {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][11] = arr_2d_e[col][row];
+      }
+    }
+
+    int arr_2d_plus[7][7] =  {{0,0,0,0,0,0,0},
+                              {0,0,0,1,0,0,0},
+                              {0,0,0,1,0,0,0},
+                              {0,1,1,1,1,1,0},
+                              {0,0,0,1,0,0,0},
+                              {0,0,0,1,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][12] = arr_2d_plus[col][row];
+      }
+    }
+
+    int arr_2d_minus[7][7] = {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,1,1,1,1,1,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][13] = arr_2d_minus[col][row];
+      }
+    }
+
+    int arr_2d_space[7][7] = {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][14] = arr_2d_space[col][row];
+      }
+    }
+
+    int arr_2d_null[7][7] =  {{0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0},
+                              {0,0,0,0,0,0,0}};
+    for (int row = 0; row < 7 ; row++) {
+      for (int col = 0; col < 7; col++) {
+        font_bw_img[col][row][15] = arr_2d_null[col][row];
+      }
+    }
+
+    return err_cod;
+  }
 
   int get_digits( double nm, int (&dgt_num)[12]){
 
@@ -69,6 +282,7 @@
     return err_cod;
   }
 
-//}}}
 
-//#endif
+
+
+#endif
