@@ -81,26 +81,22 @@ namespace dials { namespace algorithms {
 
       // Allocate some arrays
       af::shared<double> Y(num_background, 0);
-      af::shared<double> B(1, 0);
-      af::versa< double, af::c_grid<2> > X(af::c_grid<2>(num_background, 1), 1);
 
       // Compute the median value for the starting value
       std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
       double median = Y[Y.size() / 2];
-      B[0] = median;
 
       // Compute the result
-      scitbx::glmtbx::robust_glm<scitbx::glmtbx::poisson> result(
-          X.const_ref(),
+      RobustPoissonMean result(
           Y.const_ref(),
-          B.const_ref(),
+          median,
           tuning_constant_,
           1e-3,
           max_iter_);
       DIALS_ASSERT(result.converged());
 
       // Compute the background
-      double background = std::exp(result.parameters()[0]);
+      double background = result.mean();
 
       // Fill in the background shoebox values
       for (std::size_t i = 0; i < sbox.background.size(); ++i) {
