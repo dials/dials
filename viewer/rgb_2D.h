@@ -230,9 +230,9 @@ namespace dials { namespace viewer { namespace boost_python {
                         font_pix_col < 7;
                         pix_col++,
                         font_pix_col++){
-                      if(font_vol[font_pix_col][font_pix_row][digit_val[dg_num] == 1]){
-                        bmp_dat(pix_row, pix_col, 0) = 118;
-                        bmp_dat(pix_row, pix_col, 1) = 118;
+                      if(font_vol[font_pix_row][font_pix_col][digit_val[dg_num]] == 1){
+                        bmp_dat(pix_row, pix_col, 0) = 50;
+                        bmp_dat(pix_row, pix_col, 1) = 158;
                         bmp_dat(pix_row, pix_col, 2) = 158;
                       }
                     }
