@@ -16,7 +16,6 @@
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
 
-
   using scitbx::af::flex_double;
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
