@@ -21,16 +21,16 @@ def GetBitmap_from_np_array(data2d):
   wx_bmp_arr = rgb_img()
   img_array_tmp = wx_bmp_arr.gen_bmp(data2d).as_numpy_array()
 
-  width = np.size(  img_array_tmp[0:1, :, 0:1] )
   height = np.size( img_array_tmp[:, 0:1, 0:1] )
-  img_array = np.empty( (height ,width, 3),'uint8')
+  width = np.size(  img_array_tmp[0:1, :, 0:1] )
+  img_array = np.empty( (height, width, 3),'uint8')
   img_array[:,:,:] = img_array_tmp[:,:,:]
 
   time2 = time.time()
   print ("dif(time) =", time2 - time1 )
 
   print "img_array.max =", img_array.max()
-  image = wx.EmptyImage(width,height)
+  image = wx.EmptyImage(width, height)
   image.SetData( img_array.tostring())
   wxBitmap = image.ConvertToBitmap()       # OR:  wx.BitmapFromImage(image)
   return wxBitmap
@@ -42,7 +42,8 @@ def build_np_img(nrow=64, ncol=64):
 
   for x in range(nrow):
     for y in range(ncol):
-      data2d[x, y] += (x * 1.5 + y * 1.5)
+      data2d[x, y] += (x * 1.00000000001 + y * 2.5555555555555) * -0.00000000001
+      print "number to see(aprox) =", data2d[x, y]
 
 
   return data2d

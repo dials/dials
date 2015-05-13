@@ -211,8 +211,7 @@ namespace dials { namespace viewer { namespace boost_python {
               err_conv = get_digits(data2d(col, row), digit_val);
 
               if(err_conv == 0){
-                std::cout << "data2d(col, row) = " << data2d(col, row) << "\n"
-                          <<"digit_val: \n";
+                std::cout << "data2d(col, row) = " << data2d(col, row) << "\n";
                 for(int dg_num = 0;
                     dg_num < 12 and digit_val[dg_num] != 15;
                     dg_num++){
@@ -235,9 +234,8 @@ namespace dials { namespace viewer { namespace boost_python {
                       }
                     }
                   }
-                std::cout << "\n";
+                }
               }
-            }
             }else{
               bmp_dat(col, row, 0) = red_byte[int(scaled_array(col, row))];
               bmp_dat(col, row, 1) = green_byte[int(scaled_array(col, row))];
