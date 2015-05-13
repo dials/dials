@@ -398,16 +398,22 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         match1.append(value.a[0])
         match2.append(value.b[0])
       else:
-        d = []
+        matched = {}
         for i in value.a:
+          d = []
           for j in value.b:
             dx = x1[i]-x2[j]
             dy = y1[i]-y2[j]
             dz = z1[i]-z2[j]
             d.append((i,j,dx**2 + dy**2 + dz**2))
-        i, j, d = __builtin__.min(d, key=lambda x: x[2])
-        match1.append(i)
-        match2.append(j)
+          i, j, d = __builtin__.min(d, key=lambda x: x[2])
+          if j not in matched:
+            matched[j] = (i, d)
+          elif d < matched[j][1]:
+            matched[j] = (i, d)
+        for key1, value1 in matched.iteritems():
+          match1.append(value1[0])
+          match2.append(key1)
 
     # Select everything which matches
     sind = flex.size_t(match1)
