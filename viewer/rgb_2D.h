@@ -56,11 +56,11 @@ namespace dials { namespace viewer { namespace boost_python {
 
     std::cout << "\n ndept =" << ndept << "\n";
     if(err_conv == 0){
-      for (int i = 0; i < 7; i++){
-        for (int j = 0; j < 7; j++){
-          for (int k = 0; k < ndept; k ++){
-            //std::cout << "i,j,k =" << i << ", " << j << ", " << k << "\n";
-            font_3d_img(i,j,k) = font_vol[i][j][k];
+      for (int row = 0; row < 7; row++){
+        for (int col = 0; col < 7; col++){
+          for (int dept = 0; dept < ndept; dept ++){
+            //std::cout << "col,row,k =" << col << ", " << row << ", " << dept << "\n";
+            font_3d_img(col,row,dept) = font_vol[col][row][dept];
           }
         }
       }

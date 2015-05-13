@@ -282,34 +282,6 @@
 
     return err_cod;
   }
-/*
-  int write_font_vol_array( int (&font_bw_img)[7][7][16]){
 
-
-    for (int row = 0; row < 7; row++) {
-      if (row==0){
-        std::cout << "\n  [ [ ";
-      } else {
-        std::cout << "\n    [ ";
-      }
-
-      for (int col = 0; col < 7; col++) {
-        //printf(" %3d ", int(data2d(row,col)));
-
-        //[ 5 ] = minimum width (no maximum given)
-        //[ 2 ] = precision after the period
-        printf("%6.2f ", data2d(row,col));
-
-        num++;
-
-        //std::cout << int(matx2d[row][col]) << " ,   ";
-      }
-      //fflush(stdout);
-      std::cout << "  ]";
-    }
-    std::cout << " ] \n";
-  return err_cod;
-  }
-*/
 
 #endif
