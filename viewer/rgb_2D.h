@@ -26,7 +26,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
     flex_int bmp_dat(flex_grid<>(7, 7, 10),0);
     int npos=data_num.accessor().all()[0];
-    int digit_val[12];
+    int digit_val[15];
     int err_conv = 0;
     double dl_nm;
 
@@ -183,7 +183,7 @@ namespace dials { namespace viewer { namespace boost_python {
                             << px_scale << "\n";
 
 
-        int digit_val[12];
+        int digit_val[15];
         int pix_col;
         int pix_row;
 

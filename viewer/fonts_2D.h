@@ -236,11 +236,12 @@
     return err_cod;
   }
 
-  int get_digits( double nm, int (&dgt_num)[12]){
+  int get_digits( double nm, int (&dgt_num)[15]){
 
     int err_cod = 0;
+    bool end_reached;
 
-    char asc_str[12];
+    char asc_str[15];
 
     std::string str;
     std::cout << "nm =" << nm << "\n";
@@ -250,8 +251,8 @@
 
     std::cout << "asc_str = <<" << asc_str << ">>\n\n";
     str = asc_str;
-
-    for (int i = 0; i < 12; i++){
+    end_reached = false;
+    for (int i = 0; i < 13; i++){
       str = asc_str[i];
       dgt_num[i] = asc_str[i] - 48;
 
@@ -268,6 +269,7 @@
           dgt_num[i] = 14;
         }else if( asc_str[i] == 0 ){
           dgt_num[i] = 15;
+          end_reached = true;
         }else{
           std::cout << "\nfound \'" << str << "\' and not converted";
           err_cod = asc_str[i];
@@ -275,10 +277,13 @@
           err_cod = 1;
         }
       }
-
-    //std::cout << " {" << asc_str[i] << "} " << "["<< dgt_num[i] <<"],";
+      std::cout << " {" << asc_str[i] << "} " << "["<< dgt_num[i] <<"],";
     }
 
+    if(end_reached == false){
+      std::cout << "\n to long number, err 2 \n";
+      err_cod = 2;
+    }
     //std::cout << "\nerr_cod =" << err_cod << "\n";
 
     return err_cod;
