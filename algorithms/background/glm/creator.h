@@ -81,10 +81,22 @@ namespace dials { namespace algorithms {
 
       // Allocate some arrays
       af::shared<double> Y(num_background, 0);
+      std::size_t j = 0;
+      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          DIALS_ASSERT(j < Y.size());
+          DIALS_ASSERT(sbox.data[i] >= 0);
+          Y[j++] = sbox.data[i];
+        }
+      }
+      DIALS_ASSERT(j == Y.size());
 
       // Compute the median value for the starting value
       std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
       double median = Y[Y.size() / 2];
+      if (median == 0) {
+        median = 1.0;
+      }
 
       // Compute the result
       RobustPoissonMean result(
@@ -101,6 +113,9 @@ namespace dials { namespace algorithms {
       // Fill in the background shoebox values
       for (std::size_t i = 0; i < sbox.background.size(); ++i) {
         sbox.background[i] = background;
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          sbox.mask[i] |= BackgroundUsed;
+        }
       }
     }
 
