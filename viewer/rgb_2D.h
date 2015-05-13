@@ -184,18 +184,18 @@ namespace dials { namespace viewer { namespace boost_python {
 
 
         int digit_val[12];
-        int font_pix_col;
-        int font_pix_row;
+        int pix_col;
+        int pix_row;
 
         for (int row = 0; row < nrow; row++) {
           for (int col = 0; col < ncol; col++) {
 
             if(px_scale > 1){
 
-              for(int pix_col = col * px_scale;
+              for(pix_col = col * px_scale;
                   pix_col < col * px_scale + px_scale;
                   pix_col++){
-                for(int pix_row = row * px_scale;
+                for(pix_row = row * px_scale;
                     pix_row < row * px_scale + px_scale;
                     pix_row++){
 
@@ -217,18 +217,12 @@ namespace dials { namespace viewer { namespace boost_python {
                     dg_num < 12 and digit_val[dg_num] != 15;
                     dg_num++){
 
-                  std::cout << " " << digit_val[dg_num] << ", ";
-
-                  font_pix_row = 0;
-
-                  for(int pix_row = row * px_scale + dg_num * 7;
+                  for(int font_pix_row = 0, pix_row = row * px_scale + dg_num * 7;
                       font_pix_row < 7;
                       pix_row++,
                       font_pix_row++){
 
-                    font_pix_col = 0;
-
-                    for(int pix_col = col * px_scale + 14;
+                    for(int font_pix_col = 0, pix_col = col * px_scale + 14;
                         font_pix_col < 7;
                         pix_col++,
                         font_pix_col++){
