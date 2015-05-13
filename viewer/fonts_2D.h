@@ -247,6 +247,7 @@
     sprintf (asc_str, "           ");
 
     sprintf (asc_str, "%g", nm);
+
     std::cout << "asc_str = <<" << asc_str << ">>\n\n";
     str = asc_str;
 
