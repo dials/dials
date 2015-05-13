@@ -80,6 +80,10 @@ namespace dials { namespace viewer { namespace boost_python {
       int green_byte[255 * 3 + 1];
       int blue_byte[255 * 3 + 1];
 
+      int err_conv;
+
+      int font_vol[7][7][16];
+
     public:
       rgb_img() {
 
@@ -109,7 +113,7 @@ namespace dials { namespace viewer { namespace boost_python {
         green_byte[765] = 255;
         red_byte[765] = 255;
 
-
+        err_conv = get_font_img_array(font_vol);
       }
 
       flex_int gen_bmp(flex_double & data2d) {
@@ -183,8 +187,8 @@ namespace dials { namespace viewer { namespace boost_python {
 
 
         int digit_val[12];
-        int err_conv = 0;
-
+        int font_pix_row;
+        int font_pix_col;
 
         for (int row = 0; row < nrow; row++) {
           for (int col = 0; col < ncol; col++) {
@@ -207,22 +211,42 @@ namespace dials { namespace viewer { namespace boost_python {
               }
 
               err_conv = get_digits(data2d(row, col), digit_val);
+
               if(err_conv == 0){
                 std::cout << "data2d(row, col) = " << data2d(row, col) << "\n"
                           <<"digit_val: \n";
                 for(int dg_num = 0;
                     dg_num < 12 and digit_val[dg_num] != 15;
                     dg_num++){
+
                   std::cout << " " << digit_val[dg_num] << ", ";
-                }
+                  font_pix_row = 0;
+                  for(int pix_row = row * px_scale + 14;
+                      font_pix_row < 7;
+                      pix_row++,
+                      font_pix_row++){
+                        font_pix_col = 0;
+                    for(int pix_col = col * px_scale + dg_num * 7;
+                        font_pix_col < 7;
+                        pix_col++,
+                        font_pix_col++){
+                      if(font_vol[font_pix_col][font_pix_row][digit_val[dg_num] == 1]){
+                        bmp_dat(pix_row, pix_col, 0) = 118;
+                        bmp_dat(pix_row, pix_col, 1) = 118;
+                        bmp_dat(pix_row, pix_col, 2) = 158;
+                      }
+                    }
+                  }
                 std::cout << "\n";
               }
-
+            }
             }else{
               bmp_dat(row, col, 0) = red_byte[int(scaled_array(row, col))];
               bmp_dat(row, col, 1) = green_byte[int(scaled_array(row, col))];
               bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
             }
+
+
 
           }
         }
