@@ -227,9 +227,9 @@ namespace dials { namespace viewer { namespace boost_python {
                     pix_col++,
                     mask_pix_col++){
 
-                  if(mask_vol[mask_pix_col][mask_pix_row][4] == 1){
-                    bmp_dat(pix_col, pix_row, 0) = 190;
-                    bmp_dat(pix_col, pix_row, 1) = 111;
+                  if(mask_vol[mask_pix_col][mask_pix_row][0] == 1){
+                    bmp_dat(pix_col, pix_row, 0) = 90;
+                    bmp_dat(pix_col, pix_row, 1) = 178;
                     bmp_dat(pix_col, pix_row, 2) = 111;
                   }
                 }
@@ -255,9 +255,9 @@ namespace dials { namespace viewer { namespace boost_python {
                         font_pix_col++){
 
                       if(font_vol[font_pix_col][font_pix_row][digit_val[dg_num]] == 1){
-                        bmp_dat(pix_col, pix_row, 0) = 50;
-                        bmp_dat(pix_col, pix_row, 1) = 158;
-                        bmp_dat(pix_col, pix_row, 2) = 158;
+                        bmp_dat(pix_col, pix_row, 0) = 90;
+                        bmp_dat(pix_col, pix_row, 1) = 111;
+                        bmp_dat(pix_col, pix_row, 2) = 178;
                       }
                     }
                   }

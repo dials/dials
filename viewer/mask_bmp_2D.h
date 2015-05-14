@@ -24,13 +24,22 @@ using scitbx::af::flex_grid;
 int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][5]){
   int err_cod = 0;
 
+  for(int dpt = 0; dpt < 5; dpt++){
+    for(int row = 0; row < PX_SCALE; row++){
+      for(int col = 0; col < PX_SCALE; col++){
+        mask_bw_img[col][row][dpt] = 0;
+      }
+    }
+  }
+
   for(int row = 0; row < PX_SCALE; row++){
     for(int col = 0; col < PX_SCALE; col++){
-      if(row == col){
-        mask_bw_img[col][row][0] = 1;
-      }else{
-        mask_bw_img[col][row][0] = 0;
+      for(int dg_pos = -80; dg_pos < 85; dg_pos+= 8){
+        if(row == col + dg_pos){
+          mask_bw_img[col][row][0] = 1;
+        }
       }
+
     }
   }
 
