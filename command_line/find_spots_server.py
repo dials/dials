@@ -8,18 +8,66 @@ import os
 stop = False
 
 def work(filename, cl=[]):
+  import libtbx.phil
+  phil_scope = libtbx.phil.parse('''\
+index = False
+  .type = bool
+''')
+  interp = phil_scope.command_line_argument_interpreter()
+  params, unhandled = interp.process_and_fetch(
+    cl, custom_processor='collect_remaining')
+  index = params.extract().index
+
   from dials.command_line.find_spots import phil_scope as params
   from dxtbx.datablock import DataBlockFactory
   from dials.array_family import flex
   interp = params.command_line_argument_interpreter()
-  for cla in cl:
-    params = params.fetch(interp.process(cla))
+  params, unhandled = interp.process_and_fetch(
+    unhandled, custom_processor='collect_remaining')
   datablock = DataBlockFactory.from_filenames([filename])[0]
   reflections = flex.reflection_table.from_observations(
     datablock, params.extract())
   from dials.algorithms.peak_finding import per_image_analysis
   imageset = datablock.extract_imagesets()[0]
-  stats = per_image_analysis.stats_single_image(imageset, reflections)
+  stats = per_image_analysis.stats_single_image(
+    imageset, reflections,
+    i=imageset.get_scan().get_image_range()[0]-1, plot=False)
+
+  if index and stats.n_spots_no_ice > 10:
+    import logging
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    from dials.command_line.index import phil_scope
+    interp = phil_scope.command_line_argument_interpreter()
+    params, unhandled = interp.process_and_fetch(
+      unhandled, custom_processor='collect_remaining')
+    imagesets = [imageset]
+    params = params.extract()
+    params.indexing.scan_range=[]
+  
+    if (imageset.get_goniometer() is not None and
+        imageset.get_scan() is not None and
+        imageset.get_scan().get_oscillation()[1] == 0):
+      imageset.set_goniometer(None)
+      imageset.set_scan(None)
+
+    try:
+      if params.indexing.method == "fft3d":
+        from dials.algorithms.indexing.fft3d import indexer_fft3d
+        idxr = indexer_fft3d(reflections, imagesets, params=params)
+      elif params.indexing.method == "fft1d":
+        from dials.algorithms.indexing.fft1d import indexer_fft1d
+        idxr = indexer_fft1d(reflections, imagesets, params=params)
+      elif params.indexing.method == "real_space_grid_search":
+        from dials.algorithms.indexing.real_space_grid_search \
+             import indexer_real_space_grid_search
+        idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
+      stats.crystal = idxr.refined_experiments.crystals()[0]
+      stats.n_indexed = len(idxr.refined_reflections)
+    except Exception, e:
+      stats.crystal = None
+      stats.n_indexed = None
+    print logging
+
   return stats
   return stats.n_spots_total, stats.n_spots_no_ice
 
@@ -47,9 +95,17 @@ class handler(server_base.BaseHTTPRequestHandler):
         '<d_min_method_2>%.2f</d_min_method_2>' % stats.d_min_distl_method_2,
         '<total_intensity>%.0f</total_intensity>' % stats.total_intensity,
       ]
+      if hasattr(stats, 'crystal') and stats.crystal is not None:
+        response.append(
+          '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %stats.crystal.get_unit_cell().parameters())
+        response.append(
+          '<n_indexed>%i</n_indexed>' %stats.n_indexed)
+        
       s.wfile.write('<response>\n%s\n</response>' % ('\n'.join(response)))
 
     except Exception, e:
+      #import traceback
+      #traceback.print_exc()
       s.wfile.write('<response>error: %s</response>' % str(e))
     return
 
