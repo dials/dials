@@ -16,6 +16,7 @@
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
 #include <dials/viewer/fonts_2D.h>
+#include <dials/viewer/mask_bmp_2D.h>
 
 namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_double;
@@ -38,7 +39,7 @@ namespace dials { namespace viewer { namespace boost_python {
         std::cout << "\nerror converting\n";
       }
 
-      std::cout << "\n______________________________________\n";
+      //std::cout << "\n______________________________________\n";
 
     }
 
@@ -54,7 +55,7 @@ namespace dials { namespace viewer { namespace boost_python {
     int font_vol[7][7][16];
     err_conv = get_font_img_array(font_vol);
 
-    std::cout << "\n ndept =" << ndept << "\n";
+    //std::cout << "\n ndept =" << ndept << "\n";
     if(err_conv == 0){
       for (int dept = 0; dept < ndept; dept ++){
         for (int row = 0; row < 7; row++){
@@ -83,6 +84,7 @@ namespace dials { namespace viewer { namespace boost_python {
       int err_conv;
 
       int font_vol[7][7][16];
+      int mask_vol[85][85][5];
 
     public:
       rgb_img() {
@@ -114,6 +116,8 @@ namespace dials { namespace viewer { namespace boost_python {
         red_byte[765] = 255;
 
         err_conv = get_font_img_array(font_vol);
+
+        err_conv = get_mask_img_array(mask_vol);
       }
 
       flex_int gen_bmp(flex_double & data2d) {
@@ -122,9 +126,9 @@ namespace dials { namespace viewer { namespace boost_python {
         int nrow=data2d.accessor().all()[1];
 
         double max = 1, min = -1, loc_cel, dif = 0;
-        std::cout << "\n here 01 \n";
+
         flex_double scaled_array(flex_grid<>(ncol, nrow),0);
-        std::cout << "\n here 02 \n";
+
          for (int row = 0; row < nrow; row++) {
           for (int col = 0; col < ncol ; col++) {
 
@@ -141,12 +145,11 @@ namespace dials { namespace viewer { namespace boost_python {
                 min = loc_cel;
               }
             }
-            //scaled_array(col, row) = data2d(col, row);
           }
         }
 
-        std::cout << "\n max = "<< max << "\n";
-        std::cout << "\n min = "<< min << "\n \n";
+        //std::cout << "\n max = "<< max << "\n";
+        //std::cout << "\n min = "<< min << "\n \n";
 
         dif = max - min;
 
@@ -157,30 +160,32 @@ namespace dials { namespace viewer { namespace boost_python {
           }
         }
 
-        std::cout << "\n here 03 \n";
+        //std::cout << "\n here 03 \n";
         //bool auto_zoom = false;
         int px_scale = 0;
 
-        std::cout << "nrow, ncol = " << nrow << ", " << ncol << "\n";
+        //std::cout << "nrow, ncol = " << nrow << ", " << ncol << "\n";
         if(nrow < 200 and ncol < 200){
           //auto_zoom = true;
 
           float diagn;
             if(nrow < 20 and ncol < 20){
               px_scale = 85;
-              std::cout << "less than (20 * 20) pixels \n";
+              //std::cout << "less than (20 * 20) pixels \n";
             }else{
               diagn = sqrt(nrow * nrow + ncol * ncol);
               px_scale = (1000.0 / diagn);
-              std::cout << "scale = " << px_scale << "\n";
+              //std::cout << "scale = " << px_scale << "\n";
             }
         }else{
             px_scale = 1;
         }
 
           flex_int bmp_dat(flex_grid<>(ncol * px_scale, nrow * px_scale, 3),0);
+                  /*
                   std::cout << "\n auto_zoom == true \n" << "px_scale ="
                             << px_scale << "\n";
+                  */
 
 
         int digit_val[15];
@@ -211,7 +216,7 @@ namespace dials { namespace viewer { namespace boost_python {
               err_conv = get_digits(data2d(col, row), digit_val);
 
               if(err_conv == 0){
-                std::cout << "data2d(col, row) = " << data2d(col, row) << "\n";
+                //std::cout << "data2d(col, row) = " << data2d(col, row) << "\n";
                 for(int dg_num = 0;
                     dg_num < 12 and digit_val[dg_num] != 15;
                     dg_num++){
@@ -246,7 +251,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
           }
         }
-        std::cout << "\n here 04 \n";
+        //std::cout << "\n here 04 \n";
 
       return bmp_dat;
       }

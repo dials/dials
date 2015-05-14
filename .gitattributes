@@ -1089,6 +1089,7 @@ viewer/boost_tst.py -text
 viewer/flex_3d_array_viewer_test.py -text
 viewer/fonts_2D.h -text
 viewer/from_flex_to_wxbitmap.py -text
+viewer/mask_bmp_2D.h -text
 viewer/rgb_2D.h -text
 viewer/slice_viewer.py -text
 viewer/viewer_interface.py -text

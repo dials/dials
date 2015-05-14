@@ -29,7 +29,7 @@ def GetBitmap_from_np_array(data2d):
   time2 = time.time()
   print ("dif(time) =", time2 - time1 )
 
-  print "img_array.max =", img_array.max()
+  #print "img_array.max =", img_array.max()
   image = wx.EmptyImage(width, height)
   image.SetData( img_array.tostring())
   wxBitmap = image.ConvertToBitmap()       # OR:  wx.BitmapFromImage(image)
@@ -43,7 +43,7 @@ def build_np_img(nrow=64, ncol=64):
   for x in range(nrow):
     for y in range(ncol):
       data2d[x, y] += (x * 1.00000000001 + y * 2.5555555555555) * -0.00000000001
-      print "number to see(aprox) =", data2d[x, y]
+      #print "number to see(aprox) =", data2d[x, y]
 
 
   return data2d
