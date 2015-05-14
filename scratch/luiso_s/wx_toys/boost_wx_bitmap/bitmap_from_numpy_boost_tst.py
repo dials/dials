@@ -42,7 +42,7 @@ def build_np_img(nrow=64, ncol=64):
 
   for x in range(nrow):
     for y in range(ncol):
-      data2d[x, y] += (x * 1.00000000001 + y * 2.5555555555555) * 0.00000000001
+      data2d[x, y] += (x * 1.00000000001 + y * 2.5555555555555) * -0.00000000001
       print "number to see(aprox) =", data2d[x, y]
 
 

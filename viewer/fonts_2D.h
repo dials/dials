@@ -244,9 +244,13 @@
 
     std::string str;
     std::cout << "nm =" << nm << "\n";
-    sprintf (asc_str, "           ");
+    snprintf (asc_str, 15, "               ");
+    //snprintf ( char * s, size_t n, const char * format, ... );
+    snprintf (asc_str, 15, "%g", nm);
 
-    sprintf (asc_str, "%g", nm);
+    /*
+     * cx = snprintf ( buffer, 100, "The half of %d is %d", 60, 60/2 );
+     */
 
     std::cout << "asc_str = <<" << asc_str << ">>\n\n";
     str = asc_str;
@@ -270,10 +274,13 @@
           dgt_num[i] = 15;
           end_reached = true;
         }else{
-          std::cout << "\nfound \'" << str << "\' and not converted";
-          err_cod = asc_str[i];
-          std::cout << "\n char(" << err_cod << ") found\n";
-          err_cod = 1;
+          if( end_reached == false ){
+            std::cout << "\nfound \'" << str << "\' and not converted";
+            err_cod = asc_str[i];
+            std::cout << "\n char(" << err_cod << ") found\n";
+            err_cod = 1;
+          }
+
         }
       }
       std::cout << " {" << asc_str[i] << "} " << "["<< dgt_num[i] <<"],";
