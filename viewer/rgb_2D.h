@@ -116,8 +116,16 @@ namespace dials { namespace viewer { namespace boost_python {
         red_byte[765] = 255;
 
         err_conv = get_font_img_array(font_vol);
-
+        if(err_conv != 0){
+          std::cout << "\n ERROR Building fonts internally \n error code ="
+                    << err_conv << "\n";
+        }
         err_conv = get_mask_img_array(mask_vol);
+        if(err_conv != 0){
+          std::cout << "\n ERROR Building mask internally \n error code ="
+                    << err_conv << "\n";
+        }
+
       }
 
       flex_int gen_bmp(flex_double & data2d) {
@@ -159,14 +167,9 @@ namespace dials { namespace viewer { namespace boost_python {
                                                           / dif );
           }
         }
-
-        //std::cout << "\n here 03 \n";
-        //bool auto_zoom = false;
         int px_scale = 0;
 
-        //std::cout << "nrow, ncol = " << nrow << ", " << ncol << "\n";
         if(nrow < 200 and ncol < 200){
-          //auto_zoom = true;
 
           float diagn;
             if(nrow < 20 and ncol < 20){
@@ -181,12 +184,7 @@ namespace dials { namespace viewer { namespace boost_python {
             px_scale = 1;
         }
 
-          flex_int bmp_dat(flex_grid<>(ncol * px_scale, nrow * px_scale, 3),0);
-                  /*
-                  std::cout << "\n auto_zoom == true \n" << "px_scale ="
-                            << px_scale << "\n";
-                  */
-
+        flex_int bmp_dat(flex_grid<>(ncol * px_scale, nrow * px_scale, 3),0);
 
         int digit_val[15];
         int pix_col;
@@ -197,12 +195,15 @@ namespace dials { namespace viewer { namespace boost_python {
 
             if(px_scale > 1){
 
-              for(pix_col = col * px_scale;
-                  pix_col < col * px_scale + px_scale;
-                  pix_col++){
-                for(pix_row = row * px_scale;
-                    pix_row < row * px_scale + px_scale;
-                    pix_row++){
+              //painting the scaled pixel with the *hot* colour convention
+
+              for(pix_row = row * px_scale;
+                  pix_row < row * px_scale + px_scale;
+                  pix_row++){
+
+                for(pix_col = col * px_scale;
+                    pix_col < col * px_scale + px_scale;
+                    pix_col++){
 
                   bmp_dat(pix_col, pix_row, 0) = red_byte[int(
                                                  scaled_array(col, row))];
@@ -213,8 +214,30 @@ namespace dials { namespace viewer { namespace boost_python {
                 }
               }
 
-              err_conv = get_digits(data2d(col, row), digit_val);
 
+
+              // Painting mask into the scaled pixel
+              for(int mask_pix_row = 0, pix_row = row * px_scale;
+                  mask_pix_row < px_scale;
+                  pix_row++,
+                  mask_pix_row++){
+
+                for(int mask_pix_col = 0, pix_col = col * px_scale;
+                    mask_pix_col < px_scale;
+                    pix_col++,
+                    mask_pix_col++){
+
+                  if(mask_vol[mask_pix_col][mask_pix_row][4] == 1){
+                    bmp_dat(pix_col, pix_row, 0) = 190;
+                    bmp_dat(pix_col, pix_row, 1) = 111;
+                    bmp_dat(pix_col, pix_row, 2) = 111;
+                  }
+                }
+              }
+
+
+              // Painting intensity value into the scaled pixel
+              err_conv = get_digits(data2d(col, row), digit_val);
               if(err_conv == 0){
                 //std::cout << "data2d(col, row) = " << data2d(col, row) << "\n";
                 for(int dg_num = 0;
@@ -231,7 +254,6 @@ namespace dials { namespace viewer { namespace boost_python {
                         pix_col++,
                         font_pix_col++){
 
-
                       if(font_vol[font_pix_col][font_pix_row][digit_val[dg_num]] == 1){
                         bmp_dat(pix_col, pix_row, 0) = 50;
                         bmp_dat(pix_col, pix_row, 1) = 158;
@@ -241,6 +263,7 @@ namespace dials { namespace viewer { namespace boost_python {
                   }
                 }
               }
+
             }else{
               bmp_dat(col, row, 0) = red_byte[int(scaled_array(col, row))];
               bmp_dat(col, row, 1) = green_byte[int(scaled_array(col, row))];
