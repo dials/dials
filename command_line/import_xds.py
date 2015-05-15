@@ -89,7 +89,7 @@ class IntegrateHKLImporter(object):
     # Get the unit cell to calculate the resolution
     uc = self._experiment.crystal.get_unit_cell()
 
-    # Read the SPOT.XDS file
+    # Read the INTEGRATE.HKL file
     Command.start('Reading INTEGRATE.HKL')
     handle = integrate_hkl.reader()
     handle.read_file(self._integrate_hkl)
