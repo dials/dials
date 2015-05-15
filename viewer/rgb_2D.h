@@ -50,7 +50,7 @@ namespace dials { namespace viewer { namespace boost_python {
   flex_int gen_font_img(flex_double & data2d) {
 
     int ndept=data2d.accessor().all()[0];
-    flex_int font_3d_img(flex_grid<>(7, 7, ndept),0);
+    flex_int font_3d_img(flex_grid<>(14, 7, ndept),0);
     int err_conv = 0;
     int font_vol[14][7][16];
     err_conv = get_font_img_array(font_vol);
@@ -59,7 +59,7 @@ namespace dials { namespace viewer { namespace boost_python {
     if(err_conv == 0){
       for (int dept = 0; dept < ndept; dept ++){
         for (int col = 0; col < 7; col++){
-          for (int row = 0; row < 7; row++){
+          for (int row = 0; row < 14; row++){
             //std::cout << "row,col,k =" << row << ", " << col << ", " << dept << "\n";
             font_3d_img(row,col,dept) = font_vol[row][col][dept];
           }
