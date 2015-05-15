@@ -52,7 +52,7 @@ namespace dials { namespace viewer { namespace boost_python {
     int ndept=data2d.accessor().all()[0];
     flex_int font_3d_img(flex_grid<>(7, 7, ndept),0);
     int err_conv = 0;
-    int font_vol[7][7][16];
+    int font_vol[14][7][16];
     err_conv = get_font_img_array(font_vol);
 
     //std::cout << "\n ndept =" << ndept << "\n";
@@ -83,7 +83,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
       int err_conv;
 
-      int font_vol[7][7][16];
+      int font_vol[14][7][16];
       int mask_vol[85][85][4];
 
     public:
@@ -227,7 +227,11 @@ namespace dials { namespace viewer { namespace boost_python {
                     pix_col++,
                     mask_pix_col++){
 
-                  if(mask_vol[mask_pix_col][mask_pix_row][3] == 1){
+                  if( mask_vol[mask_pix_col][mask_pix_row][0] == 1 or
+                      mask_vol[mask_pix_col][mask_pix_row][1] == 1 or
+                      mask_vol[mask_pix_col][mask_pix_row][2] == 1 or
+                      mask_vol[mask_pix_col][mask_pix_row][3] == 1 ){
+
                     bmp_dat(pix_col, pix_row, 0) = 90;
                     bmp_dat(pix_col, pix_row, 1) = 178;
                     bmp_dat(pix_col, pix_row, 2) = 111;
@@ -250,7 +254,7 @@ namespace dials { namespace viewer { namespace boost_python {
                       font_pix_row++){
 
                     for(int font_pix_col = 0, pix_col = col * px_scale + 14;
-                        font_pix_col < 7;
+                        font_pix_col < 14;
                         pix_col++,
                         font_pix_col++){
 
