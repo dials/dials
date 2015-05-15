@@ -45,7 +45,6 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
     }
   }
 
-
   // painting diagonal lines from left bottom to right top
   for(int row = 0; row < PX_SCALE; row++){
     for(int col = 0; col < PX_SCALE; col++){
@@ -57,7 +56,6 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
     }
   }
 
-
   // painting horizontal lines
   for(int row = 0; row < PX_SCALE; row++){
     for(int col = 0; col < PX_SCALE; col += DST_BTW_LIN){
@@ -65,16 +63,12 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
     }
   }
 
-
-
   // painting vertical lines
   for(int row = 0; row < PX_SCALE; row += DST_BTW_LIN ){
     for(int col = 0; col < PX_SCALE; col++ ){
         mask_bw_img[col][row][3] = 1;
     }
   }
-
-
 
   std::cout << "\n Hi from mask_bmp_2D\n";
 
