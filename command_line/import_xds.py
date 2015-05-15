@@ -198,6 +198,14 @@ class XDSFileImporter(object):
     print '-' * 80
     print 'Read %d experiments' % len(experiments)
 
+    # Attempt to create scan-varying crystal model if requested
+    if params.read_varying_crystal:
+      integrate_lp = os.path.join(self.args[0], 'INTEGRATE.LP')
+      if os.path.isfile(integrate_lp):
+        self.extract_varying_crystal(integrate_lp, experiments)
+      else:
+        print "No INTEGRATE.LP to extract varying crystal model. Skipping"
+
     # Loop through the data blocks
     for i, exp in enumerate(experiments):
 
@@ -256,6 +264,103 @@ class XDSFileImporter(object):
     # If no path exists, return None
     return None
 
+  @staticmethod
+  def extract_varying_crystal(integrate_lp, experiments):
+    '''Extract a varying crystal model from an INTEGRATE.LP file (static
+    in blocks with step changes) and write it to the provided
+    experiments
+    '''
+
+    if len(experiments) > 1:
+      print "Can only read a varying crystal model for a single " +\
+            "experiment. Skipping."
+      return
+    experiment = experiments[0]
+
+    # read required records from the file. Relies on them being in the
+    # right order as we read through once
+    xds_axis = None
+    xds_beam = None
+    blocks, a_axis, b_axis, c_axis = [], [], [], []
+    with open(integrate_lp) as f:
+      for record in f:
+        if record.lstrip().startswith("ROTATION_AXIS="):
+          xds_axis = record.split("ROTATION_AXIS=")[1].split()
+          break
+      for record in f:
+        if record.lstrip().startswith("INCIDENT_BEAM_DIRECTION="):
+          xds_beam = record.split("INCIDENT_BEAM_DIRECTION=")[1].split()
+          break
+      for record in f:
+        if record.lstrip().startswith("PROCESSING OF IMAGES"):
+          blocks.append(record.split("PROCESSING OF IMAGES")[1])
+          continue
+        if record.lstrip().startswith("COORDINATES OF UNIT CELL A-AXIS"):
+          a_axis.append(record.split("COORDINATES OF UNIT CELL A-AXIS")[1])
+          continue
+        if record.lstrip().startswith("COORDINATES OF UNIT CELL B-AXIS"):
+          b_axis.append(record.split("COORDINATES OF UNIT CELL B-AXIS")[1])
+          continue
+        if record.lstrip().startswith("COORDINATES OF UNIT CELL C-AXIS"):
+          c_axis.append(record.split("COORDINATES OF UNIT CELL C-AXIS")[1])
+          continue
+
+    # sanity checks
+    msg = "INTEGRATE.LP is not in the expected format"
+    nblocks = len(blocks)
+    try:
+      assert len(a_axis) == len(b_axis) == len(c_axis) == nblocks
+      assert (xds_axis, xds_beam).count(None) == 0
+    except AssertionError:
+      print msg
+      return
+
+    # conversions to numeric
+    try:
+      blocks = [map(int, block.split("...")) for block in blocks]
+      a_axis = [map(float, axis.split()) for axis in a_axis]
+      b_axis = [map(float, axis.split()) for axis in b_axis]
+      c_axis = [map(float, axis.split()) for axis in c_axis]
+      xds_beam = [float(e) for e in xds_beam]
+      xds_axis = [float(e) for e in xds_axis]
+    except ValueError:
+      print msg
+      return
+
+    # coordinate frame conversions
+    from scitbx import matrix
+    dbeam = matrix.col(experiment.beam.get_direction())
+    daxis = matrix.col(experiment.goniometer.get_rotation_axis())
+    xbeam = matrix.col(xds_beam).normalize()
+    xaxis = matrix.col(xds_axis).normalize()
+
+    # want to align XDS -s0 vector...
+    from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+    R = align_reference_frame(- xbeam, dbeam, xaxis, daxis)
+
+    # Make a static crystal for each block
+    from dxtbx.model.crystal import crystal_model
+    crystals = []
+    sg = experiment.crystal.get_space_group()
+    for a, b, c in zip(a_axis, b_axis, c_axis):
+      a = R * matrix.col(a)
+      b = R * matrix.col(b)
+      c = R * matrix.col(c)
+      crystals.append(crystal_model(a, b, c, space_group=sg))
+
+    # construct a list of scan points
+    A_list = []
+    for block, crystal in zip(blocks, crystals):
+      A = crystal.get_A()
+      for im in range(block[0], block[1] + 1):
+        A_list.append(A)
+    # Need a final scan point at the end of the final image
+    A_list.append(A)
+
+    # set the scan-varying crystal
+    experiment.crystal.set_A_at_scan_points(A_list)
+
+    return
 
 class Script(object):
   ''' A class to encapsulate the script. '''
@@ -296,6 +401,11 @@ class Script(object):
         .type = bool
         .help = "Add empty standard columns to the reflections. Note columns"
                 "for centroid variances are set to contain 1s, not 0s"
+
+      read_varying_crystal = False
+        .type = bool
+        .help = "Attempt to create a scan-varying crystal model from"
+                "INTEGRATE.LP, if present"
     ''')
 
     # The option parser
