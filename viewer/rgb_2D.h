@@ -25,7 +25,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
   flex_int gen_str_tst(flex_double & data_num) {
 
-    flex_int bmp_dat(flex_grid<>(7, 7, 10),0);
+    flex_int bmp_dat(flex_grid<>(14, 7, 10),0);
     int npos=data_num.accessor().all()[0];
     int digit_val[15];
     int err_conv = 0;
