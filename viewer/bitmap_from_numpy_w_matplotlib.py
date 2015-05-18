@@ -104,43 +104,23 @@ class wxbmp_from_np_array(object):
 
   def _wx_img_w_cpp(self, np_2d_tmp, show_nums, np_2d_mask = None):
 
-    to_study = '''
-    d = self.vl_max - self.vl_min
-    vl_mid_low = self.vl_min + d / 3.0
-    vl_mid_hig = self.vl_max - d / 3.0
-
-    lc_fig = plt.figure(frameon=False)
-
-    xmax = np_2d_tmp.shape[0]
-    ymax = np_2d_tmp.shape[1]
-    '''
-
-
-
 
     wx_bmp_arr = rgb_img()
 
 
 
-    not_working = '''
-    img_array_tmp = wx_bmp_arr.gen_bmp(np_2d_tmp.as_flex_array(),
-                                       np_2d_mask.as_flex_array()).as_numpy_array()
-    '''
-
-    #not_working = '''
     img_array_tmp = wx_bmp_arr.gen_bmp(flex.double(np_2d_tmp), flex.int(np_2d_mask)).as_numpy_array()
-    #'''
-    #a = tst_01(flex.int(data2d)).as_numpy_array()
+
 
     height = np.size( img_array_tmp[:, 0:1, 0:1] )
     width = np.size(  img_array_tmp[0:1, :, 0:1] )
     img_array = np.empty( (height, width, 3),'uint8')
     img_array[:,:,:] = img_array_tmp[:,:,:]
 
-    #image = wx.EmptyImage(width, height)
+
     self._wx_image = wx.EmptyImage(width, height)
 
-    #image.SetData( img_array.tostring())
+
     self._wx_image.SetData( img_array.tostring() )
 
 
@@ -148,36 +128,15 @@ class wxbmp_from_np_array(object):
 
 
 
-
-
-    to_study = '''
-    lc_fig.canvas.draw()
-    width, height = lc_fig.canvas.get_width_height()
-    np_buf = np.fromstring (lc_fig.canvas.tostring_rgb(), dtype=np.uint8)
-    np_buf.shape = (width, height, 3)
-    np_buf = np.roll(np_buf, 3, axis = 2)
-    self._wx_image = wx.EmptyImage(width, height)
-    self._wx_image.SetData( np_buf )
-    data_to_become_bmp = (self._wx_image, width, height)
-
-    plt.close(lc_fig)
-    '''
-
     return data_to_become_bmp
 
 
-  #old_way_with_matplotlib = '''
+
   def _wx_img(self, np_2d_tmp, show_nums, np_2d_mask = None):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
     vl_mid_hig = self.vl_max - d / 3.0
-
-    #print
-    #print "self.vl_min =", self.vl_min
-    #print " vl_mid_low =", vl_mid_low
-    #print " vl_mid_hig =", vl_mid_hig
-    #print "self.vl_max =", self.vl_max
 
     lc_fig = plt.figure(frameon=False)
 
@@ -284,7 +243,6 @@ class wxbmp_from_np_array(object):
     plt.close(lc_fig)
 
     return data_to_become_bmp
-  #'''
 
 
   def _wx_bmp_scaled(self, data_to_become_bmp, scale):
