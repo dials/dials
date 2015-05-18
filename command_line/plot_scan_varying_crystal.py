@@ -188,9 +188,13 @@ class Script(object):
 
     ax = plt.subplot(gs[0, 1])
     ax.ticklabel_format(useOffset=False)
+    ymin, ymax = 0.0, 0.0
     for cell in dat:
       plt.plot(cell['phi'], cell['alpha'])
-      plt.axis(ymin=floor(min(cell['alpha']) - 0.05), ymax=ceil(max(cell['alpha']) + 0.05))
+      # choose the widest y range
+      ymin = max(ymin, floor(min(cell['alpha']) - 0.05))
+      ymax = max(ymax, ceil(max(cell['alpha']) + 0.05))
+      plt.axis(ymin=ymin, ymax=ymax)
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'angle $\left(^\circ\right)$')
     plt.title(r'$\alpha$')
@@ -205,9 +209,13 @@ class Script(object):
 
     ax = plt.subplot(gs[1, 1])
     ax.ticklabel_format(useOffset=False)
+    ymin, ymax = 0.0, 0.0
     for cell in dat:
       plt.plot(cell['phi'], cell['beta'])
-      plt.axis(ymin=floor(min(cell['beta'])- 0.05), ymax=ceil(max(cell['beta']) + 0.05))
+      # choose the widest y range
+      ymin = max(ymin, floor(min(cell['beta']) - 0.05))
+      ymax = max(ymax, ceil(max(cell['beta']) + 0.05))
+      plt.axis(ymin=ymin, ymax=ymax)
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'angle $\left(^\circ\right)$')
     plt.title(r'$\beta$')
@@ -222,9 +230,13 @@ class Script(object):
 
     ax = plt.subplot(gs[2, 1])
     ax.ticklabel_format(useOffset=False)
+    ymin, ymax = 0.0, 0.0
     for cell in dat:
       plt.plot(cell['phi'], cell['gamma'])
-      plt.axis(ymin=floor(min(cell['gamma']) - 0.05), ymax=ceil(max(cell['gamma']) + 0.05))
+      # choose the widest y range
+      ymin = max(ymin, floor(min(cell['gamma']) - 0.05))
+      ymax = max(ymax, ceil(max(cell['gamma']) + 0.05))
+      plt.axis(ymin=ymin, ymax=ymax)
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'angle $\left(^\circ\right)$')
     plt.title(r'$\gamma$')
