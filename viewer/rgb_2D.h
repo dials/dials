@@ -232,9 +232,9 @@ namespace dials { namespace viewer { namespace boost_python {
                       mask_vol[mask_pix_row][mask_pix_col][2] == 1 or
                       mask_vol[mask_pix_row][mask_pix_col][3] == 1 ){
 
-                    bmp_dat(pix_row, pix_col, 0) = 90;
-                    bmp_dat(pix_row, pix_col, 1) = 178;
-                    bmp_dat(pix_row, pix_col, 2) = 111;
+                    bmp_dat(pix_row, pix_col, 0) = 127;
+                    bmp_dat(pix_row, pix_col, 1) = 127;
+                    bmp_dat(pix_row, pix_col, 2) = 127;
                   }
                 }
               }
@@ -259,9 +259,20 @@ namespace dials { namespace viewer { namespace boost_python {
                         font_pix_row++){
 
                       if(font_vol[font_pix_row][font_pix_col][digit_val[dg_num]] == 1){
-                        bmp_dat(pix_row, pix_col, 0) = 90;
-                        bmp_dat(pix_row, pix_col, 1) = 111;
-                        bmp_dat(pix_row, pix_col, 2) = 178;
+                        if( scaled_array(row, col) < 255 ){
+                          bmp_dat(pix_row, pix_col, 0) = 255;
+                          bmp_dat(pix_row, pix_col, 1) = 255;
+                          bmp_dat(pix_row, pix_col, 2) = 0;
+                        }else if( scaled_array(row, col) > 255 * 2 ){
+                          bmp_dat(pix_row, pix_col, 0) = 0;
+                          bmp_dat(pix_row, pix_col, 1) = 0;
+                          bmp_dat(pix_row, pix_col, 2) = 0;
+                        }else{
+                          bmp_dat(pix_row, pix_col, 0) = 00;
+                          bmp_dat(pix_row, pix_col, 1) = 00;
+                          bmp_dat(pix_row, pix_col, 2) = 255;
+                        }
+
                       }
                     }
                   }

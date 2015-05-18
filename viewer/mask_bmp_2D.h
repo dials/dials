@@ -12,7 +12,7 @@
 #ifndef DIALS_MASK_LOW_LEVEL_H
 #define DIALS_MASK_LOW_LEVEL_H
 #define PX_SCALE 85
-#define DST_BTW_LIN 7
+#define DST_BTW_LIN 14
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -26,7 +26,7 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
   int err_cod = 0;
 
   // cleaning mask
-  for(int dpt = 0; dpt < DST_BTW_LIN; dpt++){
+  for(int dpt = 0; dpt < 4; dpt++){
     for(int row = 0; row < PX_SCALE; row++){
       for(int col = 0; col < PX_SCALE; col++){
         mask_bw_img[col][row][dpt] = 0;
