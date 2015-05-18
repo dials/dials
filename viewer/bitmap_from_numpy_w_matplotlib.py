@@ -18,6 +18,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from dials.algorithms.shoebox import MaskCode
 
+from dials.array_family import flex
+from dials_viewer_ext import rgb_img
+
 class wxbmp_from_np_array(object):
 
   def __init__(self, lst_data_in, show_nums = True, lst_data_mask_in = None):
@@ -53,7 +56,15 @@ class wxbmp_from_np_array(object):
             tmp_data2d_mask[:, :] = data_3d_in_mask[z:z + 1, :, :]
           else:
             tmp_data2d_mask = None
+
+          traditional_generator_of_images_with_matplotlib = '''
           data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
+          #'''
+
+          #new_generator_of_images_with_cpp = '''
+          data_sigle_img = self._wx_img_w_cpp(tmp_data2d, show_nums, tmp_data2d_mask)
+          #'''
+
           single_block_lst_01.append(data_sigle_img)
 
         self._ini_wx_bmp_lst.append(single_block_lst_01)
@@ -90,18 +101,84 @@ class wxbmp_from_np_array(object):
     return wx_bmp_lst
 
 
+
+  def _wx_img_w_cpp(self, np_2d_tmp, show_nums, np_2d_mask = None):
+
+    to_study = '''
+    d = self.vl_max - self.vl_min
+    vl_mid_low = self.vl_min + d / 3.0
+    vl_mid_hig = self.vl_max - d / 3.0
+
+    lc_fig = plt.figure(frameon=False)
+
+    xmax = np_2d_tmp.shape[0]
+    ymax = np_2d_tmp.shape[1]
+    '''
+
+
+
+
+    wx_bmp_arr = rgb_img()
+
+
+
+    not_working = '''
+    img_array_tmp = wx_bmp_arr.gen_bmp(np_2d_tmp.as_flex_array(),
+                                       np_2d_mask.as_flex_array()).as_numpy_array()
+    '''
+
+    #not_working = '''
+    img_array_tmp = wx_bmp_arr.gen_bmp(flex.double(np_2d_tmp), flex.int(np_2d_mask)).as_numpy_array()
+    #'''
+    #a = tst_01(flex.int(data2d)).as_numpy_array()
+
+    height = np.size( img_array_tmp[:, 0:1, 0:1] )
+    width = np.size(  img_array_tmp[0:1, :, 0:1] )
+    img_array = np.empty( (height, width, 3),'uint8')
+    img_array[:,:,:] = img_array_tmp[:,:,:]
+
+    #image = wx.EmptyImage(width, height)
+    self._wx_image = wx.EmptyImage(width, height)
+
+    #image.SetData( img_array.tostring())
+    self._wx_image.SetData( img_array.tostring() )
+
+
+    data_to_become_bmp = (self._wx_image, width, height)
+
+
+
+
+
+    to_study = '''
+    lc_fig.canvas.draw()
+    width, height = lc_fig.canvas.get_width_height()
+    np_buf = np.fromstring (lc_fig.canvas.tostring_rgb(), dtype=np.uint8)
+    np_buf.shape = (width, height, 3)
+    np_buf = np.roll(np_buf, 3, axis = 2)
+    self._wx_image = wx.EmptyImage(width, height)
+    self._wx_image.SetData( np_buf )
+    data_to_become_bmp = (self._wx_image, width, height)
+
+    plt.close(lc_fig)
+    '''
+
+    return data_to_become_bmp
+
+
+  #old_way_with_matplotlib = '''
   def _wx_img(self, np_2d_tmp, show_nums, np_2d_mask = None):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0
     vl_mid_hig = self.vl_max - d / 3.0
-    log_debug_code = '''
-    print
-    print "self.vl_min =", self.vl_min
-    print " vl_mid_low =", vl_mid_low
-    print " vl_mid_hig =", vl_mid_hig
-    print "self.vl_max =", self.vl_max
-    '''
+
+    #print
+    #print "self.vl_min =", self.vl_min
+    #print " vl_mid_low =", vl_mid_low
+    #print " vl_mid_hig =", vl_mid_hig
+    #print "self.vl_max =", self.vl_max
+
     lc_fig = plt.figure(frameon=False)
 
     xmax = np_2d_tmp.shape[0]
@@ -201,12 +278,13 @@ class wxbmp_from_np_array(object):
     np_buf.shape = (width, height, 3)
     np_buf = np.roll(np_buf, 3, axis = 2)
     self._wx_image = wx.EmptyImage(width, height)
-    self._wx_image.SetData(np_buf )
+    self._wx_image.SetData( np_buf )
     data_to_become_bmp = (self._wx_image, width, height)
 
     plt.close(lc_fig)
 
     return data_to_become_bmp
+  #'''
 
 
   def _wx_bmp_scaled(self, data_to_become_bmp, scale):

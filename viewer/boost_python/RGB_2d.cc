@@ -11,14 +11,18 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/viewer/rgb_2D.h>
-//#include <dials/viewer/fonts_2D.h>
 
 namespace dials { namespace viewer { namespace boost_python {
   using namespace boost::python;
   void export_dials_viewer(){
-    def("gen_font_img", &gen_font_img, (arg("data2d")));
-    def("gen_str_tst", &gen_str_tst, (arg("data_num")));
+    //def("gen_font_img", &gen_font_img, (arg("data2d")));
+    //def("gen_str_tst", &gen_str_tst, (arg("data_num")));
+
     class_<rgb_img>("rgb_img")
-        .def("gen_bmp", &rgb_img::gen_bmp, (arg("data2d")));
+        .def("gen_bmp", &rgb_img::gen_bmp, arg("data2d") , arg("mask2d")   );
+
+    //def("tst_ref_prod", &tst_ref_prod, arg("matr01"), arg("matr02"));
+
+
   }
 }}}

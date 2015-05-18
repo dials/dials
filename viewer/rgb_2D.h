@@ -23,6 +23,8 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
+  /*
+
   flex_int gen_str_tst(flex_double & data_num) {
 
     flex_int bmp_dat(flex_grid<>(14, 7, 10),0);
@@ -38,8 +40,6 @@ namespace dials { namespace viewer { namespace boost_python {
       if(err_conv == 1){
         std::cout << "\nerror converting\n";
       }
-
-      //std::cout << "\n______________________________________\n";
 
     }
 
@@ -67,10 +67,10 @@ namespace dials { namespace viewer { namespace boost_python {
       }
     }
 
-
-
     return font_3d_img;
   }
+
+  */
 
 
   class rgb_img
@@ -128,7 +128,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
       }
 
-      flex_int gen_bmp(flex_double & data2d) {
+      flex_int gen_bmp(flex_double & data2d, flex_int & mask2d) {
 
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
