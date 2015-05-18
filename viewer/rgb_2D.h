@@ -232,9 +232,9 @@ namespace dials { namespace viewer { namespace boost_python {
                       mask_vol[mask_pix_row][mask_pix_col][2] == 1 or
                       mask_vol[mask_pix_row][mask_pix_col][3] == 1 ){
 
-                    bmp_dat(pix_row, pix_col, 0) = 127;
-                    bmp_dat(pix_row, pix_col, 1) = 127;
-                    bmp_dat(pix_row, pix_col, 2) = 127;
+                    bmp_dat(pix_row, pix_col, 0) = 150;
+                    bmp_dat(pix_row, pix_col, 1) = 150;
+                    bmp_dat(pix_row, pix_col, 2) = 150;
                   }
                 }
               }
@@ -272,7 +272,6 @@ namespace dials { namespace viewer { namespace boost_python {
                           bmp_dat(pix_row, pix_col, 1) = 00;
                           bmp_dat(pix_row, pix_col, 2) = 255;
                         }
-
                       }
                     }
                   }

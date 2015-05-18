@@ -43,7 +43,7 @@ index = False
     imagesets = [imageset]
     params = params.extract()
     params.indexing.scan_range=[]
-  
+
     if (imageset.get_goniometer() is not None and
         imageset.get_scan() is not None and
         imageset.get_scan().get_oscillation()[1] == 0):
@@ -100,7 +100,7 @@ class handler(server_base.BaseHTTPRequestHandler):
           '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %stats.crystal.get_unit_cell().parameters())
         response.append(
           '<n_indexed>%i</n_indexed>' %stats.n_indexed)
-        
+
       s.wfile.write('<response>\n%s\n</response>' % ('\n'.join(response)))
 
     except Exception, e:
