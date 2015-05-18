@@ -550,11 +550,12 @@ class indexer_base(object):
 
       for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
         if i_cycle > 0:
-          self.d_min -= self.params.refinement_protocol.d_min_step
-          self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
-          if self.d_min < 0:
-            break
-          info("Increasing resolution to %.1f Angstrom" %self.d_min)
+          d_min = self.d_min - self.params.refinement_protocol.d_min_step
+          d_min = max(d_min, 0)
+          d_min = max(d_min, self.params.refinement_protocol.d_min_final)
+          if d_min >= 0:
+            self.d_min = d_min
+            info("Increasing resolution to %.1f Angstrom" %d_min)
 
         # reset reflection lattice flags
         # the lattice a given reflection belongs to: a value of -1 indicates
@@ -715,7 +716,8 @@ class indexer_base(object):
         self.refined_experiments = refined_experiments
 
         if (i_cycle >=2 and
-            self.d_min == self.params.refinement_protocol.d_min_final):
+            self.d_min == self.params.refinement_protocol.d_min_final or
+            self.d_min <= 0):
           info("Target d_min_final reached: finished with refinement")
           break
 
