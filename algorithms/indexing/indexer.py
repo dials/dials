@@ -45,7 +45,7 @@ indexing {
     .help = "Modify the coarseness of the wide grid search for the beam centre."
     .type = float(value_min=0)
     .expert_level = 1
-  min_cell = 20
+  min_cell = 3
     .type = float(value_min=0)
     .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
     .expert_level = 1
@@ -78,7 +78,7 @@ indexing {
     .help = "Override the phi sigmas for refinement. Mainly intended for single-shot"
             "rotation images where the phi sigma is almost certainly incorrect."
     .expert_level = 2
-  b_iso = 200
+  b_iso = 0
     .type = float(value_min=0)
     .expert_level = 2
   rmsd_cutoff = 15
