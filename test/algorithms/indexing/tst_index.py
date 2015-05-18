@@ -90,7 +90,9 @@ class run_one_indexing(object):
       assert self.crystal_model.get_unit_cell().is_similar_to(
         expected_unit_cell,
         relative_length_tolerance=relative_length_tolerance,
-        absolute_angle_tolerance=absolute_angle_tolerance)
+        absolute_angle_tolerance=absolute_angle_tolerance), (
+          self.crystal_model.get_unit_cell().parameters(),
+          expected_unit_cell.parameters())
       sg = self.crystal_model.get_space_group()
       assert sg.type().hall_symbol() == expected_hall_symbol, (
         sg.type().hall_symbol(), expected_hall_symbol)
@@ -537,7 +539,7 @@ def exercise_15():
   sweep_path = os.path.join(data_dir, "datablock_import.json")
   extra_args = ["max_try=10"]
   expected_unit_cell = uctbx.unit_cell(
-    (48.3, 48.3, 98.6, 90, 104.1, 120))
+    (48.277, 48.272, 98.667, 75.897, 75.858, 60.016))
   expected_rmsds = (0.06, 0.08, 0.22)
   expected_hall_symbol = ' P 1'
 

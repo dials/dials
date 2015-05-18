@@ -47,8 +47,9 @@ def exercise_1():
   assert len(mtz_object.batches()) == 11
   batch = mtz_object.batches()[0]
   expected_unit_cell = uctbx.unit_cell(
-    (42.4892, 42.4892, 39.7846, 90, 90, 90))
-  assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell())))
+    (42.5787, 42.5787, 40.2983, 90, 90, 90))
+  assert expected_unit_cell.is_similar_to(uctbx.unit_cell(list(batch.cell()))), (
+    expected_unit_cell.parameters(), list(batch.cell()))
   assert mtz_object.space_group().type().lookup_symbol() == "P 41 21 2"
   assert approx_equal(mtz_object.n_reflections(), 7446, eps=2e3)
   os.chdir(cwd)
