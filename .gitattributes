@@ -900,6 +900,7 @@ scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/close_to_spindle_contour_plot.py -text
 scratch/rjg/collate_results.py -text
 scratch/rjg/extract_xds_multi.py -text
+scratch/rjg/find_reflection.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
 scratch/rjg/iotbx_reflection_file_reader_example.py -text
 scratch/rjg/plot_residuals.py -text
