@@ -35,8 +35,13 @@ class Test(object):
       sigma_b = params.profile.gaussian_rs.model[0].sigma_b
       sigma_m = params.profile.gaussian_rs.model[0].sigma_m
       eps = 1e-6
-      assert(abs(sigma_b - 0.02262206634) < eps)
-      assert(abs(sigma_m - 0.0774177) < eps)
+      try:
+        assert(abs(sigma_b - 0.02262206634) < eps)
+        assert(abs(sigma_m - 0.0774177) < eps)
+      except Exception:
+        print sigma_b
+        print sigma_m
+        raise
     print 'OK'
 
 
