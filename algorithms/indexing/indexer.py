@@ -81,7 +81,7 @@ indexing {
     .help = "Override the phi sigmas for refinement. Mainly intended for single-shot"
             "rotation images where the phi sigma is almost certainly incorrect."
     .expert_level = 2
-  b_iso = 0
+  b_iso = Auto
     .type = float(value_min=0)
     .expert_level = 2
   rmsd_cutoff = 15

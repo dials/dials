@@ -44,9 +44,12 @@ class indexer_fft3d(indexer_base):
       # a little bit of rearrangement:
       #   d_min = 5 * max_cell/n_points
 
-      self.params.fft3d.reciprocal_space_grid.d_min = (
+      d_min = (
         5 * self.params.max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
-      info("Setting d_min: %s" %self.params.fft3d.reciprocal_space_grid.d_min)
+      d_spacings = 1/self.reflections['rlp'].norms()
+      self.params.fft3d.reciprocal_space_grid.d_min = max(
+        d_min, min(d_spacings))
+      info("Setting d_min: %.2f" %self.params.fft3d.reciprocal_space_grid.d_min)
     n_points = self.params.fft3d.reciprocal_space_grid.n_points
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
@@ -116,6 +119,9 @@ class indexer_fft3d(indexer_base):
 
     selection = self.reflections['id'] == -1
 
+    if self.params.b_iso is libtbx.Auto:
+      self.params.b_iso = -4 * d_min**2 * math.log(0.05)
+      debug("Setting b_iso = %.1f" %self.params.b_iso)
     from dials.algorithms.indexing import map_centroids_to_reciprocal_space_grid
     map_centroids_to_reciprocal_space_grid(
       grid, self.reflections['rlp'], selection,
