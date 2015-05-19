@@ -126,7 +126,7 @@ integrate = True
 
       #print len(reflections)
 
-      stats.integrated_intensity = flex.sum(reflections['intensity.prf.value'])
+      stats.integrated_intensity = flex.sum(reflections['intensity.sum.value'])
 
   return stats
   return stats.n_spots_total, stats.n_spots_no_ice
