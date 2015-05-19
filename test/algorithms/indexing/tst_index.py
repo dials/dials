@@ -517,7 +517,7 @@ def exercise_14():
   pickle_path = os.path.join(tmp_dir, "strong.pickle")
   assert os.path.exists(pickle_path)
 
-  expected_unit_cell = uctbx.unit_cell((78.184, 78.184, 78.184, 90.000, 90.000, 90.000))
+  expected_unit_cell = uctbx.unit_cell((78.163, 78.163, 78.163, 90.000, 90.000, 90.000))
   expected_hall_symbol = ' I 2 2 3'
   expected_rmsds = (0.05, 0.05, 0.008)
 
@@ -539,7 +539,7 @@ def exercise_15():
   sweep_path = os.path.join(data_dir, "datablock_import.json")
   extra_args = ["max_try=10"]
   expected_unit_cell = uctbx.unit_cell(
-    (48.277, 48.272, 98.667, 75.897, 75.858, 60.016))
+    (48.283, 48.283, 98.677, 90.048, 104.125, 120.004))
   expected_rmsds = (0.06, 0.08, 0.22)
   expected_hall_symbol = ' P 1'
 
