@@ -222,7 +222,7 @@ if set to 0.0 no reflections will be rejected for being too close).
 Without this option, the central panels are very sparse::
 
   dials.refine indexed.pickle experiments.json \
-   do_outlier_rejection=true use_all_reflections=true close_to_spindle_cutoff=0.01 \
+   outlier.algorithm=tukey use_all_reflections=true close_to_spindle_cutoff=0.01 \
    output.reflections=refined_reflections_lev0.pickle \
    output.experiments=refined_experiments_lev0.json
 
@@ -238,7 +238,9 @@ Here is the output::
     reflections {
       use_all_reflections = true
       close_to_spindle_cutoff = 0.01
-      do_outlier_rejection = true
+      outlier {
+        algorithm = null *tukey
+      }
     }
   }
   input {
@@ -411,7 +413,7 @@ with a single lower level, :samp:`hieararchy_level=1`, in which every panel is
 treated separately. We now start from the previous refinement run
 specifying this hierarchy level::
 
-  dials.refine indexed.pickle refined_experiments_lev0.json do_outlier_rejection=true \
+  dials.refine indexed.pickle refined_experiments_lev0.json outlier.algorithm=tukey \
    use_all_reflections=true output.reflections=refined_reflections_lev1.pickle \
    close_to_spindle_cutoff=0.01 bin_size_fraction=0 hierarchy_level=1 \
    output.experiments=refined_experiments_lev1.json
@@ -453,7 +455,9 @@ speed the job up. The output is as follows::
     reflections {
       use_all_reflections = true
       close_to_spindle_cutoff = 0.01
-      do_outlier_rejection = true
+      outlier {
+        algorithm = null *tukey
+      }
     }
   }
   input {
@@ -627,7 +631,7 @@ the commands from the tutorial::
   dials.import /path/to/th_8_2*cbf
   dials.find_spots datablock.json nproc=4
   dials.index datablock.json strong.pickle space_group="P4"
-  dials.refine experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0
+  dials.refine experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
 
 Note these are the overall RMSDs (comparable to the results from the
 :doc:`processing_in_detail_tutorial`, as we'd expect)::
@@ -642,7 +646,7 @@ Note these are the overall RMSDs (comparable to the results from the
 
 Now we do the scan-varying refinement and integrate::
 
-  dials.refine refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.json
+  dials.refine refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.json
   dials.integrate sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4
   dials.export_mtz integrated.pickle sv_refined_experiments.json hklout=integrated.mtz ignore_panels=true
   dials.analyse_output integrated.pickle grid_size=5,12
@@ -728,7 +732,7 @@ corrected in a single step::
 
 Now we'll let the crystal and beam refine along with the new detector to RMSD convergence::
 
-  dials.refine corrected_refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 output.experiments=corrected_refined_experiments.json
+  dials.refine corrected_refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 output.experiments=corrected_refined_experiments.json
 
 Here is the output::
 
@@ -743,7 +747,9 @@ Here is the output::
     }
     reflections {
       use_all_reflections = true
-      do_outlier_rejection = true
+      outlier {
+        algorithm = null *tukey
+      }
     }
   }
   input {
@@ -883,7 +889,7 @@ After correction they are as follows::
 
 Let's now do scan-varying refinement then integrate the dataset with corrected metrology::
 
-  dials.refine corrected_refined_experiments.json indexed.pickle do_outlier_rejection=true use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.json
+  dials.refine corrected_refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.json
   dials.integrate corrected_sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.pickle
   dials.export_mtz corrected_integrated.pickle corrected_sv_refined_experiments.json hklout=corrected_integrated.mtz ignore_panels=true
   dials.analyse_output corrected_integrated.pickle grid_size=5,12

@@ -61,7 +61,7 @@ dials.index datablock.json strong.pickle \
 
 dials.refine experiments.json indexed.pickle \
   use_all_reflections=True scan_varying=True \
-  do_outlier_rejection=True
+  outlier.algorithm=tukey
 
 # now run the integration - complex choices of algorithms are shown here in
 # terms of the peak measurement (fitrs) and background determination

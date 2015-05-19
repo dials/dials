@@ -339,7 +339,7 @@ refinement step in here to allow e.g. scan varying refinement.
 
   dials.refine experiments.json indexed.pickle \
     use_all_reflections=True scan_varying=True \
-    do_outlier_rejection=True
+    outlier.algorithm=tukey
 
 ::
 
@@ -353,7 +353,9 @@ refinement step in here to allow e.g. scan varying refinement.
     }
     reflections {
       use_all_reflections = True
-      do_outlier_rejection = True
+      outlier {
+        algorithm = null *tukey
+      }
     }
   }
   input {
