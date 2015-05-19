@@ -160,7 +160,8 @@ class indexer_fft3d(indexer_base):
     # the peak at the origin might have a significantly larger volume than the
     # rest so exclude this peak from determining maximum volume
     isel = (flood_fill.grid_points_per_void() > int(
-        0.2 * flex.max(flood_fill.grid_points_per_void()[1:]))).iselection()
+        self.params.fft3d.peak_volume_cutoff * flex.max(
+          flood_fill.grid_points_per_void()[1:]))).iselection()
 
     if self.params.optimise_initial_basis_vectors:
       sites_cart = flood_fill.centres_of_mass_cart().select(isel)

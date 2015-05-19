@@ -63,6 +63,9 @@ indexing {
     peak_search = *flood_fill clean
       .type = choice
       .expert_level = 2
+    peak_volume_cutoff = 0.15
+      .type = float
+      .expert_level = 2
     reciprocal_space_grid {
       n_points = 256
         .type = int(value_min=0)
