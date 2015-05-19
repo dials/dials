@@ -9,8 +9,10 @@
 
 if test -z $1; then
   data_directory=./data
+  echo "Using ./data as import parameter"
 else
   data_directory=$1
+  echo "Using $1 (as entered by CLI)"
 fi
 
 if test -z $2; then
@@ -40,41 +42,20 @@ dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
 # and refinement. can also specify unit cell here and also apply different
 # indexing algorithms
 
-dials.index datablock.json strong.pickle \
-  refinement.reflections.use_all_reflections=true
+dials.index strong.pickle datablock.json
 
-# refine the indexing solution in all Bravais settings consistent with the
-# indexed unit cell. In this example we would continue processing using the
-# bravais_setting_9.json, i.e. solution number 9
+# Refining: If you do want to use a time varying model,
+# you will need to rerun the refinement with this new model as
 
-dials.refine_bravais_settings experiments.json indexed.pickle
+dials.refine experiments.json indexed.pickle scan_varying=true
 
-# If necessary (i.e. if the cb_op for the chosen solution is not a,b,c)
-# run dials.reindex on the indexed.pickle file to match the chosen solution
+# Integration:
+# Next step reads the indexed reflections to determine strong reflections for profile
+# fitting and integrates the data in refined_experiments.json, using the default
+# background determination with no outlier rejection and XDS-style 3D profile
+# fitting. These commands are most likely to change and can be viewed by running
 
-dials.reindex indexed.pickle change_of_basis_op=a,b,c
-
-# run the refinement of the data - the indexing includes refinement so the result
-# will be refined already with a static model - however here we would like to use
-# a scan varying model so re-run the refinement (you should find that the R.M.S.
-# deviations are a little lower following the scan varying refinement). Here we
-# use an expert option "bin_size_fraction=0.0" to ensure the refinement runs
-# to RMSD convergence rather than terminating early with a good-enough RMSD.
-
-dials.refine bravais_setting_9.json reindexed_reflections.pickle \
-  refinement.parameterisation.crystal.scan_varying=true \
-  refinement.reflections.use_all_reflections=true \
-  refinement.target.bin_size_fraction=0.0
-
-# now run the integration - complex choices of algorithms are shown here in
-# terms of the peak measurement (fitrs) and background determination
-# methods. pass reference reflections from indexing in to determine the
-# profile parameters...
-
-dials.integrate outlier.algorithm=null profile.fitting=True \
-  input.experiments=refined_experiments.json \
-  input.reflections=reindexed_reflections.pickle \
-  nproc=$nproc
+dials.integrate outlier.algorithm=null refined_experiments.json indexed.pickle
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
