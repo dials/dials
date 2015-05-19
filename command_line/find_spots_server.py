@@ -12,11 +12,14 @@ def work(filename, cl=[]):
   phil_scope = libtbx.phil.parse('''\
 index = False
   .type = bool
+integrate = True
+  .type = bool
 ''')
   interp = phil_scope.command_line_argument_interpreter()
   params, unhandled = interp.process_and_fetch(
     cl, custom_processor='collect_remaining')
   index = params.extract().index
+  integrate = params.extract().integrate
 
   from dials.command_line.find_spots import phil_scope as params
   from dxtbx.datablock import DataBlockFactory
@@ -64,9 +67,66 @@ index = False
       stats.crystal = idxr.refined_experiments.crystals()[0]
       stats.n_indexed = len(idxr.refined_reflections)
     except Exception, e:
+      print e
       stats.crystal = None
       stats.n_indexed = None
-    print logging
+
+    if integrate and stats.crystal is not None:
+
+      from dials.algorithms.profile_model.factory import ProfileModelFactory
+      from dials.algorithms.integration.integrator import IntegratorFactory
+      from dials.command_line.integrate import phil_scope
+      interp = phil_scope.command_line_argument_interpreter()
+      params, unhandled = interp.process_and_fetch(
+        unhandled, custom_processor='collect_remaining')
+      imagesets = [imageset]
+      params = params.extract()
+
+      params.profile.gaussian_rs.min_spots = 0
+
+      experiments = idxr.refined_experiments
+      reference = idxr.refined_reflections
+
+      predicted = flex.reflection_table.from_predictions_multi(
+        experiments,
+        dmin=params.prediction.dmin,
+        dmax=params.prediction.dmax,
+        margin=params.prediction.margin,
+        force_static=params.prediction.force_static
+        )
+
+      matched, reference = predicted.match_with_reference(reference)
+      assert(len(matched) == len(predicted))
+      assert(matched.count(True) <= len(reference))
+      if matched.count(True) == 0:
+        raise Abort('''
+          Invalid input for reference reflections.
+          Zero reference spots were matched to predictions
+        ''')
+      elif matched.count(True) != len(reference):
+        from logging import info
+        info('')
+        info('*' * 80)
+        info('Warning: %d reference spots were not matched to predictions' % (
+          len(reference) - matched.count(True)))
+        info('*' * 80)
+        info('')
+
+      # Compute the profile model
+      profile_model = ProfileModelFactory.create(params, experiments, reference)
+
+      # Compute the bounding box
+      predicted.compute_bbox(experiments, profile_model)
+
+      # Create the integrator
+      integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
+
+      # Integrate the reflections
+      reflections = integrator.integrate()
+
+      #print len(reflections)
+
+      stats.integrated_intensity = flex.sum(reflections['intensity.prf.value'])
 
   return stats
   return stats.n_spots_total, stats.n_spots_no_ice
@@ -100,6 +160,9 @@ class handler(server_base.BaseHTTPRequestHandler):
           '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %stats.crystal.get_unit_cell().parameters())
         response.append(
           '<n_indexed>%i</n_indexed>' %stats.n_indexed)
+      if hasattr(stats, 'integrated_intensity'):
+        response.append(
+          '<integrated_intensity>%.0f</integrated_intensity>' %stats.integrated_intensity)
 
       s.wfile.write('<response>\n%s\n</response>' % ('\n'.join(response)))
 
