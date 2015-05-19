@@ -54,8 +54,7 @@ def exercise_1():
   detector_2 = optimized_datablock[0].unique_detectors()[0]
   shift = (matrix.col(detector_1[0].get_origin()) -
            matrix.col(detector_2[0].get_origin()))
-  assert approx_equal(shift.elems, (-0.178, -0.041, 0.0), eps=1e-2) \
-      or approx_equal(shift.elems, (-0.175, -0.051, 0.0), eps=1e-2)
+  assert approx_equal(shift.elems, (-0.242, -0.125, 0.0), eps=1e-2)
   # This produces these two different solutions.
   # The two corresponding origin vectors are:
   # "origin": [ -208.507324496093,   209.20518907699287, -266.11 ]

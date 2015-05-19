@@ -251,6 +251,9 @@ def run_dps(args):
   spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
     spots=spots, detector=detector, scan=scan)
 
+  indexer_base.map_centroids_to_reciprocal_space(
+    spots_mm, detector=detector, beam=beam, goniometer=goniometer)
+
   # derive a max_cell from mm spots
   # derive a grid sampling from spots
 
@@ -258,9 +261,13 @@ def run_dps(args):
   # max_cell: max possible cell in Angstroms; set to None, determine from data
   # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
-  DPS = DPS_primitive_lattice(max_cell = None,
-                              recommended_grid_sampling_rad = None,
-                              horizon_phil = params)
+  from dials.algorithms.indexing.indexer import find_max_cell
+  max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
+                           nearest_neighbor_percentile=0.05)
+
+  DPS = DPS_primitive_lattice(max_cell=max_cell,
+                              recommended_grid_sampling_rad=None,
+                              horizon_phil=params)
   from scitbx import matrix
   DPS.S0_vector = matrix.col(beam.get_s0())
   DPS.inv_wave = 1./beam.get_wavelength()

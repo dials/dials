@@ -774,44 +774,9 @@ class indexer_base(object):
         self.params.max_cell = self.params.max_cell_multiplier * max(uc_params[:3])
         info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
       else:
-        # The nearest neighbour analysis gets fooled when the same part of
-        # reciprocal space has been measured twice as this introduced small
-        # random differences in position between reflections measured twice.
-        # Therefore repeat the nearest neighbour analysis several times in small
-        # wedges where there shouldn't be any overlap in reciprocal space
-        #from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
-        from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
-        phi_deg = self.reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
-        if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
-          NN = neighbor_analysis(self.reflections['rlp'],
-                                 tolerance=self.params.max_cell_multiplier,
-                                 percentile=self.params.nearest_neighbor_percentile)
-          self.params.max_cell = NN.max_cell
-        else:
-          phi_min = flex.min(phi_deg)
-          phi_max = flex.max(phi_deg)
-          step_size = 5 #degrees
-          d_phi = phi_max - phi_min
-          n_steps = int(math.ceil(d_phi / step_size))
-          max_cell = flex.double()
-          for n in range(n_steps):
-            sel = (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
-            rlp = self.reflections['rlp'].select(sel)
-            if len(rlp) == 0:
-              continue
-            try:
-              NN = neighbor_analysis(
-                rlp, tolerance=self.params.max_cell_multiplier,
-                percentile=self.params.nearest_neighbor_percentile)
-              max_cell.append(NN.max_cell)
-            except AssertionError:
-              continue
-            debug("%s %s %s"  %(
-              phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
-          debug(list(max_cell))
-          debug("median: %s" %flex.median(max_cell))
-          debug("mean: %s" %flex.mean(max_cell))
-          self.params.max_cell = flex.median(max_cell) # mean or max or median?
+        self.params.max_cell = find_max_cell(
+          self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
+          nearest_neighbor_percentile=self.params.nearest_neighbor_percentile)
         info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
 
   def filter_reflections_by_scan_range(self):
@@ -1432,6 +1397,49 @@ class SolutionTracker(object):
     solutions = [s for s in self.filtered_solutions
                  if s.model_likelihood == self.best_filtered_liklihood]
     return solutions[0]
+
+
+def find_max_cell(reflections, max_cell_multiplier, nearest_neighbor_percentile):
+  # The nearest neighbour analysis gets fooled when the same part of
+  # reciprocal space has been measured twice as this introduced small
+  # random differences in position between reflections measured twice.
+  # Therefore repeat the nearest neighbour analysis several times in small
+  # wedges where there shouldn't be any overlap in reciprocal space
+  #from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
+  from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
+  phi_deg = reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
+  if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
+    NN = neighbor_analysis(reflections['rlp'],
+                           tolerance=max_cell_multiplier,
+                           percentile=nearest_neighbor_percentile)
+    max_cell = NN.max_cell
+  else:
+    phi_min = flex.min(phi_deg)
+    phi_max = flex.max(phi_deg)
+    step_size = 5 #degrees
+    d_phi = phi_max - phi_min
+    n_steps = int(math.ceil(d_phi / step_size))
+    max_cell = flex.double()
+    for n in range(n_steps):
+      sel = (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
+      rlp = reflections['rlp'].select(sel)
+      if len(rlp) == 0:
+        continue
+      try:
+        NN = neighbor_analysis(
+          rlp, tolerance=max_cell_multiplier,
+          percentile=nearest_neighbor_percentile)
+        max_cell.append(NN.max_cell)
+      except AssertionError:
+        continue
+      debug("%s %s %s"  %(
+        phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
+    debug(list(max_cell))
+    debug("median: %s" %flex.median(max_cell))
+    debug("mean: %s" %flex.mean(max_cell))
+    max_cell = flex.median(max_cell) # mean or max or median?
+
+  return max_cell
 
 
 def optimise_basis_vectors(reciprocal_lattice_points, vectors):
