@@ -275,7 +275,7 @@ class CentroidAnalyser(object):
   ''' Analyse the reflection centroids. '''
 
   def __init__(self, directory, grid_size=None, pixels_per_bin=10,
-    centroid_diff_range=1.5):
+    centroid_diff_max=1.5):
     ''' Setup the directory. '''
     from os.path import join
 
@@ -284,7 +284,7 @@ class CentroidAnalyser(object):
     ensure_directory(self.directory)
     self.grid_size = grid_size
     self.pixels_per_bin = pixels_per_bin
-    self.centroid_diff_range = centroid_diff_range
+    self.centroid_diff_max = centroid_diff_max
 
     # Set the required fields
     self.required = [
@@ -378,7 +378,7 @@ class CentroidAnalyser(object):
         self.title = "Difference between observed and calculated in X"
         self.filename = "centroid_diff_x.png"
         self.cbar_ylabel = "Difference in x position"
-        self.centroid_diff_range = kwargs.pop('centroid_diff_range', None)
+        self.centroid_diff_max = kwargs.pop('centroid_diff_max', None)
         super(diff_x_plot, self).__init__(*args, **kwargs)
 
       def plot_one_panel(self, ax, rlist):
@@ -386,13 +386,13 @@ class CentroidAnalyser(object):
         xo, yo, zo = rlist['xyzobs.px.value'].parts()
         xd = xo - xc
 
-        if self.centroid_diff_range is None:
-          self.centroid_diff_range = max(abs(xd))
+        if self.centroid_diff_max is None:
+          self.centroid_diff_max = max(abs(xd))
 
         hex_ax = ax.hexbin(
           xc.as_numpy_array(), yc.as_numpy_array(),
           C=xd.as_numpy_array(), gridsize=self.gridsize,
-          vmin=-1.*self.centroid_diff_range, vmax=self.centroid_diff_range,
+          vmin=-1.*self.centroid_diff_max, vmax=self.centroid_diff_max,
         )
         return hex_ax
 
@@ -403,7 +403,7 @@ class CentroidAnalyser(object):
         self.title = "Difference between observed and calculated in Y"
         self.filename = "centroid_diff_y.png"
         self.cbar_ylabel = "Difference in y position"
-        self.centroid_diff_range = kwargs.pop('centroid_diff_range', None)
+        self.centroid_diff_max = kwargs.pop('centroid_diff_max', None)
         super(diff_y_plot, self).__init__(*args, **kwargs)
 
       def plot_one_panel(self, ax, rlist):
@@ -411,22 +411,22 @@ class CentroidAnalyser(object):
         xo, yo, zo = rlist['xyzobs.px.value'].parts()
         yd = yo - yc
 
-        if self.centroid_diff_range is None:
-          self.centroid_diff_range = max(abs(yd))
+        if self.centroid_diff_max is None:
+          self.centroid_diff_max = max(abs(yd))
 
         hex_ax = ax.hexbin(
           xc.as_numpy_array(), yc.as_numpy_array(),
           C=yd.as_numpy_array(), gridsize=self.gridsize,
-          vmin=-1.*self.centroid_diff_range, vmax=self.centroid_diff_range,
+          vmin=-1.*self.centroid_diff_max, vmax=self.centroid_diff_max,
         )
         return hex_ax
 
     plot = diff_x_plot(rlist, self.directory, grid_size=self.grid_size,
                        pixels_per_bin=self.pixels_per_bin,
-                       centroid_diff_range=self.centroid_diff_range)
+                       centroid_diff_max=self.centroid_diff_max)
     plot = diff_y_plot(rlist, self.directory, grid_size=self.grid_size,
                        pixels_per_bin=self.pixels_per_bin,
-                       centroid_diff_range=self.centroid_diff_range)
+                       centroid_diff_max=self.centroid_diff_max)
 
   def centroid_diff_z(self, rlist, threshold):
     ''' Look at the centroid difference in x, y '''
@@ -1292,7 +1292,7 @@ class Analyser(object):
   ''' Helper class to do all the analysis. '''
 
   def __init__(self, directory, grid_size=None, pixels_per_bin=10,
-               centroid_diff_range=1.5):
+               centroid_diff_max=1.5):
     ''' Setup the analysers. '''
     from os.path import join
     directory = join(directory, "analysis")
@@ -1300,7 +1300,7 @@ class Analyser(object):
       StrongSpotsAnalyser(directory),
       CentroidAnalyser(
         directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin,
-          centroid_diff_range=centroid_diff_range),
+          centroid_diff_max=centroid_diff_max),
       BackgroundAnalyser(
         directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
       IntensityAnalyser(
@@ -1337,7 +1337,7 @@ class Script(object):
       pixels_per_bin = 10
         .type = int(value_min=1)
 
-      centroid_diff_range = None
+      centroid_diff_max = None
         .help = "Magnitude in pixels of shifts mapped to the extreme colours"
                 "in the heatmap plots centroid_diff_x and centroid_diff_y"
         .type = float
@@ -1378,7 +1378,7 @@ class Script(object):
     analyse = Analyser(
       params.output.directory, grid_size=params.grid_size,
       pixels_per_bin=params.pixels_per_bin,
-      centroid_diff_range=params.centroid_diff_range)
+      centroid_diff_max=params.centroid_diff_max)
     analyse(params.input.reflections[0].data)
 
 
