@@ -496,6 +496,7 @@ doc/sphinx/links.rst -text
 doc/sphinx/publications.rst -text
 doc/sphinx/workshops/DIALS-1.rst -text
 doc/sphinx/workshops/dials3d.rst -text
+doc/user-tutorial/getting_started_tutorial.sh -text
 doc/user-tutorial/multi_lattice_tutorial.sh -text
 doc/user-tutorial/tutorial.sh -text
 doc/user-tutorial/tutorial.txt -text

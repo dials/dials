@@ -35,48 +35,19 @@ dials.import ${data_directory}/th_8_2_0*.cbf
 # run dials.parameters - this shows you the entire parameter set which is
 # available for DIALS)
 
-dials.find_spots datablock.json nproc=4
+dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
 
 # index these found spots - in this case the crystal is thaumatin which is known
 # to be tetragonal, so impose appropriate lattice constraints in the indexing
 # and refinement. can also specify unit cell here and also apply different
 # indexing algorithms
 
-dials.index datablock.json strong.pickle
+dials.index strong.pickle datablock.json
 
+# Refining: If you do want to use a time varying model,
+# you will need to rerun the refinement with this new model as
 
-# Take the results of the P1 autoindexing and run refinement
-# with all of the possible Bravais settings applied
-
-dials.refine_bravais_settings experiments.json indexed.pickle
-
-# Sometimes it may be necessary to reindex the indexed.pickle file output
-# by dials.index. However, in this case as the change of basis operator to
-# the chosen setting is the identity operator (a,b,c) this step is not needed.
-# We run it anyway to demonstrate its use:
-
-dials.reindex indexed.pickle change_of_basis_op=a,b,c
-
-# During indexing we saw the presence of outliers that we would like to exclude
-# from refinement, and we also used a subset of reflections. Now we will repeat
-# using all indexed reflections in the dataset and with outlier rejection switched on.
-
-dials.refine bravais_setting_9.json reindexed_reflections.pickle \
-outlier.algorithm=tukey use_all_reflections=true
-
-# We have done the best we can with a static model for the experiment.
-# However, a better model for the crystal might allow small misset rotations
-# to occur over the course of the scan. There are usually even small changes
-# to the cell dimensions (typically resulting in a net increase in cell volume)
-# caused by exposure to radiation during data collection. To account for both of
-# these effects we can extend our parameterisation to obtain a
-# smoothed ‘scan-varying’ model for both the crystal orientation and unit cell.
-# To do this, we run a further refinement job starting from the output of the
-# previous job:
-
-dials.refine refined_experiments.json refined.pickle \
-outlier.algorithm=tukey use_all_reflections=true  \
-scan_varying=true output.experiments=sv_refined_experiments.json
+dials.refine experiments.json indexed.pickle scan_varying=true
 
 # Integration:
 # Next step reads the indexed reflections to determine strong reflections for profile
@@ -84,8 +55,7 @@ scan_varying=true output.experiments=sv_refined_experiments.json
 # background determination with no outlier rejection and XDS-style 3D profile
 # fitting. These commands are most likely to change and can be viewed by running
 
-dials.integrate sv_refined_experiments.json refined.pickle \
-outlier.algorithm=null nproc=4
+dials.integrate outlier.algorithm=null refined_experiments.json indexed.pickle
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
