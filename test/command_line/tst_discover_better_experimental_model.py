@@ -67,6 +67,7 @@ def exercise_1():
 
 def exercise_2():
 
+  from dials.test.algorithms.indexing.tst_index import run_one_indexing
   if not have_xia2_regression:
     print "Skipping exercise_2(): xia2_regression not available."
     return
@@ -116,7 +117,6 @@ def exercise_2():
   print shift
 
   # check we can actually index the resulting optimized datablock
-  from dials.test.algorithms.indexing.tst_index import run_one_indexing
   from cctbx import uctbx
   expected_unit_cell = uctbx.unit_cell(
     (57.780, 57.800, 150.017, 89.991, 89.990, 90.007))
