@@ -87,6 +87,9 @@ namespace dials { namespace algorithms {
         int grid_method) {
       int2 scan_range = scan.get_array_range();
       boost::shared_ptr<SamplerIface> sampler;
+      if (detector.size() > 1) {
+        grid_method = Single;
+      }
       switch (grid_method) {
       case Single:
         sampler = boost::make_shared<SingleSampler>(
