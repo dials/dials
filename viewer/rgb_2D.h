@@ -15,13 +15,25 @@
 #include <string>
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
+
+#include <scitbx/array_family/tiny_types.h>
+
 #include <dials/viewer/fonts_2D.h>
 #include <dials/viewer/mask_bmp_2D.h>
+#include <dials/model/data/mask_code.h>
 
 namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_double;
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
+
+  using scitbx::af::int3;
+  using scitbx::af::int6;
+
+  using dials::model::Valid;
+  using dials::model::Background;
+  using dials::model::BackgroundUsed;
+  using dials::model::Foreground;
 
   /*
 
@@ -128,7 +140,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
       }
 
-      flex_int gen_bmp(flex_double & data2d, flex_int & mask2d) {
+      flex_int gen_bmp(flex_double & data2d, flex_double & mask2d) {
 
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
@@ -226,16 +238,44 @@ namespace dials { namespace viewer { namespace boost_python {
                     mask_pix_row < px_scale;
                     pix_row++,
                     mask_pix_row++){
+                  if( mask_vol[mask_pix_row][mask_pix_col][0] == 1 and
 
-                  if( mask_vol[mask_pix_row][mask_pix_col][0] == 1 or
+
+
+                     mask2d(row, col) > 0
+                  ){
+
+
+                    /*
+                     *
+                      (mask2d(row, col) & Valid == Valid)
+
+                      *
+                    or
                       mask_vol[mask_pix_row][mask_pix_col][1] == 1 or
                       mask_vol[mask_pix_row][mask_pix_col][2] == 1 or
                       mask_vol[mask_pix_row][mask_pix_col][3] == 1 ){
+
+
+
+        if ((mask[i] & Foreground) == Foreground) {
+          if ((mask[i] & Valid) == Valid) {
+            sum_p_ += signal[i];
+            sum_b_ += background[i];
+            n_signal_++;
+          } else {
+            success_ = false;
+          }
+        } else if ((mask[i] & bg_code) == bg_code) {
+          n_background_++;
+        }
+                     */
 
                     bmp_dat(pix_row, pix_col, 0) = 150;
                     bmp_dat(pix_row, pix_col, 1) = 150;
                     bmp_dat(pix_row, pix_col, 2) = 150;
                   }
+
                 }
               }
 

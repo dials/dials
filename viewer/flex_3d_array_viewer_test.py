@@ -11,9 +11,20 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+# BOOST_ADAPTBX_FPE_DEFAULT=1
+# BOOST_ADAPTBX_SIGNALS_DEFAULT=1
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d
 from dials.algorithms.shoebox import MaskCode
+
+attempt_to_fix_a_crash = '''
+try:
+  import scipy.linalg # import dependency
+except ImportError, e:
+  pass
+'''
 
 if(__name__ == "__main__"):
   lst_flex = []
@@ -38,6 +49,7 @@ if(__name__ == "__main__"):
                                             + MaskCode.Valid \
                                             + MaskCode.Foreground \
                                             + MaskCode.Background
+            print data_flex_mask[frm, row, col]
 
             different_mask_values = '''
             MaskCode.Valid

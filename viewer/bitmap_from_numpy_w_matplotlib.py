@@ -103,13 +103,18 @@ class wxbmp_from_np_array(object):
 
 
   def _wx_img_w_cpp(self, np_2d_tmp, show_nums, np_2d_mask = None):
+    xmax = np_2d_tmp.shape[0]
+    ymax = np_2d_tmp.shape[1]
 
+    if(np_2d_mask == None):
+      np_2d_mask = np.zeros( (xmax, ymax), 'double')
 
     wx_bmp_arr = rgb_img()
 
 
 
-    img_array_tmp = wx_bmp_arr.gen_bmp(flex.double(np_2d_tmp), flex.int(np_2d_mask)).as_numpy_array()
+    img_array_tmp = wx_bmp_arr.gen_bmp(flex.double(np_2d_tmp),
+                    flex.double(np_2d_mask)).as_numpy_array()
 
 
     height = np.size( img_array_tmp[:, 0:1, 0:1] )
