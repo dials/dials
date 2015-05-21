@@ -43,8 +43,8 @@ class wxbmp_from_np_array(object):
         log_msg = '''
         print "len(data_3d_in) =", len(data_3d_in)
         '''
-        self.vl_max = np.amax(data_3d_in)
-        self.vl_min = np.amin(data_3d_in)
+        self.vl_max = float(np.amax(data_3d_in))
+        self.vl_min = float(np.amin(data_3d_in))
         tmp_data2d = np.zeros( (xmax, ymax), 'double')
         tmp_data2d_mask = np.zeros( (xmax, ymax), 'double')
         z_dp = data_3d_in.shape[0]
@@ -57,11 +57,11 @@ class wxbmp_from_np_array(object):
           else:
             tmp_data2d_mask = None
 
-          #traditional_generator_of_images_with_matplotlib = '''
+          traditional_generator_of_images_with_matplotlib = '''
           data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
           #'''
 
-          new_generator_of_images_with_cpp = '''
+          #new_generator_of_images_with_cpp = '''
           data_sigle_img = self._wx_img_w_cpp(tmp_data2d, show_nums, tmp_data2d_mask)
           #'''
 
@@ -119,6 +119,7 @@ class wxbmp_from_np_array(object):
     flex_mask_in = flex.double(transposed_mask)
 
     wx_bmp_arr = rgb_img()
+    print "self.vl_min, self.vl_max =", self.vl_min, self.vl_max
     err_code = wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
 
     img_array_tmp = wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)

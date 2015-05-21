@@ -251,14 +251,14 @@ namespace dials { namespace viewer { namespace boost_python {
                       ( (loc_cel_int & Valid) == Valid ) )
                       or
                       ( mask_vol[mask_pix_row][mask_pix_col][1] == 1 and
-                      ( (loc_cel_int & Background) == Background ) )
+                      ( (loc_cel_int & Foreground) == Foreground )  )
 
                       or
                       ( mask_vol[mask_pix_row][mask_pix_col][2] == 1 and
                       ( (loc_cel_int & BackgroundUsed) == BackgroundUsed ) )
                       or
                       ( mask_vol[mask_pix_row][mask_pix_col][3] == 1 and
-                      (   (loc_cel_int & Foreground) == Foreground ) )   ){
+                      ( (loc_cel_int & Background) == Background )  )  ){
                     bmp_dat(pix_row, pix_col, 0) = 150;
                     bmp_dat(pix_row, pix_col, 1) = 150;
                     bmp_dat(pix_row, pix_col, 2) = 150;
