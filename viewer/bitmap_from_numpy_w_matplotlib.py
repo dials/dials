@@ -57,11 +57,11 @@ class wxbmp_from_np_array(object):
           else:
             tmp_data2d_mask = None
 
-          #traditional_generator_of_images_with_matplotlib = '''
+          traditional_generator_of_images_with_matplotlib = '''
           data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
           #'''
 
-          new_generator_of_images_with_cpp = '''
+          #new_generator_of_images_with_cpp = '''
           data_sigle_img = self._wx_img_w_cpp(tmp_data2d, show_nums, tmp_data2d_mask)
           #'''
 
@@ -119,7 +119,7 @@ class wxbmp_from_np_array(object):
     flex_mask_in = flex.double(transposed_mask)
 
     wx_bmp_arr = rgb_img()
-    img_array_tmp = wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in)
+    img_array_tmp = wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
     img_array_tmp =    img_array_tmp.as_numpy_array()
 
     height = np.size( img_array_tmp[:, 0:1, 0:1] )

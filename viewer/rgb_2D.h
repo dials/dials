@@ -140,7 +140,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
       }
 
-      flex_int gen_bmp(flex_double & data2d, flex_double & mask2d) {
+      flex_int gen_bmp(flex_double & data2d, flex_double & mask2d, bool show_nums ) {
 
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
@@ -150,7 +150,8 @@ namespace dials { namespace viewer { namespace boost_python {
 
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
-         for (int col = 0; col < ncol; col++) {
+        std::cout << "\n show_nums = " << show_nums << "\n";
+        for (int col = 0; col < ncol; col++) {
           for (int row = 0; row < nrow ; row++) {
 
 
@@ -259,43 +260,45 @@ namespace dials { namespace viewer { namespace boost_python {
 
 
               // Painting intensity value into the scaled pixel
-              err_conv = get_digits(data2d(row, col), digit_val);
-              if(err_conv == 0){
-                //std::cout << "data2d(row, col) = " << data2d(row, col) << "\n";
-                for(int dg_num = 0;
-                    dg_num < 12 and digit_val[dg_num] != 15;
-                    dg_num++){
+              if(show_nums == true) {
 
-                  for(int font_pix_col = 0, pix_col = col * px_scale + dg_num * 7;
-                      font_pix_col < 7;
-                      pix_col++,
-                      font_pix_col++){
+                err_conv = get_digits(data2d(row, col), digit_val);
+                if(err_conv == 0){
+                  //std::cout << "data2d(row, col) = " << data2d(row, col) << "\n";
+                  for(int dg_num = 0;
+                      dg_num < 12 and digit_val[dg_num] != 15;
+                      dg_num++){
 
-                    for(int font_pix_row = 0, pix_row = row * px_scale + 14;
-                        font_pix_row < 14;
-                        pix_row++,
-                        font_pix_row++){
+                    for(int font_pix_col = 0, pix_col = col * px_scale + dg_num * 7;
+                        font_pix_col < 7;
+                        pix_col++,
+                        font_pix_col++){
 
-                      if(font_vol[font_pix_row][font_pix_col][digit_val[dg_num]] == 1){
-                        if( scaled_array(row, col) < 255 ){
-                          bmp_dat(pix_row, pix_col, 0) = 255;
-                          bmp_dat(pix_row, pix_col, 1) = 255;
-                          bmp_dat(pix_row, pix_col, 2) = 0;
-                        }else if( scaled_array(row, col) > 255 * 2 ){
-                          bmp_dat(pix_row, pix_col, 0) = 0;
-                          bmp_dat(pix_row, pix_col, 1) = 0;
-                          bmp_dat(pix_row, pix_col, 2) = 0;
-                        }else{
-                          bmp_dat(pix_row, pix_col, 0) = 00;
-                          bmp_dat(pix_row, pix_col, 1) = 00;
-                          bmp_dat(pix_row, pix_col, 2) = 255;
+                      for(int font_pix_row = 0, pix_row = row * px_scale + 14;
+                          font_pix_row < 14;
+                          pix_row++,
+                          font_pix_row++){
+
+                        if(font_vol[font_pix_row][font_pix_col][digit_val[dg_num]] == 1){
+                          if( scaled_array(row, col) < 255 ){
+                            bmp_dat(pix_row, pix_col, 0) = 255;
+                            bmp_dat(pix_row, pix_col, 1) = 255;
+                            bmp_dat(pix_row, pix_col, 2) = 0;
+                          }else if( scaled_array(row, col) > 255 * 2 ){
+                            bmp_dat(pix_row, pix_col, 0) = 0;
+                            bmp_dat(pix_row, pix_col, 1) = 0;
+                            bmp_dat(pix_row, pix_col, 2) = 0;
+                          }else{
+                            bmp_dat(pix_row, pix_col, 0) = 00;
+                            bmp_dat(pix_row, pix_col, 1) = 00;
+                            bmp_dat(pix_row, pix_col, 2) = 255;
+                          }
                         }
                       }
                     }
                   }
                 }
               }
-
             }else{
               bmp_dat(row, col, 0) = red_byte[int(scaled_array(row, col))];
               bmp_dat(row, col, 1) = green_byte[int(scaled_array(row, col))];
