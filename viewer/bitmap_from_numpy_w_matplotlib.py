@@ -109,29 +109,28 @@ class wxbmp_from_np_array(object):
     if(np_2d_mask == None):
       np_2d_mask = np.zeros( (xmax, ymax), 'double')
 
+    transposed_data = np.zeros( (ymax, xmax), 'double')
+    transposed_mask = np.zeros( (ymax, xmax), 'double')
+
+    transposed_data[:,:] = np.transpose(np_2d_tmp)
+    transposed_mask[:,:] = np.transpose(np_2d_mask)
+
+    flex_data_in = flex.double(transposed_data)
+    flex_mask_in = flex.double(transposed_mask)
+
     wx_bmp_arr = rgb_img()
-
-
-
-    img_array_tmp = wx_bmp_arr.gen_bmp(flex.double(np_2d_tmp),
-                    flex.double(np_2d_mask)).as_numpy_array()
-
+    img_array_tmp = wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in)
+    img_array_tmp =    img_array_tmp.as_numpy_array()
 
     height = np.size( img_array_tmp[:, 0:1, 0:1] )
     width = np.size(  img_array_tmp[0:1, :, 0:1] )
     img_array = np.empty( (height, width, 3),'uint8')
     img_array[:,:,:] = img_array_tmp[:,:,:]
 
-
     self._wx_image = wx.EmptyImage(width, height)
-
-
     self._wx_image.SetData( img_array.tostring() )
 
-
     data_to_become_bmp = (self._wx_image, width, height)
-
-
 
     return data_to_become_bmp
 
