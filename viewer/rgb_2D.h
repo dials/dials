@@ -16,7 +16,7 @@
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
 
-#include <scitbx/array_family/tiny_types.h>
+//#include <scitbx/array_family/tiny_types.h>
 
 #include <dials/viewer/fonts_2D.h>
 #include <dials/viewer/mask_bmp_2D.h>
@@ -27,8 +27,8 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
-  using scitbx::af::int3;
-  using scitbx::af::int6;
+//  using scitbx::af::int3;
+//  using scitbx::af::int6;
 
   using dials::model::Valid;
   using dials::model::Background;
@@ -237,23 +237,18 @@ namespace dials { namespace viewer { namespace boost_python {
                     mask_pix_row < px_scale;
                     pix_row++,
                     mask_pix_row++){
-                  if( mask_vol[mask_pix_row][mask_pix_col][0] == 1 and
-                     ( loc_cel_int & Valid == Valid )
-                  ){
+                  if( ( mask_vol[mask_pix_row][mask_pix_col][0] == 1 and
+                      ( (loc_cel_int & Valid) == Valid ) )
+                      or
+                      ( mask_vol[mask_pix_row][mask_pix_col][1] == 1 and
+                      ( (loc_cel_int & Background) == Background ) )
 
-
-                    /*
-                     *
-                      (mask2d(row, col) & Valid == Valid)
-
-                      *
-                    or
-                      mask_vol[mask_pix_row][mask_pix_col][1] == 1 or
-                      mask_vol[mask_pix_row][mask_pix_col][2] == 1 or
-                      mask_vol[mask_pix_row][mask_pix_col][3] == 1 ){
-
-                     */
-
+                      or
+                      ( mask_vol[mask_pix_row][mask_pix_col][2] == 1 and
+                      ( (loc_cel_int & BackgroundUsed) == BackgroundUsed ) )
+                      or
+                      ( mask_vol[mask_pix_row][mask_pix_col][3] == 1 and
+                      (   (loc_cel_int & Foreground) == Foreground ) )   ){
                     bmp_dat(pix_row, pix_col, 0) = 150;
                     bmp_dat(pix_row, pix_col, 1) = 150;
                     bmp_dat(pix_row, pix_col, 2) = 150;
