@@ -57,11 +57,11 @@ class wxbmp_from_np_array(object):
           else:
             tmp_data2d_mask = None
 
-          traditional_generator_of_images_with_matplotlib = '''
+          #traditional_generator_of_images_with_matplotlib = '''
           data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
           #'''
 
-          #new_generator_of_images_with_cpp = '''
+          new_generator_of_images_with_cpp = '''
           data_sigle_img = self._wx_img_w_cpp(tmp_data2d, show_nums, tmp_data2d_mask)
           #'''
 
