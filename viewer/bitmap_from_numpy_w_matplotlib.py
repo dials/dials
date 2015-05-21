@@ -119,6 +119,8 @@ class wxbmp_from_np_array(object):
     flex_mask_in = flex.double(transposed_mask)
 
     wx_bmp_arr = rgb_img()
+    err_code = wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
+
     img_array_tmp = wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
     img_array_tmp =    img_array_tmp.as_numpy_array()
 

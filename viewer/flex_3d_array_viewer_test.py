@@ -29,7 +29,8 @@ except ImportError, e:
 if(__name__ == "__main__"):
   lst_flex = []
   lst_flex_norm = []
-  for size_xyz in range(3,8):
+
+  for size_xyz in range(15, 7, -1):
 
     data_xyz_flex = flex.double(flex.grid(size_xyz, size_xyz, size_xyz),15)
     data_flex_norm = flex.double(flex.grid(size_xyz, size_xyz, size_xyz),15)
@@ -46,7 +47,9 @@ if(__name__ == "__main__"):
           tot += data_xyz_flex[frm, row, col]
           if( row > 1 and row < size_xyz - 2 and col > 1 and col < size_xyz - 2 ):
             data_flex_mask[frm, row, col] = MaskCode.BackgroundUsed \
-                                            + MaskCode.Valid
+                                            + MaskCode.Valid \
+                                            + MaskCode.Background \
+                                            + MaskCode.Foreground
 
 
 
@@ -71,5 +74,5 @@ if(__name__ == "__main__"):
 
 
   show_3d(data_xyz_flex, data_flex_mask)
-  #show_3d(lst_flex)
-  #show_3d(lst_flex_norm)
+  show_3d(lst_flex)
+  show_3d(lst_flex_norm)

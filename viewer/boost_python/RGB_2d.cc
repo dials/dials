@@ -20,7 +20,9 @@ namespace dials { namespace viewer { namespace boost_python {
 
     class_<rgb_img>("rgb_img")
         .def("gen_bmp", &rgb_img::gen_bmp, arg("data2d") ,
-             arg("mask2d") , arg("show_nums")  );
+             arg("mask2d") , arg("show_nums")  )
+        .def("set_min_max", &rgb_img::set_min_max, arg("new_min") ,
+             arg("new_max"));
 
     //def("tst_ref_prod", &tst_ref_prod, arg("matr01"), arg("matr02"));
 

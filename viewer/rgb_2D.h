@@ -92,7 +92,7 @@ namespace dials { namespace viewer { namespace boost_python {
       int red_byte[255 * 3 + 1];
       int green_byte[255 * 3 + 1];
       int blue_byte[255 * 3 + 1];
-
+      double max, min;
       int err_conv;
 
       int font_vol[14][7][16];
@@ -127,6 +127,9 @@ namespace dials { namespace viewer { namespace boost_python {
         green_byte[765] = 255;
         red_byte[765] = 255;
 
+        max = -1;
+        min = -1;
+
         err_conv = get_font_img_array(font_vol);
         if(err_conv != 0){
           std::cout << "\n ERROR Building fonts internally \n error code ="
@@ -140,37 +143,47 @@ namespace dials { namespace viewer { namespace boost_python {
 
       }
 
+      int set_min_max(double new_min, double new_max) {
+        std::cout << "\n min(new), max(new) =" << new_min << ", " << new_max << "\n";
+        min = new_min;
+        max = new_max;
+        return 0;
+      }
+
       flex_int gen_bmp(flex_double & data2d, flex_double & mask2d, bool show_nums ) {
 
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
 
-        double max = 1, min = -1, loc_cel, dif = 0;
+        double loc_cel, dif = 0;
         int loc_cel_int;
 
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
-        std::cout << "\n show_nums = " << show_nums << "\n";
-        for (int col = 0; col < ncol; col++) {
-          for (int row = 0; row < nrow ; row++) {
-
-
-            loc_cel = data2d(row, col);
-            if(row == 0 and col == 0){
-              max = loc_cel;
-              min = loc_cel;
-            }else{
-              if(loc_cel > max){
+        if(max == -1 and min == -1){
+          for (int col = 0; col < ncol; col++) {
+            for (int row = 0; row < nrow ; row++) {
+              loc_cel = data2d(row, col);
+              if(row == 0 and col == 0){
                 max = loc_cel;
-              }
-              if(loc_cel < min){
                 min = loc_cel;
+              }else{
+                if(loc_cel > max){
+                  max = loc_cel;
+                }
+                if(loc_cel < min){
+                  min = loc_cel;
+                }
               }
             }
           }
         }
 
         dif = max - min;
+
+        std::cout << "max, min, dif =" << max << ", " << min << ", " << dif << "\n";
+
+
 
         for (int col = 0; col < ncol; col++) {
           for (int row = 0; row < nrow; row++) {
