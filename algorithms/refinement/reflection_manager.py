@@ -178,8 +178,7 @@ class ReflectionManager(object):
     self._max_sample_size = max_sample_size #sample size ceiling
     self._min_sample_size = min_sample_size #sample size floor
 
-    # exclude reflections that fail some inclusion criteria (currently just
-    # close to spindle)
+    # exclude reflections that fail some inclusion criteria
     refs_to_keep = self._id_refs_to_keep(reflections)
     self._accepted_refs_size = len(refs_to_keep)
 
@@ -290,16 +289,17 @@ class ReflectionManager(object):
   def _id_refs_to_keep(self, obs_data):
     """Create a selection of observations that pass certain conditions.
 
-    This step includes rejection of reflections too close to the spindle, and
-    rejection of the (0,0,0) Miller index. Outlier rejection is done later."""
+    This step includes rejection of reflections too close to the spindle,
+    reflections measured outside the scan range and rejection of the (0,0,0)
+    Miller index. Outlier rejection is done later."""
 
     # first exclude reflections with miller index set to 0,0,0
     sel = obs_data['miller_index'] != (0,0,0)
     inc = flex.size_t_range(len(obs_data)).select(sel)
     obs_data = obs_data.select(sel)
 
-    # Default to True to pass test if there is no rotation axis for a particular
-    # experiment
+    # Default to True to pass the following test if there is no rotation axis
+    # for a particular experiment
     to_keep = flex.bool(len(inc), True)
 
     for iexp, exp in enumerate(self._experiments):
@@ -308,26 +308,27 @@ class ReflectionManager(object):
       sel = obs_data['id'] == iexp
       s0 = self._s0vecs[iexp]
       s1 = obs_data['s1'].select(sel)
-      to_update = self._inclusion_test(s1, axis, s0)
+      phi = obs_data['xyzobs.mm.value'].parts()[2].select(sel)
+
+      # first test: reject reflections for which the parallelepiped formed
+      # between the gonio axis, s0 and s1 has a volume of less than the cutoff.
+      # Those reflections are by definition closer to the spindle-beam
+      # plane and for low values of the cutoff are troublesome to
+      # integrate anyway.
+      p_vol = flex.abs(s1.cross(flex.vec3_double(s1.size(), s0)).dot(axis))
+      passed1 = p_vol > self._close_to_spindle_cutoff
+
+      # second test: reject reflections that lie outside the scan range
+      phi_min, phi_max = exp.scan.get_oscillation_range(deg=False)
+      passed2 = (phi >= phi_min) & (phi <= phi_max)
+
+      # combine tests
+      to_update = passed1 & passed2
       to_keep.set_selected(sel, to_update)
 
     inc = inc.select(to_keep)
 
     return inc
-
-  def _inclusion_test(self, s1, axis, s0):
-    """Test scattering vector s1 for inclusion"""
-
-    # reject reflections for which the parallelepiped formed between
-    # the gonio axis, s0 and s1 has a volume of less than the cutoff.
-    # Those reflections are by definition closer to the spindle-beam
-    # plane and for low values of the cutoff are troublesome to
-    # integrate anyway.
-
-    p_vol = flex.abs(s1.cross(flex.vec3_double(s1.size(), s0)).dot(axis))
-    test = p_vol > self._close_to_spindle_cutoff
-
-    return test
 
   def _create_working_set(self):
     """Make a subset of the indices of reflections to use in refinement"""
