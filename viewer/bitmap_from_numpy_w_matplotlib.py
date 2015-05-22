@@ -24,6 +24,7 @@ from dials_viewer_ext import rgb_img
 class wxbmp_from_np_array(object):
 
   def __init__(self, lst_data_in, show_nums = True, lst_data_mask_in = None):
+    self.wx_bmp_arr = rgb_img()
     if(lst_data_in == [None] and lst_data_mask_in == [None] ):
       self._ini_wx_bmp_lst = None
 
@@ -69,6 +70,7 @@ class wxbmp_from_np_array(object):
 
         self._ini_wx_bmp_lst.append(single_block_lst_01)
 
+
   def bmp_lst_scaled(self, scale = 1.0):
     if( self._ini_wx_bmp_lst == None):
 
@@ -103,6 +105,8 @@ class wxbmp_from_np_array(object):
 
 
   def _wx_img_w_cpp(self, np_2d_tmp, show_nums, np_2d_mask = None):
+
+
     xmax = np_2d_tmp.shape[0]
     ymax = np_2d_tmp.shape[1]
 
@@ -118,11 +122,10 @@ class wxbmp_from_np_array(object):
     flex_data_in = flex.double(transposed_data)
     flex_mask_in = flex.double(transposed_mask)
 
-    wx_bmp_arr = rgb_img()
     print "self.vl_min, self.vl_max =", self.vl_min, self.vl_max
-    err_code = wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
+    err_code = self.wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
 
-    img_array_tmp = wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
+    img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
     img_array_tmp =    img_array_tmp.as_numpy_array()
 
     height = np.size( img_array_tmp[:, 0:1, 0:1] )

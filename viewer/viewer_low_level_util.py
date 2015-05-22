@@ -165,7 +165,7 @@ class MyGrid(gridlib.Grid):
 
   def OnLabelLeftClick(self, evt):
 
-    timing_for_debugging = '''
+    #timing_for_debugging = '''
     import time
     time1 = time.time()
     #'''
@@ -177,7 +177,7 @@ class MyGrid(gridlib.Grid):
 
     evt.Skip()
 
-    timing_for_debugging = '''
+    #timing_for_debugging = '''
     time2 = time.time()
     timedif = time2 - time1
     print "timedif =", timedif
