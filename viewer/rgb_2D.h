@@ -267,7 +267,6 @@ namespace dials { namespace viewer { namespace boost_python {
                 }
               }
 
-
               // Painting intensity value into the scaled pixel
               if(show_nums == true) {
 

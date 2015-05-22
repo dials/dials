@@ -39,7 +39,6 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
     for(int pos = 0; pos < PX_SCALE; pos++){
       mask_bw_img[0][pos][dpt] = 1;
       mask_bw_img[PX_SCALE - 1][pos][dpt] = 1;
-
       mask_bw_img[pos][0][dpt] = 1;
       mask_bw_img[pos][PX_SCALE - 1][dpt] = 1;
     }
