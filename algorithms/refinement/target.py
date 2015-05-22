@@ -158,8 +158,34 @@ class Target(object):
     if not reflections.has_key("entering"):
       reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
 
-    # predict
-    return self._predict_core(reflections)
+    # can only predict for experiments that exist and within the scan range
+    # any other reflections will be left unchanged
+    inc = flex.size_t_range(len(reflections))
+    to_keep = flex.bool(len(inc), False)
+
+    for iexp, exp in enumerate(self._experiments):
+      sel = reflections['id'] == iexp
+
+      # keep all reflections if there is no rotation axis
+      if exp.goniometer is None:
+        to_keep.set_selected(sel, True)
+        continue
+
+      # trim reflections outside the scan range
+      phi = reflections['xyzobs.mm.value'].parts()[2]
+      phi_min, phi_max = exp.scan.get_oscillation_range(deg=False)
+      passed = (phi >= phi_min) & (phi <= phi_max)
+      to_keep.set_selected(sel, passed)
+
+    # determine indices to include and predict on the subset
+    inc = inc.select(to_keep)
+    sub_refl = reflections.select(inc)
+    preds = self._predict_core(sub_refl)
+
+    # set updated subset back into place
+    reflections.set_selected(inc, preds)
+
+    return reflections
 
   def calculate_gradients(self, reflections=None, callback=None):
     """delegate to the prediction_parameterisation object to calculate

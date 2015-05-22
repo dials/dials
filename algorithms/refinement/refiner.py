@@ -1075,6 +1075,7 @@ class Refiner(object):
     parameter_correlation_plot
     selection_used_for_refinement
     predict_for_reflection_table
+    predict_for_indexed
 
   Notes:
     * The return value of run is a recorded history of the refinement
