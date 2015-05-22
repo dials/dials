@@ -25,12 +25,23 @@ using scitbx::af::flex_grid;
 int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
   int err_cod = 0;
 
-  // cleaning mask
+  // cleaning mask and painting borders
   for(int dpt = 0; dpt < 4; dpt++){
     for(int row = 0; row < PX_SCALE; row++){
       for(int col = 0; col < PX_SCALE; col++){
         mask_bw_img[col][row][dpt] = 0;
       }
+    }
+  }
+
+  // painting borders
+  for(int dpt = 0; dpt < 4; dpt++){
+    for(int pos = 0; pos < PX_SCALE; pos++){
+      mask_bw_img[0][pos][dpt] = 1;
+      mask_bw_img[PX_SCALE - 1][pos][dpt] = 1;
+
+      mask_bw_img[pos][0][dpt] = 1;
+      mask_bw_img[pos][PX_SCALE - 1][dpt] = 1;
     }
   }
 
@@ -63,7 +74,7 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
     }
   }
 
-  // painting vertical lines
+  // painting vertical lines as Background static mask
   for(int row = 0; row < PX_SCALE; row += DST_BTW_LIN ){
     for(int col = 0; col < PX_SCALE; col++ ){
         mask_bw_img[col][row][3] = 1;

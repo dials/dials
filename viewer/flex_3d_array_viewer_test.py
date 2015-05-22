@@ -46,7 +46,7 @@ if(__name__ == "__main__"):
           data_xyz_flex[frm, row, col] += (row * 2 + col * 2 + frm * 2)
           tot += data_xyz_flex[frm, row, col]
           if( row > 1 and row < size_xyz - 2 and col > 1 and col < size_xyz - 2 ):
-            data_flex_mask[frm, row, col] = MaskCode.Background
+            data_flex_mask[frm, row, col] = MaskCode.Valid
 
 
 
