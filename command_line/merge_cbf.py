@@ -56,6 +56,9 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
       if data_out is None:
         data_out = data_in
       else:
+        # FIXME only add pixels to this which are > 0; image pixels < 0
+        # are meaningful and should be preserved; could achieve this by
+        # setting -ve values here to 0 before +=
         data_out += data_in
 
     out_image = "%s%04i.cbf" %(out_prefix, i_out+1)
