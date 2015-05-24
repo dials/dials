@@ -346,6 +346,7 @@ command_line/reflection_viewer.py -text
 command_line/reindex.py -text
 command_line/remove_absent_reflections.py -text
 command_line/rs_mapper.py -text
+command_line/scale_down_image.py -text
 command_line/show_extensions.py -text
 command_line/show_indexed_strong.py -text
 command_line/show_isig_rmsd.py -text
@@ -1058,7 +1059,9 @@ test/tst_plot_reflections.py -text
 test/tst_scan_varying_integration_bug.py -text
 test/util/tst_nexus.py -text
 test/util/tst_nexus_multi_experiment.py -text
+util/SConscript -text
 util/__init__.py -text
+util/boost_python/scale_down_array.cc -text
 util/command_line.py -text
 util/config.py -text
 util/create_dials_binary_installers.sh -text
@@ -1079,6 +1082,8 @@ util/picklez.py -text
 util/pprint.py -text
 util/pycbf_extra.py -text
 util/report.py -text
+util/scale_down_array.h -text
+util/scale_down_image.py -text
 util/show_version.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text

@@ -12,6 +12,9 @@
 from __future__ import division
 from libtbx.utils import Sorry
 
+from scitbx.array_family import flex # import dependency
+from dials_util_ext import *
+
 class UsefulError(RuntimeError):
   '''Error message to direct user to report to dials developers.'''
 
