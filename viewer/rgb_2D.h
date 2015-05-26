@@ -146,7 +146,7 @@ namespace dials { namespace viewer { namespace boost_python {
       int set_min_max(double new_min, double new_max) {
         min = new_min;
         max = new_max;
-        std::cout << "\n min(new), max(new) =" << min << ", " << max << "\n";
+        //std::cout << "\n min(new), max(new) =" << min << ", " << max << "\n";
         return 0;
       }
 

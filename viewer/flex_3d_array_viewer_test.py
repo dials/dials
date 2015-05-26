@@ -49,10 +49,6 @@ if(__name__ == "__main__"):
             data_flex_mask[frm, row, col] = MaskCode.Valid
 
 
-
-
-            print data_flex_mask[frm, row, col]
-
             different_mask_values = '''
             MaskCode.Valid
             MaskCode.Foreground

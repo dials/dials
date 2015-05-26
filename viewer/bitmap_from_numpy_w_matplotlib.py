@@ -51,7 +51,7 @@ class wxbmp_from_np_array(object):
         z_dp = data_3d_in.shape[0]
         single_block_lst_01 = []
         for z in range(z_dp):
-          print "z =", z
+          #print "z =", z
           tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
           if(lst_data_mask_in != None):
             tmp_data2d_mask[:, :] = data_3d_in_mask[z:z + 1, :, :]
@@ -122,7 +122,7 @@ class wxbmp_from_np_array(object):
     flex_data_in = flex.double(transposed_data)
     flex_mask_in = flex.double(transposed_mask)
 
-    print "self.vl_min, self.vl_max =", self.vl_min, self.vl_max
+    #print "self.vl_min, self.vl_max =", self.vl_min, self.vl_max
     err_code = self.wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
 
     img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
