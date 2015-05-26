@@ -1054,6 +1054,7 @@ test/model/data/tst_pixel_list.py -text
 test/model/data/tst_prediction.py -text
 test/model/data/tst_shoebox.py -text
 test/nexus/tst_nexus.py -text
+test/tst_libtbx_import.py -text
 test/tst_phil.py -text
 test/tst_plot_reflections.py -text
 test/tst_scan_varying_integration_bug.py -text
