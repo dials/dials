@@ -692,11 +692,7 @@ class SpotFinderFactory(object):
       params = phil_scope.fetch(source=parse("")).extract()
 
     # Read in the lookup files
-    gain_map = SpotFinderFactory.load_image(params.spotfinder.lookup.gain_map)
-    dark_map = SpotFinderFactory.load_image(params.spotfinder.lookup.dark_map)
     mask = SpotFinderFactory.load_image(params.spotfinder.lookup.mask)
-    params.spotfinder.lookup.gain_map = gain_map
-    params.spotfinder.lookup.dark_map = dark_map
     params.spotfinder.lookup.mask = mask
 
     # Configure the algorithm and wrap it up

@@ -286,8 +286,6 @@ class Parameters(object):
     # Set the lookup parameters
     lookup = processor.Parameters.Lookup()
     lookup.mask = params.lookup.mask
-    lookup.gain_map = params.lookup.gain_map
-    lookup.dark_map = params.lookup.dark_map
 
     # Set the block parameters
     block = processor.Parameters.Block()

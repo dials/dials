@@ -51,13 +51,9 @@ class Parameters(object):
     '''
     def __init__(self):
       self.mask = None
-      self.gain_map = None
-      self.dark_map = None
 
     def update(self, other):
       self.mask = other.mask
-      self.gain_map = other.gain_map
-      self.dark_map = other.dark_map
 
   class Block(object):
     '''

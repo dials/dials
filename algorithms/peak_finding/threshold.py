@@ -92,14 +92,10 @@ class XDSThresholdStrategy(ThresholdStrategy):
     # Get the parameters
     self._kernel_size = kwargs.get('kernel_size', (3, 3))
     self._gain        = kwargs.get('gain')
-    self._gain_map    = kwargs.get('gain_map')
     self._n_sigma_b   = kwargs.get('n_sigma_b', 6)
     self._n_sigma_s   = kwargs.get('n_sigma_s', 3)
     self._min_count   = kwargs.get('min_count', 2)
     self._threshold   = kwargs.get('global_threshold', None)
-
-    # Ensure only one gain is set
-    assert([self._gain, self._gain_map].count(None) > 0)
 
     # Create a buffer
     self.algorithm = {}

@@ -19,14 +19,6 @@ lookup
   mask = None
     .help = "The path to the mask file."
     .type = str
-
-  gain_map = None
-    .help = "The path to the gain file."
-    .type = str
-
-  dark_map = None
-    .help = "The path to the dark current file."
-    .type = str
 }
 
 ''')
