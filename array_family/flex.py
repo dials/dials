@@ -664,7 +664,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       if verbose:
         info('  reading image %d' % i)
       st = time()
-      image = imageset.get_image(i)
+      image = imageset.get_corrected_data(i)
       mask2 = imageset.get_mask(i)
       if mask is not None:
         assert(len(mask) == len(mask2))

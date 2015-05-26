@@ -62,7 +62,7 @@ class Extract(object):
       for ind in range(*index):
 
         # Get the image and mask
-        image = self.imageset.get_image(ind)
+        image = self.imageset.get_corrected_data(ind)
         mask = self.imageset.get_mask(ind)
 
         # Set the mask

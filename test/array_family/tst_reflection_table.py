@@ -844,11 +844,11 @@ class Test(object):
       def __getitem__(self, index):
         f = frame0+index
         return (self.data + f*1, self.data + f*2)
-      def get_image(self, index):
+      def get_corrected_data(self, index):
         f = frame0+index
         return (self.data + f*1, self.data + f*2)
       def get_mask(self, index):
-        image = self.get_image(index)
+        image = self.get_corrected_data(index)
         return tuple(im >= 0 for im in image)
     imageset = FakeImageSet()
 

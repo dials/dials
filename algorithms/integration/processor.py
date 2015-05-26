@@ -438,7 +438,7 @@ class Task(object):
     read_time = 0.0
     for i in range(len(imageset)):
       st = time()
-      image = imageset.get_image(i)
+      image = imageset.get_corrected_data(i)
       mask = imageset.get_mask(i)
       if self.params.lookup.mask is not None:
         assert len(mask) == len(self.params.lookup.mask), \
