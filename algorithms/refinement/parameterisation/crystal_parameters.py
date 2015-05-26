@@ -205,11 +205,11 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     a, b, c = vec_a.length(), vec_b.length(), vec_c.length()
 
     # The estimated errors are calculated by error propagation from cov_O
-    jacobian_t = matrix.rec(
+    jacobian = matrix.rec(
       (vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0,
        0, vec_b[0]/b, 0, 0, vec_b[1]/b, 0, 0, vec_b[2]/b, 0,
-       0, 0, vec_c[0]/c, 0, 0, vec_c[1]/c, 0, 0, vec_c[2]/c), (9, 3))
-    jacobian = jacobian_t.transpose()
+       0, 0, vec_c[0]/c, 0, 0, vec_c[1]/c, 0, 0, vec_c[2]/c), (3, 9))
+    jacobian_t = jacobian.transpose()
 
     # this is a 3*3 covariance matrix, we want the variances, down the diagonal
     cov_cell = (jacobian * cov_O * jacobian_t)
