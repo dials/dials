@@ -31,7 +31,7 @@ class wxbmp_from_np_array(object):
     else:
       self._ini_wx_bmp_lst = []
       for lst_pos in range(len(lst_data_in)):
-        print "lst_pos =", lst_pos
+        #print "lst_pos =", lst_pos
         data_3d_in = lst_data_in[lst_pos]
         xmax = data_3d_in.shape[1]
         ymax = data_3d_in.shape[2]
