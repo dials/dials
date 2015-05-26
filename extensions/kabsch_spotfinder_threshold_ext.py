@@ -80,14 +80,9 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
 
     '''
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
-    if params.spotfinder.threshold.xds.gain is not None:
-      if params.spotfinder.lookup.gain_map is not None:
-        raise Sorry("Cannot use gain and gain_map parameters simultaneously.")
-
     self._algorithm = XDSThresholdStrategy(
       kernel_size=params.spotfinder.threshold.xds.kernel_size,
       gain=params.spotfinder.threshold.xds.gain,
-      gain_map=params.spotfinder.lookup.gain_map,
       mask=params.spotfinder.lookup.mask,
       n_sigma_b=params.spotfinder.threshold.xds.sigma_background,
       n_sigma_s=params.spotfinder.threshold.xds.sigma_strong,

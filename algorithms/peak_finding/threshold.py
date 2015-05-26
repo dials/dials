@@ -97,6 +97,9 @@ class XDSThresholdStrategy(ThresholdStrategy):
     self._min_count   = kwargs.get('min_count', 2)
     self._threshold   = kwargs.get('global_threshold', None)
 
+    # Save the constant gain
+    self._gain_map = None
+
     # Create a buffer
     self.algorithm = {}
 
