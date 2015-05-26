@@ -117,7 +117,7 @@ class Test(object):
     # compare with delpsical.rad
     from libtbx.test_utils import approx_equal
     for ref in self.reflections:
-      r = s0 - matrix.col(ref['s1'])
+      r = matrix.col(ref['s1']) - s0
       q = UB * matrix.col(ref['miller_index'])
       tst_radius = (s0 + q).length()
       sgn = -1 if tst_radius > es_radius else 1
@@ -125,7 +125,6 @@ class Test(object):
       assert approx_equal(delpsi, ref['delpsical.rad'])
 
     print "OK"
-
 
 if __name__ == '__main__':
 
