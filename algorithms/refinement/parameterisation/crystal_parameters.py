@@ -172,8 +172,25 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     from dials.algorithms.refinement.refinement_helpers import \
         matrix_inverse_error_propagation
 
-    # var_cov is the covariance matrix of elements of the B matrix. It is also
-    # the covariance of its transpose. From B = (O^-1)^T we can convert this
+    # var_cov is the covariance matrix of elements of the B matrix. We
+    # need to construct the covariance matrix of elements of the
+    # transpose of B. The vector of elements of B is related to the
+    # vector of elements of its transpose by a permutation, P.
+    P = matrix.sqr((1,0,0,0,0,0,0,0,0,
+                    0,0,0,1,0,0,0,0,0,
+                    0,0,0,0,0,0,1,0,0,
+                    0,1,0,0,0,0,0,0,0,
+                    0,0,0,0,1,0,0,0,0,
+                    0,0,0,0,0,0,0,1,0,
+                    0,0,1,0,0,0,0,0,0,
+                    0,0,0,0,0,1,0,0,0,
+                    0,0,0,0,0,0,0,0,1))
+
+    # We can use P to replace var_cov with the covariance matrix of
+    # elements of the transpose of B.
+    var_cov = P*var_cov*P
+
+    # From B = (O^-1)^T we can convert this
     # to the covariance matrix of the real space orthogonalisation matrix
     B = self.get_state()
     Bt = B.transpose()
@@ -188,7 +205,6 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     a, b, c = vec_a.length(), vec_b.length(), vec_c.length()
 
     # The estimated errors are calculated by error propagation from cov_O
-
     jacobian_t = matrix.rec(
       (vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0,
        0, vec_b[0]/b, 0, 0, vec_b[1]/b, 0, 0, vec_b[2]/b, 0,
