@@ -89,21 +89,10 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
   from scitbx import matrix
   DPS.S0_vector = matrix.col(beam.get_s0())
   DPS.inv_wave = 1./beam.get_wavelength()
-  if goniometer is None:
-    DPS.axis = matrix.col((1,0,0))
-  else:
-    DPS.axis = matrix.col(goniometer.get_rotation_axis())
-  DPS.set_detector(detector)
 
   # transform input into what Nick needs
   # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
 
-  data = flex.vec3_double()
-  for spot in spots_mm:
-    data.append((spot['xyzobs.mm.value'][0],
-                 spot['xyzobs.mm.value'][1],
-                 spot['xyzobs.mm.value'][2]*180./math.pi))
-
-  DPS.index(raw_spot_input = data, panel_addresses = panel_ids)
+  DPS.index(reciprocal_space_vectors=spots_mm['rlp'])
   solutions = DPS.getSolutions()
   return [matrix.col(s.bvec()) for s in solutions],DPS.getXyzData()
