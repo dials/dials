@@ -313,11 +313,9 @@ namespace dials { namespace viewer { namespace boost_python {
               bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
             }
 
-
-
           }
         }
-        std::cout << "\n building BMP done \n";
+        //std::cout << "\n building BMP \n";
 
       return bmp_dat;
       }

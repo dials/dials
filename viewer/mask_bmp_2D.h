@@ -80,7 +80,7 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
     }
   }
 
-  std::cout << "\n Hi from mask_bmp_2D\n";
+  //std::cout << "\n Hi from mask_bmp_2D\n";
 
   return err_cod;
 }
