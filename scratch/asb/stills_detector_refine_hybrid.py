@@ -212,7 +212,7 @@ def detector_parallel_refiners(params, experiments, reflections):
   # update the full detector
   for group, refined_exp in zip(groups, refined_exps):
     refined_det = refined_exp.detectors()[0]
-    local_root = refined_det.hierarchy()
+    local_root = refined_det[0]
     f = local_root.get_fast_axis()
     s = local_root.get_slow_axis()
     o = local_root.get_origin()
