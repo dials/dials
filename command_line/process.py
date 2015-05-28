@@ -247,14 +247,11 @@ class Script(object):
     params = copy.deepcopy(self.params)
     # don't do scan-varying refinement during indexing
     params.refinement.parameterisation.crystal.scan_varying = False
-    if params.indexing.method == "fft3d":
-      from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
-    elif params.indexing.method == "fft1d":
-      from dials.algorithms.indexing.fft1d import indexer_fft1d as indexer
-    elif params.indexing.method == "real_space_grid_search":
-      from dials.algorithms.indexing.real_space_grid_search \
-           import indexer_real_space_grid_search as indexer
-    idxr = indexer(reflections, imagesets, params=params)
+
+    from dials.algorithms.indexing.indexer import indexer_base
+    idxr = indexer_base.from_parameters(
+      reflections, imagesets,
+      params=params)
 
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments

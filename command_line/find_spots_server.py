@@ -39,8 +39,8 @@ integrate = True
   if index and stats.n_spots_no_ice > 10:
     import logging
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    from dials.command_line.index import phil_scope
-    interp = phil_scope.command_line_argument_interpreter()
+    from dials.algorithms.indexing import indexer
+    interp = indexer.master_phil_scope.command_line_argument_interpreter()
     params, unhandled = interp.process_and_fetch(
       unhandled, custom_processor='collect_remaining')
     imagesets = [imageset]
@@ -54,16 +54,8 @@ integrate = True
       imageset.set_scan(None)
 
     try:
-      if params.indexing.method == "fft3d":
-        from dials.algorithms.indexing.fft3d import indexer_fft3d
-        idxr = indexer_fft3d(reflections, imagesets, params=params)
-      elif params.indexing.method == "fft1d":
-        from dials.algorithms.indexing.fft1d import indexer_fft1d
-        idxr = indexer_fft1d(reflections, imagesets, params=params)
-      elif params.indexing.method == "real_space_grid_search":
-        from dials.algorithms.indexing.real_space_grid_search \
-             import indexer_real_space_grid_search
-        idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
+      idxr = indexer.indexer_base.from_parameters(
+        reflections, imagesets, params=params)
       stats.crystal = idxr.refined_experiments.crystals()[0]
       stats.n_indexed = len(idxr.refined_reflections)
     except Exception, e:

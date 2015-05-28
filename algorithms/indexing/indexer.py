@@ -366,6 +366,30 @@ class indexer_base(object):
     # now actually do the indexing
     self.index()
 
+  @staticmethod
+  def from_parameters(reflections, imagesets,
+                      known_crystal_models=None, params=None):
+
+    if params is None:
+      params = master_params
+
+    if known_crystal_models is not None:
+      from dials.algorithms.indexing.known_orientation \
+           import indexer_known_orientation
+      idxr = indexer_known_orientation(
+        reflections, imagesets, params, known_crystal_models)
+    elif params.indexing.method == "fft3d":
+      from dials.algorithms.indexing.fft3d import indexer_fft3d
+      idxr = indexer_fft3d(reflections, imagesets, params=params)
+    elif params.indexing.method == "fft1d":
+      from dials.algorithms.indexing.fft1d import indexer_fft1d
+      idxr = indexer_fft1d(reflections, imagesets, params=params)
+    elif params.indexing.method == "real_space_grid_search":
+      from dials.algorithms.indexing.real_space_grid_search \
+           import indexer_real_space_grid_search
+      idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
+
+    return idxr
 
   def _setup_symmetry(self):
     self.target_symmetry_primitive = None

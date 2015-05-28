@@ -120,21 +120,11 @@ def run(args):
       imageset.set_goniometer(None)
       imageset.set_scan(None)
 
-  if known_crystal_models is not None:
-    from dials.algorithms.indexing.known_orientation \
-         import indexer_known_orientation
-    idxr = indexer_known_orientation(
-      reflections, imagesets, params, known_crystal_models)
-  elif params.indexing.method == "fft3d":
-    from dials.algorithms.indexing.fft3d import indexer_fft3d
-    idxr = indexer_fft3d(reflections, imagesets, params=params)
-  elif params.indexing.method == "fft1d":
-    from dials.algorithms.indexing.fft1d import indexer_fft1d
-    idxr = indexer_fft1d(reflections, imagesets, params=params)
-  elif params.indexing.method == "real_space_grid_search":
-    from dials.algorithms.indexing.real_space_grid_search \
-         import indexer_real_space_grid_search
-    idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
+  from dials.algorithms.indexing.indexer import indexer_base
+  idxr = indexer_base.from_parameters(
+    reflections, imagesets,
+    known_crystal_models=known_crystal_models,
+    params=params)
   refined_experiments = idxr.refined_experiments
   refined_reflections = idxr.refined_reflections
   if len(refined_experiments):
