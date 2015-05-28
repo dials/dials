@@ -65,6 +65,11 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
   # work through multipart partials; compute those weighted values I need
   # if total partiality less than min, delete. if summing, delete extra parts
 
+
+  we_got_profiles = 'intensity.prf.value' in integrated_data
+  from logging import info
+  info('Profile fitted reflections: %s' % we_got_profiles)
+
   for p_id in partial_ids:
     p_tot = sum([integrated_data['partiality'][j] for j in partial_map[p_id]])
     if p_tot < min_total_partiality:
@@ -75,16 +80,16 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
     j0 = partial_map[p_id][0]
     jrest = partial_map[p_id][1:]
 
-    prf_value = integrated_data['intensity.prf.value'][j0]
-    prf_variance = integrated_data['intensity.prf.variance'][j0]
+    if we_got_profiles:
+      prf_value = integrated_data['intensity.prf.value'][j0]
+      prf_variance = integrated_data['intensity.prf.variance'][j0]
+      weight = prf_value * prf_value / prf_variance
+      prf_value *= weight
+      prf_variance *= weight
+      total_weight = weight
     sum_value = integrated_data['intensity.sum.value'][j0]
     sum_variance = integrated_data['intensity.sum.variance'][j0]
     partiality = integrated_data['partiality'][j0]
-    weight = prf_value * prf_value / prf_variance
-    prf_value *= weight
-    prf_variance *= weight
-
-    total_weight = weight
 
     # weight profile fitted intensity and variance computed from weights
     # proportional to (I/sig(I))^2; schedule for deletion spare parts
@@ -96,22 +101,21 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
       sum_variance += integrated_data['intensity.sum.variance'][j]
       partiality += integrated_data['partiality'][j]
 
+      if we_got_profiles:
+        _prf_value = integrated_data['intensity.prf.value'][j]
+        _prf_variance = integrated_data['intensity.prf.variance'][j]
 
-      _prf_value = integrated_data['intensity.prf.value'][j]
-      _prf_variance = integrated_data['intensity.prf.variance'][j]
-
-      _weight = _prf_value * _prf_value / _prf_variance
-      prf_value += _weight * _prf_value
-      prf_variance += _weight * _prf_variance
-      total_weight += _weight
-
-    prf_value /= total_weight
-    prf_variance /= total_weight
+        _weight = _prf_value * _prf_value / _prf_variance
+        prf_value += _weight * _prf_value
+        prf_variance += _weight * _prf_variance
+        total_weight += _weight
 
     # now write these back into original reflection
-
-    integrated_data['intensity.prf.value'][j0] = prf_value
-    integrated_data['intensity.prf.variance'][j0] = prf_variance
+    if we_got_profiles:
+      prf_value /= total_weight
+      prf_variance /= total_weight
+      integrated_data['intensity.prf.value'][j0] = prf_value
+      integrated_data['intensity.prf.variance'][j0] = prf_variance
     integrated_data['intensity.sum.value'][j0] = sum_value
     integrated_data['intensity.sum.variance'][j0] = sum_variance
     integrated_data['partiality'][j0] = partiality
