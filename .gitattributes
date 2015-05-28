@@ -360,6 +360,7 @@ command_line/sort_reflections.py -text
 command_line/split_experiments.py -text
 command_line/spot_counts_per_image.py -text
 command_line/stereographic_projection.py -text
+command_line/stills_detector_refine_hybrid.py -text
 /config.h -text
 data/__init__.py -text
 data/completion_template.txt -text
@@ -586,7 +587,6 @@ scratch/asb/refine_quadrants_hybrid.py -text
 scratch/asb/refine_quadrants_hybrid_mpi.py -text
 scratch/asb/refine_quadrants_lbfgs.py -text
 scratch/asb/refined_quads_to_cbf.py -text
-scratch/asb/stills_detector_refine_hybrid.py -text
 scratch/dgw/__init__.py -text
 scratch/dgw/collect_input.py -text
 scratch/dgw/crystal_model/__init__.py -text
