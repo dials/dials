@@ -1046,6 +1046,7 @@ test/command_line/tst_sort_reflections.py -text
 test/command_line/tst_spot_counts_per_image.py -text
 test/command_line/tst_spotfinder.py -text
 test/command_line/tst_stereographic_projections.py -text
+test/command_line/tst_stills_detector_hybrid_refine.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
 test/framework/tst_interface.py -text
