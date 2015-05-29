@@ -19,6 +19,9 @@ master_phil = libtbx.phil.parse("""
   reverse_phi = False
     .type = bool
     .optional = True
+  beam_centre = None
+    .type = floats(size=2)
+    .help = "Fast, slow beam centre coordinates (mm)."
   show_rotation_axis = False
     .type = bool
   show_beam_vector = False
@@ -93,44 +96,26 @@ class ReciprocalLatticeViewer(wx.Frame):
   def create_settings_panel (self) :
     self.settings_panel = settings_window(self, -1, style=wx.RAISED_BORDER)
 
-  def load_models(self, imageset, reflections):
-    self.detector = imageset.get_detector()
-    self.beam = imageset.get_beam()
-    self.scan = imageset.get_scan()
-    self.goniometer = imageset.get_goniometer()
+  def load_models(self, imagesets, reflections):
+    self.imagesets = imagesets
     self.reflections = reflections
-    self.parameterise_models()
-    if self.goniometer is not None:
-      self.viewer.set_rotation_axis(self.goniometer.get_rotation_axis())
-    self.viewer.set_beam_vector(self.beam.get_s0())
-    self.map_points_to_reciprocal_space()
+    if self.imagesets[0].get_goniometer() is not None:
+      self.viewer.set_rotation_axis(
+        self.imagesets[0].get_goniometer().get_rotation_axis())
+    self.viewer.set_beam_vector(self.imagesets[0].get_beam().get_s0())
 
-  def parameterise_models(self):
-    from dials.algorithms.refinement.parameterisation import \
-      DetectorParameterisationSinglePanel, DetectorParameterisationHierarchical, \
-      DetectorParameterisationMultiPanel
-    if len(self.detector) > 1:
-      try:
-        h = self.detector.hierarchy()
-        self.dp = DetectorParameterisationHierarchical(self.detector,
-            experiment_ids=[0], level=0)
-      except AttributeError:
-        self.dp = DetectorParameterisationMultiPanel(self.detector, self.beam,
-                                                    experiment_ids=[0])
+    detector = self.imagesets[0].get_detector()
+    beam = self.imagesets[0].get_beam()
+    if self.settings.beam_centre is None:
+      panel_id, self.settings.beam_centre \
+        = detector.get_ray_intersection(beam.get_s0())
     else:
-      self.dp = DetectorParameterisationSinglePanel(self.detector,
-                                                    experiment_ids=[0])
-
-    from dials.algorithms.refinement.parameterisation import BeamParameterisation
-    self.bp = BeamParameterisation(self.beam, self.goniometer, experiment_ids=[0])
-
-    # keep parameter names
-    self.detector_parameter_names = self.dp.get_param_names()
-    self.beam_parameter_names = self.bp.get_param_names()
-
-    # keep parameter values (modify these and update_models to make changes)
-    self.detector_parameters = self.dp.get_param_vals()
-    self.beam_parameters = self.bp.get_param_vals()
+      from dxtbx.model.detector_helpers import set_mosflm_beam_centre
+      set_mosflm_beam_centre(detector, beam, tuple(reversed(
+        self.settings.beam_centre)))
+    self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
+    self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+    self.map_points_to_reciprocal_space()
 
   def map_points_to_reciprocal_space(self):
     goniometer = copy.deepcopy(self.goniometer)
@@ -138,23 +123,31 @@ class ReciprocalLatticeViewer(wx.Frame):
       goniometer.set_rotation_axis([-i for i in goniometer.get_rotation_axis()])
     from dials.algorithms.indexing import indexer
 
-    # set parameters to latest values
-    self.dp.set_param_vals(self.detector_parameters)
-    self.bp.set_param_vals(self.beam_parameters)
+    reflections_input = self.reflections
 
-    reflections = self.reflections
-
-    if reflections.has_key('miller_index'):
-      indexed_sel = (reflections['miller_index'] != (0,0,0))
+    if reflections_input.has_key('miller_index'):
+      indexed_sel = (reflections_input['miller_index'] != (0,0,0))
       if self.settings.display == 'indexed':
-        reflections = reflections.select(indexed_sel)
+        reflections_input = reflections_input.select(indexed_sel)
       elif self.settings.display == 'unindexed':
-        reflections = reflections.select(~indexed_sel)
+        reflections_input = reflections_input.select(~indexed_sel)
 
-    reflections = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-      reflections, self.detector, self.scan)
-    indexer.indexer_base.map_centroids_to_reciprocal_space(
-      reflections, self.detector, self.beam, goniometer)
+    from dials.array_family import flex
+    reflections = flex.reflection_table()
+    for i, imageset in enumerate(self.imagesets):
+      if 'imageset_id' in reflections_input:
+        sel = (reflections_input['imageset_id'] == i)
+      else:
+        sel = (reflections_input['id'] == i)
+      refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
+        reflections_input.select(sel),
+        imageset.get_detector(), imageset.get_scan())
+
+      indexer.indexer_base.map_centroids_to_reciprocal_space(
+        refl, imageset.get_detector(), imageset.get_beam(),
+        imageset.get_goniometer())
+      reflections.extend(refl)
+
     d_spacings = 1/reflections['rlp'].norms()
     if self.settings.d_min is not None:
       reflections = reflections.select(d_spacings > self.settings.d_min)
@@ -165,9 +158,15 @@ class ReciprocalLatticeViewer(wx.Frame):
     self.viewer.set_points(points)
 
   def update_settings(self, *args, **kwds):
+    detector = self.imagesets[0].get_detector()
+    beam = self.imagesets[0].get_beam()
+    from dxtbx.model.detector_helpers import set_mosflm_beam_centre
+    set_mosflm_beam_centre(detector, beam, tuple(reversed(
+      self.settings.beam_centre)))
+    self.imagesets[0].set_detector(detector)
+    self.imagesets[0].set_beam(beam)
     self.map_points_to_reciprocal_space()
     self.viewer.update_settings(*args, **kwds)
-    #self.draw_rotation_axis()
 
 
 class settings_window (wxtbx.utils.SettingsPanel) :
@@ -205,6 +204,27 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       label="Reverse phi direction")
     self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
 
+    self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
+    self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.beam_fast_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Beam fast")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.beam_fast_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_fast_ctrl)
+
+    self.beam_slow_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
+    self.beam_slow_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.beam_slow_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Beam slow")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.beam_slow_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_slow_ctrl)
 
     self.marker_size_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0,
                                           min_val=1)
@@ -238,6 +258,8 @@ class settings_window (wxtbx.utils.SettingsPanel) :
 
   def OnChangeSettings(self, event):
     self.settings.d_min = self.d_min_ctrl.GetValue()
+    self.settings.beam_centre = (
+      self.beam_fast_ctrl.GetValue(), self.beam_slow_ctrl.GetValue())
     self.settings.marker_size = self.marker_size_ctrl.GetValue()
     for i, display in enumerate(("all", "indexed", "unindexed")):
       if self.btn.values[i]:
@@ -347,10 +369,7 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
-  reflections_all = flatten_reflections(params.input.reflections)
-  reflections = reflections_all[0]
-  for ref in reflections_all[1:]:
-    reflections.extend(ref)
+  reflections = flatten_reflections(params.input.reflections)[0]
 
   if len(datablocks) == 0:
     if len(experiments) > 0:
@@ -363,16 +382,12 @@ def run(args):
   else:
     imagesets = datablocks[0].extract_imagesets()
 
-  if len(imagesets) > 1:
-    raise Sorry("Only one ImageSet can be processed at a time")
-  imageset = imagesets[0]
-
   import wxtbx.app
   a = wxtbx.app.CCTBXApp(0)
   a.settings = params
   f = ReciprocalLatticeViewer(
     None, -1, "Reflection data viewer", size=(1024,768))
-  f.load_models(imageset, reflections)
+  f.load_models(imagesets, reflections)
   f.Show()
   a.SetTopWindow(f)
   #a.Bind(wx.EVT_WINDOW_DESTROY, lambda evt: tb_icon.Destroy(), f)
