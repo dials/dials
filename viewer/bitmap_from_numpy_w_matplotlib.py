@@ -106,7 +106,6 @@ class wxbmp_from_np_array(object):
 
   def _wx_img_w_cpp(self, np_2d_tmp, show_nums, np_2d_mask = None):
 
-
     xmax = np_2d_tmp.shape[0]
     ymax = np_2d_tmp.shape[1]
 
@@ -122,16 +121,15 @@ class wxbmp_from_np_array(object):
     flex_data_in = flex.double(transposed_data)
     flex_mask_in = flex.double(transposed_mask)
 
-    #print "self.vl_min, self.vl_max =", self.vl_min, self.vl_max
     err_code = self.wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
 
     img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
-    img_array_tmp =    img_array_tmp.as_numpy_array()
+    np_img_array = img_array_tmp.as_numpy_array()
 
-    height = np.size( img_array_tmp[:, 0:1, 0:1] )
-    width = np.size(  img_array_tmp[0:1, :, 0:1] )
+    height = np.size( np_img_array[:, 0:1, 0:1] )
+    width = np.size(  np_img_array[0:1, :, 0:1] )
     img_array = np.empty( (height, width, 3),'uint8')
-    img_array[:,:,:] = img_array_tmp[:,:,:]
+    img_array[:,:,:] = np_img_array[:,:,:]
 
     self._wx_image = wx.EmptyImage(width, height)
     self._wx_image.SetData( img_array.tostring() )

@@ -13,8 +13,6 @@
 from __future__ import division
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
-# BOOST_ADAPTBX_FPE_DEFAULT=1
-# BOOST_ADAPTBX_SIGNALS_DEFAULT=1
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d
 from dials.algorithms.shoebox import MaskCode

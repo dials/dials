@@ -144,8 +144,14 @@ namespace dials { namespace viewer { namespace boost_python {
       }
 
       int set_min_max(double new_min, double new_max) {
-        min = new_min;
-        max = new_max;
+        if(new_min < new_max){
+          min = new_min;
+          max = new_max;
+        }else{
+          min = new_min;
+          max = min + 1;
+        }
+
         //std::cout << "\n min(new), max(new) =" << min << ", " << max << "\n";
         return 0;
       }
@@ -207,17 +213,17 @@ namespace dials { namespace viewer { namespace boost_python {
         flex_int bmp_dat(flex_grid<>(nrow * px_scale, ncol * px_scale, 3),0);
 
         int digit_val[15];
-        int pix_row;
-        int pix_col;
+        int pix_row, pix_col;
+        int col, row;
+        int mask_pix_col, mask_pix_row;
 
-        for (int col = 0; col < ncol; col++) {
-          for (int row = 0; row < nrow; row++) {
+        for (col = 0; col < ncol; col++) {
+          for (row = 0; row < nrow; row++) {
             loc_cel_int = int(mask2d(row, col));
 
             if(px_scale > 1){
 
-              //painting the scaled pixel with the *hot* rowour convention
-
+              //painting the scaled pixel with the *hot* color convention
               for(pix_col = col * px_scale;
                   pix_col < col * px_scale + px_scale;
                   pix_col++){
@@ -235,15 +241,13 @@ namespace dials { namespace viewer { namespace boost_python {
                 }
               }
 
-
-
               // Painting mask into the scaled pixel
-              for(int mask_pix_col = 0, pix_col = col * px_scale;
+              for(mask_pix_col = 0, pix_col = col * px_scale;
                   mask_pix_col < px_scale;
                   pix_col++,
                   mask_pix_col++){
 
-                for(int mask_pix_row = 0, pix_row = row * px_scale;
+                for(mask_pix_row = 0, pix_row = row * px_scale;
                     mask_pix_row < px_scale;
                     pix_row++,
                     mask_pix_row++){
