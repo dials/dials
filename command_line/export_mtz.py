@@ -28,6 +28,9 @@ phil_scope = parse('''
   include_partials = False
     .type = bool
     .help = "Include partial reflections (scaled) in output"
+  keep_partials = False
+    .type = bool
+    .help = "Keep low partiality reflections"
   min_isigi = -5
     .type = float
     .help = "Exclude reflections with unfeasible values of I/Sig(I)"
@@ -66,7 +69,9 @@ def run(args):
   integrated_data = reflections[0]
   experiment_list = experiments
   m = export_mtz(integrated_data, experiment_list, params.hklout,
-                 params.ignore_panels, params.include_partials,
+                 ignore_panels=params.ignore_panels,
+                 include_partials=params.include_partials,
+                 keep_partials=params.keep_partials,
                  min_isigi=params.min_isigi)
   m.show_summary()
 

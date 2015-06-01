@@ -158,7 +158,7 @@ def scale_partial_reflections(integrated_data, min_partiality=0.5):
   return integrated_data
 
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
-               include_partials=False, min_isigi=None):
+               include_partials=False, keep_partials=False, min_isigi=None):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -220,7 +220,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
   if 'partiality' in integrated_data:
     selection = integrated_data['partiality'] < 0.99
-    if selection.count(True) > 0:
+    if selection.count(True) > 0 and not keep_partials:
       integrated_data.del_selected(selection)
       info('Removing %d incomplete reflections' % \
         selection.count(True))
@@ -242,7 +242,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   if not ignore_panels:
     assert(len(experiment.detector) == 1)
 
-  axis = experiment.goniometer.get_rotation_axis()
+  if experiment.goniometer:
+    axis = experiment.goniometer.get_rotation_axis()
+  else:
+    axis = 0.0, 0.0, 0.0
   s0 = experiment.beam.get_s0()
   wavelength = experiment.beam.get_wavelength()
 
@@ -275,7 +278,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   m.set_title('from dials.export_mtz')
   m.set_space_group_info(experiment.crystal.get_space_group().info())
 
-  image_range = experiment.scan.get_image_range()
+  if experiment.scan:
+    image_range = experiment.scan.get_image_range()
+  else:
+    image_range = 1, 1
 
   for b in range(image_range[0], image_range[1] + 1):
     o = m.add_batch().set_num(b).set_nbsetid(1).set_ncryst(1)
@@ -334,7 +340,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     o.set_phixyz(flex.float((0.0, 0.0, 0.0, 0.0, 0.0, 0.0)))
 
     # scan ranges, axis
-    phi_start, phi_range = experiment.scan.get_image_oscillation(b)
+    if experiment.scan:
+      phi_start, phi_range = experiment.scan.get_image_oscillation(b)
+    else:
+      phi_start, phi_range = 0.0, 0.0
     o.set_phistt(phi_start)
     o.set_phirange(phi_range)
     o.set_phiend(phi_start + phi_range)
@@ -366,8 +375,11 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   zdet = flex.double(z_px)
 
   # compute ROT values
-  rot = flex.double([experiment.scan.get_angle_from_image_index(z)
-                     for z in zdet])
+  if experiment.scan:
+    rot = flex.double([experiment.scan.get_angle_from_image_index(z)
+                      for z in zdet])
+  else:
+    rot = zdet
 
   # compute BATCH values
   batch = flex.floor(zdet).iround() + 1
@@ -411,7 +423,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   d.add_column('BATCH', type_table['BATCH']).set_values(
     batch.as_double().as_float())
 
-  lp = integrated_data['lp']
+  if 'lp' in integrated_data:
+    lp = integrated_data['lp']
+  else:
+    lp = flex.double(nref, 1.0)
   if 'dqe' in integrated_data:
     dqe = integrated_data['dqe']
   else:
