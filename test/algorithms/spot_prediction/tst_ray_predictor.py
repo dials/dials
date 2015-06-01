@@ -81,12 +81,12 @@ class TestRayPredictor:
 
   def test_miller_index_set(self):
     """Ensure we have the whole set of miller indices"""
-    gen_hkl = {}
-    #print len(self.reflections)
-    for r in self.reflections:
-      gen_hkl[r['miller_index']] = True
+    gen_hkl = { r['miller_index'] for r in self.reflections }
+    missing = []
     for hkl in self.integrate_handle.hkl:
-      assert(gen_hkl[hkl] == True)
+      if hkl not in gen_hkl:
+        missing.append(hkl)
+    assert len(missing) == 0, "%d out of %d reflections not in set, including %s" % (len(missing), len(self.integrate_handle.hkl), str(missing[0]))
 
   def test_rotation_angles(self):
     """Ensure the rotation angles agree with XDS"""
