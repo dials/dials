@@ -50,6 +50,9 @@ class TestRayPredictor:
     # Get the minimum resolution in the integrate file
     d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
     self.d_min = min(d)
+    # extend the resolution shell by epsilon>0
+    # to account for rounding artifacts on 32-bit platforms
+    self.d_min = self.d_min - 1e-15
 
     # Get the number of frames from the max z value
     xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
