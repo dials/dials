@@ -347,6 +347,7 @@ command_line/reindex.py -text
 command_line/remove_absent_reflections.py -text
 command_line/rs_mapper.py -text
 command_line/scale_down_image.py -text
+command_line/scale_down_images.py -text
 command_line/show_extensions.py -text
 command_line/show_indexed_strong.py -text
 command_line/show_isig_rmsd.py -text
