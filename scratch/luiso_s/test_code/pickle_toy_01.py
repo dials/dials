@@ -4,8 +4,8 @@ import math
 
 #table = pickle.load(open('integrated_reflections_table.pickle', 'rb'))
 
-table = pickle.load(open('../../../../../../biweekly_exercises/running_tst/running_dials_22_jan_2015/indexed.pickle', 'rb'))
-show_reflections(table)
+table = pickle.load(open('../../../../../../xrd_2d_data/testing_detailed_tutorial_script_n3_20may_2015/indexed.pickle', 'rb'))
+#show_reflections(table)
 
 old_example = '''
 print dir(table)

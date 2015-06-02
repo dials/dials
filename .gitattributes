@@ -831,6 +831,7 @@ scratch/luiso_s/test_code/matrix_test_w_matplotlib.py -text
 scratch/luiso_s/test_code/mosflm_test.py -text
 scratch/luiso_s/test_code/my_mosflm.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/old_table_toy.py -text
+scratch/luiso_s/test_code/pickle_to_show_flex.py -text
 scratch/luiso_s/test_code/pickle_toy.py -text
 scratch/luiso_s/test_code/pickle_toy_01.py -text
 scratch/luiso_s/test_code/sort_exers.py -text svneol=unset#text/plain
