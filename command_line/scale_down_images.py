@@ -7,6 +7,7 @@ def nproc():
 def joiner(args):
   from dials.util.scale_down_image import scale_down_image
   scale_down_image(*args)
+  print args[1]
 
 def scale_down_images(in_template, out_template, start, end, scale_factor):
   from multiprocessing import Pool
