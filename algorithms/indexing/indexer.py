@@ -336,18 +336,16 @@ class indexer_base(object):
     self.reflections = reflections
     self.imagesets = imagesets
     for imageset in imagesets[1:]:
-      assert imageset.get_detector() == self.imagesets[0].get_detector()
-      assert imageset.get_beam() == self.imagesets[0].get_beam()
-      assert imageset.get_goniometer() == self.imagesets[0].get_goniometer()
-    sweep = self.imagesets[0]
-    self.sweep = sweep
+      if imageset.get_detector() == self.imagesets[0].get_detector():
+        imageset.set_detector(self.imagesets[0].get_detector())
+      if imageset.get_goniometer() == self.imagesets[0].get_goniometer():
+        imageset.set_goniometer(self.imagesets[0].get_goniometer())
+        # can only share a beam if we share a goniometer?
+        if imageset.get_beam() == self.imagesets[0].get_beam():
+          imageset.set_beam(self.imagesets[0].get_beam())
 
     if params is None: params = master_params
 
-    self.goniometer = sweep.get_goniometer()
-    self.detector = sweep.get_detector()
-    #self.scan = sweep.get_scan()
-    self.beam = sweep.get_beam()
     self.params = params.indexing
     self.all_params = params
     self.refined_experiments = None
@@ -515,13 +513,18 @@ class indexer_base(object):
         [self.imagesets[0]], [self.reflections], hardcoded_phil, nproc=self.params.nproc,
         wide_search_binning=self.params.wide_search_binning)
 
-      self.sweep.set_detector(new_detector)
-      self.sweep.set_beam(new_beam)
-      self.detector = new_detector
-      self.beam = new_beam
+      self.imagesets[0].set_detector(new_detector)
+      self.imagesets[0].set_beam(new_beam)
 
-    self.map_centroids_to_reciprocal_space(
-      self.reflections, self.detector, self.beam, self.goniometer)
+    spots_mm = self.reflections
+    self.reflections = flex.reflection_table()
+
+    for i, imageset in enumerate(self.imagesets):
+      spots_sel = spots_mm.select(spots_mm['id'] == i)
+      self.map_centroids_to_reciprocal_space(
+        spots_sel, imageset.get_detector(), imageset.get_beam(),
+        imageset.get_goniometer())
+      self.reflections.extend(spots_sel)
 
     try:
       self.find_max_cell()
@@ -609,26 +612,30 @@ class indexer_base(object):
             and self.target_symmetry_primitive.space_group() is not None):
           # now apply the space group symmetry only after the first indexing
           # need to make sure that the symmetrized orientation is similar to the P1 model
-          for i_expt, expt in enumerate(experiments):
-            if i_expt >= n_lattices_previous_cycle:
+          for i_cryst, cryst in enumerate(experiments.crystals()):
+            if i_cryst >= n_lattices_previous_cycle:
               new_cryst, cb_op_to_primitive = self.apply_symmetry(
-                expt.crystal, self.target_symmetry_primitive,
+                cryst, self.target_symmetry_primitive,
                 space_group_only=True)
-              if not cb_op_to_primitive.is_identity_op():
-                miller_indices = self.reflections['miller_index'].select(
-                  self.reflections['id'] == i_expt)
-                miller_indices = cb_op_to_primitive.apply(miller_indices)
-                self.reflections['miller_index'].set_selected(
-                  self.reflections['id'] == i_expt, miller_indices)
               if self.cb_op_primitive_inp is not None:
                 new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
                 info(new_cryst.get_space_group().info())
-                miller_indices = self.reflections['miller_index'].select(
-                  self.reflections['id'] == i_expt)
-                miller_indices = self.cb_op_primitive_inp.apply(miller_indices)
-                self.reflections['miller_index'].set_selected(
-                  self.reflections['id'] == i_expt, miller_indices)
-              expt.crystal.update(new_cryst)
+              cryst.update(new_cryst)
+              for i_expt, expt in enumerate(experiments):
+                if expt.crystal is not cryst:
+                  continue
+                if not cb_op_to_primitive.is_identity_op():
+                  miller_indices = self.reflections['miller_index'].select(
+                    self.reflections['id'] == i_expt)
+                  miller_indices = cb_op_to_primitive.apply(miller_indices)
+                  self.reflections['miller_index'].set_selected(
+                    self.reflections['id'] == i_expt, miller_indices)
+                if self.cb_op_primitive_inp is not None:
+                  miller_indices = self.reflections['miller_index'].select(
+                    self.reflections['id'] == i_expt)
+                  miller_indices = self.cb_op_primitive_inp.apply(miller_indices)
+                  self.reflections['miller_index'].set_selected(
+                    self.reflections['id'] == i_expt, miller_indices)
 
         if len(experiments) > 1:
           from dials.algorithms.indexing.compare_orientation_matrices \
@@ -721,22 +728,30 @@ class indexer_base(object):
 
         self.refined_reflections = refined_reflections
 
-        self.sweep.set_detector(refined_experiments[0].detector)
-        self.sweep.set_beam(refined_experiments[0].beam)
-        self.sweep.set_goniometer(refined_experiments[0].goniometer)
-        self.sweep.set_scan(refined_experiments[0].scan)
-        # these may have been updated in refinement
-        self.detector = self.sweep.get_detector()
-        self.beam = self.sweep.get_beam()
-        self.goniometer = self.sweep.get_goniometer()
-        self.scan = self.sweep.get_scan()
+        for i, imageset in enumerate(self.imagesets):
+          ref_sel = self.refined_reflections.select(
+            self.refined_reflections['imageset_id'] == i)
+          ref_sel = ref_sel.select(ref_sel['id'] >= 0)
+          expt = refined_experiments[ref_sel['id'][0]]
+          imageset.set_detector(expt.detector)
+          imageset.set_beam(expt.beam)
+          imageset.set_goniometer(expt.goniometer)
+          imageset.set_scan(expt.scan)
+          expt.imageset = imageset
 
         if not (self.all_params.refinement.parameterisation.beam.fix == 'all'
                 and self.all_params.refinement.parameterisation.detector.fix == 'all'):
           # Experimental geometry may have changed - re-map centroids to
           # reciprocal space
-          self.map_centroids_to_reciprocal_space(
-            self.reflections, self.detector, self.beam, self.goniometer)
+
+          spots_mm = self.reflections
+          self.reflections = flex.reflection_table()
+          for i, imageset in enumerate(self.imagesets):
+            spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
+            self.map_centroids_to_reciprocal_space(
+              spots_sel, imageset.get_detector(), imageset.get_beam(),
+              imageset.get_goniometer())
+            self.reflections.extend(spots_sel)
 
         # update for next cycle
         experiments = refined_experiments
@@ -754,10 +769,6 @@ class indexer_base(object):
     if not 'refined_experiments' in locals():
       raise Sorry("None of the experiments could refine.")
 
-    # XXX currently need to store the imageset otherwise we can't read the experiment list back in
-    for expt in refined_experiments:
-      expt.imageset = self.sweep
-
     if len(self.refined_experiments) > 1:
       from dials.algorithms.indexing.compare_orientation_matrices \
            import show_rotation_matrix_differences
@@ -770,28 +781,33 @@ class indexer_base(object):
         i+1, (self.reflections['id'] == i).count(True)))
       info(crystal_model)
 
-    # set xyzcal.px field in self.refined_reflections
-    panel_numbers = flex.size_t(self.refined_reflections['panel'])
-    xyzcal_mm = self.refined_reflections['xyzcal.mm']
-    x_mm, y_mm, z_rad = xyzcal_mm.parts()
-    xy_cal_mm = flex.vec2_double(x_mm, y_mm)
-    xy_cal_px = flex.vec2_double(len(xy_cal_mm))
-    for i_panel in range(len(self.detector)):
-      panel = self.detector[i_panel]
-      sel = (panel_numbers == i_panel)
-      isel = sel.iselection()
-      ref_panel = self.refined_reflections.select(panel_numbers == i_panel)
-      xy_cal_px.set_selected(
-        sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel)))
-    x_px, y_px = xy_cal_px.parts()
-    scan = self.sweep.get_scan()
-    if scan is not None:
-      z_px = scan.get_array_index_from_angle(z_rad, deg=False)
-    else:
-      # must be a still image, z centroid not meaningful
-      z_px = z_rad
-    xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
-    self.refined_reflections['xyzcal.px'] = xyzcal_px
+    self.refined_reflections['xyzcal.px'] = flex.vec3_double(
+      len(self.refined_reflections))
+    for i, imageset in enumerate(self.imagesets):
+      imgset_sel = self.refined_reflections['imageset_id'] == i
+      # set xyzcal.px field in self.refined_reflections
+      refined_reflections = self.refined_reflections.select(imgset_sel)
+      panel_numbers = flex.size_t(refined_reflections['panel'])
+      xyzcal_mm = refined_reflections['xyzcal.mm']
+      x_mm, y_mm, z_rad = xyzcal_mm.parts()
+      xy_cal_mm = flex.vec2_double(x_mm, y_mm)
+      xy_cal_px = flex.vec2_double(len(xy_cal_mm))
+      for i_panel in range(len(imageset.get_detector())):
+        panel = imageset.get_detector()[i_panel]
+        sel = (panel_numbers == i_panel)
+        isel = sel.iselection()
+        ref_panel = refined_reflections.select(panel_numbers == i_panel)
+        xy_cal_px.set_selected(
+          sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel)))
+      x_px, y_px = xy_cal_px.parts()
+      scan = imageset.get_scan()
+      if scan is not None:
+        z_px = scan.get_array_index_from_angle(z_rad, deg=False)
+      else:
+        # must be a still image, z centroid not meaningful
+        z_px = z_rad
+      xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
+      self.refined_reflections['xyzcal.px'].set_selected(imgset_sel, xyzcal_px)
 
   def find_max_cell(self):
     import libtbx
@@ -1046,27 +1062,31 @@ class indexer_base(object):
       sel = ((self.reflections['id'] == -1) &
              (1/self.reflections['rlp'].norms() > self.d_min))
       refl = self.reflections.select(sel)
-      experiment = Experiment(beam=self.beam,
-                              detector=self.detector,
-                              goniometer=self.goniometer,
-                              scan=self.imagesets[0].get_scan(),
-                              crystal=cm)
-      self.index_reflections(ExperimentList([experiment]), refl)
+      experiments = ExperimentList()
+      for imageset in self.imagesets:
+        experiments.append(Experiment(imageset=imageset,
+                                      beam=imageset.get_beam(),
+                                      detector=imageset.get_detector(),
+                                      goniometer=imageset.get_goniometer(),
+                                      scan=imageset.get_scan(),
+                                      crystal=cm))
+      self.index_reflections(experiments, refl)
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
         new_crystal, cb_op_to_primitive = self.apply_symmetry(
-          experiment.crystal, self.target_symmetry_primitive,
+          experiments[0].crystal, self.target_symmetry_primitive,
           space_group_only=True)
         if new_crystal is None:
           continue
-        experiment.crystal = new_crystal
+        experiments[0].crystal.update(new_crystal)
         if not cb_op_to_primitive.is_identity_op():
           miller_indices = refl['miller_index'].select(refl['id'] == 0)
           miller_indices = cb_op_to_primitive.apply(miller_indices)
           refl['miller_index'].set_selected(refl['id'] == 0, miller_indices)
         if 0 and self.cb_op_primitive_to_given is not None:
-          experiment.crystal = experiment.crystal.change_basis(self.cb_op_primitive_to_given)
+          experiments[0].crystal.update(
+            experiments[0].crystal.change_basis(self.cb_op_primitive_to_given))
           miller_indices = refl['miller_index'].select(refl['id'] == 0)
           miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
           refl['miller_index'].set_selected(refl['id'] == 0, miller_indices)
@@ -1074,7 +1094,7 @@ class indexer_base(object):
       if (self.refined_experiments is not None and
           len(self.refined_experiments) > 0):
         orientation_too_similar = False
-        cryst_b = experiment.crystal
+        cryst_b = experiments[0].crystal
         for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
           R_ab, euler_angles, cb_op_ab = \
             difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
@@ -1088,7 +1108,7 @@ class indexer_base(object):
           continue
 
       args.append(
-        (params, refl.select(refl['id'] > -1), ExperimentList([experiment])))
+        (params, refl.select(refl['id'] > -1), experiments))
 
     from libtbx import easy_mp
     results = easy_mp.parallel_map(
@@ -1284,8 +1304,8 @@ class indexer_base(object):
       self, file_name='reciprocal_lattice.pdb'):
     from cctbx import crystal, xray
     cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
-    for i_panel in range(len(self.detector)):
-      if len(self.detector) > 1:
+    for i_panel in range(len(self.imagesets[0].get_detector())):
+      if len(self.imagesets[0].get_detector()) > 1:
         file_name = 'reciprocal_lattice_%i.pdb' %i_panel
       with open(file_name, 'wb') as f:
         xs = xray.structure(crystal_symmetry=cs)

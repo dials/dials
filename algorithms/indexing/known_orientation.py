@@ -17,9 +17,9 @@ from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 class indexer_known_orientation(indexer_base):
 
-  def __init__(self, reflections, sweep, params, known_orientations):
+  def __init__(self, reflections, imagesets, params, known_orientations):
     self.known_orientations = known_orientations
-    super(indexer_known_orientation, self).__init__(reflections, sweep, params)
+    super(indexer_known_orientation, self).__init__(reflections, imagesets, params)
 
   def find_lattices(self):
     experiments = ExperimentList()
@@ -29,9 +29,11 @@ class indexer_known_orientation(indexer_base):
       cb_op_to_primitive \
         = space_group.info().change_of_basis_op_to_primitive_setting()
       cm = cm.change_basis(cb_op_to_primitive)
-      experiments.append(Experiment(beam=self.beam,
-                                    detector=self.detector,
-                                    goniometer=self.goniometer,
-                                    scan=self.imagesets[0].get_scan(),
-                                    crystal=cm))
+      for imageset in self.imagesets:
+        experiments.append(Experiment(imageset=imageset,
+                                      beam=imageset.get_beam(),
+                                      detector=imageset.get_detector(),
+                                      goniometer=imageset.get_goniometer(),
+                                      scan=imageset.get_scan(),
+                                      crystal=cm))
     return experiments

@@ -26,20 +26,22 @@ from logging import info, debug
 
 class indexer_real_space_grid_search(indexer_base):
 
-  def __init__(self, reflections, sweep, params):
+  def __init__(self, reflections, imagesets, params):
     super(indexer_real_space_grid_search, self).__init__(
-      reflections, sweep, params)
+      reflections, imagesets, params)
 
   def find_lattices(self):
     self.real_space_grid_search()
     crystal_models = self.candidate_crystal_models
     experiments = ExperimentList()
     for cm in crystal_models:
-      experiments.append(Experiment(beam=self.beam,
-                                    detector=self.detector,
-                                    goniometer=self.goniometer,
-                                    scan=self.imagesets[0].get_scan(),
-                                    crystal=cm))
+      for imageset in self.imagesets:
+        experiments.append(Experiment(imageset=imageset,
+                                      beam=imageset.get_beam(),
+                                      detector=imageset.get_detector(),
+                                      goniometer=imageset.get_goniometer(),
+                                      scan=imageset.get_scan(),
+                                      crystal=cm))
     return experiments
 
   def real_space_grid_search(self):

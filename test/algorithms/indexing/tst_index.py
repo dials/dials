@@ -73,7 +73,7 @@ class run_one_indexing(object):
     assert os.path.exists(os.path.join(tmp_dir, "experiments.json"))
     experiments_list = dxtbx_load.experiment_list(
       os.path.join(tmp_dir, "experiments.json"), check_format=False)
-    assert len(experiments_list) == n_expected_lattices
+    assert len(experiments_list.crystals()) == n_expected_lattices
     assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
     from libtbx.utils import time_log
     unpickling_timer = time_log("unpickling")
@@ -81,10 +81,7 @@ class run_one_indexing(object):
     unpickling_timer.start()
     self.indexed_reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
     unpickling_timer.stop()
-    for i in range(n_expected_lattices):
-      suffix = ""
-      if n_expected_lattices > 1:
-        suffix = "_%i" %(i+1)
+    for i in range(len(experiments_list)):
       experiment = experiments_list[i]
       self.crystal_model = experiment.crystal
       assert self.crystal_model.get_unit_cell().is_similar_to(
@@ -519,7 +516,7 @@ def exercise_14():
 
   expected_unit_cell = uctbx.unit_cell((78.163, 78.163, 78.163, 90.000, 90.000, 90.000))
   expected_hall_symbol = ' I 2 2 3'
-  expected_rmsds = (0.05, 0.05, 0.008)
+  expected_rmsds = (0.05, 0.06, 0.01)
 
   for method in ("fft3d", "fft1d", "real_space_grid_search"):
     extra_args = []

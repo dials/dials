@@ -19,8 +19,8 @@ from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 class indexer_fft1d(indexer_base):
 
-  def __init__(self, reflections, sweep, params):
-    super(indexer_fft1d, self).__init__(reflections, sweep, params)
+  def __init__(self, reflections, imagesets, params):
+    super(indexer_fft1d, self).__init__(reflections, imagesets, params)
 
   def find_lattices(self):
     self.d_min = self.params.refinement_protocol.d_min_start
@@ -34,9 +34,7 @@ class indexer_fft1d(indexer_base):
       (self.reflections['id'] == -1) &
       (1/self.reflections['rlp'].norms() > self.d_min))
     solutions = candidate_basis_vectors_fft1d(
-      reflections, self.detector, self.beam,
-      self.goniometer, self.imagesets[0].get_scan(), hardcoded_phil,
-      max_cell=self.params.max_cell)
+      reflections['rlp'], hardcoded_phil, max_cell=self.params.max_cell)
     self.candidate_basis_vectors = solutions[0]
     if self.params.debug:
       self.debug_show_candidate_basis_vectors()
@@ -53,28 +51,20 @@ class indexer_fft1d(indexer_base):
       crystal_models = []
     experiments = ExperimentList()
     for cm in crystal_models:
-      experiments.append(Experiment(beam=self.beam,
-                                    detector=self.detector,
-                                    goniometer=self.goniometer,
-                                    scan=self.imagesets[0].get_scan(),
-                                    crystal=cm))
+      for imageset in self.imagesets:
+        experiments.append(Experiment(imageset=imageset,
+                                      beam=imageset.get_beam(),
+                                      detector=imageset.get_detector(),
+                                      goniometer=imageset.get_goniometer(),
+                                      scan=imageset.get_scan(),
+                                      crystal=cm))
     return experiments
 
-def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
-                                  goniometer, scan, params,
+def candidate_basis_vectors_fft1d(reciprocal_lattice_vectors, params,
                                   max_cell=None):
 
   # Spot_positions: Centroid positions for spotfinder spots, in pixels
   # Return value: Corrected for parallax, converted to mm
-
-  spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
-    spots=spot_positions, detector=detector, scan=scan)
-
-  if len(detector) > 1:
-    panel_ids = [spot['panel'] for spot in spot_positions]
-  else:
-    panel_ids = None
-
 
   # derive a max_cell from mm spots
   # derive a grid sampling from spots
@@ -87,12 +77,12 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
                               recommended_grid_sampling_rad = None,
                               horizon_phil = params)
   from scitbx import matrix
-  DPS.S0_vector = matrix.col(beam.get_s0())
-  DPS.inv_wave = 1./beam.get_wavelength()
+  #DPS.S0_vector = matrix.col(beam.get_s0())
+  #DPS.inv_wave = 1./beam.get_wavelength()
 
   # transform input into what Nick needs
   # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
 
-  DPS.index(reciprocal_space_vectors=spots_mm['rlp'])
+  DPS.index(reciprocal_space_vectors=reciprocal_lattice_vectors)
   solutions = DPS.getSolutions()
   return [matrix.col(s.bvec()) for s in solutions],DPS.getXyzData()
