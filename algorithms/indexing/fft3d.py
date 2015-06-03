@@ -577,7 +577,8 @@ class indexer_fft3d(indexer_base):
 
     grid = flex.double(flex.grid(self.gridding), 0)
     sampling_volume_map(grid, flex.vec2_double(angle_ranges),
-                        self.imagesets[0].get_beam().get_s0(), self.goniometer.get_rotation_axis(),
+                        self.imagesets[0].get_beam().get_s0(),
+                        self.imagesets[0].get_goniometer().get_rotation_axis(),
                         rlgrid, d_min, self.params.b_iso)
 
     fft = fftpack.complex_to_complex_3d(self.gridding)

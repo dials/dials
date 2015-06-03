@@ -73,7 +73,8 @@ class run_one_indexing(object):
     assert os.path.exists(os.path.join(tmp_dir, "experiments.json"))
     experiments_list = dxtbx_load.experiment_list(
       os.path.join(tmp_dir, "experiments.json"), check_format=False)
-    assert len(experiments_list.crystals()) == n_expected_lattices
+    assert len(experiments_list.crystals()) == n_expected_lattices, (
+      len(experiments_list.crystals()), n_expected_lattices)
     assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
     from libtbx.utils import time_log
     unpickling_timer = time_log("unpickling")
