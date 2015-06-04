@@ -732,12 +732,13 @@ class indexer_base(object):
           ref_sel = self.refined_reflections.select(
             self.refined_reflections['imageset_id'] == i)
           ref_sel = ref_sel.select(ref_sel['id'] >= 0)
-          expt = refined_experiments[ref_sel['id'][0]]
-          imageset.set_detector(expt.detector)
-          imageset.set_beam(expt.beam)
-          imageset.set_goniometer(expt.goniometer)
-          imageset.set_scan(expt.scan)
-          expt.imageset = imageset
+          for i_expt in set(ref_sel['id']):
+            expt = refined_experiments[i_expt]
+            imageset.set_detector(expt.detector)
+            imageset.set_beam(expt.beam)
+            imageset.set_goniometer(expt.goniometer)
+            imageset.set_scan(expt.scan)
+            expt.imageset = imageset
 
         if not (self.all_params.refinement.parameterisation.beam.fix == 'all'
                 and self.all_params.refinement.parameterisation.detector.fix == 'all'):
