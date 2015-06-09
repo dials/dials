@@ -42,24 +42,29 @@ def index_reflections(
 
   if 1:
     # Use fast c++ version
-    result = AssignIndices(rlps, phi, UB_matrices, tolerance=tolerance)
-    miller_indices = result.miller_indices()
-    crystal_ids = result.crystal_ids()
-    n_rejects = result.n_rejects()
     imgset_ids = reflections['imageset_id'].select(sel)
 
-    expt_ids = flex.int(crystal_ids.size(), -1)
-    for i_cryst in crystal_id_to_expt_ids.keys():
-      sel_cryst = (crystal_ids == i_cryst)
-      for i_expt in crystal_id_to_expt_ids[i_cryst]:
-        i_imgset = expt_id_to_imgset_id[i_expt]
-        sel_imgset = (imgset_ids == i_imgset)
-        expt_ids.set_selected(sel_cryst & sel_imgset, i_expt)
+    for i_imgset in range(len(imagesets)):
+      sel_imgset = (imgset_ids == i_imgset)
 
-    reflections['miller_index'].set_selected(sel, miller_indices)
-    reflections['id'].set_selected(sel, expt_ids)
-    reflections.set_flags(
-      reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
+      result = AssignIndices(
+        rlps.select(sel_imgset), phi.select(sel_imgset), UB_matrices, tolerance=tolerance)
+
+      miller_indices = result.miller_indices()
+      crystal_ids = result.crystal_ids()
+      n_rejects = result.n_rejects()
+
+      expt_ids = flex.int(crystal_ids.size(), -1)
+      for i_cryst in crystal_id_to_expt_ids.keys():
+        sel_cryst = (crystal_ids == i_cryst)
+        for i_expt in crystal_id_to_expt_ids[i_cryst]:
+          if expt_id_to_imgset_id[i_expt] == i_imgset:
+            expt_ids.set_selected(sel_cryst, i_expt)
+
+      reflections['miller_index'].set_selected(isel.select(sel_imgset), miller_indices)
+      reflections['id'].set_selected(isel.select(sel_imgset), expt_ids)
+      reflections.set_flags(
+        reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
 
   else:
     # XXX Use old python version

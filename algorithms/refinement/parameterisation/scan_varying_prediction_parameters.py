@@ -163,7 +163,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     B = reflections['b_matrix'].select(isel)
     return U, B
 
-  def _get_gradients_core(self, reflections, D, s0, U, B, axis, callback=None):
+  def _get_gradients_core(self, reflections, D, s0, U, B, axis, fixed_rotation, callback=None):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
     that reflects at rotation angle phi with scattering vector s that
@@ -177,6 +177,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # rotation matrix R.
 
     self._axis = axis
+    self._fixed_rotation = fixed_rotation
     self._s0 = s0
 
     # pv is the 'projection vector' for the ray along s1.
@@ -197,7 +198,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # r is the reciprocal lattice vector, in the lab frame
     self._h = reflections['miller_index'].as_vec3_double()
     self._phi_calc = reflections['xyzcal.mm'].parts()[2]
-    self._r = (self._UB * self._h).rotate_around_origin(self._axis, self._phi_calc)
+    self._r = (self._fixed_rotation * (self._UB * self._h)).rotate_around_origin(self._axis, self._phi_calc)
 
     # All of the derivatives of phi have a common denominator, given by
     # (e X r).s0, where e is the rotation axis. Calculate this once, here.
@@ -375,6 +376,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
       # Get required data from those reflections
       axis = self._axis.select(isel)
+      fixed_rotation = self._fixed_rotation.select(isel)
       phi_calc = self._phi_calc.select(isel)
       h = self._h.select(isel)
       s1 = self._s1.select(isel)
@@ -391,7 +393,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dU_dxlo_p = [reflections["dU_dp{0}".format(i)].select(isel) \
                    for i in range(xlop.num_free())]
       dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(
-        dU_dxlo_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, B, D)
+        dU_dxlo_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -425,6 +427,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
       # Get required data from those reflections
       axis = self._axis.select(isel)
+      fixed_rotation = self._fixed_rotation.select(isel)
       phi_calc = self._phi_calc.select(isel)
       h = self._h.select(isel)
       s1 = self._s1.select(isel)
@@ -440,7 +443,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       dB_dxluc_p = [reflections["dB_dp{0}".format(i)].select(isel) \
                    for i in range(xlucp.num_free())]
       dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(
-        dB_dxluc_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, U, D)
+        dB_dxluc_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -457,7 +460,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return results
 
-  def _xl_orientation_derivatives(self, dU_dxlo_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, B, D):
+  def _xl_orientation_derivatives(self, dU_dxlo_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
@@ -469,7 +472,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
       # calculate the derivative of r for this parameter
       # FIXME COULD DO THIS BETTER WITH __rmul__?!
-      tmp = der_mat * B * h
+      tmp = fixed_rotation * der_mat * B * h
       dr = tmp.rotate_around_origin(axis, phi_calc)
 
       # calculate the derivative of phi for this parameter
@@ -481,7 +484,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return dpv_dp, dphi_dp
 
-  def _xl_unit_cell_derivatives(self, dB_dxluc_p, axis, phi_calc, h, s1, e_X_r, e_r_s0, U, D):
+  def _xl_unit_cell_derivatives(self, dB_dxluc_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
@@ -492,7 +495,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     for der_mat in dB_dxluc_p:
 
       # calculate the derivative of r for this parameter
-      tmp = U * der_mat * h
+      tmp = fixed_rotation * U * der_mat * h
       dr = tmp.rotate_around_origin(axis, phi_calc)
 
       # calculate the derivative of phi for this parameter

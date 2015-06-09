@@ -448,12 +448,12 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
   _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
-  def _get_gradients_core(self, reflections, D, s0, U, B, axis, callback=None):
+  def _get_gradients_core(self, reflections, D, s0, U, B, axis, fixed_rotation, callback=None):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
     with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis because these
-    are stills"""
+    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
+    because these are stills"""
 
     # pv is the 'projection vector' for the ray along s1.
     self._D = D

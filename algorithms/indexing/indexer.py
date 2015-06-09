@@ -899,9 +899,13 @@ class indexer_base(object):
       S = s1 - beam.get_s0()
       # XXX what about if goniometer fixed rotation is not identity?
       if goniometer is not None:
+        rotation_axis = matrix.col(goniometer.get_rotation_axis())
+        fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
         spots_mm['rlp'].set_selected(sel, S.rotate_around_origin(
           goniometer.get_rotation_axis(),
           -rot_angle))
+        spots_mm['rlp'].set_selected(
+          sel, tuple(fixed_rotation.inverse()) * spots_mm['rlp'].select(sel))
       else:
         spots_mm['rlp'].set_selected(sel, S)
 

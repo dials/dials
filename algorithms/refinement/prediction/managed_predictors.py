@@ -46,6 +46,7 @@ class ScansRayPredictor(object):
 
     self._ray_predictors = [ScanStaticRayPredictor(e.beam.get_s0(),
       e.goniometer.get_rotation_axis(),
+      e.goniometer.get_fixed_rotation(),
       self._sweep_range) for e in self._experiments]
     self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
 

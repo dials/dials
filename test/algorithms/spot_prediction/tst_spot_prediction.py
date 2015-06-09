@@ -63,11 +63,12 @@ class TestSpotPredictor:
 
     s0 = self.beam.get_s0()
     m2 = self.gonio.get_rotation_axis()
+    fixed_rotation = self.gonio.get_fixed_rotation()
     UB = self.ub_matrix
     dphi = self.scan.get_oscillation_range(deg=False)
 
     # Create the ray predictor
-    self.predict_rays = ScanStaticRayPredictor(s0, m2, dphi)
+    self.predict_rays = ScanStaticRayPredictor(s0, m2, fixed_rotation, dphi)
 
     # Predict the spot locations
     self.reflections = self.predict_rays(

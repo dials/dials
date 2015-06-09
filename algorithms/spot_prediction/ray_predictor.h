@@ -44,8 +44,10 @@ namespace dials { namespace algorithms {
      * @param dphi The total oscillation range
      */
     ScanStaticRayPredictor(vec3 <double> s0, vec3 <double> m2,
+                           mat3 <double> fixed_rotation,
                            vec2 <double> dphi)
       : calculate_rotation_angles_(s0, m2),
+        fixed_rotation_(fixed_rotation),
         dphi_(dphi),
         s0_(s0),
         m2_(m2.normalize()),
@@ -79,7 +81,7 @@ namespace dials { namespace algorithms {
       af::small<Ray,2> rays;
 
       // Calculate the reciprocal space vector
-      vec3 <double> pstar0 = UB * h;
+      vec3 <double> pstar0 = fixed_rotation_ * UB * h;
 
       // Try to calculate the diffracting rotation angles
       vec2 <double> phi;
@@ -112,6 +114,7 @@ namespace dials { namespace algorithms {
 
   private:
     RotationAngles calculate_rotation_angles_;
+    mat3 <double> fixed_rotation_;
     vec2 <double> dphi_;
     vec3 <double> s0_;
     vec3 <double> m2_;
