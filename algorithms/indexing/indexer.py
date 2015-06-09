@@ -780,8 +780,10 @@ class indexer_base(object):
 
     info("Final refined crystal models:")
     for i, crystal_model in enumerate(self.refined_experiments.crystals()):
-      info("model %i (%i reflections):" %(
-        i+1, (self.reflections['id'] == i).count(True)))
+      n_indexed = 0
+      for i_expt in experiments.where(crystal=crystal_model):
+        n_indexed += (self.reflections['id'] == i).count(True)
+      info("model %i (%i reflections):" %(i+1, n_indexed))
       info(crystal_model)
 
     self.refined_reflections['xyzcal.px'] = flex.vec3_double(
