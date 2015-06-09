@@ -26,25 +26,11 @@ def index_reflections(
 
   UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
 
-  crystal_id_to_expt_ids = {}
-  expt_id_to_imgset_id = {}
-  imagesets = experiments.imagesets()
-  crystals = experiments.crystals()
-
-  for i_expt, expt in enumerate(experiments):
-    i_cryst = crystals.index(expt.crystal)
-    crystal_id_to_expt_ids.setdefault(i_cryst, [])
-    crystal_id_to_expt_ids[i_cryst].append(i_expt)
-    for i_imgset, imgset in enumerate(imagesets):
-      if imgset is expt.imageset:
-        expt_id_to_imgset_id[i_expt] = i_imgset
-        break
-
   if 1:
     # Use fast c++ version
     imgset_ids = reflections['imageset_id'].select(sel)
 
-    for i_imgset in range(len(imagesets)):
+    for i_imgset, imgset in enumerate(experiments.imagesets()):
       sel_imgset = (imgset_ids == i_imgset)
 
       result = AssignIndices(
@@ -55,11 +41,11 @@ def index_reflections(
       n_rejects = result.n_rejects()
 
       expt_ids = flex.int(crystal_ids.size(), -1)
-      for i_cryst in crystal_id_to_expt_ids.keys():
+      for i_cryst, cryst in enumerate(experiments.crystals()):
         sel_cryst = (crystal_ids == i_cryst)
-        for i_expt in crystal_id_to_expt_ids[i_cryst]:
-          if expt_id_to_imgset_id[i_expt] == i_imgset:
-            expt_ids.set_selected(sel_cryst, i_expt)
+        for i_expt in experiments.where(
+          crystal=cryst, imageset=imgset):
+          expt_ids.set_selected(sel_cryst, i_expt)
 
       reflections['miller_index'].set_selected(isel.select(sel_imgset), miller_indices)
       reflections['id'].set_selected(isel.select(sel_imgset), expt_ids)
