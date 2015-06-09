@@ -147,6 +147,7 @@ class compare_global_local(object):
     # index reflections using simple "global" method
     self.reflections_global = copy.deepcopy(reflections)
     self.reflections_global['id'] = flex.int(len(self.reflections_global), -1)
+    self.reflections_global['imageset_id'] = flex.int(len(self.reflections_global), 0)
     index_reflections(
       self.reflections_global, ExperimentList([experiment]))
     non_zero_sel = (self.reflections_global['miller_index'] != (0,0,0))

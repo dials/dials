@@ -519,8 +519,10 @@ class indexer_base(object):
     spots_mm = self.reflections
     self.reflections = flex.reflection_table()
 
+    if 'imageset_id' not in spots_mm:
+      spots_mm['imageset_id'] = spots_mm['id']
     for i, imageset in enumerate(self.imagesets):
-      spots_sel = spots_mm.select(spots_mm['id'] == i)
+      spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
       self.map_centroids_to_reciprocal_space(
         spots_sel, imageset.get_detector(), imageset.get_beam(),
         imageset.get_goniometer())
@@ -885,8 +887,6 @@ class indexer_base(object):
     :type goniometer: dxtbx.model.goniometer.Goniometer
     """
 
-    if 'imageset_id' not in spots_mm:
-      spots_mm['imageset_id'] = spots_mm['id']
     if 's1' not in spots_mm: spots_mm['s1'] = flex.vec3_double(len(spots_mm))
     spots_mm['rlp'] = flex.vec3_double(len(spots_mm))
     panel_numbers = flex.size_t(spots_mm['panel'])
