@@ -16,8 +16,6 @@
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
 
-//#include <scitbx/array_family/tiny_types.h>
-
 #include <dials/viewer/fonts_2D.h>
 #include <dials/viewer/mask_bmp_2D.h>
 #include <dials/model/data/mask_code.h>
