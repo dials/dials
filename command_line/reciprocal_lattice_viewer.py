@@ -377,10 +377,10 @@ def run(args):
     else:
       parser.print_help()
       return
-  elif len(datablocks) > 1:
-    raise Sorry("Only one DataBlock can be processed at a time")
   else:
-    imagesets = datablocks[0].extract_imagesets()
+    imagesets = []
+    for datablock in datablocks:
+      imagesets.extend(datablock.extract_imagesets())
 
   import wxtbx.app
   a = wxtbx.app.CCTBXApp(0)
