@@ -25,97 +25,29 @@ def index_reflections(
   hkl_ints = []
 
   UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
+  imgset_ids = reflections['imageset_id'].select(sel)
 
-  if 1:
-    # Use fast c++ version
-    imgset_ids = reflections['imageset_id'].select(sel)
+  for i_imgset, imgset in enumerate(experiments.imagesets()):
+    sel_imgset = (imgset_ids == i_imgset)
 
-    for i_imgset, imgset in enumerate(experiments.imagesets()):
-      sel_imgset = (imgset_ids == i_imgset)
+    result = AssignIndices(
+      rlps.select(sel_imgset), phi.select(sel_imgset), UB_matrices, tolerance=tolerance)
 
-      result = AssignIndices(
-        rlps.select(sel_imgset), phi.select(sel_imgset), UB_matrices, tolerance=tolerance)
+    miller_indices = result.miller_indices()
+    crystal_ids = result.crystal_ids()
+    n_rejects = result.n_rejects()
 
-      miller_indices = result.miller_indices()
-      crystal_ids = result.crystal_ids()
-      n_rejects = result.n_rejects()
+    expt_ids = flex.int(crystal_ids.size(), -1)
+    for i_cryst, cryst in enumerate(experiments.crystals()):
+      sel_cryst = (crystal_ids == i_cryst)
+      for i_expt in experiments.where(
+        crystal=cryst, imageset=imgset):
+        expt_ids.set_selected(sel_cryst, i_expt)
 
-      expt_ids = flex.int(crystal_ids.size(), -1)
-      for i_cryst, cryst in enumerate(experiments.crystals()):
-        sel_cryst = (crystal_ids == i_cryst)
-        for i_expt in experiments.where(
-          crystal=cryst, imageset=imgset):
-          expt_ids.set_selected(sel_cryst, i_expt)
-
-      reflections['miller_index'].set_selected(isel.select(sel_imgset), miller_indices)
-      reflections['id'].set_selected(isel.select(sel_imgset), expt_ids)
-      reflections.set_flags(
-        reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
-
-  else:
-    # XXX Use old python version
-    for i_lattice, crystal_model in enumerate(crystal_models):
-      if crystal_model.num_scan_points > 0:
-        from scitbx import matrix
-        import math
-        A_inv = [matrix.sqr(crystal.get_A_at_scan_point(
-          math.floor(refs[i]['xyzobs.px.value'][2]))).inverse()
-                 for i in range(len(refs))]
-        hkl_float = flex.vec3_double(
-          [A_inv[i] * rlps[i] for i in range(len(rlps))])
-      else:
-        A = crystal_model.get_A()
-        A_inv = A.inverse()
-        hkl_float = tuple(A_inv) * rlps
-      hkl_int = hkl_float.iround()
-      differences = hkl_float - hkl_int.as_vec3_double()
-
-      diffs.append(differences)
-      norms.append(differences.norms())
-      hkl_ints.append(hkl_int)
-
-    n_rejects = 0
-
-    for i_hkl in range(hkl_int.size()):
-      d = flex.vec3_double([diffs[j][i_hkl]
-                       for j in range(len(crystal_models))])
-      n = flex.double([norms[j][i_hkl]
-                       for j in range(len(crystal_models))])
-      potential_hkls = [hkl_ints[j][i_hkl]
-                        for j in range(len(crystal_models))]
-
-      i_best_lattice = flex.min_index(n)
-      if n[i_best_lattice] > tolerance:
-        n_rejects += 1
-        continue
-      miller_index = potential_hkls[i_best_lattice]
-      i_ref = isel[i_hkl]
-      reflections['miller_index'][i_ref] = miller_index
-      reflections['id'][i_ref] = i_best_lattice
-
-    # if more than one spot can be assigned the same miller index then choose
-    # the closest one
-    miller_indices = reflections['miller_index'].select(isel)
-    for i_hkl, hkl in enumerate(miller_indices):
-      if hkl == (0,0,0): continue
-      iselection = (miller_indices == hkl).iselection()
-      if len(iselection) > 1:
-        for i in iselection:
-          for j in iselection:
-            if j <= i: continue
-            crystal_i = reflections['id'][isel[i]]
-            crystal_j = reflections['id'][isel[j]]
-            if crystal_i != crystal_j:
-              continue
-            elif crystal_i == -1:
-              continue
-            assert hkl_ints[crystal_j][j] == hkl_ints[crystal_i][i]
-            if norms[crystal_j][j] < norms[crystal_i][i]:
-              i_ref = isel[i]
-            else:
-              i_ref = isel[j]
-            reflections['miller_index'][i_ref] = (0,0,0)
-            reflections['id'][i_ref] = -1
+    reflections['miller_index'].set_selected(isel.select(sel_imgset), miller_indices)
+    reflections['id'].set_selected(isel.select(sel_imgset), expt_ids)
+    reflections.set_flags(
+      reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
 
   if verbosity > 0:
     for i_expt, expt in enumerate(experiments):
