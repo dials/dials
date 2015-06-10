@@ -691,7 +691,7 @@ class IntegratorExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments):
+  def __init__(self, experiments, profile_fitting=False):
     '''
     Initialize the executor
 
@@ -700,6 +700,7 @@ class IntegratorExecutor(Executor):
     '''
     self.experiments = experiments
     self.overlaps = None
+    self.profile_fitting = profile_fitting
     super(IntegratorExecutor, self).__init__()
 
   def initialize(self, frame0, frame1, reflections):
@@ -768,7 +769,8 @@ class IntegratorExecutor(Executor):
     reflections.compute_background(self.experiments)
     reflections.compute_centroid(self.experiments)
     reflections.compute_summed_intensity()
-    # reflections.compute_fitted_intensity(self.experiments)
+    if self.profile_fitting:
+      reflections.compute_fitted_intensity(self.experiments)
 
     # Compute the number of background/foreground pixels
     sbox = reflections['shoebox']
@@ -887,10 +889,15 @@ class Integrator(object):
     initialize(self.reflections)
 
     # Check if we want to do some profile fitting
-    profile_fitting_available = all([
-      e.profile.profile_fitting_class() is not None
-      for e in self.experiments])
-    if self.params.profile.fitting and profile_fitting_available:
+    fitting_class = [e.profile.fitting_class() for e in self.experiments]
+    fitting_avail = all([c is not None for c in fitting_class])
+    if self.params.profile.fitting and fitting_avail:
+      profile_fitting = True
+    else:
+      profile_fitting = False
+
+    # Do profile modelling
+    if profile_fitting:
 
       info("=" * 80)
       info("")
@@ -1031,7 +1038,8 @@ class Integrator(object):
 
     # Create the data processor
     executor = IntegratorExecutor(
-      self.experiments)
+      self.experiments,
+      profile_fitting=profile_fitting)
     processor = ProcessorBuilder(
       self.ProcessorClass,
       self.experiments,

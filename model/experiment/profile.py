@@ -132,7 +132,7 @@ class ProfileModelIface(ProfileModelBaseIface):
     pass
 
   @classmethod
-  def profile_fitting_class(Class):
+  def fitting_class(Class):
     '''
     Get the profile fitting algorithm associated with this profile model
 
