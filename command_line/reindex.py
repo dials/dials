@@ -81,8 +81,8 @@ def run(args):
   if len(experiments) == 0 and len(reflections) == 0:
     parser.print_help()
     return
-  elif len(experiments) > 1:
-    raise Sorry("Only one Experiment can be processed at a time")
+  elif len(experiments.crystals()) > 1:
+    raise Sorry("Only one crystal can be processed at a time")
   if params.change_of_basis_op is None:
     raise Sorry("Please provide a change_of_basis_op.")
 
@@ -96,7 +96,7 @@ def run(args):
       a, b, c = cryst_reindexed.get_real_space_vectors()
       cryst_reindexed = crystal_model(
         a, b, c, space_group=params.space_group.group())
-    experiment.crystal = cryst_reindexed
+    experiment.crystal.update(cryst_reindexed)
 
     print "Old crystal:"
     print cryst_orig

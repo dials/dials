@@ -69,8 +69,8 @@ def run(args):
   if len(experiments) == 0:
     parser.print_help()
     return
-  elif len(experiments) > 1 and params.experiment_id is None:
-    raise Sorry("More than one experiment present: set experiment_id to choose experiment.")
+  elif len(experiments.crystals()) > 1:
+    raise Sorry("Only one crystal can be processed at a time: set experiment_id to choose experiment.")
 
   if params.experiment_id is None:
     params.experiment_id = 0
@@ -78,8 +78,6 @@ def run(args):
   experiment = experiments[params.experiment_id]
   assert(len(reflections) == 1)
   reflections = reflections[0]
-  # assert len(importer.reflections) == 1
-  # reflections = importer.reflections[0]
 
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic
@@ -92,7 +90,7 @@ def run(args):
     sys_absent_flags = effective_group.is_sys_absent(
       reflections['miller_index'])
     reflections = reflections.select(~sys_absent_flags)
-  experiment.crystal = experiment.crystal.change_basis(cb_op_to_primitive)
+  experiment.crystal.update(experiment.crystal.change_basis(cb_op_to_primitive))
   reflections = reflections.select(reflections['id'] == params.experiment_id)
   miller_indices = reflections['miller_index']
   miller_indices = cb_op_to_primitive.apply(miller_indices)
@@ -109,9 +107,10 @@ def run(args):
   import copy
   for subgroup in Lfat:
     expts = copy.deepcopy(experiments)
-    expts[0].crystal = subgroup.refined_crystal
-    expts[0].detector = subgroup.detector
-    expts[0].beam = subgroup.beam
+    for expt in expts:
+      expt.crystal.update(subgroup.refined_crystal)
+      expt.detector = subgroup.detector
+      expt.beam = subgroup.beam
     dump.experiment_list(
       expts, 'bravais_setting_%i.json' % (int(subgroup.setting_number)))
   return
