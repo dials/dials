@@ -47,9 +47,9 @@ phil_scope = parse(
 '''
 
   output {
-    profile_model = 'profile_model.phil'
+    experiments = 'integrated_experiments.json'
       .type = str
-      .help = "The profile parameters output filename"
+      .help = "The experiments output filename"
 
     reflections = 'integrated.pickle'
       .type = str
@@ -240,22 +240,22 @@ class Script(object):
       predicted = self.sample_predictions(experiments, predicted, params)
 
     # Compute the profile model
-    profile_model = ProfileModelFactory.create(params, experiments, reference)
+    experiments = ProfileModelFactory.create(params, experiments, reference)
     del reference
 
     # Compute the bounding box
-    predicted.compute_bbox(experiments, profile_model)
+    predicted.compute_bbox(experiments)
 
     # Create the integrator
     info("")
-    integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
+    integrator = IntegratorFactory.create(params, experiments, predicted)
 
     # Integrate the reflections
     reflections = integrator.integrate()
 
     # Save the reflections
     self.save_reflections(reflections, params.output.reflections)
-    self.save_profile_model(profile_model, params.output.profile_model)
+    self.save_experiments(experiments, params.output.experiments)
 
     # Write a report if requested
     if params.output.report is not None:
@@ -310,14 +310,16 @@ class Script(object):
     reflections.as_pickle(filename)
     info(' time taken: %g' % (time() - st))
 
-  def save_profile_model(self, profile_model, filename):
+  def save_experiments(self, experiments, filename):
     ''' Save the profile model parameters. '''
     from logging import info
     from time import time
+    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     st = time()
-    info('Saving the profile model parameters to %s' % filename)
+    info('Saving the experiments to %s' % filename)
+    dump = ExperimentListDumper(experiments)
     with open(filename, "w") as outfile:
-      outfile.write(profile_model.dump().as_str())
+      outfile.write(dump.as_json())
     info(' time taken: %g' % (time() - st))
 
   def sample_predictions(self, experiments, predicted, params):

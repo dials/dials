@@ -23,9 +23,9 @@ class Script(object):
 
     # The phil parameters
     phil_scope = parse('''
-      output = profile.phil
+      output = experiments_with_profile_model.json
         .type = str
-        .help = "The filename for the profile parameters"
+        .help = "The filename for the experiments"
 
       include scope dials.algorithms.profile_model.factory.phil_scope
     ''', process_includes=True)
@@ -46,6 +46,7 @@ class Script(object):
     from dials.util.command_line import Command
     from dials.array_family import flex
     from dials.util.options import flatten_reflections, flatten_experiments
+    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     from libtbx.utils import Abort
 
     # Parse the command line
@@ -69,18 +70,19 @@ class Script(object):
     Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
 
     # Create the profile model
-    profile_model = ProfileModelFactory.create(params, experiments, reflections)
-    for model in profile_model:
-      sigma_b = model.sigma_b(deg=True)
-      sigma_m = model.sigma_m(deg=True)
+    experiments = ProfileModelFactory.create(params, experiments, reflections)
+    for model in experiments:
+      sigma_b = model.profile.sigma_b(deg=True)
+      sigma_m = model.profile.sigma_m(deg=True)
       print 'Sigma B: %f' % sigma_b
       print 'Sigma M: %f' % sigma_m
 
     # Wrtie the parameters
-    Command.start("Writing profile model to %s" % params.output)
+    Command.start("Writing experiments to %s" % params.output)
+    dump = ExperimentListDumper(experiments)
     with open(params.output, "w") as outfile:
-      outfile.write(profile_model.dump().as_str())
-    Command.end("Wrote profile model to %s" % params.output)
+      outfile.write(dump.as_json())
+    Command.end("Wrote experiments to %s" % params.output)
 
 
 if __name__ == '__main__':

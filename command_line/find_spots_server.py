@@ -105,13 +105,13 @@ integrate = True
         info('')
 
       # Compute the profile model
-      profile_model = ProfileModelFactory.create(params, experiments, reference)
+      experiments = ProfileModelFactory.create(params, experiments, reference)
 
       # Compute the bounding box
-      predicted.compute_bbox(experiments, profile_model)
+      predicted.compute_bbox(experiments)
 
       # Create the integrator
-      integrator = IntegratorFactory.create(params, experiments, profile_model, predicted)
+      integrator = IntegratorFactory.create(params, experiments, predicted)
 
       # Integrate the reflections
       reflections = integrator.integrate()

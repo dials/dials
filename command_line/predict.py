@@ -57,7 +57,6 @@ class Script(object):
     '''Execute the script.'''
     from dials.util.command_line import Command
     from dials.array_family import flex
-    from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.util.options import flatten_experiments
 
     # Parse the command line
@@ -92,8 +91,7 @@ class Script(object):
       predicted_all.extend(predicted)
 
     try:
-      profile_model = ProfileModelFactory.load(params)
-      predicted_all.compute_bbox(experiments, profile_model)
+      predicted_all.compute_bbox(experiments)
     except Exception:
       pass
 

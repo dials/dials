@@ -313,13 +313,13 @@ class Script(object):
     # Predict the reflections
     # Match the predictions with the reference
     # Create the integrator
-    profile_model = ProfileModelFactory.create(self.params, experiments, indexed)
+    experiments = ProfileModelFactory.create(self.params, experiments, indexed)
     info("")
     info("=" * 80)
     info("")
     info("Predicting reflections")
     info("")
-    predicted = profile_model.predict_reflections(
+    predicted = flex.reflection_table.from_predictions(
       experiments,
       dmin=self.params.prediction.dmin,
       dmax=self.params.prediction.dmax,
@@ -327,7 +327,7 @@ class Script(object):
       force_static=self.params.prediction.force_static)
     predicted.match_with_reference(indexed)
     info("")
-    integrator = IntegratorFactory.create(self.params, experiments, profile_model, predicted)
+    integrator = IntegratorFactory.create(self.params, experiments, predicted)
 
     # Integrate the reflections
     reflections = integrator.integrate()
@@ -335,10 +335,6 @@ class Script(object):
     if self.params.output.integrated_filename:
       # Save the reflections
       self.save_reflections(reflections, self.params.output.integrated_filename)
-
-    if self.params.output.profile_filename:
-      with open(self.params.output.profile_filename, "w") as outfile:
-        outfile.write(profile_model.dump().as_str())
 
     info('')
     info('Time Taken = %f seconds' % (time() - st))
