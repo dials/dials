@@ -168,8 +168,8 @@ class Model(ProfileModelIface):
   @classmethod
   def from_dict(Class, obj):
     ''' Convert the profile model from a dictionary. '''
-    if obj['name'] != "gaussian_rs":
-      raise RuntimeError('expected name gaussian_rs, got %s' % obj['name'])
+    if obj['__id__'] != "gaussian_rs":
+      raise RuntimeError('expected __id__ gaussian_rs, got %s' % obj['__id__'])
     n_sigma = obj['n_sigma']
     sigma_b = obj['sigma_b']
     sigma_m = obj['sigma_m']
@@ -189,7 +189,7 @@ class Model(ProfileModelIface):
       sigma_b = self.sigma_b(deg=True)
       sigma_m = self.sigma_m(deg=True)
     return {
-      'name' : 'gaussian_rs',
+      '__id__' : 'gaussian_rs',
       'n_sigma' : n_sigma,
       'sigma_b' : sigma_b,
       'sigma_m' : sigma_m
