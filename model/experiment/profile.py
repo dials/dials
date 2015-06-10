@@ -21,59 +21,109 @@ class ProfileModelIface(ProfileBaseIface):
   '''
 
   @classmethod
-  def create(Class, params, experiment, reflections):
+  def create(Class,
+             params,
+             reflections,
+             crystal,
+             beam,
+             detector,
+             goniometer=None,
+             scan=None):
     '''
     Create the profile model from data.
 
     :param params: The phil parameters
-    :param experiment: The experiment
     :param reflections: The reflections
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
     :return: An instance of the profile model
 
     '''
     return None
 
   @abstractmethod
-  def predict_reflections(self, experiment):
+  def predict_reflections(self,
+                          crystal,
+                          beam,
+                          detector,
+                          goniometer=None,
+                          scan=None):
     '''
     Given an experiment, predict the reflections.
 
-    :param experiment: The experiment
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
 
     '''
     pass
 
   @abstractmethod
-  def compute_partiality(self, experiment, reflections):
+  def compute_partiality(self,
+                         reflections,
+                         crystal,
+                         beam,
+                         detector,
+                         goniometer=None,
+                         scan=None):
     '''
     Given an experiment and list of reflections, compute the partiality of the
     reflections
 
-    :param experiment: The experiment
     :param reflections: The reflection table
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
 
     '''
     pass
 
   @abstractmethod
-  def compute_bbox(self, experiment, reflections):
+  def compute_bbox(self,
+                   reflections,
+                   crystal,
+                   beam,
+                   detector,
+                   goniometer=None,
+                   scan=None):
     ''' Given an experiment and list of reflections, compute the
     bounding box of the reflections on the detector (and image frames).
 
-    :param experiment: The experiment
     :param reflections: The reflection table
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
 
     '''
     pass
 
   @abstractmethod
-  def compute_mask(self, experiment, reflections):
+  def compute_mask(self,
+                   reflections,
+                   crystal,
+                   beam,
+                   detector,
+                   goniometer=None,
+                   scan=None):
     '''
     Given an experiment and list of reflections, compute the
     foreground/background mask of the reflections.
 
-    :param experiment: The experiment
     :param reflections: The reflection table
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
 
     '''
     pass
