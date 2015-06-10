@@ -11,7 +11,6 @@
 
 from __future__ import division
 from dials.framework import interface
-from dxtbx.model.profile import ProfileModelRegistry
 
 
 class SpotFinderThresholdIface(interface.Interface):
@@ -43,18 +42,43 @@ class SpotFinderThresholdIface(interface.Interface):
     '''
     pass
 
+class ProfileModelInterfaceMeta(interface.InterfaceMeta):
+  ''' The interface meta class.
 
-class ProfileModelIface(interface.Interface, ProfileModelRegistry):
+  This class adds some definition-time checking to the Interface base class to
+  make sure that interfaces have the required fields.
+
+  '''
+
+  def __init__(self, name, bases, attrs):
+    ''' Check each class has the name attribute. '''
+    from dxtbx.model.profile import ProfileModelFactory
+    super(ProfileModelInterfaceMeta, self).__init__(name, bases, attrs)
+    ProfileModelFactory.append(self.name, self)
+    try:
+      ProfileModelFactory.append(self.name, self)
+    except Exception:
+      pass
+
+class ProfileModelIface(interface.Interface):
   '''
   The interface definition for a profile model.
 
   '''
 
+  __metaclass__ = ProfileModelInterfaceMeta
+
+
   name = 'profile'
 
-  @interface.abstractmethod
-  def algorithm(self):
+  @classmethod
+  def algorithm(cls):
     ''' Get the algorithm. '''
+    pass
+
+  @classmethod
+  def from_dict(cls, d):
+    ''' Get from dictionary. '''
     pass
 
 

@@ -16,6 +16,7 @@ class Test(object):
   def run(self):
     from os.path import join
     from libtbx import easy_run
+    import dials.extensions
 
     # Call dials.detector_max_resolution
     easy_run.fully_buffered([

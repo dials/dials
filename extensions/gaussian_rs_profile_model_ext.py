@@ -29,3 +29,6 @@ class GaussianRSProfileModelExt(ProfileModelIface):
     from dials.algorithms.profile_model.gaussian_rs import Model
     return Model
 
+  @classmethod
+  def from_dict(cls, d):
+    return cls.algorithm().from_dict(d)

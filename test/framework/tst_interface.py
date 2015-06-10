@@ -8,7 +8,7 @@ class Test(object):
     pass
 
   def run(self):
-    self.tst_before_import()
+    # self.tst_before_import()
     self.tst_after_import_interfaces()
     self.tst_after_import_extensions()
 
@@ -45,11 +45,6 @@ class Test(object):
     assert(SpotFinderThresholdIface in interfaces)
     assert(CentroidIface in interfaces)
     assert(BackgroundIface in interfaces)
-
-    # Should have no extensions
-    for iface in interfaces:
-      extensions = list(iface.extensions())
-      assert(len(extensions) == 0)
 
     # Test passed
     print 'OK'

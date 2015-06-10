@@ -10,38 +10,27 @@ class Test(object):
     self.tst_load_and_dump()
 
   def tst_load_and_dump(self):
-    from dials.algorithms.profile_model.gaussian_rs import Factory
-    from dials.algorithms.profile_model.factory import phil_scope
-    from libtbx.phil import parse
-
-    user_phil = parse('''
-      profile {
-        gaussian_rs {
-          model {
-            sigma_b = 1
-            sigma_m = 2
-          }
-          model {
-            n_sigma = 2
-            sigma_b = 4
-            sigma_m = 5
-          }
-        }
-      }
-      ''')
-    params = phil_scope.fetch(source=user_phil).extract()
-    model = Factory.load(params.profile)
-    assert(len(model) == 2)
-    assert(model[0].n_sigma() == 3)
-    assert(model[0].sigma_b() == 1)
-    assert(model[0].sigma_m() == 2)
-    assert(model[1].n_sigma() == 2)
-    assert(model[1].sigma_b() == 4)
-    assert(model[1].sigma_m() == 5)
-    print 'OK'
-
-    model_phil = model.dump().fetch_diff(user_phil)
-    assert(model_phil.as_str() == '')
+    from dials.algorithms.profile_model.gaussian_rs import Model
+    d1 = {
+      '__id__' : 'gaussian_rs',
+      'n_sigma' : 3,
+      'sigma_b' : 1,
+      'sigma_m' : 2
+    }
+    d2 = {
+      '__id__' : 'gaussian_rs',
+      'n_sigma' : 2,
+      'sigma_b' : 4,
+      'sigma_m' : 5
+    }
+    model1 = Model.from_dict(d1)
+    model2 = Model.from_dict(d2)
+    assert(model1.n_sigma() == 3)
+    assert(model1.sigma_b() == 1)
+    assert(model1.sigma_m() == 2)
+    assert(model2.n_sigma() == 2)
+    assert(model2.sigma_b() == 4)
+    assert(model2.sigma_m() == 5)
     print 'OK'
 
 if __name__ == '__main__':
