@@ -291,13 +291,6 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Finalize the profiles for validation
-     */
-    void finalize_for_validation() {
-
-    }
-
-    /**
      * Finalize the profiles
      */
     void finalize() {

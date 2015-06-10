@@ -136,6 +136,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__len__", pure_virtual(&ProfileModellerIface::size))
       ;
 
+    register_ptr_to_python< boost::shared_ptr<ProfileModellerIface> >();
+
     class_<EmpiricalProfileModellerWrapper,
            boost::noncopyable,
            bases<ProfileModellerIface> >("EmpiricalProfileModeller", no_init)
@@ -154,7 +156,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("model", &MultiExpProfileModeller::model)
       .def("accumulate", &MultiExpProfileModeller::accumulate)
       .def("finalize", &MultiExpProfileModeller::finalize)
-      .def("finalize_for_validation", &MultiExpProfileModeller::finalize_for_validation)
       .def("finalized", &MultiExpProfileModeller::finalized)
       .def("fit", &MultiExpProfileModeller::fit)
       .def("validate", &MultiExpProfileModeller::validate)

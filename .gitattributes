@@ -109,6 +109,7 @@ algorithms/integration/sum/algorithm.py -text
 algorithms/integration/sum/boost_python/integration_sum_ext.cc -text
 algorithms/integration/sum/boost_python/summation.cc -text
 algorithms/integration/sum/summation.h -text
+algorithms/integration/validation.py -text
 algorithms/peak_finding/SConscript -text
 algorithms/peak_finding/__init__.py -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/peak_finding_ext.cc -text

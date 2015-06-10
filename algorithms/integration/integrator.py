@@ -508,15 +508,6 @@ class ProfileModellerExecutor(Executor):
       info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
       info('')
 
-    # # Create the modeller
-    # self.modellers = [
-    #   expr.profile.fitting_class()(
-    #     expr,
-    #     self.number_of_partitions)
-    #   for expr in self.experiments]
-    # self.modellers = [self.profile_model.modeller(self.experiments)
-    #                   for i in range(self.number_of_partitions)]
-
   def process(self, frame, reflections):
     '''
     Process the data
@@ -541,23 +532,6 @@ class ProfileModellerExecutor(Executor):
 
     # Do the profile modelling
     self.profile_fitter.model(reflections)
-    # for i, (expr, indices) in enumerate(
-    #     reflections.iterate_experiments_and_indices(
-    #       self.experiments)):
-    #   subset = reflections.select(indices)
-    #   self.modellers[i].model(subset)
-    #   reflections.set_selected(indices, subset)
-
-    # for i, modeller in enumerate(self.modellers):
-      # if 'profile.index' not in reflections:
-      #   modeller.model(reflections)
-      # else:
-      #   mask = reflections['profile.index'] != i
-      #   indices = flex.size_t(range(len(mask))).select(mask)
-      #   if len(indices) > 0:
-      #     subsample = reflections.select(indices)
-      #     modeller.model(subsample)
-      #     reflections.set_selected(indices, subsample)
 
     # Print some info
     fmt = ' Modelled % 5d / % 5d reflection profiles on image %d'
@@ -663,19 +637,6 @@ class ProfileValidatorExecutor(Executor):
 
     # Do the profile validation
     self.results = self.profile_fitter.validate(reflections)
-    # self.results = []
-    # for i, modeller in enumerate(self.modellers):
-    #   mask = reflections['profile.index'] != i
-    #   indices = flex.size_t(range(len(mask))).select(mask)
-    #   if len(indices) > 0:
-    #     subsample = reflections.select(indices)
-    #     modeller.validate(subsample)
-    #     reflections.set_selected(indices, subsample)
-    #     corr = subsample['profile.correlation']
-    #     mean_corr = flex.mean(corr)
-    #   else:
-    #     mean_corr = None
-    #   self.results.append(mean_corr)
 
     # Print some info
     fmt = ' Validated % 5d / % 5d reflection profiles on image %d'
@@ -859,6 +820,7 @@ class Integrator(object):
     from math import floor, ceil
     from dials.array_family import flex
     from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
+    from dials.algorithms.integration.validation import ValidatedMultiExpProfileModeller
 
     # Ensure we get the same random sample each time
     seed(0)
@@ -949,9 +911,12 @@ class Integrator(object):
           num_folds = 1
 
         # Create the profile fitter
-        profile_fitter = MultiExpProfileModeller()#(num_folds)
-        for expr in self.experiments:
-          profile_fitter.add(expr.profile.fitting_class()(expr))
+        profile_fitter = ValidatedMultiExpProfileModeller()
+        for i in range(num_folds):
+          profile_fitter_single = MultiExpProfileModeller()#(num_folds)
+          for expr in self.experiments:
+            profile_fitter_single.add(expr.profile.fitting_class()(expr))
+          profile_fitter.add(profile_fitter_single)
 
         # Create the data processor
         executor = ProfileModellerExecutor(
@@ -980,50 +945,27 @@ class Integrator(object):
             profile_fitter = pf
           else:
             profile_fitter.accumulate(pf)
-        profile_fitter.finalize_for_validation()
+        profile_fitter.finalize()
 
-        # assert len(modeller_list) > 0, "No modellers"
-        # modeller_partial = []
-        # for index, mod in modeller_list.iteritems():
-        #   if mod is None:
-        #     continue
-        #   if len(modeller_partial) == 0:
-        #     modeller_partial = mod
-        #   else:
-        #     for i, m in enumerate(mod):
-        #       modeller_partial[i].accumulate(m)
-        # modeller_full = None
-        # modeller_partial_temp = []
-        # for modeller in modeller_partial:
-        #   if modeller is None:
-        #     continue
-        #   if modeller_full is None:
-        #     modeller_full = modeller
-        #   else:
-        #     modeller_full.accumulate(modeller)
-        #   modeller = modeller.copy()
-        #   modeller.finalize()
-        #   modeller_partial_temp.append(modeller)
-        # modeller_partial = modeller_partial_temp
-        # modeller_full.finalize()
-        # self.profile_model.profiles(modeller_full)
+        # Get the finalized modeller
+        finalized_profile_fitter = profile_fitter.finalized_model()
 
-        # # Print profiles
-        # for i in range(len(modeller_full)):
-        #   m = modeller_full[i]
-        #   debug("")
-        #   debug("Profiles for experiment %d" % i)
-        #   for j in range(len(m)):
-        #     debug("Profile %d" % j)
-        #     try:
-        #       debug(pprint.profile3d(m.data(j)))
-        #     except Exception:
-        #       debug("** NO PROFILE **")
+        # Print profiles
+        for i in range(len(finalized_profile_fitter)):
+          m = finalized_profile_fitter[i]
+          debug("")
+          debug("Profiles for experiment %d" % i)
+          for j in range(len(m)):
+            debug("Profile %d" % j)
+            try:
+              debug(pprint.profile3d(m.data(j)))
+            except Exception:
+              debug("** NO PROFILE **")
 
         # Print the modeller report
         self.profile_model_report = ProfileModelReport(
           self.experiments,
-          profile_fitter,
+          finalized_profile_fitter,
           reference)
         info("")
         info(self.profile_model_report.as_str(prefix=' '))
@@ -1053,6 +995,7 @@ class Integrator(object):
           # Print the modeller report
           self.profile_validation_report = ProfileValidationReport(
             self.experiments,
+            profile_fitter,
             reference,
             num_folds)
           info("")
@@ -1062,6 +1005,9 @@ class Integrator(object):
           info("")
           info(str(time_info))
           info("")
+
+        # Set to the finalized fitter
+        profile_fitter = finalized_profile_fitter
 
     info("=" * 80)
     info("")

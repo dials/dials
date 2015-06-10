@@ -473,7 +473,7 @@ class ProfileValidationReport(Report):
 
   '''
 
-  def __init__(self, experiments, profile_model, reflections, num_folds):
+  def __init__(self, experiments, profile_fitter, reflections, num_folds):
     '''
     Create the integration report
 
@@ -500,16 +500,13 @@ class ProfileValidationReport(Report):
     table.cols.append(('cc', '<CC>'))
     table.cols.append(('nrmsd', '<NRMSD>'))
 
-    # Get the modeller
-    profiles = profile_model.profiles()
-
     # Split the reflections
     reflection_tables = reflections.split_by_experiment_id()
     assert len(reflection_tables) == len(experiments)
+    assert len(profile_fitter) == num_folds
 
     # Create the summary for each profile model
-    for i in range(len(profiles)):
-      model = profiles[i]
+    for i in range(len(reflection_tables)):
       reflection_table = reflection_tables[i]
       reflection_table = reflection_table.select(
         reflection_table.get_flags(
