@@ -240,8 +240,9 @@ class Script(object):
       predicted = self.sample_predictions(experiments, predicted, params)
 
     # Compute the profile model
-    experiments = ProfileModelFactory.create(params, experiments, reference)
-    del reference
+    if reference is not None:
+      experiments = ProfileModelFactory.create(params, experiments, reference)
+      del reference
 
     # Compute the bounding box
     predicted.compute_bbox(experiments)

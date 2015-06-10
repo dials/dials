@@ -45,6 +45,7 @@ class ProfileModelIface(ProfileModelBaseIface):
 
   @abc.abstractmethod
   def predict_reflections(self,
+                          imageset,
                           crystal,
                           beam,
                           detector,
@@ -54,6 +55,7 @@ class ProfileModelIface(ProfileModelBaseIface):
     '''
     Given an experiment, predict the reflections.
 
+    :param imageset: The imageset
     :param crystal: The crystal model
     :param beam: The beam model
     :param detector: The detector model

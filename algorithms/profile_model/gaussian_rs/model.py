@@ -217,6 +217,7 @@ class Model(ProfileModelIface):
       sigma_m=calculator.sigma_m())
 
   def predict_reflections(self,
+                          imageset,
                           crystal,
                           beam,
                           detector,
@@ -242,6 +243,7 @@ class Model(ProfileModelIface):
       import ReflectionPredictor
     predict = ReflectionPredictor(
       Experiment(
+        imageset=imageset,
         crystal=crystal,
         beam=beam,
         detector=detector,

@@ -162,9 +162,8 @@ class Test(object):
     self.gonio = self.sweep.get_goniometer()
     self.scan = self.sweep.get_scan()
 
-    sigma_b = self.beam.get_sigma_divergence(deg=False)
-    sigma_m = self.crystal.get_mosaicity(deg=False)
-
+    sigma_b = self.beam.get_sigma_divergence(deg=True)
+    sigma_m = self.crystal.get_mosaicity(deg=True)
 
     exlist = ExperimentList()
     exlist.append(Experiment(
@@ -175,12 +174,11 @@ class Test(object):
       scan=self.scan,
       crystal=self.crystal,
       profile=Model(
-        None, 3, sigma_b, sigma_m)))
+        None, 3, sigma_b, sigma_m, deg=True)))
 
     predicted = flex.reflection_table.from_predictions(exlist[0])
     predicted['id'] = flex.size_t(len(predicted), 0)
     predicted.compute_bbox(exlist)
-
 
     # Find overlapping reflections
     overlaps = shoebox.find_overlapping(predicted['bbox'])

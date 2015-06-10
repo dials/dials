@@ -91,6 +91,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     if experiment.profile is not None:
       return experiment.profile.predict_reflections(
+        experiment.imageset,
         experiment.crystal,
         experiment.beam,
         experiment.detector,
@@ -600,8 +601,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     for each experiment
 
     '''
+    assert(len(experiments) > 0)
     index_list = self.split_indices_by_experiment_id(len(experiments))
     assert(len(experiments) == len(index_list))
+    tot = 0
+    for l in index_list:
+      tot += l
+    assert(tot == len(self))
     for experiment, indices in zip(experiments, index_list):
       yield experiment, indices
 
