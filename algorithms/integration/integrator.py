@@ -335,14 +335,12 @@ class InitializerRot(object):
 
   def __init__(self,
                experiments,
-               profile_model,
                params):
     '''
     Initialise the pre-processor.
 
     '''
     self.experiments = experiments
-    self.profile_model = profile_model
     self.params = params
 
   def __call__(self, reflections):
@@ -356,7 +354,7 @@ class InitializerRot(object):
     # Compute some reflection properties
     reflections.compute_zeta_multi(self.experiments)
     reflections.compute_d(self.experiments)
-    reflections.compute_bbox(self.experiments, self.profile_model)
+    reflections.compute_bbox(self.experiments)
 
     # Filter the reflections by zeta
     mask = flex.abs(reflections['zeta']) < self.params.filter.min_zeta
@@ -377,14 +375,12 @@ class InitializerStills(object):
 
   def __init__(self,
                experiments,
-               profile_model,
                params):
     '''
     Initialise the pre-processor.
 
     '''
     self.experiments = experiments
-    self.profile_model = profile_model
     self.params = params
 
   def __call__(self, reflections):
@@ -397,7 +393,7 @@ class InitializerStills(object):
 
     # Compute some reflection properties
     reflections.compute_d(self.experiments)
-    reflections.compute_bbox(self.experiments, self.profile_model)
+    reflections.compute_bbox(self.experiments)
 
     # Check the bounding boxes are all 1 frame in width
     z0, z1 = reflections['bbox'].parts()[4:6]
@@ -415,13 +411,12 @@ class FinalizerRot(object):
 
   '''
 
-  def __init__(self, experiments, profile_model, params):
+  def __init__(self, experiments, params):
     '''
     Initialise the post processor.
 
     '''
     self.experiments = experiments
-    self.profile_model = profile_model
     self.params = params
 
   def __call__(self, reflections):
@@ -440,13 +435,12 @@ class FinalizerStills(object):
 
   '''
 
-  def __init__(self, experiments, profile_model, params):
+  def __init__(self, experiments, params):
     '''
     Initialise the post processor.
 
     '''
     self.experiments = experiments
-    self.profile_model = profile_model
     self.params = params
 
   def __call__(self, reflections):
@@ -463,16 +457,14 @@ class ProfileModellerExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments, profile_model, number_of_partitions):
+  def __init__(self, experiments, number_of_partitions):
     '''
     Initialise the executor
 
     :param experiments: The experiment list
-    :param profile_model: The profile model
 
     '''
     self.experiments = experiments
-    self.profile_model = profile_model
     self.number_of_partitions = number_of_partitions
     assert self.number_of_partitions > 0, "Invalid number of partitions"
     super(ProfileModellerExecutor, self).__init__()
@@ -536,7 +528,7 @@ class ProfileModellerExecutor(Executor):
     reflections.is_overloaded(self.experiments)
 
     # Compute the shoebox mask
-    reflections.compute_mask(self.experiments, self.profile_model)
+    reflections.compute_mask(self.experiments)
 
     # Process the data
     reflections.compute_background(self.experiments)
@@ -582,16 +574,14 @@ class ProfileValidatorExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments, profile_model, modellers):
+  def __init__(self, experiments, modellers):
     '''
     Initialise the executor
 
     :param experiments: The experiment list
-    :param profile_model: The profile model
 
     '''
     self.experiments = experiments
-    self.profile_model = profile_model
     self.modellers = modellers
     super(ProfileValidatorExecutor, self).__init__()
 
@@ -652,7 +642,7 @@ class ProfileValidatorExecutor(Executor):
     reflections.is_overloaded(self.experiments)
 
     # Compute the shoebox mask
-    reflections.compute_mask(self.experiments, self.profile_model)
+    reflections.compute_mask(self.experiments)
 
     # Process the data
     reflections.compute_background(self.experiments)
@@ -701,16 +691,14 @@ class IntegratorExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments, profile_model):
+  def __init__(self, experiments):
     '''
     Initialize the executor
 
     :param experiments: The experiment list
-    :param profile_model: The profile model
 
     '''
     self.experiments = experiments
-    self.profile_model = profile_model
     self.overlaps = None
     super(IntegratorExecutor, self).__init__()
 
@@ -774,13 +762,13 @@ class IntegratorExecutor(Executor):
     reflections.is_overloaded(self.experiments)
 
     # Compute the shoebox mask
-    reflections.compute_mask(self.experiments, self.profile_model)
+    reflections.compute_mask(self.experiments)
 
     # Process the data
     reflections.compute_background(self.experiments)
     reflections.compute_centroid(self.experiments)
     reflections.compute_summed_intensity()
-    reflections.compute_fitted_intensity(self.experiments, self.profile_model)
+    # reflections.compute_fitted_intensity(self.experiments)
 
     # Compute the number of background/foreground pixels
     sbox = reflections['shoebox']
@@ -823,14 +811,12 @@ class Integrator(object):
 
   def __init__(self,
                experiments,
-               profile_model,
                reflections,
                params):
     '''
     Initialize the integrator
 
     :param experiments: The experiment list
-    :param profile_model: The profile model
     :param reflections: The reflections to process
     :param params: The parameters to use
 
@@ -838,7 +824,6 @@ class Integrator(object):
 
     # Save some stuff
     self.experiments = experiments
-    self.profile_model = profile_model
     self.reflections = reflections
     self.params = params
     self.profile_model_report = None
@@ -898,13 +883,14 @@ class Integrator(object):
     # Initialize the reflections
     initialize = self.InitializerClass(
       self.experiments,
-      self.profile_model,
       self.params)
     initialize(self.reflections)
 
     # Check if we want to do some profile fitting
-    if (self.params.profile.fitting == True and
-        self.profile_model.has_profile_fitting()):
+    profile_fitting_available = all([
+      e.profile.profile_fitting_class() is not None
+      for e in self.experiments])
+    if self.params.profile.fitting and profile_fitting_available:
 
       info("=" * 80)
       info("")
@@ -943,12 +929,10 @@ class Integrator(object):
         # Create the data processor
         executor = ProfileModellerExecutor(
           self.experiments,
-          self.profile_model,
           number_of_partitions=num_folds)
         processor = ProcessorBuilder(
           self.ProcessorClass,
           self.experiments,
-          self.profile_model,
           reference,
           self.params.modelling).build()
         processor.executor = executor
@@ -1001,7 +985,6 @@ class Integrator(object):
         # Print the modeller report
         self.profile_model_report = ProfileModelReport(
           self.experiments,
-          self.profile_model,
           reference)
         info("")
         info(self.profile_model_report.as_str(prefix=' '))
@@ -1017,12 +1000,10 @@ class Integrator(object):
           # Create the data processor
           executor = ProfileValidatorExecutor(
             self.experiments,
-            self.profile_model,
             modeller_partial)
           processor = ProcessorBuilder(
             self.ProcessorClass,
             self.experiments,
-            self.profile_model,
             reference,
             self.params.modelling).build()
           processor.executor = executor
@@ -1033,7 +1014,6 @@ class Integrator(object):
           # Print the modeller report
           self.profile_validation_report = ProfileValidationReport(
             self.experiments,
-            self.profile_model,
             reference,
             num_folds)
           info("")
@@ -1051,12 +1031,10 @@ class Integrator(object):
 
     # Create the data processor
     executor = IntegratorExecutor(
-      self.experiments,
-      self.profile_model)
+      self.experiments)
     processor = ProcessorBuilder(
       self.ProcessorClass,
       self.experiments,
-      self.profile_model,
       self.reflections,
       self.params.integration).build()
     processor.executor = executor
@@ -1067,7 +1045,6 @@ class Integrator(object):
     # Finalize the reflections
     finalize = self.FinalizerClass(
       self.experiments,
-      self.profile_model,
       self.params)
     finalize(self.reflections)
 
@@ -1183,13 +1160,12 @@ class IntegratorFactory(object):
   '''
 
   @staticmethod
-  def create(params, experiments, profile_model, reflections):
+  def create(params, experiments, reflections):
     '''
     Create the integrator from the input configuration.
 
     :param params: The input phil parameters
     :param experiments: The list of experiments
-    :param profile_model: The profile model
     :param reflections: The reflections to integrate
     :return: The integrator class
 
@@ -1200,11 +1176,6 @@ class IntegratorFactory(object):
     from dials.array_family import flex
     from libtbx.utils import Abort
     import cPickle as pickle
-
-    # Check the input
-    if len(experiments) != len(profile_model):
-      raise RuntimeError(
-        'Number of experiments and profile models should be the same')
 
     # Check each experiment has an imageset
     for exp in experiments:
@@ -1254,6 +1225,5 @@ class IntegratorFactory(object):
     # Return an instantiation of the class
     return IntegratorClass(
       experiments,
-      profile_model,
       reflections,
       Parameters.from_phil(params.integration))

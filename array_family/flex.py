@@ -632,7 +632,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     algorithm = IntegrationAlgorithm()
     algorithm(self)
 
-  def compute_fitted_intensity(self, experiments, profile_model):
+  def compute_fitted_intensity(self, experiments):
     '''
     Helper function to compute the intensity.
 
@@ -640,6 +640,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param profile_model: The profile model
 
     '''
+    assert(False)
     profiles = profile_model.profiles()
     if profiles is not None:
       profiles.fit(self)

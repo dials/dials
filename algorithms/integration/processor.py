@@ -276,7 +276,6 @@ class NullTask(object):
 
     :param index: The index of the processing job
     :param experiments: The list of experiments
-    :param profile_model: The profile model
     :param reflections: The list of reflections
 
     '''
@@ -308,7 +307,6 @@ class Task(object):
                index,
                job,
                experiments,
-               profile_model,
                reflections,
                params,
                executor=None):
@@ -317,7 +315,6 @@ class Task(object):
 
     :param index: The index of the processing job
     :param experiments: The list of experiments
-    :param profile_model: The profile model
     :param reflections: The list of reflections
     :param params: The processing parameters
     :param job: The frames to integrate
@@ -333,7 +330,6 @@ class Task(object):
     self.index = index
     self.job = job
     self.experiments = experiments
-    self.profile_model = profile_model
     self.reflections = reflections
     self.params = params
     self.executor = executor
@@ -478,12 +474,11 @@ class Manager(object):
 
   '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     '''
     Initialise the manager.
 
     :param experiments: The list of experiments
-    :param profile_model: The profile model
     :param reflections: The list of reflections
     :param params: The phil parameters
 
@@ -494,7 +489,6 @@ class Manager(object):
 
     # Save some data
     self.experiments = experiments
-    self.profile_model = profile_model
     self.reflections = reflections
 
     # Other data
@@ -547,7 +541,6 @@ class Manager(object):
     assert expr_id[0] >= 0, "Invalid experiment id"
     assert expr_id[1] <= len(self.experiments), "Invalid experiment id"
     expriments = self.experiments[expr_id[0]:expr_id[1]]
-    profile_model = self.profile_model[expr_id[0]:expr_id[1]]
     reflections = self.manager.split(index)
     if len(reflections) == 0:
       warn("*** WARNING: no reflections in job %d ***" % index)
@@ -559,7 +552,6 @@ class Manager(object):
         index=index,
         job=frames,
         experiments=expriments,
-        profile_model=profile_model,
         reflections=reflections,
         params=self.params,
         executor=self.executor)
@@ -714,9 +706,7 @@ class Manager(object):
         info(' Split %d reflections overlapping job boundaries\n' % num_split)
 
     # Compute the partiality
-    self.reflections.compute_partiality(
-      self.experiments,
-      self.profile_model)
+    self.reflections.compute_partiality(self.experiments)
 
   def compute_processors(self):
     '''
@@ -819,7 +809,7 @@ class ManagerRot(Manager):
   ''' Specialize the manager for oscillation data using the oscillation pre and
   post processors. '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
     # Ensure we have the correct type of data
@@ -832,14 +822,14 @@ class ManagerRot(Manager):
 
     # Initialise the manager
     super(ManagerRot, self).__init__(
-      experiments, profile_model, reflections, params)
+      experiments, reflections, params)
 
 
 class ManagerStills(Manager):
   ''' Specialize the manager for stills data using the stills pre and post
   processors. '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     ''' Initialise the pre-processor, post-processor and manager. '''
 
     # Ensure we have the correct type of data
@@ -852,13 +842,13 @@ class ManagerStills(Manager):
 
     # Initialise the manager
     super(ManagerStills, self).__init__(
-      experiments, profile_model, reflections, params)
+      experiments, reflections, params)
 
 
 class Processor3D(Processor):
   ''' Top level processor for 3D processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
@@ -866,7 +856,7 @@ class Processor3D(Processor):
     params.shoebox.flatten = False
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections, params)
+    manager = ManagerRot(experiments, reflections, params)
 
     # Initialise the processor
     super(Processor3D, self).__init__(manager)
@@ -875,7 +865,7 @@ class Processor3D(Processor):
 class ProcessorFlat3D(Processor):
   ''' Top level processor for flat 2D processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
@@ -883,7 +873,7 @@ class ProcessorFlat3D(Processor):
     params.shoebox.partials = False
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections, params)
+    manager = ManagerRot(experiments, reflections, params)
 
     # Initialise the processor
     super(ProcessorFlat3D, self).__init__(manager)
@@ -892,14 +882,14 @@ class ProcessorFlat3D(Processor):
 class Processor2D(Processor):
   ''' Top level processor for 2D processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
     params.shoebox.partials = True
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections, params)
+    manager = ManagerRot(experiments, reflections, params)
 
     # Initialise the processor
     super(Processor2D, self).__init__(manager)
@@ -908,7 +898,7 @@ class Processor2D(Processor):
 class ProcessorSingle2D(Processor):
   ''' Top level processor for still image processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some of the parameters
@@ -918,7 +908,7 @@ class ProcessorSingle2D(Processor):
     params.shoebox.flatten = False
 
     # Create the processing manager
-    manager = ManagerRot(experiments, profile_model, reflections,  params)
+    manager = ManagerRot(experiments, reflections,  params)
 
     # Initialise the processor
     super(ProcessorSingle2D, self).__init__(manager)
@@ -927,7 +917,7 @@ class ProcessorSingle2D(Processor):
 class ProcessorStills(Processor):
   ''' Top level processor for still image processing. '''
 
-  def __init__(self, experiments, profile_model, reflections, params):
+  def __init__(self, experiments, reflections, params):
     ''' Initialise the manager and the processor. '''
 
     # Set some parameters
@@ -937,7 +927,7 @@ class ProcessorStills(Processor):
     params.shoebox.flatten = False
 
     # Create the processing manager
-    manager = ManagerStills(experiments, profile_model, reflections, params)
+    manager = ManagerStills(experiments, reflections, params)
 
     # Initialise the processor
     super(ProcessorStills, self).__init__(manager)
@@ -952,7 +942,6 @@ class ProcessorBuilder(object):
   def __init__(self,
                Class,
                experiments,
-               profile_model,
                reflections,
                params=None):
     '''
@@ -960,14 +949,12 @@ class ProcessorBuilder(object):
 
     :param Class: The input class
     :param experiments: The input experiments
-    :param profile_model: The profile model
     :param reflections: The reflections
     :param params: Optionally input parameters
 
     '''
     self.Class = Class
     self.experiments = experiments
-    self.profile_model = profile_model
     self.reflections = reflections
     self.params = Parameters()
     if params is not None:
@@ -982,6 +969,5 @@ class ProcessorBuilder(object):
     '''
     return self.Class(
       self.experiments,
-      self.profile_model,
       self.reflections,
       self.params)
