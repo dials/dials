@@ -11,6 +11,7 @@
 
 from __future__ import division
 from dials.framework import interface
+from dxtbx.model.profile import ProfileModelRegistry
 
 
 class SpotFinderThresholdIface(interface.Interface):
@@ -43,7 +44,7 @@ class SpotFinderThresholdIface(interface.Interface):
     pass
 
 
-class ProfileModelIface(interface.Interface):
+class ProfileModelIface(interface.Interface, ProfileModelRegistry):
   '''
   The interface definition for a profile model.
 

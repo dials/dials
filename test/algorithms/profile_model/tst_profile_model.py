@@ -10,7 +10,6 @@ class Test(object):
     self.tst_load_and_dump()
 
   def tst_load_and_dump(self):
-    from dials.algorithms.profile_model.model_list import ProfileModelList
     from dials.algorithms.profile_model.gaussian_rs import Factory
     from dials.algorithms.profile_model.factory import phil_scope
     from libtbx.phil import parse

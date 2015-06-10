@@ -18,6 +18,7 @@ class Test(object):
         'centroid_test_data', 'fake_long_experiments.json')
 
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment.experiment_list import ExperimentList
     exlist = ExperimentListFactory.from_json_file(filename)
     assert(len(exlist) == 1)
     self.experiment = exlist[0]
@@ -27,8 +28,11 @@ class Test(object):
     self.sigma_b = 0.060 * pi / 180
     self.sigma_m = 0.154 * pi / 180
 
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
-    self.profile_model = ProfileModel(self.n_sigma, self.sigma_b, self.sigma_m)
+    from dials.algorithms.profile_model.gaussian_rs import Model
+    self.profile_model = Model(None, self.n_sigma, self.sigma_b, self.sigma_m)
+    self.experiment.profile = self.profile_model
+    self.experiments = ExperimentList()
+    self.experiments.append(self.experiment)
 
   def run(self):
     from dials.algorithms.profile_model.gaussian_rs import \
@@ -41,8 +45,8 @@ class Test(object):
       self.experiment.scan,
       self.sigma_m)
 
-    predicted = flex.reflection_table.from_predictions(self.experiment)
-    predicted['bbox'] = predicted.compute_bbox(self.experiment, self.profile_model)
+    predicted = flex.reflection_table.from_predictions_multi(self.experiments)
+    predicted['bbox'] = predicted.compute_bbox(self.experiments)
 
     # Remove any touching edges of scan to get only fully recorded
     x0, x1, y0, y1, z0, z1 = predicted['bbox'].parts()

@@ -104,7 +104,7 @@ class Model(ProfileModelIface):
       assert(len(sigma_b) == len(sigma_m))
       sigma_b = flex.double(sigma_b)
       sigma_m = flex.double(sigma_m)
-    return Class(n_sigma, sigma_b, sigma_m, deg=True)
+    return Class(None, n_sigma, sigma_b, sigma_m, deg=True)
 
   def to_dict(self):
     ''' Convert the model to a dictionary. '''
@@ -222,6 +222,10 @@ class Model(ProfileModelIface):
                           detector,
                           goniometer=None,
                           scan=None,
+                          dmin=None,
+                          dmax=None,
+                          margin=1,
+                          force_static=False,
                           **kwargs):
     '''
     Given an experiment, predict the reflections.

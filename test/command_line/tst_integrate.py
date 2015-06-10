@@ -32,13 +32,11 @@ class Test(object):
     os.chdir(dirname)
 
     assert exists(join(self.path, 'experiments.json'))
-    assert exists(join(self.path, 'profile.phil'))
 
     # Call dials.integrate
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.path, 'experiments.json'),
-      join(self.path, 'profile.phil'),
       'profile.fitting=False',
     ]).raise_if_errors()
 
@@ -68,7 +66,6 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.path, 'experiments.json'),
-      join(self.path, 'profile.phil'),
       'profile.fitting=False',
       'integration.integrator=3d',
     ]).raise_if_errors()
@@ -92,7 +89,6 @@ class Test(object):
     import shutil
     from os.path import join
     shutil.copyfile(join(self.path, "experiments.json"), "experiments.json")
-    shutil.copyfile(join(self.path, "profile.phil"), "profile.phil")
     for i in range(1, 10):
       shutil.copyfile(join(self.path, "centroid_000%d.cbf" % i),
                       "centroid_001%d.cbf" % i)
@@ -142,7 +138,6 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       'experiments.json',
-      'profile.phil',
       'profile.fitting=False',
       'integration.integrator=3d',
     ]).raise_if_errors()
@@ -192,7 +187,6 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.path, 'experiments.json'),
-      join(self.path, 'profile.phil'),
       'profile.fitting=False',
       'sampling.integrate_all_reflections=False',
     ]).raise_if_errors()
@@ -205,7 +199,6 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.path, 'experiments.json'),
-      join(self.path, 'profile.phil'),
       'profile.fitting=False',
       'sampling.integrate_all_reflections=False',
       'sampling.minimum_sample_size=500',

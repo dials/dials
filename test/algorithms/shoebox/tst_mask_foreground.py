@@ -7,9 +7,9 @@ class Test(object):
     import libtbx.load_env
     from dxtbx.serialize.load import crystal as load_crystal
     from dials.model.serialize import load
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -30,21 +30,24 @@ class Test(object):
     self.detector = self.sweep.get_detector()
     self.goniometer = self.sweep.get_goniometer()
     self.scan = self.sweep.get_scan()
-    self.experiment = Experiment(
+    self.delta_d = 3 * self.beam.get_sigma_divergence(deg=False)
+    self.delta_m = 3 * self.crystal.get_mosaicity(deg=False)
+    self.nsigma = 3
+    self.profile_model = Model(
+      None,
+      self.nsigma,
+      self.beam.get_sigma_divergence(deg=False),
+      self.crystal.get_mosaicity(deg=False))
+    self.experiment = ExperimentList()
+    self.experiment.append(Experiment(
       imageset = self.sweep,
       beam = self.beam,
       detector = self.detector,
       goniometer = self.goniometer,
       scan = self.scan,
-      crystal = self.crystal)
-    self.delta_d = 3 * self.beam.get_sigma_divergence(deg=False)
-    self.delta_m = 3 * self.crystal.get_mosaicity(deg=False)
-    self.nsigma = 3
+      crystal = self.crystal,
+      profile = self.profile_model))
 
-    self.profile_model = ProfileModel(
-      self.nsigma,
-      self.beam.get_sigma_divergence(deg=False),
-      self.crystal.get_mosaicity(deg=False))
 
     assert(len(self.detector) == 1)
 
@@ -173,18 +176,19 @@ class Test(object):
       xyzcal_mm[i] = (x, y, phi)
       panel[i] = 0
 
-    sigma_b = self.experiment.beam.get_sigma_divergence(deg=False)
-    sigma_m = self.experiment.crystal.get_mosaicity(deg=False)
+    sigma_b = self.experiment[0].beam.get_sigma_divergence(deg=False)
+    sigma_m = self.experiment[0].crystal.get_mosaicity(deg=False)
 
     rlist = flex.reflection_table()
+    rlist['id'] = flex.size_t(len(beam_vector), 0)
     rlist['s1'] = beam_vector
     rlist['panel'] = panel
     rlist['xyzcal.px'] = xyzcal_px
     rlist['xyzcal.mm'] = xyzcal_mm
-    rlist['bbox'] = rlist.compute_bbox(self.experiment, self.profile_model)
+    rlist['bbox'] = rlist.compute_bbox(self.experiment)
     index = []
-    image_size = self.experiment.detector[0].get_image_size()
-    array_range = self.experiment.scan.get_array_range()
+    image_size = self.experiment[0].detector[0].get_image_size()
+    array_range = self.experiment[0].scan.get_array_range()
     bbox = rlist['bbox']
     for i in range(len(rlist)):
       x0, x1, y0, y1, z0, z1 = bbox[i]

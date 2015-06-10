@@ -26,7 +26,6 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.path, 'experiments.json'),
-      join(self.path, 'profile.phil'),
       'profile.fitting=False',
     ]).raise_if_errors()
 

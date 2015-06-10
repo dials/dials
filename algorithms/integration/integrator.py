@@ -869,6 +869,7 @@ class Integrator(object):
     fitting_avail = all([c is not None for c in fitting_class])
     if self.params.profile.fitting and fitting_avail:
       profile_fitting = True
+      profile_fitter = None
     else:
       profile_fitting = False
       profile_fitter = None

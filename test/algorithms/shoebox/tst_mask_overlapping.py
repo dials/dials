@@ -154,14 +154,17 @@ class Test(object):
     from dials.array_family import flex
     from dxtbx.model.experiment.experiment_list import ExperimentList
     from dxtbx.model.experiment.experiment_list import Experiment
-    from dials.algorithms.profile_model.model_list import ProfileModelList
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import Model
 
     # Get models from the sweep
     self.beam = self.sweep.get_beam()
     self.detector = self.sweep.get_detector()
     self.gonio = self.sweep.get_goniometer()
     self.scan = self.sweep.get_scan()
+
+    sigma_b = self.beam.get_sigma_divergence(deg=False)
+    sigma_m = self.crystal.get_mosaicity(deg=False)
+
 
     exlist = ExperimentList()
     exlist.append(Experiment(
@@ -170,20 +173,13 @@ class Test(object):
       detector=self.detector,
       goniometer=self.gonio,
       scan=self.scan,
-      crystal=self.crystal))
-
-    sigma_b = exlist[0].beam.get_sigma_divergence(deg=False)
-    sigma_m = exlist[0].crystal.get_mosaicity(deg=False)
-
-    profile_model = ProfileModelList()
-    profile_model.append(ProfileModel(
-      3,
-      sigma_b,
-      sigma_m))
+      crystal=self.crystal,
+      profile=Model(
+        None, 3, sigma_b, sigma_m)))
 
     predicted = flex.reflection_table.from_predictions(exlist[0])
     predicted['id'] = flex.size_t(len(predicted), 0)
-    predicted.compute_bbox(exlist, profile_model)
+    predicted.compute_bbox(exlist)
 
 
     # Find overlapping reflections

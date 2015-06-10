@@ -403,8 +403,7 @@ class TestIntegrator3D(object):
 
   def __init__(self, nproc):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dials.algorithms.profile_model.model_list import ProfileModelList
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import Model
     import libtbx.load_env
     from dials.array_family import flex
     from os.path import join
@@ -419,21 +418,20 @@ class TestIntegrator3D(object):
     path = join(dials_regression, "centroid_test_data", "experiments.json")
 
     exlist = ExperimentListFactory.from_json_file(path)
-    profile_model = ProfileModelList()
-    profile_model.append(ProfileModel(
+    exlist[0].profile = Model(
+      None,
       n_sigma=3,
       sigma_b=0.024*pi/180.0,
-      sigma_m=0.044*pi/180.0))
+      sigma_m=0.044*pi/180.0)
     self.nproc = nproc
 
     rlist = flex.reflection_table.from_predictions(exlist[0])
     rlist['id'] = flex.size_t(len(rlist), 0)
-    rlist.compute_bbox(exlist, profile_model)
+    rlist.compute_bbox(exlist)
     rlist.compute_zeta_multi(exlist)
     rlist.compute_d(exlist)
     self.rlist = rlist
     self.exlist = exlist
-    self.profile_model = profile_model
 
   def run(self):
     from dials.algorithms.integration.integrator import Integrator3D
@@ -455,7 +453,6 @@ class TestIntegrator3D(object):
     try:
       integrator = Integrator3D(
         self.exlist,
-        self.profile_model,
         self.rlist,
         Parameters.from_phil(params.integration))
       result = integrator.integrate()
@@ -471,8 +468,7 @@ class TestSummation(object):
 
   def __init__(self):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dials.algorithms.profile_model.model_list import ProfileModelList
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import Model
     import libtbx.load_env
     from dials.array_family import flex
     from os.path import join
@@ -487,17 +483,16 @@ class TestSummation(object):
     path = join(dials_regression, "centroid_test_data", "experiments.json")
 
     exlist = ExperimentListFactory.from_json_file(path)
-    profile_model = ProfileModelList()
-    profile_model.append(ProfileModel(
+    exlist[0].profile = Model(
+      None,
       n_sigma=3,
       sigma_b=0.024*pi/180.0,
-      sigma_m=0.044*pi/180.0))
+      sigma_m=0.044*pi/180.0)
 
     rlist = flex.reflection_table.from_predictions(exlist[0])
     rlist['id'] = flex.size_t(len(rlist), 0)
     self.rlist = rlist
     self.exlist = exlist
-    self.profile_model = profile_model
 
   def run(self):
     from libtbx.test_utils import approx_equal
@@ -625,7 +620,6 @@ class TestSummation(object):
       integrator = IntegratorFactory.create(
         params,
         self.exlist,
-        self.profile_model,
         rlist)
 
       result = integrator.integrate()
