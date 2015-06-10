@@ -58,7 +58,6 @@ def exercise_2():
   cwd = os.path.abspath(os.curdir)
   tmp_dir = open_tmp_directory()
   os.chdir(tmp_dir)
-  print tmp_dir
   g = sorted(glob.glob(os.path.join(data_dir, "insulin*.img")))
   assert len(g) == 45
   hall_symbol =  " I 2 2 3"

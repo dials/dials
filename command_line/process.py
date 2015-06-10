@@ -319,7 +319,7 @@ class Script(object):
     info("")
     info("Predicting reflections")
     info("")
-    predicted = flex.reflection_table.from_predictions(
+    predicted = flex.reflection_table.from_predictions_multi(
       experiments,
       dmin=self.params.prediction.dmin,
       dmax=self.params.prediction.dmax,
