@@ -1054,7 +1054,6 @@ namespace flex_table_suite {
     }
 
     reference operator*() {
-      typedef typename T::const_iterator iterator;
       dict result;
       element_to_object_visitor visitor(index_);
       for (std::size_t i = 0; i < keys.size(); ++i) {
