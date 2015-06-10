@@ -11,6 +11,7 @@ class Test(object):
       print 'FAIL: dials_regression not configured'
       exit(0)
 
+    import dials
     import os
 
     filename = os.path.join(dials_regression,

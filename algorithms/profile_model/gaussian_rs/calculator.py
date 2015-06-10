@@ -242,6 +242,7 @@ class ProfileModelCalculator(object):
     from logging import info
     from dxtbx.model.experiment.experiment_list import Experiment
     from dials.array_family import flex
+    from math import pi
 
     # Check input has what we want
     assert(reflections is not None)
@@ -282,6 +283,10 @@ class ProfileModelCalculator(object):
       # Set the sigmas
       self._sigma_m = reflecting_range.sigma()
 
+    # Print the output
+    info(' sigma b: %f degrees' % (self._sigma_b * 180 / pi))
+    info(' sigma m: %f degrees' % (self._sigma_m * 180 / pi))
+
   def sigma_b(self):
     ''' Return the E.S.D beam divergence. '''
     return self._sigma_b
@@ -299,6 +304,7 @@ class ScanVaryingProfileModelCalculator(object):
     from copy import deepcopy
     from collections import defaultdict
     from dials.array_family import flex
+    from math import pi
     from dxtbx.model.experiment.experiment_list import Experiment
 
     # Check input has what we want
@@ -401,6 +407,10 @@ class ScanVaryingProfileModelCalculator(object):
     self._sigma_b = flex.double(sigma_b_new)
     self._sigma_m = flex.double(sigma_m_new)
     assert(len(self._sigma_b) == len(self._sigma_m))
+
+    # Print the output
+    info(' sigma b: %f degrees' % (self._sigma_b * 180 / pi))
+    info(' sigma m: %f degrees' % (self._sigma_m * 180 / pi))
 
   def num(self):
     ''' The number of reflections used. '''
