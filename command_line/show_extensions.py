@@ -35,7 +35,7 @@ class Script(object):
   def run(self):
     ''' Run the script. '''
     import dials.extensions # import dependency
-    from dials.interfaces import ProfileModelCreatorIface
+    from dials.interfaces import ProfileModelIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import SpotFinderThresholdIface
@@ -45,7 +45,7 @@ class Script(object):
 
     # Create the list of interfaces
     interfaces = [
-      ProfileModelCreatorIface,
+      ProfileModelIface,
       BackgroundIface,
       CentroidIface,
       SpotFinderThresholdIface
