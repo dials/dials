@@ -150,7 +150,6 @@ algorithms/profile_model/gaussian_rs/transform/boost_python/transform_ext.cc -te
 algorithms/profile_model/gaussian_rs/transform/index_generator.h -text
 algorithms/profile_model/gaussian_rs/transform/map_frames.h -text
 algorithms/profile_model/gaussian_rs/transform/transform.h -text
-algorithms/profile_model/model_list.py -text
 algorithms/profile_model/modeller/__init__.py -text
 algorithms/profile_model/modeller/boost_python/ext.cc -text
 algorithms/profile_model/modeller/boost_python/modeller.cc -text

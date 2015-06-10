@@ -54,7 +54,7 @@ class MaskerBase(object):
 class Masker3DProfile(MaskerBase):
   '''A class to perform 3D profile masking'''
 
-  def __init__(self, experiments, profile_model):
+  def __init__(self, experiments):
     ''' Initialise the masking algorithms
 
     Params:
@@ -63,10 +63,8 @@ class Masker3DProfile(MaskerBase):
         delta_m The extent of the reflection in reciprocal space
 
     '''
-    assert(len(experiments) == len(profile_model))
     super(Masker3DProfile, self).__init__(experiments[0])
     self._experiments = experiments
-    self._profile_model = profile_model
 
   def __call__(self, reflections, adjacency_list=None):
     ''' Mask the given reflections.
@@ -82,7 +80,13 @@ class Masker3DProfile(MaskerBase):
     reflections = super(Masker3DProfile, self).__call__(reflections, adjacency_list)
 
     # Mask the foreground region
-    self._profile_model.compute_mask(self._experiments, reflections)
+    self._experiment.profile.compute_mask(
+      reflections,
+      self._experiment.crystal,
+      self._experiment.beam,
+      self._experiment.detector,
+      self._experiment.goniometer,
+      self._experiment.scan)
 
     # Return the reflections
     return reflections

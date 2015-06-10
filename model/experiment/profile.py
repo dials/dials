@@ -50,7 +50,8 @@ class ProfileModelIface(ProfileBaseIface):
                           beam,
                           detector,
                           goniometer=None,
-                          scan=None):
+                          scan=None,
+                          **kwargs):
     '''
     Given an experiment, predict the reflections.
 
@@ -70,7 +71,8 @@ class ProfileModelIface(ProfileBaseIface):
                          beam,
                          detector,
                          goniometer=None,
-                         scan=None):
+                         scan=None,
+                         **kwargs):
     '''
     Given an experiment and list of reflections, compute the partiality of the
     reflections
@@ -92,7 +94,8 @@ class ProfileModelIface(ProfileBaseIface):
                    beam,
                    detector,
                    goniometer=None,
-                   scan=None):
+                   scan=None,
+                   **kwargs):
     ''' Given an experiment and list of reflections, compute the
     bounding box of the reflections on the detector (and image frames).
 
@@ -113,7 +116,8 @@ class ProfileModelIface(ProfileBaseIface):
                    beam,
                    detector,
                    goniometer=None,
-                   scan=None):
+                   scan=None,
+                   **kwargs):
     '''
     Given an experiment and list of reflections, compute the
     foreground/background mask of the reflections.

@@ -89,6 +89,17 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The reflection table of predictions
 
     '''
+    if experiment.profile is not None:
+      return experiment.profile.predict_reflections(
+        experiment.crystal,
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
+        experiment.scan,
+        dmin=dmin,
+        dmax=dmax,
+        margin=margin,
+        force_static=force_static)
     from dials.algorithms.spot_prediction.reflection_predictor \
       import ReflectionPredictor
     predict = ReflectionPredictor(
@@ -520,7 +531,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self['d'] = uc.d(self['miller_index'], self['id'])
     return self['d']
 
-  def compute_bbox(self, experiments, profile_model, sigma_b_multiplier=2.0):
+  def compute_bbox(self, experiments, sigma_b_multiplier=2.0):
     '''
     Compute the bounding boxes.
 
@@ -530,13 +541,21 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The bounding box for each reflection
 
     '''
-    from dials.util.command_line import Command
-    return profile_model.compute_bbox(
-      experiments,
-      self,
-      sigma_b_multiplier=sigma_b_multiplier)
+    reflections['bbox'] = flex.int6(len(reflections))
+    for expr, indices in self.iterate_experiments_and_indices(experiments):
+      reflections['bbox'].set_selected(
+        indices,
+        expr.profile.compute_bbox(
+          self.select(indices),
+          expr.crystal,
+          expr.beam,
+          expr.detector,
+          expr.goniometer,
+          expr.scan,
+          sigma_b_multiplier=sigma_b_multiplier))
+    return reflections['bbox']
 
-  def compute_partiality(self, experiments, profile_model):
+  def compute_partiality(self, experiments):
     '''
     Compute the reflection partiality.
 
@@ -545,7 +564,46 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The partiality for each reflection
 
     '''
-    return profile_model.compute_partiality(experiments, self)
+    reflections['partiality'] = flex.double(len(reflections))
+    for expr, indices in self.iterate_experiments_and_indices(experiments):
+      reflections['partiality'].set_selected(
+        indices,
+        expr.profile.compute_partiality(
+          self.select(indices),
+          expr.crystal,
+          expr.beam,
+          expr.detector,
+          expr.goniometer,
+          expr.scan))
+    return reflections['partiality']
+
+  def compute_mask(self, experiments, overlaps=None):
+    '''
+    Apply a mask to the shoeboxes.
+
+    :param experiments: The list of experiments
+    :param profile_model: The profile model
+
+    '''
+    for expr, indices in self.iterate_experiments_and_indices(experiments):
+      expr.profile.compute_mask(
+        self.select(indices),
+        expr.crystal,
+        expr.beam,
+        expr.detector,
+        expr.goniometer,
+        expr.scan)
+
+  def iterate_experiments_and_indices(self, experiments):
+    '''
+    A helper function to interate through experiments and indices of reflections
+    for each experiment
+
+    '''
+    index_list = self.split_indices_by_experiment_id(len(experiments))
+    assert(len(experiments) == len(index_list))
+    for experiment, indices in zip(experiments, index_list):
+      yield experiment, indices
 
   def compute_background(self, experiments):
     '''
@@ -623,18 +681,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     if reference_selector is not None:
       reference_selector(self)
     self.compute_fitted_intensity(experiments, profile_model)
-
-  def compute_mask(self, experiments, profile_model, overlaps=None):
-    '''
-    Apply a mask to the shoeboxes.
-
-    :param experiments: The list of experiments
-    :param profile_model: The profile model
-
-    '''
-    from dials.algorithms.shoebox import Masker3DProfile
-    mask_profiles = Masker3DProfile(experiments, profile_model)
-    mask_profiles(self, overlaps)
 
   def extract_shoeboxes(self, imageset, mask=None, nthreads=1, verbose=False):
     '''
