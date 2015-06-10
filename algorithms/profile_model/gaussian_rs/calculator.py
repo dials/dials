@@ -241,6 +241,7 @@ class ProfileModelCalculator(object):
     ''' Calculate the profile model. '''
     from logging import info
     from dxtbx.model.experiment.experiment_list import Experiment
+    from dials.array_family import flex
 
     # Check input has what we want
     assert(reflections is not None)
@@ -270,7 +271,7 @@ class ProfileModelCalculator(object):
           detector=detector,
           goniometer=goniometer,
           scan=scan))
-      mask = zeta >= min_zeta
+      mask = flex.abs(zeta) >= min_zeta
       reflections = reflections.select(mask)
 
       # Calculate the E.S.D of the reflecting range
@@ -316,7 +317,7 @@ class ScanVaryingProfileModelCalculator(object):
         detector=detector,
         goniometer=goniometer,
         scan=scan))
-    mask = zeta >= min_zeta
+    mask = flex.abs(zeta) >= min_zeta
     reflections = reflections.select(mask)
 
     # Split the reflections into partials
