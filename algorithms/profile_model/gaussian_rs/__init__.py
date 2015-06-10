@@ -8,55 +8,55 @@ from model import ProfileModel      # implicit dependency
 from factory import Factory
 
 
-def BBoxCalculator(experiment, delta_b, delta_m):
+def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
   ''' Return the relavent bbox calculator. '''
-  if experiment.goniometer is None or experiment.scan is None:
+  if goniometer is None or scan is None:
     algorithm = BBoxCalculator2D(
-      experiment.beam,
-      experiment.detector,
+      beam,
+      detector,
       delta_b,
       delta_m)
   else:
     algorithm = BBoxCalculator3D(
-      experiment.beam,
-      experiment.detector,
-      experiment.goniometer,
-      experiment.scan,
+      beam,
+      detector,
+      goniometer,
+      scan,
       delta_b,
       delta_m)
   return algorithm
 
 
-def PartialityCalculator(experiment, sigma_m):
+def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
   ''' Return the relavent partiality calculator. '''
-  if experiment.goniometer is None or experiment.scan is None:
+  if goniometer is None or scan is None:
     print "WARNING: Stills partiality is currently a placeholder"
     algorithm = PartialityCalculator2D(
-      experiment.beam,
+      beam,
       sigma_m)
   else:
     algorithm = PartialityCalculator3D(
-      experiment.beam,
-      experiment.goniometer,
-      experiment.scan,
+      beam,
+      goniometer,
+      scan,
       sigma_m)
   return algorithm
 
 
-def MaskCalculator(experiment, delta_b, delta_m):
+def MaskCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
   ''' Return the relavent partiality calculator. '''
-  if experiment.goniometer is None or experiment.scan is None:
+  if goniometer is None or scan is None:
     algorithm = MaskCalculator2D(
-      experiment.beam,
-      experiment.detector,
+      beam,
+      detector,
       delta_b,
       delta_m)
   else:
     algorithm = MaskCalculator3D(
-      experiment.beam,
-      experiment.detector,
-      experiment.goniometer,
-      experiment.scan,
+      beam,
+      detector,
+      goniometer,
+      scan,
       delta_b,
       delta_m)
   return algorithm

@@ -138,7 +138,6 @@ algorithms/profile_model/gaussian_rs/bbox_calculator.h -text
 algorithms/profile_model/gaussian_rs/boost_python/gaussian_rs_ext.cc -text
 algorithms/profile_model/gaussian_rs/calculator.py -text
 algorithms/profile_model/gaussian_rs/coordinate_system.h -text
-algorithms/profile_model/gaussian_rs/factory.py -text
 algorithms/profile_model/gaussian_rs/ideal_profile.h -text
 algorithms/profile_model/gaussian_rs/mask_calculator.h -text
 algorithms/profile_model/gaussian_rs/model.py -text
@@ -546,6 +545,8 @@ model/data/pixel_list.h -text
 model/data/prediction.h -text
 model/data/ray.h -text
 model/data/shoebox.h -text
+model/experiment/__init__.py -text
+model/experiment/profile.py -text
 model/serialize/SConscript -text
 model/serialize/__init__.py -text
 model/serialize/boost_python/serialize_ext.cc -text
