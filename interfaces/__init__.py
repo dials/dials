@@ -11,6 +11,7 @@
 
 from __future__ import division
 from dials.framework import interface
+from dxtbx.model.profile import ProfileModelBaseIface
 
 
 class SpotFinderThresholdIface(interface.Interface):
@@ -43,19 +44,135 @@ class SpotFinderThresholdIface(interface.Interface):
     pass
 
 
-class ProfileModelCreatorIface(interface.Interface):
-  ''' The interface definition for a generating a list of profile models. '''
+class ProfileModelIface(interface.Interface, ProfileBaseIface):
+  '''
+  The interface definition for a profile model.
+
+  '''
 
   name = 'profile'
 
-  @interface.abstractmethod
-  def create(cls, params, experiments, reflections=None):
-    ''' Given a list of experiments and a list of reflections, compute the
-    profile models.
+  @classmethod
+  def create(Class,
+             params,
+             reflections,
+             crystal,
+             beam,
+             detector,
+             goniometer=None,
+             scan=None):
+    '''
+    Create the profile model from data.
 
-    This method should be a @classmethod and return an instance of the
-    profile model list class. '''
+    :param params: The phil parameters
+    :param reflections: The reflections
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
+    :return: An instance of the profile model
+
+    '''
+    return None
+
+  @interface.abstractmethod
+  def predict_reflections(self,
+                          crystal,
+                          beam,
+                          detector,
+                          goniometer=None,
+                          scan=None,
+                          **kwargs):
+    '''
+    Given an experiment, predict the reflections.
+
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
+
+    '''
     pass
+
+  @interface.abstractmethod
+  def compute_partiality(self,
+                         reflections,
+                         crystal,
+                         beam,
+                         detector,
+                         goniometer=None,
+                         scan=None,
+                         **kwargs):
+    '''
+    Given an experiment and list of reflections, compute the partiality of the
+    reflections
+
+    :param reflections: The reflection table
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
+
+    '''
+    pass
+
+  @interface.abstractmethod
+  def compute_bbox(self,
+                   reflections,
+                   crystal,
+                   beam,
+                   detector,
+                   goniometer=None,
+                   scan=None,
+                   **kwargs):
+    ''' Given an experiment and list of reflections, compute the
+    bounding box of the reflections on the detector (and image frames).
+
+    :param reflections: The reflection table
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
+
+    '''
+    pass
+
+  @interface.abstractmethod
+  def compute_mask(self,
+                   reflections,
+                   crystal,
+                   beam,
+                   detector,
+                   goniometer=None,
+                   scan=None,
+                   **kwargs):
+    '''
+    Given an experiment and list of reflections, compute the
+    foreground/background mask of the reflections.
+
+    :param reflections: The reflection table
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
+
+    '''
+    pass
+
+  @classmethod
+  def profile_fitting_class(Class):
+    '''
+    Get the profile fitting algorithm associated with this profile model
+
+    :return: The profile fitting class
+
+    '''
+    return None
 
 
 class CentroidIface(interface.Interface):

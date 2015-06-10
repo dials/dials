@@ -18,8 +18,8 @@ def generate_phil_scope():
 
   '''
   import dials.extensions
-  from dials.interfaces import ProfileModelCreatorIface
-  phil_scope = ProfileModelCreatorIface.phil_scope()
+  from dials.interfaces import ProfileModelIface
+  phil_scope = ProfileModelIface.phil_scope()
   return phil_scope
 
 phil_scope = generate_phil_scope()
@@ -31,7 +31,7 @@ class ProfileModelFactory(object):
   '''
 
   @classmethod
-  def create(cls, params, experiments, reflections=None):
+  def create(cls, params, experiments, reflections):
     '''
     Compute or load the profile model.
 
@@ -41,6 +41,14 @@ class ProfileModelFactory(object):
     :return: The profile model
 
     '''
-    from dials.interfaces import ProfileModelCreatorIface
-    Algorithm = ProfileModelCreatorIface.extension(params.profile.algorithm)
-    return Algorithm.create(params, experiments, reflections)
+    Algorithm = ProfileModelIface.extension(params.profile.algorithm)
+    for expr, indices in reflections.split_indices_by_experiment(experiments):
+      expr.profile = Algorithm.Create(
+        params,
+        reflections.
+        expr.crystal,
+        expr.beam,
+        expr.detector,
+        expr.goniometer,
+        expr.scan)
+    return experiments

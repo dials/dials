@@ -546,7 +546,6 @@ model/data/pixel_list.h -text
 model/data/prediction.h -text
 model/data/ray.h -text
 model/data/shoebox.h -text
-model/experiment/profile.py -text
 model/serialize/SConscript -text
 model/serialize/__init__.py -text
 model/serialize/boost_python/serialize_ext.cc -text
