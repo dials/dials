@@ -38,6 +38,7 @@ namespace dials { namespace algorithms {
      * @param modeller The profile modeller
      */
     void add(modeller_pointer modeller) {
+      DIALS_ASSERT(modeller != NULL);
       modellers_.push_back(modeller);
     }
 
@@ -93,6 +94,7 @@ namespace dials { namespace algorithms {
         std::size_t j = o1 + n2;
         DIALS_ASSERT(j < o2);
         DIALS_ASSERT(n2 < n1);
+        DIALS_ASSERT(j < indices.size());
         indices[j] = i;
         num2[id[i]]++;
       }
@@ -119,6 +121,7 @@ namespace dials { namespace algorithms {
         af::reflection_table subset = select_rows_index(reflections, ind);
 
         // Do the modelling
+        DIALS_ASSERT(modellers_[i] != NULL);
         modellers_[i]->model(subset);
 
         // Set any results
@@ -285,6 +288,13 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < size(); ++i) {
         modellers_[i]->accumulate(other.modellers_[i]);
       }
+    }
+
+    /**
+     * Finalize the profiles for validation
+     */
+    void finalize_for_validation() {
+
     }
 
     /**

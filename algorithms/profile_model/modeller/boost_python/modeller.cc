@@ -154,6 +154,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("model", &MultiExpProfileModeller::model)
       .def("accumulate", &MultiExpProfileModeller::accumulate)
       .def("finalize", &MultiExpProfileModeller::finalize)
+      .def("finalize_for_validation", &MultiExpProfileModeller::finalize_for_validation)
       .def("finalized", &MultiExpProfileModeller::finalized)
       .def("fit", &MultiExpProfileModeller::fit)
       .def("validate", &MultiExpProfileModeller::validate)

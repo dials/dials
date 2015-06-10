@@ -31,44 +31,7 @@ phil_scope = parse('''
         .help = "Filter reflections by min zeta"
     }
 
-    model
-      .multiple = True
-    {
-      has_profile_fitting = True
-        .type = bool
-
-      n_sigma = 3
-        .help = "The number of standard deviations of the beam divergence and the"
-                "mosaicity to use for the bounding box size."
-        .type = float
-
-      sigma_b = 0
-        .help = "The E.S.D. of the beam divergence"
-        .type = float
-
-      sigma_m = 0
-        .help = "The E.S.D. of the reflecting range"
-        .type = float
-    }
-
-    scan_varying_model
-      .multiple = True
-    {
-      n_sigma = 3
-        .help = "The number of standard deviations of the beam divergence and the"
-                "mosaicity to use for the bounding box size."
-        .type = float
-
-      sigma_b = None
-        .help = "The E.S.D. of the beam divergence"
-        .type = floats
-
-      sigma_m = None
-        .help = "The E.S.D. of the reflecting range"
-        .type = floats
-    }
-
-    modelling {
+    fitting {
 
       scan_step = 5
         .type = float
@@ -99,6 +62,7 @@ phil_scope = parse('''
 class Model(ProfileModelIface):
 
   def __init__(self,
+               params,
                n_sigma,
                sigma_b,
                sigma_m,
@@ -106,6 +70,7 @@ class Model(ProfileModelIface):
     ''' Initialise with the parameters. '''
     from math import pi
     from dials.array_family import flex
+    self.params = params
     self._n_sigma = n_sigma
     if deg == True:
       self._sigma_b = sigma_b * pi / 180.0
@@ -246,6 +211,7 @@ class Model(ProfileModelIface):
       scan,
       params.gaussian_rs.filter.min_zeta)
     return Class(
+      params=params,
       n_sigma=3.0,
       sigma_b=calculator.sigma_b(),
       sigma_m=calculator.sigma_m())
@@ -306,7 +272,13 @@ class Model(ProfileModelIface):
     from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
     # Create the partiality calculator
-    calculate = PartialityCalculator(crystal, beam, detector, goniometer, scan, self._sigma_m)
+    calculate = PartialityCalculator(
+      crystal,
+      beam,
+      detector,
+      goniometer,
+      scan,
+      self._sigma_m)
 
     # Compute the partiality
     partiality = calculate(
@@ -348,7 +320,14 @@ class Model(ProfileModelIface):
     delta_m = self._n_sigma * self._sigma_m
 
     # Create the bbox calculator
-    calculate = BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m)
+    calculate = BBoxCalculator(
+      crystal,
+      beam,
+      detector,
+      goniometer,
+      scan,
+      delta_b,
+      delta_m)
 
     # Calculate the bounding boxes of all the reflections
     bbox = calculate(
@@ -387,7 +366,14 @@ class Model(ProfileModelIface):
     delta_m = self._n_sigma * self._sigma_m
 
     # Create the mask calculator
-    mask_foreground = MaskCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m)
+    mask_foreground = MaskCalculator(
+      crystal,
+      beam,
+      detector,
+      goniometer,
+      scan,
+      delta_b,
+      delta_m)
 
     # Mask the foreground region
     mask_foreground(
@@ -396,58 +382,50 @@ class Model(ProfileModelIface):
       reflections['xyzcal.px'].parts()[2],
       reflections['panel'])
 
-  @classmethod
-  def fitting_class(Class):
+  def fitting_class(self):
     '''
     Get the profile fitting algorithm associated with this profile model
 
     :return: The profile fitting class
 
     '''
-    return None
 
-class ProfileFittingIface(object):
+    # Define a function to create the fitting class
+    def wrapper(experiment):
+      from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
+      from math import ceil
 
-  def fit(self, reflections, experiment):
-    pass
+      # Return if no scan or gonio
+      if experiment.scan is None or experiment.goniometer is None:
+        return None
 
-  def add(self, reflections, experiment):
-    pass
+      # Compute the scan step
+      phi0, phi1 = experiment.scan.get_oscillation_range(deg=True)
+      assert(phi1 > phi0)
+      phi_range = phi1 - phi0
+      num_scan_points = int(ceil(phi_range / self.params.gaussian_rs.fitting.scan_step))
+      assert(num_scan_points > 0)
 
-#   def modeller(self, experiment):
-#     '''
-#     Get the modeller
+      # Create the grid method
+      GridMethod = GaussianRSProfileModeller.GridMethod
+      FitMethod = GaussianRSProfileModeller.FitMethod
+      grid_method = int(GridMethod.names[self.params.gaussian_rs.fitting.grid_method].real)
+      fit_method = int(FitMethod.names[self.params.gaussian_rs.fitting.fit_method].real)
 
-#     '''
-#     from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
-#     from math import ceil
+      # Create the modeller
+      return GaussianRSProfileModeller(
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
+        experiment.scan,
+        self.sigma_b(deg=False),
+        self.sigma_m(deg=False),
+        self.n_sigma(),
+        self.params.gaussian_rs.fitting.grid_size,
+        num_scan_points,
+        self.params.gaussian_rs.fitting.threshold,
+        grid_method,
+        fit_method)
 
-#     # Return if no scan or gonio
-#     if experiment.scan is None or experiment.goniometer is None:
-#       return None
-
-#     # Compute the scan step
-#     phi0, phi1 = experiment.scan.get_oscillation_range(deg=True)
-#     assert(phi1 > phi0)
-#     phi_range = phi1 - phi0
-#     num_scan_points = int(ceil(phi_range / self._scan_step))
-#     assert(num_scan_points > 0)
-
-#     # Create the grid method
-#     grid_method = int(GaussianRSProfileModeller.GridMethod.names[self._grid_method].real)
-#     fit_method = int(GaussianRSProfileModeller.FitMethod.names[self._fit_method].real)
-
-#     # Create the modeller
-#     modeller = GaussianRSProfileModeller(
-#       experiment.beam,
-#       experiment.detector,
-#       experiment.goniometer,
-#       experiment.scan,
-#       self.sigma_b(deg=False),
-#       self.sigma_m(deg=False),
-#       self.n_sigma(),
-#       self._grid_size,
-#       num_scan_points,
-#       self._threshold,
-#       grid_method,
-#       fit_method)
+    # Return the wrapper function
+    return wrapper

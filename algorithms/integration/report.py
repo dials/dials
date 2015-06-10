@@ -411,7 +411,7 @@ class ProfileModelReport(Report):
 
   '''
 
-  def __init__(self, experiments, profile_model, reflections):
+  def __init__(self, experiments, fitter, reflections):
     '''
     Create the integration report
 
@@ -440,12 +440,9 @@ class ProfileModelReport(Report):
     table.cols.append(('z', 'Z (im)'))
     table.cols.append(('n_reflections', '# reflections'))
 
-    # Get the modeller
-    profiles = profile_model.profiles()
-
     # Create the summary for each profile model
-    for i in range(len(profiles)):
-      model = profiles[i]
+    for i in range(len(fitter)):
+      model = fitter[i]
       for j in range(len(model)):
         table.rows.append([
           '%d'   % i,
@@ -460,8 +457,8 @@ class ProfileModelReport(Report):
     self.add_table(table)
 
     # Add the profiles
-    for i in range(len(profiles)):
-      model = profiles[i]
+    for i in range(len(fitter)):
+      model = fitter[i]
       for j in range(len(model)):
         if model.valid(j):
           array = Array()

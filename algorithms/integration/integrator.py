@@ -858,6 +858,7 @@ class Integrator(object):
     from random import shuffle, seed
     from math import floor, ceil
     from dials.array_family import flex
+    from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
 
     # Ensure we get the same random sample each time
     seed(0)
@@ -948,10 +949,9 @@ class Integrator(object):
           num_folds = 1
 
         # Create the profile fitter
-        profile_fitter = ProfileFitter(num_folds)
+        profile_fitter = MultiExpProfileModeller()#(num_folds)
         for expr in self.experiments:
-          profile_fitter.add(
-            expr.profile.fitting_class(expr))
+          profile_fitter.add(expr.profile.fitting_class()(expr))
 
         # Create the data processor
         executor = ProfileModellerExecutor(
@@ -1023,6 +1023,7 @@ class Integrator(object):
         # Print the modeller report
         self.profile_model_report = ProfileModelReport(
           self.experiments,
+          profile_fitter,
           reference)
         info("")
         info(self.profile_model_report.as_str(prefix=' '))
