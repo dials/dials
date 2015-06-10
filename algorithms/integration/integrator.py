@@ -457,7 +457,7 @@ class ProfileModellerExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments, number_of_partitions):
+  def __init__(self, experiments, profile_fitter):
     '''
     Initialise the executor
 
@@ -465,8 +465,7 @@ class ProfileModellerExecutor(Executor):
 
     '''
     self.experiments = experiments
-    self.number_of_partitions = number_of_partitions
-    assert self.number_of_partitions > 0, "Invalid number of partitions"
+    self.profile_fitter = profile_fitter
     super(ProfileModellerExecutor, self).__init__()
 
   def initialize(self, frame0, frame1, reflections):
@@ -509,9 +508,14 @@ class ProfileModellerExecutor(Executor):
       info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
       info('')
 
-    # Create the modeller
-    self.modellers = [self.profile_model.modeller(self.experiments)
-                      for i in range(self.number_of_partitions)]
+    # # Create the modeller
+    # self.modellers = [
+    #   expr.profile.fitting_class()(
+    #     expr,
+    #     self.number_of_partitions)
+    #   for expr in self.experiments]
+    # self.modellers = [self.profile_model.modeller(self.experiments)
+    #                   for i in range(self.number_of_partitions)]
 
   def process(self, frame, reflections):
     '''
@@ -536,16 +540,24 @@ class ProfileModellerExecutor(Executor):
     reflections.compute_summed_intensity()
 
     # Do the profile modelling
-    for i, modeller in enumerate(self.modellers):
-      if 'profile.index' not in reflections:
-        modeller.model(reflections)
-      else:
-        mask = reflections['profile.index'] != i
-        indices = flex.size_t(range(len(mask))).select(mask)
-        if len(indices) > 0:
-          subsample = reflections.select(indices)
-          modeller.model(subsample)
-          reflections.set_selected(indices, subsample)
+    self.profile_fitter.model(reflections)
+    # for i, (expr, indices) in enumerate(
+    #     reflections.iterate_experiments_and_indices(
+    #       self.experiments)):
+    #   subset = reflections.select(indices)
+    #   self.modellers[i].model(subset)
+    #   reflections.set_selected(indices, subset)
+
+    # for i, modeller in enumerate(self.modellers):
+      # if 'profile.index' not in reflections:
+      #   modeller.model(reflections)
+      # else:
+      #   mask = reflections['profile.index'] != i
+      #   indices = flex.size_t(range(len(mask))).select(mask)
+      #   if len(indices) > 0:
+      #     subsample = reflections.select(indices)
+      #     modeller.model(subsample)
+      #     reflections.set_selected(indices, subsample)
 
     # Print some info
     fmt = ' Modelled % 5d / % 5d reflection profiles on image %d'
@@ -565,7 +577,7 @@ class ProfileModellerExecutor(Executor):
     :return: the modeller
 
     '''
-    return self.modellers
+    return self.profile_fitter
 
 
 class ProfileValidatorExecutor(Executor):
@@ -574,7 +586,7 @@ class ProfileValidatorExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments, modellers):
+  def __init__(self, experiments, profile_fitter):
     '''
     Initialise the executor
 
@@ -582,7 +594,7 @@ class ProfileValidatorExecutor(Executor):
 
     '''
     self.experiments = experiments
-    self.modellers = modellers
+    self.profile_fitter = profile_fitter
     super(ProfileValidatorExecutor, self).__init__()
 
   def initialize(self, frame0, frame1, reflections):
@@ -650,19 +662,20 @@ class ProfileValidatorExecutor(Executor):
     reflections.compute_summed_intensity()
 
     # Do the profile validation
-    self.results = []
-    for i, modeller in enumerate(self.modellers):
-      mask = reflections['profile.index'] != i
-      indices = flex.size_t(range(len(mask))).select(mask)
-      if len(indices) > 0:
-        subsample = reflections.select(indices)
-        modeller.validate(subsample)
-        reflections.set_selected(indices, subsample)
-        corr = subsample['profile.correlation']
-        mean_corr = flex.mean(corr)
-      else:
-        mean_corr = None
-      self.results.append(mean_corr)
+    self.results = self.profile_fitter.validate(reflections)
+    # self.results = []
+    # for i, modeller in enumerate(self.modellers):
+    #   mask = reflections['profile.index'] != i
+    #   indices = flex.size_t(range(len(mask))).select(mask)
+    #   if len(indices) > 0:
+    #     subsample = reflections.select(indices)
+    #     modeller.validate(subsample)
+    #     reflections.set_selected(indices, subsample)
+    #     corr = subsample['profile.correlation']
+    #     mean_corr = flex.mean(corr)
+    #   else:
+    #     mean_corr = None
+    #   self.results.append(mean_corr)
 
     # Print some info
     fmt = ' Validated % 5d / % 5d reflection profiles on image %d'
@@ -691,7 +704,7 @@ class IntegratorExecutor(Executor):
 
   '''
 
-  def __init__(self, experiments, profile_fitting=False):
+  def __init__(self, experiments, profile_fitter=None):
     '''
     Initialize the executor
 
@@ -700,7 +713,7 @@ class IntegratorExecutor(Executor):
     '''
     self.experiments = experiments
     self.overlaps = None
-    self.profile_fitting = profile_fitting
+    self.profile_fitter = profile_fitter
     super(IntegratorExecutor, self).__init__()
 
   def initialize(self, frame0, frame1, reflections):
@@ -769,8 +782,8 @@ class IntegratorExecutor(Executor):
     reflections.compute_background(self.experiments)
     reflections.compute_centroid(self.experiments)
     reflections.compute_summed_intensity()
-    if self.profile_fitting:
-      reflections.compute_fitted_intensity(self.experiments)
+    if self.profile_fitter:
+      reflections.compute_fitted_intensity(self.profile_fitter)
 
     # Compute the number of background/foreground pixels
     sbox = reflections['shoebox']
@@ -895,6 +908,7 @@ class Integrator(object):
       profile_fitting = True
     else:
       profile_fitting = False
+      profile_fitter = None
 
     # Do profile modelling
     if profile_fitting:
@@ -933,10 +947,16 @@ class Integrator(object):
         else:
           num_folds = 1
 
+        # Create the profile fitter
+        profile_fitter = ProfileFitter(num_folds)
+        for expr in self.experiments:
+          profile_fitter.add(
+            expr.profile.fitting_class(expr))
+
         # Create the data processor
         executor = ProfileModellerExecutor(
           self.experiments,
-          number_of_partitions=num_folds)
+          profile_fitter)
         processor = ProcessorBuilder(
           self.ProcessorClass,
           self.experiments,
@@ -945,49 +965,60 @@ class Integrator(object):
         processor.executor = executor
 
         # Process the reference profiles
-        reference, modeller_list, time_info = processor.process()
+        reference, profile_fitter_list, time_info = processor.process()
 
         # Set the reference spots info
         #self.reflections.set_selected(selection, reference)
 
         # Finalize the profile models for validation
-        assert len(modeller_list) > 0, "No modellers"
-        modeller_partial = []
-        for index, mod in modeller_list.iteritems():
-          if mod is None:
+        assert len(profile_fitter_list) > 0, "No profile fitters"
+        profile_fitter = None
+        for index, pf in profile_fitter_list.iteritems():
+          if pf is None:
             continue
-          if len(modeller_partial) == 0:
-            modeller_partial = mod
+          if profile_fitter is None:
+            profile_fitter = pf
           else:
-            for i, m in enumerate(mod):
-              modeller_partial[i].accumulate(m)
-        modeller_full = None
-        modeller_partial_temp = []
-        for modeller in modeller_partial:
-          if modeller is None:
-            continue
-          if modeller_full is None:
-            modeller_full = modeller
-          else:
-            modeller_full.accumulate(modeller)
-          modeller = modeller.copy()
-          modeller.finalize()
-          modeller_partial_temp.append(modeller)
-        modeller_partial = modeller_partial_temp
-        modeller_full.finalize()
-        self.profile_model.profiles(modeller_full)
+            profile_fitter.accumulate(pf)
+        profile_fitter.finalize_for_validation()
 
-        # Print profiles
-        for i in range(len(modeller_full)):
-          m = modeller_full[i]
-          debug("")
-          debug("Profiles for experiment %d" % i)
-          for j in range(len(m)):
-            debug("Profile %d" % j)
-            try:
-              debug(pprint.profile3d(m.data(j)))
-            except Exception:
-              debug("** NO PROFILE **")
+        # assert len(modeller_list) > 0, "No modellers"
+        # modeller_partial = []
+        # for index, mod in modeller_list.iteritems():
+        #   if mod is None:
+        #     continue
+        #   if len(modeller_partial) == 0:
+        #     modeller_partial = mod
+        #   else:
+        #     for i, m in enumerate(mod):
+        #       modeller_partial[i].accumulate(m)
+        # modeller_full = None
+        # modeller_partial_temp = []
+        # for modeller in modeller_partial:
+        #   if modeller is None:
+        #     continue
+        #   if modeller_full is None:
+        #     modeller_full = modeller
+        #   else:
+        #     modeller_full.accumulate(modeller)
+        #   modeller = modeller.copy()
+        #   modeller.finalize()
+        #   modeller_partial_temp.append(modeller)
+        # modeller_partial = modeller_partial_temp
+        # modeller_full.finalize()
+        # self.profile_model.profiles(modeller_full)
+
+        # # Print profiles
+        # for i in range(len(modeller_full)):
+        #   m = modeller_full[i]
+        #   debug("")
+        #   debug("Profiles for experiment %d" % i)
+        #   for j in range(len(m)):
+        #     debug("Profile %d" % j)
+        #     try:
+        #       debug(pprint.profile3d(m.data(j)))
+        #     except Exception:
+        #       debug("** NO PROFILE **")
 
         # Print the modeller report
         self.profile_model_report = ProfileModelReport(
@@ -1007,7 +1038,7 @@ class Integrator(object):
           # Create the data processor
           executor = ProfileValidatorExecutor(
             self.experiments,
-            modeller_partial)
+            profile_fitter)
           processor = ProcessorBuilder(
             self.ProcessorClass,
             self.experiments,
@@ -1039,7 +1070,7 @@ class Integrator(object):
     # Create the data processor
     executor = IntegratorExecutor(
       self.experiments,
-      profile_fitting=profile_fitting)
+      profile_fitter)
     processor = ProcessorBuilder(
       self.ProcessorClass,
       self.experiments,

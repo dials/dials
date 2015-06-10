@@ -95,44 +95,6 @@ phil_scope = parse('''
 
 ''')
 
-#   def modeller(self, experiment):
-#     '''
-#     Get the modeller
-
-#     '''
-#     from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
-#     from math import ceil
-
-#     # Return if no scan or gonio
-#     if experiment.scan is None or experiment.goniometer is None:
-#       return None
-
-#     # Compute the scan step
-#     phi0, phi1 = experiment.scan.get_oscillation_range(deg=True)
-#     assert(phi1 > phi0)
-#     phi_range = phi1 - phi0
-#     num_scan_points = int(ceil(phi_range / self._scan_step))
-#     assert(num_scan_points > 0)
-
-#     # Create the grid method
-#     grid_method = int(GaussianRSProfileModeller.GridMethod.names[self._grid_method].real)
-#     fit_method = int(GaussianRSProfileModeller.FitMethod.names[self._fit_method].real)
-
-#     # Create the modeller
-#     modeller = GaussianRSProfileModeller(
-#       experiment.beam,
-#       experiment.detector,
-#       experiment.goniometer,
-#       experiment.scan,
-#       self.sigma_b(deg=False),
-#       self.sigma_m(deg=False),
-#       self.n_sigma(),
-#       self._grid_size,
-#       num_scan_points,
-#       self._threshold,
-#       grid_method,
-#       fit_method)
-
 
 class Model(ProfileModelIface):
 
@@ -435,7 +397,7 @@ class Model(ProfileModelIface):
       reflections['panel'])
 
   @classmethod
-  def profile_fitting_class(Class):
+  def fitting_class(Class):
     '''
     Get the profile fitting algorithm associated with this profile model
 
@@ -443,3 +405,49 @@ class Model(ProfileModelIface):
 
     '''
     return None
+
+class ProfileFittingIface(object):
+
+  def fit(self, reflections, experiment):
+    pass
+
+  def add(self, reflections, experiment):
+    pass
+
+#   def modeller(self, experiment):
+#     '''
+#     Get the modeller
+
+#     '''
+#     from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
+#     from math import ceil
+
+#     # Return if no scan or gonio
+#     if experiment.scan is None or experiment.goniometer is None:
+#       return None
+
+#     # Compute the scan step
+#     phi0, phi1 = experiment.scan.get_oscillation_range(deg=True)
+#     assert(phi1 > phi0)
+#     phi_range = phi1 - phi0
+#     num_scan_points = int(ceil(phi_range / self._scan_step))
+#     assert(num_scan_points > 0)
+
+#     # Create the grid method
+#     grid_method = int(GaussianRSProfileModeller.GridMethod.names[self._grid_method].real)
+#     fit_method = int(GaussianRSProfileModeller.FitMethod.names[self._fit_method].real)
+
+#     # Create the modeller
+#     modeller = GaussianRSProfileModeller(
+#       experiment.beam,
+#       experiment.detector,
+#       experiment.goniometer,
+#       experiment.scan,
+#       self.sigma_b(deg=False),
+#       self.sigma_m(deg=False),
+#       self.n_sigma(),
+#       self._grid_size,
+#       num_scan_points,
+#       self._threshold,
+#       grid_method,
+#       fit_method)
