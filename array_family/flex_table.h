@@ -146,15 +146,7 @@ namespace dials { namespace af {
           it = table->insert(it, map_value_type(k_,
             mapped_type(af::shared<T>(n, init_zero<T>()))));
         }
-        af::shared<T> result;
-        try {
-          result = boost::get< af::shared<T> >(it->second);
-        } catch (std::exception) {
-          std::string error_str = "Error getting column from reflection table: ";
-          error_str += k_;
-          DIALS_ERROR(error_str.c_str());
-        }
-        return result;
+        return boost::get< af::shared<T> >(it->second);
       }
 
       /**

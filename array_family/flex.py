@@ -606,7 +606,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     assert(len(experiments) == len(index_list))
     tot = 0
     for l in index_list:
-      tot += l
+      tot += len(l)
     assert(tot == len(self))
     for experiment, indices in zip(experiments, index_list):
       yield experiment, indices
