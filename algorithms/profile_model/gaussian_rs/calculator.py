@@ -240,6 +240,7 @@ class ProfileModelCalculator(object):
   def __init__(self, reflections, crystal, beam, detector, goniometer, scan, min_zeta=0.05):
     ''' Calculate the profile model. '''
     from logging import info
+    from dxtbx.model.experiment.experiment_list import Experiment
 
     # Check input has what we want
     assert(reflections is not None)
@@ -260,6 +261,17 @@ class ProfileModelCalculator(object):
     if goniometer is None or scan is None:
       self._sigma_m = 0.00001
     else:
+
+      # Select by zeta
+      zeta = reflections.compute_zeta(
+        Experiment(
+          crystal=crystal,
+          beam=beam,
+          detector=detector,
+          goniometer=goniometer,
+          scan=scan))
+      mask = zeta >= min_zeta
+      reflections = reflections.select(mask)
 
       # Calculate the E.S.D of the reflecting range
       info('Calculating E.S.D Reflecting Range.')
@@ -286,6 +298,7 @@ class ScanVaryingProfileModelCalculator(object):
     from copy import deepcopy
     from collections import defaultdict
     from dials.array_family import flex
+    from dxtbx.model.experiment.experiment_list import Experiment
 
     # Check input has what we want
     assert(reflections is not None)
@@ -294,6 +307,17 @@ class ScanVaryingProfileModelCalculator(object):
     assert("shoebox" in reflections)
     assert("xyzobs.px.value" in reflections)
     assert("xyzcal.mm" in reflections)
+
+    # Select by zeta
+    zeta = reflections.compute_zeta(
+      Experiment(
+        crystal=crystal,
+        beam=beam,
+        detector=detector,
+        goniometer=goniometer,
+        scan=scan))
+    mask = zeta >= min_zeta
+    reflections = reflections.select(mask)
 
     # Split the reflections into partials
     reflections = deepcopy(reflections)

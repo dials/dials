@@ -10,7 +10,7 @@
 
 from __future__ import division
 from libtbx.phil import parse
-from dials.algorithms.profile_model.interface import ProfileModelIface
+from dials.model.experiment.profile import ProfileModelIface
 
 phil_scope = parse('''
 
@@ -134,7 +134,7 @@ phil_scope = parse('''
 #       fit_method)
 
 
-class Model(object):
+class Model(ProfileModelIface):
 
   def __init__(self,
                n_sigma,

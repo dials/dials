@@ -4,8 +4,7 @@ from dials.algorithms.profile_model import modeller # import dependency
 from dials_algorithms_profile_model_gaussian_rs_ext import *
 
 from model import phil_scope        # implicit dependency
-from model import ProfileModel      # implicit dependency
-from factory import Factory
+from model import Model             # implicit dependency
 
 
 def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):

@@ -53,6 +53,7 @@ class ProfileModelIface(interface.Interface):
 
   @interface.abstractmethod
   def algorithm(self):
+    ''' Get the algorithm. '''
     pass
 
 

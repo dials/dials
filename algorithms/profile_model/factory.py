@@ -41,11 +41,13 @@ class ProfileModelFactory(object):
     :return: The profile model
 
     '''
-    Algorithm = ProfileModelIface.extension(params.profile.algorithm)
-    for expr, indices in reflections.split_indices_by_experiment(experiments):
-      expr.profile = Algorithm.Create(
-        params,
-        reflections.
+    from dials.interfaces import ProfileModelIface
+    Extension = ProfileModelIface.extension(params.profile.algorithm)
+    Algorithm = Extension().algorithm()
+    for expr, indices in reflections.iterate_experiments_and_indices(experiments):
+      expr.profile = Algorithm.create(
+        params.profile,
+        reflections,
         expr.crystal,
         expr.beam,
         expr.detector,

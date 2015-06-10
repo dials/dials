@@ -97,7 +97,8 @@ class Interface(object):
     elif not issubclass(cls, Interface):
       raise RuntimeError('%s is not an interface or extension' % str(cls))
     if Interface in cls.__bases__:
-      master_scope = parse('%s .help=%s {}' % (cls.name, cls.__doc__))
+      doc = '\n'.join('"%s"' % d for d in cls.__doc__)
+      master_scope = parse('%s .help=%s {}' % (cls.name, doc))
       main_scope = master_scope.get_without_substitution(cls.name)
       assert(len(main_scope) == 1)
       main_scope = main_scope[0]

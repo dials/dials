@@ -541,9 +541,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The bounding box for each reflection
 
     '''
-    reflections['bbox'] = flex.int6(len(reflections))
+    self['bbox'] = int6(len(self))
     for expr, indices in self.iterate_experiments_and_indices(experiments):
-      reflections['bbox'].set_selected(
+      self['bbox'].set_selected(
         indices,
         expr.profile.compute_bbox(
           self.select(indices),
@@ -553,7 +553,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
           expr.goniometer,
           expr.scan,
           sigma_b_multiplier=sigma_b_multiplier))
-    return reflections['bbox']
+    return self['bbox']
 
   def compute_partiality(self, experiments):
     '''
@@ -564,9 +564,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The partiality for each reflection
 
     '''
-    reflections['partiality'] = flex.double(len(reflections))
+    self['partiality'] = flex.double(len(self))
     for expr, indices in self.iterate_experiments_and_indices(experiments):
-      reflections['partiality'].set_selected(
+      self['partiality'].set_selected(
         indices,
         expr.profile.compute_partiality(
           self.select(indices),
@@ -575,7 +575,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
           expr.detector,
           expr.goniometer,
           expr.scan))
-    return reflections['partiality']
+    return self['partiality']
 
   def compute_mask(self, experiments, overlaps=None):
     '''
