@@ -527,7 +527,6 @@ def exercise_14():
     extra_args.append("indexing.method=%s" %method)
     extra_args.append("treat_single_image_as_still=False")
 
-
     result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
                               expected_rmsds, expected_hall_symbol)
 
@@ -545,6 +544,28 @@ def exercise_15():
                             expected_rmsds, expected_hall_symbol)
   assert len(result.indexed_reflections) > 298000, len(result.indexed_reflections)
 
+def exercise_16():
+  # test for small molecule multi-sweep indexing, 4 sweeps with different values
+  # of goniometer.fixed_rotation()
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
+  import glob
+  pickle_paths = [
+    glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "*_strong.pickle"))[0]
+    for i in range(4)]
+  sweep_paths = [
+    glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "*_datablock_import.json"))[0]
+    for i in range(4)]
+  extra_args = ["space_group=I4"]
+  expected_unit_cell = uctbx.unit_cell(
+    (7.310, 7.310, 6.820, 90.000, 90.000, 90.000))
+  expected_rmsds = (0.10, 0.7, 0.5)
+  expected_hall_symbol = ' I 4'
+
+  result = run_one_indexing(" ".join(pickle_paths),  " ".join(sweep_paths),
+                            extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol)
+  assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
+
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
@@ -552,7 +573,8 @@ def run(args):
 
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
                exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
-               exercise_11, exercise_12, exercise_13, exercise_14, exercise_15)
+               exercise_11, exercise_12, exercise_13, exercise_14, exercise_15,
+               exercise_16)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
