@@ -312,11 +312,14 @@ class TestPoisson(object):
     mv = flex.mean_and_variance(z)
     m = mv.mean()
     s = mv.unweighted_sample_standard_deviation()
-    if (abs(m) > 0.1) or (abs(s - 1.0) > 0.1):
+    # Mean-test failure rate:
+    # 5*P(abs(X/1000) > 0.1336) where X is normally distributed
+    #   with mean 0 and standard deviation sqrt(1000)
+    if (abs(m) > 0.1336) or (abs(s - 1.0) > 0.1):
       #from matplotlib import pylab
       #pylab.hist(list(z), 100)
       #pylab.show()
-      raise Exception('Mean %f, Sdev %f' % (m, s))
+      raise Exception('Mean %f (abs. value <0.1336), Sdev %f (>0.9, <1.1)' % (m, s))
 
   def generate_background(self, size, N, A, B, C, D):
     from dials.algorithms.simulation.generate_test_reflections \
