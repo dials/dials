@@ -51,6 +51,11 @@ phil_scope = parse('''
     shoeboxes = True
       .type = bool
       .help = "Save the raw pixel values inside the reflection shoeboxes."
+
+    datablock = None
+      .type = str
+      .help = "Save the modified datablock."
+              "(usually only modified with hot pixel mask)"
   }
 
   verbosity = 1
@@ -125,6 +130,14 @@ class Script(object):
     reflections.as_pickle(params.output.reflections)
     info('Saved {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
+
+    # Save the datablock
+    if params.output.datablock:
+      from dxtbx.datablock import DataBlockDumper
+      info('Saving datablocks to {0}'.format(
+        params.output.datablock))
+      dump = DataBlockDumper(datablocks)
+      dump.as_file(params.output.datablock)
 
     # Print the time
     info("Time Taken: %f" % (time() - start_time))
