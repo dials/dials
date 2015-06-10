@@ -262,18 +262,10 @@ class SpotFinder(object):
       table, hot_mask = self._find_in_imageset(imageset)
       table['id'] = flex.size_t(table.nrows(), i)
       reflections.extend(table)
-      if imageset.external_lookup.mask.data is not None:
-        and_mask = []
-        for m1, m2 in zip(imageset.external_lookup.mask.data, hot_mask):
-          and_mask.append(m1 & m2)
-        imageset.external_lookup.mask.data = tuple(and_mask)
-      else:
-        imageset.external_lookup.mask.data = hot_mask
-      imageset.external_lookup.mask.filename = "hot_mask_%d.pickle" % i
 
       # Write the hot mask
       if self.write_hot_mask:
-        with open(imageset.external_lookup.mask.filename, "wb") as outfile:
+        with open("hot_mask_%d.pickle" % i, "w") as outfile:
           pickle.dump(hot_mask, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
     reflections.set_flags(
