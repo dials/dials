@@ -120,6 +120,9 @@ indexing {
       .type = int(value_min=1)
       .help = "Number of putative basis vector combinations to try."
       .expert_level = 1
+    solution_scorer = *filter weighted
+      .type = choice
+      .expert_level = 1
     filter
       .expert_level = 1
     {
@@ -131,6 +134,12 @@ indexing {
         .type = float(value_min=1)
       n_indexed_cutoff = 0.9
         .type = float(value_min=0, value_max=1)
+    }
+    weighted
+      .expert_level = 1
+    {
+      power = 2
+        .type = int(value_min=1)
     }
   }
   index_assignment {
@@ -1020,12 +1029,17 @@ class indexer_base(object):
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
 
-    filter_params = self.params.basis_vector_combinations.filter
-    solutions = SolutionTracker(
-      check_doubled_cell=filter_params.check_doubled_cell,
-      likelihood_cutoff=filter_params.likelihood_cutoff,
-      volume_cutoff=filter_params.volume_cutoff,
-      n_indexed_cutoff=filter_params.n_indexed_cutoff)
+    solution_scorer = self.params.basis_vector_combinations.solution_scorer
+    if solution_scorer == 'weighted':
+      weighted_params = self.params.basis_vector_combinations.weighted
+      solutions = SolutionTrackerWeighted(power=weighted_params.power)
+    else:
+      filter_params = self.params.basis_vector_combinations.filter
+      solutions = SolutionTrackerFilter(
+        check_doubled_cell=filter_params.check_doubled_cell,
+        likelihood_cutoff=filter_params.likelihood_cutoff,
+        volume_cutoff=filter_params.volume_cutoff,
+        n_indexed_cutoff=filter_params.n_indexed_cutoff)
 
     def run_one_refinement(args):
       params, reflections, experiments = args
@@ -1355,7 +1369,7 @@ class Solution(group_args):
   pass
 
 # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
-class SolutionTracker(object):
+class SolutionTrackerFilter(object):
   def __init__(self, check_doubled_cell=True, likelihood_cutoff=0.8,
                volume_cutoff=1.25, n_indexed_cutoff=0.9):
     self.check_doubled_cell = check_doubled_cell
@@ -1451,6 +1465,66 @@ class SolutionTracker(object):
     solutions = [s for s in self.filtered_solutions
                  if s.model_likelihood == self.best_filtered_liklihood]
     return solutions[0]
+
+
+def rank(array, reverse=False):
+  perm = flex.sort_permutation(array, reverse=reverse)
+  rank = flex.size_t(len(array))
+  for i in range(len(array)):
+    rank[perm[i]] = i
+  return rank
+
+
+class SolutionTrackerWeighted(object):
+  def __init__(self, power=2):
+    self.power = power
+    self.all_solutions = []
+
+  def append(self, item):
+    self.all_solutions.append(item)
+
+  def __len__(self):
+    return len(self.all_solutions)
+
+  def rank_by_volume(self, reverse=False):
+    # smaller volume = better
+    volumes = flex.double(
+      s.crystal.get_unit_cell().volume() for s in self.all_solutions)
+    min_volume = flex.min(volumes)
+    ranks = flex.double(len(volumes))
+    for i, v in enumerate(volumes):
+      ranks[i] = abs(v-min_volume)/min_volume
+    return ranks
+
+  def rank_by_likelihood(self, reverse=False):
+    # larger likelihood = better
+    likelihoods = flex.double(s.model_likelihood for s in self.all_solutions)
+    best_likelihood = flex.max(likelihoods)
+    ranks = flex.double(len(likelihoods))
+    for i, l in enumerate(likelihoods):
+      ranks[i] = abs(l-best_likelihood)/best_likelihood
+    return ranks
+
+  def rank_by_n_indexed(self, reverse=False):
+    # more indexed reflections = better
+    n_indexed = flex.int(s.n_indexed for s in self.all_solutions)
+    max_indexed = flex.max(n_indexed)
+    ranks = flex.double(len(n_indexed))
+    for i, n in enumerate(n_indexed):
+      #ranks[i] = abs(n-max_indexed)/max_indexed
+      ranks[i] = abs(n-max_indexed)/n
+    return ranks
+
+  def best_solution(self):
+    scores = sum(flex.pow(ranks.as_double(), self.power)
+                 for ranks in (self.rank_by_likelihood(),
+                               self.rank_by_n_indexed(),
+                               self.rank_by_volume(),
+                               ))
+
+    perm = flex.sort_permutation(scores)
+
+    return self.all_solutions[perm[0]]
 
 
 def find_max_cell(reflections, max_cell_multiplier, nearest_neighbor_percentile):
