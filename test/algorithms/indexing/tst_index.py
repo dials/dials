@@ -234,7 +234,7 @@ def exercise_5():
                 "scan_range=850,900"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.1, 0.1, 0.003)
+  expected_rmsds = (0.1, 0.1, 0.005)
   expected_hall_symbol = ' P 1'
   n_expected_lattices = 2
 
@@ -580,8 +580,20 @@ def run(args):
     for arg in args: assert arg > 0
     exercises = [exercises[arg-1] for arg in args]
 
-  for exercise in exercises:
+  from libtbx import easy_mp
+
+  nproc = easy_mp.get_processes(libtbx.Auto)
+  nproc = min(nproc, len(exercises))
+
+  def run_parallel(args):
+    assert len(args) == 1
+    exercise = args[0]
     exercise()
+
+  easy_mp.parallel_map(
+    func=run_parallel,
+    iterable=[(e,) for e in exercises],
+    processes=nproc)
 
 if __name__ == '__main__':
   import sys
