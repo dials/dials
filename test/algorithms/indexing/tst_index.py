@@ -48,6 +48,21 @@ def check_external_dependencies(dependencies):
       missing.append(dependency)
   return missing
 
+def unit_cells_are_similar(uc1, uc2, relative_length_tolerance=0.01,
+                           absolute_angle_tolerance=1):
+  # see also uctbx.cpp unit_cell::is_similar_to()
+  l1 = uc1.parameters()
+  l2 = uc2.parameters()
+  for i in range(3):
+    if abs(min(l1[i], l2[i]) / max(l1[i], l2[i]) - 1) > relative_length_tolerance:
+      return False
+  for i in range(3, 6):
+    if abs(l1[i]-l2[i]) > absolute_angle_tolerance:
+      if abs(l1[i]-(180-l2[i])) > absolute_angle_tolerance:
+        return False
+      #else:
+        #print uc1, uc2
+  return True
 
 class run_one_indexing(object):
   def __init__(self,
@@ -85,8 +100,14 @@ class run_one_indexing(object):
     for i in range(len(experiments_list)):
       experiment = experiments_list[i]
       self.crystal_model = experiment.crystal
-      assert self.crystal_model.get_unit_cell().is_similar_to(
-        expected_unit_cell,
+      #assert self.crystal_model.get_unit_cell().is_similar_to(
+        #expected_unit_cell,
+        #relative_length_tolerance=relative_length_tolerance,
+        #absolute_angle_tolerance=absolute_angle_tolerance), (
+          #self.crystal_model.get_unit_cell().parameters(),
+          #expected_unit_cell.parameters())
+      assert unit_cells_are_similar(
+        self.crystal_model.get_unit_cell(),expected_unit_cell,
         relative_length_tolerance=relative_length_tolerance,
         absolute_angle_tolerance=absolute_angle_tolerance), (
           self.crystal_model.get_unit_cell().parameters(),
