@@ -1496,14 +1496,35 @@ class SolutionTrackerWeighted(object):
       ranks[i] = abs(v-min_volume)/min_volume
     return ranks
 
-  def rank_by_likelihood(self, reverse=False):
-    # larger likelihood = better
-    likelihoods = flex.double(s.model_likelihood for s in self.all_solutions)
-    best_likelihood = flex.max(likelihoods)
-    ranks = flex.double(len(likelihoods))
-    for i, l in enumerate(likelihoods):
-      ranks[i] = abs(l-best_likelihood)/best_likelihood
+  def rank_by_rmsd_xy(self, reverse=False):
+    # smaller rmsds = better
+    rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
+      s.rmsds for s in self.all_solutions).parts()
+    rmsd_xy = flex.sqrt(flex.pow2(rmsd_x) + flex.pow2(rmsd_y))
+    best_rmsd = flex.min(rmsd_xy)
+    ranks = flex.double(len(rmsd_xy))
+    for i, r in enumerate(rmsd_xy):
+      ranks[i] = abs(r-best_rmsd)/best_rmsd
     return ranks
+
+  def rank_by_rmsd_z(self, reverse=False):
+    # smaller rmsds = better
+    rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
+      s.rmsds for s in self.all_solutions).parts()
+    best_rmsd = flex.min(rmsd_z)
+    ranks = flex.double(len(rmsd_z))
+    for i, r in enumerate(rmsd_z):
+      ranks[i] = abs(r-best_rmsd)/best_rmsd
+    return ranks
+
+  #def rank_by_likelihood(self, reverse=False):
+    ## larger likelihood = better
+    #likelihoods = flex.double(s.model_likelihood for s in self.all_solutions)
+    #best_likelihood = flex.max(likelihoods)
+    #ranks = flex.double(len(likelihoods))
+    #for i, l in enumerate(likelihoods):
+      #ranks[i] = abs(l-best_likelihood)/best_likelihood
+    #return ranks
 
   def rank_by_n_indexed(self, reverse=False):
     # more indexed reflections = better
@@ -1517,9 +1538,11 @@ class SolutionTrackerWeighted(object):
 
   def best_solution(self):
     scores = sum(flex.pow(ranks.as_double(), self.power)
-                 for ranks in (self.rank_by_likelihood(),
-                               self.rank_by_n_indexed(),
+                 for ranks in (self.rank_by_n_indexed(),
                                self.rank_by_volume(),
+                               self.rank_by_rmsd_xy(),
+                               self.rank_by_rmsd_z(),
+                               #self.rank_by_likelihood(),
                                ))
 
     perm = flex.sort_permutation(scores)
