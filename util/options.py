@@ -55,7 +55,10 @@ class Importer(object):
                read_reflections=False,
                read_datablocks_from_images=False,
                check_format=True,
-               verbose=False):
+               verbose=False,
+               compare_beam=None,
+               compare_detector=None,
+               compare_goniometer=None):
     '''
     Parse the arguments. Populates its instance attributes in an intelligent way
     from the arguments in args.
@@ -88,7 +91,11 @@ class Importer(object):
     # First try to read image files
     if read_datablocks_from_images:
       self.unhandled = self.try_read_datablocks_from_images(
-        self.unhandled, verbose)
+        self.unhandled,
+        verbose,
+        compare_beam,
+        compare_detector,
+        compare_goniometer)
 
     # Second try to read data block files
     if read_datablocks:
@@ -105,7 +112,12 @@ class Importer(object):
       self.unhandled = self.try_read_reflections(
         self.unhandled, verbose)
 
-  def try_read_datablocks_from_images(self, args, verbose):
+  def try_read_datablocks_from_images(self,
+                                      args,
+                                      verbose,
+                                      compare_beam,
+                                      compare_detector,
+                                      compare_goniometer):
     '''
     Try to import images.
 
@@ -118,7 +130,12 @@ class Importer(object):
     from dials.phil import FilenameDataWrapper, DataBlockConverters
     unhandled = []
     datablocks = DataBlockFactory.from_filenames(
-      args, verbose=verbose, unhandled=unhandled)
+      args,
+      verbose=verbose,
+      unhandled=unhandled,
+      compare_beam=compare_beam,
+      compare_detector=compare_detector,
+      compare_goniometer=compare_goniometer)
     if len(datablocks) > 0:
       filename = "<image files>"
       obj = FilenameDataWrapper(filename, datablocks)
@@ -259,7 +276,7 @@ class PhilCommandParser(object):
     '''
     return self.system_phil.fetch_diff(source=self.phil)
 
-  def parse_args(self, args, verbose=False, return_unhandled=True):
+  def parse_args(self, args, verbose=False):
     '''
     Parse the command line arguments.
 
@@ -269,48 +286,81 @@ class PhilCommandParser(object):
     :return: The options and parameters and (optionally) unhandled arguments
 
     '''
+    import os.path
+    from dxtbx.datablock import BeamComparison
+    from dxtbx.datablock import DetectorComparison
+    from dxtbx.datablock import GoniometerComparison
+
+    # Parse the command line phil parameters
+    user_phils = []
+    unhandled = []
+    interpretor = self.system_phil.command_line_argument_interpreter()
+    for arg in args:
+      if (os.path.isfile(arg) and os.path.getsize(arg) > 0):
+        name, ext = os.path.splitext(arg)
+        if ext in ['.phil', '.param', '.params', '.eff', '.def']:
+          try:
+            user_phils.append(libtbx.phil.parse(file_name=arg))
+          except Exception:
+            Sorry('Unable to parse phil file: %s' % arg)
+        else:
+          unhandled.append(arg)
+      elif (arg.find("=") >= 0):
+        try:
+          user_phils.append(interpretor.process_arg(arg=arg))
+        except Exception:
+          raise RuntimeError('Unable to parse parameter: %s' % arg)
+      else:
+        unhandled.append(arg)
+
+    # Fetch the phil parameters
+    self._phil = self.system_phil.fetch(sources=user_phils)
+
+    # Extract the parameters
+    params = self._phil.extract()
+
+    # Create some comparison functions
+    if self._read_datablocks_from_images:
+      compare_beam = BeamComparison(
+        wavelength_tolerance=params.input.tolerance.beam.wavelength,
+        direction_tolerance=params.input.tolerance.beam.direction,
+        polarization_normal_tolerance=params.input.tolerance.beam.polarization_normal,
+        polarization_fraction_tolerance=params.input.tolerance.beam.polarization_fraction)
+      compare_detector = DetectorComparison(
+        fast_axis_tolerance=params.input.tolerance.detector.fast_axis,
+        slow_axis_tolerance=params.input.tolerance.detector.slow_axis,
+        origin_tolerance=params.input.tolerance.detector.origin)
+      compare_goniometer = GoniometerComparison(
+        rotation_axis_tolerance=params.input.tolerance.goniometer.rotation_axis,
+        fixed_rotation_tolerance=params.input.tolerance.goniometer.fixed_rotation,
+        setting_rotation_tolerance=params.input.tolerance.goniometer.setting_rotation)
+    else:
+      compare_beam = None
+      compare_detector = None
+      compare_goniometer = None
 
     # Try to import everything
     importer = Importer(
-      args,
+      unhandled,
       read_datablocks=self._read_datablocks,
       read_experiments=self._read_experiments,
       read_reflections=self._read_reflections,
       read_datablocks_from_images=self._read_datablocks_from_images,
       check_format=self._check_format,
-      verbose=verbose)
+      verbose=verbose,
+      compare_beam=compare_beam,
+      compare_detector=compare_detector,
+      compare_goniometer=compare_goniometer)
 
     # Add the cached arguments
-    args = importer.unhandled
     for obj in importer.datablocks:
-      args.append("input.datablock=%s" % obj.filename)
+      params.input.datablock.append(obj)
     for obj in importer.experiments:
-      args.append("input.experiments=%s" % obj.filename)
+      params.input.experiments.append(obj)
     for obj in importer.reflections:
-      args.append("input.reflections=%s" % obj.filename)
+      params.input.reflections.append(obj)
 
-    # Parse the command line phil parameters
-    interpretor = self.system_phil.command_line_argument_interpreter()
-    if return_unhandled is True:
-      self._phil, args = interpretor.process_and_fetch(args,
-        custom_processor="collect_remaining")
-    else:
-      processed = interpretor.process(args=args)
-      self._phil, unused = self._system_phil.fetch(
-        sources=processed,
-        track_unused_definitions=True)
-      if (len(unused) != 0):
-        raise RuntimeError((
-          '\n'
-          ' The following phil parameters were not recognised:\n'
-          '  %s\n'
-        ) % '\n  '.join(map(str,unused)))
-      args = []
-    try:
-      params = self.phil.extract()
-    except RuntimeError, e:
-      raise Sorry(e)
-    return params, args
+    return params, importer.unhandled
 
   def _generate_input_scope(self):
     '''
@@ -342,6 +392,68 @@ class PhilCommandParser(object):
           .multiple = True
           .help = "The datablock file path"
       ''' % self._check_format)
+      main_scope.adopt_scope(phil_scope)
+
+    # If reading images, add some more parameters
+    if self._read_datablocks_from_images:
+      phil_scope = parse('''
+        tolerance
+            .help = "Tolerances used to determine shared models"
+          {
+
+          beam {
+
+            wavelength = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The wavelength tolerance"
+
+            direction = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The direction tolerance"
+
+            polarization_normal = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The polarization normal tolerance"
+
+            polarization_fraction = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The polarization fraction tolerance"
+
+          }
+
+          detector {
+
+            fast_axis = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The fast axis tolerance"
+
+            slow_axis = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The slow axis tolerance"
+
+            origin = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The origin tolerance"
+
+          }
+
+          goniometer {
+
+            rotation_axis = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The rotation axis tolerance"
+
+            fixed_rotation = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The fixed rotation tolerance"
+
+            setting_rotation = 1e-6
+              .type = float(value_min=0.0)
+              .help = "The setting rotation tolerance"
+
+          }
+        }
+      ''')
       main_scope.adopt_scope(phil_scope)
 
     # Add the experiments phil scope
@@ -535,16 +647,8 @@ class OptionParser(OptionParserBase):
       exit(0)
 
     # Parse the phil parameters
-    try:
-      params, args = self._phil_parser.parse_args(
-        args, options.verbose > 0,
-        return_unhandled=return_unhandled)
-    except Exception:
-      raise RuntimeError(
-        '''
-        Import failed. There was a problem with one or more of the
-        following arguments:\n%s
-        ''' % '\n'.join('          %s' % a for a in args))
+    params, args = self._phil_parser.parse_args(
+      args, options.verbose > 0)
 
     # Print the diff phil
     if show_diff_phil:
@@ -556,11 +660,6 @@ class OptionParser(OptionParserBase):
     # Return the parameters
     if return_unhandled:
       return params, options, args
-    else:
-      if args:
-        raise RuntimeError((
-          'This should not be reached!\n'
-          'Unhandled arguments: %s') % (' '.join(args)))
     return params, options
 
   @property
