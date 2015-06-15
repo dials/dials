@@ -368,6 +368,9 @@ class PhilCommandParser(object):
     for obj in importer.reflections:
       params.input.reflections.append(obj)
 
+    # Convert to phil
+    self._phil = self.system_phil.format(python_object=params)
+
     return params, importer.unhandled
 
   def _generate_input_scope(self):
