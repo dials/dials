@@ -276,7 +276,7 @@ class PhilCommandParser(object):
     '''
     return self.system_phil.fetch_diff(source=self.phil)
 
-  def parse_args(self, args, verbose=False):
+  def parse_args(self, args, verbose=False, return_unhandled=False):
     '''
     Parse the command line arguments.
 
@@ -290,6 +290,7 @@ class PhilCommandParser(object):
     from dxtbx.datablock import BeamComparison
     from dxtbx.datablock import DetectorComparison
     from dxtbx.datablock import GoniometerComparison
+    from dials.phil import parse
 
     # Parse the command line phil parameters
     user_phils = []
@@ -300,16 +301,23 @@ class PhilCommandParser(object):
         name, ext = os.path.splitext(arg)
         if ext in ['.phil', '.param', '.params', '.eff', '.def']:
           try:
-            user_phils.append(libtbx.phil.parse(file_name=arg))
+            user_phils.append(parse(file_name=arg))
           except Exception:
-            Sorry('Unable to parse phil file: %s' % arg)
+            raise
+            if return_unhandled:
+              unhandled.append(arg)
+            else:
+              raise RuntimeError('Unable to parse phil file: %s' % arg)
         else:
           unhandled.append(arg)
       elif (arg.find("=") >= 0):
         try:
           user_phils.append(interpretor.process_arg(arg=arg))
         except Exception:
-          raise RuntimeError('Unable to parse parameter: %s' % arg)
+          if return_unhandled == True:
+            unhandled.append(arg)
+          else:
+            raise RuntimeError('Unable to parse parameter: %s' % arg)
       else:
         unhandled.append(arg)
 
@@ -648,7 +656,9 @@ class OptionParser(OptionParserBase):
 
     # Parse the phil parameters
     params, args = self._phil_parser.parse_args(
-      args, options.verbose > 0)
+      args,
+      options.verbose > 0,
+      return_unhandled=return_unhandled)
 
     # Print the diff phil
     if show_diff_phil:

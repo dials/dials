@@ -15,7 +15,7 @@ def run():
 
   cmd = "dials.show_models %s/experiment_1.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  assert not show_diff("\n".join(result.stdout_lines[6:]), """\
+  assert not show_diff("\n".join(result.stdout_lines), """\
 Detector:
 Panel:
   pixel_size:{0.172,0.172}
@@ -62,7 +62,7 @@ Crystal:
     dials_regression, "indexing_test_data", "i04_weak_data")
   cmd = "dials.show_models %s/datablock_orig.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  assert not show_diff("\n".join(result.stdout_lines[7:]), """\
+  assert not show_diff("\n".join(result.stdout_lines[1:]), """\
 Detector:
 Panel:
   pixel_size:{0.172,0.172}
@@ -104,7 +104,7 @@ Goniometer:
   assert (
     "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
     in result.stdout_lines), result.show_stdout()
-  assert not show_diff("\n".join(result.stdout_lines[8:]), """\
+  assert not show_diff("\n".join(result.stdout_lines[2:]), """\
 Detector:
 Panel:
   pixel_size:{0.172,0.172}

@@ -150,7 +150,7 @@ class Script(object):
 
       if reference_beam is not None and reference_detector is not None:
         for sweep in sweeps:
-          assert reference_detector.is_similar_to(sweep.get_detector())
+          assert reference_detector.is_similar_to(sweep.get_detector(),static_only=True)
           sweep.set_beam(reference_beam)
           sweep.set_detector(reference_detector)
 
