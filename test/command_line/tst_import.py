@@ -15,6 +15,28 @@ class Test(object):
   def run(self):
     self.tst_from_image_files()
     self.tst_import_beam_centre()
+    self.tst_with_mask()
+
+  def tst_with_mask(self):
+    from glob import glob
+    import os
+    from libtbx import easy_run
+    from dxtbx.serialize import load
+
+    # Find the image files
+    image_files = glob(os.path.join(self.path, "centroid*.cbf"))
+    image_files = ' '.join(image_files)
+    mask_filename = os.path.join(self.path, "mask.pickle")
+
+    # provide mosflm beam centre to dials.import
+    cmd = 'dials.import %s mask=%s output=datablock_with_mask.json' % (image_files, mask_filename)
+    easy_run.fully_buffered(cmd)
+    assert os.path.exists("datablock_with_mask.json")
+    datablock = load.datablock("datablock_with_mask.json")[0]
+    imgset = datablock.extract_imagesets()[0]
+    assert imgset.external_lookup.mask.filename == mask_filename
+
+    print 'OK'
 
   def tst_import_beam_centre(self):
     from glob import glob

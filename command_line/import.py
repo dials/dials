@@ -73,6 +73,19 @@ phil_scope = parse('''
     .help = "Override the beam centre from the image headers, following "
             "the mosflm convention."
 
+  lookup {
+    mask = None
+      .type = str
+      .help = "Apply a mask to the imported data"
+
+    gain = None
+      .type = str
+      .help = "Apply a gain to the imported data"
+
+    pedestal = None
+      .type = str
+      .help = "Apply a pedestal to the imported data"
+  }
 ''')
 
 
@@ -97,14 +110,15 @@ class Script(object):
     ''' Parse the options. '''
     from dxtbx.datablock import DataBlockTemplateImporter
     from dials.util.options import flatten_datablocks
+    import cPickle as pickle
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
     datablocks = flatten_datablocks(params.input.datablock)
 
+    # Load reference geometry
     reference_detector = None
     reference_beam = None
-
     if params.input.reference_geometry is not None:
       from dxtbx.serialize import load
       try:
@@ -135,6 +149,43 @@ class Script(object):
           options.verbose)
         datablocks = importer.datablocks
 
+    # Check the lookup inputs
+    mask_filename = None
+    gain_filename = None
+    dark_filename = None
+    mask = None
+    gain = None
+    dark = None
+    lookup_size = None
+    if params.lookup.mask is not None:
+      mask_filename = params.lookup.mask
+      mask = pickle.load(open(mask_filename))
+      if not isinstance(mask, tuple):
+        mask = (mask,)
+      lookup_size = [m.all() for m in mask]
+    if params.lookup.gain is not None:
+      gain_filename = params.lookup.gain
+      gain = pickle.load(open(gain_filename))
+      if not isinstance(gain, tuple):
+        gain = (gain,)
+      if lookup_size is None:
+        lookup_size = [g.all() for g in gain]
+      else:
+        assert len(gain) == len(lookup_size), "Incompatible size"
+        for s, g in zip(lookup_size, gain):
+          assert s == g.all(), "Incompatible size"
+    if params.lookup.pedestal is not None:
+      dark_filename = params.lookup.pedestal
+      dark = pickle.load(open(dark_filename))
+      if not isinstance(dark, tuple):
+        dark = (dark,)
+      if lookup_size is None:
+        lookup_size = [d.all() for d in dark]
+      else:
+        assert len(dark) == len(lookup_size), "Incompatible size"
+        for s, d in zip(lookup_size, dark):
+          assert s == d.all(), "Incompatible size"
+
     # Loop through the data blocks
     for i, datablock in enumerate(datablocks):
 
@@ -147,6 +198,23 @@ class Script(object):
         num_stills = 0
       else:
         num_stills = len(stills)
+
+      # Set the external lookups
+      if lookup_size is not None:
+        for imageset in sweeps + stills:
+          d = imageset.get_detector()
+          assert len(lookup_size) == len(d), "Incompatible size"
+          for s, p in zip(lookup_size, d):
+            assert s == p.get_image_size()[::-1], "Incompatible size"
+          if mask_filename is not None:
+            imageset.external_lookup.mask.data = mask
+            imageset.external_lookup.mask.filename = mask_filename
+          if gain_filename is not None:
+            imageset.external_lookup.gain.data = gain
+            imageset.external_lookup.gain.filename = gain_filename
+          if dark_filename is not None:
+            imageset.external_lookup.pedestal.data = dark
+            imageset.external_lookup.pedestal.filename = dark_filename
 
       if reference_beam is not None and reference_detector is not None:
         for sweep in sweeps:
