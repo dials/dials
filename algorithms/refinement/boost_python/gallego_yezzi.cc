@@ -1,18 +1,18 @@
+
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/error.h>
+#include "../gallego_yezzi.h"
 
 using namespace boost::python;
 
 namespace dials { namespace refinement { namespace boost_python {
 
-  void export_parameterisation_helpers();
-  void export_gallego_yezzi();
-
-  BOOST_PYTHON_MODULE(dials_refinement_helpers_ext)
+  void export_gallego_yezzi()
   {
-    export_parameterisation_helpers();
-    export_gallego_yezzi();
+    def("dRq_de", &dRq_de, (
+      arg("theta"),
+      arg("e1"),
+      arg("q")));
   }
 
 }}} // namespace dials::refinement::boost_python

@@ -3,10 +3,11 @@ Import('env')
 
 sources = [
     'boost_python/parameterisation_helpers.cc',
+    'boost_python/gallego_yezzi.cc',
     'boost_python/refinement_ext.cc']
 
 env.SharedLibrary(
-  target='#/lib/dials_refinement_helpers_ext', 
+  target='#/lib/dials_refinement_helpers_ext',
   source=sources,
   LIBS=env["LIBS"])
 

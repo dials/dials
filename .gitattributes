@@ -165,9 +165,11 @@ algorithms/profile_model/modeller/stereographic_projection_sampler.h -text
 algorithms/refinement/README -text
 algorithms/refinement/SConscript -text
 algorithms/refinement/__init__.py -text
+algorithms/refinement/boost_python/gallego_yezzi.cc -text
 algorithms/refinement/boost_python/parameterisation_helpers.cc -text
 algorithms/refinement/boost_python/refinement_ext.cc -text
 algorithms/refinement/engine.py -text
+algorithms/refinement/gallego_yezzi.h -text
 algorithms/refinement/parameterisation/__init__.py -text
 algorithms/refinement/parameterisation/beam_parameters.py -text
 algorithms/refinement/parameterisation/crystal_parameters.py -text
