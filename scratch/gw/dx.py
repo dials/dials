@@ -247,11 +247,12 @@ def work():
     random.random()))
 
   # calc derivatives of rotated vector (Gallego & Yezzi equn 8)
-  from dials.algorithms.refinement.refinement_helpers import dRq_de
-  dr_de = dRq_de(t, k, u)
+  from dials_refinement_helpers_ext import dRq_de
+  from scitbx.array_family import flex
+  dr_de = dRq_de(flex.double([t]), flex.vec3_double([k]), flex.vec3_double([u]))
   print
   print "d[r]/d[e], where [r] = [R][u] is a rotation about [e] (G&Y 8)"
-  print dr_de
+  print matrix.sqr(dr_de[0])
 
   print "Compare with FD calculation"
   dr_de_FD = [dR_ki * u for dR_ki in dRk]
