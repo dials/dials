@@ -104,20 +104,187 @@ class Script(object):
   def StrategyEvaluator(self, experiments, evaluation_function_factory, dmin, dmax):
     # TODO: Don't take experiments, rather take one set of experiment components and a strategy equivalent list
 
+
     def calculate_observations(detector, goniometer, oscillation):
       crystal_R = matrix.sqr(goniometer.get_fixed_rotation())
       rotation_axis = goniometer.get_rotation_axis()
 
       from dials.algorithms.spot_prediction import ScanStaticRayPredictor
       from dials.algorithms.spot_prediction import ray_intersection
+      from math import radians, floor
+      import time
+
+      t = time.clock()
+      ## option 1: use oscillation range
+      schweep = range(0, 36)
+      schweeprays = []
+      raycount = 0
+      for s in schweep:
+        oscillation = (radians(10 * (s + 1e-14)), radians(10 * (s + 1)))
+        rays = ScanStaticRayPredictor(s0, rotation_axis, oscillation)(flex.miller_index(possible_hkl), crystal_R * crystal_A)
+        rays = rays.select(ray_intersection(detector, rays))
+#        print list(rays)
+        # ||s0|| = 1 / beam wavelength [A^-1]
+        # TODO: 2theta is currently fixed within detector object
+#        print min([ r['phi'] for r in rays ])
+        schweeprays.append([ r['miller_index'] for r in rays ])
+#        schweeprays.append([ (r['miller_index'], r['phi'], r['entering']) for r in rays ])
+#        print oscillation
+        (rmin, rmax) = (min([ r['phi'] for r in rays ]), max([ r['phi'] for r in rays ]))
+#        print (rmin, rmax)
+        raycount = raycount + len(rays)
+      print time.clock() -t
+      print raycount, "rays found"
+
+      t = time.clock()
+      ## option 2: ignore oscillation range
+      PRACTICALLY_INFINITY_BUT_DEFINITELY_LARGER_THAN_2PI = 1000
+      oscillation = (-PRACTICALLY_INFINITY_BUT_DEFINITELY_LARGER_THAN_2PI, PRACTICALLY_INFINITY_BUT_DEFINITELY_LARGER_THAN_2PI)
       rays = ScanStaticRayPredictor(s0, rotation_axis, oscillation)(flex.miller_index(possible_hkl), crystal_R * crystal_A)
-      # ||s0|| = 1 / beam wavelength [A^-1]
-      # TODO: 2theta is currently fixed within detector object
-      detectable_rays = rays.select(ray_intersection(detector, rays))
+      # ray_intersection could probably be sped up by an is_on_detector() method
+      rays = rays.select(ray_intersection(detector, rays))
+      schwoop = range(0, 36)
+      schwooprays = []
+      for s in schwoop:
+        schwooprays.append([])
+      divider = radians(10)
+      for (p, m) in zip(rays['phi'], rays['miller_index']):
+        schwooprays[int(p / divider)].append(m)
+      print time.clock() -t
+      print len(rays), "rays found"
+
+      print map(len, schweeprays)
+      print map(len, schwooprays)
+      assert map(len, schweeprays) == map(len, schwooprays)
+
+      for s in range(0,36):
+        assert set(schweeprays[s]) == set(schwooprays[s])
+
+      sys.exit(0)
+
+#     oscillation_range = (radians(strategy['omega']), radians(strategy['omega'] + strategy['scan']))
+#     detectable_rays = rays.select(ray_intersection(detector, rays))
       # TODO: To test 2theta rotation code use detector.py detector factory
       # TODO: and create two different two_theta detectors and try to rotate one onto the other
+      # ----: Reflection only counted once within oscillation, even when multiple times in diffraction condition
+      #   ----: Is it?! Unsure.
+      #     SOLVED: half-true. Not problematic here.
 
       return detectable_rays['miller_index']
+
+    def export_mtz(observed_hkls, experiment, filename):
+      if experiment.goniometer:
+        axis = experiment.goniometer.get_rotation_axis()
+      else:
+        axis = 0.0, 0.0, 0.0
+      s0 = experiment.beam.get_s0()
+      wavelength = experiment.beam.get_wavelength()
+
+      from scitbx import matrix
+
+      panel = experiment.detector[0]
+      pixel_size = panel.get_pixel_size()
+      cb_op_to_ref = experiment.crystal.get_space_group().info(
+        ).change_of_basis_op_to_reference_setting()
+
+      experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
+
+      from iotbx import mtz
+      from scitbx.array_family import flex
+      import itertools
+
+      m = mtz.object()
+      m.set_title('from dials.scratch.mg.strategy_i19')
+      m.set_space_group_info(experiment.crystal.get_space_group().info())
+
+      nrefcount = sum(observed_hkls.itervalues())
+      nref = max(observed_hkls.itervalues())
+
+      for batch in range(1, nref+1):
+        o = m.add_batch().set_num(batch).set_nbsetid(1).set_ncryst(1)
+        o.set_time1(0.0).set_time2(0.0).set_title('Batch %d' % batch)
+        o.set_ndet(1).set_theta(flex.float((0.0, 0.0))).set_lbmflg(0)
+        o.set_alambd(wavelength).set_delamb(0.0).set_delcor(0.0)
+        o.set_divhd(0.0).set_divvd(0.0)
+        o.set_so(flex.float(s0)).set_source(flex.float((0, 0, -1)))
+        o.set_bbfac(0.0).set_bscale(1.0)
+        o.set_sdbfac(0.0).set_sdbscale(0.0).set_nbscal(0)
+        _unit_cell = experiment.crystal.get_unit_cell()
+        _U = experiment.crystal.get_U()
+
+        o.set_cell(flex.float(_unit_cell.parameters()))
+        o.set_lbcell(flex.int((-1, -1, -1, -1, -1, -1)))
+        o.set_umat(flex.float(_U.transpose().elems))
+        mosaic = experiment.crystal.get_mosaicity()
+        o.set_crydat(flex.float([mosaic, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        o.set_lcrflg(0)
+        o.set_datum(flex.float((0.0, 0.0, 0.0)))
+
+        # detector size, distance
+        o.set_detlm(flex.float([0.0, panel.get_image_size()[0],
+                                0.0, panel.get_image_size()[1],
+                                0, 0, 0, 0]))
+        o.set_dx(flex.float([panel.get_distance(), 0.0]))
+
+        # goniometer axes and names, and scan axis number, and number of axes, missets
+        o.set_e1(flex.float(axis))
+        o.set_e2(flex.float((0.0, 0.0, 0.0)))
+        o.set_e3(flex.float((0.0, 0.0, 0.0)))
+        o.set_gonlab(flex.std_string(('AXIS', '', '')))
+        o.set_jsaxs(1)
+        o.set_ngonax(1)
+        o.set_phixyz(flex.float((0.0, 0.0, 0.0, 0.0, 0.0, 0.0)))
+
+        phi_start, phi_range = 0.0, 0.0
+        o.set_phistt(phi_start)
+        o.set_phirange(phi_range)
+        o.set_phiend(phi_start + phi_range)
+        o.set_scanax(flex.float(axis))
+
+        # number of misorientation angles
+        o.set_misflg(0)
+
+        # crystal axis closest to rotation axis (why do I want this?)
+        o.set_jumpax(0)
+
+        # type of data - 1; 2D, 2; 3D, 3; Laue
+        o.set_ldtype(2)
+
+      # now create the actual data structures - first keep a track of the columns
+      # H K L M/ISYM BATCH I SIGI IPR SIGIPR FRACTIONCALC XDET YDET ROT WIDTH
+      # LP MPART FLAG BGPKRATIOS
+
+      from cctbx.array_family import flex as cflex # implicit import
+
+      # now go for it and make an MTZ file...
+      x = m.add_crystal('XTAL', 'DIALS', unit_cell.parameters())
+      d = x.add_dataset('FROMDIALS', wavelength)
+
+      # now add column information...
+      type_table = {'IPR': 'J', 'BGPKRATIOS': 'R', 'WIDTH': 'R', 'I': 'J',
+                    'H': 'H', 'K': 'H', 'MPART': 'I', 'L': 'H', 'BATCH': 'B',
+                    'M_ISYM': 'Y', 'SIGI': 'Q', 'FLAG': 'I', 'XDET': 'R', 'LP': 'R',
+                    'YDET': 'R', 'SIGIPR': 'Q', 'FRACTIONCALC': 'R', 'ROT': 'R'}
+
+      m.adjust_column_array_sizes(nrefcount)
+      m.set_n_reflections(nrefcount)
+
+      # assign H, K, L, M_ISYM space
+      for column in 'H', 'K', 'L', 'M_ISYM':
+        d.add_column(column, type_table[column]).set_values(flex.float(nrefcount, 0.0))
+
+      batchnums = ( _ for (x, n) in observed_hkls.iteritems() for _ in range(1, n+1) )
+      d.add_column('BATCH', type_table['BATCH']).set_values(flex.float(batchnums))
+      d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(flex.float(nrefcount, 3.0))
+
+      m.replace_original_index_miller_indices(cb_op_to_ref.apply(
+        cflex.miller_index([ _ for (x, n) in observed_hkls.iteritems() for _ in itertools.repeat(x, n) ])
+        ))
+
+      m.write(filename)
+
+      return m
 
     def evaluate_concrete_strategy(hkls, evaluation_function):
       print "%5d reflections fall on detector during sweep" % len(hkls)
@@ -187,7 +354,7 @@ class Script(object):
         print "Sweep %d:" % run
         evaluation_function = evaluation_function_factory(possible_hkl, observed_hkls, map_hkl_to_symmhkl, map_symmhkl_to_hkl)
 
-        goniometer = goniometer_factory.make_kappa_goniometer(alpha=50,
+        goniometer = goniometer_factory.make_kappa_goniometer(alpha=54.7,
                                                               kappa=strategy['kappa'],
                                                               phi=strategy['phi'],
                                                               omega=strategy['omega'],
@@ -218,6 +385,7 @@ class Script(object):
 
         # keep the repeat sweep and continue
         observed_hkls = combined_observations
+      export_mtz(observed_hkls, expt, "mtzout.mtz")
       return {'completeness': completeness, 'multiplicity': multiplicity, 'score': total_score, 'degrees': degrees}
 
     return run_strategies
@@ -289,6 +457,21 @@ class Script(object):
     strategylist = []
 
     strategylist.append(
+        {'name': "default sphere, K=75",
+         'strategy': [
+           {'kappa':  0, 'phi':   0, 'omega': -92, 'scan_axis': 'phi', 'scan': 360, '2theta': 30}
+
+#           {'kappa': 75, 'phi': 160, 'omega': -102, 'scan_axis': 'omega', 'scan': 50, '2theta': 30} ,
+#          {'kappa': 75, 'phi':  40, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+#          {'kappa': 75, 'phi': -80, 'omega': -92, 'scan_axis': 'omega', 'scan': 132, '2theta': 30},
+#          {'kappa':  0, 'phi': -80, 'omega':-160, 'scan_axis': 'omega', 'scan': 180, '2theta': 30}
+         ]
+        }
+    )
+
+    return strategylist
+
+    strategylist.append(
         {'name': "20140302-runlist-sphere",
          'strategy': [
            {'kappa': 60, 'phi': 120, 'omega': -99, 'scan_axis': 'omega', 'scan': 134, '2theta': 25},
@@ -318,7 +501,7 @@ class Script(object):
         }
     )
 
-    return strategylist
+#    return strategylist
 
     strategylist.append(
         {'name': "default sphere, K=65",
@@ -397,6 +580,24 @@ class Script(object):
         }
     )
 
+    strategylist.append(
+        {'name': "150615-standard",
+         'strategy': [
+           {'kappa': 0, 'phi':   0, 'omega': -92, 'scan_axis': 'phi',   'scan': 180, '2theta': 30},
+           {'kappa': 0, 'phi': 180, 'omega': -92, 'scan_axis': 'omega', 'scan': 180, '2theta': 30},
+           {'kappa': 0, 'phi': 120, 'omega': -92, 'scan_axis': 'omega', 'scan': 180, '2theta': 30},
+           {'kappa': 0, 'phi':  60, 'omega': -92, 'scan_axis': 'omega', 'scan': 180, '2theta': 30},
+           {'kappa': 0, 'phi': 180, 'omega':   0, 'scan_axis': 'phi',   'scan': 180, '2theta': 30},
+           {'kappa': 0, 'phi': 180, 'omega': -92, 'scan_axis': 'omega', 'scan': 360, '2theta':-30},
+           {'kappa': 0, 'phi': 180, 'omega':   0, 'scan_axis': 'phi',   'scan': 180, '2theta':-30},
+           {'kappa': 0, 'phi': 180, 'omega': -92, 'scan_axis': 'omega', 'scan': 360, '2theta': 60},
+           {'kappa': 0, 'phi': 180, 'omega': -92, 'scan_axis': 'omega', 'scan': 360, '2theta': 90},
+           {'kappa': 0, 'phi': 180, 'omega': -92, 'scan_axis': 'phi', 'scan': 180, '2theta': 60},
+           {'kappa': 0, 'phi': 180, 'omega': -92, 'scan_axis': 'phi', 'scan': 180, '2theta': 90},
+         ]
+        }
+    )
+
     return strategylist
 
   def run(self):
@@ -443,15 +644,14 @@ class Script(object):
     print "%30s   Comp   Mul  Score  Sweep  Sc/deg" % "Strategy"
     for r in sorted(results, key=(lambda x: x['score']), reverse=True):
       print "%30s: %5.1f  %4.1f  %5d  %4d%s  %5.1f" %\
-            (r['name'], r['completeness'], r['multiplicity'], r['score'], r['degrees'], u"\u00B0",
+            (r['name'], r['completeness'], r['multiplicity'], r['score'], r['degrees'], " deg",
              r['score'] / r['degrees'])
 
-# remove first argument to run in pycharm
-sys.argv.pop(0)
-
 if __name__ == '__main__':
-  #script = Script()
-  #script.run()
+  script = Script()
+  script.run()
+  sys.exit(0)
+
   from dxtbx.model.detector import detector_factory
   sensor = 'PAD'
   distance = 85
@@ -521,5 +721,3 @@ if __name__ == '__main__':
   two_theta_angle = 30
   d = detector_factory.two_theta(sensor, distance, beam_centre, '+x', '-y', '-x', two_theta_angle, pixel_size, image_size, trusted_range = (0.0, 0.0), mask = [], px_mm = None)
   print d
-
-sys.exit(0)

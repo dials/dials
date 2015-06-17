@@ -901,6 +901,7 @@ scratch/luiso_s/wx_toys/wx_sizers_and_np_arays.py -text
 scratch/luiso_s/wx_toys/wx_viewer_template_one_more_test.py -text
 scratch/luiso_s/wx_toys/wx_viewer_template_w_simple_ap_w_panel.py -text
 scratch/mg/strategy_i19.py -text
+scratch/mg/tools.py -text
 scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/close_to_spindle_contour_plot.py -text
