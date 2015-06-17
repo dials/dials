@@ -262,3 +262,90 @@ def work():
 
 
 work()
+
+def tst_use_in_stills_parameterisation():
+
+  # test use of analytical expression in stills prediction parameterisation
+  # code, which still doesn't work as well as the finite difference
+  # approximation.
+
+  from scitbx import matrix
+  from math import pi
+  import random
+
+  print
+  print "Test use of analytical expressions in stills prediction parameterisation"
+
+  # beam model
+  from dxtbx.model.experiment import beam_factory
+  from dials.algorithms.refinement.parameterisation.beam_parameters import \
+    BeamParameterisation
+  beam = beam_factory().make_beam(matrix.col((0,0,1)), wavelength=1.1)
+  s0 = matrix.col(beam.get_s0())
+  s0u = matrix.col(beam.get_unit_s0())
+
+  # beam parameterisation
+  bp = BeamParameterisation(beam)
+
+  # choose the second parameter, mu2, which is the one we usually refine. The
+  # derivative of this is a vector along the X direction.
+  ds0_dp = bp.get_ds_dp()[1]
+
+  # convert to derivative of the unit beam direction
+  ds0u_dp = ds0_dp * beam.get_wavelength()
+
+  # pick a random point on (the positive octant of) the Ewald sphere to rotate
+  s1 = matrix.col((
+    random.random(),
+    random.random(),
+    random.random())).normalize() * s0.length()
+  r = s1 - s0
+  r0 = r.normalize()
+
+  # calculate the axis of rotation
+  e1 = r0.cross(s0u).normalize()
+
+  # rotate relp off Ewald sphere a small angle (up to 1 deg)
+  DeltaPsi = random.uniform(-pi/180, pi/180)
+  q = r.rotate_around_origin(e1, -DeltaPsi)
+  q0 = q.normalize()
+  from libtbx.test_utils import approx_equal
+  assert approx_equal(q0.cross(s0u).normalize(), e1)
+
+  # calculate d[e1]/dp by Sauter et al. (2014) (A.3)
+  de1_dp = q0.cross(ds0u_dp)
+
+  # see that this is not generally orthogonal to e1, though it *should* be
+  # in order for e1 to remain a unit vector!
+  print "[e1].(d[e1]/dp) = {0} (should be 0.0)".format(e1.dot(de1_dp))
+
+  # calculate (d[r]/d[e1])(d[e1]/dp) analytically
+  from scitbx.array_family import flex
+  from dials_refinement_helpers_ext import dRq_de
+  dr_de1 = matrix.sqr(dRq_de(flex.double([DeltaPsi]),
+                  flex.vec3_double([e1]),
+                  flex.vec3_double([q]))[0])
+  print "Analytical calculation for (d[r]/d[e1])(d[e1]/dp):"
+  print dr_de1 * de1_dp
+
+  # now calculate using finite differences. This works better in practice than
+  # the analytical expression, although both use the suspect de1_dp. The
+  # difference here is that rotate_around_origin forces the vectors e1f and e1r
+  # to act as unit vectors, perhaps making them closer to the truth than the
+  # analytical expression which does not force unit length of the axis.
+  dp = 1.e-8
+  del_e1 = de1_dp * dp
+  e1f = e1 + del_e1 * 0.5
+  rfwd = q.rotate_around_origin(e1f, DeltaPsi)
+  e1r = e1 - del_e1 * 0.5
+  rrev = q.rotate_around_origin(e1r, DeltaPsi)
+
+  print "Finite difference estimate for (d[r]/d[e1])(d[e1]/dp):"
+  print (rfwd - rrev) * (1 / dp)
+
+  print "These are different. Perhaps the problem is that d[e1]/dp can only"
+  print "actually make changes to e1 that leave it at unit length, so really"
+  print "d[e1]/dp ought to be orthogonal to e1. But nothing here prevents it"
+  print "from being any direction, depending on the direction of d[s0]/dp."
+
+tst_use_in_stills_parameterisation()
