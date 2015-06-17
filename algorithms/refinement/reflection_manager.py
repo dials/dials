@@ -665,27 +665,21 @@ class StillsReflectionManager(ReflectionManager):
       if len(sub_matches) >= self._min_num_obs:
         x_resid = sub_matches['x_resid']
         y_resid = sub_matches['y_resid']
-        delpsi = sub_matches['delpsical.rad']
 
         min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
         min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
-        min_p, q1_p, med_p, q3_p, max_p = five_number_summary(delpsi)
 
         iqr_x = q3_x - q1_x
         iqr_y = q3_y - q1_y
-        iqr_p = q3_p - q1_p
 
         cut_x = self._iqr_multiplier * iqr_x
         cut_y = self._iqr_multiplier * iqr_y
-        cut_p = self._iqr_multiplier * iqr_p
 
         # accumulate a selection of outliers for this panel
         sel_out = x_resid > q3_x + cut_x
         sel_out.set_selected(x_resid < q1_x - cut_x, True)
         sel_out.set_selected(y_resid > q3_y + cut_y, True)
         sel_out.set_selected(y_resid < q1_y - cut_y, True)
-        sel_out.set_selected(delpsi > q3_p + cut_p, True)
-        sel_out.set_selected(delpsi < q1_p - cut_p, True)
 
         # get positions of outliers from the original matches
         ioutliers = sub_imatches.select(sel_out)
