@@ -312,11 +312,14 @@ def tst_use_in_stills_parameterisation():
   from libtbx.test_utils import approx_equal
   assert approx_equal(q0.cross(s0u).normalize(), e1)
 
-  # calculate d[e1]/dp by Sauter et al. (2014) (A.3)
-  de1_dp = q0.cross(ds0u_dp)
+  # calculate c0, a vector orthogonal to s0u and e1
+  c0 = s0u.cross(e1)
 
-  # see that this is not generally orthogonal to e1, though it *should* be
-  # in order for e1 to remain a unit vector!
+  # use the fact that e1 == c0.cross(s0u) to redefine the derivative d[e1]/dp
+  # from Sauter et al. (2014) (A.3)
+  de1_dp = c0.cross(ds0u_dp)
+
+  # unlike the previous definition this *is* orthogonal to e1, as expected.
   print "[e1].(d[e1]/dp) = {0} (should be 0.0)".format(e1.dot(de1_dp))
 
   # calculate (d[r]/d[e1])(d[e1]/dp) analytically
@@ -328,11 +331,7 @@ def tst_use_in_stills_parameterisation():
   print "Analytical calculation for (d[r]/d[e1])(d[e1]/dp):"
   print dr_de1 * de1_dp
 
-  # now calculate using finite differences. This works better in practice than
-  # the analytical expression, although both use the suspect de1_dp. The
-  # difference here is that rotate_around_origin forces the vectors e1f and e1r
-  # to act as unit vectors, perhaps making them closer to the truth than the
-  # analytical expression which does not force unit length of the axis.
+  # now calculate using finite differences.
   dp = 1.e-8
   del_e1 = de1_dp * dp
   e1f = e1 + del_e1 * 0.5
@@ -343,9 +342,6 @@ def tst_use_in_stills_parameterisation():
   print "Finite difference estimate for (d[r]/d[e1])(d[e1]/dp):"
   print (rfwd - rrev) * (1 / dp)
 
-  print "These are different. Perhaps the problem is that d[e1]/dp can only"
-  print "actually make changes to e1 that leave it at unit length, so really"
-  print "d[e1]/dp ought to be orthogonal to e1. But nothing here prevents it"
-  print "from being any direction, depending on the direction of d[s0]/dp."
+  print "These are now the same :-)"
 
 tst_use_in_stills_parameterisation()
