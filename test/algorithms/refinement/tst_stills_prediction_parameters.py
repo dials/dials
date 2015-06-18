@@ -216,8 +216,8 @@ def run(verbose = False):
       n_outliers = sel.count(False)
       if verbose: print ("  {0} outliers rejected, leaving greatest " + \
         "absolute error: {1:9.6f}").format(n_outliers, tst_val)
-      # largest absolute error now 0.000062 for dX/dp of Crystal0g_param_3
-      assert abs(tst_val) < 0.00007
+      # largest absolute error now 0.000086 for dX/dp of Beam0Mu2
+      assert abs(tst_val) < 0.00009
 
       # Completely skip parameters with FD gradients all zero (e.g. gradients of
       # DeltaPsi for detector parameters)
