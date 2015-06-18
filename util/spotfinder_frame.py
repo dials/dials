@@ -24,6 +24,7 @@ class SpotFrame(XrayFrame) :
     self.vector_text_layer = None
     self._ring_layer = None
     self._resolution_text_layer = None
+    self.sel_image_layer = None
 
     from libtbx.utils import time_log
     self.show_all_pix_timer = time_log("show_all_pix")
@@ -37,6 +38,113 @@ class SpotFrame(XrayFrame) :
 
     self._image_chooser_tmp_key = []
     self._image_chooser_tmp_clientdata = []
+
+    self.init_pyslip_select()
+
+  def init_pyslip_select(self):
+    from rstbx.slip_viewer import pyslip
+    #self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
+
+    self.TypeMask = 100
+    self._xxx_layer = self.pyslip.AddLayer(
+      render=self._draw_rings_layer,
+      data=[],
+      map_rel=True,
+      visible=True,
+      show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+      selectable=True,
+      name="<xxx_layer>",
+      type=self.TypeMask)
+    self.image_layer = self._xxx_layer
+
+    self.add_select_handler(self._xxx_layer, self.boxSelect)
+    self.pyslip.SetLayerSelectable(self._xxx_layer, True)
+
+    self.pyslip.layerBSelHandler[self.TypeMask] = self.GetBoxCorners
+
+  def GetBoxCorners(self, layer, p1, p2):
+    """Get list of points inside box.
+
+    layer  reference to layer object we are working on
+    p1     one corner point of selection box
+    p2     opposite corner point of selection box
+
+    We have to figure out which corner is which.
+
+    Return a list of (lon, lat) of points inside box.
+    Return None (no selection) or list [((lon, lat), data), ...]
+    of points inside the selection box.
+    """
+
+    # TODO: speed this up?  Do we need to??
+    # get canonical box limits
+    (p1x, p1y) = p1
+    (p2x, p2y) = p2
+    lx = min(p1x, p2x)      # left x coord
+    rx = max(p1x, p2x)
+    ty = max(p1y, p2y)      # top y coord
+    by = min(p1y, p2y)
+
+    return [(lx, by), (lx, ty), (rx, ty), (rx, by)]
+
+  def boxSelect(self, event):
+    """Select event from pyslip."""
+
+    from rstbx.slip_viewer import pyslip
+    point = event.point
+    assert event.evtype == pyslip.EventBoxSelect
+
+    if point:
+      assert len(point) == 4
+      p1, p2, p3, p4 = point
+
+      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+        point = [
+          tuple(self.pyslip.tiles.flex_image.picture_to_readout(*p))
+          for p in point]
+
+      else:
+        point = [
+          self.pyslip.tiles.map_relative_to_picture_fast_slow(*p)
+          for p in point]
+
+      from libtbx.utils import flat_list
+      self.settings.untrusted_polygon.append(flat_list(point))
+
+    self.drawUntrustedPolygons()
+
+    return True
+
+  def drawUntrustedPolygons(self):
+
+    # remove any previous selection
+    if self.sel_image_layer:
+      self.pyslip.DeleteLayer(self.sel_image_layer)
+      self.sel_image_layer = None
+
+    untrusted_polygons = self.settings.untrusted_polygon
+    data = []
+    d = {}
+    for polygon in untrusted_polygons:
+
+      assert len(polygon) % 2 == 0
+      polygon = [polygon[i*2:i*2+2] for i in range(len(polygon)//2)]
+
+      points_rel = [self.pyslip.tiles.picture_fast_slow_to_map_relative(*p)
+                    for p in polygon]
+
+      points_rel.append(points_rel[0])
+      for i in range(len(points_rel)-1):
+        data.append(((points_rel[i], points_rel[i+1]), d))
+
+    self.sel_image_layer = \
+      self.pyslip.AddPolygonLayer(data, map_rel=True,
+                                  color='#00ffff',
+                                  radius=5, visible=True,
+                                  #show_levels=[3,4],
+                                  name='<boxsel_pt_layer>')
+
+
 
   #def __del__(self):
     #print self.show_all_pix_timer.legend
@@ -449,6 +557,7 @@ class SpotFrame(XrayFrame) :
       unit_cell = uctbx.unit_cell((4.498,4.498,7.338,90,90,120))
       space_group = sgtbx.space_group_info(number=194).group()
       self.draw_resolution_rings(unit_cell=unit_cell, space_group=space_group)
+    self.drawUntrustedPolygons()
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
