@@ -96,17 +96,17 @@ class SpotFrame(XrayFrame) :
 
     if point:
       assert len(point) == 4
-      p1, p2, p3, p4 = point
+
+      point = [
+        self.pyslip.tiles.map_relative_to_picture_fast_slow(*p)
+        for p in point]
 
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
         point = [
-          tuple(self.pyslip.tiles.flex_image.picture_to_readout(*p))
+          tuple(self.pyslip.tiles.flex_image.picture_to_readout(p[1], p[0]))
           for p in point]
-
-      else:
-        point = [
-          self.pyslip.tiles.map_relative_to_picture_fast_slow(*p)
-          for p in point]
+        point = [(p[1],p[0],p[2]) for p in point]
+        for p in point: assert p[2] >= 0
 
       from libtbx.utils import flat_list
       self.settings.untrusted_polygon.append(flat_list(point))
@@ -127,8 +127,17 @@ class SpotFrame(XrayFrame) :
     d = {}
     for polygon in untrusted_polygons:
 
-      assert len(polygon) % 2 == 0
-      polygon = [polygon[i*2:i*2+2] for i in range(len(polygon)//2)]
+      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+        assert len(polygon) % 3 == 0
+        polygon = [polygon[i*3:i*3+3] for i in range(len(polygon)//3)]
+        polygon = [
+          self.pyslip.tiles.flex_image.tile_readout_to_picture(int(p[2]), p[1], p[0])
+          for p in polygon]
+        polygon = [(p[1], p[0]) for p in polygon]
+
+      else:
+        assert len(polygon) % 2 == 0
+        polygon = [polygon[i*2:i*2+2] for i in range(len(polygon)//2)]
 
       points_rel = [self.pyslip.tiles.picture_fast_slow_to_map_relative(*p)
                     for p in polygon]
@@ -1060,25 +1069,36 @@ class SpotSettingsPanel (SettingsPanel) :
     print "Saving mask"
     from scitbx.array_family import flex
 
+    imagesets = self.GetParent().GetParent().imagesets # XXX
+    detector = imagesets[0].get_detector()
+
     from dials.algorithms.peak_finding.spotfinder_factory import polygon
     polygons = self.settings.untrusted_polygon
-    polygons = [
-      polygon([vertices[i*2:i*2+2] for i in range(len(vertices)//2)]) for vertices in polygons]
+
+    if len(detector) > 1:
+      polygons = [[vertices[i*3:i*3+3] for i in range(len(vertices)//3)] for vertices in polygons]
+      panel_ids = [poly[0][2] for poly in polygons]
+      polygons = [polygon([p[:2] for p in poly]) for poly in polygons]
+
+    else:
+      panel_ids = None
+      polygons = [
+        polygon([vertices[i*2:i*2+2] for i in range(len(vertices)//2)]) for vertices in polygons]
 
     # Create the mask for each image
     masks = []
-    imagesets = self.GetParent().GetParent().imagesets # XXX
-    detector = imagesets[0].get_detector()
     # Get the first image
     image = imagesets[0][0]
     if not isinstance(image, tuple):
       image = (image,)
 
-    for im, panel in zip(image, detector):
+    for i_panel, (im, panel) in enumerate(zip(image, detector)):
       mask = flex.bool(flex.grid(im.all()), True)
 
       import math
-      for poly in polygons:
+      for i, poly in enumerate(polygons):
+        if panel_ids is not None and panel_ids[i] != i_panel:
+          continue
         min_x = int(math.floor(min(v[0] for v in poly.vertices)))
         max_x = int(math.ceil(max(v[0] for v in poly.vertices)))
         min_y = int(math.floor(min(v[1] for v in poly.vertices)))
@@ -1091,7 +1111,7 @@ class SpotSettingsPanel (SettingsPanel) :
 
       # Add to the list
       masks.append(mask)
-      print mask.count(True), mask.count(False)
+      #print mask.count(True), mask.count(False)
 
     from libtbx import easy_pickle
     easy_pickle.dump('mask.pickle', tuple(masks))
