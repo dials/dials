@@ -263,11 +263,9 @@ def work():
 
 work()
 
-def tst_use_in_stills_parameterisation():
+def tst_use_in_stills_parameterisation(beam_param=0):
 
   # test use of analytical expression in stills prediction parameterisation
-  # code, which still doesn't work as well as the finite difference
-  # approximation.
 
   from scitbx import matrix
   from math import pi
@@ -289,10 +287,7 @@ def tst_use_in_stills_parameterisation():
 
   # choose the second parameter, mu2, which is the one we usually refine. The
   # derivative of this is a vector along the X direction.
-  ds0_dp = bp.get_ds_dp()[1]
-
-  # convert to derivative of the unit beam direction
-  ds0u_dp = ds0_dp * beam.get_wavelength()
+  ds0_dp = bp.get_ds_dp()[beam_param]
 
   # pick a random point on (the positive octant of) the Ewald sphere to rotate
   s1 = matrix.col((
@@ -305,15 +300,20 @@ def tst_use_in_stills_parameterisation():
   # calculate the axis of rotation
   e1 = r0.cross(s0u).normalize()
 
+  # calculate c0, a vector orthogonal to s0u and e1
+  c0 = s0u.cross(e1)
+
+  # convert to derivative of the unit beam direction. This involves scaling
+  # by the wavelength, then projection back onto the Ewald sphere.
+  scaled = ds0_dp * beam.get_wavelength()
+  ds0u_dp = scaled.dot(c0) * c0 + scaled.dot(e1) * e1
+
   # rotate relp off Ewald sphere a small angle (up to 1 deg)
   DeltaPsi = random.uniform(-pi/180, pi/180)
   q = r.rotate_around_origin(e1, -DeltaPsi)
   q0 = q.normalize()
   from libtbx.test_utils import approx_equal
   assert approx_equal(q0.cross(s0u).normalize(), e1)
-
-  # calculate c0, a vector orthogonal to s0u and e1
-  c0 = s0u.cross(e1)
 
   # use the fact that e1 == c0.cross(s0u) to redefine the derivative d[e1]/dp
   # from Sauter et al. (2014) (A.3)
@@ -344,4 +344,6 @@ def tst_use_in_stills_parameterisation():
 
   print "These are now the same :-)"
 
-tst_use_in_stills_parameterisation()
+tst_use_in_stills_parameterisation(0)
+tst_use_in_stills_parameterisation(1)
+tst_use_in_stills_parameterisation(2)
