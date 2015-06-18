@@ -58,6 +58,9 @@ image_viewer {
   sum_images = 1
     .type = int(value_min=1)
     .expert_level = 2
+  untrusted_polygon = None
+    .multiple = True
+    .type = ints(value_min=0)
 }
 """)
 

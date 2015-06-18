@@ -782,6 +782,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_spotfinder_spots = False
     self.settings.show_dials_spotfinder_spots = True
     self.settings.show_resolution_rings = self.params.show_resolution_rings
+    self.settings.untrusted_polygon = self.params.untrusted_polygon
     self.settings.show_ice_rings = self.params.show_ice_rings
     self.settings.show_ctr_mass = self.params.show_ctr_mass
     self.settings.show_max_pix = self.params.show_max_pix
@@ -892,6 +893,10 @@ class SpotSettingsPanel (SettingsPanel) :
     self.miller_indices.SetValue(self.settings.show_miller_indices)
     grid.Add(self.miller_indices, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
+    self.save_mask_button = wx.Button(self, -1, "Save mask")
+    grid.Add(self.save_mask_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_BUTTON, self.OnSaveMask, self.save_mask_button)
+
     # Minimum spot area control
     box = wx.BoxSizer(wx.HORIZONTAL)
     #self.minspotarea_ctrl = IntCtrl(self, -1, pos=(300,180), size=(80,-1),
@@ -907,7 +912,6 @@ class SpotSettingsPanel (SettingsPanel) :
     grid1 = wx.FlexGridSizer(cols=2, rows=6)
     s.Add(grid1)
 
-    from wxtbx.phil_controls import EVT_PHIL_CONTROL
     from wxtbx.phil_controls.floatctrl import FloatCtrl
     txt1 = wx.StaticText(self, -1, "Sigma background")
     grid1.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1051,3 +1055,45 @@ class SpotSettingsPanel (SettingsPanel) :
   def OnUpdateCM (self, event) :
     self.collect_values()
     self.GetParent().GetParent().update_settings(layout=False)
+
+  def OnSaveMask(self, event):
+    print "Saving mask"
+    from scitbx.array_family import flex
+
+    from dials.algorithms.peak_finding.spotfinder_factory import polygon
+    polygons = self.settings.untrusted_polygon
+    polygons = [
+      polygon([vertices[i*2:i*2+2] for i in range(len(vertices)//2)]) for vertices in polygons]
+
+    # Create the mask for each image
+    masks = []
+    imagesets = self.GetParent().GetParent().imagesets # XXX
+    detector = imagesets[0].get_detector()
+    # Get the first image
+    image = imagesets[0][0]
+    if not isinstance(image, tuple):
+      image = (image,)
+
+    for im, panel in zip(image, detector):
+      mask = flex.bool(flex.grid(im.all()), True)
+
+      import math
+      for poly in polygons:
+        min_x = int(math.floor(min(v[0] for v in poly.vertices)))
+        max_x = int(math.ceil(max(v[0] for v in poly.vertices)))
+        min_y = int(math.floor(min(v[1] for v in poly.vertices)))
+        max_y = int(math.ceil(max(v[1] for v in poly.vertices)))
+
+        for i in range(min_x, max_x+1):
+          for j in range(min_y, max_y+1):
+            if poly.is_inside(i,j):
+              mask[j,i] = False
+
+      # Add to the list
+      masks.append(mask)
+      print mask.count(True), mask.count(False)
+
+    from libtbx import easy_pickle
+    easy_pickle.dump('mask.pickle', tuple(masks))
+
+    print "Saved mask.pickle"
