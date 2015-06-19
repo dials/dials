@@ -362,6 +362,7 @@ command_line/split_experiments.py -text
 command_line/spot_counts_per_image.py -text
 command_line/stereographic_projection.py -text
 command_line/stills_detector_hybrid_refine.py -text
+command_line/unify_setting.py -text
 /config.h -text
 data/__init__.py -text
 data/completion_template.txt -text
