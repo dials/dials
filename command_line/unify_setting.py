@@ -55,7 +55,7 @@ def run(args):
     else:
       assert(crystal.get_space_group() == space_group)
 
-  reference_U0 = None
+  reference_U = None
   reference_space_group = None
   i3 = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
 
@@ -65,9 +65,8 @@ def run(args):
     fixed = matrix.sqr(goniometer.get_fixed_rotation())
     U = matrix.sqr(crystal.get_U())
     B = matrix.sqr(crystal.get_B())
-    U0 = U
-    if reference_U0 is None:
-      reference_U0 = U0
+    if reference_U is None:
+      reference_U = U
       reference_space_group = lattice_symmetry_group(crystal.get_unit_cell(),
                                                      max_delta=0.0)
       print '%s possible lattice symops' % len(reference_space_group.all_ops())
@@ -75,7 +74,7 @@ def run(args):
     results = []
     for op in reference_space_group.all_ops():
       R = B * matrix.sqr(op.r().as_double()).transpose() * B.inverse()
-      nearly_i3 = (U0 * R).inverse() * reference_U0
+      nearly_i3 = (U * R).inverse() * reference_U
       score = sum([abs(_n - _i) for (_n, _i) in zip(nearly_i3, i3)])
       results.append((score, op.r().as_hkl()))
     results.sort()
