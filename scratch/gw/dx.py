@@ -285,8 +285,8 @@ def tst_use_in_stills_parameterisation(beam_param=0):
   # beam parameterisation
   bp = BeamParameterisation(beam)
 
-  # choose the second parameter, mu2, which is the one we usually refine. The
-  # derivative of this is a vector along the X direction.
+  # choose the derivative with respect to a particular parameter. 0: mu1,
+  # 1: mu2, 2: nu.
   ds0_dp = bp.get_ds_dp()[beam_param]
 
   # pick a random point on (the positive octant of) the Ewald sphere to rotate
