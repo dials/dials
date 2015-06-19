@@ -161,7 +161,6 @@ def dials_u_to_mosflm(dials_U, uc):
   '''Compute the mosflm U matrix i.e. the U matrix from same UB definition
   as DIALS, but with Busing & Levy B matrix definition.'''
 
-  from cctbx.uctbx import unit_cell
   from scitbx.matrix import sqr
   from math import sin, cos, pi
 
