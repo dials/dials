@@ -62,7 +62,6 @@ def run(args):
   for j, experiment in enumerate(experiments):
     goniometer = experiment.data.goniometers()[0]
     crystal = experiment.data.crystals()[0]
-    fixed = matrix.sqr(goniometer.get_fixed_rotation())
     U = matrix.sqr(crystal.get_U())
     B = matrix.sqr(crystal.get_B())
     if reference_U is None:
