@@ -61,14 +61,30 @@ def run(args):
 
   for j, experiment in enumerate(experiments):
     goniometer = experiment.data.goniometers()[0]
+    F = matrix.sqr(goniometer.get_fixed_rotation())
     crystal = experiment.data.crystals()[0]
     U = matrix.sqr(crystal.get_U())
     B = matrix.sqr(crystal.get_B())
+    UB = F * U * B
+    UBt = UB.transpose().elems
+    a, b, c = matrix.col(UBt[0:3]), matrix.col(UBt[3:6]), matrix.col(UBt[6:9])
+    axis = matrix.col(goniometer.get_rotation_axis())
+    from math import pi
+    r2d = 180 / pi
+    abc = [a, b, c]
+    abc_names = 'abc'
+    distances = [(r2d * (min(axis.angle(_a), pi - axis.angle(_a))), k)
+                 for k, _a in enumerate(abc)]
+    close = sorted(distances)[0]
     if reference_U is None:
       reference_U = U
       reference_space_group = lattice_symmetry_group(crystal.get_unit_cell(),
                                                      max_delta=0.0)
-      print '%s possible lattice symops' % len(reference_space_group.all_ops())
+      print '%s possible lattice ops' % len(reference_space_group.all_ops())
+
+    print 'Experiment %d' % j
+    print 'Closest (original) axis: %s* %.2f' % \
+      (abc_names[close[1]], close[0])
 
     results = []
     for op in reference_space_group.all_ops():
@@ -80,13 +96,7 @@ def run(args):
     print 'Best reindex op for experiment %d: %12s (%.3f)' % \
       (j, results[0][1], results[0][0])
 
-
-
-
-
-
 if __name__ == '__main__':
   import sys
   from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
   run(sys.argv[1:])

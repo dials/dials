@@ -157,6 +157,33 @@ def scale_partial_reflections(integrated_data, min_partiality=0.5):
 
   return integrated_data
 
+def dials_u_to_mosflm(dials_U, uc):
+  '''Compute the mosflm U matrix i.e. the U matrix from same UB definition
+  as DIALS, but with Busing & Levy B matrix definition.'''
+
+  from cctbx.uctbx import unit_cell
+  from scitbx.matrix import sqr
+  from math import sin, cos, pi
+
+  parameters = uc.parameters()
+  dials_B = sqr(uc.fractionalization_matrix()).transpose()
+  dials_UB = dials_U * dials_B
+
+  r_parameters = uc.reciprocal_parameters()
+
+  a = parameters[:3]
+  al = [pi * p / 180.0 for p in parameters[3:]]
+  b = r_parameters[:3]
+  be = [pi * p / 180.0 for p in r_parameters[3:]]
+
+  mosflm_B = sqr((b[0], b[1] * cos(be[2]), b[2] * cos(be[1]),
+                  0, b[1] * sin(be[2]), - b[2] * sin(be[1]) * cos(al[0]),
+                  0, 0, 1.0 / a[2]))
+
+  mosflm_U = dials_UB * mosflm_B.inverse()
+
+  return mosflm_U
+
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
                include_partials=False, keep_partials=False, min_isigi=None):
   '''Export data from integrated_data corresponding to experiment_list to an
@@ -314,7 +341,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     # apply the fixed rotation to this to unify matrix definitions - F * U
     # was what was used in the actual prediction: U appears to be stored
     # as the transpose?! At least is for Mosflm...
-    _U = F * _U
+    _U = dials_u_to_mosflm(F * _U, _unit_cell)
 
     # FIXME need to get what was refined and what was constrained from the
     # crystal model
