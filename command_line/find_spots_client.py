@@ -91,7 +91,6 @@ if __name__ == '__main__':
   import os
   import select
   import sys
-  import libtbx.load_env
 
   args = sys.argv[1:]
 
@@ -103,12 +102,11 @@ if __name__ == '__main__':
   filenames = [arg for arg in args if os.path.isfile(arg)]
   args = [arg for arg in args if not arg in filenames]
 
-  usage = "%s [options] filenames" %libtbx.env.dispatcher_name
+  interp = phil_scope.command_line_argument_interpreter()
+  params, unhandled = interp.process_and_fetch(
+    args, custom_processor='collect_remaining')
+  params = params.extract()
 
-  from dials.util.options import OptionParser
-  parser = OptionParser(usage=usage, phil=phil_scope)
-  params, options, args = parser.parse_args(
-    args=args, show_diff_phil=True, return_unhandled=True)
   if params.nproc is libtbx.Auto:
     params.nproc = 1024
 
