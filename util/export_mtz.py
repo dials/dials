@@ -312,7 +312,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
       _U = U
 
     # apply the fixed rotation to this to unify matrix definitions - F * U
-    # was what was used in the actual prediction
+    # was what was used in the actual prediction: U appears to be stored
+    # as the transpose?! At least is for Mosflm...
     _U = F * _U
 
     # FIXME need to get what was refined and what was constrained from the
