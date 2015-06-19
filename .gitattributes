@@ -600,6 +600,7 @@ scratch/dgw/det_param_visualisation.py -text
 scratch/dgw/detector_model_old/README -text
 scratch/dgw/detector_model_old/detector.py -text
 scratch/dgw/enter_interactive_session.py -text
+scratch/dgw/fast_mcd.py -text
 scratch/dgw/goniometer_model/__init__.py -text
 scratch/dgw/goniometer_model/gonio.py -text
 scratch/dgw/plot_detector_shifts.py -text
