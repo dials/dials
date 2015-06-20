@@ -902,6 +902,10 @@ class SpotSettingsPanel (SettingsPanel) :
     self.miller_indices.SetValue(self.settings.show_miller_indices)
     grid.Add(self.miller_indices, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
+    self.clear_all_button = wx.Button(self, -1, "Clear all")
+    grid.Add(self.clear_all_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
+
     self.save_mask_button = wx.Button(self, -1, "Save mask")
     grid.Add(self.save_mask_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnSaveMask, self.save_mask_button)
@@ -1064,6 +1068,13 @@ class SpotSettingsPanel (SettingsPanel) :
   def OnUpdateCM (self, event) :
     self.collect_values()
     self.GetParent().GetParent().update_settings(layout=False)
+
+  def OnClearAll(self, event):
+    for btn in (self.center_ctrl, self.ctr_mass, self.max_pix, self.all_pix,
+                self.shoebox, self.predictions, self.miller_indices,
+                self.ice_rings_ctrl, self.resolution_rings_ctrl):
+      btn.SetValue(False)
+    self.OnUpdateCM(event)
 
   def OnSaveMask(self, event):
     print "Saving mask"

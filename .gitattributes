@@ -912,6 +912,7 @@ scratch/rjg/extract_xds_multi.py -text
 scratch/rjg/find_reflection.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
 scratch/rjg/iotbx_reflection_file_reader_example.py -text
+scratch/rjg/optimise_global_threshold.py -text
 scratch/rjg/plot_residuals.py -text
 scratch/rjg/plot_virtual_powder_pattern.py -text
 scratch/rjg/run_dials_index.py -text
