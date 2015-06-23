@@ -120,13 +120,19 @@ class FastMCD(object):
     self._h = int((self._n + self._p + 1) / 2)
     # FAST-MCD allows user specification of h. If h == n it reports a single
     # location and scatter estimate for the whole dataset and stops. Currently
-    # limit this implementation to h < n
+    # limit this implementation to h < n. Note R implementation uses a function
+    # h.alpha.n to calculate this (see covMcd.R)
     assert self._h < self._n
 
     # hardcoded for now...
     self._max_n_groups = 5
     self._min_group_size = 300
     self._n_trials = 500
+
+    # iteration limits
+    self._k1 = 2
+    self._k2 = 2
+    self._k3 = 100
 
   @staticmethod
   def means_and_covariance(vecs):
@@ -190,9 +196,15 @@ class FastMCD(object):
       T0, S0 = self.means_and_covariance(J)
       detS0 = S0.matrix_determinant_via_lu()
 
-    d2s = maha_dist_sq(data, T0, S0)
-    p = flex.sort_permutation(d2s)
+    H1 = self.concentration_step(h, data, T0, S0)
+    return H1
 
+  @staticmethod
+  def concentration_step(h, data, T, S):
+    """Practical application of Theorem 1 of R&vD"""
+
+    d2s = maha_dist_sq(data, T, S)
+    p = flex.sort_permutation(d2s)
     H1 = [col.select(p)[0:h] for col in data]
     return H1
 
@@ -200,13 +212,48 @@ class FastMCD(object):
     """When a dataset is small, perform the initial trials directly on the
     whole dataset"""
 
+    trials = []
     for i in xrange(self._n_trials):
 
       H1 = self.form_initial_subset(h=self._h, data=self._data)
+      T1, S1 = self.means_and_covariance(H1)
+      detS1 = S1.matrix_determinant_via_lu()
 
-      # TODO c-steps in here.
+      # perform concentration steps
+      detScurr, Tcurr, Scurr = detS1, T1, S1
+      for j in xrange(self._k1): # take maximum of k1 steps
 
-    return
+        Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
+        Tnew, Snew = self.means_and_covariance(Hnew)
+        detSnew = Snew.matrix_determinant_via_lu()
+
+        # detS3 < detS2 < detS1 by Theorem 1. In practice (rounding errors?)
+        # this is not always the case here. Ensure that detScurr is no smaller than
+        # one billionth the value of detSnew less than detSnew
+        assert detScurr > (detSnew - detSnew/1.e9)
+        detScurr, Tcurr, Scurr = detSnew, Tnew, Snew
+
+      trials.append((detSnew, Tnew, Snew))
+
+    # choose 10 trials with the lowest detS3
+    trials.sort(key=lambda x: x[0])
+    best_trials = []
+    for i in xrange(10):
+      detCurr, Tcurr, Scurr = trials[i]
+      for j in xrange(self._k3): # take maximum of k3 steps
+        Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
+        Tnew, Snew = self.means_and_covariance(Hnew)
+        detNew = Snew.matrix_determinant_via_lu()
+        if detNew == detCurr:
+          print "trial {0}; iteration {1}; convergence".format(i,j)
+          break
+        detCurr, Tcurr, Scurr = detNew, Tnew, Snew
+      best_trials.append((detCurr, Tnew, Snew))
+
+    # Find the minimum covariance determinant from that set of 10
+    best_trials.sort(key=lambda x: x[0])
+    _, Tbest, Sbest = best_trials[0]
+    return Tbest, Sbest
 
   def large_dataset_estimate(self):
     """When a dataset is large, construct disjoint subsets of the full data
@@ -224,7 +271,9 @@ class FastMCD(object):
       groups = sample_data_and_group(data=self._data,
                                      sample_size=sample_size,
                                      ngroups=self._max_n_groups)
-    return
+
+    #### FIXME #####
+    return Tbest, Sbest
 
   def detect_outliers(self):
     """Use the FAST-MCD estimate of location and scatter, T and S, to classify
@@ -239,8 +288,10 @@ class FastMCD(object):
     else:
       T, S = self.large_dataset_estimate()
 
+    print T
+    print S.as_scitbx_matrix()
     #vecs, center, covmat = self.means_and_covariance(self._data)
-    dists = maha_sq(vecs, T, S)
+    #dists = maha_sq(vecs, T, S)
 
     #TODO use dists to classify as outliers
     return
@@ -328,3 +379,4 @@ rows = [[float(e) for e in row.split()] for row in hbk.splitlines()]
 x1, x2, x3 = [flex.double(e) for e in zip(*rows)]
 
 fast_mcd = FastMCD(x1, x2, x3)
+fast_mcd.detect_outliers()
