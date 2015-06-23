@@ -98,7 +98,7 @@ def run(args):
       (j, results[0][1], 180.0 * results[0][2].angle() / pi)
 
     if results[0][0] > (5 * pi / 180.0):
-      print 'Rotation: axis: %.4f %.4f %.f4' % results[0][2].axis
+      print 'Rotation: axis: %.4f %.4f %.4f' % results[0][2].axis
       print '          angle: %.4f degrees' % \
         (180.0 * results[0][2].angle() / pi)
 
