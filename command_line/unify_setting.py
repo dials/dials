@@ -31,6 +31,8 @@ def run(args):
   import libtbx.load_env
   from scitbx import matrix
   from cctbx.sgtbx import lattice_symmetry_group
+  from scitbx.math import r3_rotation_axis_and_angle_from_matrix
+
   usage = "%s [options] experiment_0.json ..." % \
     libtbx.env.dispatcher_name
 
@@ -57,7 +59,6 @@ def run(args):
 
   reference_U = None
   reference_space_group = None
-  i3 = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
 
   for j, experiment in enumerate(experiments):
     goniometer = experiment.data.goniometers()[0]
@@ -89,12 +90,17 @@ def run(args):
     results = []
     for op in reference_space_group.all_ops():
       R = B * matrix.sqr(op.r().as_double()).transpose() * B.inverse()
-      nearly_i3 = (U * R).inverse() * reference_U
-      score = sum([abs(_n - _i) for (_n, _i) in zip(nearly_i3, i3)])
-      results.append((score, op.r().as_hkl()))
+      relative = (U * R).inverse() * reference_U
+      rot = r3_rotation_axis_and_angle_from_matrix(relative)
+      results.append((abs(rot.angle()), op.r().as_hkl(), rot))
     results.sort()
     print 'Best reindex op for experiment %d: %12s (%.3f)' % \
-      (j, results[0][1], results[0][0])
+      (j, results[0][1], 180.0 * results[0][2].angle() / pi)
+
+    if results[0][0] > (5 * pi / 180.0):
+      print 'Rotation: axis: %.4f %.4f %.f4' % results[0][2].axis
+      print '          angle: %.4f degrees' % \
+        (180.0 * results[0][2].angle() / pi)
 
 if __name__ == '__main__':
   import sys
