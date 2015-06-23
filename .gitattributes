@@ -876,6 +876,7 @@ scratch/luiso_s/wx_toys/boost_wx_bitmap/bitmap_from_numpy_boost_tst.py -text
 scratch/luiso_s/wx_toys/boost_wx_bitmap/boost_func_tst.py -text
 scratch/luiso_s/wx_toys/boost_wx_bitmap/boost_tst.py -text
 scratch/luiso_s/wx_toys/cli_wxpy_test/call_cli.py -text
+scratch/luiso_s/wx_toys/cli_wxpy_test/gui_toying.py -text
 scratch/luiso_s/wx_toys/dual_frame.py -text
 scratch/luiso_s/wx_toys/grid_tst.py -text
 scratch/luiso_s/wx_toys/grid_tst_01.py -text
