@@ -21,8 +21,25 @@ phil_scope = parse("""
     .type = bool
     .help = "Use the trusted range to mask bad pixels."
 
+  untrusted
+    .multiple = True
+  {
+
+    panel = 0
+      .type = int
+      .help = "The panel number"
+
+    circle = None
+      .type = ints(3)
+      .help = "An untrusted circle (xc, yc, r)"
+
+    rectangle = None
+      .type = ints(4)
+      .help = "An untrusted rectangle (x0, x1, y0, y1)"
+  }
+
   output {
-    mask = mask.p
+    mask = mask.pickle
       .type = str
       .help = "Name of output mask file"
   }
@@ -38,6 +55,7 @@ class MaskGenerator(object):
   def generate(self, imageset):
     ''' Generate the mask. '''
     from dials.array_family import flex
+    from math import floor, ceil
 
     # Get the detector
     detector = imageset.get_detector()
@@ -50,7 +68,10 @@ class MaskGenerator(object):
 
     # Create the mask for each image
     masks = []
-    for im, panel in zip(image, detector):
+    for index, (im, panel) in enumerate(zip(image, detector)):
+
+      # The image width height
+      height, width = im.all()
 
       # Create the basic mask from the trusted range
       if self.params.use_trusted_range:
@@ -62,6 +83,8 @@ class MaskGenerator(object):
 
       # Add a border around the image
       if self.params.border > 0:
+        print "Generating border mask:"
+        print " border = %d" % self.params.border
         border = self.params.border
         height, width = mask.all()
         borderx = flex.bool(flex.grid(border, width), False)
@@ -70,6 +93,52 @@ class MaskGenerator(object):
         mask[-border:,:] = borderx
         mask[:,0:border] = bordery
         mask[:,-border:] = bordery
+
+      # Apply the untrusted region
+      for region in self.params.untrusted:
+        if region.panel == index:
+          if region.circle is not None:
+            xc, yc, radius = region.circle
+            x0 = int(floor(xc - radius))
+            y0 = int(floor(yc - radius))
+            x1 = int(ceil(xc + radius))
+            y1 = int(ceil(yc + radius))
+            assert x1 > x0
+            assert y1 > y0
+            assert x0 >= 0
+            assert y0 >= 0
+            assert x1 <= width
+            assert y1 <= height
+            print "Generating circle mask:"
+            print " panel = %d" % region.panel
+            print " xc = %d" % xc
+            print " yc = %d" % yc
+            print " radius = %d" % radius
+            xc -= x0
+            yc -= y0
+            r2 = radius * radius
+            circ = flex.bool(flex.grid(y1-y0,x1-x0),False)
+            for j in range(y1-y0):
+              for i in range(x1-x0):
+                if (i - xc)**2 + (j - yc)**2 > r2:
+                  circ[j,i] = True
+            mask[y0:y1,x0:x1] = mask[y0:y1,x0:x1] & circ
+          if region.rectangle is not None:
+            x0, x1, y0, y1 = region.rectangle
+            assert x1 > x0
+            assert y1 > y0
+            assert x0 >= 0
+            assert y0 >= 0
+            assert x1 <= width
+            assert y1 <= height
+            print "Generating rectangle mask:"
+            print " panel = %d" % region.panel
+            print " x0 = %d" % x0
+            print " y0 = %d" % y0
+            print " x1 = %d" % x1
+            print " y1 = %d" % y1
+            rect = flex.bool(flex.grid(y1-y0,x1-x0),False)
+            mask[y0:y1,x0:x1] = rect
 
       # Add to the list
       masks.append(mask)
