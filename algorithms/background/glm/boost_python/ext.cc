@@ -53,10 +53,10 @@ namespace dials { namespace algorithms { namespace background {
     scope in_creator = creator;
 
     enum_<Creator::Model>("model")
-      .value("constant_2d", Creator::Constant2d)
-      .value("constant_3d", Creator::Constant3d)
-      .value("loglinear_2d", Creator::LogLinear2d)
-      .value("loglinear_3d", Creator::LogLinear3d)
+      .value("constant2d", Creator::Constant2d)
+      .value("constant3d", Creator::Constant3d)
+      .value("loglinear2d", Creator::LogLinear2d)
+      .value("loglinear3d", Creator::LogLinear3d)
       ;
   }
 

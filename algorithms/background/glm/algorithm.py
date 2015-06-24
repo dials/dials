@@ -26,7 +26,18 @@ class BackgroundAlgorithm(object):
 
     '''
     from dials.algorithms.background.glm import Creator
+    if model == 'constant2d':
+      model = Creator.model.constant2d
+    elif model == 'constant3d':
+      model = Creator.model.constant3d
+    elif model == 'loglinear2d':
+      model = Creator.model.loglinear2d
+    elif model == 'loglinear3d':
+      model = Creator.model.loglinear3d
+    else:
+      raise RuntimeError('Unknown background model')
     self._create = Creator(
+      model=model,
       tuning_constant=tuning_constant,
       max_iter=100)
 
