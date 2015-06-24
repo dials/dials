@@ -321,8 +321,8 @@ class Script(object):
     info("")
     predicted = flex.reflection_table.from_predictions_multi(
       experiments,
-      dmin=self.params.prediction.dmin,
-      dmax=self.params.prediction.dmax,
+      dmin=self.params.prediction.d_min,
+      dmax=self.params.prediction.d_max,
       margin=self.params.prediction.margin,
       force_static=self.params.prediction.force_static)
     predicted.match_with_reference(indexed)
