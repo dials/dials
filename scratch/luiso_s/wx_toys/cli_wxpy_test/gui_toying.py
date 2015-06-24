@@ -63,5 +63,3 @@ class MyApp(wx.App):
 
 app = MyApp(0)
 app.MainLoop()
-
-
