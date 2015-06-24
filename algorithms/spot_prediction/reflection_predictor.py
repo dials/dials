@@ -17,11 +17,11 @@ phil_scope = parse('''
 
   prediction {
 
-    dmin = None
+    d_min = None
       .type = float
       .help = "The maximum resolution limit"
 
-    dmax = None
+    d_max = None
       .type = float
       .help = "The minimum resolution limit"
 

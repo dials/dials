@@ -212,8 +212,8 @@ class Script(object):
     info("")
     predicted = flex.reflection_table.from_predictions_multi(
       experiments,
-      dmin=params.prediction.dmin,
-      dmax=params.prediction.dmax,
+      dmin=params.prediction.d_min,
+      dmax=params.prediction.d_max,
       margin=params.prediction.margin,
       force_static=params.prediction.force_static)
 

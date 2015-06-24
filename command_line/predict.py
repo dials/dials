@@ -39,7 +39,7 @@ class Script(object):
         .help = "Calculate predictions within a buffer zone of n images either"
                 "size of the scan"
 
-      dmin = None
+      d_min = None
         .type = float
         .help = "Minimum d-spacing of predicted reflections"
 
@@ -86,7 +86,7 @@ class Script(object):
       predicted = flex.reflection_table.from_predictions(
         expt,
         force_static=params.force_static,
-        dmin=params.dmin)
+        dmin=params.d_min)
       predicted['id'] = flex.size_t(len(predicted), i_expt)
       predicted_all.extend(predicted)
 
