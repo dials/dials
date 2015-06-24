@@ -30,7 +30,7 @@ class Test(object):
       input_filename,
     ]).raise_if_errors()
 
-    assert(exists("mask.p"))
+    assert(exists("mask.pickle"))
 
     print 'OK'
 
