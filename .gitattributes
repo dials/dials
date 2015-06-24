@@ -293,6 +293,7 @@ array_family/shoebox_extractor.h -text
 array_family/sort_index.h -text
 command_line/__init__.py -text
 command_line/analyse_output.py -text
+command_line/apply_mask.py -text
 command_line/background_lookup.py -text
 command_line/check_indexing_symmetry.py -text
 command_line/combine_experiments.py -text
