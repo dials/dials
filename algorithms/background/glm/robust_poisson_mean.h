@@ -16,6 +16,7 @@
 #include <scitbx/matrix/multiply.h>
 #include <scitbx/glmtbx/family.h>
 #include <scitbx/glmtbx/robust_glm.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
@@ -66,6 +67,7 @@ namespace dials { namespace algorithms {
      * @returns The poisson mean
      */
     double mean() const {
+      DIALS_ASSERT(beta_ > -300 && beta_ < 300);
       return std::exp(beta_);
     }
 

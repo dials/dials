@@ -21,6 +21,17 @@ namespace dials { namespace algorithms {
 
   using model::Shoebox;
 
+  namespace detail {
+
+    template <typename T>
+    T median(const af::const_ref<T> &x) {
+      af::shared<T> temp(x.begin(), x.end());
+      std::nth_element(temp.begin(), temp.begin() + temp.size() / 2, temp.end());
+      return temp[temp.size() / 2];
+    }
+
+  }
+
   /**
    * A class to create the background model
    */
@@ -130,8 +141,7 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(l == Y.size());
 
         // Compute the median value for the starting value
-        std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
-        double median = Y[Y.size() / 2];
+        double median = detail::median(Y.const_ref());
         if (median == 0) {
           median = 1.0;
         }
@@ -189,8 +199,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(j == Y.size());
 
       // Compute the median value for the starting value
-      std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
-      double median = Y[Y.size() / 2];
+      double median = detail::median(Y.const_ref());
       if (median == 0) {
         median = 1.0;
       }
@@ -247,17 +256,29 @@ namespace dials { namespace algorithms {
               DIALS_ASSERT(sbox.data(k,j,i) >= 0);
               Y[l] = sbox.data(k,j,i);
               X(l,0) = 1.0;
-              X(l,1) = j;
-              X(l,2) = i;
+              X(l,1) = j+0.5;
+              X(l,2) = i+0.5;
               l++;
             }
           }
         }
         DIALS_ASSERT(l == Y.size());
 
+        // Check that we have a spread of X/Y
+        std::size_t countx = 0;
+        std::size_t county = 0;
+        for (std::size_t l = 1; l < X.accessor()[0]; ++l) {
+          if (X(l,1) != X(l-1,1)) {
+            countx++;
+          }
+          if (X(l,2) != X(l-1,2)) {
+            county++;
+          }
+        }
+        DIALS_ASSERT(countx > 0 && county > 0);
+
         // Compute the median value for the starting value
-        std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
-        double median = Y[Y.size() / 2];
+        double median = detail::median(Y.const_ref());
         if (median == 0) {
           median = 1.0;
         }
@@ -284,11 +305,15 @@ namespace dials { namespace algorithms {
         double b0 = B[0];
         double b1 = B[1];
         double b2 = B[2];
+        DIALS_ASSERT(b0 > -300 && b0 < 300);
+        DIALS_ASSERT(b1 > -300 && b1 < 300);
+        DIALS_ASSERT(b2 > -300 && b2 < 300);
 
         // Fill in the background shoebox values
         for (std::size_t j = 0; j < sbox.ysize(); ++j) {
           for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            double background = std::exp(b0 + b1*j + b2*i);
+            double eta = b0 + b1 * (j+0.5) + b2*(i+0.5);
+            double background = std::exp(eta);
             sbox.background(k,j,i) = background;
             if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
               sbox.mask(k,j,i) |= BackgroundUsed;
@@ -340,9 +365,25 @@ namespace dials { namespace algorithms {
       }
       DIALS_ASSERT(l == Y.size());
 
+      // Check that we have a spread of X/Y
+      std::size_t countx = 0;
+      std::size_t county = 0;
+      std::size_t countz = 0;
+      for (std::size_t l = 1; l < X.accessor()[0]; ++l) {
+        if (X(l,1) != X(l-1,1)) {
+          countx++;
+        }
+        if (X(l,2) != X(l-1,2)) {
+          county++;
+        }
+        if (X(l,3) != X(l-1,3)) {
+          county++;
+        }
+      }
+      DIALS_ASSERT(countx > 0 && county > 0 && countz > 0);
+
       // Compute the median value for the starting value
-      std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
-      double median = Y[Y.size() / 2];
+      double median = detail::median(Y.const_ref());
       if (median == 0) {
         median = 1.0;
       }
@@ -371,6 +412,10 @@ namespace dials { namespace algorithms {
       double b1 = B[1];
       double b2 = B[2];
       double b3 = B[3];
+      DIALS_ASSERT(b0 > -300 && b0 < 300);
+      DIALS_ASSERT(b1 > -300 && b1 < 300);
+      DIALS_ASSERT(b2 > -300 && b2 < 300);
+      DIALS_ASSERT(b3 > -300 && b3 < 300);
 
       // Fill in the background shoebox values
       for (std::size_t k = 0; k < sbox.zsize(); ++k) {
