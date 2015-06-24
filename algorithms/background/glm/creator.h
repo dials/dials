@@ -222,52 +222,78 @@ namespace dials { namespace algorithms {
      */
     void compute_loglinear_2d(Shoebox<> &sbox) const {
 
-      // Compute number of background pixels
-      std::size_t num_background = 0;
-      int mask_code = Valid | Background;
-      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
-        if ((sbox.mask[i] & mask_code) == mask_code) {
-          num_background++;
+      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
+
+        // Compute number of background pixels
+        std::size_t num_background = 0;
+        int mask_code = Valid | Background;
+        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
+          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+              num_background++;
+            }
+          }
         }
-      }
-      DIALS_ASSERT(num_background > 0);
+        DIALS_ASSERT(num_background > 0);
 
-      // Allocate some arrays
-      af::shared<double> Y(num_background, 0);
-      std::size_t j = 0;
-      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
-        if ((sbox.mask[i] & mask_code) == mask_code) {
-          DIALS_ASSERT(j < Y.size());
-          DIALS_ASSERT(sbox.data[i] >= 0);
-          Y[j++] = sbox.data[i];
+        // Allocate some arrays
+        af::versa<double, af::c_grid<2> > X(af::c_grid<2>(num_background,3),0);
+        af::shared<double> Y(num_background, 0);
+        std::size_t l = 0;
+        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
+          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+              DIALS_ASSERT(l < Y.size());
+              DIALS_ASSERT(sbox.data(k,j,i) >= 0);
+              Y[l] = sbox.data(k,j,i);
+              X(l,0) = 1.0;
+              X(l,1) = j;
+              X(l,2) = i;
+              l++;
+            }
+          }
         }
-      }
-      DIALS_ASSERT(j == Y.size());
+        DIALS_ASSERT(l == Y.size());
 
-      // Compute the median value for the starting value
-      std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
-      double median = Y[Y.size() / 2];
-      if (median == 0) {
-        median = 1.0;
-      }
+        // Compute the median value for the starting value
+        std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
+        double median = Y[Y.size() / 2];
+        if (median == 0) {
+          median = 1.0;
+        }
 
-      // Compute the result
-      RobustPoissonMean result(
-          Y.const_ref(),
-          median,
-          tuning_constant_,
-          1e-3,
-          max_iter_);
-      DIALS_ASSERT(result.converged());
+        // Setup the initial parameters
+        af::shared<double> B(3);
+        B[0] = std::log(median);
+        B[1] = 0.0;
+        B[2] = 0.0;
 
-      // Compute the background
-      double background = result.mean();
+        // Compute the result
+        scitbx::glmtbx::robust_glm<scitbx::glmtbx::poisson> result(
+            X.const_ref(),
+            Y.const_ref(),
+            B.const_ref(),
+            tuning_constant_,
+            1e-3,
+            max_iter_);
+        DIALS_ASSERT(result.converged());
 
-      // Fill in the background shoebox values
-      for (std::size_t i = 0; i < sbox.background.size(); ++i) {
-        sbox.background[i] = background;
-        if ((sbox.mask[i] & mask_code) == mask_code) {
-          sbox.mask[i] |= BackgroundUsed;
+        // Compute the background
+        B = result.parameters();
+        DIALS_ASSERT(B.size() == 3);
+        double b0 = B[0];
+        double b1 = B[1];
+        double b2 = B[2];
+
+        // Fill in the background shoebox values
+        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
+          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+            double background = std::exp(b0 + b1*j + b2*i);
+            sbox.background(k,j,i) = background;
+            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+              sbox.mask(k,j,i) |= BackgroundUsed;
+            }
+          }
         }
       }
     }
