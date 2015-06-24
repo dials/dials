@@ -15,11 +15,13 @@ class BackgroundAlgorithm(object):
   ''' Class to do background subtraction. '''
 
   def __init__(self, experiments,
+               model='constant3d',
                tuning_constant=1.345):
     '''
     Initialise the algorithm.
 
     :param experiments: The list of experiments
+    :param model: The background model
     :param tuning_constant: The robust tuning constant
 
     '''

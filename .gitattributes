@@ -688,6 +688,8 @@ scratch/jmp/analysis/xds_xyz_diff_map.py -text
 scratch/jmp/background_test/fix_background.py -text
 scratch/jmp/background_test/plotintensity.py -text
 scratch/jmp/background_test/simulate_error.py -text
+scratch/jmp/background_test/test_exp.py -text
+scratch/jmp/background_test/test_glm.py -text
 scratch/jmp/drizzle/drizzle/SConscript -text
 scratch/jmp/drizzle/drizzle/__init__.py -text
 scratch/jmp/drizzle/drizzle/drizzle.h -text

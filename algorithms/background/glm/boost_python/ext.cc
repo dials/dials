@@ -38,13 +38,25 @@ namespace dials { namespace algorithms { namespace background {
       ;
 
 
-    class_<Creator>("Creator", no_init)
+    class_<Creator> creator("Creator", no_init);
+    creator
       .def(init<
+          Creator::Model,
           double,
           std::size_t>((
+              arg("model"),
               arg("tuning_constant"),
               arg("max_iter"))))
       .def("__call__", &Creator::operator())
+      ;
+
+    scope in_creator = creator;
+
+    enum_<Creator::Model>("model")
+      .value("constant_2d", Creator::Constant2d)
+      .value("constant_3d", Creator::Constant3d)
+      .value("loglinear_2d", Creator::LogLinear2d)
+      .value("loglinear_3d", Creator::LogLinear3d)
       ;
   }
 

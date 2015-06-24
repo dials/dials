@@ -28,12 +28,23 @@ namespace dials { namespace algorithms {
   public:
 
     /**
+     * Enumeration of model types
+     */
+    enum Model {
+      Constant2d,
+      Constant3d,
+      LogLinear2d,
+      LogLinear3d
+    };
+
+    /**
      * Initialise the creator
      * @param tuning_constant The robust tuning constant
      * @param max_iter The maximum number of iterations
      */
-    Creator(double tuning_constant, std::size_t max_iter)
-      : tuning_constant_(tuning_constant),
+    Creator(Model model, double tuning_constant, std::size_t max_iter)
+      : model_(model),
+        tuning_constant_(tuning_constant),
         max_iter_(max_iter) {
       DIALS_ASSERT(tuning_constant > 0);
       DIALS_ASSERT(max_iter > 0);
@@ -65,9 +76,95 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     void compute(Shoebox<> &sbox) const {
-
-      // Check shoebox is ok
       DIALS_ASSERT(sbox.is_consistent());
+      switch (model_) {
+      case Constant2d:
+        compute_constant_2d(sbox);
+        break;
+      case Constant3d:
+        compute_constant_3d(sbox);
+        break;
+      case LogLinear2d:
+        compute_loglinear_2d(sbox);
+        break;
+      case LogLinear3d:
+        compute_loglinear_3d(sbox);
+        break;
+      default:
+        DIALS_ERROR("Unknown Model");
+      };
+    }
+
+    /**
+     * Compute the background values for a single shoebox
+     * @param sbox The shoebox
+     */
+    void compute_constant_2d(Shoebox<> &sbox) const {
+
+      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
+
+        // Compute number of background pixels
+        std::size_t num_background = 0;
+        int mask_code = Valid | Background;
+        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
+          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+              num_background++;
+            }
+          }
+        }
+        DIALS_ASSERT(num_background > 0);
+
+        // Allocate some arrays
+        af::shared<double> Y(num_background, 0);
+        std::size_t l = 0;
+        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
+          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+              DIALS_ASSERT(l < Y.size());
+              DIALS_ASSERT(sbox.data(k,j,i) >= 0);
+              Y[l++] = sbox.data(k,j,i);
+            }
+          }
+        }
+        DIALS_ASSERT(l == Y.size());
+
+        // Compute the median value for the starting value
+        std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
+        double median = Y[Y.size() / 2];
+        if (median == 0) {
+          median = 1.0;
+        }
+
+        // Compute the result
+        RobustPoissonMean result(
+            Y.const_ref(),
+            median,
+            tuning_constant_,
+            1e-3,
+            max_iter_);
+        DIALS_ASSERT(result.converged());
+
+        // Compute the background
+        double background = result.mean();
+
+        // Fill in the background shoebox values
+        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
+          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+            sbox.background(k,j,i) = background;
+            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+              sbox.mask(k,j,i) |= BackgroundUsed;
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     * Compute the background values for a single shoebox
+     * @param sbox The shoebox
+     */
+    void compute_constant_3d(Shoebox<> &sbox) const {
 
       // Compute number of background pixels
       std::size_t num_background = 0;
@@ -119,6 +216,119 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /**
+     * Compute the background values for a single shoebox
+     * @param sbox The shoebox
+     */
+    void compute_loglinear_2d(Shoebox<> &sbox) const {
+
+      // Compute number of background pixels
+      std::size_t num_background = 0;
+      int mask_code = Valid | Background;
+      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          num_background++;
+        }
+      }
+      DIALS_ASSERT(num_background > 0);
+
+      // Allocate some arrays
+      af::shared<double> Y(num_background, 0);
+      std::size_t j = 0;
+      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          DIALS_ASSERT(j < Y.size());
+          DIALS_ASSERT(sbox.data[i] >= 0);
+          Y[j++] = sbox.data[i];
+        }
+      }
+      DIALS_ASSERT(j == Y.size());
+
+      // Compute the median value for the starting value
+      std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
+      double median = Y[Y.size() / 2];
+      if (median == 0) {
+        median = 1.0;
+      }
+
+      // Compute the result
+      RobustPoissonMean result(
+          Y.const_ref(),
+          median,
+          tuning_constant_,
+          1e-3,
+          max_iter_);
+      DIALS_ASSERT(result.converged());
+
+      // Compute the background
+      double background = result.mean();
+
+      // Fill in the background shoebox values
+      for (std::size_t i = 0; i < sbox.background.size(); ++i) {
+        sbox.background[i] = background;
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          sbox.mask[i] |= BackgroundUsed;
+        }
+      }
+    }
+
+    /**
+     * Compute the background values for a single shoebox
+     * @param sbox The shoebox
+     */
+    void compute_loglinear_3d(Shoebox<> &sbox) const {
+
+      // Compute number of background pixels
+      std::size_t num_background = 0;
+      int mask_code = Valid | Background;
+      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          num_background++;
+        }
+      }
+      DIALS_ASSERT(num_background > 0);
+
+      // Allocate some arrays
+      af::shared<double> Y(num_background, 0);
+      std::size_t j = 0;
+      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          DIALS_ASSERT(j < Y.size());
+          DIALS_ASSERT(sbox.data[i] >= 0);
+          Y[j++] = sbox.data[i];
+        }
+      }
+      DIALS_ASSERT(j == Y.size());
+
+      // Compute the median value for the starting value
+      std::nth_element(Y.begin(), Y.begin() + Y.size() / 2, Y.end());
+      double median = Y[Y.size() / 2];
+      if (median == 0) {
+        median = 1.0;
+      }
+
+      // Compute the result
+      RobustPoissonMean result(
+          Y.const_ref(),
+          median,
+          tuning_constant_,
+          1e-3,
+          max_iter_);
+      DIALS_ASSERT(result.converged());
+
+      // Compute the background
+      double background = result.mean();
+
+      // Fill in the background shoebox values
+      for (std::size_t i = 0; i < sbox.background.size(); ++i) {
+        sbox.background[i] = background;
+        if ((sbox.mask[i] & mask_code) == mask_code) {
+          sbox.mask[i] |= BackgroundUsed;
+        }
+      }
+    }
+
+    Model model_;
     double tuning_constant_;
     std::size_t max_iter_;
 

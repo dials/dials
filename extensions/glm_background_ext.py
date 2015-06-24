@@ -29,6 +29,12 @@ class SimpleBackgroundExt(BackgroundIface):
           .help = "The tuning constant for robust estimation"
       }
 
+      model {
+        algorithm = constant2d *constant3d loglinear2d loglinear3d
+          .type = choice
+          .help = "The background model to fit"
+      }
+
     ''')
     return phil
 
@@ -52,7 +58,8 @@ class SimpleBackgroundExt(BackgroundIface):
     # Create the algorithm
     self._algorithm = BackgroundAlgorithm(
       experiments,
-      tuning_constant=params.robust.tuning_constant)
+      tuning_constant=params.robust.tuning_constant,
+      model=params.model.algorithm)
 
   def compute_background(self, reflections):
     '''
