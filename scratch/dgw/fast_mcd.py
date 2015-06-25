@@ -118,7 +118,7 @@ class FastMCD(object):
     assert self._n > self._p
 
     # default initial subset size
-
+    self._alpha = alpha
     n2 = (self._n + self._p + 1) // 2
     self._h = int(floor(2 * n2 - self._n + 2 * (self._n - n2) *  alpha))
     # In the original FAST-MCD, if h == n it reports a single
