@@ -64,6 +64,11 @@ def generate_phil_scope():
                 "accepted by the filtering algorithm."
         .type = float(value_min=0)
 
+      max_strong_pixel_fraction = 0.01
+        .help = "If the fraction of pixels in an image marked as strong is"
+                "greater than this value, throw an exception"
+        .type = float(value_min=0, value_max=1)
+
       background_gradient
         .expert_level=2
       {
@@ -719,10 +724,12 @@ class SpotFinderFactory(object):
     threshold = SpotFinderFactory.configure_threshold(params)
 
     # Setup the spot finder
-    return ExtractSpots(threshold_image=threshold,
-                        mask=params.spotfinder.lookup.mask,
-                        mp_method=params.spotfinder.mp.method,
-                        nproc=params.spotfinder.mp.nproc)
+    return ExtractSpots(
+      threshold_image=threshold,
+      mask=params.spotfinder.lookup.mask,
+      mp_method=params.spotfinder.mp.method,
+      nproc=params.spotfinder.mp.nproc,
+      max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction)
 
   @staticmethod
   def configure_threshold(params):

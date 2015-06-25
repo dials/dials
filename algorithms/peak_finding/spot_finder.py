@@ -17,7 +17,11 @@ class Extract(object):
 
   '''
 
-  def __init__(self, imageset, threshold_image, mask):
+  def __init__(self,
+               imageset,
+               threshold_image,
+               mask,
+               max_strong_pixel_fraction):
       '''
       Initialise with imageset and threshold function, both need to be picklable
       for this to be called using multiprocessing.
@@ -30,6 +34,7 @@ class Extract(object):
       self.threshold_image = threshold_image
       self.imageset = imageset
       self.mask = mask
+      self.max_strong_pixel_fraction = max_strong_pixel_fraction
       if self.mask is not None:
         detector = self.imageset.get_detector()
         assert(len(self.mask) == len(detector))
@@ -44,6 +49,7 @@ class Extract(object):
       '''
       from dials.model.data import PixelList
       from dxtbx.imageset import ImageSweep
+      from math import ceil
 
       # Get the starting z
       if isinstance(self.imageset, ImageSweep):
@@ -72,6 +78,15 @@ class Extract(object):
 
         # Add the images to the pixel lists
         for pl, im, mk in zip(plists, image, mask):
+          threshold_mask = self.threshold_image.compute_threshold(im, mk)
+          max_strong = int(ceil(self.max_strong_pixel_fraction * len(im)))
+          num_strong = threshold_mask.count(True)
+          if num_strong > max_strong:
+            raise RuntimeError(
+              '''
+              The number of strong pixels found (%d) is greater than the
+              maximum allowed (%d). Try chaning spot finding parameters
+            ''' % (num_strong, max_strong))
           pl.add_image(im, self.threshold_image.compute_threshold(im, mk))
 
       # Return the pixel lists
@@ -121,8 +136,12 @@ class ExtractSpots(object):
 
   '''
 
-  def __init__(self, threshold_image, mask=None,
-               mp_method='multiprocessing', nproc=1):
+  def __init__(self,
+               threshold_image,
+               mask=None,
+               mp_method='multiprocessing',
+               nproc=1,
+               max_strong_pixel_fraction=0.1):
     '''
     Initialise the class with the strategy
 
@@ -130,6 +149,7 @@ class ExtractSpots(object):
     :param mask: The mask to use
     :param mp_method: The multi processing method
     :param nproc: The number of processors
+    :param max_strong_pixel_fraction: The maximum number of strong pixels
 
     '''
     # Set the required strategies
@@ -137,6 +157,7 @@ class ExtractSpots(object):
     self.mask = mask
     self.mp_method = mp_method
     self.nproc = nproc
+    self.max_strong_pixel_fraction = max_strong_pixel_fraction
 
   def __call__(self, imageset):
     '''
@@ -160,7 +181,11 @@ class ExtractSpots(object):
     # Extract the pixels in blocks of images in parallel
     info("Extracting strong pixels from images (may take a while)")
     pl = easy_mp.parallel_map(
-      func=Extract(imageset, self.threshold_image, self.mask),
+      func=Extract(
+        imageset,
+        self.threshold_image,
+        self.mask,
+        self.max_strong_pixel_fraction),
       iterable=self._calculate_blocks(imageset, nproc),
       processes=nproc,
       method=self.mp_method,
