@@ -64,7 +64,7 @@ def generate_phil_scope():
                 "accepted by the filtering algorithm."
         .type = float(value_min=0)
 
-      max_strong_pixel_fraction = 0.01
+      max_strong_pixel_fraction = 0.25
         .help = "If the fraction of pixels in an image marked as strong is"
                 "greater than this value, throw an exception"
         .type = float(value_min=0, value_max=1)
