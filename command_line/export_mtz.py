@@ -43,6 +43,7 @@ def run(args):
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   from dials.util import log
+  from logging import info
   info_handle = log.info_handle()
 
   usage = '%s integrated.pickle experiments.json [options]' % (

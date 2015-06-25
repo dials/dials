@@ -354,6 +354,7 @@ class Script(object):
       check_format=False)
 
   def run(self):
+    from logging import info
 
     print "Parsing input"
     params, options = self.parser.parse_args(show_diff_phil=False)
