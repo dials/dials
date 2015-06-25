@@ -157,15 +157,16 @@ class FastMCD(object):
     cols = [e.select(rows) for e in data]
     return cols
 
-  def sample_data_and_group(self, data, sample_size, ngroups):
-    """as sample_data, but follow by splitting each sampled vector into
-    groups of approximately equal size."""
+  def split_into_groups(self, sample, ngroups):
+    """Split each vector in the data sample into groups of approximately equal
+    size."""
 
-    sampled = self.sample_data(sample_size = sample_size)
+    # number of obs in the sample
+    sample_size = len(sample[0])
 
     # random permutation
     p = flex.random_permutation(sample_size)
-    permuted = [col.select(p) for col in data]
+    permuted = [col.select(p) for col in sample]
 
     # determine groups
     blocksize = int(sample_size / ngroups)
@@ -192,6 +193,9 @@ class FastMCD(object):
     # draw random p+1 subset J (or larger if required)
     detS0 = 0.0
     i = 0
+    # FIXME should draw a single extra sample in each iteration, not a whole
+    # new call to sample_data. Do this by forming a permutation and taking
+    # one extra elt each time.
     while not detS0 > 0.0:
       J = self.sample_data(data, sample_size=self._p+1+i)
       i += 1
@@ -250,7 +254,7 @@ class FastMCD(object):
           print "trial {0}; iteration {1}; convergence".format(i,j)
           break
         detCurr, Tcurr, Scurr = detNew, Tnew, Snew
-      best_trials.append((detCurr, Tnew, Snew))
+      best_trials.append((detNew, Tnew, Snew))
 
     # Find the minimum covariance determinant from that set of 10
     best_trials.sort(key=lambda x: x[0])
@@ -259,22 +263,111 @@ class FastMCD(object):
 
   def large_dataset_estimate(self):
     """When a dataset is large, construct disjoint subsets of the full data
-    and perform initial trials within each of these then merge"""
+    and perform initial trials within each of these, then merge"""
 
     ngroups = int(self._n / self._min_group_size)
     if ngroups < self._max_n_groups:
       # use all the data and split into ngroups
-      groups = sample_data_and_group(data=self._data,
-                                     sample_size=self._n,
-                                     ngroups=ngroups)
+      sample_size = self._n
     else:
       # sample the data and split into the maximum number of groups
+      ngroups = self._max_n_groups
       sample_size = self._min_group_size * self._max_n_groups
-      groups = sample_data_and_group(data=self._data,
-                                     sample_size=sample_size,
-                                     ngroups=self._max_n_groups)
 
-    #### FIXME #####
+    # sample the data and split into groups
+    sampled = self.sample_data(self._data, sample_size = sample_size)
+    groups = self.split_into_groups(sample=sampled, ngroups=ngroups)
+
+    # work within the groups now
+    n_trials = self._n_trials // ngroups
+    trials = []
+    h_frac = self._h / self._n
+    for group in groups:
+
+      h_sub = int(len(group[0]) * h_frac)
+      gp_trials = []
+      for i in xrange(n_trials):
+
+        H1 = self.form_initial_subset(h=h_sub, data=group)
+        T1, S1 = self.means_and_covariance(H1)
+        detS1 = S1.matrix_determinant_via_lu()
+
+        # perform concentration steps
+        detScurr, Tcurr, Scurr = detS1, T1, S1
+        for j in xrange(self._k1): # take maximum of k1 steps
+
+          Hnew = self.concentration_step(h_sub, group, Tcurr, Scurr)
+          Tnew, Snew = self.means_and_covariance(Hnew)
+          detSnew = Snew.matrix_determinant_via_lu()
+
+          # detS3 < detS2 < detS1 by Theorem 1. In practice (rounding errors?)
+          # this is not always the case here. Ensure that detScurr is no smaller than
+          # one billionth the value of detSnew less than detSnew
+          assert detScurr > (detSnew - detSnew/1.e9)
+          detScurr, Tcurr, Scurr = detSnew, Tnew, Snew
+
+        gp_trials.append((detSnew, Tnew, Snew))
+
+      # choose 10 trials with the lowest determinant and put in the outer list
+      gp_trials.sort(key=lambda x: x[0])
+      trials.extend(gp_trials[0:10])
+
+    # now have 10 best trials from each group. Work with the merged (==sampled)
+    # set
+    mrgd_trials = []
+    h_mrgd = int(sample_size * h_frac)
+    for trial in trials:
+
+      detScurr, Tcurr, Scurr = trial
+      for j in xrange(self._k2): # take maximum of k2 steps
+
+        Hnew = self.concentration_step(h_mrgd, sampled, Tcurr, Scurr)
+        Tnew, Snew = self.means_and_covariance(Hnew)
+        detSnew = Snew.matrix_determinant_via_lu()
+        detScurr, Tcurr, Scurr = detSnew, Tnew, Snew
+
+      mrgd_trials.append((detSnew, Tnew, Snew))
+
+    # sort trials by the lowest detS3 and work with the whole dataset now
+    mrgd_trials.sort(key=lambda x: x[0])
+
+    # choose number of steps to iterate based on dataset size (ugly)
+    size = self._n * self._p
+    if size <= 100000: k4 = self._k3
+    elif size > 100000 and size <= 200000: k4 = 10
+    elif size > 200000 and size <= 300000: k4 = 9
+    elif size > 300000 and size <= 400000: k4 = 8
+    elif size > 400000 and size <= 500000: k4 = 7
+    elif size > 500000 and size <= 600000: k4 = 6
+    elif size > 600000 and size <= 700000: k4 = 5
+    elif size > 700000 and size <= 800000: k4 = 4
+    elif size > 800000 and size <= 900000: k4 = 3
+    elif size > 900000 and size <= 1000000: k4 = 2
+    else: k4 = 1
+
+    # choose number of trials to look at based on number of obs (ugly)
+    n_reps = 1 if self._n > 5000 else 10
+
+    best_trials = []
+    for i in xrange(n_reps):
+      detCurr, Tcurr, Scurr = mrgd_trials[i]
+      for j in xrange(k4): # take maximum of k4 steps
+        Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
+        Tnew, Snew = self.means_and_covariance(Hnew)
+        detNew = Snew.matrix_determinant_via_lu()
+        if detNew == detCurr:
+          print "trial {0}; iteration {1}; convergence".format(i,j)
+          break
+        detCurr, Tcurr, Scurr = detNew, Tnew, Snew
+      print "determinant", detNew
+      print "location:", list(Tnew)
+      print "covariance:"
+      print Snew.as_scitbx_matrix()
+      best_trials.append((detNew, Tnew, Snew))
+
+    # Find the minimum covariance determinant from that set of 10
+    best_trials.sort(key=lambda x: x[0])
+    _, Tbest, Sbest = best_trials[0]
     return Tbest, Sbest
 
   def detect_outliers(self):
@@ -295,7 +388,7 @@ class FastMCD(object):
     #vecs, center, covmat = self.means_and_covariance(self._data)
     #dists = maha_sq(vecs, T, S)
 
-    #TODO use dists to classify as outliers
+    #TODO use dists to classify as outliers and report a flex.bool
     return
 
 
@@ -380,5 +473,17 @@ hbk = """10.1 19.6 28.3
 rows = [[float(e) for e in row.split()] for row in hbk.splitlines()]
 x1, x2, x3 = [flex.double(e) for e in zip(*rows)]
 
+# test small dataset algorithm
+fast_mcd = FastMCD([x1, x2, x3])
+fast_mcd.detect_outliers()
+
+# test large dataset algorithm
+x1, x2, x3 = [flex.random_double(2000) for e in range(3)]
+
+print "Traditional mean and covariance"
+print "centres: {0}, {1}, {2}".format(flex.mean(x1), flex.mean(x2), flex.mean(x3))
+print cov(x1, x2, x3).as_scitbx_matrix()
+
+print "Fast MCD estimates"
 fast_mcd = FastMCD([x1, x2, x3])
 fast_mcd.detect_outliers()
