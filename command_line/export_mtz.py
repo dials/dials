@@ -55,10 +55,16 @@ def run(args):
     check_format=False,
     phil=phil_scope,
     epilog=help_message)
-  params, options = parser.parse_args(show_diff_phil=True)
+  params, options = parser.parse_args(show_diff_phil=False)
 
   # Configure the logging
   log.config(info='dials.export_mtz.log', debug='dials.export_mtz.debug.log')
+
+  # Log the diff phil
+  diff_phil = parser.diff_phil.as_str()
+  if diff_phil is not '':
+    info('The following parameters have been modified:\n')
+    info(diff_phil)
 
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)

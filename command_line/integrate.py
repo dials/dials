@@ -148,7 +148,7 @@ class Script(object):
     start_time = time()
 
     # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=False)
     reference = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
     if len(reference) == 0:
@@ -171,6 +171,12 @@ class Script(object):
       params.verbosity,
       info=params.output.log,
       debug=params.output.debug_log)
+
+    # Log the diff phil
+    diff_phil = self.parser.diff_phil.as_str()
+    if diff_phil is not '':
+      info('The following parameters have been modified:\n')
+      info(diff_phil)
 
     # Print the experimental models
     for i, exp in enumerate(experiments):

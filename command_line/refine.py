@@ -253,7 +253,7 @@ class Script(object):
     from logging import info
 
     # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=False)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
@@ -275,6 +275,12 @@ class Script(object):
     # Configure the logging
     log.config(params.refinement.verbosity,
       info='dials.refine.log', debug='dials.refine.debug.log')
+
+    # Log the diff phil
+    diff_phil = self.parser.diff_phil.as_str()
+    if diff_phil is not '':
+      info('The following parameters have been modified:\n')
+      info(diff_phil)
 
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:

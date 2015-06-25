@@ -360,12 +360,18 @@ def run(args):
     read_reflections=True,
     check_format=False)
 
-  params, options = parser.parse_args(show_diff_phil=True)
+  params, options = parser.parse_args(show_diff_phil=False)
   datablocks = flatten_datablocks(params.input.datablock)
   reflections = flatten_reflections(params.input.reflections)
 
   # Configure the logging
   log.config(info='dials.discover_better_experimental_model.log')
+
+  # Log the diff phil
+  diff_phil = parser.diff_phil.as_str()
+  if diff_phil is not '':
+    info('The following parameters have been modified:\n')
+    info(diff_phil)
 
   if len(datablocks) == 0:
     raise Sorry("No DataBlock could be constructed")

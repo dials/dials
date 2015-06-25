@@ -99,13 +99,19 @@ class Script(object):
     start_time = time()
 
     # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=False)
 
     # Configure the logging
     log.config(
       params.verbosity,
       info='dials.find_spots.log',
       debug='dials.find_spots.debug.log')
+
+    # Log the diff phil
+    diff_phil = self.parser.diff_phil.as_str()
+    if diff_phil is not '':
+      info('The following parameters have been modified:\n')
+      info(diff_phil)
 
     # Ensure we have a data block
     datablocks = flatten_datablocks(params.input.datablock)

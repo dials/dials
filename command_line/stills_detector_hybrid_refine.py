@@ -356,11 +356,17 @@ class Script(object):
   def run(self):
 
     print "Parsing input"
-    params, options = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=False)
 
     #Configure the logging
     log.config(params.detector_phase.refinement.verbosity,
       info='dials.refine.log', debug='dials.refine.debug.log')
+
+    # Log the diff phil
+    diff_phil = self.parser.diff_phil.as_str()
+    if diff_phil is not '':
+      info('The following parameters have been modified:\n')
+      info(diff_phil)
 
     # Try to obtain the models and data
     if len(params.input.experiments) == 0:
