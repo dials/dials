@@ -389,7 +389,7 @@ class FastMCD(object):
     #dists = maha_sq(vecs, T, S)
 
     #TODO use dists to classify as outliers and report a flex.bool
-    return
+    return T
 
 
 # some test data, from R package robustbase: Hawkins, Bradu, Kass's Artificial Data
@@ -478,12 +478,46 @@ fast_mcd = FastMCD([x1, x2, x3])
 fast_mcd.detect_outliers()
 
 # test large dataset algorithm
-x1, x2, x3 = [flex.random_double(2000) for e in range(3)]
+import libtbx.load_env # required for libtbx.env.find_in_repositories
+if not libtbx.env.has_module("dials_regression"):
+  import sys
+  sys.exit("Skipping tests in " + __file__ + " as dials_regression not present")
 
-print "Traditional mean and covariance"
-print "centres: {0}, {1}, {2}".format(flex.mean(x1), flex.mean(x2), flex.mean(x3))
-print cov(x1, x2, x3).as_scitbx_matrix()
+# load data
+import os
+dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+data_pth = os.path.join(dials_regression, "refinement_test_data",
+  "outlier_rejection", "residuals.dat")
+
+with(open(data_pth, "r")) as f:
+  residuals = f.readlines()
+
+# ignore first line, which is a header
+residuals = [[float(val) for val in e.split()] for e in residuals[1:]]
+X_resid_mm, Y_resid_mm, Phi_resid_mm = zip(*residuals)
+
+X_resid_mm = flex.double(X_resid_mm)
+Y_resid_mm = flex.double(Y_resid_mm)
+Phi_resid_mm = flex.double(Phi_resid_mm)
 
 print "Fast MCD estimates"
-fast_mcd = FastMCD([x1, x2, x3])
-fast_mcd.detect_outliers()
+fast_mcd = FastMCD([X_resid_mm, Y_resid_mm, Phi_resid_mm])
+T = fast_mcd.detect_outliers()
+print "for a single trial, location is:"
+print T
+
+# 200 trials (will take a while - like an hour or so!)
+trials = []
+for i in xrange(200):
+  print "trial {0}".format(i)
+  fast_mcd = FastMCD([X_resid_mm, Y_resid_mm, Phi_resid_mm])
+  loc = fast_mcd.detect_outliers()
+  trials.append(loc)
+
+print "Location estimates for 200 trials follow"
+print "========================================"
+for trial in trials:
+  print "{0} {1} {2}".format(*trial)
+
