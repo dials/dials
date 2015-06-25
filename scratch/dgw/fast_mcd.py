@@ -26,6 +26,7 @@ algorithm"""
 # [8] 2.5335913 0.1952562 1.5105832
 
 from scitbx.array_family import flex
+from math import floor
 
 def sample_covariance(a, b):
   """Calculate sample covariance of two vectors"""
@@ -95,12 +96,12 @@ class FastMCD(object):
   """Experimental implementation of the FAST-MCD algorithm of Rousseeuw and
   van Driessen"""
 
-  def __init__(self, *args):
-    """args are expected to flex.double arrays of the same length, representing
-    the vectors of observations in each dimension"""
+  def __init__(self, data, alpha=0.5):
+    """data expected to be a list of flex.double arrays of the same length,
+    representing the vectors of observations in each dimension"""
 
     # the full dataset as separate vectors
-    self._data = args
+    self._data = data
 
     # number of variables
     self._p = len(self._data)
@@ -117,11 +118,12 @@ class FastMCD(object):
     assert self._n > self._p
 
     # default initial subset size
-    self._h = int((self._n + self._p + 1) / 2)
-    # FAST-MCD allows user specification of h. If h == n it reports a single
+
+    n2 = (self._n + self._p + 1) // 2
+    self._h = int(floor(2 * n2 - self._n + 2 * (self._n - n2) *  alpha))
+    # In the original FAST-MCD, if h == n it reports a single
     # location and scatter estimate for the whole dataset and stops. Currently
-    # limit this implementation to h < n. Note R implementation uses a function
-    # h.alpha.n to calculate this (see covMcd.R)
+    # limit this implementation to h < n
     assert self._h < self._n
 
     # hardcoded for now...
@@ -378,5 +380,5 @@ hbk = """10.1 19.6 28.3
 rows = [[float(e) for e in row.split()] for row in hbk.splitlines()]
 x1, x2, x3 = [flex.double(e) for e in zip(*rows)]
 
-fast_mcd = FastMCD(x1, x2, x3)
+fast_mcd = FastMCD([x1, x2, x3])
 fast_mcd.detect_outliers()
