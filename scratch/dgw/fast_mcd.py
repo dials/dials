@@ -190,14 +190,16 @@ class FastMCD(object):
   def form_initial_subset(self, h, data):
     """Method 2 of subsection 3.1 of R&vD"""
 
+    # permutation of input data for sampling
+    p = flex.random_permutation(len(data[0]))
+    permuted = [col.select(p) for col in data]
+
     # draw random p+1 subset J (or larger if required)
     detS0 = 0.0
     i = 0
-    # FIXME should draw a single extra sample in each iteration, not a whole
-    # new call to sample_data. Do this by forming a permutation and taking
-    # one extra elt each time.
     while not detS0 > 0.0:
-      J = self.sample_data(data, sample_size=self._p+1+i)
+      subset_size = self._p + 1 + i
+      J = [e[0:subset_size] for e in permuted]
       i += 1
       T0, S0 = self.means_and_covariance(J)
       detS0 = S0.matrix_determinant_via_lu()
@@ -510,14 +512,14 @@ print T
 
 # 200 trials (will take a while - like an hour or so!)
 trials = []
-for i in xrange(200):
+for i in xrange(20):
   print "trial {0}".format(i)
   fast_mcd = FastMCD([X_resid_mm, Y_resid_mm, Phi_resid_mm])
   loc = fast_mcd.detect_outliers()
   trials.append(loc)
 
-print "Location estimates for 200 trials follow"
-print "========================================"
+print "Location estimates for 20 trials follow"
+print "======================================="
 for trial in trials:
   print "{0} {1} {2}".format(*trial)
 
