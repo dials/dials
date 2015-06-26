@@ -4,6 +4,7 @@ Import('env')
 sources = [
     'boost_python/parameterisation_helpers.cc',
     'boost_python/gallego_yezzi.cc',
+    'boost_python/mahalanobis.cc',
     'boost_python/refinement_ext.cc']
 
 env.SharedLibrary(
