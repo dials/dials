@@ -61,23 +61,20 @@ def maha_dist_sq(cols, center, cov):
   vectors contained in the list cols) from the center vector with respect to
   the covariance matrix cov"""
 
+  from dials_refinement_helpers_ext import maha_dist_sq
   n = len(cols[0])
   p = len(cols)
   assert len(center) == p
 
-  # observation matrix (shifted by center) and its transpose
+  # observation matrix
   obs = flex.double(flex.grid(n, p))
   for i, col in enumerate(cols):
-    obs.matrix_paste_column_in_place(col - center[i], i)
-  obs_t = obs.matrix_transpose()
+    obs.matrix_paste_column_in_place(col, i)
 
-  d2 = ((obs.matrix_multiply(cov.matrix_inversion())).matrix_multiply(obs_t)).matrix_diagonal()
+  d2 = maha_dist_sq(obs, flex.double(center), cov)
   return d2
 
-# test Mahalanobis distance. This is an inefficient approach to calculating this
-# because we do a full matrix product when we only want the diagonal elements of
-# the result. More efficient approaches exist. See e.g.
-# http://blogs.sas.com/content/iml/2012/02/22/how-to-compute-mahalanobis-distance-in-sas.html
+# test Mahalanobis distance.
 cols = [x1, x2, x3]
 center = [flex.mean(e) for e in cols]
 covmat = cov(x1, x2, x3)
@@ -296,7 +293,7 @@ class FastMCD(object):
 
         # perform concentration steps
         detScurr, Tcurr, Scurr = detS1, T1, S1
-        for j in xrange(self._k1): # take maximum of k1 steps
+        for j in xrange(self._k1): # take k1 steps
 
           Hnew = self.concentration_step(h_sub, group, Tcurr, Scurr)
           Tnew, Snew = self.means_and_covariance(Hnew)
@@ -321,7 +318,7 @@ class FastMCD(object):
     for trial in trials:
 
       detScurr, Tcurr, Scurr = trial
-      for j in xrange(self._k2): # take maximum of k2 steps
+      for j in xrange(self._k2): # take k2 steps
 
         Hnew = self.concentration_step(h_mrgd, sampled, Tcurr, Scurr)
         Tnew, Snew = self.means_and_covariance(Hnew)
@@ -391,7 +388,7 @@ class FastMCD(object):
     #dists = maha_sq(vecs, T, S)
 
     #TODO use dists to classify as outliers and report a flex.bool
-    return T
+    return T, S, S.matrix_determinant_via_lu()
 
 
 # some test data, from R package robustbase: Hawkins, Bradu, Kass's Artificial Data
@@ -505,21 +502,18 @@ Y_resid_mm = flex.double(Y_resid_mm)
 Phi_resid_mm = flex.double(Phi_resid_mm)
 
 print "Fast MCD estimates"
-fast_mcd = FastMCD([X_resid_mm, Y_resid_mm, Phi_resid_mm])
-T = fast_mcd.detect_outliers()
-print "for a single trial, location is:"
-print T
 
-# 200 trials (will take a while - like an hour or so!)
+# 200 trials
 trials = []
-for i in xrange(20):
+for i in xrange(200):
   print "trial {0}".format(i)
   fast_mcd = FastMCD([X_resid_mm, Y_resid_mm, Phi_resid_mm])
-  loc = fast_mcd.detect_outliers()
-  trials.append(loc)
+  loc, S, detS = fast_mcd.detect_outliers()
+  trials.append((loc, S, detS))
 
-print "Location estimates for 20 trials follow"
-print "======================================="
-for trial in trials:
-  print "{0} {1} {2}".format(*trial)
+from dials.util.command_line import interactive_console; interactive_console()
+#print "Location estimates for 20 trials follow"
+#print "======================================="
+#for trial in trials:
+#  print "{0} {1} {2}".format(*trial)
 
