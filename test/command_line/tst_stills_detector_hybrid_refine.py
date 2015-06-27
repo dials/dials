@@ -20,10 +20,9 @@ import os
 import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
-from libtbx.test_utils import open_tmp_directory, approx_equal
-from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from libtbx.test_utils import open_tmp_directory
 
-def test1():
+def test1(averaged_reference_detector=False):
 
   dials_regression = libtbx.env.find_in_repositories(
     relative_path="dials_regression",
@@ -83,8 +82,13 @@ def test1():
     ref = os.path.join(data_dir, ref)
     cmd += "reflections={0} ".format(ref)
 
-  # specify hierarchy_level=1
-  cmd += "detector_phase.refinement.parameterisation.detector.hierarchy_level=1"
+  if averaged_reference_detector:
+    # specify hierarchy_level=0
+    cmd += "detector_phase.refinement.parameterisation.detector.hierarchy_level=0 "
+    cmd += "reference_detector=average"
+  else:
+    # specify hierarchy_level=1
+    cmd += "detector_phase.refinement.parameterisation.detector.hierarchy_level=1"
 
   # work in a temporary directory
   cwd = os.path.abspath(os.curdir)
@@ -107,6 +111,7 @@ def run():
     return
 
   test1()
+  test1(averaged_reference_detector=True)
 
 if __name__ == '__main__':
   from dials.test import cd_auto

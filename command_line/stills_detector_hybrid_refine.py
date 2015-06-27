@@ -32,6 +32,7 @@ from dials.util import log
 
 from libtbx.utils import Sorry
 from libtbx import easy_mp
+import copy
 
 class ExperimentFromCrystal(object):
 
@@ -164,7 +165,6 @@ def detector_parallel_refiners(params, experiments, reflections):
       p.set_name(g.get_name())
 
   # set experiment lists for each sub-detector
-  import copy
   sub_det_expts = [copy.deepcopy(experiments) for e in groups]
   for d, exp in zip(sub_detectors, sub_det_expts):
     exp.replace(exp.detectors()[0], d)
@@ -285,11 +285,11 @@ class Script(object):
       output {
         experiments_filename = refined_experiments.json
           .type = str
-          .help = "The filename for refined experimental models"
+          .help = The filename for refined experimental models
 
         reflections_filename = None
           .type = str
-          .help = "The filename for output of refined reflections"
+          .help = The filename for output of refined reflections
       }
 
       n_macrocycles = 1
@@ -304,6 +304,11 @@ class Script(object):
         include scope dials.algorithms.refinement.refiner.phil_scope
         include scope dials.data.multiprocessing.phil_scope
       }
+
+      reference_detector = *first average
+        .type = choice
+        .help = First: use the first detector found in the experiment \
+                Average: create an average detector from all experiments
 
     ''', process_includes=True)
 
@@ -354,20 +359,13 @@ class Script(object):
       check_format=False)
 
   def run(self):
-    from logging import info
 
     print "Parsing input"
-    params, options = self.parser.parse_args(show_diff_phil=False)
+    params, options = self.parser.parse_args(show_diff_phil=True)
 
     #Configure the logging
     log.config(params.detector_phase.refinement.verbosity,
       info='dials.refine.log', debug='dials.refine.debug.log')
-
-    # Log the diff phil
-    diff_phil = self.parser.diff_phil.as_str()
-    if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
 
     # Try to obtain the models and data
     if len(params.input.experiments) == 0:
@@ -387,9 +385,48 @@ class Script(object):
     from dxtbx.model.experiment.experiment_list import ExperimentList
     experiments=ExperimentList()
 
+    if params.reference_detector == "first":
+      # Use the first experiment of the first experiment list as the reference detector
+      ref_exp = params.input.experiments[0].data[0]
+    else:
+      # Average all the detectors to generate a reference detector
+      assert params.detector_phase.refinement.parameterisation.detector.hierarchy_level == 0
+      from scitbx.matrix import col
+      panel_fasts = []
+      panel_slows = []
+      panel_oris = []
+      for exp_wrapper in params.input.experiments:
+        exp = exp_wrapper.data[0]
+        if len(panel_oris) == 0:
+          for i, panel in enumerate(exp.detector):
+            panel_fasts.append(col(panel.get_fast_axis()))
+            panel_slows.append(col(panel.get_slow_axis()))
+            panel_oris.append(col(panel.get_origin()))
+        else:
+          for i, panel in enumerate(exp.detector):
+            panel_fasts[i] += col(panel.get_fast_axis())
+            panel_slows[i] += col(panel.get_slow_axis())
+            panel_oris[i] += col(panel.get_origin())
+
+      ref_exp = copy.deepcopy(params.input.experiments[0].data[0])
+      for i, panel in enumerate(ref_exp.detector):
+        # Averaging the fast and slow axes can make them be non-orthagonal. Fix by finding
+        # the vector that goes exactly between them and rotate
+        # around their cross product 45 degrees from that vector in either direction
+        vf = panel_fasts[i]/len(params.input.experiments)
+        vs = panel_slows[i]/len(params.input.experiments)
+        c = vf.cross(vs)
+        angle = vf.angle(vs, deg=True)
+        v45 = vf.rotate(c, angle/2, deg=True)
+        vf = v45.rotate(c, -45, deg=True)
+        vs = v45.rotate(c, 45, deg=True)
+        panel.set_frame(vf, vs,
+                        panel_oris[i]/len(params.input.experiments))
+
+      print "Reference detector (averaged):", str(ref_exp.detector)
+
     # set the experiment factory that combines a crystal with the reference beam
-    # and detector from the first experiment of the first experiment list
-    ref_exp = params.input.experiments[0].data[0]
+    # and the reference detector
     experiment_from_crystal=ExperimentFromCrystal(ref_exp.beam, ref_exp.detector)
 
     # keep track of the number of refl per accepted experiment for a table
