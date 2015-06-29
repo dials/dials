@@ -795,6 +795,7 @@ scratch/jmp/weak/test5.py -text
 scratch/jmp/weak/test6.py -text
 scratch/jmp/weak/test7.py -text
 scratch/jmp/weak/test8.py -text
+scratch/luiso_s/PySide_toys/shell_n_box.py -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain
@@ -814,6 +815,7 @@ scratch/luiso_s/old_viewer/tools.py -text
 scratch/luiso_s/old_viewer/viewer_frame.py -text
 scratch/luiso_s/old_viewer/viewer_utilities.py -text
 scratch/luiso_s/old_viewer/viewer_utilities_tst.py -text
+scratch/luiso_s/pside_tst.py -text
 scratch/luiso_s/test_code/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/brach01_tst/branch02_tst/caller.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/cpp_exmp/num_to_str.cpp -text
