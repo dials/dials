@@ -11,7 +11,7 @@ class MyWidg(wx.Frame):
         seq_btt = wx.Button(self, -1, "\n find_spots \n", (0,0))
         trd_btt = wx.Button(self, -1, "\n index \n", (0,0))
         main_panel = wx.Panel(self)
-        self.cli_txt = wx.TextCtrl(self, -1, size=(1500,20), style=wx.DEFAULT)
+        self.cli_txt = wx.TextCtrl(self, -1, size=(800,20), style=wx.DEFAULT)
 
         go_btt = wx.Button(self, -1, " Go ", (0,0))
 
