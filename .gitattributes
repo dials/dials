@@ -167,11 +167,13 @@ algorithms/refinement/SConscript -text
 algorithms/refinement/__init__.py -text
 algorithms/refinement/boost_python/gallego_yezzi.cc -text
 algorithms/refinement/boost_python/mahalanobis.cc -text
+algorithms/refinement/boost_python/outlier_helpers.cc -text
 algorithms/refinement/boost_python/parameterisation_helpers.cc -text
 algorithms/refinement/boost_python/refinement_ext.cc -text
 algorithms/refinement/engine.py -text
 algorithms/refinement/gallego_yezzi.h -text
 algorithms/refinement/mahalanobis.h -text
+algorithms/refinement/outlier_helpers.h -text
 algorithms/refinement/parameterisation/__init__.py -text
 algorithms/refinement/parameterisation/beam_parameters.py -text
 algorithms/refinement/parameterisation/crystal_parameters.py -text
