@@ -25,8 +25,10 @@ algorithm"""
 # [1] 2.1838336 1.9673401 1.3335029 4.9191627 2.1246818 5.3297995 4.9022487
 # [8] 2.5335913 0.1952562 1.5105832
 
-from scitbx.array_family import flex
 from math import floor
+from scitbx.array_family import flex
+from dials_refinement_helpers_ext import maha_dist_sq as maha_dist_sq_cpp
+from dials_refinement_helpers_ext import mcd_consistency
 
 def sample_covariance(a, b):
   """Calculate sample covariance of two vectors"""
@@ -34,11 +36,6 @@ def sample_covariance(a, b):
   N = len(a)
   assert len(b) == N
   return flex.sum((a - flex.mean(a)) * (b - flex.mean(b))) / (N - 1)
-
-x1 = flex.double((3.853, 2.401, 2.253, 3.067, 1.887, 3.293, 3.995, 2.559, 2.785, 2.228))
-x2 = flex.double((4.294, 1.915, 1.315, 4.641, 1.611, 2.838, 3.696, 1.337, 2.853, 2.434))
-x3 = flex.double((4.785, 2.352, 2.023, 4.978, 2.329, 3.101, 4.494, 2.204, 3.468, 3.075))
-
 
 def cov(*args):
   """Calculate covariance matrix between the arguments (should be flex.double
@@ -61,7 +58,6 @@ def maha_dist_sq(cols, center, cov):
   vectors contained in the list cols) from the center vector with respect to
   the covariance matrix cov"""
 
-  from dials_refinement_helpers_ext import maha_dist_sq
   n = len(cols[0])
   p = len(cols)
   assert len(center) == p
@@ -71,16 +67,19 @@ def maha_dist_sq(cols, center, cov):
   for i, col in enumerate(cols):
     obs.matrix_paste_column_in_place(col, i)
 
-  d2 = maha_dist_sq(obs, flex.double(center), cov)
+  d2 = maha_dist_sq_cpp(obs, flex.double(center), cov)
   return d2
 
 # test Mahalanobis distance.
+x1 = flex.double((3.853, 2.401, 2.253, 3.067, 1.887, 3.293, 3.995, 2.559, 2.785, 2.228))
+x2 = flex.double((4.294, 1.915, 1.315, 4.641, 1.611, 2.838, 3.696, 1.337, 2.853, 2.434))
+x3 = flex.double((4.785, 2.352, 2.023, 4.978, 2.329, 3.101, 4.494, 2.204, 3.468, 3.075))
 cols = [x1, x2, x3]
 center = [flex.mean(e) for e in cols]
 covmat = cov(x1, x2, x3)
-maha = maha_dist_sq(cols, center, covmat)
+n = len(cols[0])
 
-# NB This is actually the squared Mahalanobis distance!
+maha = maha_dist_sq(cols, center, covmat)
 
 from libtbx.test_utils import approx_equal
 R_result = [2.1838336, 1.9673401, 1.3335029, 4.9191627, 2.1246818,
@@ -89,11 +88,72 @@ assert approx_equal(list(maha), R_result)
 
 # Now trial implementation of FAST-MCD algorithm
 
+def mcd_finite_sample(p, n, alpha):
+  """Finite sample correction factor for the MCD estimate. Described in
+  Pison et al. Metrika (2002). doi.org/10.1007/s001840200191. Implementation
+  based on 'rawcorfactor' in fastmcd.m from Continuous Sound and Vibration
+  Analysis by Edward Zechmann"""
+
+  from math import log, exp
+  from scitbx.lstbx import normal_eqns
+  if p > 2:
+    coeffqpkwad500=[[-1.42764571687802,1.26263336932151,2],
+                    [-1.06141115981725,1.28907991440387,3]]
+    coeffqpkwad875=[[-0.455179464070565,1.11192541278794,2],
+                    [-0.294241208320834,1.09649329149811,3]]
+
+    y_500 = [log(-coeffqpkwad500[0][0] / p**coeffqpkwad500[0][1]),
+             log(-coeffqpkwad500[1][0] / p**coeffqpkwad500[1][1])]
+    y_875 = [log(-coeffqpkwad875[0][0] / p**coeffqpkwad875[0][1]),
+             log(-coeffqpkwad875[1][0] / p**coeffqpkwad875[1][1])]
+    A_500 = [[1, -log(coeffqpkwad500[0][2]*p**2)],
+             [1, -log(coeffqpkwad500[1][2]*p**2)]]
+    A_875 = [[1, -log(coeffqpkwad875[0][2]*p**2)],
+             [1, -log(coeffqpkwad875[1][2]*p**2)]]
+
+    # solve the set of equations labelled _500
+    eqs = normal_eqns.linear_ls(2)
+    for i in range(2):
+      eqs.add_equation(right_hand_side=y_500[i],
+                     design_matrix_row=flex.double(A_500[i]),
+                     weight=1)
+    eqs.solve()
+    coeffic_500 = eqs.solution()
+
+    # solve the set of equations labelled _875
+    eqs = normal_eqns.linear_ls(2)
+    for i in range(2):
+      eqs.add_equation(right_hand_side=y_875[i],
+                       design_matrix_row=flex.double(A_875[i]),
+                       weight=1)
+    eqs.solve()
+    coeffic_875 = eqs.solution()
+
+    fp_500_n = 1 - exp(coeffic_500[0]) / n**coeffic_500[1]
+    fp_875_n = 1 - exp(coeffic_875[0]) / n**coeffic_875[1]
+
+  elif p == 2:
+    fp_500_n = 1 - exp(0.673292623522027) / n**0.691365864961895
+    fp_875_n = 1 - exp(0.446537815635445) / n**1.06690782995919
+
+  elif p == 1:
+    fp_500_n = 1 - exp(0.262024211897096) / n**0.604756680630497
+    fp_875_n = 1 - exp(-0.351584646688712) / n**1.01646567502486
+
+  if alpha <= 0.875:
+    fp_alpha_n = fp_500_n + (fp_875_n - fp_500_n)/0.375 * (alpha - 0.5)
+
+  if 0.875 < alpha and alpha <= 1:
+    fp_alpha_n = fp_875_n + (1 - fp_875_n)/0.125 * (alpha - 0.875)
+
+  return 1/fp_alpha_n
+
 class FastMCD(object):
   """Experimental implementation of the FAST-MCD algorithm of Rousseeuw and
   van Driessen"""
 
-  def __init__(self, data, alpha=0.5):
+  def __init__(self, data, alpha=0.5, max_n_groups=5, min_group_size=300,
+    n_trials=500, k1=2, k2=2, k3=100):
     """data expected to be a list of flex.double arrays of the same length,
     representing the vectors of observations in each dimension"""
 
@@ -123,15 +183,53 @@ class FastMCD(object):
     # limit this implementation to h < n
     assert self._h < self._n
 
-    # hardcoded for now...
-    self._max_n_groups = 5
-    self._min_group_size = 300
-    self._n_trials = 500
+    # set sizes of groups and how many trials to perform in each
+    self._max_n_groups = max_n_groups
+    self._min_group_size = min_group_size
+    self._n_trials = n_trials
 
     # iteration limits
-    self._k1 = 2
-    self._k2 = 2
-    self._k3 = 100
+    self._k1 = k1
+    self._k2 = k2
+    self._k3 = k3
+
+    # correction factors
+    self._consistency_fac = mcd_consistency(self._p, self._h / self._n)
+    self._finite_samp_fac = mcd_finite_sample(self._p, self._n, self._alpha)
+
+    # perform calculation
+    self._T_raw = None
+    self._S_raw = None
+
+    self.run()
+
+    return
+
+  def run(self):
+    """Run the Fast MCD calculation"""
+
+    # algorithm for a small number of observations (up to twice the minimum
+    # group size)
+    if self._n < 2 * self._min_group_size:
+      self._T_raw, self._S_raw = self.small_dataset_estimate()
+
+    # algorithm for a larger number of observations
+    else:
+      self._T_raw, self._S_raw = self.large_dataset_estimate()
+
+    return
+
+  def get_raw_T_and_S(self):
+    """Get the raw MCD location (T) and covariance matrix (S) estimates"""
+
+    return self._T_raw, self._S_raw
+
+  def get_corrected_T_and_S(self):
+    """Get the MCD location (T) and covariance matrix (S) estimates corrected
+    for normal model consistency and finite-sample size"""
+
+    fac = self._consistency_fac * self._finite_samp_fac
+    return self._T_raw, self._S_raw * fac
 
   @staticmethod
   def means_and_covariance(vecs):
@@ -140,7 +238,7 @@ class FastMCD(object):
     the vector of their means and their covariance matrix. Given the vectors,
     return the latter pair as a tuple"""
 
-    center = [flex.mean(e) for e in vecs]
+    center = flex.double([flex.mean(e) for e in vecs])
     covmat = cov(*vecs)
     return (center, covmat)
 
@@ -250,7 +348,7 @@ class FastMCD(object):
         Tnew, Snew = self.means_and_covariance(Hnew)
         detNew = Snew.matrix_determinant_via_lu()
         if detNew == detCurr:
-          print "trial {0}; iteration {1}; convergence".format(i,j)
+          #print "trial {0}; iteration {1}; convergence".format(i,j)
           break
         detCurr, Tcurr, Scurr = detNew, Tnew, Snew
       best_trials.append((detNew, Tnew, Snew))
@@ -355,13 +453,13 @@ class FastMCD(object):
         Tnew, Snew = self.means_and_covariance(Hnew)
         detNew = Snew.matrix_determinant_via_lu()
         if detNew == detCurr:
-          print "trial {0}; iteration {1}; convergence".format(i,j)
+          #print "trial {0}; iteration {1}; convergence".format(i,j)
           break
         detCurr, Tcurr, Scurr = detNew, Tnew, Snew
-      print "determinant", detNew
-      print "location:", list(Tnew)
-      print "covariance:"
-      print Snew.as_scitbx_matrix()
+      #print "determinant", detNew
+      #print "location:", list(Tnew)
+      #print "covariance:"
+      #print Snew.as_scitbx_matrix()
       best_trials.append((detNew, Tnew, Snew))
 
     # Find the minimum covariance determinant from that set of 10
@@ -369,26 +467,26 @@ class FastMCD(object):
     _, Tbest, Sbest = best_trials[0]
     return Tbest, Sbest
 
-  def detect_outliers(self):
-    """Use the FAST-MCD estimate of location and scatter, T and S, to classify
-    the rows of the input data as inlier or outlier. Report as a flex.bool"""
-
-    # algorithm for a small number of observations (up to twice the minimum
-    # group size)
-    if self._n < 2 * self._min_group_size:
-      T, S = self.small_dataset_estimate()
-
-    # algorithm for a larger number of observations
-    else:
-      T, S = self.large_dataset_estimate()
-
-    print T
-    print S.as_scitbx_matrix()
-    #vecs, center, covmat = self.means_and_covariance(self._data)
-    #dists = maha_sq(vecs, T, S)
-
-    #TODO use dists to classify as outliers and report a flex.bool
-    return T, S, S.matrix_determinant_via_lu()
+  #def detect_outliers(self):
+  #  """Use the FAST-MCD estimate of location and scatter, T and S, to classify
+  #  the rows of the input data as inlier or outlier. Report as a flex.bool"""
+  #
+  #  # algorithm for a small number of observations (up to twice the minimum
+  #  # group size)
+  #  if self._n < 2 * self._min_group_size:
+  #    T, S = self.small_dataset_estimate()
+  #
+  #  # algorithm for a larger number of observations
+  #  else:
+  #    T, S = self.large_dataset_estimate()
+  #
+  #  print T
+  #  print S.as_scitbx_matrix()
+  #  #vecs, center, covmat = self.means_and_covariance(self._data)
+  #  #dists = maha_sq(vecs, T, S)
+  #
+  #  #TODO use dists to classify as outliers and report a flex.bool
+  #  return T, S, S.matrix_determinant_via_lu()
 
 
 # some test data, from R package robustbase: Hawkins, Bradu, Kass's Artificial Data
@@ -474,7 +572,17 @@ x1, x2, x3 = [flex.double(e) for e in zip(*rows)]
 
 # test small dataset algorithm
 fast_mcd = FastMCD([x1, x2, x3])
-fast_mcd.detect_outliers()
+print "Fast MCD raw estimates"
+T, S = fast_mcd.get_raw_T_and_S()
+print list(T)
+print S.as_scitbx_matrix()
+print "Fast MCD corrected estimates"
+T, S = fast_mcd.get_corrected_T_and_S()
+print list(T)
+print S.as_scitbx_matrix()
+print "with corrections"
+print fast_mcd._consistency_fac
+print fast_mcd._finite_samp_fac
 
 # test large dataset algorithm
 import libtbx.load_env # required for libtbx.env.find_in_repositories
@@ -503,15 +611,14 @@ Phi_resid_mm = flex.double(Phi_resid_mm)
 
 print "Fast MCD estimates"
 
-# 200 trials
+# 20 trials
 trials = []
-for i in xrange(200):
+for i in xrange(20):
   print "trial {0}".format(i)
   fast_mcd = FastMCD([X_resid_mm, Y_resid_mm, Phi_resid_mm])
-  loc, S, detS = fast_mcd.detect_outliers()
-  trials.append((loc, S, detS))
+  loc, S = fast_mcd.get_raw_T_and_S()
+  trials.append((loc, S))
 
-from dials.util.command_line import interactive_console; interactive_console()
 #print "Location estimates for 20 trials follow"
 #print "======================================="
 #for trial in trials:
