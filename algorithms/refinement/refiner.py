@@ -226,7 +226,7 @@ refinement
     .help = "Parameters used by the reflection manager"
   {
 
-    reflections_per_degree = 50
+    reflections_per_degree = 100
       .help = "The number of centroids per degree of the sweep to use in"
               "refinement."
       .type = float(value_min=0.)
