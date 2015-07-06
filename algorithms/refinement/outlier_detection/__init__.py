@@ -16,16 +16,8 @@ from logging import info, debug
 class CentroidOutlier(object):
   """Base class for centroid outlier detection algorithms"""
 
-  def __init__(self, reflections, cols=["x_resid", "y_resid", "phi_resid"],
+  def __init__(self, cols=["x_resid", "y_resid", "phi_resid"],
                min_num_obs=20):
-
-    # reflection table (to set the flags)
-    self._reflections = reflections
-
-    # check the columns are present
-    keys = reflections.keys()
-    for col in cols: assert col in keys
-    self._cols = cols
 
     # minimum number of observations per panel below which all reflections will
     # be marked as potential outliers
@@ -44,12 +36,17 @@ class CentroidOutlier(object):
     # to be implemented by derived classes
     raise NotImplementedError()
 
-  def __call__(self):
+  def __call__(self, reflections):
     """Identify outliers in the input and set the centroid_outlier flag.
     Return True if any outliers were detected, otherwise False"""
 
-    sel = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
-    matches = self._reflections.select(sel)
+    # check the columns are present
+    keys = reflections.keys()
+    for col in cols: assert col in keys
+    self._cols = cols
+
+    sel = reflections.get_flags(reflections.flags.used_in_refinement)
+    matches = reflections.select(sel)
     all_imatches = sel.iselection()
 
     max_panel = flex.max(matches['panel'])
@@ -80,8 +77,8 @@ class CentroidOutlier(object):
         ioutliers = pnl_isel
 
       # set those reflections as outliers in the original reflection table
-      self._reflections.set_flags(ioutliers,
-        self._reflections.flags.centroid_outlier)
+      reflections.set_flags(ioutliers,
+        reflections.flags.centroid_outlier)
 
       self.nreject += len(ioutliers)
 
