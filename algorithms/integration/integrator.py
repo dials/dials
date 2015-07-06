@@ -88,6 +88,10 @@ def generate_phil_scope():
                   " intensity.sum.i_over_sigma"
                   " intensity.prf.i_over_sigma"
 
+        split_experiments = True
+          .type = bool
+          .help = "Split shoeboxes into different files"
+
       }
 
       integrator = *auto 3d flat3d 2d single2d stills

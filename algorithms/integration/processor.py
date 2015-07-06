@@ -95,10 +95,12 @@ class Parameters(object):
     def __init__(self):
       self.output = False
       self.select = None
+      self.split_experiments = True
 
     def update(self, other):
       self.output = other.output
       self.select = other.select
+      self.split_experiments = other.split_experiments
 
   def __init__(self):
     '''
@@ -447,11 +449,16 @@ class Task(object):
 
     # Optionally save the shoeboxes
     if self.params.debug.output:
-      filename = 'shoeboxes_%d.pickle' % self.index
       output = self.reflections
       if self.params.debug.select is not None:
         output = output.select(self.params.debug.select(output))
-      output.as_pickle(filename)
+      if self.params.debug.split_experiments:
+        output = output.split_by_experiment_id()
+        for table in output:
+          i = table['id'][0]
+          table.as_pickle('shoeboxes_%d_%d.pickle' % (self.index, i))
+      else:
+        output.as_pickle('shoeboxes_%d.pickle' % self.index)
 
     # Delete the shoeboxes
     del self.reflections['shoebox']
