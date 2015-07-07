@@ -23,6 +23,8 @@ class MCD(CentroidOutlier):
 
   def __init__(self, cols=["x_resid", "y_resid", "phi_resid"],
                min_num_obs=20,
+               separate_experiments=True,
+               separate_panels=True,
                alpha=0.5,
                max_n_groups=5,
                min_group_size=300,
@@ -34,7 +36,9 @@ class MCD(CentroidOutlier):
 
     CentroidOutlier.__init__(self,
       cols=["x_resid", "y_resid", "phi_resid"],
-      min_num_obs=20)
+      min_num_obs=20,
+      separate_experiments=True,
+      separate_panels=True)
 
     # Keep the FastMCD options here
     self._alpha = alpha

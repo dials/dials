@@ -20,11 +20,16 @@ class Tukey(CentroidOutlier):
   the quartiles are designed outliers. When x=1.5, this is Tukey's rule."""
 
   def __init__(self, cols=["x_resid", "y_resid", "phi_resid"],
-               min_num_obs=20, iqr_multipler=1.5):
+               min_num_obs=20,
+               separate_experiments=True,
+               separate_panels=True,
+               iqr_multipler=1.5):
 
     CentroidOutlier.__init__(self,
       cols=["x_resid", "y_resid", "phi_resid"],
-      min_num_obs=20)
+      min_num_obs=20,
+      separate_experiments=True,
+      separate_panels=True)
 
     self._iqr_multiplier = iqr_multipler
 
