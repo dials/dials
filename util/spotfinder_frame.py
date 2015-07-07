@@ -394,8 +394,9 @@ class SpotFrame(XrayFrame) :
 
       trange = [p.get_trusted_range() for p in detector]
       mask = []
-      for tr, im in zip(trange, raw_data):
-        mask.append(im > int(tr[0]))
+      mask = image.get_mask()
+      if mask is None:
+        mask = [p.get_trusted_range_mask(im) for im, p in zip(raw_data, detector)]
 
       gain_value = self.settings.gain
       assert gain_value > 0
@@ -579,7 +580,7 @@ class SpotFrame(XrayFrame) :
     def map_coords(x, y, p):
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
         y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-          reflection['panel'], y - 0.5, x - 0.5)
+          p, y - 0.5, x - 0.5)
       return self.pyslip.tiles.picture_fast_slow_to_map_relative(
         x, y)
 
