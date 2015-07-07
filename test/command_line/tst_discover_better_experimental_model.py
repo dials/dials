@@ -6,6 +6,12 @@ from libtbx.test_utils import approx_equal
 from libtbx.test_utils import open_tmp_directory
 from scitbx import matrix
 
+# this import required early to avoid seg fault on some systems
+try:
+  import scipy.linalg # import dependency
+except ImportError, e:
+  pass
+
 # apply a random seed to avoid this randomly crashing... I hope
 import random
 random.seed(12345)
