@@ -9,8 +9,11 @@ namespace dials { namespace refinement { namespace boost_python {
 
   void export_outlier_helpers()
   {
-    def("mcd_consistency", &mcd_consistency, (
+    def("qchisq", &qchisq,(
       arg("p"),
+      arg("df")));
+    def("mcd_consistency", &mcd_consistency, (
+      arg("df"),
       arg("alpha")));
   }
 
