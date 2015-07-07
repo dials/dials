@@ -12,16 +12,27 @@
 
 from __future__ import division
 from logging import info, debug
+from dials.array_family import flex
 
 class CentroidOutlier(object):
   """Base class for centroid outlier detection algorithms"""
 
   def __init__(self, cols=["x_resid", "y_resid", "phi_resid"],
-               min_num_obs=20):
+               min_num_obs=20,
+               separate_experiments=True,
+               separate_panels=True):
+
+    # column names of the data in which to look for outliers
+    self._cols = cols
 
     # minimum number of observations per panel below which all reflections will
     # be marked as potential outliers
     self._min_num_obs = min_num_obs
+
+    # whether to do outlier rejection within each experiment or panel, or across
+    # all experiments and panels
+    self._separate_experiments = separate_experiments
+    self._separate_panels = separate_panels
 
     # the number of rejections
     self.nreject = 0
@@ -41,40 +52,67 @@ class CentroidOutlier(object):
     Return True if any outliers were detected, otherwise False"""
 
     # check the columns are present
-    keys = reflections.keys()
-    for col in cols: assert col in keys
-    self._cols = cols
+    for col in self._cols: assert reflections.has_key(col)
 
     sel = reflections.get_flags(reflections.flags.used_in_refinement)
-    matches = reflections.select(sel)
-    all_imatches = sel.iselection()
+    all_data = reflections.select(sel)
+    all_data_indices = sel.iselection()
 
-    max_panel = flex.max(matches['panel'])
+    jobs = []
+    if self._separate_experiments:
+      # split the data set by experiment id
+      for iexp in xrange(flex.max(all_data['id'] + 1)):
+        sel = all_data['id'] == iexp
+        job = {'id':iexp, 'panel':'all', 'data':all_data.select(sel),
+               'indices':all_data_indices.select(sel)}
+        jobs.append(job)
+    else:
+      # keep the whole dataset across all experiment ids
+      job = {'id':'all', 'panel':'all', 'data':all_data,
+             'indices':all_data_indices}
+      jobs.append(job)
 
-    nreject = 0
-    for pnl in xrange(max_panel + 1):
+    jobs2 = []
+    if self._separate_panels:
+      # split further by panel id
+      for job in jobs:
+        data = job['data']
+        iexp = job['id']
+        indices = job['indices']
+        for ipanel in xrange(flex.max(data['panel']) + 1):
+          sel = data['panel'] == ipanel
+          job2 = {'id':iexp, 'panel':ipanel, 'data':data.select(sel),
+                  'indices':indices.select(sel)}
+          jobs2.append(job2)
+    else:
+      # keep the splits as they are
+      jobs2 = jobs
 
-      # selection of reflections that are on this panel
-      pnl_sel = matches['panel'] == pnl
+    # now loop over the lowest level of splits
+    for job in jobs2:
 
-      # their indices back in the original reflection table
-      pnl_isel = all_imatches.select(pnl_sel)
+      data = job['data']
+      indices = job['indices']
+      iexp = job['id']
+      ipanel = job['panel']
 
-      if len(pnl_isel) >= self._min_num_obs:
+      if len(indices) >= self._min_num_obs:
 
-        # get the subset of data on this panel as a list of columns
-        cols = [matches[col].select(pnl_sel) for col in self._cols]
+        # get the subset of data as a list of columns
+        cols = [data[col] for col in self._cols]
 
-        # determine the position of outliers on this panel's sub-dataset
+        # determine the position of outliers on this sub-dataset
         outliers = self._detect_outliers(cols)
 
         # get positions of outliers from the original matches
-        ioutliers = pnl_isel.select(outliers)
+        ioutliers = indices.select(outliers)
 
       else:
-        msg = "Only {0} reflections on panel {1}. ".format(len(pnl_isel), pnl)
-        debug(msg + "All of these flagged as possible outliers.")
-        ioutliers = pnl_isel
+        msg = "For experiment: {0} and panel: {1}, ".format(iexp, ipanel)
+        msg += "only {0} reflections are present. ".format(len(indices))
+        msg += "All of these flagged as possible outliers."
+        debug(msg)
+        ioutliers = indices
 
       # set those reflections as outliers in the original reflection table
       reflections.set_flags(ioutliers,
@@ -84,7 +122,7 @@ class CentroidOutlier(object):
 
     if self.nreject == 0: return False
 
-    info("{0} reflections have been flagged as outliers".format(nreject))
+    info("{0} reflections have been flagged as outliers".format(self.nreject))
 
     return True
 

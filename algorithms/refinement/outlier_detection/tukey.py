@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  __init__.py
+#  tukey.py
 #
 #  Copyright (C) 2015 Diamond Light Source and STFC Rutherford Appleton
 #                     Laboratory, UK.
@@ -30,7 +30,7 @@ class Tukey(CentroidOutlier):
 
     return
 
-  def _detect_outliers(cols):
+  def _detect_outliers(self, cols):
 
     from scitbx.math import five_number_summary
 
