@@ -154,7 +154,7 @@ class ReflectionManager(object):
                      max_sample_size=None,
                      min_sample_size=0,
                      close_to_spindle_cutoff=0.1,
-                     iqr_multiplier=1.5,
+                     outlier_detector=None,
                      weighting_strategy_override=None,
                      verbosity=0):
 
@@ -171,9 +171,9 @@ class ReflectionManager(object):
     # keep track of the original indices of the reflections
     reflections['iobs'] = flex.size_t_range(len(reflections))
 
-    # set up the reflection inclusion cutoffs
+    # set up the reflection inclusion criteria
     self._close_to_spindle_cutoff = close_to_spindle_cutoff #too close to spindle
-    self._iqr_multiplier = iqr_multiplier #outlier rejection
+    self._outlier_detector = outlier_detector #for outlier rejection
     self._nref_per_degree = nref_per_degree #random subsets
     self._max_sample_size = max_sample_size #sample size ceiling
     self._min_sample_size = min_sample_size #sample size floor
@@ -223,8 +223,11 @@ class ReflectionManager(object):
     # print summary before outlier rejection
     self.print_stats_on_matches()
 
-    # flag potential outliers
-    rejection_occurred = self._flag_outliers()
+    # outlier rejection if requested
+    if self._outlier_detector is None:
+      rejection_occurred = False
+    else:
+      rejection_occurred = self._outlier_detector(self._reflections)
 
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
@@ -494,76 +497,6 @@ class ReflectionManager(object):
 
     return
 
-  def _flag_outliers(self):
-    """Set the centroid outlier flag on matches with extreme (outlying) residuals.
-
-    Outlier detection finds values more than _iqr_multiplier times the
-    interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
-
-    Return boolean whether rejection was performed or not"""
-
-    # return early if outlier rejection is disabled
-    if self._iqr_multiplier is None: return False
-
-    from scitbx.math import five_number_summary
-    sel = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
-    matches = self._reflections.select(sel)
-    all_imatches = sel.iselection()
-
-    max_panel = flex.max(matches['panel'])
-
-    nreject = 0
-    for pnl in range(max_panel + 1):
-      sub_sel = matches['panel'] == pnl
-      sub_matches = matches.select(sub_sel)
-      sub_imatches = all_imatches.select(sub_sel)
-
-      if len(sub_matches) >= self._min_num_obs:
-        x_resid = sub_matches['x_resid']
-        y_resid = sub_matches['y_resid']
-        phi_resid = sub_matches['phi_resid']
-
-        min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
-        min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
-        min_phi, q1_phi, med_phi, q3_phi, max_phi = five_number_summary(phi_resid)
-
-        iqr_x = q3_x - q1_x
-        iqr_y = q3_y - q1_y
-        iqr_phi = q3_phi - q1_phi
-
-        cut_x = self._iqr_multiplier * iqr_x
-        cut_y = self._iqr_multiplier * iqr_y
-        cut_phi = self._iqr_multiplier * iqr_phi
-
-        # accumulate a selection of outliers for this panel
-        sel_out = x_resid > q3_x + cut_x
-        sel_out.set_selected(x_resid < q1_x - cut_x, True)
-        sel_out.set_selected(y_resid > q3_y + cut_y, True)
-        sel_out.set_selected(y_resid < q1_y - cut_y, True)
-        sel_out.set_selected(phi_resid > q3_phi + cut_phi, True)
-        sel_out.set_selected(phi_resid < q1_phi - cut_phi, True)
-
-        # get positions of outliers from the original matches
-        ioutliers = sub_imatches.select(sel_out)
-      else:
-        debug("Only %d reflections on panel %d. All of these flagged " + \
-              "as possible outliers.",
-          len(sub_matches), pnl)
-        ioutliers = sub_imatches
-
-      # set those reflections as outliers
-      self._reflections.set_flags(ioutliers,
-        self._reflections.flags.centroid_outlier)
-
-      nreject += len(ioutliers)
-
-    if nreject == 0: return False
-
-    info("%d reflections have been flagged as outliers", nreject)
-
-    return True
-
-
   def reset_accepted_reflections(self, reflections=None):
     """Reset use flags for all observations in preparation for a new set of
     predictions"""
@@ -638,66 +571,4 @@ class StillsReflectionManager(ReflectionManager):
 
     return
 
-  def _flag_outliers(self):
-    """Set the centroid outlier flag on matches with extreme (outlying) residuals.
-
-    Outlier detection finds values more than _iqr_multiplier times the
-    interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
-
-    Return boolean whether rejection was performed or not"""
-
-    # return early if outlier rejection is disabled
-    if self._iqr_multiplier is None: return False
-
-    from scitbx.math import five_number_summary
-    sel = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
-    matches = self._reflections.select(sel)
-    all_imatches = sel.iselection()
-
-    max_panel = flex.max(matches['panel'])
-
-    nreject = 0
-    for pnl in range(max_panel + 1):
-      sub_sel = matches['panel'] == pnl
-      sub_matches = matches.select(sub_sel)
-      sub_imatches = all_imatches.select(sub_sel)
-
-      if len(sub_matches) >= self._min_num_obs:
-        x_resid = sub_matches['x_resid']
-        y_resid = sub_matches['y_resid']
-
-        min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
-        min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
-
-        iqr_x = q3_x - q1_x
-        iqr_y = q3_y - q1_y
-
-        cut_x = self._iqr_multiplier * iqr_x
-        cut_y = self._iqr_multiplier * iqr_y
-
-        # accumulate a selection of outliers for this panel
-        sel_out = x_resid > q3_x + cut_x
-        sel_out.set_selected(x_resid < q1_x - cut_x, True)
-        sel_out.set_selected(y_resid > q3_y + cut_y, True)
-        sel_out.set_selected(y_resid < q1_y - cut_y, True)
-
-        # get positions of outliers from the original matches
-        ioutliers = sub_imatches.select(sel_out)
-      else:
-        debug("Only %d reflections on panel %d. All of these flagged " + \
-              "as possible outliers.",
-          len(sub_matches), pnl)
-        ioutliers = sub_imatches
-
-      # set those reflections as outliers
-      self._reflections.set_flags(ioutliers,
-        self._reflections.flags.centroid_outlier)
-
-      nreject += len(ioutliers)
-
-    if nreject == 0: return False
-
-    info("%d reflections have been flagged as outliers" % nreject)
-
-    return True
 

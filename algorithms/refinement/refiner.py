@@ -950,10 +950,16 @@ class RefinerFactory(object):
       assert options.weighting_strategy.override != "stills"
 
     # do outlier rejection?
-    if options.outlier.algorithm == "tukey":
-      iqr_multiplier=options.outlier.tukey.iqr_multiplier
+    if options.outlier.algorithm == "null":
+      outlier_detector = None
     else:
-      iqr_multiplier=None
+      if do_stills:
+        colnames = ["x_resid", "y_resid"]
+      else:
+        colnames = ["x_resid", "y_resid", "phi_resid"]
+      from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
+      outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
+        options, colnames)
 
     # override default weighting strategy?
     weighting_strategy = None
@@ -990,7 +996,7 @@ class RefinerFactory(object):
             max_sample_size = options.maximum_sample_size,
             min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,
-            iqr_multiplier=iqr_multiplier,
+            outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
             verbosity=verbosity)
 
