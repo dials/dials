@@ -21,6 +21,10 @@ from dials.array_family import flex # import dependency
 from libtbx.phil import parse
 import libtbx
 
+# Include the outlier_detection phil scope as a string to avoid problems
+# with the include scope directive
+from dials.algorithms.refinement.outlier_detection.outlier_base \
+  import phil_str as outlier_phil_str
 phil_scope = parse('''
 
 refinement
@@ -255,11 +259,7 @@ refinement
 
     minimum_number_of_reflections = 20
       .help = "The minimum number of input observations per experiment below"
-              "which a reflection manager will not be constructed. This number"
-              "is also used to determine the minimum number of reflections per"
-              "panel to allow perform outlier rejection to be performed. Below"
-              "this, all reflections on the panel are rejected as potential"
-              "outliers"
+              "which a reflection manager will not be constructed."
       .type = int(value_min=0)
 
     close_to_spindle_cutoff = 0.05
@@ -271,24 +271,6 @@ refinement
               "to the rotation axis."
       .type = float(value_min = 0)
       .expert_level = 1
-
-    outlier
-      .help = "Outlier rejection after initial reflection prediction."
-    {
-      algorithm = *null tukey
-        .help = "Outlier rejection algorithm"
-        .type = choice
-
-      tukey
-        .help = "Options for the tukey outlier rejector"
-        .expert_level = 1
-      {
-        iqr_multiplier = 1.5
-          .help = "The IQR multiplier used to detect outliers. A value of 1.5"
-                  "gives Tukey's rule for outlier detection"
-          .type = float(value_min = 0.)
-      }
-    }
 
     block_width = 1.0
       .help = "Width of a reflection 'block' (in degrees) determining how fine-"
@@ -318,10 +300,16 @@ refinement
                 "unit weighting."
         .type = floats(size = 3, value_min = 0)
     }
+
+    # Does not work:
+    #
+    # include scope dials.algorithms.refinement.outlier_detection.phil_scope
+    #
+    # instead just paste the string in directly here.
+    %s
   }
 }
-
-''')
+'''%outlier_phil_str, process_includes=True)
 
 class RefinerFactory(object):
   """Factory class to create refiners"""
