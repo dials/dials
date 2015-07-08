@@ -175,6 +175,7 @@ algorithms/refinement/gallego_yezzi.h -text
 algorithms/refinement/mahalanobis.h -text
 algorithms/refinement/outlier_detection/__init__.py -text
 algorithms/refinement/outlier_detection/mcd.py -text
+algorithms/refinement/outlier_detection/outlier_base.py -text
 algorithms/refinement/outlier_detection/tukey.py -text
 algorithms/refinement/outlier_helpers.h -text
 algorithms/refinement/parameterisation/__init__.py -text
