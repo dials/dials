@@ -130,7 +130,7 @@ obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
 # use a ReflectionManager to exclude reflections too close to the spindle
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
-refman = ReflectionManager(obs_refs, experiments, iqr_multiplier=None)
+refman = ReflectionManager(obs_refs, experiments, outlier_detector=None)
 
 # Redefine the reflection predictor to use the type expected by the Target class
 from dials.algorithms.refinement.prediction import ExperimentsPredictor

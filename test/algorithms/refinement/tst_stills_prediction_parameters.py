@@ -122,7 +122,7 @@ def run(verbose = False):
   from dials.algorithms.refinement.reflection_manager import \
     StillsReflectionManager
   refman = StillsReflectionManager(reflections, stills_experiments,
-                                   iqr_multiplier=None)
+                                   outlier_detector=None)
 
   # Make a reflection predictor of the type expected by the Target class
   from dials.algorithms.refinement.prediction import ExperimentsPredictor
