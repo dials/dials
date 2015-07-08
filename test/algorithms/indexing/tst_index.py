@@ -558,7 +558,7 @@ def exercise_15():
   extra_args = ["max_try=10", "reflections_per_degree=50",
                 "outlier.algorithm=tukey", "known_symmetry.space_group=R3",
                 "n_macro_cycles=3"]
-  expected_unit_cell = uctbx.unit_cell((48.397, 48.397, 284.767, 90, 90, 90))
+  expected_unit_cell = uctbx.unit_cell((48.397, 48.397, 284.767, 90, 90, 120))
   expected_rmsds = (0.06, 0.08, 0.22)
   expected_hall_symbol = ' P 1'
 
