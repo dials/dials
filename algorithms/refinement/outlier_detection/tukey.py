@@ -23,7 +23,7 @@ class Tukey(CentroidOutlier):
                min_num_obs=20,
                separate_experiments=True,
                separate_panels=True,
-               iqr_multipler=1.5):
+               iqr_multiplier=1.5):
 
     CentroidOutlier.__init__(self,
       cols=["x_resid", "y_resid", "phi_resid"],
@@ -31,7 +31,7 @@ class Tukey(CentroidOutlier):
       separate_experiments=True,
       separate_panels=True)
 
-    self._iqr_multiplier = iqr_multipler
+    self._iqr_multiplier = iqr_multiplier
 
     return
 

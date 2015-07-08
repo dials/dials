@@ -190,4 +190,36 @@ outlier
 phil_scope = parse(phil_str)
 
 class CentroidOutlierFactory(object):
-  pass
+
+  @classmethod
+  def from_parameters_and_colnames(cls, params, colnames):
+
+    # id the relevant scope for the requested method
+    method = params.outlier.algorithm
+    if method == "null": return None
+    elif method == "tukey":
+      from tukey import Tukey as outlier_detector
+      algo_params = params.outlier.tukey
+    elif method == "mcd":
+      from mcd import MCD as outlier_detector
+      algo_params = params.outlier.mcd
+    else:
+      raise RuntimeError("outlier.algorithm not recognised")
+
+    # construct kwargs from the algo_params scope
+    kwargs = dict((k, v) for k, v in algo_params.__dict__.items() \
+      if not k.startswith('_'))
+
+    return outlier_detector(
+      cols=colnames,
+      min_num_obs=params.outlier.minimum_number_of_reflections,
+      separate_experiments=params.outlier.separate_experiments,
+      separate_panels=params.outlier.separate_panels,
+      **kwargs)
+
+if __name__ == "__main__":
+
+  params=phil_scope.extract()
+  params.outlier.algorithm="tukey"
+  print CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3])
+
