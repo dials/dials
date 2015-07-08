@@ -115,7 +115,9 @@ indexing {
               "combinations that are consistent with the given symmetry."
       .expert_level = 1
   }
-  basis_vector_combinations {
+  basis_vector_combinations
+    .expert_level = 1
+  {
     max_try = 50
       .type = int(value_min=1)
       .help = "Number of putative basis vector combinations to try."
@@ -296,11 +298,13 @@ class vector_group(object):
   def __init__(self):
     self.vectors = []
     self.lengths = []
+    self.volumes = []
     self._mean = None
 
-  def append(self, vector, length):
+  def append(self, vector, length, volume):
     self.vectors.append(vector)
     self.lengths.append(length)
+    self.volumes.append(volume)
     self._mean = self.compute_mean()
 
   def mean(self):
@@ -1074,6 +1078,8 @@ class indexer_base(object):
     #params.refinement.parameterisation.beam.fix = "all"
     params.refinement.refinery.max_iterations = 2
     params.refinement.reflections.minimum_number_of_reflections = 1
+    params.refinement.reflections.reflections_per_degree = min(
+      params.refinement.reflections.reflections_per_degree, 20)
 
     args = []
 
@@ -1258,32 +1264,39 @@ class indexer_base(object):
 
     vectors = self.candidate_basis_vectors
 
+    debug("Candidate basis vectors:")
     for i, v in enumerate(vectors):
       debug("%s %s" %(i, v.length()))# , vector_heights[i]
 
-    # print a table of the angles between each pair of vectors
+    if self.params.debug:
+      # print a table of the angles between each pair of vectors
 
-    angles = flex.double(len(vectors)**2)
-    angles.reshape(flex.grid(len(vectors), len(vectors)))
+      from cStringIO import StringIO
+      s = StringIO()
 
-    for i in range(len(vectors)):
-      v_i = vectors[i]
-      for j in range(i+1, len(vectors)):
-        v_j = vectors[j]
-        angles[i,j] = v_i.angle(v_j, deg=True)
+      angles = flex.double(len(vectors)**2)
+      angles.reshape(flex.grid(len(vectors), len(vectors)))
 
-    print >> debug_handle, (" "*7),
-    for i in range(len(vectors)):
-      print >> debug_handle, "%7.3f" % vectors[i].length(),
-    print >> debug_handle
-    for i in range(len(vectors)):
-      print >> debug_handle, "%7.3f" % vectors[i].length(),
-      for j in range(len(vectors)):
-        if j <= i:
-          print >> debug_handle, (" "*7),
-        else:
-          print >> debug_handle, "%5.1f  " %angles[i,j],
-      print >> debug_handle
+      for i in range(len(vectors)):
+        v_i = vectors[i]
+        for j in range(i+1, len(vectors)):
+          v_j = vectors[j]
+          angles[i,j] = v_i.angle(v_j, deg=True)
+
+      print >> s, (" "*7),
+      for i in range(len(vectors)):
+        print >> s, "%7.3f" % vectors[i].length(),
+      print >> s
+      for i in range(len(vectors)):
+        print >> s, "%7.3f" % vectors[i].length(),
+        for j in range(len(vectors)):
+          if j <= i:
+            print >> s, (" "*7),
+          else:
+            print >> s, "%5.1f  " %angles[i,j],
+        print >> s
+
+      debug(s.getvalue())
 
   def debug_plot_candidate_basis_vectors(self):
     from matplotlib import pyplot
@@ -1567,7 +1580,7 @@ def find_max_cell(reflections, max_cell_multiplier, nearest_neighbor_percentile)
   else:
     phi_min = flex.min(phi_deg)
     phi_max = flex.max(phi_deg)
-    step_size = 5 #degrees
+    step_size = 10 #degrees
     d_phi = phi_max - phi_min
     n_steps = int(math.ceil(d_phi / step_size))
     max_cell = flex.double()

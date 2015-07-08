@@ -36,8 +36,7 @@ class indexer_fft1d(indexer_base):
     solutions = candidate_basis_vectors_fft1d(
       reflections['rlp'], hardcoded_phil, max_cell=self.params.max_cell)
     self.candidate_basis_vectors = solutions[0]
-    if self.params.debug:
-      self.debug_show_candidate_basis_vectors()
+    self.debug_show_candidate_basis_vectors()
     if self.params.debug_plots:
       self.debug_plot_candidate_basis_vectors()
     self.candidate_crystal_models = self.find_candidate_orientation_matrices(

@@ -82,7 +82,7 @@ class run_one_indexing(object):
     tmp_dir = open_tmp_directory(suffix="test_dials_index")
     os.chdir(tmp_dir)
     command = " ".join(args)
-    #print command
+    print command
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     os.chdir(cwd)
     assert os.path.exists(os.path.join(tmp_dir, "experiments.json"))
@@ -170,7 +170,7 @@ def exercise_2():
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=2",
                 "bin_size_fraction=0.25",
-                "d_min=4"]
+                "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.04, 0.04, 0.0003)
@@ -192,13 +192,13 @@ def exercise_3():
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=2",
                 "bin_size_fraction=0.25",
-                "d_min=4"]
+                "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.04, 0.04, 0.0003)
 
   # now enforce symmetry
-  extra_args.append("space_group=P4")
+  extra_args.append("known_symmetry.space_group=P4")
   expected_hall_symbol = ' P 4'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -223,7 +223,7 @@ def exercise_4():
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1.json")
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=2",
-                "d_min=4",
+                "reciprocal_space_grid.d_min=4",
                 "scan_range=0,50",
                 "scan_range=450,500",
                 "scan_range=850,900"]
@@ -248,7 +248,7 @@ def exercise_5():
   extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=10",
                 "n_macro_cycles=2",
-                "d_min=4",
+                "reciprocal_space_grid.d_min=4",
                 "max_cell=70",
                 "scan_range=0,50",
                 "scan_range=450,500",
@@ -278,7 +278,7 @@ def exercise_6():
   extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=10",
                 "n_macro_cycles=2",
-                "d_min=4",
+                "reciprocal_space_grid.d_min=4",
                 "max_cell=70",
                 ]
   expected_unit_cell = uctbx.unit_cell(
@@ -306,7 +306,7 @@ def exercise_7():
   extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=10",
                 "n_macro_cycles=2",
-                "d_min=4",
+                "reciprocal_space_grid.d_min=4",
                 "max_cell=70",
                 ]
   expected_unit_cell = uctbx.unit_cell(
@@ -461,14 +461,14 @@ def exercise_12():
   pickle_path = os.path.join(data_dir, "first_image.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["indexing.method=fft3d",
-                "space_group=P4",
-                "unit_cell=57.8,57.8,150,90,90,90",
+                "known_symmetry.space_group=P4",
+                "known_symmetry.unit_cell=57.8,57.8,150,90,90,90",
                 "peak_search=clean",
                 "cluster_analysis_search=True",
                 "min_samples=15",
                 "maximum_spot_error=3",
                 "n_macro_cycles=4",
-                "d_min=4"
+                "reciprocal_space_grid.d_min=4"
                 ]
 
   expected_unit_cell = uctbx.unit_cell((57.8,57.8,150,90,90,90))
@@ -492,9 +492,9 @@ def exercise_13():
     extra_args = ["bin_size_fraction=0.25",
                   "use_all_reflections=True"]
     if uc is not None:
-      extra_args.append("unit_cell=\"%s %s %s %s %s %s\"" %unit_cell.parameters())
+      extra_args.append("known_symmetry.unit_cell=\"%s %s %s %s %s %s\"" %unit_cell.parameters())
     if hall is not None:
-      extra_args.append("space_group=\"Hall: %s\"" %hall.replace('"', '\\"'))
+      extra_args.append("known_symmetry.space_group=\"Hall: %s\"" %hall.replace('"', '\\"'))
 
     expected_unit_cell = unit_cell
     if hall is not None:
@@ -543,8 +543,8 @@ def exercise_14():
   for method in ("fft3d", "fft1d", "real_space_grid_search"):
     extra_args = []
     extra_args.append(
-      "unit_cell=\"%s %s %s %s %s %s\"" %expected_unit_cell.parameters())
-    extra_args.append("space_group=\"Hall: %s\"" %expected_hall_symbol)
+      "known_symmetry.unit_cell=\"%s %s %s %s %s %s\"" %expected_unit_cell.parameters())
+    extra_args.append("known_symmetry.space_group=\"Hall: %s\"" %expected_hall_symbol)
     extra_args.append("indexing.method=%s" %method)
     extra_args.append("treat_single_image_as_still=False")
 
@@ -555,9 +555,10 @@ def exercise_15():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
   pickle_path = os.path.join(data_dir, "strong.pickle")
   sweep_path = os.path.join(data_dir, "datablock_import.json")
-  extra_args = ["max_try=10"]
+  extra_args = ["max_try=10", "reflections_per_degree=50",
+                "outlier.algorithm=tukey"]
   expected_unit_cell = uctbx.unit_cell(
-    (48.283, 48.283, 98.677, 90.048, 104.125, 120.004))
+    (48.269, 48.2758, 98.6599, 75.8593, 75.8969, 60.0159))
   expected_rmsds = (0.06, 0.08, 0.22)
   expected_hall_symbol = ' P 1'
 
@@ -576,7 +577,7 @@ def exercise_16():
   sweep_paths = [
     glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "*_datablock_import.json"))[0]
     for i in range(4)]
-  extra_args = ["space_group=I4"]
+  extra_args = ["known_symmetry.space_group=I4"]
   expected_unit_cell = uctbx.unit_cell(
     (7.310, 7.310, 6.820, 90.000, 90.000, 90.000))
   expected_rmsds = (0.10, 0.7, 0.5)

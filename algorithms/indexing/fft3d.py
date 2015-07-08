@@ -68,8 +68,7 @@ class indexer_fft3d(indexer_base):
       self.find_peaks_clean()
     if self.params.multiple_lattice_search.cluster_analysis_search:
       self.find_basis_vector_combinations_cluster_analysis()
-      if self.params.debug:
-        self.debug_show_candidate_basis_vectors()
+      self.debug_show_candidate_basis_vectors()
       if self.params.debug_plots:
         self.debug_plot_candidate_basis_vectors()
       crystal_models = self.candidate_crystal_models
@@ -78,8 +77,7 @@ class indexer_fft3d(indexer_base):
           crystal_models[:self.params.multiple_lattice_search.max_lattices]
     else:
       self.find_candidate_basis_vectors()
-      if self.params.debug:
-        self.debug_show_candidate_basis_vectors()
+      self.debug_show_candidate_basis_vectors()
       if self.params.debug_plots:
         self.debug_plot_candidate_basis_vectors()
       self.candidate_crystal_models = self.find_candidate_orientation_matrices(
@@ -171,6 +169,7 @@ class indexer_fft3d(indexer_base):
           flood_fill.grid_points_per_void()[1:]))).iselection()
 
     if self.params.optimise_initial_basis_vectors:
+      self.volumes = flood_fill.grid_points_per_void().select(isel)
       sites_cart = flood_fill.centres_of_mass_cart().select(isel)
       sites_cart_optimised = optimise_basis_vectors(
         self.reflections['rlp'].select(self.reflections_used_for_indexing),
@@ -186,13 +185,15 @@ class indexer_fft3d(indexer_base):
         debug(sites_cart[p], sites_cart_optimised[p], norms[p])
 
       # only use those vectors which haven't shifted too far from starting point
-      self.sites = self.sites.select(
-        norms < (5 * self.fft_cell.parameters()[0]/self.gridding[0]))
+      sel = norms < (5 * self.fft_cell.parameters()[0]/self.gridding[0])
+      self.sites = self.sites.select(sel)
+      self.volumes = self.volumes.select(sel)
       #diff = (self.sites - flood_fill.centres_of_mass_frac().select(isel))
       #flex.min_max_mean_double(diff.norms()).show()
 
     else:
       self.sites = flood_fill.centres_of_mass_frac().select(isel)
+      self.volumes = flood_fill.grid_points_per_void().select(isel)
 
   def find_candidate_basis_vectors(self):
     # hijack the xray.structure class to facilitate calculation of distances
@@ -203,16 +204,19 @@ class indexer_fft3d(indexer_base):
     xs = xs.sites_mod_short()
     sites_cart = xs.sites_cart()
     lengths = flex.double([matrix.col(sc).length() for sc in sites_cart])
-    xs = xs.select(flex.sort_permutation(lengths))
+    perm = flex.sort_permutation(lengths)
+    xs = xs.select(perm)
+    volumes = self.volumes.select(perm)
     with open('peaks.pdb', 'wb') as f:
       print >> f, xs.as_pdb_file()
 
     sites_frac = xs.sites_frac()
     vectors = xs.sites_cart()
     norms = vectors.norms()
-    vectors = vectors.select(
-      (norms > self.params.min_cell) & (norms < self.params.max_cell))
+    sel = (norms > self.params.min_cell) & (norms < self.params.max_cell)
+    vectors = vectors.select(sel)
     vectors = [matrix.col(v) for v in vectors]
+    volumes = volumes.select(sel)
 
     # XXX loop over these vectors and sort into groups similar to further down
     # group similar angle and lengths, also catch integer multiples of vectors
@@ -222,7 +226,7 @@ class indexer_fft3d(indexer_base):
     angle_tolerance = 10 # degrees
 
     orth = self.fft_cell.orthogonalize
-    for v in vectors:
+    for v, volume in zip(vectors, volumes):
       length = v.length()
       if length < self.params.min_cell or length > self.params.max_cell:
         continue
@@ -234,25 +238,32 @@ class indexer_fft3d(indexer_base):
             < relative_length_tolerance):
           angle = mean_v.angle(v, deg=True)
           if angle < angle_tolerance:
-            group.append(v, length)
+            group.append(v, length, volume)
             matched_group = True
             break
           elif abs(180-angle) < angle_tolerance:
-            group.append(-v, length)
+            group.append(-v, length, volume)
             matched_group = True
             break
       if not matched_group:
         group = vector_group()
-        group.append(v, length)
+        group.append(v, length, volume)
         vector_groups.append(group)
 
     vectors = [g.mean() for g in vector_groups]
+    volumes = flex.double(max(g.volumes) for g in vector_groups)
 
-    # sort by length
-    lengths = flex.double([v.length() for v in vectors])
-    perm = flex.sort_permutation(lengths)
+    ## sort by length
+    #lengths = flex.double([v.length() for v in vectors])
+    #perm = flex.sort_permutation(lengths)
+    # sort by peak size
+    perm = flex.sort_permutation(volumes, reverse=True)
+    volumes = volumes.select(perm)
     vectors = [vectors[i] for i in perm]
     #vector_heights = [vector_heights[i] for i in perm]
+
+    for i, (v, volume) in enumerate(zip(vectors, volumes)):
+      debug("%s %s %s" %(i, v.length(), volume))
 
     # exclude vectors that are (approximately) integer multiples of a shorter
     # vector
