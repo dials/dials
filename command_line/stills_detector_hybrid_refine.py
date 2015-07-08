@@ -333,6 +333,7 @@ class Script(object):
       target.gradient_calculation_blocksize=100000
       reflections{
         outlier.algorithm=tukey
+        outlier.separate_experiments=False
         weighting_strategy.override=stills
         weighting_strategy.delpsi_constant=1000000
         minimum_number_of_reflections=0
