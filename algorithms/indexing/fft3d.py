@@ -223,7 +223,7 @@ class indexer_fft3d(indexer_base):
 
     vector_groups = []
     relative_length_tolerance = 0.1
-    angle_tolerance = 10 # degrees
+    angle_tolerance = 5 # degrees
 
     orth = self.fft_cell.orthogonalize
     for v, volume in zip(vectors, volumes):
