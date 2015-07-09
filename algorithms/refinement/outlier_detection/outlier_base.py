@@ -126,15 +126,19 @@ outlier
   minimum_number_of_reflections = 20
     .help = "The minimum number of input observations per outlier rejection"
             "job below which all reflections in the job will be rejected as"
-            "potential outliers"
+            "potential outliers."
     .type = int(value_min=0)
 
   separate_experiments = True
-    .help = ""
+    .help = "If true, outlier rejection will be performed on each experiment"
+            "separately. Otherwise, the data from all experiments will be"
+            "combined for outlier rejection."
     .type = bool
 
   separate_panels = True
-    .help = ""
+    .help = "If true, outlier rejection will be performed separately for each"
+            "panel of a multi-panel detector model. Otherwise data from across"
+            "all panels will be combined for outlier rejection."
     .type = bool
 
   tukey
@@ -148,39 +152,54 @@ outlier
   }
 
   mcd
-    .help = "Options for the mcd outlier rejector"
+    .help = "Options for the mcd outlier rejector, which uses an algorithm"
+            "based on FAST-MCD by Rousseeuw and van Driessen. See"
+            "doi.org/10.1080/00401706.1999.10485670."
     .expert_level = 1
   {
      alpha = 0.5
-       .help = ""
+       .help = "Decimal fraction controlling the size of subsets over which the"
+               "covariance matrix determinant is minimised."
        .type = float(value_min = 0., value_max = 1.0)
 
      max_n_groups=5
-       .help = ""
+       .help = "The maximum number of groups to split the dataset into if the"
+               "dataset is 'large' (more observations than twice the"
+               "min_group_size)."
        .type = int(value_min = 1)
 
      min_group_size=300
-       .help = ""
+       .help = "The smallest sub-dataset size when splitting the dataset into"
+               "a number of groups, maximally max_n_groups."
        .type = int(value_min = 100)
 
      n_trials=500
-       .help = ""
+       .help = "The number of samples used for initial estimates to seed the"
+               "search within each sub-dataset."
        .type = int(value_min = 1)
 
      k1=2
-       .help = ""
+       .help = "The number of concentration steps to take after initial estimates."
        .type = int(value_min = 1)
 
      k2=2
-       .help = ""
+       .help = "If the dataset is 'large', the number of concentration steps to"
+               "take after applying the best subset estimates to the merged"
+               "group."
        .type = int(value_min = 1)
 
      k3=100
-       .help = ""
+       .help = "If the dataset is 'small', the number of concentration steps to"
+               "take after selecting the best of the initial estimates, applied"
+               "to the whole dataset."
        .type = int(value_min = 1)
 
      threshold_probability=0.975
-       .help = ""
+       .help = "Quantile probability from the Chi-squared distribution with"
+               "number of degrees of freedom equal to the number of dimensions"
+               "of the data data (e.g. 3 for X, Y and Phi residuals)."
+               "Observations whose robust Mahalanobis distances are larger than"
+               "the obtained quantile will be flagged as outliers."
        .type = float(value_min = 0., value_max = 1.0)
   }
 }
