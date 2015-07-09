@@ -260,27 +260,36 @@ class indexer_fft3d(indexer_base):
     perm = flex.sort_permutation(volumes, reverse=True)
     volumes = volumes.select(perm)
     vectors = [vectors[i] for i in perm]
-    #vector_heights = [vector_heights[i] for i in perm]
 
     for i, (v, volume) in enumerate(zip(vectors, volumes)):
       debug("%s %s %s" %(i, v.length(), volume))
 
+    lengths = flex.double(v.length() for v in vectors)
+    perm = flex.sort_permutation(lengths)
+
     # exclude vectors that are (approximately) integer multiples of a shorter
     # vector
     unique_vectors = []
-    for v in vectors:
+    unique_volumes = flex.double()
+    for p in perm:
+      v = vectors[p]
       is_unique = True
-      if i > 0:
-        for v_u in unique_vectors:
-          if is_approximate_integer_multiple(v_u, v):
-            is_unique = False
-            break
+      for v_u in unique_vectors:
+        if is_approximate_integer_multiple(v_u, v):
+          debug("rejecting %s: integer multiple of %s" %(v.length(), v_u.length()))
+          is_unique = False
+          break
       if is_unique:
         unique_vectors.append(v)
-    vectors = unique_vectors
+        unique_volumes.append(volumes[p])
 
-    # choose the shortest vectors
-    #vectors = vectors[:30]
+    # re-sort by peak volume
+    perm = flex.sort_permutation(unique_volumes, reverse=True)
+    vectors = [unique_vectors[i] for i in perm]
+    volumes = unique_volumes.select(perm)
+
+    #for i, (v, volume) in enumerate(zip(vectors, volumes)):
+      #debug("%s %s %s" %(i, v.length(), volume))
 
     self.candidate_basis_vectors = vectors
 
