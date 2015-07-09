@@ -528,13 +528,6 @@ class RefinerFactory(object):
         s1 = s1/s1.norms() * (1/beam.get_wavelength())
         reflections['s1'].set_selected(isel, s1)
 
-    # remove unwanted columns
-    cols = ['id', 'miller_index', 'panel', 's1', 'xyzcal.mm', 'xyzobs.mm.value',
-            'xyzobs.mm.variance', 'xyzobs.px.value']
-    for k in reflections.keys():
-      if k not in cols:
-        del reflections[k]
-
     # unset the refinement flags (creates flags field if needed)
     from dials.array_family.flex import reflection_table
     reflections.unset_flags(flex.size_t_range(len(reflections)),
@@ -987,13 +980,11 @@ class RefinerFactory(object):
 
     # calculate reflection block_width?
     if params.refinement.parameterisation.crystal.scan_varying:
+      from dials.algorithms.refinement.reflection_manager import BlockCalculator
+      block_calculator = BlockCalculator(experiments, reflections)
       if params.refinement.parameterisation.crystal.UB_model_per == "block":
-        from dials.algorithms.refinement.reflection_manager import BlockCalculator
-        block_calculator = BlockCalculator(experiments, reflections)
         reflections = block_calculator.per_width(options.block_width, deg=True)
       elif params.refinement.parameterisation.crystal.UB_model_per == "image":
-        from dials.algorithms.refinement.reflection_manager import BlockCalculator
-        block_calculator = BlockCalculator(experiments, reflections)
         reflections = block_calculator.per_image()
 
     return refman(reflections=reflections,
@@ -1070,7 +1061,7 @@ class Refiner(object):
     get_detector
     get_goniometer
     get_scan
-    get_reflections
+    get_modified_indexed_reflections
     get_matches
     get_param_reporter
     parameter_correlation_plot
@@ -1196,17 +1187,19 @@ class Refiner(object):
     else:
       return None
 
-  def get_reflections(self):
-    """Return the input reflections"""
+  def get_modified_indexed_reflections(self):
+    """Return the originally input reflections with some modifications done
+    during the construction of this Refiner, namely:
 
-    # FIXME Consider: Does a Refiner really need to keep a copy of the input
-    # reflections? (indexing code seems to use it, but is it necessary?)
+    1. 's1' column is set if it wasn't present before
+    2. 'iobs' column is added
+    3. 'entering' column is added
+    4. 'xyzobs.px.value' column is set if it wasn't present before
+    5. 'used_in_refinement' flag is unset ('flag' column added if necessary)
 
-    # The length and order of this is unmodified by refinement - only beam
-    # vectors may have been set, if they were not already. It is deemed safe
-    # to return this without a copy (NB the input will usually already have been
-    # copied by the RefinerFactory)
-    return self._reflections
+    Only indexing uses this method. Its use elsewhere is discouraged."""
+
+    return self._refman.get_indexed()
 
   def rmsds(self):
     """Return rmsds of the current model"""

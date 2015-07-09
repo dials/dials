@@ -1250,7 +1250,7 @@ class indexer_base(object):
       debug_plots=self.params.debug_plots)
     if outliers is not None:
       reflections['id'].set_selected(outliers, -1)
-    used_reflections = refiner.get_reflections()
+    used_reflections = refiner.get_modified_indexed_reflections()
     verbosity = self.params.refinement_protocol.verbosity
     matches = refiner.get_matches()
     xyzcal_mm = flex.vec3_double(len(used_reflections))

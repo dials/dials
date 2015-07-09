@@ -200,6 +200,14 @@ class ReflectionManager(object):
     self._indexed = reflections
     self._reflections = reflections.select(flex.size_t(refs_to_keep))
 
+    # remove unwanted columns from the managed reflections
+    cols = ['id', 'iobs', 'miller_index', 'panel', 's1', 'xyzcal.mm',
+            'xyzobs.mm.value', 'xyzobs.mm.variance', 'xyzobs.px.value',
+            'entering', 'flags', 'block', 'block_centre']
+    for k in self._reflections.keys():
+      if k not in cols:
+        del self._reflections[k]
+
     # fail if there are too few reflections in the manager (the check also needs
     # to be repeated after outlier rejection and subsetting)
     self._check_too_few()
