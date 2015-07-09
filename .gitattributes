@@ -632,7 +632,6 @@ scratch/dgw/source_model/__init__.py -text
 scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
 scratch/dgw/synthetic_refine.py -text
-scratch/dgw/tst_fast_mcd.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/adaptive_cubic_spline.py -text
 scratch/gw/attic/brute_force_calibration.py -text
@@ -1036,6 +1035,7 @@ test/algorithms/spot_prediction/tst_scan_varying_predictor.py -text
 test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
 test/algorithms/spot_prediction/tst_stills_reflection_predictor.py -text
+test/algorithms/statistics/tst_fast_mcd.py -text
 test/array_family/tst_flex_pixel_list.py -text
 test/array_family/tst_flex_shoebox.py -text
 test/array_family/tst_reflection_table.py -text

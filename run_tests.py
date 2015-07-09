@@ -45,6 +45,7 @@ tst_list = (
     "$D/test/model/data/tst_prediction.py",
     "$D/test/model/data/tst_observation.py",
     "$D/test/model/data/tst_shoebox.py",
+    "$D/test/algorithms/statistics/tst_fast_mcd.py",
     "$D/test/algorithms/spot_prediction/tst_index_generator.py",
     "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",
     "$D/test/algorithms/spot_prediction/tst_rotation_angles.py",
