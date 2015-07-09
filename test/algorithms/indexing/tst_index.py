@@ -560,11 +560,11 @@ def exercise_15():
                 "n_macro_cycles=3"]
   expected_unit_cell = uctbx.unit_cell((48.397, 48.397, 284.767, 90, 90, 120))
   expected_rmsds = (0.06, 0.08, 0.22)
-  expected_hall_symbol = ' P 1'
+  expected_hall_symbol = ' R 3'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
-  assert len(result.indexed_reflections) > 298000, len(result.indexed_reflections)
+  assert len(result.indexed_reflections) > 277000, len(result.indexed_reflections)
 
 def exercise_16():
   # test for small molecule multi-sweep indexing, 4 sweeps with different values
