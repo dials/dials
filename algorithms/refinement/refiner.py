@@ -528,6 +528,13 @@ class RefinerFactory(object):
         s1 = s1/s1.norms() * (1/beam.get_wavelength())
         reflections['s1'].set_selected(isel, s1)
 
+    # remove unwanted columns
+    cols = ['id', 'miller_index', 'panel', 's1', 'xyzcal.mm', 'xyzobs.mm.value',
+            'xyzobs.mm.variance', 'xyzobs.px.value']
+    for k in reflections.keys():
+      if k not in cols:
+        del reflections[k]
+
     # unset the refinement flags (creates flags field if needed)
     from dials.array_family.flex import reflection_table
     reflections.unset_flags(flex.size_t_range(len(reflections)),
