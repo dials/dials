@@ -263,7 +263,7 @@ def work():
 
 work()
 
-def tst_use_in_stills_parameterisation(beam_param=0):
+def tst_use_in_stills_parameterisation_for_beam(beam_param=0):
 
   # test use of analytical expression in stills prediction parameterisation
 
@@ -272,7 +272,8 @@ def tst_use_in_stills_parameterisation(beam_param=0):
   import random
 
   print
-  print "Test use of analytical expressions in stills prediction parameterisation"
+  print "Test use of analytical expressions in stills prediction " + \
+        "parameterisation for beam parameters"
 
   # beam model
   from dxtbx.model.experiment import beam_factory
@@ -301,7 +302,7 @@ def tst_use_in_stills_parameterisation(beam_param=0):
   e1 = r0.cross(s0u).normalize()
 
   # calculate c0, a vector orthogonal to s0u and e1
-  c0 = s0u.cross(e1)
+  c0 = s0u.cross(e1).normalize()
 
   # convert to derivative of the unit beam direction. This involves scaling
   # by the wavelength, then projection back onto the Ewald sphere.
@@ -344,6 +345,145 @@ def tst_use_in_stills_parameterisation(beam_param=0):
 
   print "These are now the same :-)"
 
-tst_use_in_stills_parameterisation(0)
-tst_use_in_stills_parameterisation(1)
-tst_use_in_stills_parameterisation(2)
+tst_use_in_stills_parameterisation_for_beam(0)
+tst_use_in_stills_parameterisation_for_beam(1)
+tst_use_in_stills_parameterisation_for_beam(2)
+
+
+def tst_use_in_stills_parameterisation_for_crystal(crystal_param=0):
+
+  # test use of analytical expression in stills prediction parameterisation
+
+  from scitbx import matrix
+  from math import pi, sqrt, atan2
+  import random
+
+  print
+  print "Test use of analytical expressions in stills prediction " + \
+        "parameterisation for crystal parameters"
+
+  # crystal model
+  from dxtbx.model.crystal import crystal_model
+  from dials.algorithms.refinement.parameterisation.crystal_parameters import \
+    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
+  crystal = crystal_model((20,0,0), (0,30,0), (0,0,40),
+                          space_group_symbol="P 1")
+  # random reorientation
+  e = matrix.col((random.random(),random.random(),random.random())).normalize()
+  angle = random.random() * 180
+  crystal.rotate_around_origin(e, angle)
+
+  wl = 1.1
+  s0 = matrix.col((0,0,1/wl))
+  s0u = s0.normalize()
+
+  # these are stills, but need a rotation axis for the Reeke algorithm
+  axis = matrix.col((1,0,0))
+
+  # crystal parameterisations
+  xlop = CrystalOrientationParameterisation(crystal)
+  xlucp = CrystalUnitCellParameterisation(crystal)
+
+  # Find some reflections close to the Ewald sphere
+  from dials.algorithms.spot_prediction.reeke import reeke_model
+  U = crystal.get_U()
+  B = crystal.get_B()
+  UB = U*B
+  dmin = 4
+  hkl = reeke_model(UB, UB, axis, s0, dmin, margin=1).generate_indices()
+
+  # choose first reflection for now, calc quantities relating to q
+  h = matrix.col(hkl[0])
+  q = UB * h
+  q0 = q.normalize()
+  q_scalar = q.length()
+  qq = q_scalar * q_scalar
+
+  # calculate the axis of closest rotation
+  e1 = q0.cross(s0u).normalize()
+
+  # calculate c0, a vector orthogonal to s0u and e1
+  c0 = s0u.cross(e1).normalize()
+
+  # calculate q1
+  q1 = q0.cross(e1).normalize()
+
+  # calculate DeltaPsi
+  a = 0.5 * qq * wl
+  b = sqrt(qq - a*a)
+  r = -1.0 * a * s0u + b * c0
+  DeltaPsi = -1.0 * atan2(r.dot(q1), r.dot(q0))
+
+  # Checks on the reflection prediction
+  from libtbx.test_utils import approx_equal
+  # 1. check r is on the Ewald sphere
+  s1 = s0 + r
+  assert approx_equal(s1.length(), s0.length())
+  # 2. check DeltaPsi is correct
+  tst = q.rotate_around_origin(e1, DeltaPsi)
+  assert approx_equal(tst, r)
+
+  # choose the derivative with respect to a particular parameter.
+  if crystal_param < 3:
+    dU_dp = xlop.get_ds_dp()[crystal_param]
+    dq = dU_dp * B * h
+  else:
+    dB_dp = xlucp.get_ds_dp()[crystal_param - 3]
+    dq = U * dB_dp * h
+
+  # NKS method of calculating d[q0]/dp
+  q_dot_dq = q.dot(dq)
+  dqq = 2.0 * q_dot_dq
+  dq_scalar = dqq / q_scalar
+  dq0_dp = (q_scalar * dq - (q_dot_dq * q0)) / qq
+  # orthogonal to q0, as expected.
+  print "NKS [q0].(d[q0]/dp) = {0} (should be 0.0)".format(q0.dot(dq0_dp))
+
+  # intuitive method of calculating d[q0]/dp, based on the fact that
+  # it must be orthogonal to q0, i.e. in the plane containing q1 and e1
+  scaled = dq / q.length()
+  dq0_dp = scaled.dot(q1) * q1 + scaled.dot(e1) * e1
+  # orthogonal to q0, as expected.
+  print "DGW [q0].(d[q0]/dp) = {0} (should be 0.0)".format(q0.dot(dq0_dp))
+
+  # So it doesn't matter which method I use to calculate d[q0]/dp, as
+  # both methods give the same results
+
+  # use the fact that -e1 == q0.cross(q1) to redefine the derivative d[e1]/dp
+  # from Sauter et al. (2014) (A.22)
+  de1_dp = -1.0 * dq0_dp.cross(q1)
+
+  # this *is* orthogonal to e1, as expected.
+  print "[e1].(d[e1]/dp) = {0} (should be 0.0)".format(e1.dot(de1_dp))
+
+  # calculate (d[r]/d[e1])(d[e1]/dp) analytically
+  from scitbx.array_family import flex
+  from dials_refinement_helpers_ext import dRq_de
+  dr_de1 = matrix.sqr(dRq_de(flex.double([DeltaPsi]),
+                  flex.vec3_double([e1]),
+                  flex.vec3_double([q]))[0])
+  print "Analytical calculation for (d[r]/d[e1])(d[e1]/dp):"
+  print dr_de1 * de1_dp
+
+  # now calculate using finite differences.
+  dp = 1.e-8
+  del_e1 = de1_dp * dp
+  e1f = e1 + del_e1 * 0.5
+  rfwd = q.rotate_around_origin(e1f, DeltaPsi)
+  e1r = e1 - del_e1 * 0.5
+  rrev = q.rotate_around_origin(e1r, DeltaPsi)
+
+  print "Finite difference estimate for (d[r]/d[e1])(d[e1]/dp):"
+  print (rfwd - rrev) * (1 / dp)
+
+  print "These are essentially the same :-)"
+
+tst_use_in_stills_parameterisation_for_crystal(0)
+tst_use_in_stills_parameterisation_for_crystal(1)
+tst_use_in_stills_parameterisation_for_crystal(2)
+tst_use_in_stills_parameterisation_for_crystal(3)
+tst_use_in_stills_parameterisation_for_crystal(4)
+tst_use_in_stills_parameterisation_for_crystal(5)
+tst_use_in_stills_parameterisation_for_crystal(6)
+tst_use_in_stills_parameterisation_for_crystal(7)
+tst_use_in_stills_parameterisation_for_crystal(8)
