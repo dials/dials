@@ -516,7 +516,6 @@ doc/user-tutorial/getting_started_tutorial.sh -text
 doc/user-tutorial/multi_lattice_tutorial.sh -text
 doc/user-tutorial/tutorial.sh -text
 doc/user-tutorial/tutorial.txt -text
-doc/user/manual.tex -text
 /error.h -text
 extensions/__init__.py -text
 extensions/gaussian_rs_profile_model_ext.py -text
