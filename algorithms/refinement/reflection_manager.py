@@ -432,6 +432,7 @@ class ReflectionManager(object):
     """Print some basic statistics on the matches"""
 
     l = self.get_matches()
+    nref = len(l)
 
     from libtbx.table_utils import simple_table
     from scitbx.math import five_number_summary
@@ -440,7 +441,9 @@ class ReflectionManager(object):
     phi_resid = l['phi_resid']
     w_x, w_y, w_phi = l['xyzobs.mm.weights'].parts()
 
-    info("\nSummary statistics for observations matched to predictions:")
+    msg = "\nSummary statistics for {0} observations".format(nref) +\
+          " matched to predictions:"
+    info(msg)
     header = ["", "Min", "Q1", "Med", "Q3", "Max"]
     rows = []
     row_data = five_number_summary(x_resid)
@@ -459,7 +462,7 @@ class ReflectionManager(object):
     info(st.format())
     info("")
 
-    if len(l) < 20:
+    if nref < 20:
       debug("Fewer than 20 reflections matched!")
       return
 
