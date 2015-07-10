@@ -44,6 +44,8 @@ Examples::
 phil_scope = iotbx.phil.parse("""
 change_of_basis_op = a,b,c
   .type = str
+hkl_offset = None
+  .type = ints(size=3)
 space_group = None
   .type = space_group
   .help = "The space group to be applied AFTER applying the change of basis "
@@ -112,9 +114,18 @@ def run(args):
     reflections = reflections[0]
 
     miller_indices = reflections['miller_index']
+
+    if params.hkl_offset is not None:
+      from cctbx.array_family import flex
+      h,k,l = miller_indices.as_vec3_double().parts()
+      h += params.hkl_offset[0]
+      k += params.hkl_offset[1]
+      l += params.hkl_offset[2]
+      miller_indices = flex.miller_index(h.iround(), k.iround(), l.iround())
     miller_indices_reindexed = change_of_basis_op.apply(miller_indices)
     reflections['miller_index'] = miller_indices_reindexed
 
+    print "Saving reindexed reflections to %s" %params.output.reflections
     easy_pickle.dump(params.output.reflections, reflections)
 
 
