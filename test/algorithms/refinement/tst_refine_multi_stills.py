@@ -55,15 +55,23 @@ def test1():
     shutil.rmtree(tmp_dir)
   print "OK"
 
-  for e1, e2 in zip(reg_exp, ref_exp):
-    # test refined models against expected
-    assert e1.crystal.is_similar_to(e2.crystal)
-    assert e1.detector.is_similar_to(e2.detector,
-      fast_axis_tolerance=5e-5, slow_axis_tolerance=5e-5, origin_tolerance=5e-5)
-    assert e1.beam.is_similar_to(e2.beam)
-    s0_1 = matrix.col(e1.beam.get_unit_s0())
-    s0_2 = matrix.col(e1.beam.get_unit_s0())
+  # compare results
+  tol = 1e-5
+  for b1, b2 in zip(reg_exp.beams(), ref_exp.beams()):
+    assert b1.is_similar_to(b2, wavelength_tolerance=tol,
+                                direction_tolerance=tol,
+                                polarization_normal_tolerance=tol,
+                                polarization_fraction_tolerance=tol)
+    s0_1 = matrix.col(b1.get_unit_s0())
+    s0_2 = matrix.col(b2.get_unit_s0())
     assert s0_1.accute_angle(s0_2, deg=True) < 0.0057 # ~0.1 mrad
+  for c1, c2 in zip(reg_exp.crystals(), ref_exp.crystals()):
+    assert c1.is_similar_to(c2)
+
+  for d1, d2 in zip(reg_exp.detectors(), ref_exp.detectors()):
+    assert d1.is_similar_to(d2,
+      fast_axis_tolerance=1e-4, slow_axis_tolerance=1e-4, origin_tolerance=1e-2)
+
   print "OK"
 
   return
@@ -121,7 +129,7 @@ def run():
     print "Skipping tests in " + __file__ + " as dials_regression not present"
     return
 
-  #test1()
+  test1()
   test2()
 
 if __name__ == '__main__':
