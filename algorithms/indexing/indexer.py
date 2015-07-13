@@ -19,6 +19,7 @@ from dials.util import log
 debug_handle = log.debug_handle()
 info_handle = log.info_handle()
 
+import libtbx
 from libtbx.utils import Sorry
 import iotbx.phil
 from scitbx import matrix
@@ -140,7 +141,7 @@ indexing {
     weighted
       .expert_level = 1
     {
-      power = 2
+      power = 1
         .type = int(value_min=1)
     }
   }
@@ -595,6 +596,14 @@ class indexer_base(object):
 
       for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
         if i_cycle > 0:
+          if self.params.refinement_protocol.d_min_step is libtbx.Auto:
+            d_spacings = 1/self.reflections['rlp'].norms()
+            d_min_all = flex.min(d_spacings)
+            n_cycles = self.params.refinement_protocol.n_macro_cycles
+            self.params.refinement_protocol.d_min_step \
+              = (self.d_min - d_min_all)/(n_cycles-1)
+            info("Using d_min_step %.1f"
+                 %self.params.refinement_protocol.d_min_step)
           d_min = self.d_min - self.params.refinement_protocol.d_min_step
           d_min = max(d_min, 0)
           d_min = max(d_min, self.params.refinement_protocol.d_min_final)
@@ -828,7 +837,6 @@ class indexer_base(object):
       self.refined_reflections['xyzcal.px'].set_selected(imgset_sel, xyzcal_px)
 
   def find_max_cell(self):
-    import libtbx
     if self.params.max_cell is libtbx.Auto:
       if self.params.known_symmetry.unit_cell is not None:
         uc_params = self.target_symmetry_primitive.unit_cell().parameters()
@@ -1047,13 +1055,14 @@ class indexer_base(object):
 
     def run_one_refinement(args):
       params, reflections, experiments = args
+      indexed_reflections = reflections.select(reflections['id'] > -1)
       from dials.algorithms.refinement import RefinerFactory
       try:
         logger = logging.getLogger()
         disabled = logger.disabled
         logger.disabled = True
         refiner = RefinerFactory.from_parameters_data_experiments(
-          params, reflections, experiments,
+          params, indexed_reflections, experiments,
           verbosity=0)
         refiner.run()
       except RuntimeError, e:
@@ -1066,7 +1075,8 @@ class indexer_base(object):
         soln = Solution(model_likelihood=model_likelihood,
                         crystal=experiments.crystals()[0],
                         rmsds=rmsds,
-                        n_indexed=len(reflections))
+                        n_indexed=len(indexed_reflections),
+                        fraction_indexed=float(len(indexed_reflections))/len(reflections))
         return soln
       finally:
         logger.disabled = disabled
@@ -1134,8 +1144,7 @@ class indexer_base(object):
           debug("skipping crystal: too similar to other crystals")
           continue
 
-      args.append(
-        (params, refl.select(refl['id'] > -1), experiments))
+      args.append((params, refl, experiments))
 
     from libtbx import easy_mp
     results = easy_mp.parallel_map(
@@ -1149,11 +1158,12 @@ class indexer_base(object):
       if soln is None:
         continue
       solutions.append(soln)
-      debug("unit_cell: " + str(soln.crystal.get_unit_cell()))
-      debug("model_likelihood: %.2f" %soln.model_likelihood)
-      debug("n_indexed: %i" %soln.n_indexed)
+      #debug("unit_cell: " + str(soln.crystal.get_unit_cell()))
+      #debug("model_likelihood: %.2f" %soln.model_likelihood)
+      #debug("n_indexed: %i" %soln.n_indexed)
 
     if len(solutions):
+      debug(str(solutions))
       best_solution = solutions.best_solution()
       debug("best model_likelihood: %.2f" %best_solution.model_likelihood)
       debug("best n_indexed: %i" %best_solution.n_indexed)
@@ -1479,6 +1489,20 @@ class SolutionTrackerFilter(object):
                  if s.model_likelihood == self.best_filtered_liklihood]
     return solutions[0]
 
+  def __str__(self):
+    rows = []
+    rows.append(
+      ['unit_cell', 'volume', 'n_indexed', 'fraction_indexed', 'likelihood'])
+
+    for i, s in enumerate(self.all_solutions):
+      s = self.all_solutions[i]
+      rows.append(
+        [str(s.crystal.get_unit_cell()), "%.1f" %s.crystal.get_unit_cell().volume(),
+         str(s.n_indexed), "%.2f" %s.fraction_indexed, "%.2f" %s.model_likelihood])
+
+    from libtbx import table_utils
+    return table_utils.format(rows=rows, has_header=True)
+
 
 def rank(array, reverse=False):
   perm = flex.sort_permutation(array, reverse=reverse)
@@ -1503,64 +1527,78 @@ class SolutionTrackerWeighted(object):
     # smaller volume = better
     volumes = flex.double(
       s.crystal.get_unit_cell().volume() for s in self.all_solutions)
-    min_volume = flex.min(volumes)
-    ranks = flex.double(len(volumes))
-    for i, v in enumerate(volumes):
-      ranks[i] = abs(v-min_volume)/min_volume
-    return ranks
+    return volumes/flex.max(volumes)
 
   def rank_by_rmsd_xy(self, reverse=False):
     # smaller rmsds = better
     rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
       s.rmsds for s in self.all_solutions).parts()
     rmsd_xy = flex.sqrt(flex.pow2(rmsd_x) + flex.pow2(rmsd_y))
-    best_rmsd = flex.min(rmsd_xy)
-    ranks = flex.double(len(rmsd_xy))
-    for i, r in enumerate(rmsd_xy):
-      ranks[i] = abs(r-best_rmsd)/best_rmsd
-    return ranks
+    return (rmsd_xy/flex.max(rmsd_xy))
 
   def rank_by_rmsd_z(self, reverse=False):
     # smaller rmsds = better
     rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
       s.rmsds for s in self.all_solutions).parts()
-    best_rmsd = flex.min(rmsd_z)
-    ranks = flex.double(len(rmsd_z))
-    for i, r in enumerate(rmsd_z):
-      ranks[i] = abs(r-best_rmsd)/best_rmsd
-    return ranks
+    return (rmsd_z/flex.max(rmsd_z))
 
-  #def rank_by_likelihood(self, reverse=False):
-    ## larger likelihood = better
-    #likelihoods = flex.double(s.model_likelihood for s in self.all_solutions)
-    #best_likelihood = flex.max(likelihoods)
-    #ranks = flex.double(len(likelihoods))
-    #for i, l in enumerate(likelihoods):
-      #ranks[i] = abs(l-best_likelihood)/best_likelihood
-    #return ranks
-
-  def rank_by_n_indexed(self, reverse=False):
+  def rank_by_fraction_indexed(self, reverse=False):
     # more indexed reflections = better
-    n_indexed = flex.int(s.n_indexed for s in self.all_solutions)
-    max_indexed = flex.max(n_indexed)
-    ranks = flex.double(len(n_indexed))
-    for i, n in enumerate(n_indexed):
-      #ranks[i] = abs(n-max_indexed)/max_indexed
-      ranks[i] = abs(n-max_indexed)/n
+    fraction_indexed = flex.double(s.fraction_indexed for s in self.all_solutions)
+    fraction_unindexed = 1-fraction_indexed
+    return fraction_unindexed
+    best_fraction = flex.min(fraction_unindexed)
+    ranks = flex.abs(fraction_unindexed-best_fraction)
     return ranks
 
   def best_solution(self):
+    scores = self.solution_scores()
+    perm = flex.sort_permutation(scores)
+    return self.all_solutions[perm[0]]
+
+  def solution_scores(self):
     scores = sum(flex.pow(ranks.as_double(), self.power)
-                 for ranks in (self.rank_by_n_indexed(),
+                 for ranks in (
+                               self.rank_by_fraction_indexed(),
                                self.rank_by_volume(),
                                self.rank_by_rmsd_xy(),
-                               self.rank_by_rmsd_z(),
-                               #self.rank_by_likelihood(),
+                               #self.rank_by_rmsd_z(),
                                ))
+    return scores
 
-    perm = flex.sort_permutation(scores)
+  def __str__(self):
+    rows = []
+    rows.append(
+      ['unit_cell', 'n_indexed', 'fraction_indexed', 'rank_fraction_indexed',
+       'volume', 'rank_volume', 'rmsd_xy', 'rank_rmsd_xy',
+       #'rmsd_z', 'rank_rmsd_z',
+       'overall_score'])
 
-    return self.all_solutions[perm[0]]
+    rank_by_fraction_indexed = self.rank_by_fraction_indexed()
+    rank_by_volume = self.rank_by_volume()
+    rank_by_rmsd_xy = self.rank_by_rmsd_xy()
+    rank_by_rmsd_z = self.rank_by_rmsd_z()
+    overall_scores = self.solution_scores()
+
+    perm = flex.sort_permutation(overall_scores)
+
+    rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
+      s.rmsds for s in self.all_solutions).parts()
+    rmsd_xy = flex.sqrt(flex.pow2(rmsd_x) + flex.pow2(rmsd_y))
+    rmsd_z *= (180/math.pi)
+
+    for i in perm:
+      s = self.all_solutions[i]
+      rows.append(
+        [str(s.crystal.get_unit_cell()), str(s.n_indexed),
+         "%.2f" %s.fraction_indexed, "%.2f" %rank_by_fraction_indexed[i],
+         "%.1f" %s.crystal.get_unit_cell().volume(), "%.2f" %rank_by_volume[i],
+         "%.2f" %rmsd_xy[i], "%.2f" %rank_by_rmsd_xy[i],
+         #"%.2f" %rmsd_z[i], "%.2f" %rank_by_rmsd_z[i],
+         "%.2f" %overall_scores[i]])
+
+    from libtbx import table_utils
+    return table_utils.format(rows=rows, has_header=True)
 
 
 def find_max_cell(reflections, max_cell_multiplier, nearest_neighbor_percentile):
