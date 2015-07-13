@@ -585,8 +585,14 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         keys=self._grad_names)
 
       if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation
-        self._iparam += bp.num_free()
+        # if no reflections are in this experiment, skip calculation of
+        # gradients, but must still process null gradients by a callback
+        if callback is not None:
+          for iparam in xrange(bp.num_free()):
+            results[self._iparam] = callback(results[self._iparam])
+            self._iparam += 1
+        else:
+          self._iparam += bp.num_free()
         continue
 
       # Get required data from those reflections
@@ -633,8 +639,14 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         keys=self._grad_names)
 
       if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation
-        self._iparam += xlop.num_free()
+        # if no reflections are in this experiment, skip calculation of
+        # gradients, but must still process null gradients by a callback
+        if callback is not None:
+          for iparam in xrange(xlop.num_free()):
+            results[self._iparam] = callback(results[self._iparam])
+            self._iparam += 1
+        else:
+          self._iparam += xlop.num_free()
         continue
 
       # Get required data from those reflections
@@ -685,8 +697,14 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         keys=self._grad_names)
 
       if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation
-        self._iparam += xlucp.num_free()
+        # if no reflections are in this experiment, skip calculation of
+        # gradients, but must still process null gradients by a callback
+        if callback is not None:
+          for iparam in xrange(xlucp.num_free()):
+            results[self._iparam] = callback(results[self._iparam])
+            self._iparam += 1
+        else:
+          self._iparam += xlucp.num_free()
         continue
 
       # Get required data from those reflections
