@@ -30,7 +30,7 @@ class CentroidOutlier(object):
   def _detect_outliers(cols):
     """Perform outlier detection using the input cols and return a flex.bool
     indicating which rows in the cols are considered outlying. cols should be
-    a list of flex.doubles of equal lengths"""
+    a list of flex arrays of equal lengths"""
 
     # to be implemented by derived classes
     raise NotImplementedError()
