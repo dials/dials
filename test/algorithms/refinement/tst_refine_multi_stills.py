@@ -105,11 +105,13 @@ def test2():
   print "OK"
 
   # compare results
-  for e1, e2 in zip(nproc1, nproc4):
-    assert e1.beam.is_similar_to(e2.beam)
-    assert e1.crystal.is_similar_to(e2.crystal)
-    # FIXME, disabled as this method currently not working for hierarchical detectors
-    #assert e1.detector.is_similar_to(e2.detector)
+  for b1, b2 in zip(nproc1.beams(), nproc4.beams()):
+    assert b1.is_similar_to(b2)
+  for c1, c2 in zip(nproc1.crystals(), nproc4.crystals()):
+    assert c1.is_similar_to(c2)
+  for d1, d2 in zip(nproc1.detectors(), nproc4.detectors()):
+    assert d1.is_similar_to(d2,
+      fast_axis_tolerance=5e-5, slow_axis_tolerance=5e-5, origin_tolerance=5e-5)
   print "OK"
   return
 
