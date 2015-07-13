@@ -148,6 +148,7 @@ def exercise_1():
                 "use_all_reflections=True",
                 "discover_better_experimental_model=True",
                 "bin_size_fraction=0.25",
+                "outlier.algorithm=tukey",
                 "debug=True"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
@@ -168,12 +169,13 @@ def exercise_2():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["cluster_analysis_search=True",
-                "n_macro_cycles=2",
+                "n_macro_cycles=3",
                 "bin_size_fraction=0.25",
+                "outlier.algorithm=tukey",
                 "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.04, 0.04, 0.0003)
+  expected_rmsds = (0.05, 0.04, 0.0004)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -190,12 +192,13 @@ def exercise_3():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["cluster_analysis_search=True",
-                "n_macro_cycles=2",
+                "n_macro_cycles=3",
+                "outlier.algorithm=tukey",
                 "bin_size_fraction=0.25",
                 "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.04, 0.04, 0.0003)
+  expected_rmsds = (0.05, 0.04, 0.0003)
 
   # now enforce symmetry
   extra_args.append("known_symmetry.space_group=P4")
@@ -222,14 +225,15 @@ def exercise_4():
   pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1.json")
   extra_args = ["cluster_analysis_search=True",
-                "n_macro_cycles=2",
+                "n_macro_cycles=3",
                 "reciprocal_space_grid.d_min=4",
+                "outlier.algorithm=tukey",
                 "scan_range=0,50",
                 "scan_range=450,500",
                 "scan_range=850,900"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.07, 0.07, 0.002)
+  expected_rmsds = (0.06, 0.06, 0.0004)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,

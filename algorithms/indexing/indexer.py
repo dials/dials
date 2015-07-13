@@ -123,7 +123,7 @@ indexing {
       .type = int(value_min=1)
       .help = "Number of putative basis vector combinations to try."
       .expert_level = 1
-    solution_scorer = *filter weighted
+    solution_scorer = filter *weighted
       .type = choice
       .expert_level = 1
     filter
@@ -186,7 +186,7 @@ indexing {
   refinement_protocol {
     n_macro_cycles = 5
       .type = int(value_min=1)
-    d_min_step = 1.0
+    d_min_step = Auto
       .type = float(value_min=0.0)
       .help = "Reduction per step in d_min for reflections to include in refinement."
     d_min_start = 4.0
@@ -1497,8 +1497,8 @@ class SolutionTrackerFilter(object):
     for i, s in enumerate(self.all_solutions):
       s = self.all_solutions[i]
       rows.append(
-        [str(s.crystal.get_unit_cell()), "%.1f" %s.crystal.get_unit_cell().volume(),
-         str(s.n_indexed), "%.2f" %s.fraction_indexed, "%.2f" %s.model_likelihood])
+        [str(s.crystal.get_unit_cell()), "%.0f" %s.crystal.get_unit_cell().volume(),
+         str(s.n_indexed), "%.0f" %(s.fraction_indexed*100), "%.2f" %s.model_likelihood])
 
     from libtbx import table_utils
     return table_utils.format(rows=rows, has_header=True)
@@ -1569,10 +1569,11 @@ class SolutionTrackerWeighted(object):
   def __str__(self):
     rows = []
     rows.append(
-      ['unit_cell', 'n_indexed', 'fraction_indexed', 'rank_fraction_indexed',
-       'volume', 'rank_volume', 'rmsd_xy', 'rank_rmsd_xy',
+      ['unit_cell', 'volume', 'volume score',
+       '#indexed', '% indexed', '% indexed score',
+       'rmsd_xy', 'rmsd_xy score',
        #'rmsd_z', 'rank_rmsd_z',
-       'overall_score'])
+       'overall score'])
 
     rank_by_fraction_indexed = self.rank_by_fraction_indexed()
     rank_by_volume = self.rank_by_volume()
@@ -1590,9 +1591,10 @@ class SolutionTrackerWeighted(object):
     for i in perm:
       s = self.all_solutions[i]
       rows.append(
-        [str(s.crystal.get_unit_cell()), str(s.n_indexed),
-         "%.2f" %s.fraction_indexed, "%.2f" %rank_by_fraction_indexed[i],
-         "%.1f" %s.crystal.get_unit_cell().volume(), "%.2f" %rank_by_volume[i],
+        [str(s.crystal.get_unit_cell()),
+         "%.0f" %s.crystal.get_unit_cell().volume(), "%.2f" %rank_by_volume[i],
+         str(s.n_indexed), "%.0f" %(s.fraction_indexed*100),
+         "%.2f" %rank_by_fraction_indexed[i],
          "%.2f" %rmsd_xy[i], "%.2f" %rank_by_rmsd_xy[i],
          #"%.2f" %rmsd_z[i], "%.2f" %rank_by_rmsd_z[i],
          "%.2f" %overall_scores[i]])
