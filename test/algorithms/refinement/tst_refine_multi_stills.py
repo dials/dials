@@ -58,8 +58,9 @@ def test1():
   for e1, e2 in zip(reg_exp, ref_exp):
     # test refined models against expected
     assert e1.crystal.is_similar_to(e2.crystal)
-    # FIXME need is_similar_to for detector that checks geometry
-    #assert e1.detector == e2.detector
+    assert e1.detector.is_similar_to(e2.detector,
+      fast_axis_tolerance=5e-5, slow_axis_tolerance=5e-5, origin_tolerance=5e-5)
+    assert e1.beam.is_similar_to(e2.beam)
     s0_1 = matrix.col(e1.beam.get_unit_s0())
     s0_2 = matrix.col(e1.beam.get_unit_s0())
     assert s0_1.accute_angle(s0_2, deg=True) < 0.0057 # ~0.1 mrad
@@ -120,7 +121,7 @@ def run():
     print "Skipping tests in " + __file__ + " as dials_regression not present"
     return
 
-  test1()
+  #test1()
   test2()
 
 if __name__ == '__main__':
