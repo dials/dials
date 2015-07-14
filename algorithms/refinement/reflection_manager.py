@@ -536,6 +536,7 @@ class StillsReflectionManager(ReflectionManager):
     """Print some basic statistics on the matches"""
 
     l = self.get_matches()
+    nref = len(l)
 
     from libtbx.table_utils import simple_table
     from scitbx.math import five_number_summary
@@ -545,7 +546,9 @@ class StillsReflectionManager(ReflectionManager):
     w_x, w_y, _ = l['xyzobs.mm.weights'].parts()
     w_delpsi = l['delpsical.weights']
 
-    info("Summary statistics for observations matched to predictions:")
+    msg = "\nSummary statistics for {0} observations".format(nref) +\
+          " matched to predictions:"
+    info(msg)
     header = ["", "Min", "Q1", "Med", "Q3", "Max"]
     rows = []
     row_data = five_number_summary(x_resid)
@@ -563,7 +566,7 @@ class StillsReflectionManager(ReflectionManager):
     st = simple_table(rows, header)
     info(st.format())
 
-    if len(l) < 20:
+    if nref < 20:
       debug("Fewer than 20 reflections matched!")
       return
 
