@@ -1086,7 +1086,7 @@ class indexer_base(object):
     params.refinement.parameterisation.crystal.scan_varying = False
     #params.refinement.parameterisation.detector.fix = "all"
     #params.refinement.parameterisation.beam.fix = "all"
-    params.refinement.refinery.max_iterations = 2
+    params.refinement.refinery.max_iterations = 4
     params.refinement.reflections.minimum_number_of_reflections = 1
     params.refinement.reflections.reflections_per_degree = min(
       params.refinement.reflections.reflections_per_degree, 20)
@@ -1391,6 +1391,38 @@ from libtbx import group_args
 class Solution(group_args):
   pass
 
+
+def filter_doubled_cell(solutions):
+  from dials.algorithms.indexing.compare_orientation_matrices import difference_rotation_matrix_and_euler_angles
+  accepted_solutions = []
+  for i1, s1 in enumerate(solutions):
+    doubled_cell = False
+    for (m1,m2,m3) in ((2,1,1), (1,2,1), (1,1,2), (2,2,1), (2,1,2), (1,2,2), (2,2,2)):
+      if doubled_cell:
+        break
+      a, b, c = s1.crystal.get_real_space_vectors()
+      new_cryst = Crystal(real_space_a=1/m1*a,
+                          real_space_b=1/m2*b,
+                          real_space_c=1/m3*c,
+                          space_group=s1.crystal.get_space_group())
+      new_unit_cell = new_cryst.get_unit_cell()
+      for s2 in solutions:
+        if s2 is s1:
+          continue
+        if new_unit_cell.is_similar_to(s2.crystal.get_unit_cell(),
+                                       relative_length_tolerance=0.05):
+          R, ea, cb = difference_rotation_matrix_and_euler_angles(new_cryst, s2.crystal)
+          if ((max(ea) < 1) and
+              (s1.n_indexed < (1.1 * s2.n_indexed))):
+            doubled_cell = True
+            break
+
+    if not doubled_cell:
+      accepted_solutions.append(s1)
+
+  return accepted_solutions
+
+
 # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
 class SolutionTrackerFilter(object):
   def __init__(self, check_doubled_cell=True, likelihood_cutoff=0.8,
@@ -1408,36 +1440,6 @@ class SolutionTrackerFilter(object):
 
   def __len__(self):
     return len(self.filtered_solutions)
-
-  def filter_doubled_cell(self, solutions):
-    from dials.algorithms.indexing.compare_orientation_matrices import difference_rotation_matrix_and_euler_angles
-    accepted_solutions = []
-    for i1, s1 in enumerate(solutions):
-      doubled_cell = False
-      for (m1,m2,m3) in ((2,1,1), (1,2,1), (1,1,2), (2,2,1), (2,1,2), (1,2,2), (2,2,2)):
-        if doubled_cell:
-          break
-        a, b, c = s1.crystal.get_real_space_vectors()
-        new_cryst = Crystal(real_space_a=1/m1*a,
-                            real_space_b=1/m2*b,
-                            real_space_c=1/m3*c,
-                            space_group=s1.crystal.get_space_group())
-        new_unit_cell = new_cryst.get_unit_cell()
-        for s2 in solutions:
-          if s2 is s1:
-            continue
-          if new_unit_cell.is_similar_to(s2.crystal.get_unit_cell(),
-                                         relative_length_tolerance=0.05):
-            R, ea, cb = difference_rotation_matrix_and_euler_angles(new_cryst, s2.crystal)
-            if ((max(ea) < 1) and
-                (s1.model_likelihood < (1.5 * s2.model_likelihood))):
-              doubled_cell = True
-              break
-
-      if not doubled_cell:
-        accepted_solutions.append(s1)
-
-    return accepted_solutions
 
   def filter_by_likelihood(self, solutions):
     best_likelihood = max(s.model_likelihood for s in solutions)
@@ -1471,7 +1473,8 @@ class SolutionTrackerFilter(object):
     self.filtered_solutions = self.filter_by_n_indexed(
       self.all_solutions, n_indexed_cutoff=0.05) # 5 percent
 
-    self.filtered_solutions = self.filter_doubled_cell(self.filtered_solutions)
+    if self.check_doubled_cell:
+      self.filtered_solutions = filter_doubled_cell(self.filtered_solutions)
 
     self.filtered_solutions = self.filter_by_likelihood(self.filtered_solutions)
 
@@ -1504,14 +1507,6 @@ class SolutionTrackerFilter(object):
     return table_utils.format(rows=rows, has_header=True)
 
 
-def rank(array, reverse=False):
-  perm = flex.sort_permutation(array, reverse=reverse)
-  rank = flex.size_t(len(array))
-  for i in range(len(array)):
-    rank[perm[i]] = i
-  return rank
-
-
 class SolutionTrackerWeighted(object):
   def __init__(self, power=2):
     self.power = power
@@ -1523,33 +1518,34 @@ class SolutionTrackerWeighted(object):
   def __len__(self):
     return len(self.all_solutions)
 
-  def rank_by_volume(self, reverse=False):
+  def score_by_volume(self, reverse=False):
     # smaller volume = better
     volumes = flex.double(
       s.crystal.get_unit_cell().volume() for s in self.all_solutions)
-    return volumes/flex.max(volumes)
+    score = flex.log(volumes)/math.log(2)
+    return score - flex.min(score)
 
-  def rank_by_rmsd_xy(self, reverse=False):
+  def score_by_rmsd_xy(self, reverse=False):
     # smaller rmsds = better
     rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
       s.rmsds for s in self.all_solutions).parts()
     rmsd_xy = flex.sqrt(flex.pow2(rmsd_x) + flex.pow2(rmsd_y))
-    return (rmsd_xy/flex.max(rmsd_xy))
+    score = flex.log(rmsd_xy)/math.log(2)
+    return score - flex.min(score)
 
-  def rank_by_rmsd_z(self, reverse=False):
+  def score_by_rmsd_z(self, reverse=False):
     # smaller rmsds = better
     rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
       s.rmsds for s in self.all_solutions).parts()
-    return (rmsd_z/flex.max(rmsd_z))
+    score = flex.log(rmsd_z)/math.log(2)
+    return score - flex.min(score)
 
-  def rank_by_fraction_indexed(self, reverse=False):
+  def score_by_fraction_indexed(self, reverse=False):
     # more indexed reflections = better
     fraction_indexed = flex.double(s.fraction_indexed for s in self.all_solutions)
     fraction_unindexed = 1-fraction_indexed
-    return fraction_unindexed
-    best_fraction = flex.min(fraction_unindexed)
-    ranks = flex.abs(fraction_unindexed-best_fraction)
-    return ranks
+    score = flex.log(fraction_indexed)/math.log(2)
+    return (-score + flex.max(score))
 
   def best_solution(self):
     scores = self.solution_scores()
@@ -1557,12 +1553,12 @@ class SolutionTrackerWeighted(object):
     return self.all_solutions[perm[0]]
 
   def solution_scores(self):
-    scores = sum(flex.pow(ranks.as_double(), self.power)
-                 for ranks in (
-                               self.rank_by_fraction_indexed(),
-                               self.rank_by_volume(),
-                               self.rank_by_rmsd_xy(),
-                               #self.rank_by_rmsd_z(),
+    scores = sum(flex.pow(score.as_double(), self.power)
+                 for score in (
+                               self.score_by_fraction_indexed(),
+                               self.score_by_volume(),
+                               self.score_by_rmsd_xy(),
+                               #self.score_by_rmsd_z(),
                                ))
     return scores
 
@@ -1575,10 +1571,10 @@ class SolutionTrackerWeighted(object):
        #'rmsd_z', 'rank_rmsd_z',
        'overall score'])
 
-    rank_by_fraction_indexed = self.rank_by_fraction_indexed()
-    rank_by_volume = self.rank_by_volume()
-    rank_by_rmsd_xy = self.rank_by_rmsd_xy()
-    rank_by_rmsd_z = self.rank_by_rmsd_z()
+    score_by_fraction_indexed = self.score_by_fraction_indexed()
+    score_by_volume = self.score_by_volume()
+    score_by_rmsd_xy = self.score_by_rmsd_xy()
+    score_by_rmsd_z = self.score_by_rmsd_z()
     overall_scores = self.solution_scores()
 
     perm = flex.sort_permutation(overall_scores)
@@ -1592,11 +1588,11 @@ class SolutionTrackerWeighted(object):
       s = self.all_solutions[i]
       rows.append(
         [str(s.crystal.get_unit_cell()),
-         "%.0f" %s.crystal.get_unit_cell().volume(), "%.2f" %rank_by_volume[i],
+         "%.0f" %s.crystal.get_unit_cell().volume(), "%.2f" %score_by_volume[i],
          str(s.n_indexed), "%.0f" %(s.fraction_indexed*100),
-         "%.2f" %rank_by_fraction_indexed[i],
-         "%.2f" %rmsd_xy[i], "%.2f" %rank_by_rmsd_xy[i],
-         #"%.2f" %rmsd_z[i], "%.2f" %rank_by_rmsd_z[i],
+         "%.2f" %score_by_fraction_indexed[i],
+         "%.2f" %rmsd_xy[i], "%.2f" %score_by_rmsd_xy[i],
+         #"%.2f" %rmsd_z[i], "%.2f" %score_by_rmsd_z[i],
          "%.2f" %overall_scores[i]])
 
     from libtbx import table_utils
