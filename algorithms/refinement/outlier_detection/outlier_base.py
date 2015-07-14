@@ -202,6 +202,27 @@ outlier
                "the obtained quantile will be flagged as outliers."
        .type = float(value_min = 0., value_max = 1.0)
   }
+
+  sauter_poon
+    .help = "Options for the outlier rejector described in Sauter & Poon (2010)"
+            "(http://dx.doi.org/10.1107/S0021889810010782)"
+    .expert_level = 1
+  {
+    px_sz = Auto
+      .help = "X, Y pixel size in mm. If Auto, an attempt will be made to"
+              "determine this from the data."
+      .type = floats(size = 2, value_min = 0.001)
+
+    verbose = False
+      .help = "Verbose output."
+      .type = bool
+      .multiple = False
+
+    pdf=None
+      .help = "Output file name for making graphs of |dr| vs spot number and dy vs dx."
+      .type = str
+      .multiple = False
+  }
 }
 
 '''
@@ -222,6 +243,9 @@ class CentroidOutlierFactory(object):
     elif method == "mcd":
       from mcd import MCD as outlier_detector
       algo_params = params.outlier.mcd
+    elif method == "sauter_poon":
+      from sauter_poon import SauterPoon as outlier_detector
+      algo_params = params.outlier.sauter_poon
     else:
       raise RuntimeError("outlier.algorithm not recognised")
 
@@ -238,7 +262,11 @@ class CentroidOutlierFactory(object):
 
 if __name__ == "__main__":
 
+  # test construction
   params=phil_scope.extract()
   params.outlier.algorithm="tukey"
   print CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3])
+  params.outlier.algorithm="mcd"
+  print CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3])
+
 
