@@ -1,6 +1,8 @@
 from __future__ import division
 import os
+import socket
 import time
+import timeit
 import libtbx.load_env
 from libtbx import easy_run
 
@@ -31,7 +33,7 @@ def run():
 
   p = multiprocessing.Process(target=start_server, args=(server_command,))
   p.start()
-  time.sleep(1) # need to give server chance to start
+  wait_for_server(port) # need to give server chance to start
 
   try:
     exercise_client(port=port)
@@ -41,6 +43,27 @@ def run():
     result = easy_run.fully_buffered(command=client_stop_command).raise_if_errors()
     #result.show_stdout()
     p.terminate()
+
+def wait_for_server(port, max_wait=3):
+  # Wait up to n seconds for server to start
+  server_ok = False
+  start_time = timeit.default_timer()
+  max_time = start_time + max_wait
+  while (timeit.default_timer() < max_time) and not server_ok:
+    s = None
+    try:
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      s.connect(('127.0.0.1', port))
+      s.close()
+      server_ok = True
+    except socket.error, e:
+      if e.errno != 111:
+        raise
+      # ignore connection failures
+      time.sleep(0.05)
+  if not server_ok:
+    raise Exception("Server failed to start after %d seconds" % max_wait)
+#  print "dials.find_spots_server up after %f seconds" % (timeit.default_timer() - start_time)
 
 def exercise_client(port):
   import glob
