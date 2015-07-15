@@ -22,7 +22,6 @@ phil_scope = parse('''
 ''')
 
 def run(args):
-  from dials.util.export_nxmx import export
   import libtbx.load_env
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
