@@ -1,9 +1,10 @@
 from __future__ import division
 import time
 import BaseHTTPServer as server_base
-from multiprocessing import Process as new_process
+from multiprocessing import Process
 from multiprocessing import current_process
 import os
+import signal
 
 stop = False
 
@@ -186,8 +187,14 @@ def main(nproc, port):
   server_class = server_base.HTTPServer
   httpd = server_class(('', port), handler)
   print time.asctime(), 'start'
+
+  # catch TERM signal to allow finalizers to run and reap daemonic children
+  signal.signal(signal.SIGTERM, lambda *args: sys.exit(-signal.SIGTERM))
+
   for j in range(nproc - 1):
-    new_process(target=serve, args=(httpd,)).start()
+    proc = Process(target=serve, args=(httpd,))
+    proc.daemon = True
+    proc.start()
   serve(httpd)
   httpd.server_close()
   print time.asctime(), 'done'
