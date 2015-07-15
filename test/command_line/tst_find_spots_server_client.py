@@ -16,17 +16,19 @@ def run():
     print "Skipping tst_find_spots_server_client: dials_regression not available."
     return
 
-  import random
-  port = random.randint(10000, 49152)
-
-  server_command = "dials.find_spots_server port=%i" %port
-
   def start_server(server_command):
     result = easy_run.fully_buffered(command=server_command)
     result.show_stdout()
     result.show_stderr()
 
   import multiprocessing
+  import socket
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.bind(("",0))
+  port = s.getsockname()[1]
+  s.close()
+  server_command = "dials.find_spots_server port=%i" %port
+
   p = multiprocessing.Process(target=start_server, args=(server_command,))
   p.start()
   time.sleep(1) # need to give server chance to start
