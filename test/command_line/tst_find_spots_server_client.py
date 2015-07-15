@@ -32,6 +32,7 @@ def run():
   server_command = "dials.find_spots_server port=%i" %port
 
   p = multiprocessing.Process(target=start_server, args=(server_command,))
+  p.daemon = True
   p.start()
   wait_for_server(port) # need to give server chance to start
 
