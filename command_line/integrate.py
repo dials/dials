@@ -293,10 +293,8 @@ class Script(object):
       ''' % (0, len(reference)))
     mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
     if mask.count(True) > 0:
-      raise Abort('''
-        Invalid input for reference reflections.
-        %d reference spots have invalid miller indices
-      ''' % mask.count(True))
+      reference.del_selected(mask)
+      info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
     mask = flex.bool([x < 0 for x in reference['id']])
     if mask.count(True) > 0:
       raise Abort('''
