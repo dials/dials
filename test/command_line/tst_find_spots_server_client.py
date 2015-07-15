@@ -58,9 +58,9 @@ def wait_for_server(port, max_wait=3):
       s.close()
       server_ok = True
     except socket.error, e:
-      if e.errno != 111:
+      if (e.errno != 111) and (e.errno != 61):
         raise
-      # ignore connection failures
+      # ignore connection failures (111 connection refused on linux; 61 connection refused on mac)
       time.sleep(0.05)
   if not server_ok:
     raise Exception("Server failed to start after %d seconds" % max_wait)
