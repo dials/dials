@@ -20,14 +20,10 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
            maximum_phi_error=None,
            verbosity=0, debug_plots=False):
   detector = experiments.detectors()[0]
-  #assert len(experiments.detectors()) == 1
-  import copy
-  reflections_for_refinement = copy.deepcopy(reflections)
 
   from dials.algorithms.refinement import RefinerFactory
   refiner = RefinerFactory.from_parameters_data_experiments(
-    params, reflections_for_refinement, experiments,
-    verbosity=verbosity)
+    params, reflections, experiments, verbosity=verbosity)
 
   outliers = None
 
