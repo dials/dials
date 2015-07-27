@@ -898,7 +898,7 @@ class RefinerFactory(object):
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
             if not good_panel_group_param(dp, gp, igp):
-              id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
+              id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
               pnl_list = ', '.join([str(p) for p in gp])
               msg = 'Too few reflections to create a detector panel group parameterisation '
               msg += 'for experiments: {0} with intersections on panels {1}.'
@@ -907,12 +907,74 @@ class RefinerFactory(object):
               raise RuntimeError(msg)
         except AttributeError:
           if not good_param(dp):
-            id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
+            id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
             msg = failmsg.format('detector', id_list)
             raise RuntimeError(msg)
 
     elif auto_reduction.action == 'fix':
-      raise NotImplementedError('refinement.parameterisation.auto_reduction.action="fix" is not implemented yet')
+      warnmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}. '
+      warnmsg += 'These parameters will not be refined'
+      tmp = []
+      for bp in beam_params:
+        if good_param(bp):
+          tmp.append(bp)
+        else:
+          id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
+          msg = warnmsg.format('beam', id_list)
+          warning(msg)
+      beam_params = tmp
+
+      tmp = []
+      for xlo in xl_ori_params:
+        if good_param(xlo):
+          tmp.append(xlo)
+        else:
+          id_list = ', '.join([str(e) for e in xlo.get_experiment_ids()])
+          msg = warnmsg.format('crystal orientation', id_list)
+          warning(msg)
+      xl_ori_params = tmp
+
+      for xluc in xl_uc_params:
+        if good_param(xluc):
+          tmp.append(xluc)
+        else:
+          id_list = ', '.join([str(e) for e in xluc.get_experiment_ids()])
+          msg = warnmsg.format('crystal unit cell', id_list)
+          warning(msg)
+      xl_uc_params = tmp
+
+      tmp = []
+      for dp in det_params:
+        id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
+        fixlist = dp.get_fixed()
+        try: # test for hierarchical detector parameterisation
+          pnl_groups = dp.get_panel_ids_by_group()
+          for igp, gp in enumerate(pnl_groups):
+            if not good_panel_group_param(dp, gp, igp):
+              pnl_list = ', '.join([str(p) for p in gp])
+              msg = 'Too few reflections to create a detector panel group parameterisation '
+              msg += 'for experiments: {0} with intersections on panels {1}.'
+              msg = msg.format(id_list, pnl_list)
+              warning(msg)
+              gp_id = 'Group{0}'.format(igp)
+              for i, name in enumerate(dp.get_param_names()):
+                if name.startswith(gp_id):
+                  fixlist[i] = True
+          dp.set_fixed(fixlist)
+          if dp.num_free() > 0:
+            tmp.append(dp)
+          else:
+            msg = 'No parameters remain free within the detector parameterisation for '
+            msg += 'experiments: {0}. It has been removed.'.format(id_list)
+            warning(msg)
+        except AttributeError:
+          if good_param(dp):
+            tmp.append(dp)
+          else:
+            msg = warnmsg.format('detector', id_list)
+            warning(msg)
+      det_params = tmp
+
     elif auto_reduction.action == 'remove':
       raise NotImplementedError('refinement.parameterisation.auto_reduction.action="remove" is not implemented yet')
 
