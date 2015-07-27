@@ -171,10 +171,11 @@ def write(handle, key, data):
 
 def read(handle, key):
   from dials.array_family import flex
+  import numpy as np
   if   key == 'miller_index':
-    h = flex.int(handle['h'][:].astype(int))
-    k = flex.int(handle['k'][:].astype(int))
-    l = flex.int(handle['l'][:].astype(int))
+    h = flex.int(handle['h'][:].astype(np.int32))
+    k = flex.int(handle['k'][:].astype(np.int32))
+    l = flex.int(handle['l'][:].astype(np.int32))
     return flex.miller_index(h,k,l)
   elif key == 'id':
     return flex.size_t(handle['id'][:].astype(int))
@@ -201,12 +202,12 @@ def read(handle, key):
     z = flex.double(handle['prd_phi'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'bbox':
-    x0 = flex.int(handle['bbx0'][:].astype(int))
-    x1 = flex.int(handle['bbx1'][:].astype(int))
-    y0 = flex.int(handle['bby0'][:].astype(int))
-    y1 = flex.int(handle['bby1'][:].astype(int))
-    z0 = flex.int(handle['bbz0'][:].astype(int))
-    z1 = flex.int(handle['bbz1'][:].astype(int))
+    x0 = flex.int(handle['bbx0'][:].astype(np.int32))
+    x1 = flex.int(handle['bbx1'][:].astype(np.int32))
+    y0 = flex.int(handle['bby0'][:].astype(np.int32))
+    y1 = flex.int(handle['bby1'][:].astype(np.int32))
+    z0 = flex.int(handle['bbz0'][:].astype(np.int32))
+    z1 = flex.int(handle['bbz1'][:].astype(np.int32))
     return flex.int6(x0, x1, y0, y1, z0, z1)
   elif key == 'xyzobs.px.value':
     x = flex.double(handle['obs_px_x_val'][:])
