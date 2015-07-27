@@ -52,7 +52,7 @@ refinement
       .help = "determine behaviour when there are too few reflections to"
               "reasonably produce a full parameterisation of the experiment list"
     {
-      min_nref_per_parameter = 1
+      min_nref_per_parameter = 5
         .help = "the smallest number of reflections per parameter for a"
                 "model parameterisation below which the parameterisation will"
                 "not be made in full, but the action described below will be"
