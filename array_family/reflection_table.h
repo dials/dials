@@ -95,16 +95,22 @@ namespace dials { namespace af {
     OverlappedBg     = (1 << 11),
     OverlappedFg     = (1 << 12),
     InPowderRing     = (1 << 13),
-    BadShoebox       = Overloaded | OverlappedBg | OverlappedFg | InPowderRing,
+    IncludesBadPixels = (1 << 14),
+    BadShoebox       = Overloaded | OverlappedBg | OverlappedFg | InPowderRing | IncludesBadPixels,
 
     // Bad spot
     BadSpot = BadShoebox,
 
     // Profile Modelling
-    UsedInModelling  = (1 << 14),
+    UsedInModelling  = (1 << 15),
 
     // Centroid outlier
-    CentroidOutlier = (1 << 15),
+    CentroidOutlier = (1 << 16),
+
+    // Some Error Codes
+    FailedDuringBackgroundModelling = (1 << 17),
+    FailedDuringSummation = (1 << 18),
+    FailedDuringProfileFitting = (1 << 19),
   };
 
 }} // namespace dials::af

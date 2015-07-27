@@ -618,7 +618,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param experiments: The list of experiments
 
     '''
-    self._background_algorithm(experiments).compute_background(self)
+    success = self._background_algorithm(experiments).compute_background(self)
+    self.set_flags(~success, self.flags.failed_during_background_modelling)
 
   def compute_centroid(self, experiments):
     '''
@@ -636,7 +637,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from dials.algorithms.integration.sum import IntegrationAlgorithm
     algorithm = IntegrationAlgorithm()
-    algorithm(self)
+    success = algorithm(self)
+    self.set_flags(~success, self.flags.failed_during_summation)
 
   def compute_fitted_intensity(self, fitter):
     '''
@@ -646,7 +648,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param profile_model: The profile model
 
     '''
-    fitter.fit(self)
+    success = fitter.fit(self)
+    self.set_flags(~success, self.flags.failed_during_profile_fitting)
 
   def compute_corrections(self, experiments):
     '''

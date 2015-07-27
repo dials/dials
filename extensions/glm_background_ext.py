@@ -68,4 +68,4 @@ class SimpleBackgroundExt(BackgroundIface):
     :param reflections: The list of reflections
 
     '''
-    self._algorithm.compute_background(reflections)
+    return self._algorithm.compute_background(reflections)

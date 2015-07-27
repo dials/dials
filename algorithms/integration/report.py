@@ -42,14 +42,17 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
     # Start by adding some overall numbers
     report = OrderedDict()
-    report['n']           = len(reflections)
-    report['n_full']      = data['full'].count(True)
-    report['n_partial']   = data['full'].count(False)
-    report['n_overload']  = data['over'].count(True)
-    report['n_ice']       = data['ice'].count(True)
-    report['n_summed']    = data['sum'].count(True)
-    report['n_fitted']    = data['prf'].count(True)
-    report['n_integated'] = data['int'].count(True)
+    report['n']                   = len(reflections)
+    report['n_full']              = data['full'].count(True)
+    report['n_partial']           = data['full'].count(False)
+    report['n_overload']          = data['over'].count(True)
+    report['n_ice']               = data['ice'].count(True)
+    report['n_summed']            = data['sum'].count(True)
+    report['n_fitted']            = data['prf'].count(True)
+    report['n_integated']         = data['int'].count(True)
+    report['n_failed_background'] = data['fbgd'].count(True)
+    report['n_failed_summation']  = data['fsum'].count(True)
+    report['n_failed_fitting']    = data['fprf'].count(True)
 
     # Compute mean background
     try:
@@ -103,14 +106,17 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
     # Add some stats by resolution
     report = OrderedDict()
-    report['bins']         = list(binner.bins())
-    report['n_full']       = list(indexer_all.sum(data['full']))
-    report['n_partial']    = list(indexer_all.sum(~data['full']))
-    report['n_overload']   = list(indexer_all.sum(data['over']))
-    report['n_ice']        = list(indexer_all.sum(data['ice']))
-    report['n_summed']     = list(indexer_all.sum(data['sum']))
-    report['n_fitted']     = list(indexer_all.sum(data['prf']))
-    report['n_integrated'] = list(indexer_all.sum(data['int']))
+    report['bins']                = list(binner.bins())
+    report['n_full']              = list(indexer_all.sum(data['full']))
+    report['n_partial']           = list(indexer_all.sum(~data['full']))
+    report['n_overload']          = list(indexer_all.sum(data['over']))
+    report['n_ice']               = list(indexer_all.sum(data['ice']))
+    report['n_summed']            = list(indexer_all.sum(data['sum']))
+    report['n_fitted']            = list(indexer_all.sum(data['prf']))
+    report['n_integrated']        = list(indexer_all.sum(data['int']))
+    report['n_failed_background'] = list(indexer_all.sum(data['fbgd']))
+    report['n_failed_summation']  = list(indexer_all.sum(data['fsum']))
+    report['n_failed_fitting']    = list(indexer_all.sum(data['fprf']))
 
     # Compute mean background
     try:
@@ -204,6 +210,9 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   data["sum"] = reflections.get_flags(flags.integrated_sum)
   data["prf"] = reflections.get_flags(flags.integrated_prf)
   data["int"] = reflections.get_flags(flags.integrated, all=False)
+  data["fbgd"] = reflections.get_flags(flags.failed_during_background_modelling)
+  data["fsum"] = reflections.get_flags(flags.failed_during_summation)
+  data["fprf"] = reflections.get_flags(flags.failed_during_profile_fitting)
 
   # Try to calculate the i over sigma for summation
   data['intensity.sum.ios'] = flex_ios(
@@ -393,6 +402,9 @@ class IntegrationReport(Report):
         ("number in powder rings",                '%d'  , "n_ice"),
         ("number processed with summation",       '%d'  , "n_summed"),
         ("number processed with profile fitting", '%d'  , "n_fitted"),
+        ("number failed in background modelling", '%d'  , "n_failed_background"),
+        ("number failed in summation",            '%d'  , "n_failed_summation"),
+        ("number failed in profile fitting",      '%d'  , "n_failed_fitting"),
         ("<ibg>",                                 '%.2f', "mean_background"),
         ("<i/sigi> (summation)",                  '%.2f', "ios_sum"),
         ("<i/sigi> (profile fitting)",            '%.2f', "ios_prf"),

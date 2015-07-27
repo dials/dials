@@ -598,10 +598,14 @@ namespace dials { namespace af { namespace boost_python {
         .value("overlapped_bg", OverlappedBg)
         .value("overlapped_fg", OverlappedFg)
         .value("in_powder_ring", InPowderRing)
+        .value("includes_bad_pixels", IncludesBadPixels)
         .value("bad_shoebox", BadShoebox)
         .value("bad_spot", BadSpot)
         .value("used_in_modelling", UsedInModelling)
         .value("centroid_outlier", CentroidOutlier)
+        .value("failed_during_background_modelling", FailedDuringBackgroundModelling)
+        .value("failed_during_summation", FailedDuringSummation)
+        .value("failed_during_profile_fitting", FailedDuringProfileFitting)
         ;
 
       // return the wrapped class

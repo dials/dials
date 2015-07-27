@@ -55,3 +55,4 @@ class BackgroundAlgorithm(object):
     reflections['background.mean'] = flex.double(
       [sbox.background[0] for sbox in reflections['shoebox']])
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
+    return success

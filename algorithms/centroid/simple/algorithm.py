@@ -46,4 +46,4 @@ class Algorithm(object):
     :param reflections: The reflection list
 
     '''
-    self.centroider(reflections)
+    return self.centroider(reflections)

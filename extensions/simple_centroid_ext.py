@@ -38,4 +38,4 @@ class SimpleCentroidExt(CentroidIface):
     '''
     from dials.algorithms.centroid.simple.algorithm import Algorithm
     algorithm = Algorithm(self.experiments)
-    algorithm(reflections)
+    return algorithm(reflections)

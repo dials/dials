@@ -59,8 +59,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       return this->get_override("size")();
     }
 
-    void fit(af::reflection_table reflections) const {
-      this->get_override("fit")(reflections);
+    af::shared<bool> fit(af::reflection_table reflections) const {
+      return this->get_override("fit")(reflections);
     }
 
     pointer copy() const {
@@ -82,8 +82,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       this->get_override("model")(reflections);
     }
 
-    void fit(af::reflection_table reflections) const {
-      this->get_override("fit")(reflections);
+    af::shared<bool> fit(af::reflection_table reflections) const {
+      return this->get_override("fit")(reflections);
     }
 
     void validate(af::reflection_table reflections) const {

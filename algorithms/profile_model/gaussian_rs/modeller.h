@@ -343,17 +343,19 @@ namespace dials { namespace algorithms {
      * Return a profile fitter
      * @return The profile fitter class
      */
-    void fit(af::reflection_table reflections) const {
+    af::shared<bool> fit(af::reflection_table reflections) const {
+      af::shared<bool> success;
       switch (fit_method_) {
       case ReciprocalSpace:
-        fit_reciprocal_space(reflections);
+        success = fit_reciprocal_space(reflections);
         break;
       case DetectorSpace:
-        fit_detector_space(reflections);
+        success = fit_detector_space(reflections);
         break;
       default:
         DIALS_ERROR("Unknown fitting method");
       };
+      return success;
     }
 
     /**
@@ -377,7 +379,7 @@ namespace dials { namespace algorithms {
      * Return a profile fitter
      * @return The profile fitter class
      */
-    void fit_reciprocal_space(af::reflection_table reflections) const {
+    af::shared<bool> fit_reciprocal_space(af::reflection_table reflections) const {
 
       // Check input is OK
       DIALS_ASSERT(reflections.is_consistent());
@@ -400,6 +402,7 @@ namespace dials { namespace algorithms {
       af::ref<double> reference_rmsd = reflections["profile.rmsd"];
 
       // Loop through all the reflections and process them
+      af::shared<bool> success(reflections.size(), false);
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         DIALS_ASSERT(sbox[i].is_consistent());
 
@@ -473,19 +476,21 @@ namespace dials { namespace algorithms {
 
             // Set the integrated flag
             flags[i] |= af::IntegratedPrf;
+            success[i] = true;
 
           } catch (dials::error) {
             continue;
           }
         }
       }
+      return success;
     }
 
     /**
      * Return a profile fitter
      * @return The profile fitter class
      */
-    void fit_detector_space(af::reflection_table reflections) const {
+    af::shared<bool> fit_detector_space(af::reflection_table reflections) const {
 
       // Check input is OK
       DIALS_ASSERT(reflections.is_consistent());
@@ -507,6 +512,7 @@ namespace dials { namespace algorithms {
       af::ref<double> reference_cor = reflections["profile.correlation"];
 
       // Loop through all the reflections and process them
+      af::shared<bool> success(reflections.size(), false);
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         DIALS_ASSERT(sbox[i].is_consistent());
 
@@ -579,12 +585,14 @@ namespace dials { namespace algorithms {
 
             // Set the integrated flag
             flags[i] |= af::IntegratedPrf;
+            success[i] = true;
 
           } catch (dials::error) {
             continue;
           }
         }
       }
+      return success;
     }
 
     /**

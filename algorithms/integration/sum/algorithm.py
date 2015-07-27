@@ -35,4 +35,4 @@ class IntegrationAlgorithm(object):
     reflections['intensity.sum.variance'] = intensity.observed_variance()
     success = intensity.observed_success()
     reflections.set_flags(success, reflections.flags.integrated_sum)
-    return reflections
+    return success

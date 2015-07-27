@@ -56,7 +56,7 @@ namespace dials { namespace algorithms {
     std::size_t size() const = 0;
 
     virtual
-    void fit(af::reflection_table) const = 0;
+    af::shared<bool> fit(af::reflection_table) const = 0;
 
     virtual
     void validate(af::reflection_table) const = 0;

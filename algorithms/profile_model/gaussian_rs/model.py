@@ -382,7 +382,7 @@ class Model(ProfileModelIface):
       delta_m)
 
     # Mask the foreground region
-    mask_foreground(
+    return mask_foreground(
       reflections['shoebox'],
       reflections['s1'],
       reflections['xyzcal.px'].parts()[2],

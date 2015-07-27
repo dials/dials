@@ -133,7 +133,7 @@ namespace dials { namespace algorithms {
      * Do the profile fitting
      * @param reflections
      */
-    void fit(af::reflection_table reflections) const {
+    af::shared<bool> fit(af::reflection_table reflections) const {
 
       using af::boost_python::flex_table_suite::select_rows_index;
       using af::boost_python::flex_table_suite::set_selected_rows_index;
@@ -181,6 +181,7 @@ namespace dials { namespace algorithms {
       }
 
       // Process all the reflections
+      af::shared<bool> success(reflections.size(), false);
       for (std::size_t i = 0; i < modellers_.size(); ++i) {
 
         // Get the indices
@@ -197,11 +198,19 @@ namespace dials { namespace algorithms {
         af::reflection_table subset = select_rows_index(reflections, ind);
 
         // Do the fitting
-        modellers_[i]->fit(subset);
+        af::shared<bool> subset_success = modellers_[i]->fit(subset);
 
         // Set any results
         set_selected_rows_index(reflections, ind, subset);
+
+        // Set the successes
+        for (std::size_t j = 0; j < ind.size(); ++j) {
+          success[ind[j]] = subset_success[j];
+        }
       }
+
+      // Return success
+      return success;
     }
 
     /**

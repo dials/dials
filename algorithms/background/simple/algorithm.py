@@ -94,3 +94,4 @@ class BackgroundAlgorithm(object):
       reflections['background.dispersion'])
     reflections['background.mean'] = reflections['shoebox'].mean_background()
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
+    return success
