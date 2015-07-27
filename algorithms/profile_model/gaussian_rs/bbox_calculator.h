@@ -53,6 +53,8 @@ namespace gaussian_rs {
   class BBoxCalculatorIface {
   public:
 
+    virtual ~BBoxCalculatorIface() {}
+
     virtual int6 single(
         vec3 <double> s1,
         double frame,

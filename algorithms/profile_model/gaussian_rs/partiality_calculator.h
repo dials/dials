@@ -55,6 +55,8 @@ namespace gaussian_rs {
   class PartialityCalculatorIface {
   public:
 
+    virtual ~PartialityCalculatorIface() {}
+
     virtual double single(
         vec3 <double> s1,
         double frame,

@@ -17,6 +17,7 @@
 #include <dials/algorithms/profile_model/gaussian_rs/ideal_profile.h>
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <dials/algorithms/profile_model/gaussian_rs/modeller.h>
+#include <dials/algorithms/profile_model/modeller/boost_python/empirical_profile_modeller_wrapper.h>
 
 namespace dials {
 namespace algorithms {
@@ -126,17 +127,20 @@ namespace boost_python {
       obj.set_finalized(finalized);
     }
   };
+
   void export_modeller() {
 
-    typedef class_<
-      GaussianRSProfileModeller,
+    typedef class_<GaussianRSProfileModeller, //> class_type;
       bases<
-        EmpiricalProfileModeller
+        ProfileModellerIface
         >
       > class_type;
 
-    class_type result("GaussianRSProfileModeller", no_init);
 
+    /* class_type result("GaussianRSProfileModeller", no_init); */
+
+    class_type result = dials::algorithms::boost_python::empirical_profile_modeller_wrapper<
+        GaussianRSProfileModeller>("GaussianRSProfileModeller");
     result
       .def(init<
           const Beam&,
@@ -168,6 +172,10 @@ namespace boost_python {
       .value("detector_space", GaussianRSProfileModeller::DetectorSpace)
       ;
 
+    /* register_ptr_to_python< boost::shared_ptr<GaussianRSProfileModeller> >(); */
+    /* implicitly_convertible< */
+    /*   boost::shared_ptr<GaussianRSProfileModeller>, */
+      /* boost::shared_ptr<ProfileModellerIface> >(); */
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_ext)

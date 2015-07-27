@@ -46,6 +46,8 @@ namespace gaussian_rs {
   class MaskCalculatorIface {
   public:
 
+    virtual ~MaskCalculatorIface() {}
+
     virtual void single(
         Shoebox<> &shoebox,
         vec3 <double> s1,
