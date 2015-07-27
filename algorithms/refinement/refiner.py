@@ -561,15 +561,6 @@ class RefinerFactory(object):
     assert all(exps_are_stills[0] == e for e in exps_are_stills)
     do_stills = exps_are_stills[0]
 
-    # create parameterisations
-    pred_param, param_reporter = \
-            cls.config_parameterisation(params, experiments, do_stills)
-
-    debug("Prediction equation parameterisation built")
-    debug("Parameter order : name mapping")
-    for i, e in enumerate(pred_param.get_param_names()):
-      debug("Parameter %03d : %s", i, e)
-
     debug("\nBuilding reflection manager")
     debug("Input reflection list size = %d observations", len(reflections))
 
@@ -583,12 +574,27 @@ class RefinerFactory(object):
       debug("Working set size = %d observations", sample_size)
     debug("Reflection manager built\n")
 
+    # configure use of sparse data types
+    params = cls.config_sparse(params, experiments)
+
     debug("Building target function")
 
     # create target function
-    target = cls.config_target(params, experiments, refman, pred_param, do_stills)
+    target = cls.config_target(params, experiments, refman, do_stills)
 
     debug("Target function built")
+
+    # create parameterisations
+    pred_param, param_reporter = \
+            cls.config_parameterisation(params, experiments, do_stills)
+
+    debug("Prediction equation parameterisation built")
+    debug("Parameter order : name mapping")
+    for i, e in enumerate(pred_param.get_param_names()):
+      debug("Parameter %03d : %s", i, e)
+
+    # Set the prediction equation parameterisation in the target object
+    target.set_prediction_parameterisation(pred_param)
 
     debug("Building refinement engine")
 
@@ -601,6 +607,27 @@ class RefinerFactory(object):
     return Refiner(reflections, experiments, crystal_ids,
                     pred_param, param_reporter, refman, target, refinery,
                     verbosity=verbosity)
+
+  @staticmethod
+  def config_sparse(params, experiments):
+    """Configure whether to use sparse datatypes"""
+    # Automatic selection for sparse parameter
+    if params.refinement.parameterisation.sparse == libtbx.Auto:
+      if len(experiments) > 1:
+        params.refinement.parameterisation.sparse = True
+      else:
+        params.refinement.parameterisation.sparse = False
+      if params.refinement.mp.nproc > 1:
+        # sparse vectors cannot be pickled, so can't use easy_mp here
+        params.refinement.parameterisation.sparse = False
+    # Check incompatible selection
+    elif params.refinement.parameterisation.sparse and \
+      params.refinement.mp.nproc > 1:
+        warning("Could not set sparse=True and nproc={0}".format(
+          params.refinement.mp.nproc))
+        warning("Resetting sparse=False")
+        params.refinement.parameterisation.sparse = False
+    return params
 
   @staticmethod
   def config_parameterisation(params, experiments, do_stills):
@@ -620,23 +647,6 @@ class RefinerFactory(object):
     beam_options = params.refinement.parameterisation.beam
     crystal_options = params.refinement.parameterisation.crystal
     detector_options = params.refinement.parameterisation.detector
-
-    # Automatic selection for sparse parameter
-    if params.refinement.parameterisation.sparse == libtbx.Auto:
-      if len(experiments) > 1:
-        params.refinement.parameterisation.sparse = True
-      else:
-        params.refinement.parameterisation.sparse = False
-      if params.refinement.mp.nproc > 1:
-        # sparse vectors cannot be pickled, so can't use easy_mp here
-        params.refinement.parameterisation.sparse = False
-    # Check incompatible selection
-    elif params.refinement.parameterisation.sparse and \
-      params.refinement.mp.nproc > 1:
-        warning("Could not set sparse=True and nproc={0}".format(
-          params.refinement.mp.nproc))
-        warning("Resetting sparse=False")
-        params.refinement.parameterisation.sparse = False
     sparse = params.refinement.parameterisation.sparse
 
     # Shorten paths
@@ -999,7 +1009,7 @@ class RefinerFactory(object):
             verbosity=verbosity)
 
   @staticmethod
-  def config_target(params, experiments, refman, pred_param, do_stills):
+  def config_target(params, experiments, refman, do_stills):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -1042,7 +1052,9 @@ class RefinerFactory(object):
         from dials.algorithms.refinement.target \
           import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
-    target = targ(experiments, ref_predictor, refman, pred_param,
+    # Here we pass in None for the prediction_parameterisation, as this will
+    # be linked to the object later
+    target = targ(experiments, ref_predictor, refman, None,
                     options.bin_size_fraction, absolute_cutoffs,
                     options.gradient_calculation_blocksize)
 

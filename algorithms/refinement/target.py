@@ -63,6 +63,13 @@ class Target(object):
 
     return
 
+  def set_prediction_parameterisation(self, prediction_parameterisation):
+    """For circumstances where the PredictionParameterisation object was not
+    available at initialisation, set it with this method"""
+
+    self._prediction_parameterisation = prediction_parameterisation
+    return
+
   def _predict_core(self, reflections):
     """perform prediction for the specified reflections"""
 
