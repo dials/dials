@@ -26,4 +26,6 @@ class NullBackgroundExt(BackgroundIface):
 
     '''
     from dials.algorithms.background import set_shoebox_background_value
+    from dials.array_family import flex
     set_shoebox_background_value(reflections['shoebox'], 0)
+    return flex.bool(len(reflections), True)
