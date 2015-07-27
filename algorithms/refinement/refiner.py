@@ -845,7 +845,7 @@ class RefinerFactory(object):
         det_params.append(det_param)
 
     # Parameter auto reduction options
-    def good_param(p):
+    def model_nparam_minus_nref(p):
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
       nparam = p.num_free()
@@ -854,9 +854,9 @@ class RefinerFactory(object):
       for exp_id in exp_ids:
         isel.extend((reflections['id'] == exp_id).iselection())
       nref = len(isel)
-      return nref > cutoff
+      return nref - cutoff
 
-    def good_panel_group_param(p, pnl_ids, group):
+    def panel_gp_nparam_minus_nref(p, pnl_ids, group):
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
       gp_id = 'Group{0}'.format(group)
@@ -870,25 +870,25 @@ class RefinerFactory(object):
         for pnl in pnl_ids:
           isel.extend(subsel.select(panels == pnl))
       nref = len(isel)
-      return nref > cutoff
+      return nref - cutoff
 
     if auto_reduction.action == 'fail':
       failmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}.'
       failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
       for bp in beam_params:
-        if not good_param(bp):
+        if model_nparam_minus_nref(bp) < 0:
           id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
           msg = failmsg.format('beam', id_list)
           raise RuntimeError(msg)
 
       for xlo in xl_ori_params:
-        if not good_param(xlo):
+        if model_nparam_minus_nref(xlo) < 0:
           id_list = ', '.join([str(e) for e in xlo.get_experiment_ids()])
           msg = failmsg.format('crystal orientation', id_list)
           raise RuntimeError(msg)
 
       for xluc in xl_uc_params:
-        if not good_param(xluc):
+        if model_nparam_minus_nref(xluc) < 0:
           id_list = ', '.join([str(e) for e in xluc.get_experiment_ids()])
           msg = failmsg.format('crystal unit cell', id_list)
           raise RuntimeError(msg)
@@ -897,7 +897,7 @@ class RefinerFactory(object):
         try: # test for hierarchical detector parameterisation
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
-            if not good_panel_group_param(dp, gp, igp):
+            if panel_gp_nparam_minus_nref(dp, gp, igp) < 0:
               id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
               pnl_list = ', '.join([str(p) for p in gp])
               msg = 'Too few reflections to create a detector panel group parameterisation '
@@ -906,7 +906,7 @@ class RefinerFactory(object):
               msg += '\nTry modifying refinement.parameterisation.auto_reduction options'
               raise RuntimeError(msg)
         except AttributeError:
-          if not good_param(dp):
+          if model_nparam_minus_nref(dp) < 0:
             id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
             msg = failmsg.format('detector', id_list)
             raise RuntimeError(msg)
@@ -916,7 +916,7 @@ class RefinerFactory(object):
       warnmsg += 'These parameters will not be refined'
       tmp = []
       for bp in beam_params:
-        if good_param(bp):
+        if model_nparam_minus_nref(bp) >= 0:
           tmp.append(bp)
         else:
           id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
@@ -926,7 +926,7 @@ class RefinerFactory(object):
 
       tmp = []
       for xlo in xl_ori_params:
-        if good_param(xlo):
+        if model_nparam_minus_nref(xlo) >= 0:
           tmp.append(xlo)
         else:
           id_list = ', '.join([str(e) for e in xlo.get_experiment_ids()])
@@ -935,7 +935,7 @@ class RefinerFactory(object):
       xl_ori_params = tmp
 
       for xluc in xl_uc_params:
-        if good_param(xluc):
+        if model_nparam_minus_nref(xluc) >= 0:
           tmp.append(xluc)
         else:
           id_list = ', '.join([str(e) for e in xluc.get_experiment_ids()])
@@ -950,7 +950,7 @@ class RefinerFactory(object):
         try: # test for hierarchical detector parameterisation
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
-            if not good_panel_group_param(dp, gp, igp):
+            if panel_gp_nparam_minus_nref(dp, gp, igp) < 0:
               pnl_list = ', '.join([str(p) for p in gp])
               msg = 'Too few reflections to create a detector panel group parameterisation '
               msg += 'for experiments: {0} with intersections on panels {1}.'
@@ -968,7 +968,7 @@ class RefinerFactory(object):
             msg += 'experiments: {0}. It has been removed.'.format(id_list)
             warning(msg)
         except AttributeError:
-          if good_param(dp):
+          if model_nparam_minus_nref(dp) >= 0:
             tmp.append(dp)
           else:
             msg = warnmsg.format('detector', id_list)
