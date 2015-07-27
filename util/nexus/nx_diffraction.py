@@ -172,20 +172,20 @@ def write(handle, key, data):
 def read(handle, key):
   from dials.array_family import flex
   if   key == 'miller_index':
-    h = flex.int(list(handle['h'][:]))
-    k = flex.int(list(handle['k'][:]))
-    l = flex.int(list(handle['l'][:]))
+    h = flex.int(handle['h'][:].astype(int))
+    k = flex.int(handle['k'][:].astype(int))
+    l = flex.int(handle['l'][:].astype(int))
     return flex.miller_index(h,k,l)
   elif key == 'id':
-    return flex.size_t(map(int,list(handle['id'][:])))
+    return flex.size_t(handle['id'][:].astype(int))
   elif key == 'partial_id':
-    return flex.size_t(map(int,list(handle['reflection_id'][:])))
+    return flex.size_t(handle['reflection_id'][:].astype(int))
   elif key == 'entering':
-    return flex.bool(map(bool,list(handle['entering'][:])))
+    return flex.bool(handle['entering'][:])
   elif key == 'flags':
-    return flex.size_t(map(int,list(handle['flags'][:])))
+    return flex.size_t(handle['flags'][:].astype(int))
   elif key == 'panel':
-    return flex.size_t(map(int,list(handle['det_module'][:])))
+    return flex.size_t(handle['det_module'][:].astype(int))
   elif key == 'd':
     return flex.double(handle['d'][:])
   elif key == 'partiality':
@@ -201,12 +201,12 @@ def read(handle, key):
     z = flex.double(handle['prd_phi'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'bbox':
-    x0 = flex.int(list(handle['bbx0'][:]))
-    x1 = flex.int(list(handle['bbx1'][:]))
-    y0 = flex.int(list(handle['bby0'][:]))
-    y1 = flex.int(list(handle['bby1'][:]))
-    z0 = flex.int(list(handle['bbz0'][:]))
-    z1 = flex.int(list(handle['bbz1'][:]))
+    x0 = flex.int(handle['bbx0'][:].astype(int))
+    x1 = flex.int(handle['bbx1'][:].astype(int))
+    y0 = flex.int(handle['bby0'][:].astype(int))
+    y1 = flex.int(handle['bby1'][:].astype(int))
+    z0 = flex.int(handle['bbz0'][:].astype(int))
+    z1 = flex.int(handle['bbz1'][:].astype(int))
     return flex.int6(x0, x1, y0, y1, z0, z1)
   elif key == 'xyzobs.px.value':
     x = flex.double(handle['obs_px_x_val'][:])
