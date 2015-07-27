@@ -246,7 +246,6 @@ class ReflectionManager(object):
 
     # form working and free subsets
     self._create_working_set()
-    self._sample_size = len(self._reflections)
 
     debug("Working set size = %d observations", self.get_sample_size())
 
@@ -368,7 +367,7 @@ class ReflectionManager(object):
     """Return the number of observations in the working set to be
     used for refinement"""
 
-    return self._sample_size
+    return len(self._reflections)
 
   def _sort_obs_by_residual(self, obs, angular=False):
     """For diagnostic purposes, sort the obs-pred matches so that the
@@ -502,6 +501,12 @@ class ReflectionManager(object):
 
     return self._reflections
 
+  def filter_obs(self, sel):
+    '''Perform a flex array selection on the managed observations, so that
+    external classes can filter according to criteria not available here'''
+
+    self._reflections = self._reflections.select(sel)
+    return self._reflections
 
 class StillsReflectionManager(ReflectionManager):
   """Overloads for a Reflection Manager that does not exclude
