@@ -669,21 +669,10 @@ class RefinerFactory(object):
     crystal_options = params.refinement.parameterisation.crystal
     detector_options = params.refinement.parameterisation.detector
     sparse = params.refinement.parameterisation.sparse
+    auto_reduction = params.refinement.parameterisation.auto_reduction
 
-    # Shorten paths
+    # Shorten module paths
     import dials.algorithms.refinement.parameterisation as par
-
-    # Function moved from reflection manager
-    #def _check_too_few(self):
-    #  # fail if any of the experiments has too few reflections
-    #  for iexp in range(len(self._experiments)):
-    #    nref = (self._reflections['id'] == iexp).count(True)
-    #    if nref < self._min_num_obs:
-    #      msg = ('Remaining number of reflections = {0}, for experiment {1}, ' + \
-    #             'which is below the configured limit for this reflection ' + \
-    #             'manager').format(nref, iexp)
-    #      raise RuntimeError(msg)
-    #  return
 
     # Get the working set of reflections
     reflections = refman.get_matches()
@@ -854,6 +843,78 @@ class RefinerFactory(object):
 
       if det_param.num_free() > 0:
         det_params.append(det_param)
+
+    # Parameter auto reduction options
+    def good_param(p):
+      exp_ids = p.get_experiment_ids()
+      # Do we have enough reflections to support this parameterisation?
+      nparam = p.num_free()
+      cutoff = auto_reduction.min_nref_per_parameter * nparam
+      isel = flex.size_t()
+      for exp_id in exp_ids:
+        isel.extend((reflections['id'] == exp_id).iselection())
+      nref = len(isel)
+      return nref > cutoff
+
+    def good_panel_group_param(p, pnl_ids, group):
+      exp_ids = p.get_experiment_ids()
+      # Do we have enough reflections to support this parameterisation?
+      gp_id = 'Group{0}'.format(group)
+      gp_params = [n.startswith(gp_id) for n in p.get_param_names()]
+      nparam = gp_params.count(True)
+      cutoff = auto_reduction.min_nref_per_parameter * nparam
+      isel = flex.size_t()
+      for exp_id in exp_ids:
+        subsel = (reflections['id'] == exp_id).iselection()
+        panels = reflections['panel'].select(subsel)
+        for pnl in pnl_ids:
+          isel.extend(subsel.select(panels == pnl))
+      nref = len(isel)
+      return nref > cutoff
+
+    if auto_reduction.action == 'fail':
+      failmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}.'
+      failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
+      for bp in beam_params:
+        if not good_param(bp):
+          id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
+          msg = failmsg.format('beam', id_list)
+          raise RuntimeError(msg)
+
+      for xlo in xl_ori_params:
+        if not good_param(xlo):
+          id_list = ', '.join([str(e) for e in xlo.get_experiment_ids()])
+          msg = failmsg.format('crystal orientation', id_list)
+          raise RuntimeError(msg)
+
+      for xluc in xl_uc_params:
+        if not good_param(xluc):
+          id_list = ', '.join([str(e) for e in xluc.get_experiment_ids()])
+          msg = failmsg.format('crystal unit cell', id_list)
+          raise RuntimeError(msg)
+
+      for dp in det_params:
+        try: # test for hierarchical detector parameterisation
+          pnl_groups = dp.get_panel_ids_by_group()
+          for igp, gp in enumerate(pnl_groups):
+            if not good_panel_group_param(dp, gp, igp):
+              id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
+              pnl_list = ', '.join([str(p) for p in gp])
+              msg = 'Too few reflections to create a detector panel group parameterisation '
+              msg += 'for experiments: {0} with intersections on panels {1}.'
+              msg = msg.format(id_list, pnl_list)
+              msg += '\nTry modifying refinement.parameterisation.auto_reduction options'
+              raise RuntimeError(msg)
+        except AttributeError:
+          if not good_param(dp):
+            id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
+            msg = failmsg.format('detector', id_list)
+            raise RuntimeError(msg)
+
+    elif auto_reduction.action == 'fix':
+      raise NotImplementedError('refinement.parameterisation.auto_reduction.action="fix" is not implemented yet')
+    elif auto_reduction.action == 'remove':
+      raise NotImplementedError('refinement.parameterisation.auto_reduction.action="remove" is not implemented yet')
 
     # Prediction equation parameterisation
     if do_stills: # doing stills

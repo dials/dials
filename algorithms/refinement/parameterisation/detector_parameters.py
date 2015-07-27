@@ -1196,6 +1196,9 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
     return
 
+  def get_panel_ids_by_group(self):
+    return self._panel_ids_by_group
+
   def compose(self):
 
     # reset the list that holds derivatives
