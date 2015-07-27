@@ -283,11 +283,6 @@ refinement
       .type = int
       .expert_level = 1
 
-    minimum_number_of_reflections = 20
-      .help = "The minimum number of input observations per experiment below"
-              "which a reflection manager will not be constructed."
-      .type = int(value_min=0)
-
     close_to_spindle_cutoff = 0.05
       .help = "The inclusion criterion currently uses the volume of the"
               "parallelepiped formed by the spindle axis, the incident"
@@ -1041,7 +1036,6 @@ class RefinerFactory(object):
     return refman(reflections=reflections,
             experiments=experiments,
             nref_per_degree=nref_per_degree,
-            min_num_obs=options.minimum_number_of_reflections,
             max_sample_size = options.maximum_sample_size,
             min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,

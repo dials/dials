@@ -150,7 +150,6 @@ class ReflectionManager(object):
   def __init__(self, reflections,
                      experiments,
                      nref_per_degree=None,
-                     min_num_obs=20,
                      max_sample_size=None,
                      min_sample_size=0,
                      close_to_spindle_cutoff=0.1,
@@ -181,9 +180,6 @@ class ReflectionManager(object):
     # exclude reflections that fail some inclusion criteria
     refs_to_keep = self._id_refs_to_keep(reflections)
     self._accepted_refs_size = len(refs_to_keep)
-
-    # keep minimum number of observations per experiment to allow as working set
-    self._min_num_obs = min_num_obs
 
     # set entering flags for all reflections
     reflections['entering'] = calculate_entering_flags(reflections,

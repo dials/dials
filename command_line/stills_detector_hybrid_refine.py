@@ -239,9 +239,10 @@ def crystals_refiner(params, experiments, reflections):
     refs = reflections.select(reflections['id'] == iexp)
     refs['id'] = flex.size_t(len(refs),0)
 
-    if len(refs) < params.refinement.reflections.minimum_number_of_reflections:
-      print "Not enough reflections to refine experiment"
-      return
+    # DGW commented out as reflections.minimum_number_of_reflections no longer exists
+    #if len(refs) < params.refinement.reflections.minimum_number_of_reflections:
+    #  print "Not enough reflections to refine experiment"
+    #  return
 
     # experiment list for a single experiment
     exps=ExperimentList()
@@ -336,7 +337,6 @@ class Script(object):
         outlier.separate_experiments=False
         weighting_strategy.override=stills
         weighting_strategy.delpsi_constant=1000000
-        minimum_number_of_reflections=0
       }
       refinery.engine=LevMar
       verbosity=2
@@ -446,9 +446,10 @@ class Script(object):
         sel = refs['id'] == i
         sub_ref = refs.select(sel)
 
-        if len(sub_ref) < params.crystals_phase.refinement.reflections.minimum_number_of_reflections:
-          print "skipping experiment", i, "in", exp_wrapper.filename, "due to insufficient strong reflections in", ref_wrapper.filename
-          continue
+        ## DGW commented out as reflections.minimum_number_of_reflections no longer exists
+        #if len(sub_ref) < params.crystals_phase.refinement.reflections.minimum_number_of_reflections:
+        #  print "skipping experiment", i, "in", exp_wrapper.filename, "due to insufficient strong reflections in", ref_wrapper.filename
+        #  continue
 
         # build an experiment with this crystal plus the reference models
         combined_exp = experiment_from_crystal(exp.crystal)

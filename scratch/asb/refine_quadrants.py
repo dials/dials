@@ -80,7 +80,6 @@ refinement{
   }
   target.gradient_calculation_blocksize=100000
   reflections.outlier.algorithm=tukey
-  reflections.minimum_number_of_reflections=1
 }""")
 from dials.data.refinement import phil_scope as master_phil
 working_phil = master_phil.fetch(

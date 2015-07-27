@@ -161,7 +161,7 @@ reflections = block_calculator.per_image()
 # use a ReflectionManager to exclude reflections too close to the spindle,
 # plus set the frame numbers
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
-refman = ReflectionManager(reflections, experiments, min_num_obs=1,
+refman = ReflectionManager(reflections, experiments,
   outlier_detector=None)
 
 # make a target to ensure reflections are predicted and refman is finalised

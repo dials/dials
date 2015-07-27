@@ -71,9 +71,11 @@ def run():
   base_name = os.path.splitext(params.input.single_img)[0]
   reflections.as_pickle(os.path.join(params.output_dir, base_name + "_strong.pickle"))
 
-  if len(reflections) < params.refinement.reflections.minimum_number_of_reflections:
-    print "Not enough spots to index"
-    return
+  # DGW commented out as reflections.minimum_number_of_reflections no longer exists
+  #if len(reflections) < params.refinement.reflections.minimum_number_of_reflections:
+  #  print "Not enough spots to index"
+  #  return
+
   # create the spot finder
 
   print "Spotfinder spots found:", len(reflections)

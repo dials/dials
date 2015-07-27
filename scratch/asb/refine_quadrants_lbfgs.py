@@ -80,7 +80,6 @@ refinement{
   }
   target.gradient_calculation_blocksize=10000
   reflections.outlier.algorithm=tukey
-  reflections.minimum_number_of_reflections=1
   refinery.engine=LBFGScurvs
 }""")
 from dials.data.refinement import phil_scope as master_phil

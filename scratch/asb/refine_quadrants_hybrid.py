@@ -50,7 +50,6 @@ class DetectorRefiner(object):
     }
     target.gradient_calculation_blocksize=100000
     reflections.outlier.algorithm=tukey
-    reflections.minimum_number_of_reflections=1
   }""")
   from dials.algorithms.refinement.refiner import phil_scope as refinement_phil
   working_phil = refinement_phil.fetch(sources=[user_phil])
@@ -75,7 +74,6 @@ class CrystalRefiners(object):
       detector.fix=all
     }
     reflections.outlier.algorithm=tukey
-    reflections.minimum_number_of_reflections=1
     refinery.engine=LBFGScurvs
   }""")
   from dials.algorithms.refinement.refiner import phil_scope as refinement_phil
