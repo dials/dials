@@ -208,10 +208,6 @@ class ReflectionManager(object):
       if k not in cols:
         del self._reflections[k]
 
-    # fail if there are too few reflections in the manager (the check also needs
-    # to be repeated after outlier rejection and subsetting)
-    self._check_too_few()
-
     # set weights for all kept reflections
     if weighting_strategy_override is not None:
       self._weighting_strategy = weighting_strategy_override
@@ -246,7 +242,6 @@ class ReflectionManager(object):
     has_pred = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
     inlier = ~self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     self._reflections = self._reflections.select(has_pred & inlier)
-    self._check_too_few()
 
     debug("%d reflections remain in the manager", len(self._reflections))
 
@@ -257,21 +252,8 @@ class ReflectionManager(object):
     self._create_working_set()
     self._sample_size = len(self._reflections)
 
-    self._check_too_few()
-
     debug("Working set size = %d observations", self.get_sample_size())
 
-    return
-
-  def _check_too_few(self):
-    # fail if any of the experiments has too few reflections
-    for iexp in range(len(self._experiments)):
-      nref = (self._reflections['id'] == iexp).count(True)
-      if nref < self._min_num_obs:
-        msg = ('Remaining number of reflections = {0}, for experiment {1}, ' + \
-               'which is below the configured limit for this reflection ' + \
-               'manager').format(nref, iexp)
-        raise RuntimeError(msg)
     return
 
   def _calculate_frame_numbers(self, reflections):

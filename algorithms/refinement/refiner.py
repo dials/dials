@@ -47,6 +47,32 @@ refinement
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"
   {
+
+    auto_reduction
+      .help = "determine behaviour when there are too few reflections to"
+              "reasonably produce a full parameterisation of the experiment list"
+    {
+      min_nref_per_parameter = 1
+        .help = "the smallest number of reflections per parameter for a"
+                "model parameterisation below which the parameterisation will"
+                "not be made in full, but the action described below will be"
+                "triggered."
+        .type = int(value_min=1)
+
+      action = *fail fix remove
+        .help = "action to take if there are too few reflections across the"
+                "experiments related to a particular model parameterisation."
+                "If fail, an exception will be raised and refinement will not"
+                "proceed. If fix, refinement will continue but with the"
+                "parameters relating to that model remaining fixed at their"
+                "initial values. If remove, refinement will continue but all"
+                "reflections from experiments that are too small to allow"
+                "full parameterisations will be removed. This will result in"
+                "the complete removal of that experiment from any model"
+                "parameterisation of the global model."
+        .type = choice
+    }
+
     beam
       .help = "beam parameters"
     {
@@ -586,7 +612,7 @@ class RefinerFactory(object):
 
     # create parameterisations
     pred_param, param_reporter = \
-            cls.config_parameterisation(params, experiments, do_stills)
+            cls.config_parameterisation(params, experiments, refman, do_stills)
 
     debug("Prediction equation parameterisation built")
     debug("Parameter order : name mapping")
@@ -630,7 +656,7 @@ class RefinerFactory(object):
     return params
 
   @staticmethod
-  def config_parameterisation(params, experiments, do_stills):
+  def config_parameterisation(params, experiments, refman, do_stills):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
@@ -651,6 +677,21 @@ class RefinerFactory(object):
 
     # Shorten paths
     import dials.algorithms.refinement.parameterisation as par
+
+    # Function moved from reflection manager
+    #def _check_too_few(self):
+    #  # fail if any of the experiments has too few reflections
+    #  for iexp in range(len(self._experiments)):
+    #    nref = (self._reflections['id'] == iexp).count(True)
+    #    if nref < self._min_num_obs:
+    #      msg = ('Remaining number of reflections = {0}, for experiment {1}, ' + \
+    #             'which is below the configured limit for this reflection ' + \
+    #             'manager').format(nref, iexp)
+    #      raise RuntimeError(msg)
+    #  return
+
+    # Get the working set of reflections
+    reflections = refman.get_matches()
 
     # Parameterise unique Beams
     beam_params = []
