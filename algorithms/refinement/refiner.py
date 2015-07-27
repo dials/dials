@@ -859,9 +859,10 @@ class RefinerFactory(object):
     def panel_gp_nparam_minus_nref(p, pnl_ids, group):
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
-      gp_id = 'Group{0}'.format(group)
-      gp_params = [n.startswith(gp_id) for n in p.get_param_names()]
-      nparam = gp_params.count(True)
+      gp_params = [gp == group for gp in p.get_param_panel_groups()]
+      fixlist = p.get_fixed()
+      free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)]
+      nparam = free_gp_params.count(True)
       cutoff = auto_reduction.min_nref_per_parameter * nparam
       isel = flex.size_t()
       for exp_id in exp_ids:
@@ -871,6 +872,56 @@ class RefinerFactory(object):
           isel.extend(subsel.select(panels == pnl))
       nref = len(isel)
       return nref - cutoff
+
+    def weak_parameterisation_search(beam_params, xl_ori_params,
+                                        xl_uc_params, det_params):
+      weak = None
+      nref_deficit = 0
+      panels = None
+      pnl_gp = None
+      typ = None
+      for p in beam_params:
+        net_nref = model_nparam_minus_nref(p)
+        if net_nref < nref_deficit:
+          nref_deficit = net_nref
+          weak = p
+          typ = 'beam'
+      for p in xl_ori_params:
+        net_nref = model_nparam_minus_nref(p)
+        if net_nref < nref_deficit:
+          nref_deficit = net_nref
+          weak = p
+          typ = 'crystal orientation'
+      for p in xl_uc_params:
+        net_nref = model_nparam_minus_nref(p)
+        if net_nref < nref_deficit:
+          nref_deficit = net_nref
+          weak = p
+          typ = 'crystal unit cell'
+      for p in det_params:
+        try:
+          pnl_groups = p.get_panel_ids_by_group()
+          for igp, gp in enumerate(pnl_groups):
+            net_nref = panel_gp_nparam_minus_nref(p, gp, igp)
+            if net_nref < nref_deficit:
+              nref_deficit = net_nref
+              weak = p
+              panels = gp
+              pnl_gp = igp
+              typ = 'detector panel group'
+        except:
+          net_nref = model_nparam_minus_nref(p)
+          if net_nref < nref_deficit:
+            nref_deficit = net_nref
+            weak = p
+            panels = None
+            pnl_gp = None
+            typ = 'detector'
+      print typ, nref_deficit
+      return {'parameterisation':weak,
+              'type':typ,
+              'panels':panels,
+              'panel_group_id':pnl_gp}
 
     if auto_reduction.action == 'fail':
       failmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}.'
@@ -956,10 +1007,9 @@ class RefinerFactory(object):
               msg += 'for experiments: {0} with intersections on panels {1}.'
               msg = msg.format(id_list, pnl_list)
               warning(msg)
-              gp_id = 'Group{0}'.format(igp)
-              for i, name in enumerate(dp.get_param_names()):
-                if name.startswith(gp_id):
-                  fixlist[i] = True
+              gp_params = [gp == igp for gp in p.get_param_panel_groups()]
+              for i, val in enumerate(gp_params):
+                if val: fixlist[i] = True
           dp.set_fixed(fixlist)
           if dp.num_free() > 0:
             tmp.append(dp)
@@ -976,6 +1026,37 @@ class RefinerFactory(object):
       det_params = tmp
 
     elif auto_reduction.action == 'remove':
+      warnmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}. '
+      warnmsg += 'These parameters will not be refined and the associated reflections will be removed'
+      while True:
+        dat = weak_parameterisation_search(beam_params,
+          xl_ori_params, xl_uc_params, det_params)
+        if dat['parameterisation'] is None: break
+        exp_ids = dat['parameterisation'].get_experiment_ids()
+        id_list = ', '.join([str(e) for e in exp_ids])
+        if dat['panels'] is not None:
+          pnl_list = ', '.join([str(p) for p in dat['panels']])
+          special = id_list + ' with intersections on panels {0}'.format(pnl_list)
+          msg = warnmsg.format(dat['type'], special)
+          fixlist = dat['parameterisation'].get_fixed()
+          pnl_gps = dat['parameterisation'].get_param_panel_groups()
+          for i, gp in enumerate(pnl_gps):
+            if gp == dat['panel_group_id']: fixlist[i] = True
+          dat['parameterisation'].set_fixed(fixlist)
+          # FIXME REMOVE REFLECTIONS ON PANELS dat['panels'] IN EXPS exp_ids
+        else:
+          msg = warnmsg.format(dat['type'], id_list)
+          fixlist = [True] * dat['parameterisation'].num_total()
+          dat['parameterisation'].set_fixed(fixlist)
+          #FIXME REMOVE REFLECTIONS IN EXPS exp_ids
+        warning(msg)
+
+      # Strip out parameterisations with zero free parameters
+      beam_params = [p for p in beam_params if p.num_free() > 0]
+      xl_ori_params = [p for p in xl_ori_params if p.num_free() > 0]
+      xl_uc_params = [p for p in xl_uc_params if p.num_free() > 0]
+      det_params = [p for p in det_params if p.num_free() > 0]
+
       raise NotImplementedError('refinement.parameterisation.auto_reduction.action="remove" is not implemented yet')
 
     # Prediction equation parameterisation
