@@ -879,26 +879,26 @@ class RefinerFactory(object):
       nref_deficit = 0
       panels = None
       pnl_gp = None
-      typ = None
-      for p in beam_params:
+      name = None
+      for i, p in enumerate(beam_params):
         net_nref = model_nparam_minus_nref(p, reflections)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
-          typ = 'beam'
-      for p in xl_ori_params:
+          name = 'Beam{0}'.format(i)
+      for i, p in enumerate(xl_ori_params):
         net_nref = model_nparam_minus_nref(p, reflections)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
-          typ = 'crystal orientation'
-      for p in xl_uc_params:
+          name = 'Crystal{0} orientation'.format(i)
+      for i, p in enumerate(xl_uc_params):
         net_nref = model_nparam_minus_nref(p, reflections)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
-          typ = 'crystal unit cell'
-      for p in det_params:
+          name = 'Crystal{0} unit cell'.format(i)
+      for i, p in enumerate(det_params):
         try:
           pnl_groups = p.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
@@ -908,7 +908,7 @@ class RefinerFactory(object):
               weak = p
               panels = gp
               pnl_gp = igp
-              typ = 'detector panel group'
+              name = 'Detector{0}PanelGroup{1}'.format(i, pnl_gp)
         except:
           net_nref = model_nparam_minus_nref(p, reflections)
           if net_nref < nref_deficit:
@@ -916,128 +916,118 @@ class RefinerFactory(object):
             weak = p
             panels = None
             pnl_gp = None
-            typ = 'detector'
+            name = 'Detector{0}'.format(i)
       return {'parameterisation':weak,
-              'type':typ,
               'panels':panels,
-              'panel_group_id':pnl_gp}
+              'panel_group_id':pnl_gp,
+              'name':name}
 
     if auto_reduction.action == 'fail':
-      failmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}.'
+      failmsg = 'Too few reflections to parameterise {0}'
       failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
-      for bp in beam_params:
+      for i, bp in enumerate(beam_params):
         if model_nparam_minus_nref(bp, reflections) < 0:
-          id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
-          msg = failmsg.format('beam', id_list)
+          mdl = 'Beam{0}'.format(i)
+          msg = failmsg.format(mdl)
           raise RuntimeError(msg)
 
-      for xlo in xl_ori_params:
+      for i, xlo in enumerate(xl_ori_params):
         if model_nparam_minus_nref(xlo, reflections) < 0:
-          id_list = ', '.join([str(e) for e in xlo.get_experiment_ids()])
-          msg = failmsg.format('crystal orientation', id_list)
+          mdl = 'Crystal{0} orientation'.format(i)
+          msg = failmsg.format(mdl)
           raise RuntimeError(msg)
 
-      for xluc in xl_uc_params:
+      for i, xluc in enumerate(xl_uc_params):
         if model_nparam_minus_nref(xluc, reflections) < 0:
-          id_list = ', '.join([str(e) for e in xluc.get_experiment_ids()])
-          msg = failmsg.format('crystal unit cell', id_list)
+          mdl = 'Crystal{0} unit cell'.format(i)
+          msg = failmsg.format(mdl)
           raise RuntimeError(msg)
 
-      for dp in det_params:
+      for i, dp in enumerate(det_params):
         try: # test for hierarchical detector parameterisation
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
             if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
-              id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
-              pnl_list = ', '.join([str(p) for p in gp])
-              msg = 'Too few reflections to create a detector panel group parameterisation '
-              msg += 'for experiments: {0} with intersections on panels {1}.'
-              msg = msg.format(id_list, pnl_list)
+              msg = 'Too few reflections to parameterise Detector{0} panel group {1}'
+              msg = msg.format(i, igp)
               msg += '\nTry modifying refinement.parameterisation.auto_reduction options'
               raise RuntimeError(msg)
         except AttributeError:
           if model_nparam_minus_nref(dp, reflections) < 0:
-            id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
-            msg = failmsg.format('detector', id_list)
+            mdl = 'Detector{0}'.format(i)
+            msg = failmsg.format(mdl)
             raise RuntimeError(msg)
 
     elif auto_reduction.action == 'fix':
-      warnmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}. '
-      warnmsg += 'These parameters will not be refined'
+      warnmsg = 'Too few reflections to parameterise {0}'
       tmp = []
-      for bp in beam_params:
+      for i, bp in enumerate(beam_params):
         if model_nparam_minus_nref(bp, reflections) >= 0:
           tmp.append(bp)
         else:
-          id_list = ', '.join([str(e) for e in bp.get_experiment_ids()])
-          msg = warnmsg.format('beam', id_list)
+          mdl = 'Beam{0}'.format(i)
+          msg = warnmsg.format(mdl)
           warning(msg)
       beam_params = tmp
 
       tmp = []
-      for xlo in xl_ori_params:
+      for i, xlo in enumerate(xl_ori_params):
         if model_nparam_minus_nref(xlo, reflections) >= 0:
           tmp.append(xlo)
         else:
-          id_list = ', '.join([str(e) for e in xlo.get_experiment_ids()])
-          msg = warnmsg.format('crystal orientation', id_list)
+          mdl = 'Crystal{0} orientation'.format(i)
+          msg = warnmsg.format(mdl)
           warning(msg)
       xl_ori_params = tmp
 
       tmp = []
-      for xluc in xl_uc_params:
+      for i, xluc in enumerate(xl_uc_params):
         if model_nparam_minus_nref(xluc, reflections) >= 0:
           tmp.append(xluc)
         else:
-          id_list = ', '.join([str(e) for e in xluc.get_experiment_ids()])
-          msg = warnmsg.format('crystal unit cell', id_list)
+          mdl = 'Crystal{0} unit cell'.format(i)
+          msg = warnmsg.format(mdl)
           warning(msg)
       xl_uc_params = tmp
 
       tmp = []
-      for dp in det_params:
-        id_list = ', '.join([str(e) for e in dp.get_experiment_ids()])
+      for i, dp in enumerate(det_params):
         fixlist = dp.get_fixed()
         try: # test for hierarchical detector parameterisation
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
             if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
-              pnl_list = ', '.join([str(p) for p in gp])
-              msg = 'Too few reflections to create a detector panel group parameterisation '
-              msg += 'for experiments: {0} with intersections on panels {1}.'
-              msg = msg.format(id_list, pnl_list)
+              msg = 'Too few reflections to parameterise Detector{0}PanelGroup{1}'
+              msg = msg.format(i, igp)
               warning(msg)
               gp_params = [gp == igp for gp in dp.get_param_panel_groups()]
-              for i, val in enumerate(gp_params):
-                if val: fixlist[i] = True
+              for j, val in enumerate(gp_params):
+                if val: fixlist[j] = True
           dp.set_fixed(fixlist)
           if dp.num_free() > 0:
             tmp.append(dp)
           else:
-            msg = 'No parameters remain free within the detector parameterisation for '
-            msg += 'experiments: {0}. It has been removed.'.format(id_list)
+            msg = 'No parameters remain free for Detector{0}'.format(i)
             warning(msg)
         except AttributeError:
           if model_nparam_minus_nref(dp, reflections) >= 0:
             tmp.append(dp)
           else:
-            msg = warnmsg.format('detector', id_list)
+            mdl = 'Detector{0}'.format(i)
+            msg = warnmsg.format(mdl)
             warning(msg)
       det_params = tmp
 
     elif auto_reduction.action == 'remove':
-      warnmsg = 'Too few reflections to create a {0} parameterisation for experiments: {1}. '
-      warnmsg += 'These parameters will not be refined and the associated reflections will be removed'
+      warnmsg = 'Too few reflections to parameterise {0}'
+      warnmsg += '\nAssociated reflections will be removed from the Reflection Manager'
       while True:
         dat = weak_parameterisation_search(beam_params,
           xl_ori_params, xl_uc_params, det_params, reflections)
         if dat['parameterisation'] is None: break
         exp_ids = dat['parameterisation'].get_experiment_ids()
-        id_list = ', '.join([str(e) for e in exp_ids])
         if dat['panels'] is not None:
-          pnl_list = ', '.join([str(p) for p in dat['panels']])
-          special = id_list + ' with intersections on panels {0}'.format(pnl_list)
-          msg = warnmsg.format(dat['type'], special)
+          msg = warnmsg.format(dat['name'])
           fixlist = dat['parameterisation'].get_fixed()
           pnl_gps = dat['parameterisation'].get_param_panel_groups()
           for i, gp in enumerate(pnl_gps):
@@ -1045,7 +1035,7 @@ class RefinerFactory(object):
           dat['parameterisation'].set_fixed(fixlist)
           # FIXME REMOVE REFLECTIONS ON PANELS dat['panels'] IN EXPS exp_ids
         else:
-          msg = warnmsg.format(dat['type'], id_list)
+          msg = warnmsg.format(dat['name'])
           fixlist = [True] * dat['parameterisation'].num_total()
           dat['parameterisation'].set_fixed(fixlist)
           #FIXME REMOVE REFLECTIONS IN EXPS exp_ids
