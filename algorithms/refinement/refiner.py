@@ -65,11 +65,16 @@ refinement
                 "If fail, an exception will be raised and refinement will not"
                 "proceed. If fix, refinement will continue but with the"
                 "parameters relating to that model remaining fixed at their"
-                "initial values. If remove, refinement will continue but all"
-                "reflections from experiments that are too small to allow"
-                "full parameterisations will be removed. This will result in"
-                "the complete removal of that experiment from any model"
-                "parameterisation of the global model."
+                "initial values. If remove, parameters relating to that model"
+                "will be fixed, and in addition all reflections related to"
+                "that parameterisation will be removed. This will therefore"
+                "remove this reflections from other parameterisations of the"
+                "global model too. For example, if a crystal model could not"
+                "be parameterised it will be excised completely and not"
+                "contribute to the joint refinement of the detector and beam."
+                "In the fix mode, reflections emanating from that crystal will"
+                "still form residuals and will contribute to detector and beam"
+                "refinement."
         .type = choice
     }
 
@@ -1033,12 +1038,28 @@ class RefinerFactory(object):
           for i, gp in enumerate(pnl_gps):
             if gp == dat['panel_group_id']: fixlist[i] = True
           dat['parameterisation'].set_fixed(fixlist)
-          # FIXME REMOVE REFLECTIONS ON PANELS dat['panels'] IN EXPS exp_ids
+          # identify observations on this panel group from associated experiments
+          obs = refman.get_obs()
+          isel=flex.size_t()
+          for exp_id in exp_ids:
+            subsel = (obs['id'] == exp_id).iselection()
+            panels_this_exp = obs['panel'].select(subsel)
+            for pnl in dat['panels']:
+              isel.extend(subsel.select(panels_this_exp == pnl))
         else:
           msg = warnmsg.format(dat['name'])
           fixlist = [True] * dat['parameterisation'].num_total()
           dat['parameterisation'].set_fixed(fixlist)
-          #FIXME REMOVE REFLECTIONS IN EXPS exp_ids
+          # identify observations from the associated experiments
+          obs = refman.get_obs()
+          isel=flex.size_t()
+          for exp_id in exp_ids:
+            isel.extend((obs['id'] == exp_id).iselection())
+        # Now remove the selected reflections
+        sel = flex.bool(len(obs), True)
+        sel.set_selected(isel, False)
+        refman.filter_obs(sel)
+        reflections = refman.get_matches()
         warning(msg)
 
       # Strip out parameterisations with zero free parameters
