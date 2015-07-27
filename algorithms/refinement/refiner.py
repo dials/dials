@@ -1007,7 +1007,7 @@ class RefinerFactory(object):
               msg += 'for experiments: {0} with intersections on panels {1}.'
               msg = msg.format(id_list, pnl_list)
               warning(msg)
-              gp_params = [gp == igp for gp in p.get_param_panel_groups()]
+              gp_params = [gp == igp for gp in dp.get_param_panel_groups()]
               for i, val in enumerate(gp_params):
                 if val: fixlist[i] = True
           dp.set_fixed(fixlist)
