@@ -1092,6 +1092,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     self._panel_ids_by_group = [get_panel_ids_at_root(panels, g) for g in self._groups]
 
     p_list = []
+    self._group_ids_by_parameter = []
     istate = []
     self._offsets = []
     self._dir1s = []
@@ -1185,6 +1186,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
       # extend the parameter list with those pertaining to this group
       p_list.extend([dist, shift1, shift2, tau1, tau2, tau3])
+      self._group_ids_by_parameter.extend([igp] * 6)
 
     # set up the base class
     ModelParameterisation.__init__(self, detector, istate, p_list,
@@ -1197,7 +1199,13 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     return
 
   def get_panel_ids_by_group(self):
+    '''Return a list of panel groups. Each element of the list is itself a list,
+    containing the panel IDs for that group.'''
     return self._panel_ids_by_group
+
+  def get_param_panel_groups(self):
+    '''Return the list of group ids for each parameter'''
+    return self._group_ids_by_parameter
 
   def compose(self):
 
