@@ -739,6 +739,7 @@ class IntegratorExecutor(Executor):
 
     # Check if pixels are overloaded
     reflections.is_overloaded(self.experiments)
+    reflections.contains_invalid_pixels()
 
     # Compute the shoebox mask
     reflections.compute_mask(self.experiments)

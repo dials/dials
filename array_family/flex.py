@@ -753,6 +753,23 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.set_flags(result, self.flags.overloaded)
     return result
 
+  def contains_invalid_pixels(self):
+    '''
+    Check if the shoebox contains invalid pixels.
+
+    :return: True/False invalid for each reflection
+
+    '''
+    from dials.algorithms.shoebox import MaskCode
+    assert 'shoebox' in self
+    x0, x1, y0, y1, z0, z1 = self['bbox'].parts()
+    ntotal = (x1 - x0) * (y1 - y0) * (z1 - z0)
+    assert ntotal.all_gt(0)
+    nvalid = self['shoebox'].count_mask_values(MaskCode.Valid)
+    result = (ntotal - nvalid) > 0
+    self.set_flags(result, self.flags.includes_bad_pixels)
+    return result
+
   def find_overlaps(self, experiments):
     '''
     Check for overlapping reflections.
