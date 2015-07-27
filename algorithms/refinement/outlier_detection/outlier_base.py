@@ -268,5 +268,3 @@ if __name__ == "__main__":
   print CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3])
   params.outlier.algorithm="mcd"
   print CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3])
-
-

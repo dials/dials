@@ -567,5 +567,3 @@ class StillsReflectionManager(ReflectionManager):
     debug("\n")
 
     return
-
-
