@@ -917,7 +917,6 @@ class RefinerFactory(object):
             panels = None
             pnl_gp = None
             typ = 'detector'
-      print typ, nref_deficit
       return {'parameterisation':weak,
               'type':typ,
               'panels':panels,
@@ -985,6 +984,7 @@ class RefinerFactory(object):
           warning(msg)
       xl_ori_params = tmp
 
+      tmp = []
       for xluc in xl_uc_params:
         if model_nparam_minus_nref(xluc) >= 0:
           tmp.append(xluc)
