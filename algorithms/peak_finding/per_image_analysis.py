@@ -670,7 +670,7 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
     reflections, imageset, plot_filename=extra_filename)
   if n_spots_no_ice > 10:
     estimated_d_min = estimate_resolution_limit(
-      reflections_all, imageset, ice_sel, plot_filename=filename)
+      reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename)
     d_min_distl_method_1, noisiness_method_1 \
       = estimate_resolution_limit_distl_method1(
         reflections_all, imageset, ice_sel, plot_filename=distl_method_1_filename)
@@ -741,22 +741,33 @@ def table(stats):
   total_intensity = stats.total_intensity
   estimated_d_min = stats.estimated_d_min
   d_min_distl_method_1 = stats.d_min_distl_method_1
-  noisiness_method_1 = stats.noisiness_method_1
   d_min_distl_method_2 = stats.d_min_distl_method_2
+  noisiness_method_1 = stats.noisiness_method_1
   noisiness_method_2 = stats.noisiness_method_2
-  rows = [("image", "#spots", "#spots_no_ice", "#spots_4A", "total_intensity",
+  rows = [("image", "#spots", "#spots_no_ice", "total_intensity",
            "d_min", "d_min (distl method 1)", "d_min (distl method 2)")]
   for i_image in range(len(n_spots_total)):
-    rows.append((str(int(i_image)+1),
+    d_min_str = ''
+    method1_str = ''
+    method2_str = ''
+    if estimated_d_min[i_image] > 0:
+      d_min_str = "%.2f" %estimated_d_min[i_image]
+    if d_min_distl_method_1[i_image] > 0:
+      method1_str = "%.2f" %d_min_distl_method_1[i_image]
+      if noisiness_method_1 is not None:
+        method1_str += " (%.2f)" %noisiness_method_1[i_image]
+    if d_min_distl_method_2[i_image] > 0:
+      method2_str = "%.2f" %d_min_distl_method_2[i_image]
+      if noisiness_method_2 is not None:
+        method2_str += " (%.2f)" %noisiness_method_2[i_image]
+    rows.append([str(int(i_image)+1),
                  str(n_spots_total[i_image]),
                  str(n_spots_no_ice[i_image]),
-                 str(n_spots_4A[i_image]),
+                 #str(n_spots_4A[i_image]),
                  "%.0f" %total_intensity[i_image],
-                 "%.2f" %estimated_d_min[i_image],
-                 "%.2f (%.2f)" %(
-                   d_min_distl_method_1[i_image], noisiness_method_1[i_image]),
-                 "%.2f (%.2f)" %(
-                   d_min_distl_method_2[i_image], noisiness_method_2[i_image])))
+                 d_min_str,
+                 method1_str,
+                 method2_str])
   return rows
 
 def print_table(stats, out=None):

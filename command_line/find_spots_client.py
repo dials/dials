@@ -14,7 +14,7 @@ def nproc():
   from libtbx.introspection import number_of_processors
   return number_of_processors(return_value_if_unknown=-1)
 
-def work_all(host, port, filenames, params, plot=False):
+def work_all(host, port, filenames, params, plot=False, table=False, grid=None):
   from multiprocessing.pool import ThreadPool as thread_pool
   pool = thread_pool(processes=nproc())
   threads = { }
@@ -25,12 +25,13 @@ def work_all(host, port, filenames, params, plot=False):
     results[filename] = threads[filename].get()
     print results[filename]
 
-  if plot:
+  if plot or table:
 
     from xml.dom import minidom
     from scitbx.array_family import flex
     from libtbx import group_args
-    from dials.algorithms.peak_finding.per_image_analysis import plot_stats
+    from dials.algorithms.peak_finding.per_image_analysis \
+         import plot_stats, print_table
 
     def get_xml_item(xmldoc, item):
       return xmldoc.childNodes[0].getElementsByTagName(item)[0].childNodes[0].data
@@ -40,6 +41,7 @@ def work_all(host, port, filenames, params, plot=False):
     d_min_distl_method_2 = flex.double()
     n_spots_total = flex.int()
     n_spots_no_ice = flex.int()
+    total_intensity = flex.double()
 
     for filename in filenames:
       xml_str = results[filename]
@@ -49,15 +51,31 @@ def work_all(host, port, filenames, params, plot=False):
       d_min_distl_method_2.append(float(get_xml_item(xmldoc, 'd_min_method_2')))
       n_spots_total.append(int(get_xml_item(xmldoc, 'spot_count')))
       n_spots_no_ice.append(int(get_xml_item(xmldoc, 'spot_count_no_ice')))
+      total_intensity.append(int(get_xml_item(xmldoc, 'total_intensity')))
 
     stats = group_args(n_spots_total=n_spots_total,
                        n_spots_no_ice=n_spots_no_ice,
                        n_spots_4A=None,
-                       total_intensity=None,
+                       total_intensity=total_intensity,
                        estimated_d_min=estimated_d_min,
                        d_min_distl_method_1=d_min_distl_method_1,
-                       d_min_distl_method_2=d_min_distl_method_2)
-    plot_stats(stats)
+                       d_min_distl_method_2=d_min_distl_method_2,
+                       noisiness_method_1=None,
+                       noisiness_method_2=None)
+
+    if plot:
+      plot_stats(stats)
+    if table:
+      print_table(stats)
+
+    if grid is not None:
+      from matplotlib import pyplot
+      n_spots_no_ice.reshape(flex.grid(grid))
+      print n_spots_no_ice.size()
+      from matplotlib import pyplot
+      fig = pyplot.figure()
+      pyplot.pcolormesh(n_spots_no_ice.as_numpy_array(), cmap=pyplot.cm.Reds)
+      pyplot.savefig("spot_count.png")
 
   return
 
@@ -85,6 +103,10 @@ port = 1701
   .type = int(value_min=1)
 plot = False
   .type = bool
+table = False
+  .type = bool
+grid = None
+  .type = ints(size=2, value_min=1)
 """)
 
 if __name__ == '__main__':
@@ -117,4 +139,5 @@ if __name__ == '__main__':
     if len(filenames) == 1:
       print work(params.host, params.port, filenames[0], args)
     else:
-      work_all(params.host, params.port, filenames, args, plot=params.plot)
+      work_all(params.host, params.port, filenames, args, plot=params.plot,
+               table=params.table, grid=params.grid)

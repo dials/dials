@@ -13,7 +13,7 @@ def work(filename, cl=[]):
   phil_scope = libtbx.phil.parse('''\
 index = False
   .type = bool
-integrate = True
+integrate = False
   .type = bool
 ''')
   interp = phil_scope.command_line_argument_interpreter()
@@ -82,8 +82,8 @@ integrate = True
 
       predicted = flex.reflection_table.from_predictions_multi(
         experiments,
-        dmin=params.prediction.dmin,
-        dmax=params.prediction.dmax,
+        dmin=params.prediction.d_min,
+        dmax=params.prediction.d_max,
         margin=params.prediction.margin,
         force_static=params.prediction.force_static
         )
