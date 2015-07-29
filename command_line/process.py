@@ -310,7 +310,7 @@ class Script(object):
     indexed = self.process_reference(indexed)
 
     # Get the integrator from the input parameters
-    info('Configurating integrator from input parameters')
+    info('Configuring integrator from input parameters')
     from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.algorithms.integration.integrator import IntegratorFactory
     from dials.array_family import flex
