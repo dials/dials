@@ -529,6 +529,12 @@ class OptionParserBase(optparse.OptionParser, object):
         default=0,
         dest='expert_level',
         help='Set the expert level for showing configuration parameters')
+      self.add_option(
+        '--export-autocomplete-hints',
+        action='store_true',
+        default=False,
+        dest='export_autocomplete_hints',
+        help=optparse.SUPPRESS_HELP)
 
     # Add an option to sort
     if sort_options:
@@ -655,6 +661,18 @@ class OptionParser(OptionParserBase):
       print self.phil.as_str(
         expert_level=options.expert_level,
         attributes_level=options.attributes_level)
+      exit(0)
+
+    if hasattr(options, 'export_autocomplete_hints') and options.export_autocomplete_hints:
+      parameter_list = []
+      flag_list = {}
+      for d in self.phil.all_definitions():
+        parameter_list.append(d.path)
+        if d.object.type.phil_type == "choice":
+          flag_list[d.path] = \
+            [w[1:] if w.startswith("*") else w for w in [str(x) for x in d.object.words] ]
+      print 'PARAMS="%s"' % " ".join(sorted(parameter_list))
+      print 'declare -A flags=( %s )' % " ".join(['["%s"]="%s"' % (p, ' '.join(flag_list[p])) for p in flag_list.iterkeys()])
       exit(0)
 
     # Parse the phil parameters
