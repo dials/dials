@@ -1321,7 +1321,6 @@ class Refiner(object):
     get_detector
     get_goniometer
     get_scan
-    get_modified_indexed_reflections
     get_matches
     get_param_reporter
     parameter_correlation_plot
@@ -1446,20 +1445,6 @@ class Refiner(object):
       return self._scan
     else:
       return None
-
-  def get_modified_indexed_reflections(self):
-    """Return the originally input reflections with some modifications done
-    during the construction of this Refiner, namely:
-
-    1. 's1' column is set if it wasn't present before
-    2. 'iobs' column is added
-    3. 'entering' column is added
-    4. 'xyzobs.px.value' column is set if it wasn't present before
-    5. 'used_in_refinement' flag is unset ('flag' column added if necessary)
-
-    Only indexing uses this method. Its use elsewhere is discouraged."""
-
-    return self._refman.get_indexed()
 
   def rmsds(self):
     """Return rmsds of the current model"""
