@@ -343,14 +343,13 @@ class RefinerFactory(object):
   @classmethod
   def _filter_reflections(cls, reflections):
     '''Return a copy of the input reflections filtered to keep only
-    columns that are required by refinement'''
+    those columns that are required by refinement'''
 
-    cols = ['id', 'miller_index', 'panel', 's1',
-            'xyzobs.mm.value', 'xyzobs.mm.variance',
-             'flags']
+    cols = ['id', 'miller_index', 'panel', 's1', 'xyzobs.mm.value',
+            'xyzobs.mm.variance', 'flags']
     rt = flex.reflection_table()
 
-    # copy available columns that we want. Could use the select method
+    # copy columns to the new table. Could use the select method
     # for this except that 's1' is optional in the input so would want
     # to copy that in like this if present anyway
     for k in cols:
