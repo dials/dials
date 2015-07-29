@@ -17,7 +17,7 @@ from __future__ import division
 from logging import info, debug, warning
 
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
-from dials.array_family import flex # import dependency
+from dials.array_family import flex
 from libtbx.phil import parse
 import libtbx
 
@@ -341,6 +341,24 @@ class RefinerFactory(object):
   """Factory class to create refiners"""
 
   @classmethod
+  def _filter_reflections(cls, reflections):
+    '''Return a copy of the input reflections filtered to keep only
+    columns that are required by refinement'''
+
+    cols = ['id', 'miller_index', 'panel', 's1',
+            'xyzobs.mm.value', 'xyzobs.mm.variance',
+             'flags']
+    rt = flex.reflection_table()
+
+    # copy available columns that we want. Could use the select method
+    # for this except that 's1' is optional in the input so would want
+    # to copy that in like this if present anyway
+    for k in cols:
+      if k in reflections.keys():
+        rt[k] = reflections[k]
+    return rt
+
+  @classmethod
   def from_parameters_data_experiments(cls,
                                        params,
                                        reflections,
@@ -360,8 +378,8 @@ class RefinerFactory(object):
     import copy
     experiments = copy.deepcopy(experiments)
 
-    # copy the reflections
-    reflections = copy.deepcopy(reflections)
+    # copy and filter the reflections
+    reflections = cls._filter_reflections(reflections)
 
     return cls._build_components(params,
                                  reflections,
@@ -521,8 +539,8 @@ class RefinerFactory(object):
         beam=beam, detector=detector, goniometer=goniometer,
         scan=scan, crystal=crystal, imageset=None))
 
-    # copy the reflections
-    reflections = copy.deepcopy(reflections)
+    # copy and filter the reflections
+    reflections = cls._filter_reflections(reflections)
 
     # Build components and return
     return cls._build_components(params,

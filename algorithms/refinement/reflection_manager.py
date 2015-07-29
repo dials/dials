@@ -196,14 +196,6 @@ class ReflectionManager(object):
     self._indexed = reflections
     self._reflections = reflections.select(flex.size_t(refs_to_keep))
 
-    # remove unwanted columns from the managed reflections
-    cols = ['id', 'iobs', 'miller_index', 'panel', 's1', 'xyzcal.mm',
-            'xyzobs.mm.value', 'xyzobs.mm.variance', 'xyzobs.px.value',
-            'entering', 'flags', 'block', 'block_centre']
-    for k in self._reflections.keys():
-      if k not in cols:
-        del self._reflections[k]
-
     # set weights for all kept reflections
     if weighting_strategy_override is not None:
       self._weighting_strategy = weighting_strategy_override
