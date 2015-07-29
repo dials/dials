@@ -33,7 +33,7 @@ namespace boost_python {
   af::shared<double> zeta_factor_array(
       vec3<double> m2, vec3<double> s0,
       const af::const_ref< vec3<double> > &s1) {
-    af::shared<double> result(s1.size());
+    af::shared<double> result(s1.size(), 0);
     for (std::size_t i = 0; i < s1.size(); ++i) {
       result[i] = zeta_factor(m2, s0, s1[i]);
     }

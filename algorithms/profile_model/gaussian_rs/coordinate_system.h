@@ -49,7 +49,9 @@ namespace gaussian_rs {
    */
   inline
   double zeta_factor(vec3<double> m2, vec3<double> s0, vec3<double> s1) {
-    return zeta_factor(m2, s1.cross(s0).normalize());
+    vec3<double> e1 = s1.cross(s0);
+    DIALS_ASSERT(e1.length() > 0);
+    return zeta_factor(m2, e1.normalize());
   }
 
   /**
