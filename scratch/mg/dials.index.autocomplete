@@ -1,0 +1,92 @@
+#!/bin/bash
+PARAMS="indexing.b_iso indexing.basis_vector_combinations.filter.check_doubled_cell indexing.basis_vector_combinations.filter.likelihood_cutoff indexing.basis_vector_combinations.filter.n_indexed_cutoff indexing.basis_vector_combinations.filter.volume_cutoff indexing.basis_vector_combinations.max_try indexing.basis_vector_combinations.solution_scorer indexing.basis_vector_combinations.weighted.power indexing.debug indexing.debug_plots indexing.discover_better_experimental_model indexing.fft3d.peak_search indexing.fft3d.peak_volume_cutoff indexing.fft3d.reciprocal_space_grid.d_min indexing.fft3d.reciprocal_space_grid.n_points indexing.index_assignment.local.delta indexing.index_assignment.local.epsilon indexing.index_assignment.local.l_min indexing.index_assignment.local.nearest_neighbours indexing.index_assignment.method indexing.index_assignment.simple.hkl_tolerance indexing.known_symmetry.absolute_angle_tolerance indexing.known_symmetry.max_delta indexing.known_symmetry.relative_length_tolerance indexing.known_symmetry.space_group indexing.known_symmetry.unit_cell indexing.max_cell indexing.max_cell_multiplier indexing.method indexing.min_cell indexing.mm_search_scope indexing.multiple_lattice_search.cluster_analysis.dbscan.eps indexing.multiple_lattice_search.cluster_analysis.dbscan.min_samples indexing.multiple_lattice_search.cluster_analysis.hcluster.cutoff indexing.multiple_lattice_search.cluster_analysis.hcluster.cutoff_criterion indexing.multiple_lattice_search.cluster_analysis.hcluster.linkage.method indexing.multiple_lattice_search.cluster_analysis.hcluster.linkage.metric indexing.multiple_lattice_search.cluster_analysis.intersection_union_ratio_cutoff indexing.multiple_lattice_search.cluster_analysis.method indexing.multiple_lattice_search.cluster_analysis.min_cluster_size indexing.multiple_lattice_search.cluster_analysis_search indexing.multiple_lattice_search.max_lattices indexing.multiple_lattice_search.minimum_angular_separation indexing.multiple_lattice_search.recycle_unindexed_reflections indexing.multiple_lattice_search.recycle_unindexed_reflections_cutoff indexing.nearest_neighbor_percentile indexing.nproc indexing.optimise_initial_basis_vectors indexing.real_space_grid_search.characteristic_grid indexing.refinement_protocol.d_min_final indexing.refinement_protocol.d_min_start indexing.refinement_protocol.d_min_step indexing.refinement_protocol.disable_unit_cell_volume_sanity_check indexing.refinement_protocol.n_macro_cycles indexing.refinement_protocol.outlier_rejection.maximum_phi_error indexing.refinement_protocol.outlier_rejection.maximum_spot_error indexing.refinement_protocol.verbosity indexing.rmsd_cutoff indexing.scan_range indexing.sigma_phi_deg indexing.wide_search_binning input.datablock input.experiments input.reflections output.experiments output.reflections output.unindexed_reflections refinement.mp.nproc refinement.parameterisation.auto_reduction.action refinement.parameterisation.auto_reduction.min_nref_per_parameter refinement.parameterisation.beam.fix refinement.parameterisation.beam.fix_list refinement.parameterisation.crystal.UB_model_per refinement.parameterisation.crystal.absolute_num_intervals refinement.parameterisation.crystal.cell_fix_list refinement.parameterisation.crystal.fix refinement.parameterisation.crystal.interval_width_degrees refinement.parameterisation.crystal.num_intervals refinement.parameterisation.crystal.orientation_fix_list refinement.parameterisation.crystal.scan_varying refinement.parameterisation.detector.fix refinement.parameterisation.detector.fix_list refinement.parameterisation.detector.hierarchy_level refinement.parameterisation.detector.panels refinement.parameterisation.sparse refinement.parameterisation.treat_single_image_as_still refinement.refinery.engine refinement.refinery.log refinement.refinery.max_iterations refinement.refinery.track_gradient refinement.refinery.track_out_of_sample_rmsd refinement.refinery.track_parameter_correlation refinement.refinery.track_step refinement.reflections.block_width refinement.reflections.close_to_spindle_cutoff refinement.reflections.maximum_sample_size refinement.reflections.minimum_sample_size refinement.reflections.outlier.algorithm refinement.reflections.outlier.mcd.alpha refinement.reflections.outlier.mcd.k1 refinement.reflections.outlier.mcd.k2 refinement.reflections.outlier.mcd.k3 refinement.reflections.outlier.mcd.max_n_groups refinement.reflections.outlier.mcd.min_group_size refinement.reflections.outlier.mcd.n_trials refinement.reflections.outlier.mcd.threshold_probability refinement.reflections.outlier.minimum_number_of_reflections refinement.reflections.outlier.sauter_poon.pdf refinement.reflections.outlier.sauter_poon.px_sz refinement.reflections.outlier.sauter_poon.verbose refinement.reflections.outlier.separate_experiments refinement.reflections.outlier.separate_panels refinement.reflections.outlier.tukey.iqr_multiplier refinement.reflections.random_seed refinement.reflections.reflections_per_degree refinement.reflections.use_all_reflections refinement.reflections.weighting_strategy.constants refinement.reflections.weighting_strategy.delpsi_constant refinement.reflections.weighting_strategy.override refinement.target.absolute_cutoffs refinement.target.bin_size_fraction refinement.target.gradient_calculation_blocksize refinement.target.rmsd_cutoff refinement.verbosity verbosity"
+declare -A flags=( ["indexing.index_assignment.method"]="simple local" ["indexing.method"]="fft3d fft1d real_space_grid_search" ["indexing.multiple_lattice_search.cluster_analysis.hcluster.linkage.metric"]="euclidean" ["refinement.parameterisation.crystal.num_intervals"]="fixed_width absolute" ["refinement.reflections.outlier.algorithm"]="null mcd tukey sauter_poon" ["indexing.multiple_lattice_search.cluster_analysis.method"]="dbscan hcluster" ["indexing.fft3d.peak_search"]="flood_fill clean" ["refinement.refinery.engine"]="SimpleLBFGS LBFGScurvs GaussNewton LevMar" ["indexing.basis_vector_combinations.solution_scorer"]="filter weighted" ["refinement.parameterisation.crystal.UB_model_per"]="reflection image block" ["indexing.multiple_lattice_search.cluster_analysis.hcluster.cutoff_criterion"]="distance inconsistent" ["refinement.parameterisation.auto_reduction.action"]="fail fix remove" ["refinement.parameterisation.detector.fix"]="all position orientation" ["refinement.parameterisation.detector.panels"]="automatic single multiple hierarchical" ["indexing.multiple_lattice_search.cluster_analysis.hcluster.linkage.method"]="ward" ["refinement.reflections.weighting_strategy.override"]="statistical stills constant" ["refinement.parameterisation.crystal.fix"]="all cell orientation" ["refinement.target.rmsd_cutoff"]="fraction_of_bin_size absolute" ["refinement.parameterisation.beam.fix"]="all in_spindle_plane out_spindle_plane wavelength" )
+
+# 
+# Return 1 if $1 appears to contain a redirection operator.  Handles backslash
+# quoting (barely).
+#
+_redir_op()
+{
+	case "$1" in
+	*\\'[\<\>]'*)	return 1;;
+	*[\<\>]*)	return 0;;
+	*)		return 1;;
+	esac
+}
+
+# _redir_test tests the current word ($1) and the previous word ($2) for
+# redirection operators and does filename completion if either one contains
+# a redirection operator
+_redir_test()
+{
+	if _redir_op "$1" ; then
+		COMPREPLY=( $( compgen -f "" ) )
+		return 0
+	elif _redir_op "$2" ; then
+		COMPREPLY=( $( compgen -f "$1" ) )
+		return 0
+	fi
+	return 1
+}
+
+function _dials_index ()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    pprev=""
+    if [ "${COMP_CWORD}" -gt "2" ] ; then
+      pprev="${COMP_WORDS[COMP_CWORD-2]}"
+    fi
+    opts=$dials_index_opts
+
+#    {
+#     echo "COMP_WORDS: ${COMP_WORDS[*]}"
+#     echo "COMP_CWORD: $COMP_CWORD"
+#     echo "CUR: $cur"
+#     echo "PREV: $prev"
+#     echo "PPREV: $pprev"
+#    } > completion.log
+
+    _redir_test "$cur" "$prev" && return 0;
+
+    local json='!*.json'
+    local pickle='!*.pickle'
+    local phil='!*.phil'
+
+    if [[ ${cur} == "=" ]]; then
+      # initial autocompletion of parameter
+#      echo "cp 1" >> completion.log
+      if [ ${flags[${prev}]+exists} ]; then
+#        echo "cp 2" >> completion.log
+        COMPREPLY=( ${flags[${prev}]} )
+#        echo "COMPREPLY: ${COMPREPLY[*]}" >> completion.log
+        return 0
+      fi
+    fi
+    if [[ ${prev} == "=" ]]; then
+     # autocompletion of parameter with existing text
+#     echo "cp 6" >> completion.log
+     if [ ${flags[${pprev}]+exists} ]; then
+      local opts=${flags[${pprev}]}
+      COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+     fi
+     return 0
+    fi
+
+#    echo "cp 3" >> completion.log
+    COMPREPLY=( $(compgen -S"=" -W "${PARAMS}" -- ${cur}) \
+                $(compgen -f -X "${json}" -- "${cur}") \
+                $(compgen -f -X "${pickle}" -- "${cur}") \
+                $(compgen -f -X "${phil}" -- "${cur}") )
+    if [[ ${#COMPREPLY[@]} == 1 && ${COMPREPLY[0]} != *= ]] ; then
+      # If there's only one option, without =, then allow a space
+      compopt +o nospace
+    else
+      compopt -o nospace
+    fi
+    return 0
+}
+complete -F _dials_index dials.index

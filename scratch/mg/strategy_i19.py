@@ -2,10 +2,12 @@
 
 from __future__ import division
 
+from dxtbx.model.goniometer import goniometer_factory
 import cPickle as pickle
 from dials.array_family import flex
 from scitbx import matrix
 import sys
+import tools
 
 # Create the phil scope
 from libtbx.phil import parse
@@ -104,73 +106,58 @@ class Script(object):
   def StrategyEvaluator(self, experiments, evaluation_function_factory, dmin, dmax):
     # TODO: Don't take experiments, rather take one set of experiment components and a strategy equivalent list
 
-
-    def calculate_observations(detector, goniometer, oscillation):
-      crystal_R = matrix.sqr(goniometer.get_fixed_rotation())
-      rotation_axis = goniometer.get_rotation_axis()
-
-      from dials.algorithms.spot_prediction import ScanStaticRayPredictor
-      from dials.algorithms.spot_prediction import ray_intersection
-      from math import radians, floor
+    def calculate_miller_rings(detector):
       import time
+      t = time.clock()
+      mrings = {}
+      for scan_axis in ['phi', 'omega']:
+        mrings[scan_axis] = {}
+        for other_axis in range(0, 360, 10):
+          gonio = goniometer_factory.make_kappa_goniometer(alpha=54.7356, # fixed magic angle
+                                                           kappa=0,       # fixed 0 kappa
+                                                           phi=0 if scan_axis == "phi" else other_axis,
+                                                           omega=0 if scan_axis == "omega" else other_axis,
+                                                           direction="-y",
+                                                           scan_axis=scan_axis)
+          ring = tools.determine_miller_ring_sectors(detector, gonio, s0, possible_hkl_flex, crystal_A)
+          mrings[scan_axis][other_axis] = ring
+
+      print time.clock() - t
+      print list(mrings.iterkeys())
+      print [ list(x.iterkeys()) for x in mrings.itervalues() ]
 
       t = time.clock()
-      ## option 1: use oscillation range
-      schweep = range(0, 36)
-      schweeprays = []
-      raycount = 0
-      for s in schweep:
-        oscillation = (radians(10 * (s + 1e-14)), radians(10 * (s + 1)))
-        rays = ScanStaticRayPredictor(s0, rotation_axis, oscillation)(flex.miller_index(possible_hkl), crystal_R * crystal_A)
-        rays = rays.select(ray_intersection(detector, rays))
-#        print list(rays)
-        # ||s0|| = 1 / beam wavelength [A^-1]
-        # TODO: 2theta is currently fixed within detector object
-#        print min([ r['phi'] for r in rays ])
-        schweeprays.append([ r['miller_index'] for r in rays ])
-#        schweeprays.append([ (r['miller_index'], r['phi'], r['entering']) for r in rays ])
-#        print oscillation
-        (rmin, rmax) = (min([ r['phi'] for r in rays ]), max([ r['phi'] for r in rays ]))
-#        print (rmin, rmax)
-        raycount = raycount + len(rays)
-      print time.clock() -t
-      print raycount, "rays found"
-
-      t = time.clock()
-      ## option 2: ignore oscillation range
-      PRACTICALLY_INFINITY_BUT_DEFINITELY_LARGER_THAN_2PI = 1000
-      oscillation = (-PRACTICALLY_INFINITY_BUT_DEFINITELY_LARGER_THAN_2PI, PRACTICALLY_INFINITY_BUT_DEFINITELY_LARGER_THAN_2PI)
-      rays = ScanStaticRayPredictor(s0, rotation_axis, oscillation)(flex.miller_index(possible_hkl), crystal_R * crystal_A)
-      # ray_intersection could probably be sped up by an is_on_detector() method
-      rays = rays.select(ray_intersection(detector, rays))
-      schwoop = range(0, 36)
-      schwooprays = []
-      for s in schwoop:
-        schwooprays.append([])
-      divider = radians(10)
-      for (p, m) in zip(rays['phi'], rays['miller_index']):
-        schwooprays[int(p / divider)].append(m)
-      print time.clock() -t
-      print len(rays), "rays found"
-
-      print map(len, schweeprays)
-      print map(len, schwooprays)
-      assert map(len, schweeprays) == map(len, schwooprays)
-
-      for s in range(0,36):
-        assert set(schweeprays[s]) == set(schwooprays[s])
+      sc = scorings
+      all_scorings = { '%s:%s:%s' % (scan, str(x1), str(x2)): tools.geometric_scoring([hkl_to_id[hkl] for hkl in mrings[scan][x1][x2]], sc)['total']
+                       for scan in mrings.iterkeys() for x1 in mrings[scan].iterkeys() for x2 in range(0,36) }
+#     print list(all_scorings.itervalues())
+      print len(list(all_scorings.itervalues())), min(all_scorings.itervalues()), max(all_scorings.itervalues()), sum(all_scorings.itervalues()) / len(list(all_scorings.itervalues()))
+      print time.clock() - t
 
       sys.exit(0)
 
-#     oscillation_range = (radians(strategy['omega']), radians(strategy['omega'] + strategy['scan']))
-#     detectable_rays = rays.select(ray_intersection(detector, rays))
+    def calculate_observations(detector, goniometer, oscillation):
+      calculate_miller_rings(detector)
+      import time
+      t = time.clock()
+      r = tools.determine_miller_ring_sectors(detector, goniometer, s0, possible_hkl_flex, crystal_A)
+
+      sc = scorings
+      print map(lambda(x): tools.geometric_scoring([hkl_to_id[hkl] for hkl in x], sc)['total'], r)
+      sc = tools.geometric_scoring([hkl_to_id[hkl] for hkl in r[4]], scorings)['scorings']
+      sc = tools.geometric_scoring([hkl_to_id[hkl] for hkl in r[5]], sc)['scorings']
+      sc = tools.geometric_scoring([hkl_to_id[hkl] for hkl in r[6]], sc)['scorings']
+      print map(lambda(x): tools.geometric_scoring([hkl_to_id[hkl] for hkl in x], sc)['total'], r)
+      print time.clock() -t
+
+
+      print map(len, r)
+      sys.exit(0)
       # TODO: To test 2theta rotation code use detector.py detector factory
       # TODO: and create two different two_theta detectors and try to rotate one onto the other
       # ----: Reflection only counted once within oscillation, even when multiple times in diffraction condition
       #   ----: Is it?! Unsure.
       #     SOLVED: half-true. Not problematic here.
-
-      return detectable_rays['miller_index']
 
     def export_mtz(observed_hkls, experiment, filename):
       if experiment.goniometer:
@@ -313,20 +300,32 @@ class Script(object):
     unit_cell = expt.crystal.get_unit_cell()
 
     possible_hkl = self.list_possible_reflections(spacegroup, unit_cell, dmin, dmax)
+    possible_hkl_flex = flex.miller_index(possible_hkl)
+    hkl_to_id = { hkl: id for (id, hkl) in enumerate(possible_hkl) }
+    id_to_hkl = [ hkl for (id, hkl) in enumerate(possible_hkl) ]
 
     # find mapping of reciprocal space onto reciprocal asymmetric unit and its inverse
     from cctbx.miller import map_to_asu
-    asu_hkl = flex.miller_index(possible_hkl)
-    map_to_asu(spacegroup.type(), False, asu_hkl)
+    asu_hkl_flex = flex.miller_index(possible_hkl)
+    map_to_asu(spacegroup.type(), False, asu_hkl_flex)
     # TODO: Treat anomalous signal?
-    map_hkl_to_symmhkl = {r: rs for (r, rs) in zip(possible_hkl, list(asu_hkl))}
+    map_hkl_to_symmhkl = {r: rs for (r, rs) in zip(possible_hkl, list(asu_hkl_flex))}
     map_symmhkl_to_hkl = {}
     for k, v in map_hkl_to_symmhkl.iteritems():
       map_symmhkl_to_hkl[v] = map_symmhkl_to_hkl.get(v, [])
       map_symmhkl_to_hkl[v].append(k)
 
-    unique_asu_indices = set(asu_hkl)
+    unique_asu_indices = set(asu_hkl_flex)
     completeness_limit = len(unique_asu_indices)
+
+    # scoring function: hkl_id -> shared_bin_id
+    scoring_unique_reflection = { hkl: unique_id for (unique_id, hkl) in enumerate(possible_hkl) }
+    scoring_unique_reflection = { hkl_to_id[h]: id for (h, id) in scoring_unique_reflection.iteritems() }
+    scoring_symmetry_related_reflection = { hkl_to_id[hkl]: hkl_to_id[asu] for (hkl, asu) in map_hkl_to_symmhkl.iteritems() }
+
+    scorings = { 'unique':   (scoring_unique_reflection,           [0] * len(possible_hkl)),
+                 'symmetry': (scoring_symmetry_related_reflection, [0] * len(possible_hkl)),
+               }
 
     print "%5d unique reflections possible in %s (ignoring anomalous signal)" %\
           (completeness_limit, spacegroup.type().lookup_symbol())
@@ -348,7 +347,6 @@ class Script(object):
       degrees = 0
 
       from itertools import izip, count
-      from dxtbx.model.goniometer import goniometer_factory
       for (run, strategy) in izip(count(1), strategies):
         print
         print "Sweep %d:" % run
@@ -417,6 +415,40 @@ class Script(object):
       return score
     return evaluation_function
 
+  def SimpleGeometricEvaluationFunctionFactory(self, possible_hkl, seen_hkl_multiplicity, map_hkl_to_symmhkl, map_symmhkl_to_hkl):
+    # Geometric scoring.
+    # First observation of a reflection: 0.5^0. Second: 0.5^1. Third: 0.5^2. etc.
+    # Plus the same scoring scheme again for the ASU reduced reflection observation
+    # Advantage: Order of observations does not matter for scoring purposes
+    #
+    # This function returns a very basic evaluation function based on the number of observations per reflection
+    # TODO: Evaluation function does not consider resolution shells of reflections
+
+    reflection_count = {hkl: seen_hkl_multiplicity[hkl] if hkl in seen_hkl_multiplicity else 0 for hkl in possible_hkl}
+    symm_reflection_count = {}
+    for symm_hkl, symm_hkl_group in map_symmhkl_to_hkl.iteritems():
+      symm_reflection_count[symm_hkl] = sum([reflection_count[hkl] for hkl in symm_hkl_group])
+
+    def evaluation_function(hkls):
+      from math import pow
+      _reflection_count = reflection_count.copy()
+      _symm_reflection_count = symm_reflection_count.copy()
+
+      score = 0.0
+#      scores = []
+      for hkl in hkls:
+        score += pow(0.5, _reflection_count[hkl])
+        score += pow(0.5, _symm_reflection_count[map_hkl_to_symmhkl[hkl]])
+        _reflection_count[hkl] += 1
+        _symm_reflection_count[map_hkl_to_symmhkl[hkl]] += 1
+        #scores.append(score)
+
+#      from collections import Counter
+#      c = Counter(scores)
+#      print c
+#      return sum(scores)
+      return score
+    return evaluation_function
 
   def SimpleGeometricEvaluationFunctionFactory(self, possible_hkl, seen_hkl_multiplicity, map_hkl_to_symmhkl, map_symmhkl_to_hkl):
     # Geometric scoring.
