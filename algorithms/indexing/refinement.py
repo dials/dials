@@ -60,12 +60,6 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     perm = flex.sort_permutation(match_iobs)
     outliers = (~inlier_sel.select(perm)).iselection()
 
-    #reflections_for_refinement = reflections_for_refinement.select(
-      #refiner.selection_used_for_refinement()).select(inlier_sel.select(perm))
-    #refiner = RefinerFactory.from_parameters_data_experiments(
-      #params, reflections_for_refinement, experiments,
-      #verbosity=verbosity)
-
   matches = refiner.get_matches()
   crystal_ids = matches['id']
   # DGW commented out as reflections.minimum_number_of_reflections no longer exists

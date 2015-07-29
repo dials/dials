@@ -750,7 +750,8 @@ class indexer_base(object):
                 100*volume_change)
               raise Sorry(msg)
 
-        self.refined_reflections = refined_reflections
+        self.refined_reflections = refined_reflections.select(
+          refined_reflections['id'] > -1)
 
         for i, imageset in enumerate(self.imagesets):
           ref_sel = self.refined_reflections.select(
@@ -919,6 +920,7 @@ class indexer_base(object):
       x, y, rot_angle = spots_panel['xyzobs.mm.value'].parts()
       s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
       s1 = s1/s1.norms() * (1/beam.get_wavelength())
+      spots_mm['s1'].set_selected(sel, s1)
       S = s1 - beam.get_s0()
       # XXX what about if goniometer fixed rotation is not identity?
       if goniometer is not None:
@@ -1261,15 +1263,19 @@ class indexer_base(object):
       debug_plots=self.params.debug_plots)
     if outliers is not None:
       reflections['id'].set_selected(outliers, -1)
-    used_reflections = refiner.get_modified_indexed_reflections()
     verbosity = self.params.refinement_protocol.verbosity
     matches = refiner.get_matches()
-    xyzcal_mm = flex.vec3_double(len(used_reflections))
+    xyzcal_mm = flex.vec3_double(len(reflections))
     xyzcal_mm.set_selected(matches['iobs'], matches['xyzcal.mm'])
-    used_reflections['xyzcal.mm'] = xyzcal_mm
-    used_reflections.set_flags(
-      matches['iobs'], used_reflections.flags.used_in_refinement)
-    return refiner.get_experiments(), used_reflections
+    # entering flags needed by dials.integrate
+    from dials.algorithms.refinement.reflection_manager \
+         import calculate_entering_flags
+    entering_flags = calculate_entering_flags(
+      reflections, refiner.get_experiments())
+    reflections['xyzcal.mm'] = xyzcal_mm
+    reflections['entering'] = entering_flags
+    reflections.set_flags(matches['iobs'], reflections.flags.used_in_refinement)
+    return refiner.get_experiments(), reflections
 
   def debug_show_candidate_basis_vectors(self):
 
