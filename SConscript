@@ -30,6 +30,11 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
     env.SConscript('algorithms/SConscript', exports={ 'env' : env })
     env.SConscript('viewer/SConscript', exports={ 'env' : env })
     #env.SConscript('nexus/SConscript', exports={ 'env' : env })
-    env.SConscript('test/SConscript', exports={ 'env' : env })
     env.SConscript('util/SConscript', exports={ 'env' : env })
 
+    # 
+    # NOTE: This must go at the bottom. The LIBS are replaced with an empty
+    # list. This is done because errors occur when building the tests if it
+    # isn't done. Replacing the libs afterwards still results in those errors.
+    #
+    env.SConscript('test/SConscript', exports={ 'env' : env })
