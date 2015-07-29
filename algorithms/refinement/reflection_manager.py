@@ -12,7 +12,7 @@ principally ReflectionManager."""
 from __future__ import division
 
 from math import pi
-from logging import info, debug
+from logging import info, debug, warning
 
 from scitbx import matrix
 from dials.array_family import flex
@@ -412,22 +412,27 @@ class ReflectionManager(object):
 
     msg = "\nSummary statistics for {0} observations".format(nref) +\
           " matched to predictions:"
-    info(msg)
     header = ["", "Min", "Q1", "Med", "Q3", "Max"]
     rows = []
-    row_data = five_number_summary(x_resid)
-    rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(y_resid)
-    rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(phi_resid)
-    rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
-    row_data = five_number_summary(w_x)
-    rows.append(["X weights"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(w_y)
-    rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(w_phi)
-    rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
-    st = simple_table(rows, header)
+    try:
+      row_data = five_number_summary(x_resid)
+      rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(y_resid)
+      rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(phi_resid)
+      rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+      row_data = five_number_summary(w_x)
+      rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_y)
+      rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_phi)
+      rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+      st = simple_table(rows, header)
+    except IndexError:
+      # zero length reflection list
+      warning("Unable to calculate summary statistics for zero observations")
+      return
+    info(msg)
     info(st.format())
     info("")
 
@@ -523,21 +528,26 @@ class StillsReflectionManager(ReflectionManager):
 
     msg = "\nSummary statistics for {0} observations".format(nref) +\
           " matched to predictions:"
-    info(msg)
     header = ["", "Min", "Q1", "Med", "Q3", "Max"]
     rows = []
-    row_data = five_number_summary(x_resid)
-    rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(y_resid)
-    rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(delpsi)
-    rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
-    row_data = five_number_summary(w_x)
-    rows.append(["X weights"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(w_y)
-    rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
-    row_data = five_number_summary(w_delpsi)
-    rows.append(["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+    try:
+      row_data = five_number_summary(x_resid)
+      rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(y_resid)
+      rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(delpsi)
+      rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+      row_data = five_number_summary(w_x)
+      rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_y)
+      rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+      row_data = five_number_summary(w_delpsi)
+      rows.append(["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+    except IndexError:
+      # zero length reflection list
+      warning("Unable to calculate summary statistics for zero observations")
+      return
+    info(msg)
     st = simple_table(rows, header)
     info(st.format())
 
