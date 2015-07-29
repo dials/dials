@@ -332,24 +332,25 @@ class Script(object):
     if params.output.reflections:
       # Update predictions for all indexed reflections
       info('Updating predictions for indexed reflections')
-      indexed = deepcopy(reflections)
       preds = refiner.predict_for_indexed()
 
-      # just copy over the columns of interest
-      indexed['s1'] = preds['s1']
-      indexed['xyzcal.mm'] = preds['xyzcal.mm']
-      indexed['xyzcal.px'] = preds['xyzcal.px']
+      # just copy over the columns of interest, leaving behind things
+      # added by e.g. scan-varying refinement such as 'block', the
+      # U, B and UB matrices and gradients.
+      reflections['s1'] = preds['s1']
+      reflections['xyzcal.mm'] = preds['xyzcal.mm']
+      reflections['xyzcal.px'] = preds['xyzcal.px']
       if preds.has_key('entering'):
-        indexed['entering'] = preds['entering']
+        reflections['entering'] = preds['entering']
 
       # set used in refinement flag
       mask = refiner.selection_used_for_refinement()
-      indexed.set_flags(mask, indexed.flags.used_in_refinement)
+      reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
       # FIXME redo outlier rejection on the new predictions with updated geometry
       info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
-      indexed.as_pickle(params.output.reflections)
+      reflections.as_pickle(params.output.reflections)
 
     # For debugging, if requested save matches to file
     if params.output.matches:
