@@ -291,11 +291,11 @@ class Script(object):
         Invalid input for reference reflections.
         Expected > %d indexed spots, got %d
       ''' % (0, len(reference)))
-    mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
+    mask = reference['miller_index'] == (0, 0, 0)
     if mask.count(True) > 0:
       reference.del_selected(mask)
       info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
-    mask = flex.bool([x < 0 for x in reference['id']])
+    mask = reference['id'] < 0
     if mask.count(True) > 0:
       raise Abort('''
         Invalid input for reference reflections.
