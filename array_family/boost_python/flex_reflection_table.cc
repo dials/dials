@@ -598,6 +598,8 @@ namespace dials { namespace af { namespace boost_python {
         .value("overlapped_bg", OverlappedBg)
         .value("overlapped_fg", OverlappedFg)
         .value("in_powder_ring", InPowderRing)
+        .value("foreground_includes_bad_pixels", ForegroundIncludesBadPixels)
+        .value("background_includes_bad_pixels", BackgroundIncludesBadPixels)
         .value("includes_bad_pixels", IncludesBadPixels)
         .value("bad_shoebox", BadShoebox)
         .value("bad_spot", BadSpot)

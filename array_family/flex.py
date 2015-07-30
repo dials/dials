@@ -765,10 +765,19 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     x0, x1, y0, y1, z0, z1 = self['bbox'].parts()
     ntotal = (x1 - x0) * (y1 - y0) * (z1 - z0)
     assert ntotal.all_gt(0)
-    nvalid = self['shoebox'].count_mask_values(MaskCode.Valid)
-    result = (ntotal - nvalid) > 0
-    self.set_flags(result, self.flags.includes_bad_pixels)
-    return result
+    sbox = self['shoebox']
+    nvalid = sbox.count_mask_values(MaskCode.Valid)
+    nbackg = sbox.count_mask_values(MaskCode.Background)
+    nforeg = sbox.count_mask_values(MaskCode.Foreground)
+    nvalbg = sbox.count_mask_values(MaskCode.Background | MaskCode.Valid)
+    nvalfg = sbox.count_mask_values(MaskCode.Foreground | MaskCode.Valid)
+    ninvbg = nbackg - nvalbg
+    ninvfg = nforeg - nvalfg
+    assert ninvbg.all_ge(0)
+    assert ninvfg.all_ge(0)
+    self.set_flags(ninvbg > 0, self.flags.background_includes_bad_pixels)
+    self.set_flags(ninvfg > 0, self.flags.foreground_includes_bad_pixels)
+    return (ntotal - nvalid) > 0
 
   def find_overlaps(self, experiments):
     '''

@@ -50,7 +50,8 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     report['n_summed']            = data['sum'].count(True)
     report['n_fitted']            = data['prf'].count(True)
     report['n_integated']         = data['int'].count(True)
-    report['n_invalid']           = data['ninv'].count(True)
+    report['n_invalid_bg']        = data['ninvbg'].count(True)
+    report['n_invalid_fg']        = data['ninvfg'].count(True)
     report['n_failed_background'] = data['fbgd'].count(True)
     report['n_failed_summation']  = data['fsum'].count(True)
     report['n_failed_fitting']    = data['fprf'].count(True)
@@ -115,7 +116,8 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     report['n_summed']            = list(indexer_all.sum(data['sum']))
     report['n_fitted']            = list(indexer_all.sum(data['prf']))
     report['n_integrated']        = list(indexer_all.sum(data['int']))
-    report['n_invalid']           = list(indexer_all.sum(data['ninv']))
+    report['n_invalid_bg']        = list(indexer_all.sum(data['ninvbg']))
+    report['n_invalid_fg']        = list(indexer_all.sum(data['ninvfg']))
     report['n_failed_background'] = list(indexer_all.sum(data['fbgd']))
     report['n_failed_summation']  = list(indexer_all.sum(data['fsum']))
     report['n_failed_fitting']    = list(indexer_all.sum(data['fprf']))
@@ -212,7 +214,8 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   data["sum"] = reflections.get_flags(flags.integrated_sum)
   data["prf"] = reflections.get_flags(flags.integrated_prf)
   data["int"] = reflections.get_flags(flags.integrated, all=False)
-  data["ninv"] = reflections.get_flags(flags.includes_bad_pixels)
+  data["ninvbg"] = reflections.get_flags(flags.background_includes_bad_pixels)
+  data["ninvfg"] = reflections.get_flags(flags.foreground_includes_bad_pixels)
   data["fbgd"] = reflections.get_flags(flags.failed_during_background_modelling)
   data["fsum"] = reflections.get_flags(flags.failed_during_summation)
   data["fprf"] = reflections.get_flags(flags.failed_during_profile_fitting)
@@ -401,7 +404,8 @@ class IntegrationReport(Report):
         ('dmax',                                  '%.2f', 'dmax'),
         ("number fully recorded",                 '%d'  , "n_full"),
         ("number partially recorded",             '%d'  , "n_partial"),
-        ("number with invalid pixels",            '%d'  , "n_invalid"),
+        ("number with invalid background pixels", '%d'  , "n_invalid_bg"),
+        ("number with invalid foreground pixels", '%d'  , "n_invalid_fg"),
         ("number with overloaded pixels",         '%d'  , "n_overload"),
         ("number in powder rings",                '%d'  , "n_ice"),
         ("number processed with summation",       '%d'  , "n_summed"),
