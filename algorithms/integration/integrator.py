@@ -71,6 +71,12 @@ def generate_phil_scope():
 
       debug {
 
+        reference {
+          output = False
+            .type = bool
+            .help = "Save the reference profiles"
+        }
+
         during = modelling *integration
           .type = choice
           .help = "Do debugging during modelling or integration"
@@ -268,6 +274,7 @@ class Parameters(object):
     self.integration = processor.Parameters()
     self.filter = Parameters.Filter()
     self.profile = Parameters.Profile()
+    self.debug_reference_output = False
 
   @staticmethod
   def from_phil(params):
@@ -314,6 +321,8 @@ class Parameters(object):
     if params.debug.during == 'integration':
       result.integration.debug.output = params.debug.output
     result.integration.debug.select = params.debug.select
+
+    result.debug_reference_output = params.debug.reference.output
 
     # Get the min zeta filter
     result.filter.min_zeta = params.filter.min_zeta
@@ -959,6 +968,21 @@ class Integrator(object):
         finalized_profile_fitter = profile_fitter.finalized_model()
 
         # Print profiles
+        if self.params.debug_reference_output:
+          reference_debug = []
+          for i in range(len(finalized_profile_fitter)):
+            m = finalized_profile_fitter[i]
+            p = []
+            for j in range(len(m)):
+              try:
+                p.append(m.data(j))
+              except Exception:
+                p.append(None)
+          reference_debug.append(p)
+          with open("reference_profiles.pickle", "wb") as outfile:
+            import cPickle as pickle
+            pickle.dump(reference_debug, outfile)
+
         for i in range(len(finalized_profile_fitter)):
           m = finalized_profile_fitter[i]
           debug("")
