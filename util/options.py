@@ -664,57 +664,7 @@ class OptionParser(OptionParserBase):
       exit(0)
 
     if hasattr(options, 'export_autocomplete_hints') and options.export_autocomplete_hints:
-      parameter_list = [] # full list of all parameters
-      parameter_expansion_list = {} # short name -> full name expansion for unique names, non-expert only
-      parameter_choice_list = {} # full name -> list of flags for choice parameters
-      for d in self.phil.all_definitions():
-        parameter_list.append(d.path)
-        if d.object.name not in parameter_expansion_list and \
-           d.object.expert_level is None and \
-           d.parent.expert_level is None:
-          parameter_expansion_list[d.object.name] = d.path
-        else:
-          parameter_expansion_list[d.object.name] = None
-        if d.object.type.phil_type == "choice":
-          parameter_choice_list[d.path] = \
-            [w[1:] if w.startswith("*") else w for w in [str(x) for x in d.object.words] ]
-#      print parameter_expansion_list
-
-      def construct_completion_tree(paths):
-        """ Construct a tree of parameters, grouped by common prefixes """
-
-        # Split parameter paths at '.' character
-        paths = [ p.split('.', 1) for p in paths ]
-
-        # Identify all names that are directly on this level
-        # or represent parameter groups with a common prefix
-        top_elements = { "%s%s" % (x[0], "=" if len(x) == 1 else ".") for x in paths }
-
-        # Partition all names that are further down the tree by their prefix
-        subpaths = {}
-        for p in paths:
-          if len(p) > 1:
-            if p[0] not in subpaths: subpaths[p[0]] = []
-            subpaths[p[0]].append(p[1])
-
-        # If there are prefixes with only one name beneath them, put them on the top level
-        for s in list(subpaths.iterkeys()):
-          if len(subpaths[s]) == 1:
-            top_elements.remove("%s." % s)
-            top_elements.add("%s.%s=" % (s, subpaths[s][0]))
-            del subpaths[s]
-
-        result = { '': top_elements }
-        # Revursively process each group
-        for n, x in subpaths.iteritems():
-          result[n] = construct_completion_tree(x)
-
-        return result
-
-#      print construct_completion_tree(parameter_list)
-      print 'PARAMS="%s"' % " ".join(sorted(parameter_list))
-      print 'declare -A flags=( %s )' % " ".join(['["%s"]="%s"' % (p, ' '.join(parameter_choice_list[p])) for p in parameter_choice_list.iterkeys()])
-#      print 'declare -A expansion=( %s )' % " ".join(['["%s"]="%s"' % (p, exp) for p, exp in parameter_expansion_list.iteritems() if exp is not None ])
+      self._export_autocomplete_hints()
       exit(0)
 
     # Parse the phil parameters
@@ -785,6 +735,67 @@ class OptionParser(OptionParserBase):
     '''
     result = super(OptionParser, self).format_help(formatter=formatter)
     return self._strip_rst_markup(result)
+
+  def _export_autocomplete_hints(self):
+    # complete list of all parameters
+    parameter_list = []
+    # short name -> full name expansion for unique names
+    parameter_expansion_list = {}
+    # full name -> list of flags for choice parameters
+    parameter_choice_list = {}
+
+    for d in self.phil.all_definitions():
+      # Create complete list of all parameters
+      parameter_list.append(d.path)
+
+      # Create expansion (alias) list for unique names that are not expert commands
+      if d.object.name not in parameter_expansion_list and \
+         d.object.expert_level is None and \
+         d.parent.expert_level is None:
+        parameter_expansion_list[d.object.name] = d.path
+      else:
+        parameter_expansion_list[d.object.name] = None
+
+      # Extract parameter choice lists
+      if d.object.type.phil_type == "choice":
+        parameter_choice_list[d.path] = \
+          [w[1:] if w.startswith("*") else w for w in [str(x) for x in d.object.words] ]
+
+    def construct_completion_tree(paths):
+      """ Construct a tree of parameters, grouped by common prefixes """
+
+      # Split parameter paths at '.' character
+      paths = [ p.split('.', 1) for p in paths ]
+
+      # Identify all names that are directly on this level
+      # or represent parameter groups with a common prefix
+      top_elements = { "%s%s" % (x[0], "=" if len(x) == 1 else ".") for x in paths }
+
+      # Partition all names that are further down the tree by their prefix
+      subpaths = {}
+      for p in paths:
+        if len(p) > 1:
+          if p[0] not in subpaths: subpaths[p[0]] = []
+          subpaths[p[0]].append(p[1])
+
+      # If there are prefixes with only one name beneath them, put them on the top level
+      for s in list(subpaths.iterkeys()):
+        if len(subpaths[s]) == 1:
+          top_elements.remove("%s." % s)
+          top_elements.add("%s.%s=" % (s, subpaths[s][0]))
+          del subpaths[s]
+
+      result = { '': top_elements }
+      # Revursively process each group
+      for n, x in subpaths.iteritems():
+        result[n] = construct_completion_tree(x)
+
+      return result
+
+#    print construct_completion_tree(parameter_list)
+    print 'PARAMS="%s"' % " ".join(sorted(parameter_list))
+    print 'declare -A flags=( %s )' % " ".join(['["%s"]="%s"' % (p, ' '.join(parameter_choice_list[p])) for p in parameter_choice_list.iterkeys()])
+#    print 'declare -A expansion=( %s )' % " ".join(['["%s"]="%s"' % (p, exp) for p, exp in parameter_expansion_list.iteritems() if exp is not None ])
 
 
 def flatten_reflections(filename_object_list):
