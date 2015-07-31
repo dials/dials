@@ -79,14 +79,15 @@ class Extract(object):
         # Add the images to the pixel lists
         for pl, im, mk in zip(plists, image, mask):
           threshold_mask = self.threshold_image.compute_threshold(im, mk)
-          max_strong = int(ceil(self.max_strong_pixel_fraction * len(im)))
-          num_strong = threshold_mask.count(True)
-          if num_strong > max_strong:
-            raise RuntimeError(
-              '''
-              The number of strong pixels found (%d) is greater than the
-              maximum allowed (%d). Try changing spot finding parameters
-            ''' % (num_strong, max_strong))
+          if self.max_strong_pixel_fraction < 1:
+            max_strong = int(ceil(self.max_strong_pixel_fraction * len(im)))
+            num_strong = threshold_mask.count(True)
+            if num_strong > max_strong:
+              raise RuntimeError(
+                '''
+                The number of strong pixels found (%d) is greater than the
+                maximum allowed (%d). Try changing spot finding parameters
+              ''' % (num_strong, max_strong))
           pl.add_image(im, threshold_mask)
 
       # Return the pixel lists
