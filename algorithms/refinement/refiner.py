@@ -1228,7 +1228,7 @@ class RefinerFactory(object):
       assert options.weighting_strategy.override != "stills"
 
     # set automatic outlier rejection options
-    if options.outlier.algorithm is None:
+    if options.outlier.algorithm == 'auto':
       if do_stills:
         # automatic options appropriate for stills
         options.outlier.algorithm = 'sauter_poon'
@@ -1246,7 +1246,7 @@ class RefinerFactory(object):
         options.outlier.sauter_poon.px_sz = experiments.detectors()[0][0].get_pixel_size()
 
     # do outlier rejection?
-    if options.outlier.algorithm == "null":
+    if options.outlier.algorithm == "null" or options.outlier.algorithm is None:
       outlier_detector = None
     else:
       if do_stills:

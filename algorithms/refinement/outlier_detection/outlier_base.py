@@ -119,8 +119,8 @@ phil_str = '''
 outlier
   .help = "Outlier rejection after initial reflection prediction."
 {
-  algorithm = null mcd tukey sauter_poon
-    .help = "Outlier rejection algorithm. If none is selected, the algorithm is"
+  algorithm = null *auto mcd tukey sauter_poon
+    .help = "Outlier rejection algorithm. If auto is selected, the algorithm is"
             "chosen automatically"
     .type = choice
 
