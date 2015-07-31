@@ -87,7 +87,7 @@ class Extract(object):
               The number of strong pixels found (%d) is greater than the
               maximum allowed (%d). Try changing spot finding parameters
             ''' % (num_strong, max_strong))
-          pl.add_image(im, self.threshold_image.compute_threshold(im, mk))
+          pl.add_image(im, threshold_mask)
 
       # Return the pixel lists
       return plists
