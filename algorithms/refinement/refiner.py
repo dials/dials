@@ -1227,6 +1227,24 @@ class RefinerFactory(object):
       # check incompatible weighting strategy
       assert options.weighting_strategy.override != "stills"
 
+    # set automatic outlier rejection options
+    if options.outlier.algorithm is None:
+      if do_stills:
+        # automatic options appropriate for stills
+        options.outlier.algorithm = 'sauter_poon'
+        options.outlier.separate_experiments=True
+        options.outlier.separate_panels = False
+      else:
+        # automatic options appropriate for scans
+        options.outlier.algorithm = 'mcd'
+        options.outlier.separate_experiments=True
+        options.outlier.separate_panels = True
+
+    if options.outlier.algorithm == 'sauter_poon':
+      if options.outlier.sauter_poon.px_sz is libtbx.Auto:
+        # get this from the first panel of the first detector
+        options.outlier.sauter_poon.px_sz = experiments.detectors()[0][0].get_pixel_size()
+
     # do outlier rejection?
     if options.outlier.algorithm == "null":
       outlier_detector = None

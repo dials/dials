@@ -119,8 +119,9 @@ phil_str = '''
 outlier
   .help = "Outlier rejection after initial reflection prediction."
 {
-  algorithm = *null mcd tukey sauter_poon
-    .help = "Outlier rejection algorithm"
+  algorithm = null mcd tukey sauter_poon
+    .help = "Outlier rejection algorithm. If none is selected, the algorithm is"
+            "chosen automatically"
     .type = choice
 
   minimum_number_of_reflections = 20
