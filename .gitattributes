@@ -921,7 +921,6 @@ scratch/luiso_s/wx_toys/wx_viewer_template_one_more_test.py -text
 scratch/luiso_s/wx_toys/wx_viewer_template_w_simple_ap_w_panel.py -text
 scratch/mg/dials.hints -text
 scratch/mg/dials.index.autocomplete -text
-scratch/mg/dials.index.info -text
 scratch/mg/strategy_i19.py -text
 scratch/mg/tools.py -text
 scratch/rjg/__init__.py -text
