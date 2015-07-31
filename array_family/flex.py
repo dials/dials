@@ -219,7 +219,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     # General properties
     table['flags'] = flex.size_t(nrows, 0)
-    table['id'] = flex.double(nrows, 0)
+    table['id'] = flex.int(nrows, 0)
     table['panel'] = flex.size_t(nrows, 0)
 
     # Predicted properties
