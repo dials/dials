@@ -1,4 +1,5 @@
 from __future__ import division
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 try:
   # try importing scipy.linalg before any cctbx modules, otherwise we

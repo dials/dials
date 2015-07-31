@@ -792,14 +792,11 @@ class OptionParser(OptionParserBase):
 
       return result
 
-    export_params = " ".join(sorted(parameter_list))
     export_flags = " ".join(['["%s"]="%s"' % (p, ' '.join(parameter_choice_list[p])) for p in parameter_choice_list.iterkeys()])
-    export_expansions = " ".join(['["%s"]="%s"' % (p, exp) for p, exp in parameter_expansion_list.iteritems() if exp is not None ])
-    export_params = " ".join(sorted(construct_completion_tree(parameter_list)['']))
+    export_expansions = " ".join(['["%s="]="%s="' % (p, exp) for p, exp in parameter_expansion_list.iteritems() if exp is not None ])
 
-#    print 'PARAMS="%s"' % export_params
-#    print 'declare -A flags=( %s )' % export_flags
-#    print 'declare -A expansion=( %s )' % export_expansions
+    print 'declare -A flags=( %s )' % export_flags
+    print 'declare -A expansion=( %s )' % export_expansions
     tree = construct_completion_tree(parameter_list)
 
     def _tree_to_bash(prefix, tree):
@@ -809,7 +806,7 @@ class OptionParser(OptionParserBase):
           print '\n  %s*)' % (prefix + subkey + '.')
           print '    H="%s";;' % " ".join(sorted([prefix + subkey + '.' + x for x in tree[subkey]['']]))
 
-    print 'function _dials_index_hints ()'
+    print 'function _hints ()'
     print '{'
     print ' case "$1" in'
     _tree_to_bash('', tree)
@@ -820,7 +817,6 @@ class OptionParser(OptionParserBase):
     print '    H="%s";;' % " ".join(sorted(toplevelset))
     print ' esac'
     print '}'
-
 
 
 def flatten_reflections(filename_object_list):

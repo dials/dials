@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 help_message = '''
 
