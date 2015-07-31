@@ -209,8 +209,8 @@ outlier
     .expert_level = 1
   {
     px_sz = Auto
-      .help = "X, Y pixel size in mm. If Auto, an attempt will be made to"
-              "determine this from the data."
+      .help = "X, Y pixel size in mm. If Auto, this will be taken from"
+              "the first panel of the first experiment."
       .type = floats(size = 2, value_min = 0.001)
 
     verbose = False

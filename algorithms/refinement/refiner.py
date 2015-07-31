@@ -346,7 +346,9 @@ class RefinerFactory(object):
     those columns that are required by refinement'''
 
     cols = ['id', 'miller_index', 'panel', 's1', 'xyzobs.mm.value',
+            "xyzobs.px.value", "xyzcal.px",
             'xyzobs.mm.variance', 'flags']
+    # NB xyzobs.px.value & xyzcal.px required by SauterPoon outlier rejector
     rt = flex.reflection_table()
 
     # copy columns to the new table. Could use the select method

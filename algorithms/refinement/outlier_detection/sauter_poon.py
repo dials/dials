@@ -27,11 +27,9 @@ class SauterPoon(CentroidOutlier):
                pdf=None):
 
     # here the column names are fixed by the algorithm, so what's passed in is
-    # ignored. xyzobs.mm.value and panel are only needed to determine the
-    # pixel size if not set already
+    # ignored.
     CentroidOutlier.__init__(self,
-      cols=["miller_index", "xyzobs.px.value", "xyzcal.px",
-            "xyzobs.mm.value"],
+      cols=["miller_index", "xyzobs.px.value", "xyzcal.px"],
       min_num_obs=min_num_obs,
       separate_experiments=separate_experiments,
       separate_panels=separate_panels)
@@ -44,27 +42,7 @@ class SauterPoon(CentroidOutlier):
 
   def _detect_outliers(self, cols):
 
-    #outliers = flex.bool(len(cols[0]), False)
-
-    # if self._px_sz is Auto, try to figure it out from the data
-    from libtbx import Auto
-    if self._px_sz is Auto:
-      px = cols[1]
-      mm = cols[3]
-
-      # TO DO graceful fail if this is not true
-      assert len(px) > 2
-
-      # get X and Y distances in px and mm
-      x_px = px.dot((1,0,0))
-      x_mm = mm.dot((1,0,0))
-      y_px = px.dot((0,1,0))
-      y_mm = mm.dot((0,1,0))
-
-      # calculate pixel size as the ratio of observed distances
-      self._px_sz = flex.mean(x_mm / x_px), flex.mean(y_mm / y_px)
-
-    # cols[0:3] guaranteed to be a list of three flex arrays, containing miller
+    # cols is guaranteed to be a list of three flex arrays, containing miller
     # indices, observed pixel coordinates and calculated pixel coordinates.
     # Copy the data into matches
     class match: pass
