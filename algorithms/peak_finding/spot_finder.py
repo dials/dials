@@ -85,7 +85,7 @@ class Extract(object):
             raise RuntimeError(
               '''
               The number of strong pixels found (%d) is greater than the
-              maximum allowed (%d). Try chaning spot finding parameters
+              maximum allowed (%d). Try changing spot finding parameters
             ''' % (num_strong, max_strong))
           pl.add_image(im, self.threshold_image.compute_threshold(im, mk))
 
