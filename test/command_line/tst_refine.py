@@ -43,7 +43,6 @@ def test1():
     assert os.path.exists(pth)
 
   cmd = "dials.refine " + experiments_path + " " + pickle_path
-  cmd += " reflections_per_degree=50"
   print cmd
 
   # work in a temporary directory
@@ -90,9 +89,10 @@ def test2():
 
   # scan-static refinement first to get refined_experiments.json as start point
   cmd1 = "dials.refine " + experiments_path + " " + pickle_path + \
-    " reflections_per_degree=50"
+    " reflections_per_degree=50 outlier.algorithm=null"
   cmd2 = "dials.refine refined_experiments.json " + pickle_path + \
-    " scan_varying=true output.history=history.pickle reflections_per_degree=50"
+    " scan_varying=true output.history=history.pickle " + \
+    "reflections_per_degree=50 outlier.algorithm=null"
 
   # work in a temporary directory
   cwd = os.path.abspath(os.curdir)

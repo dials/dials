@@ -92,8 +92,8 @@ class Test(object):
   def _refine(self):
     """Do refinement and load the results"""
 
-    # set close_to_spindle_cutoff to its old default, for the regression test
-    cmd = "dials.refine combined_experiments.json combined_reflections.pickle close_to_spindle_cutoff=0.1"
+    # turn off outlier rejection so that test takes about 4s rather than 10s
+    cmd = "dials.refine combined_experiments.json combined_reflections.pickle outlier.algorithm=null"
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
     self._refined_experiments = ExperimentListFactory.from_json_file(

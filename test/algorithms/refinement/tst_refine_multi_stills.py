@@ -89,7 +89,7 @@ def test2():
   experiments_path = os.path.join(data_dir, "combined_experiments.json")
   reflections_path = os.path.join(data_dir, "combined_reflections.pickle")
   cmd = "dials.refine " + experiments_path + " " + reflections_path + \
-        " engine=LBFGScurvs output.reflections=None "
+        " outlier.algorithm=null engine=LBFGScurvs output.reflections=None "
   cmd1 = cmd + "output.experiments=refined_experiments_nproc1.json nproc=1"
   print cmd1
 
