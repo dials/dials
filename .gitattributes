@@ -695,6 +695,7 @@ scratch/jmp/analysis/show_reference_profiles.py -text
 scratch/jmp/analysis/test_parallax.py -text
 scratch/jmp/analysis/xds/extract_sigmas_from_integrate_lp.py -text
 scratch/jmp/analysis/xds_xyz_diff_map.py -text
+scratch/jmp/background_investigation/add_zingers.py -text
 scratch/jmp/background_test/fix_background.py -text
 scratch/jmp/background_test/plotintensity.py -text
 scratch/jmp/background_test/simulate_error.py -text
