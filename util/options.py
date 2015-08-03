@@ -795,8 +795,8 @@ class OptionParser(OptionParserBase):
     export_flags = " ".join(['["%s"]="%s"' % (p, ' '.join(parameter_choice_list[p])) for p in parameter_choice_list.iterkeys()])
     export_expansions = " ".join(['["%s="]="%s="' % (p, exp) for p, exp in parameter_expansion_list.iteritems() if exp is not None ])
 
-    print 'declare -A flags=( %s )' % export_flags
-    print 'declare -A expansion=( %s )' % export_expansions
+    print '_dials_autocomplete_flags=( %s )' % export_flags
+    print '_dials_autocomplete_expansion=( %s )' % export_expansions
     tree = construct_completion_tree(parameter_list)
 
     def _tree_to_bash(prefix, tree):
@@ -804,9 +804,9 @@ class OptionParser(OptionParserBase):
         if subkey != '':
           _tree_to_bash(prefix + subkey + '.', tree[subkey])
           print '\n  %s*)' % (prefix + subkey + '.')
-          print '    H="%s";;' % " ".join(sorted([prefix + subkey + '.' + x for x in tree[subkey]['']]))
+          print '    _dials_autocomplete_values="%s";;' % " ".join(sorted([prefix + subkey + '.' + x for x in tree[subkey]['']]))
 
-    print 'function _hints ()'
+    print 'function _dials_autocomplete_hints ()'
     print '{'
     print ' case "$1" in'
     _tree_to_bash('', tree)
@@ -814,7 +814,7 @@ class OptionParser(OptionParserBase):
     toplevelset = tree[''] | set([p + "=" for p, exp in parameter_expansion_list.iteritems() if exp is not None])
 
     print '\n  *)'
-    print '    H="%s";;' % " ".join(sorted(toplevelset))
+    print '    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset))
     print ' esac'
     print '}'
 
