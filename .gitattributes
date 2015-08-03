@@ -1092,6 +1092,7 @@ test/util/tst_nexus.py -text
 test/util/tst_nexus_multi_experiment.py -text
 util/SConscript -text
 util/__init__.py -text
+util/autocomplete.sh -text
 util/boost_python/scale_down_array.cc -text
 util/command_line.py -text
 util/config.py -text

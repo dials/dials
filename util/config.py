@@ -31,30 +31,45 @@ class CompletionGenerator(object):
     try:
       os.makedirs(self.output_directory)
     except OSError:
+      for file in os.listdir(self.output_directory):
+        file_path = os.path.join(self.output_directory, file)
+        try:
+          if os.path.isfile(file_path):
+            os.unlink(file_path)
+        except Exception, e:
+          pass
       pass
 
   def generate(self):
-    '''Generate the autocompletion hints.'''
+    '''Generate the autocompletion init script.'''
+    command_list = []
+
     import os
     commands_dir = os.path.join(self.dist_path, 'command_line')
-    print 'Generating command line completion hints for',
+    print 'Identifying autocompletable commands:',
     for file in sorted(os.listdir(commands_dir)):
       if not file.startswith('_') and file.endswith('.py'):
         if 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in open(os.path.join(commands_dir, file)).read():
           command_name = 'dials.%s' % file[:-3]
           print command_name,
-          self._generate_single(commands_dir, file, command_name)
+          command_list.append(command_name)
     print
-
-  def _generate_single(self, directory, executable, command):
-    '''Generate a hints file for a single program.'''
-    import os
-    import subprocess
-
-    # Save the generated hints to file
-    with open(os.path.join(self.output_directory, command), 'w') as output:
-      returncode = subprocess.call(["libtbx.python", os.path.join(directory, executable), "--export-autocomplete-hints"], stdout=output)
-      print ("[OK]" if returncode == 0 else "[FAIL:%d]" % returncode),
+    with open(os.path.join(self.output_directory, 'init.sh'), 'w') as loader:
+      loader.write('''#!/bin/bash
+if [ ! -e "%s" ]; then touch "%s" 2>/dev/null; if [ -e "%s" ]; then
+for cmd in %s; do
+ echo Generating command line completion hints for $cmd
+ $cmd --export-autocomplete-hints > "%s" || rm "%s"
+done; fi; fi
+source %s/util/autocomplete.sh
+''' % (
+        os.path.join(self.output_directory, 'runonce'),
+        os.path.join(self.output_directory, 'runonce'),
+        os.path.join(self.output_directory, 'runonce'),
+        " ".join(command_list),
+        os.path.join(self.output_directory, '${cmd}'),
+        os.path.join(self.output_directory, '${cmd}'),
+        self.dist_path))
 
 if __name__ == '__main__':
   gen = CompletionGenerator()
