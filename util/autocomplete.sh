@@ -11,9 +11,9 @@ declare -A _dials_autocomplete_expansion
 _redir_op()
 {
   case "$1" in
-  *\\'[\<\>]'*)	return 1;;
-  *[\<\>]*)	return 0;;
-  *)		return 1;;
+  *\\'[\<\>]'*) return 1;;
+  *[\<\>]*)     return 0;;
+  *)            return 1;;
   esac
 }
 

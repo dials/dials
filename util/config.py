@@ -42,10 +42,9 @@ class CompletionGenerator(object):
 
   def generate(self):
     '''Generate the autocompletion init script.'''
-    command_list = []
-
     import os
     commands_dir = os.path.join(self.dist_path, 'command_line')
+    command_list = []
     print 'Identifying autocompletable commands:',
     for file in sorted(os.listdir(commands_dir)):
       if not file.startswith('_') and file.endswith('.py'):
@@ -70,6 +69,21 @@ source %s/util/autocomplete.sh
         os.path.join(self.output_directory, '${cmd}'),
         os.path.join(self.output_directory, '${cmd}'),
         self.dist_path))
+
+  def install(self):
+    '''Permanently install the autocompletion init script into setpaths-scripts.'''
+    import libtbx.load_env
+    import os
+    build_path = abs(libtbx.env.build_path)
+    print "Installing autocompletion script into:",
+    for file in os.listdir(build_path):
+      if file.startswith('setpath') and file.endswith('.sh'):
+        if not 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in open(os.path.join(build_path, file)).read():
+          print file,
+          with open(os.path.join(build_path, file), 'a') as script:
+            script.write('\n\n# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n')
+            script.write('[ -z "$BASH_VERSIONINFO" ] && source %s\n' % os.path.join(build_path, 'dials', 'autocomplete', 'init.sh'))
+    print
 
 if __name__ == '__main__':
   gen = CompletionGenerator()
