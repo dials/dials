@@ -10,6 +10,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import division
 from copy import deepcopy
 from libtbx.utils import Sorry
