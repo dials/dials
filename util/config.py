@@ -43,17 +43,18 @@ class CompletionGenerator(object):
         if 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in open(os.path.join(commands_dir, file)).read():
           command_name = 'dials.%s' % file[:-3]
           print command_name,
-          self._generate_single(command_name)
+          self._generate_single(commands_dir, file, command_name)
     print
 
-  def _generate_single(self, program):
+  def _generate_single(self, directory, executable, command):
     '''Generate a hints file for a single program.'''
     import os
+    import subprocess
 
     # Save the generated hints to file
-    with open(os.path.join(self.output_directory, program), 'w') as f:
-      f.write('# tbd')
-    pass
+    with open(os.path.join(self.output_directory, command), 'w') as output:
+      returncode = subprocess.call(["libtbx.python", os.path.join(directory, executable), "--export-autocomplete-hints"], stdout=output)
+      print ("[OK]" if returncode == 0 else "[FAIL:%d]" % returncode),
 
 if __name__ == '__main__':
   gen = CompletionGenerator()
