@@ -483,6 +483,9 @@ doc/sphinx/documentation/programs/dials_reindex.rst -text
 doc/sphinx/documentation/programs/index.rst -text
 doc/sphinx/documentation/tutorials/developer_tutorial.rst -text
 doc/sphinx/documentation/tutorials/index.rst -text
+doc/sphinx/documentation/tutorials/logs/dials.index.log -text
+doc/sphinx/documentation/tutorials/logs/dials.integrate.log -text
+doc/sphinx/documentation/tutorials/logs/dials.refine_01.log -text
 doc/sphinx/documentation/tutorials/metrology_corrections.rst -text
 doc/sphinx/documentation/tutorials/multi_crystal_analysis.rst -text
 doc/sphinx/documentation/tutorials/multi_lattice_tutorial.rst -text
