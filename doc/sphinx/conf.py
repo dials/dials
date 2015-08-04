@@ -130,7 +130,7 @@ html_theme_options = {
   #'logo': 'dials_icon.png',
   'github_button': False,
   'show_powered_by': False,
-  'description': 'Data Integration for Advanced Light Sources',
+  'description': 'Diffraction Integration for Advanced Light Sources',
 }
 
 # The name for this set of Sphinx documents.  If None, it defaults to
