@@ -340,6 +340,7 @@ command_line/find_spots_server.py -text
 command_line/generate_mask.py -text
 command_line/generate_process_test_reflections.py -text
 command_line/generate_test_reflections.py -text
+command_line/generate_tutorial_text.py -text
 command_line/image_viewer.py -text
 command_line/import.py -text
 command_line/import_xds.py -text
@@ -483,9 +484,12 @@ doc/sphinx/documentation/programs/dials_reindex.rst -text
 doc/sphinx/documentation/programs/index.rst -text
 doc/sphinx/documentation/tutorials/developer_tutorial.rst -text
 doc/sphinx/documentation/tutorials/index.rst -text
+doc/sphinx/documentation/tutorials/logs/dials.find_spots.log -text
+doc/sphinx/documentation/tutorials/logs/dials.import.log -text
 doc/sphinx/documentation/tutorials/logs/dials.index.log -text
 doc/sphinx/documentation/tutorials/logs/dials.integrate.log -text
 doc/sphinx/documentation/tutorials/logs/dials.refine.log -text
+doc/sphinx/documentation/tutorials/logs/dials.refine_bravais_settings.log -text
 doc/sphinx/documentation/tutorials/metrology_corrections.rst -text
 doc/sphinx/documentation/tutorials/multi_crystal_analysis.rst -text
 doc/sphinx/documentation/tutorials/multi_lattice_tutorial.rst -text

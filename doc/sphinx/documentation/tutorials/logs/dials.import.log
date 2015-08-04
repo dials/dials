@@ -1,0 +1,14 @@
+The following parameters have been modified:
+
+input {
+  datablock = <image files>
+}
+
+--------------------------------------------------------------------------------
+DataBlock 0
+  format: <class 'dxtbx.format.FormatCBFMiniPilatusDLS6MSN100.FormatCBFMiniPilatusDLS6MSN100'>
+  num images: 540
+  num sweeps: 1
+  num stills: 0
+--------------------------------------------------------------------------------
+Writing datablocks to datablock.json

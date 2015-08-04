@@ -1,0 +1,39 @@
+The following parameters have been modified:
+
+spotfinder {
+  mp {
+    nproc = 4
+  }
+}
+input {
+  datablock = datablock.json
+}
+
+Setting spotfinder.filter.min_spot_size=3
+Configuring spot finder from input parameters
+--------------------------------------------------------------------------------
+Finding strong spots in imageset 0
+--------------------------------------------------------------------------------
+
+Finding spots in image 1 to 540...
+Extracting strong pixels from images (may take a while)
+Extracted strong pixels from images
+Merging 4 pixel lists
+Merged 4 pixel lists with 922120 pixels
+Extracting spots
+Extracted 219125 spots
+Calculating 219125 spot centroids
+Calculated 219125 spot centroids
+Calculating 219125 spot intensities
+Calculated 219125 spot intensities
+Found 1 possible hot spots
+Found 1 possible hot pixel(s)
+Filtering 219125 spots by number of pixels
+Filtered 116321 spots by number of pixels
+Filtering 116321 spots by peak-centroid distance
+Filtered 116082 spots by peak-centroid distance
+
+--------------------------------------------------------------------------------
+Saving 116082 reflections to strong.pickle
+Saved 116082 reflections to strong.pickle
+Time Taken: 85.013234
