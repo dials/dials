@@ -2,8 +2,10 @@
 _dials_autocomplete_path=$(libtbx.show_build_path)/dials/autocomplete/
 
 # Predeclare associative arrays, so they can be cached between invocations
-declare -A _dials_autocomplete_flags
-declare -A _dials_autocomplete_expansion
+# Use global declaration if possible (requires bash 4.2+), local otherwise (bash 4.0+)
+# If associative arrays not supported (bash <4), do not declare
+declare -gA _dials_autocomplete_flags 2>/dev/null || declare -A _dials_autocomplete_flags 2>/dev/null || :
+declare -gA _dials_autocomplete_expansion 2>/dev/null || declare -A _dials_autocomplete_expansion 2>/dev/null || :
 
 # Define two helper functions from bash_completion
 # Return 1 if $1 appears to contain a redirection operator.  Handles backslash
@@ -68,14 +70,16 @@ function _dials_autocomplete ()
   fi
 
   if [[ ${cur} == "=" ]]; then
-    # initial autocompletion of a choice parameter
-    if [ ${_dials_autocomplete_flags[${prev}]+exists} ]; then
-      COMPREPLY=( ${_dials_autocomplete_flags[${prev}]} )
-      return 0
-    fi
+   # initial autocompletion of a choice parameter
+   declare -p _dials_autocomplete_flags >/dev/null 2>&1 && \
+   if [ ${_dials_autocomplete_flags[${prev}]+exists} ]; then
+    COMPREPLY=( ${_dials_autocomplete_flags[${prev}]} )
+    return 0
+   fi
   fi
   if [[ ${prev} == "=" ]]; then
    # autocompletion of a choice parameter with existing text
+   declare -p _dials_autocomplete_flags >/dev/null 2>&1 && \
    if [ ${_dials_autocomplete_flags[${pprev}]+exists} ]; then
     COMPREPLY=( $(compgen -W "${_dials_autocomplete_flags[${pprev}]}" -- "${cur}") )
    fi
@@ -92,6 +96,7 @@ function _dials_autocomplete ()
   compopt -o nospace
   if [[ ${#COMPREPLY[@]} == 1 ]]; then
    # If there's only one option, check if it is expandable
+   declare -p _dials_autocomplete_expansion >/dev/null 2>&1 && \
    if [ ${_dials_autocomplete_expansion[${COMPREPLY[0]}]+exists} ] ; then
      COMPREPLY=( ${_dials_autocomplete_expansion[${COMPREPLY[0]}]} )
    fi
