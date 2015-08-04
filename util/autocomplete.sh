@@ -102,5 +102,3 @@ function _dials_autocomplete ()
   fi
   return 0
 }
-complete -F _dials_autocomplete dials.index
-complete -F _dials_autocomplete dials.integrate

@@ -61,6 +61,7 @@ for cmd in %s; do
  $cmd --export-autocomplete-hints > "%s" || rm "%s"
 done; fi; fi
 source %s/util/autocomplete.sh
+%s
 ''' % (
         os.path.join(self.output_directory, 'runonce'),
         os.path.join(self.output_directory, 'runonce'),
@@ -68,7 +69,9 @@ source %s/util/autocomplete.sh
         " ".join(command_list),
         os.path.join(self.output_directory, '${cmd}'),
         os.path.join(self.output_directory, '${cmd}'),
-        self.dist_path))
+        self.dist_path,
+        "\n".join(["complete -F _dials_autocomplete %s" % cmd for cmd in command_list])
+     ))
 
   def install(self):
     '''Permanently install the autocompletion init script into setpaths-scripts.'''
