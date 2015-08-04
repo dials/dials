@@ -35,22 +35,7 @@ use this.
 The output just describes what the software understands of the images it was
 passed, in this case one sweep of data containing 540 images.
 
-::
-
-  The following parameters have been modified:
-
-  input {
-    datablock = <image files>
-  }
-
-  --------------------------------------------------------------------------------
-  DataBlock 0
-    format: <class 'dxtbx.format.FormatCBFMiniPilatusDLS6MSN100.FormatCBFMiniPilatusDLS6MSN100'>
-    num images: 540
-    num sweeps: 1
-    num stills: 0
-  --------------------------------------------------------------------------------
-  Writing datablocks to datablock.json
+.. literalinclude:: logs/dials.import.log
 
 Find Spots
 ^^^^^^^^^^
@@ -67,47 +52,7 @@ enable us to do global refinement later on.
 
 This will just report the number of spots found.
 
-::
-
-  The following parameters have been modified:
-
-  spotfinder {
-    mp {
-      nproc = 4
-    }
-  }
-  input {
-    datablock = datablock.json
-  }
-
-  Setting spotfinder.filter.min_spot_size=3
-  Configuring spot finder from input parameters
-  --------------------------------------------------------------------------------
-  Finding strong spots in imageset 0
-  --------------------------------------------------------------------------------
-
-  Finding spots in image 1 to 540...
-  Extracting strong pixels from images (may take a while)
-  Extracted strong pixels from images
-  Merging 4 pixel lists
-  Merged 4 pixel lists with 922120 pixels
-  Extracting spots
-  Extracted 219125 spots
-  Calculating 219125 spot centroids
-  Calculated 219125 spot centroids
-  Calculating 219125 spot intensities
-  Calculated 219125 spot intensities
-  Found 1 possible hot spots
-  Found 1 possible hot pixel(s)
-  Filtering 219125 spots by number of pixels
-  Filtered 116321 spots by number of pixels
-  Filtering 116321 spots by peak-centroid distance
-  Filtered 116082 spots by peak-centroid distance
-
-  --------------------------------------------------------------------------------
-  Saving 116082 reflections to strong.pickle
-  Saved 116082 reflections to strong.pickle
-  Time Taken: 71.761816
+.. literalinclude:: logs/dials.find_spots.log
 
 The default parameters for :doc:`dials.find_spots </programs/dials_find_spots>`
 usually do a good job
@@ -241,31 +186,7 @@ spot-finding procedure (uncorrected and unscaled) but provides a very
 useful check to see if the data does appear to adhere to the proposed
 symmetry operators.
 
-::
-
-  The following parameters have been modified:
-
-  input {
-    experiments = experiments.json
-    reflections = indexed.pickle
-  }
-
-  -----------------------------------------------------------------------------------------------------------------
-  Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell  volume      cb_op
-  -----------------------------------------------------------------------------------------------------------------
-         9     0.0336 0.060 0.787/0.848   8099      tP  57.79  57.79 150.01  90.00  90.00  90.00  500948      a,b,c
-         8     0.0336 0.060 0.787/0.970   8099      oC  81.72  81.74 150.02  90.00  90.00  90.00 1002068  a-b,a+b,c
-         7     0.0294 0.059 0.970/0.970   8099      mC  81.73  81.75 150.04  90.00  89.99  90.00 1002461  a-b,a+b,c
-         6     0.0336 0.059 0.795/0.795   8099      mC  81.74  81.72 150.02  90.00  89.99  90.00 1002088 a+b,-a+b,c
-         5     0.0167 0.059 0.787/0.899   8099      oP  57.80  57.77 150.01  90.00  90.00  90.00  500871      a,b,c
-         4     0.0161 0.057 0.807/0.807   8099      mP  57.77  57.80 150.02  90.00  90.02  90.00  500971   -b,-a,-c
-         3     0.0167 0.056 0.899/0.899   8099      mP  57.80  57.78 150.02  90.00  89.98  90.00  501005      a,b,c
-         2     0.0163 0.057 0.787/0.787   8099      mP  57.78 150.01  57.80  90.00  89.99  90.00  501004      b,c,a
-         1     0.0000 0.056         -/-   8099      aP  57.81  57.78 150.03  90.01  89.99  89.99  501195      a,b,c
-  -----------------------------------------------------------------------------------------------------------------
-  usr+sys time: 0.74 seconds
-  wall clock time: 10.48 seconds
-
+.. literalinclude:: logs/dials.refine_bravais_settings.log
 
 In this example we would continue processing (i.e. proceed to the refinement
 step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
@@ -309,7 +230,7 @@ further refinement job starting from the output of the previous job::
 
 The output for this job is
 
-.. literalinclude:: logs/dials.refine_01.log
+.. literalinclude:: logs/dials.refine.log
 
 In this case we didn't alter the default choices that affect scan-varying
 refinement, the most important of which is the number of intervals into which
