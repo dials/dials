@@ -27,18 +27,25 @@ class Job(object):
 class dials_import(Job):
 
   def __init__(self):
-    if not libtbx.env.has_module("dials_regression"):
-      raise RuntimeError("No dials_regression module available!")
+    # find i04 bag training data, this may be part of dials_regression or xia2_regression
+    if not libtbx.env.has_module("dials_regression") and not libtbx.env.has_module('xia2_regression'):
+      raise RuntimeError("No dials_regression or xia2_regression module available!")
 
-    dials_regression = libtbx.env.find_in_repositories(
-      relative_path="dials_regression",
-      test=os.path.isdir)
+    data_dir = None
 
     # use the i04_weak_data for this test
-    data_dir = os.path.join(dials_regression, "data", "i04-BAG-training")
-    if not os.path.isdir(data_dir):
-      raise RuntimeError("Cannot find {0}".format(data_dir))
+    dials_regression = os.path.join(
+      libtbx.env.dist_path('dials_regression'),
+      "data", "i04-BAG-training")
+    xia2_regression = os.path.join(
+      abs(libtbx.env.build_path),
+      'xia2_regression', 'test_data', 'i04_bag_training')
 
+    if os.path.isdir(dials_regression): data_dir = dials_regression
+    if os.path.isdir(xia2_regression): data_dir = xia2_regression
+
+    if data_dir is None:
+      raise RuntimeError("Cannot find i04 data in either %s or %s" % (dials_regression, xia2_regression))
     self.cmd = "dials.import {0}".format(os.path.join(data_dir,"th_8_2_0*cbf"))
 
 class dials_find_spots(Job):
