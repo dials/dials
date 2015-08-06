@@ -34,14 +34,17 @@ class dials_import(Job):
     data_dir = None
 
     # use the i04_weak_data for this test
-    dials_regression = os.path.join(
-      libtbx.env.dist_path('dials_regression'),
-      "data", "i04-BAG-training")
+    try:
+      dials_regression = os.path.join(
+        libtbx.env.dist_path('dials_regression'),
+        "data", "i04-BAG-training")
+      if os.path.isdir(dials_regression): data_dir = dials_regression
+    except Exception:
+      pass
+
     xia2_regression = os.path.join(
       abs(libtbx.env.build_path),
       'xia2_regression', 'test_data', 'i04_bag_training')
-
-    if os.path.isdir(dials_regression): data_dir = dials_regression
     if os.path.isdir(xia2_regression): data_dir = xia2_regression
 
     if data_dir is None:
