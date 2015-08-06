@@ -41,6 +41,9 @@ symop_threshold = 0
 grid_search_scope = 0
   .type = int
   .help = "Search scope for testing misindexing on h, k, l."
+asu = False
+  .type = bool
+  .help = "Perform search comparing within ASU (assumes input symm)"
 """, process_includes=True)
 
 
@@ -141,12 +144,17 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
   from cctbx.miller import set as miller_set
 
+  data = reflections['intensity.sum.value'] / \
+         flex.sqrt(reflections['intensity.sum.variance'])
+
   ms = miller_set(cs, original_miller_indices)
-  ms = ms.array(reflections['intensity.sum.value'] /
-                flex.sqrt(reflections['intensity.sum.variance']))
+  ms = ms.array(data)
 
   if params.d_min or params.d_max:
     ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+
+  if params.asu:
+    ms = ms.map_to_asu()
 
   print 'Checking HKL origin:'
   print ''
@@ -166,10 +174,13 @@ def test_P1_crystal_indexing(reflections, experiment, params):
           reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
             miller_indices)
           rms = miller_set(cs, reindexed_miller_indices)
-          rms = rms.array(reflections['intensity.sum.value'] /
-                          flex.sqrt(reflections['intensity.sum.variance']))
+          rms = rms.array(data)
           if params.d_min or params.d_max:
             rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+
+          if params.asu:
+            rms = rms.map_to_asu()
+
           intensity, intensity_rdx = rms.common_sets(ms)
           cc = intensity.correlation(intensity_rdx).coefficient()
 
