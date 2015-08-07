@@ -3,12 +3,12 @@ from __future__ import division
 def run():
   from dials.util.config import CompletionGenerator
   gen = CompletionGenerator()
+  # generate init.sh and SConscript file in build/dials/autocomplete
   gen.generate()
+# # add init.sh to setpaths.sh
+# gen.install() 
 
-try:
-  run()
-except Exception, e:
-  pass
+run()
 
 try:
   from glob import glob
