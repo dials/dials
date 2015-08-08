@@ -8,7 +8,10 @@ def run():
 # # add init.sh to setpaths.sh
 # gen.install() 
 
-run()
+try:
+  run()
+except Exception:
+  pass
 
 try:
   from glob import glob
