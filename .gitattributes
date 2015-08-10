@@ -1102,7 +1102,6 @@ util/__init__.py -text
 util/autocomplete.sh -text
 util/boost_python/scale_down_array.cc -text
 util/command_line.py -text
-util/config.py -text
 util/create_dials_binary_installers.sh -text
 util/export_mtz.py -text
 util/export_text.py -text
