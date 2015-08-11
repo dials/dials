@@ -55,17 +55,17 @@ def _prepare_dials_autocompletion():
 
   # Generate the autocompletion SConscript.
   with open(os.path.join(output_directory, 'SConscript'), 'w') as builder:
-    builder.write('''
+    builder.write('''Import("env")
 import os.path
 import libtbx.load_env
 def dispatcher_outer(name):
   return os.path.join(libtbx.env.under_build('bin'), name)
 def dispatcher_inner(name):
   return os.path.join(libtbx.env.dist_path('dials'), 'command_line', '%%s.py' %% name.partition('.')[2])
-env = Environment()
 env.Append( BUILDERS={'AutoComplete': Builder(action='$SOURCE --export-autocomplete-hints > $TARGET')} )
 for cmd in [%s]:
-  env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
+  ac = env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
+  Requires(ac, Dir(libtbx.env.under_build('lib')))
 ''' % ( ', '.join(["'%s'" % cmd for cmd in command_list]) ))
 
   # Generate the autocompletion bash init script
