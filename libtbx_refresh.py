@@ -33,13 +33,6 @@ def _prepare_dials_autocompletion():
   try:
     os.makedirs(output_directory)
   except OSError:
-    for file in os.listdir(output_directory):
-      file_path = os.path.join(output_directory, file)
-      try:
-        if os.path.isfile(file_path):
-          os.unlink(file_path)
-      except Exception, e:
-        pass
     pass
 
   commands_dir = os.path.join(dist_path, 'command_line')
@@ -71,19 +64,9 @@ for cmd in [%s]:
   # Generate the autocompletion bash init script
   with open(os.path.join(output_directory, 'init.sh'), 'w') as loader:
     loader.write('''#!/bin/bash
-for cmd in %s; do
- if [ ! -e "%s" ]; then
-  echo Generating command line completion hints for $cmd
-  $cmd --export-autocomplete-hints > "%s" || rm "%s"
- fi
-done
 source %s/util/autocomplete.sh
 %s
 ''' % (
-      " ".join(command_list),
-      os.path.join(output_directory, '${cmd}'),
-      os.path.join(output_directory, '${cmd}'),
-      os.path.join(output_directory, '${cmd}'),
       dist_path,
       "\n".join(["complete -F _dials_autocomplete %s" % cmd for cmd in command_list])
    ))
