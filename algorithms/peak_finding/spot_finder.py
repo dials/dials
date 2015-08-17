@@ -57,7 +57,7 @@ class Extract(object):
       else:
         ind = self.imageset.indices()
         if len(ind) > 1:
-           assert(all(i1+1 == i2 for i1, i2 in zip(ind[0:-1], ind[1:-1])))
+          assert(all(i1+1 == i2 for i1, i2 in zip(ind[0:-1], ind[1:-1])))
         startz = ind[index[0]]
 
       # Create the list of pixel lists
