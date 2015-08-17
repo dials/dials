@@ -28,9 +28,11 @@ integrate = False
   interp = params.command_line_argument_interpreter()
   params, unhandled = interp.process_and_fetch(
     unhandled, custom_processor='collect_remaining')
+  params = params.extract()
+  # no need to write the hot mask in the server/client
+  params.spotfinder.write_hot_mask = False
   datablock = DataBlockFactory.from_filenames([filename])[0]
-  reflections = flex.reflection_table.from_observations(
-    datablock, params.extract())
+  reflections = flex.reflection_table.from_observations(datablock, params)
   from dials.algorithms.peak_finding import per_image_analysis
   imageset = datablock.extract_imagesets()[0]
   stats = per_image_analysis.stats_single_image(
