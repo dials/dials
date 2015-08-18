@@ -664,10 +664,12 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
   intensities = reflections_no_ice['intensity.sum.value']
   total_intensity = flex.sum(intensities)
   #print i
-  resolution_histogram(
-    reflections, imageset, plot_filename=hist_filename)
-  log_sum_i_sigi_vs_resolution(
-    reflections, imageset, plot_filename=extra_filename)
+  if hist_filename is not None:
+    resolution_histogram(
+      reflections, imageset, plot_filename=hist_filename)
+  if extra_filename is not None:
+    log_sum_i_sigi_vs_resolution(
+      reflections, imageset, plot_filename=extra_filename)
   if n_spots_no_ice > 10:
     estimated_d_min = estimate_resolution_limit(
       reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename)
