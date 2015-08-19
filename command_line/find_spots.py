@@ -94,7 +94,7 @@ class Script(object):
     from dials.util.options import flatten_datablocks
     from time import time
     from dials.util import log
-    from logging import info
+    from logging import info, debug
     from libtbx.utils import Abort
     start_time = time()
 
@@ -144,6 +144,17 @@ class Script(object):
         params.output.datablock))
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock)
+
+    from dials.algorithms.peak_finding import per_image_analysis
+    from cStringIO import StringIO
+    s = StringIO()
+    for i, imageset in enumerate(datablocks[0].extract_imagesets()):
+      debug("Number of centroids per image for imageset %i" %i)
+      stats = per_image_analysis.stats_imageset(
+        imageset, reflections.select(reflections['id'] == i),
+        resolution_analysis=False)
+      per_image_analysis.print_table(stats, out=s)
+    debug(s.getvalue())
 
     # Print the time
     info("Time Taken: %f" % (time() - start_time))
