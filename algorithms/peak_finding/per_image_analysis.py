@@ -636,7 +636,8 @@ def plot_ordered_d_star_sq(reflections, imageset):
   pyplot.show()
 
 
-def stats_single_image(imageset, reflections, i=None, plot=False):
+def stats_single_image(imageset, reflections, i=None, resolution_analysis=True,
+                       plot=False):
   reflections = map_to_reciprocal_space(reflections, imageset)
   if plot and i is not None:
     filename = "i_over_sigi_vs_resolution_%d.png" %(i+1)
@@ -670,7 +671,7 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
   if extra_filename is not None:
     log_sum_i_sigi_vs_resolution(
       reflections, imageset, plot_filename=extra_filename)
-  if n_spots_no_ice > 10:
+  if resolution_analysis and n_spots_no_ice > 10:
     estimated_d_min = estimate_resolution_limit(
       reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename)
     d_min_distl_method_1, noisiness_method_1 \
@@ -696,7 +697,7 @@ def stats_single_image(imageset, reflections, i=None, plot=False):
                     d_min_distl_method_2=d_min_distl_method_2,
                     noisiness_method_2=noisiness_method_2)
 
-def stats_imageset(imageset, reflections, plot=False):
+def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
   n_spots_total = []
   n_spots_no_ice = []
   n_spots_4A = []
@@ -714,7 +715,8 @@ def stats_imageset(imageset, reflections, plot=False):
   for i in range(len(imageset)):
     stats = stats_single_image(
       imageset[i:i+1],
-      reflections.select(image_number==i+start), i=i+start, plot=plot)
+      reflections.select(image_number==i+start), i=i+start,
+      resolution_analysis=resolution_analysis, plot=plot)
     n_spots_total.append(stats.n_spots_total)
     n_spots_no_ice.append(stats.n_spots_no_ice)
     n_spots_4A.append(stats.n_spots_4A)
@@ -746,30 +748,46 @@ def table(stats):
   d_min_distl_method_2 = stats.d_min_distl_method_2
   noisiness_method_1 = stats.noisiness_method_1
   noisiness_method_2 = stats.noisiness_method_2
-  rows = [("image", "#spots", "#spots_no_ice", "total_intensity",
-           "d_min", "d_min (distl method 1)", "d_min (distl method 2)")]
+  if flex.double(estimated_d_min).all_eq(-1):
+    estimated_d_min = None
+  if flex.double(d_min_distl_method_1).all_eq(-1):
+    d_min_distl_method_1 = None
+  if flex.double(d_min_distl_method_2).all_eq(-1):
+    d_min_distl_method_2 = None
+
+  rows = [["image", "#spots", "#spots_no_ice", "total_intensity"]]
+  if estimated_d_min is not None:
+    rows[0].append("d_min")
+  if d_min_distl_method_1 is not None:
+    rows[0].append("d_min (distl method 1)")
+  if d_min_distl_method_2 is not None:
+    rows[0].append("d_min (distl method 2)")
   for i_image in range(len(n_spots_total)):
     d_min_str = ''
     method1_str = ''
     method2_str = ''
-    if estimated_d_min[i_image] > 0:
+    if estimated_d_min is not None and estimated_d_min[i_image] > 0:
       d_min_str = "%.2f" %estimated_d_min[i_image]
-    if d_min_distl_method_1[i_image] > 0:
+    if d_min_distl_method_1 is not None and d_min_distl_method_1[i_image] > 0:
       method1_str = "%.2f" %d_min_distl_method_1[i_image]
       if noisiness_method_1 is not None:
         method1_str += " (%.2f)" %noisiness_method_1[i_image]
-    if d_min_distl_method_2[i_image] > 0:
+    if d_min_distl_method_2 is not None and d_min_distl_method_2[i_image] > 0:
       method2_str = "%.2f" %d_min_distl_method_2[i_image]
       if noisiness_method_2 is not None:
         method2_str += " (%.2f)" %noisiness_method_2[i_image]
-    rows.append([str(int(i_image)+1),
-                 str(n_spots_total[i_image]),
-                 str(n_spots_no_ice[i_image]),
-                 #str(n_spots_4A[i_image]),
-                 "%.0f" %total_intensity[i_image],
-                 d_min_str,
-                 method1_str,
-                 method2_str])
+    row = [str(int(i_image)+1),
+           str(n_spots_total[i_image]),
+           str(n_spots_no_ice[i_image]),
+           #str(n_spots_4A[i_image]),
+           "%.0f" %total_intensity[i_image]]
+    if estimated_d_min is not None:
+      row.append(d_min_str)
+    if d_min_distl_method_1 is not None:
+      row.append(method1_str)
+    if d_min_distl_method_2 is not None:
+      row.append(method2_str)
+    rows.append(row)
   return rows
 
 def print_table(stats, out=None):

@@ -7,9 +7,13 @@ from dials.algorithms.peak_finding import per_image_analysis
 
 import iotbx.phil
 phil_scope = iotbx.phil.parse("""\
-plot=None
+resolution_analysis = True
+  .type = bool
+plot = None
   .type = path
-individual_plots=False
+json = None
+  .type = path
+individual_plots = False
   .type = bool
 id = None
   .type = int(value_min=0)
@@ -39,8 +43,13 @@ def run(args):
     reflections = reflections.select(reflections['id'] == params.id)
 
   stats = per_image_analysis.stats_imageset(
-    imageset, reflections, plot=params.individual_plots)
+    imageset, reflections, resolution_analysis=params.resolution_analysis,
+    plot=params.individual_plots)
   per_image_analysis.print_table(stats)
+  if params.json is not None:
+    import json
+    with open(params.json, 'wb') as fp:
+      json.dump(stats.__dict__, fp)
   if params.plot is not None:
     per_image_analysis.plot_stats(stats, filename=params.plot)
 
