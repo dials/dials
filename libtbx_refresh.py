@@ -61,31 +61,40 @@ for cmd in [%s]:
   Requires(ac, Dir(libtbx.env.under_build('lib')))
 ''' % ( ', '.join(["'%s'" % cmd for cmd in command_list]) ))
 
-  # Generate the autocompletion bash init script
-  with open(os.path.join(output_directory, 'init.sh'), 'w') as loader:
-    loader.write('''#!/bin/bash
-source %s/util/autocomplete.sh
-%s
-''' % (
-      dist_path,
-      "\n".join(["complete -F _dials_autocomplete %s" % cmd for cmd in command_list])
-   ))
+  return command_list
 
-def _install_dials_autocompletion():
-  '''Permanently install the autocompletion init script into setpaths-scripts.'''
+def _install_dials_autocompletion(command_list):
+  '''Permanently install the autocompletion script into setpaths-scripts.'''
   import libtbx.load_env
   import os
 
+  # Find the dials source directory
+  dist_path = libtbx.env.dist_path('dials')
+
+  # Find the dials build directory
   build_path = abs(libtbx.env.build_path)
   print "Installing autocompletion script into:",
   for file in os.listdir(build_path):
     if file.startswith('setpath') and file.endswith('.sh'):
-      if not 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in open(os.path.join(build_path, file)).read():
-        print file,
-        with open(os.path.join(build_path, file), 'a') as script:
-          script.write('\n\n# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n')
-          script.write('[ -z "$BASH_VERSIONINFO" ] && source %s\n' % os.path.join(build_path, 'dials', 'autocomplete', 'init.sh'))
+      original_file = open(os.path.join(build_path, file)).read()
+      if not 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in original_file:
+        marker = "\nexport PATH\n"
+        insert_position = original_file.find(marker) + len(marker)
+        if insert_position >= 0:
+          print file,
+          added_script = \
+            '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
+            '[ -z "$BASH_VERSIONINFO" ] && {\n' \
+            ' source %s\n' \
+            ' %s\n' \
+            '}\n' % (
+              os.path.join('$LIBTBX_BUILD', '..', 'modules', 'dials', 'util', 'autocomplete.sh'),
+              "\n ".join(["complete -F _dials_autocomplete %s" % cmd for cmd in command_list]))
+          with open(os.path.join(build_path, file), 'w') as script:
+            script.write(original_file[:insert_position] +
+                         added_script + 
+                         original_file[insert_position:])
   print
 
-_prepare_dials_autocompletion()
-#_install_dials_autocompletion()
+_autocomplete_commands = _prepare_dials_autocompletion()
+#_install_dials_autocompletion(_autocomplete_commands)
