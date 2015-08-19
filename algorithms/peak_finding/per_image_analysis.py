@@ -711,7 +711,10 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
   image_number = reflections['xyzobs.px.value'].parts()[2]
   image_number = flex.floor(image_number)
 
-  start, end = imageset.get_array_range()
+  try:
+    start, end = imageset.get_array_range()
+  except AttributeError:
+    start = 1
   for i in range(len(imageset)):
     stats = stats_single_image(
       imageset[i:i+1],
