@@ -188,17 +188,17 @@ class Script(object):
 
     plt.figure(1)
     ax = plt.subplot(1, 1, 1, aspect='equal')
-    poscm = cm.get_cmap('Blues')
-    negcm = cm.get_cmap('Reds')
+    clrmap = cm.get_cmap('bwr')
 
     for x in xrange(nr):
       for y in xrange(nr):
         d = corrmat[x, y]
-        clrmap = poscm if d >= 0 else negcm
         d_abs = abs(d)
         circ = plt.Circle((x, y),radius=0.9*sqrt(d_abs)/2)
         circ.set_edgecolor('white')
-        circ.set_facecolor(clrmap(d_abs))
+        # put data into range [0,1] and invert so that 1 == blue and 0 == red
+        facecolor = 1 - (0.5*d + 0.5)
+        circ.set_facecolor(clrmap(facecolor))
         ax.add_artist(circ)
     ax.set_xlim(-0.5, nr-0.5)
     ax.set_ylim(-0.5, nr-0.5)
