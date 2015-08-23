@@ -33,22 +33,34 @@ class Test(object):
     self.reflections = flex.reflection_table.from_pickle(reflection_filename)
 
   def run(self):
+    self.tst_number_of_predictions()
     self.tst_vs_old()
     self.tst_with_reflection_table()
     #self.tst_with_hkl()
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
 
-  def predict_new(self, hkl=None, panel=None):
+  def predict_new(self, experiment=None, hkl=None, panel=None):
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
-    predict = ScanStaticReflectionPredictor(self.experiments[0])
+    if experiment is None: experiment=self.experiments[0]
+    predict = ScanStaticReflectionPredictor(experiment)
     if hkl is None:
-      return predict.for_ub(self.experiments[0].crystal.get_A())
+      return predict.for_ub(experiment.crystal.get_A())
     else:
       if panel is None:
         return predict(hkl)
       else:
         return predict(hkl, panel)
+
+  def tst_number_of_predictions(self):
+    prediction_count = len(self.predict_new())
+    assert prediction_count == 1996, "Predicted %d spots != 1996" % prediction_count
+
+    import copy
+    modified_experiment = copy.deepcopy(self.experiments[0])
+    modified_experiment.scan.set_oscillation((360, 0.2))
+    prediction_count = len(self.predict_new(experiment=modified_experiment))
+    assert prediction_count == 1996, "Predicted %d spots != 1996 when rotated by 360 degrees" % prediction_count
 
   def tst_vs_old(self):
     r_old = self.reflections
