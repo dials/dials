@@ -14,7 +14,7 @@ class SpotFrame(XrayFrame) :
     super(SpotFrame, self).__init__(*args, **kwds)
     self.viewer.reflections = self.reflections
     self.viewer.frames = self.imagesets
-    self.dials_spotfinder_layer = None
+    self.dials_spotfinder_layers = []
     self.shoebox_layer = None
     self.ctr_mass_layer = None
     self.max_pix_layer = None
@@ -470,9 +470,10 @@ class SpotFrame(XrayFrame) :
       miller_indices_data = spotfinder_data.miller_indices_data
       vector_data = spotfinder_data.vector_data
       vector_text_data = spotfinder_data.vector_text_data
-      if self.dials_spotfinder_layer is not None:
-        self.pyslip.DeleteLayer(self.dials_spotfinder_layer)
-        self.dials_spotfinder_layer = None
+      if len(self.dials_spotfinder_layers) > 0:
+        for layer in self.dials_spotfinder_layers:
+          self.pyslip.DeleteLayer(layer)
+        self.dials_spotfinder_layers = []
       if self.shoebox_layer is not None:
         self.pyslip.DeleteLayer(self.shoebox_layer)
         self.shoebox_layer = None
@@ -515,11 +516,26 @@ class SpotFrame(XrayFrame) :
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
       if self.settings.show_all_pix:
         self.draw_all_pix_timer.start()
-        self.dials_spotfinder_layer = self.pyslip.AddPointLayer(
-          all_pix_data, color="green", name="<all_pix_layer>",
-          radius=2,
-          renderer = self.pyslip.LightweightDrawPointLayer2,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
+        if len(all_pix_data) > 1:
+          for key, value in all_pix_data.items():
+            base_color = self.prediction_colours[key][1:]
+            #dim the color so it stands apart from the prediction
+            r = base_color[0:2]; g = base_color[2:4]; b = base_color[4:6]
+            r = max(int(r,16)-int("50",16),0)
+            g = max(int(g,16)-int("50",16),0)
+            b = max(int(b,16)-int("50",16),0)
+            color = "#%02x%02x%02x"%(r,g,b)
+            self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
+              value, color=color, name="<all_pix_layer_%d>"%key,
+              radius=2,
+              renderer = self.pyslip.LightweightDrawPointLayer2,
+              show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+        else:
+          self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
+            all_pix_data[all_pix_data.keys()[0]], color="green", name="<all_pix_layer>",
+            radius=2,
+            renderer = self.pyslip.LightweightDrawPointLayer2,
+            show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
         self.draw_all_pix_timer.stop()
       if self.settings.show_shoebox:
         self.draw_shoebox_timer.start()
@@ -594,7 +610,8 @@ class SpotFrame(XrayFrame) :
     if imageset.get_scan() is not None:
       i_frame += imageset.get_scan().get_array_range()[0]
     shoebox_data = []
-    all_pix_data = []
+    all_pix_data = {}
+    overlapped_data = []
     ctr_mass_data = []
     max_pix_data = []
     predictions_data = []
@@ -604,13 +621,13 @@ class SpotFrame(XrayFrame) :
     detector = self.pyslip.tiles.raw_image.get_detector()
     scan = self.pyslip.tiles.raw_image.get_scan()
     to_degrees = 180 / math.pi
-    #prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+    #self.prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
                           #"#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
                           #"#cab2d6"] * 10
     # alternative colour scheme
-    prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
-                          "#ff7f00", "#ffff33", "#a65628", "#f781bf",
-                          "#999999"] * 10
+    self.prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
+                               "#ff7f00", "#ffff33", "#a65628", "#f781bf",
+                               "#999999"] * 10
     for ref_list in self.reflections:
       if ref_list.has_key('bbox'):
         bbox = ref_list['bbox']
@@ -628,6 +645,9 @@ class SpotFrame(XrayFrame) :
             shoebox = reflection['shoebox']
             iz = i_frame - z0
             #print i_frame, z0, iz
+            if not reflection['id'] in all_pix_data:
+              all_pix_data[reflection['id']] = []
+
             for ix in range(nx):
               for iy in range(ny):
                 mask_value = shoebox.mask[iz, iy, ix]
@@ -635,7 +655,19 @@ class SpotFrame(XrayFrame) :
                     (mask_value == fg_code)):
                   x_, y_ = map_coords(
                     ix + x0 + 0.5, iy + y0 + 0.5, panel)
-                  all_pix_data.append((x_, y_))
+                  if len(all_pix_data) > 1:
+                    # look for overlapped pixels
+                    found_it = False
+                    for key, value in all_pix_data.items():
+                      if (x_, y_) in value:
+                        value.pop(value.index((x_, y_)))
+                        found_it = True
+                    if found_it:
+                      overlapped_data.append((x_, y_))
+                    else:
+                      all_pix_data[reflection['id']].append((x_, y_))
+                  else:
+                    all_pix_data[reflection['id']].append((x_, y_))
             self.show_all_pix_timer.stop()
 
           if self.settings.show_shoebox:
@@ -703,19 +735,23 @@ class SpotFrame(XrayFrame) :
                                 reflection['xyzcal.px'][1] + 0.5,
                                 reflection['panel'])
               predictions_data.append(
-                (x, y, {'colour':prediction_colours[i_expt]}))
+                (x, y, {'colour':self.prediction_colours[i_expt]}))
             elif (self.settings.show_predictions and
                   reflection.has_key('xyzcal.mm')):
               x, y = detector[reflection['panel']].millimeter_to_pixel(
                 reflection['xyzcal.mm'][:2])
               x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
               predictions_data.append(
-                (x, y, {'colour':prediction_colours[i_expt]}))
+                (x, y, {'colour':self.prediction_colours[i_expt]}))
             if (self.settings.show_miller_indices and
                 'miller_index' in reflection and
                 reflection['miller_index'] != (0,0,0)):
               miller_indices_data.append((x, y, str(reflection['miller_index']),
                                           {'placement':'ne'}))
+
+    if len(overlapped_data) > 0:
+      #show overlapped pixels in a different color
+      all_pix_data[max(all_pix_data.keys())+1] = overlapped_data
 
     if self.crystals is not None:
       from scitbx import matrix
