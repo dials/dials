@@ -10,7 +10,7 @@ class Test(object):
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
-      print 'FAIL: dials_regression not configured'
+      print 'SKIP: dials_regression not configured'
       exit(0)
 
     self.path = join(dials_regression, "centroid_test_data")
@@ -27,7 +27,7 @@ class Test(object):
     import os
     from uuid import uuid4
 
-    dirname ='tmp_%s' % uuid4().hex
+    dirname ='Atmp_%s' % uuid4().hex
     os.mkdir(dirname)
     os.chdir(dirname)
 
@@ -56,11 +56,6 @@ class Test(object):
     from os.path import join
     from libtbx import easy_run
     import os
-    from uuid import uuid4
-
-    dirname ='tmp_%s' % uuid4().hex
-    os.mkdir(dirname)
-    os.chdir(dirname)
 
     # Call dials.integrate
     easy_run.fully_buffered([
@@ -177,9 +172,8 @@ class Test(object):
     from os.path import join
     from libtbx import easy_run
     import os
-    from uuid import uuid4
 
-    dirname ='tmp_%s' % uuid4().hex
+    dirname ='test4'
     os.mkdir(dirname)
     os.chdir(dirname)
 
