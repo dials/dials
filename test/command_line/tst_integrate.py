@@ -17,6 +17,7 @@ class Test(object):
 
   def run(self):
     # self.test1()
+    # TODO: Why is this test disabled? Fix or remove?
     self.test2()
     self.test3()
     self.test4()
@@ -27,7 +28,7 @@ class Test(object):
     import os
     from uuid import uuid4
 
-    dirname ='Atmp_%s' % uuid4().hex
+    dirname ='tmp_%s' % uuid4().hex
     os.mkdir(dirname)
     os.chdir(dirname)
 
