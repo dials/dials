@@ -92,7 +92,7 @@ def _install_dials_autocompletion(command_list):
               "\n ".join(["complete -F _dials_autocomplete %s" % cmd for cmd in command_list]))
           with open(os.path.join(build_path, file), 'w') as script:
             script.write(original_file[:insert_position] +
-                         added_script + 
+                         added_script +
                          original_file[insert_position:])
   print
 
