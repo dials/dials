@@ -96,11 +96,13 @@ class Parameters(object):
       self.output = False
       self.select = None
       self.split_experiments = True
+      self.separate_files = True
 
     def update(self, other):
       self.output = other.output
       self.select = other.select
       self.split_experiments = other.split_experiments
+      self.separate_files = other.separate_files
 
   def __init__(self):
     '''
@@ -448,7 +450,7 @@ class Task(object):
     assert processor.finished(), "Data processor is not finished"
 
     # Optionally save the shoeboxes
-    if self.params.debug.output:
+    if self.params.debug.output and self.params.debug.separate_files:
       output = self.reflections
       if self.params.debug.select is not None:
         output = output.select(self.params.debug.select(output))
@@ -461,7 +463,9 @@ class Task(object):
         output.as_pickle('shoeboxes_%d.pickle' % self.index)
 
     # Delete the shoeboxes
-    del self.reflections['shoebox']
+    if (self.params.debug.output == False or
+        self.params.debug.separate_files == True):
+      del self.reflections['shoebox']
 
     # Finalize the executor
     self.executor.finalize()

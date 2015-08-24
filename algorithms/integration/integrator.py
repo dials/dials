@@ -85,6 +85,17 @@ def generate_phil_scope():
           .type = bool
           .help = "Save shoeboxes after each processing task."
 
+        separate_files = True
+          .type = bool
+          .help = "If this is true, the shoeboxes are saved in separate files"
+                  "from the output integrated.pickle file. This is necessary"
+                  "in most cases since the amount of memory used by the"
+                  "shoeboxes is typically greater than the available system"
+                  "memory. If, however, you know that memory is not an issue,"
+                  "you can saved the shoeboxes in the integrated.pickle file"
+                  "by setting this option to False. This only works if the debug"
+                  "output is during integrated and not modelling."
+
         select = None
           .type = reflection_table_selector
           .help = "A string specifying the selection. The string should be of the"
@@ -313,6 +324,7 @@ class Parameters(object):
     if params.debug.during == 'modelling':
       result.modelling.debug.output = params.debug.output
     result.modelling.debug.select = params.debug.select
+    result.modelling.debug.separate_files = True
 
     # Set the integration processor parameters
     result.integration.mp = mp
@@ -321,6 +333,7 @@ class Parameters(object):
     if params.debug.during == 'integration':
       result.integration.debug.output = params.debug.output
     result.integration.debug.select = params.debug.select
+    result.integration.debug.separate_files = params.debug.separate_files
 
     result.debug_reference_output = params.debug.reference.output
 
