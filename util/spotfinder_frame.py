@@ -531,11 +531,12 @@ class SpotFrame(XrayFrame) :
               renderer = self.pyslip.LightweightDrawPointLayer2,
               show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
         else:
-          self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
-            all_pix_data[all_pix_data.keys()[0]], color="green", name="<all_pix_layer>",
-            radius=2,
-            renderer = self.pyslip.LightweightDrawPointLayer2,
-            show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+          if len(all_pix_data) > 0:
+            self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
+              all_pix_data[all_pix_data.keys()[0]], color="green", name="<all_pix_layer>",
+              radius=2,
+              renderer = self.pyslip.LightweightDrawPointLayer2,
+              show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
         self.draw_all_pix_timer.stop()
       if self.settings.show_shoebox:
         self.draw_shoebox_timer.start()
