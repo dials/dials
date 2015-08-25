@@ -8,6 +8,7 @@ Program documentation
    dials_process
    dials_import
    dials_find_spots
+   dials_find_spots_server
    dials_index
    dials_refine_bravais_settings
    dials_reindex

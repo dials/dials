@@ -474,6 +474,7 @@ doc/sphinx/documentation/library_reference/interfaces/index.rst -text
 doc/sphinx/documentation/library_reference/util/index.rst -text
 doc/sphinx/documentation/programs/dials_export_mtz.rst -text
 doc/sphinx/documentation/programs/dials_find_spots.rst -text
+doc/sphinx/documentation/programs/dials_find_spots_server.rst -text
 doc/sphinx/documentation/programs/dials_import.rst -text
 doc/sphinx/documentation/programs/dials_index.rst -text
 doc/sphinx/documentation/programs/dials_integrate.rst -text
