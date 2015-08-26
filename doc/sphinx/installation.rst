@@ -7,7 +7,7 @@ Binary Installers
 
 Nightly build installers are available for Linux and Mac OS and may be
 downloaded from http://cci.lbl.gov/dials/installers/ and
-http://dials.diamond.ac.uk/builds/.  Builds for Microsoft Windows are not
+http://dials.diamond.ac.uk/diamond_builds/.  Builds for Microsoft Windows are not
 currently available, but will be added in the near future.
 For instructions on compiling from source or setting up a DIALS development
 environment, see :doc:`/documentation/installation_developer`.
@@ -16,8 +16,12 @@ Download the latest nightly build:
 ----------------------------------
 
 .. button::
-   :text: Mac installer
+   :text: Mac installer (OS X 10.10.3)
    :link: http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.10.3.tar.gz
+
+.. button::
+   :text: Mac installer (OS X 10.6)
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.6.tar.gz
 
 .. button::
    :text: Linux installer
