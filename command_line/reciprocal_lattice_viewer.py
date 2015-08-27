@@ -107,14 +107,18 @@ class ReciprocalLatticeViewer(wx.Frame):
     detector = self.imagesets[0].get_detector()
     beam = self.imagesets[0].get_beam()
     if self.settings.beam_centre is None:
-      panel_id, self.settings.beam_centre \
-        = detector.get_ray_intersection(beam.get_s0())
+      try:
+        panel_id, self.settings.beam_centre \
+          = detector.get_ray_intersection(beam.get_s0())
+      except RuntimeError:
+        pass
     else:
       from dxtbx.model.detector_helpers import set_mosflm_beam_centre
       set_mosflm_beam_centre(detector, beam, tuple(reversed(
         self.settings.beam_centre)))
-    self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
-    self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+    if self.settings.beam_centre is not None:
+      self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
+      self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
     self.map_points_to_reciprocal_space()
 
   def map_points_to_reciprocal_space(self):

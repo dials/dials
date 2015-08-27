@@ -350,12 +350,12 @@ class indexer_base(object):
     self.reflections = reflections
     self.imagesets = imagesets
     for imageset in imagesets[1:]:
-      if imageset.get_detector() == self.imagesets[0].get_detector():
+      if imageset.get_detector().is_similar_to(self.imagesets[0].get_detector()):
         imageset.set_detector(self.imagesets[0].get_detector())
-      if imageset.get_goniometer() == self.imagesets[0].get_goniometer():
+      if imageset.get_goniometer().is_similar_to(self.imagesets[0].get_goniometer()):
         imageset.set_goniometer(self.imagesets[0].get_goniometer())
         # can only share a beam if we share a goniometer?
-        if imageset.get_beam() == self.imagesets[0].get_beam():
+        if imageset.get_beam().is_similar_to(self.imagesets[0].get_beam()):
           imageset.set_beam(self.imagesets[0].get_beam())
 
     if params is None: params = master_params
