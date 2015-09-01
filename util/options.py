@@ -303,11 +303,10 @@ class PhilCommandParser(object):
           try:
             user_phils.append(parse(file_name=arg))
           except Exception:
-            raise
             if return_unhandled:
               unhandled.append(arg)
             else:
-              raise RuntimeError('Unable to parse phil file: %s' % arg)
+              raise
         else:
           unhandled.append(arg)
       elif (arg.find("=") >= 0):
@@ -317,12 +316,20 @@ class PhilCommandParser(object):
           if return_unhandled == True:
             unhandled.append(arg)
           else:
-            raise RuntimeError('Unable to parse parameter: %s' % arg)
+            raise
       else:
         unhandled.append(arg)
 
     # Fetch the phil parameters
-    self._phil = self.system_phil.fetch(sources=user_phils)
+    self._phil, unused = self.system_phil.fetch(
+      sources=user_phils,
+      track_unused_definitions=True)
+
+    # Print if bad definitions
+    if len(unused) > 0:
+      msg = [item.object.as_str().strip() for item in unused]
+      msg = '\n'.join(['  %s' % line for line in msg])
+      raise RuntimeError('The following definitions were not recognised\n%s' % msg)
 
     # Extract the parameters
     params = self._phil.extract()
