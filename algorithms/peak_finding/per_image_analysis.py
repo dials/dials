@@ -533,19 +533,18 @@ def points_inside_envelope(d_star_sq, log_i_over_sigi,
           ~points_below_line(d_star_sq, log_i_over_sigi, m_lower, c_lower))
 
 
-def ice_rings_selection(reflections, imageset):
+def ice_rings_selection(reflections):
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
   from dials.algorithms.integration import filtering
 
   unit_cell = uctbx.unit_cell((4.498,4.498,7.338,90,90,120))
-  d_min = imageset.get_detector().get_max_resolution(imageset.get_beam().get_s0())
   space_group = sgtbx.space_group_info(number=194).group()
   width = 0.06
 
   ice_filter = filtering.PowderRingFilter(
-    unit_cell, space_group, d_min, width)
+    unit_cell, space_group, 0.1, width)
 
   ice_sel = ice_filter(d_spacings)
   return ice_sel
@@ -657,7 +656,7 @@ def stats_single_image(imageset, reflections, i=None, resolution_analysis=True,
 
   #plot_ordered_d_star_sq(reflections, imageset)
   reflections_all = reflections
-  ice_sel = ice_rings_selection(reflections_all, imageset)
+  ice_sel = ice_rings_selection(reflections_all)
   reflections_no_ice = reflections_all.select(~ice_sel)
   n_spots_total = len(reflections_all)
   n_spots_no_ice = len(reflections_no_ice)
