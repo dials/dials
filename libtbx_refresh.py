@@ -97,4 +97,4 @@ def _install_dials_autocompletion(command_list):
   print
 
 _autocomplete_commands = _prepare_dials_autocompletion()
-#_install_dials_autocompletion(_autocomplete_commands)
+_install_dials_autocompletion(_autocomplete_commands)
