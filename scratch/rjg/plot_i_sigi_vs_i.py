@@ -52,6 +52,8 @@ def run(args):
   pyplot.scatter(intensities.data(), i_sigi, marker='+', s=2, alpha=0.5, c='black')
   pyplot.gca().set_xscale('log',basex=10)
   xlim = pyplot.xlim()
+  ylim = pyplot.ylim()
+  pyplot.ylim(0, ylim[1])
   pyplot.xlim(1, xlim[1])
   pyplot.savefig('i_sigi_vs_i.png')
   pyplot.clf()
