@@ -21,7 +21,7 @@ def exercise_1():
   g = sorted(glob.glob(os.path.join(data_dir, "hg_*.mar1600")))
   assert len(g) == 84
   hall_symbol =  '-R 3 2"'
-  cmd = " ".join(["dials.process",
+  cmd = " ".join(["dev.dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
                   "indexing.known_symmetry.space_group=\"Hall: %s\"" %hall_symbol.replace('"', '\\"'),
                   "maximum_spot_error=3",
@@ -61,7 +61,7 @@ def exercise_2():
   g = sorted(glob.glob(os.path.join(data_dir, "insulin*.img")))
   assert len(g) == 45
   hall_symbol =  " I 2 2 3"
-  cmd = " ".join(["dials.process",
+  cmd = " ".join(["dev.dials.process",
                   "refinement.parameterisation.crystal.scan_varying=True",
                   "indexing.known_symmetry.space_group=\"Hall: %s\"" %hall_symbol,
                   "maximum_spot_error=3",
