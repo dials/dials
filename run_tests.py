@@ -130,7 +130,7 @@ tst_list = (
     ["$D/test/algorithms/indexing/tst_index.py", "16"],
     "$D/test/algorithms/indexing/tst_assign_indices.py",
     "$D/test/command_line/tst_refine_bravais_settings.py",
-    ["$D/test/command_line/tst_discover_better_experimental_model.py", "1"],
+    #["$D/test/command_line/tst_discover_better_experimental_model.py", "1"],
     ["$D/test/command_line/tst_discover_better_experimental_model.py", "2"],
     "$D/test/algorithms/indexing/tst_compare_orientation_matrices.py",
     "$D/test/algorithms/indexing/tst_symmetry.py",
