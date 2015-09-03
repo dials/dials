@@ -5,7 +5,6 @@ Program documentation
 .. toctree::
    :maxdepth: 1
 
-   dials_process
    dials_import
    dials_find_spots
    dials_find_spots_server

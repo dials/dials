@@ -25,8 +25,7 @@ Import
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that the image headers are read, and a file describing
 their contents (:samp:`datablock.json`) is written. It's worth noting that if
-this file is changed subsequent processing (even with
-:doc:`dials.process </programs/dials_process>`) can use this.
+this file is changed subsequent processing can use this.
 
 ::
 

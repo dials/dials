@@ -478,7 +478,6 @@ doc/sphinx/documentation/programs/dials_find_spots_server.rst -text
 doc/sphinx/documentation/programs/dials_import.rst -text
 doc/sphinx/documentation/programs/dials_index.rst -text
 doc/sphinx/documentation/programs/dials_integrate.rst -text
-doc/sphinx/documentation/programs/dials_process.rst -text
 doc/sphinx/documentation/programs/dials_refine.rst -text
 doc/sphinx/documentation/programs/dials_refine_bravais_settings.rst -text
 doc/sphinx/documentation/programs/dials_reindex.rst -text

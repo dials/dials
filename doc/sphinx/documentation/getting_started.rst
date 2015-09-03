@@ -17,47 +17,8 @@ Introduction
 ------------
 
 The philosophy behind DIALS is to be explicit in performing the various steps of
-data analysis rather than giving one big tool (though one big tool is available)
-- DIALS is first and foremost a toolkit for doing the data analysis to be used
-within other systems.
-
-dials.process
--------------
-
-In the simplest case, :doc:`dials.process </programs/dials_process>`
-``/here/are/all/images*.cbf`` will do sensible processing, with a static model
-of the experiment and sample, and will output a reflection file integrated.mtz
-containing the intensity measurements assuming everything works correctly.
-Some sensible options to explore are:
-
- - :samp:`scan_varying=true` - allow the crystal orientation and unit cell
-   constants to vary during the scan
- - :samp:`mp.nproc=1` - only use one processor [#f1]_
- - :samp:`profile.fitting=False` - force summation integration instead of
-   the default profile fitting
- - :samp:`block_size=N` - for some N, split the data set into N degree blocks
-   for integration, so as not to overload the computer. A sensible default will
-   be chosen, but use this to override that choice.
- - :samp:`-i` - pass the images to process through the standard input e.g. from
-   :samp:`find . -name *.cbf` to avoid issues with limited command-line lengths
-
-The workflow (if you do things step by step,) is as
-follows:
-
- - import the data - this reads the image headers & makes sense of the data,
-   forming sweeps etc.
- - find spots - as it says on the tin, can adjust spot size
- - index - index these strong spots, can use a variety of methods
- - refine - refine the experimental geometry (included in indexing for
-   scan-static refinement)
- - integrate - actually integrate the data
- - export - create MTZ files
-
-Some detail of the options for each of these will follow below. How they are
-used can be seen a complete example script, found
-:download:`here<../user-tutorial/tutorial.sh>`, which can be run as follows::
-
-  ./tutorial.sh /path/to/data
+data analysis rather than giving one big tool - DIALS is first and foremost a
+toolkit for doing the data analysis to be used within other systems.
 
 Import
 ------
