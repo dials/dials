@@ -1,5 +1,7 @@
 #!/bin/bash
-_dials_autocomplete_path=$(libtbx.show_build_path)/dials/autocomplete/
+if [ -z "$_dials_autocomplete_path" ]; then
+ _dials_autocomplete_path=$(libtbx.show_build_path)/dials/autocomplete/
+fi
 
 # Predeclare associative arrays, so they can be cached between invocations
 # Use global declaration if possible (requires bash 4.2+), local otherwise (bash 4.0+)

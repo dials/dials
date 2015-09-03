@@ -20,7 +20,7 @@ try:
 except Exception:
   pass
 
-def _prepare_dials_autocompletion():
+def _install_dials_autocompletion():
   '''generate init.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
   import os
@@ -61,18 +61,15 @@ for cmd in [%s]:
   Requires(ac, Dir(libtbx.env.under_build('lib')))
 ''' % ( ', '.join(["'%s'" % cmd for cmd in command_list]) ))
 
-  return command_list
-
-def _install_dials_autocompletion(command_list):
-  '''Permanently install the autocompletion script into setpaths-scripts.'''
-  import libtbx.load_env
-  import os
-
-  # Find the dials source directory
-  dist_path = libtbx.env.dist_path('dials')
+  # Generate a bash script activating command line completion for each relevant command
+  with open(os.path.join(output_directory, 'bash.sh'), 'w') as script:
+    for cmd in command_list:
+      script.write("complete -F _dials_autocomplete %s\n" % cmd)
 
   # Find the dials build directory
   build_path = abs(libtbx.env.build_path)
+
+  # Permanently install the autocompletion script into setpaths-scripts.
   print "Installing autocompletion script into:",
   for file in os.listdir(build_path):
     if file.startswith('setpath') and file.endswith('.sh'):
@@ -86,15 +83,14 @@ def _install_dials_autocompletion(command_list):
             '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
             '[ -z "$BASH_VERSIONINFO" ] && {\n' \
             ' source %s\n' \
-            ' %s\n' \
+            ' source %s\n' \
             '}\n' % (
               os.path.join('$LIBTBX_BUILD', '..', 'modules', 'dials', 'util', 'autocomplete.sh'),
-              "\n ".join(["complete -F _dials_autocomplete %s" % cmd for cmd in command_list]))
+              os.path.join('$LIBTBX_BUILD', 'dials', 'autocomplete', 'bash.sh'))
           with open(os.path.join(build_path, file), 'w') as script:
             script.write(original_file[:insert_position] +
                          added_script +
                          original_file[insert_position:])
   print
 
-_autocomplete_commands = _prepare_dials_autocompletion()
-_install_dials_autocompletion(_autocomplete_commands)
+_install_dials_autocompletion()
