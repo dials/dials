@@ -568,7 +568,7 @@ def exercise_15():
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
-  assert len(result.indexed_reflections) > 277000, len(result.indexed_reflections)
+  assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
 def exercise_16():
   # test for small molecule multi-sweep indexing, 4 sweeps with different values

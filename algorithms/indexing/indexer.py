@@ -1614,6 +1614,11 @@ class SolutionTrackerWeighted(object):
 
 
 def find_max_cell(reflections, max_cell_multiplier, nearest_neighbor_percentile):
+  # Exclude potential ice-ring spots from nearest neighbour analysis
+  from dials.algorithms.peak_finding.per_image_analysis import ice_rings_selection
+  ice_sel = ice_rings_selection(reflections)
+  reflections = reflections.select(~ice_sel)
+
   # The nearest neighbour analysis gets fooled when the same part of
   # reciprocal space has been measured twice as this introduced small
   # random differences in position between reflections measured twice.
