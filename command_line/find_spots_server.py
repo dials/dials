@@ -109,10 +109,12 @@ integrate = False
         reflections, imagesets, params=params)
       stats.crystal = idxr.refined_experiments.crystals()[0]
       stats.n_indexed = len(idxr.refined_reflections)
+      stats.fraction_indexed = stats.n_indexed/len(reflections)
     except Exception, e:
       print e
       stats.crystal = None
       stats.n_indexed = None
+      stats.fraction_indexed = None
 
     if integrate and stats.crystal is not None:
 
@@ -203,6 +205,8 @@ class handler(server_base.BaseHTTPRequestHandler):
           '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %stats.crystal.get_unit_cell().parameters())
         response.append(
           '<n_indexed>%i</n_indexed>' %stats.n_indexed)
+        response.append(
+          '<fraction_indexed>%.2f</fraction_indexed>' %stats.fraction_indexed)
       if hasattr(stats, 'integrated_intensity'):
         response.append(
           '<integrated_intensity>%.0f</integrated_intensity>' %stats.integrated_intensity)
