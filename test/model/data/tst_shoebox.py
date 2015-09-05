@@ -261,8 +261,7 @@ class Test(object):
   def tst_all_foreground_valid(self):
     import cPickle as pickle
     from dials.test.model.data.all_foreground_valid_data import data
-    table = pickle.loads(data)
-    shoeboxes = table['shoebox']
+    shoeboxes = pickle.loads(data)
     for i in xrange(len(shoeboxes)):
       if i < 4:
         assert(shoeboxes[i].all_foreground_valid() == False)
