@@ -17,6 +17,7 @@ class Test(object):
     self.tst_centroid_masked()
     self.tst_summed_intensity()
     self.tst_flatten()
+    self.tst_all_foreground_valid()
 
   def tst_allocate(self):
     from random import randint
@@ -255,6 +256,18 @@ class Test(object):
       assert(expected_mask.all_eq(shoebox.mask))
       assert(shoebox.flat)
       assert(shoebox.is_consistent())
+    print 'OK'
+
+  def tst_all_foreground_valid(self):
+    import cPickle as pickle
+    from dials.test.model.data.all_foreground_valid_data import data
+    table = pickle.loads(data)
+    shoeboxes = table['shoebox']
+    for i in xrange(len(shoeboxes)):
+      if i < 4:
+        assert(shoeboxes[i].all_foreground_valid() == False)
+      else:
+        assert(shoeboxes[i].all_foreground_valid() == True)
     print 'OK'
 
   def random_shoeboxes(self, num, mask=False):

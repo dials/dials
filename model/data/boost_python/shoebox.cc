@@ -213,6 +213,8 @@ namespace dials { namespace model { namespace boost_python {
           arg("mask")))
       .def("count_mask_values",
         &shoebox_type::count_mask_values)
+      .def("all_foreground_valid",
+        &shoebox_type::all_foreground_valid)
       .def("centroid_all",
         &shoebox_type::centroid_all)
       .def("centroid_masked",

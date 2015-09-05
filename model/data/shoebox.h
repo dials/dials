@@ -33,6 +33,8 @@ namespace dials { namespace model {
   using dials::algorithms::CentroidImage3d;
   using dials::algorithms::CentroidMaskedImage3d;
   using dials::algorithms::Summation;
+  using dials::model::Foreground;
+  using dials::model::Valid;
 
   /**
    * Helper function to take an image centroid and create something we
@@ -278,6 +280,19 @@ namespace dials { namespace model {
       }
       return count;
     }
+
+    /**
+    * returns true if all the foreground pixels are valid
+    * @returns a bool
+    */
+    bool all_foreground_valid() const {
+      for (std::size_t i = 0; i < mask.size(); ++i){
+        if (((mask[i] & Valid) != Valid) && ((mask[i] & Foreground) == Foreground)){
+          return false;
+        }
+    }
+      return true;
+  }
 
     /**
      * Perform a centroid of all pixels

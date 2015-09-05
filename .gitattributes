@@ -1088,6 +1088,9 @@ test/command_line/tst_stills_detector_hybrid_refine.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
 test/framework/tst_interface.py -text
+test/model/__init__.py -text
+test/model/data/__init__.py -text
+test/model/data/all_foreground_valid_data.py -text
 test/model/data/tst_observation.py -text
 test/model/data/tst_pixel_list.py -text
 test/model/data/tst_prediction.py -text
