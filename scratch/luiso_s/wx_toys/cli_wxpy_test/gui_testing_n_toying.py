@@ -30,21 +30,21 @@ class MyWidg(wx.Frame):
     self.step_btn_lst.append(index_btn)
 
 
-    for btt in self.step_btn_lst:
-      exmpl_btt = wx.Button(self, -1, btt.lbl, (0,0))
+    for step_btn in self.step_btn_lst:
+      exmpl_btt = wx.Button(self, -1, step_btn.lbl, (0,0))
       wx_btn_lst.append(exmpl_btt)
-      print("exmpl_btt.GetId() =", exmpl_btt.GetId())
-      btt.bt_id = exmpl_btt.GetId()
+      step_btn.bt_id = exmpl_btt.GetId()
 
     main_panel = wx.Panel(self)
+
+    go_btn = wx.Button(self, -1, " Go ", (0,0))
     self.cli_txt = wx.TextCtrl(self, -1, size = (800,20), style = wx.DEFAULT)
 
-    go_btt = wx.Button(self, -1, " Go ", (0,0))
 
     vbox = wx.BoxSizer(wx.VERTICAL)
 
-    for btt in wx_btn_lst:
-      vbox.Add(btt, 0, border = 3)
+    for wx_btn in wx_btn_lst:
+      vbox.Add(wx_btn, 0, border = 3)
 
 
     hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -53,7 +53,7 @@ class MyWidg(wx.Frame):
 
     bt_box = wx.BoxSizer(wx.HORIZONTAL)
     bt_box.Add(self.cli_txt,wx.EXPAND | wx.ALL, border = 3)
-    bt_box.Add(go_btt, 0, border = 3)
+    bt_box.Add(go_btn, 0, border = 3)
 
     bg_box = wx.BoxSizer(wx.VERTICAL)
     bg_box.Add(hbox, 0, border = 3)
@@ -62,22 +62,21 @@ class MyWidg(wx.Frame):
     self.SetSizer(bg_box)
     bg_box.Fit(self)
 
-    for btt in wx_btn_lst:
-      btt.Bind(wx.EVT_BUTTON, self.on_btn)
+    for wx_btn in wx_btn_lst:
+      wx_btn.Bind(wx.EVT_BUTTON, self.on_btn)
 
-    go_btt.Bind(wx.EVT_BUTTON, self.on_go_button)
+    go_btn.Bind(wx.EVT_BUTTON, self.on_go_button)
 
 
   def on_btn(self, event):
 
-    for btt in self.step_btn_lst:
-      if(btt.bt_id == event.GetId()):
-        self.cli_txt.SetValue(btt.cmd)
+    for step_btn in self.step_btn_lst:
+      if(step_btn.bt_id == event.GetId()):
+        self.cli_txt.SetValue(step_btn.cmd)
 
 
   def on_go_button(self, event):
     txt_to_run = self.cli_txt.GetValue()
-    #'print "string to run =", txt_to_run
     subprocess.call(txt_to_run, shell=True)
 
 
