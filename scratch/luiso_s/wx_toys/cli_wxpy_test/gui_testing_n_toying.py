@@ -10,7 +10,6 @@ class MyWidg(wx.Frame):
   def __init__(self, parent, id, title):
     super(MyWidg, self).__init__(parent, id, title)
 
-    wx_btn_lst = []
     self.step_btn_lst = []
 
     import_btn = element()
@@ -32,7 +31,7 @@ class MyWidg(wx.Frame):
 
     for step_btn in self.step_btn_lst:
       exmpl_btt = wx.Button(self, -1, step_btn.lbl, (0,0))
-      wx_btn_lst.append(exmpl_btt)
+      step_btn.wx_btn = exmpl_btt
       step_btn.bt_id = exmpl_btt.GetId()
 
     main_panel = wx.Panel(self)
@@ -43,8 +42,8 @@ class MyWidg(wx.Frame):
 
     vbox = wx.BoxSizer(wx.VERTICAL)
 
-    for wx_btn in wx_btn_lst:
-      vbox.Add(wx_btn, 0, border = 3)
+    for step_btn in self.step_btn_lst:
+      vbox.Add(step_btn.wx_btn, 0, border = 3)
 
 
     hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -62,8 +61,8 @@ class MyWidg(wx.Frame):
     self.SetSizer(bg_box)
     bg_box.Fit(self)
 
-    for wx_btn in wx_btn_lst:
-      wx_btn.Bind(wx.EVT_BUTTON, self.on_btn)
+    for step_btn in self.step_btn_lst:
+      step_btn.wx_btn.Bind(wx.EVT_BUTTON, self.on_btn)
 
     go_btn.Bind(wx.EVT_BUTTON, self.on_go_button)
 
@@ -84,7 +83,7 @@ class MyApp(wx.App):
   def OnInit(self):
 
 
-    frame = MyWidg(None, -1, 'menu1.py')
+    frame = MyWidg(None, -1, 'Main Frame')
     frame.Show(True)
     return True
 
