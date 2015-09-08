@@ -30,9 +30,10 @@ class MyWidg(wx.Frame):
     self.step_btn_lst.append(index_btn)
 
 
-    for btt in range(len(self.step_btn_lst)):
-      exmpl_btt = wx.Button(self, -1, self.step_btn_lst[btt].lbl, (0,0))
+    for btt in self.step_btn_lst:
+      exmpl_btt = wx.Button(self, -1, btt.lbl, (0,0))
       wx_btn_lst.append(exmpl_btt)
+      print("exmpl_btt.GetId() =", exmpl_btt.GetId())
 
     main_panel = wx.Panel(self)
     self.cli_txt = wx.TextCtrl(self, -1, size = (800,20), style = wx.DEFAULT)
@@ -66,6 +67,8 @@ class MyWidg(wx.Frame):
 
 
   def on_btn(self, event):
+    print("event.GetId() =", event.GetId())
+    print("event.GetEventObject() =", event.GetEventObject())
     self.cli_txt.SetValue("Clicked")
 
 
