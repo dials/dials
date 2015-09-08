@@ -34,6 +34,7 @@ class MyWidg(wx.Frame):
       exmpl_btt = wx.Button(self, -1, btt.lbl, (0,0))
       wx_btn_lst.append(exmpl_btt)
       print("exmpl_btt.GetId() =", exmpl_btt.GetId())
+      btt.bt_id = exmpl_btt.GetId()
 
     main_panel = wx.Panel(self)
     self.cli_txt = wx.TextCtrl(self, -1, size = (800,20), style = wx.DEFAULT)
@@ -41,8 +42,9 @@ class MyWidg(wx.Frame):
     go_btt = wx.Button(self, -1, " Go ", (0,0))
 
     vbox = wx.BoxSizer(wx.VERTICAL)
-    for btt in range(len(self.step_btn_lst)):
-      vbox.Add(wx_btn_lst[btt], 0, border = 3)
+
+    for btt in wx_btn_lst:
+      vbox.Add(btt, 0, border = 3)
 
 
     hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -67,9 +69,10 @@ class MyWidg(wx.Frame):
 
 
   def on_btn(self, event):
-    print("event.GetId() =", event.GetId())
-    print("event.GetEventObject() =", event.GetEventObject())
-    self.cli_txt.SetValue("Clicked")
+
+    for btt in self.step_btn_lst:
+      if(btt.bt_id == event.GetId()):
+        self.cli_txt.SetValue(btt.cmd)
 
 
   def on_go_button(self, event):
