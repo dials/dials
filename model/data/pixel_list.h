@@ -161,6 +161,10 @@ namespace dials { namespace model {
         boost::vecS,
         boost::undirectedS> AdjacencyList;
 
+      if (coords_.size() == 0) {
+        return af::shared<int>();
+      }
+
       // Calculate the coordinate indices
       std::vector<std::size_t> idx(coords_.size());
       for (std::size_t i = 0; i < coords_.size(); ++i) {
@@ -209,6 +213,10 @@ namespace dials { namespace model {
         boost::vecS,
         boost::undirectedS> AdjacencyList;
 
+      if (coords_.size() == 0) {
+        return af::shared<int>();
+      }
+
       // Calculate the coordinate indices
       std::vector<std::size_t> idx(coords_.size());
       for (std::size_t i = 0; i < coords_.size(); ++i) {
@@ -235,7 +243,7 @@ namespace dials { namespace model {
       }
 
       // Do the connected components
-      af::shared<int> labels(num_vertices(graph), af::init_functor_null<int>());
+      af::shared<int> labels(num_vertices(graph));
       int num = boost::connected_components(graph, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;

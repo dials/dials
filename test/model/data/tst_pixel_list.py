@@ -10,6 +10,7 @@ class Test(object):
     self.tst_add_image()
     self.tst_labels_3d()
     self.tst_labels_2d()
+    self.tst_with_no_points()
 
   def tst_construct(self):
 
@@ -162,7 +163,34 @@ class Test(object):
     # Test passed
     print 'OK'
 
+  def tst_with_no_points(self):
 
+    from dials.model.data import PixelList
+    from scitbx.array_family import flex
+    size = (500, 500)
+    sf = 0
+    pl = PixelList(size, sf)
+
+    count = 0
+    mask_list = []
+    for i in range(3):
+      image = flex.random_int_gaussian_distribution(size[0]*size[1], 100, 5)
+      mask = flex.bool(size[0]*size[0], False)
+      image.reshape(flex.grid(size))
+      mask.reshape(flex.grid(size))
+      count += len(mask.as_1d().select(mask.as_1d()))
+      pl.add_image(image, mask)
+      mask_list.append(mask)
+
+    coords = pl.coords()
+    labels1 = pl.labels_2d()
+    labels2 = pl.labels_2d()
+
+    assert len(coords) == 0
+    assert len(labels1) == 0
+    assert len(labels2) == 0
+
+    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto
