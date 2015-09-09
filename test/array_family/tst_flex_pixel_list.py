@@ -15,8 +15,8 @@ class Test(object):
     frange2 = (15, 20)
     n1 = 100
     n2 = 200
-    v1 = flex.random_int_gaussian_distribution(n1, 100, 5)
-    v2 = flex.random_int_gaussian_distribution(n2, 100, 5)
+    v1 = flex.random_int_gaussian_distribution(n1, 100, 5).as_double()
+    v2 = flex.random_int_gaussian_distribution(n2, 100, 5).as_double()
     c1 = flex.vec3_int(n1)
     c2 = flex.vec3_int(n2)
 

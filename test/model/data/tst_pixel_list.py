@@ -26,7 +26,7 @@ class Test(object):
     assert(pl.frame_range() == (sf, sf))
 
     frame_range = (10, 20)
-    values = flex.int(range(100))
+    values = flex.double(range(100))
     coords = flex.vec3_int(100)
     for i in range(100):
       coords[i] = (
