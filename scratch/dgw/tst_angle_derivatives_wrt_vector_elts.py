@@ -13,61 +13,61 @@ from dials.algorithms.refinement.refinement_helpers import \
   AngleDerivativeWrtVectorElts
 
 class FDAngleDerivativeWrtVectorElts(object):
-  '''Given two vectors, a and b, calculate the derivative of the angle gamma
-  between them with respect to any of the elements a_1, a_2, a_3, b_1, b_2
-  and b_3 using a finite difference approximation'''
+  '''Given two vectors, u and v, calculate the derivative of the angle theta
+  between them with respect to any of the elements u_1, u_2, u_3, v_1, v_2
+  and v_3 using a finite difference approximation'''
 
-  def __init__(self, a, b, delta=1.e-7):
+  def __init__(self, u, v, delta=1.e-7):
 
-    self._vec_a = a
-    self._vec_b = b
-    self._a = a.length()
-    self._b = b.length()
+    self._vec_u = u
+    self._vec_v = v
+    self._u = u.length()
+    self._v = v.length()
     self._delta = delta
 
     return
 
-  def dgamma_da_elt(self, i):
-    '''Return the derivative of gamma with respect to the ith element of a'''
+  def dtheta_du_elt(self, i):
+    '''Return the derivative of theta with respect to the ith element of a'''
 
     half_delta_shift = [0., 0., 0.]
     half_delta_shift[i] = self._delta/2.
     half_delta_shift = matrix.col(half_delta_shift)
 
-    a_fwd = self._vec_a + half_delta_shift
-    a_rev = self._vec_a - half_delta_shift
+    u_fwd = self._vec_u + half_delta_shift
+    u_rev = self._vec_u - half_delta_shift
 
-    gamma_fwd = acos(a_fwd.dot(self._vec_b) / (a_fwd.length()*self._b))
-    gamma_rev = acos(a_rev.dot(self._vec_b) / (a_rev.length()*self._b))
+    theta_fwd = acos(u_fwd.dot(self._vec_v) / (u_fwd.length()*self._v))
+    theta_rev = acos(u_rev.dot(self._vec_v) / (u_rev.length()*self._v))
 
-    return (gamma_fwd - gamma_rev) / self._delta
+    return (theta_fwd - theta_rev) / self._delta
 
-  def dgamma_db_elt(self, i):
-    '''Return the derivative of gamma with respect to the ith element of b'''
+  def dtheta_dv_elt(self, i):
+    '''Return the derivative of theta with respect to the ith element of b'''
 
     half_delta_shift = [0., 0., 0.]
     half_delta_shift[i] = self._delta/2.
     half_delta_shift = matrix.col(half_delta_shift)
 
-    b_fwd = self._vec_b + half_delta_shift
-    b_rev = self._vec_b - half_delta_shift
+    v_fwd = self._vec_v + half_delta_shift
+    v_rev = self._vec_v - half_delta_shift
 
-    gamma_fwd = acos(self._vec_a.dot(b_fwd) / (b_fwd.length()*self._a))
-    gamma_rev = acos(self._vec_a.dot(b_rev) / (b_rev.length()*self._a))
+    theta_fwd = acos(self._vec_u.dot(v_fwd) / (v_fwd.length()*self._u))
+    theta_rev = acos(self._vec_u.dot(v_rev) / (v_rev.length()*self._u))
 
-    return (gamma_fwd - gamma_rev) / self._delta
+    return (theta_fwd - theta_rev) / self._delta
 
-  def dgamma_da_1(self): return self.dgamma_da_elt(0)
+  def dtheta_du_1(self): return self.dtheta_du_elt(0)
 
-  def dgamma_da_2(self): return self.dgamma_da_elt(1)
+  def dtheta_du_2(self): return self.dtheta_du_elt(1)
 
-  def dgamma_da_3(self): return self.dgamma_da_elt(2)
+  def dtheta_du_3(self): return self.dtheta_du_elt(2)
 
-  def dgamma_db_1(self): return self.dgamma_db_elt(0)
+  def dtheta_dv_1(self): return self.dtheta_dv_elt(0)
 
-  def dgamma_db_2(self): return self.dgamma_db_elt(1)
+  def dtheta_dv_2(self): return self.dtheta_dv_elt(1)
 
-  def dgamma_db_3(self): return self.dgamma_db_elt(2)
+  def dtheta_dv_3(self): return self.dtheta_dv_elt(2)
 
 def test():
 
@@ -90,12 +90,12 @@ def test():
 
   # FD
   dgFD = FDAngleDerivativeWrtVectorElts(vec_a, vec_b)
-  assert approx_equal(dg.dgamma_da_1(), dgFD.dgamma_da_1())
-  assert approx_equal(dg.dgamma_da_2(), dgFD.dgamma_da_2())
-  assert approx_equal(dg.dgamma_da_3(), dgFD.dgamma_da_3())
-  assert approx_equal(dg.dgamma_db_1(), dgFD.dgamma_db_1())
-  assert approx_equal(dg.dgamma_db_2(), dgFD.dgamma_db_2())
-  assert approx_equal(dg.dgamma_db_3(), dgFD.dgamma_db_3())
+  assert approx_equal(dg.dtheta_du_1(), dgFD.dtheta_du_1())
+  assert approx_equal(dg.dtheta_du_2(), dgFD.dtheta_du_2())
+  assert approx_equal(dg.dtheta_du_3(), dgFD.dtheta_du_3())
+  assert approx_equal(dg.dtheta_dv_1(), dgFD.dtheta_dv_1())
+  assert approx_equal(dg.dtheta_dv_2(), dgFD.dtheta_dv_2())
+  assert approx_equal(dg.dtheta_dv_3(), dgFD.dtheta_dv_3())
 
   return True
 
