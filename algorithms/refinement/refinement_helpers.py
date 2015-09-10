@@ -10,7 +10,7 @@
 """Auxiliary functions for the refinement package"""
 
 from __future__ import division
-from math import sin, cos
+from math import sin, cos, acos
 from scitbx import matrix
 import random
 
@@ -174,8 +174,7 @@ def get_panel_ids_at_root(panel_list, group):
 def matrix_inverse_error_propagation(mat, cov_mat):
   """Implement analytical formula of Lefebvre et al. (1999)
   http://arxiv.org/abs/hep-ex/9909031 to calculate the covariances of elements
-  of mat^-1, given the covariances of mat itself. This is not the most efficient
-  way to approach the formula, but suitable for initial tests"""
+  of mat^-1, given the covariances of mat itself."""
 
   from scitbx.array_family import flex
 
@@ -220,3 +219,58 @@ def matrix_inverse_error_propagation(mat, cov_mat):
 
   inv_cov_mat.matrix_copy_upper_to_lower_triangle_in_place()
   return inv_cov_mat.as_scitbx_matrix()
+
+class AngleDerivativeWrtVectorElts(object):
+  '''Given two vectors, a and b, calculate the derivative of the angle gamma
+  between them with respect to any of the elements a_1, a_2, a_3, b_1, b_2
+  and b_3.'''
+
+  def __init__(self, a, b):
+
+    self._vec_a = a
+    self._vec_b = b
+    a_dot_b = a.dot(b)
+    _a = a.length()
+    _b = b.length()
+    one_over_a2 = 1./(_a * _a)
+    one_over_b2 = 1./(_b * _b)
+    one_over_ab = 1./(_a * _b)
+    g = acos(a_dot_b * one_over_ab)
+    cos_g = cos(g)
+    one_over_sin_g = 1./sin(g)
+    cos_g_over_sin_g = cos_g * one_over_sin_g
+
+    self._dgamma_dai_fac = cos_g_over_sin_g * one_over_a2
+    self._dgamma_dbi_fac = cos_g_over_sin_g * one_over_b2
+    self._dgamma_shared_fac = one_over_sin_g * one_over_ab
+
+    return
+
+  def dgamma_da_elt(self, i):
+    '''Return the derivative of gamma with respect to the ith element of a'''
+
+    a_i = self._vec_a.elems[i]
+    b_i = self._vec_b.elems[i]
+
+    return self._dgamma_dai_fac * a_i - self._dgamma_shared_fac * b_i
+
+  def dgamma_db_elt(self, i):
+    '''Return the derivative of gamma with respect to the ith element of b'''
+
+    a_i = self._vec_a.elems[i]
+    b_i = self._vec_b.elems[i]
+
+    return self._dgamma_dbi_fac * b_i - self._dgamma_shared_fac * a_i
+
+  def dgamma_da_1(self): return self.dgamma_da_elt(0)
+
+  def dgamma_da_2(self): return self.dgamma_da_elt(1)
+
+  def dgamma_da_3(self): return self.dgamma_da_elt(2)
+
+  def dgamma_db_1(self): return self.dgamma_db_elt(0)
+
+  def dgamma_db_2(self): return self.dgamma_db_elt(1)
+
+  def dgamma_db_3(self): return self.dgamma_db_elt(2)
+
