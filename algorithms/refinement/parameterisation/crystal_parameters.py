@@ -10,6 +10,8 @@
 #
 
 from __future__ import division
+from logging import debug
+from math import sqrt, pi, acos
 from model_parameters import Parameter, ModelParameterisation
 from dxtbx.model.crystal import crystal_model # implicit import
 from scitbx import matrix
@@ -202,29 +204,89 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     vec_b = (O * matrix.col((0,1,0)))
     vec_c = (O * matrix.col((0,0,1)))
 
+    # So the unit cell parameters are
     a, b, c = vec_a.length(), vec_b.length(), vec_c.length()
+    alpha = acos(vec_b.dot(vec_c) / (b*c))
+    beta =  acos(vec_a.dot(vec_c) / (a*c))
+    gamma = acos(vec_a.dot(vec_b) / (a*b))
 
-    # The estimated errors are calculated by error propagation from cov_O
+    # The estimated errors are calculated by error propagation from cov_O. In
+    # each case we define a function F(O) that converts the matrix O into the
+    # unit cell parameter of interest. To do error propagation to get the
+    # variance of that cell parameter we need the Jacobian of the function.
+    # This is a 1*9 matrix of derivatives in the order of the elements of O
+    #
+    #     / dF   dF   dF   dF   dF   dF   dF   dF   dF  \
+    # J = | ---, ---, ---, ---, ---, ---, ---, ---, --- |
+    #     \ da1  db1  dc1  da2  db2  dc2  da3  db3  dc3 /
+    #
+
+    # For cell length |a|, F = sqrt(a1^2 + a2^2 + a3^2)
     jacobian = matrix.rec(
-      (vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0,
-       0, vec_b[0]/b, 0, 0, vec_b[1]/b, 0, 0, vec_b[2]/b, 0,
-       0, 0, vec_c[0]/c, 0, 0, vec_c[1]/c, 0, 0, vec_c[2]/c), (3, 9))
-    jacobian_t = jacobian.transpose()
+      (vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0), (1, 9))
+    var_a = (jacobian * cov_O * jacobian.transpose())[0]
 
-    # this is a 3*3 covariance matrix, we want the variances, down the diagonal
-    cov_cell = (jacobian * cov_O * jacobian_t)
-    var_a, var_b, var_c = cov_cell[0], cov_cell[4], cov_cell[8]
+    # For cell length |b|, F = sqrt(b1^2 + b2^2 + b3^2)
+    jacobian = matrix.rec(
+      (0, vec_b[0]/b, 0, 0, vec_b[1]/b, 0, 0, vec_b[2]/b, 0), (1, 9))
+    var_b = (jacobian * cov_O * jacobian.transpose())[0]
+
+    # For cell length |c|, F = sqrt(c1^2 + c2^2 + c3^2)
+    jacobian = matrix.rec(
+      (0, 0, vec_c[0]/c, 0, 0, vec_c[1]/c, 0, 0, vec_c[2]/c), (1, 9))
+    jacobian_t = jacobian.transpose()
+    var_c = (jacobian * cov_O * jacobian.transpose())[0]
+
+    # For the unit cell angles we need to calculate derivatives of the angles
+    # with respect to the elements of O
+    from dials.algorithms.refinement.refinement_helpers import \
+      AngleDerivativeWrtVectorElts
+
+    dalpha = AngleDerivativeWrtVectorElts(vec_b, vec_c)
+    dbeta = AngleDerivativeWrtVectorElts(vec_a, vec_c)
+    dgamma = AngleDerivativeWrtVectorElts(vec_a, vec_b)
+
+    # For angle alpha, F = acos( b.c / |b||c|)
+    jacobian = matrix.rec(
+      (0, dalpha.dtheta_du_1(), dalpha.dtheta_dv_1(), 0, dalpha.dtheta_du_2(),
+       dalpha.dtheta_dv_2(), 0, dalpha.dtheta_du_3(), dalpha.dtheta_dv_3()),
+       (1, 9))
+    var_alpha = (jacobian * cov_O * jacobian.transpose())[0]
+
+    # For angle beta, F = acos( a.c / |a||c|)
+    jacobian = matrix.rec(
+      (dbeta.dtheta_du_1(), 0, dbeta.dtheta_dv_1(), dbeta.dtheta_du_2(), 0,
+       dbeta.dtheta_dv_2(), dbeta.dtheta_du_3(), 0, dbeta.dtheta_dv_3()),
+       (1, 9))
+    var_beta = (jacobian * cov_O * jacobian.transpose())[0]
+
+    # For angle gamma, F = acos( a.b / |a||b|)
+    jacobian = matrix.rec(
+      (dgamma.dtheta_du_1(), dgamma.dtheta_dv_1(), 0, dgamma.dtheta_du_2(),
+       dgamma.dtheta_dv_2(), 0, dgamma.dtheta_du_3(), dgamma.dtheta_dv_3(), 0),
+       (1, 9))
+    var_gamma = (jacobian * cov_O * jacobian.transpose())[0]
+
+    # Symmetry constraints may mean variances of the angles should be zero.
+    # Floating point error may lead to negative variances. Ensure these are
+    # caught before taking their square root!
+    var_alpha = max(0, var_alpha)
+    var_beta = max(0, var_beta)
+    var_gamma = max(0, var_gamma)
 
     # FIXME These estimates are not tested (how can we even do so? Use semi-
     # synthetic datasets perhaps and look at true scatter?) plus we have nowhere
     # to store this information. So for now just output to the debug log
-    from logging import debug
-    from math import sqrt
-    debug("Refined cell lengths and estimated standard deviations:")
-    debug("a: {0:f} +/- ({1:f})".format(a, sqrt(var_a)))
-    debug("b: {0:f} +/- ({1:f})".format(b, sqrt(var_b)))
-    debug("c: {0:f} +/- ({1:f})".format(c, sqrt(var_c)))
-
-    # TODO cell angles. How?
+    rad2deg = 180. / pi
+    debug("Refined cell parameters and estimated standard deviations:")
+    debug("a: {0:f} +/- ({1:f}) Angstroms".format(a, sqrt(var_a)))
+    debug("b: {0:f} +/- ({1:f}) Angstroms".format(b, sqrt(var_b)))
+    debug("c: {0:f} +/- ({1:f}) Angstroms".format(c, sqrt(var_c)))
+    debug("alpha: {0:f} +/- ({1:f}) degrees".format(alpha * rad2deg,
+      sqrt(var_alpha) * rad2deg))
+    debug("beta:  {0:f} +/- ({1:f}) degrees".format(beta * rad2deg,
+      sqrt(var_beta) * rad2deg))
+    debug("gamma: {0:f} +/- ({1:f}) degrees".format(gamma * rad2deg,
+      sqrt(var_gamma) * rad2deg))
 
     return
