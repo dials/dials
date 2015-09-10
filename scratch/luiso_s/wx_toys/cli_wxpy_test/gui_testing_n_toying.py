@@ -3,8 +3,25 @@ import wx
 
 
 def create_gui_dat():
+  '''
+
+  Function for editing components of every step of the GUI.
+
+  In this function should NOT be programmed the behavior of the main GUI
+
+  for editing the general behavior of the main GUI the class MainFrame should be used
+
+
+  '''
+
   class element(object):
+
+    '''
+    By editing different instances of this class the programmer should be able
+    to edit the components of the main GUI
+    '''
     def __init__(self):
+      # putting some default values to the editable sub components
       self.lbl = "\n Label here \n"
       self.cmd = "echo \"a default command line goes here\""
 
@@ -31,9 +48,14 @@ def create_gui_dat():
   return local_lst
 
 
-class MyWidg(wx.Frame):
+class MainFrame(wx.Frame):
+
+  '''
+  Class to edit the behavior of the main GUI and to put in it the components
+  edited in the create_gui_dat function
+  '''
   def __init__(self, parent, id, title, data_in):
-    super(MyWidg, self).__init__(parent, id, title)
+    super(MainFrame, self).__init__(parent, id, title)
 
     self.step_btn_lst = data_in
 
@@ -92,7 +114,7 @@ class MyApp(wx.App):
 
     gui_dat = create_gui_dat()
 
-    frame = MyWidg(parent = None, id = -1, title = 'Main Frame', data_in = gui_dat)
+    frame = MainFrame(parent = None, id = -1, title = 'Main Frame', data_in = gui_dat)
     frame.Show(True)
     return True
 
