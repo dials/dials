@@ -641,6 +641,7 @@ scratch/dgw/source_model/__init__.py -text
 scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
 scratch/dgw/synthetic_refine.py -text
+scratch/dgw/tst_angle_derivatives_wrt_vector_elts.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/adaptive_cubic_spline.py -text
 scratch/gw/attic/brute_force_calibration.py -text
