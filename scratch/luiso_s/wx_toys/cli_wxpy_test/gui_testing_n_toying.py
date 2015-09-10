@@ -2,32 +2,40 @@ import subprocess
 import wx
 
 
-class element(object):
-  pass
+def create_gui_dat():
+  class element(object):
+    def __init__(self):
+      self.lbl = "\n Label here \n"
+      self.cmd = "echo \"a default command line goes here\""
+
+  local_lst = []
+
+  import_btn = element()
+  import_btn.lbl = "\n import \n"
+  import_btn.cmd = "dials.import"
+  local_lst.append(import_btn)
+
+  find_btn = element()
+  find_btn.lbl = "\n find_spots \n"
+  find_btn.cmd = "dials.find_spots"
+  local_lst.append(find_btn)
+
+  index_btn = element()
+  index_btn.lbl = "\n index \n"
+  index_btn.cmd = "dials.index"
+  local_lst.append(index_btn)
+
+  dummy_tst = element()
+  local_lst.append(dummy_tst)
+
+  return local_lst
 
 
 class MyWidg(wx.Frame):
-  def __init__(self, parent, id, title):
+  def __init__(self, parent, id, title, data_in):
     super(MyWidg, self).__init__(parent, id, title)
 
-    self.step_btn_lst = []
-
-    import_btn = element()
-    import_btn.lbl = "\n import \n"
-    import_btn.cmd = "dials.import"
-    self.step_btn_lst.append(import_btn)
-
-    find_btn = element()
-    find_btn.lbl = "\n find_spots \n"
-    find_btn.cmd = "dials.find_spots"
-    self.step_btn_lst.append(find_btn)
-
-
-    index_btn = element()
-    index_btn.lbl = "\n index \n"
-    index_btn.cmd = "dials.index"
-    self.step_btn_lst.append(index_btn)
-
+    self.step_btn_lst = data_in
 
     for step_btn in self.step_btn_lst:
       exmpl_btt = wx.Button(self, -1, step_btn.lbl, (0,0))
@@ -82,8 +90,9 @@ class MyWidg(wx.Frame):
 class MyApp(wx.App):
   def OnInit(self):
 
+    gui_dat = create_gui_dat()
 
-    frame = MyWidg(None, -1, 'Main Frame')
+    frame = MyWidg(parent = None, id = -1, title = 'Main Frame', data_in = gui_dat)
     frame.Show(True)
     return True
 
