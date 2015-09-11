@@ -470,10 +470,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   if 'intensity.prf.value' in integrated_data:
     if dqe:
       I_profile = integrated_data['intensity.prf.value'] * lp / dqe
-      V_profile = integrated_data['intensity.prf.variance'] * lp / dqe
+      V_profile = integrated_data['intensity.prf.variance'] * (lp / dqe) * (lp / dqe)
     else:
       I_profile = integrated_data['intensity.prf.value'] * lp
-      V_profile = integrated_data['intensity.prf.variance'] * lp
+      V_profile = integrated_data['intensity.prf.variance'] * lp * lp
     d.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
     d.add_column('SIGIPR', type_table['SIGI']).set_values(
       flex.sqrt(V_profile).as_float())
@@ -482,10 +482,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   if 'intensity.sum.value' in integrated_data:
     if dqe:
       I_sum = integrated_data['intensity.sum.value'] * lp / dqe
-      V_sum = integrated_data['intensity.sum.variance'] * lp / dqe
+      V_sum = integrated_data['intensity.sum.variance'] * (lp / dqe) * (lp / dqe)
     else:
       I_sum = integrated_data['intensity.sum.value'] * lp
-      V_sum = integrated_data['intensity.sum.variance'] * lp
+      V_sum = integrated_data['intensity.sum.variance'] * lp * lp
     d.add_column('I', type_table['I']).set_values(I_sum.as_float())
     d.add_column('SIGI', type_table['SIGI']).set_values(
       flex.sqrt(V_sum).as_float())
