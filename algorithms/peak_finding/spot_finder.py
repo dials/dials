@@ -21,7 +21,8 @@ class Extract(object):
                imageset,
                threshold_image,
                mask,
-               max_strong_pixel_fraction):
+               max_strong_pixel_fraction,
+               region_of_interest):
       '''
       Initialise with imageset and threshold function, both need to be picklable
       for this to be called using multiprocessing.
@@ -35,6 +36,7 @@ class Extract(object):
       self.imageset = imageset
       self.mask = mask
       self.max_strong_pixel_fraction = max_strong_pixel_fraction
+      self.region_of_interest = region_of_interest
       if self.mask is not None:
         detector = self.imageset.get_detector()
         assert(len(self.mask) == len(detector))
@@ -49,6 +51,7 @@ class Extract(object):
       '''
       from dials.model.data import PixelList
       from dxtbx.imageset import ImageSweep
+      from dials.array_family import flex
       from math import ceil
 
       # Get the starting z
@@ -78,7 +81,22 @@ class Extract(object):
 
         # Add the images to the pixel lists
         for pl, im, mk in zip(plists, image, mask):
-          threshold_mask = self.threshold_image.compute_threshold(im, mk)
+          if self.region_of_interest is not None:
+            x0, x1, y0, y1 = self.region_of_interest
+            height, width = im.all()
+            assert x0 < x1, "x0 < x1"
+            assert y0 < y1, "y0 < y1"
+            assert x0 >= 0, "x0 >= 0"
+            assert y0 >= 0, "y0 >= 0"
+            assert x1 <= width, "x1 <= width"
+            assert y1 <= height, "y1 <= height"
+            im_roi = im[y0:y1,x0:x1]
+            mk_roi = mk[y0:y1,x0:x1]
+            tm_roi = self.threshold_image.compute_threshold(im_roi, mk_roi)
+            threshold_mask = flex.bool(im.accessor(),False)
+            threshold_mask[y0:y1,x0:x1] = tm_roi
+          else:
+            threshold_mask = self.threshold_image.compute_threshold(im, mk)
           if self.max_strong_pixel_fraction < 1:
             max_strong = int(ceil(self.max_strong_pixel_fraction * len(im)))
             num_strong = threshold_mask.count(True)
@@ -142,7 +160,8 @@ class ExtractSpots(object):
                mask=None,
                mp_method='multiprocessing',
                nproc=1,
-               max_strong_pixel_fraction=0.1):
+               max_strong_pixel_fraction=0.1,
+               region_of_interest=None):
     '''
     Initialise the class with the strategy
 
@@ -159,6 +178,7 @@ class ExtractSpots(object):
     self.mp_method = mp_method
     self.nproc = nproc
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
+    self.region_of_interest = region_of_interest
 
   def __call__(self, imageset):
     '''
@@ -186,7 +206,8 @@ class ExtractSpots(object):
         imageset,
         self.threshold_image,
         self.mask,
-        self.max_strong_pixel_fraction),
+        self.max_strong_pixel_fraction,
+        self.region_of_interest),
       iterable=self._calculate_blocks(imageset, nproc),
       processes=nproc,
       method=self.mp_method,

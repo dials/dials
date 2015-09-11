@@ -39,6 +39,14 @@ def generate_phil_scope():
       .type = ints(size=2)
       .multiple = True
 
+    region_of_interest = None
+      .type = ints(size=4)
+      .help = "A region of interest to look for spots."
+              "Specified as: x0,x1,y0,y1"
+              "The pixels x0 and y0 are included in the range but the pixels x1 and y1"
+              "are not. To specify an ROI covering the whole image set"
+              "region_of_interest=0,width,0,height."
+
     filter
       .help = "Parameters used in the spot finding filter strategy."
 
@@ -729,7 +737,8 @@ class SpotFinderFactory(object):
       mask=params.spotfinder.lookup.mask,
       mp_method=params.spotfinder.mp.method,
       nproc=params.spotfinder.mp.nproc,
-      max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction)
+      max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction,
+      region_of_interest=params.spotfinder.region_of_interest)
 
   @staticmethod
   def configure_threshold(params):

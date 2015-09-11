@@ -73,6 +73,21 @@ def exercise_spotfinder():
       d = detector[0].get_resolution_at_pixel(beam.get_s0(), (x, y))
       assert(d >= 3)
 
+  # Now with a user defined mask
+  template = glob(os.path.join(data_dir, "centroid*.cbf"))
+  args = ["dials.find_spots", ' '.join(template), "output.reflections=spotfinder.pickle",
+          "output.shoeboxes=True",
+          "region_of_interest=800,1200,800,1200"]
+  result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
+  assert os.path.exists("spotfinder.pickle")
+  with open("spotfinder.pickle", "rb") as f:
+    reflections = pickle.load(f)
+    x, y, z = reflections['xyzobs.px.value'].parts()
+    assert x.all_ge(800)
+    assert y.all_ge(800)
+    assert x.all_lt(1200)
+    assert y.all_lt(1200)
+
   print 'OK'
 
 
