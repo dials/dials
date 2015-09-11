@@ -36,6 +36,14 @@ _redir_test()
   return 1
 }
 
+type compopt &>/dev/null || {
+ function compopt ()
+ {
+  # unsupported on Mac. Quick fix for now. Proper fix: TODO
+  :
+ }
+}
+
 function _dials_autocomplete ()
 {
   # This function provides autocomplete functionality to supported dials commands
