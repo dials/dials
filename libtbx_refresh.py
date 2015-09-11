@@ -82,10 +82,9 @@ for cmd in [%s]:
           added_script = \
             '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
             '[ -z "$BASH_VERSIONINFO" ] && {\n' \
-            ' source %s\n' \
+            ' source $(libtbx.find_in_repositories dials/util/autocomplete.sh)\n' \
             ' source %s\n' \
             '}\n' % (
-              os.path.join('$LIBTBX_BUILD', '..', 'modules', 'dials', 'util', 'autocomplete.sh'),
               os.path.join('$LIBTBX_BUILD', 'dials', 'autocomplete', 'bash.sh'))
           with open(os.path.join(build_path, file), 'w') as script:
             script.write(original_file[:insert_position] +
