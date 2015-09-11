@@ -60,6 +60,9 @@ indexing {
     .type = float(value_min=0)
     .help = "Percentile of NN histogram to use for max cell determination."
     .expert_level = 1
+  filter_ice = True
+    .type = bool
+    .help = "Ignore ice rings in initial indexing"
   fft3d {
     peak_search = *flood_fill clean
       .type = choice
@@ -853,7 +856,8 @@ class indexer_base(object):
       else:
         self.params.max_cell = find_max_cell(
           self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
-          nearest_neighbor_percentile=self.params.nearest_neighbor_percentile)
+          nearest_neighbor_percentile=self.params.nearest_neighbor_percentile,
+          filter_ice=self.params.filter_ice)
         info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
 
   def filter_reflections_by_scan_range(self):
@@ -1613,11 +1617,14 @@ class SolutionTrackerWeighted(object):
     return table_utils.format(rows=rows, has_header=True)
 
 
-def find_max_cell(reflections, max_cell_multiplier, nearest_neighbor_percentile):
-  # Exclude potential ice-ring spots from nearest neighbour analysis
-  from dials.algorithms.peak_finding.per_image_analysis import ice_rings_selection
-  ice_sel = ice_rings_selection(reflections)
-  reflections = reflections.select(~ice_sel)
+def find_max_cell(reflections, max_cell_multiplier,
+                  nearest_neighbor_percentile, filter_ice=True):
+  # Exclude potential ice-ring spots from nearest neighbour analysis if needed
+  if filter_ice:
+    from dials.algorithms.peak_finding.per_image_analysis import \
+     ice_rings_selection
+    ice_sel = ice_rings_selection(reflections)
+    reflections = reflections.select(~ice_sel)
 
   # The nearest neighbour analysis gets fooled when the same part of
   # reciprocal space has been measured twice as this introduced small
