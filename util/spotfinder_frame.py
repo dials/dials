@@ -215,7 +215,6 @@ class SpotFrame(XrayFrame) :
         style=wx.CAPTION|wx.MINIMIZE_BOX, pos=(x_start, y_start))
     self.settings_frame.Show()
 
-
   def _draw_rings_layer(self, dc, data, map_rel):
     """Draw a points layer.
 
@@ -857,8 +856,11 @@ class SpotSettingsPanel (SettingsPanel) :
     s.Add(grid)
     txt1 = wx.StaticText(self, -1, "Zoom level:")
     grid.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.zoom_ctrl = wx.Choice(self, -1,
-      choices=["Auto", "25%", "50%", "100%", "200%", "400%", "800%"])
+    self.levels = self.GetParent().GetParent().pyslip.tiles.levels
+    #from scitbx.math import continued_fraction as cf
+    #choices = ["%s" %(cf.from_real(2**l).as_rational()) for l in self.levels]
+    choices = ["%g%%" %(100*2**l) for l in self.levels]
+    self.zoom_ctrl = wx.Choice(self, -1, choices=choices)
     self.zoom_ctrl.SetSelection(self.settings.zoom_level)
     grid.Add(self.zoom_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     txt11 = wx.StaticText(self, -1, "Color scheme:")
@@ -1042,7 +1044,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.collect_values()
 
     # CONTROLS 3:  Bind events to actions
-    self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.zoom_ctrl)
+    self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
     self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
     self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.resolution_rings_ctrl)
@@ -1055,6 +1057,8 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.predictions)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
+
+    self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
 
     have_thumbnail = False
     if have_thumbnail:
@@ -1071,7 +1075,7 @@ class SpotSettingsPanel (SettingsPanel) :
     if self.settings.enable_collect_values:
       self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
       self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
-      self.settings.zoom_level = self.zoom_ctrl.GetSelection()
+      self.settings.zoom_level = self.levels[self.zoom_ctrl.GetSelection()]
       # get brightness from slider or text box, whichever is different from
       # the current value, then update the other input field so that both
       # display the current value
@@ -1103,6 +1107,11 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.min_local = self.min_local_ctrl.GetPhilValue()
       self.settings.gain = self.gain_ctrl.GetPhilValue()
 
+  def UpdateZoomCtrl(self, event):
+    self.settings.zoom_level = self.levels.index(
+      self.GetParent().GetParent().pyslip.level)
+    self.zoom_ctrl.SetSelection(self.settings.zoom_level)
+
   def OnUpdateCM (self, event) :
     self.collect_values()
     self.GetParent().GetParent().update_settings(layout=False)
@@ -1113,6 +1122,17 @@ class SpotSettingsPanel (SettingsPanel) :
                 self.ice_rings_ctrl, self.resolution_rings_ctrl):
       btn.SetValue(False)
     self.OnUpdateCM(event)
+
+  def OnUpdateZoomLevel(self, event):
+    self.collect_values()
+    pyslip = self.GetParent().GetParent().pyslip
+
+    # get center of view in map coords
+    x, y = pyslip.view_width/2, pyslip.view_height/2
+    center = pyslip.ConvertView2Geo((x, y))
+    pyslip.ZoomToLevel(self.settings.zoom_level)
+    pyslip.ZoomIn((x,y), update=False)
+    pyslip.GotoPosition(center)
 
   def OnSaveMask(self, event):
     print "Saving mask"
