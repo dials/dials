@@ -173,6 +173,9 @@ class Script(object):
       info=params.output.log,
       debug=params.output.debug_log)
 
+    from dials.util.version import dials_version
+    info(dials_version())
+
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':

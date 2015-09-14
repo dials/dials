@@ -61,6 +61,9 @@ def run(args):
   # Configure the logging
   log.config(info='dials.export_mtz.log', debug='dials.export_mtz.debug.log')
 
+  from dials.util.version import dials_version
+  info(dials_version())
+
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':

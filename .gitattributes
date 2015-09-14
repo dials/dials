@@ -1132,6 +1132,7 @@ util/scale_down_image.py -text
 util/show_version.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text
+util/version.py -text
 viewer/SConscript -text
 viewer/__init__.py -text
 viewer/bitmap_from_numpy_w_matplotlib.py -text

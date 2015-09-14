@@ -111,6 +111,9 @@ class Script(object):
       info='dials.find_spots.log',
       debug='dials.find_spots.debug.log')
 
+    from dials.util.version import dials_version
+    info(dials_version())
+
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':

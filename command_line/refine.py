@@ -276,6 +276,8 @@ class Script(object):
     # Configure the logging
     log.config(params.refinement.verbosity,
       info='dials.refine.log', debug='dials.refine.debug.log')
+    from dials.util.version import dials_version
+    info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()

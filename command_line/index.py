@@ -87,6 +87,9 @@ def run(args):
   log.config(
     params.verbosity, info='dials.index.log', debug='dials.index.debug.log')
 
+  from dials.util.version import dials_version
+  info(dials_version())
+
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':

@@ -52,6 +52,18 @@ phil_scope = parse('''
     .type = str
     .help = "The output JSON or pickle file"
 
+  log = 'dials.import.log'
+    .type = str
+    .help = "The log filename"
+
+  debug_log = 'dials.import.debug.log'
+    .type = str
+    .help = "The debug log filename"
+
+  verbosity = 1
+    .type = int(value_min=0)
+    .help = "The verbosity level"
+
   compact = False
     .type = bool
     .help = "For JSON output use compact representation"
@@ -110,11 +122,27 @@ class Script(object):
     ''' Parse the options. '''
     from dxtbx.datablock import DataBlockTemplateImporter
     from dials.util.options import flatten_datablocks
+    from dials.util import log
+    from logging import info, debug
     import cPickle as pickle
 
     # Parse the command line arguments
-    params, options = self.parser.parse_args(show_diff_phil=True)
+    params, options = self.parser.parse_args(show_diff_phil=False)
     datablocks = flatten_datablocks(params.input.datablock)
+
+    # Configure logging
+    log.config(
+      params.verbosity,
+      info=params.log,
+      debug=params.debug_log)
+    from dials.util.version import dials_version
+    info(dials_version())
+
+    # Log the diff phil
+    diff_phil = self.parser.diff_phil.as_str()
+    if diff_phil is not '':
+      info('The following parameters have been modified:\n')
+      info(diff_phil)
 
     # Load reference geometry
     reference_detector = None
@@ -238,28 +266,27 @@ class Script(object):
             still.get_detector(), still.get_beam(), params.mosflm_beam_centre)
 
       # Print some data block info
-      print "-" * 80
-      print "DataBlock %d" % i
-      print "  format: %s" % str(datablock.format_class())
-      print "  num images: %d" % datablock.num_images()
-      print "  num sweeps: %d" % len(sweeps)
-      print "  num stills: %d" % num_stills
+      info("-" * 80)
+      info("DataBlock %d" % i)
+      info("  format: %s" % str(datablock.format_class()))
+      info("  num images: %d" % datablock.num_images())
+      info("  num sweeps: %d" % len(sweeps))
+      info("  num stills: %d" % num_stills)
 
       # Loop through all the sweeps
-      if options.verbose > 1:
-        for j, sweep in enumerate(sweeps):
-          print ""
-          print "Sweep %d" % j
-          print "  length %d" % len(sweep)
-          print sweep.get_beam()
-          print sweep.get_goniometer()
-          print sweep.get_detector()
-          print sweep.get_scan()
+      for j, sweep in enumerate(sweeps):
+        debug("")
+        debug("Sweep %d" % j)
+        debug("  Length %d" % len(sweep))
+        debug(sweep.get_beam())
+        debug(sweep.get_goniometer())
+        debug(sweep.get_detector())
+        debug(sweep.get_scan())
 
     # Write the datablock to a JSON or pickle file
     if params.output:
-      print "-" * 80
-      print 'Writing datablocks to %s' % params.output
+      info("-" * 80)
+      info('Writing datablocks to %s' % params.output)
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output, compact=params.compact)
 
