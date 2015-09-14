@@ -65,7 +65,6 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
   # work through multipart partials; compute those weighted values I need
   # if total partiality less than min, delete. if summing, delete extra parts
 
-
   we_got_profiles = 'intensity.prf.value' in integrated_data
   from logging import info
   info('Profile fitted reflections: %s' % we_got_profiles)
@@ -462,35 +461,29 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   if 'dqe' in integrated_data:
     dqe = integrated_data['dqe']
   else:
-    dqe = None
+    dqe = flex.double(nref, 1.0)
   I_profile = None
   V_profile = None
   I_sum = None
   V_sum = None
+  # FIXME errors in e.g. LP correction need to be propogated here
+  scl = lp / dqe
   if 'intensity.prf.value' in integrated_data:
-    if dqe:
-      I_profile = integrated_data['intensity.prf.value'] * lp / dqe
-      V_profile = integrated_data['intensity.prf.variance'] * (lp / dqe) * (lp / dqe)
-    else:
-      I_profile = integrated_data['intensity.prf.value'] * lp
-      V_profile = integrated_data['intensity.prf.variance'] * lp * lp
+    I_profile = integrated_data['intensity.prf.value'] * scl
+    V_profile = integrated_data['intensity.prf.variance'] * scl * scl
+    # Trap negative variances
+    assert V_profile.all_gt(0)
     d.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
     d.add_column('SIGIPR', type_table['SIGI']).set_values(
       flex.sqrt(V_profile).as_float())
-    # Trap negative variances
-    assert V_profile.all_gt(0)
   if 'intensity.sum.value' in integrated_data:
-    if dqe:
-      I_sum = integrated_data['intensity.sum.value'] * lp / dqe
-      V_sum = integrated_data['intensity.sum.variance'] * (lp / dqe) * (lp / dqe)
-    else:
-      I_sum = integrated_data['intensity.sum.value'] * lp
-      V_sum = integrated_data['intensity.sum.variance'] * lp * lp
+    I_sum = integrated_data['intensity.sum.value'] * scl
+    V_sum = integrated_data['intensity.sum.variance'] * scl * scl
+    # Trap negative variances
+    assert V_sum.all_gt(0)
     d.add_column('I', type_table['I']).set_values(I_sum.as_float())
     d.add_column('SIGI', type_table['SIGI']).set_values(
       flex.sqrt(V_sum).as_float())
-    # Trap negative variances
-    assert V_sum.all_gt(0)
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())
@@ -499,8 +492,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   d.add_column('YDET', type_table['YDET']).set_values(ydet.as_float())
   d.add_column('ROT', type_table['ROT']).set_values(rot.as_float())
   d.add_column('LP', type_table['LP']).set_values(lp.as_float())
-  if dqe:
-    d.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
+  d.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
 
   m.write(hklout)
 
