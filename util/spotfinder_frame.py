@@ -1020,26 +1020,19 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.min_local_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.gain_ctrl)
 
-    from wxtbx.segmentedctrl import SegmentedRadioControl, SEGBTN_VERTICAL
-    self.btn = SegmentedRadioControl(self, style=SEGBTN_VERTICAL)
-    self.btn.AddSegment("image")
-    self.btn.AddSegment("mean")
-    self.btn.AddSegment("variance")
-    self.btn.AddSegment("dispersion")
-    self.btn.AddSegment("global")
-    self.btn.AddSegment("sigma_b")
-    self.btn.AddSegment("sigma_s ")
-    self.btn.AddSegment("threshold")
-    self.btn.SetSelection(
-      ["image", "mean", "variance", "dispersion", "global_threshold",
-       "sigma_b", "sigma_s", "threshold"].index(self.params.display))
+    grid2 = wx.FlexGridSizer(cols=4, rows=2)
+    s.Add(grid2)
 
-    self.Bind(wx.EVT_RADIOBUTTON, self.OnUpdateCM, self.btn)
-    self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
+    self.kabsch_buttons = []
+    self.kabsch_labels = ['image', 'mean', 'variance', 'dispersion',
+                          'sigma_b', 'sigma_s', 'global', 'threshold']
+    for label in self.kabsch_labels:
+      btn = wx.ToggleButton(self, -1, label)
+      self.kabsch_buttons.append(btn)
+      grid2.Add(btn, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+      self.Bind(wx.EVT_TOGGLEBUTTON, self.OnKabschDebug, btn)
 
-    btn = wx.Button(self, -1, "Update display", pos=(400, 360))
-    self.GetSizer().Add(btn, 0, wx.ALL, 5)
-    self.Bind(wx.EVT_BUTTON, self.OnUpdateCM, btn)
+    self.kabsch_buttons[0].SetValue(True)
 
     self.collect_values()
 
@@ -1093,13 +1086,6 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_predictions = self.predictions.GetValue()
       self.settings.show_miller_indices = self.miller_indices.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
-      self.settings.show_mean_filter = self.btn.values[1]
-      self.settings.show_variance_filter = self.btn.values[2]
-      self.settings.show_dispersion = self.btn.values[3]
-      self.settings.show_global_threshold_filter = self.btn.values[4]
-      self.settings.show_sigma_b_filter = self.btn.values[5]
-      self.settings.show_sigma_s_filter = self.btn.values[6]
-      self.settings.show_threshold_map = self.btn.values[7]
       self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
       self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
       self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
@@ -1186,3 +1172,40 @@ class SpotSettingsPanel (SettingsPanel) :
     easy_pickle.dump('mask.pickle', tuple(masks))
 
     print "Saved mask.pickle"
+
+  def OnKabschDebug(self, event):
+    button = event.GetEventObject()
+    selected = button.GetLabelText()
+
+    # reset flags
+    self.settings.show_mean_filter = False
+    self.settings.show_variance_filter = False
+    self.settings.show_dispersion = False
+    self.settings.show_global_threshold_filter = False
+    self.settings.show_sigma_b_filter = False
+    self.settings.show_sigma_s_filter = False
+    self.settings.show_threshold_map = False
+
+    if selected == 'mean':
+      self.settings.show_mean_filter = True
+    elif selected == 'variance':
+      self.settings.show_variance_filter = True
+    elif selected == 'dispersion':
+      self.settings.show_dispersion = True
+    elif selected == 'global':
+      self.settings.show_global_threshold_filter = True
+    elif selected == 'sigma_b':
+      self.settings.show_sigma_b_filter = True
+    elif selected == 'sigma_s':
+      self.settings.show_sigma_s_filter = True
+    elif selected == 'threshold':
+      self.settings.show_threshold_map = True
+
+    # reset buttons
+    for btn in self.kabsch_buttons:
+      if btn.GetLabelText() == selected:
+        btn.SetValue(True)
+      else:
+        btn.SetValue(False)
+
+    self.GetParent().GetParent().update_settings(layout=False)
