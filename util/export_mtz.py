@@ -204,6 +204,15 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # FIXME Doing select on summation results. Should do on profile result if
   # present? Yes
 
+  if 'intensity.prf.variance' in integrated_data:
+    selection = integrated_data.get_flags(
+      integrated_data.flags.integrated,
+      all=True)
+  else:
+    selection = integrated_data.get_flags(
+      integrated_data.flags.integrated_sum)
+  integrated_data = integrated_data.select(selection)
+
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
