@@ -39,6 +39,15 @@ Workshop Proceedings
 
 .. _`DIALS-4B`: http://cci.lbl.gov/dials/oct_2013_berkeley.htm
 
+* DIALS-5:  November 2014 (Diamond Light Source, UK)
+
+.. _`xxx`: xxx
+
+* `DIALS-6`_: May 2015 (Berkeley, CA)
+
+.. _`DIALS-6`: http://cci.lbl.gov/dials/may_2015_berkeley.htm
+
+
 DIALS Framework
 ---------------
 

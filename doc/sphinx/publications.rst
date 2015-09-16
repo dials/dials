@@ -16,6 +16,13 @@ DIALS Journal Articles
 DIALS Application to XFEL Crystallography
 -----------------------------------------
 
+
+* .. pubmed:: 26057680 Ginn 2015b
+* .. pubmed:: 25781634 prime
+* .. pubmed:: 25751308 Ginn 2015a
+* .. pubmed:: 25723925 Sauter postrefinement
+* .. pubmed:: 25664747 amyloid peptides
+* .. pubmed:: 25664746 Zeldin Toolkit
 * .. pubmed:: 25478847 Mosaicity Paper
      :reprint-url: http://cci.lbl.gov/publications/download/Mosaicity_wa5077.pdf
 * .. pubmed:: 25362050 Goniometer XFEL
