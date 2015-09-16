@@ -1,8 +1,18 @@
 body {
+  /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
   margin: 8px;
   min-width: 240px;
   margin-left: 5%;
   margin-right: 5%;
+}
+
+div.body h1,
+div.body h2,
+div.body h3,
+div.body h4,
+div.body h5,
+div.body h6 {
+  /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
 }
 
 div.document {
