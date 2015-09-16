@@ -1,10 +1,10 @@
 Conventions
 ===========
 
-Coding standards
-----------------
+.. Coding standards
+   ----------------
 
-FIXME something about standards for coding in here.
+.. FIXME something about standards for coding in here.
 
 Coordinate frames
 -----------------
@@ -40,7 +40,7 @@ equation is
 
 .. math::
    :label: diffractometer
-  
+
    \vec{r_\phi} = \mathbf{R} \mathbf{A} \vec{h}
 
 where :math:`\mathbf{R}` is the *goniostat rotation matrix* and
@@ -65,12 +65,12 @@ of the laboratory frame determine the rotation matrix :math:`\mathbf{R}`.
 Orthogonalisation convention
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Following [Busing1967]_ we may decompose the setting matrix :math:`\mathbf{A}`
+Following [#Busing1967]_ we may decompose the setting matrix :math:`\mathbf{A}`
 into the product of two matrices, conventionally labelled :math:`\mathbf{U}` and
 :math:`\mathbf{B}`. We name :math:`\mathbf{U}` the *orientation matrix* and
 :math:`\mathbf{B}` the *reciprocal space orthogonalisation matrix*. These names
 are in common, but not universal use. In particular, some texts (for example
-[Paciorek1999]_ refer to the product (i.e. our setting matrix) as the
+[#Paciorek1999]_ refer to the product (i.e. our setting matrix) as the
 "orientation matrix".
 
 Of these two matrices, :math:`\mathbf{U}` is a pure rotation matrix and is
@@ -84,21 +84,21 @@ There are infinitely many ways that :math:`\mathbf{A}` may be decomposed into a
 pair :math:`\mathbf{U} \mathbf{B}`. The symbolic expression of
 :math:`\mathbf{B}` is simplest when the crystal-fixed Cartesian system is chosen
 to be aligned with crystal real or reciprocal space axes. For example,
-[Busing1967]_ use a frame in which the basis vector :math:`\vec{i}` is parallel
+[#Busing1967]_ use a frame in which the basis vector :math:`\vec{i}` is parallel
 to reciprocal lattice vector :math:`\vec{a^*}`, while :math:`\vec{j}` is chosen
 to lie in the plane of :math:`\vec{a^*}` and :math:`\vec{b^*}`. Unfortunately,
 this convention is then disconnected from the standard *real space*
-orthogonalisation convention, usually called the *PDB convention* [PDB1992]_.
+orthogonalisation convention, usually called the *PDB convention* [#PDB1992]_.
 This standard is essentially universal in crystallographic software for the
 transformation of fractional crystallographic coordinates to positions in
 orthogonal space, with units of :math:`\AA`. In particular, it is the convention
-used in the cctbx [GrosseKunstleve2002]_. The convention states that the
+used in the cctbx [#GrosseKunstleve2002]_. The convention states that the
 orthogonal coordinate :math:`x` is determined from a fractional coordinate
 :math:`u` by
 
 .. math::
    :label: realspaceortho
-   
+
    \vec{x} = \mathbf{O} \vec{u}
 
 where the matrix :math:`O` is the *real space orthogonalisation matrix*. This
@@ -109,8 +109,8 @@ plane. The elements of this matrix made explicit in a compact form are
 
 .. math::
    :label: realspaceorthomatrix
-   
-   \mathbf{O} = 
+
+   \mathbf{O} =
    \begin{pmatrix}
    a & b\cos{\gamma} &  c\cos{\beta} \\
    0 & b\sin{\gamma} & -c\sin{\beta}\cos{\alpha^*} \\
@@ -118,7 +118,7 @@ plane. The elements of this matrix made explicit in a compact form are
    \end{pmatrix}
 
 It is desirable to specify our *reciprocal space* orthogonalisation convention
-in terms of this real space orthogonalisation convention.  [Giacovazzo2002]_
+in terms of this real space orthogonalisation convention.  [#Giacovazzo2002]_
 derives relationships between real and reciprocal space. Of particular interest
 from that text we have
 
@@ -138,7 +138,7 @@ with :math:`\vec{u}`. We then see that
 
 .. math::
    :label: reciprocalortho
-   
+
    \mathbf{B} = \left( \mathbf{O}^{-1} \right)^\mathsf{T} = \mathbf{F}^\mathsf{T}
 
 where :math:`\mathbf{F}` is designated the *real space fractionalisation
@@ -148,12 +148,12 @@ matrix*.  This is easily obtained in cctbx by a method of a
 A symbolic expansion of :math:`\mathbf{B}` in terms of the real space unit cell
 parameters will be required for the calculation of the derivatives of
 :math:`\mathbf{B}` wrt these parameters. An expression for :math:`\mathbf{F}` is
-given by [RuppWeb]_ from which we derive :math:`\mathbf{B}` simply:
+given by [#RuppWeb]_ from which we derive :math:`\mathbf{B}` simply:
 
 .. math::
    :label: recipspaceorthomatrix
 
-   \mathbf{B} = 
+   \mathbf{B} =
    \begin{pmatrix}
    \frac{1}{a} &
    0 &
@@ -174,7 +174,7 @@ TODO This expression should be tested!
 Orientation matrix
 ------------------
 
-.. \label{sec:U_matrix} 
+.. \label{sec:U_matrix}
 
 The matrix :math:`\mathbf{U}` "corrects" for the orthogonalisation convention
 implicit in the choice of :math:`\mathbf{B}`. As the crystal-fixed Cartesian
@@ -227,7 +227,7 @@ software and for an agreed definition of what the laboratory consists of
 be either fixed to the detector, or to the rotation axis and beam).
 
 In the interests of standardisation, we choose to adopt the Image CIF (imgCIF)
-reference frame [Bernstein2006]_, [Hammersley2006]_.
+reference frame [#Bernstein2006]_, [#Hammersley2006]_.
 
 FIXME Some expansion of that here.
 
@@ -302,12 +302,12 @@ This should cover almost all use cases.
 
 .. rubric:: References
 
-.. [Bernstein2006] Bernstein, H. J. in Int. Tables Crystallogr. 199–205 (IUCr, 2006). at <http://it.iucr.org/Ga/ch3o7v0001/>
-.. [Busing1967] Busing, W. R. & Levy, H. A. Angle calculations for 3- and 4-circle X-ray and neutron diffractometers. Acta Crystallogr. 22, 457–464 (1967).
-.. [Giacovazzo2002] Giacovazzo, C. Fundamentals of Crystallography. (Oxofrd University Press, USA, 2002).
-.. [GrosseKunstleve2002] Grosse-Kunstleve, R. W., Sauter, N. K., Moriarty, N. W. & Adams, P. D. The Computational Crystallography Toolbox: crystallographic algorithms in a reusable software framework. J. Appl. Crystallogr. 35, 126–136 (2002).
-.. [Hammersley2006] Hammersley, A. P., Bernstein, H. J. & Westbrook, D. in Int. Tables Crystallogr. 444–458 (IUCr, 2006). at <http://it.iucr.org/Ga/ch4o6v0001/>
-.. [Paciorek1999] Paciorek, W. A., Meyer, M. & Chapuis, G. On the geometry of a modern imaging diffractometer. Acta Crystallogr. Sect. A Found. Crystallogr. 55, 543–557 (1999).
-.. [PDB1992] PDB. Atomic Coordinate and Bibliographic Entry Format Description. Brookhaven Natl. Lab. (1992). at <http://www.wwpdb.org/documentation/PDB_format_1992.pdf>
-.. [RuppWeb] Rupp, B. Coordinate system transformation. at <http://www.ruppweb.org/xray/tutorial/Coordinate system transformation.htm>
+.. [#Bernstein2006] `Bernstein, H. J. in Int. Tables Crystallogr. 199–205 (IUCr, 2006). <http://it.iucr.org/Ga/ch3o7v0001/>`_
+.. [#Busing1967] Busing, W. R. & Levy, H. A. Angle calculations for 3- and 4-circle X-ray and neutron diffractometers. Acta Crystallogr. 22, 457–464 (1967).
+.. [#Giacovazzo2002] Giacovazzo, C. Fundamentals of Crystallography. (Oxofrd University Press, USA, 2002).
+.. [#GrosseKunstleve2002] Grosse-Kunstleve, R. W., Sauter, N. K., Moriarty, N. W. & Adams, P. D. The Computational Crystallography Toolbox: crystallographic algorithms in a reusable software framework. J. Appl. Crystallogr. 35, 126–136 (2002).
+.. [#Hammersley2006] `Hammersley, A. P., Bernstein, H. J. & Westbrook, D. in Int. Tables Crystallogr. 444–458 (IUCr, 2006). <http://it.iucr.org/Ga/ch4o6v0001/>`_
+.. [#Paciorek1999] Paciorek, W. A., Meyer, M. & Chapuis, G. On the geometry of a modern imaging diffractometer. Acta Crystallogr. Sect. A Found. Crystallogr. 55, 543–557 (1999).
+.. [#PDB1992] `PDB. Atomic Coordinate and Bibliographic Entry Format Description. Brookhaven Natl. Lab. (1992). <http://www.wwpdb.org/docs/documentation/file-format/PDB_format_1992.pdf>`_
+.. [#RuppWeb] `Rupp, B. Coordinate system transformation. <http://www.ruppweb.org/Xray/tutorial/Coordinate%20system%20transformation.htm>`_
 
