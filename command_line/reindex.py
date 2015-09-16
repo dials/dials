@@ -91,8 +91,9 @@ def run(args):
   change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
 
   if len(experiments):
+    import copy
     experiment = experiments[0]
-    cryst_orig = experiment.crystal
+    cryst_orig = copy.deepcopy(experiment.crystal)
     cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
     if params.space_group is not None:
       a, b, c = cryst_reindexed.get_real_space_vectors()
