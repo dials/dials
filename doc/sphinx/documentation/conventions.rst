@@ -1,11 +1,6 @@
 Conventions
 ===========
 
-.. Coding standards
-   ----------------
-
-.. FIXME something about standards for coding in here.
-
 Coordinate frames
 -----------------
 
@@ -168,8 +163,6 @@ given by [#RuppWeb]_ from which we derive :math:`\mathbf{B}` simply:
 
 with :math:`V = abc \sqrt{ 1 - \cos^2{\alpha} - \cos^2{\beta} - \cos^2{\gamma} +
 2 \cos{\alpha}\cos{\beta}\cos{\gamma}}`
-
-TODO This expression should be tested!
 
 Orientation matrix
 ------------------
