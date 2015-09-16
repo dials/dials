@@ -268,7 +268,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     var_gamma = (jacobian * cov_O * jacobian.transpose())[0]
 
     # Symmetry constraints may mean variances of the angles should be zero.
-    # Floating point error may lead to negative variances. Ensure these are
+    # Floating point error could lead to negative variances. Ensure these are
     # caught before taking their square root!
     var_alpha = max(0, var_alpha)
     var_beta = max(0, var_beta)
