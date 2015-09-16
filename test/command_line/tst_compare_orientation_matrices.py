@@ -17,7 +17,8 @@ def run():
   out = "\n".join(result.stdout_lines[7:])
   out = out.replace("-0", "0")
   assert not show_diff(out, """\
-Rotation matrix to transform crystal 1 to crystal 2
+Change of basis op: a,b,c
+Rotation matrix to transform crystal 1 to crystal 2:
 {{1.000, 0.000, 0.000},
  {0.000, 1.000, 0.000},
  {0.000, 0.000, 1.000}}
