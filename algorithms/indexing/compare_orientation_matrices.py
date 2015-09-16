@@ -45,6 +45,7 @@ def show_rotation_matrix_differences(crystal_models, out=None, miller_indices=No
         crystal_models[i], crystal_models[j])
       print "Rotation matrix to transform crystal %i to crystal %i" %(
         i+1, j+1)
+      print "Change of basis op: %s" %cb_op
       print R_ij.mathematica_form(format="%.3f", one_row_per_line=True)
       print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
       if miller_indices is not None:
