@@ -24,7 +24,7 @@ sub-micron focus and new light sources such as X-FELs. The DIALS
 project is a collaborative endeavour to develop new diffraction integration
 software to meet the data analysis requirements presented by these
 recent advances. There are three end goals: to develop an extensible
-framework for the developmen of algorithms to analyse X-ray
+framework for the development of algorithms to analyse X-ray
 diffraction data; the implementation of algorithms within this
 framework and finally a set of user facing tools using these
 algorithms to allow integration of data from diffraction experiments
