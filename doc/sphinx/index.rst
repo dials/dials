@@ -17,7 +17,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    links
    License <license>
 
-X-ray crystallography for structural biology has benefitted greatly
+X-ray crystallography for structural biology has benefited greatly
 from a number of advances in recent years including high performance
 pixel array detectors, new beamlines capable of delivering micron and
 sub-micron focus and new light sources such as X-FELs. The DIALS
@@ -28,7 +28,7 @@ framework for the development of algorithms to analyse X-ray
 diffraction data; the implementation of algorithms within this
 framework and finally a set of user facing tools using these
 algorithms to allow integration of data from diffraction experiments
-on synchrotron and free electron sources. 
+on synchrotron and free electron sources.
 
 Contact
 =======
