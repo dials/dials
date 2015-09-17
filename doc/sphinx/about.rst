@@ -46,7 +46,7 @@ Development Teams
 DIALS East
 ----------
 
-Development of DIALS in the UK are funded by the `BioStruct-X`_ EU grant,
+Development of DIALS in the UK is funded by the `BioStruct-X`_ EU grant,
 `Diamond Light Source`_ and `CCP4`_, and led by `Dr Gwyndaf Evans`_.
 Developers include Luis Fuentes-Montero, Markus Gerstel, Richard Gildea,
 James Parkhurst and Graeme Winter at `Diamond Light Source`_, and David Waterman
@@ -55,7 +55,7 @@ at `CCP4`_.
 DIALS West
 ----------
 
-Development of DIALS at `Lawrence Berkeley National Laboratory`_, USA are led by
+Development of DIALS at `Lawrence Berkeley National Laboratory`_, USA is led by
 `Dr Nicholas Sauter`_ and supported by `National Institutes of Health`_ /
 `National Institute of General Medical Sciences`_ grant R01-GM095887: *Realizing
 new horizons in X-ray crystallography data processing*. Work at LBNL is
