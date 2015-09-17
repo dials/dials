@@ -17,8 +17,18 @@ DIALS: Diffraction Integration for Advanced Light Sources
    links
    License <license>
 
-DIALS is a new software project for the analysis of crystallographic
-diffraction images.
+X-ray crystallography for structural biology has benefitted greatly
+from a number of advances in recent years including high performance
+pixel array detectors, new beamlines capable of delivering micron and
+sub-micron focus and new light sources such as X-FELs. The DIALS
+project is a collaborative endeavour to develop new diffraction integration
+software to meet the data analysis requirements presented by these
+recent advances. There are three end goals: to develop an extensible
+framework for the developmen of algorithms to analyse X-ray
+diffraction data; the implementation of algorithms within this
+framework and finally a set of user facing tools using these
+algorithms to allow integration of data from diffraction experiments
+on synchrotron and free electron sources. 
 
 Contact
 =======
