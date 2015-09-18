@@ -1,5 +1,6 @@
 from __future__ import division
 
+from cStringIO import StringIO
 from libtbx.phil import command_line
 from libtbx.utils import Sorry
 import iotbx.phil
@@ -52,6 +53,8 @@ include scope dials.algorithms.refinement.refiner.phil_scope
 
 
 def run(args):
+  from dials.util import log
+  from logging import info
   import libtbx.load_env
   usage = "%s experiments.json indexed.pickle [options]" %libtbx.env.dispatcher_name
 
@@ -63,7 +66,20 @@ def run(args):
     check_format=False,
     epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=True)
+  params, options = parser.parse_args(show_diff_phil=False)
+
+  # Configure the logging
+  log.config(info='%s.log' %libtbx.env.dispatcher_name)
+
+  from dials.util.version import dials_version
+  info(dials_version())
+
+  # Log the diff phil
+  diff_phil = parser.diff_phil.as_str()
+  if diff_phil is not '':
+    info('The following parameters have been modified:\n')
+    info(diff_phil)
+
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
   if len(experiments) == 0:
@@ -100,7 +116,9 @@ def run(args):
   Lfat = refined_settings_factory_from_refined_triclinic(
     params, experiment, reflections, lepage_max_delta=params.lepage_max_delta,
     nproc=params.nproc, refiner_verbosity=params.verbosity)
-  Lfat.labelit_printout()
+  s = StringIO()
+  Lfat.labelit_printout(out=s)
+  info(s.getvalue())
   from json import dumps
   open('bravais_summary.json', 'wb').write(dumps(Lfat.as_dict()))
   from dxtbx.serialize import dump

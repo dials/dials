@@ -1,5 +1,6 @@
 from __future__ import division
 import copy
+import logging
 import math
 from libtbx import easy_mp
 from cctbx import crystal, sgtbx
@@ -169,6 +170,9 @@ def refine_subgroup(args):
   subgroup.max_cc = None
   subgroup.min_cc = None
   try:
+    logger = logging.getLogger()
+    disabled = logger.disabled
+    logger.disabled = True
     refinery, refined, outliers = refine(
       params, used_reflections, experiments, verbosity=refiner_verbosity)
   except RuntimeError, e:
@@ -206,6 +210,8 @@ def refine_subgroup(args):
     if len(ccs) > 1:
       subgroup.max_cc = flex.max(ccs[1:])
       subgroup.min_cc = flex.min(ccs[1:])
+  finally:
+    logger.disabled = disabled
   return subgroup
 
 from cctbx.sgtbx import subgroups
