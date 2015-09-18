@@ -81,8 +81,7 @@ Jim Pflugrath,
 Harry Powell,
 Ian Rees
 and
-Jon Schuermann
-.
+Jon Schuermann.
 
 .. [#Lure] `Bricogne, G. (1987). Proceedings of the CCP4 Daresbury Study Weekend, pp. 120-145.`
 .. [#XDS] `Kabsch, W. (2010). Acta Cryst. D66, 125-132.`

@@ -105,43 +105,36 @@ visual sudio).
 Getting the CCTBX and DIALS sources
 -----------------------------------
 
-To get this started, create a directory to contain the cctbx build.
+To get this started, create a directory to contain the cctbx build::
 
-.. code-block:: none
-
-   mkdir cctbx
-   cd cctbx
+  mkdir cctbx
+  cd cctbx
 
 Download http://cci.lbl.gov/cctbx_build/results/current/cctbx_bundle_for_installer.tar.gz
-and unpack into the directory "cctbx\sources".
+and unpack into the directory "cctbx\modules".
 
-Now checkout the cctbx sources into the "cctbx\sources\cctbx_project" directory.
+Now checkout the cctbx sources into the "cctbx\modules\cctbx_project" directory::
 
-.. code-block:: none
-   cd sources
-   svn checkout svn://svn.code.sf.net/p/cctbx/code/trunk cctbx_project
+  cd modules
+  svn checkout svn://svn.code.sf.net/p/cctbx/code/trunk cctbx_project
 
-In the "sources" directory of your cctbx installation, checkout the dials source
-in the following way:
+In the "modules" directory of your cctbx installation, checkout the dials source
+in the following way::
 
-.. code-block:: none
-
-   svn checkout https://svn.code.sf.net/p/dials/code/trunk dials
+  svn checkout https://svn.code.sf.net/p/dials/code/trunk dials
 
 This may take some time, but will fetch all the dials source code and deposit in
 in a folder called dials within the cctbx source directory.
 
 Now, create a build directory in "cctbx\build". and configure the cctbx
-installation and build the c++ libraries as follows.
+installation and build the c++ libraries as follows::
 
-.. code-block:: none
-
-   cd ..
-   mkdir build
-   cd build
-   python ..\sources\cctbx_project\libtbx\configure.py dials
-   setpaths.bat
-   libtbx.scons
+  cd ..
+  mkdir build
+  cd build
+  python ..\modules\cctbx_project\libtbx\configure.py dials
+  setpaths.bat
+  libtbx.scons
 
 Note that the setpaths.bat script needs to be sourced each time you want to build
 cctbx or run a cctbx program.
@@ -151,12 +144,19 @@ You should now be good to go!
 Downloading the DIALS regression test data
 ==========================================
 
-To obtain the dials regression test data, needed for some of the dials tests,
-you will need access to the CCI server. Checkout the data into the cctbx source
-directory and configure as follows, replacing "USERNAME" for your username:
+The DIALS regression test data, needed for some of the DIALS tests, can be
+obtained `here <http://dials.diamond.ac.uk/developers/dials_regression.tgz>`_::
 
-.. code-block:: none
+  cd ../modules
+  curl http://dials.diamond.ac.uk/developers/dials_regression.tgz > dials_regression.tgz
+  tar -xzvf dials_regression.tgz
+  libtbx.configure dials_regression
 
-   cd ../sources
-   svn checkout svn+ssh://USERNAME@cci.lbl.gov/dials_regression/trunk dials_regression
-   libtbx.configure dials_regression
+For those with svn access to the CCI server, it can also be obtained as
+follows. Checkout the data into the cctbx source
+directory and configure as follows, replacing "USERNAME" for your username::
+
+
+  cd ../modules
+  svn checkout svn+ssh://USERNAME@cci.lbl.gov/dials_regression/trunk dials_regression
+  libtbx.configure dials_regression
