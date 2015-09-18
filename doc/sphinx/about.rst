@@ -69,8 +69,9 @@ We are grateful to the following people who have contributed to the development
 of DIALS either in the form of code, or through numerous intellectual discussions:
 
 Muhamed Amin,
-Alun Ashton
+Alun Ashton,
 Gleb Bourenkov,
+Gerard Bricogne,
 Phil Evans,
 Nat Echols,
 Johan Hattne,
