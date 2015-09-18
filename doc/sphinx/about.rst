@@ -66,9 +66,10 @@ Acknowledgements
 ================
 
 We are grateful to the following people who have contributed to the development
-of DIALS either in the form of code, or through numerous intellecual discussions:
+of DIALS either in the form of code, or through numerous intellectual discussions:
 
 Muhamed Amin,
+Alun Ashton
 Gleb Bourenkov,
 Phil Evans,
 Nat Echols,
@@ -79,9 +80,10 @@ Garib Murshadov,
 Takanori Nakane,
 Jim Pflugrath,
 Harry Powell,
-Ian Rees
+Ian Rees,
+Jon Schuermann
 and
-Jon Schuermann.
+Matthew Webber.
 
 .. [#Lure] `Bricogne, G. (1987). Proceedings of the CCP4 Daresbury Study Weekend, pp. 120-145.`
 .. [#XDS] `Kabsch, W. (2010). Acta Cryst. D66, 125-132.`
