@@ -146,6 +146,12 @@ indexing {
     {
       power = 1
         .type = int(value_min=1)
+      volume_weight = 1
+        .type = float(value_min=0)
+      n_indexed_weight = 1
+        .type = float(value_min=0)
+      rmsd_weight = 1
+        .type = float(value_min=0)
     }
   }
   index_assignment {
@@ -1057,7 +1063,11 @@ class indexer_base(object):
     solution_scorer = self.params.basis_vector_combinations.solution_scorer
     if solution_scorer == 'weighted':
       weighted_params = self.params.basis_vector_combinations.weighted
-      solutions = SolutionTrackerWeighted(power=weighted_params.power)
+      solutions = SolutionTrackerWeighted(
+        power=weighted_params.power,
+        volume_weight=weighted_params.volume_weight,
+        n_indexed_weight=weighted_params.n_indexed_weight,
+        rmsd_weight=weighted_params.rmsd_weight)
     else:
       filter_params = self.params.basis_vector_combinations.filter
       solutions = SolutionTrackerFilter(
@@ -1526,7 +1536,10 @@ class SolutionTrackerFilter(object):
 
 
 class SolutionTrackerWeighted(object):
-  def __init__(self, power=2):
+  def __init__(self, power=2, volume_weight=1, n_indexed_weight=1, rmsd_weight=1):
+    self.volume_weight = volume_weight
+    self.n_indexed_weight = n_indexed_weight
+    self.rmsd_weight = rmsd_weight
     self.power = power
     self.all_solutions = []
 
@@ -1541,7 +1554,7 @@ class SolutionTrackerWeighted(object):
     volumes = flex.double(
       s.crystal.get_unit_cell().volume() for s in self.all_solutions)
     score = flex.log(volumes)/math.log(2)
-    return score - flex.min(score)
+    return self.volume_weight * (score - flex.min(score))
 
   def score_by_rmsd_xy(self, reverse=False):
     # smaller rmsds = better
@@ -1549,7 +1562,7 @@ class SolutionTrackerWeighted(object):
       s.rmsds for s in self.all_solutions).parts()
     rmsd_xy = flex.sqrt(flex.pow2(rmsd_x) + flex.pow2(rmsd_y))
     score = flex.log(rmsd_xy)/math.log(2)
-    return score - flex.min(score)
+    return self.rmsd_weight * (score - flex.min(score))
 
   def score_by_rmsd_z(self, reverse=False):
     # smaller rmsds = better
@@ -1563,7 +1576,7 @@ class SolutionTrackerWeighted(object):
     fraction_indexed = flex.double(s.fraction_indexed for s in self.all_solutions)
     fraction_unindexed = 1-fraction_indexed
     score = flex.log(fraction_indexed)/math.log(2)
-    return (-score + flex.max(score))
+    return self.n_indexed_weight * (-score + flex.max(score))
 
   def best_solution(self):
     scores = self.solution_scores()
