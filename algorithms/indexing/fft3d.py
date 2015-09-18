@@ -274,8 +274,9 @@ class indexer_fft3d(indexer_base):
     for p in perm:
       v = vectors[p]
       is_unique = True
-      for v_u in unique_vectors:
-        if is_approximate_integer_multiple(v_u, v):
+      for i, v_u in enumerate(unique_vectors):
+        if ((unique_volumes[i] > volumes[p])
+            and is_approximate_integer_multiple(v_u, v)):
           debug("rejecting %s: integer multiple of %s" %(v.length(), v_u.length()))
           is_unique = False
           break
