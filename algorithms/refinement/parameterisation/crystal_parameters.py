@@ -147,8 +147,17 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     p_vals = [p.value / 1.e5 for p in self._param]
 
     # set parameter values in the symmetrizing object and obtain new B
-    newB = matrix.sqr(
+    try:
+      newB = matrix.sqr(
             self._S.backward_orientation(p_vals).reciprocal_matrix())
+    except RuntimeError as e:
+      from libtbx.utils import Sorry
+      # write original error to debug log
+      debug('Unable to compose the crystal model')
+      debug('Original error message: {0}'.format(str(e)))
+      debug('Failing now.')
+      raise Sorry('Unable to compose the crystal model. Please check that the '
+                  'reflections and experiments are indexed consistently.')
 
     # Now pass new B to the crystal model
     self._model.set_B(newB)
