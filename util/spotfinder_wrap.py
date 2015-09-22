@@ -7,7 +7,12 @@ class spot_wrapper(object):
     import wx
     from dials.util.spotfinder_frame import SpotFrame
 
-    app   = wx.App(0)
+    app = wx.App(0)
+
+    # XXX Hacky workaround wxPython 3.0 crash on Linux
+    # wx._core.PyAssertionError: C++ assertion "m_window" failed at ./src/gtk/dcclient.cpp(2043) in DoGetSize(): GetSize() doesn't work without window
+    app.SetAssertMode(wx.PYAPP_ASSERT_SUPPRESS)
+
     frame = SpotFrame(None, -1, "X-ray image display", size=(800,720),
       pos=(100,100),
       params=self.params,
