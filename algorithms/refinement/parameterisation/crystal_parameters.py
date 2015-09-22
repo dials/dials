@@ -157,7 +157,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
       debug('Original error message: {0}'.format(str(e)))
       debug('Failing now.')
       raise Sorry('Unable to compose the crystal model. Please check that the '
-                  'reflections and experiments are indexed consistently.')
+                  'experiments match the indexing of the reflections.')
 
     # Now pass new B to the crystal model
     self._model.set_B(newB)
