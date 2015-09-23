@@ -19,6 +19,7 @@ from logging import info, debug, warning
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.array_family import flex
 from libtbx.phil import parse
+from libtbx.utils import Sorry
 import libtbx
 
 # Include the outlier_detection phil scope as a string to avoid problems
@@ -479,7 +480,9 @@ class RefinerFactory(object):
 
     # checks on the input
     if sweep:
-      assert [beam, goniometer, detector, scan].count(None) == 4
+      if [beam, goniometer, detector, scan].count(None) != 4:
+        raise Sorry('You have a sweep but it is missing a beam, goniometer, '
+                    'detector or scan model')
       beam = sweep.get_beam()
       detector = sweep.get_detector()
       goniometer = sweep.get_goniometer()
@@ -595,15 +598,13 @@ class RefinerFactory(object):
         else:
           exps_are_stills.append(False)
       else:
-        try:
-          assert exp.scan.get_oscillation()[1] > 0.0
-        except AssertionError:
-          print "Cannot refine a zero-width scan"
-          raise
+        if exp.scan.get_oscillation()[1] <= 0.0:
+          raise Sorry('Cannot refine a zero-width scan')
         exps_are_stills.append(False)
 
     # check experiment types are consistent
-    assert all(exps_are_stills[0] == e for e in exps_are_stills)
+    if not all(exps_are_stills[0] == e for e in exps_are_stills):
+      raise Sorry('Cannot refine a mixture of stills and scans')
     do_stills = exps_are_stills[0]
 
     debug("\nBuilding reflection manager")
@@ -705,13 +706,10 @@ class RefinerFactory(object):
     beam_params = []
     for beam in experiments.beams():
       # The Beam is parameterised with reference to a goniometer axis (or None).
-      # Therefore this Beam must always be found alongside the same Goniometer
-      # (otherwise it should be a different Beam as it will require a different
-      # parameterisation).
+      # Use the first (if any) Goniometers this Beam is associated with.
       exp_ids = experiments.indices(beam)
       assoc_gonios = [experiments[i].goniometer for i in exp_ids]
       goniometer = assoc_gonios[0]
-      assert all(g is goniometer for g in assoc_gonios)
 
       # Parameterise, passing the goniometer (but accepts None)
       beam_param = par.BeamParameterisation(beam, goniometer,
@@ -747,13 +745,19 @@ class RefinerFactory(object):
                       for i in exp_ids]
       goniometer, scan = assoc_models[0]
       if goniometer is None:
-        assert all(g is None and s is None for (g, s) in assoc_models)
+        if not all(g is None and s is None for (g, s) in assoc_models):
+          raise Sorry('A crystal model appears in a mixture of scan and still '
+                      'experiments, which is not supported')
 
       if crystal_options.scan_varying:
         # If a crystal is scan-varying, then it must always be found alongside
         # the same Scan and Goniometer in any Experiments in which it appears
-        assert [goniometer, scan].count(None) == 0
-        assert all(g is goniometer and s is scan for (g, s) in assoc_models)
+        if [goniometer, scan].count(None) != 0:
+          raise Sorry('A scan-varying crystal model cannot be created because '
+                      'a scan or goniometer model is missing')
+        if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+          raise Sorry('A single scan-varying crystal model cannot be refined '
+                      'when associated with more than one scan or goniometer')
 
         if crystal_options.num_intervals == "fixed_width":
           sweep_range_deg = scan.get_oscillation_range(deg=True)
@@ -1221,11 +1225,15 @@ class RefinerFactory(object):
       from dials.algorithms.refinement.reflection_manager import \
           StillsReflectionManager as refman
       # check incompatible weighting strategy
-      assert options.weighting_strategy.override != "statistical"
+      if options.weighting_strategy.override == "statistical":
+        raise Sorry('The "statistical" weighting strategy is not compatible '
+                    'with stills refinement')
     else:
       from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
       # check incompatible weighting strategy
-      assert options.weighting_strategy.override != "stills"
+      if options.weighting_strategy.override == "stills":
+        raise Sorry('The "stills" weighting strategy is not compatible with '
+                    'scan refinement')
 
     # set automatic outlier rejection options
     if options.outlier.algorithm in ('auto', libtbx.Auto):
