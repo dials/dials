@@ -39,7 +39,17 @@ class SpotFrame(XrayFrame) :
     self._image_chooser_tmp_key = []
     self._image_chooser_tmp_clientdata = []
 
-    self.init_pyslip_select()
+  # link initialization of GUI to creation of certain windows
+  # http://trac.wxwidgets.org/ticket/16034
+  # this avoids crashes and error messages in Linux for wxPython 3.0.2
+  def OnWindowCreate(self,evt):
+    window = evt.GetWindow()
+    if (self.pyslip is None):
+      self.set_pyslip(self.viewer)
+    if (type(window) is type(self.pyslip)):
+      self.init_pyslip_presizer()
+      self.init_pyslip_select()
+      self.Layout()
 
   def init_pyslip_select(self):
     from rstbx.slip_viewer import pyslip
@@ -856,6 +866,13 @@ class SpotSettingsPanel (SettingsPanel) :
     s.Add(grid)
     txt1 = wx.StaticText(self, -1, "Zoom level:")
     grid.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    # check to make sure PySlip is created before proceeding (OS X)
+    parent_frame = self.GetParent().GetParent()
+    if (parent_frame.pyslip is None):
+      parent_frame.set_pyslip(parent_frame.viewer)
+      parent_frame.init_pyslip_presizer()
+      parent_frame.init_pyslip_select()
+      parent_frame.Layout()
     self.levels = self.GetParent().GetParent().pyslip.tiles.levels
     #from scitbx.math import continued_fraction as cf
     #choices = ["%s" %(cf.from_real(2**l).as_rational()) for l in self.levels]
@@ -1052,6 +1069,8 @@ class SpotSettingsPanel (SettingsPanel) :
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
 
     self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
+
+    self.Bind(wx.EVT_WINDOW_CREATE, self.GetParent().GetParent().OnWindowCreate)
 
     have_thumbnail = False
     if have_thumbnail:

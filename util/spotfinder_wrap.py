@@ -9,10 +9,6 @@ class spot_wrapper(object):
 
     app = wx.App(0)
 
-    # XXX Hacky workaround wxPython 3.0 crash on Linux
-    # wx._core.PyAssertionError: C++ assertion "m_window" failed at ./src/gtk/dcclient.cpp(2043) in DoGetSize(): GetSize() doesn't work without window
-    app.SetAssertMode(wx.PYAPP_ASSERT_SUPPRESS)
-
     frame = SpotFrame(None, -1, "X-ray image display", size=(800,720),
       pos=(100,100),
       params=self.params,
@@ -20,6 +16,11 @@ class spot_wrapper(object):
       reflections=reflections,
       crystals=crystals)
     frame.SetSize((1024,780))
+
+    # SpotFrame is shown before SpotSettingsFrame to ensure that PySlip
+    # is initialized (Linux)
+    frame.Show()
+    frame.OnShowSettings(None)
 
     from rstbx.slip_viewer.frame import chooser_wrapper
 
@@ -31,5 +32,5 @@ class spot_wrapper(object):
         frame.add_file_name_or_data(chooser_wrapper(imageset, idx))
     idx = imagesets[0].indices()[0]
     frame.load_image(chooser_wrapper(imagesets[0],idx))
-    frame.Show()
+
     app.MainLoop()
