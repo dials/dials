@@ -697,6 +697,14 @@ scratch/gw/x2tbx/x2tbx_ol.cpp -text
 scratch/gw/x2tbx/x2tbx_rl.cpp -text
 scratch/gw/xds_parallax_x.png -text
 scratch/gw/xds_parallax_y.png -text
+scratch/idy/__init__.py -text
+scratch/idy/algorithms/__init__.py -text
+scratch/idy/algorithms/spot_prediction/SConscript -text
+scratch/idy/algorithms/spot_prediction/__init__.py -text
+scratch/idy/algorithms/spot_prediction/reflection_predictor.cc -text
+scratch/idy/algorithms/spot_prediction/reflection_predictor.h -text
+scratch/idy/algorithms/spot_prediction/spot_prediction_ext.cc -text
+scratch/idy/algorithms/spot_prediction/stills_ray_predictor.h -text
 scratch/jmp/__init__.py -text
 scratch/jmp/analysis/average_intensity_per_image.py -text
 scratch/jmp/analysis/centroid_difference.py -text

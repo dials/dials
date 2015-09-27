@@ -1,0 +1,11 @@
+
+Import('env')
+
+sources = [
+    'reflection_predictor.cc',
+    'spot_prediction_ext.cc']
+
+env.SharedLibrary(
+  target='#/lib/idy_algorithms_spot_prediction_ext',
+  source=sources, 
+  LIBS=env["LIBS"])

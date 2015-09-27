@@ -633,10 +633,8 @@ namespace dials { namespace algorithms {
    * A class to do stills prediction.
    */
   class StillsDeltaPsiReflectionPredictor {
-
-    typedef cctbx::miller::index<> miller_index;
-
   public:
+    typedef cctbx::miller::index<> miller_index;
 
     /**
      * Initialise the predictor
@@ -818,7 +816,7 @@ namespace dials { namespace algorithms {
      * @param p The reflection data
      * @param h The miller index
      */
-    void append_for_index(stills_prediction_data &p,
+    virtual void append_for_index(stills_prediction_data &p,
         const mat3<double> ub,
         const miller_index &h, int panel=-1) {
       //af::small<Ray, 2> rays = predict_rays_(h, ub_);
@@ -827,8 +825,6 @@ namespace dials { namespace algorithms {
       double delpsi = predict_ray_.get_delpsi();
       append_for_ray(p, h, ray, panel, delpsi);
     }
-
-  private:
 
     /**
      * Predict the reflection for the given ray data.
@@ -862,6 +858,8 @@ namespace dials { namespace algorithms {
         // do nothing
       }
     }
+
+  private:
 
     /**
      * Helper function to do ray intersection with/without panel set.
@@ -943,7 +941,6 @@ namespace dials { namespace algorithms {
       // Return the reflection table
       return table;
     }
-
 
   private:
     const double ML_half_mosaicity_deg_;
