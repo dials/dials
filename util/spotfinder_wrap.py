@@ -16,11 +16,7 @@ class spot_wrapper(object):
       reflections=reflections,
       crystals=crystals)
     frame.SetSize((1024,780))
-
-    # SpotFrame is shown before SpotSettingsFrame to ensure that PySlip
-    # is initialized (Linux)
     frame.Show()
-    frame.OnShowSettings(None)
 
     from rstbx.slip_viewer.frame import chooser_wrapper
 
