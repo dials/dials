@@ -307,7 +307,7 @@ We will also increase the number of processors used to speed the job up.
 ::
 
   dials.integrate refined_experiments.json refined.pickle \
-  outlier.algorithm=null nproc=4
+  background.algorithm=glm nproc=4
 
 The log file is quite long.
 

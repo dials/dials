@@ -64,7 +64,7 @@ class dials_refine(Job):
   cmd = "dials.refine bravais_setting_9.json indexed.pickle scan_varying=true"
 
 class dials_integrate(Job):
-  cmd = "dials.integrate refined_experiments.json refined.pickle outlier.algorithm=null nproc=4"
+  cmd = "dials.integrate refined_experiments.json refined.pickle background.algorithm=glm nproc=4"
 
 class LogWriter(object):
 
