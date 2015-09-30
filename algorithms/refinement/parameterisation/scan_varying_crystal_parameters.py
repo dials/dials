@@ -8,12 +8,13 @@
 #
 
 from __future__ import division
+from logging import debug
+from scitbx import matrix
+from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import ScanVaryingParameterSet, \
                ScanVaryingModelParameterisation, \
                GaussianSmoother
-from scitbx import matrix
-from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from dials.algorithms.refinement.refinement_helpers \
     import dR_from_axis_and_angle
 
@@ -177,8 +178,17 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
     dvals_dp =  [tuple([e / sw for e in w]) for v, w, sw in data]
 
     # set parameter values in the symmetrizing object and obtain new B
-    self._B_at_t = matrix.sqr(
-                self._S.backward_orientation(vals).reciprocal_matrix())
+    try:
+      self._B_at_t = matrix.sqr(
+                  self._S.backward_orientation(vals).reciprocal_matrix())
+    except RuntimeError as e:
+      from libtbx.utils import Sorry
+      # write original error to debug log
+      debug('Unable to compose the crystal model')
+      debug('Original error message: {0}'.format(str(e)))
+      debug('Failing now.')
+      raise Sorry('Unable to compose the crystal model. Please check that the '
+                  'experiments match the indexing of the reflections.')
 
     # returns the independent parameters given the set_orientation() B matrix
     # used here for side effects
