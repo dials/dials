@@ -40,6 +40,7 @@ class SpotFrame(XrayFrame) :
 
     self._image_chooser_tmp_key = []
     self._image_chooser_tmp_clientdata = []
+    self.display_foreground_circles_patch = False #hard code this option, for now
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
@@ -468,6 +469,7 @@ class SpotFrame(XrayFrame) :
       spotfinder_data = self.get_spotfinder_data()
       shoebox_data = spotfinder_data.shoebox_data
       all_pix_data = spotfinder_data.all_pix_data
+      all_foreground_circles = spotfinder_data.all_foreground_circles
       ctr_mass_data = spotfinder_data.ctr_mass_data
       max_pix_data = spotfinder_data.max_pix_data
       predictions_data = spotfinder_data.predictions_data
@@ -521,6 +523,7 @@ class SpotFrame(XrayFrame) :
       if self.settings.show_all_pix:
         self.draw_all_pix_timer.start()
         if len(all_pix_data) > 1:
+         if not self.display_foreground_circles_patch:
           for key, value in all_pix_data.items():
             base_color = self.prediction_colours[key][1:]
             #dim the color so it stands apart from the prediction
@@ -534,6 +537,33 @@ class SpotFrame(XrayFrame) :
               radius=2,
               renderer = self.pyslip.LightweightDrawPointLayer2,
               show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+         else:
+          e1 = matrix.col((1.,0.))
+          e2 = matrix.col((0.,1.))
+          for key, value in all_foreground_circles.items():
+            base_color = self.prediction_colours[key][1:]
+            positions = [i["position"] for i in value]
+            good_radius = flex.mean(flex.double([i["radius"] for i in value]))
+            vertices = []
+            for model_center in positions:
+              for vertex in [model_center + good_radius*(e1+e2),
+                             model_center + good_radius*(e1-e2),
+                             model_center + good_radius*(-e1-e2),
+                             model_center + good_radius*(-e1+e2),
+                             model_center + good_radius*(e1+e2)]:
+                vertices.append(vertex)
+
+            if False: self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
+              positions, color="#%s"%base_color, name="<all_pix_layer_%d>"%key,
+              radius=2,
+              renderer = self.pyslip.LightweightDrawPointLayer2,
+              show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+            if True:
+              self.dials_spotfinder_layers.append(self.pyslip.AddEllipseLayer(
+                  vertices, color="#%s"%base_color, name="<all_foreground_circles_%d>"%key,
+                  width=2,
+                  show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+              print "Circles: center of foreground masks for the %d spots actually integrated"%(len(vertices)//5)
         else:
           if len(all_pix_data) > 0:
             self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
@@ -616,6 +646,7 @@ class SpotFrame(XrayFrame) :
       i_frame += imageset.get_scan().get_array_range()[0]
     shoebox_data = []
     all_pix_data = {}
+    all_foreground_circles = {}
     overlapped_data = []
     ctr_mass_data = []
     max_pix_data = []
@@ -653,6 +684,9 @@ class SpotFrame(XrayFrame) :
             if not reflection['id'] in all_pix_data:
               all_pix_data[reflection['id']] = []
 
+              all_foreground_circles[reflection['id']] = []
+
+            this_spot_foreground_pixels = []
             for ix in range(nx):
               for iy in range(ny):
                 mask_value = shoebox.mask[iz, iy, ix]
@@ -660,6 +694,7 @@ class SpotFrame(XrayFrame) :
                     (mask_value == fg_code)):
                   x_, y_ = map_coords(
                     ix + x0 + 0.5, iy + y0 + 0.5, panel)
+                  this_spot_foreground_pixels.append(matrix.col((x_,y_)))
                   if len(all_pix_data) > 1:
                     # look for overlapped pixels
                     found_it = False
@@ -673,6 +708,13 @@ class SpotFrame(XrayFrame) :
                       all_pix_data[reflection['id']].append((x_, y_))
                   else:
                     all_pix_data[reflection['id']].append((x_, y_))
+            if self.display_foreground_circles_patch and len(this_spot_foreground_pixels)>1:
+              per_spot_mean = matrix.col((0.,0.,))
+              for pxl in this_spot_foreground_pixels:
+                per_spot_mean+=pxl
+              per_spot_mean /= len(this_spot_foreground_pixels)
+              all_foreground_circles[reflection['id']].append(dict(
+                position=per_spot_mean,radius=max([(t-per_spot_mean).length() for t in this_spot_foreground_pixels])))
             self.show_all_pix_timer.stop()
 
           if self.settings.show_shoebox:
@@ -790,6 +832,7 @@ class SpotFrame(XrayFrame) :
 
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,
+                      all_foreground_circles = all_foreground_circles,
                       shoebox_data=shoebox_data,
                       ctr_mass_data=ctr_mass_data,
                       max_pix_data=max_pix_data,
