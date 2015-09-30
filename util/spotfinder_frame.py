@@ -3,6 +3,8 @@ import rstbx.viewer.display
 import wx
 from rstbx.slip_viewer.frame import XrayFrame
 from rstbx.viewer.frame import SettingsFrame, SettingsPanel
+from scitbx import matrix
+from scitbx.array_family import flex
 
 class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
@@ -757,7 +759,6 @@ class SpotFrame(XrayFrame) :
       all_pix_data[max(all_pix_data.keys())+1] = overlapped_data
 
     if self.crystals is not None:
-      from scitbx import matrix
       from cctbx import crystal
       crystal_model = self.crystals[0]
       cs = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(), space_group=crystal_model.get_space_group())
@@ -1125,7 +1126,6 @@ class SpotSettingsPanel (SettingsPanel) :
 
   def OnSaveMask(self, event):
     print "Saving mask"
-    from scitbx.array_family import flex
 
     imagesets = self.GetParent().GetParent().imagesets # XXX
     detector = imagesets[0].get_detector()
