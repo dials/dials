@@ -800,7 +800,7 @@ def print_table(stats, out=None):
 
   rows = table(stats)
   print >> out, table_utils.format(
-    rows, has_header=True, prefix="|", postfix="|")
+    rows, has_header=True, prefix="| ", postfix=" |")
 
 def plot_stats(stats, filename='per_image_analysis.png'):
   n_spots_total = flex.int(stats.n_spots_total)
