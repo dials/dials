@@ -55,6 +55,23 @@ def run(args):
     imageset, reflections, resolution_analysis=params.resolution_analysis,
     plot=params.individual_plots)
   per_image_analysis.print_table(stats)
+
+  from libtbx import table_utils
+  overall_stats = per_image_analysis.stats_single_image(
+    imageset, reflections, resolution_analysis=params.resolution_analysis)
+  rows = [
+    ("Overall statistics", ""),
+    ("#spots", "%i" %overall_stats.n_spots_total),
+    ("#spots_no_ice", "%i" %overall_stats.n_spots_no_ice),
+    #("total_intensity", "%.0f" %overall_stats.total_intensity),
+    ("d_min", "%.2f" %overall_stats.estimated_d_min),
+    ("d_min (distl method 1)", "%.2f (%.2f)" %(
+      overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1)),
+    ("d_min (distl method 2)", "%.2f (%.2f)" %(
+      overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1)),
+    ]
+  print table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
+
   if params.json is not None:
     import json
     with open(params.json, 'wb') as fp:
