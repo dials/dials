@@ -353,7 +353,6 @@ command_line/plot_reflections.py -text
 command_line/plot_scan_varying_crystal.py -text
 command_line/predict.py -text
 command_line/print_test_reflections.py -text
-command_line/process.py -text
 command_line/reciprocal_lattice_viewer.py -text
 command_line/refine.py -text
 command_line/refine_bravais_settings.py -text
@@ -1067,7 +1066,6 @@ test/command_line/tst_compare.py -text
 test/command_line/tst_compare_orientation_matrices.py -text
 test/command_line/tst_create_profile_model.py -text
 test/command_line/tst_detector_max_resolution.py -text
-test/command_line/tst_dials_process.py -text
 test/command_line/tst_dials_show_isig_rmsd.py -text
 test/command_line/tst_discover_better_experimental_model.py -text
 test/command_line/tst_export.py -text

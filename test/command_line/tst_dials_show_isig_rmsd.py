@@ -28,7 +28,7 @@ def exercise1():
 
 def run(args):
   if not have_dials_regression:
-    print "Skipping tst_dials_process.py: dials_regression not available"
+    print "Skipping tst_dials_show_isig_rmsd.py: dials_regression not available"
     return
 
   exercise1()
