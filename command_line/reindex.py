@@ -12,10 +12,12 @@
 
 from __future__ import division
 
+import copy
 from libtbx.phil import command_line
 from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
+from cctbx.array_family import flex
 from dxtbx.model.crystal import crystal_model
 from dxtbx.serialize import dump
 # from dials.util.command_line import Importer
@@ -63,6 +65,48 @@ output {
 """, process_includes=True)
 
 
+def derive_change_of_basis_op(from_hkl, to_hkl):
+
+  # exclude those reflections that we couldn't index
+  sel = (to_hkl != (0,0,0)) & (from_hkl != (0,0,0))
+  assert sel.count(True) >= 3 # need minimum of 3 equations ?
+  to_hkl = to_hkl.select(sel)
+  from_hkl = from_hkl.select(sel)
+
+  # for each miller index, solve a system of linear equations to find the
+  # change of basis operator
+  h, k, l = to_hkl.as_vec3_double().parts()
+
+  r = []
+  from scitbx.lstbx import normal_eqns
+  for i in range(3):
+    eqns = normal_eqns.linear_ls(3)
+    for index, hkl in zip((h,k,l)[i], from_hkl):
+      eqns.add_equation(right_hand_side=index,
+                        design_matrix_row=flex.double(hkl),
+                        weight=1)
+    eqns.solve()
+    r.extend(eqns.solution())
+
+  from scitbx.math import continued_fraction
+  from scitbx import matrix
+  denom = 12
+  r = [denom * int(continued_fraction.from_real(r_, eps=1e-2).as_rational())
+       for r_ in r]
+  r = matrix.sqr(r).transpose()
+  #print (1/denom)*r
+
+  # now convert into a cctbx change_of_basis_op object
+  change_of_basis_op = sgtbx.change_of_basis_op(
+    sgtbx.rt_mx(sgtbx.rot_mx(r, denominator=denom))).inverse()
+  print "discovered change_of_basis_op=%s" %(str(change_of_basis_op))
+
+  # sanity check that this is the right cb_op
+  assert (change_of_basis_op.apply(from_hkl) == to_hkl).count(False) == 0
+
+  return change_of_basis_op
+
+
 def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
@@ -88,10 +132,26 @@ def run(args):
   if params.change_of_basis_op is None:
     raise Sorry("Please provide a change_of_basis_op.")
 
-  change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
+  if len(experiments) and len(reflections) and params.change_of_basis_op is libtbx.Auto:
+    assert len(reflections) == 1
+    refl_copy = copy.deepcopy(reflections[0])
+    refl_copy['id'] = flex.int(len(refl_copy), -1)
+
+    # index the reflection list using the input experiments list
+    from dials.algorithms.indexing import index_reflections
+    index_reflections(refl_copy, experiments, tolerance=0.2)
+    hkl_expt = refl_copy['miller_index']
+    hkl_input = reflections[0]['miller_index']
+
+    change_of_basis_op = derive_change_of_basis_op(hkl_input, hkl_expt)
+
+    # reset experiments list since we don't want to reindex this
+    experiments = []
+
+  else:
+    change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
 
   if len(experiments):
-    import copy
     experiment = experiments[0]
     cryst_orig = copy.deepcopy(experiment.crystal)
     cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
@@ -117,7 +177,6 @@ def run(args):
     miller_indices = reflections['miller_index']
 
     if params.hkl_offset is not None:
-      from cctbx.array_family import flex
       h,k,l = miller_indices.as_vec3_double().parts()
       h += params.hkl_offset[0]
       k += params.hkl_offset[1]
