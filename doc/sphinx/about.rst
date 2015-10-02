@@ -5,10 +5,9 @@ About
 The DIALS framework is being developed in a fully open-source, collaborative
 environment. In the spirit of the open source movement, we welcome
 collaboration from anyone who wishes to contribute to the project. The
-framework development is currently a joint effort between developers funded by
-BioStruct-X, Diamond Light Source and CCP4, based in the UK, and developers
-funded by an NIH technology project: *Realizing new horizons in X-ray
-crystallography data processing*, based at the LBNL, USA. Our common interests
+framework development is currently a joint effort between developers from
+`Diamond Light Source`_ and `CCP4`_, based in the UK, and developers at
+`Lawrence Berkeley National Laboratory`_, USA. Our common interests
 allow us to distribute effort and combine expertise effectively, greatly
 enhancing our joint productivity and allowing us to tackle the sizeable task of
 writing a new data processing package within a reasonable time frame.
