@@ -1,3 +1,5 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.estimate_resolution_limit
+
 from __future__ import division
 
 from libtbx.phil import command_line
@@ -124,6 +126,8 @@ def run(args):
     ax_.set_xlabel(r"Resolution ($\AA$)")
     ax_.set_xticklabels(["%.1f" %d for d in xticks_d])
     pyplot.savefig("estimate_resolution_limit.png")
+    pyplot.clf()
+
 
 if __name__ == '__main__':
   import sys
