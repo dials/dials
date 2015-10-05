@@ -152,6 +152,9 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=False)
     reference = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
+    if len(reference) == 0 and len(experiments) == 0:
+      self.parser.print_help()
+      return
     if len(reference) == 0:
       reference = None
     elif len(reference) != 1:
