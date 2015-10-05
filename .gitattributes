@@ -445,6 +445,7 @@ doc/sphinx/_static/dials_header.png -text svneol=unset#unset
 doc/sphinx/_static/dials_icon.png -text svneol=unset#unset
 doc/sphinx/_static/diamond_logo.png -text svneol=unset#unset
 doc/sphinx/_templates/layout.html -text
+doc/sphinx/_templates/navigation.html -text
 doc/sphinx/_templates/page.html -text
 doc/sphinx/about.rst -text
 doc/sphinx/basel.rst -text

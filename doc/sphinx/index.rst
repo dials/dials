@@ -9,6 +9,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    :hidden:
    :maxdepth: 1
 
+   Home <index>
    about
    installation
    documentation/index

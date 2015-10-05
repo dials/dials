@@ -119,7 +119,7 @@ extensions.append('alabaster')
 html_theme = 'alabaster'
 html_sidebars = {
     '**': [
-        'about.html',
+        #'about.html',
         'navigation.html',
         #'searchbox.html',
         #'donate.html',
