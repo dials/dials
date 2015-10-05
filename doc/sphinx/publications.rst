@@ -16,7 +16,8 @@ DIALS Journal Articles
 DIALS Application to XFEL Crystallography
 -----------------------------------------
 
-
+* .. pubmed:: 26352473 synuclein
+* .. pubmed:: 26280336 synaptotagmin-SNARE
 * .. pubmed:: 26057680 Ginn 2015b
 * .. pubmed:: 25781634 prime
 * .. pubmed:: 25751308 Ginn 2015a
