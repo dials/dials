@@ -97,7 +97,7 @@ if __name__ == '__main__':
   from dials.util.options import flatten_reflections
   import libtbx.load_env
   usage_message = """
-    %s datablock.json reflections.pickle
+    %s datablock.json [reflections.pickle]
   """ %libtbx.env.dispatcher_name
   parser = OptionParser(
     usage=usage_message,
