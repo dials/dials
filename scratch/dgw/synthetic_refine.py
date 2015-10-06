@@ -23,6 +23,7 @@ from libtbx.phil import parse
 from libtbx.test_utils import not_approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
+from logging import info, debug
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -183,6 +184,10 @@ if __name__ == "__main__":
   except AssertionError:
     print usage
     raise
+
+  from dials.util import log
+  log.config(params.refinement.verbosity,
+      info='synthetic_refine.log', debug='synthetic_refine.debug.log')
 
   reflections, perturbed_exp = generate_reflections(experiments[0])
 
