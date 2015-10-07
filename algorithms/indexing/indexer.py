@@ -972,25 +972,26 @@ class indexer_base(object):
     sel &= k > j
     combinations = combinations.select(sel)
 
-    min_angle = 20 # degrees, arbitrary cutoff
+    half_pi = 0.5 * math.pi
+    min_angle = 20/180 * math.pi # 20 degrees, arbitrary cutoff
     for i, j, k in combinations:
       a = vectors[i]
       b = vectors[j]
-      angle = a.angle(b, deg=True)
-      if angle < min_angle or (180-angle) < min_angle:
+      angle = a.angle(b)
+      if angle < min_angle or (math.pi-angle) < min_angle:
         continue
       a_cross_b = a.cross(b)
-      gamma = a.angle(b, deg=True)
-      if gamma < 90:
+      gamma = a.angle(b)
+      if gamma < half_pi:
         # all angles obtuse if possible please
         b = -b
-        gamma = 180 - gamma
+        gamma = math.pi - gamma
         a_cross_b = -a_cross_b
       c = vectors[k]
-      if abs(90-a_cross_b.angle(c, deg=True)) < min_angle:
+      if abs(half_pi-a_cross_b.angle(c)) < min_angle:
         continue
       alpha = b.angle(c, deg=True)
-      if alpha < 90:
+      if alpha < half_pi:
         c = -c
       #beta = c.angle(a, deg=True)
       if a_cross_b.dot(c) < 0:
