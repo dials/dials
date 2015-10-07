@@ -15,7 +15,7 @@ def run(args):
 
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
-  from libtbx.utils import Abort
+  from libtbx.utils import Sorry
 
   parser = OptionParser(
     phil=master_phil_scope,
@@ -25,7 +25,7 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
   if len(experiments) <= 1:
-    raise Abort('more than 1 experiment is required')
+    raise Sorry('more than 1 experiment is required')
 
   hkl = flex.miller_index(params.hkl)
 

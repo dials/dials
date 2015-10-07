@@ -47,7 +47,7 @@ class Script(object):
     from dials.array_family import flex
     from dials.util.options import flatten_reflections, flatten_experiments
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -57,9 +57,9 @@ class Script(object):
       self.parser.print_help()
       return
     if len(reflections) != 1:
-      raise Abort('exactly 1 reflection table must be specified')
+      raise Sorry('exactly 1 reflection table must be specified')
     if len(experiments) == 0:
-      raise Abort('no experiments were specified')
+      raise Sorry('no experiments were specified')
     reflections = reflections[0]
 
     from dials.array_family import flex

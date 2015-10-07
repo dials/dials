@@ -27,7 +27,7 @@ def run(args):
     read_experiments=True,
     phil=phil_scope,
     check_format=False)
-  from libtbx.utils import Abort
+  from libtbx.utils import Sorry
 
   params, options = parser.parse_args(show_diff_phil=False)
   reflections = flatten_reflections(params.input.reflections)
@@ -35,14 +35,14 @@ def run(args):
   experiments = flatten_experiments(params.input.experiments)
 
   if len(reflections) != 1:
-    raise Abort('exactly 1 reflection table must be specified')
+    raise Sorry('exactly 1 reflection table must be specified')
   if len(datablocks) != 1:
     if len(experiments):
       if len(experiments.imagesets()) != 1:
-        raise Abort('exactly 1 datablock must be specified')
+        raise Sorry('exactly 1 datablock must be specified')
       imageset = experiments.imagesets()[0]
     else:
-      raise Abort('exactly 1 datablock must be specified')
+      raise Sorry('exactly 1 datablock must be specified')
   else:
     imageset = datablocks[0].extract_imagesets()[0]
 

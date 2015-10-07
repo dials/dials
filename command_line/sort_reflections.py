@@ -55,7 +55,7 @@ class Sort(object):
     '''Execute the script.'''
     from dials.array_family import flex # import dependency
     from dials.util.options import flatten_reflections
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -64,7 +64,7 @@ class Sort(object):
       self.parser.print_help()
       return
     if len(reflections) != 1:
-      raise Abort('exactly 1 reflection table must be specified')
+      raise Sorry('exactly 1 reflection table must be specified')
     reflections = reflections[0]
 
     # Check the key is valid

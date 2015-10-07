@@ -44,15 +44,15 @@ if __name__ == '__main__':
   import cPickle as pickle
   import sys
   from dials.array_family import flex # import dependency
-  from libtbx.utils import Abort
+  from libtbx.utils import Sorry
 
   if len(sys.argv) != 2:
-    raise Abort('exactly 1 reflection table must be specified')
+    raise Sorry('exactly 1 reflection table must be specified')
 
   try:
     table = pickle.load(open(sys.argv[1]))
   except Exception:
-    raise Abort('Error loading reflection table')
+    raise Sorry('Error loading reflection table')
 
 
   for i in range(len(table)):

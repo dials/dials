@@ -55,7 +55,7 @@ class Script(object):
     import math
     from dials.util.command_line import Importer
     from dials.algorithms.integration import ReflectionPredictor
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options, args = self.parser.parse_args()
@@ -65,9 +65,9 @@ class Script(object):
       self.config().print_help()
       return
     if len(importer.imagesets) != 1:
-      raise Abort('need 1 sweep: %d given' % len(importer.imagesets))
+      raise Sorry('need 1 sweep: %d given' % len(importer.imagesets))
     if len(importer.crystals) != 1:
-      raise Abort('need 1 crystal: %d given' % len(importer.crystals))
+      raise Sorry('need 1 crystal: %d given' % len(importer.crystals))
     sweep = importer.imagesets[0]
     crystal = importer.crystals[0]
 

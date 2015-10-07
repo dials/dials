@@ -43,7 +43,7 @@ class Script(object):
     ''' Run the script. '''
     from dials.array_family import flex
     from dials.util.command_line import Command
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -51,7 +51,7 @@ class Script(object):
       self.parser.print_help()
       return
     if len(params.input.reflections) <= 1:
-      raise Abort('more than 1 reflection table must be specified')
+      raise Sorry('more than 1 reflection table must be specified')
     tables = [p.data for p in params.input.reflections]
 
     # Get the number of rows and columns

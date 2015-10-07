@@ -57,7 +57,7 @@ class Script(object):
     from dials.algorithms.simulation.reciprocal_space import Simulator
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     from dials.util.command_line import Command
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
     from math import pi
 
     # Parse the command line arguments
@@ -70,7 +70,7 @@ class Script(object):
 
     # Check we have some profile parameters
     if len(params.profile) != 1:
-      raise Abort('no profile parameters specified')
+      raise Sorry('no profile parameters specified')
 
     print 'Simulating with the following parameters:'
     print ' # Reflections: %d' % params.num
@@ -84,7 +84,7 @@ class Script(object):
     # Get the experiments
     experiments = ExperimentListFactory.from_json_file(args[0], check_format=False)
     if len(experiments) != 1:
-      raise Abort('experiment list must contain exactly 1 experiment')
+      raise Sorry('experiment list must contain exactly 1 experiment')
     experiment = experiments[0]
 
     # Do the simulation

@@ -47,7 +47,7 @@ class Script(object):
     ''' Run the script. '''
     from dials.util.options import flatten_datablocks
     from dxtbx.datablock import DataBlockDumper
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
     import cPickle as pickle
 
     # Parse the command line arguments
@@ -66,13 +66,13 @@ class Script(object):
 
     # Check nbumber of datablocks
     if len(datablocks) != 1:
-      raise Abort('exactly 1 datablock must be specified')
+      raise Sorry('exactly 1 datablock must be specified')
 
     # Get the imageset
     datablock = datablocks[0]
     imagesets = datablock.extract_imagesets()
     if len(imagesets) != 1:
-      raise Abort('datablock must contain exactly 1 imageset')
+      raise Sorry('datablock must contain exactly 1 imageset')
     imageset = imagesets[0]
 
     # Set the lookup

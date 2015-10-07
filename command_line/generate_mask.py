@@ -165,7 +165,7 @@ class Script(object):
   def run(self):
     ''' Run the script. '''
     from dials.util.options import flatten_datablocks
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
     import cPickle as pickle
 
     # Parse the command line arguments
@@ -178,11 +178,11 @@ class Script(object):
       return
 
     if len(datablocks) != 1:
-      raise Abort('exactly 1 datablock must be specified')
+      raise Sorry('exactly 1 datablock must be specified')
     datablock = datablocks[0]
     imagesets = datablock.extract_imagesets()
     if len(imagesets) != 1:
-      raise Abort('datablock must contain exactly 1 imageset')
+      raise Sorry('datablock must contain exactly 1 imageset')
     imageset = imagesets[0]
 
     # Generate the mask

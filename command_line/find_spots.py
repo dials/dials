@@ -99,7 +99,7 @@ class Script(object):
     from time import time
     from dials.util import log
     from logging import info, debug
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
     start_time = time()
 
     # Parse the command line
@@ -126,7 +126,7 @@ class Script(object):
       self.parser.print_help()
       return
     elif len(datablocks) != 1:
-      raise Abort('only 1 datablock can be processed at a time')
+      raise Sorry('only 1 datablock can be processed at a time')
 
     # Loop through all the imagesets and find the strong spots
     reflections = flex.reflection_table.from_observations(

@@ -67,21 +67,21 @@ class Script(object):
     '''Execute the script.'''
     from dials.array_family import flex
     from dials.util.options import flatten_reflections
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
     if len(reflections) == 0:
-      raise Abort('No valid reflection file given')
+      raise Sorry('No valid reflection file given')
     if len(reflections) != 1:
-      raise Abort('Exactly 1 reflection file must be specified')
+      raise Sorry('Exactly 1 reflection file must be specified')
     reflections = reflections[0]
 
     print "{0} reflections loaded".format(len(reflections))
 
     if len(params.inclusions.flag) == 0:
-      raise Abort('No inclusion criteria given')
+      raise Sorry('No inclusion criteria given')
 
     # Build up the initial inclusion selection
     inc = flex.bool(len(reflections))

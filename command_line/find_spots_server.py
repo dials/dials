@@ -144,7 +144,7 @@ integrate = False
       assert(len(matched) == len(predicted))
       assert(matched.count(True) <= len(reference))
       if matched.count(True) == 0:
-        raise Abort('''
+        raise Sorry('''
           Invalid input for reference reflections.
           Zero reference spots were matched to predictions
         ''')

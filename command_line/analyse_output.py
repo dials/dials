@@ -1361,7 +1361,7 @@ class Script(object):
   def run(self):
     ''' Run the script. '''
     from dials.util.command_line import Command
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -1372,7 +1372,7 @@ class Script(object):
 
     # Shoe the help
     if len(params.input.reflections) != 1:
-      raise Abort('No reflections specified')
+      raise Sorry('No reflections specified')
 
     # Analyse the reflections
     analyse = Analyser(

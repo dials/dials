@@ -26,7 +26,7 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_datablocks
-  from libtbx.utils import Abort
+  from libtbx.utils import Sorry
   import libtbx.load_env
 
   usage = "%s [options] datablock.json | experiments.json | image_*.cbf" %(
@@ -84,7 +84,7 @@ def run(args):
         if imageset.get_goniometer() is not None:
           print imageset.get_goniometer()
   if experiments is None and datablocks is None:
-    raise Abort('No experiments or datablocks specified')
+    raise Sorry('No experiments or datablocks specified')
   return
 
 if __name__ == '__main__':

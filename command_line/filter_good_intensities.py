@@ -31,7 +31,7 @@ def run(args):
   import libtbx.load_env
   from dials.util.options import OptionParser
   from dials.util.options import flatten_reflections
-  from libtbx.utils import Abort
+  from libtbx.utils import Sorry
   from libtbx.phil import parse
   phil_scope = parse('''
     hklout = hklout.pickle
@@ -50,7 +50,7 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=True)
   reflections = flatten_reflections(params.input.reflections)
   if len(reflections) != 1:
-    raise Abort('exactly 1 reflection table must be specified')
+    raise Sorry('exactly 1 reflection table must be specified')
 
   integrated_data = reflections[0]
   filter_good_reflections(integrated_data).as_pickle(params.hklout)

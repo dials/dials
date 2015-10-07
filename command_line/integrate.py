@@ -143,7 +143,7 @@ class Script(object):
     from dials.util import log
     from logging import info, debug
     from time import time
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
 
     # Check the number of arguments is correct
     start_time = time()
@@ -158,13 +158,13 @@ class Script(object):
     if len(reference) == 0:
       reference = None
     elif len(reference) != 1:
-      raise Abort('more than 1 reflection file was given')
+      raise Sorry('more than 1 reflection file was given')
     else:
       reference = reference[0]
     if len(experiments) == 0:
-      raise Abort('no experiment list was specified')
+      raise Sorry('no experiment list was specified')
     elif len(experiments.imagesets()) > 1 or len(experiments.detectors()) > 1:
-      raise Abort('experiment list contains > 1 imageset or detector')
+      raise Sorry('experiment list contains > 1 imageset or detector')
 
     # Save phil parameters
     with open(params.output.phil, "w") as outfile:
@@ -236,7 +236,7 @@ class Script(object):
       assert(len(matched) == len(predicted))
       assert(matched.count(True) <= len(reference))
       if matched.count(True) == 0:
-        raise Abort('''
+        raise Sorry('''
           Invalid input for reference reflections.
           Zero reference spots were matched to predictions
         ''')
@@ -283,7 +283,7 @@ class Script(object):
     from dials.array_family import flex
     from logging import info
     from time import time
-    from libtbx.utils import Abort
+    from libtbx.utils import Sorry
     if reference is None:
       return None
     st = time()
@@ -294,7 +294,7 @@ class Script(object):
     mask = reference.get_flags(reference.flags.indexed)
     reference.del_selected(mask == False)
     if len(reference) == 0:
-      raise Abort('''
+      raise Sorry('''
         Invalid input for reference reflections.
         Expected > %d indexed spots, got %d
       ''' % (0, len(reference)))
@@ -304,7 +304,7 @@ class Script(object):
       info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
     mask = reference['id'] < 0
     if mask.count(True) > 0:
-      raise Abort('''
+      raise Sorry('''
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
       ''' % mask.count(True))
