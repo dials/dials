@@ -512,7 +512,7 @@ class RefinerFactory(object):
     if goniometer and not image_width_rad and not scan:
       # This is not to be supported any more. Now we state we must have enough
       # information to make a scan
-      raise RuntimeError("Goniometer provided, but not enough information about a scan!")
+      raise Sorry("Goniometer provided, but not enough information about a scan!")
       # if there was neither a scan nor the image width provided,
       # the target rmsd must be provided in absolute terms
       #assert params.refinement.target.rmsd_cutoff == "absolute"
@@ -803,7 +803,7 @@ class RefinerFactory(object):
         elif crystal_options.fix == "orientation":
           xl_ori_param.set_fixed([True] * num_ori)
         else: # can only get here if refinement.phil is broken
-          raise RuntimeError("crystal_options.fix value not recognised")
+          raise Sorry("crystal_options.fix value not recognised")
 
       if crystal_options.cell_fix_list:
         to_fix = [True if i in crystal_options.cell_fix_list else False \
@@ -848,7 +848,7 @@ class RefinerFactory(object):
         det_param = par.DetectorParameterisationHierarchical(detector, beam,
                 experiment_ids=exp_ids, level=detector_options.hierarchy_level)
       else: # can only get here if refinement.phil is broken
-        raise RuntimeError("detector_options.panels value not recognised")
+        raise Sorry("detector_options.panels value not recognised")
 
       if detector_options.fix:
         if detector_options.fix == "all":
@@ -862,7 +862,7 @@ class RefinerFactory(object):
                     for e in det_param.get_params(only_free = False)]
           det_param.set_fixed(to_fix)
         else: # can only get here if refinement.phil is broken
-          raise RuntimeError("detector_options.fix value not recognised")
+          raise Sorry("detector_options.fix value not recognised")
 
       if detector_options.fix_list:
         to_fix = [True if i in detector_options.fix_list else False \
@@ -957,19 +957,19 @@ class RefinerFactory(object):
         if model_nparam_minus_nref(bp, reflections) < 0:
           mdl = 'Beam{0}'.format(i)
           msg = failmsg.format(mdl)
-          raise RuntimeError(msg)
+          raise Sorry(msg)
 
       for i, xlo in enumerate(xl_ori_params):
         if model_nparam_minus_nref(xlo, reflections) < 0:
           mdl = 'Crystal{0} orientation'.format(i)
           msg = failmsg.format(mdl)
-          raise RuntimeError(msg)
+          raise Sorry(msg)
 
       for i, xluc in enumerate(xl_uc_params):
         if model_nparam_minus_nref(xluc, reflections) < 0:
           mdl = 'Crystal{0} unit cell'.format(i)
           msg = failmsg.format(mdl)
-          raise RuntimeError(msg)
+          raise Sorry(msg)
 
       for i, dp in enumerate(det_params):
         try: # test for hierarchical detector parameterisation
@@ -979,12 +979,12 @@ class RefinerFactory(object):
               msg = 'Too few reflections to parameterise Detector{0} panel group {1}'
               msg = msg.format(i, igp)
               msg += '\nTry modifying refinement.parameterisation.auto_reduction options'
-              raise RuntimeError(msg)
+              raise Sorry(msg)
         except AttributeError:
           if model_nparam_minus_nref(dp, reflections) < 0:
             mdl = 'Detector{0}'.format(i)
             msg = failmsg.format(mdl)
-            raise RuntimeError(msg)
+            raise Sorry(msg)
 
     elif auto_reduction.action == 'fix':
       warnmsg = 'Too few reflections to parameterise {0}'
@@ -1120,7 +1120,7 @@ class RefinerFactory(object):
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
               import VaryingCrystalPredictionParameterisationFast as PredParam
         else:
-          raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
+          raise Sorry("UB_model_per=" + crystal_options.scan_varying +
                              " is not a recognised option")
         pred_param = PredParam(
               experiments,
@@ -1168,7 +1168,7 @@ class RefinerFactory(object):
     elif options.engine == "LevMar":
       from engine import LevenbergMarquardtIterations as refinery
     else:
-      raise RuntimeError("Refinement engine " + options.engine +
+      raise Sorry("Refinement engine " + options.engine +
                          " not recognised")
 
     debug("Selected refinement engine type: %s", options.engine)
@@ -1322,7 +1322,7 @@ class RefinerFactory(object):
     elif options.rmsd_cutoff == "absolute":
       absolute_cutoffs = options.absolute_cutoffs
     else:
-      raise RuntimeError("Target function rmsd_cutoff option" +
+      raise Sorry("Target function rmsd_cutoff option" +
           options.rmsd_cutoff + " not recognised")
 
     # build managed reflection predictors
