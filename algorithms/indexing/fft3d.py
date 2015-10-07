@@ -640,6 +640,9 @@ class indexer_fft3d(indexer_base):
       self.debug_write_ccp4_map(dirty_map, "clean.map")
 
     self.sites = peaks_frac
+    # we don't really know the "volume"" of the peaks, but this method should
+    # find the peaks in order of their intensity (strongest first)
+    self.volumes = flex.double(range(len(self.sites), 0, -1))
 
     return
 
