@@ -1089,8 +1089,7 @@ class indexer_base(object):
           params, indexed_reflections, experiments,
           verbosity=0)
         refiner.run()
-      except RuntimeError, e:
-        #print e
+      except (RuntimeError, Sorry), e:
         return
       else:
         rmsds = refiner.rmsds()
