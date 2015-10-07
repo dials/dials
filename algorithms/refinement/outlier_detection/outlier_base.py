@@ -1,6 +1,5 @@
 from logging import info, debug
 from libtbx.phil import parse
-from libtbx.utils import Sorry
 from dials.array_family import flex
 
 class CentroidOutlier(object):
@@ -249,7 +248,7 @@ class CentroidOutlierFactory(object):
       from sauter_poon import SauterPoon as outlier_detector
       algo_params = params.outlier.sauter_poon
     else:
-      raise Sorry("outlier.algorithm not recognised")
+      raise RuntimeError("outlier.algorithm not recognised")
 
     # construct kwargs from the algo_params scope
     kwargs = dict((k, v) for k, v in algo_params.__dict__.items() \
