@@ -246,12 +246,14 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
+    from time import time
+    import cPickle as pickle
+    from logging import info
+    from dials.util import log
     from dials.algorithms.refinement import RefinerFactory
     from dials.util.options import flatten_reflections, flatten_experiments
-    import cPickle as pickle
 
-    from dials.util import log
-    from logging import info
+    start_time = time()
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)
@@ -408,6 +410,9 @@ class Script(object):
         info('Saving refinement step history to {0}'.format(
           params.output.history))
         pickle.dump(history, handle)
+
+    # Log the total time taken
+    info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
 
     return
 
