@@ -1575,7 +1575,6 @@ class SolutionTrackerWeighted(object):
   def score_by_fraction_indexed(self, reverse=False):
     # more indexed reflections = better
     fraction_indexed = flex.double(s.fraction_indexed for s in self.all_solutions)
-    fraction_unindexed = 1-fraction_indexed
     score = flex.log(fraction_indexed)/math.log(2)
     return self.n_indexed_weight * (-score + flex.max(score))
 
