@@ -231,7 +231,7 @@ def serve(httpd):
 import libtbx.phil
 phil_scope = libtbx.phil.parse('''\
 nproc = Auto
-  .type = int(value_min=2)
+  .type = int(value_min=1)
 port = 1701
   .type = int(value_min=1)
 ''')

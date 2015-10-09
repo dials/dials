@@ -96,7 +96,7 @@ def stop(host, port, nproc):
 import libtbx.phil
 phil_scope = libtbx.phil.parse("""\
 nproc = Auto
-  .type = int(value_min=2)
+  .type = int(value_min=1)
 host = localhost
   .type = str
 port = 1701
