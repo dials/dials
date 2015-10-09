@@ -29,7 +29,7 @@ def run():
   s.bind(("",0))
   port = s.getsockname()[1]
   s.close()
-  server_command = "dials.find_spots_server port=%i" %port
+  server_command = "dials.find_spots_server port=%i nproc=1" %port
 
   p = multiprocessing.Process(target=start_server, args=(server_command,))
   p.daemon = True
@@ -75,6 +75,7 @@ def exercise_client(port):
     ["dials.find_spots_client",
      "port=%i" %port,
      "min_spot_size=3",
+     "nproc=1",
      filenames[0]]
   )
 
