@@ -7,16 +7,17 @@ def work(host, port, filename, params):
   for param in params:
     path += ';%s' % param
   conn.request('GET', path)
-  response = conn.getresponse()
-  return response.read()
+  return conn.getresponse().read()
 
-def nproc():
+def _nproc():
   from libtbx.introspection import number_of_processors
   return number_of_processors(return_value_if_unknown=-1)
 
-def work_all(host, port, filenames, params, plot=False, table=False, grid=None):
+def work_all(host, port, filenames, params, plot=False, table=False, grid=None, nproc=None):
   from multiprocessing.pool import ThreadPool as thread_pool
-  pool = thread_pool(processes=nproc())
+  if nproc is None:
+    nproc=_nproc()
+  pool = thread_pool(processes=nproc)
   threads = { }
   for filename in filenames:
     threads[filename] = pool.apply_async(work, (host, port, filename, params))
@@ -130,7 +131,10 @@ if __name__ == '__main__':
   params = params.extract()
 
   if params.nproc is libtbx.Auto:
+    nproc = None
     params.nproc = 1024
+  else:
+    nproc = params.nproc
 
   if len(args) and args[0] == 'stop':
     stopped = stop(params.host, params.port, params.nproc)
@@ -140,4 +144,4 @@ if __name__ == '__main__':
       print work(params.host, params.port, filenames[0], args)
     else:
       work_all(params.host, params.port, filenames, args, plot=params.plot,
-               table=params.table, grid=params.grid)
+               table=params.table, grid=params.grid, nproc=nproc)
