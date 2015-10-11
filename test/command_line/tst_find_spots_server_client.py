@@ -29,7 +29,7 @@ def run():
   s.bind(("",0))
   port = s.getsockname()[1]
   s.close()
-  server_command = "dials.find_spots_server port=%i nproc=1" %port
+  server_command = "dials.find_spots_server port=%i nproc=3" %port
 
   p = multiprocessing.Process(target=start_server, args=(server_command,))
   p.daemon = True
