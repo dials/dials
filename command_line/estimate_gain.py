@@ -10,11 +10,16 @@ help_message = '''
 '''
 
 phil_scope = iotbx.phil.parse("""\
-kernel_size = 10,10
-  .type = ints(size=2, value_min=1)
+  kernel_size = 10,10
+    .type = ints(size=2, value_min=1)
+  output {
+    gain_map = None
+      .type = str
+      .help = "Name of output gain map file"
+  }
 """, process_includes=True)
 
-def estimate_gain(imageset, kernel_size=(10,10)):
+def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None):
   detector = imageset.get_detector()
 
   from dials.algorithms.image.threshold import KabschDebug
@@ -60,7 +65,14 @@ def estimate_gain(imageset, kernel_size=(10,10)):
   inlier_sel = (sorted_dispersion > (q1 - 1.5*iqr)) & (sorted_dispersion < (q3 + 1.5*iqr))
   sorted_dispersion = sorted_dispersion.select(inlier_sel)
   gain = sorted_dispersion[nint(len(sorted_dispersion)/2)]
-  print "Estimated gain: %.2f" %gain
+  print "Estimated gain: %.2f" % gain
+
+  if output_gain_map:
+    # write the gain map
+    import cPickle as pickle
+    gain_map = flex.double(flex.grid(raw_data[0].all()), gain)
+    pickle.dump(gain_map, open(output_gain_map, "w"),
+                protocol=pickle.HIGHEST_PROTOCOL)
 
   if 0:
     sel = flex.random_selection(population_size=len(sorted_dispersion), sample_size=10000)
@@ -113,7 +125,7 @@ def run(args):
 
   assert len(imagesets) == 1
   imageset = imagesets[0]
-  estimate_gain(imageset, params.kernel_size)
+  estimate_gain(imageset, params.kernel_size, params.output.gain_map)
 
   return
 
