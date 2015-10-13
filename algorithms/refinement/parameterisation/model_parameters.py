@@ -330,7 +330,7 @@ class ModelParameterisation(object):
       # in the model state elements, to calculate an approximate variance-
       # covariance matrix of the state elements. That is, state_cov is the
       # matrix product: jacobian * var_cov * jacobian_t
-      tmp = var_cov.as_flex_double_matrix().matrix_multiply(jacobian_t)
+      tmp = var_cov.matrix_multiply(jacobian_t)
       state_cov = jacobian_t.matrix_transpose_multiply(tmp).as_scitbx_matrix()
       state_covs.append(state_cov)
 

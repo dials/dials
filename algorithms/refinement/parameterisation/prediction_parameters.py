@@ -257,7 +257,7 @@ class PredictionParameterisation(object):
     if self._detector_parameterisations:
       for model in self._detector_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
         state_covs = model.calculate_state_uncertainties(sub)
         if state_covs is None: continue
         if len(state_covs) == 1:
@@ -270,7 +270,7 @@ class PredictionParameterisation(object):
     if self._beam_parameterisations:
       for model in self._beam_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
         state_covs = model.calculate_state_uncertainties(sub)
         if state_covs is None: continue
         if len(state_covs) == 1:
@@ -283,7 +283,7 @@ class PredictionParameterisation(object):
     if self._xl_orientation_parameterisations:
       for model in self._xl_orientation_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
         state_covs = model.calculate_state_uncertainties(sub)
         if state_covs is None: continue
         if len(state_covs) == 1:
@@ -296,7 +296,7 @@ class PredictionParameterisation(object):
     if self._xl_unit_cell_parameterisations:
       for model in self._xl_unit_cell_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
         state_covs = model.calculate_state_uncertainties(sub)
         if state_covs is None: continue
         if len(state_covs) == 1:
