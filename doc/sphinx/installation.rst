@@ -37,7 +37,7 @@ Mac graphical binary installers
 -------------------------------
 
 We provide a graphical package installer for Mac users. Download, the
-`Mac OS X 10.10.3 <http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.10.3.pkg>`_
+`Mac OS X 10.11 <http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.11.pkg>`_
 or
 `Mac OS X 10.6 <http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.6.pkg>`_
 installer and double click the ``.pkg`` file to start the
@@ -62,8 +62,8 @@ platforms, e.g. on Linux::
 
 Or on Mac::
 
-  curl http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.10.3.tar.gz > dials-macosx-10.10.3.tar.gz
-  tar -xzf dials-macosx-10.10.3.tar.gz
+  curl http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.11.tar.gz > dials-macosx-10.11.tar.gz
+  tar -xzf dials-macosx-10.11.tar.gz
   cd dials-installer-dev
 
 Then to install in the /usr/local directory (you may need to add a ``sudo``
