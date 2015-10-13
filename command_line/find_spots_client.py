@@ -136,12 +136,12 @@ if __name__ == '__main__':
   else:
     nproc = params.nproc
 
-  if len(args) and args[0] == 'stop':
+  if len(unhandled) and unhandled[0] == 'stop':
     stopped = stop(params.host, params.port, params.nproc)
     print 'Stopped %d findspots processes' % stopped
   else:
     if len(filenames) == 1:
-      print work(params.host, params.port, filenames[0], args)
+      print work(params.host, params.port, filenames[0], unhandled)
     else:
-      work_all(params.host, params.port, filenames, args, plot=params.plot,
+      work_all(params.host, params.port, filenames, unhandled, plot=params.plot,
                table=params.table, grid=params.grid, nproc=nproc)
