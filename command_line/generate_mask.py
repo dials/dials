@@ -38,6 +38,18 @@ phil_scope = parse("""
       .help = "An untrusted rectangle (x0, x1, y0, y1)"
   }
 
+  resolution
+    .multiple = True
+  {
+    d_min=None
+      .type = float
+      .help = "The maximum resolution to mask out."
+
+    d_max=None
+      .type = float
+      .help = "The minimum resolution to mask out."
+  }
+
   output {
     mask = mask.pickle
       .type = str
@@ -57,8 +69,10 @@ class MaskGenerator(object):
     from dials.array_family import flex
     from math import floor, ceil
 
-    # Get the detector
+    # Get the detector and beam
     detector = imageset.get_detector()
+    beam = imageset.get_beam()
+    s0 = beam.get_s0()
 
     # Get the first image
     image = imageset[0]
@@ -140,6 +154,22 @@ class MaskGenerator(object):
             rect = flex.bool(flex.grid(y1-y0,x1-x0),False)
             mask[y0:y1,x0:x1] = rect
 
+      # Mask out resolution for all panels
+      for resolution in self.params.resolution:
+        if resolution.d_min is not None:
+          d_min = resolution.d_min
+        else:
+          d_min = 0
+        if resolution.d_max is not None:
+          d_max = resolution.d_max
+        else:
+          d_max = 1e9
+        for j in range(mask.all()[0]):
+          for i in range(mask.all()[1]):
+            d = panel.get_resolution_at_pixel(s0, (i,j))
+            if d_min <= d <= d_max:
+              mask[j,i] = False
+
       # Add to the list
       masks.append(mask)
 
@@ -190,6 +220,7 @@ class Script(object):
     mask = generator.generate(imageset)
 
     # Save the mask to file
+    print "Writing mask to %s" % params.output.mask
     pickle.dump(mask, open(params.output.mask, "w"))
 
 if __name__ == '__main__':
