@@ -317,18 +317,22 @@ class ModelParameterisation(object):
     # the jacobian is the m*n matrix of partial derivatives of the m state
     # elements wrt the n parameters
     from libtbx.utils import flat_list
-    from scitbx import matrix
+    from scitbx.array_family import flex
 
     state_covs = []
     for grads_one_state in grads:
-      jacobian_t = matrix.rec(flat_list(grads_one_state), (len(grads_one_state),
-        len(grads_one_state[0].elems)))
-      jacobian = jacobian_t.transpose()
+      jacobian_t = flex.double(flat_list(grads_one_state))
+      jacobian_t.reshape(flex.grid(len(grads_one_state),
+                                   len(grads_one_state[0].elems)))
+
       # propagation of errors takes the variance-covariance matrix of parameters,
       # along with the jacobian mapping changes in parameter values to changes
       # in the model state elements, to calculate an approximate variance-
-      # covariance matrix of the state elements
-      state_covs.append(jacobian * var_cov * jacobian_t)
+      # covariance matrix of the state elements. That is, state_cov is the
+      # matrix product: jacobian * var_cov * jacobian_t
+      tmp = var_cov.as_flex_double_matrix().matrix_multiply(jacobian_t)
+      state_cov = jacobian_t.matrix_transpose_multiply(tmp).as_scitbx_matrix()
+      state_covs.append(state_cov)
 
     #FIXME don't have anywhere to put this information yet! Probably need to
     #assign it to the model somehow
