@@ -478,6 +478,7 @@ namespace dials { namespace af { namespace boost_python {
   template <typename T>
   boost::python::list split_indices_by_experiment_id(
       T self, std::size_t num_expr) {
+    DIALS_ASSERT(self.size() > 0);
     DIALS_ASSERT(num_expr > 0);
     DIALS_ASSERT(self.contains("id"));
 
@@ -497,15 +498,15 @@ namespace dials { namespace af { namespace boost_python {
     std::partial_sum(num.begin(), num.end(), std::back_inserter(offset));
     num.assign(num.size(), 0);
     for (std::size_t i = 0; i < indices.size(); ++i) {
-      std::size_t j = id[i];
-      DIALS_ASSERT(j < offset.size() - 1);
-      std::size_t off1 = offset[j];
-      std::size_t off2 = offset[j+1];
+      std::size_t exp_id = id[i];
+      DIALS_ASSERT(exp_id < offset.size() - 1);
+      std::size_t off1 = offset[exp_id];
+      std::size_t off2 = offset[exp_id+1];
       DIALS_ASSERT(off2 > off1);
       DIALS_ASSERT(off2 <= indices.size());
-      std::size_t k = off1 + num[j];
-      DIALS_ASSERT(j < off2);
-      num[j]++;
+      std::size_t k = off1 + num[exp_id];
+      DIALS_ASSERT(k < off2);
+      num[exp_id]++;
       indices[k] = i;
     }
 
