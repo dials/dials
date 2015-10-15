@@ -26,6 +26,10 @@ as shown in the examples below. Alternatively a template can be specified using
 the template= parameter where the consecutive digits representing the image
 numbers in the filenames are replaced with '#' characters.
 
+The geometry can be set manually by either specifying a datablock.json file
+contaning the reference geometry, by setting the mosflm beam centre of by
+setting each variable to be overriden.
+
 Examples::
 
   dials.import image_*.cbf
@@ -79,10 +83,106 @@ phil_scope = parse('''
               "image headers."
   }
 
-  mosflm_beam_centre = None
-    .type = floats(size=2)
-    .help = "Override the beam centre from the image headers, following "
-            "the mosflm convention."
+  geometry {
+
+    beam {
+
+      wavelength = None
+        .type = float
+        .help = "Override the beam wavelength"
+
+      direction = None
+        .type = floats(size=3)
+        .help = "Override the beam direction"
+
+    }
+
+    detector {
+
+      panel
+        .multiple = True
+      {
+        id = 0
+          .type = int
+          .help = "The panel number"
+
+        name = None
+          .type = str
+          .help = "Override the panel name"
+
+        type = None
+          .type = str
+          .help = "Override the panel type"
+
+        pixel_size = None
+          .type = floats(size=2)
+          .help = "Override the panel pixel size"
+
+        image_size = None
+          .type = ints(size=2)
+          .help = "Override the panel image size"
+
+        trusted_range = None
+          .type = floats(size=2)
+          .help = "Override the panel trusted range"
+
+        thickness = None
+          .type = float
+          .help = "Override the panel thickness"
+
+        material = None
+          .type = str
+          .help = "Override the panel material"
+
+        fast_axis = None
+          .type = floats(size=3)
+          .help = "Override the panel fast axis. Requires slow_axis and origin."
+
+        slow_axis = None
+          .type = floats(size=3)
+          .help = "Override the panel slow axis. Requires fast_axis and origin."
+
+        origin = None
+          .type = floats(size=3)
+          .help = "Override the panel origin. Requires fast_axis and slow_axis."
+
+      }
+
+    }
+
+    goniometer {
+
+      rotation_axis = None
+        .type = floats(size=3)
+        .help = "Override the rotation axis"
+
+      fixed_rotation = None
+        .type = floats(size=9)
+        .help = "Override the fixed rotation matrix"
+
+      setting_rotation = None
+        .type = floats(size=9)
+        .help = "Override the setting rotation matrix"
+
+    }
+
+    scan {
+
+      image_range = None
+        .type = ints(size=2)
+        .help = "Override the image range"
+
+      oscillation = None
+        .type = floats(size=2)
+        .help = "Override the image oscillation"
+
+    }
+
+    mosflm_beam_centre = None
+      .type = floats(size=2)
+      .help = "Override the beam centre from the image headers, following "
+              "the mosflm convention."
+  }
 
   lookup {
     mask = None
@@ -243,26 +343,82 @@ class Script(object):
             imageset.external_lookup.pedestal.data = dark
             imageset.external_lookup.pedestal.filename = dark_filename
 
+      # Override the geometry. Use the reference geometry first, if set.
+      # Otherwise use the mosflm beam centre and finally look to see if
+      # any items have been otherwise overridden
       if reference_beam is not None and reference_detector is not None:
         for sweep in sweeps:
-          assert reference_detector.is_similar_to(sweep.get_detector(),static_only=True)
+          assert reference_detector.is_similar_to(
+            sweep.get_detector(),
+            static_only=True)
           sweep.set_beam(reference_beam)
           sweep.set_detector(reference_detector)
-
         for still in stills:
           assert reference_detector.is_similar_to(still.get_detector())
           still.set_beam(reference_beam)
           still.set_detector(reference_detector)
-
-      elif params.mosflm_beam_centre is not None:
+      elif params.geometry.mosflm_beam_centre is not None:
         from dxtbx.model.detector_helpers import set_mosflm_beam_centre
         for sweep in sweeps:
           set_mosflm_beam_centre(
-            sweep.get_detector(), sweep.get_beam(), params.mosflm_beam_centre)
-
+            sweep.get_detector(),
+            sweep.get_beam(),
+            params.geometry.mosflm_beam_centre)
         for still in stills:
           set_mosflm_beam_centre(
-            still.get_detector(), still.get_beam(), params.mosflm_beam_centre)
+            still.get_detector(),
+            still.get_beam(),
+            params.geometry.mosflm_beam_centre)
+      else:
+        def override_beam(beam, params):
+          if params.wavelength is not None:
+            beam.set_wavelength(params.wavelength)
+          if params.direction is not None:
+            beam.set_direction(params.direction)
+        def override_detector(detector, params):
+          for panel_params in params.panel:
+            panel = detector[panel_params.id]
+            if panel_params.name is not None:
+              panel.set_name(panel_params.name)
+            if panel_params.type is not None:
+              panel.set_type(panel_params.type)
+            if panel_params.pixel_size is not None:
+              panel.set_pixel_size(panel_params.pixel_size)
+            if panel_params.image_size is not None:
+              panel.set_image_size(panel_params.image_size)
+            if panel_params.trusted_range is not None:
+              panel.set_trusted_range(panel_params.trusted_range)
+            if panel_params.thickness is not None:
+              panel.set_thickness(panel_params.thickness)
+            if panel_params.material is not None:
+              panel.set_material(panel_params.material)
+            if (panel_params.fast_axis is not None and
+                panel_params.slow_axis is not None and
+                panel_params.origin is not None):
+              panel.set_frame(
+                panel_params.fast_axis,
+                panel_params.slow_axis,
+                panel_params.origin)
+        def override_goniometer(goniometer, params):
+          if params.rotation_axis is not None:
+            goniometer.set_rotation_axis(params.rotation_axis)
+          if params.fixed_rotation is not None:
+            goniometer.set_fixed_rotation(params.fixed_rotation)
+          if params.setting_rotation is not None:
+            goniometer.set_setting_rotation(params.setting_rotation)
+        def override_scan(scan, params):
+          if params.image_range is not None:
+            scan.set_image_range(params.image_range)
+          if params.oscillation is not None:
+            scan.set_oscillation(params.oscillation)
+        for sweep in sweeps:
+          override_beam(sweep.get_beam(), params.geometry.beam)
+          override_detector(sweep.get_detector(), params.geometry.detector)
+          override_goniometer(sweep.get_goniometer(), params.geometry.goniometer)
+          override_scan(sweep.get_scan(), params.geometry.scan)
+        for still in stills:
+          override_beam(still.get_beam(), params.geometry.beam)
+          override_detector(still.get_detector(), params.geometry.detector)
 
       # Print some data block info
       info("-" * 80)

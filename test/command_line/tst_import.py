@@ -16,6 +16,7 @@ class Test(object):
     self.tst_from_image_files()
     self.tst_import_beam_centre()
     self.tst_with_mask()
+    self.tst_override_geometry()
 
   def tst_with_mask(self):
     from glob import glob
@@ -35,6 +36,83 @@ class Test(object):
     datablock = load.datablock("datablock_with_mask.json")[0]
     imgset = datablock.extract_imagesets()[0]
     assert imgset.external_lookup.mask.filename == mask_filename
+
+    print 'OK'
+
+  def tst_override_geometry(self):
+    from glob import glob
+    import os
+    from libtbx import easy_run
+    from dxtbx.serialize import load
+
+    # Find the image files
+    image_files = glob(os.path.join(self.path, "centroid*.cbf"))
+    image_files = ' '.join(image_files)
+
+    # Write a geometry phil file
+    with open("geometry.phil", "w") as outfile:
+      outfile.write(
+        '''
+        geometry {
+          beam {
+            wavelength = 2
+            direction = (-1,0,0)
+          }
+          detector {
+            panel {
+              name = "New panel"
+              type = "New type"
+              pixel_size = 10,20
+              image_size = 30,40
+              trusted_range = 50,60
+              thickness = 70
+              material = "New material"
+              fast_axis = -1,0,0
+              slow_axis = 0,-1,0
+              origin = 100,100,100
+            }
+          }
+          goniometer {
+            rotation_axis = 0,0,-1
+            fixed_rotation = 0,1,2,3,4,5,6,7,8
+            setting_rotation = 8,7,6,5,4,3,2,1,0
+          }
+          scan {
+            image_range = 1,4
+            oscillation = 1,2
+          }
+        }
+    ''')
+
+    # provide mosflm beam centre to dials.import
+    cmd = 'dials.import %s geometry.phil output=override_geometry.json' %image_files
+    easy_run.fully_buffered(cmd)
+    assert os.path.exists("override_geometry.json")
+    datablock = load.datablock("override_geometry.json")[0]
+    imgset = datablock.extract_imagesets()[0]
+
+    beam = imgset.get_beam()
+    detector = imgset.get_detector()
+    goniometer = imgset.get_goniometer()
+    scan = imgset.get_scan()
+
+    assert beam.get_wavelength() == 2
+    assert beam.get_direction() == (-1,0,0)
+    assert detector[0].get_name() == "New panel"
+    assert detector[0].get_type() == "New type"
+    assert detector[0].get_pixel_size() == (10,20)
+    assert detector[0].get_image_size() == (30,40)
+    assert detector[0].get_trusted_range() == (50,60)
+    assert detector[0].get_thickness() == 70
+    assert detector[0].get_material() == "New material"
+    assert detector[0].get_fast_axis() == (-1,0,0)
+    assert detector[0].get_slow_axis() == (0,-1,0)
+    assert detector[0].get_origin() == (100,100,100)
+    assert goniometer.get_rotation_axis() == (0,0,-1)
+    assert goniometer.get_fixed_rotation() == (0,1,2,3,4,5,6,7,8)
+    assert goniometer.get_setting_rotation() == (8,7,6,5,4,3,2,1,0)
+    assert scan.get_image_range() == (1,4)
+    assert scan.get_oscillation() == (1,2)
 
     print 'OK'
 
