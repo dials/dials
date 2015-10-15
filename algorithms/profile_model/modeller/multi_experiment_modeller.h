@@ -111,21 +111,17 @@ namespace dials { namespace algorithms {
         std::size_t o1 = offset[i];
         std::size_t o2 = offset[i+1];
         DIALS_ASSERT(o2 <= indices.size());
-        DIALS_ASSERT(o1 < o2);
+        DIALS_ASSERT(o1 <= o2);
         std::size_t n = o2 - o1;
 
-        // The indices
-        af::const_ref<std::size_t> ind(&indices[o1], n);
-
-        // Get the reflections
-        af::reflection_table subset = select_rows_index(reflections, ind);
-
-        // Do the modelling
-        DIALS_ASSERT(modellers_[i] != NULL);
-        modellers_[i]->model(subset);
-
-        // Set any results
-        set_selected_rows_index(reflections, ind, subset);
+        // If there are reflections for this experiment do some modelling
+        if (n > 0) {
+          af::const_ref<std::size_t> ind(&indices[o1], n);
+          af::reflection_table subset = select_rows_index(reflections, ind);
+          DIALS_ASSERT(modellers_[i] != NULL);
+          modellers_[i]->model(subset);
+          set_selected_rows_index(reflections, ind, subset);
+        }
       }
     }
 
