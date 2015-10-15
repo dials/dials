@@ -58,7 +58,8 @@ class Importer(object):
                verbose=False,
                compare_beam=None,
                compare_detector=None,
-               compare_goniometer=None):
+               compare_goniometer=None,
+               scan_tolerance=None):
     '''
     Parse the arguments. Populates its instance attributes in an intelligent way
     from the arguments in args.
@@ -95,7 +96,8 @@ class Importer(object):
         verbose,
         compare_beam,
         compare_detector,
-        compare_goniometer)
+        compare_goniometer,
+        scan_tolerance)
 
     # Second try to read data block files
     if read_datablocks:
@@ -117,7 +119,8 @@ class Importer(object):
                                       verbose,
                                       compare_beam,
                                       compare_detector,
-                                      compare_goniometer):
+                                      compare_goniometer,
+                                      scan_tolerance):
     '''
     Try to import images.
 
@@ -135,7 +138,8 @@ class Importer(object):
       unhandled=unhandled,
       compare_beam=compare_beam,
       compare_detector=compare_detector,
-      compare_goniometer=compare_goniometer)
+      compare_goniometer=compare_goniometer,
+      scan_tolerance=scan_tolerance)
     if len(datablocks) > 0:
       filename = "<image files>"
       obj = FilenameDataWrapper(filename, datablocks)
@@ -349,10 +353,12 @@ class PhilCommandParser(object):
         rotation_axis_tolerance=params.input.tolerance.goniometer.rotation_axis,
         fixed_rotation_tolerance=params.input.tolerance.goniometer.fixed_rotation,
         setting_rotation_tolerance=params.input.tolerance.goniometer.setting_rotation)
+      scan_tolerance = params.input.tolerance.scan.oscillation
     else:
       compare_beam = None
       compare_detector = None
       compare_goniometer = None
+      scan_tolerance=None
 
     # Try to import everything
     importer = Importer(
@@ -365,7 +371,8 @@ class PhilCommandParser(object):
       verbose=verbose,
       compare_beam=compare_beam,
       compare_detector=compare_detector,
-      compare_goniometer=compare_goniometer)
+      compare_goniometer=compare_goniometer,
+      scan_tolerance=scan_tolerance)
 
     # Add the cached arguments
     for obj in importer.datablocks:
@@ -468,6 +475,14 @@ class PhilCommandParser(object):
             setting_rotation = 1e-6
               .type = float(value_min=0.0)
               .help = "The setting rotation tolerance"
+
+          }
+
+          scan {
+
+            oscillation = 0.01
+              .type = float(value_min=0.0)
+              .help = "The oscillation tolerance for the scan"
 
           }
         }
