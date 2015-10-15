@@ -1206,7 +1206,6 @@ class RefinerFactory(object):
 
     # Shorten parameter path
     options = params.refinement.reflections
-    options.random_seed
     if options.use_all_reflections:
       nref_per_degree = None
     else:
