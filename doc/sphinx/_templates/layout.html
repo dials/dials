@@ -23,6 +23,17 @@
   <a href="http://www.lbl.gov/"><img class="logofooter" alt="LBL" src="{{ pathto('_static/LBL-logo-wide.jpeg', 1) }}" /></a>
   <a href="https://www.stfc.ac.uk/"><img class="logofooter" alt="STFC" src="{{ pathto('_static/STFC_logo.png', 1) }}" /></a>
   </div>
+
+  <script type="text/javascript">
+     $(document).ready(function() {
+         $(".toggle > *").hide();
+         $(".toggle .header").show();
+         $(".toggle .header").click(function() {
+             $(this).parent().children().not(".header").toggle(400);
+             $(this).parent().children(".header").toggleClass("open");
+         })
+     });
+  </script>
   {{ super() }}
 {% endblock %}
 
