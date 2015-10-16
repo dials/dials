@@ -10,7 +10,6 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <omptbx/omp_or_stubs.h>
 #include <cmath>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
@@ -403,7 +402,6 @@ namespace dials { namespace af { namespace boost_python {
   template <typename FloatType>
   af::shared<Centroid> centroid_all(const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_all();
     }
@@ -417,7 +415,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_masked(
       const const_ref< Shoebox<FloatType> > &a, int code) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_masked(code);
     }
@@ -431,7 +428,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_valid(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_valid();
     }
@@ -445,7 +441,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_foreground(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_foreground();
     }
@@ -459,7 +454,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_strong(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_strong();
     }
@@ -473,7 +467,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_all_minus_background(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_all_minus_background();
     }
@@ -487,7 +480,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_masked_minus_background(
       const const_ref< Shoebox<FloatType> > &a, int code) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_masked_minus_background(code);
     }
@@ -501,7 +493,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_valid_minus_background(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_valid_minus_background();
     }
@@ -515,7 +506,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_foreground_minus_background(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_foreground_minus_background();
     }
@@ -529,7 +519,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Centroid> centroid_strong_minus_background(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Centroid> result(a.size(), Centroid());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_strong_minus_background();
     }
@@ -543,7 +532,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<Intensity> summed_intensity(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Intensity> result(a.size(), Intensity());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity();
     }
@@ -557,7 +545,6 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<double> mean_background(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<double> result(a.size());
-    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       af::versa<FloatType, af::c_grid<3> > data = a[i].data;
       af::versa<int, af::c_grid<3> > mask = a[i].mask;
@@ -584,7 +571,6 @@ namespace dials { namespace af { namespace boost_python {
    */
   template <typename FloatType>
   void flatten(ref< Shoebox<FloatType> > self) {
-    #pragma omp parallel for
     for (std::size_t i = 0; i < self.size(); ++i) {
       self[i].flatten();
     }
