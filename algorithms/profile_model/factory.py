@@ -47,7 +47,7 @@ class ProfileModelFactory(object):
     for expr, indices in reflections.iterate_experiments_and_indices(experiments):
       expr.profile = Algorithm.create(
         params.profile,
-        reflections,
+        reflections.select(indices),
         expr.crystal,
         expr.beam,
         expr.detector,

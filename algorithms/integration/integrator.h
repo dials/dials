@@ -582,17 +582,17 @@ namespace dials { namespace algorithms {
       af::reflection_table result = select_rows_index(data_, ind);
 
       // Make sure that the experiment ids start at zero
-      tiny<int,2> expr = job(index).expr();
-      if (expr[0] != 0) {
-        DIALS_ASSERT(expr[0] > 0);
-        DIALS_ASSERT(expr[1] > expr[0]);
-        af::ref<std::size_t> id = result["id"];
-        for (std::size_t i = 0; i < id.size(); ++i) {
-          DIALS_ASSERT(id[i] >= expr[0]);
-          DIALS_ASSERT(id[i] < expr[1]);
-          id[i] -= expr[0];
-        }
-      }
+      /* tiny<int,2> expr = job(index).expr(); */
+      /* if (expr[0] != 0) { */
+      /*   DIALS_ASSERT(expr[0] > 0); */
+      /*   DIALS_ASSERT(expr[1] > expr[0]); */
+      /*   af::ref<std::size_t> id = result["id"]; */
+      /*   for (std::size_t i = 0; i < id.size(); ++i) { */
+      /*     DIALS_ASSERT(id[i] >= expr[0]); */
+      /*     DIALS_ASSERT(id[i] < expr[1]); */
+      /*     id[i] -= expr[0]; */
+      /*   } */
+      /* } */
 
       // Return the reflections
       return result;
@@ -612,15 +612,15 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(ind.size() == result.size());
 
       // Rejig the experiment ids again
-      tiny<int,2> expr = job(index).expr();
-      DIALS_ASSERT(expr[0] >= 0);
-      DIALS_ASSERT(expr[1] > expr[0]);
-      std::size_t num_expr = expr[1] - expr[0];
-      af::ref<std::size_t> id = result["id"];
-      for (std::size_t i = 0; i < id.size(); ++i) {
-        DIALS_ASSERT(id[i] < num_expr);
-        id[i] += expr[0];
-      }
+      /* tiny<int,2> expr = job(index).expr(); */
+      /* DIALS_ASSERT(expr[0] >= 0); */
+      /* DIALS_ASSERT(expr[1] > expr[0]); */
+      /* std::size_t num_expr = expr[1] - expr[0]; */
+      /* af::ref<std::size_t> id = result["id"]; */
+      /* for (std::size_t i = 0; i < id.size(); ++i) { */
+      /*   DIALS_ASSERT(id[i] < num_expr); */
+      /*   id[i] += expr[0]; */
+      /* } */
 
       // Set the result
       set_selected_rows_index(data_, ind, result);

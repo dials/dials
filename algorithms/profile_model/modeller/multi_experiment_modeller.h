@@ -184,24 +184,18 @@ namespace dials { namespace algorithms {
         std::size_t o1 = offset[i];
         std::size_t o2 = offset[i+1];
         DIALS_ASSERT(o2 <= indices.size());
-        DIALS_ASSERT(o1 < o2);
+        DIALS_ASSERT(o1 <= o2);
         std::size_t n = o2 - o1;
 
-        // The indices
-        af::const_ref<std::size_t> ind(&indices[o1], n);
-
-        // Get the reflections
-        af::reflection_table subset = select_rows_index(reflections, ind);
-
-        // Do the fitting
-        af::shared<bool> subset_success = modellers_[i]->fit(subset);
-
-        // Set any results
-        set_selected_rows_index(reflections, ind, subset);
-
-        // Set the successes
-        for (std::size_t j = 0; j < ind.size(); ++j) {
-          success[ind[j]] = subset_success[j];
+        // If there are any reflections, do the fitting
+        if (n > 0) {
+          af::const_ref<std::size_t> ind(&indices[o1], n);
+          af::reflection_table subset = select_rows_index(reflections, ind);
+          af::shared<bool> subset_success = modellers_[i]->fit(subset);
+          set_selected_rows_index(reflections, ind, subset);
+          for (std::size_t j = 0; j < ind.size(); ++j) {
+            success[ind[j]] = subset_success[j];
+          }
         }
       }
 

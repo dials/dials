@@ -163,8 +163,6 @@ class Script(object):
       reference = reference[0]
     if len(experiments) == 0:
       raise Sorry('no experiment list was specified')
-    elif len(experiments.imagesets()) > 1 or len(experiments.detectors()) > 1:
-      raise Sorry('experiment list contains > 1 imageset or detector')
 
     # Save phil parameters
     with open(params.output.phil, "w") as outfile:

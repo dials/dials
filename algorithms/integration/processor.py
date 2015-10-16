@@ -357,10 +357,13 @@ class Task(object):
     # Set the global process ID
     job.index = self.index
 
+    # Check all reflections have same imageset and get it
+    exp_id = list(set(self.reflections['id']))
+    imageset = self.experiments[exp_id[0]].imageset
+    for i in exp_id[1:]:
+      assert self.experiments[i].imageset == imageset, "Task can only handle 1 imageset"
+
     # Get the sub imageset
-    imagesets = self.experiments.imagesets()
-    assert len(imagesets) == 1, "Task can only handle 1 imageset"
-    imageset = imagesets[0]
     frame00, frame01 = self.job
     try:
       frame10, frame11 = imageset.get_array_range()
@@ -551,7 +554,7 @@ class Manager(object):
     assert expr_id[1] > expr_id[0], "Invalid experiment id"
     assert expr_id[0] >= 0, "Invalid experiment id"
     assert expr_id[1] <= len(self.experiments), "Invalid experiment id"
-    expriments = self.experiments[expr_id[0]:expr_id[1]]
+    experiments = self.experiments#[expr_id[0]:expr_id[1]]
     reflections = self.manager.split(index)
     if len(reflections) == 0:
       warn("*** WARNING: no reflections in job %d ***" % index)
@@ -562,7 +565,7 @@ class Manager(object):
       task = Task(
         index=index,
         job=frames,
-        experiments=expriments,
+        experiments=experiments,
         reflections=reflections,
         params=self.params,
         executor=self.executor)
@@ -660,8 +663,8 @@ class Manager(object):
     from math import ceil
     groups = groupby(
       range(len(self.experiments)),
-      lambda x: (self.experiments[x].imageset,
-                 self.experiments[x].scan))
+      lambda x: (id(self.experiments[x].imageset),
+                 id(self.experiments[x].scan)))
     self.jobs = JobList()
     for key, indices in groups:
       indices = list(indices)

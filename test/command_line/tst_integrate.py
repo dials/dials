@@ -14,6 +14,7 @@ class Test(object):
       exit(0)
 
     self.path = join(dials_regression, "centroid_test_data")
+    self.integration_test_data = join(dials_regression, "integration_test_data")
 
   def run(self):
     # self.test1()
@@ -21,6 +22,8 @@ class Test(object):
     self.test2()
     self.test3()
     self.test4()
+    self.test_multi_sweep()
+    self.test_multi_lattice()
 
   def test1(self):
     from os.path import join, exists
@@ -202,6 +205,78 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
     assert len(table) == 500
+
+    print 'OK'
+
+  def test_multi_sweep(self):
+    from os.path import join
+    from libtbx import easy_run
+    import os
+
+    dirname ='multi_sweep'
+    os.mkdir(dirname)
+    os.chdir(dirname)
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.integrate',
+      join(self.integration_test_data, 'multi_sweep', 'experiments.json'),
+      join(self.integration_test_data, 'multi_sweep', 'indexed.pickle')
+    ]).raise_if_errors()
+
+    import cPickle as pickle
+    table = pickle.load(open('integrated.pickle', 'rb'))
+    assert len(table) == 4020
+
+    # Check the results
+    T1 = table[:2010]
+    T2 = table[2010:]
+    ID1 = list(set(T1['id']))
+    ID2 = list(set(T2['id']))
+    assert len(ID1) == 1
+    assert len(ID2) == 1
+    assert ID1[0] == 0
+    assert ID2[0] == 1
+    I1 = T1['intensity.prf.value']
+    I2 = T2['intensity.prf.value']
+    F1 = T1.get_flags(T1.flags.integrated_prf)
+    F2 = T2.get_flags(T2.flags.integrated_prf)
+    assert F1 == F2
+    I1 = I1.select(F1)
+    I2 = I2.select(F2)
+    assert flex.abs(I1 - I2) < 1e-6
+
+    print 'OK'
+
+  def test_multi_lattice(self):
+    from os.path import join
+    from libtbx import easy_run
+    import os
+
+    dirname ='multi_sweep'
+    os.mkdir(dirname)
+    os.chdir(dirname)
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.integrate',
+      join(self.integration_test_data, 'multi_lattice', 'experiments.json'),
+      join(self.integration_test_data, 'multi_lattice', 'indexed.pickle')
+    ]).raise_if_errors()
+
+    import cPickle as pickle
+    table = pickle.load(open('integrated.pickle', 'rb'))
+    assert len(table) == 5604
+
+    # Check output contains from two lattices
+    exp_id = list(set(table['id']))
+    assert len(exp_id) == 2
+
+    # Check both lattices have integrated reflections
+    mask = table.get_flags(table.flags.integrated_prf)
+    table = table.select(mask)
+    exp_id = list(set(table['id']))
+    assert len(exp_id) == 2
 
     print 'OK'
 
