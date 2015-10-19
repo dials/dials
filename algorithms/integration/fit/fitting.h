@@ -141,23 +141,6 @@ namespace dials { namespace algorithms {
         }
       }
       return vec2<double>(sum2 != 0 ? sum1 / sum2 : 0.0, sumv);
-
-      //double df = 0.0, d2f = 0.0, sum_v = 0.0;
-      //for (std::size_t i = 0; i < p.size(); ++i) {
-        //if (m[i]) {
-          //double v = std::abs(b[i]) + std::abs(p[i] * I);
-          //double v2 = v*v;
-          //double v3 = v2*v;
-          //double c2 = c[i] * c[i];
-          //double p2 = p[i] * p[i];
-          //if (v > 0) {
-            //df  += p[i] * (1.0 - c2 / v2);
-            //d2f += 2.0 * p2 * c2 / v3;
-            //sum_v += v;
-          //}
-        //}
-      //}
-      /*return vec2<double>(I - (d2f != 0 ? df / d2f : 0.0), sum_v);*/
     }
 
     /**
