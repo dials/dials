@@ -18,7 +18,7 @@ input experiments.json
 # Python and cctbx imports
 from __future__ import division
 import sys
-from math import pi
+from math import pi, sqrt
 from libtbx.phil import parse
 from libtbx.test_utils import not_approx_equal
 from scitbx import matrix
@@ -63,7 +63,7 @@ class ExperimentsPerturber(object):
   def __init__(self, experiments, sig_mm=0.5, sig_deg=0.2, frac_sig_unitless=0.02):
 
     self._sig_mm = sig_mm
-    self._sig_deg = sig_deg
+    self._sig_mrad = sig_deg * pi/0.18
     self._frac_sig_unitless = frac_sig_unitless
 
     self.dummy_reflections = generate_reflections(experiments)
@@ -101,7 +101,7 @@ class ExperimentsPerturber(object):
       if '(mm)' in str(u):
         self._sigmas.append(self._sig_mm)
       elif '(mrad)' in str(u):
-        self._sigmas.append(self._sig_deg)
+        self._sigmas.append(self._sig_mrad)
       else: # no recognised unit
         self._sigmas.append(self._frac_sig_unitless * val)
 
@@ -129,7 +129,14 @@ class ExperimentsPerturber(object):
 
     return self._refiner.get_experiments()
 
-def generate_reflections(experiments):
+def generate_reflections(experiments, xyzvar=(0., 0., 0.)):
+  '''Generate synthetic reflection centroids using the supplied experiments,
+  with normally-distributed errors applied the variances in xyzvar'''
+
+  # check input
+  if [e >= 0. for e in xyzvar].count(False) > 0:
+    msg = "negative variance requested in " + str(xyzvar) + "!"
+    raise RuntimeError(msg)
 
   refs = []
   for iexp, exp in enumerate(experiments):
@@ -165,8 +172,16 @@ def generate_reflections(experiments):
   ref_predictor = ExperimentsPredictor(experiments)
   obs_refs = ref_predictor.predict(obs_refs)
 
+  # calculate (uncorrelated) errors to offset the centroids
+  # this is safe as elts of xyzvar are already tested to be > 0
+  sigX, sigY, sigZ = [sqrt(e) for e in xyzvar]
+  shift = [(random.gauss(0, sigX),
+            random.gauss(0, sigY),
+            random.gauss(0, sigZ)) for _ in xrange(len(obs_refs))]
+  shift = flex.vec3_double(shift)
+
   # Set 'observed' centroids from the predicted ones
-  obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
+  obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm'] + shift
 
   # Invent some variances for the centroid positions of the simulated data
   im_width = exp.scan.get_oscillation()[1] * pi / 180.
