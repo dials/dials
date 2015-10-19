@@ -52,9 +52,19 @@ from cctbx.sgtbx import space_group, space_group_symbols
 class ExperimentsPerturber(object):
   '''Perturb the models in an experiment list. For simplicity create a complete
   Refiner for this, which will just be used as a carrier for the parameterised
-  models'''
+  models. The offset for parameters in units of mm is controlled by sig_mm,
+  the offset for angle parameters in degrees by sig_deg and the offset for
+  unitless parameters (unit cell parameters - scaled elts of the metrical
+  matrix) by frac_sig_unitless. The parameter shifts are either drawn from
+  a normal distribution or exactly equal to these values. For the unitless
+  parameters the value frac_sig_unitless operates as a fraction of the current
+  parameter value.'''
 
-  def __init__(self, experiments):
+  def __init__(self, experiments, sig_mm=0.5, sig_deg=0.2, frac_sig_unitless=0.02):
+
+    self._sig_mm = sig_mm
+    self._sig_deg = sig_deg
+    self._frac_sig_unitless = frac_sig_unitless
 
     self.dummy_reflections = generate_reflections(experiments)
 
@@ -70,37 +80,54 @@ class ExperimentsPerturber(object):
     self.params.refinement.verbosity=0
 
     self.original_experiments = experiments
+
     return
 
-  def random_perturbation(self, fraction=0.05):
+  def _setup_perturbation(self):
+    '''Obtain a PredictionParameterisation object, get the values of the
+    parameters and their units'''
+
+    self._refiner = RefinerFactory.from_parameters_data_experiments(
+      self.params, self.dummy_reflections, self.original_experiments)
+
+    pr = self._refiner.get_param_reporter()
+    units = [p.param_type for p in pr.get_params()]
+    self._pp = self._refiner._pred_param
+    self._vals = self._pp.get_param_vals()
+
+    # construct list of sigmas according to parameter units
+    self._sigmas = []
+    for (u, val) in zip(units, self._vals):
+      if '(mm)' in str(u):
+        self._sigmas.append(self._sig_mm)
+      elif '(mrad)' in str(u):
+        self._sigmas.append(self._sig_deg)
+      else: # no recognised unit
+        self._sigmas.append(self._frac_sig_unitless * val)
+
+    return
+
+  def random_perturbation(self):
     '''randomly perturb each model parameter value by an amount drawn from a
     normal distribution with sigma equal to fraction*value'''
 
-    refiner = RefinerFactory.from_parameters_data_experiments(
-      self.params, self.dummy_reflections, self.original_experiments)
+    self._setup_perturbation()
+    new_vals = [random.gauss(mu, sig) for (mu, sig) in zip(self._vals, self._sigmas)]
+    self._pp.set_param_vals(new_vals)
 
-    pp = refiner._pred_param
-    vals = pp.get_param_vals()
-    sigmas = [fraction * val for val in vals]
-    new_vals = [random.gauss(mu, sig) for (mu, sig) in zip(vals, sigmas)]
-    pp.set_param_vals(new_vals)
+    return self._refiner.get_experiments()
 
-    return refiner.get_experiments()
+  def known_perturbation(self, shifts=[]):
+    '''Perturb each model parameter value by known amounts'''
 
-  def known_perturbation(self, fraction=0.05):
-    '''Perturb each model parameter value by a known relative amount given by
-    fraction*value'''
+    self._setup_perturbation()
+    if len(shifts) != len(vals):
+      raise RuntimeError("Wrong number of parameter shifts. This experiment "
+        "has {0} parameters".format(len(vals)))
+    new_vals = [v + s for (v,s) in zip(self._vals, self._shifts)]
+    self._pp.set_param_vals(new_vals)
 
-    refiner = RefinerFactory.from_parameters_data_experiments(
-      self.params, self.dummy_reflections, self.original_experiments)
-
-    pp = refiner._pred_param
-    vals = pp.get_param_vals()
-    shifts = [fraction * val for val in vals]
-    new_vals = [val + shift for (val, shift) in zip(vals, shifts)]
-    pp.set_param_vals(new_vals)
-
-    return refiner.get_experiments()
+    return self._refiner.get_experiments()
 
 def generate_reflections(experiments):
 
