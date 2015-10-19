@@ -183,12 +183,15 @@ def generate_reflections(experiments, xyzvar=(0., 0., 0.)):
   # Set 'observed' centroids from the predicted ones
   obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm'] + shift
 
-  # Invent some variances for the centroid positions of the simulated data
-  im_width = exp.scan.get_oscillation()[1] * pi / 180.
-  px_size = exp.detector[0].get_pixel_size()
-  var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
-  var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
-  var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
+  # Store variances for the centroid positions of the simulated data. If errors
+  # are zero, invent some variances
+  if xyzvar == (0., 0., 0.):
+    im_width = exp.scan.get_oscillation()[1] * pi / 180.
+    px_size = exp.detector[0].get_pixel_size()
+    xyzvar = ((px_size[0] / 2.)**2, (px_size[1] / 2.)**2, (im_width / 2.)**2)
+  var_x = flex.double(len(obs_refs), xyzvar[0])
+  var_y = flex.double(len(obs_refs), xyzvar[1])
+  var_phi = flex.double(len(obs_refs), xyzvar[2])
   obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
   info("Total number of observations made: {0}".format(len(obs_refs)))
@@ -201,6 +204,24 @@ if __name__ == "__main__":
   from dials.util.options import OptionParser
   # The phil scope
   phil_scope = parse('''
+  centroid_error
+  {
+    units = *mm px
+      .type = choice
+
+    iid_xyzobs_variances = 0. 0. 0.
+      .help = "Generate independent and identically (normally) distributed"
+              "errors in X, Y and Z according to the supplied variances, using"
+              "the selected units"
+      .type = floats(size=3, value_min=0.)
+
+    iid_xyzobs_sigmas = 0. 0. 0.
+      .help = "Generate independent and identically (normally) distributed"
+              "errors in X, Y and Z according to the supplied standard"
+              "deviations, using the selected units"
+      .type = floats(size=3, value_min=0.)
+  }
+
   include scope dials.algorithms.refinement.refiner.phil_scope
   ''', process_includes=True)
 
@@ -226,8 +247,28 @@ if __name__ == "__main__":
   exp_perturber = ExperimentsPerturber(experiments)
   perturbed_experiments = exp_perturber.random_perturbation()
 
+  # determine xyzvar for reflection generation
+  err = params.centroid_error
+  xyzvar = err.iid_xyzobs_variances
+  if err.iid_xyzobs_sigmas != [0.,0.,0.]:
+    if xyzvar != [0.,0.,0.]:
+      raise RuntimeError("Cannot set both iid_xyzobs_variances and iid_xyzobs_sigmas")
+    # convert sigmas to variances
+    xyzvar = [e**2 for e in err.iid_xyzobs_sigmas]
+
+  # convert units if necessary
+  if err.units == "px":
+    info("Converting units for requested errors. Only the first experiment "
+         "(and first panel) will be used to determine pixel size and image width")
+    exp=experiments[0]
+    image_width_rad = exp.scan.get_oscillation(deg=False)[1]
+    px_size_mm = exp.detector[0].get_pixel_size()
+    xyzvar = (xyzvar[0] * px_size_mm[0]**2,
+              xyzvar[1] * px_size_mm[0]**2,
+              xyzvar[2] * image_width_rad**2)
+
   info("Generating 'observations' to refine against")
-  reflections = generate_reflections(perturbed_experiments)
+  reflections = generate_reflections(perturbed_experiments, xyzvar=xyzvar)
 
   info("Running refinement starting from original experiments")
   refiner = RefinerFactory.from_parameters_data_experiments(
