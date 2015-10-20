@@ -52,13 +52,13 @@ from cctbx.sgtbx import space_group, space_group_symbols
 class ExperimentsPerturber(object):
   '''Perturb the models in an experiment list. For simplicity create a complete
   Refiner for this, which will just be used as a carrier for the parameterised
-  models. The offset for parameters in units of mm is controlled by sig_mm,
-  the offset for angle parameters in degrees by sig_deg and the offset for
-  unitless parameters (unit cell parameters - scaled elts of the metrical
-  matrix) by frac_sig_unitless. The parameter shifts are either drawn from
-  a normal distribution or exactly equal to these values. For the unitless
-  parameters the value frac_sig_unitless operates as a fraction of the current
-  parameter value.'''
+  models. The parameter shifts are either drawn from a normal distribution or
+  exactly equal to a provided list. When randomly generating shifts, the offset
+  for parameters in units of mm is controlled by sig_mm, the offset for angle
+  parameters in degrees by sig_deg and the offset for unitless parameters (unit
+  cell parameters - scaled elts of the metrical matrix) by frac_sig_unitless.
+  For the unitless parameters the value frac_sig_unitless operates as a
+  fraction of the current parameter value.'''
 
   def __init__(self, experiments, sig_mm=0.5, sig_deg=0.2, frac_sig_unitless=0.02):
 
@@ -93,11 +93,11 @@ class ExperimentsPerturber(object):
     pr = self._refiner.get_param_reporter()
     units = [p.param_type for p in pr.get_params()]
     self._pp = self._refiner._pred_param
-    self._vals = self._pp.get_param_vals()
+    self._old_vals = self._pp.get_param_vals()
 
     # construct list of sigmas according to parameter units
     self._sigmas = []
-    for (u, val) in zip(units, self._vals):
+    for (u, val) in zip(units, self._old_vals):
       if '(mm)' in str(u):
         self._sigmas.append(self._sig_mm)
       elif '(mrad)' in str(u):
@@ -107,26 +107,35 @@ class ExperimentsPerturber(object):
 
     return
 
+  def _set_param_vals(self, new_vals):
+    '''Report parameter shifts and set new values'''
+
+    names = self._pp.get_param_names()
+    shifts = [v - u for u,v in zip(self._old_vals, new_vals)]
+    info('Parameter shifts:')
+    for n, s in zip(names, shifts):
+      info(n + ': {0}'.format(s))
+    info('')
+    self._pp.set_param_vals(new_vals)
+
   def random_perturbation(self):
     '''randomly perturb each model parameter value by an amount drawn from a
     normal distribution with sigma equal to fraction*value'''
 
     self._setup_perturbation()
-    new_vals = [random.gauss(mu, sig) for (mu, sig) in zip(self._vals, self._sigmas)]
-    self._pp.set_param_vals(new_vals)
-
+    new_vals = [random.gauss(mu, sig) for (mu, sig) in zip(self._old_vals, self._sigmas)]
+    self._set_param_vals(new_vals)
     return self._refiner.get_experiments()
 
   def known_perturbation(self, shifts=[]):
     '''Perturb each model parameter value by known amounts'''
 
     self._setup_perturbation()
-    if len(shifts) != len(vals):
+    if len(shifts) != len(self._old_vals):
       raise RuntimeError("Wrong number of parameter shifts. This experiment "
-        "has {0} parameters".format(len(vals)))
-    new_vals = [v + s for (v,s) in zip(self._vals, self._shifts)]
-    self._pp.set_param_vals(new_vals)
-
+        "has {0} parameters".format(len(self._old_vals)))
+    new_vals = [v + s for (v,s) in zip(self._old_vals, shifts)]
+    self._set_param_vals(new_vals)
     return self._refiner.get_experiments()
 
 def generate_reflections(experiments, xyzvar=(0., 0., 0.)):
@@ -185,7 +194,7 @@ def generate_reflections(experiments, xyzvar=(0., 0., 0.)):
 
   # Store variances for the centroid positions of the simulated data. If errors
   # are zero, invent some variances
-  if xyzvar == (0., 0., 0.):
+  if tuple(xyzvar) == (0., 0., 0.):
     im_width = exp.scan.get_oscillation()[1] * pi / 180.
     px_size = exp.detector[0].get_pixel_size()
     xyzvar = ((px_size[0] / 2.)**2, (px_size[1] / 2.)**2, (im_width / 2.)**2)
@@ -193,7 +202,6 @@ def generate_reflections(experiments, xyzvar=(0., 0., 0.)):
   var_y = flex.double(len(obs_refs), xyzvar[1])
   var_phi = flex.double(len(obs_refs), xyzvar[2])
   obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
-
   info("Total number of observations made: {0}".format(len(obs_refs)))
 
   return obs_refs
@@ -222,6 +230,30 @@ if __name__ == "__main__":
       .type = floats(size=3, value_min=0.)
   }
 
+  parameter_shifts
+  {
+    sig_mm = 0.5
+      .help = "sigma for random normal generation of parameter shifts for"
+              "parameters in units of mm"
+      .type = float
+
+    sig_deg = 0.2
+      .help = "sigma for random normal generation of parameter shifts for"
+              "angle parameters in units of degrees"
+      .type = float
+
+    frac_sig_unitless = 0.02
+      .help = "fractional size of the sigma compared to the parameter value"
+              "for random normal generation of parameter shifts for parameters"
+              "without units"
+      .type = float
+
+    absolute_shifts = None
+      .help = "list of absolute parameter shifts to use instead of random"
+              "generation"
+      .type = floats
+  }
+
   include scope dials.algorithms.refinement.refiner.phil_scope
   ''', process_includes=True)
 
@@ -244,8 +276,16 @@ if __name__ == "__main__":
       info='synthetic_refine.log', debug='synthetic_refine.debug.log')
 
   info("Perturbing original experiments")
-  exp_perturber = ExperimentsPerturber(experiments)
-  perturbed_experiments = exp_perturber.random_perturbation()
+  exp_perturber = ExperimentsPerturber(experiments,
+    sig_mm=params.parameter_shifts.sig_mm,
+    sig_deg=params.parameter_shifts.sig_deg,
+    frac_sig_unitless=params.parameter_shifts.frac_sig_unitless)
+
+  if params.parameter_shifts.absolute_shifts is None:
+    perturbed_experiments = exp_perturber.random_perturbation()
+  else:
+    perturbed_experiments = exp_perturber.known_perturbation(
+      params.parameter_shifts.absolute_shifts)
 
   # determine xyzvar for reflection generation
   err = params.centroid_error
@@ -267,7 +307,11 @@ if __name__ == "__main__":
               xyzvar[1] * px_size_mm[0]**2,
               xyzvar[2] * image_width_rad**2)
 
-  info("Generating 'observations' to refine against")
+  info("Generating 'observations' to refine against with centroid errors"
+       "(mm, mm, rad) determined by variances:")
+  info('X: {0}'.format(xyzvar[0]))
+  info('Y: {0}'.format(xyzvar[1]))
+  info('phi: {0}'.format(xyzvar[2]))
   reflections = generate_reflections(perturbed_experiments, xyzvar=xyzvar)
 
   info("Running refinement starting from original experiments")
