@@ -42,6 +42,8 @@ min_local = 2
   .type = int
 gain = 1
   .type = float(value_min=0)
+saturation = 0
+  .type = int
 """)
 
 colour_schemes = {
@@ -98,6 +100,8 @@ def run(args):
     panel = detector[0]
     # XXX is this inclusive or exclusive?
     saturation = panel.get_trusted_range()[1]
+    if params.saturation:
+      saturation = params.saturation
     for i_image, image in enumerate(imageset):
 
       if len(detector) == 1:
