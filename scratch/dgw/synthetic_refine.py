@@ -23,6 +23,7 @@ from libtbx.phil import parse
 from libtbx.test_utils import not_approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
+from cctbx.uctbx import unit_cell
 from logging import info, debug
 from copy import deepcopy
 import random
@@ -60,11 +61,14 @@ class ExperimentsPerturber(object):
   For the unitless parameters the value frac_sig_unitless operates as a
   fraction of the current parameter value.'''
 
-  def __init__(self, experiments, sig_mm=0.5, sig_deg=0.2, frac_sig_unitless=0.02):
+  def __init__(self, experiments, sig_mm=0.1, sig_deg=0.05, frac_sig_unitless=0.02,
+    perturb_cell_lengths=True, perturb_cell_angles=True):
 
     self._sig_mm = sig_mm
     self._sig_mrad = sig_deg * pi/0.18
     self._frac_sig_unitless = frac_sig_unitless
+    self._perturb_cell_lengths = perturb_cell_lengths
+    self._perturb_cell_angles = perturb_cell_angles
 
     self.dummy_reflections = generate_reflections(experiments)
 
@@ -104,7 +108,6 @@ class ExperimentsPerturber(object):
         self._sigmas.append(self._sig_mrad)
       else: # no recognised unit
         self._sigmas.append(self._frac_sig_unitless * val)
-
     return
 
   def _set_param_vals(self, new_vals):
@@ -116,7 +119,35 @@ class ExperimentsPerturber(object):
     for n, s in zip(names, shifts):
       info(n + ': {0}'.format(s))
     info('')
+
+    # keep original cells
+    uc_list = [xl.get_unit_cell().parameters() for xl in self.original_experiments.crystals()]
+    print uc_list
     self._pp.set_param_vals(new_vals)
+    print [xl.get_unit_cell().parameters() for xl in self._refiner.get_experiments().crystals()]
+
+    experiments = self._refiner.get_experiments()
+    # hacky way to reset cell parameters if requested
+    if not self._perturb_cell_lengths:
+      for uc, crystal in zip(uc_list, experiments.crystals()):
+        params = list(crystal.get_unit_cell().parameters())
+        params[0] = uc[0]
+        params[1] = uc[1]
+        params[2] = uc[2]
+        newB = matrix.sqr(unit_cell(params).fractionalization_matrix()).transpose()
+        crystal.set_B(newB)
+      info('reset cell lengths to zero shifts')
+    if not self._perturb_cell_angles:
+      for uc, crystal in zip(uc_list, experiments.crystals()):
+        params = list(crystal.get_unit_cell().parameters())
+        params[3] = uc[3]
+        params[4] = uc[4]
+        params[5] = uc[5]
+        newB = matrix.sqr(unit_cell(params).fractionalization_matrix()).transpose()
+        crystal.set_B(newB)
+      info('reset cell angles to zero shifts')
+
+    return
 
   def random_perturbation(self):
     '''randomly perturb each model parameter value by an amount drawn from a
@@ -232,12 +263,12 @@ if __name__ == "__main__":
 
   parameter_shifts
   {
-    sig_mm = 0.5
+    sig_mm = 0.1
       .help = "sigma for random normal generation of parameter shifts for"
               "parameters in units of mm"
       .type = float
 
-    sig_deg = 0.2
+    sig_deg = 0.05
       .help = "sigma for random normal generation of parameter shifts for"
               "angle parameters in units of degrees"
       .type = float
@@ -252,6 +283,14 @@ if __name__ == "__main__":
       .help = "list of absolute parameter shifts to use instead of random"
               "generation"
       .type = floats
+
+    perturb_cell_lengths=True
+      .help = "allow unit cell lengths to be perturbed"
+      .type = bool
+
+    perturb_cell_angles=True
+      .help = "allow unit cell angles to be perturbed"
+      .type = bool
   }
 
   include scope dials.algorithms.refinement.refiner.phil_scope
@@ -279,7 +318,9 @@ if __name__ == "__main__":
   exp_perturber = ExperimentsPerturber(experiments,
     sig_mm=params.parameter_shifts.sig_mm,
     sig_deg=params.parameter_shifts.sig_deg,
-    frac_sig_unitless=params.parameter_shifts.frac_sig_unitless)
+    frac_sig_unitless=params.parameter_shifts.frac_sig_unitless,
+    perturb_cell_lengths=params.parameter_shifts.perturb_cell_lengths,
+    perturb_cell_angles=params.parameter_shifts.perturb_cell_angles)
 
   if params.parameter_shifts.absolute_shifts is None:
     perturbed_experiments = exp_perturber.random_perturbation()
