@@ -40,6 +40,11 @@ img.logofooter {
   padding: 5px;
 }
 
+div.embedpdf {
+  width: 800px;
+  height: 1132px;
+}
+
 
 @media screen and (max-width: 870px) {
 

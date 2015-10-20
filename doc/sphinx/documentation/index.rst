@@ -13,6 +13,8 @@ Documentation and tutorials for DIALS:
    data_files
    tutorials/index
    programs/index
+   Cheat sheet <cheat_sheet>
    conventions
    installation_developer
    library_reference/index
+
