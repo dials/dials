@@ -122,9 +122,7 @@ class ExperimentsPerturber(object):
 
     # keep original cells
     uc_list = [xl.get_unit_cell().parameters() for xl in self.original_experiments.crystals()]
-    print uc_list
     self._pp.set_param_vals(new_vals)
-    print [xl.get_unit_cell().parameters() for xl in self._refiner.get_experiments().crystals()]
 
     experiments = self._refiner.get_experiments()
     # hacky way to reset cell parameters if requested
@@ -306,7 +304,6 @@ if __name__ == "__main__":
 
   # Parse the command line arguments
   params, options = parser.parse_args(show_diff_phil=True)
-  #print params.input.experiments
   from dials.util.options import flatten_experiments
   experiments = flatten_experiments(params.input.experiments)
 
