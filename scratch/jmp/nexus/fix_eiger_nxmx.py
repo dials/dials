@@ -9,7 +9,7 @@ class EigerNXmxFixer(object):
     import shutil
     from os.path import join
     from scitbx import matrix
-    
+
     #
     print "Copying %s to %s to fix NXmx file" % (
       input_filename,
@@ -20,7 +20,7 @@ class EigerNXmxFixer(object):
     print "Opening %s to perform fixes" % (
       output_filename)
     handle = h5py.File(output_filename, 'r+')
-  
+
     # Add some simple datasets
     def create_scalar(handle, path, dtype, value):
       print "Adding dataset %s with value %s" % (
@@ -28,26 +28,26 @@ class EigerNXmxFixer(object):
       dataset = handle.create_dataset(
         path, (), dtype=dtype)
       dataset[()] = value
-   
+
     # Add NXmx definition
     create_scalar(
-      handle['entry'], 
-      "definition", 
-      "S4", 
+      handle['entry'],
+      "definition",
+      "S4",
       "NXmx")
-    
+
     # Add saturation value
     create_scalar(
-      handle['entry/instrument/detector'], 
+      handle['entry/instrument/detector'],
       "saturation_value",
-      "int32", 
+      "int32",
       10000)
-    
+
     # Add detector type
     create_scalar(
-      handle['entry/instrument/detector'], 
+      handle['entry/instrument/detector'],
       "type",
-      "S4", 
+      "S4",
       "PIXEL")
 
     # Move the beam
@@ -71,8 +71,8 @@ class EigerNXmxFixer(object):
     # Create detector data size
     print "Adding dataset %s with value %s" % (join(group.name, "data_size"), str((1030, 1065)))
     dataset = group.create_dataset("data_size", (2,), dtype="int32")
-    dataset[0] = 1030
-    dataset[1] = 1065
+    dataset[0] = handle['/entry/data/data_000001'].shape[2]
+    dataset[1] = handle['/entry/data/data_000001'].shape[1]
 
     # Add fast_pixel_size dataset
     print "Using /entry/instrument/detector/geometry/orientation/value as fast/slow pixel directions"
@@ -88,7 +88,7 @@ class EigerNXmxFixer(object):
     group['fast_pixel_direction'].attrs['offset'] = 0
     group['fast_pixel_direction'].attrs['units'] = "m"
     group['fast_pixel_direction'].attrs['depends_on'] = '.'
-    
+
     # Add slow_pixel_size dataset
     create_scalar(
       group,
@@ -121,7 +121,7 @@ class EigerNXmxFixer(object):
       'depends_on',
       'S1',
       '.')
-      
+
     # Create goniometer transformations
     print "Creating group /entry/sample/transformation"
     group = handle.create_group('/entry/sample/transformations')
@@ -143,10 +143,12 @@ class EigerNXmxFixer(object):
     dataset.attrs['offset'] = 0
     dataset.attrs['depends_on'] = '.'
     omega_range_average = handle['/entry/sample/goniometer/omega_range_average'][()]
+    omega_range_average = int(omega_range_average * 100 + 0.5) / 100.0
     for i in range(num_images):
-      dataset[i] = omega_range_average * i
+      angle = omega_range_average * i
+      dataset[i] = angle
 
-      
+
     # Create sample depends_on
     create_scalar(
       handle['/entry/sample'],
