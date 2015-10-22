@@ -13,7 +13,18 @@ from dials.util.options import flatten_datablocks, flatten_reflections
 from dials.algorithms.indexing.indexer \
      import indexer_base, filter_reflections_by_scan_range
 
-master_phil_scope = iotbx.phil.parse("""
+help_message = '''
+
+Search for a better beam centre using the results of spot finding. Based on
+method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
+
+Examples::
+
+  dials.discover_better_experimental_model datablock.json strong.pickle
+
+'''
+
+phil_scope = iotbx.phil.parse("""
 nproc = Auto
   .type = int(value_min=1)
 plot_search_scope = False
@@ -35,7 +46,7 @@ output = optimized_datablock.json
   .type = path
 """)
 
-master_params = master_phil_scope.fetch().extract()
+master_params = phil_scope.fetch().extract()
 
 import random
 flex.set_random_seed(42)
@@ -355,14 +366,19 @@ def run(args):
 
   parser = OptionParser(
     usage=usage,
-    phil=master_phil_scope,
+    phil=phil_scope,
     read_datablocks=True,
     read_reflections=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=False)
   datablocks = flatten_datablocks(params.input.datablock)
   reflections = flatten_reflections(params.input.reflections)
+
+  if len(datablocks) == 0 or len(reflections) == 0:
+    parser.print_help()
+    exit(0)
 
   # Configure the logging
   log.config(info='dials.discover_better_experimental_model.log')
@@ -373,8 +389,6 @@ def run(args):
     info('The following parameters have been modified:\n')
     info(diff_phil)
 
-  if len(datablocks) == 0:
-    raise Sorry("No DataBlock could be constructed")
   imagesets = []
   for datablock in datablocks:
     imagesets.extend(datablock.extract_imagesets())

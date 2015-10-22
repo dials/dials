@@ -57,17 +57,32 @@ phil_scope = parse('''
   }
 ''')
 
+help_message = '''
+
+Generate plots of the scan-varying crystal orientation and unit cell from the
+input refined_experiments.json which must contain a scan-varying crystal model.
+
+Examples::
+
+  dials.plot_scan_varying_crystal refined_experiments.json
+
+'''
+
 class Script(object):
   '''Class to run script.'''
 
   def __init__(self):
     '''Setup the script.'''
     from dials.util.options import OptionParser
+    import libtbx.load_env
 
+    usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
+      usage=usage,
       phil=phil_scope,
       read_experiments=True,
-      check_format=False)
+      check_format=False,
+      epilog=help_message)
 
   def run(self):
     '''Run the script.'''

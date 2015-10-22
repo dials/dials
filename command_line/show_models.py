@@ -39,52 +39,54 @@ def run(args):
     read_datablocks=True,
     read_datablocks_from_images=True,
     check_format=False,
-    epilog=help)
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
   datablocks = flatten_datablocks(params.input.datablock)
 
-  if experiments is not None:
-    for detector in experiments.detectors():
-      print detector
-    for beam in experiments.beams():
-      print beam
-    for scan in experiments.scans():
-      print scan
-    for goniometer in experiments.goniometers():
-      print goniometer
-    for crystal in experiments.crystals():
-      crystal.show(show_scan_varying=params.show_scan_varying)
-      if crystal.num_scan_points:
-        from scitbx.array_family import flex
-        from cctbx import uctbx
-        abc = flex.vec3_double()
-        angles = flex.vec3_double()
-        for n in range(crystal.num_scan_points):
-          a, b, c, alpha, beta, gamma = crystal.get_unit_cell_at_scan_point(n).parameters()
-          abc.append((a, b, c))
-          angles.append((alpha, beta, gamma))
-        a, b, c = abc.mean()
-        alpha, beta, gamma = angles.mean()
-        mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
-        print "  Average unit cell: %s" %mean_unit_cell
-  if datablocks is not None:
-    for datablock in datablocks:
-      if datablock.format_class() is not None:
-        print 'Format: %s' %datablock.format_class()
-      imagesets = datablock.extract_imagesets()
-      for imageset in imagesets:
-        try: print imageset.get_template()
-        except Exception: pass
-        print imageset.get_detector()
-        print imageset.get_beam()
-        if imageset.get_scan() is not None:
-          print imageset.get_scan()
-        if imageset.get_goniometer() is not None:
-          print imageset.get_goniometer()
-  if experiments is None and datablocks is None:
-    raise Sorry('No experiments or datablocks specified')
+  if len(datablocks) == 0 and len(experiments) == 0:
+    parser.print_help()
+    exit()
+
+  for detector in experiments.detectors():
+    print detector
+  for beam in experiments.beams():
+    print beam
+  for scan in experiments.scans():
+    print scan
+  for goniometer in experiments.goniometers():
+    print goniometer
+  for crystal in experiments.crystals():
+    crystal.show(show_scan_varying=params.show_scan_varying)
+    if crystal.num_scan_points:
+      from scitbx.array_family import flex
+      from cctbx import uctbx
+      abc = flex.vec3_double()
+      angles = flex.vec3_double()
+      for n in range(crystal.num_scan_points):
+        a, b, c, alpha, beta, gamma = crystal.get_unit_cell_at_scan_point(n).parameters()
+        abc.append((a, b, c))
+        angles.append((alpha, beta, gamma))
+      a, b, c = abc.mean()
+      alpha, beta, gamma = angles.mean()
+      mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
+      print "  Average unit cell: %s" %mean_unit_cell
+
+  for datablock in datablocks:
+    if datablock.format_class() is not None:
+      print 'Format: %s' %datablock.format_class()
+    imagesets = datablock.extract_imagesets()
+    for imageset in imagesets:
+      try: print imageset.get_template()
+      except Exception: pass
+      print imageset.get_detector()
+      print imageset.get_beam()
+      if imageset.get_scan() is not None:
+        print imageset.get_scan()
+      if imageset.get_goniometer() is not None:
+        print imageset.get_goniometer()
+
   return
 
 if __name__ == '__main__':

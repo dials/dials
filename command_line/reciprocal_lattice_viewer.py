@@ -12,7 +12,19 @@ from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
 import libtbx.phil
 
-master_phil = libtbx.phil.parse("""
+help_message = '''
+
+Visualise the strong spots from spotfinding in reciprocal space.
+
+Examples::
+
+  dials.reciprocal_lattice_viewer datablock.json strong.pickle
+
+  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+
+'''
+
+phil_scope= libtbx.phil.parse("""
   data = None
     .type = path
     .optional = False
@@ -35,7 +47,7 @@ master_phil = libtbx.phil.parse("""
 """)
 
 def settings () :
-  return master_phil.fetch().extract()
+  return phil_scope.fetch().extract()
 
 class ReciprocalLatticeViewer(wx.Frame):
   def __init__(self, *args, **kwds):
@@ -362,25 +374,33 @@ def run(args):
   from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
+  import libtbx.load_env
+
+  usage = "%s [options] datablock.json reflections.pickle" %(
+    libtbx.env.dispatcher_name)
 
   parser = OptionParser(
-    phil=master_phil,
+    usage=usage,
+    phil=phil_scope,
     read_datablocks=True,
     read_experiments=True,
     read_reflections=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
-  reflections = flatten_reflections(params.input.reflections)[0]
+  reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0:
-    if len(experiments) > 0:
-      imagesets = experiments.imagesets()
-    else:
-      parser.print_help()
-      return
+  if (len(datablocks) == 0 and len(experiments) == 0) or len(reflections) == 0:
+    parser.print_help()
+    exit(0)
+
+  reflections = reflections[0]
+
+  if len(datablocks) == 0 and len(experiments) > 0:
+    imagesets = experiments.imagesets()
   else:
     imagesets = []
     for datablock in datablocks:
