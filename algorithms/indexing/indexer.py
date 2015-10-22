@@ -1638,6 +1638,7 @@ def find_max_cell(reflections, max_cell_multiplier,
     ice_sel = ice_rings_selection(reflections)
     reflections = reflections.select(~ice_sel)
 
+  assert len(reflections) > 0
   # The nearest neighbour analysis gets fooled when the same part of
   # reciprocal space has been measured twice as this introduced small
   # random differences in position between reflections measured twice.
