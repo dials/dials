@@ -27,13 +27,11 @@ def recursive_overwrite(src, dest, ignore=None):
 if (__name__ == "__main__") :
   cctbx_base = libtbx.env.find_in_repositories("cctbx_project")
   dials_dir = libtbx.env.find_in_repositories("dials")
-  dials_htdocs = libtbx.env.find_in_repositories("dials_htdocs")
-  if dials_htdocs is None:
-    dials_htdocs = libtbx.env.find_in_repositories("htdocs")
-  assert (dials_htdocs is not None)
+  dials_github_io = libtbx.env.find_in_repositories("dials.github.io")
+  assert (dials_github_io is not None)
   assert (cctbx_base is not None)
   base_dir = op.dirname(cctbx_base)
-  dest_dir = dials_htdocs
+  dest_dir = dials_github_io
   os.chdir(op.join(dials_dir, "doc", "sphinx"))
   easy_run.call("make clean")
   easy_run.call("make html")
