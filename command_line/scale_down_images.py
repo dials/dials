@@ -1,3 +1,5 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.scale_down_images
+
 from __future__ import division
 
 def nproc():

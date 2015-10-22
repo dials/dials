@@ -21,6 +21,43 @@ matplotlib.use("Agg")
 from matplotlib import pyplot
 from dials.array_family import flex
 
+
+help_message = '''
+
+Generate a number of analysis plots from input integrated or indexed reflections.
+
+Examples::
+
+  dials.analyse_output indexed.pickle
+
+  dials.analyse_output refined.pickle
+
+  dials.analyse_output integrated.pickle
+
+'''
+
+import libtbx.phil
+
+# Create the phil parameters
+phil_scope = libtbx.phil.parse('''
+  output {
+    directory = .
+      .type = str
+      .help = "The directory to store the results"
+  }
+  grid_size = Auto
+    .type = ints(size=2)
+  pixels_per_bin = 10
+    .type = int(value_min=1)
+
+  centroid_diff_max = None
+    .help = "Magnitude in pixels of shifts mapped to the extreme colours"
+            "in the heatmap plots centroid_diff_x and centroid_diff_y"
+    .type = float
+    .expert_level = 1
+''')
+
+
 def ensure_directory(path):
   ''' Make the directory if not already there. '''
   from os import makedirs
@@ -1322,34 +1359,15 @@ class Script(object):
   def __init__(self):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    # Create the phil parameters
-    phil_scope = parse('''
-      output {
-        directory = .
-          .type = str
-          .help = "The directory to store the results"
-      }
-      grid_size = Auto
-        .type = ints(size=2)
-      pixels_per_bin = 10
-        .type = int(value_min=1)
-
-      centroid_diff_max = None
-        .help = "Magnitude in pixels of shifts mapped to the extreme colours"
-                "in the heatmap plots centroid_diff_x and centroid_diff_y"
-        .type = float
-        .expert_level = 1
-    ''')
 
     # Create the parser
     usage = "usage: %s [options] reflections.pickle" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      read_reflections=True)
+      read_reflections=True,
+      epilog=help_message)
 
     self.parser.add_option(
       '--xkcd',
@@ -1372,7 +1390,8 @@ class Script(object):
 
     # Shoe the help
     if len(params.input.reflections) != 1:
-      raise Sorry('No reflections specified')
+      self.parser.print_help()
+      exit(0)
 
     # Analyse the reflections
     analyse = Analyser(

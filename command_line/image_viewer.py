@@ -16,6 +16,25 @@ from __future__ import division
 
 import iotbx.phil
 
+help_message = '''
+
+This program can be used for viewing diffraction images, optionally overlayed
+with the results of spot finding, indexing or integration.
+
+Examples::
+
+  dials.image_viewer image.cbf
+
+  dials.image_viewer datablock.json
+
+  dials.image_viewer datablock.json strong.pickle
+
+  dials.image_viewer datablock.json integrated.pickle
+
+  dials.image_viewer experiments.json
+
+'''
+
 phil_scope = iotbx.phil.parse("""\
 image_viewer {
   brightness = 100
@@ -105,7 +124,8 @@ if __name__ == '__main__':
     read_datablocks=True,
     read_experiments=True,
     read_reflections=True,
-    read_datablocks_from_images=True)
+    read_datablocks_from_images=True,
+    epilog=help_message)
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)

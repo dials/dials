@@ -1,3 +1,5 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_test_reflections
+
 from __future__ import division
 
 def main(args):
