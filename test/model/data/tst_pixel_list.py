@@ -6,54 +6,47 @@ class Test(object):
     pass
 
   def run(self):
-    self.tst_construct()
+    self.tst_pickle()
     self.tst_add_image()
     self.tst_labels_3d()
     self.tst_labels_2d()
     self.tst_with_no_points()
 
-  def tst_construct(self):
+  def tst_pickle(self):
 
     from dials.model.data import PixelList
     from scitbx.array_family import flex
     from random import randint
-    size = (2000, 2000)
+    size = (100, 100)
     sf = 10
-    pl = PixelList(size, sf)
+    image = flex.double(flex.grid(size))
+    mask = flex.bool(flex.grid(size))
+    for i in range(len(image)):
+      image[i] = randint(0,100)
+      mask[i] = bool(randint(0,1))
+    pl = PixelList(sf, image, mask)
     assert(pl.size() == size)
-    assert(pl.first_frame() == sf)
-    assert(pl.last_frame() == sf)
-    assert(pl.num_frames() == 0)
-    assert(pl.frame_range() == (sf, sf))
+    assert(pl.frame() == sf)
 
-    frame_range = (10, 20)
-    values = flex.double(range(100))
-    coords = flex.vec3_int(100)
-    for i in range(100):
-      coords[i] = (
-          randint(10, 20-1),
-          randint(0, 2000-1),
-          randint(0, 2000-1))
+    import cPickle as pickle
 
-    pl = PixelList(size, frame_range, values, coords)
-    assert(pl.size() == size)
-    assert(pl.first_frame() == frame_range[0])
-    assert(pl.last_frame() == frame_range[1])
-    assert(pl.num_frames() == frame_range[1] - frame_range[0])
-    assert(pl.frame_range() == frame_range)
-    assert(len(pl.values()) == 100)
-    assert(len(pl.coords()) == 100)
-    for i in range(100):
-      assert(pl.values()[i] == values[i])
-      assert(pl.coords()[i] == coords[i])
+    obj = pickle.dumps(pl)
+    pl2 = pickle.loads(obj)
+
+    assert(pl2.size() == size)
+    assert(pl2.frame() == sf)
+    assert(len(pl2) == len(pl))
+    assert(pl2.index().all_eq(pl.index()))
+    assert(pl2.value().all_eq(pl.value()))
+
     print 'OK'
 
   def tst_add_image(self):
-    from dials.model.data import PixelList
+    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
     size = (2000, 2000)
     sf = 10
-    pl = PixelList(size, sf)
+    labeller = PixelListLabeller()
 
     count = 0
     for i in range(3):
@@ -61,18 +54,19 @@ class Test(object):
       mask = flex.random_bool(size[0]*size[1], 0.5)
       image.reshape(flex.grid(size))
       mask.reshape(flex.grid(size))
+      pl = PixelList(sf+i, image, mask)
       count += len(mask.as_1d().select(mask.as_1d()))
-      pl.add_image(image, mask)
-    assert(len(pl.values()) == count)
+      labeller.add(pl)
+    assert(len(labeller.values()) == count)
 
     print 'OK'
 
   def tst_labels_3d(self):
-    from dials.model.data import PixelList
+    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
     size = (500, 500)
     sf = 0
-    pl = PixelList(size, sf)
+    labeller = PixelListLabeller()
 
     count = 0
     mask_list = []
@@ -81,12 +75,13 @@ class Test(object):
       mask = flex.random_bool(size[0]*size[1], 0.5)
       image.reshape(flex.grid(size))
       mask.reshape(flex.grid(size))
+      pl = PixelList(sf+i, image, mask)
       count += len(mask.as_1d().select(mask.as_1d()))
-      pl.add_image(image, mask)
+      labeller.add(pl)
       mask_list.append(mask)
 
-    coords = pl.coords()
-    labels = pl.labels_3d()
+    coords = labeller.coords()
+    labels = labeller.labels_3d()
 
     # Create a map of labels
     label_map = flex.int(flex.grid(3, size[0], size[1]))
@@ -116,11 +111,11 @@ class Test(object):
     print 'OK'
 
   def tst_labels_2d(self):
-    from dials.model.data import PixelList
+    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
     size = (500, 500)
     sf = 0
-    pl = PixelList(size, sf)
+    labeller = PixelListLabeller()
 
     count = 0
     mask_list = []
@@ -129,12 +124,13 @@ class Test(object):
       mask = flex.random_bool(size[0]*size[1], 0.5)
       image.reshape(flex.grid(size))
       mask.reshape(flex.grid(size))
+      pl = PixelList(sf+i, image, mask)
       count += len(mask.as_1d().select(mask.as_1d()))
-      pl.add_image(image, mask)
+      labeller.add(pl)
       mask_list.append(mask)
 
-    coords = pl.coords()
-    labels = pl.labels_2d()
+    coords = labeller.coords()
+    labels = labeller.labels_2d()
 
     # Create a map of labels
     label_map = flex.int(flex.grid(3, size[0], size[1]))
@@ -165,11 +161,11 @@ class Test(object):
 
   def tst_with_no_points(self):
 
-    from dials.model.data import PixelList
+    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
     size = (500, 500)
     sf = 0
-    pl = PixelList(size, sf)
+    labeller = PixelListLabeller()
 
     count = 0
     mask_list = []
@@ -178,13 +174,14 @@ class Test(object):
       mask = flex.bool(size[0]*size[0], False)
       image.reshape(flex.grid(size))
       mask.reshape(flex.grid(size))
+      pl = PixelList(sf+i, image, mask)
       count += len(mask.as_1d().select(mask.as_1d()))
-      pl.add_image(image, mask)
+      labeller.add(pl)
       mask_list.append(mask)
 
-    coords = pl.coords()
-    labels1 = pl.labels_2d()
-    labels2 = pl.labels_2d()
+    coords = labeller.coords()
+    labels1 = labeller.labels_2d()
+    labels2 = labeller.labels_2d()
 
     assert len(coords) == 0
     assert len(labels1) == 0
