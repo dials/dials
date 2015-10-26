@@ -138,8 +138,6 @@ class Script(object):
 
     # Save the reflections to file
     info('\n' + '-' * 80)
-    info('Saving {0} reflections to {1}'.format(
-        len(reflections), params.output.reflections))
     reflections.as_pickle(params.output.reflections)
     info('Saved {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
@@ -152,6 +150,7 @@ class Script(object):
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock)
 
+    # Print some per image statistics
     if params.per_image_statistics:
       from dials.algorithms.peak_finding import per_image_analysis
       from cStringIO import StringIO

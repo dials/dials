@@ -12,7 +12,6 @@ sources = [
     'boost_python/flex_intensity.cc',
     'boost_python/flex_observation.cc',
     'boost_python/flex_prediction.cc',
-    'boost_python/flex_pixel_list.cc',
     'boost_python/flex_reflection_table.cc',
     'boost_python/flex_unit_cell.cc',
     'boost_python/flex_shoebox_extractor.cc',

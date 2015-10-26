@@ -22,7 +22,6 @@ def generate_phil_scope():
     .help = "Parameters used in the spot finding algorithm."
   {
     include scope dials.data.lookup.phil_scope
-    include scope dials.data.multiprocessing.phil_scope
 
     write_hot_mask = False
       .type = bool
@@ -126,6 +125,21 @@ def generate_phil_scope():
       #untrusted_rectangle = None
       #  .multiple = True
       #  .type = ints(size=4, value_min=0)
+
+    }
+
+    mp {
+      method = *multiprocessing sge lsf pbs
+        .type = choice
+        .help = "The multiprocessing method to use"
+
+      nproc = 1
+        .type = int(value_min=1)
+        .help = "The number of processes to use."
+
+      chunksize = 20
+        .type = int(value_min=1)
+        .help = "The number of jobs to process per process"
     }
   }
 
@@ -243,11 +257,12 @@ class MinPixelsFilter(object):
 
     '''
     from logging import info
-    info('Filtering {0} spots by number of pixels'.format(
-        flags.count(True)))
+    num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
-    info('Filtered {0} spots by number of pixels'.format(
-        flags.count(True)))
+    num_after = flags.count(True)
+    info('Filtered {0} of {1} spots by number of pixels'.format(
+      num_after,
+      num_before))
     return flags
 
 
@@ -277,11 +292,12 @@ class PeakCentroidDistanceFilter(object):
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
     from logging import info
-    info('Filtering {0} spots by peak-centroid distance'.format(
-        flags.count(True)))
+    num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
-    info('Filtered {0} spots by peak-centroid distance'.format(
-        flags.count(True)))
+    num_after = flags.count(True)
+    info('Filtered {0} or {1} spots by peak-centroid distance'.format(
+      num_after,
+      num_before))
     return flags
 
 
@@ -320,11 +336,12 @@ class CentroidResolutionFilter(object):
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
     from logging import info
-    info('Filtering {0} spots by resolution'.format(
-        flags.count(True)))
+    num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
-    info('Filtered {0} spots by resolution'.format(
-        flags.count(True)))
+    num_after = flags.count(True)
+    info('Filtered {0} of {1} spots by resolution'.format(
+      num_after,
+      num_before))
     return flags
 
 
@@ -368,11 +385,12 @@ class PowderRingFilter(object):
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
     from logging import info
-    info('Filtering {0} spots by powder rings'.format(
-        flags.count(True)))
+    num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
-    info('Filtered {0} spots by powder rings'.format(
-        flags.count(True)))
+    num_after = flags.count(True)
+    info('Filtered {0} of {1} spots by powder rings'.format(
+      num_after,
+      num_before))
     return flags
 
 
@@ -414,11 +432,12 @@ class UntrustedPolygonFilter(object):
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
     from logging import info
-    info('Filtering {0} spots by untrusted polygons'.format(
-        flags.count(True)))
+    num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
-    info('Filtered {0} spots by untrusted polygons'.format(
-        flags.count(True)))
+    num_after = flags.count(True)
+    info('Filtered {0} of {1} spots by untrusted polygons'.format(
+      num_after,
+      num_before))
     return flags
 
 
@@ -582,11 +601,12 @@ class BackgroundGradientFilter(object):
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
     from logging import info
-    info('Filtering {0} spots by background gradient'.format(
-        flags.count(True)))
+    num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
-    info('Filtered {0} spots by background gradient'.format(
-        flags.count(True)))
+    num_after = flags.count(True)
+    info('Filtered {0} or {1} spots by background gradient'.format(
+      num_after,
+      num_before))
     return flags
 
 
@@ -675,11 +695,12 @@ class SpotDensityFilter(object):
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
     from logging import info
-    info('Filtering {0} spots by spot density'.format(
-        flags.count(True)))
+    num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
-    info('Filtered {0} spots by spot density'.format(
-        flags.count(True)))
+    num_after = flags.count(True)
+    info('Filtered {0} of {1} spots by spot density'.format(
+      num_after,
+      num_before))
     return flags
 
 
@@ -737,6 +758,7 @@ class SpotFinderFactory(object):
       mask=params.spotfinder.lookup.mask,
       mp_method=params.spotfinder.mp.method,
       nproc=params.spotfinder.mp.nproc,
+      mp_chunksize=params.spotfinder.mp.chunksize,
       max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction,
       region_of_interest=params.spotfinder.region_of_interest)
 

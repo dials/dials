@@ -34,7 +34,7 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::Centroid;
   using dials::model::Intensity;
   using dials::model::Observation;
-  using dials::model::PixelList;
+  using dials::model::PixelListLabeller;
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::model::BackgroundUsed;
@@ -67,7 +67,7 @@ namespace dials { namespace af { namespace boost_python {
    */
   template <typename FloatType>
   typename af::flex< Shoebox<FloatType> >::type* from_pixel_list(
-      const PixelList &pixel, std::size_t panel,
+      const PixelListLabeller &pixel, std::size_t panel,
       std::size_t zstart, bool twod) {
 
     // Get the stuff from the label struct

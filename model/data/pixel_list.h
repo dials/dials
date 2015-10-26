@@ -23,51 +23,202 @@ namespace dials { namespace model {
   using scitbx::vec3;
 
   /**
-   * A class to hold a load of pixels and coordinates
+   * A class to hold a list of pixels
    */
   class PixelList {
+
+    int frame_;
+    int2 size_;
+    af::shared<double> value_;
+    af::shared<std::size_t> index_;
+
   public:
 
-    PixelList() :
-       size_(0, 0),
-       first_frame_(0) {}
+    /**
+     * Initialise an empty list
+     */
+    PixelList()
+      : frame_(0),
+        size_(0, 0) {}
 
     /**
-     * Initialise
-     * @param size The size of the 2D image
-     * @param first_frame The index of the first frame
+     * Initialise the list
+     * @param frame The current frame
+     * @param image The image values
+     * @param mask The pixel mask
      */
-    PixelList(int2 size, int first_frame)
-      : size_(size),
-        first_frame_(first_frame),
-        last_frame_(first_frame) {}
+    PixelList(
+        int frame,
+        const af::const_ref< int, af::c_grid<2> > &image,
+        const af::const_ref< bool, af::c_grid<2> > &mask) {
 
-    /**
-     * Initialise
-     * @param size The size of the 2D image
-     * @param frame_range The range of the frame indices
-     * @param values The image values
-     * @param coords The image coords
-     */
-    PixelList(int2 size, int2 frame_range,
-              af::shared<double> values,
-              af::shared< vec3<int> > coords)
-      : size_(size),
-        first_frame_(frame_range[0]),
-        last_frame_(frame_range[1]),
-        coords_(coords),
-        values_(values) {
-      DIALS_ASSERT(size[0] > 0 && size[1] > 0);
-      DIALS_ASSERT(last_frame_ >= first_frame_);
-      DIALS_ASSERT(coords_.size() == values_.size());
-      for (std::size_t i = 0; i < coords_.size(); ++i) {
-        DIALS_ASSERT(coords[i][0] >= first_frame_ && coords[i][0] < last_frame_);
-        DIALS_ASSERT(coords[i][1] >= 0 && coords[i][1] < size_[0]);
-        DIALS_ASSERT(coords[i][2] >= 0 && coords[i][2] < size_[1]);
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+
+      frame_ = frame;
+      size_ = image.accessor();
+
+      std::size_t num = 0;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if (mask[i]) num++;
+      }
+
+      value_.resize(num);
+      index_.resize(num);
+
+      for (std::size_t i = 0, j = 0; i < mask.size(); ++i) {
+        if (mask[i]) {
+          value_[j] = image[i];
+          index_[j] = i;
+          j++;
+        }
       }
     }
 
-    /** @returns The size of the 2D image */
+    /**
+     * Initialise the list
+     * @param frame The current frame
+     * @param image The image values
+     * @param mask The pixel mask
+     */
+    PixelList(
+        int frame,
+        const af::const_ref< double, af::c_grid<2> > &image,
+        const af::const_ref< bool, af::c_grid<2> > &mask) {
+
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+
+      frame_ = frame;
+      size_ = image.accessor();
+
+      std::size_t num = 0;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if (mask[i]) num++;
+      }
+
+      value_.resize(num);
+      index_.resize(num);
+
+      for (std::size_t i = 0, j = 0; i < mask.size(); ++i) {
+        if (mask[i]) {
+          value_[j] = image[i];
+          index_[j] = i;
+          j++;
+        }
+      }
+    }
+
+    /**
+     * Initialise the list
+     * @param frame The current frame
+     * @param size The size of the image
+     * @param value The list of pixel values
+     * @param index The list of pixel indices
+     */
+    PixelList(
+          int frame,
+          int2 size,
+          const af::const_ref<double> value,
+          const af::const_ref<std::size_t> index)
+      : frame_(frame),
+        size_(size),
+        value_(value.begin(), value.end()),
+        index_(index.begin(), index.end()) {
+      DIALS_ASSERT(value.size() == index.size());
+    }
+
+    /**
+     * @return the current frame
+     */
+    int frame() const {
+      return frame_;
+    }
+
+    /**
+     * @return the image size
+     */
+    int2 size() const {
+      return size_;
+    }
+
+    /**
+     * @return the pixel values
+     */
+    af::shared<double> value() const {
+      return value_;
+    }
+
+    /**
+     * @return the pixel indices
+     */
+    af::shared<std::size_t> index() const {
+      return index_;
+    }
+
+    /**
+     * @return the number of points
+     */
+    std::size_t num_points() const {
+      DIALS_ASSERT(value_.size() == index_.size());
+      return value_.size();
+    }
+
+
+  };
+
+
+  /**
+   * A class to label the pixels as spots
+   */
+  class PixelListLabeller {
+  public:
+
+    PixelListLabeller()
+      : size_(0,0),
+        first_frame_(0),
+        last_frame_(0) {}
+
+    /**
+     * Add a pixel list
+     * @param pixel_list The pixel list
+     */
+    void add(const PixelList &pixel_list) {
+
+      // Check the frame number
+      if (last_frame_ == first_frame_) {
+        first_frame_ = pixel_list.frame();
+        size_ = pixel_list.size();
+      } else {
+        DIALS_ASSERT(pixel_list.frame() == last_frame_);
+        DIALS_ASSERT(pixel_list.size().all_eq(size_));
+      }
+
+      // Update the last frame number
+      int frame = pixel_list.frame();
+      last_frame_ = frame + 1;
+
+      // Get pixel list info
+      int2 size = pixel_list.size();
+      af::const_ref<double> value = pixel_list.value().const_ref();
+      af::const_ref<std::size_t> index = pixel_list.index().const_ref();
+      DIALS_ASSERT(value.size() == index.size());
+
+      // Add the values and coordinates
+      for (std::size_t i = 0; i < value.size(); ++i) {
+        std::size_t k = index[i];
+        DIALS_ASSERT(i < size[0]*size[1]);
+        std::size_t y = k / size[1];
+        std::size_t x = k - y * size[1];
+        DIALS_ASSERT(x < size[1]);
+        DIALS_ASSERT(y < size[0]);
+        vec3<int> coord(frame, y, x);
+        values_.push_back(value[i]);
+        coords_.push_back(coord);
+      }
+    }
+
+    /**
+     * @returns The image size
+     */
     int2 size() const {
       return size_;
     }
@@ -100,46 +251,6 @@ namespace dials { namespace model {
     }
 
     /**
-     * Add an image
-     * @param image The image pixels
-     * @param mask The mask values
-     */
-    void add_int_image(const af::const_ref< int, af::c_grid<2> > &image,
-                       const af::const_ref< bool, af::c_grid<2> > &mask) {
-      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
-      DIALS_ASSERT(image.accessor().all_eq(size_));
-      for (std::size_t j = 0; j < size_[0]; ++j) {
-        for (std::size_t i = 0; i < size_[1]; ++i) {
-          if (mask(j, i)) {
-            coords_.push_back(vec3<int>(last_frame_, j, i));
-            values_.push_back((double)image(j, i));
-          }
-        }
-      }
-      last_frame_++;
-    }
-
-    /**
-     * Add an image
-     * @param image The image pixels
-     * @param mask The mask values
-     */
-    void add_double_image(const af::const_ref< double, af::c_grid<2> > &image,
-                          const af::const_ref< bool, af::c_grid<2> > &mask) {
-      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
-      DIALS_ASSERT(image.accessor().all_eq(size_));
-      for (std::size_t j = 0; j < size_[0]; ++j) {
-        for (std::size_t i = 0; i < size_[1]; ++i) {
-          if (mask(j, i)) {
-            coords_.push_back(vec3<int>(last_frame_, j, i));
-            values_.push_back(image(j, i));
-          }
-        }
-      }
-      last_frame_++;
-    }
-
-    /**
      * @returns The list of valid point coordinates
      */
     af::shared< vec3<int> > coords() const {
@@ -153,6 +264,9 @@ namespace dials { namespace model {
       return values_;
     }
 
+    /**
+     * Label the pixels in 3D
+     */
     af::shared<int> labels_3d() const {
 
       // Adjacency list type
@@ -205,6 +319,9 @@ namespace dials { namespace model {
       return labels;
     }
 
+    /**
+     * Label the pixels in 2D
+     */
     af::shared<int> labels_2d() const {
 
       // Adjacency list type
@@ -266,6 +383,7 @@ namespace dials { namespace model {
     af::shared< vec3<int> > coords_;
     af::shared<double> values_;
   };
+
 
 }} // namespace dials::model
 

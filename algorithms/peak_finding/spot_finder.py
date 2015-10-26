@@ -11,9 +11,28 @@
 from __future__ import division
 
 
-class Extract(object):
+class Result(object):
   '''
-  Class to extract a batch of images
+  A class to hold the result from spot finding on an image.
+
+  When doing multi processing, we can process the result of
+  each thread as it comes in instead of waiting for all results.
+  The purpose of this class is to allow us to set the pixel list
+  to None after each image to lower memory usage.
+
+  '''
+
+  def __init__(self, pixel_list):
+    '''
+    Set the pixel list
+
+    '''
+    self.pixel_list = pixel_list
+
+
+class ExtractPixelsFromImage(object):
+  '''
+  A class to extract pixels from a single image
 
   '''
 
@@ -23,130 +42,169 @@ class Extract(object):
                mask,
                max_strong_pixel_fraction,
                region_of_interest):
-      '''
-      Initialise with imageset and threshold function, both need to be picklable
-      for this to be called using multiprocessing.
+    '''
+    Initialise the class
 
-      :param imageset: The imageset to process
-      :param threshold_image: The threshold algorithm
-      :param mask: The mask to use
+    :param imageset: The imageset to extract from
+    :param threshold_image: The function to threshold with
+    :param mask: The image mask
+    :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
+    :param region_of_interest: A region of interest to process
 
-      '''
-      self.threshold_image = threshold_image
-      self.imageset = imageset
-      self.mask = mask
-      self.max_strong_pixel_fraction = max_strong_pixel_fraction
-      self.region_of_interest = region_of_interest
-      if self.mask is not None:
-        detector = self.imageset.get_detector()
-        assert(len(self.mask) == len(detector))
+    '''
+    self.threshold_image = threshold_image
+    self.imageset = imageset
+    self.mask = mask
+    self.max_strong_pixel_fraction = max_strong_pixel_fraction
+    self.region_of_interest = region_of_interest
+    if self.mask is not None:
+      detector = self.imageset.get_detector()
+      assert(len(self.mask) == len(detector))
 
   def __call__(self, index):
-      '''
-      Extract pixels from a block of images.
+    '''
+    Extract strong pixels from an image
 
-      :param index: The image indices to extract
-      :return: The extracted spots
+    :param index: The index of the image
 
-      '''
-      from dials.model.data import PixelList
-      from dxtbx.imageset import ImageSweep
-      from dials.array_family import flex
-      from math import ceil
+    '''
+    from dials.model.data import PixelList
+    from dxtbx.imageset import ImageSweep
+    from dials.array_family import flex
+    from math import ceil
+    from logging import info
 
-      # Get the starting z
-      if isinstance(self.imageset, ImageSweep):
-        startz = self.imageset.get_array_range()[0] + index[0]
+    # Get the frame number
+    if isinstance(self.imageset, ImageSweep):
+      frame = self.imageset.get_array_range()[0] + index
+    else:
+      ind = self.imageset.indices()
+      if len(ind) > 1:
+        assert(all(i1+1 == i2 for i1, i2 in zip(ind[0:-1], ind[1:-1])))
+      frame = ind[index]
+
+    # Create the list of pixel lists
+    pixel_list = []
+
+    # Get the image and mask
+    image = self.imageset.get_corrected_data(index)
+    mask = self.imageset.get_mask(index)
+
+    # Set the mask
+    if self.mask is not None:
+      assert(len(self.mask) == len(mask))
+      mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
+
+    # Add the images to the pixel lists
+    num_strong = 0
+    for im, mk in zip(image, mask):
+      if self.region_of_interest is not None:
+        x0, x1, y0, y1 = self.region_of_interest
+        height, width = im.all()
+        assert x0 < x1, "x0 < x1"
+        assert y0 < y1, "y0 < y1"
+        assert x0 >= 0, "x0 >= 0"
+        assert y0 >= 0, "y0 >= 0"
+        assert x1 <= width, "x1 <= width"
+        assert y1 <= height, "y1 <= height"
+        im_roi = im[y0:y1,x0:x1]
+        mk_roi = mk[y0:y1,x0:x1]
+        tm_roi = self.threshold_image.compute_threshold(im_roi, mk_roi)
+        threshold_mask = flex.bool(im.accessor(),False)
+        threshold_mask[y0:y1,x0:x1] = tm_roi
       else:
-        ind = self.imageset.indices()
-        if len(ind) > 1:
-          assert(all(i1+1 == i2 for i1, i2 in zip(ind[0:-1], ind[1:-1])))
-        startz = ind[index[0]]
+        threshold_mask = self.threshold_image.compute_threshold(im, mk)
 
-      # Create the list of pixel lists
-      plists = [PixelList(p.get_image_size()[::-1], startz)
-        for p in self.imageset.get_detector()]
+      # Add the pixel list
+      plist = PixelList(frame, im, threshold_mask)
+      pixel_list.append(plist)
 
-      # Iterate through the range of images
-      for ind in range(*index):
+      # Add to the spot count
+      num_strong += len(plist)
 
-        # Get the image and mask
-        image = self.imageset.get_corrected_data(ind)
-        mask = self.imageset.get_mask(ind)
+    # Check total number of strong pixels
+    if self.max_strong_pixel_fraction < 1:
+      num_image = 0
+      for im in image:
+        num_image += len(im)
+      max_strong = int(ceil(self.max_strong_pixel_fraction * num_image))
+      if num_strong > max_strong:
+        raise RuntimeError(
+          '''
+          The number of strong pixels found (%d) is greater than the
+          maximum allowed (%d). Try changing spot finding parameters
+        ''' % (num_strong, max_strong))
 
-        # Set the mask
-        if self.mask is not None:
-          assert(len(self.mask) == len(mask))
-          mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
+    # Print some info
+    info("Found %d strong pixels on image %d" % (num_strong, index))
 
-        # Add the images to the pixel lists
-        for pl, im, mk in zip(plists, image, mask):
-          if self.region_of_interest is not None:
-            x0, x1, y0, y1 = self.region_of_interest
-            height, width = im.all()
-            assert x0 < x1, "x0 < x1"
-            assert y0 < y1, "y0 < y1"
-            assert x0 >= 0, "x0 >= 0"
-            assert y0 >= 0, "y0 >= 0"
-            assert x1 <= width, "x1 <= width"
-            assert y1 <= height, "y1 <= height"
-            im_roi = im[y0:y1,x0:x1]
-            mk_roi = mk[y0:y1,x0:x1]
-            tm_roi = self.threshold_image.compute_threshold(im_roi, mk_roi)
-            threshold_mask = flex.bool(im.accessor(),False)
-            threshold_mask[y0:y1,x0:x1] = tm_roi
-          else:
-            threshold_mask = self.threshold_image.compute_threshold(im, mk)
-          if self.max_strong_pixel_fraction < 1:
-            max_strong = int(ceil(self.max_strong_pixel_fraction * len(im)))
-            num_strong = threshold_mask.count(True)
-            if num_strong > max_strong:
-              raise RuntimeError(
-                '''
-                The number of strong pixels found (%d) is greater than the
-                maximum allowed (%d). Try changing spot finding parameters
-              ''' % (num_strong, max_strong))
-          pl.add_image(im, threshold_mask)
-
-      # Return the pixel lists
-      return plists
+    # Return the result
+    return Result(pixel_list)
 
 
-class ProgressUpdater(object):
+def batch_parallel_map(func=None,
+                       iterable=None,
+                       processes=None,
+                       callback=None,
+                       method=None,
+                       chunksize=1):
   '''
-  Class to update the progress bar from multi processing callback.
+  A function to run jobs in batches in each process
 
   '''
+  from libtbx import easy_mp
 
-  def __init__(self, total):
+  class batch_func(object):
     '''
-    Initialise the progress bar.
-
-    :param total: The total to count up to
-
-    '''
-    from dials.util.command_line import ProgressBar
-    self.total = total
-    self.num = 0
-    self.progress = ProgressBar(title='Extracting strong pixels from images')
-
-  def __call__(self, result):
-    '''
-    Update the progress bar.
-
-    :param result: The result
+    Process the batch iterables
 
     '''
-    self.num += 1
-    percent = 100.0 * (self.num+1) / self.total
-    self.progress.update(percent)
+    def __init__(self, func):
+      self.func = func
 
-  def finished(self):
-     '''
-     Finish the progress bar.
+    def __call__(self, index):
+      result = []
+      for i in index:
+        result.append(self.func(i))
+      return result
 
-     '''
-     self.progress.finished('Extracted strong pixels from images')
+  class batch_iterable(object):
+    '''
+    Split the iterables into batches
+
+    '''
+    def __init__(self, iterable, chunksize):
+      self.iterable = iterable
+      self.chunksize = chunksize
+
+    def __iter__(self):
+      i = 0
+      while i < len(self.iterable):
+        j = i + chunksize
+        yield self.iterable[i:j]
+        i = j
+
+  class batch_callback(object):
+    '''
+    Process the batch callback
+
+    '''
+    def __init__(self, callback):
+      self.callback = callback
+
+    def __call__(self, result):
+      for r in result:
+        self.callback(r)
+
+  # Call the batches in parallel
+  easy_mp.parallel_map(
+    func=batch_func(func),
+    iterable=batch_iterable(iterable, chunksize),
+    processes=processes,
+    callback=batch_callback(callback),
+    method=method,
+    preserve_order=True,
+    preserve_exception_message=True)
 
 
 class ExtractSpots(object):
@@ -160,6 +218,7 @@ class ExtractSpots(object):
                mask=None,
                mp_method='multiprocessing',
                nproc=1,
+               mp_chunksize=1,
                max_strong_pixel_fraction=0.1,
                region_of_interest=None):
     '''
@@ -176,6 +235,7 @@ class ExtractSpots(object):
     self.threshold_image = threshold_image
     self.mask = mask
     self.mp_method = mp_method
+    self.mp_chunksize = mp_chunksize
     self.nproc = nproc
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
     self.region_of_interest = region_of_interest
@@ -191,75 +251,87 @@ class ExtractSpots(object):
     from dials.util.command_line import Command
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
-    from libtbx import easy_mp
+    from dials.model.data import PixelListLabeller
     from logging import info
+    from math import floor
 
     # Change the number of processors if necessary
-    nproc = self.nproc
-    if nproc > len(imageset):
-      nproc = len(imageset)
+    mp_nproc = self.nproc
+    if mp_nproc > len(imageset):
+      mp_nproc = len(imageset)
+    mp_method = self.mp_method
+    mp_chunksize = self.mp_chunksize
+    len_by_nproc = int(floor(len(imageset) / mp_nproc))
+    if mp_chunksize > len_by_nproc:
+      mp_chunksize = len_by_nproc
+    assert mp_nproc > 0, "Invalid number of processors"
+    assert mp_chunksize > 0, "Invalid chunk size"
 
-    # Extract the pixels in blocks of images in parallel
-    info("Extracting strong pixels from images (may take a while)")
-    pl = easy_mp.parallel_map(
-      func=Extract(
+    # The extract pixels function
+    function = ExtractPixelsFromImage(
         imageset,
         self.threshold_image,
         self.mask,
         self.max_strong_pixel_fraction,
-        self.region_of_interest),
-      iterable=self._calculate_blocks(imageset, nproc),
-      processes=nproc,
-      method=self.mp_method,
-      preserve_order=True,
-      asynchronous=False)
-    info("Extracted strong pixels from images")
+        self.region_of_interest)
 
-    # Merge pixel lists into a single list for each panel
-    len_pl = sum(len(p) for p in pl)
-    info('Merging {0} pixel lists'.format(len_pl))
-    pl = [flex.pixel_list(p).merge() for p in zip(*pl)]
-    np = sum([len(p.values()) for p in pl])
-    info('Merged {0} pixel lists with {1} pixels'.format(len_pl, np))
+    # The indices to iterate over
+    indices = list(range(len(imageset)))
+
+    # Initialise the pixel labeller
+    num_panels = len(imageset.get_detector())
+    pixel_labeller = [PixelListLabeller() for p in range(num_panels)]
+
+    # Do the processing
+    info('Extracting strong pixels from images')
+    info(' Using %s with %d parallel job(s)\n' % (mp_method, mp_nproc))
+    if mp_nproc > 1:
+      def process_output(result):
+        import logging
+        for message in result[1]:
+          logging.log(message.levelno, message.msg)
+        assert len(pixel_labeller) == len(result[0].pixel_list), "Inconsistent size"
+        for plabeller, plist in zip(pixel_labeller, result[0].pixel_list):
+          plabeller.add(plist)
+        result[0].pixel_list = None
+      def execute_task(task):
+        from cStringIO import StringIO
+        from dials.util import log
+        import logging
+        log.config_simple_cached()
+        result = function(task)
+        handlers = logging.getLogger().handlers
+        assert len(handlers) == 1, "Invalid number of logging handlers"
+        return result, handlers[0].messages()
+      batch_parallel_map(
+        func=execute_task,
+        iterable=indices,
+        processes=mp_nproc,
+        callback=process_output,
+        method=mp_method,
+        chunksize=mp_chunksize)
+    else:
+      for task in indices:
+        result = function(task)
+        assert len(pixel_labeller) == len(result.pixel_list), "Inconsistent size"
+        for plabeller, plist in zip(pixel_labeller, result.pixel_list):
+          plabeller.add(plist)
+          result.pixel_list = None
 
     # Extract the pixel lists into a list of reflections
-    info('Extracting spots')
     shoeboxes = flex.shoebox()
     if isinstance(imageset, ImageSweep):
       twod = False
     else:
       twod = True
-    for i, p in enumerate(pl):
+    for i, p in enumerate(pixel_labeller):
       if p.num_pixels() > 0:
         shoeboxes.extend(flex.shoebox(p, i, 0, twod))
+    info('')
     info('Extracted {0} spots'.format(len(shoeboxes)))
 
     # Return the shoeboxes
     return shoeboxes
-
-  def _calculate_blocks(self, imageset, nblocks):
-    '''
-    Calculate the blocks.
-
-    :param imageset: The imageset
-    :param nblocks: The number of blocks to process in
-    :return: The block size
-
-    '''
-    from math import ceil
-    blocks = [0]
-    imageset_length = len(imageset)
-    assert(nblocks <= imageset_length)
-    block_length = int(ceil(imageset_length / nblocks))
-    for i in range(nblocks):
-      frame = (i + 1) * block_length
-      if frame > imageset_length:
-        frame = imageset_length
-      blocks.append(frame)
-      if frame == imageset_length:
-        break
-    assert(all(b > a for a, b in zip(blocks, blocks[1:])))
-    return [(i, j) for i, j in zip(blocks[0:-1], blocks[1:])]
 
 
 class SpotFinder(object):
@@ -310,6 +382,7 @@ class SpotFinder(object):
       table['id'] = flex.size_t(table.nrows(), i)
       reflections.extend(table)
 
+      # Write a hot pixel mask
       if self.write_hot_mask:
         if imageset.external_lookup.mask.data is not None:
           and_mask = []
@@ -324,8 +397,10 @@ class SpotFinder(object):
         with open(imageset.external_lookup.mask.filename, "wb") as outfile:
           pickle.dump(hot_mask, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
+    # Set the strong spot flag
     reflections.set_flags(
-      flex.size_t_range(len(reflections)), reflections.flags.strong)
+      flex.size_t_range(len(reflections)),
+      reflections.flags.strong)
 
     # Return the reflections
     return reflections
@@ -371,18 +446,17 @@ class SpotFinder(object):
     shoeboxes = flex.shoebox(spots_all)
 
     # Calculate the spot centroids
-    info('Calculating {0} spot centroids'.format(len(shoeboxes)))
     centroid = shoeboxes.centroid_valid()
     info('Calculated {0} spot centroids'.format(len(shoeboxes)))
 
     # Calculate the spot intensities
-    info('Calculating {0} spot intensities'.format(len(shoeboxes)))
     intensity = shoeboxes.summed_intensity()
     info('Calculated {0} spot intensities'.format(len(shoeboxes)))
 
     # Create the observations
     observed = flex.observation(shoeboxes.panels(), centroid, intensity)
 
+    # Write the hot mask
     if self.write_hot_mask:
       # Find spots which cover the whole scan range
       bbox = flex.int6([sbox.bbox for sbox in shoeboxes])
