@@ -40,7 +40,6 @@ tst_list = (
     "$D/test/command_line/tst_stills_detector_hybrid_refine.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_reflection_table.py",
-    "$D/test/array_family/tst_flex_pixel_list.py",
     "$D/test/model/data/tst_prediction.py",
     "$D/test/model/data/tst_observation.py",
     "$D/test/model/data/tst_shoebox.py",
