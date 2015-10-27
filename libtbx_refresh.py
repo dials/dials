@@ -63,8 +63,14 @@ for cmd in [%s]:
 
   # Generate a bash script activating command line completion for each relevant command
   with open(os.path.join(output_directory, 'bash.sh'), 'w') as script:
+    script.write("type compopt &>/dev/null && {\n")
     for cmd in command_list:
-      script.write("complete -F _dials_autocomplete %s\n" % cmd)
+      script.write(" complete -F _dials_autocomplete %s\n" % cmd)
+    script.write("}\n")
+    script.write("type compopt &>/dev/null || {\n")
+    for cmd in command_list:
+      script.write(" complete -o nospace -F _dials_autocomplete %s\n" % cmd)
+    script.write("}\n")
 
   # Find the dials build directory
   build_path = abs(libtbx.env.build_path)

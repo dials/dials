@@ -36,14 +36,6 @@ _redir_test()
   return 1
 }
 
-type compopt &>/dev/null || {
- function compopt ()
- {
-  # unsupported on Mac. Quick fix for now. Proper fix: TODO
-  :
- }
-}
-
 function _dials_autocomplete ()
 {
   # This function provides autocomplete functionality to supported dials commands
@@ -73,7 +65,7 @@ function _dials_autocomplete ()
   # Load and cache pre-computed hints for the requested command
   if [[ ${_dials_autocomplete_cache} != $1 ]]; then
    # Check if the requested command is supported. If not, use default completion.
-   if [ ! -f ${_dials_autocomplete_path}$1 ]; then compopt -o default; return 0; fi
+   if [ ! -f ${_dials_autocomplete_path}$1 ]; then type compopt &>/dev/null && compopt -o default; return 0; fi
 
    source ${_dials_autocomplete_path}$1
    _dials_autocomplete_cache=$1
@@ -86,6 +78,14 @@ function _dials_autocomplete ()
     COMPREPLY=( ${_dials_autocomplete_flags[${prev}]} )
     return 0
    fi
+  fi
+  if [[ ${cur} == *= ]]; then
+#  {
+#   echo "Path is cur*="
+#   echo "COMPREPLY: ${COMPREPLY}"
+#  } >> completion.log
+   COMPREPLY=()
+   return 0
   fi
   if [[ ${prev} == "=" ]]; then
    # autocompletion of a choice parameter with existing text
@@ -103,7 +103,7 @@ function _dials_autocomplete ()
               $(compgen -f -X "!*.pickle" -- "${cur}") \
               $(compgen -f -X "!*.phil" -- "${cur}") )
   unset -f _dials_autocomplete_values
-  compopt -o nospace
+  type compopt &>/dev/null && compopt -o nospace
   if [[ ${#COMPREPLY[@]} == 1 ]]; then
    # If there's only one option, check if it is expandable
    declare -p _dials_autocomplete_expansion >/dev/null 2>&1 && \
@@ -112,7 +112,7 @@ function _dials_autocomplete ()
    fi
    # If the only option is not ending in '.' or '=', then append a space
    if [[ ${COMPREPLY[0]} != *. && ${COMPREPLY[0]} != *= ]] ; then
-    compopt +o nospace
+    type compopt &>/dev/null && compopt +o nospace || COMPREPLY=( "${COMPREPLY[0]} " )
    fi
   fi
   return 0
