@@ -8,3 +8,4 @@ _*.nb
 *~
 *.swp
 .git-notifier*
+.gitversion
