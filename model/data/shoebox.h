@@ -352,7 +352,7 @@ namespace dials { namespace model {
      * @returns The centroid
      */
     Centroid centroid_foreground() const {
-      return centroid_masked(Foreground);
+      return centroid_masked(Valid | Foreground);
     }
 
     /**
@@ -360,7 +360,7 @@ namespace dials { namespace model {
      * @returns The centroid
      */
     Centroid centroid_strong() const {
-      return centroid_masked(Strong);
+      return centroid_masked(Valid | Strong);
     }
 
     /**
@@ -426,7 +426,7 @@ namespace dials { namespace model {
      * @return The centroid
      */
     Centroid centroid_foreground_minus_background() const {
-      return centroid_masked_minus_background(Foreground);
+      return centroid_masked_minus_background(Valid | Foreground);
     }
 
     /**
@@ -434,7 +434,7 @@ namespace dials { namespace model {
      * @return The centroid
      */
     Centroid centroid_strong_minus_background() const {
-      return centroid_masked_minus_background(Strong);
+      return centroid_masked_minus_background(Valid | Strong);
     }
 
     /**
