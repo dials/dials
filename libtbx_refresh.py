@@ -20,6 +20,12 @@ try:
 except Exception:
   pass
 
+try:
+  from dials.util.version import dials_version
+  print dials_version()
+except Exception:
+  pass
+
 def _install_dials_autocompletion():
   '''generate init.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
