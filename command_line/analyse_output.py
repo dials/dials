@@ -350,13 +350,21 @@ class CentroidAnalyser(object):
       print ' Removing %d reflections with variance <= 0' % \
         selection.count(True)
 
+    # Remove partial reflections as their observed centroids won't be accurate
+    if 'partiality' in rlist:
+      selection = rlist['partiality'] < 0.99
+      if selection.count(True) > 0 and selection.count(True) < selection.size():
+        rlist.del_selected(selection)
+        print ' Removing %d partial reflections' % \
+          selection.count(True)
+
     # Select only integrated reflections
-    Command.start(" Selecting only integated reflections")
-    mask = rlist.get_flags(rlist.flags.integrated)
+    Command.start(" Selecting only summation-integated reflections")
+    mask = rlist.get_flags(rlist.flags.integrated_sum)
     if mask.count(True) > 0:
       threshold = 10
       rlist = rlist.select(mask)
-      Command.end(" Selected %d integrated reflections" % len(rlist))
+      Command.end(" Selected %d summation-integrated reflections" % len(rlist))
     else:
       # Select only those reflections used in refinement
       threshold = 0
