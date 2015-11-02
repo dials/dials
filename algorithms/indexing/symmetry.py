@@ -90,10 +90,11 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
 }
 
 def refined_settings_factory_from_refined_triclinic(
-  params, experiment, reflections, i_setting=None,
+  params, experiments, reflections, i_setting=None,
   lepage_max_delta=5.0, nproc=1, refiner_verbosity=0):
 
-  crystal = experiment.crystal
+  assert len(experiments.crystals()) == 1
+  crystal = experiments.crystals()[0]
 
   used_reflections = copy.deepcopy(reflections)
   UC = crystal.get_unit_cell()
@@ -135,7 +136,7 @@ def refined_settings_factory_from_refined_triclinic(
   args = []
   for subgroup in Lfat:
     args.append((
-      params, subgroup, used_reflections, experiment, refiner_verbosity))
+      params, subgroup, used_reflections, experiments, refiner_verbosity))
 
   results = easy_mp.parallel_map(
     func=refine_subgroup,
@@ -155,18 +156,17 @@ def refine_subgroup(args):
   from dials.command_line.check_indexing_symmetry \
        import get_symop_correlation_coefficients
 
-  params, subgroup, used_reflections, experiment, refiner_verbosity = args
+  params, subgroup, used_reflections, experiments, refiner_verbosity = args
 
   used_reflections = copy.deepcopy(used_reflections)
   triclinic_miller = used_reflections['miller_index']
   cb_op = subgroup['cb_op_inp_best']
   higher_symmetry_miller = cb_op.apply(triclinic_miller)
   used_reflections['miller_index'] = higher_symmetry_miller
-  experiment.crystal = copy.deepcopy(subgroup.unrefined_crystal)
+  for expt in experiments:
+    expt.crystal = copy.deepcopy(subgroup.unrefined_crystal)
 
   from dials.algorithms.indexing.refinement import refine
-  from dxtbx.model.experiment.experiment_list import ExperimentList
-  experiments = ExperimentList([experiment])
   subgroup.max_cc = None
   subgroup.min_cc = None
   try:
@@ -197,12 +197,12 @@ def refine_subgroup(args):
     subgroup.detector = refinery.get_detector()
     subgroup.refined_crystal = refinery.get_crystal()
     cs = crystal.symmetry(
-        unit_cell=subgroup.refined_crystal.get_unit_cell(),
-        space_group=subgroup.refined_crystal.get_space_group())
+      unit_cell=subgroup.refined_crystal.get_unit_cell(),
+      space_group=subgroup.refined_crystal.get_space_group())
     from cctbx import miller
     ms = miller.set(cs, used_reflections['miller_index'])
     ms = ms.array(used_reflections['intensity.sum.value'] /
-                flex.sqrt(used_reflections['intensity.sum.variance']))
+                  flex.sqrt(used_reflections['intensity.sum.variance']))
     ccs, nrefs = get_symop_correlation_coefficients(ms)
     subgroup.correlation_coefficients = ccs
     subgroup.cc_nrefs = nrefs
