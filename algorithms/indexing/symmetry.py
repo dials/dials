@@ -163,12 +163,15 @@ def refine_subgroup(args):
   cb_op = subgroup['cb_op_inp_best']
   higher_symmetry_miller = cb_op.apply(triclinic_miller)
   used_reflections['miller_index'] = higher_symmetry_miller
+  unrefined_crystal = copy.deepcopy(subgroup.unrefined_crystal)
   for expt in experiments:
-    expt.crystal = copy.deepcopy(subgroup.unrefined_crystal)
+    expt.crystal = unrefined_crystal
 
   from dials.algorithms.indexing.refinement import refine
   subgroup.max_cc = None
   subgroup.min_cc = None
+  subgroup.correlation_coefficients = []
+  subgroup.cc_nrefs = []
   try:
     logger = logging.getLogger()
     disabled = logger.disabled
@@ -199,17 +202,18 @@ def refine_subgroup(args):
     cs = crystal.symmetry(
       unit_cell=subgroup.refined_crystal.get_unit_cell(),
       space_group=subgroup.refined_crystal.get_space_group())
-    from cctbx import miller
-    ms = miller.set(cs, used_reflections['miller_index'])
-    ms = ms.array(used_reflections['intensity.sum.value'] /
-                  flex.sqrt(used_reflections['intensity.sum.variance']))
-    ccs, nrefs = get_symop_correlation_coefficients(ms)
-    subgroup.correlation_coefficients = ccs
-    subgroup.cc_nrefs = nrefs
-    ccs = ccs.select(nrefs > 10)
-    if len(ccs) > 1:
-      subgroup.max_cc = flex.max(ccs[1:])
-      subgroup.min_cc = flex.min(ccs[1:])
+    if 'intensity.sum.value' in used_reflections:
+      from cctbx import miller
+      ms = miller.set(cs, used_reflections['miller_index'])
+      ms = ms.array(used_reflections['intensity.sum.value'] /
+                    flex.sqrt(used_reflections['intensity.sum.variance']))
+      ccs, nrefs = get_symop_correlation_coefficients(ms)
+      subgroup.correlation_coefficients = ccs
+      subgroup.cc_nrefs = nrefs
+      ccs = ccs.select(nrefs > 10)
+      if len(ccs) > 1:
+        subgroup.max_cc = flex.max(ccs[1:])
+        subgroup.min_cc = flex.min(ccs[1:])
   finally:
     logger.disabled = disabled
   return subgroup
