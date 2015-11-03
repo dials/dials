@@ -79,7 +79,7 @@ class SauterPoon(CentroidOutlier):
     hardcoded_phil = hardcoded_phil
     od = outlier_detection.find_outliers_from_matches(
       matches,
-      verbose=True,
+      verbose=self._verbose,
       horizon_phil=hardcoded_phil)
 
     # flex.bool of the inliers
