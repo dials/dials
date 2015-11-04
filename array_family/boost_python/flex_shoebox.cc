@@ -631,6 +631,68 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Apply the data, mask and background to the shoebox
+   */
+  template <typename FloatType>
+  void apply_pixel_data(
+      af::shared< Shoebox<FloatType> > self,
+      const af::const_ref<double, af::c_grid<2> > &data,
+      const af::const_ref<double, af::c_grid<2> > &background,
+      const af::const_ref<bool, af::c_grid<2> > &mask,
+      int frame,
+      std::size_t num_panels) {
+    DIALS_ASSERT(num_panels > 0);
+    DIALS_ASSERT(num_panels == 1);
+    int height = background.accessor()[0];
+    int width = background.accessor()[1];
+    for (std::size_t s = 0; s < self.size(); ++s) {
+
+      // Check shoebox
+      DIALS_ASSERT(self[s].is_consistent());
+
+      // Get stuff from the shoebox
+      std::size_t p = self[s].panel;
+      int x0 = self[s].bbox[0];
+      int x1 = self[s].bbox[1];
+      int y0 = self[s].bbox[2];
+      int y1 = self[s].bbox[3];
+      int z0 = self[s].bbox[4];
+      DIALS_ASSERT(p == 0);
+
+      // Get the shoebox mask
+      af::ref< FloatType, af::c_grid<3> > sbox_data = self[s].data.ref();
+      af::ref< FloatType, af::c_grid<3> > sbox_bgrd = self[s].background.ref();
+      af::ref< int, af::c_grid<3> > sbox_mask = self[s].mask.ref();
+
+      // Make sure bbox range is ok
+      int x00 = x0 >= 0 ? x0 : 0;
+      int y00 = y0 >= 0 ? y0 : 0;
+      int x11 = x1 <= width ? x1 : width;
+      int y11 = y1 <= height ? y1 : height;
+
+      // Set the mask
+      int k = frame - z0;
+      DIALS_ASSERT(k >= 0);
+      DIALS_ASSERT(k < sbox_data.accessor()[0]);
+      for (std::size_t y = y00; y < y11; ++y) {
+        for (std::size_t x = x00; x < x11; ++x) {
+          std::size_t j = y - y0;
+          std::size_t i = x - x0;
+          DIALS_ASSERT(j < sbox_data.accessor()[1]);
+          DIALS_ASSERT(i < sbox_data.accessor()[2]);
+          sbox_data(k,j,i) = data(y,x);
+          sbox_bgrd(k,j,i) = background(y,x);
+          if (mask(y,x) == false) {
+            sbox_mask(k,j,i) &= ~Valid;
+          } else {
+            sbox_mask(k,j,i) |= Valid;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * A class to convert the shoebox class to a string for pickling
    */
   template <typename FloatType>
@@ -819,6 +881,7 @@ namespace dials { namespace af { namespace boost_python {
           &mean_background<FloatType>)
         .def("flatten", &flatten<FloatType>)
         .def("apply_background_mask", &apply_background_mask<FloatType>)
+        .def("apply_pixel_data", &apply_pixel_data<FloatType>)
         .def_pickle(flex_pickle_double_buffered<shoebox_type,
           shoebox_to_string<FloatType>,
           shoebox_from_string<FloatType> >());
