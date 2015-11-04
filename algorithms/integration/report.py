@@ -339,6 +339,7 @@ class IntegrationReport(Report):
 
     # Construct the per image table
     table = Table()
+    table.name = 'integration.image.summary'
     table.title = "Summary vs image number"
     table.cols.append(('id', 'ID'))
     table.cols.append(('image', 'Image'))
@@ -374,6 +375,7 @@ class IntegrationReport(Report):
 
     # Construct the per resolution table
     table = Table()
+    table.name = 'integration.resolution.summary'
     table.title = "Summary vs resolution"
     table.cols.append(('id', 'ID'))
     table.cols.append(('dmin', 'd min'))
@@ -415,6 +417,7 @@ class IntegrationReport(Report):
       low = report['low']
 
       table = Table()
+      table.name = 'integration.overall.summary'
       table.title = "Summary for experiment %d" % j
       table.cols.append(('item', 'Item'))
       table.cols.append(('overall', 'Overall'))
@@ -470,6 +473,7 @@ class ProfileModelReport(Report):
     table = Table()
 
     # Set the title
+    table.name = 'profile.summary'
     table.title = 'Summary of profile model'
 
     # Add the columns
@@ -503,6 +507,7 @@ class ProfileModelReport(Report):
       for j in range(len(model)):
         if model.valid(j):
           array = Array()
+          array.name = 'profile.model.%d.%d' % (i, j)
           array.title = 'Profile model (id: %d, profile: %d)' % (i, j)
           array.data = model.data(j)
           self.add_array(array)
@@ -532,6 +537,7 @@ class ProfileValidationReport(Report):
     table = Table()
 
     # Set the title
+    table.name = 'validation.summary'
     table.title = 'Summary of profile validation '
 
     # Add the columns

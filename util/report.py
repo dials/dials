@@ -22,6 +22,7 @@ class Array(object):
     Initialise the array
 
     '''
+    self.name = ''
     self.title = ''
     self.data = None
 
@@ -59,6 +60,7 @@ class Table(object):
     Initialize the table
 
     '''
+    self.name = ""
     self.title = ""
     self.cols = []
     self.rows = []
@@ -159,8 +161,8 @@ class Report(object):
     '''
     from collections import OrderedDict
     result = OrderedDict()
-    result['tables'] = [ table.as_dict() for table in self.tables ]
-    result['arrays'] = [ array.as_dict() for array in self.arrays ]
+    result['tables'] = dict([(table.name, table.as_dict()) for table in self.tables ])
+    result['arrays'] = dict([(array.name, array.as_dict()) for array in self.arrays ])
     return result
 
   def as_str(self, prefix=''):
