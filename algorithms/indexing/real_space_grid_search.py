@@ -47,9 +47,10 @@ class indexer_real_space_grid_search(indexer_base):
   def real_space_grid_search(self):
     d_min = self.params.refinement_protocol.d_min_start
 
-    reciprocal_lattice_points = self.reflections['rlp'].select(
-      (self.reflections['id'] == -1) &
-      (1/self.reflections['rlp'].norms() > d_min))
+    sel = (self.reflections['id'] == -1)
+    if d_min is not None:
+      sel &= (1/self.reflections['rlp'].norms() > d_min)
+    reciprocal_lattice_points = self.reflections['rlp'].select(sel)
 
     info("Indexing from %i reflections" %len(reciprocal_lattice_points))
 

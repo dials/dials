@@ -201,7 +201,7 @@ indexing {
     d_min_step = Auto
       .type = float(value_min=0.0)
       .help = "Reduction per step in d_min for reflections to include in refinement."
-    d_min_start = 4.0
+    d_min_start = None
       .type = float(value_min=0.0)
     d_min_final = None
       .type = float(value_min=0.0)
@@ -390,6 +390,7 @@ class indexer_base(object):
         flex.size_t_range(len(self.reflections)), self.reflections.flags.strong)
 
     self._setup_symmetry()
+    self.d_min = None
 
     # now actually do the indexing
     self.index()
@@ -582,7 +583,6 @@ class indexer_base(object):
     have_similar_crystal_models = False
 
     while True:
-      self.d_min = self.params.refinement_protocol.d_min_start
       if had_refinement_error or have_similar_crystal_models:
         break
       max_lattices = self.params.multiple_lattice_search.max_lattices
@@ -603,7 +603,23 @@ class indexer_base(object):
 
       n_lattices_previous_cycle = len(experiments)
 
+      if self.d_min is None:
+        self.d_min = self.params.refinement_protocol.d_min_start
+
       experiments.extend(self.find_lattices())
+
+      if self.params.refinement_protocol.d_min_step is libtbx.Auto:
+        if self.d_min is None:
+          self.params.refinement_protocol.d_min_step = 0
+        else:
+          d_spacings = 1/self.reflections['rlp'].norms()
+          d_min_all = flex.min(d_spacings)
+          n_cycles = self.params.refinement_protocol.n_macro_cycles
+          self.params.refinement_protocol.d_min_step \
+            = (self.d_min - d_min_all)/(n_cycles-1)
+          info("Using d_min_step %.1f"
+               %self.params.refinement_protocol.d_min_step)
+
       if len(experiments) == 0:
         raise Sorry("No suitable lattice could be found.")
       elif len(experiments) == n_lattices_previous_cycle:
@@ -611,21 +627,13 @@ class indexer_base(object):
         break
 
       for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
-        if i_cycle > 0:
-          if self.params.refinement_protocol.d_min_step is libtbx.Auto:
-            d_spacings = 1/self.reflections['rlp'].norms()
-            d_min_all = flex.min(d_spacings)
-            n_cycles = self.params.refinement_protocol.n_macro_cycles
-            self.params.refinement_protocol.d_min_step \
-              = (self.d_min - d_min_all)/(n_cycles-1)
-            info("Using d_min_step %.1f"
-                 %self.params.refinement_protocol.d_min_step)
+        if i_cycle > 0 and self.params.refinement_protocol.d_min_step > 0:
           d_min = self.d_min - self.params.refinement_protocol.d_min_step
           d_min = max(d_min, 0)
           d_min = max(d_min, self.params.refinement_protocol.d_min_final)
           if d_min >= 0:
             self.d_min = d_min
-            info("Increasing resolution to %.1f Angstrom" %d_min)
+            info("Increasing resolution to %.2f Angstrom" %d_min)
 
         # reset reflection lattice flags
         # the lattice a given reflection belongs to: a value of -1 indicates
@@ -709,8 +717,9 @@ class indexer_base(object):
 
         sel = flex.bool(len(self.reflections), False)
         lengths = 1/self.reflections['rlp'].norms()
-        isel = (lengths >= self.d_min).iselection()
-        sel.set_selected(isel, True)
+        if self.d_min is not None:
+          isel = (lengths >= self.d_min).iselection()
+          sel.set_selected(isel, True)
         sel.set_selected(self.reflections['id'] > -1, False)
         self.unindexed_reflections = self.reflections.select(sel)
 
@@ -800,8 +809,7 @@ class indexer_base(object):
         self.refined_experiments = refined_experiments
 
         if (i_cycle >=2 and
-            self.d_min == self.params.refinement_protocol.d_min_final or
-            self.d_min <= 0):
+            self.d_min == self.params.refinement_protocol.d_min_final):
           info("Target d_min_final reached: finished with refinement")
           break
 
@@ -1120,8 +1128,9 @@ class indexer_base(object):
     from dials.algorithms.indexing.compare_orientation_matrices \
          import difference_rotation_matrix_and_euler_angles
     for cm in candidate_orientation_matrices:
-      sel = ((self.reflections['id'] == -1) &
-             (1/self.reflections['rlp'].norms() > self.d_min))
+      sel = (self.reflections['id'] == -1)
+      if self.d_min is not None:
+        sel &= (1/self.reflections['rlp'].norms() > self.d_min)
       refl = self.reflections.select(sel)
       experiments = ExperimentList()
       for imageset in self.imagesets:

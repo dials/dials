@@ -30,9 +30,10 @@ class indexer_fft1d(indexer_base):
     hardcoded_phil = iotbx.phil.parse(
       input_string=indexing_api_defs).extract()
 
-    reflections = self.reflections.select(
-      (self.reflections['id'] == -1) &
-      (1/self.reflections['rlp'].norms() > self.d_min))
+    sel = (self.reflections['id'] == -1)
+    if self.d_min is not None:
+      sel &= (1/self.reflections['rlp'].norms() > self.d_min)
+    reflections = self.reflections.select(sel)
     solutions = candidate_basis_vectors_fft1d(
       reflections['rlp'], hardcoded_phil, max_cell=self.params.max_cell)
     self.candidate_basis_vectors = solutions[0]
