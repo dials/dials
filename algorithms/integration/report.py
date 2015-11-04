@@ -150,6 +150,12 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     except Exception:
       report['cc_prf'] = [0.0] * len(binner)
 
+    try:
+      report['rmsd_xy'] = list(indexer_sum.mean(
+        data['xyz.rmsd'].select(data['int'])))
+    except Exception:
+      report['rmsd_xy'] = [0.0] * len(binner)
+
     # Return the binned report
     return report
 
@@ -195,6 +201,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   data = {}
   for key in ['miller_index',
               'xyzcal.px',
+              'xyzobs.px.value',
               'd',
               'bbox',
               'background.mean',
@@ -230,6 +237,16 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     data['intensity.prf.ios'] = flex_ios(
       data['intensity.prf.value'],
       data['intensity.prf.variance'])
+  except Exception:
+    pass
+
+  # Try to calculate the rmsd between observation and prediction
+  try:
+    xcal, ycal, zcal = data['xyzcal.px'].parts()
+    xobs, yobs, zobs = data['xyzobs.px.value'].parts()
+    data['xyz.rmsd'] = flex.sqrt(
+      flex.pow2(xcal - xobs) +
+      flex.pow2(ycal - yobs))
   except Exception:
     pass
 
@@ -331,10 +348,11 @@ class IntegrationReport(Report):
     table.cols.append(('n_ice', '# ice'))
     table.cols.append(('n_sum', '# sum'))
     table.cols.append(('n_prf', '# prf'))
-    table.cols.append(('ibg', '<Ibg>'))
-    table.cols.append(('ios_sum', '<I/sigI>\n (sum)'))
-    table.cols.append(('ios_prf', '<I/sigI>\n (prf)'))
-    table.cols.append(('cc_prf', '<CC prf>'))
+    table.cols.append(('ibg', 'Ibg'))
+    table.cols.append(('ios_sum', 'I/sigI\n (sum)'))
+    table.cols.append(('ios_prf', 'I/sigI\n (prf)'))
+    table.cols.append(('cc_prf', 'CC prf'))
+    table.cols.append(('rmsd_xy', 'RMSD XY'))
     for j, report in enumerate(report_list):
       report = report['image']
       for i in range(len(report['bins'])-1):
@@ -350,7 +368,8 @@ class IntegrationReport(Report):
           '%.2f' % report['mean_background'][i],
           '%.2f' % report['ios_sum'][i],
           '%.2f' % report['ios_prf'][i],
-          '%.2f' % report['cc_prf'][i]])
+          '%.2f' % report['cc_prf'][i],
+          '%.2f' % report['rmsd_xy'][i]])
     self.add_table(table)
 
     # Construct the per resolution table
@@ -364,10 +383,11 @@ class IntegrationReport(Report):
     table.cols.append(('n_ice', '# ice'))
     table.cols.append(('n_sum', '# sum'))
     table.cols.append(('n_prf', '# prf'))
-    table.cols.append(('ibg', '<Ibg>'))
-    table.cols.append(('ios_sum', '<I/sigI>\n (sum)'))
-    table.cols.append(('ios_prf', '<I/sigI>\n (prf)'))
-    table.cols.append(('cc_prf', '<CC prf>'))
+    table.cols.append(('ibg', 'Ibg'))
+    table.cols.append(('ios_sum', 'I/sigI\n (sum)'))
+    table.cols.append(('ios_prf', 'I/sigI\n (prf)'))
+    table.cols.append(('cc_prf', 'CC prf'))
+    table.cols.append(('rmsd_xy', 'RMSD XY'))
     for j, report in enumerate(report_list):
       report = report['resolution']
       for i in range(len(report['bins'])-1):
@@ -383,7 +403,8 @@ class IntegrationReport(Report):
           '%.2f' % report['mean_background'][i],
           '%.2f' % report['ios_sum'][i],
           '%.2f' % report['ios_prf'][i],
-          '%.2f' % report['cc_prf'][i]])
+          '%.2f' % report['cc_prf'][i],
+          '%.2f' % report['rmsd_xy'][i]])
     self.add_table(table)
 
     # Create the overall table
@@ -413,10 +434,10 @@ class IntegrationReport(Report):
         ("number failed in background modelling", '%d'  , "n_failed_background"),
         ("number failed in summation",            '%d'  , "n_failed_summation"),
         ("number failed in profile fitting",      '%d'  , "n_failed_fitting"),
-        ("<ibg>",                                 '%.2f', "mean_background"),
-        ("<i/sigi> (summation)",                  '%.2f', "ios_sum"),
-        ("<i/sigi> (profile fitting)",            '%.2f', "ios_prf"),
-        ("<cc prf>",                              '%.2f', "cc_prf"),
+        ("ibg",                                   '%.2f', "mean_background"),
+        ("i/sigi (summation)",                    '%.2f', "ios_sum"),
+        ("i/sigi (profile fitting)",              '%.2f', "ios_prf"),
+        ("cc prf",                                '%.2f', "cc_prf"),
         ("cc_pearson sum/prf",                    '%.2f', "cc_pearson_sum_prf"),
         ("cc_spearman sum/prf",                   '%.2f', "cc_spearman_sum_prf")
       ]
