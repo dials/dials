@@ -58,7 +58,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
 
         // Compute the pixel centroid
-        Centroid centroid = shoebox[i].centroid_valid();
+        Centroid centroid = shoebox[i].centroid_foreground_minus_background();
 
         // Get the panel
         DIALS_ASSERT(id[i] < detector_.size());
