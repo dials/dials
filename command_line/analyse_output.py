@@ -21,6 +21,7 @@ matplotlib.use("Agg")
 from matplotlib import pyplot
 from dials.array_family import flex
 
+RAD2DEG = 180/math.pi
 
 help_message = '''
 
@@ -510,7 +511,7 @@ class CentroidAnalyser(object):
 
     dx = xc - xo
     dy = yc - yo
-    dphi = zc - zo
+    dphi = (zc - zo) * RAD2DEG
 
     mean_residuals_x = flex.double()
     mean_residuals_y = flex.double()
@@ -519,7 +520,7 @@ class CentroidAnalyser(object):
     rmsd_y = flex.double()
     rmsd_phi = flex.double()
     frame = []
-    phi_obs_deg = (180/math.pi) * zo
+    phi_obs_deg = RAD2DEG * zo
     phi = []
 
     for i_phi in range(int(math.floor(flex.min(phi_obs_deg))),
