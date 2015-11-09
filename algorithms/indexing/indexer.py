@@ -126,6 +126,8 @@ indexing {
       .type = int(value_min=1)
       .help = "Number of putative basis vector combinations to try."
       .expert_level = 1
+    sys_absent_threshold = 0.9
+      .type = float(value_min=0.0, value_max=1.0)
     solution_scorer = filter *weighted
       .type = choice
       .expert_level = 1
@@ -1142,6 +1144,14 @@ class indexer_base(object):
                                       crystal=cm))
       self.index_reflections(experiments, refl)
 
+      from rstbx.dps_core.cell_assessment import SmallUnitCellVolume
+      threshold = self.params.basis_vector_combinations.sys_absent_threshold
+      if threshold:
+        try:
+          self.correct_non_primitive_basis(experiments, refl, threshold)
+        except SmallUnitCellVolume:
+          continue
+
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
         new_crystal, cb_op_to_primitive = self.apply_symmetry(
@@ -1203,6 +1213,27 @@ class indexer_base(object):
       return best_solution.crystal, best_solution.n_indexed
     else:
       return None, None
+
+  def correct_non_primitive_basis(self, experiments, reflections, threshold):
+    assert len(experiments.crystals()) == 1
+    while True:
+      T = detect_non_primitive_basis(reflections['miller_index'], threshold=threshold)
+      if T is None:
+        break
+
+      crystal_model = experiments.crystals()[0]
+      direct_matrix = crystal_model.get_A().inverse()
+      M = T.inverse().transpose()
+      new_direct_matrix = M * direct_matrix
+      crystal_model.set_A(new_direct_matrix.inverse())
+
+      from rstbx.dps_core.cell_assessment import unit_cell_too_small
+      unit_cell_too_small(crystal_model.get_unit_cell())
+      cb_op = crystal_model.get_unit_cell().change_of_basis_op_to_niggli_cell()
+      crystal_model.update(crystal_model.change_basis(cb_op))
+
+      reflections['id'] = flex.int(len(reflections), -1)
+      self.index_reflections(experiments, reflections)
 
   def apply_symmetry(self, crystal_model, target_symmetry,
                      cell_only=False,
@@ -1636,6 +1667,23 @@ class SolutionTrackerWeighted(object):
 
     from libtbx import table_utils
     return table_utils.format(rows=rows, has_header=True)
+
+
+def detect_non_primitive_basis(miller_indices, threshold=0.9):
+
+  from rstbx.indexing_api import tools
+  for test in tools.R:
+    cum = tools.cpp_absence_test(miller_indices, test['mod'], test['vec'])
+    for counter in xrange(test['mod']):
+      if float(cum[counter])/miller_indices.size() > threshold and counter==0:
+        # (if counter != 0 there is no obvious way to correct this)
+        debug("Detected exclusive presence of %dH %dK %dL = %dn, remainder %d"%(
+          test['vec'][0], test['vec'][1], test['vec'][2], test['mod'],counter))
+        debug("%s, %s, %s" %(
+          test['vec'], test['mod'], float(cum[counter])/miller_indices.size()))
+        #flag = {'vec':test['vec'],'mod':test['mod'],
+                #'remainder':counter, 'trans':test['trans'].elems}
+        return test['trans']
 
 
 def find_max_cell(reflections, max_cell_multiplier,
