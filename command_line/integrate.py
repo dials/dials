@@ -15,30 +15,22 @@ from __future__ import division
 help_message = '''
 
 This program is used to integrate the reflections on the diffraction images. It
-is called with an experiment list outputted from dials.index or dials.refine.
-The extend of the shoeboxes is specified through the profile parameters
-shoebox.sigma_b and shoebox.sigma_m (use the --show-config option for more
-details). These parameters can be specified directly, otherwise a set of strong
-indexed reflections are needed to form the profile model; these are specified
-using the -r (for reference) option. The program can also be called with a
-specific set of predictions using the -p option.
-
-Once a profile model is given and the size of the measurement boxes have been
-calculated, the program will extract the reflections to file. The reflections
-will then be integrated. The reflections can be integrated with different
-options using the same measurement boxes by giving the measurement box file
-using the -s option. This will skip reading the measurement boxes and go
-directly to integrating the reflections.
+is called with an experiment list outputted from dials.index or dials.refine and
+a corresponding set of strong spots from which a profile model is calculated.
+The program will output a set of integrated reflections and an experiment list
+with additional profile model data. The data can be reintegrated using the same
+profile model by inputting this integrated_experiments.json file back into
+dials.integate.
 
 Examples::
 
-  dials.integrate experiments.json input.reflections=indexed.pickle
+  dials.integrate experiments.json indexed.pickle
 
-  dials.integrate experiments.json input.reflections=indexed.pickle output.reflections=integrated.pickle
+  dials.integrate experiments.json indexed.pickle output.reflections=integrated.pickle
 
-  dials.integrate experiments.json profile.phil
+  dials.integrate experiments.json indexed.pickle profile.fitting=False
 
-  dials.integrate experiments.json predicted=predicted.pickle reference=indexed.pickle
+  dials.integrate experiments.json indexed.pickle background.algorithm=glm
 
 '''
 

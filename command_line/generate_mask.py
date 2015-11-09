@@ -12,6 +12,25 @@
 from __future__ import division
 from iotbx.phil import parse
 
+help_message = '''
+
+This program is used to generate mask to specify which pixels should be
+considered "invalid" during spot finding and integration. It provides a few
+options to create simple masks using the detector trusted range, or from
+simple shapes or by setting different resolution ranges.
+
+Examples::
+
+  dials.generate_mask datablock.json border=5
+
+  dials.generate_mask datablock.json \\
+    untrusted.rectangle=50,100,50,100 \\
+    untrusted.circle=200,200,100
+
+  dials.generate_mask datablock.json resolution.d_max=2.00
+
+'''
+
 phil_scope = parse("""
   border = 0
     .type = int
@@ -190,6 +209,7 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
+      epilog=help_message,
       read_datablocks=True)
 
   def run(self):
