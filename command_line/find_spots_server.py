@@ -64,6 +64,8 @@ index = False
 integrate = False
   .type = bool
 ''')
+  if not os.access(filename, os.R_OK):
+    raise RuntimeError("Server does not have read access to file %s" %filename)
   interp = phil_scope.command_line_argument_interpreter()
   params, unhandled = interp.process_and_fetch(
     cl, custom_processor='collect_remaining')
