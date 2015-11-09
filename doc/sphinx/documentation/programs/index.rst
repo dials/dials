@@ -25,6 +25,7 @@ Utilities:
    dials_show_models
    dials_image_viewer
    dials_reciprocal_lattice_viewer
+   dials_generate_mask
    dials_check_indexing_symmetry
    dials_discover_better_experimental_model
    dials_analyse_output
