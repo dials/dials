@@ -32,7 +32,7 @@ namespace dials { namespace model {
 
     typedef std::pair<std::size_t, std::size_t> edge_descriptor;
     typedef std::deque<edge_descriptor> edge_list;
-    typedef typename edge_list::const_iterator edge_iterator;
+    typedef edge_list::const_iterator edge_iterator;
     typedef std::pair<edge_iterator, edge_iterator> edge_iterator_range;
 
     AdjacencyList(std::size_t num_vertices)
