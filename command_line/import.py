@@ -32,6 +32,8 @@ setting each variable to be overriden.
 
 Examples::
 
+  dials.import /data/directory-containing-images/
+
   dials.import image_*.cbf
 
   dials.import image_1_*.cbf image_2_*.cbf
