@@ -38,6 +38,8 @@ Examples::
 
   dials.import image_1_*.cbf image_2_*.cbf
 
+  dials.import directory/with/images
+
   dials.import template=image_1_####.cbf
 
   find . -name "image_*.cbf" | dials.import
