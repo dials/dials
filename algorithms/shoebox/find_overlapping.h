@@ -60,13 +60,11 @@ namespace dials { namespace algorithms { namespace shoebox {
     detect_collisions3d(bboxes.begin(), bboxes.end(), collisions);
 
     // Put all the collisions into an adjacency list
-    AdjacencyList list;
-    for (std::size_t i = 0; i < bboxes.size(); ++i) {
-      add_vertex(list);
-    }
+    AdjacencyList list(bboxes.size());
     for (std::size_t i = 0; i < collisions.size(); ++i) {
-      add_edge(collisions[i].first, collisions[i].second, list);
+      list.add_edge(collisions[i].first, collisions[i].second);
     }
+    list.finish();
 
     // Return the adjacency list
     return list;
@@ -130,10 +128,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     offset.push_back(index.size());
 
     // Do the collision detection for all bboxes in the same panel
-    AdjacencyList list;
-    for (std::size_t i = 0; i < bbox.size(); ++i) {
-      add_vertex(list);
-    }
+    AdjacencyList list(bbox.size());
     for (std::size_t j = 0; j < offset.size() - 1; ++j) {
       std::size_t d0 = offset[j];
       std::size_t d1 = offset[j+1];
@@ -147,12 +142,12 @@ namespace dials { namespace algorithms { namespace shoebox {
 
       // Put all the collisions into an adjacency list
       for (std::size_t i = 0; i < collisions.size(); ++i) {
-        add_edge(
+        list.add_edge(
             index[d0 + collisions[i].first],
-            index[d0 + collisions[i].second],
-            list);
+            index[d0 + collisions[i].second]);
       }
     }
+    list.finish();
     return list;
   }
 
@@ -230,10 +225,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       offset.push_back(index.size());
 
       // Do the collision detection for all bboxes in the same group
-      AdjacencyList list;
-      for (std::size_t i = 0; i < bbox.size(); ++i) {
-        add_vertex(list);
-      }
+      AdjacencyList list(bbox.size());
       for (std::size_t j = 0; j < offset.size() - 1; ++j) {
         std::size_t d0 = offset[j];
         std::size_t d1 = offset[j+1];
@@ -247,12 +239,12 @@ namespace dials { namespace algorithms { namespace shoebox {
 
         // Put all the collisions into an adjacency list
         for (std::size_t i = 0; i < collisions.size(); ++i) {
-          add_edge(
+          list.add_edge(
               index[d0 + collisions[i].first],
-              index[d0 + collisions[i].second],
-              list);
+              index[d0 + collisions[i].second]);
         }
       }
+      list.finish();
       return list;
     }
 

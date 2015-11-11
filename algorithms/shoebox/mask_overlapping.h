@@ -30,9 +30,8 @@ namespace dials { namespace algorithms { namespace shoebox {
   public:
 
     // Useful typedefs
-    typedef AdjacencyList::adjacency_iterator adjacency_iterator;
-    typedef std::pair<adjacency_iterator,adjacency_iterator>
-      adjacency_iterator_range;
+    typedef AdjacencyList::edge_iterator edge_iterator;
+    typedef AdjacencyList::edge_iterator_range edge_iterator_range;
 
     /**
      * Initialise the algorithm
@@ -66,10 +65,13 @@ namespace dials { namespace algorithms { namespace shoebox {
           vec3<double> c = coords[i];
 
           // Get the list of overlapping shoeboxes
-          adjacency_iterator_range range = adjacent_vertices(i, *adjacency_list);
-          for (adjacency_iterator it = range.first; it != range.second; ++it) {
-            if (i < *it) {
-              assign_ownership(s, c, shoeboxes[*it], coords[*it]);
+          edge_iterator_range range = adjacency_list->edges(i);
+          for (edge_iterator it = range.first; it != range.second; ++it) {
+            std::size_t index1 = it->first;
+            std::size_t index2 = it->second;
+            DIALS_ASSERT(index1 == i);
+            if (index1 < index2) {
+              assign_ownership(s, c, shoeboxes[index2], coords[index2]);
             }
           }
         }

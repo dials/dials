@@ -12,108 +12,94 @@
 #include <boost/python/def.hpp>
 #include <boost/python/iterator.hpp>
 #include <boost_adaptbx/std_pair_conversion.h>
+#include <boost/iterator/transform_iterator.hpp>
 #include <dials/model/data/adjacency_list.h>
 
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  typedef AdjacencyList::vertex_descriptor vertex_descriptor;
-  typedef AdjacencyList::vertex_iterator vertex_iterator;
-  typedef AdjacencyList::edge_iterator edge_iterator;
-  typedef AdjacencyList::adjacency_iterator adjacency_iterator;
-  typedef AdjacencyList::edge_descriptor edge_descriptor;
-  typedef std::pair<vertex_iterator, vertex_iterator> vertex_iterator_range;
-  typedef std::pair<edge_iterator, edge_iterator> edge_iterator_range;
-  typedef std::pair<adjacency_iterator, adjacency_iterator>
-    adjacency_iterator_range;
+  struct adjacent_vertices_iterator {
 
-  void adjacency_list_add_edge(boost::shared_ptr<AdjacencyList> list,
-      vertex_descriptor i, vertex_descriptor j) {
-    add_edge(i, j, *list);
+    AdjacencyList::edge_iterator first_;
+    AdjacencyList::edge_iterator last_;
+
+    adjacent_vertices_iterator(
+        AdjacencyList::edge_iterator first,
+        AdjacencyList::edge_iterator last)
+      : first_(first),
+        last_(last) {}
+
+    std::size_t next() {
+      if (first_ == last_) {
+        PyErr_SetString(PyExc_StopIteration, "No more data.");
+        boost::python::throw_error_already_set();
+      }
+      std::size_t result = first_->second;
+      first_++;
+      return result;
+    }
+
+    static
+    object iter(object const& o) {
+      return o;
+    }
+
+  };
+
+  template <typename ClassIter>
+  struct iterator_wrapper {
+
+    static
+    void wrap(const char *name) {
+      class_<ClassIter>(name, no_init)
+        .def("next", &ClassIter::next)
+        .def("__next__", &ClassIter::next)
+        .def("__iter__", &ClassIter::iter)
+        ;
+    }
+  };
+
+  static
+  AdjacencyList::edge_iterator
+  edges_begin(const AdjacencyList &list)
+  {
+    return list.edges().first;
   }
 
-  void adjacency_list_remove_edge(boost::shared_ptr<AdjacencyList> list,
-      vertex_descriptor i, vertex_descriptor j) {
-    remove_edge(i, j, *list);
+  static
+  AdjacencyList::edge_iterator
+  edges_end(const AdjacencyList &list)
+  {
+    return list.edges().second;
   }
 
-  void adjacency_list_clear_vertex(boost::shared_ptr<AdjacencyList> list,
-      vertex_descriptor v) {
-    clear_vertex(v, *list);
-  }
-
-  void adjacency_list_clear(boost::shared_ptr<AdjacencyList> list) {
-    list->clear();
-  }
-
-  vertex_iterator_range adjacency_list_vertices(
-      boost::shared_ptr<AdjacencyList> list) {
-    return vertices(*list);
-  }
-
-  edge_iterator_range adjacency_list_edges(
-      boost::shared_ptr<AdjacencyList> list) {
-    return edges(*list);
-  }
-
-  adjacency_iterator_range adjacency_list_adjacent_vertices(
-      boost::shared_ptr<AdjacencyList> list, vertex_descriptor v) {
-    return adjacent_vertices(v, *list);
-  }
-
-  std::size_t adjacency_list_num_vertices(
-      boost::shared_ptr<AdjacencyList> list) {
-    return num_vertices(*list);
-  }
-  std::size_t adjacency_list_num_edges(
-      boost::shared_ptr<AdjacencyList> list) {
-    return num_edges(*list);
-  }
-
-  std::pair<vertex_descriptor, vertex_descriptor> adjacency_list_edge_vertices(
-      boost::shared_ptr<AdjacencyList> list, edge_descriptor edge) {
-    return std::pair<vertex_descriptor, vertex_descriptor>(
-      source(edge, *list), target(edge, *list));
+  adjacent_vertices_iterator make_adjacent_vertices_iterator(
+      const AdjacencyList &self, std::size_t index) {
+    return adjacent_vertices_iterator(
+        self.edges(index).first,
+        self.edges(index).second);
   }
 
   void export_adjacency_list()
   {
-    boost_adaptbx::std_pair_conversions::
-      to_and_from_tuple<vertex_descriptor, vertex_descriptor>();
+    class_<AdjacencyList::edge_descriptor>("EdgeDescriptor", no_init)
+      ;
 
-    class_<vertex_iterator_range>("VertexIteratorRange", no_init)
-      .def("__iter__",
-        boost::python::range(
-          &vertex_iterator_range::first,
-          &vertex_iterator_range::second));
+    iterator_wrapper<adjacent_vertices_iterator>::wrap("AdjacentVerticesIter");
 
-    class_<edge_descriptor>("EdgeDescriptor", no_init);
-
-    class_< boost::shared_ptr<edge_iterator_range> >("EdgeIteratorRange", no_init)
-      .def("__iter__",
-        boost::python::range(
-          &edge_iterator_begin,
-          &edge_iterator_endrange::second));
-
-    class_<adjacency_iterator_range>("AdjacencyIteratorRange", no_init)
-      .def("__iter__",
-        boost::python::range(
-          &adjacency_iterator_range::first,
-          &adjacency_iterator_range::second));
-
-    class_< boost::shared_ptr<AdjacencyList> >("AdjacencyList")
-      .def("add_edge", &adjacency_list_add_edge)
-      .def("remove_edge", &adjacency_list_remove_edge)
-      .def("clear_vertex", &adjacency_list_clear_vertex)
-      .def("clear", &adjacency_list_clear)
-      .def("num_vertices", &adjacency_list_num_vertices)
-      .def("num_edges", &adjacency_list_num_edges)
-      .def("vertices", &adjacency_list_vertices)
-      .def("edges", &adjacency_list_edges)
-      .def("adjacent_vertices", &adjacency_list_adjacent_vertices)
-      .def("__getitem__", &adjacency_list_edge_vertices)
-      .def("__len__", &adjacency_list_num_edges);
+    class_<AdjacencyList>("AdjacencyList", no_init)
+      .def("source", &AdjacencyList::source)
+      .def("target", &AdjacencyList::target)
+      .def("adjacent_vertices", &make_adjacent_vertices_iterator)
+      .def("edges",
+          boost::python::range(
+            edges_begin,
+            edges_end))
+      .def("add_edge", &AdjacencyList::add_edge)
+      .def("num_vertices", &AdjacencyList::num_vertices)
+      .def("num_edges", &AdjacencyList::num_edges)
+      ;
   }
 
 }}} // namespace = dials::model::boost_python
