@@ -13,7 +13,7 @@
 
 #include <iostream>
 #include <deque>
-#include <boost_adaptbx/graph/graph_type.hpp>
+#include <vector>
 #include <dials/error.h>
 
 namespace dials { namespace model {
