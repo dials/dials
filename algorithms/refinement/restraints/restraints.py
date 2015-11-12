@@ -56,7 +56,7 @@ class GroupTie(object):
     return self._dRdp
 
 
-class TiestoMean(GroupTie):
+class TiesToMean(GroupTie):
   """Tie a group of parameters together by similarity to their mean value"""
 
   # R = w Sum(p(i) - <p>)^2
@@ -86,7 +86,7 @@ class TiestoMean(GroupTie):
 
     return wd * d
 
-class TiestoMedian(GroupTie):
+class TiesToMedian(GroupTie):
   """Tie a group of parameters together by similarity to their median value"""
 
   def values(self):
