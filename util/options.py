@@ -819,9 +819,19 @@ class OptionParser(OptionParserBase):
 
     export_flags = " ".join(['["%s"]="%s"' % (p, ' '.join(parameter_choice_list[p])) for p in parameter_choice_list.iterkeys()])
     export_expansions = " ".join(['["%s="]="%s="' % (p, exp) for p, exp in parameter_expansion_list.iteritems() if exp is not None ])
+    print 'function _dials_autocomplete_expansion ()'
+    print '{'
+    print ' case "$1" in'
+    for p, exp in parameter_expansion_list.iteritems():
+      if exp is not None:
+        print '\n  %s=)' % p
+        print '   _dials_autocomplete_values="%s=";;' % exp
+    print '\n  *)'
+    print '    _dials_autocomplete_values="";;'
+    print ' esac'
+    print '}'
 
     print 'declare -p _dials_autocomplete_flags >/dev/null 2>&1 && _dials_autocomplete_flags=( %s ) || :' % export_flags
-    print 'declare -p _dials_autocomplete_expansion >/dev/null 2>&1 && _dials_autocomplete_expansion=( %s ) || :' % export_expansions
     tree = construct_completion_tree(parameter_list)
 
     def _tree_to_bash(prefix, tree):
