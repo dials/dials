@@ -65,6 +65,8 @@ env.Append( BUILDERS={'AutoComplete': Builder(action='$SOURCE --export-autocompl
 for cmd in [%s]:
   ac = env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
   Requires(ac, Dir(libtbx.env.under_build('lib')))
+  Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'options.py'))
+  Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'autocomplete.sh'))
 ''' % ( ', '.join(["'%s'" % cmd for cmd in command_list]) ))
 
   # Generate a bash script activating command line completion for each relevant command
