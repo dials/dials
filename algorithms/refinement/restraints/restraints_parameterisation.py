@@ -75,28 +75,65 @@ class RestraintsParameterisation(object):
     from collections import namedtuple
     ParamIndex = namedtuple('ParamIndex', ['parameterisation', 'istart'])
 
-    exp_to_det_param = {}
+    self._exp_to_det_param = {}
     for detp in self._detector_parameterisations:
       for iexp in detp.get_experiment_ids():
-        exp_to_det_param[iexp] = ParamIndex(detp, iparam)
+        self._exp_to_det_param[iexp] = ParamIndex(detp, iparam)
       iparam += detp.num_free()
 
-    exp_to_beam_param = {}
+    self._exp_to_beam_param = {}
     for beamp in self._beam_parameterisations:
       for iexp in beamp.get_experiment_ids():
-        exp_to_beam_param[iexp] = ParamIndex(beamp, iparam)
+        self._exp_to_beam_param[iexp] = ParamIndex(beamp, iparam)
       iparam += beamp.num_free()
 
-    exp_to_xlo_param = {}
+    self._exp_to_xlo_param = {}
     for xlop in self._xl_orientation_parameterisations:
       for iexp in xlop.get_experiment_ids():
-        exp_to_xlo_param[iexp] = ParamIndex(xlop, iparam)
+        self._exp_to_xlo_param[iexp] = ParamIndex(xlop, iparam)
       iparam += xlop.num_free()
 
-    exp_to_xluc_param = {}
+    self._exp_to_xluc_param = {}
     for xlucp in self._xl_unit_cell_parameterisations:
       for iexp in xlucp.get_experiment_ids():
-        exp_to_xluc_param[iexp] = ParamIndex(xlucp, iparam)
+        self._exp_to_xluc_param[iexp] = ParamIndex(xlucp, iparam)
       iparam += xlucp.num_free()
+
+    return
+
+  #def add_restraints_to_target_detector(self):
+  #
+  #  return
+  #
+  #def add_restraints_to_target_beam(self):
+  #
+  #  return
+  #
+  #def add_restraints_to_target_xl_orientation(self):
+  #
+  #  return
+
+  def add_restraints_to_target_xl_unit_cell(self,
+    experiment_ids, values, sigmas):
+
+    pass
+    return
+
+  #def add_restraints_to_group_detector(self):
+  #
+  #  return
+  #
+  #def add_restraints_to_group_beam(self):
+  #
+  #  return
+  #
+  #def add_restraints_to_group_xl_orientation(self):
+
+    return
+
+  def add_restraints_to_group_xl_unit_cell(self):
+
+    pass
+    return
 
     #from dials.util.command_line import interactive_console; interactive_console()

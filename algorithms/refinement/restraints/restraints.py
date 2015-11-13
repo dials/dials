@@ -36,6 +36,9 @@ class SingleTie(object):
     """Return dR/dp"""
     return self._dRdp
 
+# FIXME SingleModelTie would be neater - express all restraints for parameters
+# of a particular model in terms of the elements of the state of that model.
+# calculate derivatives wrt parameters of the model using d[state]/dp elements.
 
 class GroupTie(object):
   """Base class for ties of multiple parameters together to a shared target

@@ -1180,10 +1180,35 @@ class RefinerFactory(object):
     """"""
 
     from dials.algorithms.refinement.restraints import RestraintsParameterisation
-    RestraintsParameterisation(detector_parameterisations = det_params,
+    rp = RestraintsParameterisation(detector_parameterisations = det_params,
                beam_parameterisations = beam_params,
                xl_orientation_parameterisations = xl_ori_params,
                xl_unit_cell_parameterisations = xl_uc_params)
+
+    # Shorten params path
+    beam_r = params.refinement.parameterisation.beam.restraints
+    cell_r = params.refinement.parameterisation.crystal.cell.restraints
+    orientation_r = params.refinement.parameterisation.crystal.orientation.restraints
+    detector_r = params.refinement.parameterisation.detector.restraints
+
+    # Only crystal unit cell restraints are considered currently
+    if any([beam_r.tie_to_target, beam_r.tie_to_group,
+            orientation_r.tie_to_target, orientation_r.tie_to_group,
+            detector_r.tie_to_target, detector_r.tie_to_group]):
+      raise Sorry("Only crystal unit cell restraints are currently available")
+
+    for tie in cell_r.tie_to_target:
+      if len(tie.values) != 6:
+        raise Sorry("6 cell parameters must be provided as the tie_to_target.values.")
+      if len(tie.sigmas) != 6:
+        raise Sorry("6 sigmas must be provided as the tie_to_target.sigmas. "
+                    "Note that individual sigmas of 0 or None will remove "
+                    "the restraint for the corresponding cell parameter.")
+      rp.add_restraints_to_target_xl_unit_cell(tie.id, tie.values, tie.sigmas)
+
+    for tie in cell_r.tie_to_group:
+      pass
+
     return
 
   @staticmethod
