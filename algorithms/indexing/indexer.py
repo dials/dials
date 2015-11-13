@@ -1217,7 +1217,9 @@ class indexer_base(object):
   def correct_non_primitive_basis(self, experiments, reflections, threshold):
     assert len(experiments.crystals()) == 1
     while True:
-      T = detect_non_primitive_basis(reflections['miller_index'], threshold=threshold)
+      sel = reflections['miller_index'] != (0,0,0)
+      T = detect_non_primitive_basis(
+        reflections['miller_index'].select(sel), threshold=threshold)
       if T is None:
         break
 
