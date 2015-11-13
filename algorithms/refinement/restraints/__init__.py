@@ -11,4 +11,5 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-
+from restraints_parameterisation import phil_str, phil_scope
+from restraints_parameterisation import RestraintsParameterisation

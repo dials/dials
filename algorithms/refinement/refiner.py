@@ -110,7 +110,7 @@ refinement
         .help = "Fix crystal parameters"
         .type = choice
 
-      cell
+      unit_cell
       {
         fix_list = None
           .type = ints(value_min=0)
@@ -692,8 +692,8 @@ class RefinerFactory(object):
         params.refinement.parameterisation.sparse = False
     return params
 
-  @staticmethod
-  def config_parameterisation(params, experiments, refman, do_stills):
+  @classmethod
+  def config_parameterisation(cls, params, experiments, refman, do_stills):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
@@ -822,7 +822,7 @@ class RefinerFactory(object):
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("crystal_options.fix value not recognised")
 
-      if crystal_options.cell.fix_list:
+      if crystal_options.unit_cell.fix_list:
         to_fix = [True if i in crystal_options.cell.fix_list else False \
                   for i in range(num_uc)]
         xl_uc_param.set_fixed(to_fix)
@@ -1108,6 +1108,21 @@ class RefinerFactory(object):
       xl_uc_params = [p for p in xl_uc_params if p.num_free() > 0]
       det_params = [p for p in det_params if p.num_free() > 0]
 
+    # Now we have the final list of model parameterisations, build a restraints
+    # parameterisation (if requested)
+    if any([beam_options.restraints.tie_to_target,
+            beam_options.restraints.tie_to_group,
+            crystal_options.orientation.restraints.tie_to_target,
+            crystal_options.orientation.restraints.tie_to_group,
+            crystal_options.unit_cell.restraints.tie_to_target,
+            crystal_options.unit_cell.restraints.tie_to_group,
+            detector_options.restraints.tie_to_target,
+            detector_options.restraints.tie_to_group]):
+      restraints_param = cls.config_restraints(params, det_params, beam_params,
+        xl_ori_params, xl_uc_params)
+    else:
+      restraints_param = None
+
     # Prediction equation parameterisation
     if do_stills: # doing stills
       if sparse:
@@ -1158,6 +1173,18 @@ class RefinerFactory(object):
                                            xl_ori_params, xl_uc_params)
 
     return pred_param, param_reporter
+
+  @staticmethod
+  def config_restraints(params, det_params, beam_params,
+        xl_ori_params, xl_uc_params):
+    """"""
+
+    from dials.algorithms.refinement.restraints import RestraintsParameterisation
+    RestraintsParameterisation(detector_parameterisations = det_params,
+               beam_parameterisations = beam_params,
+               xl_orientation_parameterisations = xl_ori_params,
+               xl_unit_cell_parameterisations = xl_uc_params)
+    return
 
   @staticmethod
   def config_refinery(params, target, pred_param, verbosity):
