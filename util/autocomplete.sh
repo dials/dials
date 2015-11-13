@@ -1,12 +1,18 @@
 #!/bin/bash
+
+# This script provides the function _dials_autocomplete(), which is used by
+# bash shells to allow command line parameter completion for selected DIALS
+# commands
+#
+# The function contains a debugging routine, which is enabled by setting
+# the environmental variable DIALS_AUTOCOMPLETE to any non-empty value.
+# Information is written to the file completion.log in the current working
+# directory. This can then be monitored in another terminal with e.g.
+#   watch -n 0.1 cat completion.log
+
 if [ -z "$_dials_autocomplete_path" ]; then
  _dials_autocomplete_path=$(libtbx.show_build_path)/dials/autocomplete/
 fi
-
-# Predeclare associative arrays, so they can be cached between invocations
-# Use global declaration if possible (requires bash 4.2+), local otherwise (bash 4.0+)
-# If associative arrays not supported (bash <4), do not declare
-declare -gA _dials_autocomplete_flags 2>/dev/null || declare -A _dials_autocomplete_flags 2>/dev/null || :
 
 # Define two helper functions from bash_completion
 # Return 1 if $1 appears to contain a redirection operator.  Handles backslash
@@ -52,14 +58,14 @@ function _dials_autocomplete ()
     pprev="${COMP_WORDS[COMP_CWORD-2]}"
   fi
 
-#  {
-#   echo "1: $1"
-#   echo "COMP_WORDS: ${COMP_WORDS[*]}"
-#   echo "COMP_CWORD: $COMP_CWORD"
-#   echo "CUR: $cur"
-#   echo "PREV: $prev"
-#   echo "PPREV: $pprev"
-#  } > completion.log
+  [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
+    echo "1: $1"
+    echo "COMP_WORDS: ${COMP_WORDS[*]}"
+    echo "COMP_CWORD: $COMP_CWORD"
+    echo "CUR: $cur"
+    echo "PREV: $prev"
+    echo "PPREV: $pprev"
+  } > completion.log
 
   # Load and cache pre-computed hints for the requested command
   if [[ ${_dials_autocomplete_cache} != $1 ]]; then
@@ -72,26 +78,40 @@ function _dials_autocomplete ()
 
   if [[ ${cur} == "=" ]]; then
    # initial autocompletion of a choice parameter
-   declare -p _dials_autocomplete_flags >/dev/null 2>&1 && \
-   if [ ${_dials_autocomplete_flags[${prev}]+exists} ]; then
-    COMPREPLY=( ${_dials_autocomplete_flags[${prev}]} )
+   _dials_autocomplete_flags "${prev}"
+   if [[ ${_dials_autocomplete_values} != "" ]] ; then
+    COMPREPLY=( ${_dials_autocomplete_values} )
+
+    [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
+     echo "Path is cur="
+     echo "COMPREPLY: ${COMPREPLY}"
+    } >> completion.log
+
     return 0
    fi
   fi
   if [[ ${cur} == *= ]]; then
-#  {
-#   echo "Path is cur*="
-#   echo "COMPREPLY: ${COMPREPLY}"
-#  } >> completion.log
    COMPREPLY=()
+
+   [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
+    echo "Path is cur*="
+    echo "COMPREPLY: ${COMPREPLY}"
+   } >> completion.log
+
    return 0
   fi
   if [[ ${prev} == "=" ]]; then
    # autocompletion of a choice parameter with existing text
-   declare -p _dials_autocomplete_flags >/dev/null 2>&1 && \
-   if [ ${_dials_autocomplete_flags[${pprev}]+exists} ]; then
-    COMPREPLY=( $(compgen -W "${_dials_autocomplete_flags[${pprev}]}" -- "${cur}") )
+  _dials_autocomplete_flags "${pprev}"
+   if [[ ${_dials_autocomplete_values} != "" ]] ; then
+    COMPREPLY=( $(compgen -W "${_dials_autocomplete_values}" -- "${cur}") )
    fi
+
+   [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
+    echo "Path is prev="
+    echo "COMPREPLY: ${COMPREPLY}"
+   } >> completion.log
+
    return 0
   fi
 
@@ -114,5 +134,11 @@ function _dials_autocomplete ()
     type compopt &>/dev/null && compopt +o nospace || COMPREPLY=( "${COMPREPLY[0]} " )
    fi
   fi
+
+  [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
+   echo "Path is other"
+   echo "COMPREPLY: ${COMPREPLY}"
+  } >> completion.log
+
   return 0
 }

@@ -785,6 +785,8 @@ class OptionParser(OptionParserBase):
       if d.object.type.phil_type == "choice":
         parameter_choice_list[d.path] = \
           [w[1:] if w.startswith("*") else w for w in [str(x) for x in d.object.words] ]
+      elif d.object.type.phil_type == "bool":
+        parameter_choice_list[d.path] = ["true", "false"]
 
     def construct_completion_tree(paths):
       """ Construct a tree of parameters, grouped by common prefixes """
@@ -817,8 +819,17 @@ class OptionParser(OptionParserBase):
 
       return result
 
-    export_flags = " ".join(['["%s"]="%s"' % (p, ' '.join(parameter_choice_list[p])) for p in parameter_choice_list.iterkeys()])
-    export_expansions = " ".join(['["%s="]="%s="' % (p, exp) for p, exp in parameter_expansion_list.iteritems() if exp is not None ])
+    print 'function _dials_autocomplete_flags ()'
+    print '{'
+    print ' case "$1" in'
+    for p in parameter_choice_list.iterkeys():
+      print '\n  %s)' % p
+      print '   _dials_autocomplete_values="%s";;' % ' '.join(parameter_choice_list[p])
+    print '\n  *)'
+    print '    _dials_autocomplete_values="";;'
+    print ' esac'
+    print '}'
+
     print 'function _dials_autocomplete_expansion ()'
     print '{'
     print ' case "$1" in'
@@ -831,7 +842,6 @@ class OptionParser(OptionParserBase):
     print ' esac'
     print '}'
 
-    print 'declare -p _dials_autocomplete_flags >/dev/null 2>&1 && _dials_autocomplete_flags=( %s ) || :' % export_flags
     tree = construct_completion_tree(parameter_list)
 
     def _tree_to_bash(prefix, tree):
