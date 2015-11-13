@@ -25,6 +25,8 @@ colour_scheme = *greyscale rainbow heatmap inverse_greyscale
   .type = choice
 format = jpeg *png tiff
   .type = choice
+prefix = "image"
+  .type = str
 output_dir = None
   .type = path
 display = *image mean variance dispersion sigma_b \
@@ -148,9 +150,8 @@ def run(args):
                 flex_image.size1()//binning),
         flex_image.export_string)
 
-      basename = os.path.basename(os.path.splitext(imageset.paths()[i_image])[0])
       path = os.path.join(
-        output_dir, basename + '.' + params.format)
+        output_dir, params.prefix + ("%d" % i_image) + '.' + params.format)
 
       print "Exporting %s" %path
       tmp_stream = open(path, 'wb')
