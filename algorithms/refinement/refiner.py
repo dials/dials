@@ -22,10 +22,13 @@ from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
 
-# Include the outlier_detection phil scope as a string to avoid problems
+# Include external phil scopes as strings to avoid problems
 # with the include scope directive
 from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
+from dials.algorithms.refinement.restraints.restraints_parameterisation \
+  import phil_str as restraints_phil_str
+format_data = {'outlier_phil':outlier_phil_str, 'restraints_phil':restraints_phil_str}
 phil_scope = parse('''
 
 refinement
@@ -96,6 +99,8 @@ refinement
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
         .expert_level = 1
+
+      %(restraints_phil)s
     }
 
     crystal
@@ -105,15 +110,25 @@ refinement
         .help = "Fix crystal parameters"
         .type = choice
 
-      cell_fix_list = None
-        .type = ints(value_min=0)
-        .help = "Fix specified parameters by a list of indices"
-        .expert_level = 1
+      cell
+      {
+        fix_list = None
+          .type = ints(value_min=0)
+          .help = "Fix specified parameters by a list of indices"
+          .expert_level = 1
 
-      orientation_fix_list = None
-        .type = ints(value_min=0)
-        .help = "Fix specified parameters by a list of indices"
-        .expert_level = 1
+        %(restraints_phil)s
+      }
+
+      orientation
+      {
+        fix_list = None
+          .type = ints(value_min=0)
+          .help = "Fix specified parameters by a list of indices"
+          .expert_level = 1
+
+        %(restraints_phil)s
+      }
 
       scan_varying = False
         .help = "Parameterise the crystal to vary during the scan"
@@ -172,6 +187,8 @@ refinement
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
         .expert_level = 1
+
+      %(restraints_phil)s
     }
 
     sparse = Auto
@@ -333,10 +350,10 @@ refinement
     # include scope dials.algorithms.refinement.outlier_detection.phil_scope
     #
     # instead just paste the string in directly here.
-    %s
+    %(outlier_phil)s
   }
 }
-'''%outlier_phil_str, process_includes=True)
+'''%format_data, process_includes=True)
 
 class RefinerFactory(object):
   """Factory class to create refiners"""
@@ -805,13 +822,13 @@ class RefinerFactory(object):
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("crystal_options.fix value not recognised")
 
-      if crystal_options.cell_fix_list:
-        to_fix = [True if i in crystal_options.cell_fix_list else False \
+      if crystal_options.cell.fix_list:
+        to_fix = [True if i in crystal_options.cell.fix_list else False \
                   for i in range(num_uc)]
         xl_uc_param.set_fixed(to_fix)
 
-      if crystal_options.orientation_fix_list:
-        to_fix = [True if i in crystal_options.orientation_fix_list else False \
+      if crystal_options.orientation.fix_list:
+        to_fix = [True if i in crystal_options.orientation.fix_list else False \
                   for i in range(num_ori)]
         xl_ori_param.set_fixed(to_fix)
 

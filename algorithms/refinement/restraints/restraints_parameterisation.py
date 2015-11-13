@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.phil import parse
 
 # The phil scope for restraints
 phil_str = '''
@@ -19,7 +20,7 @@ restraints
   .expert_level = 1
 {
   tie_to_target
-    .help = ""
+    .multiple = True
   {
     values = None
       .type = floats()
@@ -29,14 +30,12 @@ restraints
       .help = "A sigma of zero or None will remove the restraint at that position"
       .type = floats(value_min=0.)
 
-    experiments = None
+    id = None
       .help = "Experiment indices of experiments to be affected by this restraint"
       .type = ints(value_min=0)
-      .
   }
 
   tie_to_group
-    .help = ""
   {
     target = *mean median
       .type = choice
@@ -46,15 +45,17 @@ restraints
       .help = "A sigma of zero or None will remove the restraint at that position"
       .type = floats(value_min=0.)
 
-    experiments = None
+    id = None
       .help = "Experiment indices of experiments to be affected by this restraint"
       .type = ints(value_min=0)
-      .
   }
 }
 
 '''
 
+phil_scope = parse(phil_str)
+
 class RestraintsParameterisation(object):
 
   def __init__(self):
+    pass
