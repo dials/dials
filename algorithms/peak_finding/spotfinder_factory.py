@@ -295,7 +295,7 @@ class PeakCentroidDistanceFilter(object):
     num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
     num_after = flags.count(True)
-    info('Filtered {0} or {1} spots by peak-centroid distance'.format(
+    info('Filtered {0} of {1} spots by peak-centroid distance'.format(
       num_after,
       num_before))
     return flags
