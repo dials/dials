@@ -4,7 +4,7 @@ import wx
 from rstbx.slip_viewer.frame import XrayFrame
 from rstbx.viewer.frame import SettingsFrame, SettingsPanel
 from scitbx import matrix
-from scitbx.array_family import flex
+from dials.array_family import flex
 
 class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
@@ -41,6 +41,39 @@ class SpotFrame(XrayFrame) :
     self._image_chooser_tmp_key = []
     self._image_chooser_tmp_clientdata = []
     self.display_foreground_circles_patch = False #hard code this option, for now
+
+    from dials.algorithms.indexing import indexer
+    if self.params.d_min is not None:
+      reflections = [flex.reflection_table() for i in range(len(self.reflections))]
+      for i_ref_list in range(len(self.reflections)):
+        if 'rlp' in self.reflections[i_ref_list]:
+          reflections[i_ref_list] = self.reflections[i_ref_list]
+        else:
+          for i, imageset in enumerate(self.imagesets):
+            if 'imageset_id' in self.reflections[i_ref_list]:
+              sel = (self.reflections[i_ref_list]['imageset_id'] == i)
+            else:
+              sel = (self.reflections[i_ref_list]['id'] == i)
+            if 'xyzobs.mm.value' in self.reflections[i_ref_list]:
+              refl = self.reflections[i_ref_list]
+            else:
+              if 'xyzobs.px.value' not in self.reflections[i_ref_list]:
+                self.reflections[i_ref_list]['xyzobs.px.value'] \
+                  = self.reflections[i_ref_list]['xyzcal.px']
+                self.reflections[i_ref_list]['xyzobs.px.variance'] \
+                  = flex.vec3_double(len(self.reflections[i_ref_list]), (1,1,1))
+              refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
+                self.reflections[i_ref_list].select(sel),
+                imageset.get_detector(), imageset.get_scan())
+
+            indexer.indexer_base.map_centroids_to_reciprocal_space(
+              refl, imageset.get_detector(), imageset.get_beam(),
+              imageset.get_goniometer())
+            reflections[i_ref_list].extend(refl)
+
+        d_spacings = 1/reflections[i_ref_list]['rlp'].norms()
+        reflections[i_ref_list] = reflections[i_ref_list].select(d_spacings > self.params.d_min)
+      self.reflections = reflections
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):

@@ -80,6 +80,8 @@ image_viewer {
   untrusted_polygon = None
     .multiple = True
     .type = ints(value_min=0)
+  d_min = None
+    .type = float(value_min=0)
 }
 """)
 
