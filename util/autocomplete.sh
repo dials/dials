@@ -84,7 +84,7 @@ function _dials_autocomplete ()
 
     [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
      echo "Path is cur="
-     echo "COMPREPLY: ${COMPREPLY}"
+     echo "COMPREPLY: ${COMPREPLY[@]}"
     } >> completion.log
 
     return 0
@@ -95,7 +95,7 @@ function _dials_autocomplete ()
 
    [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
     echo "Path is cur*="
-    echo "COMPREPLY: ${COMPREPLY}"
+    echo "COMPREPLY: ${COMPREPLY[@]}"
    } >> completion.log
 
    return 0
@@ -109,7 +109,7 @@ function _dials_autocomplete ()
 
    [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
     echo "Path is prev="
-    echo "COMPREPLY: ${COMPREPLY}"
+    echo "COMPREPLY: ${COMPREPLY[@]}"
    } >> completion.log
 
    return 0
@@ -137,7 +137,7 @@ function _dials_autocomplete ()
 
   [ -n "${DIALS_AUTOCOMPLETE_DEBUG:+1}" ] && {
    echo "Path is other"
-   echo "COMPREPLY: ${COMPREPLY}"
+   echo "COMPREPLY: ${COMPREPLY[@]}"
   } >> completion.log
 
   return 0
