@@ -96,12 +96,12 @@ dials.export_mtz integrated.pickle refined_experiments.json hklout=integrated.mt
 # pointless and then scale the data (ignoring anomalous differences) to 1.3A,
 # and run ctruncate for the intensity analysis...
 
-pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
+pointless hklin integrated.mtz hklout sorted.mtz 2>&1 | tee pointless.log
 
-aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << eof
+aimless hklin sorted.mtz hklout scaled.mtz 2>&1 | tee aimless.log << eof
 resolution 1.3
 anomalous off
 eof
 
 ctruncate -hklin scaled.mtz -hklout truncated.mtz \
--colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
+-colin '/*/*/[IMEAN,SIGIMEAN]' 2>&1 | tee ctruncate.log
