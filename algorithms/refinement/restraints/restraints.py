@@ -40,6 +40,100 @@ class SingleTie(object):
 # of a particular model in terms of the elements of the state of that model.
 # calculate derivatives wrt parameters of the model using d[state]/dp elements.
 
+class SingleUnitCellTie(object):
+  """Tie the parameters of a single unit cell model parameterisation to
+  target values via least-squares restraints. The restraints will be expressed
+  in terms of real space unit cell constants, whilst the underlying parameters
+  are encapsulated in the model parameterisation object"""
+
+  def __init__(self, model_parameterisation, target, sigma):
+    """model_parameterisation is a CrystalUnitCellParameterisation
+
+    target is a sequence of 6 elements describing the target cell parameters
+
+    sigma is a sequence of 6 elements giving the 'sigma' for each of the
+    terms in target, from which weights for the residuals will be calculated.
+    Values of zero or None in sigma will remove the restraint for the cell
+    parameter at that position"""
+
+    self._xlucp = model_parameterisation
+    self._target = target
+    self._sigma = sigma
+
+    assert len(self._target) == 6
+    assert len(self._sigma) == 6
+
+    # calculate gradients of cell parameters wrt model parameters. A gradient
+    # of zero means that cell parameter is constrained and thus ignored in
+    # restraints
+
+    grads = self._calculate_uc_gradients()
+    #self._sigma = [s if g > 1.e-12 else None for s,g in zip(self._sigma, grads)]
+
+  def _calculate_uc_gradients(self):
+
+    B = self._xlucp.get_state()
+    O = (B.transpose()).inverse()
+    a, b, c, aa, bb, gg = self._xlucp.get_model().get_unit_cell().parameters()
+    avec, bvec, cvec = self._xlucp.get_model().get_real_space_vectors()
+
+    # calculate d[B^T]/dp
+    dB_dp = self._xlucp.get_ds_dp()
+    dBT_dp = [dB.transpose() for dB in dB_dp]
+
+    # calculate d[O]/dp
+    dO_dp = [-O * dBT * O for dBT in dBT_dp]
+
+    # XXX DEBUG compare with FD gradients
+    fd_grads = self._check_fd_gradients()
+
+    # loop over parameters of the model
+    for i, dO in enumerate(dO_dp):
+
+      # extract derivatives of each unit cell vector wrt p
+      dav_dp, dbv_dp, dcv_dp = dO.as_list_of_lists()
+
+      # derivative of cell params wrt p
+      da_dp = 1./a * sum([ai * dav for ai, dav in zip(avec.elems, dav_dp)])
+      print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grads[i][0], i)
+
+      db_dp = 1./b * sum([bi * dbv for bi, dbv in zip(bvec.elems, dbv_dp)])
+      print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grads[i][1], i)
+
+      dc_dp = 1./c * sum([ci * dcv for ci, dcv in zip(cvec.elems, dcv_dp)])
+      print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grads[i][2], i)
+
+
+  def _check_fd_gradients(self):
+
+    from scitbx import matrix
+    mp = self._xlucp
+    p_vals = mp.get_param_vals()
+    deltas = [1.e-8 for p in p_vals]
+    assert len(deltas) == len(p_vals)
+    fd_grad = []
+
+    for i in range(len(deltas)):
+
+      val = p_vals[i]
+
+      p_vals[i] -= deltas[i] / 2.
+      mp.set_param_vals(p_vals)
+      rev_state = mp.get_model().get_unit_cell().parameters()
+
+      p_vals[i] += deltas[i]
+      mp.set_param_vals(p_vals)
+      fwd_state = mp.get_model().get_unit_cell().parameters()
+
+      fd_grad.append([(f - r) / deltas[i] for f,r in zip(fwd_state, rev_state)])
+
+      p_vals[i] = val
+
+    # return to the initial state
+    mp.set_param_vals(p_vals)
+
+    return fd_grad
+
 class GroupTie(object):
   """Base class for ties of multiple parameters together to a shared target
   value calculated on the group"""
