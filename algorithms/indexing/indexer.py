@@ -56,6 +56,10 @@ indexing {
   max_cell_multiplier = 1.3
     .type = float(value_min=0)
     .help = "Multiply the estimated maximum basis vector length by this value."
+  max_cell_step_size = 10
+    .type = float(value_min=0)
+    .help = "Step size, in degrees, of the blocks used to peform the max_cell "
+            "estimation."
   nearest_neighbor_percentile = 0.05
     .type = float(value_min=0)
     .help = "Percentile of NN histogram to use for max cell determination."
@@ -890,6 +894,7 @@ class indexer_base(object):
       else:
         self.params.max_cell = find_max_cell(
           self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
+          step_size=self.params.max_cell_step_size,
           nearest_neighbor_percentile=self.params.nearest_neighbor_percentile,
           filter_ice=self.params.filter_ice)
         info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
@@ -1706,7 +1711,7 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
         return test['trans']
 
 
-def find_max_cell(reflections, max_cell_multiplier,
+def find_max_cell(reflections, max_cell_multiplier, step_size,
                   nearest_neighbor_percentile, filter_ice=True,
                   location_function=flex.median):
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
@@ -1733,7 +1738,6 @@ def find_max_cell(reflections, max_cell_multiplier,
   else:
     phi_min = flex.min(phi_deg)
     phi_max = flex.max(phi_deg)
-    step_size = 10 #degrees
     d_phi = phi_max - phi_min
     n_steps = int(math.ceil(d_phi / step_size))
     max_cell = flex.double()
