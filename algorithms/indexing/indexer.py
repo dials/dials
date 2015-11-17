@@ -631,7 +631,7 @@ class indexer_base(object):
           relaxed_cell = find_max_cell(
             self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
             nearest_neighbor_percentile=self.params.nearest_neighbor_percentile,
-            filter_ice=self.params.filter_ice, moment_function=flex.min)
+            filter_ice=self.params.filter_ice, location_function=flex.min)
           if relaxed_cell < self.params.max_cell:
             info("No suitable lattice could be found. Relaxing max_cell and trying again.")
             self.d_min = original_d_min
@@ -1708,7 +1708,7 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 
 def find_max_cell(reflections, max_cell_multiplier,
                   nearest_neighbor_percentile, filter_ice=True,
-                  moment_function=flex.median):
+                  location_function=flex.median):
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
     from dials.algorithms.peak_finding.per_image_analysis import \
@@ -1754,7 +1754,7 @@ def find_max_cell(reflections, max_cell_multiplier,
     debug(list(max_cell))
     debug("median: %s" %flex.median(max_cell))
     debug("mean: %s" %flex.mean(max_cell))
-    max_cell = moment_function(max_cell) # mean or max or median?
+    max_cell = location_function(max_cell) # mean or max or median?
 
   return max_cell
 
