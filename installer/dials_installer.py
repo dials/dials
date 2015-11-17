@@ -36,6 +36,11 @@ class installer(install_distribution.installer):
     'dials',
     'xia2',
   ]
+  flags = list(install_distribution.installer.flags)
+  try:
+    flags.remove('create_versioned_dispatchers')
+  except ValueError:
+    pass
 
 if (__name__ == "__main__") :
   installer(sys.argv[1:]).install()
