@@ -563,6 +563,9 @@ class indexer_base(object):
       self.map_centroids_to_reciprocal_space(
         spots_sel, imageset.get_detector(), imageset.get_beam(),
         imageset.get_goniometer())
+      spots_sel['entering'] = self.calculate_entering_flags(
+        spots_sel, beam=imageset.get_beam(),
+        goniometer=imageset.get_goniometer())
       self.reflections.extend(spots_sel)
 
     try:
@@ -904,6 +907,20 @@ class indexer_base(object):
     if len(self.params.scan_range):
       self.reflections = filter_reflections_by_scan_range(
         self.reflections, self.params.scan_range)
+
+  @staticmethod
+  def calculate_entering_flags(reflections, beam, goniometer):
+    if goniometer is None:
+      return flex.bool(len(reflections), False)
+    axis = matrix.col(goniometer.get_rotation_axis())
+    s0 = matrix.col(beam.get_s0())
+    # calculate a unit vector normal to the spindle-beam plane for this
+    # experiment, such that the vector placed at the centre of the Ewald sphere
+    # points to the hemisphere in which reflections cross from inside to outside
+    # of the sphere (reflections are exiting). NB this vector is in +ve Y
+    # direction when using imgCIF coordinate frame.
+    vec = s0.cross(axis)
+    return reflections['s1'].dot(vec) < 0.
 
   @staticmethod
   def map_spots_pixel_to_mm_rad(spots, detector, scan):
@@ -1756,10 +1773,15 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
   # Therefore repeat the nearest neighbour analysis several times in small
   # wedges where there shouldn't be any overlap in reciprocal space
   #from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
+  if 'entering' in reflections:
+    entering_flags = reflections['entering']
+  else:
+    entering_flags = flex.bool(len(reflections), False)
   from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
   phi_deg = reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
   if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
     NN = neighbor_analysis(reflections['rlp'],
+                           entering_flags=entering_flags,
                            tolerance=max_cell_multiplier,
                            percentile=nearest_neighbor_percentile)
     max_cell = NN.max_cell
@@ -1776,7 +1798,8 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
         continue
       try:
         NN = neighbor_analysis(
-          rlp, tolerance=max_cell_multiplier,
+          rlp, entering_flags=entering_flags.select(sel),
+          tolerance=max_cell_multiplier,
           percentile=nearest_neighbor_percentile)
         max_cell.append(NN.max_cell)
       except AssertionError:

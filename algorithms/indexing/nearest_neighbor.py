@@ -2,30 +2,37 @@ from __future__ import division
 import math
 
 class neighbor_analysis(object):
-  def __init__(self, rs_vectors, tolerance=1.5, max_height_fraction=0.25,
-               percentile=0.05):
+  def __init__(self, rs_vectors, entering_flags, tolerance=1.5,
+               max_height_fraction=0.25, percentile=0.05):
     self.tolerance = tolerance # Margin of error for max unit cell estimate
     from scitbx.array_family import flex
     NEAR = 10
     self.NNBIN = 5 # target number of neighbors per histogram bin
 
+    direct = flex.double()
+
     # nearest neighbor analysis
     from annlib_ext import AnnAdaptor
-    query = flex.double()
-    for spot in rs_vectors: # spots, in reciprocal space xyz
-      query.append(spot[0])
-      query.append(spot[1])
-      query.append(spot[2])
+    for entering in (True, False):
+      entering_sel = entering_flags == entering
+      query = flex.double()
+      for spot in rs_vectors.select(entering_sel): # spots, in reciprocal space xyz
+        query.append(spot[0])
+        query.append(spot[1])
+        query.append(spot[2])
 
-    assert len(rs_vectors)>NEAR, (
-      "Too few spots (%d) for nearest neighbour analysis." %len(rs_vectors))
+      if query.size() == 0:
+        continue
 
-    IS_adapt = AnnAdaptor(data=query,dim=3,k=1)
-    IS_adapt.query(query)
+      IS_adapt = AnnAdaptor(data=query,dim=3,k=1)
+      IS_adapt.query(query)
 
-    direct = flex.double()
-    for i in xrange(len(rs_vectors)):
-      direct.append(1.0/math.sqrt(IS_adapt.distances[i]))
+      for i in xrange(len(IS_adapt.distances)):
+        direct.append(1.0/math.sqrt(IS_adapt.distances[i]))
+
+    assert len(direct)>NEAR, (
+      "Too few spots (%d) for nearest neighbour analysis." %len(direct))
+
     # reject top 1% of longest distances to hopefully get rid of any outliers
     direct = direct.select(
       flex.sort_permutation(direct)[:int(math.floor(0.99*len(direct)))])
