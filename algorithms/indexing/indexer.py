@@ -374,6 +374,14 @@ class indexer_base(object):
     self.all_params = params
     self.refined_experiments = None
 
+    if self.all_params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
+      if self.imagesets[0].get_goniometer() is None:
+        self.all_params.refinement.reflections.outlier.algorithm = 'sauter_poon'
+      else:
+        # different default to dials.refine
+        # tukey is faster and more appropriate at the indexing step
+        self.all_params.refinement.reflections.outlier.algorithm = 'tukey'
+
     for imageset in imagesets[1:]:
       if imageset.get_detector().is_similar_to(self.imagesets[0].get_detector()):
         imageset.set_detector(self.imagesets[0].get_detector())
