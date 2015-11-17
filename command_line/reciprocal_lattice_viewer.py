@@ -55,11 +55,8 @@ class ReciprocalLatticeViewer(wx.Frame):
     self.parent = self.GetParent()
     self.statusbar = self.CreateStatusBar()
     self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-    self.detector = None
-    self.beam = None
-    self.scan = None
-    self.goniometer = None
     self.reflections = None
+    self.goniometer_orig = None
 
     app = wx.GetApp()
     if (getattr(app, "settings", None) is not None) :
@@ -134,8 +131,12 @@ class ReciprocalLatticeViewer(wx.Frame):
     self.map_points_to_reciprocal_space()
 
   def map_points_to_reciprocal_space(self):
-    goniometer = copy.deepcopy(self.goniometer)
-    if goniometer is not None and self.settings.reverse_phi:
+    goniometer = self.imagesets[0].get_goniometer()
+    if self.goniometer_orig is not None and not self.settings.reverse_phi:
+      self.imagesets[0].set_goniometer(self.goniometer_orig)
+      self.goniometer_orig = None
+    elif goniometer is not None and self.settings.reverse_phi:
+      self.goniometer_orig = copy.deepcopy(goniometer)
       goniometer.set_rotation_axis([-i for i in goniometer.get_rotation_axis()])
     from dials.algorithms.indexing import indexer
 
