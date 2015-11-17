@@ -627,16 +627,20 @@ class indexer_base(object):
                %self.params.refinement_protocol.d_min_step)
 
       if len(experiments) == 0:
-        if self.params.max_cell_allow_relaxation and self.params.max_cell > 20:
-          info("No suitable lattice could be found. Relaxing max_cell and trying again.")
-          self.d_min = original_d_min
-          self.params = original_params
-          self.params.max_cell = 20
-          self.params.max_cell_allow_relaxation = False
-          info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
-          continue
-        else:
-          raise Sorry("No suitable lattice could be found.")
+        if self.params.max_cell_allow_relaxation:
+          relaxed_cell = find_max_cell(
+            self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
+            nearest_neighbor_percentile=self.params.nearest_neighbor_percentile,
+            filter_ice=self.params.filter_ice, moment_function=flex.min)
+          if relaxed_cell < self.params.max_cell:
+            info("No suitable lattice could be found. Relaxing max_cell and trying again.")
+            self.d_min = original_d_min
+            self.params = original_params
+            self.params.max_cell = relaxed_cell
+            self.params.max_cell_allow_relaxation = False
+            info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
+            continue
+        raise Sorry("No suitable lattice could be found.")
       elif len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
         break
@@ -1703,7 +1707,8 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 
 
 def find_max_cell(reflections, max_cell_multiplier,
-                  nearest_neighbor_percentile, filter_ice=True):
+                  nearest_neighbor_percentile, filter_ice=True,
+                  moment_function=flex.median):
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
     from dials.algorithms.peak_finding.per_image_analysis import \
@@ -1749,7 +1754,7 @@ def find_max_cell(reflections, max_cell_multiplier,
     debug(list(max_cell))
     debug("median: %s" %flex.median(max_cell))
     debug("mean: %s" %flex.mean(max_cell))
-    max_cell = flex.median(max_cell) # mean or max or median?
+    max_cell = moment_function(max_cell) # mean or max or median?
 
   return max_cell
 
