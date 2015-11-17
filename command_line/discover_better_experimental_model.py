@@ -274,6 +274,7 @@ def run_dps(args):
 
   from dials.algorithms.indexing.indexer import find_max_cell
   max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
+                           step_size=10,
                            nearest_neighbor_percentile=0.05)
 
   DPS = DPS_primitive_lattice(max_cell=max_cell,

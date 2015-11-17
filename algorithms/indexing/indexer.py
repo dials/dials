@@ -634,6 +634,7 @@ class indexer_base(object):
         if self.params.max_cell_allow_relaxation:
           relaxed_cell = find_max_cell(
             self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
+            step_size=self.params.max_cell_multiplier,
             nearest_neighbor_percentile=self.params.nearest_neighbor_percentile,
             filter_ice=self.params.filter_ice, location_function=flex.min)
           if relaxed_cell < self.params.max_cell:
@@ -1720,6 +1721,33 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
      ice_rings_selection
     ice_sel = ice_rings_selection(reflections)
     reflections = reflections.select(~ice_sel)
+
+  # Histogram spot counts in resolution bins: filter out outlier bin counts
+  # according to the Tukey method
+  d_spacings = 1/reflections['rlp'].norms()
+  d_star_sq = 1/flex.pow2(d_spacings)
+  hist = flex.histogram(d_star_sq, n_slots=100)
+  bin_counts = hist.slots().as_double()
+  perm = flex.sort_permutation(bin_counts)
+  sorted_bin_counts = bin_counts.select(perm)
+  sorted_bin_counts.select(sorted_bin_counts > 0)
+  from libtbx.math_utils import nearest_integer as nint
+  q1 = sorted_bin_counts[nint(len(sorted_bin_counts)/4)]
+  q2 = sorted_bin_counts[nint(len(sorted_bin_counts)/2)]
+  q3 = sorted_bin_counts[nint(len(sorted_bin_counts)*3/4)]
+  iqr = q3-q1
+  inlier_sel = (bin_counts > (q1 - 1.5*iqr)) & (bin_counts < (q3 + 1.5*iqr))
+
+  sel = flex.bool(d_star_sq.size(), True)
+  for i_slot in range(hist.slots().size()):
+    if not inlier_sel[i_slot]:
+      sel.set_selected(
+        (d_star_sq > (hist.slot_centers()[i_slot] - 0.5*hist.slot_width())) &
+        (d_star_sq <= (hist.slot_centers()[i_slot] + 0.5*hist.slot_width())), False)
+
+  reflections = reflections.select(sel)
+  #from libtbx import easy_pickle
+  #easy_pickle.dump('filtered.pickle', reflections)
 
   assert len(reflections) > 0
   # The nearest neighbour analysis gets fooled when the same part of
