@@ -265,18 +265,26 @@ class StrongSpotsAnalyser(object):
     x,y,z = rlist['xyzobs.px.value'].parts()
     max_z = int(math.ceil(flex.max(z)))
 
-    spot_count_per_image = flex.int()
-    for i in range(max_z):
-      sel = (z >= i) & (z < (i+1))
-      spot_count_per_image.append(sel.count(True))
+    ids = rlist['id']
+    spot_count_per_image = []
+    for j in range(flex.max(ids)+1):
+      spot_count_per_image.append(flex.int())
+      zsel = z.select(ids == j)
+      for i in range(max_z):
+        sel = (zsel >= i) & (zsel < (i+1))
+        spot_count_per_image[j].append(sel.count(True))
+
+    colours = ['blue', 'red', 'green', 'orange', 'purple', 'black'] * 10
+    assert len(spot_count_per_image) <= colours
 
     from matplotlib import pyplot
     fig = pyplot.figure()
     ax = fig.add_subplot(111)
     ax.set_title("Spot count per image")
-    ax.scatter(
-      list(range(len(spot_count_per_image))), spot_count_per_image,
-      s=5, color='blue', marker='o', alpha=0.4)
+    for j in range(len(spot_count_per_image)):
+      ax.scatter(
+        list(range(len(spot_count_per_image[j]))), spot_count_per_image[j],
+        s=5, color=colours[j], marker='o', alpha=0.4)
     ax.set_xlabel("Image #")
     ax.set_ylabel("# spots")
     pyplot.savefig(join(self.directory, "spots_per_image.png"))
