@@ -584,6 +584,10 @@ class indexer_base(object):
     had_refinement_error = False
     have_similar_crystal_models = False
 
+    import copy
+    original_params = copy.deepcopy(self.params)
+    original_d_min = self.d_min
+
     while True:
       if had_refinement_error or have_similar_crystal_models:
         break
@@ -623,7 +627,16 @@ class indexer_base(object):
                %self.params.refinement_protocol.d_min_step)
 
       if len(experiments) == 0:
-        raise Sorry("No suitable lattice could be found.")
+        if self.params.max_cell_allow_relaxation and self.params.max_cell > 20:
+          info("No suitable lattice could be found. Relaxing max_cell and trying again.")
+          self.d_min = original_d_min
+          self.params = original_params
+          self.params.max_cell = 20
+          self.params.max_cell_allow_relaxation = False
+          info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
+          continue
+        else:
+          raise Sorry("No suitable lattice could be found.")
       elif len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
         break
@@ -865,6 +878,7 @@ class indexer_base(object):
 
   def find_max_cell(self):
     if self.params.max_cell is libtbx.Auto:
+      self.params.__inject__('max_cell_allow_relaxation', True)
       if self.params.known_symmetry.unit_cell is not None:
         uc_params = self.target_symmetry_primitive.unit_cell().parameters()
         self.params.max_cell = self.params.max_cell_multiplier * max(uc_params[:3])
