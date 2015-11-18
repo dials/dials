@@ -136,7 +136,7 @@ outlier
             "combined for outlier rejection."
     .type = bool
 
-  separate_panels = True
+  separate_panels = Auto
     .help = "If true, outlier rejection will be performed separately for each"
             "panel of a multi-panel detector model. Otherwise data from across"
             "all panels will be combined for outlier rejection."

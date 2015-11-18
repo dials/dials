@@ -441,7 +441,6 @@ def exercise_11():
                 #"maximum_spot_error=3",
                 "maximum_spot_error=None",
                 "hkl_tolerance=0.5",
-                "separate_panels=false", # XXX should be auto
                 ]
 
   expected_unit_cell = uctbx.unit_cell((78, 78, 39, 90, 90, 90))

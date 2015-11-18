@@ -1306,14 +1306,14 @@ class RefinerFactory(object):
     # set automatic outlier rejection options
     if options.outlier.algorithm in ('auto', libtbx.Auto):
       if do_stills:
-        # automatic options appropriate for stills
         options.outlier.algorithm = 'sauter_poon'
-        options.outlier.separate_experiments=True
+      else:
+        options.outlier.algorithm = 'mcd'
+
+    if options.outlier.separate_panels is libtbx.Auto:
+      if do_stills:
         options.outlier.separate_panels = False
       else:
-        # automatic options appropriate for scans
-        options.outlier.algorithm = 'mcd'
-        options.outlier.separate_experiments=True
         options.outlier.separate_panels = True
 
     if options.outlier.algorithm == 'sauter_poon':
