@@ -56,7 +56,7 @@ indexing {
   max_cell_multiplier = 1.3
     .type = float(value_min=0)
     .help = "Multiply the estimated maximum basis vector length by this value."
-  max_cell_step_size = 10
+  max_cell_step_size = 45
     .type = float(value_min=0)
     .help = "Step size, in degrees, of the blocks used to peform the max_cell "
             "estimation."
