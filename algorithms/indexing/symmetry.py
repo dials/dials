@@ -208,7 +208,10 @@ def refine_subgroup(args):
       ms = ms.array(used_reflections['intensity.sum.value'] /
                     flex.sqrt(used_reflections['intensity.sum.variance']))
       if params.normalise:
-        ms = normalise_intensities(ms)
+        if params.normalise_bins:
+          ms = normalise_intensities(ms, n_bins=params.normalise_bins)
+        else:
+          ms = normalise_intensities(ms)
       ccs, nrefs = get_symop_correlation_coefficients(ms)
       subgroup.correlation_coefficients = ccs
       subgroup.cc_nrefs = nrefs
