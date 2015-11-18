@@ -17,8 +17,8 @@ Download the latest nightly build:
 ----------------------------------
 
 .. button::
-   :text: Mac installer (OS X 10.11)
-   :link: http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.11.pkg
+   :text: Mac installer (OS X 10.11.1)
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.11.1.pkg
 
 .. button::
    :text: Mac installer (OS X 10.6)
