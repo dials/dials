@@ -70,7 +70,7 @@ def get_symop_correlation_coefficients(miller_array):
   return corr_coeffs, n_refs
 
 def normalise_intensities(miller_array, n_bins=10):
-  miller_array.setup_binner(n_bins=10)
+  miller_array.setup_binner(n_bins=n_bins)
   nomalisations = miller_array.amplitude_quasi_normalisations()
   miller_array = miller_array.customized_copy(
     data=miller_array.data()/nomalisations.data())
