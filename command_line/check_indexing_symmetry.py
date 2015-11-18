@@ -86,6 +86,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
   # in case we pass in reflections from integration
   reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
+  reflections = reflections.select(reflections['intensity.sum.value'] > 0)
   original_miller_indices = reflections['miller_index']
 
   space_group = crystal.get_space_group()
