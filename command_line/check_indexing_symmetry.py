@@ -47,6 +47,9 @@ asu = False
 normalise = False
   .type = bool
   .help = "Normalise intensities before calculating correlation coefficients."
+normalise_bins = 0
+  .type = int
+  .help = "Number of resolution bins for normalisation"
 """, process_includes=True)
 
 
@@ -101,8 +104,10 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     reflections = reflections.select(sel)
 
   if params.normalise:
-    ms = normalise_intensities(ms)
-
+    if params.normalise_bins:
+      ms = normalise_intensities(ms, n_bins=params.normalise_bins)
+    else:
+      ms = normalise_intensities(ms)
   print 'Check symmetry operations on %d reflections:' % ms.size()
   print ''
   print '%10s %6s %5s' % ('Symop', 'Nref', 'CC')

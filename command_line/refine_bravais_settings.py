@@ -51,6 +51,9 @@ crystal_id = None
 normalise = False
   .type = bool
   .help = "Normalise intensities before calculating correlation coefficients."
+normalise_bins = 0
+  .type = int
+  .help = "Number of resolution bins for normalisation"
 include scope dials.algorithms.refinement.refiner.phil_scope
 """, process_includes=True)
 
