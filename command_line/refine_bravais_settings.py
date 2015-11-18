@@ -48,6 +48,9 @@ nproc = Auto
   .type = int(value_min=1)
 crystal_id = None
   .type = int(value_min=0)
+normalise = False
+  .type = bool
+  .help = "Normalise intensities before calculating correlation coefficients."
 include scope dials.algorithms.refinement.refiner.phil_scope
 """, process_includes=True)
 

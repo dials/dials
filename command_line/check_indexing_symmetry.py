@@ -44,6 +44,9 @@ grid_search_scope = 0
 asu = False
   .type = bool
   .help = "Perform search comparing within ASU (assumes input symm)"
+normalise = False
+  .type = bool
+  .help = "Normalise intensities before calculating correlation coefficients."
 """, process_includes=True)
 
 
@@ -66,6 +69,12 @@ def get_symop_correlation_coefficients(miller_array):
     n_refs.append(intensity.size())
   return corr_coeffs, n_refs
 
+def normalise_intensities(miller_array, n_bins=10):
+  miller_array.setup_binner(n_bins=10)
+  nomalisations = miller_array.amplitude_quasi_normalisations()
+  miller_array = miller_array.customized_copy(
+    data=miller_array.data()/nomalisations.data())
+  return miller_array
 
 def test_crystal_pointgroup_symmetry(reflections, experiment, params):
   crystal = experiment.crystal
@@ -90,6 +99,9 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     sel = (d_spacings >= params.d_min) & (d_spacings <= params.d_max)
     ms = ms.select(sel)
     reflections = reflections.select(sel)
+
+  if params.normalise:
+    ms = normalise_intensities(ms)
 
   print 'Check symmetry operations on %d reflections:' % ms.size()
   print ''

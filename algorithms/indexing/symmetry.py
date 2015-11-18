@@ -154,7 +154,7 @@ def refined_settings_factory_from_refined_triclinic(
 def refine_subgroup(args):
   assert len(args) == 5
   from dials.command_line.check_indexing_symmetry \
-       import get_symop_correlation_coefficients
+       import get_symop_correlation_coefficients, normalise_intensities
 
   params, subgroup, used_reflections, experiments, refiner_verbosity = args
 
@@ -207,6 +207,8 @@ def refine_subgroup(args):
       ms = miller.set(cs, used_reflections['miller_index'])
       ms = ms.array(used_reflections['intensity.sum.value'] /
                     flex.sqrt(used_reflections['intensity.sum.variance']))
+      if params.normalise:
+        ms = normalise_intensities(ms)
       ccs, nrefs = get_symop_correlation_coefficients(ms)
       subgroup.correlation_coefficients = ccs
       subgroup.cc_nrefs = nrefs
