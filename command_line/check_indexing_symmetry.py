@@ -84,6 +84,8 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
   from dials.array_family import flex
 
+  # in case we pass in reflections from integration
+  reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
   original_miller_indices = reflections['miller_index']
 
   space_group = crystal.get_space_group()
@@ -92,7 +94,6 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
   cs = crystal_symmetry(unit_cell, space_group.type().lookup_symbol())
 
   from cctbx.miller import set as miller_set
-
   ms = miller_set(cs, original_miller_indices)
   ms = ms.array(reflections['intensity.sum.value'] /
                 flex.sqrt(reflections['intensity.sum.variance']))
@@ -108,6 +109,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
       ms = normalise_intensities(ms, n_bins=params.normalise_bins)
     else:
       ms = normalise_intensities(ms)
+
   print 'Check symmetry operations on %d reflections:' % ms.size()
   print ''
   print '%10s %6s %5s' % ('Symop', 'Nref', 'CC')
