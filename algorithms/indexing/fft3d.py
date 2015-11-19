@@ -207,8 +207,9 @@ class indexer_fft3d(indexer_base):
     perm = flex.sort_permutation(lengths)
     xs = xs.select(perm)
     volumes = self.volumes.select(perm)
-    with open('peaks.pdb', 'wb') as f:
-      print >> f, xs.as_pdb_file()
+    if self.params.debug:
+      with open('peaks.pdb', 'wb') as f:
+        print >> f, xs.as_pdb_file()
 
     sites_frac = xs.sites_frac()
     vectors = xs.sites_cart()
