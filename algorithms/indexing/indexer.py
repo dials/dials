@@ -599,10 +599,6 @@ class indexer_base(object):
     had_refinement_error = False
     have_similar_crystal_models = False
 
-    import copy
-    original_params = copy.deepcopy(self.params)
-    original_d_min = self.d_min
-
     while True:
       if had_refinement_error or have_similar_crystal_models:
         break
@@ -642,20 +638,6 @@ class indexer_base(object):
                %self.params.refinement_protocol.d_min_step)
 
       if len(experiments) == 0:
-        if self.params.max_cell_allow_relaxation:
-          relaxed_cell = find_max_cell(
-            self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
-            step_size=self.params.max_cell_multiplier,
-            nearest_neighbor_percentile=self.params.nearest_neighbor_percentile,
-            filter_ice=self.params.filter_ice, location_function=flex.min)
-          if relaxed_cell < self.params.max_cell:
-            info("No suitable lattice could be found. Relaxing max_cell and trying again.")
-            self.d_min = original_d_min
-            self.params = original_params
-            self.params.max_cell = relaxed_cell
-            self.params.max_cell_allow_relaxation = False
-            info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
-            continue
         raise Sorry("No suitable lattice could be found.")
       elif len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
@@ -898,7 +880,6 @@ class indexer_base(object):
 
   def find_max_cell(self):
     if self.params.max_cell is libtbx.Auto:
-      self.params.__inject__('max_cell_allow_relaxation', True)
       if self.params.known_symmetry.unit_cell is not None:
         uc_params = self.target_symmetry_primitive.unit_cell().parameters()
         self.params.max_cell = self.params.max_cell_multiplier * max(uc_params[:3])
@@ -1738,8 +1719,7 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 
 
 def find_max_cell(reflections, max_cell_multiplier, step_size,
-                  nearest_neighbor_percentile, filter_ice=True,
-                  location_function=flex.median):
+                  nearest_neighbor_percentile, filter_ice=True):
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
     from dials.algorithms.peak_finding.per_image_analysis import \
@@ -1817,7 +1797,7 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
     debug(list(max_cell))
     debug("median: %s" %flex.median(max_cell))
     debug("mean: %s" %flex.mean(max_cell))
-    max_cell = location_function(max_cell) # mean or max or median?
+    max_cell = flex.median(max_cell) # mean or max or median?
 
   return max_cell
 
