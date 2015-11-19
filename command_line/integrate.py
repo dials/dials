@@ -157,8 +157,9 @@ class Script(object):
       raise Sorry('no experiment list was specified')
 
     # Save phil parameters
-    with open(params.output.phil, "w") as outfile:
-      outfile.write(self.parser.diff_phil.as_str())
+    if params.output.phil is not None:
+      with open(params.output.phil, "w") as outfile:
+        outfile.write(self.parser.diff_phil.as_str())
 
     # Configure logging
     log.config(

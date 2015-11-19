@@ -654,6 +654,7 @@ class IntegrateCommand(CommandNode):
     self.parameters.set("output.log=%s" % self.output_info_log_filename)
     self.parameters.set("output.debug_log=%s" % self.output_debug_log_filename)
     self.parameters.set("output.report=%s" % self.output_report_filename)
+    self.parameters.set("output.phil=None")
 
   def run(self, parameters, output):
     from libtbx import easy_run
@@ -708,12 +709,17 @@ class ExportCommand(CommandNode):
 
   def finalize(self):
     from os.path import exists
+    import shutil
     for filename in [
         self.output_reflections_filename,
         self.output_info_log_filename,
         self.output_debug_log_filename]:
       if not exists(filename):
         raise RuntimeError("File %s could not be found" % filename)
+
+    # Copy the resulting mtz file to the working directory
+    result_filename = "%d_integrated.mtz" % self.index
+    shutil.copy2(self.output_reflections_filename, result_filename)
 
 
 class CommandRunner(object):
