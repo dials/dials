@@ -52,6 +52,15 @@ normalise_bins = 0
   .help = "Number of resolution bins for normalisation"
 """, process_includes=True)
 
+def dump_text(filename, set0, set1):
+  i0 = set0.as_double()
+  i1 = set1.as_double()
+  fout = open(filename), 'w')
+  for _0, _1 in zip(i0, i1):
+    assert(_0[0] == _1[0])
+    fout.write('%f %f\n' % (_0[1], _1[1]))
+  fout.close()
+  return
 
 def get_symop_correlation_coefficients(miller_array):
   from copy import deepcopy
