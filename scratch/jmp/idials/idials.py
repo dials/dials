@@ -1,5 +1,57 @@
 from __future__ import division
 from cmd import Cmd
+import sys
+
+
+class ExternalCommand(object):
+  '''
+  Class to run an external command
+
+  '''
+
+  def __init__(self, command, filename, output=sys.stdout, wait_time=0.1):
+    '''
+    Run the command
+
+    :param command: The command to run
+    :param filename: The filename for stdout and stderr
+    :param output: Write stdout and stderr to additional output
+    :param wait_time: Wait time for polling file output
+
+    '''
+    import subprocess
+    import time
+
+    # Create the command string
+    if not isinstance(command, str):
+      command = subprocess.list2cmdline(command)
+
+    # Open the file for output and input
+    with open(filename, "w") as outfile:
+      with open(filename, "r") as infile:
+
+        # Start the process
+        process = subprocess.Popen(
+          command,
+          stdout=outfile,
+          stderr=outfile,
+          shell=True,
+          universal_newlines=True,
+          bufsize=-1)
+
+        # Write the lines of the file to the output
+        if output is not None:
+          while True:
+            line = infile.readline()
+            if not line:
+              if process.poll() is not None:
+                break
+              time.sleep(wait_time)
+            else:
+              output.write(line)
+
+        # Get the result
+        self.result = process.wait()
 
 
 class ParameterManager(object):
@@ -475,11 +527,9 @@ class ImportImagesCommand(CommandNode):
   def run(self, parameters, output):
     from libtbx import easy_run
     print "Running import: for output see %s" % output
-    easy_run.fully_buffered([
-      'dials.import',
-      parameters,
-      '>',
-      output])#.raise_if_errors()
+    command = ExternalCommand(['dials.import', parameters], output)
+    if command.result != 0:
+      raise RuntimeError('import failed')
 
   def finalize(self):
     from os.path import exists
@@ -515,11 +565,9 @@ class FindSpotsCommand(CommandNode):
   def run(self, parameters, output):
     from libtbx import easy_run
     print "Running find_spots: for output see %s" % output
-    easy_run.fully_buffered([
-      'dials.find_spots',
-      parameters,
-      '>',
-      output])#.raise_if_errors()
+    command = ExternalCommand(['dials.find_spots', parameters], output)
+    if command.result != 0:
+      raise RuntimeError('find_spots failed')
 
   def finalize(self):
     from os.path import exists
@@ -558,11 +606,9 @@ class IndexCommand(CommandNode):
   def run(self, parameters, output):
     from libtbx import easy_run
     print "Running index: for output see %s" % output
-    easy_run.fully_buffered([
-      'dials.index',
-      parameters,
-      '>',
-      output])#.raise_if_errors()
+    command = ExternalCommand(['dials.index', parameters], output)
+    if command.result != 0:
+      raise RuntimeError('index failed')
 
   def finalize(self):
     from os.path import exists
@@ -609,11 +655,9 @@ class RefineCommand(CommandNode):
   def run(self, parameters, output):
     from libtbx import easy_run
     print "Running refine: for output see %s" % output
-    easy_run.fully_buffered([
-      'dials.refine',
-      parameters,
-      '>',
-      output])#.raise_if_errors()
+    command = ExternalCommand(['dials.refine', parameters], output)
+    if command.result != 0:
+      raise RuntimeError('refine failed')
 
   def finalize(self):
     from os.path import exists
@@ -659,11 +703,9 @@ class IntegrateCommand(CommandNode):
   def run(self, parameters, output):
     from libtbx import easy_run
     print "Running integrate: for output see %s" % output
-    easy_run.fully_buffered([
-      'dials.integrate',
-      parameters,
-      '>',
-      output])#.raise_if_errors()
+    command = ExternalCommand(['dials.integrate', parameters], output)
+    if command.result != 0:
+      raise RuntimeError('integrate failed')
 
   def finalize(self):
     from os.path import exists
@@ -701,11 +743,9 @@ class ExportCommand(CommandNode):
   def run(self, parameters, output):
     from libtbx import easy_run
     print "Running export: for output see %s" % output
-    easy_run.fully_buffered([
-      'dials.export_mtz',
-      parameters,
-      '>',
-      output])#.raise_if_errors()
+    command = ExternalCommand(['dials.export_mtz', parameters], output)
+    if command.result != 0:
+      raise RuntimeError('export failed')
 
   def finalize(self):
     from os.path import exists
