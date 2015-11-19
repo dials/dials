@@ -34,6 +34,10 @@ phil_scope = parse('''
   min_isigi = -5
     .type = float
     .help = "Exclude reflections with unfeasible values of I/Sig(I)"
+  log = dials.export_mtz.log
+    .type = str
+  debug_log = dials.export_mtz.debug.log
+    .type = str
 ''')
 
 def run(args):
@@ -59,7 +63,9 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=False)
 
   # Configure the logging
-  log.config(info='dials.export_mtz.log', debug='dials.export_mtz.debug.log')
+  log.config(
+    info=params.log,
+    debug=params.debug_log)
 
   from dials.util.version import dials_version
   info(dials_version())

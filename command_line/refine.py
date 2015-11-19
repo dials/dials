@@ -63,6 +63,12 @@ phil_scope = parse('''
       .help = "The filename for the table of scan varying parameter values"
       .expert_level = 1
 
+    log = dials.refine.log
+      .type = str
+
+    debug_log = dials.refine.debug.log
+      .type = str
+
     correlation_plot
       .expert_level = 1
     {
@@ -277,7 +283,8 @@ class Script(object):
 
     # Configure the logging
     log.config(params.refinement.verbosity,
-      info='dials.refine.log', debug='dials.refine.debug.log')
+      info=params.output.log,
+      debug=params.output.debug_log)
     from dials.util.version import dials_version
     info(dials_version())
 

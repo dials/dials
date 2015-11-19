@@ -57,6 +57,10 @@ output {
     .type = path
   unindexed_reflections = None
     .type = path
+  log = dials.index.log
+    .type = str
+  debug_log = dials.index.debug.log
+    .type = str
 }
 
 verbosity = 1
@@ -85,7 +89,9 @@ def run(args):
 
   # Configure the logging
   log.config(
-    params.verbosity, info='dials.index.log', debug='dials.index.debug.log')
+    params.verbosity,
+    info=params.output.log,
+    debug=params.output.debug_log)
 
   from dials.util.version import dials_version
   info(dials_version())

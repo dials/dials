@@ -58,6 +58,14 @@ phil_scope = parse('''
       .type = str
       .help = "Save the modified datablock."
               "(usually only modified with hot pixel mask)"
+
+    log = 'dials.find_spots.log'
+      .type = str
+      .help = "The log filename"
+
+    debug_log = 'dials.find_spots.debug.log'
+      .type = str
+      .help = "The debug log filename"
   }
 
   per_image_statistics = False
@@ -110,8 +118,8 @@ class Script(object):
     # Configure the logging
     log.config(
       params.verbosity,
-      info='dials.find_spots.log',
-      debug='dials.find_spots.debug.log')
+      info=params.output.log,
+      debug=params.output.debug_log)
 
     from dials.util.version import dials_version
     info(dials_version())

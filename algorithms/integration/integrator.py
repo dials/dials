@@ -1100,7 +1100,8 @@ class Integrator(object):
     '''
     from dials.util.report import Report
     result = Report()
-    result.combine(self.profile_model_report)
+    if self.profile_model_report is not None:
+      result.combine(self.profile_model_report)
     result.combine(self.integration_report)
     return result
 
