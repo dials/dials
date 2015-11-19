@@ -24,7 +24,7 @@ class ParameterManager(object):
     from libtbx.phil import parse
     self.working_phil = self.master_phil.fetch(source=parse(''))
 
-  def set(self, parameter, short_syntax=False):
+  def set(self, parameters, short_syntax=False):
     '''
     Set a parameter and update the working phil
     :param parameter: The text string of parameters
@@ -33,13 +33,15 @@ class ParameterManager(object):
     '''
     from libtbx.phil import parse
     from libtbx.utils import Sorry
+    import shlex
     if short_syntax == True:
-      interpretor = self.master_phil.command_line_argument_interpreter()
-      self.working_phil = self.working_phil.fetch(
-        interpretor.process_arg(parameter))
+      for parameter in shlex.split(parameters):
+        interpretor = self.master_phil.command_line_argument_interpreter()
+        self.working_phil = self.working_phil.fetch(
+          interpretor.process_arg(parameter))
     else:
       working_phil, unused = self.working_phil.fetch(
-        source=parse(parameter),
+        source=parse(parameters),
         track_unused_definitions=True)
       if len(unused) > 0:
         msg = [item.object.as_str().strip() for item in unused]
@@ -787,6 +789,8 @@ class CommandRunner(object):
 
 class Controller(object):
 
+  mode_list = ['import', 'find_spots', 'index', 'refine', 'integrate', 'export']
+
   def __init__(self, directory="output", state_filename="dials.state", recover=True):
     from os.path import exists, abspath
 
@@ -803,6 +807,8 @@ class Controller(object):
       self.state = CommandRunner(abspath(directory))
 
   def program(self, program):
+    if program not in self.mode_list:
+      raise RuntimeError('Unknown mode: %s' % program)
     self.mode = program
 
   def set(self, parameters, short_syntax=False):
@@ -882,14 +888,22 @@ class Console(Cmd):
     ''' Do nothing on empty line '''
     pass
 
-  def do_set_mode(self, program):
-    ''' Set the program mode '''
-    self.controller.program(program)
-    self.prompt = "%s >> " % self.controller.mode
+  def default(self, line):
+    try:
+      self.do_set(line)
+    except Exception:
+      return Cmd.default(line)
 
-  def do_get_mode(self, line):
-    ''' Get the program mode '''
-    print self.controller.mode
+  def do_mode(self, mode):
+    ''' Set the program mode '''
+    try:
+      self.controller.program(mode)
+      self.prompt = "%s >> " % self.controller.mode
+    except Exception, e:
+      print e
+
+  def complete_mode(self, text, line, begidx, endidx):
+    return [i for i in self.controller.mode_list if i.startswith(text)]
 
   def do_reset(self, line):
     ''' Reset parameters to default. '''
@@ -924,6 +938,30 @@ class Console(Cmd):
     ''' Show the history. '''
     self.controller.show()
 
+  def do_import(self, params):
+    ''' Imperative import command '''
+    self.run_as_imperative("import", params)
+
+  def do_find_spots(self, params):
+    ''' Imperative find_spots command '''
+    self.run_as_imperative("find_spots", params)
+
+  def do_index(self, params):
+    ''' Imperative index command '''
+    self.run_as_imperative("index", params)
+
+  def do_refine(self, params):
+    ''' Imperative refine command '''
+    self.run_as_imperative("refine", params)
+
+  def do_integrate(self, params):
+    ''' Imperative integrate command '''
+    self.run_as_imperative("integrate", params)
+
+  def do_export(self, params):
+    ''' Imperative export command '''
+    self.run_as_imperative("export", params)
+
   def do_exit(self, line):
     ''' Exit the console '''
     return True
@@ -932,6 +970,11 @@ class Console(Cmd):
     ''' Exit the console '''
     print ''
     return True
+
+  def run_as_imperative(self, mode, params):
+    self.do_mode(mode)
+    self.do_set(params)
+    self.do_run("")
 
 
 if __name__ == '__main__':
