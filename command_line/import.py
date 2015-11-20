@@ -380,8 +380,24 @@ class Script(object):
           if params.direction is not None:
             beam.set_direction(params.direction)
         def override_detector(detector, params):
+          # need to gather material from multiple phil parameters to set
+          frame_hash = { }
           for panel_params in params.panel:
+            panel_id = panel_params.id
             panel = detector[panel_params.id]
+
+            if not panel_id in frame_hash:
+              frame_hash[panel_id] = {'fast_axis':None,
+                                      'slow_axis':None,
+                                      'origin':None}
+
+            if panel_params.fast_axis is not None:
+              frame_hash[panel_id]['fast_axis'] = panel_params.fast_axis
+            if panel_params.slow_axis is not None:
+              frame_hash[panel_id]['slow_axis'] = panel_params.slow_axis
+            if panel_params.origin is not None:
+              frame_hash[panel_id]['origin'] = panel_params.origin
+
             if panel_params.name is not None:
               panel.set_name(panel_params.name)
             if panel_params.type is not None:
@@ -396,13 +412,17 @@ class Script(object):
               panel.set_thickness(panel_params.thickness)
             if panel_params.material is not None:
               panel.set_material(panel_params.material)
-            if (panel_params.fast_axis is not None and
-                panel_params.slow_axis is not None and
-                panel_params.origin is not None):
-              panel.set_frame(
-                panel_params.fast_axis,
-                panel_params.slow_axis,
-                panel_params.origin)
+
+          for panel_id in frame_hash:
+            fast_axis = frame_hash[panel_id]['fast_axis']
+            slow_axis = frame_hash[panel_id]['slow_axis']
+            origin = frame_hash[panel_id]['origin']
+            # FIXME warn user if not (all none or all not none)
+            if (fast_axis is not None and
+                slow_axis is not None and
+                origin is not None):
+              panel = detector[panel_id]
+              panel.set_frame(fast_axis, slow_axis, origin)
         def override_goniometer(goniometer, params):
           if params.rotation_axis is not None:
             goniometer.set_rotation_axis(params.rotation_axis)
