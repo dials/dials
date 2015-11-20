@@ -56,7 +56,7 @@ normalise_bins = 0
   .help = "Number of resolution bins for normalisation"
 
 output {
-  directory = None
+  directory = "."
     .type = str
   log = dials.refine_bravais_settings.log
     .type = str

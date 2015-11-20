@@ -30,7 +30,7 @@ class Test(object):
     mask_filename = os.path.join(self.path, "mask.pickle")
 
     # provide mosflm beam centre to dials.import
-    cmd = 'dials.import %s mask=%s output=datablock_with_mask.json' % (image_files, mask_filename)
+    cmd = 'dials.import %s mask=%s output.datablock=datablock_with_mask.json' % (image_files, mask_filename)
     easy_run.fully_buffered(cmd)
     assert os.path.exists("datablock_with_mask.json")
     datablock = load.datablock("datablock_with_mask.json")[0]
@@ -85,7 +85,7 @@ class Test(object):
     ''')
 
     # provide mosflm beam centre to dials.import
-    cmd = 'dials.import %s geometry.phil output=override_geometry.json' %image_files
+    cmd = 'dials.import %s geometry.phil output.datablock=override_geometry.json' %image_files
     easy_run.fully_buffered(cmd)
     assert os.path.exists("override_geometry.json")
     datablock = load.datablock("override_geometry.json")[0]
@@ -127,7 +127,7 @@ class Test(object):
     image_files = ' '.join(image_files)
 
     # provide mosflm beam centre to dials.import
-    cmd = 'dials.import %s mosflm_beam_centre=100,200 output=mosflm_beam_centre.json' %image_files
+    cmd = 'dials.import %s mosflm_beam_centre=100,200 output.datablock=mosflm_beam_centre.json' %image_files
     easy_run.fully_buffered(cmd)
     assert os.path.exists("mosflm_beam_centre.json")
     datablock = load.datablock("mosflm_beam_centre.json")[0]
@@ -135,7 +135,7 @@ class Test(object):
     assert imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0()) == (200,100)
 
     # provide an alternative datablock.json to get geometry from
-    cmd = 'dials.import %s reference_geometry=mosflm_beam_centre.json output=mosflm_beam_centre2.json' %image_files
+    cmd = 'dials.import %s reference_geometry=mosflm_beam_centre.json output.datablock=mosflm_beam_centre2.json' %image_files
     easy_run.fully_buffered(cmd)
     assert os.path.exists("mosflm_beam_centre2.json")
     datablock = load.datablock("mosflm_beam_centre2.json")[0]
@@ -154,7 +154,7 @@ class Test(object):
     image_files = ' '.join(image_files)
 
     # Import from the image files
-    call('dials.import %s output=import_datablock.json' % image_files, shell=True, stdout=PIPE)
+    call('dials.import %s output.datablock=import_datablock.json' % image_files, shell=True, stdout=PIPE)
 
     # Get the expected output
     #expected = self.expected_import_from_image_files()

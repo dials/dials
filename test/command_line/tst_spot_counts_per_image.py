@@ -15,7 +15,7 @@ def run():
   path = os.path.join(dials_regression, "centroid_test_data")
 
   # import the data
-  cmd = "dials.import %s output=datablock.json" % ' '.join(glob(os.path.join(path,"*.cbf")))
+  cmd = "dials.import %s output.datablock=datablock.json" % ' '.join(glob(os.path.join(path,"*.cbf")))
   easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("datablock.json")
 
