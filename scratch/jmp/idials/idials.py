@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+#
+# dials.idials.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+
 from __future__ import division
 from cmd import Cmd
 import sys
@@ -1132,13 +1143,16 @@ class ApplicationState(object):
     }
 
     # Create the command
-    self.current = CommandClass[self.mode](
+    command = CommandClass[self.mode](
       self.current,
       self.parameters[self.mode],
       self.directory)
 
     # Apply the command
-    self.current.apply()
+    command.apply()
+
+    # If successful update current
+    self.current = command
 
   def goto(self, index):
     '''
@@ -1204,7 +1218,7 @@ class Controller(object):
     'export']
 
   def __init__(self,
-               directory="output",
+               directory=".",
                state_filename="dials.state",
                recover=True):
     '''
@@ -1215,10 +1229,10 @@ class Controller(object):
     :param recover: Recover the state if available
 
     '''
-    from os.path import exists, abspath
+    from os.path import exists, abspath, join
 
     # Set some stuff
-    self.state_filename = state_filename
+    self.state_filename = join(directory, state_filename)
 
     # Read state if available
     if recover == True and exists(state_filename):
@@ -1226,7 +1240,14 @@ class Controller(object):
       print "Recovered state from %s" % state_filename
       print self.get_history()
     else:
-      self.state = ApplicationState(abspath(directory))
+      def find_directory(working_directory):
+        counter = 1
+        while True:
+          directory = join(working_directory, "dials-%d" % counter)
+          if not exists(directory):
+            return directory
+          counter += 1
+      self.state = ApplicationState(find_directory(abspath(directory)))
 
   def set_mode(self, mode):
     '''
@@ -1241,6 +1262,7 @@ class Controller(object):
 
     # Set the mode
     self.state.mode = mode
+    self.state.dump(self.state_filename)
 
   def get_mode(self):
     '''
@@ -1297,6 +1319,7 @@ class Controller(object):
 
     '''
     self.state.goto(index)
+    self.state.dump(self.state_filename)
 
   def run(self):
     '''
