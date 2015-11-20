@@ -122,7 +122,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
   print 'Check symmetry operations on %d reflections:' % ms.size()
   print ''
-  print '%10s %6s %5s' % ('Symop', 'Nref', 'CC')
+  print '%20s %6s %5s' % ('Symop', 'Nref', 'CC')
 
   true_symops = []
 
@@ -134,7 +134,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
       if cc > params.symop_threshold:
         true_symops.append(smx)
         accept = '***'
-    print '%10s %6d %.3f %s' % (smx, n_ref, cc, accept)
+    print '%20s %6d %.3f %s' % (smx, n_ref, cc, accept)
 
   if params.symop_threshold:
     from cctbx.sgtbx import space_group as sgtbx_space_group
