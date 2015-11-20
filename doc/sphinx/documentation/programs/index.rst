@@ -15,6 +15,7 @@ Main processing commands:
    dials_refine
    dials_integrate
    dials_export_mtz
+   idials
 
 
 Utilities:

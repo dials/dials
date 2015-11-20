@@ -15,6 +15,63 @@ from __future__ import division
 from cmd import Cmd
 import sys
 
+help_message = '''
+
+This program is an interactive console mode for the dials command line programs.
+It provides convient access to the following dials programs
+
+ - dials.import
+ - dials.find_spots
+ - dials.index
+ - dials.refine_bravais_settings
+ - dials.reindex
+ - dials.refine
+ - dials.integrate
+ - dials.export
+
+To view the full list of commands available in the console, type "help".
+
+The program implements a tree model for the data processing. Each command
+executed is treated as a node in the tree and each job is output into its own
+directory where all output associated with the job will be kept. The current
+state can be changed by using the "goto" command to jump between nodes of the
+tree. This allows the user to go back and re-do a stage of the processing if
+necessary.
+
+The program uses a modal state model. To change mode use the "mode" command.
+Parameters are set using the "set" command. Parameters can be viewed using the
+"get" command which shows only the modified parameters and the "all" command
+which shows all the parameters. Parameters can be set to default values by using
+the "reset" command. The mode is then run using the "run" command. This design
+allows complicated parameter definitions to be specified in a more convenient
+way for the user.
+
+For convenience when the user wants to use default or a small number of
+parameters, an imperative mode is supplied for the dials programs. Each of these
+commands changes the mode, sets the parameters and runs the program in a single
+line.
+
+The program implements a persistant state mechanism. If the program crashes, the
+state can be recovered by simply restarting the program in the same directory.
+
+Examples::
+
+# Process data, select bravais setting and integrate with/without profile
+# fitting
+>> import template=/path/to/images_####.cbf
+>> find_spots
+>> index
+>> refine_bs
+>> reindex solution=1
+>> refine scan_varying=True
+>> integrate
+>> export
+>> goto 6
+>> integrate profile.fitting=False
+>> export
+
+'''
+
 
 class ActionError(RuntimeError):
   '''
