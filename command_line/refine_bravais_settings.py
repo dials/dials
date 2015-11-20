@@ -54,6 +54,16 @@ normalise = False
 normalise_bins = 0
   .type = int
   .help = "Number of resolution bins for normalisation"
+
+output {
+  directory = None
+    .type = str
+  log = dials.refine_bravais_settings.log
+    .type = str
+  debug_log = dials.refine_bravais_settings.debug.log
+    .type = str
+}
+
 include scope dials.algorithms.refinement.refiner.phil_scope
 """, process_includes=True)
 
@@ -75,7 +85,7 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=False)
 
   # Configure the logging
-  log.config(info='%s.log' %libtbx.env.dispatcher_name)
+  log.config(info=params.output.log, debug=params.output.debug.log)
 
   from dials.util.version import dials_version
   info(dials_version())
@@ -129,7 +139,8 @@ def run(args):
   Lfat.labelit_printout(out=s)
   info(s.getvalue())
   from json import dumps
-  open('bravais_summary.json', 'wb').write(dumps(Lfat.as_dict()))
+  from os.path import join
+  open(join(params.output.directory, 'bravais_summary.json'), 'wb').write(dumps(Lfat.as_dict()))
   from dxtbx.serialize import dump
   import copy
   for subgroup in Lfat:
@@ -139,7 +150,7 @@ def run(args):
       expt.detector = subgroup.detector
       expt.beam = subgroup.beam
     dump.experiment_list(
-      expts, 'bravais_setting_%i.json' % (int(subgroup.setting_number)))
+      expts, join(params.output.directory, 'bravais_setting_%i.json' % (int(subgroup.setting_number))))
   return
 
 if __name__ == '__main__':

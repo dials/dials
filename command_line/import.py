@@ -55,25 +55,29 @@ Examples::
 from libtbx.phil import parse
 phil_scope = parse('''
 
-  output = datablock.json
-    .type = str
-    .help = "The output JSON or pickle file"
+  output {
 
-  log = 'dials.import.log'
-    .type = str
-    .help = "The log filename"
+    datablock = datablock.json
+      .type = str
+      .help = "The output JSON or pickle file"
 
-  debug_log = 'dials.import.debug.log'
-    .type = str
-    .help = "The debug log filename"
+    log = 'dials.import.log'
+      .type = str
+      .help = "The log filename"
+
+    debug_log = 'dials.import.debug.log'
+      .type = str
+      .help = "The debug log filename"
+
+    compact = False
+      .type = bool
+      .help = "For JSON output use compact representation"
+
+  }
 
   verbosity = 1
     .type = int(value_min=0)
     .help = "The verbosity level"
-
-  compact = False
-    .type = bool
-    .help = "For JSON output use compact representation"
 
   input {
     template = None
@@ -236,8 +240,8 @@ class Script(object):
     # Configure logging
     log.config(
       params.verbosity,
-      info=params.log,
-      debug=params.debug_log)
+      info=params.output.log,
+      debug=params.output.debug_log)
     from dials.util.version import dials_version
     info(dials_version())
 
@@ -463,11 +467,11 @@ class Script(object):
         debug(sweep.get_scan())
 
     # Write the datablock to a JSON or pickle file
-    if params.output:
+    if params.output.datablock:
       info("-" * 80)
-      info('Writing datablocks to %s' % params.output)
+      info('Writing datablocks to %s' % params.output.datablock)
       dump = DataBlockDumper(datablocks)
-      dump.as_file(params.output, compact=params.compact)
+      dump.as_file(params.output.datablock, compact=params.output.compact)
 
 if __name__ == '__main__':
   from dials.util import halraiser

@@ -688,7 +688,6 @@ class FindSpotsCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    print "Running find_spots: for output see %s" % output
     run_external_command(['dials.find_spots', parameters], output)
 
   def finalize(self):
@@ -747,7 +746,6 @@ class IndexCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    print "Running index: for output see %s" % output
     run_external_command(['dials.index', parameters], output)
 
   def finalize(self):
@@ -805,7 +803,6 @@ class RefineBSCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    print "Running refine_bs: for output see %s" % output
     run_external_command(['dials.refine_bravais_settings', parameters], output)
 
   def finalize(self):
@@ -896,7 +893,6 @@ class ReIndexCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    print "Running index: for output see %s" % output
     run_external_command(['dials.reindex', parameters], output)
 
   def finalize(self):
@@ -958,7 +954,6 @@ class RefineCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    print "Running refine: for output see %s" % output
     run_external_command(['dials.refine', parameters], output)
 
   def finalize(self):
@@ -1018,7 +1013,6 @@ class IntegrateCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    print "Running integrate: for output see %s" % output
     run_external_command(['dials.integrate', parameters], output)
 
   def finalize(self):
@@ -1076,7 +1070,6 @@ class ExportCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    print "Running export: for output see %s" % output
     run_external_command(['dials.export_mtz', parameters], output)
 
   def finalize(self):
