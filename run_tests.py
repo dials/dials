@@ -10,6 +10,7 @@ tst_list = (
     "$D/test/framework/tst_interface.py",
     "$D/test/util/tst_nexus.py",
     "$D/test/util/tst_nexus_multi_experiment.py",
+    "$D/test/command_line/tst_idials.py",
     "$D/test/command_line/tst_reindex.py",
     "$D/test/command_line/tst_import.py",
     "$D/test/command_line/tst_integrate.py",

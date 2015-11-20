@@ -36,7 +36,7 @@ phil_scope = parse('''
     .help = "Exclude reflections with unfeasible values of I/Sig(I)"
 
   output {
-   
+
     log = dials.export_mtz.log
       .type = str
     debug_log = dials.export_mtz.debug.log
