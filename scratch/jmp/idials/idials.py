@@ -3,6 +3,22 @@ from cmd import Cmd
 import sys
 
 
+class ActionError(RuntimeError):
+  '''
+  Class to represent exception for when an action can't be performed
+
+  '''
+
+  def __init__(self, action, parent_action):
+    '''
+    :param action: The action we want to do
+    :param parent_action: The parent's action
+
+    '''
+    text = 'Unable to perform "%s" after "%s"' % (action, parent_action)
+    super(ActionError, self).__init__(text)
+
+
 class ExternalCommand(object):
   '''
   Class to run an external command
@@ -52,6 +68,21 @@ class ExternalCommand(object):
 
         # Get the result
         self.result = process.wait()
+
+
+def run_external_command(command, filename, output=sys.stdout, wait_time=0.1):
+  '''
+  Helper function to run command
+
+  :param command: The command to run
+  :param filename: The filename to output
+  :param output: The buffer to write to
+  :param wait_time: The polling timeout
+
+  '''
+  command = ExternalCommand(command, filename, output, wait_time)
+  if command.result != 0:
+    raise RuntimeError('Error: external command failed')
 
 
 class ParameterManager(object):
@@ -179,6 +210,54 @@ class IndexParameterManager(ParameterManager):
     super(IndexParameterManager, self).__init__(phil_scope)
 
 
+class RefineBSParameterManager(ParameterManager):
+  '''
+  Specialization for refine_bs parameters
+
+  '''
+
+  def __init__(self):
+    '''
+    Import phil scope and set up
+
+    '''
+    from libtbx.phil import parse
+    phil_scope = parse('''
+      input {
+        experiments = None
+          .type = str
+        reflections = None
+          .type = str
+      }
+      include scope dials.command_line.refine_bravais_settings.phil_scope
+    ''', process_includes=True)
+    super(RefineBSParameterManager, self).__init__(phil_scope)
+
+
+class ReIndexParameterManager(ParameterManager):
+  '''
+  Specialization for reindex parameters
+
+  '''
+
+  def __init__(self):
+    '''
+    Import phil scope and set up
+
+    '''
+    from libtbx.phil import parse
+    phil_scope = parse('''
+      solution = None
+        .type = int
+      input {
+        reflections = None
+          .type = str
+      }
+      include scope dials.command_line.reindex.phil_scope
+    ''', process_includes=True)
+    super(ReIndexParameterManager, self).__init__(phil_scope)
+
+
 class RefineParameterManager(ParameterManager):
   '''
   Specialization for refine parameters
@@ -251,7 +330,7 @@ class ExportParameterManager(ParameterManager):
     super(ExportParameterManager, self).__init__(phil_scope)
 
 
-class GlobalParameterManager(object):
+class GlobalParameterManager(dict):
   '''
   Class to hold all parameter managers
 
@@ -262,29 +341,17 @@ class GlobalParameterManager(object):
     Init everything
 
     '''
-    self.import_parameters = ImportParameterManager()
-    self.find_spots_parameters = FindSpotsParameterManager()
-    self.index_parameters = IndexParameterManager()
-    self.refine_parameters = RefineParameterManager()
-    self.integrate_parameters = IntegrateParameterManager()
-    self.export_parameters = ExportParameterManager()
-
-
-
-class ActionError(RuntimeError):
-  '''
-  Class to represent exception for when an action can't be performed
-
-  '''
-
-  def __init__(self, action, parent_action):
-    '''
-    :param action: The action we want to do
-    :param parent_action: The parent's action
-
-    '''
-    text = 'Unable to perform "%s" after "%s"' % (action, parent_action)
-    super(ActionError, self).__init__(text)
+    super(GlobalParameterManager, self).__init__()
+    self.update({
+      'import'     : ImportParameterManager(),
+      'find_spots' : FindSpotsParameterManager(),
+      'index'      : IndexParameterManager(),
+      'refine_bs'  : RefineBSParameterManager(),
+      'reindex'    : ReIndexParameterManager(),
+      'refine'     : RefineParameterManager(),
+      'integrate'  : IntegrateParameterManager(),
+      'export'     : ExportParameterManager(),
+    })
 
 
 class Counter(object):
@@ -345,6 +412,10 @@ class CommandNode(object):
     if parent_action not in self.parent_actions:
       raise ActionError(action, parent_action)
 
+    # Raise exception if trying to job after failure
+    if parent is not None and parent.success == False:
+      raise RuntimeError('Error: parent job %d failed' % parent.index)
+
     # Set the parent and counter
     self.parent = parent
     if self.parent is None:
@@ -359,7 +430,7 @@ class CommandNode(object):
       self.parent.children.append(self)
 
     # Init the result
-    self.result = None
+    self.success = False
 
     # Save the info
     self.action = action
@@ -378,14 +449,6 @@ class CommandNode(object):
     for child in self.children:
       for node, depth in child:
         yield node, depth+1
-
-  def done(self):
-    '''
-    Check if we've done the command
-
-    :return: True/False are we done
-    '''
-    return self.result != None
 
   def apply(self):
     '''
@@ -422,8 +485,8 @@ class CommandNode(object):
     # Grab the result (override this method)
     self.finalize()
 
-    # Return success/failure
-    return True#self.result.success
+    # Set success
+    self.success = True
 
 
 class CommandTree(object):
@@ -471,6 +534,7 @@ class CommandTree(object):
       buf = StringIO()
       if prefix:
         buf.write(('%%%dd' % size) % node.index)
+        buf.write(' %s' % ('S' if node.success else 'F'))
         buf.write(prefix[:-3])
         buf.write('  +--')
       buf.write(node.action)
@@ -502,269 +566,538 @@ class InitialState(CommandNode):
     '''
     super(InitialState, self).__init__(None, 'clean')
 
+    # Set success to True
+    self.success = True
+
   def apply(self):
-    raise RuntimeError("Nothing to do")
+    '''
+    Override apply since we have nothing to do here
+
+    '''
+    raise RuntimeError("Programming error: nothing to do")
 
 
-class ImportImagesCommand(CommandNode):
+class ImportCommand(CommandNode):
+  '''
+  A command to perform an import operation
+
+  '''
 
   parent_actions = ['clean']
 
   def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
 
-    super(ImportImagesCommand, self).__init__(
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
+    super(ImportCommand, self).__init__(
       parent, 'import', parameters, directory)
 
   def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
     from os.path import join
-    self.output_datablock_filename = join(self.directory, "datablock.json")
-    self.output_info_log_filename = join(self.directory, "info.log")
-    self.output_debug_log_filename = join(self.directory, "debug.log")
-    self.parameters.set("output=%s" % self.output_datablock_filename)
-    self.parameters.set("log=%s" % self.output_info_log_filename)
-    self.parameters.set("debug_log=%s" % self.output_debug_log_filename)
+    self.filenames = {
+      'output.datablock' : join(self.directory, "datablock.json"),
+      'output.log'       : join(self.directory, "info.log"),
+      'output.debug_log' : join(self.directory, "debug.log")
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
 
   def run(self, parameters, output):
-    from libtbx import easy_run
+    '''
+    Run the import command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
     print "Running import: for output see %s" % output
-    command = ExternalCommand(['dials.import', parameters], output)
-    if command.result != 0:
-      raise RuntimeError('import failed')
+    run_external_command(['dials.import', parameters], output)
 
   def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
     from os.path import exists
-    for filename in [
-        self.output_datablock_filename,
-        self.output_info_log_filename,
-        self.output_debug_log_filename]:
-      if not exists(filename):
-        raise RuntimeError("File %s could not be found" % filename)
+    for name, value in self.filenames.iteritems():
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
 
 
 class FindSpotsCommand(CommandNode):
+  '''
+  A command to perform an find_spots operation
+
+  '''
 
   parent_actions = ['import']
 
   def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
     super(FindSpotsCommand, self).__init__(
       parent, 'find_spots', parameters, directory)
 
   def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
     from os.path import join
-    self.input_datablock_filename = self.parent.output_datablock_filename
-    self.output_reflections_filename = join(self.directory, "reflections.pickle")
-    self.output_datablock_filename = join(self.directory, "datablock.json")
-    self.output_info_log_filename = join(self.directory, "info.log")
-    self.output_debug_log_filename = join(self.directory, "debug.log")
-    self.parameters.set("input.datablock=%s" % self.input_datablock_filename)
-    self.parameters.set("output.reflections=%s" % self.output_reflections_filename)
-    self.parameters.set("output.datablock=%s" % self.output_datablock_filename)
-    self.parameters.set("output.log=%s" % self.output_info_log_filename)
-    self.parameters.set("output.debug_log=%s" % self.output_debug_log_filename)
+    self.filenames = {
+      'input.datablock'    : self.parent.filenames['output.datablock'],
+      'output.datablock'   : join(self.directory, "datablock.json"),
+      'output.reflections' : join(self.directory, "reflections.pickle"),
+      'output.log'         : join(self.directory, "info.log"),
+      'output.debug_log'   : join(self.directory, "debug.log"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
 
   def run(self, parameters, output):
-    from libtbx import easy_run
+    '''
+    Run the find_spots command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
     print "Running find_spots: for output see %s" % output
-    command = ExternalCommand(['dials.find_spots', parameters], output)
-    if command.result != 0:
-      raise RuntimeError('find_spots failed')
+    run_external_command(['dials.find_spots', parameters], output)
 
   def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
     from os.path import exists
-    for filename in [
-        self.output_reflections_filename,
-        self.output_datablock_filename,
-        self.output_info_log_filename,
-        self.output_debug_log_filename]:
-      if not exists(filename):
-        raise RuntimeError("File %s could not be found" % filename)
+    for name, value in self.filenames.iteritems():
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
 
 
 class IndexCommand(CommandNode):
+  '''
+  A command to perform an index operation
+
+  '''
 
   parent_actions = ['find_spots']
 
   def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
     super(IndexCommand, self).__init__(
       parent, 'index', parameters, directory)
 
   def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
     from os.path import join
-    self.input_datablock_filename = self.parent.output_datablock_filename
-    self.input_reflections_filename = self.parent.output_reflections_filename
-    self.output_reflections_filename = join(self.directory, "reflections.pickle")
-    self.output_experiments_filename = join(self.directory, "experiments.json")
-    self.output_info_log_filename = join(self.directory, "info.log")
-    self.output_debug_log_filename = join(self.directory, "debug.log")
-    self.parameters.set("input.datablock=%s" % self.input_datablock_filename)
-    self.parameters.set("input.reflections=%s" % self.input_reflections_filename)
-    self.parameters.set("output.reflections=%s" % self.output_reflections_filename)
-    self.parameters.set("output.experiments=%s" % self.output_experiments_filename)
-    self.parameters.set("output.log=%s" % self.output_info_log_filename)
-    self.parameters.set("output.debug_log=%s" % self.output_debug_log_filename)
+    self.filenames = {
+      'input.datablock'    : self.parent.filenames['output.datablock'],
+      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'output.reflections' : join(self.directory, "reflections.pickle"),
+      'output.experiments' : join(self.directory, "experiments.json"),
+      'output.log'         : join(self.directory, "info.log"),
+      'output.debug_log'   : join(self.directory, "debug.log"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
 
   def run(self, parameters, output):
-    from libtbx import easy_run
+    '''
+    Run the index command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
     print "Running index: for output see %s" % output
-    command = ExternalCommand(['dials.index', parameters], output)
-    if command.result != 0:
-      raise RuntimeError('index failed')
+    run_external_command(['dials.index', parameters], output)
 
   def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
     from os.path import exists
-    for filename in [
-        self.output_reflections_filename,
-        self.output_experiments_filename,
-        self.output_info_log_filename,
-        self.output_debug_log_filename]:
-      if not exists(filename):
-        raise RuntimeError("File %s could not be found" % filename)
+    for name, value in self.filenames.iteritems():
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
+
+
+class RefineBSCommand(CommandNode):
+  '''
+  A command to perform an refine_bs operation
+
+  '''
+
+  parent_actions = ['index']
+
+  def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
+    super(RefineBSCommand, self).__init__(
+      parent, 'refine_bs', parameters, directory)
+
+  def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
+    from os.path import join
+    self.filenames = {
+      'input.experiments'  : self.parent.filenames['output.experiments'],
+      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'output.log'         : join(self.directory, "info.log"),
+      'output.debug_log'   : join(self.directory, "debug.log"),
+      'output.directory'   : self.directory,
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
+
+  def run(self, parameters, output):
+    '''
+    Run the refine_bravais_settings command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
+    print "Running refine_bs: for output see %s" % output
+    run_external_command(['dials.refine_bravais_settings', parameters], output)
+
+  def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
+    from os.path import exists, join
+    import json
+
+    # Add expected output files to check
+    self.filenames.update({
+      'output.reflections' : self.parent.filenames['output.reflections'],
+      'output.summary'     : join(self.directory, 'bravais_summary.json'),
+    })
+
+    # Check the output files
+    for name, value in self.filenames.iteritems():
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
+
+    # Read the summary and check all json files exist
+    with open(self.filenames['output.summary']) as summary_file:
+      self.summary = json.load(summary_file)
+      self.bs_filenames = {}
+      for name, value in self.summary.iteritems():
+        self.bs_filenames[name] = join(self.directory, 'bravais_setting_%s.json' % name)
+      for name, value in self.bs_filenames.iteritems():
+        if not exists(value):
+          raise RuntimeError("File %s could not be found" % value)
+
+
+class ReIndexCommand(CommandNode):
+  '''
+  A command to perform an reindex operation
+
+  '''
+
+  parent_actions = ['refine_bs']
+
+  def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
+    super(ReIndexCommand, self).__init__(
+      parent, 'reindex', parameters, directory)
+
+  def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
+    from os.path import join
+
+    # The files which can be set as parameters
+    self.filenames = {
+      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'output.reflections' : join(self.directory, "reflections.pickle"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
+
+    # Get the solution we want and convert to the change_of_basis_op
+    solution = self.parameters.get(diff=False).extract().solution
+    if solution is None:
+      raise RuntimeError("No solution selected")
+    change_of_basis_op = self.parent.summary[str(solution)]['cb_op']
+
+    # Set the solution parameter to None and set the cb_op
+    self.parameters.set("solution=None")
+    self.parameters.set("change_of_basis_op=%s" % change_of_basis_op)
+
+    # Set the output experiments to the bravais settings file
+    self.filenames.update({
+      'output.experiments' : self.parent.bs_filenames[str(solution)]
+    })
+
+  def run(self, parameters, output):
+    '''
+    Run the index command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
+    print "Running index: for output see %s" % output
+    run_external_command(['dials.reindex', parameters], output)
+
+  def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
+    from os.path import exists
+    for name, value in self.filenames.iteritems():
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
 
 
 class RefineCommand(CommandNode):
+  '''
+  A command to perform an refine operation
 
-  parent_actions = ['index', 'refine', 'integrate']
+  '''
+
+  parent_actions = ['index', 'reindex', 'refine', 'integrate']
 
   def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
     super(RefineCommand, self).__init__(
       parent, 'refine', parameters, directory)
 
   def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
     from os.path import join
-    self.input_experiments_filename = self.parent.output_experiments_filename
-    self.input_reflections_filename = self.parent.output_reflections_filename
-    self.output_reflections_filename = join(self.directory, "reflections.pickle")
-    self.output_experiments_filename = join(self.directory, "experiments.json")
-    self.output_info_log_filename = join(self.directory, "info.log")
-    self.output_debug_log_filename = join(self.directory, "debug.log")
-    self.output_matches_filename = join(self.directory, "matches.pickle")
-    self.output_centroids_filename = join(self.directory, "centroids.txt")
-    # self.output_parameter_table_filename = join(self.directory, "parameter_table.txt")
-    self.output_history_filename = join(self.directory, "history.txt")
-    self.parameters.set("input.experiments=%s" % self.input_experiments_filename)
-    self.parameters.set("input.reflections=%s" % self.input_reflections_filename)
-    self.parameters.set("output.reflections=%s" % self.output_reflections_filename)
-    self.parameters.set("output.experiments=%s" % self.output_experiments_filename)
-    self.parameters.set("output.log=%s" % self.output_info_log_filename)
-    self.parameters.set("output.debug_log=%s" % self.output_debug_log_filename)
-    self.parameters.set("output.matches=%s" % self.output_matches_filename)
-    self.parameters.set("output.centroids=%s" % self.output_centroids_filename)
-    # self.parameters.set("output.parameter_table=%s" % self.output_parameter_table_filename)
-    self.parameters.set("output.history=%s" % self.output_history_filename)
+    self.filenames = {
+      'input.experiments'  : self.parent.filenames['output.experiments'],
+      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'output.reflections' : join(self.directory, "reflections.pickle"),
+      'output.experiments' : join(self.directory, "experiments.json"),
+      'output.log'         : join(self.directory, "info.log"),
+      'output.debug_log'   : join(self.directory, "debug.log"),
+      'output.matches'     : join(self.directory, "matches.pickle"),
+      'output.centroids'   : join(self.directory, "centroids.txt"),
+      'output.history'     : join(self.directory, "history.txt"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
 
   def run(self, parameters, output):
-    from libtbx import easy_run
+    '''
+    Run the refine command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
     print "Running refine: for output see %s" % output
-    command = ExternalCommand(['dials.refine', parameters], output)
-    if command.result != 0:
-      raise RuntimeError('refine failed')
+    run_external_command(['dials.refine', parameters], output)
 
   def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
     from os.path import exists
-    for filename in [
-        self.output_reflections_filename,
-        self.output_experiments_filename,
-        self.output_info_log_filename,
-        self.output_debug_log_filename,
-        self.output_matches_filename,
-        self.output_centroids_filename,
-        # self.output_parameter_table_filename,
-        self.output_history_filename]:
-      if not exists(filename):
-        raise RuntimeError("File %s could not be found" % filename)
+    for name, value in self.filenames.iteritems():
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
 
 
 class IntegrateCommand(CommandNode):
+  '''
+  A command to perform an integrate operation
 
-  parent_actions = ['index', 'refine', 'integrate']
+  '''
+
+  parent_actions = ['index', 'reindex', 'refine', 'integrate']
 
   def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
     super(IntegrateCommand, self).__init__(
       parent, 'integrate', parameters, directory)
 
   def initialize(self):
-    from os.path import join
-    self.input_experiments_filename = self.parent.output_experiments_filename
-    self.input_reflections_filename = self.parent.output_reflections_filename
-    self.output_reflections_filename = join(self.directory, "reflections.pickle")
-    self.output_experiments_filename = join(self.directory, "experiments.json")
-    self.output_info_log_filename = join(self.directory, "info.log")
-    self.output_debug_log_filename = join(self.directory, "debug.log")
-    self.output_report_filename = join(self.directory, "report.json")
-    self.parameters.set("input.experiments=%s" % self.input_experiments_filename)
-    self.parameters.set("input.reflections=%s" % self.input_reflections_filename)
-    self.parameters.set("output.reflections=%s" % self.output_reflections_filename)
-    self.parameters.set("output.experiments=%s" % self.output_experiments_filename)
-    self.parameters.set("output.log=%s" % self.output_info_log_filename)
-    self.parameters.set("output.debug_log=%s" % self.output_debug_log_filename)
-    self.parameters.set("output.report=%s" % self.output_report_filename)
-    self.parameters.set("output.phil=None")
+    '''
+    Initialise the processing
 
+    '''
+    from os.path import join
+    self.filenames = {
+      'input.experiments'  : self.parent.filenames['output.experiments'],
+      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'output.reflections' : join(self.directory, "reflections.pickle"),
+      'output.experiments' : join(self.directory, "experiments.json"),
+      'output.log'         : join(self.directory, "info.log"),
+      'output.debug_log'   : join(self.directory, "debug.log"),
+      'output.report'      : join(self.directory, "report.json"),
+      'output.phil'        : 'None'
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
   def run(self, parameters, output):
-    from libtbx import easy_run
+    '''
+    Run the integrate command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
     print "Running integrate: for output see %s" % output
-    command = ExternalCommand(['dials.integrate', parameters], output)
-    if command.result != 0:
-      raise RuntimeError('integrate failed')
+    run_external_command(['dials.integrate', parameters], output)
 
   def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
     from os.path import exists
-    for filename in [
-        self.output_reflections_filename,
-        self.output_experiments_filename,
-        self.output_info_log_filename,
-        self.output_debug_log_filename,
-        self.output_report_filename]:
-      if not exists(filename):
-        raise RuntimeError("File %s could not be found" % filename)
+    for name, value in self.filenames.iteritems():
+      if value is not 'None' and not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
 
 
 class ExportCommand(CommandNode):
+  '''
+  A command to perform an export operation
+
+  '''
 
   parent_actions = ['integrate']
 
   def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
     super(ExportCommand, self).__init__(
       parent, 'export', parameters, directory)
 
   def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
     from os.path import join
-    self.input_experiments_filename = self.parent.output_experiments_filename
-    self.input_reflections_filename = self.parent.output_reflections_filename
-    self.output_reflections_filename = join(self.directory, "reflections.mtz")
-    self.output_info_log_filename = join(self.directory, "info.log")
-    self.output_debug_log_filename = join(self.directory, "debug.log")
-    self.parameters.set("input.experiments=%s" % self.input_experiments_filename)
-    self.parameters.set("input.reflections=%s" % self.input_reflections_filename)
-    self.parameters.set("hklout=%s" % self.output_reflections_filename)
-    self.parameters.set("log=%s" % self.output_info_log_filename)
-    self.parameters.set("debug_log=%s" % self.output_debug_log_filename)
+    self.filenames = {
+      'input.experiments'  : self.parent.filenames['output.experiments'],
+      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'hklout'             : join(self.directory, "reflections.mtz"),
+      'output.log'         : join(self.directory, "info.log"),
+      'output.debug_log'   : join(self.directory, "debug.log"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
 
   def run(self, parameters, output):
-    from libtbx import easy_run
+    '''
+    Run the export command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
     print "Running export: for output see %s" % output
-    command = ExternalCommand(['dials.export_mtz', parameters], output)
-    if command.result != 0:
-      raise RuntimeError('export failed')
+    run_external_command(['dials.export_mtz', parameters], output)
 
   def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
     from os.path import exists
     import shutil
-    for filename in [
-        self.output_reflections_filename,
-        self.output_info_log_filename,
-        self.output_debug_log_filename]:
-      if not exists(filename):
-        raise RuntimeError("File %s could not be found" % filename)
+    for name, value in self.filenames.iteritems():
+      print name, value
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
 
     # Copy the resulting mtz file to the working directory
     result_filename = "%d_integrated.mtz" % self.index
-    shutil.copy2(self.output_reflections_filename, result_filename)
+    shutil.copy2(self.filenames['hklout'], result_filename)
 
 
-class CommandRunner(object):
+class ApplicationState(object):
+  '''
+  A class to hold all the application state
+
+  '''
 
   def __init__(self, directory):
+    '''
+    Initialise the state
+
+    :param directory: The output directory
+
+    '''
     # Create the parameters
     self.parameters = GlobalParameterManager()
 
@@ -777,212 +1110,314 @@ class CommandRunner(object):
     # Save the parameters and directory
     self.directory = directory
 
-  def run_command(self, parameters, Class):
-    self.current = Class(
+    # Initialise the mode
+    self.mode = 'import'
+
+  def run(self):
+    '''
+    Run the command for the given mode
+
+    '''
+
+    # The command classes
+    CommandClass = {
+      'import'                  : ImportCommand,
+      'find_spots'              : FindSpotsCommand,
+      'index'                   : IndexCommand,
+      'refine_bs' : RefineBSCommand,
+      'reindex'                 : ReIndexCommand,
+      'refine'                  : RefineCommand,
+      'integrate'               : IntegrateCommand,
+      'export'                  : ExportCommand
+    }
+
+    # Create the command
+    self.current = CommandClass[self.mode](
       self.current,
-      parameters,
+      self.parameters[self.mode],
       self.directory)
+
+    # Apply the command
     self.current.apply()
-    return self.current.index
-
-  def import_images(self):
-    return self.run_command(
-      self.parameters.import_parameters,
-      ImportImagesCommand)
-
-  def find_spots(self):
-    return self.run_command(
-      self.parameters.find_spots_parameters,
-      FindSpotsCommand)
-
-  def index(self):
-    return self.run_command(
-      self.parameters.index_parameters,
-      IndexCommand)
-
-  def refine(self):
-    return self.run_command(
-      self.parameters.refine_parameters,
-      RefineCommand)
-
-  def integrate(self):
-    return self.run_command(
-      self.parameters.integrate_parameters,
-      IntegrateCommand)
-
-  def export(self):
-    return self.run_command(
-      self.parameters.export_parameters,
-      ExportCommand)
 
   def goto(self, index):
+    '''
+    Goto a specific command
+
+    :param index: The command index
+
+    '''
     self.current = self.command_tree.goto(index)
 
-  def string(self):
+  def history(self):
+    '''
+    Get the command history
+
+    :return The command history
+
+    '''
     return self.command_tree.string(current=self.current.index)
 
   def dump(self, filename):
+    '''
+    Dump the state to file
+
+    :param filename: The filename
+
+    '''
     import cPickle as pickle
     with open(filename, "w") as outfile:
       pickle.dump(self, outfile)
 
   @classmethod
   def load(Class, filename):
+    '''
+    Load the state from file
+
+    :param filename: The filename
+    :return: The state object
+
+    '''
     import cPickle as pickle
     with open(filename) as infile:
       return pickle.load(infile)
 
 
 class Controller(object):
+  '''
+  The controller class.
 
-  mode_list = ['import', 'find_spots', 'index', 'refine', 'integrate', 'export']
+  This defines the interface the DIALS GUI and CLI programs can use to interact
+  with the DIALS programs in a standard way.
 
-  def __init__(self, directory="output", state_filename="dials.state", recover=True):
+  '''
+
+  # The list of program modes
+  mode_list = [
+    'import',
+    'find_spots',
+    'index',
+    'refine_bs',
+    'reindex',
+    'refine',
+    'integrate',
+    'export']
+
+  def __init__(self,
+               directory="output",
+               state_filename="dials.state",
+               recover=True):
+    '''
+    Initialise the controller
+
+    :param directory: The output directory
+    :param state_filename: The filename to save the state to
+    :param recover: Recover the state if available
+
+    '''
     from os.path import exists, abspath
 
     # Set some stuff
     self.state_filename = state_filename
-    self.mode = "import"
 
     # Read state if available
     if recover == True and exists(state_filename):
-      self.state = CommandRunner.load(state_filename)
+      self.state = ApplicationState.load(state_filename)
       print "Recovered state from %s" % state_filename
-      self.show()
+      print self.get_history()
     else:
-      self.state = CommandRunner(abspath(directory))
+      self.state = ApplicationState(abspath(directory))
 
-  def program(self, program):
-    if program not in self.mode_list:
-      raise RuntimeError('Unknown mode: %s' % program)
-    self.mode = program
+  def set_mode(self, mode):
+    '''
+    Set the current mode.
 
-  def set(self, parameters, short_syntax=False):
+    :param mode: The mode to set
+
+    '''
+    # Is mode available?
+    if mode not in self.mode_list:
+      raise RuntimeError('Unknown mode: %s' % mode)
+
+    # Set the mode
+    self.state.mode = mode
+
+  def get_mode(self):
+    '''
+    Get the current mode
+
+    :return: The current mode
+
+    '''
+    return self.state.mode
+
+  def set_parameters(self, parameters, short_syntax=False):
+    '''
+    Set the parameters.
+
+    :param parameters: The parameters as a string
+    :param show_syntax: Use command line string
+
+    '''
     from libtbx.utils import Sorry
-    try:
-      self.parameters().set(parameters, short_syntax=short_syntax)
-      self.state.dump(self.state_filename)
-    except Sorry, e:
-      print e
-      return False
-    return True
-
-  def reset(self):
-    self.parameters().reset()
+    self.state.parameters[self.get_mode()].set(parameters, short_syntax=short_syntax)
     self.state.dump(self.state_filename)
-    return True
 
-  def get(self, diff=True):
-    return self.parameters().get(diff=diff)
+  def reset_parameters(self):
+    '''
+    Reset the parameters to the default values
 
-  def show(self):
-    print self.state.string()
+    '''
+    self.state.parameters[self.get_mode()].reset()
+    self.state.dump(self.state_filename)
+
+  def get_parameters(self, diff=True):
+    '''
+    Get the current parameters
+
+    :param diff: Show only the modified parameters
+
+    '''
+    return self.state.parameters[self.get_mode()].get(diff=diff)
+
+  def get_history(self):
+    '''
+    Get the history as a string
+
+    :return: The history string
+
+    '''
+    return self.state.history()
 
   def goto(self, index):
-    self.state.goto(index)
-    self.show()
+    '''
+    Change state to a different index
 
-  def parameters(self):
-    if self.mode == 'import':
-      return self.state.parameters.import_parameters
-    elif self.mode == 'find_spots':
-      return self.state.parameters.find_spots_parameters
-    elif self.mode == 'index':
-      return self.state.parameters.index_parameters
-    elif self.mode == 'refine':
-      return self.state.parameters.refine_parameters
-    elif self.mode == 'integrate':
-      return self.state.parameters.integrate_parameters
-    elif self.mode == 'export':
-      return self.state.parameters.export_parameters
-    else:
-      raise RuntimeError('Unknown mode: %s' % self.mode)
+    :param index: The index to go to
+
+    '''
+    self.state.goto(index)
 
   def run(self):
-    if self.mode == 'import':
-      result = self.state.import_images()
-    elif self.mode == 'find_spots':
-      result = self.state.find_spots()
-    elif self.mode == 'index':
-      result = self.state.index()
-    elif self.mode == 'refine':
-      result = self.state.refine()
-    elif self.mode == 'integrate':
-      result = self.state.integrate()
-    elif self.mode == 'export':
-      result = self.state.export()
-    else:
-      raise RuntimeError('Unknown mode: %s' % self.mode)
-    self.state.dump(self.state_filename)
-    return result
+    '''
+    Run a program
+
+    '''
+    try:
+      self.state.run()
+      self.state.dump(self.state_filename)
+    except Exception:
+      self.state.dump(self.state_filename)
+      raise
+
+
+
+def print_error(exception):
+  '''
+  Print out the error message
+
+  '''
+  print ''
+  print '*' * 80
+  print 'USER ERROR: PLEASE REPLACE USER'
+  print ''
+  print exception
+  print '*' * 80
+  print ''
 
 
 class Console(Cmd):
-  ''' Interactive console. '''
+  '''
+  A class to implement an interactive dials console
 
-  intro = 'DIALS interactive mode (type "help" for documentation)'
+  '''
+
+  # The default prompt
   prompt = ">> "
 
   def __init__(self):
+    '''
+    Initialise the console
 
+    '''
+
+    # Initialise the console base
     Cmd.__init__(self)
 
+    # Create the controller object
     self.controller = Controller()
-    self.prompt = "%s >> " % self.controller.mode
+
+    # Set the prompt to show the current mode
+    self.prompt = "%s >> " % self.controller.get_mode()
 
   def emptyline(self):
     ''' Do nothing on empty line '''
     pass
 
   def default(self, line):
+    ''' The default line handler '''
     try:
-      self.do_set(line)
+      self.controller.set_parameters(line, short_syntax=True)
     except Exception:
-      return Cmd.default(line)
+      return Cmd.default(self, line)
 
   def do_mode(self, mode):
     ''' Set the program mode '''
     try:
-      self.controller.program(mode)
-      self.prompt = "%s >> " % self.controller.mode
+      self.controller.set_mode(mode)
+      self.prompt = "%s >> " % self.controller.get_mode()
     except Exception, e:
-      print e
-
-  def complete_mode(self, text, line, begidx, endidx):
-    return [i for i in self.controller.mode_list if i.startswith(text)]
-
-  def do_reset(self, line):
-    ''' Reset parameters to default. '''
-    self.controller.reset()
+      print_error(e)
 
   def do_set(self, parameter):
     ''' Set a phil parameter '''
-    self.controller.set(parameter, short_syntax=True)
+    try:
+      self.controller.set_parameters(parameter, short_syntax=True)
+    except Exception, e:
+      print_error(e)
+
+  def do_reset(self, line):
+    ''' Reset parameters to default. '''
+    try:
+      self.controller.reset_parameters()
+    except Exception, e:
+      print_error(e)
 
   def do_load(self, filename):
     ''' Load a phil parameter file '''
-    with open(filename) as infile:
-      self.controller.set(infile.read())
-
-  def do_get(self, line):
-    ''' Show the modified parameters. '''
-    print self.controller.get(diff=True).as_str()
-
-  def do_all(self, expert_level):
-    ''' Show all the possible parameters '''
-    print self.controller.get(diff=False).as_str(expert_level=str(expert_level))
+    try:
+      with open(filename) as infile:
+        self.controller.set_parameters(infile.read())
+    except Exception, e:
+      print_error(e)
 
   def do_run(self, line):
     ''' Run a program '''
-    self.controller.run()
+    try:
+      self.controller.run()
+      self.print_history()
+    except Exception, e:
+      print_error(e)
 
   def do_goto(self, line):
     ''' Goto a particular history state '''
-    self.controller.goto(int(line))
+    try:
+      self.controller.goto(int(line))
+      self.print_history()
+    except Exception, e:
+      print_error(e)
+
+  def do_get(self, line):
+    ''' Show all the possible parameters '''
+    print self.controller.get_parameters(diff=True).as_str()
+
+  def do_all(self, line):
+    ''' Show all the possible parameters '''
+    print self.controller.get_parameters(diff=False).as_str()
 
   def do_history(self, line):
     ''' Show the history. '''
-    self.controller.show()
+    self.print_history()
 
   def do_import(self, params):
     ''' Imperative import command '''
@@ -995,6 +1430,14 @@ class Console(Cmd):
   def do_index(self, params):
     ''' Imperative index command '''
     self.run_as_imperative("index", params)
+
+  def do_refine_bs(self, params):
+    ''' Imperative refine_bs command '''
+    self.run_as_imperative("refine_bs", params)
+
+  def do_reindex(self, params):
+    ''' Imperative reindex command '''
+    self.run_as_imperative("reindex", params)
 
   def do_refine(self, params):
     ''' Imperative refine command '''
@@ -1017,12 +1460,51 @@ class Console(Cmd):
     print ''
     return True
 
-  def run_as_imperative(self, mode, params):
-    self.do_mode(mode)
-    self.do_set(params)
-    self.do_run("")
+  def run_as_imperative(self, mode, parameters):
+    '''
+    Helper for imperative mode. Change mode, set parameters and run the job
+
+    '''
+    try:
+      self.controller.set_mode(mode)
+      self.prompt = "%s >> " % self.controller.get_mode()
+      self.controller.set_parameters(parameters, short_syntax=True)
+      self.controller.run()
+      self.print_history()
+    except Exception, e:
+      print_error(e)
+
+  def print_history(self):
+    '''
+    Print the history
+
+    '''
+    print ''
+    print 'History'
+    print self.controller.get_history()
+
+  def complete_mode(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for changing mode.
+
+    '''
+    return [i for i in self.controller.mode_list if i.startswith(text)]
+
+
+# The intro string for the console
+CONSOLE_INTRO = '''
+DIALS interactive mode
+Type "help" for more information
+'''
 
 
 if __name__ == '__main__':
+
+  # Print the console intro
+  print CONSOLE_INTRO
+
+  # Create the console
   console = Console()
+
+  # Enter the command loop
   console.cmdloop()
