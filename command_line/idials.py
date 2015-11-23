@@ -22,6 +22,7 @@ It provides convient access to the following dials programs
 
  - dials.import
  - dials.find_spots
+ - dials.discover_better_experimental_model
  - dials.index
  - dials.refine_bravais_settings
  - dials.reindex
