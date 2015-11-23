@@ -26,11 +26,12 @@ class Test(object):
     stdin_lines = [
       "import template=%s" % join(self.path, "centroid_####.cbf"),
       "find_spots",
+      "discover_better_experimental_model",
       "index",
       "refine_bravais_settings",
       "reindex solution=22",
       "refine",
-      "goto 5",
+      "goto 6",
     ]
 
     easy_run.fully_buffered(
@@ -43,7 +44,7 @@ class Test(object):
       "refine scan_varying=True",
       "integrate",
       "export",
-      "goto 6",
+      "goto 7",
       "integrate profile.fitting=False",
       "export",
     ]
@@ -55,19 +56,20 @@ class Test(object):
     # Check all the stuff we expect, exists
     assert exists("dials.state")
     assert exists("dials-1")
-    assert exists("9_integrated.mtz")
-    assert exists("11_integrated.mtz")
+    assert exists("10_integrated.mtz")
+    assert exists("12_integrated.mtz")
     assert exists("dials-1/1_import")
     assert exists("dials-1/2_find_spots")
-    assert exists("dials-1/3_index")
-    assert exists("dials-1/4_refine_bravais_settings")
-    assert exists("dials-1/5_reindex")
-    assert exists("dials-1/6_refine")
+    assert exists("dials-1/3_discover_better_experimental_model")
+    assert exists("dials-1/4_index")
+    assert exists("dials-1/5_refine_bravais_settings")
+    assert exists("dials-1/6_reindex")
     assert exists("dials-1/7_refine")
-    assert exists("dials-1/8_integrate")
-    assert exists("dials-1/9_export")
-    assert exists("dials-1/10_integrate")
-    assert exists("dials-1/11_export")
+    assert exists("dials-1/8_refine")
+    assert exists("dials-1/9_integrate")
+    assert exists("dials-1/10_export")
+    assert exists("dials-1/11_integrate")
+    assert exists("dials-1/12_export")
 
     print 'OK'
 

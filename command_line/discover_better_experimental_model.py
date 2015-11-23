@@ -42,8 +42,14 @@ mm_search_scope = 4.0
 wide_search_binning = 2
   .help = "Modify the coarseness of the wide grid search for the beam centre."
   .type = float(value_min=0)
-output = optimized_datablock.json
-  .type = path
+output {
+  datablock = optimized_datablock.json
+    .type = path
+  log = "dials.discover_better_experimental_model.log"
+    .type = str
+  debug_log = "dials.discover_better_experimental_model.debug.log"
+    .type = str
+}
 """)
 
 master_params = phil_scope.fetch().extract()
@@ -382,7 +388,9 @@ def run(args):
     exit(0)
 
   # Configure the logging
-  log.config(info='dials.discover_better_experimental_model.log')
+  log.config(
+    info=params.output.log,
+    debug=params.output.debug_log)
 
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
@@ -417,7 +425,7 @@ def run(args):
     imageset.set_detector(new_detector)
     imageset.set_beam(new_beam)
   from dxtbx.serialize import dump
-  dump.datablock(datablock, params.output)
+  dump.datablock(datablock, params.output.datablock)
 
 
 if __name__ == '__main__':

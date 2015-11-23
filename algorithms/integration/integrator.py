@@ -1220,7 +1220,7 @@ class IntegratorFactory(object):
     # Read the mask in if necessary
     if params.integration.lookup.mask is not None:
       if type(params.integration.lookup.mask) == str:
-        with open(params.integraton.lookup.mask) as infile:
+        with open(params.integration.lookup.mask) as infile:
           params.integration.lookup.mask = pickle.load(infile)
 
     # Initialise the strategy classes

@@ -266,6 +266,30 @@ class FindSpotsParameterManager(ParameterManager):
     super(FindSpotsParameterManager, self).__init__(phil_scope)
 
 
+class DiscoverBetterModelParameterManager(ParameterManager):
+  '''
+  Specialization for discover_better_experiment_model parameters
+
+  '''
+
+  def __init__(self):
+    '''
+    Import phil scope and set up
+
+    '''
+    from libtbx.phil import parse
+    phil_scope = parse('''
+      input {
+        datablock = None
+          .type = str
+        reflections = None
+          .type = str
+      }
+      include scope dials.command_line.discover_better_experimental_model.phil_scope
+    ''', process_includes=True)
+    super(DiscoverBetterModelParameterManager, self).__init__(phil_scope)
+
+
 class IndexParameterManager(ParameterManager):
   '''
   Specialization for index parameters
@@ -423,14 +447,15 @@ class GlobalParameterManager(dict):
     '''
     super(GlobalParameterManager, self).__init__()
     self.update({
-      'import'                   : ImportParameterManager(),
-      'find_spots'               : FindSpotsParameterManager(),
-      'index'                    : IndexParameterManager(),
-      'refine_bravais_settings'  : RefineBSParameterManager(),
-      'reindex'                  : ReIndexParameterManager(),
-      'refine'                   : RefineParameterManager(),
-      'integrate'                : IntegrateParameterManager(),
-      'export'                   : ExportParameterManager(),
+      'import'                             : ImportParameterManager(),
+      'find_spots'                         : FindSpotsParameterManager(),
+      'discover_better_experimental_model' : DiscoverBetterModelParameterManager(),
+      'index'                              : IndexParameterManager(),
+      'refine_bravais_settings'            : RefineBSParameterManager(),
+      'reindex'                            : ReIndexParameterManager(),
+      'refine'                             : RefineParameterManager(),
+      'integrate'                          : IntegrateParameterManager(),
+      'export'                             : ExportParameterManager(),
     })
 
 
@@ -770,13 +795,73 @@ class FindSpotsCommand(CommandNode):
         raise RuntimeError("File %s could not be found" % value)
 
 
+class DiscoverBetterModelCommand(CommandNode):
+  '''
+  A command to perform a discover_better_experimental_model operation
+
+  '''
+
+  parent_actions = ['find_spots']
+
+  def __init__(self, parent, parameters, directory):
+    '''
+    Initialise the command node
+
+    :param parent: The parent command
+    :param parameters: The parameters to use
+    :param directory: The output directory
+
+    '''
+    super(DiscoverBetterModelCommand, self).__init__(
+      parent, 'discover_better_experimental_model', parameters, directory)
+
+  def initialize(self):
+    '''
+    Initialise the processing
+
+    '''
+    from os.path import join
+    self.filenames = {
+      'input.datablock'    : self.parent.filenames['output.datablock'],
+      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'output.datablock'   : join(self.directory, "datablock.json"),
+      'output.log'         : join(self.directory, "info.log"),
+      'output.debug_log'   : join(self.directory, "debug.log"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.parameters.set('%s=%s' % (name, value))
+
+  def run(self, parameters, output):
+    '''
+    Run the index command
+
+    :param parameters: The input parameter filename
+    :param output: The stdout file
+
+    '''
+    run_external_command(['dials.discover_better_experimental_model', parameters], output)
+
+  def finalize(self):
+    '''
+    Finalize the processing
+
+    '''
+    from os.path import exists
+    self.filenames.update({
+      'output.reflections' : self.parent.filenames['output.reflections'],
+    })
+    for name, value in self.filenames.iteritems():
+      if not exists(value):
+        raise RuntimeError("File %s could not be found" % value)
+
+
 class IndexCommand(CommandNode):
   '''
   A command to perform an index operation
 
   '''
 
-  parent_actions = ['find_spots']
+  parent_actions = ['find_spots', 'discover_better_experimental_model']
 
   def __init__(self, parent, parameters, directory):
     '''
@@ -1194,14 +1279,15 @@ class ApplicationState(object):
 
     # The command classes
     CommandClass = {
-      'import'                  : ImportCommand,
-      'find_spots'              : FindSpotsCommand,
-      'index'                   : IndexCommand,
-      'refine_bravais_settings' : RefineBSCommand,
-      'reindex'                 : ReIndexCommand,
-      'refine'                  : RefineCommand,
-      'integrate'               : IntegrateCommand,
-      'export'                  : ExportCommand
+      'import'                             : ImportCommand,
+      'find_spots'                         : FindSpotsCommand,
+      'discover_better_experimental_model' : DiscoverBetterModelCommand,
+      'index'                              : IndexCommand,
+      'refine_bravais_settings'            : RefineBSCommand,
+      'reindex'                            : ReIndexCommand,
+      'refine'                             : RefineCommand,
+      'integrate'                          : IntegrateCommand,
+      'export'                             : ExportCommand
     }
 
     # Create the command
@@ -1272,6 +1358,7 @@ class Controller(object):
   mode_list = [
     'import',
     'find_spots',
+    'discover_better_experimental_model',
     'index',
     'refine_bravais_settings',
     'reindex',
@@ -1514,6 +1601,10 @@ class Console(Cmd):
     ''' Imperative find_spots command '''
     self.run_as_imperative("find_spots", params)
 
+  def do_discover_better_experimental_model(self, params):
+    ''' Imperative discover_better_experimental_model command '''
+    self.run_as_imperative("discover_better_experimental_model", params)
+
   def do_index(self, params):
     ''' Imperative index command '''
     self.run_as_imperative("index", params)
@@ -1546,6 +1637,11 @@ class Console(Cmd):
     ''' Exit the console '''
     print ''
     return True
+
+  def do_shell(self, line):
+    ''' Execute shell commands '''
+    import subprocess
+    subprocess.call(line, shell=True)
 
   def run_import_as_imperative(self, line):
     '''
@@ -1642,29 +1738,7 @@ class Console(Cmd):
     Offer tab completion options for loading phil files
 
     '''
-    import os
-    from os.path import isdir
-    import glob
-
-    def _append_slash_if_dir(p):
-      if p and isdir(p) and p[-1] != os.sep:
-        return p + os.sep
-      else:
-        return p
-
-    before_arg = line.rfind(" ", 0, begidx)
-    if before_arg == -1:
-      return # arg not found
-
-    fixed = line[before_arg+1:begidx]  # fixed portion of the arg
-    arg = line[before_arg+1:endidx]
-    pattern = arg + '*'
-
-    completions = []
-    for path in glob.glob(pattern):
-      path = _append_slash_if_dir(path)
-      completions.append(path.replace(fixed, "", 1))
-    return completions
+    return get_path_completions(text, line, begidx, endidx)
 
   def complete_import(self, text, line, begidx, endidx):
     '''
@@ -1673,12 +1747,20 @@ class Console(Cmd):
     '''
     return self.get_phil_completions(text, mode="import")
 
+
   def complete_find_spots(self, text, line, begidx, endidx):
     '''
     Offer tab completion options for find_spots
 
     '''
     return self.get_phil_completions(text, mode="find_spots")
+
+  def complete_discover_better_experimental_model(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for discover_better_experimental_model
+
+    '''
+    return self.get_phil_completions(text, mode="discover_better_experimental_model")
 
   def complete_index(self, text, line, begidx, endidx):
     '''
@@ -1732,6 +1814,35 @@ class Console(Cmd):
     definitions = phil_scope.all_definitions()
     full_names = [d.path for d in definitions]
     return [i for i in full_names if text in i]
+
+  def get_path_completions(self, text, line, begidx, endidx):
+    '''
+    Get completions for paths
+
+    '''
+    import os
+    from os.path import isdir
+    import glob
+
+    def _append_slash_if_dir(p):
+      if p and isdir(p) and p[-1] != os.sep:
+        return p + os.sep
+      else:
+        return p
+
+    before_arg = line.rfind(" ", 0, begidx)
+    if before_arg == -1:
+      return # arg not found
+
+    fixed = line[before_arg+1:begidx]  # fixed portion of the arg
+    arg = line[before_arg+1:endidx]
+    pattern = arg + '*'
+
+    completions = []
+    for path in glob.glob(pattern):
+      path = _append_slash_if_dir(path)
+      completions.append(path.replace(fixed, "", 1))
+    return completions
 
 
 # The intre string for the console
