@@ -536,6 +536,8 @@ class CommandNode(object):
 
     # Init the result
     self.success = False
+    self.result = None
+    self.report = None
 
     # Save the info
     self.action = action
@@ -1179,6 +1181,9 @@ class IntegrateCommand(CommandNode):
       if value is not 'None' and not exists(value):
         raise RuntimeError("File %s could not be found" % value)
 
+    # set the report and results filenames
+    self.report = self.filenames['output.report']
+
 
 class ExportCommand(CommandNode):
   '''
@@ -1462,6 +1467,24 @@ class Controller(object):
     '''
     return self.state.history()
 
+  def get_result(self):
+    '''
+    Get the results filename
+
+    :return: The results filename
+
+    '''
+    return self.state.current.result
+
+  def get_report(self):
+    '''
+    Get the report filename
+
+    :return: The report filename
+
+    '''
+    return self.state.current.report
+
   def goto(self, index):
     '''
     Change state to a different index
@@ -1483,7 +1506,6 @@ class Controller(object):
     except Exception:
       self.state.dump(self.state_filename)
       raise
-
 
 
 def print_error(exception):
@@ -1540,6 +1562,27 @@ class Console(Cmd):
     try:
       self.controller.set_mode(mode)
       self.prompt = "%s >> " % self.controller.get_mode()
+    except Exception, e:
+      print_error(e)
+
+  def do_report(self, line):
+    ''' Get the report. '''
+    try:
+      filename = self.controller.get_report()
+      if filename is None:
+        raise RuntimeError('No result to show')
+      print 'For report, see: %s' % filename
+    except Exception, e:
+      print_error(e)
+
+  def do_result(self, line):
+    ''' Get the results. '''
+    try:
+      import webbrowser
+      filename = self.controller.get_result()
+      if filename is None:
+        raise RuntimeError('No result to show')
+      webbrowser.open('file://%s' % filename)
     except Exception, e:
       print_error(e)
 
