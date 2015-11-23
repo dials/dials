@@ -12,6 +12,9 @@
 
 from __future__ import division
 from scitbx.array_family import flex
+from math import pi, sin, cos, sqrt
+DEG2RAD = pi/180.0
+RAD2DEG = 180.0/pi
 
 class SingleTie(object):
   """Tie of a single parameter to a value with a least squares restraint"""
@@ -72,9 +75,13 @@ class SingleUnitCellTie(object):
 
   def _calculate_uc_gradients(self):
 
+    from scitbx import matrix
     B = self._xlucp.get_state()
     O = (B.transpose()).inverse()
-    a, b, c, aa, bb, gg = self._xlucp.get_model().get_unit_cell().parameters()
+    a, b, c, aa, bb, cc = self._xlucp.get_model().get_unit_cell().parameters()
+    aa *= DEG2RAD
+    bb *= DEG2RAD
+    cc *= DEG2RAD
     avec, bvec, cvec = self._xlucp.get_model().get_real_space_vectors()
 
     # calculate d[B^T]/dp
@@ -92,24 +99,38 @@ class SingleUnitCellTie(object):
 
       # extract derivatives of each unit cell vector wrt p
       dav_dp, dbv_dp, dcv_dp = dO.as_list_of_lists()
+      dav_dp = matrix.col(dav_dp)
+      dbv_dp = matrix.col(dbv_dp)
+      dcv_dp = matrix.col(dcv_dp)
 
       # derivative of cell params wrt p
-      da_dp = 1./a * sum([ai * dav for ai, dav in zip(avec.elems, dav_dp)])
+      da_dp = 1./a * avec.dot(dav_dp)
       print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grads[i][0], i)
 
-      db_dp = 1./b * sum([bi * dbv for bi, dbv in zip(bvec.elems, dbv_dp)])
+      db_dp = 1./b * bvec.dot(dbv_dp)
       print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grads[i][1], i)
 
-      dc_dp = 1./c * sum([ci * dcv for ci, dcv in zip(cvec.elems, dcv_dp)])
+      dc_dp = 1./c * cvec.dot(dcv_dp)
       print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grads[i][2], i)
 
+      z = bvec.dot(cvec) / (b * c)
+      daa_dp = bvec.dot(cvec) * (db_dp * c + b * dc_dp) - b * c * (dbv_dp.dot(cvec) + bvec.dot(dcv_dp))
+      daa_dp /= (b * b * c * c)
+      daa_dp *= -RAD2DEG / (sqrt(1 - z**2))
+      #daa_dp = -1. * cos(aa) * (db_dp * c + b * dc_dp)
+      #daa_dp += dbv_dp.dot(cvec) + bvec.dot(dcv_dp)
+      #daa_dp *= RAD2DEG / (b*c*sin(aa))
+      print "d[alpha]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grads[i][3], i)
+
+    #from dials.util.command_line import interactive_console; interactive_console()
+    #1/0
 
   def _check_fd_gradients(self):
 
     from scitbx import matrix
     mp = self._xlucp
     p_vals = mp.get_param_vals()
-    deltas = [1.e-8 for p in p_vals]
+    deltas = [1.e-7 for p in p_vals]
     assert len(deltas) == len(p_vals)
     fd_grad = []
 
