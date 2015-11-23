@@ -61,7 +61,7 @@ Examples::
 >> import template=/path/to/images_####.cbf
 >> find_spots
 >> index
->> refine_bs
+>> refine_bravais_settings
 >> reindex solution=1
 >> refine scan_varying=True
 >> integrate
@@ -69,6 +69,16 @@ Examples::
 >> goto 6
 >> integrate profile.fitting=False
 >> export
+
+# Simple scripting can be done by inputting command on stdin
+idials <<EOF
+import template=/path/to/images_####.cbf
+find_spots
+index
+refine scan_varying=True
+integrate
+export
+EOF
 
 '''
 
@@ -282,7 +292,7 @@ class IndexParameterManager(ParameterManager):
 
 class RefineBSParameterManager(ParameterManager):
   '''
-  Specialization for refine_bs parameters
+  Specialization for refine_bravais_settings parameters
 
   '''
 
@@ -413,14 +423,14 @@ class GlobalParameterManager(dict):
     '''
     super(GlobalParameterManager, self).__init__()
     self.update({
-      'import'     : ImportParameterManager(),
-      'find_spots' : FindSpotsParameterManager(),
-      'index'      : IndexParameterManager(),
-      'refine_bs'  : RefineBSParameterManager(),
-      'reindex'    : ReIndexParameterManager(),
-      'refine'     : RefineParameterManager(),
-      'integrate'  : IntegrateParameterManager(),
-      'export'     : ExportParameterManager(),
+      'import'                   : ImportParameterManager(),
+      'find_spots'               : FindSpotsParameterManager(),
+      'index'                    : IndexParameterManager(),
+      'refine_bravais_settings'  : RefineBSParameterManager(),
+      'reindex'                  : ReIndexParameterManager(),
+      'refine'                   : RefineParameterManager(),
+      'integrate'                : IntegrateParameterManager(),
+      'export'                   : ExportParameterManager(),
     })
 
 
@@ -820,7 +830,7 @@ class IndexCommand(CommandNode):
 
 class RefineBSCommand(CommandNode):
   '''
-  A command to perform an refine_bs operation
+  A command to perform an refine_bravais_settings operation
 
   '''
 
@@ -836,7 +846,7 @@ class RefineBSCommand(CommandNode):
 
     '''
     super(RefineBSCommand, self).__init__(
-      parent, 'refine_bs', parameters, directory)
+      parent, 'refine_bravais_settings', parameters, directory)
 
   def initialize(self):
     '''
@@ -900,7 +910,7 @@ class ReIndexCommand(CommandNode):
 
   '''
 
-  parent_actions = ['refine_bs']
+  parent_actions = ['refine_bravais_settings']
 
   def __init__(self, parent, parameters, directory):
     '''
@@ -1187,7 +1197,7 @@ class ApplicationState(object):
       'import'                  : ImportCommand,
       'find_spots'              : FindSpotsCommand,
       'index'                   : IndexCommand,
-      'refine_bs' : RefineBSCommand,
+      'refine_bravais_settings' : RefineBSCommand,
       'reindex'                 : ReIndexCommand,
       'refine'                  : RefineCommand,
       'integrate'               : IntegrateCommand,
@@ -1263,7 +1273,7 @@ class Controller(object):
     'import',
     'find_spots',
     'index',
-    'refine_bs',
+    'refine_bravais_settings',
     'reindex',
     'refine',
     'integrate',
@@ -1494,9 +1504,9 @@ class Console(Cmd):
     ''' Show the history. '''
     self.print_history()
 
-  def do_import(self, params):
+  def do_import(self, line):
     ''' Imperative import command '''
-    self.run_as_imperative("import", params)
+    self.run_import_as_imperative(line)
 
   def do_find_spots(self, params):
     ''' Imperative find_spots command '''
@@ -1506,9 +1516,9 @@ class Console(Cmd):
     ''' Imperative index command '''
     self.run_as_imperative("index", params)
 
-  def do_refine_bs(self, params):
-    ''' Imperative refine_bs command '''
-    self.run_as_imperative("refine_bs", params)
+  def do_refine_bravais_settings(self, params):
+    ''' Imperative refine_bravais_settings command '''
+    self.run_as_imperative("refine_bravais_settings", params)
 
   def do_reindex(self, params):
     ''' Imperative reindex command '''
@@ -1535,6 +1545,13 @@ class Console(Cmd):
     print ''
     return True
 
+  def run_import_as_imperative(self, line):
+    '''
+    Helper for import imperative mode. Change mode, set parameters and run the job
+
+    '''
+    self.run_as_imperative("import", self.parse_import_line(line))
+
   def run_as_imperative(self, mode, parameters):
     '''
     Helper for imperative mode. Change mode, set parameters and run the job
@@ -1548,6 +1565,52 @@ class Console(Cmd):
       self.print_history()
     except Exception, e:
       print_error(e)
+
+  def parse_import_line(self, line):
+    ''' Given a line after the import command. Figure out phil and filenames
+
+    Split line like a shell command line. Then check each argument. If an
+    argument is a directory, then find templates in that directory. Otherwise,
+    Find files matching the argument using the glob module and generate
+    templates from the matches. If there are no matches then input as a phil
+    parameter.
+
+    '''
+    from os import listdir
+    from os.path import isdir, isfile, join
+    from glob import glob
+    from dxtbx.model.scan_helpers import template_regex
+    import shlex
+    def templates_from_filenames(filenames):
+      templates = []
+      for f in filenames:
+        try:
+          templates.append(template_regex(f)[0])
+        except Exception:
+          pass
+      return list(set(templates))
+    def templates_from_directory(directory):
+      filenames = []
+      for f in listdir(directory):
+        if isfile(join(directory, f)):
+          filenames.append(join(directory, f))
+      return templates_from_filenames(sorted(filenames))
+    parameters = []
+    arguments = shlex.split(line)
+    for arg in arguments:
+      if isdir(arg):
+        templates = templates_from_directory(arg)
+        for t in templates:
+          parameters.append("template=%s" % t)
+      else:
+        matches = glob(arg)
+        if len(matches) > 0:
+          templates = templates_from_filenames(matches)
+          for t in templates:
+            parameters.append("template=%s" % t)
+        else:
+          parameters.append(arg)
+    return ' '.join(parameters)
 
   def print_history(self):
     '''

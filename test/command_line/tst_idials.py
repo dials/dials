@@ -27,7 +27,7 @@ class Test(object):
       "import template=%s" % join(self.path, "centroid_####.cbf"),
       "find_spots",
       "index",
-      "refine_bs",
+      "refine_bravais_settings",
       "reindex solution=22",
       "refine",
       "goto 5",
@@ -60,7 +60,7 @@ class Test(object):
     assert exists("dials-1/1_import")
     assert exists("dials-1/2_find_spots")
     assert exists("dials-1/3_index")
-    assert exists("dials-1/4_refine_bs")
+    assert exists("dials-1/4_refine_bravais_settings")
     assert exists("dials-1/5_reindex")
     assert exists("dials-1/6_refine")
     assert exists("dials-1/7_refine")
