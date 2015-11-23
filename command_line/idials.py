@@ -1355,14 +1355,16 @@ class Controller(object):
     self.state.parameters[self.get_mode()].reset()
     self.state.dump(self.state_filename)
 
-  def get_parameters(self, diff=True):
+  def get_parameters(self, diff=True, mode=None):
     '''
     Get the current parameters
 
     :param diff: Show only the modified parameters
 
     '''
-    return self.state.parameters[self.get_mode()].get(diff=diff)
+    if mode is None:
+      mode = self.get_mode()
+    return self.state.parameters[mode].get(diff=diff)
 
   def get_history(self):
     '''
@@ -1628,8 +1630,111 @@ class Console(Cmd):
     '''
     return [i for i in self.controller.mode_list if i.startswith(text)]
 
+  def complete_set(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for setting parameters
 
-# The intro string for the console
+    '''
+    return self.get_phil_completions(text)
+
+  def complete_load(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for loading phil files
+
+    '''
+    import os
+    from os.path import isdir
+    import glob
+
+    def _append_slash_if_dir(p):
+      if p and isdir(p) and p[-1] != os.sep:
+        return p + os.sep
+      else:
+        return p
+
+    before_arg = line.rfind(" ", 0, begidx)
+    if before_arg == -1:
+      return # arg not found
+
+    fixed = line[before_arg+1:begidx]  # fixed portion of the arg
+    arg = line[before_arg+1:endidx]
+    pattern = arg + '*'
+
+    completions = []
+    for path in glob.glob(pattern):
+      path = _append_slash_if_dir(path)
+      completions.append(path.replace(fixed, "", 1))
+    return completions
+
+  def complete_import(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for import
+
+    '''
+    return self.get_phil_completions(text, mode="import")
+
+  def complete_find_spots(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for find_spots
+
+    '''
+    return self.get_phil_completions(text, mode="find_spots")
+
+  def complete_index(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for index
+
+    '''
+    return self.get_phil_completions(text, mode="index")
+
+  def complete_refine_bravais_settings(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for refine_bravais_settings
+
+    '''
+    return self.get_phil_completions(text, mode="refine_bravais_settings")
+
+  def complete_reindex(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for reindex
+
+    '''
+    return self.get_phil_completions(text, mode="reindex")
+
+  def complete_refine(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for refine
+
+    '''
+    return self.get_phil_completions(text, mode="refine")
+
+
+  def complete_integrate(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for integrate
+
+    '''
+    return self.get_phil_completions(text, mode="integrate")
+
+  def complete_export(self, text, line, begidx, endidx):
+    '''
+    Offer tab completion options for export
+
+    '''
+    return self.get_phil_completions(text, mode="export")
+
+  def get_phil_completions(self, text, mode=None):
+    '''
+    Get completions for phil parameters
+
+    '''
+    phil_scope = self.controller.get_parameters(diff=False, mode=mode)
+    definitions = phil_scope.all_definitions()
+    full_names = [d.path for d in definitions]
+    return [i for i in full_names if text in i]
+
+
+# The intre string for the console
 CONSOLE_INTRO = '''
 DIALS interactive mode
 Type "help" for more information
