@@ -538,6 +538,7 @@ class CommandNode(object):
     self.success = False
     self.result = None
     self.report = None
+    self.models = None
 
     # Save the info
     self.action = action
@@ -739,6 +740,9 @@ class ImportCommand(CommandNode):
       if not exists(value):
         raise RuntimeError("File %s could not be found" % value)
 
+    # set the results
+    self.models = self.filenames['output.datablock']
+
 
 class FindSpotsCommand(CommandNode):
   '''
@@ -795,6 +799,9 @@ class FindSpotsCommand(CommandNode):
     for name, value in self.filenames.iteritems():
       if not exists(value):
         raise RuntimeError("File %s could not be found" % value)
+
+    # set the results
+    self.models = self.filenames['output.datablock']
 
 
 class DiscoverBetterModelCommand(CommandNode):
@@ -856,6 +863,9 @@ class DiscoverBetterModelCommand(CommandNode):
       if not exists(value):
         raise RuntimeError("File %s could not be found" % value)
 
+    # set the results
+    self.models = self.filenames['output.datablock']
+
 
 class IndexCommand(CommandNode):
   '''
@@ -913,6 +923,9 @@ class IndexCommand(CommandNode):
     for name, value in self.filenames.iteritems():
       if not exists(value):
         raise RuntimeError("File %s could not be found" % value)
+
+    # set the results
+    self.models = self.filenames['output.experiments']
 
 
 class RefineBSCommand(CommandNode):
@@ -1061,6 +1074,9 @@ class ReIndexCommand(CommandNode):
       if not exists(value):
         raise RuntimeError("File %s could not be found" % value)
 
+    # set the results
+    self.models = self.filenames['output.experiments']
+
 
 class RefineCommand(CommandNode):
   '''
@@ -1122,6 +1138,9 @@ class RefineCommand(CommandNode):
       if not exists(value):
         raise RuntimeError("File %s could not be found" % value)
 
+    # set the results
+    self.models = self.filenames['output.experiments']
+
 
 class IntegrateCommand(CommandNode):
   '''
@@ -1161,6 +1180,7 @@ class IntegrateCommand(CommandNode):
     }
     for name, value in self.filenames.iteritems():
       self.parameters.set('%s=%s' % (name, value))
+
   def run(self, parameters, output):
     '''
     Run the integrate command
@@ -1183,6 +1203,7 @@ class IntegrateCommand(CommandNode):
 
     # set the report and results filenames
     self.report = self.filenames['output.report']
+    self.models = self.filenames['output.experiments']
 
 
 class ExportCommand(CommandNode):
@@ -1467,6 +1488,15 @@ class Controller(object):
     '''
     return self.state.history()
 
+  def get_models(self):
+    '''
+    Get the models filename
+
+    :return: The models filename
+
+    '''
+    return self.state.current.models
+
   def get_result(self):
     '''
     Get the results filename
@@ -1562,6 +1592,17 @@ class Console(Cmd):
     try:
       self.controller.set_mode(mode)
       self.prompt = "%s >> " % self.controller.get_mode()
+    except Exception, e:
+      print_error(e)
+
+  def do_models(self, line):
+    ''' Show the models '''
+    import subprocess
+    try:
+      filename = self.controller.get_models()
+      if filename is None:
+        raise RuntimeError('No models to show')
+      subprocess.call('dials.show_models %s' % filename, shell=True)
     except Exception, e:
       print_error(e)
 
@@ -1684,7 +1725,10 @@ class Console(Cmd):
   def do_shell(self, line):
     ''' Execute shell commands '''
     import subprocess
-    subprocess.call(line, shell=True)
+    try:
+      subprocess.call(line, shell=True)
+    except Exception, e:
+      print_error(e)
 
   def run_import_as_imperative(self, line):
     '''
