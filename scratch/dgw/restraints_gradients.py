@@ -130,12 +130,16 @@ for i, dO in enumerate(dO_dp):
   #print fd_grad[i]['dB_dp']
   #print
 
+  print "***** PARAMETER {0} *****".format(i)
+
   # dB_dp is good.
 
+  print "O MATRIX"
   print "dO_dp analytical"
   print dO
   print "dO_dp FD"
   print fd_grad[i]['dO_dp']
+  print
 
   # extract derivatives of each unit cell vector wrt p
   dav_dp, dbv_dp, dcv_dp = dO.transpose().as_list_of_lists()
@@ -143,32 +147,38 @@ for i, dO in enumerate(dO_dp):
   dbv_dp = matrix.col(dbv_dp)
   dcv_dp = matrix.col(dcv_dp)
 
-  print "d[avec]/dp", dav_dp
-  print "FD d[avec]/dp", fd_grad[i]['davec_dp']
-  print
-
   # check these are correct vs FD
+  print "CELL VECTORS"
   diff = dav_dp - fd_grad[i]['davec_dp']
-  print 2 * diff.length() / (dav_dp.length() + fd_grad[i]['davec_dp'].length()) * 100
+  #print 2 * diff.length() / (dav_dp.length() + fd_grad[i]['davec_dp'].length()) * 100
   print 'davec_dp analytical: {0} {1} {2}'.format(*dav_dp.elems)
   print 'davec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['davec_dp'].elems)
 
   # only the first one seems about right. What about b?
   diff = dbv_dp - fd_grad[i]['dbvec_dp']
-  print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
+  #print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
   print 'dbvec_dp analytical: {0} {1} {2}'.format(*dbv_dp.elems)
   print 'dbvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dbvec_dp'].elems)
 
   # and c?
   diff = dcv_dp - fd_grad[i]['dcvec_dp']
-  print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
+  #print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
   print 'dcvec_dp analytical: {0} {1} {2}'.format(*dcv_dp.elems)
   print 'dcvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dcvec_dp'].elems)
   print
 
-  # only gradients for the first three parameters seem to make any sense, and
-  # each of these is only correct for one vector: a for the first parameter,
-  # b for the second and c for the last.
+  #
+  print "CELL LENGTHS"
+  da_dp = 1./a * avec.dot(dav_dp)
+  print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grad[i]['da_dp'], i)
+
+  db_dp = 1./b * bvec.dot(dbv_dp)
+  print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grad[i]['db_dp'], i)
+
+  dc_dp = 1./c * cvec.dot(dcv_dp)
+  print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grad[i]['dc_dp'], i)
+  print
+  print
 
   # only orthogonal changes are relevant
   ua = avec.normalize()
@@ -191,7 +201,8 @@ for i, dO in enumerate(dO_dp):
   dalpha_db = matrix.col((dangle.dtheta_dv_1(), dangle.dtheta_dv_2(), dangle.dtheta_dv_3()))
   daa_dp = ortho_dav_dp.dot(dalpha_da) + ortho_dbv_dp.dot(dalpha_db)
 
-  #print daa_dp * RAD2DEG
+  #print "analytical daa_dp", daa_dp * RAD2DEG
+  #print "FD daa_dp", fd_grad[i]['daa_dp']
 
 # enter interactive console
 from dials.util.command_line import interactive_console; interactive_console()
