@@ -7,7 +7,7 @@ restraints
 # Python and cctbx imports
 from __future__ import division
 import sys
-from math import pi
+from math import pi, sqrt
 from scitbx import matrix
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
@@ -178,6 +178,13 @@ for i, dO in enumerate(dO_dp):
   dc_dp = 1./c * cvec.dot(dcv_dp)
   print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grad[i]['dc_dp'], i)
   print
+  print "CELL ANGLES"
+
+  z = bvec.dot(cvec) / (b * c)
+  daa_dp = bvec.dot(cvec) * (db_dp * c + b * dc_dp) - b * c * (dbv_dp.dot(cvec) + bvec.dot(dcv_dp))
+  daa_dp /= (b * b * c * c)
+  daa_dp *= -RAD2DEG / (sqrt(1 - z**2))
+  print "d[alpha]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grad[i]['daa_dp'], i)
   print
 
   # only orthogonal changes are relevant
