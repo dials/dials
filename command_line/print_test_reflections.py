@@ -1,5 +1,7 @@
 from __future__ import division
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.print_test_reflections
+
 def print_refl(row):
 
   sbox = row['shoebox'].data
