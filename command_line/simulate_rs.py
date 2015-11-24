@@ -9,6 +9,8 @@
 
 from __future__ import division
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.simulate_rs
+
 class Script(object):
   ''' The class to encapsulate the script. '''
 
