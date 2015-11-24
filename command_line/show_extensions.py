@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 from __future__ import division
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.show_extensions
 
 class Script(object):
   ''' The class to encapsulate the script. '''
