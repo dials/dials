@@ -112,6 +112,7 @@ def build_np_img(width = 64, height = 64):
 
   return data2d
 
+
 class App(wx.App):
     def OnInit(self):
 
