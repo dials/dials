@@ -32,6 +32,7 @@ Utilities:
    dials_analyse_output
    dials_plot_scan_varying_crystal
    dials_find_spots_server
+   dials_apply_mask
 
 Printable command line reference:
 

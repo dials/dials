@@ -12,6 +12,18 @@
 from __future__ import division
 from iotbx.phil import parse
 
+help_message = '''
+
+This program augments a datablock JSON file with a mask specified by the user.
+It's only function is to input the path to the mask file but means that the user
+does not have to edit the datablock file by hand.
+
+Examples::
+
+  dials.apply_mask datablock.json input.mask=mask.pickle
+
+'''
+
 phil_scope = parse("""
 
   input {
@@ -40,6 +52,7 @@ class Script(object):
     usage = "usage: %s [options] datablock.json" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
+      epilog=help_message,
       phil=phil_scope,
       read_datablocks=True)
 

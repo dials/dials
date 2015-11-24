@@ -38,6 +38,7 @@ tst_list = (
     "$D/test/command_line/tst_rs_mapper.py",
     "$D/test/command_line/tst_filter_reflections.py",
     "$D/test/command_line/tst_stills_detector_hybrid_refine.py",
+    "$D/test/command_line/tst_apply_mask.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_reflection_table.py",
     "$D/test/model/data/tst_prediction.py",
