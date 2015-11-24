@@ -57,29 +57,29 @@ state can be recovered by simply restarting the program in the same directory.
 
 Examples::
 
-# Process data, select bravais setting and integrate with/without profile
-# fitting
->> import template=/path/to/images_####.cbf
->> find_spots
->> index
->> refine_bravais_settings
->> reindex solution=1
->> refine scan_varying=True
->> integrate
->> export
->> goto 6
->> integrate profile.fitting=False
->> export
+  # Process data, select bravais setting and integrate with/without profile
+  # fitting
+  >> import template=/path/to/images_####.cbf
+  >> find_spots
+  >> index
+  >> refine_bravais_settings
+  >> reindex solution=1
+  >> refine scan_varying=True
+  >> integrate
+  >> export
+  >> goto 6
+  >> integrate profile.fitting=False
+  >> export
 
-# Simple scripting can be done by inputting command on stdin
-idials <<EOF
-import template=/path/to/images_####.cbf
-find_spots
-index
-refine scan_varying=True
-integrate
-export
-EOF
+  # Simple scripting can be done by inputting command on stdin
+  idials <<EOF
+  import template=/path/to/images_####.cbf
+  find_spots
+  index
+  refine scan_varying=True
+  integrate
+  export
+  EOF
 
 '''
 
