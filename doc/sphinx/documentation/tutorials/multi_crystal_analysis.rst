@@ -159,8 +159,8 @@ script does. If time is *really* short then try uncommenting the line
         return
 
       # create MTZ
-      cmd = "dials.export_mtz refined_experiments.json integrated.pickle " +\
-            "hklout=integrated.mtz"
+      cmd = "dials.export refined_experiments.json integrated.pickle " +\
+            "mtz.hklout=integrated.mtz"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.mtz"):
         print "Job %02d failed during MTZ export" % num
@@ -303,7 +303,7 @@ is useless for any other purpose.
 
 Finally we use :program:`dials.export` to create an MTZ file::
 
-  dials.export_mtz refined_experiments.json integrated.pickle hklout=integrated.mtz
+  dials.export refined_experiments.json integrated.pickle mtz.hklout=integrated.mtz
 
 After each of these major steps we check whether the last command ran successfully
 by checking for the existence of an expected output file. If the file does not
@@ -985,7 +985,7 @@ to run in parallel, similar to the one used previously::
         return
 
       # create MTZ
-      cmd = "dials.export_mtz %s integrated.pickle hklout=integrated.mtz"
+      cmd = "dials.export %s integrated.pickle mtz.hklout=integrated.mtz"
       cmd = cmd % experiments_path
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.mtz"):

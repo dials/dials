@@ -430,7 +430,7 @@ and aimless_.
 
 ::
 
-  dials.export_mtz integrated.pickle refined_experiments.json hklout=integrated.mtz
+  dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mtz
 
 And this is the output, showing the reflection file statistics.
 
@@ -438,7 +438,9 @@ And this is the output, showing the reflection file statistics.
 
   The following parameters have been modified:
 
-  hklout = "integrated.mtz"
+  mtz {
+    hklout = "integrated.mtz"
+  }
   input {
     experiments = refined_experiments.json
     reflections = integrated.pickle
@@ -449,7 +451,7 @@ And this is the output, showing the reflection file statistics.
   Removing 2 reflections with I/Sig(I) < -5.0
   Removing 0 profile reflections with I/Sig(I) < -5.0
   Removing 4039 incomplete reflections
-  Title: from dials.export_mtz
+  Title: from dials.export
   Space group symbol from file: P4
   Space group number from file: 75
   Space group from matrices: P 4 (No. 75)

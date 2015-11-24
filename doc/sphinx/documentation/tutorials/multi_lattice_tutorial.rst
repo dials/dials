@@ -748,7 +748,7 @@ Exporting as MTZ
 
 The final step of dials processing is to export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
-and aimless_. Currently :doc:`dials.export_mtz </programs/dials_export_mtz>`
+and aimless_. Currently :doc:`dials.export </programs/dials_export>`
 only supports one experiment at a time, therefore it is necessary to first
 split the :samp:`refined_experiments.json` and :samp:`integrated.pickle` into
 separate files
@@ -765,13 +765,13 @@ separate files
   Saving experiment 1 to refined_experiments_1.json
   Saving reflections for experiment 1 to integrated_1.pickle
 
-Now we are ready to run dials.export_mtz on the individual .pickle and .json
+Now we are ready to run dials.export on the individual .pickle and .json
 files output for each experiment.
 
 ::
 
-  dials.export_mtz integrated_0.pickle refined_experiments_0.json hklout=integrated_0.mtz
-  dials.export_mtz integrated_1.pickle refined_experiments_1.json hklout=integrated_1.mtz
+  dials.export integrated_0.pickle refined_experiments_0.json mtz.hklout=integrated_0.mtz
+  dials.export integrated_1.pickle refined_experiments_1.json mtz.hklout=integrated_1.mtz
 
 And this is the output, showing the reflection file statistics.
 
@@ -780,7 +780,7 @@ And this is the output, showing the reflection file statistics.
   Removing 1277 reflections with negative variance
   Removing 5057 profile reflections with negative variance
   Removing 1153 incomplete reflections
-  Title: from dials.export_mtz
+  Title: from dials.export
   Space group symbol from file: P222
   Space group number from file: 16
   Space group from matrices: P 2 2 2 (No. 16)
@@ -821,7 +821,7 @@ And this is the output, showing the reflection file statistics.
   Removing 1465 reflections with negative variance
   Removing 5318 profile reflections with negative variance
   Removing 1317 incomplete reflections
-  Title: from dials.export_mtz
+  Title: from dials.export
   Space group symbol from file: P222
   Space group number from file: 16
   Space group from matrices: P 2 2 2 (No. 16)

@@ -648,7 +648,7 @@ Now we do the scan-varying refinement and integrate::
 
   dials.refine refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.json
   dials.integrate sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4
-  dials.export_mtz integrated.pickle sv_refined_experiments.json hklout=integrated.mtz ignore_panels=true
+  dials.export integrated.pickle sv_refined_experiments.json mtz.hklout=integrated.mtz ignore_panels=true
   dials.analyse_output integrated.pickle grid_size=5,12
 
 From the end of :file:`dials.integrate.log`::
@@ -891,7 +891,7 @@ Let's now do scan-varying refinement then integrate the dataset with corrected m
 
   dials.refine corrected_refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.json
   dials.integrate corrected_sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.pickle
-  dials.export_mtz corrected_integrated.pickle corrected_sv_refined_experiments.json hklout=corrected_integrated.mtz ignore_panels=true
+  dials.export corrected_integrated.pickle corrected_sv_refined_experiments.json mtz.hklout=corrected_integrated.mtz ignore_panels=true
   dials.analyse_output corrected_integrated.pickle grid_size=5,12
 
 From the integration log::
