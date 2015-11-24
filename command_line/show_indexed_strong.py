@@ -1,5 +1,7 @@
 from __future__ import division
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.show_indexed_strong
+
 def show_indexed_strong(indexed_data):
 
   assert('miller_index' in indexed_data)

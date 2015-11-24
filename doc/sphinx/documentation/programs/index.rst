@@ -14,7 +14,7 @@ Main processing commands:
    dials_reindex
    dials_refine
    dials_integrate
-   dials_export_mtz
+   dials_export
    idials
 
 
