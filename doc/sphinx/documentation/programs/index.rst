@@ -33,6 +33,7 @@ Utilities:
    dials_plot_scan_varying_crystal
    dials_find_spots_server
    dials_apply_mask
+   dials_create_profile_model
 
 Printable command line reference:
 

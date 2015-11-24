@@ -10,7 +10,28 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.phil import parse
 
+help_message = '''
+
+This program computes the profile model from the input reflections. It then
+saves a modified experiments.json file with the additional profile model
+information. Usually this is performed during integration; however, on some
+occasions it may be desirable to compute the profile model independantly.
+
+Examples::
+
+  dials.create_profile_model experiments.json reflections.pickle
+
+'''
+
+phil_scope = parse('''
+  output = experiments_with_profile_model.json
+    .type = str
+    .help = "The filename for the experiments"
+
+  include scope dials.algorithms.profile_model.factory.phil_scope
+''', process_includes=True)
 
 class Script(object):
   ''' Encapsulate the script in a class. '''
@@ -18,23 +39,14 @@ class Script(object):
   def __init__(self):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    # The phil parameters
-    phil_scope = parse('''
-      output = experiments_with_profile_model.json
-        .type = str
-        .help = "The filename for the experiments"
-
-      include scope dials.algorithms.profile_model.factory.phil_scope
-    ''', process_includes=True)
 
     # The script usage
     usage  = "usage: %s [options] experiments.json spots.pickle" \
       % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
+      epilog=help_message,
       phil=phil_scope,
       read_reflections=True,
       read_experiments=True,
