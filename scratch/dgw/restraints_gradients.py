@@ -136,33 +136,35 @@ for i, dO in enumerate(dO_dp):
   print dO
   print "dO_dp FD"
   print fd_grad[i]['dO_dp']
-  print
-
 
   # extract derivatives of each unit cell vector wrt p
-  dav_dp, dbv_dp, dcv_dp = dO.as_list_of_lists()
+  dav_dp, dbv_dp, dcv_dp = dO.transpose().as_list_of_lists()
   dav_dp = matrix.col(dav_dp)
   dbv_dp = matrix.col(dbv_dp)
   dcv_dp = matrix.col(dcv_dp)
 
-  ## check these are correct vs FD
-  #diff = dav_dp - fd_grad[i]['davec_dp']
-  #print 2 * diff.length() / (dav_dp.length() + fd_grad[i]['davec_dp'].length()) * 100
-  #print 'davec_dp analytical: {0} {1} {2}'.format(*dav_dp.elems)
-  #print 'davec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['davec_dp'].elems)
-  #
-  ## only the first one seems about right. What about b?
-  #diff = dbv_dp - fd_grad[i]['dbvec_dp']
-  #print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
-  #print 'dbvec_dp analytical: {0} {1} {2}'.format(*dbv_dp.elems)
-  #print 'dbvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dbvec_dp'].elems)
-  #
-  ## and c?
-  #diff = dcv_dp - fd_grad[i]['dcvec_dp']
-  #print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
-  #print 'dcvec_dp analytical: {0} {1} {2}'.format(*dcv_dp.elems)
-  #print 'dcvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dcvec_dp'].elems)
-  #print
+  print "d[avec]/dp", dav_dp
+  print "FD d[avec]/dp", fd_grad[i]['davec_dp']
+  print
+
+  # check these are correct vs FD
+  diff = dav_dp - fd_grad[i]['davec_dp']
+  print 2 * diff.length() / (dav_dp.length() + fd_grad[i]['davec_dp'].length()) * 100
+  print 'davec_dp analytical: {0} {1} {2}'.format(*dav_dp.elems)
+  print 'davec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['davec_dp'].elems)
+
+  # only the first one seems about right. What about b?
+  diff = dbv_dp - fd_grad[i]['dbvec_dp']
+  print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
+  print 'dbvec_dp analytical: {0} {1} {2}'.format(*dbv_dp.elems)
+  print 'dbvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dbvec_dp'].elems)
+
+  # and c?
+  diff = dcv_dp - fd_grad[i]['dcvec_dp']
+  print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
+  print 'dcvec_dp analytical: {0} {1} {2}'.format(*dcv_dp.elems)
+  print 'dcvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dcvec_dp'].elems)
+  print
 
   # only gradients for the first three parameters seem to make any sense, and
   # each of these is only correct for one vector: a for the first parameter,
