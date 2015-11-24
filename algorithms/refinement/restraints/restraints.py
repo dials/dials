@@ -98,7 +98,7 @@ class SingleUnitCellTie(object):
     for i, dO in enumerate(dO_dp):
 
       # extract derivatives of each unit cell vector wrt p
-      dav_dp, dbv_dp, dcv_dp = dO.as_list_of_lists()
+      dav_dp, dbv_dp, dcv_dp = dO.transpose().as_list_of_lists()
       dav_dp = matrix.col(dav_dp)
       dbv_dp = matrix.col(dbv_dp)
       dcv_dp = matrix.col(dcv_dp)
