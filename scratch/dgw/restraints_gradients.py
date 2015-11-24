@@ -28,12 +28,14 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
-args = sys.argv[1:]
+#args = sys.argv[1:]
 master_phil = parse("""
     include scope dials.test.algorithms.refinement.geometry_phil
     include scope dials.test.algorithms.refinement.minimiser_phil
     """, process_includes=True)
 
+# make cell more oblique
+args=["a.direction.close_to.sd=5","b.direction.close_to.sd=5","c.direction.close_to.sd=5"]
 models = setup_geometry.Extract(master_phil, cmdline_args = args)
 crystal = models.crystal
 
@@ -56,14 +58,20 @@ def check_fd_gradients(parameterisation):
     mp.set_param_vals(p_vals)
     rev_uc = mp.get_model().get_unit_cell().parameters()
     rev_vec = mp.get_model().get_real_space_vectors()
+    rev_B = mp.get_model().get_B()
+    rev_O = rev_B.transpose().inverse()
 
     p_vals[i] += deltas[i]
     mp.set_param_vals(p_vals)
     fwd_uc = mp.get_model().get_unit_cell().parameters()
     fwd_vec = mp.get_model().get_real_space_vectors()
+    fwd_B = mp.get_model().get_B()
+    fwd_O = fwd_B.transpose().inverse()
 
     fd_uc = [(f - r) / deltas[i] for f,r in zip(fwd_uc, rev_uc)]
     fd_vec = [(f - r) / deltas[i] for f,r in zip(fwd_vec, rev_vec)]
+    fd_B = (fwd_B - rev_B) / deltas[i]
+    fd_O = (fwd_O - rev_O) / deltas[i]
     fd_grad.append({'da_dp':fd_uc[0],
                     'db_dp':fd_uc[1],
                     'dc_dp':fd_uc[2],
@@ -72,7 +80,9 @@ def check_fd_gradients(parameterisation):
                     'dcc_dp':fd_uc[5],
                     'davec_dp':fd_vec[0],
                     'dbvec_dp':fd_vec[1],
-                    'dcvec_dp':fd_vec[2]})
+                    'dcvec_dp':fd_vec[2],
+                    'dB_dp':fd_B,
+                    'dO_dp':fd_O})
 
     p_vals[i] = val
 
@@ -114,30 +124,45 @@ fd_grad = check_fd_gradients(xluc_param)
 # look at each parameter
 for i, dO in enumerate(dO_dp):
 
+  #print "dB_dp analytical"
+  #print dB_dp[i]
+  #print "dB_dp FD"
+  #print fd_grad[i]['dB_dp']
+  #print
+
+  # dB_dp is good.
+
+  print "dO_dp analytical"
+  print dO
+  print "dO_dp FD"
+  print fd_grad[i]['dO_dp']
+  print
+
+
   # extract derivatives of each unit cell vector wrt p
   dav_dp, dbv_dp, dcv_dp = dO.as_list_of_lists()
   dav_dp = matrix.col(dav_dp)
   dbv_dp = matrix.col(dbv_dp)
   dcv_dp = matrix.col(dcv_dp)
 
-  # check these are correct vs FD
-  diff = dav_dp - fd_grad[i]['davec_dp']
-  print 2 * diff.length() / (dav_dp.length() + fd_grad[i]['davec_dp'].length()) * 100
-  print 'davec_dp analytical: {0} {1} {2}'.format(*dav_dp.elems)
-  print 'davec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['davec_dp'].elems)
-
-  # only the first one seems about right. What about b?
-  diff = dbv_dp - fd_grad[i]['dbvec_dp']
-  print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
-  print 'dbvec_dp analytical: {0} {1} {2}'.format(*dbv_dp.elems)
-  print 'dbvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dbvec_dp'].elems)
-
-  # and c?
-  diff = dcv_dp - fd_grad[i]['dcvec_dp']
-  print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
-  print 'dcvec_dp analytical: {0} {1} {2}'.format(*dcv_dp.elems)
-  print 'dcvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dcvec_dp'].elems)
-  print
+  ## check these are correct vs FD
+  #diff = dav_dp - fd_grad[i]['davec_dp']
+  #print 2 * diff.length() / (dav_dp.length() + fd_grad[i]['davec_dp'].length()) * 100
+  #print 'davec_dp analytical: {0} {1} {2}'.format(*dav_dp.elems)
+  #print 'davec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['davec_dp'].elems)
+  #
+  ## only the first one seems about right. What about b?
+  #diff = dbv_dp - fd_grad[i]['dbvec_dp']
+  #print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
+  #print 'dbvec_dp analytical: {0} {1} {2}'.format(*dbv_dp.elems)
+  #print 'dbvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dbvec_dp'].elems)
+  #
+  ## and c?
+  #diff = dcv_dp - fd_grad[i]['dcvec_dp']
+  #print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
+  #print 'dcvec_dp analytical: {0} {1} {2}'.format(*dcv_dp.elems)
+  #print 'dcvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dcvec_dp'].elems)
+  #print
 
   # only gradients for the first three parameters seem to make any sense, and
   # each of these is only correct for one vector: a for the first parameter,
