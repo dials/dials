@@ -1,6 +1,8 @@
 from __future__ import division
 from cctbx.array_family import flex
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_orientation_matrices
+
 import iotbx.phil
 
 master_phil_scope = iotbx.phil.parse(

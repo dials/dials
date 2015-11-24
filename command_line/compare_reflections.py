@@ -1,5 +1,7 @@
 from __future__ import division
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_reflections
+
 class CompareReflections(object):
   ''' A class to compare reflections. '''
 

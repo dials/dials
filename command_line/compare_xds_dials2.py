@@ -1,6 +1,8 @@
 from __future__ import division
 #from scipy.interpolate import griddata
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_xds_dials2
+
 import matplotlib
 matplotlib.use('WXAgg')
 

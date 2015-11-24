@@ -1,5 +1,7 @@
 from __future__ import division
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_mosflm_xds
+
 def pull_reference_xds(integrate_hkl, d_min = 0.0):
   '''Generate reference data set from integrate.hkl, check out the calculated
   x, y and z centroids as well as the Miller indices as coordinates in some
