@@ -1,6 +1,8 @@
 from __future__ import division
 from libtbx.phil import parse
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.export_nxms_to_mtz
+
 help_message = '''
 
 This program is used to export an NXmx file as an mtz file.

@@ -13,7 +13,7 @@ def run():
 
   path = os.path.join(dials_regression, "experiment_test_data")
 
-  cmd = "dials.export_mosflm %s/experiment_1.json" %path
+  cmd = "dials.export format=mosflm %s/experiment_1.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("mosflm/index.mat")
   with open("mosflm/index.mat", "rb") as f:

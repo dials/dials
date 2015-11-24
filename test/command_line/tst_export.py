@@ -21,45 +21,42 @@ class Test(object):
       exit(0)
 
     self.path = join(dials_regression, "centroid_test_data")
-
-    # Call dials.integrate
-    easy_run.fully_buffered([
-      'dials.integrate',
-      join(self.path, 'experiments.json'),
-      'profile.fitting=False',
-    ]).raise_if_errors()
+    self.experiments = join(self.path, "experiments.json")
+    self.reflections = join(self.path, "integrated.pickle")
 
   def run(self):
+    self.test_mtz()
+    self.test_nxs()
+
+  def test_nxs(self):
     from libtbx import easy_run
-    from dials.array_family import flex
-    from dials.model.data import Shoebox
+    from os.path import exists
 
     # Call dials.export
     easy_run.fully_buffered([
       'dials.export',
-      'integrated.pickle',
-      'integrated.h5'
+      'format=nxs',
+      self.experiments,
+      self.reflections
     ]).raise_if_errors()
 
-    table1 = flex.reflection_table.from_pickle('integrated.pickle')
-    table2 = flex.reflection_table.from_h5('integrated.h5')
-    eps = 1e-7
-    assert(table1.nrows() == table2.nrows())
-    assert(table1.ncols() == table2.ncols())
-    assert(sorted(table1.keys()) == sorted(table2.keys()))
-    for key in table1.keys():
-      col1 = table1[key]
-      col2 = table2[key]
-      assert(type(col1) == type(col1))
-      for e1, e2 in zip(col1, col2):
-        if isinstance(e1, tuple):
-          assert(len(e1) == len(e2))
-          for ee1, ee2 in zip(e1, e2):
-            assert(abs(ee1 - ee2) < eps)
-        elif isinstance(e1, Shoebox):
-          pass
-        else:
-          assert(abs(e1 - e2) < eps)
+    assert exists("hklout.nxs")
+
+    print 'OK'
+
+  def test_mtz(self):
+    from libtbx import easy_run
+    from os.path import exists
+
+    # Call dials.export
+    easy_run.fully_buffered([
+      'dials.export',
+      'format=mtz',
+      self.experiments,
+      self.reflections
+    ]).raise_if_errors()
+
+    assert exists("hklout.mtz")
 
     print 'OK'
 
