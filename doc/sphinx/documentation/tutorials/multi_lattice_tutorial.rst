@@ -203,9 +203,9 @@ processing using bravais_setting_5.json, i.e. solution number 5.
 
 ::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle experiment_id=0
+  dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=0
 
-  dials.refine_bravais_settings experiments.json indexed.pickle experiment_id=1
+  dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=1
 
 gives a table containing the metric fit, rmsds (in mm) and unit cell for
 each Bravais setting...

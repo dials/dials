@@ -46,9 +46,9 @@ dials.index datablock.json strong.pickle \
 # with the indexed unit cell. In this example we would continue processing
 # using the bravais_setting_5.json, i.e. solution number 5
 
-dials.refine_bravais_settings experiments.json indexed.pickle experiment_id=0
+dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=0
 
-dials.refine_bravais_settings experiments.json indexed.pickle experiment_id=1
+dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=1
 
 # now re-run the indexing, this time imposing the lattice constraints for the
 # chosen Bravais setting, in this case number 5, i.e. oP, or point group P222
