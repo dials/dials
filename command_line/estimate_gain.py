@@ -7,6 +7,17 @@ from dials.util.options import flatten_datablocks
 
 help_message = '''
 
+This program can be used to estimate the gain of the detector. For pixel array
+detectors the gain is usually set to 1.00. This means that the pixels behave
+according to Poisson statistics. However, for older CCD detectors the gain may
+have a different value. This value is important because it can affect, amongst
+other things, the ability of the spot finding algorithm which can result in
+noise being identified as diffraction spots.
+
+Examples::
+
+dials.estimate_gain datablock.json
+
 '''
 
 phil_scope = iotbx.phil.parse("""\

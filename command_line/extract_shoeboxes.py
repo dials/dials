@@ -9,8 +9,20 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.extract_shoeboxes
 
 from __future__ import division
+
+help_message = '''
+
+This program takes an experiment list and reflections with shoeboxes and
+extracts pixels from the images. The shoeboxes are then saved to file.
+
+Examples::
+
+dials.extract_shoeboxes experiments.json reflections.pickle
+
+'''
 
 from libtbx.phil import parse
 phil_scope = parse('''
@@ -41,6 +53,7 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
+      epilog=help_message,
       read_experiments=True,
       read_reflections=True,
       read_datablocks=True)

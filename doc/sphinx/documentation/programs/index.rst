@@ -34,6 +34,7 @@ Utilities:
    dials_find_spots_server
    dials_apply_mask
    dials_create_profile_model
+   dials_estimate_gain
 
 Printable command line reference:
 
