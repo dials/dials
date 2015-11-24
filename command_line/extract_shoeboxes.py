@@ -47,7 +47,7 @@ class Script(object):
     import libtbx.load_env
 
     # The script usage
-    usage  = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+    usage  = "usage: %s [options] experiment.json reflections.pickle" % libtbx.env.dispatcher_name
 
     # Create the parser
     self.parser = OptionParser(
@@ -84,7 +84,10 @@ class Script(object):
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
     datablocks = flatten_datablocks(params.input.datablock)
-    if (len(experiments) != 0 and len(datablocks) != 0):
+    if len(experiments) == 0 and len(datablocks) == 0 and len(reflections) == 0:
+      self.parser.print_help()
+      exit(0)
+    elif (len(experiments) != 0 and len(datablocks) != 0):
       raise Sorry('Both experiment list and datablocks set')
     elif len(experiments) > 1:
       raise Sorry('More than 1 experiment set')
