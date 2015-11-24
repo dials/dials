@@ -35,6 +35,7 @@ Utilities:
    dials_apply_mask
    dials_create_profile_model
    dials_estimate_gain
+   dials_predict
 
 Printable command line reference:
 

@@ -10,6 +10,44 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from libtbx.phil import parse
+
+help_message = '''
+
+This program takes a set of experiments and predicts the reflections. The
+reflections are then saved to file.
+
+Examples::
+
+dials.predict experiments.json
+
+dials.predict experiments.json force_static=True
+
+dials.predict experiments.json d_min=2.0
+
+'''
+
+phil_scope = parse('''
+  output = predicted.pickle
+    .type = str
+    .help = "The filename for the predicted reflections"
+
+  force_static = False
+    .type = bool
+    .help = "For a scan varying model, force static prediction"
+
+  buffer_size = 0
+    .type = int
+    .help = "Calculate predictions within a buffer zone of n images either"
+            "size of the scan"
+
+  d_min = None
+    .type = float
+    .help = "Minimum d-spacing of predicted reflections"
+
+    include scope dials.algorithms.profile_model.factory.phil_scope
+''', process_includes=True)
+
 
 class Script(object):
   '''A class for running the script.'''
@@ -25,31 +63,11 @@ class Script(object):
             "{sweep.json | image1.file [image2.file ...]}" \
             % libtbx.env.dispatcher_name
 
-    phil_scope = parse('''
-      output = predicted.pickle
-        .type = str
-        .help = "The filename for the predicted reflections"
-
-      force_static = False
-        .type = bool
-        .help = "For a scan varying model, force static prediction"
-
-      buffer_size = 0
-        .type = int
-        .help = "Calculate predictions within a buffer zone of n images either"
-                "size of the scan"
-
-      d_min = None
-        .type = float
-        .help = "Minimum d-spacing of predicted reflections"
-
-        include scope dials.algorithms.profile_model.factory.phil_scope
-    ''', process_includes=True)
-
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
+      epilog=help_message,
       check_format=False,
       read_experiments=True)
 
