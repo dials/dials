@@ -66,6 +66,8 @@ def dump(experiments, reflections, directory):
         export_spot_xds(ref_cryst, os.path.join(sub_dir, 'SPOT.XDS'))
 
   else:
+    if not os.path.isdir(directory):
+      os.makedirs(directory)
     export_spot_xds(reflections, os.path.join(directory, 'SPOT.XDS'))
 
 def export_spot_xds(reflections, filename):

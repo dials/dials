@@ -27,7 +27,7 @@ class Test(object):
 
     # Call dials.import_xds
     easy_run.fully_buffered([
-      'dials.import_xds',
+      'dev.dials.import_xds',
       'input.method=reflections',
       join(self.path, 'INTEGRATE.HKL'),
       join(self.path, "experiments.json")
@@ -52,7 +52,7 @@ class Test(object):
 
     # Call dials.import_xds
     easy_run.fully_buffered([
-      'dials.import_xds',
+      'dev.dials.import_xds',
       'input.method=reflections',
       join(self.path, 'SPOT.XDS'),
     ]).raise_if_errors()
@@ -70,7 +70,7 @@ class Test(object):
 
     # Call dials.import_xds
     easy_run.fully_buffered([
-      'dials.import_xds',
+      'dev.dials.import_xds',
       'input.method=reflections',
       join(self.path, 'SPOT.XDS'),
       'remove_invalid=True',
@@ -94,7 +94,7 @@ class Test(object):
 
     # Import from the image files
     easy_run.fully_buffered([
-      'dials.import_xds',
+      'dev.dials.import_xds',
       'input.method=experiment',
       'output.filename=import_experiments.json',
       join(self.path)]).raise_if_errors()

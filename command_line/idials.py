@@ -430,7 +430,7 @@ class ExportParameterManager(ParameterManager):
         reflections = None
           .type = str
       }
-      include scope dials.command_line.export_mtz.phil_scope
+      include scope dials.command_line.export.phil_scope
     ''', process_includes=True)
     super(ExportParameterManager, self).__init__(phil_scope)
 
@@ -1236,10 +1236,11 @@ class ExportCommand(CommandNode):
     self.filenames = {
       'input.experiments'  : self.parent.filenames['output.experiments'],
       'input.reflections'  : self.parent.filenames['output.reflections'],
-      'hklout'             : join(self.directory, "reflections.mtz"),
+      'mtz.hklout'         : join(self.directory, "reflections.mtz"),
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
     }
+    self.parameters.set("format=mtz")
     for name, value in self.filenames.iteritems():
       self.parameters.set('%s=%s' % (name, value))
 
@@ -1251,7 +1252,7 @@ class ExportCommand(CommandNode):
     :param output: The stdout file
 
     '''
-    run_external_command(['dials.export_mtz', parameters], output)
+    run_external_command(['dials.export', parameters], output)
 
   def finalize(self):
     '''
@@ -1261,13 +1262,12 @@ class ExportCommand(CommandNode):
     from os.path import exists
     import shutil
     for name, value in self.filenames.iteritems():
-      print name, value
       if not exists(value):
         raise RuntimeError("File %s could not be found" % value)
 
     # Copy the resulting mtz file to the working directory
     result_filename = "%d_integrated.mtz" % self.index
-    shutil.copy2(self.filenames['hklout'], result_filename)
+    shutil.copy2(self.filenames['mtz.hklout'], result_filename)
 
 
 class ApplicationState(object):

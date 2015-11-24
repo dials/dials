@@ -13,7 +13,7 @@ class Test(object):
 
     # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
-      'dials.show_extensions',
+      'dev.dials.show_extensions',
     ]).raise_if_errors()
 
     print 'OK'

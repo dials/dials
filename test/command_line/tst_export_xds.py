@@ -45,8 +45,8 @@ def exercise_spots_xds():
   command = " ".join(args)
   print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
-  assert os.path.exists("SPOT.XDS")
-  with open("SPOT.XDS", "rb") as f:
+  assert os.path.exists(os.path.join("xds", "SPOT.XDS"))
+  with open(os.path.join("xds", "SPOT.XDS"), "rb") as f:
     txt = f.read()
     assert not show_diff(
       "\n".join([l.rstrip() for l in txt.split("\n")]), """\
