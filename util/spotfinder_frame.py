@@ -75,6 +75,54 @@ class SpotFrame(XrayFrame) :
         reflections[i_ref_list] = reflections[i_ref_list].select(d_spacings > self.params.d_min)
       self.reflections = reflections
 
+
+  def setup_toolbar(self) :
+    from wxtbx import bitmaps
+    from wxtbx import icons
+
+    btn = self.toolbar.AddLabelTool(id=-1,
+      label="Load file",
+      bitmap=icons.hkl_file.GetBitmap(),
+      shortHelp="Load file",
+      kind=wx.ITEM_NORMAL)
+    self.Bind(wx.EVT_MENU, self.OnLoadFile, btn)
+    #btn = self.toolbar.AddLabelTool(id=-1,
+      #label="Settings",
+      #bitmap=icons.advancedsettings.GetBitmap(),
+      #shortHelp="Settings",
+      #kind=wx.ITEM_NORMAL)
+    #self.Bind(wx.EVT_MENU, self.OnShowSettings, btn)
+    #btn = self.toolbar.AddLabelTool(id=-1,
+      #label="Zoom",
+      #bitmap=icons.search.GetBitmap(),
+      #shortHelp="Zoom",
+      #kind=wx.ITEM_NORMAL)
+    #self.Bind(wx.EVT_MENU, self.OnZoom, btn
+    btn = self.toolbar.AddLabelTool(id=wx.ID_SAVEAS,
+    label="Save As...",
+    bitmap=bitmaps.fetch_icon_bitmap("actions","save_all", 32),
+    shortHelp="Save As...",
+    kind=wx.ITEM_NORMAL)
+    self.Bind(wx.EVT_MENU, self.OnSaveAs, btn)
+    txt = wx.StaticText(self.toolbar, -1, "Image:")
+    self.toolbar.AddControl(txt)
+    self.image_chooser = wx.Choice(self.toolbar, -1, size=(300,-1))
+    self.toolbar.AddControl(self.image_chooser)
+    self.Bind(wx.EVT_CHOICE, self.OnChooseImage, self.image_chooser)
+    btn = self.toolbar.AddLabelTool(id=wx.ID_BACKWARD,
+      label="Previous",
+      bitmap=bitmaps.fetch_icon_bitmap("actions","1leftarrow"),
+      shortHelp="Previous",
+      kind=wx.ITEM_NORMAL)
+    self.Bind(wx.EVT_MENU, self.OnPrevious, btn)
+    btn = self.toolbar.AddLabelTool(id=wx.ID_FORWARD,
+      label="Next",
+      bitmap=bitmaps.fetch_icon_bitmap("actions","1rightarrow"),
+      shortHelp="Next",
+      kind=wx.ITEM_NORMAL)
+    self.Bind(wx.EVT_MENU, self.OnNext, btn)
+
+
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
     super(SpotFrame, self).init_pyslip()
