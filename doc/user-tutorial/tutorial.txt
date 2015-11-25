@@ -123,7 +123,7 @@ Export
 If you have got this far everything else is easy: export the data as MTZ then
 run pointless and aimless to resort and scale the data viz:
 
-  dials.export_mtz integrated.pickle refined_experiments.json integrated.mtz
+  dials.export integrated.pickle refined_experiments.json integrated.mtz
   pointless hklin integrated.mtz hklout sorted.mtz
   aimless hklin sorted.mtz hklout scaled.mtz
 
