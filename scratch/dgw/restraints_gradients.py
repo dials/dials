@@ -116,7 +116,7 @@ dBT_dp = [dB.transpose() for dB in dB_dp]
 dO_dp = [-O * dBT * O for dBT in dBT_dp]
 
 # d[alpha]/d[a_i] and d[alpha]/d[b_i]
-dangle = AngleDerivativeWrtVectorElts(avec, bvec)
+dalpha = AngleDerivativeWrtVectorElts(avec, bvec)
 
 # get all FD derivatives
 fd_grad = check_fd_gradients(xluc_param)
@@ -177,13 +177,26 @@ for i, dO in enumerate(dO_dp):
 
   dc_dp = 1./c * cvec.dot(dcv_dp)
   print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grad[i]['dc_dp'], i)
+
+  # dc_dp appears worse than da_dp or db_dp for the 6th parameter. The vector dcv_dp
+  # is 20 times longer than dbv_dp, so clearly the c vector is strongly affected
+  # by this parameter, which is g5=b*.c*. However, the direction of this change
+  # is almost perpendicular to cvec.
+
   print
   print "CELL ANGLES"
 
-  z = bvec.dot(cvec) / (b * c)
-  daa_dp = bvec.dot(cvec) * (db_dp * c + b * dc_dp) - b * c * (dbv_dp.dot(cvec) + bvec.dot(dcv_dp))
-  daa_dp /= (b * b * c * c)
-  daa_dp *= -RAD2DEG / (sqrt(1 - z**2))
+  #z = bvec.dot(cvec) / (b * c)
+  #daa_dp = bvec.dot(cvec) * (db_dp * c + b * dc_dp) - b * c * (dbv_dp.dot(cvec) + bvec.dot(dcv_dp))
+  #daa_dp /= (b * b * c * c)
+  #daa_dp *= -RAD2DEG / (sqrt(1 - z**2))
+
+  dalpha_da = dalpha.derivative_wrt_u()
+  dalpha_db = dalpha.derivative_wrt_v()
+
+  # why is this wrong?
+  daa_dp = RAD2DEG * dav_dp.dot(dalpha_da) + dbv_dp.dot(dalpha_db)
+
   print "d[alpha]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grad[i]['daa_dp'], i)
   print
 
@@ -204,8 +217,7 @@ for i, dO in enumerate(dO_dp):
     u = v.cross(ub).normalize()
     ortho_dbv_dp = dbv_dp.dot(u) * u
 
-  dalpha_da = matrix.col((dangle.dtheta_du_1(), dangle.dtheta_du_2(), dangle.dtheta_du_3()))
-  dalpha_db = matrix.col((dangle.dtheta_dv_1(), dangle.dtheta_dv_2(), dangle.dtheta_dv_3()))
+
   daa_dp = ortho_dav_dp.dot(dalpha_da) + ortho_dbv_dp.dot(dalpha_db)
 
   #print "analytical daa_dp", daa_dp * RAD2DEG
