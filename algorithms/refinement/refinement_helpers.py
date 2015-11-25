@@ -222,8 +222,8 @@ def matrix_inverse_error_propagation(mat, cov_mat):
 
 class AngleDerivativeWrtVectorElts(object):
   '''Given two vectors, u and v, calculate the derivative of the angle theta
-  between them with respect to any of the elements u_1, u_2, u_3, v_1, v_2
-  and v_3.'''
+  between them with respect to these vectors, or any of the elements u_1, u_2,
+  u_3, v_1, v_2 and v_3.'''
 
   def __init__(self, u, v):
 
@@ -245,6 +245,16 @@ class AngleDerivativeWrtVectorElts(object):
     self._dtheta_shared_fac = one_over_sin_t * one_over_uv
 
     return
+
+  def derivative_wrt_u(self):
+    '''Return the derivative of the angle with respect to vector u'''
+
+    return self._dtheta_dui_fac * self._vec_u - self._dtheta_shared_fac * self._vec_v
+
+  def derivative_wrt_v(self):
+    '''Return the derivative of the angle with respect to vector v'''
+
+    return self._dtheta_dvi_fac * self._vec_v - self._dtheta_shared_fac * self._vec_u
 
   def dtheta_du_elt(self, i):
     '''Return the derivative of theta with respect to the ith element of u'''

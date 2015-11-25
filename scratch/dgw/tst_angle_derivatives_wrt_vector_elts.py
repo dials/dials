@@ -97,6 +97,12 @@ def test():
   assert approx_equal(dg.dtheta_dv_2(), dgFD.dtheta_dv_2())
   assert approx_equal(dg.dtheta_dv_3(), dgFD.dtheta_dv_3())
 
+  # Test vector version
+  assert approx_equal(dg.derivative_wrt_u(), matrix.col(
+    (dg.dtheta_du_1(), dg.dtheta_du_2(), dg.dtheta_du_3())))
+  assert approx_equal(dg.derivative_wrt_v(), matrix.col(
+    (dg.dtheta_dv_1(), dg.dtheta_dv_2(), dg.dtheta_dv_3())))
+
   return True
 
 if __name__ == '__main__':
