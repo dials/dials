@@ -151,7 +151,7 @@ def run(args):
         flex_image.export_string)
 
       path = os.path.join(
-        output_dir, params.prefix + ("%d" % i_image) + '.' + params.format)
+        output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
 
       print "Exporting %s" %path
       tmp_stream = open(path, 'wb')
