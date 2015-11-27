@@ -707,13 +707,17 @@ class CentroidAnalyser(object):
       'xaxis': {
         'domain': [0, 0.85],
         'showgrid': False,
-        'zeroline': False,
+        'zeroline': True,
+        'zerolinewidth': 2,
+        'zerolinecolor': '#969696',
         'title': 'X',
       },
       'yaxis': {
         'domain': [0, 0.85],
         'showgrid': False,
-        'zeroline': False,
+        'zeroline': True,
+        'zerolinewidth': 2,
+        'zerolinecolor': '#969696',
         'title': 'Y',
       },
       'xaxis2': {
