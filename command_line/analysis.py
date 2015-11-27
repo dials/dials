@@ -1666,7 +1666,7 @@ class Analyser(object):
         json_data.update(result)
 
     import json
-    json_str = json.dumps(json_data, indent=2)
+    json_str = json.dumps(json_data)
     javascript = ['var graphs = %s' %(json_str)]
 
     graph_divs = {}
