@@ -555,9 +555,9 @@ class CentroidAnalyser(object):
           'colorscale': 'Jet',
         }],
         'layout': {
-          'title': 'Difference between observed and calculated centroids in z',
-          'xaxis': {'title': 'z'},
-          'yaxis': {'title': 'Difference in z position'},
+          'title': 'Difference between observed and calculated centroids in Z',
+          'xaxis': {'title': 'Z'},
+          'yaxis': {'title': 'Difference in Z position'},
         },
       },
     }
@@ -1149,19 +1149,23 @@ class IntensityAnalyser(object):
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
+    d = OrderedDict()
+
     # Look at distribution of I/Sigma
     print " Analysing distribution of I/Sigma"
-    self.i_over_s_hist(rlist)
+    d.update(self.i_over_s_hist(rlist))
     print " Analysing distribution of I/Sigma vs xy"
-    self.i_over_s_vs_xy(rlist, "sum")
+    d.update(self.i_over_s_vs_xy(rlist, "sum"))
     print " Analysing distribution of I/Sigma vs xy"
-    self.i_over_s_vs_xy(rlist, "prf")
+    d.update(self.i_over_s_vs_xy(rlist, "prf"))
     print " Analysing distribution of I/Sigma vs z"
-    self.i_over_s_vs_z(rlist)
-    print " Analysing number of background pixels used"
-    self.num_background_hist(rlist)
-    print " Analysing number of foreground pixels used"
-    self.num_foreground_hist(rlist)
+    d.update(self.i_over_s_vs_z(rlist))
+    #print " Analysing number of background pixels used"
+    #self.num_background_hist(rlist)
+    #print " Analysing number of foreground pixels used"
+    #self.num_foreground_hist(rlist)
+
+    return d
 
   def i_over_s_hist(self, rlist):
     ''' Analyse the correlations. '''
@@ -1169,57 +1173,100 @@ class IntensityAnalyser(object):
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
-    fig = pyplot.figure()
-    pyplot.title("Log I/Sigma histogram")
-    pyplot.hist(flex.log(I_over_S), bins=20)
-    pyplot.xlabel("Log I/Sigma")
-    pyplot.ylabel("# reflections")
-    fig.savefig(join(self.directory, "ioversigma_hist"))
-    pyplot.close()
+    log_I_over_S = flex.log(I_over_S)
+
+    d = {
+      'log_i_over_sigma_histogram': {
+        'data': [{
+          'x': list(log_I_over_S),
+          'type': 'histogram',
+          'name': 'log_i_over_sigma',
+          'nbinsx': 20,
+        }],
+        'layout': {
+          'title': 'Log I/Sigma histogram',
+          'xaxis': {'title': 'Log I/Sigma'},
+          'yaxis': {'title': 'Number of reflections'},
+        },
+      },
+    }
+    return d
 
   def i_over_s_vs_xy(self, rlist, intensity_type):
     ''' Plot I/Sigma vs X/Y '''
 
-    class i_over_s_vs_xy_plot(per_panel_plot):
+    I_sig = flex.sqrt(rlist['intensity.%s.variance' %intensity_type])
+    sel = I_sig > 0
+    rlist = rlist.select(sel)
+    I_sig = I_sig.select(sel)
+    I = rlist['intensity.%s.value' %intensity_type]
+    I_over_S = I / I_sig
+    x, y, z = rlist['xyzcal.px'].parts()
 
-      title = "Distribution of I/Sigma vs X/Y"
-      filename = "ioversigma_%s_vs_xy.png" %intensity_type
-      cbar_ylabel = "Log I/Sigma"
-
-      def plot_one_panel(self, ax, rlist):
-        I_sig = flex.sqrt(rlist['intensity.%s.variance' %intensity_type])
-        sel = I_sig > 0
-        rlist = rlist.select(sel)
-        I_sig = I_sig.select(sel)
-        I = rlist['intensity.%s.value' %intensity_type]
-        I_over_S = I / I_sig
-        x, y, z = rlist['xyzcal.px'].parts()
-
-        hex_ax = ax.hexbin(
-          x.as_numpy_array(), y.as_numpy_array(),
-          C=flex.log(I_over_S), gridsize=self.gridsize,
-        )
-        return hex_ax
-
-    plot = i_over_s_vs_xy_plot(rlist, self.directory, grid_size=self.grid_size,
-                               pixels_per_bin=self.pixels_per_bin)
+    return {
+      'i_over_sigma_%s_vs_xy' %intensity_type: {
+        'data': [{
+          'x': list(x),
+          'y': list(y),
+          'z': list(flex.log(I_over_S)),
+          'type': 'histogram2d',
+          'histfunc': 'avg',
+          'connectgaps': False,
+          'name': 'i_over_sigma_%s' %intensity_type,
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Log I/Sigma',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Distribution of I(%s)/Sigma vs X/Y' %intensity_type,
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X'
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed'
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    }
 
   def i_over_s_vs_z(self, rlist):
     ''' Plot I/Sigma vs Z. '''
-    from os.path import join
+
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     x, y, z = rlist['xyzcal.px'].parts()
-    fig = pyplot.figure()
-    pyplot.title("Distribution of I/Sigma vs Z")
-    cax = pyplot.hexbin(z, flex.log(I_over_S), gridsize=100)
-    cax.axes.set_xlabel("z")
-    cax.axes.set_ylabel("Log I/Sigma")
-    cbar = pyplot.colorbar(cax)
-    cbar.ax.set_ylabel("# reflections")
-    fig.savefig(join(self.directory, "ioversigma_vs_z.png"))
-    pyplot.close()
+
+    return {
+      'i_over_sigma_vs_z': {
+        'data': [{
+          'x': list(z),
+          'y': list(flex.log(I_over_S)),
+          'type': 'histogram2d',
+          'name': 'i_over_sigma',
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Number of reflections',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Difference between observed and calculated centroids in Z',
+          'xaxis': {'title': 'Z'},
+          'yaxis': {'title': 'Log I/Sigma'},
+        },
+      }
+    }
 
   def num_background_hist(self, rlist):
     ''' Analyse the number of background pixels. '''
@@ -1528,8 +1575,8 @@ class Analyser(object):
         directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
       IntensityAnalyser(
         directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
-      ReferenceProfileAnalyser(
-        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+      #ReferenceProfileAnalyser(
+        #directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
     ]
 
   def __call__(self, rlist):
