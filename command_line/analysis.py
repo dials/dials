@@ -14,6 +14,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.analysis
 
 from __future__ import division
+import copy
 import math
 
 from libtbx.containers import OrderedDict
@@ -767,7 +768,7 @@ class CentroidAnalyser(object):
             'type': 'histogram',
           },
         ],
-        'layout': density_hist_layout,
+        'layout': copy.deepcopy(density_hist_layout),
       }
     })
     d['residuals_xy']['layout']['title'] = 'Centroid residuals in X and Y'
@@ -812,10 +813,11 @@ class CentroidAnalyser(object):
             'type': 'histogram',
           },
         ],
-        'layout': density_hist_layout,
+        'layout': copy.deepcopy(density_hist_layout),
       }
     })
     d['residuals_zy']['layout']['title'] = 'Centroid residuals in Z and Y'
+    d['residuals_zy']['layout']['xaxis']['title'] = 'Z'
 
     d.update({
       'residuals_xz': {
@@ -857,10 +859,11 @@ class CentroidAnalyser(object):
             'type': 'histogram',
           },
         ],
-        'layout': density_hist_layout,
+        'layout': copy.deepcopy(density_hist_layout),
       }
     })
     d['residuals_xz']['layout']['title'] = 'Centroid residuals in X and Z'
+    d['residuals_xz']['layout']['yaxis']['title'] = 'Z'
 
     return d
 
