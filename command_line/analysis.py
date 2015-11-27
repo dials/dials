@@ -394,7 +394,7 @@ class CentroidAnalyser(object):
     print " Analysing centroid differences with I/Sigma > %s" %threshold
     d.update(self.centroid_diff_hist(rlist, threshold))
     print " Analysing centroid differences in x/y with I/Sigma > %s" %threshold
-    self.centroid_diff_xy(rlist, threshold)
+    d.update(self.centroid_diff_xy(rlist, threshold))
     d.update(self.centroid_xy_xz_zy_residuals(rlist, threshold))
     print " Analysing centroid differences in z with I/Sigma > %s" %threshold
     d.update(self.centroid_diff_z(rlist, threshold))
@@ -439,7 +439,6 @@ class CentroidAnalyser(object):
     }
     return d
 
-
   def centroid_diff_xy(self, rlist, threshold):
     ''' Look at the centroid difference in x, y '''
     from os.path import join
@@ -450,62 +449,81 @@ class CentroidAnalyser(object):
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
 
-    class diff_x_plot(per_panel_plot):
+    xc, yc, zc = rlist['xyzcal.px'].parts()
+    xo, yo, zo = rlist['xyzobs.px.value'].parts()
+    xd = xo - xc
+    yd = yo - yc
 
-      def __init__(self, *args, **kwargs):
+    d = OrderedDict()
 
-        self.title = "Difference between observed and calculated in X"
-        self.filename = "centroid_diff_x.png"
-        self.cbar_ylabel = "Difference in x position"
-        self.centroid_diff_max = kwargs.pop('centroid_diff_max', None)
-        super(diff_x_plot, self).__init__(*args, **kwargs)
+    d.update({
+      'centroid_differences_x': {
+        'data': [{
+          'x': list(xc),
+          'y': list(yc),
+          'z': list(xd),
+          'type': 'histogram2d',
+          'histfunc': 'avg',
+          'connectgaps': False,
+          'name': 'centroid_differences_x',
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Difference in X position',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Difference between observed and calculated centroids in X',
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X'
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed'
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    })
 
-      def plot_one_panel(self, ax, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        xd = xo - xc
-
-        if self.centroid_diff_max is None:
-          self.centroid_diff_max = max(abs(xd))
-
-        hex_ax = ax.hexbin(
-          xc.as_numpy_array(), yc.as_numpy_array(),
-          C=xd.as_numpy_array(), gridsize=self.gridsize,
-          vmin=-1.*self.centroid_diff_max, vmax=self.centroid_diff_max,
-        )
-        return hex_ax
-
-    class diff_y_plot(per_panel_plot):
-
-      def __init__(self, *args, **kwargs):
-
-        self.title = "Difference between observed and calculated in Y"
-        self.filename = "centroid_diff_y.png"
-        self.cbar_ylabel = "Difference in y position"
-        self.centroid_diff_max = kwargs.pop('centroid_diff_max', None)
-        super(diff_y_plot, self).__init__(*args, **kwargs)
-
-      def plot_one_panel(self, ax, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        yd = yo - yc
-
-        if self.centroid_diff_max is None:
-          self.centroid_diff_max = max(abs(yd))
-
-        hex_ax = ax.hexbin(
-          xc.as_numpy_array(), yc.as_numpy_array(),
-          C=yd.as_numpy_array(), gridsize=self.gridsize,
-          vmin=-1.*self.centroid_diff_max, vmax=self.centroid_diff_max,
-        )
-        return hex_ax
-
-    plot = diff_x_plot(rlist, self.directory, grid_size=self.grid_size,
-                       pixels_per_bin=self.pixels_per_bin,
-                       centroid_diff_max=self.centroid_diff_max)
-    plot = diff_y_plot(rlist, self.directory, grid_size=self.grid_size,
-                       pixels_per_bin=self.pixels_per_bin,
-                       centroid_diff_max=self.centroid_diff_max)
+    d.update({
+      'centroid_differences_y': {
+        'data': [{
+          'x': list(xc),
+          'y': list(yc),
+          'z': list(yd),
+          'type': 'histogram2d',
+          'histfunc': 'avg',
+          'connectgaps': False,
+          'name': 'centroid_differences_y',
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Difference in Y position',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Difference between observed and calculated centroids in Y',
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X'
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed'
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    })
+    return d
 
   def centroid_diff_z(self, rlist, threshold):
     ''' Look at the centroid difference in z '''
