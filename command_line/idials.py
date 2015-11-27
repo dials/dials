@@ -240,6 +240,8 @@ class ImportParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       include scope dials.command_line.import.phil_scope
     ''', process_includes=True)
     super(ImportParameterManager, self).__init__(phil_scope)
@@ -258,6 +260,8 @@ class FindSpotsParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       input {
         datablock = None
           .type = str
@@ -280,6 +284,8 @@ class DiscoverBetterModelParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       input {
         datablock = None
           .type = str
@@ -304,6 +310,8 @@ class IndexParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       input {
         datablock = None
           .type = str
@@ -328,6 +336,8 @@ class RefineBSParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       input {
         experiments = None
           .type = str
@@ -352,6 +362,8 @@ class ReIndexParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       solution = None
         .type = int
       input {
@@ -376,6 +388,8 @@ class RefineParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       input {
         experiments = None
           .type = str
@@ -400,6 +414,8 @@ class IntegrateParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       input {
         experiments = None
           .type = str
@@ -424,6 +440,8 @@ class ExportParameterManager(ParameterManager):
     '''
     from libtbx.phil import parse
     phil_scope = parse('''
+      description=None
+        .type = str
       input {
         experiments = None
           .type = str
@@ -540,6 +558,7 @@ class CommandNode(object):
     self.result = None
     self.report = None
     self.models = None
+    self.description = None
 
     # Save the info
     self.action = action
@@ -572,6 +591,10 @@ class CommandNode(object):
     # Check the output path does not exist already
     if exists(self.directory):
       raise RuntimeError('Output directory %s already exists' % self.directory)
+
+    # Get the description
+    self.description = self.parameters.get(diff=False).extract().description
+    self.parameters.set("description=None")
 
     # Initialise running the command
     self.initialize()
@@ -647,6 +670,8 @@ class CommandTree(object):
         buf.write(prefix[:-3])
         buf.write('  +--')
       buf.write(node.action)
+      if node.description is not None:
+        buf.write(" %s" % node.description)
       if current is not None and node.index == current:
         buf.write(" (current)")
       buf.write('\n')
@@ -1042,8 +1067,8 @@ class ReIndexCommand(CommandNode):
 
     # Get the solution we want and convert to the change_of_basis_op
     solution = self.parameters.get(diff=False).extract().solution
-    if solution is None:
-      raise RuntimeError("No solution selected")
+    if solution is None or solution == 'None':
+      solution = max(map(int, self.parent.summary.keys()))
     change_of_basis_op = self.parent.summary[str(solution)]['cb_op']
 
     # Set the solution parameter to None and set the cb_op
