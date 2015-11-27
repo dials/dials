@@ -16,6 +16,7 @@
 from __future__ import division
 import math
 
+from libtbx.containers import OrderedDict
 from dials.array_family import flex
 
 RAD2DEG = 180/math.pi
@@ -252,7 +253,7 @@ class StrongSpotsAnalyser(object):
         rlist = rlist.select(mask)
       Command.end(" Selected %d strong reflections" % len(rlist))
 
-    d = {}
+    d = OrderedDict()
     # Look at distribution of spot counts
     d.update(self.spot_count_per_image(rlist))
     self.spot_count_per_panel(rlist)
@@ -387,14 +388,14 @@ class CentroidAnalyser(object):
       rlist = rlist.select(mask)
       Command.end(" Selected %d refined reflections" % len(rlist))
 
-    d = {}
+    d = OrderedDict()
 
     # Look at differences in calculated/observed position
     print " Analysing centroid differences with I/Sigma > %s" %threshold
     d.update(self.centroid_diff_hist(rlist, threshold))
     print " Analysing centroid differences in x/y with I/Sigma > %s" %threshold
     self.centroid_diff_xy(rlist, threshold)
-    self.centroid_xy_xz_zy_residuals(rlist, threshold)
+    d.update(self.centroid_xy_xz_zy_residuals(rlist, threshold))
     print " Analysing centroid differences in z with I/Sigma > %s" %threshold
     d.update(self.centroid_diff_z(rlist, threshold))
     print " Analysing centroid differences vs phi with I/Sigma > %s" %threshold
@@ -612,7 +613,7 @@ class CentroidAnalyser(object):
         'layout': {
           'title': 'Difference between observed and calculated centroids vs z',
           'yaxis3': {'domain': [0, 0.266]},
-          'legend': {'traceorder': 'reversed'},
+          #'legend': {'traceorder': 'reversed'},
           'xaxis3': {'anchor': 'y3'},
           'xaxis2': {'anchor': 'y2'},
           'yaxis2': {'domain': [0.366, 0.633]},
@@ -647,7 +648,7 @@ class CentroidAnalyser(object):
         'layout': {
           'title': 'RMSD between observed and calculated centroids vs phi',
           'yaxis3': {'domain': [0, 0.266]},
-          'legend': {'traceorder': 'reversed'},
+          #'legend': {'traceorder': 'reversed'},
           'xaxis3': {'anchor': 'y3'},
           'xaxis2': {'anchor': 'y2'},
           'yaxis2': {'domain': [0.366, 0.633]},
@@ -667,112 +668,183 @@ class CentroidAnalyser(object):
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
 
+    xc, yc, zc = rlist['xyzcal.px'].parts()
+    xo, yo, zo = rlist['xyzobs.px.value'].parts()
+    dx = xc - xo
+    dy = yc - yo
+    dz = zc - zo
 
-    class residuals_xy_plot(per_panel_plot):
+    d = OrderedDict()
 
-      title = "Centroid residuals in X and Y"
-      filename = "centroid_xy_residuals.png"
-      cbar_ylabel = None
-      xlabel = 'X'
-      ylabel = 'Y'
+    density_hist_layout = {
 
-      def plot_one_panel(self, ax, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        dx = xc - xo
-        dy = yc - yo
+      'showlegend': False,
+      'autosize': False,
+      'width': 600,
+      'height': 550,
+      'margin': {'t': 50},
+      'hovermode': 'closest',
+      'bargap': 0,
+      'xaxis': {
+        'domain': [0, 0.85],
+        'showgrid': False,
+        'zeroline': False,
+        'title': 'X',
+      },
+      'yaxis': {
+        'domain': [0, 0.85],
+        'showgrid': False,
+        'zeroline': False,
+        'title': 'Y',
+      },
+      'xaxis2': {
+        'domain': [0.85, 1],
+        'showgrid': False,
+        'zeroline': False
+      },
+      'yaxis2': {
+        'domain': [0.85, 1],
+        'showgrid': False,
+        'zeroline': False
+      }
+    }
 
-        ax.axhline(0, color='grey')
-        ax.axvline(0, color='grey')
-        ax_xy = ax.scatter(
-          dx.as_numpy_array(), dy.as_numpy_array(), c='b', alpha=0.3)
-        ax.set_aspect('equal')
-        return ax_xy
+    d.update({
+      'residuals_xy': {
+        'data': [
+          {
+            'x': list(dx),
+            'y': list(dy),
+            'mode': 'markers',
+            'name': 'points',
+            'marker': {
+              'color': 'rgb(102,0,0)',
+              'size': 2,
+              'opacity': 0.4
+            },
+            'type': 'scatter',
+          },
+          {
+            'x': list(dx),
+            'y': list(dy),
+            'name': 'density',
+            'ncontours': 20,
+            'colorscale': 'Hot',
+            'reversescale': True,
+            'showscale': False,
+            'type': 'histogram2dcontour',
+          },
+          {
+            'x': list(dx),
+            'name': 'x density',
+            'marker': {'color': 'rgb(102,0,0)'},
+            'yaxis': 'y2',
+            'type': 'histogram',
+          },
+          {
+            'y': list(dy),
+            'name': 'y density',
+            'marker': {'color': 'rgb(102,0,0)'},
+            'xaxis': 'x2',
+            'type': 'histogram',
+          },
+        ],
+        'layout': density_hist_layout,
+      }
+    })
+    d['residuals_xy']['layout']['title'] = 'Centroid residuals in X and Y'
 
-      def get_min_max_xy(self, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        dx = xc - xo
-        dy = yc - yo
+    d.update({
+      'residuals_zy': {
+        'data': [
+          {
+            'x': list(dz),
+            'y': list(dy),
+            'mode': 'markers',
+            'name': 'points',
+            'marker': {
+              'color': 'rgb(102,0,0)',
+              'size': 2,
+              'opacity': 0.4
+            },
+            'type': 'scatter',
+          },
+          {
+            'x': list(dz),
+            'y': list(dy),
+            'name': 'density',
+            'ncontours': 20,
+            'colorscale': 'Hot',
+            'reversescale': True,
+            'showscale': False,
+            'type': 'histogram2dcontour',
+          },
+          {
+            'x': list(dz),
+            'name': 'z density',
+            'marker': {'color': 'rgb(102,0,0)'},
+            'yaxis': 'y2',
+            'type': 'histogram',
+          },
+          {
+            'y': list(dy),
+            'name': 'y density',
+            'marker': {'color': 'rgb(102,0,0)'},
+            'xaxis': 'x2',
+            'type': 'histogram',
+          },
+        ],
+        'layout': density_hist_layout,
+      }
+    })
+    d['residuals_zy']['layout']['title'] = 'Centroid residuals in Z and Y'
 
-        min_x = math.floor(flex.min(dx))
-        min_y = math.floor(flex.min(dy))
-        max_x = math.ceil(flex.max(dx))
-        max_y = math.ceil(flex.max(dy))
-        return min_x, max_x, min_y, max_y
+    d.update({
+      'residuals_xz': {
+        'data': [
+          {
+            'x': list(dx),
+            'y': list(dz),
+            'mode': 'markers',
+            'name': 'points',
+            'marker': {
+              'color': 'rgb(102,0,0)',
+              'size': 2,
+              'opacity': 0.4
+            },
+            'type': 'scatter',
+          },
+          {
+            'x': list(dx),
+            'y': list(dz),
+            'name': 'density',
+            'ncontours': 20,
+            'colorscale': 'Hot',
+            'reversescale': True,
+            'showscale': False,
+            'type': 'histogram2dcontour',
+          },
+          {
+            'x': list(dx),
+            'name': 'x density',
+            'marker': {'color': 'rgb(102,0,0)'},
+            'yaxis': 'y2',
+            'type': 'histogram',
+          },
+          {
+            'y': list(dz),
+            'name': 'z density',
+            'marker': {'color': 'rgb(102,0,0)'},
+            'xaxis': 'x2',
+            'type': 'histogram',
+          },
+        ],
+        'layout': density_hist_layout,
+      }
+    })
+    d['residuals_xz']['layout']['title'] = 'Centroid residuals in X and Z'
 
-    class residuals_zy_plot(per_panel_plot):
-
-      title = "Centroid residuals in Z and Y"
-      filename = "centroid_zy_residuals.png"
-      cbar_ylabel = None
-      xlabel = 'Z'
-      ylabel = 'Y'
-
-      def plot_one_panel(self, ax, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        dy = yc - yo
-        dz = zc - zo
-
-        ax.axhline(0, color='grey')
-        ax.axvline(0, color='grey')
-        ax_zy = ax.scatter(
-          dz.as_numpy_array(), dy.as_numpy_array(), c='b', alpha=0.3)
-        ax.set_aspect('equal')
-
-        return ax_zy
-
-      def get_min_max_xy(self, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        dx = xc - xo
-        dy = yc - yo
-        dz = zc -zo
-
-        min_x = math.floor(flex.min(dz))
-        min_y = math.floor(flex.min(dy))
-        max_x = math.ceil(flex.max(dz))
-        max_y = math.ceil(flex.max(dy))
-        return min_x, max_x, min_y, max_y
-
-    class residuals_xz_plot(per_panel_plot):
-
-      title = "Centroid residuals in X and Z"
-      filename = "centroid_xz_residuals.png"
-      cbar_ylabel = None
-      xlabel = 'X'
-      ylabel = 'Z'
-
-      def plot_one_panel(self, ax, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        dx = xc - xo
-        dz = zc - zo
-
-        ax.axhline(0, color='grey')
-        ax.axvline(0, color='grey')
-        ax_xz = ax.scatter(
-          dx.as_numpy_array(), dz.as_numpy_array(), c='b', alpha=0.3)
-        ax.set_aspect('equal')
-
-        return ax_xz
-
-      def get_min_max_xy(self, rlist):
-        xc, yc, zc = rlist['xyzcal.px'].parts()
-        xo, yo, zo = rlist['xyzobs.px.value'].parts()
-        dx = xc - xo
-        dz = zc - zo
-
-        min_x = math.floor(flex.min(dx))
-        min_y = math.floor(flex.min(dz))
-        max_x = math.ceil(flex.max(dx))
-        max_y = math.ceil(flex.max(dz))
-        return min_x, max_x, min_y, max_y
-
-    #plot = residuals_xy_plot(rlist, self.directory, grid_size=self.grid_size)
-    #plot = residuals_zy_plot(rlist, self.directory, grid_size=self.grid_size)
-    #plot = residuals_xz_plot(rlist, self.directory, grid_size=self.grid_size)
+    return d
 
 
 class BackgroundAnalyser(object):
@@ -1438,7 +1510,7 @@ class Analyser(object):
   def __call__(self, rlist):
     ''' Do all the analysis. '''
     from copy import deepcopy
-    json_data = {}
+    json_data = OrderedDict()
     for analyse in self.analysers:
       result = analyse(deepcopy(rlist))
       if result is not None:
