@@ -258,7 +258,7 @@ class StrongSpotsAnalyser(object):
     # Look at distribution of spot counts
     d.update(self.spot_count_per_image(rlist))
     self.spot_count_per_panel(rlist)
-    return d
+    return {'strong': d}
 
   def spot_count_per_image(self, rlist):
     ''' Analyse the spot count per image. '''
@@ -401,7 +401,7 @@ class CentroidAnalyser(object):
     d.update(self.centroid_diff_z(rlist, threshold))
     print " Analysing centroid differences vs phi with I/Sigma > %s" %threshold
     d.update(self.centroid_mean_diff_vs_phi(rlist, threshold))
-    return d
+    return {'centroid': d}
 
   def centroid_diff_hist(self, rlist, threshold):
     ''' Analyse the correlations. '''
@@ -539,7 +539,7 @@ class CentroidAnalyser(object):
     xo, yo, zo = rlist['xyzobs.px.value'].parts()
     zd = zo - zc
 
-    d = {
+    return {
       'centroid_differences_z': {
         'data': [{
           'x': list(zc),
@@ -561,7 +561,6 @@ class CentroidAnalyser(object):
         },
       },
     }
-    return d
 
   def centroid_mean_diff_vs_phi(self, rlist, threshold):
     from os.path import join
@@ -1165,7 +1164,7 @@ class IntensityAnalyser(object):
     #print " Analysing number of foreground pixels used"
     #self.num_foreground_hist(rlist)
 
-    return d
+    return {'intensity': d}
 
   def i_over_s_hist(self, rlist):
     ''' Analyse the correlations. '''
@@ -1175,7 +1174,7 @@ class IntensityAnalyser(object):
     I_over_S = I / I_sig
     log_I_over_S = flex.log(I_over_S)
 
-    d = {
+    return {
       'log_i_over_sigma_histogram': {
         'data': [{
           'x': list(log_I_over_S),
@@ -1190,7 +1189,6 @@ class IntensityAnalyser(object):
         },
       },
     }
-    return d
 
   def i_over_s_vs_xy(self, rlist, intensity_type):
     ''' Plot I/Sigma vs X/Y '''
@@ -1334,11 +1332,13 @@ class ReferenceProfileAnalyser(object):
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
+    d = OrderedDict()
+
     # Analyse distribution of reference spots
     print " Analysing reference profile distribution vs x/y"
-    self.reference_xy(rlist)
+    d.update(self.reference_xy(rlist))
     print " Analysing reference profile distribution vs z"
-    self.reference_z(rlist)
+    d.update(self.reference_z(rlist))
 
     # Look at correlations between profiles
     def ideal_correlations(filename, rlist):
@@ -1360,116 +1360,179 @@ class ReferenceProfileAnalyser(object):
     def correlations(filename, rlist):
       ''' Call for reference spots and all reflections. '''
 
+      d = OrderedDict()
       print " Analysing reflection profile correlations"
-      self.reflection_corr_hist(rlist, filename)
+      d.update(self.reflection_corr_hist(rlist, filename))
 
       print " Analysing reflection profile correlations vs x/y"
-      self.reflection_corr_vs_xy(rlist, filename)
+      d.update(self.reflection_corr_vs_xy(rlist, filename))
 
       print " Analysing reflection profile correlations vs z"
-      self.reflection_corr_vs_z(rlist, filename)
+      d.update(self.reflection_corr_vs_z(rlist, filename))
 
       print " Analysing reflection profile correlations vs I/Sigma"
-      self.reflection_corr_vs_ios(rlist, filename)
+      d.update(self.reflection_corr_vs_ios(rlist, filename))
+
+      return d
 
     mask = rlist.get_flags(rlist.flags.reference_spot)
-    correlations("reference",  rlist.select(mask))
-    correlations("reflection", rlist)
-    ideal_correlations("reference", rlist.select(mask))
-    ideal_correlations("reflection", rlist)
+    d.update(correlations("reference",  rlist.select(mask)))
+    d.update(correlations("reflection", rlist))
+    #ideal_correlations("reference", rlist.select(mask))
+    #ideal_correlations("reflection", rlist)
+
+    return {'reference': d}
 
   def reference_xy(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
     from os.path import join
     mask = rlist.get_flags(rlist.flags.reference_spot)
     rlist = rlist.select(mask)
+    x, y, z = rlist['xyzcal.px'].parts()
 
-    class reference_xy_plot(per_panel_plot):
-
-      title = "Reference profiles binned in X/Y"
-      filename = "reference_xy.png"
-      cbar_ylabel = "# reflections"
-
-      def plot_one_panel(self, ax, rlist):
-        x, y, z = rlist['xyzcal.px'].parts()
-
-        hex_ax = ax.hexbin(
-          x.as_numpy_array(), y.as_numpy_array(), gridsize=self.gridsize,
-        )
-        return hex_ax
-
-    plot = reference_xy_plot(rlist, self.directory, grid_size=self.grid_size,
-                             pixels_per_bin=self.pixels_per_bin)
+    return {
+      'n_reference_profiles_vs_xy': {
+        'data': [{
+          'x': list(x),
+          'y': list(y),
+          'type': 'histogram2d',
+          'name': 'n_reference_profiles',
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Number of reflections',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Reference profiles binned in X/Y',
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X'
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed'
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    }
 
   def reference_z(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
-    from os.path import join
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
-    fig = pyplot.figure()
-    pyplot.title("Reference profiles binned in Z")
-    pyplot.hist(z, bins=20)
-    pyplot.xlabel("z")
-    pyplot.ylabel("# reflections")
-    fig.savefig(join(self.directory, "reference_z.png"))
-    pyplot.close()
+
+    return {
+      'n_reference_profiles_vs_z': {
+        'data': [{
+          'x': list(z),
+          'type': 'histogram',
+          'name': 'n_reference_profiles',
+          'nbinsx': 20,
+        }],
+        'layout': {
+          'title': 'Reference profiles binned in Z',
+          'xaxis': {'title': 'Z'},
+          'yaxis': {'title': 'Number of reflections'},
+        },
+      },
+    }
 
   def reflection_corr_hist(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from os.path import join
     corr = rlist['profile.correlation']
-    fig = pyplot.figure()
-    pyplot.title("Reflection correlations histogram")
-    pyplot.hist(corr, bins=20)
-    pyplot.xlabel("Correlation with reference profile")
-    pyplot.ylabel("# reflections")
-    fig.savefig(join(self.directory, "%s_corr_hist" % filename))
-    pyplot.close()
+
+    return {
+      '%s_correlations_histogram' %filename: {
+        'data': [{
+          'x': list(corr),
+          'type': 'histogram',
+          'name': '%s_correlations' %filename,
+          'nbinsx': 20,
+        }],
+        'layout': {
+          'title': '%s correlations histogram' %filename.capitalize(),
+          'xaxis': {'title': 'Correlation with reference profile'},
+          'yaxis': {'title': 'Number of reflections'},
+        },
+      },
+    }
 
   def reflection_corr_vs_xy(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from os.path import join
 
-    tmp_filename = filename
+    corr = rlist['profile.correlation']
+    x, y, z = rlist['xyzcal.px'].parts()
 
-    class corr_vs_xy_plot(per_panel_plot):
-
-      title = "Reflection correlations binned in X/Y"
-      filename = "%s_corr_vs_xy.png" % tmp_filename
-      cbar_ylabel = "Correlation with reference profile"
-
-      def plot_one_panel(self, ax, rlist):
-        corr = rlist['profile.correlation']
-        x, y, z = rlist['xyzcal.px'].parts()
-
-        hex_ax = ax.hexbin(
-          x.as_numpy_array(), y.as_numpy_array(),
-          C=corr.as_numpy_array(), gridsize=self.gridsize,
-          vmin=0, vmax=1
-        )
-        return hex_ax
-
-    plot = corr_vs_xy_plot(rlist, self.directory, grid_size=self.grid_size,
-                           pixels_per_bin=self.pixels_per_bin)
+    return {
+      '%s_correlations_xy' %filename: {
+        'data': [{
+          'x': list(x),
+          'y': list(y),
+          'z': list(corr),
+          'type': 'histogram2d',
+          'histfunc': 'avg',
+          'name': '%s_correlations' %filename,
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Correlation with reference profile',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': '%s correlations binned in X/Y' %filename.capitalize(),
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X'
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed'
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    }
 
   def reflection_corr_vs_z(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from os.path import join
+
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
-    fig = pyplot.figure()
-    pyplot.title("Reflection correlations vs Z")
-    cax = pyplot.hexbin(z, corr, gridsize=100)
-    cbar = pyplot.colorbar(cax)
-    cax.axes.set_xlabel("z")
-    cax.axes.set_ylabel("Correlation with reference profile")
-    cbar.ax.set_ylabel("# reflections")
-    fig.savefig(join(self.directory, "%s_corr_vs_z.png" % filename))
-    pyplot.close()
+
+    return {
+      '%s_correlations_vs_z' %filename: {
+        'data': [{
+          'x': list(z),
+          'y': list(corr),
+          'type': 'histogram2d',
+          'name': '%s_correlations' %filename,
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Number of reflections',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': '%s correlations vs Z' %filename.capitalize(),
+          'xaxis': {'title': 'Z'},
+          'yaxis': {'title': 'Correlation with reference profile'},
+        },
+      },
+    }
 
   def reflection_corr_vs_ios(self, rlist, filename):
     ''' Analyse the correlations. '''
-    from os.path import join
+
     corr = rlist['profile.correlation']
     I = rlist['intensity.prf.value']
     I_sig = flex.sqrt(rlist['intensity.prf.variance'])
@@ -1481,15 +1544,29 @@ class ReferenceProfileAnalyser(object):
     mask = I_over_S > 0.1
     I_over_S = I_over_S.select(mask)
     corr = corr.select(mask)
-    fig = pyplot.figure()
-    pyplot.title("Reflection correlations vs Log I/Sigma")
-    cax = pyplot.hexbin(flex.log(I_over_S), corr, gridsize=100)
-    cbar = pyplot.colorbar(cax)
-    cax.axes.set_xlabel("Log I/Sigma")
-    cax.axes.set_ylabel("Correlation with reference profile")
-    cbar.ax.set_ylabel("# reflections")
-    fig.savefig(join(self.directory, "%s_corr_vs_ios.png" % filename))
-    pyplot.close()
+
+    return {
+      '%s_correlations_vs_ios' %filename: {
+        'data': [{
+          'x': list(flex.log(I_over_S)),
+          'y': list(corr),
+          'type': 'histogram2d',
+          'name': '%s_correlations' %filename,
+          'nbinsx': 100,
+          'nbinsy': 100,
+          'colorbar': {
+            'title': 'Number of reflections',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': '%s correlations vs Log I/Sigma' %filename.capitalize(),
+          'xaxis': {'title': 'Log I/Sigma'},
+          'yaxis': {'title': 'Correlation with reference profile'},
+        },
+      },
+    }
 
   def ideal_reflection_corr_hist(self, rlist, filename):
     ''' Analyse the correlations. '''
@@ -1575,8 +1652,8 @@ class Analyser(object):
         directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
       IntensityAnalyser(
         directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
-      #ReferenceProfileAnalyser(
-        #directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+      ReferenceProfileAnalyser(
+        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
     ]
 
   def __call__(self, rlist):
@@ -1588,19 +1665,22 @@ class Analyser(object):
       if result is not None:
         json_data.update(result)
 
-
     import json
     json_str = json.dumps(json_data, indent=2)
     javascript = ['var graphs = %s' %(json_str)]
 
-    for graph in json_data.keys():
-      javascript.append(
-        'Plotly.newPlot(%(graph)s, graphs.%(graph)s.data, graphs.%(graph)s.layout);' %{'graph': graph})
+    graph_divs = {}
+    for grouping in json_data.keys():
+      graph_divs[grouping] = []
+      for graph in json_data[grouping].keys():
+        javascript.append(
+          'Plotly.newPlot(%(graph)s, graphs.%(grouping)s.%(graph)s.data, graphs.%(grouping)s.%(graph)s.layout);' %{
+            'graph': graph,
+            'grouping': grouping
+          })
 
-    graph_divs = []
-    for graph in json_data.keys():
-      graph_divs.append(
-        '<div class="col-xs-6 col-sm-6 col-md-4 plot" id="%(graph)s"></div>' %{'graph': graph})
+        graph_divs[grouping].append(
+          '<div class="col-xs-6 col-sm-6 col-md-4 plot" id="%(graph)s"></div>' %{'graph': graph})
 
     html_header = '''
 <head>
@@ -1648,16 +1728,67 @@ body {
   <h2>DIALS analysis plots</h2>
   <div class="panel-group">
     <div class="panel panel-default">
+      <div class="panel-heading" data-toggle="collapse" href="#collapse1">
+        <h4 class="panel-title">
+          <a>Analysis of strong reflections</a>
+        </h4>
+      </div>
+      <div id="collapse1" class="panel-collapse collapse">
+        <div class="panel-body">
+
+          <div class="container-fluid">
+            %(strong_graph_divs)s
+          </div>
+
+        </div>
+        <!-- <div class="panel-footer"></div> -->
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading" data-toggle="collapse" href="#collapse2">
+        <h4 class="panel-title">
+          <a>Analysis of reflection centroids</a>
+        </h4>
+      </div>
+      <div id="collapse2" class="panel-collapse collapse">
+        <div class="panel-body">
+
+          <div class="container-fluid">
+            %(centroid_graph_divs)s
+          </div>
+
+        </div>
+        <!-- <div class="panel-footer"></div> -->
+      </div>
+    </div>
+    <div class="panel panel-default">
       <div class="panel-heading" data-toggle="collapse" href="#collapse3">
         <h4 class="panel-title">
-          <a>Analysis</a>
+          <a>Analysis of reflection intensities</a>
         </h4>
       </div>
       <div id="collapse3" class="panel-collapse collapse">
         <div class="panel-body">
 
           <div class="container-fluid">
-            %(graph_divs)s
+            %(intensity_graph_divs)s
+          </div>
+
+        </div>
+        <!-- <div class="panel-footer"></div> -->
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading" data-toggle="collapse" href="#collapse4">
+        <h4 class="panel-title">
+          <a>Analysis of reference profiles</a>
+        </h4>
+      </div>
+      <div id="collapse4" class="panel-collapse collapse">
+        <div class="panel-body">
+
+          <div class="container-fluid">
+            %(reference_graph_divs)s
           </div>
 
         </div>
@@ -1671,7 +1802,10 @@ body {
 %(script)s
 </script>
 </body>
-''' %{'graph_divs': '            '.join(graph_divs),
+''' %{'strong_graph_divs': '\n            '.join(graph_divs['strong']),
+      'centroid_graph_divs': '\n            '.join(graph_divs['centroid']),
+      'intensity_graph_divs': '\n            '.join(graph_divs['intensity']),
+      'reference_graph_divs': '\n            '.join(graph_divs['reference']),
       'script': '\n'.join(javascript)}
 
     html = '\n'.join([html_header, html_body])
