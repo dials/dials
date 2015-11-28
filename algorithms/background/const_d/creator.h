@@ -55,13 +55,13 @@ namespace dials { namespace algorithms {
     af::shared<bool> operator()(af::ref< Shoebox<> > sbox) const {
       af::shared<bool> success(sbox.size(), true);
       for (std::size_t i = 0; i < sbox.size(); ++i) {
-        try {
+        //try {
           compute(sbox[i]);
-        } catch(scitbx::error) {
-          success[i] = false;
-        } catch(dials::error) {
-          success[i] = false;
-        }
+        //} catch(scitbx::error) {
+        //  success[i] = false;
+        //} catch(dials::error) {
+        //  success[i] = false;
+        //}
       }
       return success;
     }
@@ -83,9 +83,9 @@ namespace dials { namespace algorithms {
       std::vector<double> d_min(sbox.data.size());
       std::vector<double> d_max(sbox.data.size());
       std::vector<double> d_mid(sbox.data.size());
-      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
+      for (std::size_t k = 0, l = 0; k < sbox.zsize(); ++k) {
         for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+          for (std::size_t i = 0; i < sbox.xsize(); ++i, ++l) {
             double x = i + sbox.bbox[0];
             double y = j + sbox.bbox[2];
             vec2<double> xy1(x,y);
@@ -98,9 +98,9 @@ namespace dials { namespace algorithms {
             double d3 = panel.get_resolution_at_pixel(s0, xy3);
             double d4 = panel.get_resolution_at_pixel(s0, xy4);
             double d5 = panel.get_resolution_at_pixel(s0, xy5);
-            d_min.push_back(min4(d1,d2,d3,d4));
-            d_max.push_back(max4(d1,d2,d3,d4));
-            d_mid.push_back(d5);
+            d_min[l] = min4(d1,d2,d3,d4);
+            d_max[l] = max4(d1,d2,d3,d4);
+            d_mid[l] = d5;
           }
         }
       }
@@ -111,36 +111,45 @@ namespace dials { namespace algorithms {
       std::vector<std::size_t> background;
       std::vector<std::size_t> foreground;
       af::const_ref< int, af::c_grid<3> > mask = sbox.mask.const_ref();
+      af::const_ref< float, af::c_grid<3> > data = sbox.data.const_ref();
+      af::ref< float, af::c_grid<3> > background_values = sbox.background.ref();
+      double mean = 0.0;
+      double mean_count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if ((mask[i] & background_code) == background_code) {
           background.push_back(i);
+          mean += data[i];
+          mean_count += 1;
         }
         if ((mask[i] & foreground_code) == foreground_code) {
           foreground.push_back(i);
         }
       }
+      DIALS_ASSERT(mean_count > 0);
+      mean = mean / mean_count;
+
+      // Copy the data to the background
+      for (std::size_t i = 0; i < background_values.size(); ++i) {
+        background_values[i] = mean;
+      }
 
       // Compute radially averaged background
-      af::const_ref< float, af::c_grid<3> > data = sbox.data.const_ref();
-      af::ref< float, af::c_grid<3> > background_values = sbox.data.ref();
       for (std::size_t i = 0; i < foreground.size(); ++i) {
         std::size_t f = foreground[i];
         double dm = d_mid[f];
         double sum = 0.0;
         std::size_t count = 0;
         for (std::size_t j = 0; j < background.size(); ++j) {
-          std::size_t b = background[i];
+          std::size_t b = background[j];
           double d0 = d_min[b];
           double d1 = d_max[b];
-          if (d0 <= dm && dm <= d1) {
+          if ((d0 <= dm) && (dm <= d1)) {
             sum += data[b];
             count += 1;
           }
         }
         if (count > 0) {
-          background_values[f] = sum / count;
-        } else {
-          background_values[f] = 0;
+          background_values[f] = sum / ((double)count);
         }
       }
     }
