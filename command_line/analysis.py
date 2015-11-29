@@ -47,7 +47,7 @@ phil_scope = libtbx.phil.parse('''
   }
   grid_size = Auto
     .type = ints(size=2)
-  pixels_per_bin = 10
+  pixels_per_bin = 40
     .type = int(value_min=1)
 
   centroid_diff_max = None
@@ -457,6 +457,11 @@ class CentroidAnalyser(object):
 
     d = OrderedDict()
 
+    nbinsx, nbinsy = tuple(
+        int(math.ceil(i))
+        for i in (flex.max(xc)/self.pixels_per_bin,
+                  flex.max(yc)/self.pixels_per_bin))
+
     d.update({
       'centroid_differences_x': {
         'data': [{
@@ -467,8 +472,8 @@ class CentroidAnalyser(object):
           'histfunc': 'avg',
           'connectgaps': False,
           'name': 'centroid_differences_x',
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': nbinsx,
+          'nbinsy': nbinsy,
           'colorbar': {
             'title': 'Difference in X position',
             'titleside': 'right',
@@ -501,8 +506,8 @@ class CentroidAnalyser(object):
           'histfunc': 'avg',
           'connectgaps': False,
           'name': 'centroid_differences_y',
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': nbinsx,
+          'nbinsy': nbinsy,
           'colorbar': {
             'title': 'Difference in Y position',
             'titleside': 'right',
@@ -1148,6 +1153,12 @@ class IntensityAnalyser(object):
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
+    x, y, z = rlist['xyzcal.px'].parts()
+    self.nbinsx, self.nbinsy = tuple(
+        int(math.ceil(i))
+        for i in (flex.max(x)/self.pixels_per_bin,
+                  flex.max(y)/self.pixels_per_bin))
+
     d = OrderedDict()
 
     # Look at distribution of I/Sigma
@@ -1213,8 +1224,8 @@ class IntensityAnalyser(object):
           'histfunc': 'avg',
           'connectgaps': False,
           'name': 'i_over_sigma_%s' %intensity_type,
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': self.nbinsx,
+          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Log I/Sigma',
             'titleside': 'right',
@@ -1252,8 +1263,8 @@ class IntensityAnalyser(object):
           'y': list(flex.log(I_over_S)),
           'type': 'histogram2d',
           'name': 'i_over_sigma',
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': self.nbinsx,
+          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -1334,6 +1345,12 @@ class ReferenceProfileAnalyser(object):
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
+    x, y, z = rlist['xyzcal.px'].parts()
+    self.nbinsx, self.nbinsy = tuple(
+        int(math.ceil(i))
+        for i in (flex.max(x)/self.pixels_per_bin,
+                  flex.max(y)/self.pixels_per_bin))
+
     d = OrderedDict()
 
     # Analyse distribution of reference spots
@@ -1399,8 +1416,8 @@ class ReferenceProfileAnalyser(object):
           'y': list(y),
           'type': 'histogram2d',
           'name': 'n_reference_profiles',
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': self.nbinsx,
+          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -1483,8 +1500,8 @@ class ReferenceProfileAnalyser(object):
           'type': 'histogram2d',
           'histfunc': 'avg',
           'name': '%s_correlations' %filename,
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': self.nbinsx,
+          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Correlation with reference profile',
             'titleside': 'right',
@@ -1520,8 +1537,8 @@ class ReferenceProfileAnalyser(object):
           'y': list(corr),
           'type': 'histogram2d',
           'name': '%s_correlations' %filename,
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': self.nbinsx,
+          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -1558,8 +1575,8 @@ class ReferenceProfileAnalyser(object):
           'y': list(corr),
           'type': 'histogram2d',
           'name': '%s_correlations' %filename,
-          'nbinsx': 100,
-          'nbinsy': 100,
+          'nbinsx': self.nbinsx,
+          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
