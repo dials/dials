@@ -418,16 +418,15 @@ class CentroidAnalyser(object):
     yd = yo - yc
     zd = zo - zc
     diff = flex.sqrt(xd*xd + yd*yd + zd*zd)
+    hist = flex.histogram(diff, n_slots=20)
 
-    # XXX might be better to calculate histogram here in Python and then record
-    # data as type bar?
     d = {
       'centroid_difference_histogram': {
         'data': [{
-          'x': list(diff),
-          'type': 'histogram',
+          'x': list(hist.slot_centers()),
+          'y': list(hist.slots()),
+          'type': 'bar',
           'name': 'centroid_differences',
-          'nbinsx': 20,
         }],
         'layout': {
           'title': 'Difference between observed and calculated centroids',
@@ -435,6 +434,7 @@ class CentroidAnalyser(object):
           'yaxis': {
             'title': 'Number of reflections',
           },
+          'bargap': 0,
         },
       },
     }
@@ -1173,19 +1173,21 @@ class IntensityAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     log_I_over_S = flex.log(I_over_S)
+    hist = flex.histogram(log_I_over_S, n_slots=20)
 
     return {
       'log_i_over_sigma_histogram': {
         'data': [{
-          'x': list(log_I_over_S),
-          'type': 'histogram',
+          'x': list(hist.slot_centers()),
+          'y': list(hist.slots()),
+          'type': 'bar',
           'name': 'log_i_over_sigma',
-          'nbinsx': 20,
         }],
         'layout': {
           'title': 'Log I/Sigma histogram',
           'xaxis': {'title': 'Log I/Sigma'},
           'yaxis': {'title': 'Number of reflections'},
+          'bargap': 0,
         },
       },
     }
@@ -1425,19 +1427,21 @@ class ReferenceProfileAnalyser(object):
     ''' Analyse the distribution of reference profiles. '''
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
+    hist = flex.histogram(z, n_slots=20)
 
     return {
       'n_reference_profiles_vs_z': {
         'data': [{
-          'x': list(z),
-          'type': 'histogram',
+          'x': list(hist.slot_centers()),
+          'y': list(hist.slots()),
+          'type': 'bar',
           'name': 'n_reference_profiles',
-          'nbinsx': 20,
         }],
         'layout': {
           'title': 'Reference profiles binned in Z',
           'xaxis': {'title': 'Z'},
           'yaxis': {'title': 'Number of reflections'},
+          'bargap': 0,
         },
       },
     }
@@ -1445,19 +1449,21 @@ class ReferenceProfileAnalyser(object):
   def reflection_corr_hist(self, rlist, filename):
     ''' Analyse the correlations. '''
     corr = rlist['profile.correlation']
+    hist = flex.histogram(corr, n_slots=20)
 
     return {
       '%s_correlations_histogram' %filename: {
         'data': [{
-          'x': list(corr),
-          'type': 'histogram',
+          'x': list(hist.slot_centers()),
+          'y': list(hist.slots()),
+          'type': 'bar',
           'name': '%s_correlations' %filename,
-          'nbinsx': 20,
         }],
         'layout': {
           'title': '%s correlations histogram' %filename.capitalize(),
           'xaxis': {'title': 'Correlation with reference profile'},
           'yaxis': {'title': 'Number of reflections'},
+          'bargap': 0,
         },
       },
     }
