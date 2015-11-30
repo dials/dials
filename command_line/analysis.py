@@ -749,14 +749,20 @@ class CentroidAnalyser(object):
       'xaxis2': {
         'domain': [0.85, 1],
         'showgrid': False,
-        'zeroline': False
+        'zeroline': False,
+        'bargap': 0,
       },
       'yaxis2': {
         'domain': [0.85, 1],
         'showgrid': False,
-        'zeroline': False
+        'zeroline': False,
+        'bargap': 0,
       }
     }
+
+    histx = flex.histogram(dx, n_slots=100)
+    histy = flex.histogram(dy, n_slots=100)
+    histz = flex.histogram(dz, n_slots=100)
 
     d.update({
       'residuals_xy': {
@@ -784,18 +790,21 @@ class CentroidAnalyser(object):
             'type': 'histogram2dcontour',
           },
           {
-            'x': list(dx),
-            'name': 'x density',
+            'x': list(histx.slot_centers()),
+            'y': list(histx.slots()),
+            'name': 'dx histogram',
             'marker': {'color': 'rgb(102,0,0)'},
             'yaxis': 'y2',
-            'type': 'histogram',
+            'type': 'bar',
           },
           {
-            'y': list(dy),
-            'name': 'y density',
+            'y': list(histy.slot_centers()),
+            'x': list(histy.slots()),
+            'name': 'dy histogram',
             'marker': {'color': 'rgb(102,0,0)'},
             'xaxis': 'x2',
-            'type': 'histogram',
+            'type': 'bar',
+            'orientation': 'h',
           },
         ],
         'layout': copy.deepcopy(density_hist_layout),
@@ -829,18 +838,21 @@ class CentroidAnalyser(object):
             'type': 'histogram2dcontour',
           },
           {
-            'x': list(dz),
-            'name': 'z density',
+            'x': list(histz.slot_centers()),
+            'y': list(histz.slots()),
+            'name': 'dz histogram',
             'marker': {'color': 'rgb(102,0,0)'},
             'yaxis': 'y2',
-            'type': 'histogram',
+            'type': 'bar',
           },
           {
-            'y': list(dy),
-            'name': 'y density',
+            'y': list(histy.slot_centers()),
+            'x': list(histy.slots()),
+            'name': 'dy histogram',
             'marker': {'color': 'rgb(102,0,0)'},
             'xaxis': 'x2',
-            'type': 'histogram',
+            'type': 'bar',
+            'orientation': 'h',
           },
         ],
         'layout': copy.deepcopy(density_hist_layout),
@@ -875,18 +887,21 @@ class CentroidAnalyser(object):
             'type': 'histogram2dcontour',
           },
           {
-            'x': list(dx),
-            'name': 'x density',
+            'x': list(histx.slot_centers()),
+            'y': list(histx.slots()),
+            'name': 'dx histogram',
             'marker': {'color': 'rgb(102,0,0)'},
             'yaxis': 'y2',
-            'type': 'histogram',
+            'type': 'bar',
           },
           {
-            'y': list(dz),
-            'name': 'z density',
+            'y': list(histz.slot_centers()),
+            'x': list(histz.slots()),
+            'name': 'dz histogram',
             'marker': {'color': 'rgb(102,0,0)'},
             'xaxis': 'x2',
-            'type': 'histogram',
+            'type': 'bar',
+            'orientation': 'h',
           },
         ],
         'layout': copy.deepcopy(density_hist_layout),
