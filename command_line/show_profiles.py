@@ -1,3 +1,4 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.show_profiles
 from __future__ import division
 
 def print_profile(r):
