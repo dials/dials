@@ -40,9 +40,12 @@ import libtbx.phil
 # Create the phil parameters
 phil_scope = libtbx.phil.parse('''
   output {
-    directory = .
-      .type = str
-      .help = "The directory to store the results"
+    html = dials-report.html
+      .type = path
+      .help = "The name of the output html file"
+    json = None
+      .type = path
+      .help = "The name of the optional json file containing the plot data"
   }
   grid_size = Auto
     .type = ints(size=2)
@@ -214,13 +217,8 @@ class per_panel_plot(object):
 class StrongSpotsAnalyser(object):
   ''' Analyse a list of strong spots. '''
 
-  def __init__(self, directory):
-    ''' Setup the directory. '''
+  def __init__(self):
     from os.path import join
-
-    # Set the directory
-    self.directory = join(directory, "strong")
-    ensure_directory(self.directory)
 
     # Set the required fields
     self.required = [
@@ -327,14 +325,10 @@ class StrongSpotsAnalyser(object):
 class CentroidAnalyser(object):
   ''' Analyse the reflection centroids. '''
 
-  def __init__(self, directory, grid_size=None, pixels_per_bin=10,
+  def __init__(self, grid_size=None, pixels_per_bin=10,
     centroid_diff_max=1.5):
-    ''' Setup the directory. '''
     from os.path import join
 
-    # Set the directory
-    self.directory = join(directory, "centroid")
-    ensure_directory(self.directory)
     self.grid_size = grid_size
     self.pixels_per_bin = pixels_per_bin
     self.centroid_diff_max = centroid_diff_max
@@ -926,13 +920,9 @@ class CentroidAnalyser(object):
 class BackgroundAnalyser(object):
   ''' Analyse the background. '''
 
-  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
-    ''' Setup the directory. '''
+  def __init__(self, grid_size=None, pixels_per_bin=10):
     from os.path import join
 
-    # Set the directory
-    self.directory = join(directory, "background")
-    ensure_directory(self.directory)
     self.grid_size = grid_size
     self.pixels_per_bin = pixels_per_bin
 
@@ -1151,13 +1141,9 @@ class BackgroundAnalyser(object):
 class IntensityAnalyser(object):
   ''' Analyse the intensities. '''
 
-  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
-    ''' Set up the directory. '''
+  def __init__(self, grid_size=None, pixels_per_bin=10):
     from os.path import join
 
-    # Set the directory
-    self.directory = join(directory, "intensity")
-    ensure_directory(self.directory)
     self.grid_size = grid_size
     self.pixels_per_bin = pixels_per_bin
 
@@ -1377,13 +1363,9 @@ class IntensityAnalyser(object):
 class ReferenceProfileAnalyser(object):
   ''' Analyse the reference profiles. '''
 
-  def __init__(self, directory, grid_size=None, pixels_per_bin=10):
-    ''' Set up the directory. '''
+  def __init__(self, grid_size=None, pixels_per_bin=10):
     from os.path import join
 
-    # Set the directory
-    self.directory = join(directory, "reference")
-    ensure_directory(self.directory)
     self.grid_size = grid_size
     self.pixels_per_bin = pixels_per_bin
 
@@ -1766,22 +1748,23 @@ class ReferenceProfileAnalyser(object):
 class Analyser(object):
   ''' Helper class to do all the analysis. '''
 
-  def __init__(self, directory, grid_size=None, pixels_per_bin=10,
-               centroid_diff_max=1.5):
+  def __init__(self, html_filename, json_filename,
+               grid_size=None, pixels_per_bin=10, centroid_diff_max=1.5):
     ''' Setup the analysers. '''
     from os.path import join
-    directory = join(directory, "analysis")
+    self.html_filename = html_filename
+    self.json_filename = json_filename
     self.analysers = [
-      StrongSpotsAnalyser(directory),
+      StrongSpotsAnalyser(),
       CentroidAnalyser(
-        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin,
+        grid_size=grid_size, pixels_per_bin=pixels_per_bin,
           centroid_diff_max=centroid_diff_max),
       BackgroundAnalyser(
-        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+         grid_size=grid_size, pixels_per_bin=pixels_per_bin),
       IntensityAnalyser(
-        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+        grid_size=grid_size, pixels_per_bin=pixels_per_bin),
       ReferenceProfileAnalyser(
-        directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+        grid_size=grid_size, pixels_per_bin=pixels_per_bin),
     ]
 
   def __call__(self, rlist):
@@ -1938,13 +1921,13 @@ body {
 
     html = '\n'.join([html_header, html_body])
 
-    with open('dials-report.json', 'wb') as f:
-      print >> f, json_str
+    if self.json_filename is not None:
+      with open(self.json_filename, 'wb') as f:
+        print >> f, json_str
 
-    with open('dials-report.html', 'wb') as f:
-      print >> f, html.encode('ascii', 'xmlcharrefreplace')
-
-
+    if self.html_filename is not None:
+      with open(self.html_filename, 'wb') as f:
+        print >> f, html.encode('ascii', 'xmlcharrefreplace')
 
 
 class Script(object):
@@ -1989,7 +1972,7 @@ class Script(object):
 
     # Analyse the reflections
     analyse = Analyser(
-      params.output.directory, grid_size=params.grid_size,
+      params.output.html, params.output.json, grid_size=params.grid_size,
       pixels_per_bin=params.pixels_per_bin,
       centroid_diff_max=params.centroid_diff_max)
     analyse(params.input.reflections[0].data)
