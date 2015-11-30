@@ -106,7 +106,7 @@ class ExternalCommand(object):
 
   '''
 
-  def __init__(self, command, filename, output=sys.stdout, wait_time=0.1):
+  def __init__(self, command, filename=None, output=sys.stdout, wait_time=0.1):
     '''
     Run the command
 
@@ -123,35 +123,51 @@ class ExternalCommand(object):
     if not isinstance(command, str):
       command = subprocess.list2cmdline(command)
 
+
     # Open the file for output and input
-    with open(filename, "w") as outfile:
-      with open(filename, "r") as infile:
+    if filename is not None:
+      with open(filename, "w") as outfile:
+        with open(filename, "r") as infile:
 
-        # Start the process
-        process = subprocess.Popen(
-          command,
-          stdout=outfile,
-          stderr=outfile,
-          shell=True,
-          universal_newlines=True,
-          bufsize=-1)
+          # Start the process
+          process = subprocess.Popen(
+            command,
+            stdout=outfile,
+            stderr=outfile,
+            shell=True,
+            universal_newlines=True,
+            bufsize=-1)
 
-        # Write the lines of the file to the output
-        if output is not None:
-          while True:
-            line = infile.readline()
-            if not line:
-              if process.poll() is not None:
-                break
-              time.sleep(wait_time)
-            else:
-              output.write(line)
+          # Write the lines of the file to the output
+          if output is not None:
+            while True:
+              line = infile.readline()
+              if not line:
+                if process.poll() is not None:
+                  break
+                time.sleep(wait_time)
+              else:
+                output.write(line)
 
-        # Get the result
-        self.result = process.wait()
+          # Get the result
+          self.result = process.wait()
+
+    else:
+      # Start the process
+      process = subprocess.Popen(
+        command,
+        stdout=output,
+        stderr=output,
+        shell=True,
+        universal_newlines=True,
+        bufsize=-1)
+
+      # Get the result
+      self.result = process.wait()
 
 
-def run_external_command(command, filename, output=sys.stdout, wait_time=0.1):
+
+def run_external_command(command, filename=None, output=sys.stdout, wait_time=0.1):
   '''
   Helper function to run command
 
@@ -553,20 +569,30 @@ class CommandNode(object):
     if self.parent is not None:
       self.parent.children.append(self)
 
+    # Initialise the description
+    self.description = None
+
     # Init the result
     self.success = False
-    self.result = None
-    self.report = None
-    self.models = None
-    self.description = None
 
     # Save the info
     self.action = action
-    self.parameters = copy.deepcopy(parameters)
+    self.params = copy.deepcopy(parameters)
+
+    # Init the important paths
     if directory is not None:
       self.directory = join(directory, "%d_%s" % (self.index, self.action))
+      self.output = join(self.directory, "output.txt")
+      self.parameters = join(self.directory, "parameters.phil")
     else:
       self.directory = None
+      self.output = None
+      self.parameters = None
+    self.report = None
+    self.summary = None
+    self.datablock = None
+    self.experiments = None
+    self.reflections = None
 
   def __iter__(self):
     '''
@@ -593,8 +619,8 @@ class CommandNode(object):
       raise RuntimeError('Output directory %s already exists' % self.directory)
 
     # Get the description
-    self.description = self.parameters.get(diff=False).extract().description
-    self.parameters.set("description=None")
+    self.description = self.params.get(diff=False).extract().description
+    self.params.set("description=None")
 
     # Initialise running the command
     self.initialize()
@@ -603,22 +629,59 @@ class CommandNode(object):
     makedirs(self.directory)
 
     # Set the parameter filename and write to file
-    parameters = join(self.directory, "parameters.phil")
-    with open(parameters, "w") as outfile:
-      outfile.write(self.parameters.get(diff=True).as_str())
+    with open(self.parameters, "w") as outfile:
+      outfile.write(self.params.get(diff=True).as_str())
     outfile.close()
 
-    # Set the output filename
-    output = join(self.directory, "output.txt")
-
     # Run the command (override this method)
-    self.run(parameters, output)
+    self.run()
 
     # Grab the result (override this method)
     self.finalize()
 
     # Set success
     self.success = True
+
+  def generate_report(self):
+    '''
+    Helper function to run dials.report
+
+    :param experiments: path to experiments.json
+    :param reflections: path to reflections.json
+    :param html: path to output html file
+
+    '''
+    command = ['dials.report']
+    if self.reflections is None:
+      raise RuntimeError('No reflections file set')
+    if self.report is None:
+      raise RuntimeError('No report file set')
+    if self.experiments is not None:
+      command.append('input.experiments=%s' % self.experiments)
+    command.append('input.reflections=%s' % self.reflections)
+    command.append('output.html=%s' % self.report)
+    run_external_command(command)
+
+  def check_files_exist(self, filenames=None):
+    '''
+    Helper function to check filenames exist
+
+    '''
+    from os.path import exists
+    def assert_exists(name):
+      if name is not None and name is not 'None' and not exists(name):
+        raise RuntimeError("File %s could not be found" % name)
+    if filenames is not None:
+      for name in filenames:
+        assert_exists(name)
+    assert_exists(self.directory)
+    assert_exists(self.output)
+    assert_exists(self.parameters)
+    assert_exists(self.report)
+    assert_exists(self.summary)
+    assert_exists(self.datablock)
+    assert_exists(self.experiments)
+    assert_exists(self.reflections)
 
 
 class CommandTree(object):
@@ -737,37 +800,33 @@ class ImportCommand(CommandNode):
 
     '''
     from os.path import join
+
+    # set the results
+    self.datablock = join(self.directory, "datablock.json")
+
+    # Set filenames and input
     self.filenames = {
-      'output.datablock' : join(self.directory, "datablock.json"),
+      'output.datablock' : self.datablock,
       'output.log'       : join(self.directory, "info.log"),
       'output.debug_log' : join(self.directory, "debug.log")
     }
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the import command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    print "Running import: for output see %s" % output
-    run_external_command(['dials.import', parameters], output)
+    run_external_command(['dials.import', self.parameters], self.output)
 
   def finalize(self):
     '''
     Finalize the processing
 
     '''
-    from os.path import exists
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
-
-    # set the results
-    self.models = self.filenames['output.datablock']
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class FindSpotsCommand(CommandNode):
@@ -796,38 +855,41 @@ class FindSpotsCommand(CommandNode):
 
     '''
     from os.path import join
+
+    # set the results
+    self.datablock = join(self.directory, "datablock.json")
+    self.reflections = join(self.directory, "reflections.pickle")
+    self.report = join(self.directory, 'report.html')
+
+    # Set filenames and input
     self.filenames = {
-      'input.datablock'    : self.parent.filenames['output.datablock'],
-      'output.datablock'   : join(self.directory, "datablock.json"),
-      'output.reflections' : join(self.directory, "reflections.pickle"),
+      'input.datablock'    : self.parent.datablock,
+      'output.datablock'   : self.datablock,
+      'output.reflections' : self.reflections,
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
     }
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the find_spots command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.find_spots', parameters], output)
+    # Run find spots
+    run_external_command(['dials.find_spots', self.parameters], self.output)
 
   def finalize(self):
     '''
     Finalize the processing
 
     '''
-    from os.path import exists
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
+    # Generate the report
+    self.generate_report()
 
-    # set the results
-    self.models = self.filenames['output.datablock']
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class DiscoverBetterModelCommand(CommandNode):
@@ -856,41 +918,41 @@ class DiscoverBetterModelCommand(CommandNode):
 
     '''
     from os.path import join
+
+    # set the results
+    self.datablock = join(self.directory, "datablock.json")
+    self.reflections = self.parent.reflections
+    self.report = join(self.directory, 'report.html')
+
+    # Set filenames and input
     self.filenames = {
-      'input.datablock'    : self.parent.filenames['output.datablock'],
-      'input.reflections'  : self.parent.filenames['output.reflections'],
-      'output.datablock'   : join(self.directory, "datablock.json"),
+      'input.datablock'    : self.parent.datablock,
+      'input.reflections'  : self.parent.reflections,
+      'output.datablock'   : self.datablock,
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
     }
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the index command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.discover_better_experimental_model', parameters], output)
+    run_external_command(['dials.discover_better_experimental_model',
+                          self.parameters], self.output)
 
   def finalize(self):
     '''
     Finalize the processing
 
     '''
-    from os.path import exists
-    self.filenames.update({
-      'output.reflections' : self.parent.filenames['output.reflections'],
-    })
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
+    # Generate the report
+    self.generate_report()
 
-    # set the results
-    self.models = self.filenames['output.datablock']
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class IndexCommand(CommandNode):
@@ -919,39 +981,41 @@ class IndexCommand(CommandNode):
 
     '''
     from os.path import join
+
+    # set the results
+    self.experiments = join(self.directory, "experiments.json")
+    self.reflections = join(self.directory, "reflections.pickle")
+    self.report = join(self.directory, 'report.html')
+
+    # Set filenames and input
     self.filenames = {
-      'input.datablock'    : self.parent.filenames['output.datablock'],
-      'input.reflections'  : self.parent.filenames['output.reflections'],
-      'output.reflections' : join(self.directory, "reflections.pickle"),
-      'output.experiments' : join(self.directory, "experiments.json"),
+      'input.datablock'    : self.parent.datablock,
+      'input.reflections'  : self.parent.reflections,
+      'output.reflections' : self.reflections,
+      'output.experiments' : self.experiments,
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
     }
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the index command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.index', parameters], output)
+    run_external_command(['dials.index', self.parameters], self.output)
 
   def finalize(self):
     '''
     Finalize the processing
 
     '''
-    from os.path import exists
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
+    # Generate the report
+    self.generate_report()
 
-    # set the results
-    self.models = self.filenames['output.experiments']
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class RefineBSCommand(CommandNode):
@@ -980,25 +1044,27 @@ class RefineBSCommand(CommandNode):
 
     '''
     from os.path import join
+
+    # set the results
+    self.reflections = self.parent.reflections
+
+    # Set other filenames
     self.filenames = {
-      'input.experiments'  : self.parent.filenames['output.experiments'],
-      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'input.experiments'  : self.parent.experiments,
+      'input.reflections'  : self.parent.reflections,
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
       'output.directory'   : self.directory,
     }
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the refine_bravais_settings command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.refine_bravais_settings', parameters], output)
+    run_external_command(['dials.refine_bravais_settings', self.parameters], self.output)
 
   def finalize(self):
     '''
@@ -1008,26 +1074,18 @@ class RefineBSCommand(CommandNode):
     from os.path import exists, join
     import json
 
-    # Add expected output files to check
-    self.filenames.update({
-      'output.reflections' : self.parent.filenames['output.reflections'],
-      'output.summary'     : join(self.directory, 'bravais_summary.json'),
-    })
-
-    # Check the output files
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
-
     # Read the summary and check all json files exist
-    with open(self.filenames['output.summary']) as summary_file:
-      self.summary = json.load(summary_file)
+    with open(join(self.directory, 'bravais_summary.json')) as summary_file:
+      self.bs_summary = json.load(summary_file)
       self.bs_filenames = {}
-      for name, value in self.summary.iteritems():
+      for name, value in self.bs_summary.iteritems():
         self.bs_filenames[name] = join(self.directory, 'bravais_setting_%s.json' % name)
       for name, value in self.bs_filenames.iteritems():
         if not exists(value):
           raise RuntimeError("File %s could not be found" % value)
+
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class ReIndexCommand(CommandNode):
@@ -1057,51 +1115,46 @@ class ReIndexCommand(CommandNode):
     '''
     from os.path import join
 
-    # The files which can be set as parameters
-    self.filenames = {
-      'input.reflections'  : self.parent.filenames['output.reflections'],
-      'output.reflections' : join(self.directory, "reflections.pickle"),
-    }
-    for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
-
     # Get the solution we want and convert to the change_of_basis_op
-    solution = self.parameters.get(diff=False).extract().solution
+    solution = self.params.get(diff=False).extract().solution
     if solution is None or solution == 'None':
-      solution = max(map(int, self.parent.summary.keys()))
-    change_of_basis_op = self.parent.summary[str(solution)]['cb_op']
-
-    # Set the solution parameter to None and set the cb_op
-    self.parameters.set("solution=None")
-    self.parameters.set("change_of_basis_op=%s" % change_of_basis_op)
+      solution = max(map(int, self.parent.bs_summary.keys()))
+    change_of_basis_op = self.parent.bs_summary[str(solution)]['cb_op']
 
     # Set the output experiments to the bravais settings file
-    self.filenames.update({
-      'output.experiments' : self.parent.bs_filenames[str(solution)]
-    })
+    self.experiments = self.parent.bs_filenames[str(solution)]
+    self.reflections = join(self.directory, "reflections.pickle")
+    self.report = join(self.directory, 'report.html')
 
-  def run(self, parameters, output):
+    # The files which can be set as parameters
+    self.filenames = {
+      'input.reflections'  : self.parent.reflections,
+      'output.reflections' : self.reflections,
+    }
+    for name, value in self.filenames.iteritems():
+      self.params.set('%s=%s' % (name, value))
+
+    # Set the solution parameter to None and set the cb_op
+    self.params.set("solution=None")
+    self.params.set("change_of_basis_op=%s" % change_of_basis_op)
+
+  def run(self):
     '''
     Run the index command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.reindex', parameters], output)
+    run_external_command(['dials.reindex', self.parameters], self.output)
 
   def finalize(self):
     '''
     Finalize the processing
 
     '''
-    from os.path import exists
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
+    # Generate the report
+    self.generate_report()
 
-    # set the results
-    self.models = self.filenames['output.experiments']
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class RefineCommand(CommandNode):
@@ -1130,11 +1183,17 @@ class RefineCommand(CommandNode):
 
     '''
     from os.path import join
+    # set the results
+    self.experiments = join(self.directory, "experiments.json")
+    self.reflections = join(self.directory, "reflections.pickle")
+    self.report = join(self.directory, 'report.html')
+
+    # Set the other filenames and input
     self.filenames = {
-      'input.experiments'  : self.parent.filenames['output.experiments'],
-      'input.reflections'  : self.parent.filenames['output.reflections'],
-      'output.reflections' : join(self.directory, "reflections.pickle"),
-      'output.experiments' : join(self.directory, "experiments.json"),
+      'input.experiments'  : self.parent.experiments,
+      'input.reflections'  : self.parent.reflections,
+      'output.reflections' : self.reflections,
+      'output.experiments' : self.experiments,
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
       'output.matches'     : join(self.directory, "matches.pickle"),
@@ -1142,30 +1201,25 @@ class RefineCommand(CommandNode):
       'output.history'     : join(self.directory, "history.txt"),
     }
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the refine command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.refine', parameters], output)
+    run_external_command(['dials.refine', self.parameters], self.output)
 
   def finalize(self):
     '''
     Finalize the processing
 
     '''
-    from os.path import exists
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
+    # Generate the report
+    self.generate_report()
 
-    # set the results
-    self.models = self.filenames['output.experiments']
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class IntegrateCommand(CommandNode):
@@ -1194,42 +1248,43 @@ class IntegrateCommand(CommandNode):
 
     '''
     from os.path import join
+
+    # set the results
+    self.experiments = join(self.directory, "experiments.json")
+    self.reflections = join(self.directory, "reflections.pickle")
+    self.report = join(self.directory, 'report.html')
+
+    # Set the other filenames and input
     self.filenames = {
-      'input.experiments'  : self.parent.filenames['output.experiments'],
-      'input.reflections'  : self.parent.filenames['output.reflections'],
-      'output.reflections' : join(self.directory, "reflections.pickle"),
-      'output.experiments' : join(self.directory, "experiments.json"),
+      'input.experiments'  : self.parent.experiments,
+      'input.reflections'  : self.parent.reflections,
+      'output.reflections' : self.reflections,
+      'output.experiments' : self.experiments,
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
-      'output.report'      : join(self.directory, "report.json"),
+      'output.report'      : join(self.directory, "summary.json"),
       'output.phil'        : 'None'
     }
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the integrate command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.integrate', parameters], output)
+    run_external_command(['dials.integrate', self.parameters], self.output)
 
   def finalize(self):
     '''
     Finalize the processing
 
     '''
-    from os.path import exists
-    for name, value in self.filenames.iteritems():
-      if value is not 'None' and not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
+    # Generate the report
+    self.generate_report()
 
-    # set the report and results filenames
-    self.report = self.filenames['output.report']
-    self.models = self.filenames['output.experiments']
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
 
 class ExportCommand(CommandNode):
@@ -1259,25 +1314,22 @@ class ExportCommand(CommandNode):
     '''
     from os.path import join
     self.filenames = {
-      'input.experiments'  : self.parent.filenames['output.experiments'],
-      'input.reflections'  : self.parent.filenames['output.reflections'],
+      'input.experiments'  : self.parent.experiments,
+      'input.reflections'  : self.parent.reflections,
       'mtz.hklout'         : join(self.directory, "reflections.mtz"),
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
     }
-    self.parameters.set("format=mtz")
+    self.params.set("format=mtz")
     for name, value in self.filenames.iteritems():
-      self.parameters.set('%s=%s' % (name, value))
+      self.params.set('%s=%s' % (name, value))
 
-  def run(self, parameters, output):
+  def run(self):
     '''
     Run the export command
 
-    :param parameters: The input parameter filename
-    :param output: The stdout file
-
     '''
-    run_external_command(['dials.export', parameters], output)
+    run_external_command(['dials.export', self.parameters], self.output)
 
   def finalize(self):
     '''
@@ -1286,9 +1338,9 @@ class ExportCommand(CommandNode):
     '''
     from os.path import exists
     import shutil
-    for name, value in self.filenames.iteritems():
-      if not exists(value):
-        raise RuntimeError("File %s could not be found" % value)
+
+    # Check the files exist
+    self.check_files_exist(self.filenames.values())
 
     # Copy the resulting mtz file to the working directory
     result_filename = "%d_integrated.mtz" % self.index
@@ -1523,23 +1575,23 @@ class Controller(object):
     '''
     return self.state.current.models
 
-  def get_result(self):
+  def get_report(self):
     '''
     Get the results filename
 
     :return: The results filename
 
     '''
-    return self.state.current.result
+    return self.state.current.report
 
-  def get_report(self):
+  def get_summary(self):
     '''
     Get the report filename
 
     :return: The report filename
 
     '''
-    return self.state.current.report
+    return self.state.current.summary
 
   def goto(self, index):
     '''
@@ -1632,21 +1684,21 @@ class Console(Cmd):
     except Exception, e:
       print_error(e)
 
-  def do_report(self, line):
+  def do_summary(self, line):
     ''' Get the report. '''
     try:
-      filename = self.controller.get_report()
+      filename = self.controller.get_summary()
       if filename is None:
         raise RuntimeError('No result to show')
       print 'For report, see: %s' % filename
     except Exception, e:
       print_error(e)
 
-  def do_result(self, line):
+  def do_report(self, line):
     ''' Get the results. '''
     try:
       import webbrowser
-      filename = self.controller.get_result()
+      filename = self.controller.get_report()
       if filename is None:
         raise RuntimeError('No result to show')
       webbrowser.open('file://%s' % filename)

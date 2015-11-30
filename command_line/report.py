@@ -2065,8 +2065,8 @@ class Analyser(object):
       CentroidAnalyser(
         grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin,
           centroid_diff_max=centroid_diff_max),
-      BackgroundAnalyser(
-         grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin),
+      #BackgroundAnalyser(
+      #   grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin),
       IntensityAnalyser(
         grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin),
       ReferenceProfileAnalyser(
