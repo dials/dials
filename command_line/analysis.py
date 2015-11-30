@@ -721,6 +721,11 @@ class CentroidAnalyser(object):
 
     d = OrderedDict()
 
+    import numpy as np
+    Hxy, xedges, yedges = np.histogram2d(dx, dy, bins=(50, 50))
+    Hzy, zedges, yedges = np.histogram2d(dz, dy, bins=(50, 50))
+    Hxz, xedges, zedges = np.histogram2d(dx, dz, bins=(50, 50))
+
     density_hist_layout = {
 
       'showlegend': False,
@@ -767,27 +772,29 @@ class CentroidAnalyser(object):
     d.update({
       'residuals_xy': {
         'data': [
+          #{
+            #'x': list(dx),
+            #'y': list(dy),
+            #'mode': 'markers',
+            #'name': 'points',
+            #'marker': {
+              #'color': 'rgb(102,0,0)',
+              #'size': 2,
+              #'opacity': 0.4
+            #},
+            #'type': 'scatter',
+          #},
           {
-            'x': list(dx),
-            'y': list(dy),
-            'mode': 'markers',
-            'name': 'points',
-            'marker': {
-              'color': 'rgb(102,0,0)',
-              'size': 2,
-              'opacity': 0.4
-            },
-            'type': 'scatter',
-          },
-          {
-            'x': list(dx),
-            'y': list(dy),
+            'x': xedges.tolist(),
+            'y': yedges.tolist(),
+            'z': Hxy.transpose().tolist(),
             'name': 'density',
-            'ncontours': 20,
+            #'ncontours': 20,
             'colorscale': 'Hot',
             'reversescale': True,
             'showscale': False,
-            'type': 'histogram2dcontour',
+            'type': 'contour',
+            'zsmooth': 'best',
           },
           {
             'x': list(histx.slot_centers()),
@@ -815,27 +822,29 @@ class CentroidAnalyser(object):
     d.update({
       'residuals_zy': {
         'data': [
+          #{
+            #'x': list(dz),
+            #'y': list(dy),
+            #'mode': 'markers',
+            #'name': 'points',
+            #'marker': {
+              #'color': 'rgb(102,0,0)',
+              #'size': 2,
+              #'opacity': 0.4
+            #},
+            #'type': 'scatter',
+          #},
           {
-            'x': list(dz),
-            'y': list(dy),
-            'mode': 'markers',
-            'name': 'points',
-            'marker': {
-              'color': 'rgb(102,0,0)',
-              'size': 2,
-              'opacity': 0.4
-            },
-            'type': 'scatter',
-          },
-          {
-            'x': list(dz),
-            'y': list(dy),
+            'x': zedges.tolist(),
+            'y': yedges.tolist(),
+            'z': Hzy.transpose().tolist(),
             'name': 'density',
-            'ncontours': 20,
+            #'ncontours': 20,
             'colorscale': 'Hot',
             'reversescale': True,
             'showscale': False,
-            'type': 'histogram2dcontour',
+            'type': 'contour',
+            'zsmooth': 'best',
           },
           {
             'x': list(histz.slot_centers()),
@@ -864,27 +873,29 @@ class CentroidAnalyser(object):
     d.update({
       'residuals_xz': {
         'data': [
+          #{
+            #'x': list(dx),
+            #'y': list(dz),
+            #'mode': 'markers',
+            #'name': 'points',
+            #'marker': {
+              #'color': 'rgb(102,0,0)',
+              #'size': 2,
+              #'opacity': 0.4
+            #},
+            #'type': 'scatter',
+          #},
           {
-            'x': list(dx),
-            'y': list(dz),
-            'mode': 'markers',
-            'name': 'points',
-            'marker': {
-              'color': 'rgb(102,0,0)',
-              'size': 2,
-              'opacity': 0.4
-            },
-            'type': 'scatter',
-          },
-          {
-            'x': list(dx),
-            'y': list(dz),
+            'x': xedges.tolist(),
+            'y': zedges.tolist(),
+            'z': Hxz.transpose().tolist(),
             'name': 'density',
-            'ncontours': 20,
+            #'ncontours': 20,
             'colorscale': 'Hot',
             'reversescale': True,
             'showscale': False,
-            'type': 'histogram2dcontour',
+            'type': 'contour',
+            'zsmooth': 'best',
           },
           {
             'x': list(histx.slot_centers()),
