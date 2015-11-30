@@ -462,18 +462,32 @@ class CentroidAnalyser(object):
         for i in (flex.max(xc)/self.pixels_per_bin,
                   flex.max(yc)/self.pixels_per_bin))
 
+    xc = xc.as_numpy_array()
+    yc = yc.as_numpy_array()
+    xd = xd.as_numpy_array()
+    yd = yd.as_numpy_array()
+
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy))
+    H1, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy), weights=xd)
+    H2, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy), weights=yd)
+
+    nonzeros = np.nonzero(H)
+    z1 = np.empty(H.shape)
+    z1[:] = np.NAN
+    z1[nonzeros] = (H1[nonzeros]/H[nonzeros]).transpose()
+    z2 = np.empty(H.shape)
+    z2[:] = np.NAN
+    z2[nonzeros] = (H2[nonzeros]/H[nonzeros]).transpose()
+
     d.update({
       'centroid_differences_x': {
         'data': [{
-          'x': list(xc),
-          'y': list(yc),
-          'z': list(xd),
-          'type': 'histogram2d',
-          'histfunc': 'avg',
-          'connectgaps': False,
           'name': 'centroid_differences_x',
-          'nbinsx': nbinsx,
-          'nbinsy': nbinsy,
+          'x': xedges.tolist(),
+          'y': xedges.tolist(),
+          'z': z1.tolist(),
+          'type': 'heatmap',
           'colorbar': {
             'title': 'Difference in X position',
             'titleside': 'right',
@@ -484,11 +498,13 @@ class CentroidAnalyser(object):
           'title': 'Difference between observed and calculated centroids in X',
           'xaxis': {
             'domain': [0, 0.85],
-            'title': 'X'
+            'title': 'X',
+            'showgrid': False,
           },
           'yaxis': {
             'title': 'Y',
-            'autorange': 'reversed'
+            'autorange': 'reversed',
+            'showgrid': False,
           },
           'width': 500,
           'height': 450,
@@ -499,15 +515,11 @@ class CentroidAnalyser(object):
     d.update({
       'centroid_differences_y': {
         'data': [{
-          'x': list(xc),
-          'y': list(yc),
-          'z': list(yd),
-          'type': 'histogram2d',
-          'histfunc': 'avg',
-          'connectgaps': False,
           'name': 'centroid_differences_y',
-          'nbinsx': nbinsx,
-          'nbinsy': nbinsy,
+          'x': xedges.tolist(),
+          'y': xedges.tolist(),
+          'z': z2.tolist(),
+          'type': 'heatmap',
           'colorbar': {
             'title': 'Difference in Y position',
             'titleside': 'right',
@@ -518,11 +530,13 @@ class CentroidAnalyser(object):
           'title': 'Difference between observed and calculated centroids in Y',
           'xaxis': {
             'domain': [0, 0.85],
-            'title': 'X'
+            'title': 'X',
+            'showgrid': False,
           },
           'yaxis': {
             'title': 'Y',
-            'autorange': 'reversed'
+            'autorange': 'reversed',
+            'showgrid': False,
           },
           'width': 500,
           'height': 450,
@@ -544,15 +558,17 @@ class CentroidAnalyser(object):
     xo, yo, zo = rlist['xyzobs.px.value'].parts()
     zd = zo - zc
 
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(zc, zd, bins=(100, 100))
+
     return {
       'centroid_differences_z': {
         'data': [{
-          'x': list(zc),
-          'y': list(zd),
-          'type': 'histogram2d',
+          'x': xedges.tolist(),
+          'y': xedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
           'name': 'centroid_differences_z',
-          'nbinsx': 100,
-          'nbinsy': 100,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -561,8 +577,14 @@ class CentroidAnalyser(object):
         }],
         'layout': {
           'title': 'Difference between observed and calculated centroids in Z',
-          'xaxis': {'title': 'Z'},
-          'yaxis': {'title': 'Difference in Z position'},
+          'xaxis': {
+            'title': 'Z',
+            'showgrid': False,
+          },
+          'yaxis': {
+            'title': 'Difference in Z position',
+            'showgrid': False,
+          },
         },
       },
     }
@@ -1207,25 +1229,35 @@ class IntensityAnalyser(object):
     ''' Plot I/Sigma vs X/Y '''
 
     I_sig = flex.sqrt(rlist['intensity.%s.variance' %intensity_type])
-    sel = I_sig > 0
-    rlist = rlist.select(sel)
-    I_sig = I_sig.select(sel)
     I = rlist['intensity.%s.value' %intensity_type]
+    sel = (I_sig > 0) & (I > 0)
+    rlist = rlist.select(sel)
+    I = I.select(sel)
+    I_sig = I_sig.select(sel)
     I_over_S = I / I_sig
     x, y, z = rlist['xyzcal.px'].parts()
+
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(
+      x.as_numpy_array(), y.as_numpy_array(), bins=(self.nbinsx, self.nbinsy))
+    H1, xedges, yedges = np.histogram2d(
+      x.as_numpy_array(), y.as_numpy_array(),
+      bins=(self.nbinsx, self.nbinsy),
+      weights=flex.log(I_over_S).as_numpy_array())
+
+    nonzeros = np.nonzero(H)
+    z = np.empty(H.shape)
+    z[:] = np.NAN
+    z[nonzeros] = (H1[nonzeros]/H[nonzeros]).transpose()
 
     return {
       'i_over_sigma_%s_vs_xy' %intensity_type: {
         'data': [{
-          'x': list(x),
-          'y': list(y),
-          'z': list(flex.log(I_over_S)),
-          'type': 'histogram2d',
-          'histfunc': 'avg',
-          'connectgaps': False,
+          'x': xedges.tolist(),
+          'y': xedges.tolist(),
+          'z': z.tolist(),
+          'type': 'heatmap',
           'name': 'i_over_sigma_%s' %intensity_type,
-          'nbinsx': self.nbinsx,
-          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Log I/Sigma',
             'titleside': 'right',
@@ -1236,11 +1268,13 @@ class IntensityAnalyser(object):
           'title': 'Distribution of I(%s)/Sigma vs X/Y' %intensity_type,
           'xaxis': {
             'domain': [0, 0.85],
-            'title': 'X'
+            'title': 'X',
+            'showgrid': False,
           },
           'yaxis': {
             'title': 'Y',
-            'autorange': 'reversed'
+            'autorange': 'reversed',
+            'showgrid': False,
           },
           'width': 500,
           'height': 450,
@@ -1256,15 +1290,18 @@ class IntensityAnalyser(object):
     I_over_S = I / I_sig
     x, y, z = rlist['xyzcal.px'].parts()
 
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(
+      z.as_numpy_array(), flex.log(I_over_S).as_numpy_array(), bins=(100, 100))
+
     return {
       'i_over_sigma_vs_z': {
         'data': [{
-          'x': list(z),
-          'y': list(flex.log(I_over_S)),
-          'type': 'histogram2d',
+          'x': xedges.tolist(),
+          'y': xedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
           'name': 'i_over_sigma',
-          'nbinsx': self.nbinsx,
-          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -1273,8 +1310,14 @@ class IntensityAnalyser(object):
         }],
         'layout': {
           'title': 'Difference between observed and calculated centroids in Z',
-          'xaxis': {'title': 'Z'},
-          'yaxis': {'title': 'Log I/Sigma'},
+          'xaxis': {
+            'title': 'Z',
+            'showgrid': False,
+          },
+          'yaxis': {
+            'title': 'Log I/Sigma',
+            'showgrid': False,
+          },
         },
       }
     }
@@ -1409,15 +1452,18 @@ class ReferenceProfileAnalyser(object):
     rlist = rlist.select(mask)
     x, y, z = rlist['xyzcal.px'].parts()
 
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(
+      x.as_numpy_array(), y.as_numpy_array(), bins=(self.nbinsx, self.nbinsy))
+
     return {
       'n_reference_profiles_vs_xy': {
         'data': [{
-          'x': list(x),
-          'y': list(y),
-          'type': 'histogram2d',
+          'x': xedges.tolist(),
+          'y': yedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
           'name': 'n_reference_profiles',
-          'nbinsx': self.nbinsx,
-          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -1428,11 +1474,13 @@ class ReferenceProfileAnalyser(object):
           'title': 'Reference profiles binned in X/Y',
           'xaxis': {
             'domain': [0, 0.85],
-            'title': 'X'
+            'title': 'X',
+            'showgrid': False,
           },
           'yaxis': {
             'title': 'Y',
-            'autorange': 'reversed'
+            'autorange': 'reversed',
+            'showgrid': False,
           },
           'width': 500,
           'height': 450,
@@ -1491,17 +1539,26 @@ class ReferenceProfileAnalyser(object):
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
 
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(
+      x.as_numpy_array(), y.as_numpy_array(), bins=(self.nbinsx, self.nbinsy))
+    H1, xedges, yedges = np.histogram2d(
+      x.as_numpy_array(), y.as_numpy_array(), bins=(self.nbinsx, self.nbinsy),
+      weights=corr.as_numpy_array())
+
+    nonzeros = np.nonzero(H)
+    z = np.empty(H.shape)
+    z[:] = np.NAN
+    z[nonzeros] = (H1[nonzeros]/H[nonzeros]).transpose()
+
     return {
       '%s_correlations_xy' %filename: {
         'data': [{
-          'x': list(x),
-          'y': list(y),
-          'z': list(corr),
-          'type': 'histogram2d',
-          'histfunc': 'avg',
+          'x': xedges.tolist(),
+          'y': yedges.tolist(),
+          'z': z.tolist(),
+          'type': 'heatmap',
           'name': '%s_correlations' %filename,
-          'nbinsx': self.nbinsx,
-          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Correlation with reference profile',
             'titleside': 'right',
@@ -1512,11 +1569,13 @@ class ReferenceProfileAnalyser(object):
           'title': '%s correlations binned in X/Y' %filename.capitalize(),
           'xaxis': {
             'domain': [0, 0.85],
-            'title': 'X'
+            'title': 'X',
+            'showgrid': False,
           },
           'yaxis': {
             'title': 'Y',
-            'autorange': 'reversed'
+            'autorange': 'reversed',
+            'showgrid': False,
           },
           'width': 500,
           'height': 450,
@@ -1530,15 +1589,18 @@ class ReferenceProfileAnalyser(object):
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
 
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(
+      z.as_numpy_array(), corr.as_numpy_array(), bins=(100, 100))
+
     return {
       '%s_correlations_vs_z' %filename: {
         'data': [{
-          'x': list(z),
-          'y': list(corr),
-          'type': 'histogram2d',
+          'x': xedges.tolist(),
+          'y': yedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
           'name': '%s_correlations' %filename,
-          'nbinsx': self.nbinsx,
-          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -1547,8 +1609,14 @@ class ReferenceProfileAnalyser(object):
         }],
         'layout': {
           'title': '%s correlations vs Z' %filename.capitalize(),
-          'xaxis': {'title': 'Z'},
-          'yaxis': {'title': 'Correlation with reference profile'},
+          'xaxis': {
+            'title': 'Z',
+            'showgrid': False,
+          },
+          'yaxis': {
+            'title': 'Correlation with reference profile',
+            'showgrid': False,
+          },
         },
       },
     }
@@ -1568,15 +1636,19 @@ class ReferenceProfileAnalyser(object):
     I_over_S = I_over_S.select(mask)
     corr = corr.select(mask)
 
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(
+      flex.log(I_over_S).as_numpy_array(),
+      corr.as_numpy_array(), bins=(100, 100))
+
     return {
       '%s_correlations_vs_ios' %filename: {
         'data': [{
-          'x': list(flex.log(I_over_S)),
-          'y': list(corr),
-          'type': 'histogram2d',
+          'x': xedges.tolist(),
+          'y': yedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
           'name': '%s_correlations' %filename,
-          'nbinsx': self.nbinsx,
-          'nbinsy': self.nbinsy,
           'colorbar': {
             'title': 'Number of reflections',
             'titleside': 'right',
@@ -1585,8 +1657,14 @@ class ReferenceProfileAnalyser(object):
         }],
         'layout': {
           'title': '%s correlations vs Log I/Sigma' %filename.capitalize(),
-          'xaxis': {'title': 'Log I/Sigma'},
-          'yaxis': {'title': 'Correlation with reference profile'},
+          'xaxis': {
+            'title': 'Log I/Sigma',
+            'showgrid': False,
+          },
+          'yaxis': {
+            'title': 'Correlation with reference profile',
+            'showgrid': False,
+          },
         },
       },
     }
