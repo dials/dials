@@ -498,13 +498,13 @@ class ScanVaryingCrystalAnalyser(object):
             'x': ori['phi'],
             'y': ori['phi1'],
             'type': 'scatter',
-            'name': 'Φ1',
+            'name': 'Φ1 (°)',
           },
           {
             'x': ori['phi'],
             'y': ori['phi2'],
             'type': 'scatter',
-            'name': 'Φ2',
+            'name': 'Φ2 (°)',
             'xaxis': 'x2',
             'yaxis': 'y2',
           },
@@ -512,7 +512,7 @@ class ScanVaryingCrystalAnalyser(object):
             'x': ori['phi'],
             'y': ori['phi3'],
             'type': 'scatter',
-            'name': 'Φ3',
+            'name': 'Φ3 (°)',
             'xaxis': 'x3',
             'yaxis': 'y3',
           }])
@@ -2089,22 +2089,25 @@ class Analyser(object):
 
     import json
     json_str = json.dumps(json_data)
-    javascript = ['var graphs = %s' %(json_str)]
 
-    graph_divs = {}
-    for grouping in json_data.keys():
-      graph_divs[grouping] = []
-      for graph in json_data[grouping].keys():
-        javascript.append(
-          'Plotly.newPlot(%(graph)s, graphs.%(grouping)s.%(graph)s.data, graphs.%(grouping)s.%(graph)s.layout);' %{
-            'graph': graph,
-            'grouping': grouping
-          })
 
-        graph_divs[grouping].append(
-          '<div class="col-xs-6 col-sm-6 col-md-4 plot" id="%(graph)s"></div>' %{'graph': graph})
+    if self.params.output.html is not None:
+      javascript = ['var graphs = %s' %(json_str)]
 
-    html_header = '''
+      graph_divs = {}
+      for grouping in json_data.keys():
+        graph_divs[grouping] = []
+        for graph in json_data[grouping].keys():
+          javascript.append(
+            'Plotly.newPlot(%(graph)s, graphs.%(grouping)s.%(graph)s.data, graphs.%(grouping)s.%(graph)s.layout);' %{
+              'graph': graph,
+              'grouping': grouping
+            })
+
+          graph_divs[grouping].append(
+            '<div class="col-xs-6 col-sm-6 col-md-4 plot" id="%(graph)s"></div>' %{'graph': graph})
+
+      html_header = '''
 <head>
 
 <!-- Plotly.js -->
@@ -2138,7 +2141,7 @@ body {
 
 '''
 
-    html_body = '''
+      html_body = '''
 
 <body>
 
@@ -2248,15 +2251,16 @@ body {
       'scan_varying_graph_divs': '\n            '.join(graph_divs['scan_varying']),
       'script': '\n'.join(javascript)}
 
-    html = '\n'.join([html_header, html_body])
+      html = '\n'.join([html_header, html_body])
 
-    if self.params.output.json is not None:
-      with open(self.params.output.json, 'wb') as f:
-        print >> f, json_str
-
-    if self.params.output.html is not None:
+      print "Writing html report to: %s" %self.params.output.html
       with open(self.params.output.html, 'wb') as f:
         print >> f, html.encode('ascii', 'xmlcharrefreplace')
+
+    if self.params.output.json is not None:
+      print "Writing json data to: %s" %self.params.output.json
+      with open(self.params.output.json, 'wb') as f:
+        print >> f, json_str
 
 
 class Script(object):
