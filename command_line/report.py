@@ -1589,6 +1589,8 @@ class ReferenceProfileAnalyser(object):
             'titleside': 'right',
           },
           'colorscale': 'Jet',
+          'zmin': 0,
+          'zmax': 1,
         }],
         'layout': {
           'title': '%s correlations binned in X/Y' %filename.capitalize(),
