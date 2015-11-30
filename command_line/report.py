@@ -1699,7 +1699,7 @@ class ReferenceProfileAnalyser(object):
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
     if mask.count(True) == 0:
-      return
+      return {'reference': {}}
 
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
