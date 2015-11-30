@@ -475,10 +475,10 @@ class CentroidAnalyser(object):
     nonzeros = np.nonzero(H)
     z1 = np.empty(H.shape)
     z1[:] = np.NAN
-    z1[nonzeros] = (H1[nonzeros]/H[nonzeros]).transpose()
+    z1[nonzeros] = (H1[nonzeros]/H[nonzeros])
     z2 = np.empty(H.shape)
     z2[:] = np.NAN
-    z2[nonzeros] = (H2[nonzeros]/H[nonzeros]).transpose()
+    z2[nonzeros] = (H2[nonzeros]/H[nonzeros])
 
     d.update({
       'centroid_differences_x': {
@@ -486,7 +486,7 @@ class CentroidAnalyser(object):
           'name': 'centroid_differences_x',
           'x': xedges.tolist(),
           'y': xedges.tolist(),
-          'z': z1.tolist(),
+          'z': z1.transpose().tolist(),
           'type': 'heatmap',
           'colorbar': {
             'title': 'Difference in X position',
@@ -518,7 +518,7 @@ class CentroidAnalyser(object):
           'name': 'centroid_differences_y',
           'x': xedges.tolist(),
           'y': xedges.tolist(),
-          'z': z2.tolist(),
+          'z': z2.transpose().tolist(),
           'type': 'heatmap',
           'colorbar': {
             'title': 'Difference in Y position',
@@ -1263,14 +1263,14 @@ class IntensityAnalyser(object):
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
     z[:] = np.NAN
-    z[nonzeros] = (H1[nonzeros]/H[nonzeros]).transpose()
+    z[nonzeros] = (H1[nonzeros]/H[nonzeros])
 
     return {
       'i_over_sigma_%s_vs_xy' %intensity_type: {
         'data': [{
           'x': xedges.tolist(),
           'y': xedges.tolist(),
-          'z': z.tolist(),
+          'z': z.transpose().tolist(),
           'type': 'heatmap',
           'name': 'i_over_sigma_%s' %intensity_type,
           'colorbar': {
@@ -1564,14 +1564,14 @@ class ReferenceProfileAnalyser(object):
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
     z[:] = np.NAN
-    z[nonzeros] = (H1[nonzeros]/H[nonzeros]).transpose()
+    z[nonzeros] = (H1[nonzeros]/H[nonzeros])
 
     return {
       '%s_correlations_xy' %filename: {
         'data': [{
           'x': xedges.tolist(),
           'y': yedges.tolist(),
-          'z': z.tolist(),
+          'z': z.transpose().tolist(),
           'type': 'heatmap',
           'name': '%s_correlations' %filename,
           'colorbar': {
