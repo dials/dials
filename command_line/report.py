@@ -57,6 +57,26 @@ phil_scope = libtbx.phil.parse('''
             "in the heatmap plots centroid_diff_x and centroid_diff_y"
     .type = float
     .expert_level = 1
+
+  orientation_decomposition
+    .help = "Options determining how the orientation matrix"
+            "decomposition is done. The axes about which to decompose"
+            "the matrix into three rotations are chosen here, as well"
+            "as whether the rotations are relative to the reference"
+            "orientation, taken from the static crystal model"
+  {
+    e1 = 1. 0. 0.
+      .type = floats(size = 3)
+
+    e2 = 0. 1. 0.
+      .type = floats(size = 3)
+
+    e3 = 0. 0. 1.
+      .type = floats(size = 3)
+
+    relative_to_static_orientation = True
+      .type = bool
+  }
 ''')
 
 
@@ -212,6 +232,291 @@ class per_panel_plot(object):
 
   def plot_one_panel(self, ax, rlist):
     raise NotImplementedError()
+
+
+class ScanVaryingCrystalAnalyser(object):
+  ''' Analyse a scan-varying crystal. '''
+
+  def __init__(self, orientation_decomposition):
+    # Decomposition axes
+    self._e1 = orientation_decomposition.e1
+    self._e2 = orientation_decomposition.e2
+    self._e3 = orientation_decomposition.e3
+    self._relative_to_static_orientation \
+      = orientation_decomposition.relative_to_static_orientation
+    self._debug = False
+
+  def __call__(self, experiments):
+    ''' Analyse the strong spots. '''
+    from dials.util.command_line import Command
+
+    # Check we have the required fields
+    print "Analysing scan-varying crystal model"
+
+    d = OrderedDict()
+
+    if experiments is not None and len(experiments):
+      d.update(self.plot_cell(experiments))
+      d.update(self.plot_orientation(experiments))
+    return {'scan_varying': d}
+
+  def plot_cell(self, experiments):
+    ''' Analyse the scan-varying cell parameters. '''
+
+    # cell plot
+    dat = []
+    for iexp, exp in enumerate(experiments):
+
+      crystal = exp.crystal
+      scan = exp.scan
+
+      if crystal.num_scan_points == 0:
+        print "Ignoring scan-static crystal"
+        continue
+
+      scan_pts = range(crystal.num_scan_points)
+      cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
+      cell_params = [e.parameters() for e in cells]
+      a,b,c,aa,bb,cc = zip(*cell_params)
+      aa = list(round(i, ndigits=6) for i in aa)
+      bb = list(round(i, ndigits=6) for i in bb)
+      cc = list(round(i, ndigits=6) for i in cc)
+      phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+      vol = [e.volume() for e in cells]
+      cell_dat = {'phi':phi,
+                  'a':a,
+                  'b':b,
+                  'c':c,
+                  'alpha':aa,
+                  'beta':bb,
+                  'gamma':cc,
+                  'volume':vol}
+      if self._debug:
+        print "Crystal in Experiment {0}".format(iexp)
+        print "Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume"
+        msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
+        line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
+        for line in line_dat:
+          print msg.format(*line)
+      dat.append(cell_dat)
+
+    d = {
+      'scan_varying_cell': {
+        'data': [],
+        'layout': {
+          'title': 'Scan-varying cell parameters',
+          'xaxis3': {
+            'domain': [0, 1],
+            'anchor': 'y7',
+            'title': 'rotation angle (°)',
+          },
+          'xaxis2': {
+            'domain': [0.55, 1],
+            'anchor': 'y6',
+          },
+          'xaxis': {
+            'domain': [0, 0.45],
+            'anchor': 'y3',
+          },
+
+          'yaxis7': {
+            'domain': [0.0, 0.2],
+            'anchor': 'x3',
+            'nticks': 3,
+          },
+          'yaxis6': {
+            'domain': [0.3, 0.5],
+            'anchor': 'x2',
+            'nticks': 3,
+          },
+          'yaxis5': {
+            'domain': [0.55, 0.75],
+            'anchor': 'x2',
+            'nticks': 3,
+          },
+          'yaxis4': {
+            'domain': [0.8, 1],
+            'anchor': 'x2',
+            'nticks': 3,
+          },
+          'yaxis3': {
+            'domain': [0.3, 0.5],
+            'anchor': 'x',
+            'nticks': 3,
+          },
+          'yaxis2': {
+            'domain': [0.55, 0.75],
+            'anchor': 'x',
+            'nticks': 3,
+          },
+          'yaxis': {
+            'domain': [0.8, 1],
+            'nticks': 3,
+          },
+
+        },
+      },
+    }
+
+    for cell_dat in dat:
+      d['scan_varying_cell']['data'].extend([
+        {
+          'x': cell_dat['phi'],
+          'y': cell_dat['a'],
+          'type': 'scatter',
+          'name': 'a (Å)',
+        },
+        {
+          'x': cell_dat['phi'],
+          'y': cell_dat['b'],
+          'type': 'scatter',
+          'name': 'b (Å)',
+          'xaxis': 'x',
+          'yaxis': 'y2',
+        },
+        {
+          'x': cell_dat['phi'],
+          'y': cell_dat['c'],
+          'type': 'scatter',
+          'name': 'c (Å)',
+          'xaxis': 'x',
+          'yaxis': 'y3',
+        },
+        {
+          'x': cell_dat['phi'],
+          'y': cell_dat['alpha'],
+          'type': 'scatter',
+          'name': 'α (°)',
+          'xaxis': 'x2',
+          'yaxis': 'y4',
+        },
+        {
+          'x': cell_dat['phi'],
+          'y': cell_dat['beta'],
+          'type': 'scatter',
+          'name': 'β (°)',
+          'xaxis': 'x2',
+          'yaxis': 'y5',
+        },
+        {
+          'x': cell_dat['phi'],
+          'y': cell_dat['gamma'],
+          'type': 'scatter',
+          'name': 'γ (°)',
+          'xaxis': 'x2',
+          'yaxis': 'y6',
+        },
+        {
+          'x': cell_dat['phi'],
+          'y': cell_dat['volume'],
+          'type': 'scatter',
+          'name': 'volume (Å^3)',
+          'xaxis': 'x3',
+          'yaxis': 'y7',
+        }])
+    return d
+
+  def plot_orientation(self, experiments):
+    from dials.algorithms.refinement.rotation_decomposition import \
+      solve_r3_rotation_for_angles_given_axes
+
+    # orientation plot
+    dat = []
+    for iexp, exp in enumerate(experiments):
+
+      crystal = exp.crystal
+      scan = exp.scan
+
+      if crystal.num_scan_points == 0:
+        print "Ignoring scan-static crystal"
+        continue
+
+      scan_pts = range(crystal.num_scan_points)
+      phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+      Umats = [crystal.get_U_at_scan_point(t) for t in scan_pts]
+      if self._relative_to_static_orientation:
+        # factor out static U
+        Uinv = crystal.get_U().inverse()
+        Umats = [U*Uinv for U in Umats]
+      # NB e3 and e1 definitions for the crystal are swapped compared
+      # with those used inside the solve_r3_rotation_for_angles_given_axes
+      # method
+      angles = [solve_r3_rotation_for_angles_given_axes(U,
+        self._e3, self._e2, self._e1, deg=True) for U in Umats]
+      phi3, phi2, phi1 = zip(*angles)
+      angle_dat = {'phi':phi,
+                   'phi3':phi3,
+                   'phi2':phi2,
+                   'phi1':phi1}
+      if self._debug:
+        print "Crystal in Experiment {0}".format(iexp)
+        print "Image\tphi3\tphi2\tphi1"
+        msg = "{0}\t{1}\t{2}\t{3}"
+        line_dat = zip(phi, phi3, phi2, phi1)
+        for line in line_dat:
+          print msg.format(*line)
+      dat.append(angle_dat)
+
+      d = {
+        'scan_varying_orientation': {
+          'data': [],
+          'layout': {
+            'title': 'Scan-varying orientation parameters',
+            'xaxis3': {
+              'domain': [0, 1],
+              'anchor': 'y3',
+              'title': 'rotation angle (°)',
+            },
+            'xaxis2': {
+              'domain': [0, 1],
+              'anchor': 'y3',
+            },
+            'xaxis': {
+              'domain': [0, 1],
+              'anchor': 'y3',
+            },
+
+            'yaxis3': {
+              'domain': [0, 0.3],
+              'anchor': 'x3',
+            },
+            'yaxis2': {
+              'domain': [0.35, 0.65],
+              'anchor': 'x2',
+            },
+            'yaxis': {
+              'domain': [0.7, 1],
+            },
+
+          },
+        },
+      }
+
+      for ori in dat:
+        d['scan_varying_orientation']['data'].extend([
+          {
+            'x': ori['phi'],
+            'y': ori['phi1'],
+            'type': 'scatter',
+            'name': 'Φ1',
+          },
+          {
+            'x': ori['phi'],
+            'y': ori['phi2'],
+            'type': 'scatter',
+            'name': 'Φ2',
+            'xaxis': 'x2',
+            'yaxis': 'y2',
+          },
+          {
+            'x': ori['phi'],
+            'y': ori['phi3'],
+            'type': 'scatter',
+            'name': 'Φ3',
+            'xaxis': 'x3',
+            'yaxis': 'y3',
+          }])
+      return d
 
 
 class StrongSpotsAnalyser(object):
@@ -1748,33 +2053,39 @@ class ReferenceProfileAnalyser(object):
 class Analyser(object):
   ''' Helper class to do all the analysis. '''
 
-  def __init__(self, html_filename, json_filename,
-               grid_size=None, pixels_per_bin=10, centroid_diff_max=1.5):
+  def __init__(self, params, grid_size=None, centroid_diff_max=1.5):
     ''' Setup the analysers. '''
-    from os.path import join
-    self.html_filename = html_filename
-    self.json_filename = json_filename
+    self.params = params
     self.analysers = [
       StrongSpotsAnalyser(),
       CentroidAnalyser(
-        grid_size=grid_size, pixels_per_bin=pixels_per_bin,
+        grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin,
           centroid_diff_max=centroid_diff_max),
       BackgroundAnalyser(
-         grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+         grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin),
       IntensityAnalyser(
-        grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+        grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin),
       ReferenceProfileAnalyser(
-        grid_size=grid_size, pixels_per_bin=pixels_per_bin),
+        grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin),
     ]
 
-  def __call__(self, rlist):
+  def __call__(self, rlist=None, experiments=None):
     ''' Do all the analysis. '''
     from copy import deepcopy
     json_data = OrderedDict()
-    for analyse in self.analysers:
-      result = analyse(deepcopy(rlist))
-      if result is not None:
-        json_data.update(result)
+
+    if rlist is not None:
+      for analyse in self.analysers:
+        result = analyse(deepcopy(rlist))
+        if result is not None:
+          json_data.update(result)
+    else:
+      json_data.update(
+        {'strong': {}, 'centroid': {}, 'intensity': {}, 'reference': {}})
+
+    if experiments is not None:
+      analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
+      json_data.update(analyse(experiments))
 
     import json
     json_str = json.dumps(json_data)
@@ -1906,6 +2217,23 @@ body {
         <!-- <div class="panel-footer"></div> -->
       </div>
     </div>
+    <div class="panel panel-default">
+      <div class="panel-heading" data-toggle="collapse" href="#collapse5">
+        <h4 class="panel-title">
+          <a>Analysis of scan-varying crystal model</a>
+        </h4>
+      </div>
+      <div id="collapse5" class="panel-collapse collapse">
+        <div class="panel-body">
+
+          <div class="container-fluid">
+            %(scan_varying_graph_divs)s
+          </div>
+
+        </div>
+        <!-- <div class="panel-footer"></div> -->
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1917,16 +2245,17 @@ body {
       'centroid_graph_divs': '\n            '.join(graph_divs['centroid']),
       'intensity_graph_divs': '\n            '.join(graph_divs['intensity']),
       'reference_graph_divs': '\n            '.join(graph_divs['reference']),
+      'scan_varying_graph_divs': '\n            '.join(graph_divs['scan_varying']),
       'script': '\n'.join(javascript)}
 
     html = '\n'.join([html_header, html_body])
 
-    if self.json_filename is not None:
-      with open(self.json_filename, 'wb') as f:
+    if self.params.output.json is not None:
+      with open(self.params.output.json, 'wb') as f:
         print >> f, json_str
 
-    if self.html_filename is not None:
-      with open(self.html_filename, 'wb') as f:
+    if self.params.output.html is not None:
+      with open(self.params.output.html, 'wb') as f:
         print >> f, html.encode('ascii', 'xmlcharrefreplace')
 
 
@@ -1944,38 +2273,36 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       read_reflections=True,
+      read_experiments=True,
       epilog=help_message)
-
-    self.parser.add_option(
-      '--xkcd',
-      action='store_true',
-      dest='xkcd',
-      default=False,
-      help='Special drawing mode')
 
   def run(self):
     ''' Run the script. '''
     from dials.util.command_line import Command
     from libtbx.utils import Sorry
+    from dials.util.options import flatten_reflections, flatten_experiments
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
 
-    if options.xkcd:
-      from matplotlib import pyplot
-      pyplot.xkcd()
-
     # Shoe the help
-    if len(params.input.reflections) != 1:
+    if len(params.input.reflections) != 1 and not len(params.input.experiments):
       self.parser.print_help()
       exit(0)
 
+    from dials.util.options import flatten_reflections, flatten_experiments
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
+
     # Analyse the reflections
-    analyse = Analyser(
-      params.output.html, params.output.json, grid_size=params.grid_size,
-      pixels_per_bin=params.pixels_per_bin,
+    analyse = Analyser(params, grid_size=params.grid_size,
       centroid_diff_max=params.centroid_diff_max)
-    analyse(params.input.reflections[0].data)
+    if len(reflections):
+      reflections = reflections[0]
+    else:
+      reflections = None
+
+    analyse(reflections, experiments)
 
 
 if __name__ == '__main__':
