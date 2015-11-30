@@ -414,6 +414,8 @@ class ScanVaryingCrystalAnalyser(object):
           'xaxis': 'x3',
           'yaxis': 'y7',
         }])
+    if not len(dat):
+      return {}
     return d
 
   def plot_orientation(self, experiments):
@@ -457,66 +459,68 @@ class ScanVaryingCrystalAnalyser(object):
           print msg.format(*line)
       dat.append(angle_dat)
 
-      d = {
-        'scan_varying_orientation': {
-          'data': [],
-          'layout': {
-            'title': 'Scan-varying orientation parameters',
-            'xaxis3': {
-              'domain': [0, 1],
-              'anchor': 'y3',
-              'title': 'rotation angle (°)',
-            },
-            'xaxis2': {
-              'domain': [0, 1],
-              'anchor': 'y3',
-            },
-            'xaxis': {
-              'domain': [0, 1],
-              'anchor': 'y3',
-            },
-
-            'yaxis3': {
-              'domain': [0, 0.3],
-              'anchor': 'x3',
-            },
-            'yaxis2': {
-              'domain': [0.35, 0.65],
-              'anchor': 'x2',
-            },
-            'yaxis': {
-              'domain': [0.7, 1],
-            },
-
+    d = {
+      'scan_varying_orientation': {
+        'data': [],
+        'layout': {
+          'title': 'Scan-varying orientation parameters',
+          'xaxis3': {
+            'domain': [0, 1],
+            'anchor': 'y3',
+            'title': 'rotation angle (°)',
           },
+          'xaxis2': {
+            'domain': [0, 1],
+            'anchor': 'y3',
+          },
+          'xaxis': {
+            'domain': [0, 1],
+            'anchor': 'y3',
+          },
+
+          'yaxis3': {
+            'domain': [0, 0.3],
+            'anchor': 'x3',
+          },
+          'yaxis2': {
+            'domain': [0.35, 0.65],
+            'anchor': 'x2',
+          },
+          'yaxis': {
+            'domain': [0.7, 1],
+          },
+
         },
-      }
+      },
+    }
 
-      for ori in dat:
-        d['scan_varying_orientation']['data'].extend([
-          {
-            'x': ori['phi'],
-            'y': ori['phi1'],
-            'type': 'scatter',
-            'name': 'Φ1 (°)',
-          },
-          {
-            'x': ori['phi'],
-            'y': ori['phi2'],
-            'type': 'scatter',
-            'name': 'Φ2 (°)',
-            'xaxis': 'x2',
-            'yaxis': 'y2',
-          },
-          {
-            'x': ori['phi'],
-            'y': ori['phi3'],
-            'type': 'scatter',
-            'name': 'Φ3 (°)',
-            'xaxis': 'x3',
-            'yaxis': 'y3',
-          }])
-      return d
+    for ori in dat:
+      d['scan_varying_orientation']['data'].extend([
+        {
+          'x': ori['phi'],
+          'y': ori['phi1'],
+          'type': 'scatter',
+          'name': 'Φ1 (°)',
+        },
+        {
+          'x': ori['phi'],
+          'y': ori['phi2'],
+          'type': 'scatter',
+          'name': 'Φ2 (°)',
+          'xaxis': 'x2',
+          'yaxis': 'y2',
+        },
+        {
+          'x': ori['phi'],
+          'y': ori['phi3'],
+          'type': 'scatter',
+          'name': 'Φ3 (°)',
+          'xaxis': 'x3',
+          'yaxis': 'y3',
+        }])
+    if not len(dat):
+      return {}
+    return d
 
 
 class StrongSpotsAnalyser(object):
