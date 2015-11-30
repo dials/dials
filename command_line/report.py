@@ -235,7 +235,7 @@ class StrongSpotsAnalyser(object):
     # Check we have the required fields
     print "Analysing strong spots"
     if not ensure_required(rlist, self.required):
-      return
+      return {'strong': {}}
 
     # Remove I_sigma <= 0
     selection = rlist['intensity.sum.variance'] <= 0
@@ -357,7 +357,7 @@ class CentroidAnalyser(object):
     # Check we have the required fields
     print "Analysing reflection centroids"
     if not ensure_required(rlist, self.required):
-      return
+      return {'centroid': {}}
 
     # Remove I_sigma <= 0
     selection = rlist['intensity.sum.variance'] <= 0
@@ -1177,7 +1177,7 @@ class IntensityAnalyser(object):
     # Check we have the required fields
     print "Analysing reflection intensities"
     if not ensure_required(rlist, self.required):
-      return
+      return {'intensity': {}}
 
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
@@ -1195,7 +1195,7 @@ class IntensityAnalyser(object):
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
     if mask.count(True) == 0:
-      return
+      return {'intensity': {}}
 
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
@@ -1402,7 +1402,7 @@ class ReferenceProfileAnalyser(object):
     # Check we have the required fields
     print "Analysing reference profiles"
     if not ensure_required(rlist, self.required):
-      return
+      return {'reference': {}}
 
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
