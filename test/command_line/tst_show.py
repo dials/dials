@@ -13,9 +13,10 @@ def run():
 
   path = os.path.join(dials_regression, "experiment_test_data")
 
-  cmd = "dials.show_models %s/experiment_1.json" %path
+  cmd = "dials.show %s/experiment_1.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert not show_diff("\n".join(result.stdout_lines[6:]), """\
+Experiment 0:
 Detector:
 Panel:
   pixel_size:{0.172,0.172}
@@ -27,6 +28,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
+Max resolution: 1.008178
 
 Beam:
     wavelength: 0.9795
@@ -56,11 +58,12 @@ Crystal:
                 {-0.0000,  0.0000,  0.0252}}
     A = UB:    {{ 0.0197, -0.0127, -0.0034},
                 {-0.0043, -0.0008, -0.0248},
-                { 0.0124,  0.0200, -0.0032}}""", strip_trailing_whitespace=True)
+                { 0.0124,  0.0200, -0.0032}}
+""", strip_trailing_whitespace=True)
 
   path = os.path.join(
     dials_regression, "indexing_test_data", "i04_weak_data")
-  cmd = "dials.show_models %s/datablock_orig.json" %path
+  cmd = "dials.show %s/datablock_orig.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert not show_diff("\n".join(result.stdout_lines[7:]), """\
 Detector:
@@ -74,6 +77,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-210.76,205.277,-265.27}
+Max resolution: 1.161261
 
 Beam:
     wavelength: 0.97625
@@ -98,7 +102,7 @@ Goniometer:
   import glob
   g = glob.glob(path)
   assert len(g) > 0, path
-  cmd = "dials.show_models %s" %(' '.join(g))
+  cmd = "dials.show %s" %(' '.join(g))
   result = easy_run.fully_buffered(cmd).raise_if_errors()
 
   assert (
@@ -116,6 +120,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
+Max resolution: 1.008375
 
 Beam:
     wavelength: 0.9795

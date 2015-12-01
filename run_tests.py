@@ -98,7 +98,7 @@ tst_list = (
     "$D/test/command_line/tst_reindex.py",
     "$D/test/command_line/tst_rs_mapper.py",
     "$D/test/command_line/tst_show_extensions.py",
-    "$D/test/command_line/tst_show_models.py",
+    "$D/test/command_line/tst_show.py",
     "$D/test/command_line/tst_slice_sweep.py",
     "$D/test/command_line/tst_sort_reflections.py",
     "$D/test/command_line/tst_spot_counts_per_image.py",

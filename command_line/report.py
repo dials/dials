@@ -2327,9 +2327,15 @@ body {
                       u'μ:', '%g' %panel.get_mu()))
         table.append((
           '', 'Fast axis:', latex_vector_template %panel.get_fast_axis(),
-          'Slow axis:', latex_vector_template %panel.get_fast_axis()))
+          'Slow axis:', latex_vector_template %panel.get_slow_axis()))
         table.append((
-          '', 'Origin axis:', latex_vector_template %panel.get_fast_axis()))
+          '', 'Origin:', latex_vector_template %panel.get_origin(),
+          'Distance (mm)', '%.4f' %panel.get_distance()))
+        table.append((
+          '', u'Max resolution (corners) (Å):',
+          '%.2f' %panel.get_max_resolution_at_corners(expt.beam.get_s0()),
+          u'Max resolution (inscribed circle) (Å):',
+          '%.2f' %panel.get_max_resolution_ellipse(expt.beam.get_s0())))
 
       if expt.scan is not None:
         table.append((

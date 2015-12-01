@@ -69,29 +69,30 @@ def run(args):
     parser.print_help()
     exit()
 
-  for detector in experiments.detectors():
-    print detector
-  for beam in experiments.beams():
-    print beam
-  for scan in experiments.scans():
-    print scan
-  for goniometer in experiments.goniometers():
-    print goniometer
-  for crystal in experiments.crystals():
-    crystal.show(show_scan_varying=params.show_scan_varying)
-    if crystal.num_scan_points:
+  for i_expt, expt in enumerate(experiments):
+    print "Experiment %i:" %i_expt
+    print str(expt.detector) + 'Max resolution: %f\n' %(
+      expt.detector.get_max_resolution(expt.beam.get_s0()))
+    print expt.beam
+    if expt.scan is not None:
+      print expt.scan
+    if expt.goniometer is not None:
+      print expt.goniometer
+    expt.crystal.show(show_scan_varying=params.show_scan_varying)
+    if expt.crystal.num_scan_points:
       from scitbx.array_family import flex
       from cctbx import uctbx
       abc = flex.vec3_double()
       angles = flex.vec3_double()
-      for n in range(crystal.num_scan_points):
-        a, b, c, alpha, beta, gamma = crystal.get_unit_cell_at_scan_point(n).parameters()
+      for n in range(expt.crystal.num_scan_points):
+        a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
         abc.append((a, b, c))
         angles.append((alpha, beta, gamma))
       a, b, c = abc.mean()
       alpha, beta, gamma = angles.mean()
       mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
       print "  Average unit cell: %s" %mean_unit_cell
+    print
 
   for datablock in datablocks:
     if datablock.format_class() is not None:
@@ -100,7 +101,9 @@ def run(args):
     for imageset in imagesets:
       try: print imageset.get_template()
       except Exception: pass
-      print imageset.get_detector()
+      detector = imageset.get_detector()
+      print str(detector) + 'Max resolution: %f\n' %(
+        detector.get_max_resolution(imageset.get_beam().get_s0()))
       print imageset.get_beam()
       if imageset.get_scan() is not None:
         print imageset.get_scan()

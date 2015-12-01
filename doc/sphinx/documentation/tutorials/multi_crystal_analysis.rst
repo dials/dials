@@ -69,7 +69,7 @@ With a single command we have determined that there are 73 individual sweeps
 comprising 2711 total images. Running the following command will give us
 information about each one of these datasets::
 
-  dials.show_models datablock.json
+  dials.show datablock.json
 
 That was a smooth start, but now things get abruptly more difficult.
 Before we perform the joint analysis, we want to do the individual analysis
@@ -675,9 +675,9 @@ to the final :file:`combined_reflections.pickle`::
   Saving combined reflections to combined_reflections.pickle
 
 We may also inspect the contents of :file:`combined_experiments.json`, by using
-:program:`dials.show_models`, for example::
+:program:`dials.show`, for example::
 
-  dials.show_models combined_experiments.json
+  dials.show combined_experiments.json
 
 Useful though this is, it is clear how this could become unwieldy as the number
 of experiments increases. Work on better interfaces to multi-crystal (or

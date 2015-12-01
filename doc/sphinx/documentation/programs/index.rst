@@ -23,7 +23,7 @@ Utilities:
 .. toctree::
    :maxdepth: 1
 
-   dials_show_models
+   dials_show
    dials_image_viewer
    dials_reciprocal_lattice_viewer
    dials_generate_mask

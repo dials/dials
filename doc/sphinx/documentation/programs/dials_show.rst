@@ -1,15 +1,15 @@
-dials.show_models
-=================
+dials.show
+==========
 
 Introduction
 ------------
 
-.. python_string:: dials.command_line.show_models.help_message
+.. python_string:: dials.command_line.show.help_message
 
 Basic parameters
 ----------------
 
-.. phil:: dials.command_line.show_models.phil_scope
+.. phil:: dials.command_line.show.phil_scope
    :expert-level: 0
    :attributes-level: 0
 
@@ -17,6 +17,6 @@ Basic parameters
 Full parameter definitions
 --------------------------
 
-.. phil:: dials.command_line.show_models.phil_scope
+.. phil:: dials.command_line.show.phil_scope
    :expert-level: 2
    :attributes-level: 2

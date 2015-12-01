@@ -1680,7 +1680,7 @@ class Console(Cmd):
       filename = self.controller.get_models()
       if filename is None:
         raise RuntimeError('No models to show')
-      subprocess.call('dials.show_models %s' % filename, shell=True)
+      subprocess.call('dials.show %s' % filename, shell=True)
     except Exception, e:
       print_error(e)
 

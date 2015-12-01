@@ -41,7 +41,7 @@ With that in place, we start as usual by importing the dataset::
 The fact that the multiple panel detector model was used is clear from the
 output of::
 
-  dials.show_models datablock.json
+  dials.show datablock.json
 
 We can now inspect images from the dataset with::
 
