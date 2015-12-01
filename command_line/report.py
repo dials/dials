@@ -2087,13 +2087,14 @@ class Analyser(object):
       json_data.update(
         {'strong': {}, 'centroid': {}, 'intensity': {}, 'reference': {}})
 
+    experiments_html = ''
     if experiments is not None:
       analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
       json_data.update(analyse(experiments))
+      experiments_html = self.experiments_html(experiments)
 
     import json
     json_str = json.dumps(json_data)
-
 
     if self.params.output.html is not None:
       javascript = ['var graphs = %s' %(json_str)]
@@ -2121,7 +2122,15 @@ class Analyser(object):
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      scale: 90,
+      minScaleAdjust: 50
+    }
+});
+</script>
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 <style type="text/css">
 
 body {
@@ -2139,6 +2148,9 @@ body {
   margin-bottom: 20px;
 }
 
+.MathJax_Display {
+  text-align: left !important;
+}
 </style>
 
 </head>
@@ -2151,6 +2163,43 @@ body {
 
 <div class="page-header">
   <h1>DIALS analysis report</h1>
+</div>
+
+
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading" data-toggle="collapse" href="#collapse_expt">
+      <h4 class="panel-title">
+        <a>Experiments</a>
+      </h4>
+    </div>
+    <div id="collapse_expt" class="panel-collapse collapse in">
+
+      <div class="table-responsive">
+        %(experiments_html)s
+      </div>
+
+      <div class="panel-group">
+        <div class="panel panel-default">
+          <div class="panel-heading" data-toggle="collapse" href="#collapse5">
+            <h4 class="panel-title">
+              <a>Analysis of scan-varying crystal model</a>
+            </h4>
+          </div>
+          <div id="collapse5" class="panel-collapse collapse">
+            <div class="panel-body">
+
+              <div class="container-fluid">
+                %(scan_varying_graph_divs)s
+              </div>
+
+            </div>
+            <!-- <div class="panel-footer"></div> -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div >
@@ -2224,23 +2273,6 @@ body {
         <!-- <div class="panel-footer"></div> -->
       </div>
     </div>
-    <div class="panel panel-default">
-      <div class="panel-heading" data-toggle="collapse" href="#collapse5">
-        <h4 class="panel-title">
-          <a>Analysis of scan-varying crystal model</a>
-        </h4>
-      </div>
-      <div id="collapse5" class="panel-collapse collapse">
-        <div class="panel-body">
-
-          <div class="container-fluid">
-            %(scan_varying_graph_divs)s
-          </div>
-
-        </div>
-        <!-- <div class="panel-footer"></div> -->
-      </div>
-    </div>
   </div>
 </div>
 
@@ -2248,7 +2280,8 @@ body {
 %(script)s
 </script>
 </body>
-''' %{'strong_graph_divs': '\n            '.join(graph_divs['strong']),
+''' %{'experiments_html': experiments_html,
+      'strong_graph_divs': '\n            '.join(graph_divs['strong']),
       'centroid_graph_divs': '\n            '.join(graph_divs['centroid']),
       'intensity_graph_divs': '\n            '.join(graph_divs['intensity']),
       'reference_graph_divs': '\n            '.join(graph_divs['reference']),
@@ -2265,6 +2298,88 @@ body {
       print "Writing json data to: %s" %self.params.output.json
       with open(self.params.output.json, 'wb') as f:
         print >> f, json_str
+
+  def experiments_html(self, experiments):
+    assert experiments is not None
+
+    table = []
+
+    latex_vector_template \
+      = r'$$\left( \begin{array}{rrr} %5.4f & %5.4f & %5.4f \end{array} \right)$$'
+    latex_matrix_template = '\n'.join((
+      r'$$\left( \begin{array}{rrr}',
+      r'%5.4f & %5.4f & %5.4f \\',
+      r'%5.4f & %5.4f & %5.4f \\',
+      r'%5.4f & %5.4f & %5.4f \end{array} \right)$$'))
+    latex_unit_cell_template \
+      = r'$$\left( \begin{array}{cccccc} %5.3f & %5.3f & %5.3f & %5.3f & %5.3f & %5.3f \end{array}\right)$$'
+
+    for expt in experiments:
+      for panel_id, panel in enumerate(expt.detector):
+        table.append((
+          '<strong>Panel %i</strong>:' %(panel_id+1),
+          'Pixel size (mm):', '%.4f, %.4f' %panel.get_pixel_size(),
+          'Image size (pixels):', '%i, %i' %panel.get_image_size()))
+        table.append((
+          '', 'Trusted range:', '%g, %g' %panel.get_trusted_range(),
+          'Thickness (mm):', '%g' %panel.get_thickness()))
+        table.append(('', 'Material:', '%s' %panel.get_material(),
+                      u'μ:', '%g' %panel.get_mu()))
+        table.append((
+          '', 'Fast axis:', latex_vector_template %panel.get_fast_axis(),
+          'Slow axis:', latex_vector_template %panel.get_fast_axis()))
+        table.append((
+          '', 'Origin axis:', latex_vector_template %panel.get_fast_axis()))
+
+      if expt.scan is not None:
+        table.append((
+          '<strong>Scan:</strong>', 'Image range:', '%i, %i' %expt.scan.get_image_range(),
+          'Oscillation:', '%i, %i' %expt.scan.get_oscillation()))
+
+      if expt.goniometer is not None:
+        table.append((
+          '<strong>Goniometer:</strong>', 'Rotation axis:',
+          latex_vector_template %expt.goniometer.get_rotation_axis()))
+        table.append((
+          '', 'Fixed rotation:',
+          latex_matrix_template %expt.goniometer.get_fixed_rotation(),
+          'Setting rotation:',
+            latex_matrix_template %expt.goniometer.get_setting_rotation()))
+
+      uc = expt.crystal.get_unit_cell().parameters()
+      sgi = expt.crystal.get_space_group().info()
+      umat = latex_matrix_template %expt.crystal.get_U().elems
+      bmat = latex_matrix_template %expt.crystal.get_B().elems
+      amat = latex_matrix_template %expt.crystal.get_A().elems
+      table.append(('<strong>Crystal:</strong>', 'Space group:', sgi.symbol_and_number(),
+                    'Unit cell:', latex_unit_cell_template %uc))
+      table.append(('', 'U matrix:', '%s' %umat, 'B matrix:', '%s' %bmat))
+      table.append(('', 'A = UB:', '%s' %amat))
+      if expt.crystal.num_scan_points > 0:
+        from cctbx import uctbx
+        abc = flex.vec3_double()
+        angles = flex.vec3_double()
+        for n in range(expt.crystal.num_scan_points):
+          a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
+          abc.append((a, b, c))
+          angles.append((alpha, beta, gamma))
+        a, b, c = abc.mean()
+        alpha, beta, gamma = angles.mean()
+        mean_uc = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
+        table.append((
+          '', 'A sampled at %i scan points' %expt.crystal.num_scan_points, '',
+          'Average unit cell:', latex_unit_cell_template %mean_uc.parameters()))
+
+    # ensure all the rows are the same length
+    for i_row in range(len(table)):
+      while len(table[i_row]) < 5:
+        table[i_row] = list(table[i_row]) + ['']
+
+    from xia2.lib.tabulate import tabulate
+    experiments_html = tabulate(table, tablefmt='html')
+    experiments_html = experiments_html.replace(
+      '<table>', '<table class="table table-hover table-condensed">')
+    return experiments_html
 
 
 class Script(object):
