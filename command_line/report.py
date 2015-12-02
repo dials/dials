@@ -2087,11 +2087,13 @@ class Analyser(object):
       json_data.update(
         {'strong': {}, 'centroid': {}, 'intensity': {}, 'reference': {}})
 
-    experiments_html = ''
+    crystal_html = ''
+    experimental_geometry_html = ''
     if experiments is not None:
       analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
       json_data.update(analyse(experiments))
-      experiments_html = self.experiments_html(experiments)
+      crystal_html, experimental_geometry_html = self.experiments_html(
+        experiments)
 
     import json
     json_str = json.dumps(json_data)
@@ -2176,10 +2178,27 @@ body {
     <div id="collapse_expt" class="panel-collapse collapse in">
 
       <div class="table-responsive">
-        %(experiments_html)s
+        %(crystal_html)s
       </div>
 
       <div class="panel-group">
+        <div class="panel panel-default">
+          <div class="panel-heading" data-toggle="collapse" href="#collapse_expts">
+            <h4 class="panel-title">
+              <a>Experimental geometry</a>
+            </h4>
+          </div>
+          <div id="collapse_expts" class="panel-collapse collapse">
+            <div class="panel-body">
+
+              <div class="table-responsive">
+                %(experimental_geometry_html)s
+              </div>
+
+            </div>
+            <!-- <div class="panel-footer"></div> -->
+          </div>
+        </div>
         <div class="panel panel-default">
           <div class="panel-heading" data-toggle="collapse" href="#collapse5">
             <h4 class="panel-title">
@@ -2280,7 +2299,8 @@ body {
 %(script)s
 </script>
 </body>
-''' %{'experiments_html': experiments_html,
+''' %{'crystal_html': crystal_html,
+      'experimental_geometry_html': experimental_geometry_html,
       'strong_graph_divs': '\n            '.join(graph_divs['strong']),
       'centroid_graph_divs': '\n            '.join(graph_divs['centroid']),
       'intensity_graph_divs': '\n            '.join(graph_divs['intensity']),
@@ -2302,7 +2322,8 @@ body {
   def experiments_html(self, experiments):
     assert experiments is not None
 
-    table = []
+    crystal_table = []
+    expt_geom_table = []
 
     latex_vector_template \
       = r'$$\left( \begin{array}{rrr} %5.4f & %5.4f & %5.4f \end{array} \right)$$'
@@ -2316,37 +2337,37 @@ body {
 
     for expt in experiments:
       for panel_id, panel in enumerate(expt.detector):
-        table.append((
+        expt_geom_table.append((
           '<strong>Panel %i</strong>:' %(panel_id+1),
           'Pixel size (mm):', '%.4f, %.4f' %panel.get_pixel_size(),
           'Image size (pixels):', '%i, %i' %panel.get_image_size()))
-        table.append((
+        expt_geom_table.append((
           '', 'Trusted range:', '%g, %g' %panel.get_trusted_range(),
           'Thickness (mm):', '%g' %panel.get_thickness()))
-        table.append(('', 'Material:', '%s' %panel.get_material(),
+        expt_geom_table.append(('', 'Material:', '%s' %panel.get_material(),
                       u'μ:', '%g' %panel.get_mu()))
-        table.append((
+        expt_geom_table.append((
           '', 'Fast axis:', latex_vector_template %panel.get_fast_axis(),
           'Slow axis:', latex_vector_template %panel.get_slow_axis()))
-        table.append((
+        expt_geom_table.append((
           '', 'Origin:', latex_vector_template %panel.get_origin(),
           'Distance (mm)', '%.4f' %panel.get_distance()))
-        table.append((
+        expt_geom_table.append((
           '', u'Max resolution (corners) (Å):',
           '%.2f' %panel.get_max_resolution_at_corners(expt.beam.get_s0()),
           u'Max resolution (inscribed circle) (Å):',
           '%.2f' %panel.get_max_resolution_ellipse(expt.beam.get_s0())))
 
       if expt.scan is not None:
-        table.append((
+        expt_geom_table.append((
           '<strong>Scan:</strong>', 'Image range:', '%i, %i' %expt.scan.get_image_range(),
           'Oscillation:', '%i, %i' %expt.scan.get_oscillation()))
 
       if expt.goniometer is not None:
-        table.append((
+        expt_geom_table.append((
           '<strong>Goniometer:</strong>', 'Rotation axis:',
           latex_vector_template %expt.goniometer.get_rotation_axis()))
-        table.append((
+        expt_geom_table.append((
           '', 'Fixed rotation:',
           latex_matrix_template %expt.goniometer.get_fixed_rotation(),
           'Setting rotation:',
@@ -2357,10 +2378,10 @@ body {
       umat = latex_matrix_template %expt.crystal.get_U().elems
       bmat = latex_matrix_template %expt.crystal.get_B().elems
       amat = latex_matrix_template %expt.crystal.get_A().elems
-      table.append(('<strong>Crystal:</strong>', 'Space group:', sgi.symbol_and_number(),
+      crystal_table.append(('<strong>Crystal:</strong>', 'Space group:', sgi.symbol_and_number(),
                     'Unit cell:', latex_unit_cell_template %uc))
-      table.append(('', 'U matrix:', '%s' %umat, 'B matrix:', '%s' %bmat))
-      table.append(('', 'A = UB:', '%s' %amat))
+      crystal_table.append(('', 'U matrix:', '%s' %umat, 'B matrix:', '%s' %bmat))
+      crystal_table.append(('', 'A = UB:', '%s' %amat))
       if expt.crystal.num_scan_points > 0:
         from cctbx import uctbx
         abc = flex.vec3_double()
@@ -2372,20 +2393,26 @@ body {
         a, b, c = abc.mean()
         alpha, beta, gamma = angles.mean()
         mean_uc = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
-        table.append((
+        crystal_table.append((
           '', 'A sampled at %i scan points' %expt.crystal.num_scan_points, '',
           'Average unit cell:', latex_unit_cell_template %mean_uc.parameters()))
 
     # ensure all the rows are the same length
-    for i_row in range(len(table)):
-      while len(table[i_row]) < 5:
-        table[i_row] = list(table[i_row]) + ['']
+    for table in (expt_geom_table, crystal_table):
+      for i_row in range(len(table)):
+        while len(table[i_row]) < 5:
+          table[i_row] = list(table[i_row]) + ['']
 
     from xia2.lib.tabulate import tabulate
-    experiments_html = tabulate(table, tablefmt='html')
-    experiments_html = experiments_html.replace(
+    experimental_geometry_html = tabulate(expt_geom_table, tablefmt='html')
+    experimental_geometry_html = experimental_geometry_html.replace(
       '<table>', '<table class="table table-hover table-condensed">')
-    return experiments_html
+
+    crystal_html = tabulate(crystal_table, tablefmt='html')
+    crystal_html = crystal_html.replace(
+      '<table>', '<table class="table table-hover table-condensed">')
+
+    return crystal_html, experimental_geometry_html
 
 
 class Script(object):
