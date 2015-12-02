@@ -202,7 +202,7 @@ namespace gaussian_rs {
           double sigma_m)
       : s0_(beam.get_s0()),
         sigma_m_(sigma_m) {
-      DIALS_ASSERT(sigma_m > 0.0);
+      DIALS_ASSERT(sigma_m >= 0.0);
     }
 
     /**
@@ -223,7 +223,7 @@ namespace gaussian_rs {
       // FIXME This is a placeholder
 
       // Return the fraction recorded
-      return 0.5;
+      return 1.0;
     }
 
     /**

@@ -391,9 +391,9 @@ namespace gaussian_rs {
       : detector_(detector),
         s0_(beam.get_s0()) {
       DIALS_ASSERT(delta_b > 0.0);
-      DIALS_ASSERT(delta_m > 0.0);
+      DIALS_ASSERT(delta_m >= 0.0);
       delta_b_r_ = 1.0 / delta_b;
-      delta_m_r_ = 1.0 / delta_m;
+      //delta_m_r_ = 1.0 / delta_m;
     }
 
     /**

@@ -275,7 +275,7 @@ namespace gaussian_rs {
         detector_(detector),
         delta_divergence_(delta_divergence) {
       DIALS_ASSERT(delta_divergence > 0.0);
-      DIALS_ASSERT(delta_mosaicity > 0.0);
+      DIALS_ASSERT(delta_mosaicity >= 0.0);
     }
 
     /**

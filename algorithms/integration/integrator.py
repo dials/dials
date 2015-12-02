@@ -775,6 +775,29 @@ class IntegratorExecutor(Executor):
     if self.profile_fitter:
       reflections.compute_fitted_intensity(self.profile_fitter)
 
+    # from matplotlib import pylab
+    # from dials.array_family import flex
+    # I = reflections['intensity.sum.value']
+    # F = reflections.get_flags(reflections.flags.integrated_sum)
+    # A = flex.size_t(range(len(reflections)))
+    # A = A.select(F)
+    # I = I.select(F)
+    # index = flex.max_index(I)
+    # index = A[index]
+    # sbox = reflections['shoebox'][index]
+    # zmin, zmax = sbox.bbox[4:6]
+    # zind = int((zmin + zmax) / 2)
+    # image1 = sbox.background.as_numpy_array().sum(axis=0)
+    # image2 = sbox.data.as_numpy_array().sum(axis=0)
+    # vmin=image1.min()#min([image1.min(), image2.min()])
+    # vmax=image1.max()#min([image1.max(), image2.max()])
+    # print image1.min(), image1.max(), image2.min(), image2.max()
+    # pylab.subplot(121)
+    # pylab.imshow(image1, interpolation='none', vmin=vmin, vmax=vmax)
+    # pylab.subplot(122)
+    # pylab.imshow(image2, interpolation='none', vmin=vmin, vmax=vmax)
+    # pylab.show()
+
     # Compute the number of background/foreground pixels
     sbox = reflections['shoebox']
     code1 = MaskCode.Valid
@@ -1253,6 +1276,11 @@ class IntegratorFactory(object):
       IntegratorClass = IntegratorStills
     else:
       raise RuntimeError("Unknown integration type")
+
+    # Remove scan if stills
+    if experiments.all_stills():
+      for experiment in experiments:
+        experiment.scan = None
 
     # Return an instantiation of the class
     return IntegratorClass(

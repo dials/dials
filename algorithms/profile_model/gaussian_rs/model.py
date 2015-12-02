@@ -89,7 +89,7 @@ class Model(ProfileModelIface):
       assert(len(self._sigma_b) == len(self._sigma_m))
     else:
       assert(self._sigma_b > 0)
-      assert(self._sigma_m > 0)
+      assert(self._sigma_m >= 0)
       assert(self._n_sigma > 0)
 
   @classmethod
@@ -276,6 +276,7 @@ class Model(ProfileModelIface):
 
     '''
     from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
+    from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
     # Create the partiality calculator
     calculate = PartialityCalculator(
@@ -396,13 +397,19 @@ class Model(ProfileModelIface):
 
     '''
 
+    # No profile fitting if sigma_m is bad
+    if self.sigma_m() == 0:
+      return None
+
     # Define a function to create the fitting class
     def wrapper(experiment):
       from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
       from math import ceil
 
       # Return if no scan or gonio
-      if experiment.scan is None or experiment.goniometer is None:
+      if (experiment.scan is None or
+          experiment.goniometer is None or
+          experiment.scan.get_oscillation()[1] == 0):
         return None
 
       # Compute the scan step

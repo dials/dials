@@ -9,7 +9,7 @@ from model import Model             # implicit dependency
 
 def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
   ''' Return the relavent bbox calculator. '''
-  if goniometer is None or scan is None:
+  if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
     algorithm = BBoxCalculator2D(
       beam,
       detector,
@@ -28,7 +28,7 @@ def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
 
 def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
   ''' Return the relavent partiality calculator. '''
-  if goniometer is None or scan is None:
+  if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
     print "WARNING: Stills partiality is currently a placeholder"
     algorithm = PartialityCalculator2D(
       beam,
@@ -44,7 +44,7 @@ def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
 
 def MaskCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
   ''' Return the relavent partiality calculator. '''
-  if goniometer is None or scan is None:
+  if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
     algorithm = MaskCalculator2D(
       beam,
       detector,

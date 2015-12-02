@@ -260,8 +260,8 @@ class ProfileModelCalculator(object):
     self._sigma_b = beam_divergence.sigma()
 
     # FIXME Calculate properly
-    if goniometer is None or scan is None:
-      self._sigma_m = 0.00001
+    if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
+      self._sigma_m = 0.0
     else:
 
       # Select by zeta
