@@ -115,8 +115,10 @@ dBT_dp = [dB.transpose() for dB in dB_dp]
 # calculate d[O]/dp
 dO_dp = [-O * dBT * O for dBT in dBT_dp]
 
-# d[alpha]/d[a_i] and d[alpha]/d[b_i]
-dalpha = AngleDerivativeWrtVectorElts(avec, bvec)
+# objects to get derivative of angles wrt vectors
+dalpha = AngleDerivativeWrtVectorElts(bvec, cvec)
+dbeta = AngleDerivativeWrtVectorElts(avec, cvec)
+dgamma = AngleDerivativeWrtVectorElts(avec, bvec)
 
 # get all FD derivatives
 fd_grad = check_fd_gradients(xluc_param)
@@ -191,16 +193,22 @@ for i, dO in enumerate(dO_dp):
   #daa_dp /= (b * b * c * c)
   #daa_dp *= -RAD2DEG / (sqrt(1 - z**2))
 
-  dalpha_da = dalpha.derivative_wrt_u()
-  dalpha_db = dalpha.derivative_wrt_v()
+  # Here we know the derivatives of the angle alpha with respect to elements
+  # of the vectors a and b. We know these expressions are correct because they
+  # are tested in tst_angle_derivatives_wrt_vector_elts.py
+  dalpha_db = dalpha.derivative_wrt_u()
+  dalpha_dc = dalpha.derivative_wrt_v()
+  dbeta_da = dbeta.derivative_wrt_u()
+  dbeta_dc = dbeta.derivative_wrt_v()
+  dgamma_da = dgamma.derivative_wrt_u()
+  dgamma_db = dgamma.derivative_wrt_v()
 
   # why is this wrong?
-  daa_dp = RAD2DEG * dav_dp.dot(dalpha_da) + dbv_dp.dot(dalpha_db)
+  daa_dp = RAD2DEG * dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc)
+  dbb_dp = RAD2DEG * dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc)
+  dcc_dp = RAD2DEG * dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db)
 
-  print "d[alpha]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grad[i]['daa_dp'], i)
-  print
-
-  # only orthogonal changes are relevant
+  # because only orthogonal changes are relevant?
   ua = avec.normalize()
   if dav_dp.length() < 1e-10:
     ortho_dav_dp = matrix.col((0, 0, 0))
@@ -217,11 +225,25 @@ for i, dO in enumerate(dO_dp):
     u = v.cross(ub).normalize()
     ortho_dbv_dp = dbv_dp.dot(u) * u
 
+  uc = cvec.normalize()
+  if dcv_dp.length() < 1e-10:
+    ortho_dcv_dp = matrix.col((0, 0, 0))
+  else:
+    v = cvec.cross(dcv_dp).normalize()
+    u = v.cross(uc).normalize()
+    ortho_dcv_dp = dcv_dp.dot(u) * u
 
-  daa_dp = ortho_dav_dp.dot(dalpha_da) + ortho_dbv_dp.dot(dalpha_db)
+  daa_dp = RAD2DEG * (ortho_dbv_dp.dot(dalpha_db) + ortho_dcv_dp.dot(dalpha_dc))
+  dbb_dp = RAD2DEG * (ortho_dav_dp.dot(dbeta_da) + ortho_dcv_dp.dot(dbeta_dc))
+  dcc_dp = RAD2DEG * (ortho_dav_dp.dot(dgamma_da) + ortho_dbv_dp.dot(dgamma_db))
 
-  #print "analytical daa_dp", daa_dp * RAD2DEG
-  #print "FD daa_dp", fd_grad[i]['daa_dp']
+  print "d[alpha]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grad[i]['daa_dp'], i)
+  print "d[beta]/dp{2} analytical: {0} FD: {1}".format(dbb_dp, fd_grad[i]['dbb_dp'], i)
+  print "d[gamma]/dp{2} analytical: {0} FD: {1}".format(dcc_dp, fd_grad[i]['dcc_dp'], i)
+
+  #print "analytical dcc_dp", dcc_dp * RAD2DEG
+  #print "FD dcc_dp", fd_grad[i]['dcc_dp']
+  #print
 
 # enter interactive console
-from dials.util.command_line import interactive_console; interactive_console()
+#from dials.util.command_line import interactive_console; interactive_console()
