@@ -3,7 +3,9 @@ from __future__ import division
 import sys, os
 from libtbx.phil import command_line, parse
 
-"""Utility script to combine multiple reflections and experiments files into
+help_message = '''
+
+Utility script to combine multiple reflections and experiments files into
 one multi-experiment reflections and one experiments file. Experiments are
 matched to reflections in the order they are provided as input.
 
@@ -15,7 +17,15 @@ reference model is a good replacement model.
 
 Although only one reference model of each type is allowed, more complex
 combinations of experiments can be created by repeat runs.
-"""
+
+Examples::
+
+  dials.combine_experiments experiments_0.json experiments_1.json \\
+    reflections_0.pickle reflections_1.pickle \\
+    reference_from_experiment.beam=0 \\
+    reference_from_experiment.detector=0
+
+'''
 
 class CombineWithReference(object):
 
@@ -110,7 +120,8 @@ class Script(object):
       phil=phil_scope,
       read_reflections=True,
       read_experiments=True,
-      check_format=False)
+      check_format=False,
+      epilog=help_message)
 
   def run(self):
     '''Execute the script.'''
