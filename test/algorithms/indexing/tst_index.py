@@ -312,6 +312,7 @@ def exercise_7():
                 "n_macro_cycles=2",
                 "reciprocal_space_grid.d_min=4",
                 "max_cell=70",
+                "max_lattices=4"
                 ]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
