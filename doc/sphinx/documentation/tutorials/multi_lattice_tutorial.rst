@@ -113,11 +113,10 @@ Indexing
 The next step will be indexing of the strong spots. By default only one
 lattice is searched for, but if there are sufficient unindexed reflections
 remaining after indexing the first lattice, we can switch on indexing of
-multiple lattices using the parameter recycle_unindexed_reflections=true
-::
+multiple lattices using the parameter max_lattices=2 (e.g.)::
 
   dials.index datablock.json strong.pickle \
-    recycle_unindexed_reflections=true \
+    max_lattices=2 \
     refinement.reflections.use_all_reflections=true \
     maximum_spot_error=3 maximum_phi_error=2
 
@@ -133,7 +132,7 @@ multiple lattices using the parameter recycle_unindexed_reflections=true
       }
     }
     multiple_lattice_search {
-      recycle_unindexed_reflections = true
+      max_lattices = 2
     }
   }
   refinement {
@@ -247,7 +246,7 @@ P222.
 ::
 
   dials.index datablock.json strong.pickle \
-    recycle_unindexed_reflections=true \
+    max_lattices=2 \
     refinement.reflections.use_all_reflections=true \
     maximum_spot_error=3 maximum_phi_error=2 \
     space_group=P222
@@ -267,7 +266,7 @@ P222.
       }
     }
     multiple_lattice_search {
-      recycle_unindexed_reflections = true
+      max_lattices = 2
     }
   }
   refinement {

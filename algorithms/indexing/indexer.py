@@ -242,10 +242,6 @@ indexing {
     cluster_analysis_search = False
       .type = bool
       .help = "Perform cluster analysis search for multiple lattices."
-    recycle_unindexed_reflections = False
-      .type = bool
-      .help = "Attempt another cycle of indexing on the unindexed reflections "
-              "if enough reflections are unindexed."
     recycle_unindexed_reflections_cutoff = 0.1
       .type = float(value_min=0, value_max=1)
       .help = "Attempt another cycle of indexing on the unindexed reflections "
@@ -253,7 +249,7 @@ indexing {
     minimum_angular_separation = 5
       .type = float(value_min=0)
       .help = "The minimum angular separation (in degrees) between two lattices."
-    max_lattices = None
+    max_lattices = 1
       .type = int
     cluster_analysis {
       method = *dbscan hcluster
@@ -829,9 +825,6 @@ class indexer_base(object):
             self.d_min == self.params.refinement_protocol.d_min_final):
           info("Target d_min_final reached: finished with refinement")
           break
-
-      if not self.params.multiple_lattice_search.recycle_unindexed_reflections:
-        break
 
     if not 'refined_experiments' in locals():
       raise Sorry("None of the experiments could refine.")

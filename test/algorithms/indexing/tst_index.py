@@ -386,8 +386,7 @@ def exercise_10():
                 "detector.fix=all",
                 "maximum_spot_error=3",
                 "maximum_phi_error=2",
-                "recycle_unindexed_reflections=True",
-                "max_lattices=3", #XXX eventually this should not be needed
+                "max_lattices=3",
                 "index_assignment.method=local",
                 "nearest_neighbours=50",
                 ]

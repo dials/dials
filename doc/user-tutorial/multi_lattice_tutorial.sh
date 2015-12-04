@@ -38,7 +38,7 @@ dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
 # index these found spots, searching for multiple lattices
 
 dials.index datablock.json strong.pickle \
-  recycle_unindexed_reflections=true \
+  max_lattices=2 \
   refinement.reflections.use_all_reflections=true \
   maximum_spot_error=3 maximum_phi_error=2
 
@@ -54,7 +54,7 @@ dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=1
 # chosen Bravais setting, in this case number 5, i.e. oP, or point group P222
 
 dials.index datablock.json strong.pickle \
-  recycle_unindexed_reflections=true \
+  max_lattices=2 \
   refinement.reflections.use_all_reflections=true \
   maximum_spot_error=3 maximum_phi_error=2 \
   space_group=P222
