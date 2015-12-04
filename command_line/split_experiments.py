@@ -2,9 +2,16 @@
 from __future__ import division
 from libtbx.phil import parse
 
-"""Utility script to split experiments and reflections from single files into
+help_message = """
+
+Utility script to split experiments and reflections from single files into
 multiple files with one experiment per output experiment file and one
 reflection file per output experiment file.
+
+Example::
+
+  dials.split_experiments combined_experiments.json combined_reflections.pickle
+
 """
 
 class Script(object):
@@ -41,7 +48,8 @@ class Script(object):
       phil=phil_scope,
       read_reflections=True,
       read_experiments=True,
-      check_format=False)
+      check_format=False,
+      epilog=help_message)
 
   def run(self):
     '''Execute the script.'''
