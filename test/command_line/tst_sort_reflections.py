@@ -24,9 +24,8 @@ class Test(object):
 
     input_filename = join(self.path, "integrated.pickle")
 
-    # Call dials.integrate
     easy_run.fully_buffered([
-      'dials.sort_reflections',
+      'dev.dials.sort_reflections',
       input_filename,
       'key=intensity.sum.value',
       'output=sorted1.pickle',
@@ -37,9 +36,8 @@ class Test(object):
     sorted1 = flex.reflection_table.from_pickle("sorted1.pickle")
     self.assert_sorted(sorted1['intensity.sum.value'])
 
-    # Call dials.integrate
     easy_run.fully_buffered([
-      'dials.sort_reflections',
+      'dev.dials.sort_reflections',
       input_filename,
       'output=sorted2.pickle',
       'key=intensity.sum.value',

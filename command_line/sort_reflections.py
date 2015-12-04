@@ -9,7 +9,20 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.sort_reflections
+
 from __future__ import division
+import libtbx.load_env
+
+help_message = '''
+
+Utility script to sort reflection tables by the values in a column.
+
+Example::
+
+  %s key=miller_index output=sorted.pickle
+
+''' % libtbx.env.dispatcher_name
 
 class Sort(object):
   '''A class for running the script.'''
@@ -18,14 +31,13 @@ class Sort(object):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
     from libtbx.phil import parse
-    import libtbx.load_env
 
     phil_scope = parse('''
 
       key = 'miller_index'
         .type = str
-        .help = "The chosen sort key. This should be an attribute of "
-                "the Reflection object."
+        .help = "The chosen sort key. This should be an column of "
+                "the reflection table."
 
       reverse = False
         .type = bool
@@ -41,15 +53,14 @@ class Sort(object):
     usage  = """
       usage: %s [options] reflections.pickle
 
-      Example: %s key=miller_index output=sorted.pickle
-    """ % (libtbx.env.dispatcher_name,
-           libtbx.env.dispatcher_name)
+    """ % libtbx.env.dispatcher_name
 
     # Initialise the base class
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      read_reflections=True)
+      read_reflections=True,
+      epilog=help_message)
 
   def run(self):
     '''Execute the script.'''
