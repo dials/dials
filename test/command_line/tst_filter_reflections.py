@@ -10,7 +10,7 @@
 #
 
 """
-Test command line program dials.filter_reflections by filtering according to
+Test command line program dev.dials.filter_reflections by filtering according to
 certain flags
 
 """
@@ -41,7 +41,7 @@ def test1():
   rt_name = "test_refs.pickle"
   rt.as_pickle(rt_name)
 
-  cmd = "dials.filter_reflections " + rt_name + " inclusions.flag=integrated" + \
+  cmd = "dev.dials.filter_reflections " + rt_name + " inclusions.flag=integrated" + \
     " exclusions.flag=bad_spot"
   print cmd
 
