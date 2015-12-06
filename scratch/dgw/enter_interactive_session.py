@@ -110,6 +110,10 @@ s0_param = BeamParameterisation(mybeam, mygonio)
 xlo_param = CrystalOrientationParameterisation(mycrystal)
 xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
+# TEMPORARY TESTING HERE
+from dials.algorithms.refinement.restraints.restraints import SingleUnitCellTie
+uct = SingleUnitCellTie(xluc_param, [None]*6, [None]*6)
+
 # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
 s0_param.set_fixed([True, False, True])
 

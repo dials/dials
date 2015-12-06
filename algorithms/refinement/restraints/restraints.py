@@ -13,6 +13,7 @@
 from __future__ import division
 from scitbx.array_family import flex
 from math import pi, sin, cos, sqrt
+from dials.algorithms.refinement.refinement_helpers import AngleDerivativeWrtVectorElts
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
@@ -83,6 +84,9 @@ class SingleUnitCellTie(object):
     bb *= DEG2RAD
     cc *= DEG2RAD
     avec, bvec, cvec = self._xlucp.get_model().get_real_space_vectors()
+    ua = avec.normalize()
+    ub = bvec.normalize()
+    uc = cvec.normalize()
 
     # calculate d[B^T]/dp
     dB_dp = self._xlucp.get_ds_dp()
@@ -90,6 +94,17 @@ class SingleUnitCellTie(object):
 
     # calculate d[O]/dp
     dO_dp = [-O * dBT * O for dBT in dBT_dp]
+
+    # objects to get derivative of angles wrt vectors
+    dalpha = AngleDerivativeWrtVectorElts(bvec, cvec)
+    dbeta = AngleDerivativeWrtVectorElts(avec, cvec)
+    dgamma = AngleDerivativeWrtVectorElts(avec, bvec)
+    dalpha_db = dalpha.derivative_wrt_u()
+    dalpha_dc = dalpha.derivative_wrt_v()
+    dbeta_da = dbeta.derivative_wrt_u()
+    dbeta_dc = dbeta.derivative_wrt_v()
+    dgamma_da = dgamma.derivative_wrt_u()
+    dgamma_db = dgamma.derivative_wrt_v()
 
     # XXX DEBUG compare with FD gradients
     fd_grads = self._check_fd_gradients()
@@ -103,7 +118,7 @@ class SingleUnitCellTie(object):
       dbv_dp = matrix.col(dbv_dp)
       dcv_dp = matrix.col(dcv_dp)
 
-      # derivative of cell params wrt p
+      # derivative of cell lengths wrt p
       da_dp = 1./a * avec.dot(dav_dp)
       print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grads[i][0], i)
 
@@ -113,17 +128,37 @@ class SingleUnitCellTie(object):
       dc_dp = 1./c * cvec.dot(dcv_dp)
       print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grads[i][2], i)
 
-      z = bvec.dot(cvec) / (b * c)
-      daa_dp = bvec.dot(cvec) * (db_dp * c + b * dc_dp) - b * c * (dbv_dp.dot(cvec) + bvec.dot(dcv_dp))
-      daa_dp /= (b * b * c * c)
-      daa_dp *= -RAD2DEG / (sqrt(1 - z**2))
-      #daa_dp = -1. * cos(aa) * (db_dp * c + b * dc_dp)
-      #daa_dp += dbv_dp.dot(cvec) + bvec.dot(dcv_dp)
-      #daa_dp *= RAD2DEG / (b*c*sin(aa))
-      print "d[alpha]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grads[i][3], i)
+      # calculate orthogonal rate of change vectors
+      if dav_dp.length() < 1e-10:
+        ortho_dav_dp = matrix.col((0, 0, 0))
+      else:
+        v = avec.cross(dav_dp).normalize()
+        u = v.cross(ua).normalize()
+        ortho_dav_dp = dav_dp.dot(u) * u
 
-    #from dials.util.command_line import interactive_console; interactive_console()
-    #1/0
+      if dbv_dp.length() < 1e-10:
+        ortho_dbv_dp = matrix.col((0, 0, 0))
+      else:
+        v = bvec.cross(dbv_dp).normalize()
+        u = v.cross(ub).normalize()
+        ortho_dbv_dp = dbv_dp.dot(u) * u
+
+      if dcv_dp.length() < 1e-10:
+        ortho_dcv_dp = matrix.col((0, 0, 0))
+      else:
+        v = cvec.cross(dcv_dp).normalize()
+        u = v.cross(uc).normalize()
+        ortho_dcv_dp = dcv_dp.dot(u) * u
+
+      # derivative of cell angles wrt p
+      daa_dp = ortho_dbv_dp.dot(dalpha_db) + ortho_dcv_dp.dot(dalpha_dc)
+      dbb_dp = ortho_dav_dp.dot(dbeta_da) + ortho_dcv_dp.dot(dbeta_dc)
+      dcc_dp = ortho_dav_dp.dot(dgamma_da) + ortho_dbv_dp.dot(dgamma_db)
+
+      print "d[aa]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * daa_dp, fd_grads[i][3], i)
+      print "d[bb]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dbb_dp, fd_grads[i][4], i)
+      print "d[cc]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dcc_dp, fd_grads[i][5], i)
+
 
   def _check_fd_gradients(self):
 
