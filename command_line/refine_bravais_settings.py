@@ -116,6 +116,14 @@ def run(args):
     else:
       raise Sorry("Only one crystal can be processed at a time: set crystal_id to choose experiment.")
 
+  if params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
+    if experiments[0].goniometer is None:
+      params.refinement.reflections.outlier.algorithm = 'sauter_poon'
+    else:
+      # different default to dials.refine
+      # tukey is faster and more appropriate at the indexing step
+      params.refinement.reflections.outlier.algorithm = 'tukey'
+
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic
 
