@@ -176,8 +176,13 @@ def refine_subgroup(args):
     logger = logging.getLogger()
     disabled = logger.disabled
     logger.disabled = True
+    iqr_multiplier = params.refinement.reflections.outlier.tukey.iqr_multiplier
+    params.refinement.reflections.outlier.tukey.iqr_multiplier = 2 * iqr_multiplier
     refinery, refined, outliers = refine(
       params, used_reflections, experiments, verbosity=refiner_verbosity)
+    params.refinement.reflections.outlier.tukey.iqr_multiplier = iqr_multiplier
+    refinery, refined, outliers = refine(
+      params, used_reflections, refinery.get_experiments(), verbosity=refiner_verbosity)
   except RuntimeError, e:
     if (str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0." or
         str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."):
