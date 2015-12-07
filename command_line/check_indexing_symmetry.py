@@ -62,7 +62,7 @@ def dump_text(filename, set0, set1):
   fout.close()
   return
 
-def get_symop_correlation_coefficients(miller_array):
+def get_symop_correlation_coefficients(miller_array, use_binning=False):
   from copy import deepcopy
   from scitbx.array_family import flex
   from cctbx import miller
@@ -70,14 +70,21 @@ def get_symop_correlation_coefficients(miller_array):
   n_refs = flex.int()
   space_group = miller_array.space_group()
   for smx in space_group.smx():
-    miller_indices = miller_array.indices()
-    reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
-      miller_indices)
-    rms = miller.set(miller_array, reindexed_miller_indices)
-    rms = rms.array(miller_array.data())
-    intensity, intensity_rdx = rms.common_sets(miller_array)
-    cc = intensity.correlation(intensity_rdx).coefficient()
-    corr_coeffs.append(cc)
+    reindexed_array = miller_array.change_basis(sgtbx.change_of_basis_op(smx))
+    intensity, intensity_rdx = reindexed_array.common_sets(miller_array)
+    if use_binning:
+      intensity.use_binning_of(miller_array)
+      intensity_rdx.use_binning_of(miller_array)
+      cc = intensity.correlation(
+        intensity_rdx, use_binning=use_binning)
+      corr_coeffs.append(
+        flex.mean_weighted(
+          flex.double(i for i in cc.data if i is not None),
+          flex.double(
+            j for i, j in zip(cc.data, cc.binner.counts()) if i is not None)))
+    else:
+      corr_coeffs.append(intensity.correlation(
+        intensity_rdx, use_binning=use_binning).coefficient())
     n_refs.append(intensity.size())
   return corr_coeffs, n_refs
 

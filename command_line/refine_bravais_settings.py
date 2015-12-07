@@ -54,7 +54,9 @@ normalise = False
 normalise_bins = 0
   .type = int
   .help = "Number of resolution bins for normalisation"
-
+cc_n_bins = None
+  .type = int(value_min=1)
+  .help = "Number of resolution bins to use for calculation of correlation coefficients"
 output {
   directory = "."
     .type = str

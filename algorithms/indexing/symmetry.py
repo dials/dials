@@ -212,7 +212,10 @@ def refine_subgroup(args):
           ms = normalise_intensities(ms, n_bins=params.normalise_bins)
         else:
           ms = normalise_intensities(ms)
-      ccs, nrefs = get_symop_correlation_coefficients(ms)
+      if params.cc_n_bins is not None:
+        ms.setup_binner(n_bins=params.cc_n_bins)
+      ccs, nrefs = get_symop_correlation_coefficients(
+        ms, use_binning=(params.cc_n_bins is not None))
       subgroup.correlation_coefficients = ccs
       subgroup.cc_nrefs = nrefs
       ccs = ccs.select(nrefs > 10)
