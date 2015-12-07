@@ -139,7 +139,7 @@ def exercise_refine_bravais_settings_3():
     bravais_summary['5']['unit_cell'],
     [54.37, 58.29, 66.51, 90.00, 90.00, 90.00], eps=1e-1)
   assert bravais_summary['5']['bravais'] == 'oP'
-  assert approx_equal(bravais_summary['5']['rmsd'], 0.1457, eps=1e-2)
+  assert approx_equal(bravais_summary['5']['rmsd'], 0.1084, eps=1e-2)
   os.chdir(cwd)
 
 

@@ -113,8 +113,10 @@ def run(args):
       from dxtbx.model.experiment.experiment_list import ExperimentList
       experiments = ExperimentList([experiments[i] for i in experiment_ids])
       refl_selections = [reflections['id'] == i for i in experiment_ids]
+      reflections['id'] = flex.int(len(reflections), -1)
       for i, sel in enumerate(refl_selections):
         reflections['id'].set_selected(sel, i)
+      reflections = reflections.select(reflections['id'] > -1)
     else:
       raise Sorry("Only one crystal can be processed at a time: set crystal_id to choose experiment.")
 
