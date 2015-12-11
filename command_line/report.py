@@ -563,7 +563,7 @@ class StrongSpotsAnalyser(object):
     d = OrderedDict()
     # Look at distribution of spot counts
     d.update(self.spot_count_per_image(rlist))
-    self.spot_count_per_panel(rlist)
+    #self.spot_count_per_panel(rlist)
     return {'strong': d}
 
   def spot_count_per_image(self, rlist):
