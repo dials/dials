@@ -860,6 +860,10 @@ class CentroidAnalyser(object):
     xo, yo, zo = rlist['xyzobs.px.value'].parts()
     zd = zo - zc
 
+    if zd.all_approx_equal(zd[0]):
+      # probably still images, no z residuals
+      return {}
+
     import numpy as np
     H, xedges, yedges = np.histogram2d(zc, zd, bins=(100, 100))
 
@@ -907,6 +911,10 @@ class CentroidAnalyser(object):
     dx = xc - xo
     dy = yc - yo
     dphi = (zc - zo) * RAD2DEG
+
+    if dphi.all_approx_equal(dphi[0]):
+      # probably still images, no z residuals
+      return {}
 
     mean_residuals_x = flex.double()
     mean_residuals_y = flex.double()
@@ -1021,12 +1029,19 @@ class CentroidAnalyser(object):
     dy = yc - yo
     dz = zc - zo
 
+    is_stills = dz.all_approx_equal(dz[0])
+
     d = OrderedDict()
 
     import numpy as np
+    histx = flex.histogram(dx, n_slots=100)
+    histy = flex.histogram(dy, n_slots=100)
     Hxy, xedges, yedges = np.histogram2d(dx, dy, bins=(50, 50))
-    Hzy, zedges, yedges = np.histogram2d(dz, dy, bins=(50, 50))
-    Hxz, xedges, zedges = np.histogram2d(dx, dz, bins=(50, 50))
+
+    if not is_stills:
+      histz = flex.histogram(dz, n_slots=100)
+      Hzy, zedges, yedges = np.histogram2d(dz, dy, bins=(50, 50))
+      Hxz, xedges, zedges = np.histogram2d(dx, dz, bins=(50, 50))
 
     density_hist_layout = {
 
@@ -1067,9 +1082,6 @@ class CentroidAnalyser(object):
       }
     }
 
-    histx = flex.histogram(dx, n_slots=100)
-    histy = flex.histogram(dy, n_slots=100)
-    histz = flex.histogram(dz, n_slots=100)
 
     d.update({
       'residuals_xy': {
@@ -1121,107 +1133,109 @@ class CentroidAnalyser(object):
     })
     d['residuals_xy']['layout']['title'] = 'Centroid residuals in X and Y'
 
-    d.update({
-      'residuals_zy': {
-        'data': [
-          #{
-            #'x': list(dz),
-            #'y': list(dy),
-            #'mode': 'markers',
-            #'name': 'points',
-            #'marker': {
-              #'color': 'rgb(102,0,0)',
-              #'size': 2,
-              #'opacity': 0.4
-            #},
-            #'type': 'scatter',
-          #},
-          {
-            'x': zedges.tolist(),
-            'y': yedges.tolist(),
-            'z': Hzy.transpose().tolist(),
-            'name': 'density',
-            #'ncontours': 20,
-            'colorscale': 'Hot',
-            'reversescale': True,
-            'showscale': False,
-            'type': 'contour',
-            'zsmooth': 'best',
-          },
-          {
-            'x': list(histz.slot_centers()),
-            'y': list(histz.slots()),
-            'name': 'dz histogram',
-            'marker': {'color': 'rgb(102,0,0)'},
-            'yaxis': 'y2',
-            'type': 'bar',
-          },
-          {
-            'y': list(histy.slot_centers()),
-            'x': list(histy.slots()),
-            'name': 'dy histogram',
-            'marker': {'color': 'rgb(102,0,0)'},
-            'xaxis': 'x2',
-            'type': 'bar',
-            'orientation': 'h',
-          },
-        ],
-        'layout': copy.deepcopy(density_hist_layout),
-      }
-    })
-    d['residuals_zy']['layout']['title'] = 'Centroid residuals in Z and Y'
-    d['residuals_zy']['layout']['xaxis']['title'] = 'Z'
+    if not is_stills:
 
-    d.update({
-      'residuals_xz': {
-        'data': [
-          #{
-            #'x': list(dx),
-            #'y': list(dz),
-            #'mode': 'markers',
-            #'name': 'points',
-            #'marker': {
-              #'color': 'rgb(102,0,0)',
-              #'size': 2,
-              #'opacity': 0.4
+      d.update({
+        'residuals_zy': {
+          'data': [
+            #{
+              #'x': list(dz),
+              #'y': list(dy),
+              #'mode': 'markers',
+              #'name': 'points',
+              #'marker': {
+                #'color': 'rgb(102,0,0)',
+                #'size': 2,
+                #'opacity': 0.4
+              #},
+              #'type': 'scatter',
             #},
-            #'type': 'scatter',
-          #},
-          {
-            'x': xedges.tolist(),
-            'y': zedges.tolist(),
-            'z': Hxz.transpose().tolist(),
-            'name': 'density',
-            #'ncontours': 20,
-            'colorscale': 'Hot',
-            'reversescale': True,
-            'showscale': False,
-            'type': 'contour',
-            'zsmooth': 'best',
-          },
-          {
-            'x': list(histx.slot_centers()),
-            'y': list(histx.slots()),
-            'name': 'dx histogram',
-            'marker': {'color': 'rgb(102,0,0)'},
-            'yaxis': 'y2',
-            'type': 'bar',
-          },
-          {
-            'y': list(histz.slot_centers()),
-            'x': list(histz.slots()),
-            'name': 'dz histogram',
-            'marker': {'color': 'rgb(102,0,0)'},
-            'xaxis': 'x2',
-            'type': 'bar',
-            'orientation': 'h',
-          },
-        ],
-        'layout': copy.deepcopy(density_hist_layout),
-      }
-    })
-    d['residuals_xz']['layout']['title'] = 'Centroid residuals in X and Z'
-    d['residuals_xz']['layout']['yaxis']['title'] = 'Z'
+            {
+              'x': zedges.tolist(),
+              'y': yedges.tolist(),
+              'z': Hzy.transpose().tolist(),
+              'name': 'density',
+              #'ncontours': 20,
+              'colorscale': 'Hot',
+              'reversescale': True,
+              'showscale': False,
+              'type': 'contour',
+              'zsmooth': 'best',
+            },
+            {
+              'x': list(histz.slot_centers()),
+              'y': list(histz.slots()),
+              'name': 'dz histogram',
+              'marker': {'color': 'rgb(102,0,0)'},
+              'yaxis': 'y2',
+              'type': 'bar',
+            },
+            {
+              'y': list(histy.slot_centers()),
+              'x': list(histy.slots()),
+              'name': 'dy histogram',
+              'marker': {'color': 'rgb(102,0,0)'},
+              'xaxis': 'x2',
+              'type': 'bar',
+              'orientation': 'h',
+            },
+          ],
+          'layout': copy.deepcopy(density_hist_layout),
+        }
+      })
+      d['residuals_zy']['layout']['title'] = 'Centroid residuals in Z and Y'
+      d['residuals_zy']['layout']['xaxis']['title'] = 'Z'
+
+      d.update({
+        'residuals_xz': {
+          'data': [
+            #{
+              #'x': list(dx),
+              #'y': list(dz),
+              #'mode': 'markers',
+              #'name': 'points',
+              #'marker': {
+                #'color': 'rgb(102,0,0)',
+                #'size': 2,
+                #'opacity': 0.4
+              #},
+              #'type': 'scatter',
+            #},
+            {
+              'x': xedges.tolist(),
+              'y': zedges.tolist(),
+              'z': Hxz.transpose().tolist(),
+              'name': 'density',
+              #'ncontours': 20,
+              'colorscale': 'Hot',
+              'reversescale': True,
+              'showscale': False,
+              'type': 'contour',
+              'zsmooth': 'best',
+            },
+            {
+              'x': list(histx.slot_centers()),
+              'y': list(histx.slots()),
+              'name': 'dx histogram',
+              'marker': {'color': 'rgb(102,0,0)'},
+              'yaxis': 'y2',
+              'type': 'bar',
+            },
+            {
+              'y': list(histz.slot_centers()),
+              'x': list(histz.slots()),
+              'name': 'dz histogram',
+              'marker': {'color': 'rgb(102,0,0)'},
+              'xaxis': 'x2',
+              'type': 'bar',
+              'orientation': 'h',
+            },
+          ],
+          'layout': copy.deepcopy(density_hist_layout),
+        }
+      })
+      d['residuals_xz']['layout']['title'] = 'Centroid residuals in X and Z'
+      d['residuals_xz']['layout']['yaxis']['title'] = 'Z'
 
     return d
 
