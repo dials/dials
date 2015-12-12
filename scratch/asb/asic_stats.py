@@ -117,7 +117,7 @@ class Script(object):
 
       # Calculate statistics
       pixel_gaps.append((abs((center_a-center_b).dot(col((1,0)))) - width) / pixel_size)
-      bottom_gaps.append((abs((center_a-center_b).dot(col((0,1)))) - 0) / pixel_size)
+      bottom_gaps.append(((center_a-center_b).dot(col((0,1))) - 0) / pixel_size)
 
       slow_a = col(a.get_slow_axis())
       slow_b = col(b.get_slow_axis())
@@ -126,7 +126,6 @@ class Script(object):
 
       a_to_b = center_b - center_a
       sensor_angles.append(a_to_b.angle(col((1,0)), deg=True))
-
 
     pg_stats = flex.mean_and_variance(pixel_gaps)
     bg_stats = flex.mean_and_variance(bottom_gaps)
