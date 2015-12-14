@@ -17,32 +17,30 @@ from dials.algorithms.refinement.refinement_helpers import AngleDerivativeWrtVec
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
-class SingleTie(object):
-  """Tie of a single parameter to a value with a least squares restraint"""
+class DerivedParameterTie(object):
+  """Calculate the restraint and gradients for a single derived parameter
+  of the model"""
 
-  def __init__(self, parameter, target, weight):
+  def __init__(self, target, weight):
 
-    self._parameter = parameter
     self._target = target
     self._w = weight
     self._dRdp = None
 
-  def value(self):
-    """Calculate and return weighted squared residual R, cache gradient"""
+    return
 
-    d = self._parameter.value - self._target
-    wd = self._w * d
-    self._dRdp = 2. * wd
+  def value(self, parameter_value, parameter_gradients):
+    """Calculate and return weighted squared residual R, cache gradients"""
+
+    d = parameter_value - self._target
+    grad_coeff = 2. * self._w * d
+    self._dRdp = [grad_coeff * g for g in parameter_gradients]
 
     return wd * d
 
   def gradient(self):
     """Return dR/dp"""
     return self._dRdp
-
-# FIXME SingleModelTie would be neater - express all restraints for parameters
-# of a particular model in terms of the elements of the state of that model.
-# calculate derivatives wrt parameters of the model using d[state]/dp elements.
 
 class SingleUnitCellTie(object):
   """Tie the parameters of a single unit cell model parameterisation to
@@ -70,9 +68,19 @@ class SingleUnitCellTie(object):
     # calculate gradients of cell parameters wrt model parameters. A gradient
     # of zero means that cell parameter is constrained and thus ignored in
     # restraints
-
     grads = self._calculate_uc_gradients()
-    #self._sigma = [s if g > 1.e-12 else None for s,g in zip(self._sigma, grads)]
+    self._sigma = [s if g > 1.e-10 else None for s,g in zip(self._sigma, grads)]
+
+    # For each non-zero sigma create a restraint between the relevant cell
+    # parameter and its target value
+    self._ties = []
+    for t, s  in zip(self._target, self._sigma):
+      if s is not None:
+        self._ties.append(DerivedParameterTie(t, 1./s**2))
+      else:
+        self._ties.append(None)
+
+    return
 
   def _calculate_uc_gradients(self):
 
@@ -158,10 +166,11 @@ class SingleUnitCellTie(object):
       print "d[aa]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * daa_dp, fd_grads[i][3], i)
       print "d[bb]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dbb_dp, fd_grads[i][4], i)
       print "d[cc]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dcc_dp, fd_grads[i][5], i)
-
+      return da_dp, db_dp, dc_dp, daa_dp, dbb_dp, dcc_dp
 
   def _check_fd_gradients(self):
 
+    print "CHECKING GRADIENTS."
     from scitbx import matrix
     mp = self._xlucp
     p_vals = mp.get_param_vals()
