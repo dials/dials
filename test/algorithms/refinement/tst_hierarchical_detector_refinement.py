@@ -175,7 +175,8 @@ def test1():
 
   # set a very tight rmsd target of 1/10000 of a pixel
   target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-      ref_predictor, refman, pred_param,frac_binsize_cutoff=0.0001)
+      ref_predictor, refman, pred_param, restraints_parameterisation=None,
+      frac_binsize_cutoff=0.0001)
 
   # minimisation engine
   from dials.algorithms.refinement.engine \

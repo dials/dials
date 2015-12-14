@@ -140,7 +140,7 @@ ref_predictor = ExperimentsPredictor(experiments)
 from dials.algorithms.refinement.target import \
   LeastSquaresPositionalResidualWithRmsdCutoff
 target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-    ref_predictor, refman, pred_param)
+    ref_predictor, refman, pred_param, restraints_parameterisation=None)
 
 # keep only those reflections that pass inclusion criteria and have predictions
 reflections = refman.get_matches()

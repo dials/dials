@@ -46,12 +46,14 @@ class Target(object):
   rmsd_units = ["mm", "mm", "rad"]
 
   def __init__(self, experiments, reflection_predictor, ref_manager,
-               prediction_parameterisation, gradient_calculation_blocksize=None):
+               prediction_parameterisation, restraints_parameterisation=None,
+               gradient_calculation_blocksize=None):
 
     self._reflection_predictor = reflection_predictor
     self._experiments = experiments
     self._reflection_manager = ref_manager
     self._prediction_parameterisation = prediction_parameterisation
+    self._restraints_parameterisation = restraints_parameterisation
 
     # Quantities to cache each step
     self._rmsds = None
@@ -68,6 +70,13 @@ class Target(object):
     available at initialisation, set it with this method"""
 
     self._prediction_parameterisation = prediction_parameterisation
+    return
+
+  def set_restraints_parameterisation(self, restraints_parameterisation):
+    """For circumstances where the RestraintsParameterisation object was not
+    available at initialisation, set it with this method"""
+
+    self._restraints_parameterisation = restraints_parameterisation
     return
 
   def _predict_core(self, reflections):
@@ -442,7 +451,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   rmsd (or on intrisic convergence of the chosen minimiser)"""
 
   def __init__(self, experiments, reflection_predictor, ref_man,
-               prediction_parameterisation,
+               prediction_parameterisation, restraints_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None,
                gradient_calculation_blocksize=None):

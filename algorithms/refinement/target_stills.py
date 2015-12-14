@@ -29,7 +29,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
   rmsd_units = ["mm", "mm", "rad"]
 
   def __init__(self, experiments, reflection_predictor, ref_man,
-               prediction_parameterisation,
+               prediction_parameterisation, restraints_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None,
                gradient_calculation_blocksize=None):

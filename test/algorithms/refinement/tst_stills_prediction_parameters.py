@@ -133,7 +133,7 @@ def run(verbose = False):
   from dials.algorithms.refinement.target_stills import \
     LeastSquaresStillsResidualWithRmsdCutoff
   target = LeastSquaresStillsResidualWithRmsdCutoff(stills_experiments,
-      ref_predictor, refman, pred_param)
+      ref_predictor, refman, pred_param, restraints_parameterisation=None)
 
   # get predictions from the reflection manager
   reflections = refman.get_matches()

@@ -108,6 +108,16 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 
       det_params.append(det_param)
 
+    # Now we have the final list of model parameterisations, build a restraints
+    # parameterisation (if requested). Only unit cell restraints are supported
+    # at the moment.
+    if any([crystal_options.unit_cell.restraints.tie_to_target,
+            crystal_options.unit_cell.restraints.tie_to_group]):
+      restraints_param = cls.config_restraints(params, det_params, beam_params,
+        xl_ori_params, xl_uc_params)
+    else:
+      restraints_param = None
+
     # Prediction equation parameterisation
     if do_stills: # doing stills
       if sparse:
@@ -151,7 +161,7 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     param_reporter = par.ParameterReporter(det_params, beam_params,
                                            xl_ori_params, xl_uc_params)
 
-    return pred_param, param_reporter
+    return pred_param, param_reporter, restraints_param
 
   @staticmethod
   def config_target(params, experiments, refman, do_stills):
@@ -202,12 +212,16 @@ class StillsDetectorRefinerFactory(RefinerFactory):
       #  #from dials.algorithms.refinement.target \
       #  #  import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
-    # Here we pass in None for the prediction_parameterisation, as this will
-    # be linked to the object later
-    pred_param = None
-    target = targ(experiments, ref_predictor, refman, pred_param,
-                    options.bin_size_fraction, absolute_cutoffs,
-                    options.gradient_calculation_blocksize)
+    # Here we pass in None for prediction_parameterisation and
+    # restraints_parameterisation, as these will be linked to the object later
+    target = targ(experiments=experiments,
+                  reflection_predictor=ref_predictor,
+                  ref_man=refman,
+                  prediction_parameterisation=None,
+                  restraints_parameterisation=None,
+                  frac_binsize_cutoff=options.bin_size_fraction,
+                  absolute_cutoffs=absolute_cutoffs,
+                  gradient_calculation_blocksize=options.gradient_calculation_blocksize)
 
     return target
 

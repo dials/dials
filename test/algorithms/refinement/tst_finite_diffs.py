@@ -195,7 +195,8 @@ from dials.algorithms.refinement.prediction import ExperimentsPredictor
 ref_predictor = ExperimentsPredictor(experiments)
 
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-    experiments, ref_predictor, refman, pred_param)
+    experiments, ref_predictor, refman, pred_param,
+    restraints_parameterisation=None)
 
 # get the functional and gradients
 mytarget.predict()
