@@ -66,6 +66,11 @@ restraints
 
 uc_phil_scope = parse(uc_phil_str)
 
+# Define a couple of namedtuple types we will use for convenience
+from collections import namedtuple
+ParamIndex = namedtuple('ParamIndex', ['parameterisation', 'istart'])
+RestraintIndex = namedtuple('RestraintIndex', ['restraint', 'istart'])
+
 class RestraintsParameterisation(object):
 
   def __init__(self, detector_parameterisations = None,
@@ -80,10 +85,9 @@ class RestraintsParameterisation(object):
     self._xl_unit_cell_parameterisations = xl_unit_cell_parameterisations
 
     # Loop over all parameterisations, extract experiment IDs and record
-    # global parameter index for each
+    # global parameter index for each that tells us which parameters have
+    # non-zero derivatives
     iparam = 0
-    from collections import namedtuple
-    ParamIndex = namedtuple('ParamIndex', ['parameterisation', 'istart'])
 
     self._exp_to_det_param = {}
     for detp in self._detector_parameterisations:
@@ -109,6 +113,13 @@ class RestraintsParameterisation(object):
         self._exp_to_xluc_param[iexp] = ParamIndex(xlucp, iparam)
       iparam += xlucp.num_free()
 
+    # keep a set that will ensure every model parameterisation only gets
+    # a single restraint.
+    self._param_to_restraint = set()
+
+    # keep a list of restraint objects that we will add
+    self._restraints = []
+
     return
 
   #def add_restraints_to_target_detector(self):
@@ -124,9 +135,29 @@ class RestraintsParameterisation(object):
   #  return
 
   def add_restraints_to_target_xl_unit_cell(self,
-    experiment_ids, values, sigmas):
+    experiment_id, values, sigma):
 
-    pass
+    # On input we will have one id value, 6 target values and 6 sigmas.
+
+    # select the right parameterisation
+    param_i = self._exp_to_xluc_param[experiment_id]
+
+    # fail now if this is already restrained.
+    if param_i.parameterisation in self._param_to_restraint:
+      raise Sorry("Parameterisation already restrained. Cannot create "
+                  "additional restraint with experiment {0}".format(experiment_id))
+
+    # create new restraint
+    tie = SingleUnitCellTie(model_parameterisation=param_i.parameterisation,
+                            target=values,
+                            sigma=sigma)
+
+    # add to the restraint list along with the global parameter index
+    self._restraints.append(RestraintIndex(tie, param_i.istart))
+
+    # also add the parameterisation to the set for uniqueness testing
+    self._param_to_restraint.add(param_i.parameterisation)
+
     return
 
   #def add_restraints_to_group_detector(self):
