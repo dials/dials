@@ -650,8 +650,10 @@ class RefinerFactory(object):
     for i, e in enumerate(pred_param.get_param_names()):
       debug("Parameter %03d : %s", i, e)
 
-    # Set the prediction equation parameterisation in the target object
+    # Set the prediction equation and restraints parameterisations
+    # in the target object
     target.set_prediction_parameterisation(pred_param)
+    target.set_restraints_parameterisation(restraints_parameterisation)
 
     debug("Building refinement engine")
 
