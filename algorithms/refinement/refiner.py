@@ -27,8 +27,8 @@ import libtbx
 from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
-  import phil_str as restraints_phil_str
-format_data = {'outlier_phil':outlier_phil_str, 'restraints_phil':restraints_phil_str}
+  import uc_phil_str as uc_restraints_phil_str
+format_data = {'outlier_phil':outlier_phil_str, 'uc_restraints_phil':uc_restraints_phil_str}
 phil_scope = parse('''
 
 refinement
@@ -99,8 +99,6 @@ refinement
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
         .expert_level = 1
-
-      %(restraints_phil)s
     }
 
     crystal
@@ -117,7 +115,7 @@ refinement
           .help = "Fix specified parameters by a list of indices"
           .expert_level = 1
 
-        %(restraints_phil)s
+        %(uc_restraints_phil)s
       }
 
       orientation
@@ -126,8 +124,6 @@ refinement
           .type = ints(value_min=0)
           .help = "Fix specified parameters by a list of indices"
           .expert_level = 1
-
-        %(restraints_phil)s
       }
 
       scan_varying = False
@@ -187,8 +183,6 @@ refinement
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
         .expert_level = 1
-
-      %(restraints_phil)s
     }
 
     sparse = Auto
@@ -1109,15 +1103,10 @@ class RefinerFactory(object):
       det_params = [p for p in det_params if p.num_free() > 0]
 
     # Now we have the final list of model parameterisations, build a restraints
-    # parameterisation (if requested)
-    if any([beam_options.restraints.tie_to_target,
-            beam_options.restraints.tie_to_group,
-            crystal_options.orientation.restraints.tie_to_target,
-            crystal_options.orientation.restraints.tie_to_group,
-            crystal_options.unit_cell.restraints.tie_to_target,
-            crystal_options.unit_cell.restraints.tie_to_group,
-            detector_options.restraints.tie_to_target,
-            detector_options.restraints.tie_to_group]):
+    # parameterisation (if requested). Only unit cell restraints are supported
+    # at the moment.
+    if any([crystal_options.unit_cell.restraints.tie_to_target,
+            crystal_options.unit_cell.restraints.tie_to_group]):
       restraints_param = cls.config_restraints(params, det_params, beam_params,
         xl_ori_params, xl_uc_params)
     else:
@@ -1177,7 +1166,19 @@ class RefinerFactory(object):
   @staticmethod
   def config_restraints(params, det_params, beam_params,
         xl_ori_params, xl_uc_params):
-    """"""
+    """Given a set of user parameters plus model parameterisations, create a
+    restraints plus a parameterisation of these restraints
+
+    Params:
+        params The input parameters
+        det_params A list of detector parameterisations
+        beam_params A list of beam parameterisations,
+        xl_ori_params A list of crystal orientation parameterisations
+        xl_uc_params A list of crystal unit cell parameterisations
+
+    Returns:
+        A restraints parameterisation
+    """
 
     from dials.algorithms.refinement.restraints import RestraintsParameterisation
     rp = RestraintsParameterisation(detector_parameterisations = det_params,
@@ -1186,16 +1187,11 @@ class RefinerFactory(object):
                xl_unit_cell_parameterisations = xl_uc_params)
 
     # Shorten params path
-    beam_r = params.refinement.parameterisation.beam.restraints
+    # FIXME Only unit cell restraints currently supported
+    #beam_r = params.refinement.parameterisation.beam.restraints
     cell_r = params.refinement.parameterisation.crystal.cell.restraints
-    orientation_r = params.refinement.parameterisation.crystal.orientation.restraints
-    detector_r = params.refinement.parameterisation.detector.restraints
-
-    # Only crystal unit cell restraints are considered currently
-    if any([beam_r.tie_to_target, beam_r.tie_to_group,
-            orientation_r.tie_to_target, orientation_r.tie_to_group,
-            detector_r.tie_to_target, detector_r.tie_to_group]):
-      raise Sorry("Only crystal unit cell restraints are currently available")
+    #orientation_r = params.refinement.parameterisation.crystal.orientation.restraints
+    #detector_r = params.refinement.parameterisation.detector.restraints
 
     for tie in cell_r.tie_to_target:
       if len(tie.values) != 6:
@@ -1206,6 +1202,7 @@ class RefinerFactory(object):
                     "the restraint for the corresponding cell parameter.")
       rp.add_restraints_to_target_xl_unit_cell(tie.id, tie.values, tie.sigmas)
 
+    # FIXME Group ties not available yet
     for tie in cell_r.tie_to_group:
       pass
 
