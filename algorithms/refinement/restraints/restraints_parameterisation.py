@@ -12,9 +12,12 @@
 
 from __future__ import division
 from libtbx.phil import parse
+from libtbx.utils import Sorry
 
-# The phil scope for restraints
-phil_str = '''
+from dials.algorithms.refinement.restraints.restraints import SingleUnitCellTie
+
+# PHIL options for unit cell restraints
+uc_phil_str = '''
 restraints
   .help = "Least squares restraints to use in refinement."
   .expert_level = 1
@@ -23,16 +26,21 @@ restraints
     .multiple = True
   {
     values = None
-      .type = floats()
-      .help = "Target values for the restraint for this parameterisation"
+      .type = floats(size=6)
+      .help = "Target unit cell parameters for the restraint for this"
+              "parameterisation"
 
     sigmas = None
-      .help = "A sigma of zero or None will remove the restraint at that position"
-      .type = floats(value_min=0.)
+      .help = "The unit cell target values are associated with sigmas which are"
+              "used to determine the weight of each restraint. A sigma of zero"
+              "or None will remove the restraint at that position"
+      .type = floats(size=6, value_min=0.)
 
     id = None
-      .help = "Experiment indices of experiments to be affected by this restraint"
-      .type = ints(value_min=0)
+      .help = "Index of an experiment affected by this restraint. If the"
+              "relevant parameterisation affects multiple experiments then any"
+              "one of the indices may be supplied"
+      .type = int(value_min=0)
   }
 
   tie_to_group
@@ -47,14 +55,16 @@ restraints
       .type = floats(value_min=0.)
 
     id = None
-      .help = "Experiment indices of experiments to be affected by this restraint"
+      .help = "Indices of experiments affected by this restraint. For every"
+              "parameterisation that requires a restraint at least one"
+              "experiment index must be supplied."
       .type = ints(value_min=0)
   }
 }
 
 '''
 
-phil_scope = parse(phil_str)
+uc_phil_scope = parse(uc_phil_str)
 
 class RestraintsParameterisation(object):
 
@@ -136,4 +146,3 @@ class RestraintsParameterisation(object):
     pass
     return
 
-    #from dials.util.command_line import interactive_console; interactive_console()
