@@ -1189,7 +1189,7 @@ class RefinerFactory(object):
     # Shorten params path
     # FIXME Only unit cell restraints currently supported
     #beam_r = params.refinement.parameterisation.beam.restraints
-    cell_r = params.refinement.parameterisation.crystal.cell.restraints
+    cell_r = params.refinement.parameterisation.crystal.unit_cell.restraints
     #orientation_r = params.refinement.parameterisation.crystal.orientation.restraints
     #detector_r = params.refinement.parameterisation.detector.restraints
 
