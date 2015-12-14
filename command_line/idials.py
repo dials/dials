@@ -12,6 +12,14 @@
 # LIBTBX_SET_DISPATCHER_NAME idials
 
 from __future__ import division
+
+try:
+  # try importing scipy.linalg before any cctbx modules to avoid segfault on
+  # some platforms
+  import scipy.linalg # import dependency
+except ImportError, e:
+  pass
+
 from cmd import Cmd
 import sys
 
