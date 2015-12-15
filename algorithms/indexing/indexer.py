@@ -1728,7 +1728,7 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
   bin_counts = hist.slots().as_double()
   perm = flex.sort_permutation(bin_counts)
   sorted_bin_counts = bin_counts.select(perm)
-  sorted_bin_counts.select(sorted_bin_counts > 0)
+  sorted_bin_counts = sorted_bin_counts.select(sorted_bin_counts > 0)
   from libtbx.math_utils import nearest_integer as nint
   q1 = sorted_bin_counts[nint(len(sorted_bin_counts)/4)]
   q2 = sorted_bin_counts[nint(len(sorted_bin_counts)/2)]
