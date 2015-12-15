@@ -60,16 +60,21 @@ class SingleUnitCellTie(object):
 
     self._xlucp = model_parameterisation
     self._target = target
-    self._sigma = sigma
 
     assert len(self._target) == 6
-    assert len(self._sigma) == 6
+    assert len(sigma) == 6
 
     # calculate gradients of cell parameters wrt model parameters. A gradient
     # of zero means that cell parameter is constrained and thus ignored in
     # restraints
     grads = self._calculate_uc_gradients()
-    self._sigma = [s if g > 1.e-10 else None for s,g in zip(self._sigma, grads)]
+    self._sigma = []
+    for sig, grad in zip(sigma, grads):
+      tst = [g > 1.e-10 for g in grad]
+      if any(tst):
+        self._sigma.append(sig)
+      else:
+        self._sigma.append(None)
 
     # For each non-zero sigma create a restraint between the relevant cell
     # parameter and its target value
@@ -82,7 +87,8 @@ class SingleUnitCellTie(object):
 
     return
 
-  def _calculate_uc_gradients(self):
+  def _calculate_uc_gradients(self, sel=[True]*6):
+    '''Calculate gradients of the unit cell parameters with respect to '''
 
     from scitbx import matrix
     B = self._xlucp.get_state()
@@ -117,6 +123,13 @@ class SingleUnitCellTie(object):
     # XXX DEBUG compare with FD gradients
     fd_grads = self._check_fd_gradients()
 
+    da = []
+    db = []
+    dc = []
+    daa = []
+    dbb = []
+    dcc = []
+
     # loop over parameters of the model
     for i, dO in enumerate(dO_dp):
 
@@ -127,13 +140,16 @@ class SingleUnitCellTie(object):
       dcv_dp = matrix.col(dcv_dp)
 
       # derivative of cell lengths wrt p
-      da_dp = 1./a * avec.dot(dav_dp)
+      da_dp = 1./a * avec.dot(dav_dp) if sel[0] else 0.0
+      da.append(da_dp)
       print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grads[i][0], i)
 
-      db_dp = 1./b * bvec.dot(dbv_dp)
+      db_dp = 1./b * bvec.dot(dbv_dp) if sel[1] else 0.0
+      db.append(db_dp)
       print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grads[i][1], i)
 
-      dc_dp = 1./c * cvec.dot(dcv_dp)
+      dc_dp = 1./c * cvec.dot(dcv_dp) if sel[2] else 0.0
+      dc.append(dc_dp)
       print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grads[i][2], i)
 
       # calculate orthogonal rate of change vectors
@@ -159,14 +175,21 @@ class SingleUnitCellTie(object):
         ortho_dcv_dp = dcv_dp.dot(u) * u
 
       # derivative of cell angles wrt p
-      daa_dp = ortho_dbv_dp.dot(dalpha_db) + ortho_dcv_dp.dot(dalpha_dc)
-      dbb_dp = ortho_dav_dp.dot(dbeta_da) + ortho_dcv_dp.dot(dbeta_dc)
-      dcc_dp = ortho_dav_dp.dot(dgamma_da) + ortho_dbv_dp.dot(dgamma_db)
+      daa_dp = ortho_dbv_dp.dot(dalpha_db) + ortho_dcv_dp.dot(dalpha_dc) \
+        if sel[3] else 0.0
+      daa.append(daa_dp)
+      dbb_dp = ortho_dav_dp.dot(dbeta_da) + ortho_dcv_dp.dot(dbeta_dc) \
+        if sel[4] else 0.0
+      dbb.append(daa_dp)
+      dcc_dp = ortho_dav_dp.dot(dgamma_da) + ortho_dbv_dp.dot(dgamma_db) \
+        if sel[5] else 0.0
+      dcc.append(dcc_dp)
 
       print "d[aa]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * daa_dp, fd_grads[i][3], i)
       print "d[bb]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dbb_dp, fd_grads[i][4], i)
       print "d[cc]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dcc_dp, fd_grads[i][5], i)
-      return da_dp, db_dp, dc_dp, daa_dp, dbb_dp, dcc_dp
+
+    return da, db, dc, daa, dbb, dcc
 
   def _check_fd_gradients(self):
 
