@@ -139,6 +139,7 @@ fd_grad = check_fd_gradients(xluc_param)
 # look at each parameter
 for i, dO in enumerate(dO_dp):
 
+  print
   print "***** PARAMETER {0} *****".format(i)
 
   #print "dB_dp analytical"
@@ -151,9 +152,9 @@ for i, dO in enumerate(dO_dp):
 
   print "O MATRIX"
   print "dO_dp analytical"
-  print dO
+  print dO.round(6)
   print "dO_dp FD"
-  print fd_grad[i]['dO_dp']
+  print fd_grad[i]['dO_dp'].round(6)
   print
 
   # extract derivatives of each unit cell vector wrt p
@@ -166,32 +167,32 @@ for i, dO in enumerate(dO_dp):
   print "CELL VECTORS"
   diff = dav_dp - fd_grad[i]['davec_dp']
   #print 2 * diff.length() / (dav_dp.length() + fd_grad[i]['davec_dp'].length()) * 100
-  print 'davec_dp analytical: {0} {1} {2}'.format(*dav_dp.elems)
-  print 'davec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['davec_dp'].elems)
+  print 'davec_dp analytical: {0:.5f} {1:.5f} {2:.5f}'.format(*dav_dp.elems)
+  print 'davec_dp finite diff: {0:.5f} {1:.5f} {2:.5f}'.format(*fd_grad[i]['davec_dp'].elems)
 
   # only the first one seems about right. What about b?
   diff = dbv_dp - fd_grad[i]['dbvec_dp']
   #print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
-  print 'dbvec_dp analytical: {0} {1} {2}'.format(*dbv_dp.elems)
-  print 'dbvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dbvec_dp'].elems)
+  print 'dbvec_dp analytical: {0:.5f} {1:.5f} {2:.5f}'.format(*dbv_dp.elems)
+  print 'dbvec_dp finite diff: {0:.5f} {1:.5f} {2:.5f}'.format(*fd_grad[i]['dbvec_dp'].elems)
 
   # and c?
   diff = dcv_dp - fd_grad[i]['dcvec_dp']
   #print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
-  print 'dcvec_dp analytical: {0} {1} {2}'.format(*dcv_dp.elems)
-  print 'dcvec_dp finite diff: {0} {1} {2}'.format(*fd_grad[i]['dcvec_dp'].elems)
+  print 'dcvec_dp analytical: {0:.5f} {1:.5f} {2:.5f}'.format(*dcv_dp.elems)
+  print 'dcvec_dp finite diff: {0:.5f} {1:.5f} {2:.5f}'.format(*fd_grad[i]['dcvec_dp'].elems)
   print
 
   #
   print "CELL LENGTHS"
   da_dp = 1./a * avec.dot(dav_dp)
-  print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grad[i]['da_dp'], i)
+  print "d[a]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(da_dp, fd_grad[i]['da_dp'], i)
 
   db_dp = 1./b * bvec.dot(dbv_dp)
-  print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grad[i]['db_dp'], i)
+  print "d[b]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(db_dp, fd_grad[i]['db_dp'], i)
 
   dc_dp = 1./c * cvec.dot(dcv_dp)
-  print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grad[i]['dc_dp'], i)
+  print "d[c]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dc_dp, fd_grad[i]['dc_dp'], i)
 
   # dc_dp appears worse than da_dp or db_dp for the 6th parameter. The vector dcv_dp
   # is 20 times longer than dbv_dp, so clearly the c vector is strongly affected
@@ -250,9 +251,9 @@ for i, dO in enumerate(dO_dp):
   dbb_dp = RAD2DEG * (ortho_dav_dp.dot(dbeta_da) + ortho_dcv_dp.dot(dbeta_dc))
   dcc_dp = RAD2DEG * (ortho_dav_dp.dot(dgamma_da) + ortho_dbv_dp.dot(dgamma_db))
 
-  print "d[alpha]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grad[i]['daa_dp'], i)
-  print "d[beta]/dp{2} analytical: {0} FD: {1}".format(dbb_dp, fd_grad[i]['dbb_dp'], i)
-  print "d[gamma]/dp{2} analytical: {0} FD: {1}".format(dcc_dp, fd_grad[i]['dcc_dp'], i)
+  print "d[alpha]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(daa_dp, fd_grad[i]['daa_dp'], i)
+  print "d[beta]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dbb_dp, fd_grad[i]['dbb_dp'], i)
+  print "d[gamma]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dcc_dp, fd_grad[i]['dcc_dp'], i)
 
   #print "analytical dcc_dp", dcc_dp * RAD2DEG
   #print "FD dcc_dp", fd_grad[i]['dcc_dp']
