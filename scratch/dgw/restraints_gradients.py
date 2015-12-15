@@ -28,7 +28,6 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
-#args = sys.argv[1:]
 master_phil = parse("""
     include scope dials.test.algorithms.refinement.geometry_phil
     include scope dials.test.algorithms.refinement.minimiser_phil
@@ -38,6 +37,20 @@ master_phil = parse("""
 args=["a.direction.close_to.sd=5","b.direction.close_to.sd=5","c.direction.close_to.sd=5"]
 models = setup_geometry.Extract(master_phil, cmdline_args = args)
 crystal = models.crystal
+
+do_hexagonal = True
+if do_hexagonal:
+  # XXXX use a hexagonal crystal instead for investigation as symmetry constraints
+  # are causing problems
+  import libtbx.load_env, os
+  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression", test=os.path.isdir)
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+  experiments_path = os.path.join(data_dir, "combined_experiments.json")
+  experiments = ExperimentListFactory.from_json_file(experiments_path,
+                check_format=False)
+  crystal = experiments[0].crystal
 
 print crystal
 
@@ -126,15 +139,15 @@ fd_grad = check_fd_gradients(xluc_param)
 # look at each parameter
 for i, dO in enumerate(dO_dp):
 
+  print "***** PARAMETER {0} *****".format(i)
+
   #print "dB_dp analytical"
   #print dB_dp[i]
   #print "dB_dp FD"
   #print fd_grad[i]['dB_dp']
   #print
 
-  print "***** PARAMETER {0} *****".format(i)
-
-  # dB_dp is good.
+  # dB_dp is good. What about dO_dp?
 
   print "O MATRIX"
   print "dO_dp analytical"
