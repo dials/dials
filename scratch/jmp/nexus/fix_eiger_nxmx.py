@@ -62,6 +62,9 @@ class EigerNXmxFixer(object):
     group = handle.create_group(module_path)
     group.attrs['NX_class'] = "NXdetector_module"
 
+    # Add a module index
+    create_scalar(group, "module_index", "int64", 0)
+
     # Create detector data origin
     print "Adding dataset %s with value %s" % (join(group.name, "data_origin"), str((0,0)))
     dataset = group.create_dataset("data_origin", (2,), dtype="int32")
@@ -87,7 +90,7 @@ class EigerNXmxFixer(object):
     group['fast_pixel_direction'].attrs['vector'] = fast_axis
     group['fast_pixel_direction'].attrs['offset'] = 0
     group['fast_pixel_direction'].attrs['units'] = "m"
-    group['fast_pixel_direction'].attrs['depends_on'] = '.'
+    group['fast_pixel_direction'].attrs['depends_on'] = '/entry/instrument/detector/transformations/translation'
 
     # Add slow_pixel_size dataset
     create_scalar(
@@ -99,28 +102,43 @@ class EigerNXmxFixer(object):
     group['slow_pixel_direction'].attrs['vector'] = slow_axis
     group['slow_pixel_direction'].attrs['offset'] = 0
     group['slow_pixel_direction'].attrs['units'] = "m"
-    group['slow_pixel_direction'].attrs['depends_on'] = '.'
+    group['slow_pixel_direction'].attrs['depends_on'] = '/entry/instrument/detector/transformations/translation'
 
     # Add module offset dataset
-    print "Using /entry/instrument/detector/geometry/translation/distances as module offset"
-    module_offset_vector = matrix.col(handle['/entry/instrument/detector/geometry/translation/distances'][()])
+    print "Set module offset to be zero relative to detector"
     create_scalar(
       group,
       "module_offset",
       "float32",
-      module_offset_vector.length())
+      0)
     group['module_offset'].attrs['transformation_type'] = 'translation'
-    group['module_offset'].attrs['vector'] = module_offset_vector.normalize()
+    group['module_offset'].attrs['vector'] = (0, 0, 0)
     group['module_offset'].attrs['offset'] = 0
     group['module_offset'].attrs['units'] = "m"
-    group['module_offset'].attrs['depends_on'] = '.'
+    group['module_offset'].attrs['depends_on'] = '/entry/instrument/detector/transformations/translation'
 
     # Create detector depends_on
     create_scalar(
       handle['/entry/instrument/detector'],
       'depends_on',
       'S1',
-      '.')
+      '/entry/instrument/detector/transformations/translation')
+
+    # Add detector position
+    print "Using /entry/instrument/detector/geometry/translation/distances as transformation"
+    detector_offset_vector = matrix.col(handle['/entry/instrument/detector/geometry/translation/distances'][()])
+    group = handle.create_group('/entry/instrument/detector/transformations')
+    group.attrs['NX_class'] = 'NXtransformations'
+    create_scalar(
+      group,
+      "translation",
+      "float32",
+      detector_offset_vector.length())
+    group['translation'].attrs['transformation_type'] = 'translation'
+    group['translation'].attrs['vector'] = detector_offset_vector.normalize()
+    group['translation'].attrs['offset'] = 0
+    group['translation'].attrs['units'] = "m"
+    group['translation'].attrs['depends_on'] = '.'
 
     # Create goniometer transformations
     print "Creating group /entry/sample/transformation"

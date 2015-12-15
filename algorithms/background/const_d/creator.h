@@ -55,13 +55,13 @@ namespace dials { namespace algorithms {
     af::shared<bool> operator()(af::ref< Shoebox<> > sbox) const {
       af::shared<bool> success(sbox.size(), true);
       for (std::size_t i = 0; i < sbox.size(); ++i) {
-        //try {
+        try {
           compute(sbox[i]);
-        //} catch(scitbx::error) {
-        //  success[i] = false;
-        //} catch(dials::error) {
-        //  success[i] = false;
-        //}
+        } catch(scitbx::error) {
+          success[i] = false;
+        } catch(dials::error) {
+          success[i] = false;
+        }
       }
       return success;
     }
@@ -134,24 +134,32 @@ namespace dials { namespace algorithms {
       }
 
       // Compute radially averaged background
+      double other_mean = 0.0;
+      double other_count = 0.0;
       for (std::size_t i = 0; i < foreground.size(); ++i) {
         std::size_t f = foreground[i];
-        double dm = d_mid[f];
+        double d00 = d_min[f];
+        double d11 = d_max[f];
         double sum = 0.0;
         std::size_t count = 0;
         for (std::size_t j = 0; j < background.size(); ++j) {
           std::size_t b = background[j];
           double d0 = d_min[b];
           double d1 = d_max[b];
-          if ((d0 <= dm) && (dm <= d1)) {
+          if ((d0 <= d11) && (d00 <= d1)) {
             sum += data[b];
             count += 1;
           }
         }
         if (count > 0) {
           background_values[f] = sum / ((double)count);
+          other_mean += background_values[f];
+          other_count += 1;
         }
       }
+      /* if (other_count > 0) { */
+      /*   std::cout << mean << ", " << (other_mean / other_count) << std::endl; */
+      /* } */
     }
 
     Beam beam_;
