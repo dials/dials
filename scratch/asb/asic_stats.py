@@ -101,9 +101,9 @@ class Script(object):
       a = sensor[0]
       b = sensor[1]
 
-      # Gget initial vectors, dropping the z axis
-      center_a = col(a.get_local_origin()[0:2])
-      center_b = col(b.get_local_origin()[0:2])
+      # Get initial vectors
+      center_a = col(a.get_local_origin())
+      center_b = col(b.get_local_origin())
 
       pixel_size_a = a.get_pixel_size()[0]
       pixel_size_b = b.get_pixel_size()[0]
@@ -116,16 +116,23 @@ class Script(object):
       width = width_a * pixel_size
 
       # Calculate statistics
-      pixel_gaps.append((abs((center_a-center_b).dot(col((1,0)))) - width) / pixel_size)
-      bottom_gaps.append(((center_a-center_b).dot(col((0,1))) - 0) / pixel_size)
+      pixel_gaps.append((abs((center_a-center_b).dot(col((1,0,0)))) - width) / pixel_size)
+      bottom_gaps.append(((center_a-center_b).dot(col((0,1,0))) - 0) / pixel_size)
 
       slow_a = col(a.get_slow_axis())
       slow_b = col(b.get_slow_axis())
 
-      angles.append(slow_a.angle(slow_b, deg=True))
+      angle = slow_a.angle(slow_b, deg=True)
+      if slow_a.cross(slow_b)[1] < 0:
+        angle = -angle
+      angles.append(angle)
 
       a_to_b = center_b - center_a
-      sensor_angles.append(a_to_b.angle(col((1,0)), deg=True))
+
+      angle = a_to_b.angle(col((1,0,0)), deg=True)
+      if a_to_b.cross(col((1,0,0)))[1] < 0:
+        angle = -angle
+      sensor_angles.append(angle)
 
     pg_stats = flex.mean_and_variance(pixel_gaps)
     bg_stats = flex.mean_and_variance(bottom_gaps)
@@ -136,7 +143,7 @@ class Script(object):
     print "3 pixel gap                        : %f, %f"%(pg_stats.mean(), pg_stats.unweighted_sample_standard_deviation())
     print "Vertical offset                    : %f, %f"%(bg_stats.mean(), bg_stats.unweighted_sample_standard_deviation())
     print "Angular deviations (between asics) : %f, %f"%(an_stats.mean(), an_stats.unweighted_sample_standard_deviation())
-    print "Angular deviations (sensor)        : %f, %f"%(sa_stats.mean(), an_stats.unweighted_sample_standard_deviation())
+    print "Angular deviations (sensor)        : %f, %f"%(sa_stats.mean(), sa_stats.unweighted_sample_standard_deviation())
 
 
 if __name__ == '__main__':
