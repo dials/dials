@@ -1,5 +1,4 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.show
-# LIBTBX_SET_DISPATCHER_NAME dials.show_models
 
 from __future__ import division
 
