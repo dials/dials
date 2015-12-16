@@ -1284,8 +1284,8 @@ class RefineCommand(CommandNode):
       'output.log'         : join(self.directory, "info.log"),
       'output.debug_log'   : join(self.directory, "debug.log"),
       'output.matches'     : join(self.directory, "matches.pickle"),
-      'output.centroids'   : join(self.directory, "centroids.txt"),
-      'output.history'     : join(self.directory, "history.txt"),
+      'output.centroids'   : join(self.directory, "centroids.pickle"),
+      'output.history'     : join(self.directory, "history.pickle"),
     }
     for name, value in self.filenames.iteritems():
       self.params.set('%s=%s' % (name, value))
@@ -1440,6 +1440,19 @@ class ApplicationState(object):
 
   '''
 
+  # The command classes
+  CommandClass = {
+    'import'                             : ImportCommand,
+    'find_spots'                         : FindSpotsCommand,
+    'discover_better_experimental_model' : DiscoverBetterModelCommand,
+    'index'                              : IndexCommand,
+    'refine_bravais_settings'            : RefineBSCommand,
+    'reindex'                            : ReIndexCommand,
+    'refine'                             : RefineCommand,
+    'integrate'                          : IntegrateCommand,
+    'export'                             : ExportCommand
+  }
+
   def __init__(self, directory):
     '''
     Initialise the state
@@ -1468,21 +1481,8 @@ class ApplicationState(object):
 
     '''
 
-    # The command classes
-    CommandClass = {
-      'import'                             : ImportCommand,
-      'find_spots'                         : FindSpotsCommand,
-      'discover_better_experimental_model' : DiscoverBetterModelCommand,
-      'index'                              : IndexCommand,
-      'refine_bravais_settings'            : RefineBSCommand,
-      'reindex'                            : ReIndexCommand,
-      'refine'                             : RefineCommand,
-      'integrate'                          : IntegrateCommand,
-      'export'                             : ExportCommand
-    }
-
     # Create the command
-    command = CommandClass[self.mode](
+    command = self.CommandClass[self.mode](
       self.current,
       self.parameters[self.mode],
       self.directory)
@@ -1534,6 +1534,7 @@ class ApplicationState(object):
     import cPickle as pickle
     with open(filename) as infile:
       return pickle.load(infile)
+
 
 
 class Controller(object):
@@ -1751,11 +1752,26 @@ class Console(Cmd):
     # Initialise the console base
     Cmd.__init__(self)
 
+    # Open a file for history
+    self.command_history = open("command_history", "a")
+
     # Create the controller object
     self.controller = Controller()
 
     # Set the prompt to show the current mode
     self.prompt = "%s >> " % self.controller.get_mode()
+
+  def precmd(self, line):
+    '''
+    Process command before
+
+    '''
+    # Add command history to file
+    self.command_history.write("%s\n" % line)
+    self.command_history.flush()
+
+    # Call parent
+    return Cmd.precmd(self, line)
 
   def emptyline(self):
     ''' Do nothing on empty line '''
