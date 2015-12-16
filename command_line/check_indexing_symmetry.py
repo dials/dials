@@ -19,12 +19,15 @@ from dials.util.options import flatten_reflections, flatten_experiments
 
 help_message = '''
 
-This program can be used to (i) generate the symmetry from the experiment
-and apply to the input reflections, and (ii) for each symop for that symmetry
-attempt to calculate the CC on that operation within the strong spot list.
+This program can be used to analyse the correlation coefficients between
+reflections related by the symmetry operators belonging to the space group of
+the input experiment.json file. It can also check for misindexing of
+the diffraction pattern, possibly as a result of an incorrect beam centre.
 
-  dials.check_indexing_symmetry experiment.json indexed.pickle \
-    [d_min=3.0] [d_max=10.0]
+Examples::
+
+  dials.check_indexing_symmetry experiment.json indexed.pickle \\
+    grid_search_scope=1 symop_threshold=0.7
 
 '''
 
