@@ -300,9 +300,10 @@ class ParameterManager(object):
     from libtbx.utils import Sorry
     import shlex
     if short_syntax == True:
+      working_phil = self.working_phil.peek()
       for parameter in shlex.split(parameters):
         interpretor = self.master_phil.command_line_argument_interpreter()
-        working_phil = self.working_phil.peek().fetch(
+        working_phil = working_phil.fetch(
           interpretor.process_arg(parameter))
     else:
       working_phil, unused = self.working_phil.peek().fetch(
@@ -1943,7 +1944,7 @@ class Console(Cmd):
       self.prompt = "%s >> " % self.controller.get_mode()
       self.controller.set_parameters(parameters, short_syntax=True)
       self.controller.run()
-      self.controller.undo()
+      self.controller.undo_parameters()
       self.print_history()
     except Exception, e:
       print_error(e)
