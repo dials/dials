@@ -63,6 +63,9 @@ def check_fd_gradients(parameterisation):
   assert len(deltas) == len(p_vals)
   fd_grad = []
 
+  # get matrix to unset rotations of unit cell vectors
+  Ut = mp.get_model().get_U().transpose()
+
   for i in range(len(deltas)):
 
     val = p_vals[i]
@@ -71,6 +74,7 @@ def check_fd_gradients(parameterisation):
     mp.set_param_vals(p_vals)
     rev_uc = mp.get_model().get_unit_cell().parameters()
     rev_vec = mp.get_model().get_real_space_vectors()
+    rev_vec = [Ut * vec for vec in rev_vec]
     rev_B = mp.get_model().get_B()
     rev_O = rev_B.transpose().inverse()
 
@@ -78,6 +82,7 @@ def check_fd_gradients(parameterisation):
     mp.set_param_vals(p_vals)
     fwd_uc = mp.get_model().get_unit_cell().parameters()
     fwd_vec = mp.get_model().get_real_space_vectors()
+    fwd_vec = [Ut * vec for vec in fwd_vec]
     fwd_B = mp.get_model().get_B()
     fwd_O = fwd_B.transpose().inverse()
 
