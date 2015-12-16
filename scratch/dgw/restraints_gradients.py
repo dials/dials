@@ -90,6 +90,12 @@ def check_fd_gradients(parameterisation):
     fd_vec = [(f - r) / deltas[i] for f,r in zip(fwd_vec, rev_vec)]
     fd_B = (fwd_B - rev_B) / deltas[i]
     fd_O = (fwd_O - rev_O) / deltas[i]
+
+    # unit cell dimensions based on vector lengths
+    fd_a = (fwd_vec[0].length() - rev_vec[0].length())/deltas[i]
+    fd_b = (fwd_vec[1].length() - rev_vec[1].length())/deltas[i]
+    fd_c = (fwd_vec[2].length() - rev_vec[2].length())/deltas[i]
+
     fd_grad.append({'da_dp':fd_uc[0],
                     'db_dp':fd_uc[1],
                     'dc_dp':fd_uc[2],
@@ -99,6 +105,9 @@ def check_fd_gradients(parameterisation):
                     'davec_dp':fd_vec[0],
                     'dbvec_dp':fd_vec[1],
                     'dcvec_dp':fd_vec[2],
+                    'd|avec|_dp':fd_a,
+                    'd|bvec|_dp':fd_b,
+                    'd|cvec|_dp':fd_c,
                     'dB_dp':fd_B,
                     'dO_dp':fd_O})
 
@@ -192,17 +201,18 @@ for i, dO in enumerate(dO_dp):
   print "CELL LENGTHS"
   da_dp = 1./a * avec.dot(dav_dp)
   print "d[a]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(da_dp, fd_grad[i]['da_dp'], i)
+  print 'd|avec|_dp finite diff: {0:.5f}'.format(fd_grad[i]['d|avec|_dp'])
 
   db_dp = 1./b * bvec.dot(dbv_dp)
   print "d[b]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(db_dp, fd_grad[i]['db_dp'], i)
+  print 'd|bvec|_dp finite diff: {0:.5f}'.format(fd_grad[i]['d|bvec|_dp'])
 
   dc_dp = 1./c * cvec.dot(dcv_dp)
   print "d[c]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dc_dp, fd_grad[i]['dc_dp'], i)
+  print 'd|cvec|_dp finite diff: {0:.5f}'.format(fd_grad[i]['d|cvec|_dp'])
 
-  # dc_dp appears worse than da_dp or db_dp for the 6th parameter. The vector dcv_dp
-  # is 20 times longer than dbv_dp, so clearly the c vector is strongly affected
-  # by this parameter, which is g5=b*.c*. However, the direction of this change
-  # is almost perpendicular to cvec.
+  # FIXME the expressions for da_dp, db_dp and dc_cp are apparently wrong,
+  # as shown by the finite differences
 
   print
   print "CELL ANGLES"
