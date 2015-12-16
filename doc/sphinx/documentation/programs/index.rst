@@ -29,7 +29,7 @@ Utilities:
    dials_generate_mask
    dials_check_indexing_symmetry
    dials_discover_better_experimental_model
-   dials_analyse_output
+   dials_report
    dials_plot_scan_varying_crystal
    dials_find_spots_server
    dials_apply_mask

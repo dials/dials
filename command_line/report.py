@@ -23,15 +23,22 @@ RAD2DEG = 180/math.pi
 
 help_message = '''
 
-Generate a number of analysis plots from input integrated or indexed reflections.
+Generates a html report given the output of various DIALS programs
+(reflections.pickle and/or experiments.json).
 
 Examples::
 
-  dials.analyse_output indexed.pickle
+  dials.report strong.pickle
 
-  dials.analyse_output refined.pickle
+  dials.report indexed.pickle
 
-  dials.analyse_output integrated.pickle
+  dials.report refined.pickle
+
+  dials.report integrated.pickle
+
+  dials.report refined_experiments.json
+
+  dials.report integrated.pickle integrated_experiments.json
 
 '''
 
