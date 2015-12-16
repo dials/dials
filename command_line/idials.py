@@ -190,6 +190,68 @@ def run_external_command(command, filename=None, output=sys.stdout, wait_time=0.
     raise RuntimeError('Error: external command failed')
 
 
+
+class UndoStack(object):
+  '''
+  A class to implement an undo stack
+
+  '''
+
+  def __init__(self, initial):
+    '''
+    Set the initial state
+
+    '''
+    self._stack = [initial]
+    self._index = 0
+
+  def push(self, obj):
+    '''
+    Add a new state
+
+    '''
+    self._stack = self._stack[0:self._index+1] + [obj]
+    self._index = len(self._stack) - 1
+
+  def peek(self):
+    '''
+    Get the current state
+
+    '''
+    return self._stack[self._index]
+
+  def undo(self):
+    '''
+    Undo to the last state
+
+    '''
+    if self._index > 0:
+      self._index -= 1
+
+  def redo(self):
+    '''
+    Redo to the next state
+
+    '''
+    if self._index < len(self._stack) - 1:
+      self._index += 1
+
+  def reset(self):
+    '''
+    Reset to the initial state
+
+    '''
+    self._stack = self._stack[0:1]
+    self._index = 0
+
+  def __len__(self):
+    '''
+    Get the number of states
+
+    '''
+    return len(self._stack)
+
+
 class ParameterManager(object):
   '''
   A class to manage the current set of parameters.
@@ -201,8 +263,23 @@ class ParameterManager(object):
     Create the master phil and set working phil to default parameters
 
     '''
+    from libtbx.phil import parse
     self.master_phil = phil_scope
-    self.reset()
+    self.working_phil = UndoStack(self.master_phil.fetch(source=parse('')))
+
+  def undo(self):
+    '''
+    Undo the last parameter changes
+
+    '''
+    self.working_phil.undo()
+
+  def redo(self):
+    '''
+    Redo the last parameter changes
+
+    '''
+    self.working_phil.redo()
 
   def reset(self):
     '''
@@ -210,7 +287,7 @@ class ParameterManager(object):
 
     '''
     from libtbx.phil import parse
-    self.working_phil = self.master_phil.fetch(source=parse(''))
+    self.working_phil.push(self.master_phil.fetch(source=parse('')))
 
   def set(self, parameters, short_syntax=False):
     '''
@@ -225,17 +302,17 @@ class ParameterManager(object):
     if short_syntax == True:
       for parameter in shlex.split(parameters):
         interpretor = self.master_phil.command_line_argument_interpreter()
-        self.working_phil = self.working_phil.fetch(
+        working_phil = self.working_phil.peek().fetch(
           interpretor.process_arg(parameter))
     else:
-      working_phil, unused = self.working_phil.fetch(
+      working_phil, unused = self.working_phil.peek().fetch(
         source=parse(parameters),
         track_unused_definitions=True)
       if len(unused) > 0:
         msg = [item.object.as_str().strip() for item in unused]
         msg = '\n'.join(['  %s' % line for line in msg])
         raise Sorry('The following definitions were not recognised\n%s' % msg)
-      self.working_phil = working_phil
+    self.working_phil.push(working_phil)
 
   def get(self, diff=True):
     '''
@@ -244,10 +321,11 @@ class ParameterManager(object):
     :param diff: Get the diff phil
 
     '''
+    working_phil = self.working_phil.peek()
     if diff == False:
-      result = self.working_phil
+      result = working_phil
     else:
-      result = self.master_phil.fetch_diff(source=self.working_phil)
+      result = self.master_phil.fetch_diff(source=working_phil)
     return result
 
 
@@ -1565,6 +1643,22 @@ class Controller(object):
       mode = self.get_mode()
     return self.state.parameters[mode].get(diff=diff)
 
+  def undo_parameters(self):
+    '''
+    Undo the last parameter changes
+
+    '''
+    self.state.parameters[self.get_mode()].undo()
+    self.state.dump(self.state_filename)
+
+  def redo_parameters(self):
+    '''
+    Redo the last parameter changes
+
+    '''
+    self.state.parameters[self.get_mode()].redo()
+    self.state.dump(self.state_filename)
+
   def get_history(self):
     '''
     Get the history as a string
@@ -1727,6 +1821,22 @@ class Console(Cmd):
     except Exception, e:
       print_error(e)
 
+  def do_undo(self, line):
+    ''' Undo parameters. '''
+    try:
+      self.controller.undo_parameters()
+      print self.controller.get_parameters(diff=True).as_str()
+    except Exception, e:
+      print_error(e)
+
+  def do_redo(self, line):
+    ''' Redo parameters. '''
+    try:
+      self.controller.redo_parameters()
+      print self.controller.get_parameters(diff=True).as_str()
+    except Exception, e:
+      print_error(e)
+
   def do_load(self, filename):
     ''' Load a phil parameter file '''
     try:
@@ -1833,6 +1943,7 @@ class Console(Cmd):
       self.prompt = "%s >> " % self.controller.get_mode()
       self.controller.set_parameters(parameters, short_syntax=True)
       self.controller.run()
+      self.controller.undo()
       self.print_history()
     except Exception, e:
       print_error(e)
