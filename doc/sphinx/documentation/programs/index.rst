@@ -36,6 +36,7 @@ Utilities:
    dials_create_profile_model
    dials_estimate_gain
    dials_predict
+   dials_merge_cbf
 
 Printable command line reference:
 
