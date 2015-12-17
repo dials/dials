@@ -3,12 +3,31 @@ from cctbx.array_family import flex
 
 import iotbx.phil
 
-master_phil_scope = iotbx.phil.parse(
-"""
+help_message = '''
+
+Computes the change of basis operator that minimises the difference between
+two orientation matrices, and calculates the rotation matrix and Euler angles
+that relate the two resulting orientation matrices (after transformation by
+the calculated change of basis operator). Optionally calculates the angle
+between given miller indices for the respective orientation matrices.
+
+Examples::
+
+  dials.compare_orientation_matrices experiments.json
+
+  dials.compare_orientation_matrices experiments_1.json experiments_2.json
+
+  dials.compare_orientation_matrices experiments_1.json experiments_2.json hkl=1,0,0
+
+'''
+
+
+phil_scope = iotbx.phil.parse(
+'''
 hkl = None
   .type = ints(size=3)
   .multiple=True
-""")
+''')
 
 
 def run(args):
@@ -16,16 +35,22 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   from libtbx.utils import Sorry
+  import libtbx.load_env
+
+  usage = "%s [options] experiments.json" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
-    phil=master_phil_scope,
+    usage=usage,
+    phil=phil_scope,
     read_experiments=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
   if len(experiments) <= 1:
-    raise Sorry('more than 1 experiment is required')
+    parser.print_help()
+    return
 
   hkl = flex.miller_index(params.hkl)
 

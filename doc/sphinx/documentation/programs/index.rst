@@ -39,6 +39,7 @@ Utilities:
    dials_merge_cbf
    dials_export_bitmaps
    dials_slice_sweep
+   dials_compare_orientation_matrices
 
 Printable command line reference:
 
