@@ -54,7 +54,7 @@ def run(args):
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
 
-  if len(reflections) == 0 or len(experiments) == 0:
+  if len(reflections) == 0 or (len(experiments) == 0 and len(datablocks) == 0):
     parser.print_help()
     return
 

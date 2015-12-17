@@ -25,8 +25,9 @@ def run():
   assert os.path.exists("strong.pickle")
 
   cmd = "dials.spot_counts_per_image datablock.json strong.pickle plot=spot_counts.png"
+  print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  assert os.path.exists("spot_counts.png")
+  assert os.path.exists("spot_counts.png"), result.show_stdout()
 
   assert (
     "| image | #spots | #spots_no_ice | total_intensity |" + \
