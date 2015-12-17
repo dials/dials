@@ -40,6 +40,7 @@ Utilities:
    dials_export_bitmaps
    dials_slice_sweep
    dials_compare_orientation_matrices
+   dials_spot_counts_per_image
    dials_stereographic_projection
 
 Printable command line reference:

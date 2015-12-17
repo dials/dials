@@ -7,6 +7,21 @@ from dials.util.options \
 from dials.algorithms.peak_finding import per_image_analysis
 
 import iotbx.phil
+
+help_message = '''
+
+Reports the number of strong spots and computes an estimate of the resolution
+limit for each image, given the results of dials.find_spots. Optionally
+generates a plot of the per-image statistics (plot=image.png).
+
+Examples::
+
+  dials.spot_counts_per_image datablock.json strong.pickle
+
+  dials.spot_counts_per_image datablock.json strong.pickle plot=per_image.png
+
+'''
+
 phil_scope = iotbx.phil.parse("""\
 resolution_analysis = True
   .type = bool
@@ -21,18 +36,27 @@ id = None
 """)
 
 def run(args):
+  import libtbx.load_env
+  usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
+
   parser = OptionParser(
+    usage=usage,
     read_reflections=True,
     read_datablocks=True,
     read_experiments=True,
     phil=phil_scope,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
   from libtbx.utils import Sorry
 
   params, options = parser.parse_args(show_diff_phil=False)
   reflections = flatten_reflections(params.input.reflections)
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
+
+  if len(reflections) == 0 or len(experiments) == 0:
+    parser.print_help()
+    return
 
   if len(reflections) != 1:
     raise Sorry('exactly 1 reflection table must be specified')
