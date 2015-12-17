@@ -84,6 +84,7 @@ tst_list = (
     "$D/test/command_line/tst_export_mosflm.py",
     "$D/test/command_line/tst_export_xds.py",
     "$D/test/command_line/tst_filter_reflections.py",
+    "$D/test/command_line/tst_find_hot_pixels.py",
     "$D/test/command_line/tst_find_spots_server_client.py",
     "$D/test/command_line/tst_generate_mask.py",
     "$D/test/command_line/tst_idials.py",

@@ -19,11 +19,23 @@ verbosity = 1
 """, process_includes=True)
 
 help_message = '''
-Find hot pixels from custom dials.find_spots run, i.e.
 
-  dials.find_hot_pixels datablock.json strong.pickle
+  This program looks through the output of dials.find_spots to determine if any
+  of the pixels are possible "hot" pixels. If a pixel is "hot" this will mean
+  that it will have a consistently high value throughout the dataset. This
+  program simply selects all pixels which are labelled as strong on all images
+  in the dataset as "hot".
 
-Will return a hot_pixel.pickle mask for use in integration.
+  Note that if you have still data or a small dataset, this is likely to produce
+  lots of false positives; however, if you have a large rotation dataset, it is
+  likely to be reasonably accurate.
+
+  The program returns a file names hot_pixels.pickle which contains a boolean mask
+  with True pixels being OK and False pixels being "hot" pixels.
+
+  Examples::
+    dials.find_hot_pixels datablock.json strong.pickle
+
 '''
 
 def run(args):
@@ -35,6 +47,7 @@ def run(args):
   usage = "%s [options] datablock.json strong.pickle" % \
     libtbx.env.dispatcher_name
 
+  # Create the option parser
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
@@ -43,11 +56,14 @@ def run(args):
     check_format=False,
     epilog=help_message)
 
+  # Get the parameters
   params, options = parser.parse_args(show_diff_phil=False)
 
+  # Configure the log
   log.config(
-    params.verbosity, info='dials.find_hot_pixels.log',
-      debug='dials.find_hot_pixels.debug.log')
+    params.verbosity,
+    info='dials.find_hot_pixels.log',
+    debug='dials.find_hot_pixels.debug.log')
 
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
@@ -58,11 +74,14 @@ def run(args):
   datablocks = flatten_datablocks(params.input.datablock)
   reflections = flatten_reflections(params.input.reflections)
 
+  if len(datablocks) == 0 and len(reflections) == 0:
+    parser.print_help()
+    exit(0)
+
   if len(datablocks) > 1:
     raise Sorry("Only one DataBlock can be processed at a time")
   else:
     imagesets = datablocks[0].extract_imagesets()
-
   if len(reflections) == 0:
     raise Sorry("No reflection lists found in input")
   if len(reflections) > 1:
