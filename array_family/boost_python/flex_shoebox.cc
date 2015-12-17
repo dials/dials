@@ -75,6 +75,8 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<int> labels = twod ? pixel.labels_2d() : pixel.labels_3d();
     af::shared<double> values = pixel.values();
     af::shared< vec3<int> > coords = pixel.coords();
+    DIALS_ASSERT(labels.size() == values.size());
+    DIALS_ASSERT(labels.size() == coords.size());
 
     // Get the number of labels and allocate the array
     std::size_t num = af::max(labels.const_ref()) + 1;
@@ -95,6 +97,9 @@ namespace dials { namespace af { namespace boost_python {
     for (std::size_t i = 0; i < labels.size(); ++i) {
       int l = labels[i];
       vec3<int> c = coords[i];
+      DIALS_ASSERT(c[2] < xsize && c[2] >= 0);
+      DIALS_ASSERT(c[1] < ysize && c[1] >= 0);
+      DIALS_ASSERT(c[0] < minmaxz[1] && c[0] >= minmaxz[0]);
       if (c[2] <  result[l].bbox[0]) result[l].bbox[0] = c[2];
       if (c[2] >= result[l].bbox[1]) result[l].bbox[1] = c[2] + 1;
       if (c[1] <  result[l].bbox[2]) result[l].bbox[2] = c[1];

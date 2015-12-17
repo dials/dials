@@ -298,14 +298,14 @@ namespace dials { namespace model {
           boost::add_edge(i1, i1+1, graph);
         }
         if (coords_[i1][1] < size_[0]-1) {
-          for (; idx[i2] < idx2 && i2 < coords_.size(); ++i2);
+          for (; idx[i2] < idx2 && i2 < coords_.size()-1; ++i2);
           if (idx[i2] == idx2) {
             boost::add_edge(i1, i2, graph);
           }
         }
         if (coords_[i1][0] < last_frame_-1) {
           if (i2 > i3) i3 = i2;
-          for (; idx[i3] < idx3 && i3 < coords_.size(); ++i3);
+          for (; idx[i3] < idx3 && i3 < coords_.size()-1; ++i3);
           if (idx[i3] == idx3) {
             boost::add_edge(i1, i3, graph);
           }
@@ -314,6 +314,7 @@ namespace dials { namespace model {
 
       // Do the connected components
       af::shared<int> labels(num_vertices(graph), af::init_functor_null<int>());
+      DIALS_ASSERT(labels.size() == coords_.size());
       int num = boost::connected_components(graph, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;
@@ -352,7 +353,7 @@ namespace dials { namespace model {
           boost::add_edge(i1, i1+1, graph);
         }
         if (coords_[i1][1] < size_[0]-1) {
-          for (; idx[i2] < idx2 && i2 < coords_.size(); ++i2);
+          for (; idx[i2] < idx2 && i2 < coords_.size()-1; ++i2);
           if (idx[i2] == idx2) {
             boost::add_edge(i1, i2, graph);
           }
@@ -361,6 +362,7 @@ namespace dials { namespace model {
 
       // Do the connected components
       af::shared<int> labels(num_vertices(graph));
+      DIALS_ASSERT(labels.size() == coords_.size());
       int num = boost::connected_components(graph, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;
