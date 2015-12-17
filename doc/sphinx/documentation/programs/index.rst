@@ -37,6 +37,7 @@ Utilities:
    dials_estimate_gain
    dials_predict
    dials_merge_cbf
+   dials_export_bitmaps
    dials_slice_sweep
 
 Printable command line reference:

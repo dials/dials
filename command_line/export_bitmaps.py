@@ -6,6 +6,13 @@ import iotbx.phil
 from dials.util.options import flatten_datablocks
 
 help_message = '''
+
+Export raw diffraction image files as bitmap images, optionally exporting
+images from intermediate spot-finding steps (local mean and variance maps,
+or sigma_b, sigma_s or threshold-filtered images). Appearance of the images
+can be altered via the brightness and colour_scheme parameters, and optionally
+binning of pixels can be used to reduce image sizes.
+
 Examples::
 
   dials.export_bitmaps image.cbf
@@ -59,7 +66,6 @@ def run(args):
   import os
   import libtbx.load_env
   from libtbx.utils import Sorry
-  from dials.util import log
   from dials.util.options import OptionParser
   usage = "%s [options] datablock.json | image.cbf" %libtbx.env.dispatcher_name
 
