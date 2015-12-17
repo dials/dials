@@ -74,7 +74,7 @@ def test1(averaged_reference_detector=False):
                        "idx-20140615231416328_indexed.pickle",
                        "idx-20140615231416694_indexed.pickle"]
 
-  cmd = "dials.stills_detector_hybrid_refine "
+  cmd = "dev.dials.stills_detector_hybrid_refine "
   for exp in experiments_paths:
     exp = os.path.join(data_dir, exp)
     cmd += "experiments={0} ".format(exp)

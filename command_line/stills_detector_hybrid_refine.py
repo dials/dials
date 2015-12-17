@@ -9,6 +9,8 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.stills_detector_hybrid_refine
+
 """This script is intended for panel group refinement using still shot data
 collected on a CSPAD detector. This version of the script uses a 'hybrid
 minimiser'. Rather than a single joint refinement job of all crystals and the
