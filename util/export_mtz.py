@@ -200,48 +200,75 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   assert(len(experiment_list) == 1)
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
-  # strip out negative variance reflections: these should not really be there
-  # FIXME Doing select on summation results. Should do on profile result if
-  # present? Yes
+  # Helper array of indices
+  indices = flex.size_t(range(len(integrated_data)))
 
+  # Integration output bad variances as -1, set them to zero
+  if 'intensity.sum.variance' in integrated_data:
+    V = integrated_data['intensity.sum.variance']
+    selection = indices.select(V < 0)
+    V.set_selected(selection, flex.double(len(selection), 0))
   if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated,
-      all=True)
+    V = integrated_data['intensity.prf.variance']
+    selection = indices.select(V < 0)
+    V.set_selected(selection, flex.double(len(selection), 0))
+
+  # Get the reflections with summed or profile intensities
+  sum_flags = integrated_data.get_flags(integrated_data.flags.integrated_sum)
+  prf_flags = integrated_data.get_flags(integrated_data.flags.integrated_prf)
+
+  # Remove reflections with summed variance less than zero and low I/Sigma
+  if 'intensity.sum.variance' in integrated_data:
+    summed = integrated_data.select(sum_flags)
+    V = summed['intensity.sum.variance']
+    selection = indices.select(sum_flags).select(V <= 0)
+    sum_flags.set_selected(selection, flex.bool(len(selection), False))
+    info("Removing %d reflections with summed Variance <= 0" % len(selection))
+    if min_isigi is not None:
+      summed = integrated_data.select(sum_flags)
+      I = summed['intensity.sum.value']
+      V = summed['intensity.sum.variance']
+      IsigI = I / flex.sqrt(V)
+      selection = indices.select(sum_flags).select(IsigI < min_isigi)
+      sum_flags.set_selected(selection, flex.bool(len(selection), False))
+      info('Removing %d reflections with summed I/Sig(I) < %s' %(
+        len(selection),
+        min_isigi))
+
+  # Remove reflections with profile variance less than zero and low I/Sigma
+  if 'intensity.prf.variance' in integrated_data:
+    fitted = integrated_data.select(prf_flags)
+    V = fitted['intensity.prf.variance']
+    selection = indices.select(prf_flags).select(V <= 0)
+    V.set_selected(selection, flex.double(len(selection), 0))
+    prf_flags.set_selected(selection, flex.bool(len(selection), False))
+    info("Removing %d reflections with fitted Variance <= 0" % len(selection))
+    if min_isigi is not None:
+      fitted = integrated_data.select(prf_flags)
+      I = fitted['intensity.prf.value']
+      V = fitted['intensity.prf.variance']
+      IsigI = I / flex.sqrt(V)
+      selection = indices.select(prf_flags).select(IsigI < min_isigi)
+      prf_flags.set_selected(selection, flex.bool(len(selection), False))
+      info('Removing %d reflections with fitted I/Sig(I) < %s' %(
+        len(selection),
+        min_isigi))
+
+  # Unset the flags in the integrated data
+  integrated_data.unset_flags(~sum_flags, integrated_data.flags.integrated_sum)
+  integrated_data.unset_flags(~prf_flags, integrated_data.flags.integrated_prf)
+
+  # FIXME How do we sum and scale partials for both profile fitting and
+  # summation when the number of reflections summed or fitted is different?
+  # Currently select only reflections which have both intensities
+  if include_partials:
+    if 'intensity.prf.value' in integrated_data:
+      selection = sum_flags & prf_flags
+    else:
+      selection = sum_flags
   else:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated_sum)
+    selection = sum_flags | prf_flags
   integrated_data = integrated_data.select(selection)
-
-  selection = integrated_data['intensity.sum.variance'] <= 0
-  if selection.count(True) > 0:
-    integrated_data.del_selected(selection)
-    info('Removing %d reflections with negative variance' % \
-          selection.count(True))
-
-  if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data['intensity.prf.variance'] <= 0
-    if selection.count(True) > 0:
-      integrated_data.del_selected(selection)
-      info('Removing %d profile reflections with negative variance' % \
-            selection.count(True))
-
-  if min_isigi is not None:
-
-    selection = (
-      integrated_data['intensity.sum.value']/
-      flex.sqrt(integrated_data['intensity.sum.variance'])) < min_isigi
-    integrated_data.del_selected(selection)
-    info('Removing %d reflections with I/Sig(I) < %s' %(
-      selection.count(True), min_isigi))
-
-    if 'intensity.prf.variance' in integrated_data:
-      selection = (
-        integrated_data['intensity.prf.value']/
-        flex.sqrt(integrated_data['intensity.prf.variance'])) < min_isigi
-      integrated_data.del_selected(selection)
-      info('Removing %d profile reflections with I/Sig(I) < %s' %(
-        selection.count(True), min_isigi))
 
   # FIXME in here work on including partial reflections => at this stage best
   # to split off the partial refections into a different selection & handle
@@ -466,6 +493,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   d.add_column('BATCH', type_table['BATCH']).set_values(
     batch.as_double().as_float())
 
+  # Get the summed and profile fitted flags
+  sum_flags = integrated_data.get_flags(integrated_data.flags.integrated_sum)
+  prf_flags = integrated_data.get_flags(integrated_data.flags.integrated_prf)
+
   if 'lp' in integrated_data:
     lp = integrated_data['lp']
   else:
@@ -484,18 +515,24 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     I_profile = integrated_data['intensity.prf.value'] * scl
     V_profile = integrated_data['intensity.prf.variance'] * scl * scl
     # Trap negative variances
-    assert V_profile.all_gt(0)
-    d.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
+    assert V_profile.select(prf_flags).all_gt(0)
+    d.add_column('IPR', type_table['I']).set_values(
+      I_profile.as_float(),
+      prf_flags)
     d.add_column('SIGIPR', type_table['SIGI']).set_values(
-      flex.sqrt(V_profile).as_float())
+      flex.sqrt(V_profile).as_float(),
+      prf_flags)
   if 'intensity.sum.value' in integrated_data:
     I_sum = integrated_data['intensity.sum.value'] * scl
     V_sum = integrated_data['intensity.sum.variance'] * scl * scl
     # Trap negative variances
-    assert V_sum.all_gt(0)
-    d.add_column('I', type_table['I']).set_values(I_sum.as_float())
+    assert V_sum.select(sum_flags).all_gt(0)
+    d.add_column('I', type_table['I']).set_values(
+      I_sum.as_float(),
+      sum_flags)
     d.add_column('SIGI', type_table['SIGI']).set_values(
-      flex.sqrt(V_sum).as_float())
+      flex.sqrt(V_sum).as_float(),
+      sum_flags)
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())
