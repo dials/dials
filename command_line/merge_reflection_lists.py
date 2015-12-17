@@ -8,7 +8,38 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.merge_reflection_lists
+
 from __future__ import division
+from libtbx.phil import parse
+
+# Create the help message
+help_message = '''
+
+  This program allows you to combine reflection lists. Note that merge in this
+  case refers to merging lists rather than merging equivalent reflections.
+
+  Reflection tables can either be extended (i.e. given two reflection tables,
+  "A" and "B", the result would have length = len("A") + len("B")). Or values
+  in one table can be overwritten with values from the other table. Any columns
+  present in "A" but not present in "B" (or vice versa) will be preserved.
+
+'''
+
+# Create the phil parameters
+phil_scope = parse('''
+
+  output = merged.pickle
+    .type = str
+    .help = "The output file"
+
+  method = *update extend
+    .type = choice
+    .help = "The method of merging"
+
+''')
+
 
 class Script(object):
   ''' A class to encapsulate the script. '''
@@ -16,25 +47,12 @@ class Script(object):
   def __init__(self):
     ''' Initialise the script. '''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    # Create the phil parameters
-    phil_scope = parse('''
-
-      output = merged.pickle
-        .type = str
-        .help = "The output file"
-
-      method = *update extend
-        .type = choice
-        .help = "The method of merging"
-
-    ''')
 
     # The script usage
     usage = "usage: %s [options] /path/to/image/reflection/files" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
+      epilog=help_message,
       usage=usage,
       phil=phil_scope,
       read_reflections=True)

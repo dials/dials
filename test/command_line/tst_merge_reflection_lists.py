@@ -30,7 +30,7 @@ class Test(object):
 
     # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
-      'dials.merge_reflection_lists',
+      'dev.dials.merge_reflection_lists',
       'temp1.pickle',
       'temp2.pickle',
       'method=update'
@@ -42,7 +42,7 @@ class Test(object):
 
     # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
-      'dials.merge_reflection_lists',
+      'dev.dials.merge_reflection_lists',
       'temp1.pickle',
       'temp2.pickle',
       'method=extend'
