@@ -11,6 +11,7 @@ def exercise_export_bitmaps():
   data_dir = os.path.join(dials_regression, 'centroid_test_data')
   if data_dir is None:
     print 'Skipping exercise_export_bitmaps(): dials_regression not available'
+    return
 
   cmd = 'dials.export_bitmaps %s/centroid_0001.cbf' %data_dir
   print cmd
