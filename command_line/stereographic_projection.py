@@ -8,8 +8,30 @@ import iotbx.phil
 from cctbx import crystal, miller
 from scitbx import matrix
 
-master_phil_scope = iotbx.phil.parse(
-"""
+help_message = '''
+
+Calculates a stereographic projection image for the given crystal models and
+the given miller indices (either specified invidually, or for all miller indices
+up to a given hkl_limit). By default the projection is in the plane
+perpendicular to 0,0,1 reflection for the first crystal, however the projection
+can optionally be performed in the laboratory frame (frame=laboratory) in the
+plane perpendicular to the beam. Setting the parameter expand_to_p1=True will
+also plot all symmetry equivalents of the given miller indices, and
+eliminate_sys_absent=False will eliminate systematically absent reflections
+before generating the projection.
+
+Examples::
+
+  dials.stereographic_projection experiments.json hkl=1,0,0 hkl=0,1,0
+
+  dials.stereographic_projection experiments.json hkl_limit=2
+
+  dials.stereographic_projection experiments_1.json experiments_2.json hkl=1,0,0 expand_to_p1=True
+
+'''
+
+phil_scope = iotbx.phil.parse(
+'''
 hkl = None
   .type = ints(size=3)
   .multiple=True
@@ -48,7 +70,7 @@ plot {
   font_size = 6
     .type = float(value_min=0)
 }
-""")
+''')
 
 def reference_poles_perpendicular_to_beam(beam, goniometer):
   # plane normal
@@ -125,9 +147,10 @@ def run(args):
 
   parser = OptionParser(
     usage=usage,
-    phil=master_phil_scope,
+    phil=phil_scope,
     read_experiments=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
