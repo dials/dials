@@ -27,6 +27,47 @@ Examples::
 
 '''
 
+# The phil scope
+phil_scope = parse('''
+
+  reference_from_experiment{
+    beam = None
+      .help = "Take beam model from this experiment to overwrite all other"
+              "beam models in the combined experiments"
+      .type = int(value_min=0)
+
+    scan = None
+      .help = "Take scan model from this experiment to overwrite all other"
+              "scan models in the combined experiments"
+      .type = int(value_min=0)
+
+    crystal = None
+      .help = "Take crystal model from this experiment to overwrite all"
+              "other crystal models in the combined experiments"
+      .type = int(value_min=0)
+
+    goniometer = None
+      .help = "Take goniometer model from this experiment to overwrite all"
+              "other goniometer models in the combined experiments"
+      .type = int(value_min=0)
+
+    detector = None
+      .help = "Take detector model from this experiment to overwrite all"
+              "other detector models in the combined experiments"
+      .type = int(value_min=0)
+  }
+
+  output {
+    experiments_filename = combined_experiments.json
+      .type = str
+      .help = "The filename for combined experimental models"
+
+    reflections_filename = combined_reflections.pickle
+      .type = str
+      .help = "The filename for combined reflections"
+  }
+''', process_includes=True)
+
 class CombineWithReference(object):
 
   def __init__(self, beam=None, goniometer=None, scan=None,
@@ -64,49 +105,7 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
-
-    # The phil scope
-    phil_scope = parse('''
-
-      reference_from_experiment{
-        beam = None
-          .help = "Take beam model from this experiment to overwrite all other"
-                  "beam models in the combined experiments"
-          .type = int(value_min=0)
-
-        scan = None
-          .help = "Take scan model from this experiment to overwrite all other"
-                  "scan models in the combined experiments"
-          .type = int(value_min=0)
-
-        crystal = None
-          .help = "Take crystal model from this experiment to overwrite all"
-                  "other crystal models in the combined experiments"
-          .type = int(value_min=0)
-
-        goniometer = None
-          .help = "Take goniometer model from this experiment to overwrite all"
-                  "other goniometer models in the combined experiments"
-          .type = int(value_min=0)
-
-        detector = None
-          .help = "Take detector model from this experiment to overwrite all"
-                  "other detector models in the combined experiments"
-          .type = int(value_min=0)
-      }
-
-      output {
-        experiments_filename = combined_experiments.json
-          .type = str
-          .help = "The filename for combined experimental models"
-
-        reflections_filename = combined_reflections.pickle
-          .type = str
-          .help = "The filename for combined reflections"
-      }
-    ''', process_includes=True)
 
     # The script usage
     usage  = "usage: %s [options] [param.phil] " \

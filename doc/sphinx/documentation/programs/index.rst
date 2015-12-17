@@ -42,6 +42,7 @@ Utilities:
    dials_compare_orientation_matrices
    dials_spot_counts_per_image
    dials_stereographic_projection
+   dials_combine_experiments
 
 Printable command line reference:
 
