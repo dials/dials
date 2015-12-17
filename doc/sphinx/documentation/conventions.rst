@@ -28,7 +28,7 @@ The basic diffractometer equation relates a position :math:`\vec{h}` to a
 position :math:`\vec{r_\phi}` in *Cartesian reciprocal space*. This space is
 defined so that its axes coincide with the axes of the *laboratory frame*. The
 distinction is necessary because distances in reciprocal space are measured in
-units of :math:`\AA^-1`. However, for convenience it is often acceptable to
+units of :math:`\AA^{-1}`. However, for convenience it is often acceptable to
 refer to either Cartesian reciprocal space or the real space laboratory frame as
 the "lab frame", when the correct choice is clear by context. The diffractometer
 equation is
@@ -46,7 +46,7 @@ position in the :math:`\phi`-axis frame, a Cartesian frame that coincides with
 the laboratory frame at a rotation angle of :math:`\phi=0`. This makes clear
 that the setting matrix does not change during the course of a rotation
 experiment (notwithstanding small "misset" rotations --- see
-Section~\ref{sec:U_matrix}).
+`Orientation matrix`.
 
 For an experiment performed using the rotation method we use here :math:`\phi`
 to refer to the angle about the actual axis of rotation, even when this is
@@ -77,7 +77,7 @@ Cartesian frame are fixed to the reciprocal lattice *via* this convention.
 
 There are infinitely many ways that :math:`\mathbf{A}` may be decomposed into a
 pair :math:`\mathbf{U} \mathbf{B}`. The symbolic expression of
-:math:`\mathbf{B}` is simplest when the crystal-fixed Cartesian system is chosen
+:math:`\mathbf{B}` is simplified when the crystal-fixed Cartesian system is chosen
 to be aligned with crystal real or reciprocal space axes. For example,
 [#Busing1967]_ use a frame in which the basis vector :math:`\vec{i}` is parallel
 to reciprocal lattice vector :math:`\vec{a^*}`, while :math:`\vec{j}` is chosen
@@ -140,10 +140,8 @@ where :math:`\mathbf{F}` is designated the *real space fractionalisation
 matrix*.  This is easily obtained in cctbx by a method of a
 :samp:`cctbx.uctbx.unit_cell` object.
 
-A symbolic expansion of :math:`\mathbf{B}` in terms of the real space unit cell
-parameters will be required for the calculation of the derivatives of
-:math:`\mathbf{B}` wrt these parameters. An expression for :math:`\mathbf{F}` is
-given by [#RuppWeb]_ from which we derive :math:`\mathbf{B}` simply:
+A symbolic expression for :math:`\mathbf{F}` in terms of the real space unit cell
+parameters is given by [#RuppWeb]_ from which we derive :math:`\mathbf{B}` simply:
 
 .. math::
    :label: recipspaceorthomatrix
@@ -189,7 +187,7 @@ and a variable time-dependent part that is parameterised. That gives
    \vec{r_\phi} = \mathbf{\Psi}\mathbf{R}\mathbf{U_0}\mathbf{B}\vec{h}
 
 where :math:`\Psi` is the combined rotation matrix for the misset expressed as
-three angles, :math:`\psi_x, \psi_y and \psi_z` in the laboratory frame.
+three angles, :math:`\psi_x, \psi_y` and :math:`\psi_z` in the laboratory frame.
 
 In Mosflm these angles are converted to their equivalents in the
 :math:`\phi-` axis frame, where:
@@ -209,10 +207,6 @@ fully vectorial. By this we mean that it should be possible to change the
 reference frame arbitrarily and all calculations should work appropriately in
 the new frame.
 
-FIXME Note this is not currently true in the case of translations. We assume
-that the intersection of the crystal and beam occurs at the origin of our
-laboratory system. Is this going to be a problem?
-
 Nevertheless, it is useful to adopt a particular standard frame of reference for
 meaningful comparison of results, communication between components of the
 software and for an agreed definition of what the laboratory consists of
@@ -221,8 +215,6 @@ be either fixed to the detector, or to the rotation axis and beam).
 
 In the interests of standardisation, we choose to adopt the Image CIF (imgCIF)
 reference frame [#Bernstein2006]_, [#Hammersley2006]_.
-
-FIXME Some expansion of that here.
 
 Summary of coordinate frames
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -235,63 +227,13 @@ Summary of coordinate frames
    the crystal, axes aligned to lab frame at :math:`\phi=0`)
  - :math:`\mathbf{RUB}\vec{h}` gives *Cartesian reciprocal space* (fixed wrt the
    laboratory)
- - Diffraction geometry (Section~\ref{sec:diff_geom}) relates this to the
+ - The diffraction geometry relates this to the
    direction of the scattering vector :math:`\vec{s}` in the *laboratory frame*
  - Projection along :math:`\vec{s}` impacts an *abstract sensor frame* giving a
    2D position of the reflection position on a sensor.
  - This position is converted to the *pixel position* for the 2D position on an
-   image in number of pixels (starts 0,0 at origin?)
+   image in number of pixels (starting 0,0 at the origin).
 
-Diffraction geometry
---------------------
-.. \label{sec:diff_geom}
-
-This is described in detail in the document "Reflection prediction". Perhaps
-the introductory parts of that document should be moved here.
-
-Detector model
---------------
-
-A composite detector may be composed of multiple "sensors". Each sensor is
-supposed to be a single detective surface that may be reasonably described
-mathematically by a plane and limits in orthogonal directions thus forming a
-letterbox in space. This corresponds closely to the idea of an "abstract
-detector"
-
-It is expected that any arrangement of multiple sensors with rigidly fixed
-offsets and mutual orientations will be described by a single set of parameters
-and constitutes a single detector parameterisation.
-
-There is a distinction between a "detector model" and a "detector
-parameterisation" that risks some confusion. Here we attempt some strict
-definitions to clarify that distinction.
-
-A detector model implements the interface by which all detector-related
-operations are performed, and all detector-related data is accessed. A detector
-model will contain a list of sensors (one or many) which constitute the
-detective surfaces of that detector.  At this stage we assume *only one detector
-exists* in the experiment, thus there is only one detector model. For the
-purposes of reflection prediction and refinement, this singleton detector model
-is a directory of all of the sensors in the experiment.  This means that
-coordinates given as :math:`X, Y, i`, where :math:`i` is a unique sensor number
-fully cover all of the detector space.
-
-A "detector parameterisation" also contains a grouping of sensors. This group is
-described by a single set of parameters and is therefore supposed to be a single
-physical entity, which is internally static, but may be oriented arbitrarily
-within the laboratory frame. However, it is possible that this detector
-parameterisation does not cover the full detector model. There may be multiple
-detector parameterisations, in the case where parts of a detector may move
-relative to one another (refer to the CXI PAD, although even in such cases it is
-likely to be a very unusual situation that warrants such movements as degrees of
-freedom).
-
-We also state that a sensor may only belong to one parameterisation at any one
-time (overlapping groups of sensors are not allowed), or none (in the case where
-we are absolutely certain of the sensor location and orientation and this need
-not be refined).
-
-This should cover almost all use cases.
 
 .. rubric:: References
 
