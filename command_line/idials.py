@@ -731,9 +731,6 @@ class CommandNode(object):
     # Run the command (override this method)
     self.run()
 
-    # Grab the result (override this method)
-    self.finalize()
-
     # Set success
     self.success = True
 
@@ -948,13 +945,9 @@ class ImportCommand(CommandNode):
     Run the import command
 
     '''
+    # Run the command
     run_external_command(['dials.import', self.parameters], self.output)
 
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     # Check the files exist
     self.check_files_exist(self.filenames.values())
 
@@ -1010,11 +1003,6 @@ class FindSpotsCommand(CommandNode):
     # Run find spots
     run_external_command(['dials.find_spots', self.parameters], self.output)
 
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     # Generate the report
     self.generate_report()
 
@@ -1070,14 +1058,10 @@ class DiscoverBetterModelCommand(CommandNode):
     Run the index command
 
     '''
+    # Run the command
     run_external_command(['dials.discover_better_experimental_model',
                           self.parameters], self.output)
 
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     # Generate the report
     self.generate_report()
 
@@ -1141,13 +1125,9 @@ class IndexCommand(CommandNode):
     Run the index command
 
     '''
+    # Run the command
     run_external_command(['dials.index', self.parameters], self.output)
 
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     # Generate the report
     self.generate_report()
 
@@ -1202,14 +1182,10 @@ class RefineBSCommand(CommandNode):
     Run the refine_bravais_settings command
 
     '''
-    run_external_command(['dials.refine_bravais_settings', self.parameters], self.output)
-
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     from os.path import exists
+
+    # Run the command
+    run_external_command(['dials.refine_bravais_settings', self.parameters], self.output)
 
     # Read the summary and check all json files exist
     for item, filename in self.bravais_setting_filenames().iteritems():
@@ -1298,13 +1274,9 @@ class ReIndexCommand(CommandNode):
     Run the index command
 
     '''
+    # Run the command
     run_external_command(['dials.reindex', self.parameters], self.output)
 
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     # Generate the report
     self.generate_report()
 
@@ -1364,13 +1336,9 @@ class RefineCommand(CommandNode):
     Run the refine command
 
     '''
+    # Run the command
     run_external_command(['dials.refine', self.parameters], self.output)
 
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     # Generate the report
     self.generate_report()
 
@@ -1429,13 +1397,9 @@ class IntegrateCommand(CommandNode):
     Run the integrate command
 
     '''
+    # Run the command
     run_external_command(['dials.integrate', self.parameters], self.output)
 
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     # Generate the report
     self.generate_report()
 
@@ -1487,15 +1451,11 @@ class ExportCommand(CommandNode):
     Run the export command
 
     '''
-    run_external_command(['dials.export', self.parameters], self.output)
-
-  def finalize(self):
-    '''
-    Finalize the processing
-
-    '''
     from os.path import exists
     import shutil
+
+    # Run the command
+    run_external_command(['dials.export', self.parameters], self.output)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
