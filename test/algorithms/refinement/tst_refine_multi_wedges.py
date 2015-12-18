@@ -93,7 +93,9 @@ class Test(object):
     """Do refinement and load the results"""
 
     # turn off outlier rejection so that test takes about 4s rather than 10s
-    cmd = "dials.refine combined_experiments.json combined_reflections.pickle outlier.algorithm=null"
+    # set close_to_spindle_cutoff to old default
+    cmd = ("dials.refine combined_experiments.json combined_reflections.pickle"
+           " outlier.algorithm=null close_to_spindle_cutoff=0.05")
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
     self._refined_experiments = ExperimentListFactory.from_json_file(

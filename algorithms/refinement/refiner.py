@@ -300,7 +300,7 @@ refinement
       .type = int
       .expert_level = 1
 
-    close_to_spindle_cutoff = 0.05
+    close_to_spindle_cutoff = 0.02
       .help = "The inclusion criterion currently uses the volume of the"
               "parallelepiped formed by the spindle axis, the incident"
               "beam and the scattered beam. If this is lower than some"
