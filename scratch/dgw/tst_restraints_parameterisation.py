@@ -79,5 +79,3 @@ def test1(params):
 if __name__ == '__main__':
 
   test1(working_params)
-
-
