@@ -97,7 +97,7 @@ class SingleUnitCellTie(object):
     aa *= DEG2RAD
     bb *= DEG2RAD
     cc *= DEG2RAD
-    avec, bvec, cvec = self._xlucp.get_model().get_real_space_vectors()
+    avec, bvec, cvec = [matrix.col(v) for v in O.transpose().as_list_of_lists()]
     ua = avec.normalize()
     ub = bvec.normalize()
     uc = cvec.normalize()
@@ -142,47 +142,21 @@ class SingleUnitCellTie(object):
       # derivative of cell lengths wrt p
       da_dp = 1./a * avec.dot(dav_dp) if sel[0] else 0.0
       da.append(da_dp)
-      print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grads[i][0], i)
-
       db_dp = 1./b * bvec.dot(dbv_dp) if sel[1] else 0.0
       db.append(db_dp)
-      print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grads[i][1], i)
-
       dc_dp = 1./c * cvec.dot(dcv_dp) if sel[2] else 0.0
       dc.append(dc_dp)
+
+      print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grads[i][0], i)
+      print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grads[i][1], i)
       print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grads[i][2], i)
 
-      # calculate orthogonal rate of change vectors
-      if dav_dp.length() < 1e-10:
-        ortho_dav_dp = matrix.col((0, 0, 0))
-      else:
-        v = avec.cross(dav_dp).normalize()
-        u = v.cross(ua).normalize()
-        ortho_dav_dp = dav_dp.dot(u) * u
-
-      if dbv_dp.length() < 1e-10:
-        ortho_dbv_dp = matrix.col((0, 0, 0))
-      else:
-        v = bvec.cross(dbv_dp).normalize()
-        u = v.cross(ub).normalize()
-        ortho_dbv_dp = dbv_dp.dot(u) * u
-
-      if dcv_dp.length() < 1e-10:
-        ortho_dcv_dp = matrix.col((0, 0, 0))
-      else:
-        v = cvec.cross(dcv_dp).normalize()
-        u = v.cross(uc).normalize()
-        ortho_dcv_dp = dcv_dp.dot(u) * u
-
       # derivative of cell angles wrt p
-      daa_dp = ortho_dbv_dp.dot(dalpha_db) + ortho_dcv_dp.dot(dalpha_dc) \
-        if sel[3] else 0.0
+      daa_dp = dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc) if sel[3] else 0.0
       daa.append(daa_dp)
-      dbb_dp = ortho_dav_dp.dot(dbeta_da) + ortho_dcv_dp.dot(dbeta_dc) \
-        if sel[4] else 0.0
+      dbb_dp = dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc) if sel[4] else 0.0
       dbb.append(daa_dp)
-      dcc_dp = ortho_dav_dp.dot(dgamma_da) + ortho_dbv_dp.dot(dgamma_db) \
-        if sel[5] else 0.0
+      dcc_dp = dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db) if sel[5] else 0.0
       dcc.append(dcc_dp)
 
       print "d[aa]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * daa_dp, fd_grads[i][3], i)

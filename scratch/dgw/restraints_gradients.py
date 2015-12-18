@@ -38,10 +38,9 @@ args=["a.direction.close_to.sd=5","b.direction.close_to.sd=5","c.direction.close
 models = setup_geometry.Extract(master_phil, cmdline_args = args)
 crystal = models.crystal
 
+# a hexagonal crystal is a good test case for behaviour of oblique cells
 do_hexagonal = True
 if do_hexagonal:
-  # XXXX use a hexagonal crystal instead for investigation as symmetry constraints
-  # are causing problems
   import libtbx.load_env, os
   from dxtbx.model.experiment.experiment_list import ExperimentListFactory
   dials_regression = libtbx.env.find_in_repositories(
@@ -91,11 +90,6 @@ def check_fd_gradients(parameterisation):
     fd_B = (fwd_B - rev_B) / deltas[i]
     fd_O = (fwd_O - rev_O) / deltas[i]
 
-    # unit cell dimensions based on vector lengths
-    fd_a = (fwd_vec[0].length() - rev_vec[0].length())/deltas[i]
-    fd_b = (fwd_vec[1].length() - rev_vec[1].length())/deltas[i]
-    fd_c = (fwd_vec[2].length() - rev_vec[2].length())/deltas[i]
-
     fd_grad.append({'da_dp':fd_uc[0],
                     'db_dp':fd_uc[1],
                     'dc_dp':fd_uc[2],
@@ -105,9 +99,6 @@ def check_fd_gradients(parameterisation):
                     'davec_dp':fd_vec[0],
                     'dbvec_dp':fd_vec[1],
                     'dcvec_dp':fd_vec[2],
-                    'd|avec|_dp':fd_a,
-                    'd|bvec|_dp':fd_b,
-                    'd|cvec|_dp':fd_c,
                     'dB_dp':fd_B,
                     'dO_dp':fd_O})
 
@@ -133,7 +124,8 @@ a, b, c, aa, bb, cc = crystal.get_unit_cell().parameters()
 aa *= DEG2RAD
 bb *= DEG2RAD
 cc *= DEG2RAD
-avec, bvec, cvec = crystal.get_real_space_vectors()
+Ut = crystal.get_U().transpose()
+avec, bvec, cvec = [Ut * vec for vec in crystal.get_real_space_vectors()]
 
 # calculate d[B^T]/dp
 dB_dp = xluc_param.get_ds_dp()
@@ -184,43 +176,29 @@ for i, dO in enumerate(dO_dp):
   print 'davec_dp analytical: {0:.5f} {1:.5f} {2:.5f}'.format(*dav_dp.elems)
   print 'davec_dp finite diff: {0:.5f} {1:.5f} {2:.5f}'.format(*fd_grad[i]['davec_dp'].elems)
 
-  # only the first one seems about right. What about b?
   diff = dbv_dp - fd_grad[i]['dbvec_dp']
   #print 2 * diff.length() / (dbv_dp.length() + fd_grad[i]['dbvec_dp'].length()) * 100
   print 'dbvec_dp analytical: {0:.5f} {1:.5f} {2:.5f}'.format(*dbv_dp.elems)
   print 'dbvec_dp finite diff: {0:.5f} {1:.5f} {2:.5f}'.format(*fd_grad[i]['dbvec_dp'].elems)
 
-  # and c?
   diff = dcv_dp - fd_grad[i]['dcvec_dp']
   #print 2 * diff.length() / (dcv_dp.length() + fd_grad[i]['dcvec_dp'].length()) * 100
   print 'dcvec_dp analytical: {0:.5f} {1:.5f} {2:.5f}'.format(*dcv_dp.elems)
   print 'dcvec_dp finite diff: {0:.5f} {1:.5f} {2:.5f}'.format(*fd_grad[i]['dcvec_dp'].elems)
   print
 
-  #
   print "CELL LENGTHS"
   da_dp = 1./a * avec.dot(dav_dp)
   print "d[a]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(da_dp, fd_grad[i]['da_dp'], i)
-  print 'd|avec|_dp finite diff: {0:.5f}'.format(fd_grad[i]['d|avec|_dp'])
 
   db_dp = 1./b * bvec.dot(dbv_dp)
   print "d[b]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(db_dp, fd_grad[i]['db_dp'], i)
-  print 'd|bvec|_dp finite diff: {0:.5f}'.format(fd_grad[i]['d|bvec|_dp'])
 
   dc_dp = 1./c * cvec.dot(dcv_dp)
   print "d[c]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dc_dp, fd_grad[i]['dc_dp'], i)
-  print 'd|cvec|_dp finite diff: {0:.5f}'.format(fd_grad[i]['d|cvec|_dp'])
-
-  # FIXME the expressions for da_dp, db_dp and dc_cp are apparently wrong,
-  # as shown by the finite differences
 
   print
   print "CELL ANGLES"
-
-  #z = bvec.dot(cvec) / (b * c)
-  #daa_dp = bvec.dot(cvec) * (db_dp * c + b * dc_dp) - b * c * (dbv_dp.dot(cvec) + bvec.dot(dcv_dp))
-  #daa_dp /= (b * b * c * c)
-  #daa_dp *= -RAD2DEG / (sqrt(1 - z**2))
 
   # Here we know the derivatives of the angle alpha with respect to elements
   # of the vectors a and b. We know these expressions are correct because they
@@ -232,47 +210,11 @@ for i, dO in enumerate(dO_dp):
   dgamma_da = dgamma.derivative_wrt_u()
   dgamma_db = dgamma.derivative_wrt_v()
 
-  # why is this wrong?
   daa_dp = RAD2DEG * dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc)
   dbb_dp = RAD2DEG * dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc)
   dcc_dp = RAD2DEG * dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db)
-
-  # because only orthogonal changes are relevant?
-  ua = avec.normalize()
-  if dav_dp.length() < 1e-10:
-    ortho_dav_dp = matrix.col((0, 0, 0))
-  else:
-    v = avec.cross(dav_dp).normalize()
-    u = v.cross(ua).normalize()
-    ortho_dav_dp = dav_dp.dot(u) * u
-
-  ub = bvec.normalize()
-  if dbv_dp.length() < 1e-10:
-    ortho_dbv_dp = matrix.col((0, 0, 0))
-  else:
-    v = bvec.cross(dbv_dp).normalize()
-    u = v.cross(ub).normalize()
-    ortho_dbv_dp = dbv_dp.dot(u) * u
-
-  uc = cvec.normalize()
-  if dcv_dp.length() < 1e-10:
-    ortho_dcv_dp = matrix.col((0, 0, 0))
-  else:
-    v = cvec.cross(dcv_dp).normalize()
-    u = v.cross(uc).normalize()
-    ortho_dcv_dp = dcv_dp.dot(u) * u
-
-  daa_dp = RAD2DEG * (ortho_dbv_dp.dot(dalpha_db) + ortho_dcv_dp.dot(dalpha_dc))
-  dbb_dp = RAD2DEG * (ortho_dav_dp.dot(dbeta_da) + ortho_dcv_dp.dot(dbeta_dc))
-  dcc_dp = RAD2DEG * (ortho_dav_dp.dot(dgamma_da) + ortho_dbv_dp.dot(dgamma_db))
 
   print "d[alpha]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(daa_dp, fd_grad[i]['daa_dp'], i)
   print "d[beta]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dbb_dp, fd_grad[i]['dbb_dp'], i)
   print "d[gamma]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dcc_dp, fd_grad[i]['dcc_dp'], i)
 
-  #print "analytical dcc_dp", dcc_dp * RAD2DEG
-  #print "FD dcc_dp", fd_grad[i]['dcc_dp']
-  #print
-
-# enter interactive console
-#from dials.util.command_line import interactive_console; interactive_console()
