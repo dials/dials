@@ -41,7 +41,7 @@ class Test(object):
 
     # Check that state works
     stdin_lines = [
-      "refine scan_varying=True",
+      "refine",
       "integrate",
       "export",
       "goto 7",
@@ -49,7 +49,8 @@ class Test(object):
       "export",
     ]
 
-    easy_run.fully_buffered('idials', stdin_lines=stdin_lines).raise_if_errors()
+    easy_run.fully_buffered('idials',
+                            stdin_lines=stdin_lines).raise_if_errors()
 
     print 'OK'
 

@@ -587,12 +587,12 @@ class Counter(object):
 
   '''
 
-  def __init__(self):
+  def __init__(self, count=1):
     '''
     Counter begins at zero
 
     '''
-    self.count = 1
+    self.count = count
 
   def current(self):
     '''
@@ -615,16 +615,17 @@ class CommandNode(object):
 
   '''
 
+  action = None
   parent_actions = []
 
   def __init__(self,
                parent=None,
-               action=None,
                index=None,
                phil_scope=None,
                workspace=None,
                applied=False,
-               success=False):
+               success=False,
+               description=None):
     '''
     Initialise the tree parent and children and set the index
 
@@ -633,12 +634,14 @@ class CommandNode(object):
     import copy
 
     # Check some input
-    if action is None:
+    if self.action is None:
       raise RuntimeError('No action set')
     if index is None:
       raise RuntimeError('No index set')
     if workspace is None:
       raise RuntimeError('No workspace set')
+    if success and not applied:
+      raise RuntimeError('Bad success/applied combination')
     if parent is not None:
       if parent.action not in self.parent_actions:
         raise ActionError(action, parent.action)
@@ -647,27 +650,19 @@ class CommandNode(object):
       if parent.success == False:
         raise RuntimeError('Parent job %d failed' % parent.index)
       if parent.index >= index:
-        raise RuntimeError('Invalid parent/child indices: %d/%d' % (parent.index, index))
+        raise RuntimeError('Invalid parent/child indices: %d / %d' % (parent.index, index))
+      if parent.workspace is not '.' and parent.workspace != workspace:
+        raise RuntimeError('Invalid parent/child worksapce: %s / %s' % (parent.workspace, workspace))
 
     # Set some stuff
     self.parent = parent
-    self.action = action
     self.index = index
     self.applied = applied
     self.success = success
+    self.workspace = workspace
     self.children = []
 
-    # Set the phil stuff and description
-    if phil_scope is not None:
-      self.description = phil_scope.get(diff=False).extract().description
-      self.phil_scope = copy.deepcopy(phil_scope)
-      self.phil_scope.set("description=None")
-    else:
-      self.description = None
-      self.phil_scope = None
-
     # Set some paths
-    self.workspace = workspace
     self.directory = join(self.workspace, "%d_%s" % (self.index, self.action))
     self.output = join(self.directory, "output.txt")
     self.parameters = join(self.directory, "parameters.phil")
@@ -676,6 +671,17 @@ class CommandNode(object):
     self.datablock = None
     self.experiments = None
     self.reflections = None
+
+    # Set the phil stuff and description
+    if phil_scope is not None:
+      self.description = phil_scope.get(diff=False).extract().description
+      self.phil_scope = copy.deepcopy(phil_scope)
+      self.phil_scope.set("description=None")
+      if self.description is None:
+        self.description = description
+    else:
+      self.description = description
+      self.phil_scope = None
 
     # Do additional initialisation
     self.initialize()
@@ -775,11 +781,6 @@ class CommandNode(object):
     assert_exists(self.experiments)
     assert_exists(self.reflections)
 
-  @classmethod
-  def from_dict(Class, dictionary):
-    obj = Class(state)
-    return obj
-
   def as_dict(self):
     '''
     Return the command node as a dictionary
@@ -790,21 +791,63 @@ class CommandNode(object):
     dictionary = {
       'action'      : self.action,
       'index'       : self.index,
+      'workspace'   : self.workspace,
       'description' : self.description,
-      'parent'      : self.parent.directory,
-      'children'    : [ c.directory for c in self.children ],
+      'children'    : [ c.as_dict() for c in self.children ],
+      'applied'     : self.applied,
       'success'     : self.success,
-      'datablock'   : self.datablock,
-      'experiments' : self.experiments,
-      'reflections' : self.reflections,
-      'output'      : self.output,
-      'parameters'  : self.parameters,
-      'report'      : self.report,
-      'summary'     : self.summary
     }
 
     # Return the dictionary
     return dictionary
+
+  @classmethod
+  def from_dict(Class, dictionary, parent=None):
+    '''
+    Construct the command from a dictionary
+
+    '''
+    from os.path import join
+
+    # Check the action
+    if Class.action != dictionary['action']:
+      raise RuntimeError('Error loading class from dictionary')
+
+    # Get the parameter filename
+    self.directory = join(
+      dictionary['workspace'],
+      "%d_%s" % (
+        dictionary['index'],
+        dictionary['action']))
+    self.output = join(self.directory, "output.txt")
+    self.parameters = join(self.directory, "parameters.phil")
+
+    # Create the command
+    obj = Class(
+      parent      = parent,
+      index       = dictionary['index'],
+      workspace   = dictionary['workspace'],
+      applied     = dictionary['applied'],
+      success     = dictionary['success'],
+      description = dictionary['description'])
+
+    # Add all the children
+    for child in dictionary['children']:
+      Class.find(child['action']).from_dict(child, obj)
+
+    # Return the command
+    return obj
+
+  @staticmethod
+  def find(action):
+    '''
+    Find the matching command
+
+    '''
+    for Class in CommandNode.__subclasses__():
+      if Class.action == action:
+        return Class
+    raise RuntimeError('No class with action %s' % action)
 
 
 
@@ -879,19 +922,30 @@ class InitialState(CommandNode):
 
   '''
 
+  action='clean'
   parent_actions = [None]
 
-  def __init__(self):
+  def __init__(self,
+               parent=None,
+               index=None,
+               phil_scope=None,
+               workspace=None,
+               applied=True,
+               success=True,
+               description=None):
+
     '''
     Initialise the command
 
     '''
     super(InitialState, self).__init__(
-      action='clean',
+      parent=None,
       index=0,
+      phil_scope=None,
       workspace='.',
       success=True,
-      applied=True)
+      applied=True,
+      description=None)
 
   def apply(self):
     '''
@@ -907,19 +961,8 @@ class ImportCommand(CommandNode):
 
   '''
 
+  action = 'import'
   parent_actions = ['clean']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(ImportCommand, self).__init__(
-      parent=parent,
-      action='import',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -958,19 +1001,8 @@ class FindSpotsCommand(CommandNode):
 
   '''
 
+  action='find_spots'
   parent_actions = ['import']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(FindSpotsCommand, self).__init__(
-      parent=parent,
-      action='find_spots',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1016,19 +1048,8 @@ class DiscoverBetterModelCommand(CommandNode):
 
   '''
 
+  action='discover_better_experimental_model'
   parent_actions = ['find_spots']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(DiscoverBetterModelCommand, self).__init__(
-      parent=parent,
-      action='discover_better_experimental_model',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1075,19 +1096,8 @@ class IndexCommand(CommandNode):
 
   '''
 
+  action = 'index'
   parent_actions = ['find_spots', 'discover_better_experimental_model', 'index']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(IndexCommand, self).__init__(
-      parent=parent,
-      action='index',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1141,19 +1151,8 @@ class RefineBSCommand(CommandNode):
 
   '''
 
+  action='refine_bravais_settings'
   parent_actions = ['index']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(RefineBSCommand, self).__init__(
-      parent=parent,
-      action='refine_bravais_settings',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1223,19 +1222,8 @@ class ReIndexCommand(CommandNode):
 
   '''
 
+  action='reindex'
   parent_actions = ['refine_bravais_settings']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(ReIndexCommand, self).__init__(
-      parent=parent,
-      action='reindex',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1290,19 +1278,8 @@ class RefineCommand(CommandNode):
 
   '''
 
+  action = 'refine'
   parent_actions = ['index', 'reindex', 'refine', 'integrate']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(RefineCommand, self).__init__(
-      parent=parent,
-      action='refine',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1352,19 +1329,8 @@ class IntegrateCommand(CommandNode):
 
   '''
 
+  action = 'integrate'
   parent_actions = ['index', 'reindex', 'refine', 'integrate']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(IntegrateCommand, self).__init__(
-      parent=parent,
-      action='integrate',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1413,19 +1379,8 @@ class ExportCommand(CommandNode):
 
   '''
 
+  action = 'export'
   parent_actions = ['integrate']
-
-  def __init__(self, parent, index, phil_scope, workspace):
-    '''
-    Initialise the command node
-
-    '''
-    super(ExportCommand, self).__init__(
-      parent=parent,
-      action='export',
-      index=index,
-      phil_scope=phil_scope,
-      workspace=workspace)
 
   def initialize(self):
     '''
@@ -1484,7 +1439,24 @@ class ApplicationState(object):
     'export'                             : ExportCommand
   }
 
-  def __init__(self, directory):
+  class Memento(object):
+    '''
+    Class to init from state
+
+    '''
+    def __init__(self,
+                 directory=None,
+                 current=None,
+                 commands=None,
+                 counter=None,
+                 mode=None):
+      self.directory = directory
+      self.current = current
+      self.commands = commands
+      self.counter = counter
+      self.mode = mode
+
+  def __init__(self, directory=None, memento=None):
     '''
     Initialise the state
 
@@ -1492,23 +1464,22 @@ class ApplicationState(object):
 
     '''
 
-    # The index counter
-    self.counter = Counter()
-
-    # Create the parameters
+    # Get the global parameters
     self.parameters = GlobalParameterManager()
 
-    # Set the initial state to current
-    self.current = InitialState()
-
-    # Create the command tree
-    self.command_tree = CommandTree(self.current, self.counter)
-
-    # Save the parameters and directory
-    self.directory = directory
-
-    # Initialise the mode
-    self.mode = 'import'
+    # Init the state
+    if memento is None:
+      self.counter = Counter()
+      self.current = InitialState()
+      self.command_tree = CommandTree(self.current, self.counter)
+      self.directory = directory
+      self.mode = 'import'
+    else:
+      self.counter = Counter(memento.counter)
+      self.command_tree = CommandTree(memento.commands, self.counter)
+      self.current = self.command_tree.goto(memento.current)
+      self.directory = memento.directory
+      self.mode = memento.mode
 
   def run(self):
     '''
@@ -1518,10 +1489,10 @@ class ApplicationState(object):
 
     # Create the command
     command = self.CommandClass[self.mode](
-      self.current,
-      self.counter.current(),
-      self.parameters[self.mode],
-      self.directory)
+      parent=self.current,
+      index=self.counter.current(),
+      phil_scope=self.parameters[self.mode],
+      workspace=self.directory)
 
     # Increment the counter
     self.counter.incr()
@@ -1550,6 +1521,38 @@ class ApplicationState(object):
     '''
     return self.command_tree.string(current=self.current.index)
 
+  def as_dict(self):
+    '''
+    Return the application state as a dictionary
+
+    '''
+
+    # The application state as a dictionary
+    obj = {
+      'counter'   : self.counter.current(),
+      'current'   : self.current.index,
+      'mode'      : self.mode,
+      'directory' : self.directory,
+      'commands'  : self.command_tree.root.as_dict()
+    }
+
+    # Return the dictionary
+    return obj
+
+  @classmethod
+  def from_dict(Class, dictionary):
+    '''
+    Load the class from a dictionary
+
+    '''
+    memento = Class.Memento(
+      directory = dictionary['directory'],
+      commands  = InitialState.from_dict(dictionary['commands']),
+      current   = dictionary['current'],
+      mode      = dictionary['mode'],
+      counter   = dictionary['counter'])
+    return Class(memento=memento)
+
   def dump(self, filename):
     '''
     Dump the state to file
@@ -1557,6 +1560,9 @@ class ApplicationState(object):
     :param filename: The filename
 
     '''
+    #import json
+    #with open(filename, "w") as outfile:
+    #  json.dump(self.as_dict(), outfile, indent=2, ensure_ascii=True)
     import cPickle as pickle
     with open(filename, "w") as outfile:
       pickle.dump(self, outfile)
@@ -1570,10 +1576,37 @@ class ApplicationState(object):
     :return: The state object
 
     '''
+    #import json
+    #def _decode_list(data):
+    #  rv = []
+    #  for item in data:
+    #    if isinstance(item, unicode):
+    #      item = item.encode('utf-8')
+    #    elif isinstance(item, list):
+    #      item = _decode_list(item)
+    #    elif isinstance(item, dict):
+    #      item = _decode_dict(item)
+    #    rv.append(item)
+    #  return rv
+
+    #def _decode_dict(data):
+    #  rv = {}
+    #  for key, value in data.iteritems():
+    #    if isinstance(key, unicode):
+    #      key = key.encode('utf-8')
+    #    if isinstance(value, unicode):
+    #      value = value.encode('utf-8')
+    #    elif isinstance(value, list):
+    #      value = _decode_list(value)
+    #    elif isinstance(value, dict):
+    #      value = _decode_dict(value)
+    #    rv[key] = value
+    #  return rv
+    #with open(filename) as infile:
+    #  return Class.from_dict(json.load(infile, object_hook=_decode_dict))
     import cPickle as pickle
     with open(filename) as infile:
       return pickle.load(infile)
-
 
 
 class Controller(object):
