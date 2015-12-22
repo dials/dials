@@ -408,9 +408,11 @@ class ScanVaryingProfileModelCalculator(object):
     self._sigma_m = flex.double(sigma_m_new)
     assert(len(self._sigma_b) == len(self._sigma_m))
 
-    # Print the output
-    info(' sigma b: %f degrees' % (self._sigma_b * 180 / pi))
-    info(' sigma m: %f degrees' % (self._sigma_m * 180 / pi))
+    # Print the output - mean as is scan varying
+    mean_sigma_b = sum(self._sigma_b) / len(self._sigma_b)
+    mean_sigma_m = sum(self._sigma_m) / len(self._sigma_m)
+    info(' sigma b: %f degrees' % (mean_sigma_b * 180 / pi))
+    info(' sigma m: %f degrees' % (mean_sigma_m * 180 / pi))
 
   def num(self):
     ''' The number of reflections used. '''
