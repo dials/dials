@@ -89,8 +89,14 @@ class Script(object):
     for model in experiments:
       sigma_b = model.profile.sigma_b(deg=True)
       sigma_m = model.profile.sigma_m(deg=True)
-      print 'Sigma B: %f' % sigma_b
-      print 'Sigma M: %f' % sigma_m
+      if type(sigma_b) == type(1.0):
+        print 'Sigma B: %f' % sigma_b
+        print 'Sigma M: %f' % sigma_m
+      else: # scan varying
+        mean_sigma_b = sum(sigma_b) / len(sigma_b)
+        mean_sigma_m = sum(sigma_m) / len(sigma_m)
+        print 'Sigma B: %f' % mean_sigma_b
+        print 'Sigma M: %f' % mean_sigma_m
 
     # Wrtie the parameters
     Command.start("Writing experiments to %s" % params.output)
