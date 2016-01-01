@@ -1197,14 +1197,14 @@ class Reindex(Command):
     for name, value in self.filenames.iteritems():
       self.phil_scope.set('%s=%s' % (name, value))
 
+    # Set the solution parameter to None and set the cb_op
+    self.phil_scope.set("solution=None")
+    self.phil_scope.set("change_of_basis_op=%s" % change_of_basis_op)
+
     # Set the parameter filename and write to file
     with open(self.state.parameters, "w") as outfile:
       outfile.write(self.phil_scope.get(diff=True).as_str())
     outfile.close()
-
-    # Set the solution parameter to None and set the cb_op
-    self.phil_scope.set("solution=None")
-    self.phil_scope.set("change_of_basis_op=%s" % change_of_basis_op)
 
     # Run the command
     run_external_command(['dials.reindex', self.state.parameters],
