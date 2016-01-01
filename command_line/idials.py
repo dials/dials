@@ -609,93 +609,21 @@ class Counter(object):
     self.count += 1
 
 
-class CommandNode(object):
+class CommandState(object):
   '''
-  A class to represent the commands
+  A class to represent the command state
 
   '''
-
-  action = None
-  parent_actions = []
-
-  def __init__(self,
-               parent=None,
-               index=None,
-               phil_scope=None,
-               workspace=None,
-               applied=False,
-               success=False,
-               description=None):
+  def __init__(self, **kwargs):
     '''
-    Initialise the tree parent and children and set the index
+    Initialise the command state
 
     '''
-    from os.path import join
-    import copy
-
-    # Check some input
-    if self.action is None:
-      raise RuntimeError('No action set')
-    if index is None:
-      raise RuntimeError('No index set')
-    if workspace is None:
-      raise RuntimeError('No workspace set')
-    if success and not applied:
-      raise RuntimeError('Bad success/applied combination')
-    if parent is not None:
-      if parent.action not in self.parent_actions:
-        raise ActionError(action, parent.action)
-      if parent.applied == False:
-        raise RuntimeError('Parent job %d not applied' % parent.index)
-      if parent.success == False:
-        raise RuntimeError('Parent job %d failed' % parent.index)
-      if parent.index >= index:
-        raise RuntimeError('Invalid parent/child indices: %d / %d' % (parent.index, index))
-      if parent.workspace is not '.' and parent.workspace != workspace:
-        raise RuntimeError('Invalid parent/child worksapce: %s / %s' % (parent.workspace, workspace))
-
-    # Set some stuff
-    self.parent = parent
-    self.index = index
-    self.applied = applied
-    self.success = success
-    self.workspace = workspace
+    self.applied = False
+    self.success = False
+    self.parent = None
     self.children = []
-
-    # Set some paths
-    self.directory = join(self.workspace, "%d_%s" % (self.index, self.action))
-    self.output = join(self.directory, "output.txt")
-    self.parameters = join(self.directory, "parameters.phil")
-    self.report = None
-    self.summary = None
-    self.datablock = None
-    self.experiments = None
-    self.reflections = None
-
-    # Set the phil stuff and description
-    if phil_scope is not None:
-      self.description = phil_scope.get(diff=False).extract().description
-      self.phil_scope = copy.deepcopy(phil_scope)
-      self.phil_scope.set("description=None")
-      if self.description is None:
-        self.description = description
-    else:
-      self.description = description
-      self.phil_scope = None
-
-    # Do additional initialisation
-    self.initialize()
-
-    # Add self to parent's children
-    if self.parent is not None:
-      self.parent.children.append(self)
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    pass
+    self.__dict__.update(kwargs)
 
   def __iter__(self):
     '''
@@ -707,38 +635,133 @@ class CommandNode(object):
       for node, depth in child:
         yield node, depth+1
 
+  def as_dict(self):
+    '''
+    Return the command state as a dictionary
+
+    '''
+    dictionary = {}
+    for key, value in self.__dict__.iteritems():
+      if key == 'parent':
+        continue
+      elif key == 'children':
+        value = [c.as_dict() for c in value]
+      dictionary[key] = value
+    return dictionary
+
+  @classmethod
+  def from_dict(Class, dictionary):
+    '''
+    Convert the dictionary to the state
+
+    '''
+    state = Class()
+    for key, value in dictionary.iteritems():
+      if key == 'children':
+        for item in value:
+          child = Class.from_dict(item)
+          child.parent = state
+          state.children.append(child)
+      else:
+        setattr(state, key, value)
+    return state
+
+
+class Command(object):
+  '''
+  A class to represent the commands
+
+  '''
+
+  name = None
+
+  def __init__(self, parent=None, index=None, phil_scope=None, workspace=None):
+    '''
+    Initialise the action
+
+    '''
+    from os.path import join
+    import copy
+
+    # Check some input
+    if self.name is None:
+      raise RuntimeError('No action name set')
+    if index is None:
+      raise RuntimeError('No index set')
+    if phil_scope is None:
+      raise RuntimeError('No parameter set')
+    if workspace is None:
+      raise RuntimeError('No workspace set')
+
+    # Check the parent
+    if parent is not None:
+      if parent.applied == False:
+        raise RuntimeError('Parent job %d not applied' % parent.index)
+      if parent.success == False:
+        raise RuntimeError('Parent job %d failed' % parent.index)
+      if parent.index >= index:
+        raise RuntimeError('Invalid parent/child indices: %d / %d' % (parent.index, index))
+      if parent.workspace is not None and parent.workspace != workspace:
+        raise RuntimeError('Invalid parent/child worksapce: %s / %s' % (parent.workspace, workspace))
+
+    # Set the phil stuff and description
+    description = phil_scope.get(diff=False).extract().description
+    self.phil_scope = copy.deepcopy(phil_scope)
+    self.phil_scope.set("description=None")
+
+    # The directory
+    directory = "%d_%s" % (index, self.name)
+
+    # Set the state
+    self.state = CommandState(
+      name        = self.name,
+      index       = index,
+      parent      = parent,
+      description = description,
+      workspace   = workspace,
+      directory   = join(workspace, directory),
+      output      = join(workspace, directory, "output.txt"),
+      parameters  = join(workspace, directory, "parameters.phil"))
+
+    # Set the parent and children
+    if self.state.parent is not None:
+      self.state.parent.children.append(self.state)
+
   def apply(self):
     '''
     Apply the command
-
-    :return: True/False success or failure
 
     '''
     from os.path import exists, join
     from os import makedirs
 
     # Check that the command has not already been run
-    if self.applied == True:
+    if self.state.applied == True:
       raise RuntimeError('This command has already been run')
-    self.applied = True
+    self.state.applied = True
 
     # Check the output path does not exist already
-    if exists(self.directory):
-      raise RuntimeError('Output directory %s already exists' % self.directory)
+    if exists(self.state.directory):
+      raise RuntimeError('Output directory %s already exists' % self.state.directory)
 
     # Make the directory to store output
-    makedirs(self.directory)
-
-    # Set the parameter filename and write to file
-    with open(self.parameters, "w") as outfile:
-      outfile.write(self.phil_scope.get(diff=True).as_str())
-    outfile.close()
+    makedirs(self.state.directory)
 
     # Run the command (override this method)
     self.run()
 
     # Set success
-    self.success = True
+    self.state.success = True
+
+    # Return the state
+    return self.state
+
+  def run(self):
+    '''
+    Run the command
+
+    '''
+    pass
 
   def generate_report(self):
     '''
@@ -750,14 +773,14 @@ class CommandNode(object):
 
     '''
     command = ['dials.report']
-    if self.reflections is None:
+    if not hasattr(self.state, "reflections") or self.state.reflections is None:
       raise RuntimeError('No reflections file set')
-    if self.report is None:
+    if not hasattr(self.state, "report") or self.state.report is None:
       raise RuntimeError('No report file set')
-    if self.experiments is not None:
-      command.append('input.experiments=%s' % self.experiments)
-    command.append('input.reflections=%s' % self.reflections)
-    command.append('output.html=%s' % self.report)
+    if hasattr(self.state, "experiments") and self.state.experiments is not None:
+      command.append('input.experiments=%s' % self.state.experiments)
+    command.append('input.reflections=%s' % self.state.reflections)
+    command.append('output.html=%s' % self.state.report)
     run_external_command(command)
 
   def check_files_exist(self, filenames=None):
@@ -772,83 +795,17 @@ class CommandNode(object):
     if filenames is not None:
       for name in filenames:
         assert_exists(name)
-    assert_exists(self.directory)
-    assert_exists(self.output)
-    assert_exists(self.parameters)
-    assert_exists(self.report)
-    assert_exists(self.summary)
-    assert_exists(self.datablock)
-    assert_exists(self.experiments)
-    assert_exists(self.reflections)
-
-  def as_dict(self):
-    '''
-    Return the command node as a dictionary
-
-    '''
-
-    # Populate the dictionary
-    dictionary = {
-      'action'      : self.action,
-      'index'       : self.index,
-      'workspace'   : self.workspace,
-      'description' : self.description,
-      'children'    : [ c.as_dict() for c in self.children ],
-      'applied'     : self.applied,
-      'success'     : self.success,
-    }
-
-    # Return the dictionary
-    return dictionary
-
-  @classmethod
-  def from_dict(Class, dictionary, parent=None):
-    '''
-    Construct the command from a dictionary
-
-    '''
-    from os.path import join
-
-    # Check the action
-    if Class.action != dictionary['action']:
-      raise RuntimeError('Error loading class from dictionary')
-
-    # Get the parameter filename
-    self.directory = join(
-      dictionary['workspace'],
-      "%d_%s" % (
-        dictionary['index'],
-        dictionary['action']))
-    self.output = join(self.directory, "output.txt")
-    self.parameters = join(self.directory, "parameters.phil")
-
-    # Create the command
-    obj = Class(
-      parent      = parent,
-      index       = dictionary['index'],
-      workspace   = dictionary['workspace'],
-      applied     = dictionary['applied'],
-      success     = dictionary['success'],
-      description = dictionary['description'])
-
-    # Add all the children
-    for child in dictionary['children']:
-      Class.find(child['action']).from_dict(child, obj)
-
-    # Return the command
-    return obj
-
-  @staticmethod
-  def find(action):
-    '''
-    Find the matching command
-
-    '''
-    for Class in CommandNode.__subclasses__():
-      if Class.action == action:
-        return Class
-    raise RuntimeError('No class with action %s' % action)
-
+    def assert_exists_if_present(name):
+      if hasattr(self.state, name):
+        assert_exists(getattr(self.state, name))
+    assert_exists_if_present("directory")
+    assert_exists_if_present("output")
+    assert_exists_if_present("parameters")
+    assert_exists_if_present("report")
+    assert_exists_if_present("summary")
+    assert_exists_if_present("datablock")
+    assert_exists_if_present("experiments")
+    assert_exists_if_present("reflections")
 
 
 class CommandTree(object):
@@ -900,7 +857,7 @@ class CommandTree(object):
         buf.write(' %s' % ('S' if node.success else 'F'))
         buf.write(prefix[:-3])
         buf.write('  +--')
-      buf.write(node.action)
+      buf.write(node.name)
       if node.description is not None:
         buf.write(" %s" % node.description)
       if current is not None and node.index == current:
@@ -916,36 +873,24 @@ class CommandTree(object):
     return draw_tree(self.root, '')
 
 
-class InitialState(CommandNode):
+class InitialState(CommandState):
   '''
-  A class to represent the initial clean state
+  The initial state
 
   '''
 
-  action='clean'
-  parent_actions = [None]
-
-  def __init__(self,
-               parent=None,
-               index=None,
-               phil_scope=None,
-               workspace=None,
-               applied=True,
-               success=True,
-               description=None):
-
+  def __init__(self):
     '''
-    Initialise the command
+    Initialise the state
 
     '''
     super(InitialState, self).__init__(
-      parent=None,
-      index=0,
-      phil_scope=None,
-      workspace='.',
-      success=True,
-      applied=True,
-      description=None)
+      name        = "clean",
+      index       = 0,
+      description = '',
+      workspace   = None,
+      applied     = True,
+      success     = True)
 
   def apply(self):
     '''
@@ -955,85 +900,84 @@ class InitialState(CommandNode):
     raise RuntimeError("Programming error: nothing to do")
 
 
-class ImportCommand(CommandNode):
+class Import(Command):
   '''
   A command to perform an import operation
 
   '''
 
-  action = 'import'
-  parent_actions = ['clean']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # set the results
-    self.datablock = join(self.directory, "datablock.json")
-
-    # Set filenames and input
-    self.filenames = {
-      'output.datablock' : self.datablock,
-      'output.log'       : join(self.directory, "info.log"),
-      'output.debug_log' : join(self.directory, "debug.log")
-    }
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name = 'import'
 
   def run(self):
     '''
     Run the import command
 
     '''
+    from os.path import join
+
+    # set the results
+    self.state.datablock = join(self.state.directory, "datablock.json")
+
+    # Set filenames and input
+    self.filenames = {
+      'output.datablock' : self.state.datablock,
+      'output.log'       : join(self.state.directory, "info.log"),
+      'output.debug_log' : join(self.state.directory, "debug.log")
+    }
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
     # Run the command
-    run_external_command(['dials.import', self.parameters], self.output)
+    run_external_command(['dials.import', self.state.parameters], self.state.output)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
 
 
-class FindSpotsCommand(CommandNode):
+class FindSpots(Command):
   '''
   A command to perform an find_spots operation
 
   '''
 
-  action='find_spots'
-  parent_actions = ['import']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # set the results
-    self.datablock = join(self.directory, "datablock.json")
-    self.reflections = join(self.directory, "reflections.pickle")
-    self.report = join(self.directory, 'report.html')
-
-    # Set filenames and input
-    self.filenames = {
-      'input.datablock'    : self.parent.datablock,
-      'output.datablock'   : self.datablock,
-      'output.reflections' : self.reflections,
-      'output.log'         : join(self.directory, "info.log"),
-      'output.debug_log'   : join(self.directory, "debug.log"),
-    }
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name='find_spots'
 
   def run(self):
     '''
     Run the find_spots command
 
     '''
+    from os.path import join
+
+    # set the results
+    self.state.datablock = join(self.state.directory, "datablock.json")
+    self.state.reflections = join(self.state.directory, "reflections.pickle")
+    self.state.report = join(self.state.directory, 'report.html')
+
+    # Set filenames and input
+    self.filenames = {
+      'input.datablock'    : self.state.parent.datablock,
+      'output.datablock'   : self.state.datablock,
+      'output.reflections' : self.state.reflections,
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
     # Run find spots
-    run_external_command(['dials.find_spots', self.parameters], self.output)
+    run_external_command(['dials.find_spots', self.state.parameters],
+                         self.state.output)
 
     # Generate the report
     self.generate_report()
@@ -1042,46 +986,45 @@ class FindSpotsCommand(CommandNode):
     self.check_files_exist(self.filenames.values())
 
 
-class DiscoverBetterModelCommand(CommandNode):
+class DiscoverBetterExperimentalModel(Command):
   '''
   A command to perform a discover_better_experimental_model operation
 
   '''
 
-  action='discover_better_experimental_model'
-  parent_actions = ['find_spots']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # set the results
-    self.datablock = join(self.directory, "datablock.json")
-    self.reflections = self.parent.reflections
-    self.report = join(self.directory, 'report.html')
-
-    # Set filenames and input
-    self.filenames = {
-      'input.datablock'    : self.parent.datablock,
-      'input.reflections'  : self.parent.reflections,
-      'output.datablock'   : self.datablock,
-      'output.log'         : join(self.directory, "info.log"),
-      'output.debug_log'   : join(self.directory, "debug.log"),
-    }
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name='discover_better_experimental_model'
 
   def run(self):
     '''
     Run the index command
 
     '''
+    from os.path import join
+
+    # set the results
+    self.state.datablock = join(self.state.directory, "datablock.json")
+    self.state.reflections = self.state.parent.reflections
+    self.state.report = join(self.state.directory, 'report.html')
+
+    # Set filenames and input
+    self.filenames = {
+      'input.datablock'    : self.state.parent.datablock,
+      'input.reflections'  : self.state.parent.reflections,
+      'output.datablock'   : self.state.datablock,
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
     # Run the command
     run_external_command(['dials.discover_better_experimental_model',
-                          self.parameters], self.output)
+                          self.state.parameters], self.state.output)
 
     # Generate the report
     self.generate_report()
@@ -1090,53 +1033,53 @@ class DiscoverBetterModelCommand(CommandNode):
     self.check_files_exist(self.filenames.values())
 
 
-class IndexCommand(CommandNode):
+class Index(Command):
   '''
   A command to perform an index operation
 
   '''
 
-  action = 'index'
-  parent_actions = ['find_spots', 'discover_better_experimental_model', 'index']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # set the results
-    self.experiments = join(self.directory, "experiments.json")
-    self.reflections = join(self.directory, "reflections.pickle")
-    self.report = join(self.directory, 'report.html')
-
-    # Set filenames and input
-    if self.parent.action == 'index':
-      self.filenames = {
-        'input.experiments' : self.parent.experiments,
-      }
-    else:
-      self.filenames = {
-        'input.datablock' : self.parent.datablock,
-      }
-    self.filenames.update({
-      'input.reflections'  : self.parent.reflections,
-      'output.reflections' : self.reflections,
-      'output.experiments' : self.experiments,
-      'output.log'         : join(self.directory, "info.log"),
-      'output.debug_log'   : join(self.directory, "debug.log"),
-    })
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name = 'index'
 
   def run(self):
     '''
     Run the index command
 
     '''
+    from os.path import join
+
+    # set the results
+    self.state.experiments = join(self.state.directory, "experiments.json")
+    self.state.reflections = join(self.state.directory, "reflections.pickle")
+    self.state.report = join(self.state.directory, 'report.html')
+
+    # Set filenames and input
+    if self.state.parent.name == 'index':
+      self.filenames = {
+        'input.experiments' : self.state.parent.experiments,
+      }
+    else:
+      self.filenames = {
+        'input.datablock' : self.state.parent.datablock,
+      }
+    self.filenames.update({
+      'input.reflections'  : self.state.parent.reflections,
+      'output.reflections' : self.state.reflections,
+      'output.experiments' : self.state.experiments,
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log"),
+    })
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
     # Run the command
-    run_external_command(['dials.index', self.parameters], self.output)
+    run_external_command(['dials.index', self.state.parameters],
+                         self.state.output)
 
     # Generate the report
     self.generate_report()
@@ -1145,36 +1088,13 @@ class IndexCommand(CommandNode):
     self.check_files_exist(self.filenames.values())
 
 
-class RefineBSCommand(CommandNode):
+class RefineBravaisSettings(Command):
   '''
   A command to perform an refine_bravais_settings operation
 
   '''
 
-  action='refine_bravais_settings'
-  parent_actions = ['index']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # set the results
-    self.reflections = self.parent.reflections
-    self.summary = join(self.directory, "bravais_summary.json")
-
-    # Set other filenames
-    self.filenames = {
-      'input.experiments'  : self.parent.experiments,
-      'input.reflections'  : self.parent.reflections,
-      'output.log'         : join(self.directory, "info.log"),
-      'output.debug_log'   : join(self.directory, "debug.log"),
-      'output.directory'   : self.directory,
-    }
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name='refine_bravais_settings'
 
   def run(self):
     '''
@@ -1182,88 +1102,112 @@ class RefineBSCommand(CommandNode):
 
     '''
     from os.path import exists
+    from os.path import join
+
+    # set the results
+    self.state.reflections = self.state.parent.reflections
+    self.state.summary = join(self.state.directory, "bravais_summary.json")
+
+    # Set other filenames
+    self.filenames = {
+      'input.experiments'  : self.state.parent.experiments,
+      'input.reflections'  : self.state.parent.reflections,
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log"),
+      'output.directory'   : self.state.directory,
+    }
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
 
     # Run the command
-    run_external_command(['dials.refine_bravais_settings', self.parameters], self.output)
+    run_external_command(['dials.refine_bravais_settings',
+                          self.state.parameters], self.state.output)
 
     # Read the summary and check all json files exist
-    for item, filename in self.bravais_setting_filenames().iteritems():
+    for item, filename in self.bravais_setting_filenames(self.state).iteritems():
       if not exists(filename):
         raise RuntimeError("File %s could not be found" % filename)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
 
-  def bravais_summary(self):
+  @classmethod
+  def bravais_summary(Class, state):
     '''
     Get the bravais summary
 
     '''
     import json
-    with open(self.summary) as summary_file:
+    with open(state.summary) as summary_file:
       return json.load(summary_file)
 
-  def bravais_setting_filenames(self):
+  @classmethod
+  def bravais_setting_filenames(Class, state):
     '''
     Get the bravais setting filenames
 
     '''
     from os.path import join
-    bs_summary = self.bravais_summary()
+    bs_summary = Class.bravais_summary(state)
     bs_filenames = {}
     for name, value in bs_summary.iteritems():
-      bs_filenames[name] = join(self.directory, 'bravais_setting_%s.json' % name)
+      bs_filenames[name] = join(state.directory, 'bravais_setting_%s.json' % name)
     return bs_filenames
 
 
-class ReIndexCommand(CommandNode):
+class Reindex(Command):
   '''
   A command to perform an reindex operation
 
   '''
 
-  action='reindex'
-  parent_actions = ['refine_bravais_settings']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # Get the solution we want and convert to the change_of_basis_op
-    summary = self.parent.bravais_summary()
-    solution = self.phil_scope.get(diff=False).extract().solution
-    if solution is None or solution == 'None':
-      solution = max(map(int, summary.keys()))
-    change_of_basis_op = summary[str(solution)]['cb_op']
-
-    # Set the output experiments to the bravais settings file
-    bs_filenames = self.parent.bravais_setting_filenames()
-    self.experiments = bs_filenames[str(solution)]
-    self.reflections = join(self.directory, "reflections.pickle")
-    self.report = join(self.directory, 'report.html')
-
-    # The files which can be set as parameters
-    self.filenames = {
-      'input.reflections'  : self.parent.reflections,
-      'output.reflections' : self.reflections,
-    }
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
-
-    # Set the solution parameter to None and set the cb_op
-    self.phil_scope.set("solution=None")
-    self.phil_scope.set("change_of_basis_op=%s" % change_of_basis_op)
+  name='reindex'
 
   def run(self):
     '''
     Run the index command
 
     '''
+    from os.path import join
+
+    # Get the solution we want and convert to the change_of_basis_op
+    summary = RefineBravaisSettings.bravais_summary(self.state.parent)
+    solution = self.phil_scope.get(diff=False).extract().solution
+    if solution is None or solution == 'None':
+      solution = max(map(int, summary.keys()))
+    change_of_basis_op = summary[str(solution)]['cb_op']
+
+    # Set the output experiments to the bravais settings file
+    bs_filenames = RefineBravaisSettings.bravais_setting_filenames(self.state.parent)
+    self.state.experiments = bs_filenames[str(solution)]
+    self.state.reflections = join(self.state.directory, "reflections.pickle")
+    self.state.report = join(self.state.directory, 'report.html')
+
+    # The files which can be set as parameters
+    self.filenames = {
+      'input.reflections'  : self.state.parent.reflections,
+      'output.reflections' : self.state.reflections,
+    }
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
+    # Set the solution parameter to None and set the cb_op
+    self.phil_scope.set("solution=None")
+    self.phil_scope.set("change_of_basis_op=%s" % change_of_basis_op)
+
     # Run the command
-    run_external_command(['dials.reindex', self.parameters], self.output)
+    run_external_command(['dials.reindex', self.state.parameters],
+                         self.state.output)
 
     # Generate the report
     self.generate_report()
@@ -1272,49 +1216,49 @@ class ReIndexCommand(CommandNode):
     self.check_files_exist(self.filenames.values())
 
 
-class RefineCommand(CommandNode):
+class Refine(Command):
   '''
   A command to perform an refine operation
 
   '''
 
-  action = 'refine'
-  parent_actions = ['index', 'reindex', 'refine', 'integrate']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # set the results
-    self.experiments = join(self.directory, "experiments.json")
-    self.reflections = join(self.directory, "reflections.pickle")
-    self.report = join(self.directory, 'report.html')
-
-    # Set the other filenames and input
-    self.filenames = {
-      'input.experiments'  : self.parent.experiments,
-      'input.reflections'  : self.parent.reflections,
-      'output.reflections' : self.reflections,
-      'output.experiments' : self.experiments,
-      'output.log'         : join(self.directory, "info.log"),
-      'output.debug_log'   : join(self.directory, "debug.log"),
-      'output.matches'     : join(self.directory, "matches.pickle"),
-      'output.centroids'   : join(self.directory, "centroids.pickle"),
-      'output.history'     : join(self.directory, "history.pickle"),
-    }
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name = 'refine'
 
   def run(self):
     '''
     Run the refine command
 
     '''
+    from os.path import join
+
+    # set the results
+    self.state.experiments = join(self.state.directory, "experiments.json")
+    self.state.reflections = join(self.state.directory, "reflections.pickle")
+    self.state.report = join(self.state.directory, 'report.html')
+
+    # Set the other filenames and input
+    self.filenames = {
+      'input.experiments'  : self.state.parent.experiments,
+      'input.reflections'  : self.state.parent.reflections,
+      'output.reflections' : self.state.reflections,
+      'output.experiments' : self.state.experiments,
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log"),
+      'output.matches'     : join(self.state.directory, "matches.pickle"),
+      'output.centroids'   : join(self.state.directory, "centroids.pickle"),
+      'output.history'     : join(self.state.directory, "history.pickle"),
+    }
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
     # Run the command
-    run_external_command(['dials.refine', self.parameters], self.output)
+    run_external_command(['dials.refine', self.state.parameters],
+                         self.state.output)
 
     # Generate the report
     self.generate_report()
@@ -1323,48 +1267,48 @@ class RefineCommand(CommandNode):
     self.check_files_exist(self.filenames.values())
 
 
-class IntegrateCommand(CommandNode):
+class Integrate(Command):
   '''
   A command to perform an integrate operation
 
   '''
 
-  action = 'integrate'
-  parent_actions = ['index', 'reindex', 'refine', 'integrate']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # set the results
-    self.experiments = join(self.directory, "experiments.json")
-    self.reflections = join(self.directory, "reflections.pickle")
-    self.report = join(self.directory, 'report.html')
-
-    # Set the other filenames and input
-    self.filenames = {
-      'input.experiments'  : self.parent.experiments,
-      'input.reflections'  : self.parent.reflections,
-      'output.reflections' : self.reflections,
-      'output.experiments' : self.experiments,
-      'output.log'         : join(self.directory, "info.log"),
-      'output.debug_log'   : join(self.directory, "debug.log"),
-      'output.report'      : join(self.directory, "summary.json"),
-      'output.phil'        : 'None'
-    }
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name = 'integrate'
 
   def run(self):
     '''
     Run the integrate command
 
     '''
+    from os.path import join
+
+    # set the results
+    self.state.experiments = join(self.state.directory, "experiments.json")
+    self.state.reflections = join(self.state.directory, "reflections.pickle")
+    self.state.report = join(self.state.directory, 'report.html')
+
+    # Set the other filenames and input
+    self.filenames = {
+      'input.experiments'  : self.state.parent.experiments,
+      'input.reflections'  : self.state.parent.reflections,
+      'output.reflections' : self.state.reflections,
+      'output.experiments' : self.state.experiments,
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log"),
+      'output.report'      : join(self.state.directory, "summary.json"),
+      'output.phil'        : 'None'
+    }
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
     # Run the command
-    run_external_command(['dials.integrate', self.parameters], self.output)
+    run_external_command(['dials.integrate', self.state.parameters],
+                         self.state.output)
 
     # Generate the report
     self.generate_report()
@@ -1373,33 +1317,13 @@ class IntegrateCommand(CommandNode):
     self.check_files_exist(self.filenames.values())
 
 
-class ExportCommand(CommandNode):
+class Export(Command):
   '''
   A command to perform an export operation
 
   '''
 
-  action = 'export'
-  parent_actions = ['integrate']
-
-  def initialize(self):
-    '''
-    Additional initialization
-
-    '''
-    from os.path import join
-
-    # Set filenames
-    self.filenames = {
-      'input.experiments'  : self.parent.experiments,
-      'input.reflections'  : self.parent.reflections,
-      'mtz.hklout'         : join(self.directory, "reflections.mtz"),
-      'output.log'         : join(self.directory, "info.log"),
-      'output.debug_log'   : join(self.directory, "debug.log"),
-    }
-    self.phil_scope.set("format=mtz")
-    for name, value in self.filenames.iteritems():
-      self.phil_scope.set('%s=%s' % (name, value))
+  name = 'export'
 
   def run(self):
     '''
@@ -1407,16 +1331,35 @@ class ExportCommand(CommandNode):
 
     '''
     from os.path import exists
+    from os.path import join
     import shutil
 
+    # Set filenames
+    self.filenames = {
+      'input.experiments'  : self.state.parent.experiments,
+      'input.reflections'  : self.state.parent.reflections,
+      'mtz.hklout'         : join(self.state.directory, "reflections.mtz"),
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log"),
+    }
+    self.phil_scope.set("format=mtz")
+    for name, value in self.filenames.iteritems():
+      self.phil_scope.set('%s=%s' % (name, value))
+
+    # Set the parameter filename and write to file
+    with open(self.state.parameters, "w") as outfile:
+      outfile.write(self.phil_scope.get(diff=True).as_str())
+    outfile.close()
+
     # Run the command
-    run_external_command(['dials.export', self.parameters], self.output)
+    run_external_command(['dials.export', self.state.parameters],
+                         self.state.output)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
 
     # Copy the resulting mtz file to the working directory
-    result_filename = "%d_integrated.mtz" % self.index
+    result_filename = "%d_integrated.mtz" % self.state.index
     shutil.copy2(self.filenames['mtz.hklout'], result_filename)
 
 
@@ -1428,15 +1371,15 @@ class ApplicationState(object):
 
   # The command classes
   CommandClass = {
-    'import'                             : ImportCommand,
-    'find_spots'                         : FindSpotsCommand,
-    'discover_better_experimental_model' : DiscoverBetterModelCommand,
-    'index'                              : IndexCommand,
-    'refine_bravais_settings'            : RefineBSCommand,
-    'reindex'                            : ReIndexCommand,
-    'refine'                             : RefineCommand,
-    'integrate'                          : IntegrateCommand,
-    'export'                             : ExportCommand
+    'import'                             : Import,
+    'find_spots'                         : FindSpots,
+    'discover_better_experimental_model' : DiscoverBetterExperimentalModel,
+    'index'                              : Index,
+    'refine_bravais_settings'            : RefineBravaisSettings,
+    'reindex'                            : Reindex,
+    'refine'                             : Refine,
+    'integrate'                          : Integrate,
+    'export'                             : Export
   }
 
   class Memento(object):
@@ -1486,22 +1429,18 @@ class ApplicationState(object):
     Run the command for the given mode
 
     '''
-
     # Create the command
     command = self.CommandClass[self.mode](
-      parent=self.current,
-      index=self.counter.current(),
-      phil_scope=self.parameters[self.mode],
-      workspace=self.directory)
+      parent     = self.current,
+      index      = self.counter.current(),
+      phil_scope = self.parameters[self.mode],
+      workspace  = self.directory)
 
     # Increment the counter
     self.counter.incr()
 
     # Apply the command
-    command.apply()
-
-    # If successful update current
-    self.current = command
+    self.current = command.apply()
 
   def goto(self, index):
     '''
@@ -1546,11 +1485,11 @@ class ApplicationState(object):
 
     '''
     memento = Class.Memento(
-      directory = dictionary['directory'],
-      commands  = InitialState.from_dict(dictionary['commands']),
+      counter   = dictionary['counter'],
       current   = dictionary['current'],
       mode      = dictionary['mode'],
-      counter   = dictionary['counter'])
+      directory = dictionary['directory'],
+      commands  = CommandState.from_dict(dictionary['commands']))
     return Class(memento=memento)
 
   def dump(self, filename):
@@ -1560,12 +1499,9 @@ class ApplicationState(object):
     :param filename: The filename
 
     '''
-    #import json
-    #with open(filename, "w") as outfile:
-    #  json.dump(self.as_dict(), outfile, indent=2, ensure_ascii=True)
-    import cPickle as pickle
+    import json
     with open(filename, "w") as outfile:
-      pickle.dump(self, outfile)
+      json.dump(self.as_dict(), outfile, indent=2, ensure_ascii=True)
 
   @classmethod
   def load(Class, filename):
@@ -1576,37 +1512,34 @@ class ApplicationState(object):
     :return: The state object
 
     '''
-    #import json
-    #def _decode_list(data):
-    #  rv = []
-    #  for item in data:
-    #    if isinstance(item, unicode):
-    #      item = item.encode('utf-8')
-    #    elif isinstance(item, list):
-    #      item = _decode_list(item)
-    #    elif isinstance(item, dict):
-    #      item = _decode_dict(item)
-    #    rv.append(item)
-    #  return rv
+    import json
+    def _decode_list(data):
+      rv = []
+      for item in data:
+        if isinstance(item, unicode):
+          item = item.encode('utf-8')
+        elif isinstance(item, list):
+          item = _decode_list(item)
+        elif isinstance(item, dict):
+          item = _decode_dict(item)
+        rv.append(item)
+      return rv
 
-    #def _decode_dict(data):
-    #  rv = {}
-    #  for key, value in data.iteritems():
-    #    if isinstance(key, unicode):
-    #      key = key.encode('utf-8')
-    #    if isinstance(value, unicode):
-    #      value = value.encode('utf-8')
-    #    elif isinstance(value, list):
-    #      value = _decode_list(value)
-    #    elif isinstance(value, dict):
-    #      value = _decode_dict(value)
-    #    rv[key] = value
-    #  return rv
-    #with open(filename) as infile:
-    #  return Class.from_dict(json.load(infile, object_hook=_decode_dict))
-    import cPickle as pickle
+    def _decode_dict(data):
+      rv = {}
+      for key, value in data.iteritems():
+        if isinstance(key, unicode):
+          key = key.encode('utf-8')
+        if isinstance(value, unicode):
+          value = value.encode('utf-8')
+        elif isinstance(value, list):
+          value = _decode_list(value)
+        elif isinstance(value, dict):
+          value = _decode_dict(value)
+        rv[key] = value
+      return rv
     with open(filename) as infile:
-      return pickle.load(infile)
+      return Class.from_dict(json.load(infile, object_hook=_decode_dict))
 
 
 class Controller(object):
@@ -1675,7 +1608,7 @@ class Controller(object):
 
     # Set the mode
     self.state.mode = mode
-    #self.state.dump(self.state_filename)
+    self.state.dump(self.state_filename)
 
   def get_mode(self):
     '''
@@ -1696,7 +1629,7 @@ class Controller(object):
     '''
     from libtbx.utils import Sorry
     self.state.parameters[self.get_mode()].set(parameters, short_syntax=short_syntax)
-    #self.state.dump(self.state_filename)
+    self.state.dump(self.state_filename)
 
   def reset_parameters(self):
     '''
@@ -1704,7 +1637,7 @@ class Controller(object):
 
     '''
     self.state.parameters[self.get_mode()].reset()
-    #self.state.dump(self.state_filename)
+    self.state.dump(self.state_filename)
 
   def get_parameters(self, diff=True, mode=None):
     '''
@@ -1723,7 +1656,7 @@ class Controller(object):
 
     '''
     self.state.parameters[self.get_mode()].undo()
-    #self.state.dump(self.state_filename)
+    self.state.dump(self.state_filename)
 
   def redo_parameters(self):
     '''
@@ -1731,7 +1664,7 @@ class Controller(object):
 
     '''
     self.state.parameters[self.get_mode()].redo()
-    #self.state.dump(self.state_filename)
+    self.state.dump(self.state_filename)
 
   def get_history(self):
     '''
@@ -1777,7 +1710,7 @@ class Controller(object):
 
     '''
     self.state.goto(index)
-    #self.state.dump(self.state_filename)
+    self.state.dump(self.state_filename)
 
   def run(self):
     '''
