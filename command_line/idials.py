@@ -553,6 +553,7 @@ class ExportParameterManager(ParameterManager):
       }
       include scope dials.command_line.export.phil_scope
     ''', process_includes=True)
+    phil_scope = phil_scope.fetch(parse("mtz.hklout=None"))
     super(ExportParameterManager, self).__init__(phil_scope)
 
 
@@ -1334,6 +1335,11 @@ class Export(Command):
     from os.path import join
     import shutil
 
+    # Get output filename if set
+    result_filename = self.phil_scope.get(diff=False).extract().mtz.hklout
+    if result_filename is None:
+      result_filename = "%d_integrated.mtz" % self.state.index
+
     # Set filenames
     self.filenames = {
       'input.experiments'  : self.state.parent.experiments,
@@ -1359,7 +1365,6 @@ class Export(Command):
     self.check_files_exist(self.filenames.values())
 
     # Copy the resulting mtz file to the working directory
-    result_filename = "%d_integrated.mtz" % self.state.index
     shutil.copy2(self.filenames['mtz.hklout'], result_filename)
 
 
