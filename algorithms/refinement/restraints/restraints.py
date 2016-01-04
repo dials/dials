@@ -33,7 +33,8 @@ class DerivedParameterTie(object):
     """Calculate and return weighted squared residual R, cache gradients"""
 
     d = parameter_value - self._target
-    grad_coeff = 2. * self._w * d
+    wd = self._w * d
+    grad_coeff = 2. * wd
     self._dRdp = [grad_coeff * g for g in parameter_gradients]
 
     return wd * d
@@ -68,18 +69,18 @@ class SingleUnitCellTie(object):
     # of zero means that cell parameter is constrained and thus ignored in
     # restraints
     grads = self._calculate_uc_gradients()
-    self._sigma = []
+    _sigma = []
     for sig, grad in zip(sigma, grads):
-      tst = [g > 1.e-10 for g in grad]
+      tst = [abs(g) > 1.e-10 for g in grad]
       if any(tst):
-        self._sigma.append(sig)
+        _sigma.append(sig)
       else:
-        self._sigma.append(None)
+        _sigma.append(None)
 
     # For each non-zero sigma create a restraint between the relevant cell
     # parameter and its target value
     self._ties = []
-    for t, s  in zip(self._target, self._sigma):
+    for t, s  in zip(self._target, _sigma):
       if s is not None:
         self._ties.append(DerivedParameterTie(t, 1./s**2))
       else:
@@ -195,6 +196,32 @@ class SingleUnitCellTie(object):
     mp.set_param_vals(p_vals)
 
     return fd_grad
+
+  def values(self):
+    """Calculate and return weighted squared residuals, cache gradients"""
+
+    cell_params = self._xlucp.get_model().get_unit_cell().parameters()
+
+    # gradients of the cell parameters wrt model parameters
+    grads = self._calculate_uc_gradients(sel=[t is not None for t in self._ties])
+
+    R = []
+    for p, g, t in zip(cell_params, grads, self._ties):
+      if t is None: continue
+      R.append(t.value(parameter_value=p, parameter_gradients=g))
+
+    return R
+
+  def gradients(self):
+    """For each residual, return the gradients dR/dp. Requires values to be
+    called first"""
+
+    dRdp = []
+    for t in self._ties:
+      if t is None: continue
+      dRdp.append(t.gradient())
+
+    return dRdp
 
 class GroupTie(object):
   """Base class for ties of multiple parameters together to a shared target
