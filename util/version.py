@@ -29,7 +29,8 @@ def dials_version():
       try:
         import subprocess
         with open(os.devnull, 'w') as devnull:
-          version = subprocess.check_output(["git", "describe"], cwd=dials_path, stderr=devnull).rstrip()
+          version = subprocess.check_output(
+            ["git", "describe", "--long"], cwd=dials_path, stderr=devnull).rstrip()
         with open(version_file, 'w') as gv:
           gv.write(version)
       except Exception:
