@@ -60,7 +60,7 @@ dials.integrate outlier.algorithm=null refined_experiments.json indexed.pickle
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated.pickle refined_experiments.json hklout=integrated.mtz
+dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mtz
 
 # and as if to make a point, here is all we need to do is to sort the data with
 # pointless and then scale the data (ignoring anomalous differences) to 1.3A,

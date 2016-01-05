@@ -83,8 +83,8 @@ dials.split_experiments refined_experiments.json integrated.pickle \
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated_0.pickle refined_experiments_0.json hklout=integrated_0.mtz
-dials.export integrated_1.pickle refined_experiments_1.json hklout=integrated_1.mtz
+dials.export integrated_0.pickle refined_experiments_0.json mtz.hklout=integrated_0.mtz
+dials.export integrated_1.pickle refined_experiments_1.json mtz.hklout=integrated_1.mtz
 
 rebatch hklin integrated_0.mtz hklout rebatch_0.mtz > rebatch_0.log << EOF
 batch add 0
