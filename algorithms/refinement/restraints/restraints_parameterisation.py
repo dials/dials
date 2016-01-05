@@ -13,6 +13,8 @@
 from __future__ import division
 from libtbx.phil import parse
 from libtbx.utils import Sorry
+from scitbx.array_family import flex
+from scitbx import sparse
 
 from dials.algorithms.refinement.restraints.restraints import SingleUnitCellTie
 
@@ -113,6 +115,9 @@ class RestraintsParameterisation(object):
         self._exp_to_xluc_param[iexp] = ParamIndex(xlucp, iparam)
       iparam += xlucp.num_free()
 
+    # the number of free parameters
+    self._nparam = iparam
+
     # keep a set that will ensure every model parameterisation only gets
     # a single restraint.
     self._param_to_restraint = set()
@@ -169,11 +174,27 @@ class RestraintsParameterisation(object):
   #  return
   #
   #def add_restraints_to_group_xl_orientation(self):
-
-    return
+  #
+  #  return
 
   def add_restraints_to_group_xl_unit_cell(self):
 
     pass
     return
 
+  def get_values_and_gradients(self):
+
+    values = []
+    for r in self._restraints:
+      values.extend(r.restraint.values())
+
+    nrows = len(values)
+    gradients = sparse.matrix(nrows, self._nparam)
+
+    for irow, r in enumerate(self._restraints):
+      icol = r.istart
+      # convert square list-of-lists into a 2D array for block assignment
+      grads = flex.double(r.restraint.gradients())
+      gradients.assign_block(grads, irow, icol)
+
+    return values, gradients
