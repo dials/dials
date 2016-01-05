@@ -533,8 +533,10 @@ class ScanVaryingCrystalAnalyser(object):
 class StrongSpotsAnalyser(object):
   ''' Analyse a list of strong spots. '''
 
-  def __init__(self):
+  def __init__(self, pixels_per_bin=10):
     from os.path import join
+
+    self.pixels_per_bin = pixels_per_bin
 
     # Set the required fields
     self.required = [
@@ -552,11 +554,12 @@ class StrongSpotsAnalyser(object):
       return {'strong': {}}
 
     # Remove I_sigma <= 0
-    selection = rlist['intensity.sum.variance'] <= 0
-    if selection.count(True) > 0:
-      rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+    if 'intensity.sum.variance' in rlist:
+      selection = rlist['intensity.sum.variance'] <= 0
+      if selection.count(True) > 0:
+        rlist.del_selected(selection)
+        print ' Removing %d reflections with variance <= 0' % \
+          selection.count(True)
 
     if 'flags' in rlist:
       # Select only strong reflections
@@ -567,9 +570,17 @@ class StrongSpotsAnalyser(object):
         rlist = rlist.select(mask)
       Command.end(" Selected %d strong reflections" % len(rlist))
 
+    x, y, z = rlist['xyzobs.px.value'].parts()
+    self.nbinsx, self.nbinsy = tuple(
+      int(math.ceil(i))
+      for i in (flex.max(x)/self.pixels_per_bin,
+                flex.max(y)/self.pixels_per_bin))
+
     d = OrderedDict()
     # Look at distribution of spot counts
     d.update(self.spot_count_per_image(rlist))
+    # Look at distribution of unindexed spots with detector position
+    d.update(self.unindexed_count_xy(rlist))
     #self.spot_count_per_panel(rlist)
     return {'strong': d}
 
@@ -579,14 +590,28 @@ class StrongSpotsAnalyser(object):
     x,y,z = rlist['xyzobs.px.value'].parts()
     max_z = int(math.ceil(flex.max(z)))
 
-    ids = rlist['id']
+    indexed_sel = rlist.get_flags(rlist.flags.indexed)
+    n_indexed = indexed_sel.count(True)
+
+    if 'imageset_id' in rlist:
+      ids = rlist['imageset_id']
+    else:
+      ids = rlist['id']
     spot_count_per_image = []
+    indexed_per_image = []
     for j in range(flex.max(ids)+1):
       spot_count_per_image.append([])
-      zsel = z.select(ids == j)
+      ids_sel = (ids == j)
+      zsel = z.select(ids_sel)
       for i in range(max_z):
         sel = (zsel >= i) & (zsel < (i+1))
         spot_count_per_image[j].append(sel.count(True))
+      if n_indexed > 0:
+        indexed_per_image.append([])
+        zsel = z.select(ids_sel & indexed_sel)
+        for i in range(max_z):
+          sel = (zsel >= i) & (zsel < (i+1))
+          indexed_per_image[j].append(sel.count(True))
 
     d = {
       'spot_count_per_image': {
@@ -609,7 +634,97 @@ class StrongSpotsAnalyser(object):
         'name': '#spots',
         'opacity': 0.4,
       })
+      if n_indexed > 0:
+        d['spot_count_per_image']['data'].append({
+          'x': list(range(len(indexed_per_image[j]))),
+          'y': indexed_per_image[j],
+          'type': 'scatter',
+          'name': '#indexed',
+          'opacity': 0.4,
+        })
+
+    if indexed_sel.count(True) > 0 and flex.max(rlist['id']) > 0:
+      # multiple lattices
+      ids = rlist['id']
+      indexed_per_lattice_per_image = []
+      for j in range(flex.max(ids)+1):
+        indexed_per_lattice_per_image.append([])
+        zsel = z.select((ids == j) & indexed_sel)
+        for i in range(max_z):
+          sel = (zsel >= i) & (zsel < (i+1))
+          indexed_per_lattice_per_image[j].append(sel.count(True))
+
+      d.update({
+        'indexed_per_lattice_per_image': {
+          'data': [],
+          'layout': {
+            'title': 'Indexed reflections per lattice per image',
+            'xaxis': {'title': 'Image'},
+            'yaxis': {
+              'title': 'Number of reflections',
+              'rangemode': 'tozero'
+            },
+          },
+        },
+      })
+
+      for j in range(flex.max(ids)+1):
+        d['indexed_per_lattice_per_image']['data'].append({
+          'x': list(range(len(indexed_per_lattice_per_image[j]))),
+          'y': indexed_per_lattice_per_image[j],
+          'type': 'scatter',
+          'name': 'Lattice #%i' %(j+1),
+          'opacity': 0.4,
+        })
+
     return d
+
+  def unindexed_count_xy(self, rlist):
+    ''' Analyse the spot count in x/y. '''
+    from os.path import join
+    x,y,z = rlist['xyzobs.px.value'].parts()
+
+    indexed_sel = rlist.get_flags(rlist.flags.indexed)
+    if indexed_sel.count(True) == 0 or indexed_sel.count(False) == 0:
+      return {}
+
+    x = x.select(~indexed_sel).as_numpy_array()
+    y = y.select(~indexed_sel).as_numpy_array()
+
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(x, y, bins=(self.nbinsx, self.nbinsy))
+
+    return {
+      'n_unindexed_vs_xy': {
+        'data': [{
+          'x': xedges.tolist(),
+          'y': yedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
+          'name': 'n_unindexed',
+          'colorbar': {
+            'title': 'Number of reflections',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Number of unindexed reflections binned in X/Y',
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X',
+            'showgrid': False,
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed',
+            'showgrid': False,
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    }
 
   def spot_count_per_panel(self, rlist):
     ''' Analyse the spot count per panel. '''
@@ -2082,7 +2197,7 @@ class Analyser(object):
     ''' Setup the analysers. '''
     self.params = params
     self.analysers = [
-      StrongSpotsAnalyser(),
+      StrongSpotsAnalyser(pixels_per_bin=self.params.pixels_per_bin),
       CentroidAnalyser(
         grid_size=grid_size, pixels_per_bin=self.params.pixels_per_bin,
           centroid_diff_max=centroid_diff_max),
