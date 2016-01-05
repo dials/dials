@@ -788,8 +788,7 @@ class indexer_base(object):
                 100*volume_change)
               raise Sorry(msg)
 
-        self.refined_reflections = refined_reflections.select(
-          refined_reflections['id'] > -1)
+        self.refined_reflections = refined_reflections
 
         for i, imageset in enumerate(self.imagesets):
           ref_sel = self.refined_reflections.select(

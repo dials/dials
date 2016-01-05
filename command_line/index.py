@@ -9,6 +9,8 @@ try:
 except ImportError, e:
   pass
 
+import copy
+
 from libtbx.phil import command_line
 import iotbx.phil
 from dials.util.options import OptionParser
@@ -150,14 +152,16 @@ def run(args):
     known_crystal_models=known_crystal_models,
     params=params)
   refined_experiments = idxr.refined_experiments
-  refined_reflections = idxr.refined_reflections
+  reflections = copy.deepcopy(idxr.refined_reflections)
+  reflections.extend(idxr.unindexed_reflections)
   if len(refined_experiments):
     info("Saving refined experiments to %s" %params.output.experiments)
     idxr.export_as_json(refined_experiments,
                         file_name=params.output.experiments)
     info("Saving refined reflections to %s" %params.output.reflections)
     idxr.export_reflections(
-      refined_reflections, file_name=params.output.reflections)
+      reflections, file_name=params.output.reflections)
+
     if params.output.unindexed_reflections is not None:
       info("Saving unindexed reflections to %s"
            %params.output.unindexed_reflections)
