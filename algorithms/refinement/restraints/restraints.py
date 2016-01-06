@@ -159,7 +159,7 @@ class SingleUnitCellTie(object):
       daa.append(daa_dp)
       dbb_dp = dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc) if sel[4] else 0.0
       dbb_dp *= RAD2DEG
-      dbb.append(daa_dp)
+      dbb.append(dbb_dp)
       dcc_dp = dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db) if sel[5] else 0.0
       dcc_dp *= RAD2DEG
       dcc.append(dcc_dp)
