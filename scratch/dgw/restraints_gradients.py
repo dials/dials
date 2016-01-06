@@ -201,8 +201,9 @@ for i, dO in enumerate(dO_dp):
   print "CELL ANGLES"
 
   # Here we know the derivatives of the angle alpha with respect to elements
-  # of the vectors a and b. We know these expressions are correct because they
-  # are tested in tst_angle_derivatives_wrt_vector_elts.py
+  # of the vectors a and b. Similarly for beta and gamma. We know these
+  # expressions are correct because they are tested in
+  # tst_angle_derivatives_wrt_vector_elts.py
   dalpha_db = dalpha.derivative_wrt_u()
   dalpha_dc = dalpha.derivative_wrt_v()
   dbeta_da = dbeta.derivative_wrt_u()
@@ -210,9 +211,10 @@ for i, dO in enumerate(dO_dp):
   dgamma_da = dgamma.derivative_wrt_u()
   dgamma_db = dgamma.derivative_wrt_v()
 
-  daa_dp = RAD2DEG * dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc)
-  dbb_dp = RAD2DEG * dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc)
-  dcc_dp = RAD2DEG * dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db)
+  #
+  daa_dp = RAD2DEG * (dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc))
+  dbb_dp = RAD2DEG * (dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc))
+  dcc_dp = RAD2DEG * (dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db))
 
   print "d[alpha]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(daa_dp, fd_grad[i]['daa_dp'], i)
   print "d[beta]/dp{2} analytical: {0:.5f} FD: {1:.5f}".format(dbb_dp, fd_grad[i]['dbb_dp'], i)
