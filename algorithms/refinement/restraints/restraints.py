@@ -89,7 +89,8 @@ class SingleUnitCellTie(object):
     return
 
   def _calculate_uc_gradients(self, sel=[True]*6):
-    '''Calculate gradients of the unit cell parameters with respect to '''
+    '''Calculate gradients of the unit cell parameters with respect to
+    each of the parameters of the crystal unit cell model parameterisation'''
 
     from scitbx import matrix
     B = self._xlucp.get_state()
@@ -154,15 +155,18 @@ class SingleUnitCellTie(object):
 
       # derivative of cell angles wrt p
       daa_dp = dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc) if sel[3] else 0.0
+      daa_dp *= RAD2DEG
       daa.append(daa_dp)
       dbb_dp = dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc) if sel[4] else 0.0
+      dbb_dp *= RAD2DEG
       dbb.append(daa_dp)
       dcc_dp = dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db) if sel[5] else 0.0
+      dcc_dp *= RAD2DEG
       dcc.append(dcc_dp)
 
-      print "d[aa]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * daa_dp, fd_grads[i][3], i)
-      print "d[bb]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dbb_dp, fd_grads[i][4], i)
-      print "d[cc]/dp{2} analytical: {0} FD: {1}".format(RAD2DEG * dcc_dp, fd_grads[i][5], i)
+      print "d[aa]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grads[i][3], i)
+      print "d[bb]/dp{2} analytical: {0} FD: {1}".format(dbb_dp, fd_grads[i][4], i)
+      print "d[cc]/dp{2} analytical: {0} FD: {1}".format(dcc_dp, fd_grads[i][5], i)
 
     return da, db, dc, daa, dbb, dcc
 
