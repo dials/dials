@@ -10,7 +10,7 @@
 #
 
 """
-Development testing of restraints_parameterisation and associated classes
+Tests for RestraintsParameterisation and associated classes used in refinement
 
 """
 
@@ -20,74 +20,18 @@ import os
 from libtbx.phil import parse
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from libtbx.test_utils import approx_equal
 from dials.algorithms.refinement import RefinerFactory
 from dials.array_family import flex
-
 from dials.algorithms.refinement.restraints import RestraintsParameterisation
 
-# The phil scope
-from dials.algorithms.refinement.refiner import phil_scope
-user_phil = parse('''
-refinement
-{
-  parameterisation
-  {
-    crystal
-    {
-      unit_cell
-      {
-        restraints
-        {
-          tie_to_target
-          {
-            values=10,10,10,90,90,90
-            sigmas=1,1,1,1,1,1
-            id=0
-          }
-        }
-      }
-    }
-  }
-}
-''')
+def test1():
+  '''Simple test with a single triclinic crystal restrained to a target unit cell'''
 
-working_phil = phil_scope.fetch(source=user_phil)
-working_params = working_phil.extract()
-
-def test1(params):
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
-  # use the multi stills test data
-  data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
-  experiments_path = os.path.join(data_dir, "combined_experiments.json")
-  pickle_path = os.path.join(data_dir, "combined_reflections.pickle")
-
-  experiments = ExperimentListFactory.from_json_file(experiments_path,
-                check_format=False)
-  reflections = flex.reflection_table.from_pickle(pickle_path)
-
-  refiner = RefinerFactory.from_parameters_data_experiments(params,
-        reflections, experiments)
-
-  # hack to extract the restraints parameterisation from the Refiner
-  rp = refiner._target._restraints_parameterisation
-
-  print "do something"
-  return
-
-def test2():
-  #from libtbx.test_utils import approx_equal
-  #from scitbx.array_family import flex
   from math import pi
   from random import gauss
   from dials.test.algorithms.refinement.setup_geometry import Extract
-
   from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
-  #from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-  #  ExperimentsPredictor
 
   #### Import model parameterisations
 
@@ -155,9 +99,7 @@ def test2():
   # make a unit cell target
   sigma = 1.
   uc = mycrystal.get_unit_cell().parameters()
-  print uc
   target_uc = [gauss(e, sigma) for e in uc]
-  print target_uc
 
   rp.add_restraints_to_target_xl_unit_cell(experiment_id=0, values=target_uc,
                                            sigma=[sigma]*6)
@@ -200,15 +142,68 @@ def test2():
     # extract dense column from the sparse matrix
     an = grads.col(i).as_dense_vector()
 
-    print list(an.round(6))
-    print list(fd.round(6))
-    print
+    assert approx_equal(an, fd, eps=1e-5)
 
+  print "OK"
 
-  # enter interactive console
-  from dials.util.command_line import interactive_console; interactive_console()
+def test2():
+  '''Test with multiple crystals, and a stills refiner'''
+
+  # The phil scope
+  from dials.algorithms.refinement.refiner import phil_scope
+  user_phil = parse('''
+  refinement
+  {
+    parameterisation
+    {
+      crystal
+      {
+        unit_cell
+        {
+          restraints
+          {
+            tie_to_target
+            {
+              values=10,10,10,90,90,90
+              sigmas=1,1,1,1,1,1
+              id=0
+            }
+          }
+        }
+      }
+    }
+  }
+  ''')
+
+  working_phil = phil_scope.fetch(source=user_phil)
+  working_params = working_phil.extract()
+
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+
+  # use the multi stills test data
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+  experiments_path = os.path.join(data_dir, "combined_experiments.json")
+  pickle_path = os.path.join(data_dir, "combined_reflections.pickle")
+
+  experiments = ExperimentListFactory.from_json_file(experiments_path,
+                check_format=False)
+  reflections = flex.reflection_table.from_pickle(pickle_path)
+
+  refiner = RefinerFactory.from_parameters_data_experiments(working_params,
+        reflections, experiments)
+
+  # hack to extract the restraints parameterisation from the Refiner
+  rp = refiner._target._restraints_parameterisation
+
+  #FIXME do something useful here
+  return
 
 if __name__ == '__main__':
 
-  test1(working_params)
+  # test single crystal restraints gradients
+  test1()
+
+  # second test currently incomplete - only tests construction
   test2()
