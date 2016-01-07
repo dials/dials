@@ -122,9 +122,6 @@ class SingleUnitCellTie(object):
     dgamma_da = dgamma.derivative_wrt_u()
     dgamma_db = dgamma.derivative_wrt_v()
 
-    # XXX DEBUG compare with FD gradients
-    fd_grads = self._check_fd_gradients()
-
     da = []
     db = []
     dc = []
@@ -149,10 +146,6 @@ class SingleUnitCellTie(object):
       dc_dp = 1./c * cvec.dot(dcv_dp) if sel[2] else 0.0
       dc.append(dc_dp)
 
-      print "d[a]/dp{2} analytical: {0} FD: {1}".format(da_dp, fd_grads[i][0], i)
-      print "d[b]/dp{2} analytical: {0} FD: {1}".format(db_dp, fd_grads[i][1], i)
-      print "d[c]/dp{2} analytical: {0} FD: {1}".format(dc_dp, fd_grads[i][2], i)
-
       # derivative of cell angles wrt p
       daa_dp = dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc) if sel[3] else 0.0
       daa_dp *= RAD2DEG
@@ -164,42 +157,7 @@ class SingleUnitCellTie(object):
       dcc_dp *= RAD2DEG
       dcc.append(dcc_dp)
 
-      print "d[aa]/dp{2} analytical: {0} FD: {1}".format(daa_dp, fd_grads[i][3], i)
-      print "d[bb]/dp{2} analytical: {0} FD: {1}".format(dbb_dp, fd_grads[i][4], i)
-      print "d[cc]/dp{2} analytical: {0} FD: {1}".format(dcc_dp, fd_grads[i][5], i)
-
     return da, db, dc, daa, dbb, dcc
-
-  def _check_fd_gradients(self):
-
-    print "CHECKING GRADIENTS."
-    from scitbx import matrix
-    mp = self._xlucp
-    p_vals = mp.get_param_vals()
-    deltas = [1.e-7 for p in p_vals]
-    assert len(deltas) == len(p_vals)
-    fd_grad = []
-
-    for i in range(len(deltas)):
-
-      val = p_vals[i]
-
-      p_vals[i] -= deltas[i] / 2.
-      mp.set_param_vals(p_vals)
-      rev_state = mp.get_model().get_unit_cell().parameters()
-
-      p_vals[i] += deltas[i]
-      mp.set_param_vals(p_vals)
-      fwd_state = mp.get_model().get_unit_cell().parameters()
-
-      fd_grad.append([(f - r) / deltas[i] for f,r in zip(fwd_state, rev_state)])
-
-      p_vals[i] = val
-
-    # return to the initial state
-    mp.set_param_vals(p_vals)
-
-    return fd_grad
 
   def values(self):
     """Calculate and return weighted squared residuals, cache gradients"""
