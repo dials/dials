@@ -105,10 +105,7 @@ def test1():
                                            sigma=[sigma]*6)
 
   # get analytical values and gradients
-  vals, grads = rp.get_values_and_gradients()
-
-  # for debugging, print finite difference gradients of the unit cell parameters
-  # versus
+  vals, grads, weights = rp.get_residuals_gradients_and_weights()
 
   # get finite difference gradients
   p_vals = pred_param.get_param_vals()
@@ -122,13 +119,13 @@ def test1():
     p_vals[i] -= deltas[i] / 2.
     pred_param.set_param_vals(p_vals)
 
-    rev_state, _ = rp.get_values_and_gradients()
+    rev_state, foo, bar = rp.get_residuals_gradients_and_weights()
     rev_state = flex.double(rev_state)
 
     p_vals[i] += deltas[i]
     pred_param.set_param_vals(p_vals)
 
-    fwd_state, _ = rp.get_values_and_gradients()
+    fwd_state, foo, bar = rp.get_residuals_gradients_and_weights()
     fwd_state = flex.double(fwd_state)
 
     p_vals[i] = val

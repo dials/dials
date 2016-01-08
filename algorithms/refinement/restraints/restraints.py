@@ -29,19 +29,32 @@ class DerivedParameterTie(object):
 
     return
 
-  def value(self, parameter_value, parameter_gradients):
-    """Calculate and return weighted squared residual R, cache gradients"""
+  #def value(self, parameter_value, parameter_gradients):
+  #  """Calculate and return weighted squared residual R, cache gradients"""
+  #
+  #  d = parameter_value - self._target
+  #  wd = self._w * d
+  #  grad_coeff = 2. * wd
+  #  self._dRdp = [grad_coeff * g for g in parameter_gradients]
+  #
+  #  return wd * d
+
+  def residual(self, parameter_value, parameter_gradients):
+    '''Calculate residual R, cache gradients'''
 
     d = parameter_value - self._target
-    wd = self._w * d
-    grad_coeff = 2. * wd
-    self._dRdp = [grad_coeff * g for g in parameter_gradients]
+    self._dRdp = parameter_gradients
 
-    return wd * d
+    return d
 
   def gradient(self):
     """Return dR/dp"""
     return self._dRdp
+
+  def weight(self):
+    '''Return restraint weight'''
+
+    return self._w
 
 class SingleUnitCellTie(object):
   """Tie the parameters of a single unit cell model parameterisation to
@@ -86,6 +99,9 @@ class SingleUnitCellTie(object):
         self._ties.append(DerivedParameterTie(t, 1./s**2))
       else:
         self._ties.append(None)
+
+    # set up empty weights list
+    self._weights = []
 
     return
 
@@ -160,8 +176,8 @@ class SingleUnitCellTie(object):
 
     return da, db, dc, daa, dbb, dcc
 
-  def values(self):
-    """Calculate and return weighted squared residuals, cache gradients"""
+  def residuals(self):
+    """Calculate and return the residuals, cache gradients"""
 
     cell_params = self._xlucp.get_model().get_unit_cell().parameters()
 
@@ -171,7 +187,7 @@ class SingleUnitCellTie(object):
     R = []
     for p, g, t in zip(cell_params, grads, self._ties):
       if t is None: continue
-      R.append(t.value(parameter_value=p, parameter_gradients=g))
+      R.append(t.residual(parameter_value=p, parameter_gradients=g))
 
     return R
 
@@ -185,6 +201,18 @@ class SingleUnitCellTie(object):
       dRdp.append(t.gradient())
 
     return dRdp
+
+  def weights(self):
+    '''Return the weights for the residuals vector'''
+
+    # the weights do not change so cache them
+    if not self._weights:
+      self._weights = []
+      for t in self._ties:
+        if t is None: continue
+        self._weights.append(t.weight())
+
+    return self._weights
 
 class GroupTie(object):
   """Base class for ties of multiple parameters together to a shared target

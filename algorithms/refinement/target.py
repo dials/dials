@@ -365,11 +365,8 @@ class Target(object):
     weights for non-linear least squares methods'''
 
     if self._restraints_parameterisation:
-      residuals, jacobian = \
-        self._restraints_parameterisation.get_values_and_gradients()
-      # currently weights are incorporated into the restraints, so provide
-      # unit weights here
-      weights = flex.double(len(residuals), 1.0)
+      residuals, jacobian, weights = \
+        self._restraints_parameterisation.get_residuals_gradients_and_weights()
       return(residuals, jacobian, weights)
 
     else:
