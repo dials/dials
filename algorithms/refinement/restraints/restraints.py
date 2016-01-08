@@ -73,6 +73,7 @@ class SingleUnitCellTie(object):
     for sig, grad in zip(sigma, grads):
       tst = [abs(g) > 1.e-10 for g in grad]
       if any(tst):
+        if sig == 0.0: sig = None
         _sigma.append(sig)
       else:
         _sigma.append(None)
