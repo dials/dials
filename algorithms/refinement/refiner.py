@@ -1200,7 +1200,7 @@ class RefinerFactory(object):
         raise Sorry("6 cell parameters must be provided as the tie_to_target.values.")
       if len(tie.sigmas) != 6:
         raise Sorry("6 sigmas must be provided as the tie_to_target.sigmas. "
-                    "Note that individual sigmas of 0 or None will remove "
+                    "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter.")
       if not tie.id:
         raise Sorry("At least one experiment id must be provided as the "
