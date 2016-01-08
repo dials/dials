@@ -198,7 +198,9 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # range of batches for each experiment
 
   assert(len(experiment_list) == 1)
-  assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
+  # select reflections that are assigned to an experiment (i.e. non-negative id)
+  integrated_data = integrated_data.select(integrated_data['id'] >= 0)
+  assert max(integrated_data['id']) == 0
 
   # strip out negative variance reflections: these should not really be there
   # FIXME Doing select on summation results. Should do on profile result if
