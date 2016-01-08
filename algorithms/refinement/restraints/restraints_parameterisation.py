@@ -187,13 +187,18 @@ class RestraintsParameterisation(object):
   def get_residuals_gradients_and_weights(self):
 
     residuals = flex.double()
+    row_start = []
+    irow = 0
     for r in self._restraints:
-      residuals.extend(flex.double(r.restraint.residuals()))
+      res = r.restraint.residuals()
+      residuals.extend(flex.double(res))
+      row_start.append(irow)
+      irow += len(res)
 
     nrows = len(residuals)
     gradients = sparse.matrix(nrows, self._nparam)
 
-    for irow, r in enumerate(self._restraints):
+    for irow, r in zip(row_start, self._restraints):
       icol = r.istart
       # convert square list-of-lists into a 2D array for block assignment
       grads = flex.double(r.restraint.gradients())
