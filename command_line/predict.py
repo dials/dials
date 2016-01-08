@@ -105,7 +105,7 @@ class Script(object):
         expt,
         force_static=params.force_static,
         dmin=params.d_min)
-      predicted['id'] = flex.size_t(len(predicted), i_expt)
+      predicted['id'] = flex.int(len(predicted), i_expt)
       predicted_all.extend(predicted)
 
     try:

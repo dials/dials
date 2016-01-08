@@ -37,7 +37,7 @@ class Test(object):
 
     # Create some reflections
     reflections = flex.reflection_table()
-    reflections["id"] = flex.size_t()
+    reflections["id"] = flex.int()
     for idx in range(len(expected)):
       for n in range(expected[idx]):
         reflections.append({

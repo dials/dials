@@ -48,12 +48,13 @@ namespace boost_python {
       const af::const_ref< vec3<double> > &m2,
       const af::const_ref< vec3<double> > &s0,
       const af::const_ref< vec3<double> > &s1,
-      const af::const_ref< std::size_t > &index) {
+      const af::const_ref<int> &index) {
     DIALS_ASSERT(m2.size() == s0.size());
     DIALS_ASSERT(s1.size() == index.size());
     af::shared<double> result(s1.size());
     for (std::size_t i = 0; i < index.size(); ++i) {
-      std::size_t j = index[i];
+      int j = index[i];
+      DIALS_ASSERT(j >= 0);
       DIALS_ASSERT(j < m2.size());
       result[i] = zeta_factor(m2[j], s0[j], s1[i]);
     }

@@ -87,7 +87,7 @@ ray_predictor = ScansRayPredictor(experiments, sweep_range)
 obs_refs = ray_predictor.predict(indices)
 
 # Set the experiment number
-obs_refs['id'] = flex.size_t(len(obs_refs), 0)
+obs_refs['id'] = flex.int(len(obs_refs), 0)
 
 # Calculate intersections
 ref_predictor = ExperimentsPredictor(experiments)

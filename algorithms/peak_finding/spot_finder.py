@@ -379,7 +379,7 @@ class SpotFinder(object):
       info('Finding strong spots in imageset %d' % i)
       info('-' * 80)
       table, hot_mask = self._find_in_imageset(imageset)
-      table['id'] = flex.size_t(table.nrows(), i)
+      table['id'] = flex.int(table.nrows(), i)
       reflections.extend(table)
 
       # Write a hot pixel mask

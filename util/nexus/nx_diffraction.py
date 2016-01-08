@@ -51,7 +51,7 @@ def write(handle, key, data):
   elif key == 'id':
     col = data
     dsc = 'The experiment id'
-    make_uint(handle, "id", col, dsc)
+    make_int(handle, "id", col, dsc)
   elif key == 'partial_id':
     col = data
     desc = 'The reflection id'
@@ -166,6 +166,26 @@ def write(handle, key, data):
     col = data
     dsc = 'The lorentz-polarization correction factor'
     make_float(handle, 'lp', col, dsc)
+  elif key == 'num_pixels.background':
+    col = data
+    dsc = 'Number of background pixels'
+    make_int(handle, 'num_bg', col, dsc)
+  elif key == 'num_pixels.background_used':
+    col = data
+    dsc = 'Number of background pixels used'
+    make_int(handle, 'num_bg_used', col, dsc)
+  elif key == 'num_pixels.foreground':
+    col = data
+    dsc = 'Number of foreground pixels'
+    make_int(handle, 'num_fg', col, dsc)
+  elif key == 'num_pixels.valid':
+    col = data
+    dsc = 'Number of valid pixels'
+    make_int(handle, 'num_valid', col, dsc)
+  elif key == 'profile.rmsd':
+    col = data
+    dsc = 'Profile rmsd'
+    make_float(handle, 'prf_rmsd', col, dsc)
   else:
     raise KeyError('Column %s not written to file' % key)
 
@@ -178,7 +198,7 @@ def read(handle, key):
     l = flex.int(handle['l'][:].astype(np.int32))
     return flex.miller_index(h,k,l)
   elif key == 'id':
-    return flex.size_t(handle['id'][:].astype(int))
+    return flex.int(handle['id'][:].astype(int))
   elif key == 'partial_id':
     return flex.size_t(handle['reflection_id'][:].astype(int))
   elif key == 'entering':
@@ -243,6 +263,16 @@ def read(handle, key):
     return flex.double(handle['prf_cc'][:])
   elif key == 'lp':
     return flex.double(handle['lp'][:])
+  elif key == 'num_pixels.background':
+    return flex.int(handle['num_bg'][:].astype(np.int32))
+  elif key == 'num_pixels.background_used':
+    return flex.int(handle['num_bg_used'][:].astype(np.int32))
+  elif key == 'num_pixels.foreground':
+    return flex.int(handle['num_fg'][:].astype(np.int32))
+  elif key == 'num_pixels.valid':
+    return flex.int(handle['num_valid'][:].astype(np.int32))
+  elif key == 'profile.rmsd':
+    return flex.double(handle['prf_rmsd'][:])
   else:
     raise KeyError('Column %s not read from file' % key)
 
@@ -341,7 +371,12 @@ def load(entry):
     'intensity.prf.value',
     'intensity.prf.variance',
     'profile.correlation',
-    'lp'
+    'lp',
+    'num_pixels.background',
+    'num_pixels.foreground',
+    'num_pixels.background_used',
+    'num_pixels.valid',
+    'profile.rmsd',
   ]
 
   # The reflection table

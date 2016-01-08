@@ -522,7 +522,7 @@ namespace gaussian_rs {
      * @param frame The list of frame numbers
      */
     void operator()(
-        const af::const_ref<std::size_t> &id,
+        const af::const_ref<int> &id,
         af::ref<Shoebox<> > shoeboxes,
         const af::const_ref< vec3<double> > &s1,
         const af::const_ref< double > &frame,

@@ -391,7 +391,7 @@ namespace dials { namespace algorithms {
   public:
 
     ReflectionLookup(
-        const af::const_ref<std::size_t> &id,
+        const af::const_ref<int> &id,
         const af::const_ref<std::size_t> &flags,
         const af::const_ref<int6> &bbox,
         const JobList &jobs)
@@ -402,6 +402,7 @@ namespace dials { namespace algorithms {
 
       // Check all the reflections are in range
       for (std::size_t i = 0; i < bbox.size(); ++i) {
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
         DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
         DIALS_ASSERT(bbox[i][5] > bbox[i][4]);

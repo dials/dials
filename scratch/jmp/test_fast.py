@@ -17,7 +17,7 @@ if __name__ == '__main__':
   from math import pi
   exlist = ExperimentListFactory.from_json_file(sys.argv[1])
   rlist = flex.reflection_table.from_predictions(exlist[0])
-  rlist['id'] = flex.size_t(len(rlist), 0)
+  rlist['id'] = flex.int(len(rlist), 0)
   rlist.compute_bbox(exlist[0], nsigma=3, sigma_d=0.024*pi/180,
                      sigma_m=0.044*pi/180)
 

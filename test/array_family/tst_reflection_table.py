@@ -890,7 +890,7 @@ class Test(object):
   def tst_split_by_experiment_id(self):
     from dials.array_family import flex
     r = flex.reflection_table()
-    r['id'] = flex.size_t()
+    r['id'] = flex.int()
     for i in range(100):
       r.append({"id" : 0})
       r.append({"id" : 1})
@@ -907,7 +907,7 @@ class Test(object):
   def tst_split_indices_by_experiment_id(self):
     from dials.array_family import flex
     r = flex.reflection_table()
-    r['id'] = flex.size_t()
+    r['id'] = flex.int()
     for i in range(100):
       r.append({"id" : 0})
       r.append({"id" : 1})

@@ -199,9 +199,9 @@ indices2 = index_generator.to_array()
 # Predict rays within the sweep range. Set experiment IDs
 ray_predictor = ScansRayPredictor(experiments, sweep_range)
 obs_refs1 = ray_predictor.predict(indices1, experiment_id=0)
-obs_refs1['id'] = flex.size_t(len(obs_refs1), 0)
+obs_refs1['id'] = flex.int(len(obs_refs1), 0)
 obs_refs2 = ray_predictor.predict(indices1, experiment_id=1)
-obs_refs2['id'] = flex.size_t(len(obs_refs2), 1)
+obs_refs2['id'] = flex.int(len(obs_refs2), 1)
 
 # Take only those rays that intersect the detector
 intersects = ray_intersection(mydetector, obs_refs1)

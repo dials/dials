@@ -1,0 +1,4 @@
+set hidden3d
+set dgrid3d 50,50 qnorm 2
+splot 'data.txt' with lines
+pause -1 "Hit any key to continue"

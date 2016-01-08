@@ -180,7 +180,7 @@ class Test(object):
     sigma_m = self.experiment[0].crystal.get_mosaicity(deg=False)
 
     rlist = flex.reflection_table()
-    rlist['id'] = flex.size_t(len(beam_vector), 0)
+    rlist['id'] = flex.int(len(beam_vector), 0)
     rlist['s1'] = beam_vector
     rlist['panel'] = panel
     rlist['xyzcal.px'] = xyzcal_px

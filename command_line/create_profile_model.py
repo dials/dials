@@ -81,9 +81,6 @@ class Script(object):
     reflections.del_selected(mask)
     Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
 
-    # For some reason, some input files have id as type int rather than uint
-    reflections['id'] = flex.size_t(list(reflections['id']))
-
     # Create the profile model
     experiments = ProfileModelFactory.create(params, experiments, reflections)
     for model in experiments:

@@ -85,7 +85,7 @@ class Test(object):
     #self.test_for_reference()
     for filename in self.refl_filenames:
       refl = flex.reflection_table.from_pickle(filename)
-      refl['id'] = flex.size_t(len(refl),0)
+      refl['id'] = flex.int(len(refl),0)
       self.test_for_reflections(refl, filename)
 
   def mv3n_tolerance_interval(self, x):

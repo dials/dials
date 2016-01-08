@@ -90,7 +90,7 @@ class Test(object):
     from dials.array_family import flex
     table = flex.reflection_table()
     table['flags'] = flex.size_t(nref, 0)
-    table['id']    = flex.size_t(nref, 0)
+    table['id']    = flex.int(nref, 0)
     table['panel'] = flex.size_t(nref, 0)
     table['miller_index'] = flex.miller_index(hkl)
     table['entering']     = flex.bool(nref, True)

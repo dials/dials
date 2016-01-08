@@ -49,7 +49,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(detector_.size() == scan_.size());
 
       // Loop through all the reflections
-      af::const_ref<std::size_t> id = reflections["id"];
+      af::const_ref<int> id = reflections["id"];
       af::const_ref< Shoebox<> > shoebox = reflections["shoebox"];
       af::ref< vec3<double> > xyzobs_px_value = reflections["xyzobs.px.value"];
       af::ref< vec3<double> > xyzobs_px_variance = reflections["xyzobs.px.variance"];
@@ -61,6 +61,7 @@ namespace dials { namespace algorithms {
         Centroid centroid = shoebox[i].centroid_foreground_minus_background();
 
         // Get the panel
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < detector_.size());
         const Detector& d = detector_[id[i]];
         DIALS_ASSERT(shoebox[i].panel < d.size());

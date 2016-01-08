@@ -178,13 +178,14 @@ namespace dials { namespace algorithms { namespace shoebox {
     };
 
     AdjacencyList operator()(
-      const af::const_ref<std::size_t> &id,
+      const af::const_ref<int> &id,
       const af::const_ref<int6> &bbox,
       const af::const_ref<std::size_t> &panel) const {
 
       DIALS_ASSERT(panel.size() > 0);
       DIALS_ASSERT(panel.size() == bbox.size());
       DIALS_ASSERT(panel.size() == id.size());
+      DIALS_ASSERT(id.all_ge(0));
 
       // Get the maximum panel number
       std::size_t max_panel = af::max(panel);

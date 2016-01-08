@@ -85,11 +85,12 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @returns flex.bool True contains outliers
      */
     af::shared<bool> operator()(
-        const af::const_ref<std::size_t> id,
+        const af::const_ref<int> id,
         af::ref< Shoebox <> > shoebox) const {
       DIALS_ASSERT(id.size() == shoebox.size());
       af::shared<bool> result(id.size(), false);
       for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < checker_.size());
         result[i] = checker_[id[i]](
             shoebox[i].panel,

@@ -40,7 +40,7 @@ class SpotXDSImporter(object):
     # Create the reflection list
     Command.start('Creating reflection list')
     table = flex.reflection_table()
-    table['id'] = flex.size_t(len(centroid), 0)
+    table['id'] = flex.int(len(centroid), 0)
     table['panel'] = flex.size_t(len(centroid), 0)
     if miller_index:
       table['miller_index'] = flex.miller_index(miller_index)
@@ -118,7 +118,7 @@ class IntegrateHKLImporter(object):
     # Create the reflection list
     Command.start('Creating reflection table')
     table = flex.reflection_table()
-    table['id'] = flex.size_t(len(hkl), 0)
+    table['id'] = flex.int(len(hkl), 0)
     table['panel'] = flex.size_t(len(hkl), 0)
     table['miller_index'] = hkl
     table['xyzcal.px'] = xyzcal

@@ -421,11 +421,12 @@ namespace dials { namespace af { namespace boost_python {
     DIALS_ASSERT(self.contains("id"));
 
     // Get the id array
-    af::const_ref<std::size_t> id = self["id"];
+    af::const_ref<int> id = self["id"];
 
     // Get the number of experiments
     std::size_t num_expr = 0;
     for (std::size_t i = 0; i < id.size(); ++i) {
+      DIALS_ASSERT(id[i] >= 0);
       if (id[i] >= num_expr) num_expr = id[i] + 1;
     }
 
@@ -483,11 +484,12 @@ namespace dials { namespace af { namespace boost_python {
     DIALS_ASSERT(self.contains("id"));
 
     // Get the id array
-    af::const_ref<std::size_t> id = self["id"];
+    af::const_ref<int> id = self["id"];
 
     // Get the number of each
     std::vector<std::size_t> num(num_expr, 0);
     for (std::size_t i = 0; i < id.size(); ++i) {
+      DIALS_ASSERT(id[i] >= 0);
       DIALS_ASSERT(id[i] < num_expr);
       num[id[i]]++;
     }

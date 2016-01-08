@@ -170,11 +170,12 @@ namespace dials { namespace algorithms {
      * @param s1 The list of indcident beam vectors
      */
     af::shared<double> lp(
-        const af::const_ref<std::size_t> &id,
+        const af::const_ref<int> &id,
         const af::const_ref< vec3<double> > &s1) const {
       DIALS_ASSERT(id.size() == s1.size());
       af::shared<double> result(id.size(), 0);
       for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < compute_.size());
         result[i] = compute_[id[i]].lp(s1[i]);
       }
@@ -188,13 +189,14 @@ namespace dials { namespace algorithms {
      * @param p The list of panels
      */
     af::shared<double> dqe(
-        const af::const_ref<std::size_t> &id,
+        const af::const_ref<int> &id,
         const af::const_ref< vec3<double> > &s1,
         const af::const_ref<std::size_t> &p) const {
       DIALS_ASSERT(id.size() == s1.size());
       DIALS_ASSERT(id.size() == p.size());
       af::shared<double> result(id.size(), 0);
       for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < compute_.size());
         result[i] = compute_[id[i]].dqe(s1[i], p[i]);
       }

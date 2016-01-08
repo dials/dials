@@ -17,7 +17,7 @@ class TestJobList(object):
     r['value2'] = flex.int()
     r['value3'] = flex.double()
     r['bbox'] = flex.int6()
-    r['id'] = flex.size_t()
+    r['id'] = flex.int()
     expected = []
     for i in range(100):
       x0 = randint(0, 100)
@@ -88,7 +88,7 @@ class TestJobList(object):
     r['value2'] = flex.int()
     r['value3'] = flex.double()
     r['bbox'] = flex.int6()
-    r['id'] = flex.size_t()
+    r['id'] = flex.int()
     expected = []
     for i in range(100):
       x0 = randint(0, 100)
@@ -172,7 +172,7 @@ class TestJobList(object):
     r['value2'] = flex.int()
     r['value3'] = flex.double()
     r['bbox'] = flex.int6()
-    r['id'] = flex.size_t()
+    r['id'] = flex.int()
     expected = []
     for i in range(100):
       x0 = randint(0, 100)
@@ -247,7 +247,7 @@ class TestReflectionManager(object):
     self.reflections['xyzcal.px'] = flex.vec3_double()
     self.reflections['xyzcal.mm'] = flex.vec3_double()
     self.reflections['entering'] = flex.bool()
-    self.reflections['id'] = flex.size_t()
+    self.reflections['id'] = flex.int()
     self.reflections["flags"] = flex.size_t()
 
     self.npanels = 2
@@ -426,7 +426,7 @@ class TestIntegrator3D(object):
     self.nproc = nproc
 
     rlist = flex.reflection_table.from_predictions(exlist[0])
-    rlist['id'] = flex.size_t(len(rlist), 0)
+    rlist['id'] = flex.int(len(rlist), 0)
     rlist.compute_bbox(exlist)
     rlist.compute_zeta_multi(exlist)
     rlist.compute_d(exlist)
@@ -490,7 +490,7 @@ class TestSummation(object):
       sigma_m=0.044*pi/180.0)
 
     rlist = flex.reflection_table.from_predictions(exlist[0])
-    rlist['id'] = flex.size_t(len(rlist), 0)
+    rlist['id'] = flex.int(len(rlist), 0)
     self.rlist = rlist
     self.exlist = exlist
 

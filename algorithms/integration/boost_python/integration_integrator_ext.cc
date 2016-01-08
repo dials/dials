@@ -34,10 +34,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     // Get the bounding boxes
     af::const_ref<int6> bbox = data["bbox"];
-    af::const_ref<std::size_t> id = data["id"];
+    af::const_ref<int> id = data["id"];
 
     // Check all the reflections are in range
     for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(id[i] >= 0);
       DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
       DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
       DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
@@ -154,11 +155,12 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     // Get the bounding boxes
     af::const_ref<int6> bbox = data["bbox"];
-    af::const_ref<std::size_t> id = data["id"];
+    af::const_ref<int> id = data["id"];
     af::const_ref<std::size_t> flags = data["flags"];
 
     // Check all the reflections are in range
     for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(id[i] >= 0);
       DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
       DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
       DIALS_ASSERT(bbox[i][5] > bbox[i][4]);

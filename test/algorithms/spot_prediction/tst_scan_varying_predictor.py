@@ -99,7 +99,7 @@ def ref_gen_static(experiments):
   # Make a reflection predictor and re-predict for these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
   ref_predictor = ExperimentsPredictor(experiments)
-  refs['id'] = flex.size_t(len(refs), 0)
+  refs['id'] = flex.int(len(refs), 0)
   refs = ref_predictor.predict(refs)
 
   return refs

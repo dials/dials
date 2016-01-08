@@ -53,7 +53,7 @@ def generate_reflections(experiments):
   # Make a reflection predictor and re-predict for all these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
   ref_predictor = ExperimentsPredictor(experiments)
-  obs_refs['id'] = flex.size_t(len(obs_refs), 0)
+  obs_refs['id'] = flex.int(len(obs_refs), 0)
   obs_refs = ref_predictor.predict(obs_refs)
 
   # Set 'observed' centroids from the predicted ones

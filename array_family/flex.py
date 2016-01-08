@@ -137,7 +137,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         dmax=dmax,
         margin=margin,
         force_static=force_static)
-      rlist['id'] = flex.size_t(len(rlist), i)
+      rlist['id'] = flex.int(len(rlist), i)
       result.extend(rlist)
     return result
 
@@ -456,12 +456,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.set_flags(
       sind.select(o2.get_flags(self.flags.used_in_refinement)),
       self.flags.used_in_refinement)
-    other = other.select(oind.select(mask))
+    other_matched_indices = oind.select(mask)
+    other_unmatched_mask = flex.bool(len(other), True)
+    other_unmatched_mask.set_selected(
+      other_matched_indices,
+      flex.bool(len(other_matched_indices), False))
+    other_matched = other.select(other_matched_indices)
+    other_unmatched = other.select(other_unmatched_mask)
     for key, column in self.select(sind.select(mask)).cols():
-      other[key] = column
+      other_matched[key] = column
     mask2 = flex.bool(len(self),False)
     mask2.set_selected(sind.select(mask), True)
-    return mask2, other
+    return mask2, other_matched, other_unmatched
 
   #def is_bbox_inside_image_range(self, experiment):
     #''' Check if bbox is within image range. '''
@@ -529,7 +535,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     uc = flex.unit_cell(len(experiments))
     for i, e in enumerate(experiments):
       uc[i] = e.crystal.get_unit_cell()
-    self['d'] = uc.d(self['miller_index'], self['id'])
+    assert self['id'].all_ge(0)
+    self['d'] = uc.d(self['miller_index'], flex.size_t(list(self['id'])))
     return self['d']
 
   def compute_bbox(self, experiments, sigma_b_multiplier=2.0):

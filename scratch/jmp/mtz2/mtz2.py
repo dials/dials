@@ -272,7 +272,7 @@ def test_export_dials():
   print 'Creating dummy reflection table...'
   table = flex.reflection_table()
   table['miller_index'] = flex.miller_index(100)
-  table['id'] = flex.size_t(100)
+  table['id'] = flex.int(100)
   table['intensity.sum.value'] = flex.double(100)
   table['intensity.sum.variance'] = flex.double(100)
   table['intensity.prf.value'] = flex.double(100)

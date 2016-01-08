@@ -177,7 +177,7 @@ class Test(object):
         None, 3, sigma_b, sigma_m, deg=True)))
 
     predicted = flex.reflection_table.from_predictions(exlist[0])
-    predicted['id'] = flex.size_t(len(predicted), 0)
+    predicted['id'] = flex.int(len(predicted), 0)
     predicted.compute_bbox(exlist)
 
     # Find overlapping reflections

@@ -161,7 +161,7 @@ class IntegratorStills(object):
     result = flex.reflection_table()
     for i, experiment in enumerate(experiments):
       predicted = flex.reflection_table.from_predictions(experiment)
-      predicted['id'] = flex.size_t(len(predicted), i)
+      predicted['id'] = flex.int(len(predicted), i)
       result.extend(predicted)
     return result
 

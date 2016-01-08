@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
   print "Predicting Reflections"
   rlist = flex.reflection_table.from_predictions(experiments[0])
-  rlist['id'] = flex.size_t(len(rlist), 0)
+  rlist['id'] = flex.int(len(rlist), 0)
   rlist.compute_bbox(experiments, profile_model)
   rlist.compute_zeta_multi(experiments)
   rlist.compute_d(experiments)

@@ -67,11 +67,12 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("id"));
 
       // Get the experiment id
-      af::const_ref<std::size_t> id = reflections["id"];
+      af::const_ref<int> id = reflections["id"];
 
       // Compute the number of reflections for each experiment
       std::vector<std::size_t> num1(size(), 0);
       for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < num1.size());
         num1[id[i]]++;
       }
@@ -140,11 +141,12 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("id"));
 
       // Get the experiment id
-      af::const_ref<std::size_t> id = reflections["id"];
+      af::const_ref<int> id = reflections["id"];
 
       // Compute the number of reflections for each experiment
       std::vector<std::size_t> num1(size(), 0);
       for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < num1.size());
         num1[id[i]]++;
       }
@@ -218,11 +220,12 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("id"));
 
       // Get the experiment id
-      af::const_ref<std::size_t> id = reflections["id"];
+      af::const_ref<int> id = reflections["id"];
 
       // Compute the number of reflections for each experiment
       std::vector<std::size_t> num1(size(), 0);
       for (std::size_t i = 0; i < id.size(); ++i) {
+        DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < num1.size());
         num1[id[i]]++;
       }

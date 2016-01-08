@@ -223,7 +223,7 @@ class Script(object):
 
     # Match reference with predicted
     if reference:
-      matched, reference = predicted.match_with_reference(reference)
+      matched, reference, _ = predicted.match_with_reference(reference)
       assert(len(matched) == len(predicted))
       assert(matched.count(True) <= len(reference))
       if matched.count(True) == 0:
@@ -299,7 +299,6 @@ class Script(object):
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
       ''' % mask.count(True))
-    reference['id'] = flex.size_t(list(reference['id']))
     info(' using %d indexed reflections' % len(reference))
     info(' time taken: %g' % (time() - st))
     return reference
@@ -430,7 +429,7 @@ class Script(object):
           e2.crystal = e1.crystal
           e2.imageset = new_iset
           e2.scan = new_scan
-          new_reference_all[i]['id'] = flex.size_t(
+          new_reference_all[i]['id'] = flex.int(
             len(new_reference_all[i]), len(new_experiments))
           new_reference.extend(new_reference_all[i])
           new_experiments.append(e2)

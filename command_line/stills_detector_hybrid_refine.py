@@ -239,7 +239,7 @@ def crystals_refiner(params, experiments, reflections):
     print "Refining crystal", iexp
     # reflection subset for a single experiment
     refs = reflections.select(reflections['id'] == iexp)
-    refs['id'] = flex.size_t(len(refs),0)
+    refs['id'] = flex.int(len(refs),0)
 
     # DGW commented out as reflections.minimum_number_of_reflections no longer exists
     #if len(refs) < params.refinement.reflections.minimum_number_of_reflections:
@@ -465,7 +465,7 @@ class Script(object):
           continue
 
         # set reflections ID
-        sub_ref['id'] = flex.size_t(len(sub_ref), exp_id)
+        sub_ref['id'] = flex.int(len(sub_ref), exp_id)
 
         # keep number of reflections for the table
         nrefs_per_exp.append(len(sub_ref))
