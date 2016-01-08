@@ -368,6 +368,10 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     super(MyGLWindow, self).rotate_view(
       x1, y1, x2, y2, shift_down=shift_down, scale=scale)
 
+  def OnLeftUp(self,event):
+    self.was_dragged = True
+    super(MyGLWindow, self).OnLeftUp(event)
+
 
 def run(args):
 
