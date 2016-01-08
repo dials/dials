@@ -295,6 +295,30 @@ class Target(object):
 
     return (L, dL_dp, curvs)
 
+  def compute_restraints_functional_gradients_and_curvatures(self):
+    '''use the restraints_parameterisation object, if present, to
+    calculate the least squares restraints objective plus gradients and
+    approximate curvatures'''
+
+    if not self._restraints_parameterisation: return None
+
+    residuals, jacobian, weights = \
+      self._restraints_parameterisation.get_residuals_gradients_and_weights()
+    w_resid = weights * residuals
+    residuals2 = residuals * residuals
+
+    # calculate target function
+    L = 0.5 * flex.sum(weights * residuals2)
+
+    # calculate gradients using the scalar product of sparse vector col with
+    # dense vector w_resid
+    dL_dp = [col * w_resid for col in jacobian.cols()]
+
+    # calculate lsq approximation to curvatures using weighted dot product
+    curvs = [sparse.weighted_dot(col, weights, col) for col in jacobian.cols()]
+
+    return (L, dL_dp, curvs)
+
   #def curvatures(self):
   #  """First order approximation to the diagonal of the Hessian based on the
   #  least squares form of the target"""
