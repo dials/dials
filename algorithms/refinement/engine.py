@@ -317,6 +317,7 @@ class AdaptLbfgs(Refinery):
 
     self.prepare_for_step()
 
+    # observation terms
     blocks = self._target.split_matches_into_blocks(nproc = self._nproc)
     if self._nproc > 1:
       task_results = easy_mp.parallel_map(
@@ -335,7 +336,20 @@ class AdaptLbfgs(Refinery):
     flist, glist, clist = zip(*task_results)
     glist = zip(*glist)
     clist = zip(*clist)
-    return sum(flist), [sum(g) for g in glist], [sum(c) for c in clist]
+    f = sum(flist)
+    g = [sum(g) for g in glist]
+    c = [sum(c) for c in clist]
+
+    # restraints terms
+    restraints = \
+      self._target.compute_restraints_functional_gradients_and_curvatures()
+
+    if restraints:
+      f += restraints[0]
+      g = [a + b for a,b in zip(g, restraints[1])]
+      c = [a + b for a,b in zip(c, restraints[2])]
+
+    return f, g, c
 
   def callback_after_step(self, minimizer):
     """
