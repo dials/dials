@@ -121,7 +121,21 @@ class SpotFrame(XrayFrame) :
       shortHelp="Next",
       kind=wx.ITEM_NORMAL)
     self.Bind(wx.EVT_MENU, self.OnNext, btn)
+    txt = wx.StaticText(self.toolbar, -1, "Jump to image:")
+    self.toolbar.AddControl(txt)
 
+    from wxtbx.phil_controls.intctrl import IntCtrl
+    from wxtbx.phil_controls import EVT_PHIL_CONTROL
+    self.jump_to_image = IntCtrl(self.toolbar, -1, name="image", size=(50,-1))
+    self.jump_to_image.SetMin(1)
+    self.jump_to_image.SetValue(1)
+    self.toolbar.AddControl(self.jump_to_image)
+    self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+
+  def OnJumpToImage (self, event) :
+    self.jump_to_image.SetMax(self.image_chooser.GetCount())
+    self.load_image(self.image_chooser.GetClientData(
+      self.jump_to_image.GetPhilValue()-1))
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
