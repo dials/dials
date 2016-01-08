@@ -251,13 +251,6 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     pass
 
   # Create the resolution binner
-  high_low_resolution_binner = Binner(
-    resolution_bins(
-      experiment,
-      data['miller_index'],
-      2))
-
-  # Create the resolution binner
   resolution_binner = Binner(
     resolution_bins(
       experiment,
@@ -277,13 +270,13 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   overall = overall_report(data)
 
   # Create high/low resolution reports
-  hl_binner = high_low_resolution_binner.indexer(data['d'])
+  hl_binner = resolution_binner.indexer(data['d'])
   high_summary = overall_report(select(data, hl_binner.indices(0)))
-  low_summary = overall_report(select(data, hl_binner.indices(1)))
-  high_summary['dmin'] = high_low_resolution_binner.bins()[0]
-  high_summary['dmax'] = high_low_resolution_binner.bins()[1]
-  low_summary['dmin'] = high_low_resolution_binner.bins()[1]
-  low_summary['dmax'] = high_low_resolution_binner.bins()[2]
+  low_summary = overall_report(select(data, hl_binner.indices(n_resolution_bins-1)))
+  high_summary['dmin'] = resolution_binner.bins()[0]
+  high_summary['dmax'] = resolution_binner.bins()[1]
+  low_summary['dmin'] = resolution_binner.bins()[n_resolution_bins-1]
+  low_summary['dmax'] = resolution_binner.bins()[n_resolution_bins]
   overall['dmin'] = high_summary['dmin']
   overall['dmax'] = low_summary['dmax']
 
