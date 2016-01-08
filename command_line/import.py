@@ -42,6 +42,8 @@ Examples::
 
   dials.import template=image_1_####.cbf
 
+  dials.import directory=directory/with/images
+
   find . -name "image_*.cbf" | dials.import
 
   dials.import <<eof
@@ -84,6 +86,12 @@ phil_scope = parse('''
       .type = str
       .help = "The image sweep template"
       .multiple = True
+
+    directory = None
+      .type = str
+      .help = "A directory with images"
+      .multiple = True
+
     reference_geometry = None
       .type = path
       .help = "Experimental geometry from this datablock.json or "
@@ -227,6 +235,7 @@ class Script(object):
 
   def run(self):
     ''' Parse the options. '''
+    from dxtbx.datablock import DataBlockFactory
     from dxtbx.datablock import DataBlockTemplateImporter
     from dials.util.options import flatten_datablocks
     from dials.util import log
@@ -276,14 +285,16 @@ class Script(object):
 
       # Check if a template has been set and print help if not, otherwise try to
       # import the images based on the template input
-      if len(params.input.template) == 0:
-        self.parser.print_help()
-        exit(0)
-      else:
+      if len(params.input.template) > 0:
         importer = DataBlockTemplateImporter(
           params.input.template,
           options.verbose)
         datablocks = importer.datablocks
+      elif len(params.input.directory) > 0:
+        datablocks = DataBlockFactory.from_filenames(params.input.directory)
+      else:
+        self.parser.print_help()
+        exit(0)
 
     # Check the lookup inputs
     mask_filename = None
