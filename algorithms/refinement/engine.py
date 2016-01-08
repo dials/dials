@@ -472,6 +472,7 @@ class AdaptLstbx(
     # Reset the state to construction time, i.e. no equations accumulated
     self.reset()
 
+    # observation terms
     if objective_only:
       residuals, weights = self._target.compute_residuals()
       self.add_residuals(residuals, weights)
@@ -514,6 +515,14 @@ class AdaptLstbx(
           residuals, self._jacobian, weights = \
             self._target.compute_residuals_and_gradients(block)
           self.add_equations(residuals, self._jacobian, weights)
+
+    # restraints terms
+    restraints = self._target.compute_restraints_residuals_and_gradients()
+    if restraints:
+      if objective_only:
+        self.add_residuals(restraints[0], restraints[2])
+      else:
+        self.add_equations(restraints[0], restraints[1], restraints[2])
     return
 
   def step_forward(self):
