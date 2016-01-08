@@ -149,6 +149,10 @@ def test1():
 def test2():
   '''Test with multiple crystals, and a stills refiner'''
 
+  if not libtbx.env.has_module("dials_regression"):
+    print "Skipping test2 in " + __file__ + " as dials_regression not present"
+    return
+
   # The phil scope
   from dials.algorithms.refinement.refiner import phil_scope
   user_phil = parse('''
