@@ -63,6 +63,13 @@ phil_scope = parse(
     report = None
       .type = str
       .help = "The integration report filename (*.xml or *.json)"
+
+    include_bad_reference = False
+      .type = bool
+      .help = "Include bad reference data including unindexed spots,"
+              "and reflections whose predictions are messed up in the"
+              "reflection table output. Reflections will have the"
+              "'bad_reference' flag set."
   }
 
   scan_range = None
@@ -194,7 +201,7 @@ class Script(object):
     info("")
 
     # Load the data
-    reference = self.process_reference(reference)
+    reference, rubbish = self.process_reference(reference)
     info("")
 
     # Initialise the integrator
@@ -223,7 +230,7 @@ class Script(object):
 
     # Match reference with predicted
     if reference:
-      matched, reference, _ = predicted.match_with_reference(reference)
+      matched, reference, unmatched = predicted.match_with_reference(reference)
       assert(len(matched) == len(predicted))
       assert(matched.count(True) <= len(reference))
       if matched.count(True) == 0:
@@ -231,13 +238,14 @@ class Script(object):
           Invalid input for reference reflections.
           Zero reference spots were matched to predictions
         ''')
-      elif matched.count(True) != len(reference):
+      elif len(unmatched) != 0:
         info('')
         info('*' * 80)
         info('Warning: %d reference spots were not matched to predictions' % (
-          len(reference) - matched.count(True)))
+          len(unmatched)))
         info('*' * 80)
         info('')
+      rubbish.extend(unmatched)
 
     # Select a random sample of the predicted reflections
     if not params.sampling.integrate_all_reflections:
@@ -258,6 +266,14 @@ class Script(object):
     # Integrate the reflections
     reflections = integrator.integrate()
 
+    # Append rubbish data onto the end
+    if rubbish is not None and params.output.include_bad_reference:
+      mask = flex.bool(len(rubbish), True)
+      rubbish.unset_flags(mask, rubbish.flags.integrated_sum)
+      rubbish.unset_flags(mask, rubbish.flags.integrated_prf)
+      rubbish.set_flags(mask, rubbish.flags.bad_reference)
+      reflections.extend(rubbish)
+
     # Save the reflections
     self.save_reflections(reflections, params.output.reflections)
     self.save_experiments(experiments, params.output.experiments)
@@ -276,14 +292,17 @@ class Script(object):
     from time import time
     from libtbx.utils import Sorry
     if reference is None:
-      return None
+      return None, None
     st = time()
     assert("miller_index" in reference)
     assert("id" in reference)
     info('Processing reference reflections')
     info(' read %d strong spots' % len(reference))
     mask = reference.get_flags(reference.flags.indexed)
-    reference.del_selected(mask == False)
+    rubbish = reference.select(mask == False)
+    if mask.count(False) > 0:
+      reference.del_selected(mask == False)
+      info(' removing %d unindexed reflections' %  mask.count(True))
     if len(reference) == 0:
       raise Sorry('''
         Invalid input for reference reflections.
@@ -291,6 +310,7 @@ class Script(object):
       ''' % (0, len(reference)))
     mask = reference['miller_index'] == (0, 0, 0)
     if mask.count(True) > 0:
+      rubbish.extend(reference.select(mask))
       reference.del_selected(mask)
       info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
     mask = reference['id'] < 0
@@ -300,8 +320,9 @@ class Script(object):
         %d reference spots have an invalid experiment id
       ''' % mask.count(True))
     info(' using %d indexed reflections' % len(reference))
+    info(' found %d junk reflections' % len(rubbish))
     info(' time taken: %g' % (time() - st))
-    return reference
+    return reference, rubbish
 
   def save_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''

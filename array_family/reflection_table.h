@@ -113,6 +113,9 @@ namespace dials { namespace af {
     FailedDuringBackgroundModelling = (1 << 18),
     FailedDuringSummation = (1 << 19),
     FailedDuringProfileFitting = (1 << 20),
+
+    // Bad reference
+    BadReference = (1 << 21),
   };
 
 }} // namespace dials::af

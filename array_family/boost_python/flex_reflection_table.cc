@@ -611,6 +611,7 @@ namespace dials { namespace af { namespace boost_python {
         .value("failed_during_background_modelling", FailedDuringBackgroundModelling)
         .value("failed_during_summation", FailedDuringSummation)
         .value("failed_during_profile_fitting", FailedDuringProfileFitting)
+        .value("bad_reference", BadReference)
         ;
 
       // return the wrapped class

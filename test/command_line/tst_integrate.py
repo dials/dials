@@ -24,6 +24,7 @@ class Test(object):
     self.test4()
     self.test_multi_sweep()
     self.test_multi_lattice()
+    self.test_output_rubbish()
 
   def test1(self):
     from os.path import join, exists
@@ -279,6 +280,49 @@ class Test(object):
     assert len(exp_id) == 2
 
     print 'OK'
+
+
+  def test_output_rubbish(self):
+    from os.path import join, exists
+    from libtbx import easy_run
+    import os
+    from uuid import uuid4
+
+    dirname ='tmp_%s' % uuid4().hex
+    os.mkdir(dirname)
+    os.chdir(dirname)
+
+    assert exists(join(self.path, 'datablock.json'))
+    assert exists(join(self.path, 'strong.pickle'))
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.index',
+      join(self.path, 'datablock.json'),
+      join(self.path, 'strong.pickle'),
+    ]).raise_if_errors()
+
+    assert exists('experiments.json')
+    assert exists('indexed.pickle')
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.integrate',
+      'experiments.json',
+      'indexed.pickle',
+      'profile.fitting=False',
+    ]).raise_if_errors()
+
+    import cPickle as pickle
+    table = pickle.load(open('integrated.pickle', 'rb'))
+    assert table.get_flags(table.flags.bad_reference) > 0
+
+    assert('id' in table)
+    for row in table:
+      assert(row['id'] == 0)
+    self.table = table
+    print 'OK'
+
 
 if __name__ == '__main__':
   from dials.test import cd_auto
