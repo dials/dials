@@ -232,6 +232,7 @@ class Script(object):
     from dials.util import log
     from logging import info, debug
     import cPickle as pickle
+    from libtbx.utils import Sorry
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=False)
@@ -333,6 +334,17 @@ class Script(object):
         num_stills = 0
       else:
         num_stills = len(stills)
+
+      for imageset in sweeps + stills:
+        if imageset.get_beam() == None or imageset.get_detector() == None:
+          raise Sorry('''
+            Imageset contains no beam or detector model. This means you will be
+            unable to process your data.
+
+            Possible causes of this error are:
+               - A problem reading the images with one of the dxtbx format classes
+               - A lack of header information in the file itself.
+          ''')
 
       # Set the external lookups
       if lookup_size is not None:
