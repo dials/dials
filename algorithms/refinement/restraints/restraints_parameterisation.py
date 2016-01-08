@@ -35,7 +35,7 @@ restraints
     sigmas = None
       .help = "The unit cell target values are associated with sigmas which are"
               "used to determine the weight of each restraint. A sigma of zero"
-              "or None will remove the restraint at that position"
+              "will remove the restraint at that position"
       .type = floats(size=6, value_min=0.)
 
     id = None
@@ -186,9 +186,9 @@ class RestraintsParameterisation(object):
 
   def get_values_and_gradients(self):
 
-    values = []
+    values = flex.double()
     for r in self._restraints:
-      values.extend(r.restraint.values())
+      values.extend(flex.double(r.restraint.values()))
 
     nrows = len(values)
     gradients = sparse.matrix(nrows, self._nparam)
