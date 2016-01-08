@@ -29,16 +29,6 @@ class DerivedParameterTie(object):
 
     return
 
-  #def value(self, parameter_value, parameter_gradients):
-  #  """Calculate and return weighted squared residual R, cache gradients"""
-  #
-  #  d = parameter_value - self._target
-  #  wd = self._w * d
-  #  grad_coeff = 2. * wd
-  #  self._dRdp = [grad_coeff * g for g in parameter_gradients]
-  #
-  #  return wd * d
-
   def residual(self, parameter_value, parameter_gradients):
     '''Calculate residual R, cache gradients'''
 

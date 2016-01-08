@@ -13,7 +13,8 @@ principally Target and ReflectionManager."""
 # python and cctbx imports
 from __future__ import division
 from math import pi, sqrt, ceil
-from cctbx.array_family import flex
+from scitbx.array_family import flex
+from scitbx import sparse
 import abc
 
 # constants
@@ -556,7 +557,6 @@ class SparseGradientsMixin:
   def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam):
     """construct Jacobian from lists of sparse gradient vectors."""
 
-    from scitbx import sparse
     nref = int(nelem / 3)
     X_mat = sparse.matrix(nref, nparam)
     Y_mat = sparse.matrix(nref, nparam)
