@@ -359,6 +359,22 @@ class Target(object):
 
     return(residuals, jacobian, weights)
 
+  def compute_restraints_residuals_and_gradients(self):
+    '''delegate to the restraints_parameterisation object, if present, to
+    calculate the vector of restraints residuals plus their gradients and
+    weights for non-linear least squares methods'''
+
+    if self._restraints_parameterisation:
+      residuals, jacobian = \
+        self._restraints_parameterisation.get_values_and_gradients()
+      # currently weights are incorporated into the restraints, so provide
+      # unit weights here
+      weights = flex.double(len(residuals), 1.0)
+      return(residuals, jacobian, weights)
+
+    else:
+      return None
+
   @staticmethod
   def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam):
     """construct Jacobian from lists of gradient vectors. This method may be
