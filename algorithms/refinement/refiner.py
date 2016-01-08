@@ -1202,7 +1202,11 @@ class RefinerFactory(object):
         raise Sorry("6 sigmas must be provided as the tie_to_target.sigmas. "
                     "Note that individual sigmas of 0 or None will remove "
                     "the restraint for the corresponding cell parameter.")
-      rp.add_restraints_to_target_xl_unit_cell(tie.id, tie.values, tie.sigmas)
+      if not tie.id:
+        raise Sorry("At least one experiment id must be provided as the "
+                    "tie_to_target.id")
+      for exp_id in tie.id:
+        rp.add_restraints_to_target_xl_unit_cell(exp_id, tie.values, tie.sigmas)
 
     # FIXME Group ties not available yet
     for tie in cell_r.tie_to_group:

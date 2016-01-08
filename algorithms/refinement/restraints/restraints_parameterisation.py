@@ -39,10 +39,12 @@ restraints
       .type = floats(size=6, value_min=0.)
 
     id = None
-      .help = "Index of an experiment affected by this restraint. If the"
-              "relevant parameterisation affects multiple experiments then any"
-              "one of the indices may be supplied"
-      .type = int(value_min=0)
+      .help = "Index of experiments affected by this restraint to look up which"
+              "parameterisations to apply the restraint to. If an identified"
+              "parameterisation affects multiple experiments then the index"
+              "of any one of those experiments suffices to restrain that"
+              "parameterisation."
+      .type = ints(value_min=0)
   }
 
   tie_to_group
