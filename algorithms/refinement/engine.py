@@ -12,13 +12,12 @@ LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
 from __future__ import division
-from logging import info, debug
+from logging import debug
 
 from scitbx import lbfgs
 from scitbx.array_family import flex
 import libtbx
 from libtbx import easy_mp
-import sys
 
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
