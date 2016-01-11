@@ -1,46 +1,56 @@
 Instructions to build the DIALS documentation pages using sphinx
+================================================================
 
-Assumptions:
+Pre-requisites:
 
-i)  you have the dials htdocs repository checked out:
-      svn+ssh://svn.code.sf.net/p/dials/htdocs/code/trunk
+i)  you have the dials.github.io repository cloned in your modules directory:
+
+   $ git clone git@github.com:dials/dials.github.io.git
+
 ii) you have sphinx and dependencies (docutils, etc.) installed in your
     cctbx.python.
 
-
-1) Install biopython if you don’t already have it (this is to populate the
+iii) Install biopython if you don’t already have it (this is to populate the
    publications section):
 
-$ curl http://biopython.org/DIST/biopython-1.65.tar.gz > biopython-1.65.tar.gz
-$ tar -xzvf biopython-1.65.tar.gz
-$ cd biopython-1.65
-$ dials.python setup.py build install
+   $ curl http://biopython.org/DIST/biopython-1.65.tar.gz > biopython-1.65.tar.gz
+   $ tar -xzvf biopython-1.65.tar.gz
+   $ cd biopython-1.65
+   $ dials.python setup.py build install
 
+iv) Get the alabaster sphinx theme:
 
-[this step is only necessary if you want to use the alabaster theme]
-2) Get the alabaster sphinx theme:
+   $ curl https://pypi.python.org/packages/source/a/alabaster/alabaster-0.6.3.tar.gz > alabaster-0.6.3.tar.gz
+   $ tar -xzvf alabaster-0.6.3.tar.gz
+   $ cd alabaster-0.6.3
+   $ dials.python setup.py build install
 
-$ curl https://pypi.python.org/packages/source/a/alabaster/alabaster-0.6.3.tar.gz > alabaster-0.6.3.tar.gz
-$ tar -xzvf alabaster-0.6.3.tar.gz
-$ cd alabaster-0.6.3
-$ dials.python setup.py build install
+To update the DIALS webpages:
 
+1) Update the dials.github.io:
 
-[this step is only necessary if you want to use the alabaster theme]
-3) Then replace the current sphinx configuration with the one using the alabaster theme:
+  $ git pull --rebase
 
-$ cd $(libtbx.find_in_repositories dials)/doc/sphinx
-$ mv conf.py conf_default.py
-$ ln -s conf_alabaster.py conf.py
+2) Make changes to the .rst files in dials/doc/sphinx. Commit the resulting
+   changes to the .rst files to the dials repository (ideally after running
+   steps 3 & 4 to visually inspect the generated html files).
 
-
-4) Build the documentation using the dev.dials.make_sphinx_html command which
+3) Build the documentation using the dev.dials.make_sphinx_html command which
    builds the sphinx documentation and copies the output into the
-   sources/htdocs/doc directory.
+   dials.github.io.git directory.
 
-$ dev.dials.make_sphinx_html
+   $ dev.dials.make_sphinx_html
 
+4) View the documentation! e.g. on mac:
 
-5) View the documentation! e.g. on mac:
+   $ open $(libtbx.find_in_repositories htdocs)/doc/index.html
 
-$ open $(libtbx.find_in_repositories htdocs)/doc/index.html
+5) Either (i) commit the resulting changes to the dials.github.io repository to
+   make modifications immediately available or (ii) wait for the next Jenkins
+   job to re-build the website (this happens nightly UK time). If you choose not
+   to commit your local changes, you might want to run the following git
+   commands (in the dials.github.io source directory) which reset the local
+   changes to the dials.github.io repository and remove untracked
+   files/directories, before running any future git pull commands:
+
+   $ git checkout . ; git clean -f -d
