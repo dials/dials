@@ -309,7 +309,7 @@ class AdaptLbfgs(Refinery):
   def compute_functional_and_gradients(self):
     L, dL_dp, _ = self.compute_functional_gradients_and_curvatures()
     self._f = L
-    self._g = flex.double(dL_dp)
+    self._g = dL_dp
     return self._f, self._g
 
   def compute_functional_gradients_and_curvatures(self):
@@ -348,7 +348,7 @@ class AdaptLbfgs(Refinery):
       g = [a + b for a,b in zip(g, restraints[1])]
       c = [a + b for a,b in zip(c, restraints[2])]
 
-    return f, g, c
+    return f, flex.double(g), flex.double(c)
 
   def callback_after_step(self, minimizer):
     """
@@ -422,12 +422,12 @@ class LBFGScurvs(AdaptLbfgs):
 
     L, dL_dp, curvs = self.compute_functional_gradients_and_curvatures()
     self._f = L
-    self._g = flex.double(dL_dp)
+    self._g = dL_dp
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
-    assert all([c > 0.0 for c in curvs])
+    assert curvs.all_gt(0.0)
 
-    diags = 1. / flex.double(curvs)
+    diags = 1. / curvs
 
     if self._verbosity > 2:
       msg = "  curv: " +  "%.5f " * len(tuple(curvs))
