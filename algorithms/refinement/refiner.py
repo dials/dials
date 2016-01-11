@@ -201,7 +201,7 @@ refinement
     .help = "Parameters to configure the refinery"
     .expert_level = 1
   {
-    engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar
+    engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar SparseLevMar
       .help = "The minimisation engine to use"
       .type = choice
 
@@ -1239,6 +1239,8 @@ class RefinerFactory(object):
       from engine import GaussNewtonIterations as refinery
     elif options.engine == "LevMar":
       from engine import LevenbergMarquardtIterations as refinery
+    elif options.engine == "SparseLevMar":
+      from sparse_engine import SparseLevenbergMarquardtIterations as refinery
     else:
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")
