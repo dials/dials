@@ -146,8 +146,11 @@ class RestraintsParameterisation(object):
 
     # On input we will have one id value, 6 target values and 6 sigmas.
 
-    # select the right parameterisation
-    param_i = self._exp_to_xluc_param[experiment_id]
+    # select the right parameterisation, if one exists
+    try:
+      param_i = self._exp_to_xluc_param[experiment_id]
+    except KeyError:
+      return
 
     # fail now if this is already restrained.
     if param_i.parameterisation in self._param_to_restraint:
