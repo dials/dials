@@ -1002,6 +1002,7 @@ class indexer_base(object):
       sgtbx.change_of_basis_op(
         str(sgtbx.rt_mx(sgtbx.rot_mx(T['trans'].transpose().as_int()))))
       for T in tools.R if T['mod'] < 5]
+    transformations = [] # XXX temporarily disable cell doubling checks
     transformations.insert(0, sgtbx.change_of_basis_op())
 
     # select only those combinations where j > i and k > j
