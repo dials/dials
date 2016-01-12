@@ -997,6 +997,13 @@ class indexer_base(object):
     combinations = combinations.select(
       flex.sort_permutation(combinations.as_vec3_double().norms()))
 
+    from rstbx.indexing_api import tools
+    transformations = [
+      sgtbx.change_of_basis_op(
+        str(sgtbx.rt_mx(sgtbx.rot_mx(T['trans'].transpose().as_int()))))
+      for T in tools.R if T['mod'] < 5]
+    transformations.insert(0, sgtbx.change_of_basis_op())
+
     # select only those combinations where j > i and k > j
     i, j, k = combinations.as_vec3_double().parts()
     sel = flex.bool(len(combinations), True)
@@ -1039,43 +1046,53 @@ class indexer_base(object):
       min_bmsd = 1e8
       cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
       model = model.change_basis(cb_op_to_niggli)
-      #print model.get_unit_cell()
-      uc = model.get_unit_cell()
       if self.target_symmetry_primitive is not None:
         max_delta = self.params.known_symmetry.max_delta
         from dials.algorithms.indexing.symmetry import find_matching_symmetry
-        best_subgroup = find_matching_symmetry(
-          uc, self.target_symmetry_primitive.space_group(),
-          max_delta=max_delta)
-        cb_op_extra = None
-        if best_subgroup is None:
-          if self.target_symmetry_reference_setting is not None:
-            # if we have been told we have a centred unit cell check that
-            # indexing hasn't found the centred unit cell instead of the
-            # primitive cell
-            best_subgroup = find_matching_symmetry(
-              uc, self.target_symmetry_reference_setting.space_group().build_derived_point_group(),
-              max_delta=max_delta)
-            cb_op_extra = self.cb_op_reference_to_primitive
-            if best_subgroup is None:
-              continue
+        for T in transformations:
+          uc = model.get_unit_cell()
+          det = T.c().r().determinant()
+          if self.target_symmetry_primitive.unit_cell() is None:
+            if det > 1: break
           else:
+            primitive_volume = self.target_symmetry_primitive.unit_cell().volume()
+          if det > 1 and abs(uc.volume()/primitive_volume - det) < 1e-1:
+            uc = uc.change_basis(T)
+          best_subgroup = find_matching_symmetry(
+            uc, self.target_symmetry_primitive.space_group(),
+            max_delta=max_delta)
+          cb_op_extra = None
+          if best_subgroup is None:
+            if self.target_symmetry_reference_setting is not None:
+              # if we have been told we have a centred unit cell check that
+              # indexing hasn't found the centred unit cell instead of the
+              # primitive cell
+              best_subgroup = find_matching_symmetry(
+                uc, self.target_symmetry_reference_setting.space_group().build_derived_point_group(),
+                max_delta=max_delta)
+              cb_op_extra = self.cb_op_reference_to_primitive
+              if best_subgroup is None:
+                continue
+            else:
+              continue
+          cb_op_inp_best = best_subgroup['cb_op_inp_best']
+          best_subsym = best_subgroup['best_subsym']
+          cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
+          ref_subsym = best_subsym.change_basis(cb_op_best_ref)
+          cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
+          cb_op_to_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best * T
+          if cb_op_extra is not None:
+            cb_op_to_primitive = cb_op_extra * cb_op_to_primitive
+          best_model = model.change_basis(cb_op_to_primitive)
+          if (self.target_symmetry_primitive.unit_cell() is not None
+              and not best_model.get_unit_cell().is_similar_to(
+            self.target_symmetry_primitive.unit_cell(),
+            relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+              absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
+            best_model = None
             continue
-        cb_op_inp_best = best_subgroup['cb_op_inp_best']
-        best_subsym = best_subgroup['best_subsym']
-        cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-        ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-        cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-        cb_op_to_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
-        if cb_op_extra is not None:
-          cb_op_to_primitive = cb_op_extra * cb_op_to_primitive
-        best_model = model.change_basis(cb_op_to_primitive)
-        if (self.target_symmetry_primitive.unit_cell () is not None
-            and not best_model.get_unit_cell().is_similar_to(
-          self.target_symmetry_primitive.unit_cell(),
-          relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-            absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
-          continue
+          else:
+            break
       else:
         best_model = model
 
@@ -1168,7 +1185,8 @@ class indexer_base(object):
 
       from rstbx.dps_core.cell_assessment import SmallUnitCellVolume
       threshold = self.params.basis_vector_combinations.sys_absent_threshold
-      if threshold:
+      if (threshold and (self.target_symmetry_primitive is None or
+                         self.target_symmetry_primitive.unit_cell() is None)):
         try:
           self.correct_non_primitive_basis(experiments, refl, threshold)
         except SmallUnitCellVolume:
