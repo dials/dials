@@ -72,7 +72,7 @@ class Script(object):
       raise Sorry('exactly 1 reflection table must be specified')
     if len(experiments) == 0:
       raise Sorry('no experiments were specified')
-    reflections = reflections[0]
+    reflections, _ = self.process_reference(reflections[0])
 
     from dials.array_family import flex
     Command.start('Removing invalid coordinates')
@@ -102,6 +102,44 @@ class Script(object):
       outfile.write(dump.as_json())
     Command.end("Wrote experiments to %s" % params.output)
 
+  def process_reference(self, reference):
+    ''' Load the reference spots. '''
+    from dials.array_family import flex
+    from logging import info
+    from time import time
+    from libtbx.utils import Sorry
+    if reference is None:
+      return None, None
+    st = time()
+    assert("miller_index" in reference)
+    assert("id" in reference)
+    info('Processing reference reflections')
+    info(' read %d strong spots' % len(reference))
+    mask = reference.get_flags(reference.flags.indexed)
+    rubbish = reference.select(mask == False)
+    if mask.count(False) > 0:
+      reference.del_selected(mask == False)
+      info(' removing %d unindexed reflections' %  mask.count(True))
+    if len(reference) == 0:
+      raise Sorry('''
+        Invalid input for reference reflections.
+        Expected > %d indexed spots, got %d
+      ''' % (0, len(reference)))
+    mask = reference['miller_index'] == (0, 0, 0)
+    if mask.count(True) > 0:
+      rubbish.extend(reference.select(mask))
+      reference.del_selected(mask)
+      info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
+    mask = reference['id'] < 0
+    if mask.count(True) > 0:
+      raise Sorry('''
+        Invalid input for reference reflections.
+        %d reference spots have an invalid experiment id
+      ''' % mask.count(True))
+    info(' using %d indexed reflections' % len(reference))
+    info(' found %d junk reflections' % len(rubbish))
+    info(' time taken: %g' % (time() - st))
+    return reference, rubbish
 
 if __name__ == '__main__':
   from dials.util import halraiser
