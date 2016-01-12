@@ -78,6 +78,10 @@ phil_scope = parse('''
       .type = float
       .help = "Exclude reflections with unfeasible values of I/Sig(I)"
 
+    force_static_model = False
+      .type = bool
+      .help = "Force program to use static model even if scan varying is present"
+
     hklout = hklout.mtz
       .type = str
       .help = "The output MTZ file"
@@ -161,7 +165,8 @@ class MTZExporter(object):
       ignore_panels=params.mtz.ignore_panels,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials,
-      min_isigi=params.mtz.min_isigi)
+      min_isigi=params.mtz.min_isigi,
+      force_static_model=params.mtz.force_static_model)
     m.show_summary()
 
 

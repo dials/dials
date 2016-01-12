@@ -183,7 +183,8 @@ def dials_u_to_mosflm(dials_U, uc):
   return mosflm_U
 
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
-               include_partials=False, keep_partials=False, min_isigi=None):
+               include_partials=False, keep_partials=False, min_isigi=None,
+               force_static_model=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -343,7 +344,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     # take time-varying parameters from the *end of the frame* unlikely to
     # be much different at the end - however only exist if time-varying refinement
     # was used
-    if experiment.crystal.num_scan_points:
+    if not force_static_model and experiment.crystal.num_scan_points > 0:
       _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(b-image_range[0])
       _U = experiment.crystal.get_U_at_scan_point(b-image_range[0])
     else:
