@@ -12,7 +12,7 @@ class Test(object):
       print 'FAIL: dials_regression not configured'
       exit(0)
 
-    self.path = join(dials_regression, "refinement_test_data", "i04_weak_data")
+    self.path = join(dials_regression, "integration_test_data", "i04-weak-data2")
 
   def run(self):
     from os.path import join
@@ -25,7 +25,7 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.create_profile_model',
       join(self.path, 'experiments.json'),
-      join(self.path, 'indexed_strong3.pickle'),
+      join(self.path, 'indexed.pickle'),
     ]).raise_if_errors()
 
 
@@ -34,10 +34,10 @@ class Test(object):
       check_format=False)
     sigma_b = experiments[0].profile.sigma_b(deg=True)
     sigma_m = experiments[0].profile.sigma_m(deg=True)
-    eps = 1e-6
+    eps = 1e-3
     try:
-      assert(abs(sigma_b - 0.02262206634) < eps)
-      assert(abs(sigma_m - 0.0774177) < eps)
+      assert(abs(sigma_b - 0.02195) < eps)
+      assert(abs(sigma_m - 0.06833) < eps)
     except Exception:
       print sigma_b
       print sigma_m

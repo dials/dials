@@ -17,7 +17,7 @@ try:
   from scitbx.examples.bevington import non_linear_ls_eigen_wrapper
 except ImportError,e:
   raise Sorry("""Eigen package is not available.  Please untar the Eigen source package
-     (http://eigen.tuxfamily.org) and place a link to it (eigen--> Eigen source dir) in 
+     (http://eigen.tuxfamily.org) and place a link to it (eigen--> Eigen source dir) in
      the modules directory of your developer install; then recompile.
 """)
 
