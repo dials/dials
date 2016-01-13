@@ -137,7 +137,7 @@ tst_list = (
     ["$D/test/command_line/tst_discover_better_experimental_model.py", "2"],
     "$D/test/algorithms/indexing/tst_compare_orientation_matrices.py",
     "$D/test/algorithms/indexing/tst_symmetry.py",
-    "$D/scratch/rjg/unit_cell_refinement.py",
+    #"$D/scratch/rjg/unit_cell_refinement.py",
     )
 
 def run () :
