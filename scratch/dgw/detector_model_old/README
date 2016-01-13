@@ -1,8 +1,0 @@
-BPCX / Heckler detector model
------------------------------
-
-As described on google documents, a framework to describe the detector in an
-X-ray diffraction experiment. This will be implemented in terms of an interface
-and a set of implementations starting off with a trivial one.
-
-

@@ -1,9 +1,0 @@
-Import('env')
-
-#sources = [
-#    'boost_python/lui_example_helper.cc',
-#    'boost_python/luiso_s_scratch_ext.cc']
-#
-#env.SharedLibrary(target='#/lib/luiso_s_scratch_ext', 
-#    source=sources)
-    

@@ -1,5 +1,0 @@
-{
-  "modules_required_for_build": ["boost", "scitbx"],
-  "modules_required_for_use": ["boost_adaptbx"],
-  "optional_modules": []
-}
