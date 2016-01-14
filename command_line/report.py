@@ -2231,220 +2231,85 @@ class Analyser(object):
       crystal_html, experimental_geometry_html = self.experiments_html(
         experiments)
 
-    import json
-    json_str = json.dumps(json_data)
+    from dials.report import html_report
 
     if self.params.output.html is not None:
-      javascript = ['var graphs = %s' %(json_str)]
 
-      graph_divs = {}
+      plotly_graphs = {}
       for grouping in json_data.keys():
-        graph_divs[grouping] = []
+        plotly_graphs[grouping] = []
         for graph in json_data[grouping].keys():
-          javascript.append(
-            'Plotly.newPlot(%(graph)s, graphs.%(grouping)s.%(graph)s.data, graphs.%(grouping)s.%(graph)s.layout);' %{
-              'graph': graph,
-              'grouping': grouping
-            })
+          plotly_graphs[grouping].append(
+            html_report.plotly_graph(json_data[grouping][graph], graph))
 
-          graph_divs[grouping].append(
-            '<div class="col-xs-6 col-sm-6 col-md-4 plot" id="%(graph)s"></div>' %{'graph': graph})
+      report = html_report.html_report()
 
-      html_header = '''
-<head>
+      page_header = html_report.page_header('DIALS analysis report')
+      report.add_content(page_header)
 
-<!-- Plotly.js -->
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+      # Experiments panel
 
-<meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-    "HTML-CSS": {
-      scale: 90,
-      minScaleAdjust: 50
-    }
-});
-</script>
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-<style type="text/css">
+      expt_panel = html_report.panel('Experiments', 'expt', show=True)
+      expt_table = html_report.table_responsive(crystal_html)
+      expt_panel.add_content(expt_table)
 
-body {
-  /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
-  margin: 8px;
-  min-width: 240px;
-  margin-left: 5%;
-  margin-right: 5%;
-}
+      geom_panel = html_report.panel('Experimental geometry', 'geom')
+      geom_table = html_report.table_responsive(experimental_geometry_html)
+      geom_panel.add_content(geom_table)
 
-.plot {
-  float: left;
-  width: 600px;
-  height: 400px;
-  margin-bottom: 20px;
-}
+      scan_varying_panel = html_report.panel(
+        'Analysis of scan-varying crystal model', 'scan_varying')
+      container = html_report.container_fluid()
+      for graph in plotly_graphs['scan_varying']:
+        container.add_content(graph)
+      scan_varying_panel.add_content(container)
 
-.MathJax_Display {
-  text-align: left !important;
-}
-</style>
+      expts_panel_group = html_report.panel_group(
+        [geom_panel, scan_varying_panel])
+      expt_panel.add_content(expts_panel_group)
 
-</head>
+      experiments_panel_group = html_report.panel_group([expt_panel])
+      report.add_content(experiments_panel_group)
 
-'''
+      # Dials analysis plots panel
 
-      html_body = '''
+      panels = []
 
-<body>
+      panel = html_report.panel('Analysis of strong reflections', 'strong')
+      container = html_report.container_fluid()
+      for graph in plotly_graphs['strong']:
+        container.add_content(graph)
+      panel.add_content(container)
+      panels.append(panel)
 
-<div class="page-header">
-  <h1>DIALS analysis report</h1>
-</div>
+      panel = html_report.panel('Analysis of reflection centroids', 'centroids')
+      container = html_report.container_fluid()
+      for graph in plotly_graphs['centroid']:
+        container.add_content(graph)
+      panel.add_content(container)
+      panels.append(panel)
 
+      panel = html_report.panel('Analysis of reflection intensities', 'intensity')
+      container = html_report.container_fluid()
+      for graph in plotly_graphs['intensity']:
+        container.add_content(graph)
+      panel.add_content(container)
+      panels.append(panel)
 
-<div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading" data-toggle="collapse" href="#collapse_expt">
-      <h4 class="panel-title">
-        <a>Experiments</a>
-      </h4>
-    </div>
-    <div id="collapse_expt" class="panel-collapse collapse in">
+      panel = html_report.panel('Analysis of reference profiles', 'reference')
+      container = html_report.container_fluid()
+      for graph in plotly_graphs['reference']:
+        container.add_content(graph)
+      panel.add_content(container)
+      panels.append(panel)
 
-      <div class="table-responsive">
-        %(crystal_html)s
-      </div>
+      analysis_panel_group = html_report.panel_group(panels)
+      div = html_report.div()
+      div.add_content(html_report.raw_html('<h2>DIALS analysis plots</h2>'))
+      div.add_content(analysis_panel_group)
+      report.add_content(div)
 
-      <div class="panel-group">
-        <div class="panel panel-default">
-          <div class="panel-heading" data-toggle="collapse" href="#collapse_expts">
-            <h4 class="panel-title">
-              <a>Experimental geometry</a>
-            </h4>
-          </div>
-          <div id="collapse_expts" class="panel-collapse collapse">
-            <div class="panel-body">
-
-              <div class="table-responsive">
-                %(experimental_geometry_html)s
-              </div>
-
-            </div>
-            <!-- <div class="panel-footer"></div> -->
-          </div>
-        </div>
-        <div class="panel panel-default">
-          <div class="panel-heading" data-toggle="collapse" href="#collapse5">
-            <h4 class="panel-title">
-              <a>Analysis of scan-varying crystal model</a>
-            </h4>
-          </div>
-          <div id="collapse5" class="panel-collapse collapse">
-            <div class="panel-body">
-
-              <div class="container-fluid">
-                %(scan_varying_graph_divs)s
-              </div>
-
-            </div>
-            <!-- <div class="panel-footer"></div> -->
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div >
-  <h2>DIALS analysis plots</h2>
-  <div class="panel-group">
-    <div class="panel panel-default">
-      <div class="panel-heading" data-toggle="collapse" href="#collapse1">
-        <h4 class="panel-title">
-          <a>Analysis of strong reflections</a>
-        </h4>
-      </div>
-      <div id="collapse1" class="panel-collapse collapse">
-        <div class="panel-body">
-
-          <div class="container-fluid">
-            %(strong_graph_divs)s
-          </div>
-
-        </div>
-        <!-- <div class="panel-footer"></div> -->
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading" data-toggle="collapse" href="#collapse2">
-        <h4 class="panel-title">
-          <a>Analysis of reflection centroids</a>
-        </h4>
-      </div>
-      <div id="collapse2" class="panel-collapse collapse">
-        <div class="panel-body">
-
-          <div class="container-fluid">
-            %(centroid_graph_divs)s
-          </div>
-
-        </div>
-        <!-- <div class="panel-footer"></div> -->
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading" data-toggle="collapse" href="#collapse3">
-        <h4 class="panel-title">
-          <a>Analysis of reflection intensities</a>
-        </h4>
-      </div>
-      <div id="collapse3" class="panel-collapse collapse">
-        <div class="panel-body">
-
-          <div class="container-fluid">
-            %(intensity_graph_divs)s
-          </div>
-
-        </div>
-        <!-- <div class="panel-footer"></div> -->
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading" data-toggle="collapse" href="#collapse4">
-        <h4 class="panel-title">
-          <a>Analysis of reference profiles</a>
-        </h4>
-      </div>
-      <div id="collapse4" class="panel-collapse collapse">
-        <div class="panel-body">
-
-          <div class="container-fluid">
-            %(reference_graph_divs)s
-          </div>
-
-        </div>
-        <!-- <div class="panel-footer"></div> -->
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-%(script)s
-</script>
-</body>
-''' %{'crystal_html': crystal_html,
-      'experimental_geometry_html': experimental_geometry_html,
-      'strong_graph_divs': '\n            '.join(graph_divs['strong']),
-      'centroid_graph_divs': '\n            '.join(graph_divs['centroid']),
-      'intensity_graph_divs': '\n            '.join(graph_divs['intensity']),
-      'reference_graph_divs': '\n            '.join(graph_divs['reference']),
-      'scan_varying_graph_divs': '\n            '.join(graph_divs['scan_varying']),
-      'script': '\n'.join(javascript)}
-
-      html = '\n'.join([html_header, html_body])
+      html = report.html()
 
       print "Writing html report to: %s" %self.params.output.html
       with open(self.params.output.html, 'wb') as f:
