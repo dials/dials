@@ -183,6 +183,13 @@ class Script(object):
       info('The following parameters have been modified:\n')
       info(diff_phil)
 
+    # Print if we're using a mask
+    for i, exp in enumerate(experiments):
+      mask = exp.imageset.external_lookup.mask
+      if mask.filename is not None:
+        info('Using external mask: %s' % mask.filename)
+        info(' Mask has %d pixels masked' % mask.data.count(False))
+
     # Print the experimental models
     for i, exp in enumerate(experiments):
       debug("Models for experiment %d" % i)
