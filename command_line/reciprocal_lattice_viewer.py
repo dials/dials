@@ -173,6 +173,17 @@ class ReciprocalLatticeViewer(wx.Frame):
       self.settings_panel.d_min_ctrl.SetValue(self.settings.d_min)
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)
+    colors = flex.vec3_double(len(points), (1,1,1))
+    # suggested colorbline color pallet
+    # sorry if you have > 8 lattices!
+    palette = flex.vec3_double((
+      (255,255,255), (230,159,0), (86,180,233), (0,158,115),
+      (240,228,66), (0,114,178), (213,94,0), (204,121,167)))
+    palette *= (1/255)
+    assert flex.max(reflections['id']) < 7
+    for i in range(-1, flex.max(reflections['id'])+1):
+      colors.set_selected(reflections['id'] == i, palette[i+1])
+    self.viewer.set_colors(colors)
 
   def update_settings(self, *args, **kwds):
     detector = self.imagesets[0].get_detector()
@@ -292,6 +303,7 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     super(MyGLWindow, self).__init__(*args, **kwds)
     self.settings = settings
     self.points = flex.vec3_double()
+    self.colors = None
     self.rotation_axis = None
     self.beam_vector = None
     self.flag_show_minimum_covering_sphere = False
@@ -305,6 +317,22 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     self._compute_minimum_covering_sphere()
     #if not self.GL_uninitialised:
       #self.fit_into_viewport()
+
+  def set_colors(self, colors):
+    assert len(colors) == len(self.points)
+    self.colors = colors
+
+  def draw_points(self):
+    if (self.points_display_list is None):
+      self.points_display_list = gltbx.gl_managed.display_list()
+      self.points_display_list.compile()
+      glLineWidth(1)
+      if self.colors is None:
+        self.colors = flex.vec3_double(len(self.points), (1,1,1))
+      for point, color in zip(self.points, self.colors):
+        self.draw_cross_at(point, color=color)
+      self.points_display_list.end()
+    self.points_display_list.call()
 
   def set_rotation_axis(self, axis):
     self.rotation_axis = axis
