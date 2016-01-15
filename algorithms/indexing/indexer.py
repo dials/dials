@@ -1187,6 +1187,8 @@ class indexer_base(object):
                                       scan=imageset.get_scan(),
                                       crystal=cm))
       self.index_reflections(experiments, refl)
+      if refl.get_flags(refl.flags.indexed).count(True) == 0:
+        continue
 
       from rstbx.dps_core.cell_assessment import SmallUnitCellVolume
       threshold = self.params.basis_vector_combinations.sys_absent_threshold
