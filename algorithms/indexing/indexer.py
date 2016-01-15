@@ -734,6 +734,7 @@ class indexer_base(object):
           isel = (lengths >= self.d_min).iselection()
           sel.set_selected(isel, True)
         sel.set_selected(self.reflections['id'] > -1, False)
+        self.reflections.unset_flags(sel, self.reflections.flags.indexed)
         self.unindexed_reflections = self.reflections.select(sel)
 
         maximum_spot_error \
@@ -789,6 +790,9 @@ class indexer_base(object):
               raise Sorry(msg)
 
         self.refined_reflections = refined_reflections
+        self.refined_reflections.unset_flags(
+          self.refined_reflections['id'] < 0,
+          self.refined_reflections.flags.indexed)
 
         for i, imageset in enumerate(self.imagesets):
           ref_sel = self.refined_reflections.select(
