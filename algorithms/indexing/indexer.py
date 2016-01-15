@@ -1811,6 +1811,9 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
         continue
       debug("%s %s %s"  %(
         phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
+    if len(max_cell) == 0:
+      raise Sorry(
+        "Couldn't determine suitable max_cell from %i reflections" %len(reflections))
     debug(list(max_cell))
     debug("median: %s" %flex.median(max_cell))
     debug("mean: %s" %flex.mean(max_cell))
