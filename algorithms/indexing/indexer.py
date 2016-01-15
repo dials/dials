@@ -46,7 +46,7 @@ indexing {
     .help = "Modify the coarseness of the wide grid search for the beam centre."
     .type = float(value_min=0)
     .expert_level = 1
-  min_cell_volume = 100
+  min_cell_volume = 25
     .type = float(value_min=0)
     .help = "Minimum unit cell volume (in Angstrom^3)."
     .expert_level = 1
@@ -1147,7 +1147,7 @@ class indexer_base(object):
           params, indexed_reflections, experiments,
           verbosity=0)
         refiner.run()
-      except (RuntimeError, Sorry), e:
+      except (RuntimeError, ValueError, Sorry), e:
         return
       else:
         rmsds = refiner.rmsds()
