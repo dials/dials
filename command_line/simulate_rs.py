@@ -43,7 +43,19 @@ class Script(object):
         .type = bool
         .help = "Random intensities and background"
 
-      include scope dials.algorithms.profile_model.profile_model.phil_scope
+      sigma_m = None
+        .type = float
+        .help = "The sigma_m parameter"
+
+      sigma_b = None
+        .type = float
+        .help = "The sigma_b parameter"
+
+      n_sigma = None
+        .type = float
+        .help = "The n_sigma parameter"
+
+      include scope dials.algorithms.profile_model.factory.phil_scope
 
     ''', process_includes=True)
 
@@ -52,47 +64,39 @@ class Script(object):
       % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope)
+      phil=phil_scope,
+      read_experiments=True,
+      check_format=False)
 
   def run(self):
     ''' Run the script. '''
     from dials.algorithms.simulation.reciprocal_space import Simulator
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dials.util.command_line import Command
+    from dials.util.options import flatten_experiments
     from libtbx.utils import Sorry
     from math import pi
 
     # Parse the command line arguments
-    params, options, args = self.parser.parse_args()
-
-    # Ensure we have enough arguments
-    if len(args) != 1:
-      self.parser.print_help()
-      exit(0)
-
-    # Check we have some profile parameters
-    if len(params.profile) != 1:
-      raise Sorry('no profile parameters specified')
+    params, options = self.parser.parse_args()
 
     print 'Simulating with the following parameters:'
     print ' # Reflections: %d' % params.num
     print ' Intensity: %d' % params.intensity
     print ' Background: %s' % params.background
-    print ' Sigma B: %f degrees' % params.profile[0].sigma_b
-    print ' Sigma M: %f degrees' % params.profile[0].sigma_m
-    print ' N Sigma: %f degrees' % params.profile[0].n_sigma
+    print ' Sigma B: %f degrees' % params.sigma_b
+    print ' Sigma M: %f degrees' % params.sigma_m
+    print ' N Sigma: %f degrees' % params.n_sigma
     print ' Random: %s' % str(params.random)
 
     # Get the experiments
-    experiments = ExperimentListFactory.from_json_file(args[0], check_format=False)
+    experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
       raise Sorry('experiment list must contain exactly 1 experiment')
     experiment = experiments[0]
 
     # Do the simulation
-    sigma_b = params.profile[0].sigma_b * pi / 180
-    sigma_m = params.profile[0].sigma_m * pi / 180
-    n_sigma = params.profile[0].n_sigma
+    sigma_b = params.sigma_b * pi / 180
+    sigma_m = params.sigma_m * pi / 180
+    n_sigma = params.n_sigma
     N = params.num
     I = params.intensity
     B = map(int, params.background.split(","))
@@ -104,9 +108,8 @@ class Script(object):
       refl = simulate.with_given_intensity(N, I, B[0], B[1], B[2], B[3])
 
     # Save the reflections to file
-    Command.start('Writing reflections to %s' % params.output)
+    print 'Writing reflections to %s' % params.output
     refl.as_pickle(params.output)
-    Command.end('Write reflections to %s' % params.output)
 
 
 if __name__ == '__main__':

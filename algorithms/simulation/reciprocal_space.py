@@ -84,6 +84,7 @@ class Simulator(object):
     I_exp = flex.double(len(refl), 0)
     for i in range(len(refl)):
       if I[i] > 0:
+        data = shoebox[i].data.as_double()
         I_exp[i] = simulate_reciprocal_space_gaussian(
           self.experiment.beam,
           self.experiment.detector,
@@ -95,8 +96,9 @@ class Simulator(object):
           phi[i],
           bbox[i],
           I[i],
-          shoebox[i].data,
+          data,
           shoebox[i].mask)
+        shoebox[i].data = data.as_float()
       if i % m == 0:
         progress.update(100.0 * float(i) / len(refl))
     progress.finished('Calculated signal impacts for %d reflections' % len(refl))
@@ -104,7 +106,7 @@ class Simulator(object):
     # Calculate the background
     progress = ProgressBar(title='Calculating background for %d reflections' % len(refl))
     for l in range(len(refl)):
-      background = flex.double(flex.grid(shoebox[l].size()), 0.0)
+      background = flex.float(flex.grid(shoebox[l].size()), 0.0)
       random_background_plane2(background, Ba[l], Bb[l], Bc[l], Bd[l])
       shoebox[l].data += background
       shoebox[l].background = background
@@ -157,17 +159,19 @@ class Simulator(object):
     from dials.util.command_line import Command
     from dials.algorithms import filtering
     from dials.algorithms.shoebox import MaskCode
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
+    from dials.algorithms.profile_model.gaussian_rs import Model as ProfileModel
     import random
 
     # Set the profile model
-    profile_model = ProfileModel(
+    self.experiment.profile = ProfileModel(
+      None,
       self.n_sigma,
       self.sigma_b,
       self.sigma_m)
 
     # Generate a list of reflections
     refl = flex.reflection_table.from_predictions(self.experiment)
+    refl['id'] = flex.int(len(refl), 0)
 
     # Filter by zeta
     zeta = 0.05
@@ -180,7 +184,7 @@ class Simulator(object):
     Command.end('Filtered %d reflections by zeta >= %f' % (len(refl), zeta))
 
     # Compute the bounding box
-    refl.compute_bbox(self.experiment, profile_model)
+    refl.compute_bbox([self.experiment])
     index = []
     image_size = self.experiment.detector[0].get_image_size()
     array_range = self.experiment.scan.get_array_range()
@@ -218,7 +222,8 @@ class Simulator(object):
     mask_foreground(
       refl['shoebox'],
       refl['s1'],
-      refl['xyzcal.px'].parts()[2])
+      refl['xyzcal.px'].parts()[2],
+      refl['panel'])
     Command.end('Masked foreground for %d reflections' % len(refl))
 
     # Return the reflections
