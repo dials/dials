@@ -46,6 +46,10 @@ indexing {
     .help = "Modify the coarseness of the wide grid search for the beam centre."
     .type = float(value_min=0)
     .expert_level = 1
+  min_cell_volume = 100
+    .type = float(value_min=0)
+    .help = "Minimum unit cell volume (in Angstrom^3)."
+    .expert_level = 1
   min_cell = 3
     .type = float(value_min=0)
     .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
@@ -1197,6 +1201,8 @@ class indexer_base(object):
         try:
           self.correct_non_primitive_basis(experiments, refl, threshold)
         except SmallUnitCellVolume:
+          continue
+        if experiments[0].crystal.get_unit_cell().volume() < self.params.min_cell_volume:
           continue
 
       if (self.target_symmetry_primitive is not None
