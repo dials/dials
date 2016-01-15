@@ -42,7 +42,7 @@ phil_scope= libtbx.phil.parse("""
     .type = float(value_min=0.0)
   display = *all unindexed indexed
     .type = choice
-  marker_size = 1
+  marker_size = 2
     .type = int(value_min=1)
 """)
 
@@ -128,6 +128,7 @@ class ReciprocalLatticeViewer(wx.Frame):
     if self.settings.beam_centre is not None:
       self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
       self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+    self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
     self.map_points_to_reciprocal_space()
 
   def map_points_to_reciprocal_space(self):
