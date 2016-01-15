@@ -177,12 +177,13 @@ class ReciprocalLatticeViewer(wx.Frame):
   def update_settings(self, *args, **kwds):
     detector = self.imagesets[0].get_detector()
     beam = self.imagesets[0].get_beam()
-    from dxtbx.model.detector_helpers import set_mosflm_beam_centre
-    set_mosflm_beam_centre(detector, beam, tuple(reversed(
-      self.settings.beam_centre)))
-    self.imagesets[0].set_detector(detector)
-    self.imagesets[0].set_beam(beam)
-    self.map_points_to_reciprocal_space()
+    if self.settings.beam_centre != detector[0].get_beam_centre(beam.get_s0()):
+      from dxtbx.model.detector_helpers import set_mosflm_beam_centre
+      set_mosflm_beam_centre(detector, beam, tuple(reversed(
+        self.settings.beam_centre)))
+      self.imagesets[0].set_detector(detector)
+      self.imagesets[0].set_beam(beam)
+      self.map_points_to_reciprocal_space()
     self.viewer.update_settings(*args, **kwds)
 
 
