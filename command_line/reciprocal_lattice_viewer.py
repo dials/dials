@@ -107,7 +107,7 @@ class ReciprocalLatticeViewer(wx.Frame):
 
   def load_models(self, imagesets, reflections):
     self.imagesets = imagesets
-    self.reflections = reflections
+    self.reflections_input = reflections
     if self.imagesets[0].get_goniometer() is not None:
       self.viewer.set_rotation_axis(
         self.imagesets[0].get_goniometer().get_rotation_axis())
@@ -130,6 +130,7 @@ class ReciprocalLatticeViewer(wx.Frame):
       self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
     self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
     self.map_points_to_reciprocal_space()
+    self.set_points()
 
   def map_points_to_reciprocal_space(self):
     goniometer = self.imagesets[0].get_goniometer()
@@ -141,30 +142,39 @@ class ReciprocalLatticeViewer(wx.Frame):
       goniometer.set_rotation_axis([-i for i in goniometer.get_rotation_axis()])
     from dials.algorithms.indexing import indexer
 
-    reflections_input = self.reflections
-
-    if reflections_input.has_key('miller_index'):
-      indexed_sel = (reflections_input['miller_index'] != (0,0,0))
+    if self.reflections_input.has_key('miller_index'):
+      indexed_sel = (self.reflections_input['miller_index'] != (0,0,0))
       if self.settings.display == 'indexed':
-        reflections_input = reflections_input.select(indexed_sel)
+        self.reflections_input = self.reflections_input.select(indexed_sel)
       elif self.settings.display == 'unindexed':
-        reflections_input = reflections_input.select(~indexed_sel)
+        self.reflections_input = self.reflections_input.select(~indexed_sel)
 
     from dials.array_family import flex
     reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
-      if 'imageset_id' in reflections_input:
-        sel = (reflections_input['imageset_id'] == i)
+      if 'imageset_id' in self.reflections_input:
+        sel = (self.reflections_input['imageset_id'] == i)
       else:
-        sel = (reflections_input['id'] == i)
+        sel = (self.reflections_input['id'] == i)
       refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-        reflections_input.select(sel),
+        self.reflections_input.select(sel),
         imageset.get_detector(), imageset.get_scan())
 
       indexer.indexer_base.map_centroids_to_reciprocal_space(
         refl, imageset.get_detector(), imageset.get_beam(),
         imageset.get_goniometer())
       reflections.extend(refl)
+      self.reflections = reflections
+
+  def set_points(self):
+    reflections = self.reflections
+
+    if reflections.has_key('miller_index'):
+      indexed_sel = (reflections['miller_index'] != (0,0,0))
+      if self.settings.display == 'indexed':
+        reflections = reflections.select(indexed_sel)
+      elif self.settings.display == 'unindexed':
+        reflections = reflections.select(~indexed_sel)
 
     d_spacings = 1/reflections['rlp'].norms()
     if self.settings.d_min is not None:
@@ -196,6 +206,7 @@ class ReciprocalLatticeViewer(wx.Frame):
       self.imagesets[0].set_detector(detector)
       self.imagesets[0].set_beam(beam)
       self.map_points_to_reciprocal_space()
+    self.set_points()
     self.viewer.update_settings(*args, **kwds)
 
 
