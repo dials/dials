@@ -131,6 +131,7 @@ class ReciprocalLatticeViewer(wx.Frame):
       self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
       self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
     self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
+    self.settings_panel.add_experiments_buttons()
     self.map_points_to_reciprocal_space()
     self.set_points()
 
@@ -178,7 +179,7 @@ class ReciprocalLatticeViewer(wx.Frame):
       elif self.settings.display == 'unindexed':
         reflections = reflections.select(~indexed_sel)
 
-      if self.settings.experiment_ids is not None:
+      if self.settings.experiment_ids:
         sel = flex.bool(len(reflections), False)
         for i in self.settings.experiment_ids:
           sel.set_selected(reflections['id'] == i, True)
@@ -305,6 +306,29 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       style=wx.TE_READONLY)
     sizer.Add(self.value_info, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
+  def add_experiments_buttons(self):
+    n = flex.max(self.parent.reflections_input['id'])
+    if n <= 0:
+      self.expt_btn = None
+      return
+
+    box = wx.BoxSizer(wx.VERTICAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Experiment ids:")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
+    from wxtbx.segmentedctrl import SegmentedToggleControl, SEGBTN_HORIZONTAL
+    self.expt_btn = SegmentedToggleControl(self, style=SEGBTN_HORIZONTAL)
+    for i in range(-1, n+1):
+      self.expt_btn.AddSegment(str(i))
+      if (self.settings.experiment_ids is not None and
+          i in self.settings.experiment_ids):
+        self.expt_btn.SetValue(i+1, True)
+
+    self.expt_btn.Realize()
+    self.Bind(wx.EVT_TOGGLEBUTTON, self.OnChangeSettings, self.expt_btn)
+    box.Add(self.expt_btn, 0, wx.ALL, 5)
+
   def OnChangeSettings(self, event):
     self.settings.d_min = self.d_min_ctrl.GetValue()
     self.settings.beam_centre = (
@@ -314,6 +338,14 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       if self.btn.values[i]:
         self.settings.display = display
         break
+
+    if self.expt_btn is not None:
+      expt_ids = []
+      for i in range(len(self.expt_btn.segments)):
+        if self.expt_btn.GetValue(i):
+          expt_ids.append(i-1)
+      self.settings.experiment_ids = expt_ids
+
     self.parent.update_settings()
 
 
