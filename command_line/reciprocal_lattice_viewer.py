@@ -42,7 +42,7 @@ phil_scope= libtbx.phil.parse("""
     .type = float(value_min=0.0)
   display = *all unindexed indexed
     .type = choice
-  marker_size = 2
+  marker_size = 5
     .type = int(value_min=1)
   experiment_ids = None
     .type = ints(value_min=-1)
