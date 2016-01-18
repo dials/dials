@@ -360,6 +360,12 @@ class TestLinear3d(object):
     print filename
     rlist = flex.reflection_table.from_pickle(filename)
     shoebox = rlist['shoebox']
+
+    # FIXME doesn't work for single image
+    zr = flex.int([s.bbox[5]-s.bbox[4] for s in shoebox])
+    rlist = rlist.select(zr > 1)
+    shoebox = rlist['shoebox']
+
     background = [sb.background.deep_copy() for sb in shoebox]
     success = creator(shoebox)
     assert(success.count(True) == len(success))

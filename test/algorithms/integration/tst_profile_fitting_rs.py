@@ -63,28 +63,33 @@ class Test(object):
     assert(len(experiments) == 1)
     self.experiments = experiments
 
-    from dials.algorithms.profile_model.model_list import ProfileModelList
-    from dials.algorithms.profile_model.gaussian_rs import ProfileModel
-    self.profile_model = ProfileModelList()
-    self.profile_model.append(
-      ProfileModel(
+
+    from dials.algorithms.profile_model.gaussian_rs import Model as ProfileModel
+    from dials.algorithms.profile_model.factory import phil_scope
+    from libtbx.phil import parse
+    params = phil_scope.fetch(parse('')).extract()
+    self.experiments[0].profile = ProfileModel(
+        params.profile,
         sigma_b=0.024,
         sigma_m=0.044,
         n_sigma=3,
-        deg=True))
+        deg=True)
 
     # Load the reference spots
     from dials.array_family import flex
     self.reference = flex.reflection_table.from_pickle(reference_filename)
+    self.reference.compute_partiality(self.experiments)
     mask = flex.bool(len(self.reference), True)
     value = self.reference.flags.reference_spot
     self.reference.set_flags(mask, value)
+    self.reference.set_flags(mask, self.reference.flags.integrated_sum)
 
   def run(self):
     from dials.array_family import flex
     #self.test_for_reference()
     for filename in self.refl_filenames:
       refl = flex.reflection_table.from_pickle(filename)
+      refl.compute_partiality(self.experiments)
       refl['id'] = flex.int(len(refl),0)
       self.test_for_reflections(refl, filename)
 
@@ -96,19 +101,11 @@ class Test(object):
       return (g32 * erf(srx2) - srx2 * exp(-x2)) / g32
 
   def test_for_reference(self):
-    from dials.algorithms.integration.fitrs import IntegrationAlgorithm
     from dials.array_family import flex
     from math import sqrt, pi
 
     # Integrate
-    integration = IntegrationAlgorithm(
-      grid_size=4,
-      threshold=0.02,
-      frame_interval=100,
-      n_sigma=5,
-      sigma_b=0.024 * pi / 180.0,
-      sigma_m=0.044 * pi / 180.0
-    )
+    integration = self.experiments[0].profile.fitting_class()(self.experiments[0])
 
     # Integrate the reference profiles
     integration(self.experiments, self.reference)
@@ -228,7 +225,6 @@ class Test(object):
     #pylab.show()
 
   def test_for_reflections(self, refl, filename):
-    from dials.algorithms.integration.fitrs import IntegrationAlgorithm
     from dials.array_family import flex
     from dials.algorithms.statistics import \
       kolmogorov_smirnov_test_standard_normal
@@ -251,16 +247,11 @@ class Test(object):
         bg[j] = B_sim[i]
 
     # Integrate
-    integration = IntegrationAlgorithm(
-      self.experiments,
-      self.profile_model,
-      grid_size=4,
-      threshold=0.00,
-    )
-
+    integration = self.experiments[0].profile.fitting_class()(self.experiments[0])
     old_size = len(refl)
     refl.extend(self.reference)
-    ref_profiles = integration(refl)
+    integration.model(self.reference)
+    integration.fit(refl)
     reference = refl[-len(self.reference):]
     refl = refl[:len(self.reference)]
     assert(len(refl) == old_size)
@@ -282,7 +273,7 @@ class Test(object):
       #print p
 
     # Only select variances greater than zero
-    mask = refl.get_flags(refl.flags.integrated, all=False)
+    mask = refl.get_flags(refl.flags.integrated_prf)
     assert(mask.count(True) > 0)
     I_cal = I_cal.select(mask)
     I_var = I_var.select(mask)
