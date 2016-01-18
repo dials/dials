@@ -44,6 +44,8 @@ phil_scope= libtbx.phil.parse("""
     .type = choice
   marker_size = 2
     .type = int(value_min=1)
+  experiment_ids = None
+    .type = ints(value_min=-1)
 """)
 
 def settings () :
@@ -175,6 +177,12 @@ class ReciprocalLatticeViewer(wx.Frame):
         reflections = reflections.select(indexed_sel)
       elif self.settings.display == 'unindexed':
         reflections = reflections.select(~indexed_sel)
+
+      if self.settings.experiment_ids is not None:
+        sel = flex.bool(len(reflections), False)
+        for i in self.settings.experiment_ids:
+          sel.set_selected(reflections['id'] == i, True)
+        reflections = reflections.select(sel)
 
     d_spacings = 1/reflections['rlp'].norms()
     if self.settings.d_min is not None:
