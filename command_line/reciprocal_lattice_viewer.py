@@ -194,15 +194,17 @@ class ReciprocalLatticeViewer(wx.Frame):
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)
     colors = flex.vec3_double(len(points), (1,1,1))
-    # suggested colorbline color pallet
-    # sorry if you have > 8 lattices!
-    palette = flex.vec3_double((
-      (255,255,255), (230,159,0), (86,180,233), (0,158,115),
-      (240,228,66), (0,114,178), (213,94,0), (204,121,167)))
-    palette *= (1/255)
-    assert flex.max(reflections['id']) < 7
-    for i in range(-1, flex.max(reflections['id'])+1):
-      colors.set_selected(reflections['id'] == i, palette[i+1])
+
+    if len(points):
+      # suggested colorbline color pallet
+      # sorry if you have > 8 lattices!
+      palette = flex.vec3_double((
+        (255,255,255), (230,159,0), (86,180,233), (0,158,115),
+        (240,228,66), (0,114,178), (213,94,0), (204,121,167)))
+      palette *= (1/255)
+      assert flex.max(reflections['id']) < 7
+      for i in range(-1, flex.max(reflections['id'])+1):
+        colors.set_selected(reflections['id'] == i, palette[i+1])
     self.viewer.set_colors(colors)
 
   def update_settings(self, *args, **kwds):
