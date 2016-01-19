@@ -331,6 +331,13 @@ class Script(object):
 
     # get the refined experiments
     experiments = refiner.get_experiments()
+    crystals = experiments.crystals()
+
+    if len(crystals) == 1:
+      # output the refined model for information
+      info('')
+      info('Final refined crystal model')
+      info(crystals[0])
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
