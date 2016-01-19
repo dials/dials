@@ -303,6 +303,14 @@ class ExtractSpots(object):
         handlers = logging.getLogger().handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
         return result, handlers[0].messages()
+
+      # Parallel reading of HDF5 from the same handle is not allowed. Python
+      # multiprocessing is a bit messed up and used fork on linux so need to
+      # close and reopen file.
+      from dxtbx.imageset import SingleFileReader
+      if isinstance(imageset.reader(), SingleFileReader):
+        imageset.reader().nullify_format_instance()
+
       batch_parallel_map(
         func=execute_task,
         iterable=indices,
