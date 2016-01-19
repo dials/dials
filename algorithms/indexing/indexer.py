@@ -737,7 +737,7 @@ class indexer_base(object):
         if self.d_min is not None:
           isel = (lengths >= self.d_min).iselection()
           sel.set_selected(isel, True)
-        sel.set_selected(self.reflections['id'] > -1, False)
+        sel.set_selected(self.reflections['id'] == -1, True)
         self.reflections.unset_flags(sel, self.reflections.flags.indexed)
         self.unindexed_reflections = self.reflections.select(sel)
 
