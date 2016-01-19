@@ -288,6 +288,12 @@ indexing {
     characteristic_grid = 0.02
       .type = float(value_min=0)
   }
+  stills {
+    ewald_proximity_resolution_cutoff = 2.0
+      .type = float
+      .help = For still images, this high-resolution cutoff is used to calculate
+      .help = the acceptable volume of reciprocal space for spot prediction
+  }
 }
 """
 
@@ -421,16 +427,43 @@ class indexer_base(object):
            import indexer_known_orientation
       idxr = indexer_known_orientation(
         reflections, imagesets, params, known_crystal_models)
-    elif params.indexing.method == "fft3d":
-      from dials.algorithms.indexing.fft3d import indexer_fft3d
-      idxr = indexer_fft3d(reflections, imagesets, params=params)
-    elif params.indexing.method == "fft1d":
-      from dials.algorithms.indexing.fft1d import indexer_fft1d
-      idxr = indexer_fft1d(reflections, imagesets, params=params)
-    elif params.indexing.method == "real_space_grid_search":
-      from dials.algorithms.indexing.real_space_grid_search \
-           import indexer_real_space_grid_search
-      idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
+    else:
+      has_stills = False
+      has_sweeps = False
+      for imageset in imagesets:
+        if imageset.get_goniometer() is None or imageset.get_scan() is None or \
+            imageset.get_scan().get_oscillation()[1] == 0:
+          if has_sweeps:
+            raise Sorry("Please provide only stills or only sweeps, not both")
+          has_stills = True
+        else:
+          if has_stills:
+            raise Sorry("Please provide only stills or only sweeps, not both")
+          has_sweeps = True
+      assert not (has_stills and has_sweeps)
+
+      if params.indexing.method == "fft3d":
+        if has_stills:
+          from dials.algorithms.indexing.stills_indexer \
+            import stills_indexer_fft3d as indexer_fft3d
+        else:
+          from dials.algorithms.indexing.fft3d import indexer_fft3d
+        idxr = indexer_fft3d(reflections, imagesets, params=params)
+      elif params.indexing.method == "fft1d":
+        if has_stills:
+          from dials.algorithms.indexing.stills_indexer \
+            import stills_indexer_fft1d as indexer_fft1d
+        else:
+          from dials.algorithms.indexing.fft1d import indexer_fft1d
+        idxr = indexer_fft1d(reflections, imagesets, params=params)
+      elif params.indexing.method == "real_space_grid_search":
+        if has_stills:
+          from dials.algorithms.indexing.stills_indexer import \
+            stills_indexer_real_space_grid_search as indexer_real_space_grid_search
+        else:
+          from dials.algorithms.indexing.real_space_grid_search \
+            import indexer_real_space_grid_search
+        idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
 
     return idxr
 
