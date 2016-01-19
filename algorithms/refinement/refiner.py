@@ -1719,7 +1719,7 @@ class Refiner(object):
 
     info("\nRMSDs by experiment:")
 
-    header = ["Exp", "Nref"]
+    header = ["Exp\nid", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
       if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
         header.append(name + "\n(px)")
