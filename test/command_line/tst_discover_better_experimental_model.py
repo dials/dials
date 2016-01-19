@@ -85,6 +85,10 @@ def exercise_2():
 
   import glob
   g = glob.glob(os.path.join(data_dir, "*.cbf"))
+  if len(g) == 0:
+    print "Skipping exercise_2(): xia2_regression files not downloaded."
+    print "Run xia2_regression.fetch_test_data first."
+    return
 
   # beam centre from image headers: 205.28,210.76 mm
   args = ["dials.import", "mosflm_beam_centre=207,212"] + g
