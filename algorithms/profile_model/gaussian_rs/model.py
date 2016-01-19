@@ -130,8 +130,8 @@ class Model(ProfileModelIface):
     else:
       sigma_b = self._sigma_b[index]
     if deg == True:
-      return self._sigma_b * 180.0 / pi
-    return self._sigma_b
+      return sigma_b * 180.0 / pi
+    return sigma_b
 
   def sigma_m(self, index=None, deg=True):
     ''' Return sigma_m. '''
@@ -141,8 +141,8 @@ class Model(ProfileModelIface):
     else:
       sigma_m = self._sigma_m[index]
     if deg == True:
-      return self._sigma_m * 180.0 / pi
-    return self._sigma_m
+      return sigma_m * 180.0 / pi
+    return sigma_m
 
   def n_sigma(self):
     ''' The number of sigmas. '''
@@ -396,10 +396,15 @@ class Model(ProfileModelIface):
     :return: The profile fitting class
 
     '''
+    from dials.array_family import flex
 
-    # No profile fitting if sigma_m is bad
-    if self.sigma_m() == 0:
-      return None
+    # Check input
+    if self._scan_varying:
+      if not self.sigma_m().all_gt(0):
+        return None
+    else:
+      if self.sigma_m() <= 0:
+        return None
 
     # Define a function to create the fitting class
     def wrapper(experiment):
@@ -425,14 +430,21 @@ class Model(ProfileModelIface):
       grid_method = int(GridMethod.names[self.params.gaussian_rs.fitting.grid_method].real)
       fit_method = int(FitMethod.names[self.params.gaussian_rs.fitting.fit_method].real)
 
+      if self._scan_varying:
+        sigma_b = flex.mean(self.sigma_b(deg=False))
+        sigma_m = flex.mean(self.sigma_m(deg=False))
+      else:
+        sigma_b = self.sigma_b(deg=False)
+        sigma_m = self.sigma_m(deg=False)
+
       # Create the modeller
       return GaussianRSProfileModeller(
         experiment.beam,
         experiment.detector,
         experiment.goniometer,
         experiment.scan,
-        self.sigma_b(deg=False),
-        self.sigma_m(deg=False),
+        sigma_b,
+        sigma_m,
         self.n_sigma(),
         self.params.gaussian_rs.fitting.grid_size,
         num_scan_points,
