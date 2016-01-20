@@ -91,7 +91,7 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
   from scitbx.math import continued_fraction
   from scitbx import matrix
   denom = 12
-  r = [denom * int(continued_fraction.from_real(r_, eps=1e-2).as_rational())
+  r = [int(denom * continued_fraction.from_real(r_, eps=1e-2).as_rational())
        for r_ in r]
   r = matrix.sqr(r).transpose()
   #print (1/denom)*r
@@ -182,8 +182,16 @@ def run(args):
       k += params.hkl_offset[1]
       l += params.hkl_offset[2]
       miller_indices = flex.miller_index(h.iround(), k.iround(), l.iround())
-    miller_indices_reindexed = change_of_basis_op.apply(miller_indices)
-    reflections['miller_index'] = miller_indices_reindexed
+    non_integral_indices = change_of_basis_op.apply_results_in_non_integral_indices(miller_indices)
+    if non_integral_indices.size() > 0:
+      print "Removing %i/%i reflections (change of basis results in non-integral indices)" %(
+      non_integral_indices.size(), miller_indices.size())
+    sel = flex.bool(miller_indices.size(), True)
+    sel.set_selected(non_integral_indices, False)
+    miller_indices_reindexed = change_of_basis_op.apply(
+      miller_indices.select(sel))
+    reflections['miller_index'].set_selected(sel, miller_indices_reindexed)
+    reflections['miller_index'].set_selected(~sel, (0,0,0))
 
     print "Saving reindexed reflections to %s" %params.output.reflections
     easy_pickle.dump(params.output.reflections, reflections)
