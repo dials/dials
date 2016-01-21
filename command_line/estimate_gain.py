@@ -36,8 +36,8 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None):
   from dials.algorithms.image.threshold import KabschDebug
 
   raw_data = imageset[0]
-  if len(detector) == 1:
-    raw_data = [raw_data]
+  if not isinstance(raw_data, tuple):
+    raw_data = (raw_data,)
 
   gain_value = 1
   gain_map = [flex.double(raw_data[i].accessor(), gain_value)

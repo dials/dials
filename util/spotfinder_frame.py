@@ -451,11 +451,9 @@ class SpotFrame(XrayFrame) :
   def sum_images(self):
     if self.params.sum_images > 1:
       image = self.pyslip.tiles.raw_image
-      detector = image.get_detector()
-      if len(detector) == 1:
-        raw_data = [image.get_raw_data()]
-      else:
-        raw_data = [image.get_raw_data(i) for i in range(len(detector))]
+      raw_data = image.get_raw_data()
+      if not isinstance(raw_data, tuple):
+        raw_data = (raw_data,)
 
       i_frame = self.image_chooser.GetClientData(
         self.image_chooser.GetSelection()).index
@@ -479,10 +477,9 @@ class SpotFrame(XrayFrame) :
 
     image = self.pyslip.tiles.raw_image
     detector = image.get_detector()
-    if len(detector) == 1:
-      raw_data = [image.get_raw_data()]
-    else:
-      raw_data = [image.get_raw_data(i) for i in range(len(detector))]
+    raw_data = image.get_raw_data()
+    if not isinstance(raw_data, tuple):
+      raw_data = (raw_data,)
 
     if (self.settings.show_mean_filter or
         self.settings.show_variance_filter or
