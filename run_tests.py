@@ -115,6 +115,7 @@ tst_list = (
     "$D/test/tst_phil.py",
     "$D/test/tst_plot_reflections.py",
     "$D/test/tst_scan_varying_integration_bug.py",
+    "$D/test/util/tst_ascii_art.py",
     "$D/test/util/tst_nexus.py",
     "$D/test/util/tst_nexus_multi_experiment.py",
     ["$D/test/algorithms/indexing/tst_index.py", "1"],
