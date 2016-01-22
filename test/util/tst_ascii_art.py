@@ -23,10 +23,7 @@ def exercise_spot_counts_per_image_plot():
   output = ascii_art.spot_counts_per_image_plot(refl)
 
   expected_output = '''\
-Histogram of spot counts:
-  Total number of spots: 57769
-  Max bin height: 1120 spots
-  Bin width: 9.0 images
+57769 spots found on 540 images (max 1120 / bin)
      * ***** **********
  *************************************     *
 ******************************************** **

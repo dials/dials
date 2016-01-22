@@ -24,10 +24,8 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   counts = counts.iround()
 
   rows = []
-  rows.append('Histogram of spot counts:')
-  rows.append('  Total number of spots: %i' %total_counts)
-  rows.append('  Max bin height: %i spots' %max_count)
-  rows.append('  Bin width: %.1f images' %z_step)
+  rows.append('%i spots found on %i images (max %i / bin)' %(
+    total_counts, z_range, max_count))
 
   for i in range(10, 0, -1):
     row = []
