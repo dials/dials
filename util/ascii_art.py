@@ -4,6 +4,9 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   import math
   from dials.array_family import flex
 
+  assert isinstance(char, basestring)
+  assert len(char) == 1
+
   x,y,z = reflections['xyzobs.px.value'].parts()
   max_z = int(math.ceil(flex.max(z)))
   min_z = int(math.floor(flex.min(z)))
@@ -27,11 +30,11 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   rows.append('%i spots found on %i images (max %i / bin)' %(
     total_counts, z_range, max_count))
 
-  for i in range(10, 0, -1):
+  for i in range(height, 0, -1):
     row = []
     for j in range(len(counts)):
       if counts[j] > (i-1):
-        row.append('*')
+        row.append(char)
       else:
         row.append(' ')
     rows.append(''.join(row))

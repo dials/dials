@@ -39,6 +39,30 @@ def exercise_spot_counts_per_image_plot():
   assert not show_diff(output, expected_output)
 
 
+  output = ascii_art.spot_counts_per_image_plot(
+    refl, char='o', width=80, height=15)
+
+  expected_output = '''\
+57769 spots found on 540 images (max 886 / bin)
+              o
+       o  ooo o ooooooooooooo o  o
+  oooooooooooooooooooooooooooooooooooo  ooo o  oo
+ooooooooooooooooooooooooooooooooooooooooooooooooooooo o  oo
+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo ooo     o
+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo   ooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+1                                    image                                   540'''
+  output = '\n'.join(line.rstrip() for line in output.splitlines())
+  assert not show_diff(output, expected_output)
+
 def run():
   exercise_spot_counts_per_image_plot()
   print 'OK'
