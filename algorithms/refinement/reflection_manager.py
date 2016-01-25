@@ -285,6 +285,7 @@ class ReflectionManager(object):
     for iexp, exp in enumerate(self._experiments):
       axis = self._axes[iexp]
       if not axis or exp.scan is None: continue
+      if exp.scan.get_oscillation()[1] == 0.0: continue
       sel = obs_data['id'] == iexp
       s0 = self._s0vecs[iexp]
       s1 = obs_data['s1'].select(sel)
