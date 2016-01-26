@@ -267,7 +267,8 @@ class Script(object):
     experiments = flatten_experiments(params.input.experiments)
 
     # Try to load the models and data
-    if len(experiments) == 0:
+    nexp = len(experiments)
+    if nexp == 0:
       print "No Experiments found in the input"
       self.parser.print_help()
       return
@@ -304,7 +305,10 @@ class Script(object):
         reflections, experiments)
 
     # Refine the geometry
-    info('Performing refinement...')
+    if nexp == 1:
+      info('Performing refinement of a single Experiment...')
+    else:
+      info('Performing refinement of {0} Experiments...'.format(nexp))
 
     # Refine and get the refinement history
     history = refiner.run()
