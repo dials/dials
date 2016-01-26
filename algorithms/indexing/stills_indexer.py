@@ -414,6 +414,7 @@ class stills_indexer(indexer_base):
       experiments = self.experiment_list_for_crystal(cm)
       self.index_reflections(experiments, refl)
       indexed = refl.select(refl['id'] >= 0)
+      indexed = indexed.select(indexed['miller_index'] != (0,0,0))
 
       print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification"%icm
       acceptance_flags = self.identify_outliers(params, experiments, indexed)
