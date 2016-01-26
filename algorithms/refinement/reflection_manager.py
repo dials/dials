@@ -221,6 +221,11 @@ class ReflectionManager(object):
     else:
       rejection_occurred = self._outlier_detector(self._reflections)
 
+    # set the centroid_outlier flag in the original indexed reflections
+    ioutliers = self._reflections.get_flags(self._reflections.flags.centroid_outlier)
+    ioutliers = self._reflections['iobs'].select(ioutliers)
+    self._indexed.set_flags(ioutliers, self._indexed.flags.centroid_outlier)
+
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
     msg = "Removing reflections not matched to predictions"
