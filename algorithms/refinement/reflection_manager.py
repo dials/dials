@@ -448,42 +448,44 @@ class ReflectionManager(object):
 
     sl = self._sort_obs_by_residual(l)
     debug("Reflections with the worst 20 positional residuals:")
-    debug("H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, " + \
-      "phi_obs, weight_x_obs, weight_y_obs, weight_phi_obs")
-    fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %d %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+    header = ['Miller index', 'x_resid', 'y_resid', 'phi_resid', 'pnl',
+              'x_obs', 'y_obs', 'phi_obs', 'x_obs\nweight', 'y_obs\nweight',
+              'phi_obs\nweight']
+    rows = []
     for i in xrange(20):
       e = sl[i]
       x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
-      msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                       e['y_resid'],
-                       e['phi_resid'] * RAD2DEG,
-                       e['panel'],
-                       x_obs,
-                       y_obs,
-                       phi_obs * RAD2DEG,
-                       e['xyzobs.mm.weights'][0],
-                       e['xyzobs.mm.weights'][1],
-                       e['xyzobs.mm.weights'][2] * DEG2RAD**2))
-      debug(msg)
+      rows.append(['% 3d, % 3d, % 3d'%e['miller_index'],
+                   '%5.3f'%e['x_resid'],
+                   '%5.3f'%e['y_resid'],
+                   '%6.4f'%(e['phi_resid'] * RAD2DEG),
+                   '%d'%e['panel'],
+                   '%5.3f'%x_obs,
+                   '%5.3f'%y_obs,
+                   '%6.4f'%(phi_obs * RAD2DEG),
+                   '%5.3f'%e['xyzobs.mm.weights'][0],
+                   '%5.3f'%e['xyzobs.mm.weights'][1],
+                   '%6.4f'%(e['xyzobs.mm.weights'][2] * DEG2RAD**2)])
+    debug(simple_table(rows, header).format())
+
     sl = self._sort_obs_by_residual(sl, angular=True)
     debug("\nReflections with the worst 20 angular residuals:")
-    debug("H, K, L, x_resid, y_resid, phi_resid, panel, x_obs, y_obs, " + \
-      "phi_obs, weight_x_obs, weight_y_obs, weight_phi_obs")
-    fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %d %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+    rows=[]
     for i in xrange(20):
       e = sl[i]
       x_obs, y_obs, phi_obs = e['xyzobs.mm.value']
-      msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                                             e['y_resid'],
-                                             e['phi_resid'] * RAD2DEG,
-                                             e['panel'],
-                                             x_obs,
-                                             y_obs,
-                                             phi_obs * RAD2DEG,
-                                             e['xyzobs.mm.weights'][0],
-                                             e['xyzobs.mm.weights'][1],
-                                             e['xyzobs.mm.weights'][2] * DEG2RAD**2))
-      debug(msg)
+      rows.append(['% 3d, % 3d, % 3d'%e['miller_index'],
+                   '%5.3f'%e['x_resid'],
+                   '%5.3f'%e['y_resid'],
+                   '%6.4f'%(e['phi_resid'] * RAD2DEG),
+                   '%d'%e['panel'],
+                   '%5.3f'%x_obs,
+                   '%5.3f'%y_obs,
+                   '%6.4f'%(phi_obs * RAD2DEG),
+                   '%5.3f'%e['xyzobs.mm.weights'][0],
+                   '%5.3f'%e['xyzobs.mm.weights'][1],
+                   '%6.4f'%(e['xyzobs.mm.weights'][2] * DEG2RAD**2)])
+    debug(simple_table(rows, header).format())
     debug("")
 
     return
