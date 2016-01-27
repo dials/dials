@@ -287,15 +287,16 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     # synthetic datasets perhaps and look at true scatter?) plus we have nowhere
     # to store this information. So for now just output to the debug log
     rad2deg = 180. / pi
-    debug("Refined cell parameters and estimated standard deviations:")
-    debug("a: {0:f} +/- ({1:f}) Angstroms".format(a, sqrt(var_a)))
-    debug("b: {0:f} +/- ({1:f}) Angstroms".format(b, sqrt(var_b)))
-    debug("c: {0:f} +/- ({1:f}) Angstroms".format(c, sqrt(var_c)))
-    debug("alpha: {0:f} +/- ({1:f}) degrees".format(alpha * rad2deg,
+    debug("Crystal %s refined cell parameters and estimated standard deviations:" %
+      ",".join(map(str, self.get_experiment_ids())))
+    debug(" a: {0:f} (+/- {1:f}) Angstroms".format(a, sqrt(var_a)))
+    debug(" b: {0:f} (+/- {1:f}) Angstroms".format(b, sqrt(var_b)))
+    debug(" c: {0:f} (+/- {1:f}) Angstroms".format(c, sqrt(var_c)))
+    debug(" alpha: {0:f} (+/- {1:f}) degrees".format(alpha * rad2deg,
       sqrt(var_alpha) * rad2deg))
-    debug("beta:  {0:f} +/- ({1:f}) degrees".format(beta * rad2deg,
+    debug(" beta:  {0:f} (+/- {1:f}) degrees".format(beta * rad2deg,
       sqrt(var_beta) * rad2deg))
-    debug("gamma: {0:f} +/- ({1:f}) degrees".format(gamma * rad2deg,
+    debug(" gamma: {0:f} (+/- {1:f}) degrees".format(gamma * rad2deg,
       sqrt(var_gamma) * rad2deg))
 
     return
