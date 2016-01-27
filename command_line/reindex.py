@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 import copy
 from libtbx.phil import command_line
@@ -168,6 +169,7 @@ def run(args):
     print cryst_reindexed
     print
 
+    print "Saving reindexed experimental models to %s" %params.output.experiments
     dump.experiment_list(experiments, params.output.experiments)
 
   if len(reflections):
