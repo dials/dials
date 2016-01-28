@@ -249,26 +249,26 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     # For the unit cell angles we need to calculate derivatives of the angles
     # with respect to the elements of O
     from scitbx.math import angle_derivative_wrt_vectors
-    dalpha_du, dalpha_dv = angle_derivative_wrt_vectors(vec_b, vec_c)
-    dbeta_du, dbeta_dv = angle_derivative_wrt_vectors(vec_a, vec_c)
-    dgamma_du, dgamma_dv = angle_derivative_wrt_vectors(vec_a, vec_b)
+    dalpha_db, dalpha_dc = angle_derivative_wrt_vectors(vec_b, vec_c)
+    dbeta_da, dbeta_dc = angle_derivative_wrt_vectors(vec_a, vec_c)
+    dgamma_da, dgamma_db = angle_derivative_wrt_vectors(vec_a, vec_b)
 
     # For angle alpha, F = acos( b.c / |b||c|)
     jacobian = matrix.rec(
-      (0, dalpha_du[0], dalpha_dv[0], 0, dalpha_du[1], dalpha_dv[1], 0,
-      dalpha_du[2], dalpha_dv[2]), (1, 9))
+      (0, dalpha_db[0], dalpha_dc[0], 0, dalpha_db[1], dalpha_dc[1], 0,
+      dalpha_db[2], dalpha_dc[2]), (1, 9))
     var_alpha = (jacobian * cov_O * jacobian.transpose())[0]
 
     # For angle beta, F = acos( a.c / |a||c|)
     jacobian = matrix.rec(
-      (dbeta_du[0], 0, dbeta_dv[0], dbeta_du[1], 0, dbeta_dv[1], dbeta_du[2],
-      0, dbeta_dv[2]), (1, 9))
+      (dbeta_da[0], 0, dbeta_dc[0], dbeta_da[1], 0, dbeta_dc[1], dbeta_da[2],
+      0, dbeta_dc[2]), (1, 9))
     var_beta = (jacobian * cov_O * jacobian.transpose())[0]
 
     # For angle gamma, F = acos( a.b / |a||b|)
     jacobian = matrix.rec(
-      (dgamma_du[0], dgamma_dv[0], 0, dgamma_du[1], dgamma_dv[1], 0,
-      dgamma_du[2], dgamma_dv[2], 0), (1, 9))
+      (dgamma_da[0], dgamma_db[0], 0, dgamma_da[1], dgamma_db[1], 0,
+      dgamma_da[2], dgamma_db[2], 0), (1, 9))
     var_gamma = (jacobian * cov_O * jacobian.transpose())[0]
 
     # Symmetry constraints may mean variances of the angles should be zero.
