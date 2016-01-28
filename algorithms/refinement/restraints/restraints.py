@@ -13,7 +13,7 @@
 from __future__ import division
 from scitbx.array_family import flex
 from math import pi, sin, cos, sqrt
-from dials.algorithms.refinement.refinement_helpers import AngleDerivativeWrtVectorElts
+from scitbx.math import angle_derivative_wrt_vectors
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
@@ -118,16 +118,12 @@ class SingleUnitCellTie(object):
     # calculate d[O]/dp
     dO_dp = [-O * dBT * O for dBT in dBT_dp]
 
-    # objects to get derivative of angles wrt vectors
-    dalpha = AngleDerivativeWrtVectorElts(bvec, cvec)
-    dbeta = AngleDerivativeWrtVectorElts(avec, cvec)
-    dgamma = AngleDerivativeWrtVectorElts(avec, bvec)
-    dalpha_db = dalpha.derivative_wrt_u()
-    dalpha_dc = dalpha.derivative_wrt_v()
-    dbeta_da = dbeta.derivative_wrt_u()
-    dbeta_dc = dbeta.derivative_wrt_v()
-    dgamma_da = dgamma.derivative_wrt_u()
-    dgamma_db = dgamma.derivative_wrt_v()
+    # get derivatives of angles wrt vectors
+    def dangle(u, v):
+      return [matrix.col(e) for e in angle_derivative_wrt_vectors(u,v)]
+    dalpha_db, dalpha_dc = dangle(bvec, cvec)
+    dbeta_da, dbeta_dc = dangle(avec, cvec)
+    dgamma_da, dgamma_db = dangle(avec, bvec)
 
     da = []
     db = []
