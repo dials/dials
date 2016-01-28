@@ -248,32 +248,27 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
 
     # For the unit cell angles we need to calculate derivatives of the angles
     # with respect to the elements of O
-    from dials.algorithms.refinement.refinement_helpers import \
-      AngleDerivativeWrtVectorElts
-
-    dalpha = AngleDerivativeWrtVectorElts(vec_b, vec_c)
-    dbeta = AngleDerivativeWrtVectorElts(vec_a, vec_c)
-    dgamma = AngleDerivativeWrtVectorElts(vec_a, vec_b)
+    from scitbx.math import angle_derivative_wrt_vectors
+    dalpha_du, dalpha_dv = angle_derivative_wrt_vectors(vec_b, vec_c)
+    dbeta_du, dbeta_dv = angle_derivative_wrt_vectors(vec_a, vec_c)
+    dgamma_du, dgamma_dv = angle_derivative_wrt_vectors(vec_a, vec_b)
 
     # For angle alpha, F = acos( b.c / |b||c|)
     jacobian = matrix.rec(
-      (0, dalpha.dtheta_du_1(), dalpha.dtheta_dv_1(), 0, dalpha.dtheta_du_2(),
-       dalpha.dtheta_dv_2(), 0, dalpha.dtheta_du_3(), dalpha.dtheta_dv_3()),
-       (1, 9))
+      (0, dalpha_du[0], dalpha_dv[0], 0, dalpha_du[1], dalpha_dv[1], 0,
+      dalpha_du[2], dalpha_dv[2]), (1, 9))
     var_alpha = (jacobian * cov_O * jacobian.transpose())[0]
 
     # For angle beta, F = acos( a.c / |a||c|)
     jacobian = matrix.rec(
-      (dbeta.dtheta_du_1(), 0, dbeta.dtheta_dv_1(), dbeta.dtheta_du_2(), 0,
-       dbeta.dtheta_dv_2(), dbeta.dtheta_du_3(), 0, dbeta.dtheta_dv_3()),
-       (1, 9))
+      (dbeta_du[0], 0, dbeta_dv[0], dbeta_du[1], 0, dbeta_dv[1], dbeta_du[2],
+      0, dbeta_dv[2]), (1, 9))
     var_beta = (jacobian * cov_O * jacobian.transpose())[0]
 
     # For angle gamma, F = acos( a.b / |a||b|)
     jacobian = matrix.rec(
-      (dgamma.dtheta_du_1(), dgamma.dtheta_dv_1(), 0, dgamma.dtheta_du_2(),
-       dgamma.dtheta_dv_2(), 0, dgamma.dtheta_du_3(), dgamma.dtheta_dv_3(), 0),
-       (1, 9))
+      (dgamma_du[0], dgamma_dv[0], 0, dgamma_du[1], dgamma_dv[1], 0,
+      dgamma_du[2], dgamma_dv[2], 0), (1, 9))
     var_gamma = (jacobian * cov_O * jacobian.transpose())[0]
 
     # Symmetry constraints may mean variances of the angles should be zero.
