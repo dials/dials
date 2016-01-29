@@ -14,6 +14,7 @@ from __future__ import division
 from scitbx.array_family import flex
 from math import pi, sin, cos, sqrt
 from scitbx.math import angle_derivative_wrt_vectors
+from dials_refinement_helpers_ext import CalculateCellGradients
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
@@ -99,62 +100,21 @@ class SingleUnitCellTie(object):
     '''Calculate gradients of the unit cell parameters with respect to
     each of the parameters of the crystal unit cell model parameterisation'''
 
-    from scitbx import matrix
     B = self._xlucp.get_state()
-    O = (B.transpose()).inverse()
-    a, b, c = self._xlucp.get_model().get_unit_cell().parameters()[0:3]
-    avec, bvec, cvec = [matrix.col(v) for v in O.transpose().as_list_of_lists()]
+    dB_dp = flex.mat3_double(self._xlucp.get_ds_dp())
 
-    # calculate d[B^T]/dp
-    dB_dp = self._xlucp.get_ds_dp()
-    dBT_dp = [dB.transpose() for dB in dB_dp]
+    # Use C++ function for speed
+    ccg = CalculateCellGradients(B, dB_dp)
 
-    # calculate d[O]/dp
-    dO_dp = [-O * dBT * O for dBT in dBT_dp]
+    nparam = len(dB_dp)
+    da = list(ccg.da_dp()) if sel[0] else [0.0] * nparam
+    db = list(ccg.db_dp()) if sel[1] else [0.0] * nparam
+    dc = list(ccg.dc_dp()) if sel[2] else [0.0] * nparam
+    daa = list(ccg.daa_dp()) if sel[3] else [0.0] * nparam
+    dbb = list(ccg.dbb_dp()) if sel[4] else [0.0] * nparam
+    dcc = list(ccg.dcc_dp()) if sel[5] else [0.0] * nparam
 
-    # get derivatives of angles wrt vectors
-    def dangle(u, v):
-      return [matrix.col(e) for e in angle_derivative_wrt_vectors(u,v)]
-    dalpha_db, dalpha_dc = dangle(bvec, cvec)
-    dbeta_da, dbeta_dc = dangle(avec, cvec)
-    dgamma_da, dgamma_db = dangle(avec, bvec)
-
-    da = []
-    db = []
-    dc = []
-    daa = []
-    dbb = []
-    dcc = []
-
-    # loop over parameters of the model
-    for i, dO in enumerate(dO_dp):
-
-      # extract derivatives of each unit cell vector wrt p
-      dav_dp, dbv_dp, dcv_dp = dO.transpose().as_list_of_lists()
-      dav_dp = matrix.col(dav_dp)
-      dbv_dp = matrix.col(dbv_dp)
-      dcv_dp = matrix.col(dcv_dp)
-
-      # derivative of cell lengths wrt p
-      da_dp = 1./a * avec.dot(dav_dp) if sel[0] else 0.0
-      da.append(da_dp)
-      db_dp = 1./b * bvec.dot(dbv_dp) if sel[1] else 0.0
-      db.append(db_dp)
-      dc_dp = 1./c * cvec.dot(dcv_dp) if sel[2] else 0.0
-      dc.append(dc_dp)
-
-      # derivative of cell angles wrt p
-      daa_dp = dbv_dp.dot(dalpha_db) + dcv_dp.dot(dalpha_dc) if sel[3] else 0.0
-      daa_dp *= RAD2DEG
-      daa.append(daa_dp)
-      dbb_dp = dav_dp.dot(dbeta_da) + dcv_dp.dot(dbeta_dc) if sel[4] else 0.0
-      dbb_dp *= RAD2DEG
-      dbb.append(dbb_dp)
-      dcc_dp = dav_dp.dot(dgamma_da) + dbv_dp.dot(dgamma_db) if sel[5] else 0.0
-      dcc_dp *= RAD2DEG
-      dcc.append(dcc_dp)
-
-    return da, db, dc, daa, dbb, dcc
+    return (da, db, dc, daa, dbb, dcc)
 
   def residuals(self):
     """Calculate and return the residuals, cache gradients"""
