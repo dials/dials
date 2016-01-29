@@ -102,10 +102,7 @@ class SingleUnitCellTie(object):
     from scitbx import matrix
     B = self._xlucp.get_state()
     O = (B.transpose()).inverse()
-    a, b, c, aa, bb, cc = self._xlucp.get_model().get_unit_cell().parameters()
-    aa *= DEG2RAD
-    bb *= DEG2RAD
-    cc *= DEG2RAD
+    a, b, c = self._xlucp.get_model().get_unit_cell().parameters()[0:3]
     avec, bvec, cvec = [matrix.col(v) for v in O.transpose().as_list_of_lists()]
 
     # calculate d[B^T]/dp
