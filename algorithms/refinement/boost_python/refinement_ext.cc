@@ -10,6 +10,7 @@ namespace dials { namespace refinement { namespace boost_python {
   void export_gallego_yezzi();
   void export_mahalanobis();
   void export_outlier_helpers();
+  void export_calculate_cell_gradients();
 
   BOOST_PYTHON_MODULE(dials_refinement_helpers_ext)
   {
@@ -17,6 +18,7 @@ namespace dials { namespace refinement { namespace boost_python {
     export_gallego_yezzi();
     export_mahalanobis();
     export_outlier_helpers();
+    export_calculate_cell_gradients();
   }
 
 }}} // namespace dials::refinement::boost_python

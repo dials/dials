@@ -6,6 +6,7 @@ sources = [
     'boost_python/gallego_yezzi.cc',
     'boost_python/mahalanobis.cc',
     'boost_python/outlier_helpers.cc',
+    'boost_python/restraints_helpers.cc',
     'boost_python/refinement_ext.cc']
 
 env.SharedLibrary(
