@@ -107,9 +107,6 @@ class SingleUnitCellTie(object):
     bb *= DEG2RAD
     cc *= DEG2RAD
     avec, bvec, cvec = [matrix.col(v) for v in O.transpose().as_list_of_lists()]
-    ua = avec.normalize()
-    ub = bvec.normalize()
-    uc = cvec.normalize()
 
     # calculate d[B^T]/dp
     dB_dp = self._xlucp.get_ds_dp()
