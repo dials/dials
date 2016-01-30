@@ -1,7 +1,6 @@
 #!/usr/bin/env dials.python
 from __future__ import division
-import sys, os
-from libtbx.phil import command_line, parse
+from libtbx.phil import parse
 
 help_message = '''
 
@@ -54,6 +53,17 @@ phil_scope = parse('''
     detector = None
       .help = "Take detector model from this experiment to overwrite all"
               "other detector models in the combined experiments"
+      .type = int(value_min=0)
+
+    average_detector = False
+      .help = "Create an average detector model from all the input detector"
+              "models and use it as the reference. Not compatible with"
+              "reference_from_experiment.detector"
+      .type = bool
+
+    average_hierarchy_level = None
+      .help = "For hierarchical detectors, optionally provide a single level"
+              "to do averaging at."
       .type = int(value_min=0)
   }
 
@@ -125,7 +135,7 @@ class Script(object):
   def run(self):
     '''Execute the script.'''
 
-    from dials.util.options import flatten_reflections, flatten_experiments
+    from dials.util.options import flatten_experiments
     from libtbx.utils import Sorry
 
     # Parse the command line
@@ -179,10 +189,48 @@ class Script(object):
         raise Sorry("{0} is not a valid experiment ID".format(ref_crystal))
 
     if ref_detector is not None:
+      assert params.reference_from_experiment.average_detector == False
       try:
         ref_detector = flat_exps[ref_detector].detector
       except IndexError:
         raise Sorry("{0} is not a valid experiment ID".format(ref_detector))
+    elif params.reference_from_experiment.average_detector:
+      # Average all of the detectors together
+      from scitbx.matrix import col
+      def average_detectors(target, panelgroups, depth):
+        # Recursive function to do the averaging
+
+        if params.reference_from_experiment.average_hierarchy_level is None or \
+            depth == params.reference_from_experiment.average_hierarchy_level:
+          n = len(panelgroups)
+          sum_fast = col((0.0,0.0,0.0))
+          sum_slow = col((0.0,0.0,0.0))
+          sum_ori  = col((0.0,0.0,0.0))
+
+          # Average the d matrix vectors
+          for pg in panelgroups:
+            sum_fast += col(pg.get_local_fast_axis())
+            sum_slow += col(pg.get_local_slow_axis())
+            sum_ori  += col(pg.get_local_origin())
+          sum_fast /= n
+          sum_slow /= n
+          sum_ori  /= n
+
+          # Re-orthagonalize the slow and the fast vectors by rotating around the cross product
+          c = sum_fast.cross(sum_slow)
+          a = sum_fast.angle(sum_slow, deg=True)/2
+          sum_fast = sum_fast.rotate(c, a-45, deg=True)
+          sum_slow = sum_slow.rotate(c, -(a-45), deg=True)
+
+          target.set_local_frame(sum_fast,sum_slow,sum_ori)
+
+        if hasattr(target, "children"):
+          # Recurse
+          for i, target_pg in enumerate(target):
+            average_detectors(target_pg, [pg[i] for pg in panelgroups], depth+1)
+
+      ref_detector = flat_exps[0].detector
+      average_detectors(ref_detector.hierarchy(), [e.detector.hierarchy() for e in flat_exps], 0)
 
     combine = CombineWithReference(beam=ref_beam, goniometer=ref_goniometer,
                   scan=ref_scan, crystal=ref_crystal, detector=ref_detector)
@@ -235,4 +283,3 @@ if __name__ == "__main__":
     script.run()
   except Exception as e:
     halraiser(e)
-
