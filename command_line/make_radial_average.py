@@ -19,6 +19,7 @@ This program averages images and makes a radial average over resolution shells
 
 Examples::
 
+dev.dials.make_radial_average datablock.json
 dev.dials.make_radial_average experiments.json
 
 '''
@@ -69,12 +70,13 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      read_experiments=True)
+      read_experiments=True,
+      read_datablocks=True)
 
   def run(self):
     ''' Perform the integration. '''
     from dials.util.command_line import heading
-    from dials.util.options import flatten_reflections, flatten_experiments
+    from dials.util.options import flatten_datablocks, flatten_experiments
     from dials.util import log
     from logging import info, debug
     from time import time
@@ -84,15 +86,26 @@ class Script(object):
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)
     experiments = flatten_experiments(params.input.experiments)
-    if len(experiments) != 1:
+    datablocks = flatten_datablocks(params.input.datablock)
+    if len(experiments) == 0 and len(datablocks) == 0:
       self.parser.print_help()
       return
 
+    if len(datablocks) > 0:
+      assert len(datablocks) == 1
+      imagesets = datablocks[0].extract_imagesets()
+      assert len(imagesets) == 1
+      imageset = imagesets[0]
+      beam = imageset.get_beam()
+      detector = imageset.get_detector()
+    else:
+      assert len(experiments) == 1
+      imageset = experiments[0].imageset
+      beam = experiments[0].beam
+      detector = experiments[0].detector
+
     # Configure logging
     log.config()
-
-    # The imageset
-    imageset = experiments[0].imageset
 
     # Set the scan range
     if params.scan_range is None:
@@ -127,15 +140,12 @@ class Script(object):
 
     # Compute min and max and num
     if params.num_bins is None:
-      detector = experiments[0].detector
       num_bins = sum(sum(p.get_image_size()) for p in detector)
     if params.d_max is None:
       vmin = 0
     else:
       vmin = (1.0 / d_max)**2
     if params.d_min is None:
-      beam = experiments[0].beam
-      detector = experiments[0].detector
       params.d_min = detector.get_max_resolution(beam.get_s0())
     vmax = (1.0 / params.d_min)**2
 
