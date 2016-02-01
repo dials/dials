@@ -35,7 +35,9 @@ restraints
     sigmas = None
       .help = "The unit cell target values are associated with sigmas which are"
               "used to determine the weight of each restraint. A sigma of zero"
-              "will remove the restraint at that position"
+              "will remove the restraint at that position. If symmetry"
+              "constrains two cell dimensions to be equal then only the"
+              "smaller of the two sigmas will be kept"
       .type = floats(size=6, value_min=0.)
 
     id = None

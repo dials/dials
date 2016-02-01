@@ -69,10 +69,38 @@ class SingleUnitCellTie(object):
     assert len(self._target) == 6
     assert len(sigma) == 6
 
-    # calculate gradients of cell parameters wrt model parameters. A gradient
-    # of zero means that cell parameter is constrained and thus ignored in
-    # restraints
+    # calculate gradients of cell parameters wrt model parameters.
     grads = self._calculate_uc_gradients()
+
+    # identify cell dimensions constrained to be equal
+    a, b, c, aa, bb, cc = self._xlucp.get_model().get_unit_cell().parameters()
+    if abs(a - b) < 1e-10:
+      grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[1])]
+      if max(grad_diff) < 1e-10:
+        # a and b are equal, therefore keep only the strongest restraint
+        strong, weak = sorted([sigma[0], sigma[1]])
+        if strong == 0.0: strong = weak
+        sigma[0] = strong
+        sigma[1] = 0.0
+    if abs(a - c) < 1e-10:
+      grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[2])]
+      if max(grad_diff) < 1e-10:
+        # a and c are equal, therefore keep only the strongest restraint
+        strong, weak = sorted([sigma[0], sigma[2]])
+        if strong == 0.0: strong = weak
+        sigma[0] = strong
+        sigma[2] = 0.0
+    if abs(b - c) < 1e-10:
+      grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[1], grads[2])]
+      if max(grad_diff) < 1e-10:
+        # b and c are equal, therefore keep only the strongest restraint
+        strong, weak = sorted([sigma[1], sigma[2]])
+        if strong == 0.0: strong = weak
+        sigma[1] = strong
+        sigma[2] = 0.0
+
+    # A gradient of zero indicates that cell parameter is constrained and thus
+    # to be ignored in restraints
     _sigma = []
     for sig, grad in zip(sigma, grads):
       tst = [abs(g) > 1.e-10 for g in grad]
