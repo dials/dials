@@ -307,7 +307,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.outlier_btn.AddSegment("inliers")
     self.outlier_btn.AddSegment("outliers")
     self.outlier_btn.SetSelection(
-      ["all", "inliers", "outliers"].index(self.settings.outlier_display))
+      [None, "inliers", "outliers"].index(self.settings.outlier_display))
     self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeSettings, self.outlier_btn)
     self.GetSizer().Add(self.outlier_btn, 0, wx.ALL, 5)
 
