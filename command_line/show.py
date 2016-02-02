@@ -43,7 +43,6 @@ def run(args):
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_reflections
-  from libtbx.utils import Sorry
   import libtbx.load_env
 
   usage = "%s [options] datablock.json | experiments.json | image_*.cbf" %(
@@ -133,13 +132,20 @@ def run(args):
     ('profile.rmsd','%.3f'),
     ('xyzcal.mm','%.2f, %.2f, %.2f'),
     ('xyzcal.px','%.2f, %.2f, %.2f'),
+    ('delpsical.rad','%.3f'),
+    ('delpsical2','%.3f'),
     ('xyzobs.mm.value','%.2f, %.2f, %.2f'),
     ('xyzobs.mm.variance','%.4e, %.4e, %.4e'),
     ('xyzobs.px.value','%.2f, %.2f, %.2f'),
     ('xyzobs.px.variance','%.4f, %.4f, %.4f'),
     ('s1','%.4f, %.4f, %.4f'),
     ('rlp','%.4f, %.4f, %.4f'),
-    ('zeta','%.3f')])
+    ('zeta','%.3f'),
+    ('x_resid','%.3f'),
+    ('x_resid2','%.3f'),
+    ('y_resid','%.3f'),
+    ('y_resid2','%.3f'),
+    ])
 
   for rlist in reflections:
     from cctbx.array_family import flex
