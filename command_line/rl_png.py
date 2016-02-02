@@ -18,15 +18,16 @@ class ReciprocalLatticePng(render_3d):
 
   def __init__(self, settings=None):
     render_3d.__init__(self)
-    self.viewer = PngScene()
     if settings is not None:
       self.settings = settings
     else:
       self.settings = settings()
+    self.viewer = PngScene(settings=self.settings)
 
 class PngScene(object):
 
-  def __init__(self):
+  def __init__(self, settings):
+    self.settings = settings
     self.rotation_axis = None
     self.beam_vector = None
     self.points = None
@@ -42,7 +43,9 @@ class PngScene(object):
     self.points = points
 
   def set_colors(self, colors):
-    colors.set_selected((colors.norms() == 1), (0,0,0))
+    import math
+    # convert whites to black (background is white)
+    colors.set_selected((colors.norms() == math.sqrt(3)), (0,0,0))
     self.colors = colors
 
   def plot(self, filename, n=(1,0,0)):
@@ -69,7 +72,8 @@ class PngScene(object):
 
     from matplotlib import pyplot
     fig = pyplot.figure(figsize=(10,10))
-    pyplot.scatter(px2d, py2d, marker='+', s=5, c=self.colors)
+    pyplot.scatter(
+      px2d, py2d, marker='+', s=self.settings.marker_size, c=self.colors)
     fig.savefig(filename)
     pyplot.close()
 
