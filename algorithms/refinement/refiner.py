@@ -1494,7 +1494,6 @@ class Refiner(object):
 
     # keep the data and models public for access after refinement
     self._experiments = experiments
-    self._reflections = reflections
     self._beam = beam
     self._crystals = crystals
     self._crystal_ids = crystal_ids
