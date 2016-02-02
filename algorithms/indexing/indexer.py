@@ -883,8 +883,6 @@ class indexer_base(object):
       info("model %i (%i reflections):" %(i+1, n_indexed))
       info(crystal_model)
 
-    self.predict_for_indexed(self.refined_reflections, self.refined_experiments)
-
     self.refined_reflections['xyzcal.px'] = flex.vec3_double(
       len(self.refined_reflections))
     for i, imageset in enumerate(self.imagesets):
@@ -912,15 +910,6 @@ class indexer_base(object):
         z_px = z_rad
       xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
       self.refined_reflections['xyzcal.px'].set_selected(imgset_sel, xyzcal_px)
-
-  def predict_for_indexed(self, reflections, experiments):
-    from dials.algorithms.refinement import RefinerFactory
-    refiner = RefinerFactory.from_parameters_data_experiments(
-      self.all_params, reflections, experiments, verbosity=0)
-    refl = refiner.predict_for_indexed()
-    assert len(refl) == len(reflections)
-    reflections['xyzcal.mm'] = refl['xyzcal.mm']
-    return
 
   def find_max_cell(self):
     if self.params.max_cell is libtbx.Auto:
@@ -1423,18 +1412,16 @@ class indexer_base(object):
       debug_plots=self.params.debug_plots)
     if outliers is not None:
       reflections['id'].set_selected(outliers, -1)
+    predicted = refiner.predict_for_indexed()
     verbosity = self.params.refinement_protocol.verbosity
-    matches = refiner.get_matches()
-    xyzcal_mm = flex.vec3_double(len(reflections))
-    xyzcal_mm.set_selected(matches['iobs'], matches['xyzcal.mm'])
-    # entering flags needed by dials.integrate
-    from dials.algorithms.refinement.reflection_manager \
-         import calculate_entering_flags
-    entering_flags = calculate_entering_flags(
-      reflections, refiner.get_experiments())
-    reflections['xyzcal.mm'] = xyzcal_mm
-    reflections['entering'] = entering_flags
-    reflections.set_flags(matches['iobs'], reflections.flags.used_in_refinement)
+    reflections['xyzcal.mm'] = predicted['xyzcal.mm']
+    reflections['entering'] = predicted['entering']
+    reflections.unset_flags(flex.bool(len(reflections)), reflections.flags.centroid_outlier)
+    assert reflections.get_flags(reflections.flags.centroid_outlier).count(True) == 0
+    reflections.set_flags(predicted.get_flags(predicted.flags.centroid_outlier),
+                          reflections.flags.centroid_outlier)
+    reflections.set_flags(refiner.selection_used_for_refinement(),
+                          reflections.flags.used_in_refinement)
     return refiner.get_experiments(), reflections
 
   def debug_show_candidate_basis_vectors(self):
