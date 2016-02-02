@@ -54,61 +54,11 @@ phil_scope= libtbx.phil.parse("""
 def settings () :
   return phil_scope.fetch().extract()
 
-class ReciprocalLatticeViewer(wx.Frame):
-  def __init__(self, *args, **kwds):
-    wx.Frame.__init__(self, *args, **kwds)
-    self.parent = self.GetParent()
-    self.statusbar = self.CreateStatusBar()
-    self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+class render_3d(object):
+
+  def __init__(self):
     self.reflections = None
     self.goniometer_orig = None
-
-    app = wx.GetApp()
-    if (getattr(app, "settings", None) is not None) :
-      # XXX copying the initial settings avoids awkward interactions when
-      # multiple viewer windows are opened
-      self.settings = copy.deepcopy(app.settings)
-    else :
-      self.settings = settings()
-
-    self.create_settings_panel()
-    self.sizer.Add(self.settings_panel, 0, wx.EXPAND)
-    self.create_viewer_panel()
-    self.sizer.Add(self.viewer, 1, wx.EXPAND|wx.ALL)
-    #self.SetupToolbar()
-    #self.SetupMenus()
-    #self.add_view_specific_functions()
-    #self.SetMenuBar(self.menubar)
-    #self.toolbar.Realize()
-    self.SetSizer(self.sizer)
-    self.sizer.SetSizeHints(self)
-    self.Bind(wx.EVT_CLOSE, self.OnClose, self)
-    self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy, self)
-    self.Bind(wx.EVT_ACTIVATE, self.OnActive)
-    self.viewer.SetFocus()
-
-  def OnActive (self, event) :
-    if (self.IsShown()) and (type(self.viewer).__name__ != "_wxPyDeadObject") :
-      self.viewer.Refresh()
-
-  def OnClose (self, event) :
-    self.Unbind(wx.EVT_ACTIVATE)
-    self.Destroy()
-    event.Skip()
-
-  def OnDestroy (self, event) :
-    if (self.parent is not None) :
-      self.parent.viewer = None
-    event.Skip()
-
-  def create_viewer_panel (self) :
-    self.viewer = MyGLWindow(settings=self.settings, parent=self, size=(800,600),
-      style=wx.glcanvas.WX_GL_DOUBLEBUFFER,
-      #orthographic=True
-      )
-
-  def create_settings_panel (self) :
-    self.settings_panel = settings_window(self, -1, style=wx.RAISED_BORDER)
 
   def load_models(self, imagesets, reflections):
     self.imagesets = imagesets
@@ -130,11 +80,6 @@ class ReciprocalLatticeViewer(wx.Frame):
       from dxtbx.model.detector_helpers import set_mosflm_beam_centre
       set_mosflm_beam_centre(detector, beam, tuple(reversed(
         self.settings.beam_centre)))
-    if self.settings.beam_centre is not None:
-      self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
-      self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
-    self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
-    self.settings_panel.add_experiments_buttons()
     self.map_points_to_reciprocal_space()
     self.set_points()
 
@@ -192,7 +137,6 @@ class ReciprocalLatticeViewer(wx.Frame):
       reflections = reflections.select(d_spacings > self.settings.d_min)
     else:
       self.settings.d_min = flex.min(d_spacings)
-      self.settings_panel.d_min_ctrl.SetValue(self.settings.d_min)
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)
     colors = flex.vec3_double(len(points), (1,1,1))
@@ -208,6 +152,74 @@ class ReciprocalLatticeViewer(wx.Frame):
       for i in range(-1, flex.max(reflections['id'])+1):
         colors.set_selected(reflections['id'] == i, palette[i+1])
     self.viewer.set_colors(colors)
+
+
+class ReciprocalLatticeViewer(wx.Frame, render_3d):
+  def __init__(self, *args, **kwds):
+    wx.Frame.__init__(self, *args, **kwds)
+    render_3d.__init__(self)
+    self.parent = self.GetParent()
+    self.statusbar = self.CreateStatusBar()
+    self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+    app = wx.GetApp()
+    if (getattr(app, "settings", None) is not None) :
+      # XXX copying the initial settings avoids awkward interactions when
+      # multiple viewer windows are opened
+      self.settings = copy.deepcopy(app.settings)
+    else :
+      self.settings = settings()
+
+    self.create_settings_panel()
+    self.sizer.Add(self.settings_panel, 0, wx.EXPAND)
+    self.create_viewer_panel()
+    self.sizer.Add(self.viewer, 1, wx.EXPAND|wx.ALL)
+    #self.SetupToolbar()
+    #self.SetupMenus()
+    #self.add_view_specific_functions()
+    #self.SetMenuBar(self.menubar)
+    #self.toolbar.Realize()
+    self.SetSizer(self.sizer)
+    self.sizer.SetSizeHints(self)
+    self.Bind(wx.EVT_CLOSE, self.OnClose, self)
+    self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy, self)
+    self.Bind(wx.EVT_ACTIVATE, self.OnActive)
+    self.viewer.SetFocus()
+
+  def load_models(self, imagesets, reflections):
+    render_3d.load_models(self, imagesets, reflections)
+    if self.settings.beam_centre is not None:
+      self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
+      self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+    self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
+    self.settings_panel.add_experiments_buttons()
+
+  def OnActive (self, event) :
+    if (self.IsShown()) and (type(self.viewer).__name__ != "_wxPyDeadObject") :
+      self.viewer.Refresh()
+
+  def OnClose (self, event) :
+    self.Unbind(wx.EVT_ACTIVATE)
+    self.Destroy()
+    event.Skip()
+
+  def OnDestroy (self, event) :
+    if (self.parent is not None) :
+      self.parent.viewer = None
+    event.Skip()
+
+  def create_viewer_panel (self) :
+    self.viewer = MyGLWindow(settings=self.settings, parent=self, size=(800,600),
+      style=wx.glcanvas.WX_GL_DOUBLEBUFFER,
+      #orthographic=True
+      )
+
+  def create_settings_panel (self) :
+    self.settings_panel = settings_window(self, -1, style=wx.RAISED_BORDER)
+
+  def set_points(self):
+    render_3d.set_points(self)
+    self.settings_panel.d_min_ctrl.SetValue(self.settings.d_min)
 
   def update_settings(self, *args, **kwds):
     detector = self.imagesets[0].get_detector()
