@@ -43,6 +43,8 @@ phil_scope= libtbx.phil.parse("""
     .type = float(value_min=0.0)
   display = *all unindexed indexed
     .type = choice
+  outlier_display = outliers inliers
+    .type = choice
   marker_size = 5
     .type = int(value_min=1)
   experiment_ids = None
@@ -146,13 +148,6 @@ class ReciprocalLatticeViewer(wx.Frame):
       goniometer.set_rotation_axis([-i for i in goniometer.get_rotation_axis()])
     from dials.algorithms.indexing import indexer
 
-    if self.reflections_input.has_key('miller_index'):
-      indexed_sel = (self.reflections_input['miller_index'] != (0,0,0))
-      if self.settings.display == 'indexed':
-        self.reflections_input = self.reflections_input.select(indexed_sel)
-      elif self.settings.display == 'unindexed':
-        self.reflections_input = self.reflections_input.select(~indexed_sel)
-
     from dials.array_family import flex
     reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
@@ -174,11 +169,17 @@ class ReciprocalLatticeViewer(wx.Frame):
     reflections = self.reflections
 
     if reflections.has_key('miller_index'):
-      indexed_sel = (reflections['miller_index'] != (0,0,0))
+      indexed_sel = reflections.get_flags(reflections.flags.indexed)
       if self.settings.display == 'indexed':
         reflections = reflections.select(indexed_sel)
       elif self.settings.display == 'unindexed':
         reflections = reflections.select(~indexed_sel)
+
+      outlier_sel = reflections.get_flags(reflections.flags.centroid_outlier)
+      if self.settings.outlier_display == 'outliers':
+        reflections = reflections.select(outlier_sel)
+      if self.settings.outlier_display == 'inliers':
+        reflections = reflections.select(~outlier_sel)
 
       if self.settings.experiment_ids:
         sel = flex.bool(len(reflections), False)
@@ -197,7 +198,7 @@ class ReciprocalLatticeViewer(wx.Frame):
     colors = flex.vec3_double(len(points), (1,1,1))
 
     if len(points):
-      # suggested colorbline color pallet
+      # suggested colorblind color pallet
       # sorry if you have > 8 lattices!
       palette = flex.vec3_double((
         (255,255,255), (230,159,0), (86,180,233), (0,158,115),
@@ -298,9 +299,17 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.btn.AddSegment("unindexed")
     self.btn.SetSelection(
       ["all", "indexed", "unindexed"].index(self.settings.display))
-
     self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeSettings, self.btn)
     self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
+
+    self.outlier_btn = SegmentedRadioControl(self, style=SEGBTN_HORIZONTAL)
+    self.outlier_btn.AddSegment("all")
+    self.outlier_btn.AddSegment("inliers")
+    self.outlier_btn.AddSegment("outliers")
+    self.outlier_btn.SetSelection(
+      ["all", "inliers", "outliers"].index(self.settings.outlier_display))
+    self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeSettings, self.outlier_btn)
+    self.GetSizer().Add(self.outlier_btn, 0, wx.ALL, 5)
 
   def add_value_widgets (self, sizer) :
     sizer.Add(wx.StaticText(self.panel, -1, "Value:"), 0,
@@ -340,6 +349,11 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     for i, display in enumerate(("all", "indexed", "unindexed")):
       if self.btn.values[i]:
         self.settings.display = display
+        break
+
+    for i, display in enumerate(("all", "inliers", "outliers")):
+      if self.outlier_btn.values[i]:
+        self.settings.outlier_display = display
         break
 
     if self.expt_btn is not None:
