@@ -122,20 +122,24 @@ def run(args):
   f.viewer.plot('rl_001.png', n=(0,0,1))
 
   if len(experiments):
-    c = experiments.crystals()[0]
-    A = c.get_A()
-    astar = A[:3]
-    bstar = A[3:6]
-    cstar = A[6:9]
+    for i, c in enumerate(experiments.crystals()):
+      A = c.get_A()
+      astar = A[:3]
+      bstar = A[3:6]
+      cstar = A[6:9]
 
-    direct_matrix = A.inverse()
-    a = direct_matrix[:3]
-    b = direct_matrix[3:6]
-    c = direct_matrix[6:9]
+      direct_matrix = A.inverse()
+      a = direct_matrix[:3]
+      b = direct_matrix[3:6]
+      c = direct_matrix[6:9]
 
-    f.viewer.plot('rl_a.png', n=a)
-    f.viewer.plot('rl_b.png', n=b)
-    f.viewer.plot('rl_c.png', n=c)
+      prefix = ''
+      if len(experiments.crystals()) > 1:
+        prefix = '%i_' %(i+1)
+
+      f.viewer.plot('rl_%sa.png' %prefix, n=a)
+      f.viewer.plot('rl_%sb.png' %prefix, n=b)
+      f.viewer.plot('rl_%sc.png' %prefix, n=c)
 
 
 if __name__ == '__main__':
