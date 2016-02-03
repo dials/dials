@@ -25,6 +25,10 @@ basis_vector_search {
   n_solutions = 3
     .type = int
 }
+plot {
+  size_inches = 10,10
+    .type = floats(size=2, value_min=0)
+}
 """, process_includes=True)
 
 def settings () :
@@ -87,7 +91,7 @@ class PngScene(object):
     py2d = points2d.dot(y)
 
     from matplotlib import pyplot
-    fig = pyplot.figure(figsize=(10,10))
+    fig = pyplot.figure(figsize=self.settings.plot.size_inches)
     pyplot.scatter(
       px2d, py2d, marker='+', s=self.settings.marker_size, c=self.colors)
     pyplot.title('Plane normal: (%.2g, %.2g, %.2g)' %(n.elems))
