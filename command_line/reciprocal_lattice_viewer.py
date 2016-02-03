@@ -209,7 +209,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     event.Skip()
 
   def create_viewer_panel (self) :
-    self.viewer = MyGLWindow(settings=self.settings, parent=self, size=(800,600),
+    self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
       style=wx.glcanvas.WX_GL_DOUBLEBUFFER,
       #orthographic=True
       )
@@ -378,24 +378,25 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.parent.update_settings()
 
 
-class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
+class RLVWindow(wx_viewer.show_points_and_lines_mixin):
 
   def __init__(self, settings, *args, **kwds):
-    super(MyGLWindow, self).__init__(*args, **kwds)
+    super(RLVWindow, self).__init__(*args, **kwds)
     self.settings = settings
     self.points = flex.vec3_double()
     self.colors = None
     self.rotation_axis = None
     self.beam_vector = None
     self.flag_show_minimum_covering_sphere = False
-    self._compute_minimum_covering_sphere()
+    self.minimum_covering_sphere = None
     self.field_of_view_y = 0.001
 
   def set_points(self, points):
     self.points = points
     self.points_display_list = None
     #self.draw_points()
-    self._compute_minimum_covering_sphere()
+    if self.minimum_covering_sphere is None:
+      self.update_minimum_covering_sphere()
     #if not self.GL_uninitialised:
       #self.fit_into_viewport()
 
@@ -425,12 +426,11 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
   def update_settings (self) :
     self.points_display_list = None
     #self.DrawGL()
-    self._compute_minimum_covering_sphere()
     #if not self.GL_uninitialised:
       #self.fit_into_viewport()
     self.Refresh()
 
-  def _compute_minimum_covering_sphere(self):
+  def update_minimum_covering_sphere(self):
     n_points = min(1000, self.points.size())
     isel = flex.random_permutation(self.points.size())[:n_points]
     self.minimum_covering_sphere = minimum_covering_sphere(
@@ -450,6 +450,8 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
       self.draw_axis(self.beam_vector, "beam")
 
   def draw_axis(self, axis, label):
+    if self.minimum_covering_sphere is None:
+      self.update_minimum_covering_sphere()
     s = self.minimum_covering_sphere
     scale = max(max(s.box_max()), abs(min(s.box_min())))
     gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
@@ -475,12 +477,12 @@ class MyGLWindow(wx_viewer.show_points_and_lines_mixin):
     glDisable(GL_LINE_STIPPLE)
 
   def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
-    super(MyGLWindow, self).rotate_view(
+    super(RLVWindow, self).rotate_view(
       x1, y1, x2, y2, shift_down=shift_down, scale=scale)
 
   def OnLeftUp(self,event):
     self.was_dragged = True
-    super(MyGLWindow, self).OnLeftUp(event)
+    super(RLVWindow, self).OnLeftUp(event)
 
 
 def run(args):
