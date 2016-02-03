@@ -3,16 +3,33 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import division
-from scitbx.array_family import flex
 
 import matplotlib
 
 # Offline backend
 matplotlib.use("Agg")
 
+from logging import info
+
+import libtbx.phil
+from scitbx import matrix
+from scitbx.array_family import flex
+
 from dials.command_line.reciprocal_lattice_viewer import render_3d
-from dials.command_line.reciprocal_lattice_viewer import help_message, phil_scope
-from dials.command_line.reciprocal_lattice_viewer import settings
+from dials.command_line.reciprocal_lattice_viewer import help_message
+
+
+phil_scope= libtbx.phil.parse("""
+include scope dials.command_line.reciprocal_lattice_viewer.phil_scope
+basis_vector_search {
+  n_solutions = 3
+    .type = int
+}
+""", process_includes=True)
+
+def settings () :
+  return phil_scope.fetch().extract()
+
 
 class ReciprocalLatticePng(render_3d):
 
@@ -50,7 +67,6 @@ class PngScene(object):
 
   def plot(self, filename, n=(1,0,0)):
 
-    from scitbx import matrix
     n = matrix.col(n).normalize()
     d = self.points.dot(n.elems)
     p = d * flex.vec3_double(len(d), n.elems)
@@ -74,6 +90,7 @@ class PngScene(object):
     fig = pyplot.figure(figsize=(10,10))
     pyplot.scatter(
       px2d, py2d, marker='+', s=self.settings.marker_size, c=self.colors)
+    pyplot.title('Plane normal: (%.2g, %.2g, %.2g)' %(n.elems))
     fig.savefig(filename)
     pyplot.close()
 
@@ -83,6 +100,7 @@ def run(args):
   from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
+  from dials.util import log
   import libtbx.load_env
 
   usage = "%s [options] datablock.json reflections.pickle" %(
@@ -97,7 +115,7 @@ def run(args):
     check_format=False,
     epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=True)
+  params, options = parser.parse_args()
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
@@ -105,6 +123,15 @@ def run(args):
   if (len(datablocks) == 0 and len(experiments) == 0) or len(reflections) == 0:
     parser.print_help()
     exit(0)
+
+  # Configure the logging
+  log.config(info='dials.rl_png.log')
+
+  # Log the diff phil
+  diff_phil = parser.diff_phil.as_str()
+  if diff_phil is not '':
+    info('The following parameters have been modified:\n')
+    info(diff_phil)
 
   reflections = reflections[0]
 
@@ -117,9 +144,23 @@ def run(args):
 
   f = ReciprocalLatticePng(settings=params)
   f.load_models(imagesets, reflections)
-  f.viewer.plot('rl_100.png', n=(1,0,0))
-  f.viewer.plot('rl_010.png', n=(0,1,0))
-  f.viewer.plot('rl_001.png', n=(0,0,1))
+
+  imageset = imagesets[0]
+  rotation_axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
+  s0 = matrix.col(imageset.get_beam().get_s0())
+
+  e1 = rotation_axis.normalize()
+  e2 = s0.normalize()
+  e3 = e1.cross(e2).normalize()
+  #print e1
+  #print e2
+  #print e3
+
+  f.viewer.plot('rl_rotation_axis.png', n=e1.elems)
+  f.viewer.plot('rl_beam_vector', n=e2.elems)
+  f.viewer.plot('rl_e3.png', n=e3.elems)
+
+  n_solutions = params.basis_vector_search.n_solutions
 
   if len(experiments):
     for i, c in enumerate(experiments.crystals()):
@@ -140,6 +181,22 @@ def run(args):
       f.viewer.plot('rl_%sa.png' %prefix, n=a)
       f.viewer.plot('rl_%sb.png' %prefix, n=b)
       f.viewer.plot('rl_%sc.png' %prefix, n=c)
+
+  elif n_solutions:
+    from dials.command_line.discover_better_experimental_model \
+         import run_dps, dps_phil_scope
+
+    hardcoded_phil = dps_phil_scope.extract()
+    hardcoded_phil.d_min = params.d_min
+    result = run_dps((imagesets[0], reflections, hardcoded_phil))
+    solutions = [matrix.col(v) for v in result['solutions']]
+    for i in range(min(n_solutions, len(solutions))):
+      v = solutions[i]
+      #if i > 0:
+        #for v1 in solutions[:i-1]:
+          #angle = v.angle(v1, deg=True)
+          #print angle
+      f.viewer.plot('rl_solution_%s.png' %(i+1), n=v.elems)
 
 
 if __name__ == '__main__':

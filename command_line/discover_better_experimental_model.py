@@ -54,6 +54,15 @@ output {
 
 master_params = phil_scope.fetch().extract()
 
+
+from rstbx.phil.phil_preferences import indexing_api_defs
+dps_phil_scope = iotbx.phil.parse('''
+include scope rstbx.phil.phil_preferences.indexing_api_defs
+d_min = None
+  .type = float(value_min=0)
+''', process_includes=True)
+
+
 import random
 flex.set_random_seed(42)
 random.seed(42)
@@ -271,6 +280,11 @@ def run_dps(args):
   indexer_base.map_centroids_to_reciprocal_space(
     spots_mm, detector=detector, beam=beam, goniometer=goniometer)
 
+  if params.d_min is not None:
+    d_spacings = 1/spots_mm['rlp'].norms()
+    sel = d_spacings > params.d_min
+    spots_mm = spots_mm.select(sel)
+
   # derive a max_cell from mm spots
   # derive a grid sampling from spots
 
@@ -312,7 +326,7 @@ def run_dps(args):
 
   DPS.index(raw_spot_input=data,
             panel_addresses=flex.int([s['panel'] for s in spots_mm]))
-  info("Found %i solutions with max unit cell %7.2f Angstroms." %(
+  info("Found %i solutions with max unit cell %.2f Angstroms." %(
     len(DPS.getSolutions()), DPS.amax))
   return dict(solutions=flex.vec3_double(
     [s.dvec for s in DPS.getSolutions()]), amax=DPS.amax)
@@ -410,10 +424,7 @@ def run(args):
       filter_reflections_by_scan_range(refl, params.scan_range)
       for refl in reflections]
 
-  from rstbx.phil.phil_preferences import indexing_api_defs
-  import iotbx.phil
-  hardcoded_phil = iotbx.phil.parse(
-    input_string=indexing_api_defs).extract()
+  hardcoded_phil = dps_phil_scope.extract()
   # for development, we want an exhaustive plot of beam probability map:
   hardcoded_phil.indexing.plot_search_scope = params.plot_search_scope
   hardcoded_phil.indexing.mm_search_scope = params.mm_search_scope
