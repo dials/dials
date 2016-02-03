@@ -74,7 +74,7 @@ class PngScene(object):
     points2d = self.points - p
 
     x = matrix.col((1,0,0))
-    if x.angle(n) == 0:
+    if x.angle(n) == 0 or x.angle(-n) == 0:
       x = matrix.col((0,1,0))
 
     x = (x - x.dot(n) * n).normalize()
