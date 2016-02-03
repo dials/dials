@@ -579,12 +579,10 @@ class indexer_base(object):
     if self.params.discover_better_experimental_model:
 
       from dials.command_line.discover_better_experimental_model \
-           import discover_better_experimental_model
+           import discover_better_experimental_model, dps_phil_scope
 
-      from rstbx.phil.phil_preferences import indexing_api_defs
-      import iotbx.phil
-      hardcoded_phil = iotbx.phil.parse(
-        input_string=indexing_api_defs).extract()
+
+      hardcoded_phil = dps_phil_scope.extract()
       hardcoded_phil.indexing.mm_search_scope = self.params.mm_search_scope
 
       new_detector, new_beam = discover_better_experimental_model(
