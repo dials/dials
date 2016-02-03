@@ -69,9 +69,7 @@ class PngScene(object):
     colors.set_selected((colors.norms() == math.sqrt(3)), (0,0,0))
     self.colors = colors
 
-  def plot(self, filename, n=(1,0,0)):
-
-    n = matrix.col(n).normalize()
+  def project_2d(self, n):
     d = self.points.dot(n.elems)
     p = d * flex.vec3_double(len(d), n.elems)
 
@@ -90,10 +88,16 @@ class PngScene(object):
     px2d = points2d.dot(x)
     py2d = points2d.dot(y)
 
+    return px2d, py2d
+
+  def plot(self, filename, n=(1,0,0)):
     from matplotlib import pyplot
+
+    n = matrix.col(n).normalize()
+    x, y = self.project_2d(n)
     fig = pyplot.figure(figsize=self.settings.plot.size_inches)
-    pyplot.scatter(
-      px2d, py2d, marker='+', s=self.settings.marker_size, c=self.colors)
+    pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(),
+                   marker='+', s=self.settings.marker_size, c=list(self.colors))
     pyplot.title('Plane normal: (%.2g, %.2g, %.2g)' %(n.elems))
     fig.savefig(filename)
     pyplot.close()
