@@ -369,6 +369,106 @@ def test3():
   print "OK"
   return
 
+def test4():
+  '''Test group restraint with multiple crystals, and a stills refiner'''
+
+  if not libtbx.env.has_module("dials_regression"):
+    print "Skipping test2 in " + __file__ + " as dials_regression not present"
+    return
+
+  # The phil scope
+  from dials.algorithms.refinement.refiner import phil_scope
+  user_phil = parse('''
+  refinement
+  {
+    parameterisation
+    {
+      crystal
+      {
+        unit_cell
+        {
+          restraints
+          {
+            tie_to_group
+            {
+              sigmas=1,0,2,0,0,0
+              apply_to_all=true
+            }
+          }
+        }
+      }
+    }
+  }
+  ''')
+
+  working_phil = phil_scope.fetch(source=user_phil)
+  working_params = working_phil.extract()
+
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+
+  # use the multi stills test data
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+  experiments_path = os.path.join(data_dir, "combined_experiments.json")
+  pickle_path = os.path.join(data_dir, "combined_reflections.pickle")
+
+  experiments = ExperimentListFactory.from_json_file(experiments_path,
+                check_format=False)
+  reflections = flex.reflection_table.from_pickle(pickle_path)
+
+  refiner = RefinerFactory.from_parameters_data_experiments(working_params,
+        reflections, experiments)
+
+  # hack to extract the objects needed from the Refiner
+  rp = refiner._target._restraints_parameterisation
+  pred_param = refiner._pred_param
+
+  # get analytical values and gradients
+  vals, grads, weights = rp.get_residuals_gradients_and_weights()
+
+  # get finite difference gradients
+  p_vals = pred_param.get_param_vals()
+  deltas = [1.e-7] * len(p_vals)
+
+  fd_grad=[]
+  for i in range(len(deltas)):
+
+    val = p_vals[i]
+
+    p_vals[i] -= deltas[i] / 2.
+    pred_param.set_param_vals(p_vals)
+
+    rev_state, foo, bar = rp.get_residuals_gradients_and_weights()
+    rev_state = flex.double(rev_state)
+
+    p_vals[i] += deltas[i]
+    pred_param.set_param_vals(p_vals)
+
+    fwd_state, foo, bar = rp.get_residuals_gradients_and_weights()
+    fwd_state = flex.double(fwd_state)
+
+    p_vals[i] = val
+
+    fd = (fwd_state - rev_state) / deltas[i]
+    fd_grad.append(fd)
+
+  # for comparison, fd_grad is a list of flex.doubles, each of which corresponds
+  # to the gradients of the residuals wrt to a single parameter.
+  pnames = pred_param.get_param_names()
+  for i, (pname, fd) in enumerate(zip(pnames, fd_grad)):
+    # extract dense column from the sparse matrix
+    an = grads.col(i).as_dense_vector()
+
+    #print pname
+    #print list(an.round(6))
+    #print list(fd.round(6))
+    #print
+    assert approx_equal(an, fd, eps=1e-5)
+
+  print "OK"
+  return
+
 if __name__ == '__main__':
 
   # test single crystal restraints gradients
@@ -379,3 +479,6 @@ if __name__ == '__main__':
 
   # test 10 crystals with the stills parameterisation
   test3()
+
+  # test group parameterisation
+  test4()
