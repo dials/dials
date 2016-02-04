@@ -366,9 +366,7 @@ class Script(object):
       if preds.has_key('entering'):
         reflections['entering'] = preds['entering']
 
-      # set used_in_refinement flag and centroid_outlier flags
-      mask = refiner.selection_used_for_refinement()
-      reflections.set_flags(mask, reflections.flags.used_in_refinement)
+      # set centroid_outlier flag
       mask = preds.get_flags(preds.flags.centroid_outlier)
       reflections.set_flags(mask, reflections.flags.centroid_outlier)
 

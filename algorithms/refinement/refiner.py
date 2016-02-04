@@ -1920,9 +1920,12 @@ class Refiner(object):
 
   def predict_for_indexed(self):
     """perform prediction for all the indexed reflections passed into
-    refinement"""
+    refinement and additionally set the used_in_refinement flag"""
 
-    return self.predict_for_reflection_table(self._refman.get_indexed())
+    reflections = self.predict_for_reflection_table(self._refman.get_indexed())
+    mask = self.selection_used_for_refinement()
+    reflections.set_flags(mask, reflections.flags.used_in_refinement)
+    return reflections
 
   def predict_for_reflection_table(self, reflections):
     """perform prediction for all reflections in the supplied table"""
