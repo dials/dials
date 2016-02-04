@@ -17,11 +17,12 @@ from scitbx.array_family import flex
 from scitbx import sparse
 
 from dials.algorithms.refinement.restraints.restraints import SingleUnitCellTie
+from dials.algorithms.refinement.restraints.restraints import MeanUnitCellTie
 
 # PHIL options for unit cell restraints
 uc_phil_str = '''
 restraints
-  .help = "Least squares restraints to use in refinement."
+  .help = "Least squares unit cell restraints to use in refinement."
   .expert_level = 1
 {
   tie_to_target
@@ -57,14 +58,20 @@ restraints
       .help = "Function to tie group parameter values to"
 
     sigmas = None
-      .help = "A sigma of zero or None will remove the restraint at that position"
-      .type = floats(value_min=0.)
+      .help = "The unit cell parameters are associated with sigmas which are"
+              "used to determine the weight of each restraint. A sigma of zero"
+              "will remove the restraint at that position."
+      .type = floats(size=6, value_min=0.)
 
     id = None
       .help = "Indices of experiments affected by this restraint. For every"
               "parameterisation that requires a restraint at least one"
-              "experiment index must be supplied."
+              "experiment index must be supplied, unless using apply_to_all"
       .type = ints(value_min=0)
+
+    apply_to_all = False
+      .help = "Shorthand to restrain the unit cells across all experiments"
+      .type = bool
   }
 }
 
@@ -126,8 +133,9 @@ class RestraintsParameterisation(object):
     # a single restraint.
     self._param_to_restraint = set()
 
-    # keep a list of restraint objects that we will add
-    self._restraints = []
+    # keep lists of restraint objects that we will add
+    self._single_model_restraints = []
+    self._group_model_restraints = []
 
     return
 
@@ -165,7 +173,7 @@ class RestraintsParameterisation(object):
                             sigma=sigma)
 
     # add to the restraint list along with the global parameter index
-    self._restraints.append(RestraintIndex(tie, param_i.istart))
+    self._single_model_restraints.append(RestraintIndex(tie, param_i.istart))
 
     # also add the parameterisation to the set for uniqueness testing
     self._param_to_restraint.add(param_i.parameterisation)
@@ -184,33 +192,94 @@ class RestraintsParameterisation(object):
   #
   #  return
 
-  def add_restraints_to_group_xl_unit_cell(self):
+  def add_restraints_to_group_xl_unit_cell(self, target, experiment_ids, sigma):
 
-    pass
+    # select the right parameterisations, if they exist
+    if experiment_ids == 'all':
+      param_indices = self._exp_to_xluc_param.values()
+    else:
+      param_indices = []
+      for exp_id in experiment_ids:
+        try:
+          param_indices.append(self._exp_to_xluc_param[exp_id])
+        except KeyError:
+          # ignore experiment without a parameterisation
+          pass
+    params = [e.parameterisation for e in param_indices]
+    istarts = [e.istart for e in param_indices]
+
+    # fail if any of the parameterisations has already been restrained.
+    for param in params:
+      if param in self._param_to_restraint:
+        raise Sorry("Parameterisation already restrained. Cannot create "
+                    "additional group restraint for experiment(s) {0}".format(str(
+                      param_i.parameterisation.get_experiment_ids())))
+
+    # create new group of restraints
+    if target == 'mean':
+      tie = MeanUnitCellTie(model_parameterisations=params,
+                            sigma=sigma)
+    else:
+      raise Sorry("target type {0} not available".format(target))
+
+    # add to the restraint list along with the global parameter indices
+    self._group_model_restraints.append(RestraintIndex(tie, istarts))
+
     return
 
   def get_residuals_gradients_and_weights(self):
 
     residuals = flex.double()
+    weights = flex.double()
     row_start = []
     irow = 0
-    for r in self._restraints:
+
+    # process restraints residuals and weights for single models
+    for r in self._single_model_restraints:
       res = r.restraint.residuals()
+      wgt = r.restraint.weights()
       residuals.extend(flex.double(res))
+      weights.extend(flex.double(wgt))
       row_start.append(irow)
       irow += len(res)
 
+    group_model_irow = irow
+
+    # process restraints residuals and weights for groups of models
+    for r in self._group_model_restraints:
+      residuals.extend(flex.double(r.restraint.residuals()))
+      weights.extend(flex.double(r.restraint.weights()))
+
+    # set up a sparse matrix for the restraints jacobian
     nrows = len(residuals)
     gradients = sparse.matrix(nrows, self._nparam)
 
-    for irow, r in zip(row_start, self._restraints):
+    # assign gradients in blocks for the single model restraints
+    for irow, r in zip(row_start, self._single_model_restraints):
       icol = r.istart
       # convert square list-of-lists into a 2D array for block assignment
       grads = flex.double(r.restraint.gradients())
       gradients.assign_block(grads, irow, icol)
 
-    weights = flex.double()
-    for r in self._restraints:
-      weights.extend(flex.double(r.restraint.weights()))
+    # assign gradients in blocks for the group model restraints
+    irow = group_model_irow
+    for r in self._group_model_restraints:
+      # loop over the included unit cell models, k
+      for k, (icol, grads) in enumerate(zip(r.istart, r.restraint.gradients())):
+        this_cell_grads = flex.double(grads)
+        other_cells_grads = flex.double(r.restraint.gradients_of_the_mean(k)) * -1.0
+        # the cell model k has a parameterisation that starts with column icol.
+        # the block of gradients of its residuals wrt its parameters is the
+        # block this_cell_grads, whilst the block of gradients of other cell's
+        # residuals wrt its parameters is other_cells_grads.
+        #
+        # need to loop over the starting rows and write the blocks
+        for j in range(r.restraint._nxls):
+          jrow = irow + j * r.restraint.nrestraints_per_cell
+          if j == k:
+            gradients.assign_block(this_cell_grads, jrow, icol)
+          else:
+            gradients.assign_block(other_cells_grads, jrow, icol)
+      irow += r.restraint._nxls * r.restraint.nrestraints_per_cell
 
     return residuals, gradients, weights
