@@ -15,6 +15,7 @@ from scitbx.array_family import flex
 from math import pi, sin, cos, sqrt
 from scitbx.math import angle_derivative_wrt_vectors
 from dials_refinement_helpers_ext import CalculateCellGradients
+from logging import warning
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
@@ -60,8 +61,8 @@ class SingleUnitCellTie(object):
 
     sigma is a sequence of 6 elements giving the 'sigma' for each of the
     terms in target, from which weights for the residuals will be calculated.
-    Values of zero or None in sigma will remove the restraint for the cell
-    parameter at that position"""
+    Values of zero  will remove the restraint for the cell parameter at
+    that position"""
 
     self._xlucp = model_parameterisation
     self._target = target
@@ -160,7 +161,7 @@ class SingleUnitCellTie(object):
     return R
 
   def gradients(self):
-    """For each residual, return the gradients dR/dp. Requires values to be
+    """For each residual, return the gradients dR/dp. Requires residuals to be
     called first"""
 
     dRdp = []
@@ -182,66 +183,194 @@ class SingleUnitCellTie(object):
 
     return self._weights
 
-class GroupTie(object):
-  """Base class for ties of multiple parameters together to a shared target
-  value calculated on the group"""
+class MeanUnitCellTie(object):
+  """Tie the parameters of multiple unit cell model parameterisations to
+  central values via least-squares restraints. The restraints will be expressed
+  in terms of real space unit cell constants, whilst the underlying parameters
+  are encapsulated in the model parameterisation objects"""
 
-  def __init__(self, parameter_list, weight):
+  def __init__(self, model_parameterisations, sigma):
+    """model_parameterisations is a list of CrystalUnitCellParameterisations
 
-    self._plist = parameter_list
-    self._w = weight
-    self._dRdp = None
+    sigma is a sequence of 6 elements giving the 'sigma' for each of the
+    unit cell parameters, from which weights for the residuals will be
+    calculated. Values of zero in sigma will remove the restraint for the
+    cell parameter at that position"""
 
-  def values(self):
+    self._xlucp = model_parameterisations
+    self._nxls = len(model_parameterisations)
 
-    raise NotImplementedError()
+    # common factors used in gradient calculations
+    self._meangradfac = 1./self._nxls
+    self._gradfac = (1. - self._meangradfac)
+
+    self._weights = []
+
+    # initially want to calculate all gradients
+    self._sel = [True] * 6
+
+    # identify any cell dimensions constrained to be equal. If any are and a
+    # restraint has been requested for that cell dimension, remove the restraint
+    # for all crystals and warn in the log
+    msg = ('Unit cell similarity restraints were requested for both the '
+           '{0} and {1} dimensions, however for the crystal in experiment '
+           '{2} these are constrained to be equal. Only the strongest '
+           'of these restraints will be retained for all crystals in '
+           'the restrained group.')
+    for xlucp, grads in zip(self._xlucp, self.gradients()):
+      a, b, c, aa, bb, cc = xlucp.get_model().get_unit_cell().parameters()
+      if abs(a - b) < 1e-10:
+        grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[1])]
+        if max(grad_diff) < 1e-10:
+          # a and b are equal for this crystal, therefore keep only the
+          # strongest requested restraint
+          if sigma[0] > 0.0 and sigma[1] > 0.0:
+            warning(msg.format('a', 'b', xlucp.get_experiment_ids()[0]))
+            strong, weak = sorted([sigma[0], sigma[1]])
+            sigma[0] = strong
+            sigma[1] = 0.0
+      if abs(a - c) < 1e-10:
+        grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[2])]
+        if max(grad_diff) < 1e-10:
+          # a and c are equal for this crystal, therefore keep only the
+          # strongest requested restraint
+          if sigma[0] > 0.0 and sigma[2] > 0.0:
+            warning(msg.format('a', 'c', xlucp.get_experiment_ids()[0]))
+            strong, weak = sorted([sigma[0], sigma[2]])
+            sigma[0] = strong
+            sigma[2] = 0.0
+      if abs(b - c) < 1e-10:
+        grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[1], grads[2])]
+        if max(grad_diff) < 1e-10:
+          # b and c are equal for this crystal, therefore keep only the
+          # strongest requested restraint
+          if sigma[1] > 0.0 and sigma[2] > 0.0:
+            strong, weak = sorted([sigma[1], sigma[2]])
+            sigma[1] = strong
+            sigma[2] = 0.0
+
+      # A gradient of zero indicates that cell parameter is constrained and thus
+      # to be ignored in restraints
+      #_sigma = []
+      msg = ('Unit cell similarity restraints were requested for the {0} '
+             'parameter, however for the crystal in experiment {1}, {0} is '
+             'constrained. This restraint will be removed for all crystals in '
+             'the restrained group.')
+      for i, (grad, pname) in enumerate(zip(grads, ['a', 'b', 'c', 'alpha', 'beta', 'gamma'])):
+        tst = [abs(g) <= 1.e-10 for g in grad]
+        if all(tst):
+          # this parameter is constrained, so remove any requested restraints
+          # at this position
+          if sigma[i] > 0.0:
+            warning(msg.format(xlucp.get_experiment_ids()[0], pname[i]))
+            sigma[i] = 0.0
+
+    # set the selection for gradient calculations to the unconstrained parameters
+    self._sel = [s > 0.0 for s in sigma]
+
+    self.nrestraints_per_cell = self._sel.count(True)
+
+    # repeat the weights for each unit cell being restrained
+    weights = flex.double([1./s**2 for s in sigma if s > 0.0])
+    self._weights = flex.double()
+    for xlucp in self._xlucp: self._weights.extend(weights)
+
+    return
+
+  def residuals(self):
+    """Calculate and return the residuals"""
+
+    cells = [xlucp.get_model().get_unit_cell().parameters() for xlucp in self._xlucp]
+    a, b, c, aa, bb, cc = [flex.double(e) for e in zip(*cells)]
+    resid_a = a - flex.mean(a) if self._sel[0] else None
+    resid_b = b - flex.mean(b) if self._sel[1] else None
+    resid_c = c - flex.mean(c) if self._sel[2] else None
+    resid_aa = aa - flex.mean(aa) if self._sel[3] else None
+    resid_bb = bb - flex.mean(bb) if self._sel[4] else None
+    resid_cc = cc - flex.mean(cc) if self._sel[5] else None
+
+    # collect the residuals for restrained parameters only
+    resid = [e for e in [resid_a, resid_b, resid_c,
+                         resid_aa, resid_bb, resid_cc] if e is not None]
+
+    # flex array trickery to interlace the residuals
+    ncol = len(resid)
+    R = flex.double(flex.grid(self._nxls, ncol))
+    for i, r in enumerate(resid):
+      R.matrix_paste_column_in_place(r, i)
+
+    return R.as_1d()
 
   def gradients(self):
-    """Return dR/dp for each parameter."""
-    return self._dRdp
+    """A generator function to return the gradients dR/dp for all the restraints
+    referring to a particular crystal's cell parameters.
+    This only returns the gradients with respect to a single crystal
+    (the one referred to by that residual). Other residuals have non-zero
+    gradients however, due to the cell parameter target values being the mean
+    over all cells. The gradients of the mean parameter are also set and can
+    be accessed with a separate method"""
 
+    for xlucp in self._xlucp:
+      B = xlucp.get_state()
+      dB_dp = flex.mat3_double(xlucp.get_ds_dp())
+      # Use C++ function for speed
+      ccg = CalculateCellGradients(B, dB_dp)
+      dRdp = []
+      self._dmeandp = []
+      if self._sel[0]:
+        tmp = ccg.da_dp()
+        dRdp.append(list(tmp * self._gradfac))
+      if self._sel[1]:
+        tmp = ccg.db_dp()
+        dRdp.append(list(tmp * self._gradfac))
+      if self._sel[2]:
+        tmp = ccg.dc_dp()
+        dRdp.append(list(tmp * self._gradfac))
+      if self._sel[3]:
+        tmp = ccg.daa_dp()
+        dRdp.append(list(tmp * self._gradfac))
+      if self._sel[4]:
+        tmp = ccg.dbb_dp()
+        dRdp.append(list(tmp * self._gradfac))
+      if self._sel[5]:
+        tmp = ccg.dcc_dp()
+        dRdp.append(list(tmp * self._gradfac))
 
-class TiesToMean(GroupTie):
-  """Tie a group of parameters together by similarity to their mean value"""
+      yield dRdp
 
-  # R = w Sum(p(i) - <p>)^2
-  # dR/dp(i) = 2w(p(i) - <p>) d/dp(i)[ p(i) - <p>]
-  # = 2w(p(i) - <p>) [1 - d<p>/dp(i)]
-  # <p> = Sum(p(i))/n
-  # d<p>/dp(i) = 1/n
-  # dR/dp(i) = 2w(p(i) - <p>) [1 - 1/n]
+  def gradients_of_the_mean(self, icell):
+    """Return the gradients of the mean values of cell parameters for all the
+    restraints referring to a particular unit cell."""
 
-  def __init__(self, *args, **kwargs):
+    xlucp = self._xlucp[icell]
+    B = xlucp.get_state()
+    dB_dp = flex.mat3_double(xlucp.get_ds_dp())
+    # Use C++ function for speed
+    ccg = CalculateCellGradients(B, dB_dp)
+    dmeandp = []
+    if self._sel[0]:
+      tmp = ccg.da_dp()
+      dmeandp.append(list(tmp * self._meangradfac))
+    if self._sel[1]:
+      tmp = ccg.db_dp()
+      dmeandp.append(list(tmp * self._meangradfac))
+    if self._sel[2]:
+      tmp = ccg.dc_dp()
+      dmeandp.append(list(tmp * self._meangradfac))
+    if self._sel[3]:
+      tmp = ccg.daa_dp()
+      dRdp.append(list(tmp * self._gradfac))
+      dmeandp.append(list(tmp * self._meangradfac))
+    if self._sel[4]:
+      tmp = ccg.dbb_dp()
+      dmeandp.append(list(tmp * self._meangradfac))
+    if self._sel[5]:
+      tmp = ccg.dcc_dp()
+      dmeandp.append(list(tmp * self._meangradfac))
 
-    # set up base class
-    super(TiestoMean, self).__init__(*args, **kwargs)
+    return dmeandp
 
-    # set scale factor for the gradient
-    self._gradscal = 1.0 - 1.0/len(self._plist)
+  def weights(self):
+    '''Return the weights for the residuals vector'''
 
-  def values(self):
-    """Calculate and return squared residuals R for each parameter, cache
-    gradients"""
-
-    p = flex.double([p.value for p in self._plist])
-    target = flex.mean(p)
-    d = p - target
-    wd = self._w * d
-    self._dRdp = 2 * wd * self._gradscal
-
-    return wd * d
-
-class TiesToMedian(GroupTie):
-  """Tie a group of parameters together by similarity to their median value"""
-
-  def values(self):
-    """Calculate and return squared residuals R for each parameter, cache
-    gradients"""
-
-    p = flex.double([p.value for p in self._plist])
-    target = flex.median(p)
-    d = p - target
-    wd = self._w * d
-    self._dRdp = 2 * wd # ignore dependence of median on the parameter values
-
-    return wd * d
+    return self._weights
