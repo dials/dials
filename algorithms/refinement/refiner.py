@@ -1208,9 +1208,20 @@ class RefinerFactory(object):
       for exp_id in tie.id:
         rp.add_restraints_to_target_xl_unit_cell(exp_id, tie.values, tie.sigmas)
 
-    # FIXME Group ties not available yet
     for tie in cell_r.tie_to_group:
-      pass
+      if tie.target != 'mean':
+        raise Sorry('Only ties to mean are currently available')
+      if len(tie.sigmas) != 6:
+        raise Sorry("6 sigmas must be provided as the tie_to_group.sigmas. "
+                    "Note that individual sigmas of 0.0 will remove "
+                    "the restraint for the corresponding cell parameter.")
+      if tie.apply_to_all:
+        rp.add_restraints_to_group_xl_unit_cell(tie.target, "all", tie.sigmas)
+      else:
+        if not tie.id:
+          raise Sorry("At least one experiment id must be provided as the "
+                      "tie_to_group.id, or use apply_to_all")
+        rp.add_restraints_to_group_xl_unit_cell(tie.target, tie.id, tie.sigmas)
 
     return rp
 
