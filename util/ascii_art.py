@@ -12,6 +12,9 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   min_z = int(math.floor(flex.min(z)))
 
   z_range = max_z - min_z
+  if z_range == 1:
+    return ''
+
   width = min(z_range, width)
 
   z_step = z_range / width
@@ -43,7 +46,7 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   first_image = '%i' %(min_z+1)
   last_image = '%i' %max_z
   if width < 10:
-    padding = ' ' * width - len(first_image) - len(last_image)
+    padding = ' ' * (width - len(first_image) - len(last_image))
   else:
     words = 'image'
     padding1 = ' ' * (
@@ -54,7 +57,8 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
 
   while len(first_image + padding + last_image) < width:
     padding += ' '
-  rows.append(first_image + padding + last_image)
+  if len(padding):
+    rows.append(first_image + padding + last_image)
 
   return '\n'.join(rows)
 

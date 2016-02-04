@@ -146,6 +146,16 @@ class Script(object):
     if not params.output.shoeboxes:
       del reflections['shoebox']
 
+    # ascii spot count per image plot
+    from dials.util.ascii_art import spot_counts_per_image_plot
+
+    for i, imageset in enumerate(datablocks[0].extract_imagesets()):
+      ascii_plot = spot_counts_per_image_plot(
+        reflections.select(reflections['id'] == i))
+      if len(ascii_plot):
+        info('\nHistogram of per-image spot count for imageset %i:' %i)
+        info(ascii_plot)
+
     # Save the reflections to file
     info('\n' + '-' * 80)
     reflections.as_pickle(params.output.reflections)
