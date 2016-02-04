@@ -289,6 +289,11 @@ indexing {
       .type = float(value_min=0)
   }
   stills {
+    indexer = *Auto stills sweeps
+      .type = choice
+      .help = Use the stills or sweeps indexer.  Auto: choose based on the input \
+              imagesets (stills or sweeps).
+      .expert_level = 1
     ewald_proximity_resolution_cutoff = 2.0
       .type = float
       .help = For still images, this high-resolution cutoff is used to calculate
@@ -441,23 +446,32 @@ class indexer_base(object):
             raise Sorry("Please provide only stills or only sweeps, not both")
           has_sweeps = True
       assert not (has_stills and has_sweeps)
+      use_stills_indexer = has_stills
+
+      if not (params.indexing.stills.indexer is libtbx.Auto or params.indexing.stills.indexer.lower() == 'auto'):
+        if params.indexing.stills.indexer == 'stills':
+          use_stills_indexer = True
+        elif params.indexing.stills.indexer == 'sweeps':
+          use_stills_indexer = False
+        else:
+          assert False
 
       if params.indexing.method == "fft3d":
-        if has_stills:
+        if use_stills_indexer:
           from dials.algorithms.indexing.stills_indexer \
             import stills_indexer_fft3d as indexer_fft3d
         else:
           from dials.algorithms.indexing.fft3d import indexer_fft3d
         idxr = indexer_fft3d(reflections, imagesets, params=params)
       elif params.indexing.method == "fft1d":
-        if has_stills:
+        if use_stills_indexer:
           from dials.algorithms.indexing.stills_indexer \
             import stills_indexer_fft1d as indexer_fft1d
         else:
           from dials.algorithms.indexing.fft1d import indexer_fft1d
         idxr = indexer_fft1d(reflections, imagesets, params=params)
       elif params.indexing.method == "real_space_grid_search":
-        if has_stills:
+        if use_stills_indexer:
           from dials.algorithms.indexing.stills_indexer import \
             stills_indexer_real_space_grid_search as indexer_real_space_grid_search
         else:
