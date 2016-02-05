@@ -452,6 +452,9 @@ class stills_indexer(indexer_base):
                                        indexed = indexed,
                                        experiments = ref_experiments))
 
+    if len(candidates) == 0:
+      raise Sorry("No suitable indexing solution found")
+
     print "**** ALL CANDIDATES:"
     for i,XX in enumerate(candidates):
       print "\n****Candidate %d"%i,XX
@@ -531,7 +534,6 @@ class stills_indexer(indexer_base):
   def refine(self, experiments, reflections, maximum_spot_error=None,
              maximum_phi_error=None):
 
-    import traceback; traceback.print_stack()
     sel = ((reflections['id'] >= -1))
     refl = reflections.select(sel)
 
