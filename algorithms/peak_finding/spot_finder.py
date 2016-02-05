@@ -136,7 +136,7 @@ class ExtractPixelsFromImage(object):
         ''' % (num_strong, max_strong))
 
     # Print some info
-    info("Found %d strong pixels on image %d" % (num_strong, index))
+    info("Found %d strong pixels on image %d" % (num_strong, index + 1))
 
     # Return the result
     return Result(pixel_list)
