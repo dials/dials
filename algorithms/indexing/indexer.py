@@ -1046,6 +1046,10 @@ class indexer_base(object):
     # nearer the beginning of the input list will appear before combinations
     # comprising vectors towards the end of the list
     n = len(vectors)
+    # hardcoded limit on number of vectors, fixes issue #72
+    # https://github.com/dials/dials/issues/72
+    n = min(n, 100)
+    vectors = vectors[:n]
     combinations = flex.vec3_int(flex.nested_loop((n,n,n)))
     combinations = combinations.select(
       flex.sort_permutation(combinations.as_vec3_double().norms()))
