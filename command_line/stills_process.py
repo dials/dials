@@ -119,7 +119,20 @@ class Script(object):
 
     # Import stuff
     info("Loading files...")
-    datablocks = DataBlockFactory.from_filenames(all_paths)
+    if len(all_paths) == 1:
+      datablocks = DataBlockFactory.from_filenames(all_paths)
+    else:
+      def do_import(filename):
+        info("Loading %s"%os.path.basename(filename))
+        return DataBlockFactory.from_filenames([filename])[0]
+
+      datablocks = easy_mp.parallel_map(
+        func=do_import,
+        iterable=all_paths,
+        processes=params.mp.nproc,
+        method=params.mp.method,
+        preserve_order=True,
+        preserve_exception_message=True)
 
     if len(datablocks) == 0:
       raise Abort('No datablocks specified')
