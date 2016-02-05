@@ -59,11 +59,11 @@ def plot_displacements(reflections, predictions, experiments):
 
 def e_refine(params, experiments, reflections, graph_verbose=False):
     # Stills-specific parameters we always want
-    params.refinement.parameterisation.beam.fix="all"
-    params.refinement.parameterisation.detector.fix_list=3, # fix detector rotz, allow distance to refine
-    params.refinement.reflections.outlier.algorithm=None # we do our own outlier rejection
+    assert params.refinement.reflections.outlier.algorithm in (None, "null"), \
+      "Cannot index, set refinement.reflections.outlier.algorithm=null" # we do our own outlier rejection
+    assert params.refinement.reflections.weighting_strategy.override == "stills", \
+      "Cannot index, set refinement.reflections.weighting_strategy.override=stills"
     params.refinement.reflections.weighting_strategy.delpsi_constant=1000000.
-    params.refinement.reflections.weighting_strategy.override="stills"
 
     from dials.algorithms.refinement.refiner import RefinerFactory
     refiner = RefinerFactory.from_parameters_data_experiments(params,
