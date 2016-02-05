@@ -88,7 +88,8 @@ class Script(object):
     from time import time
     from libtbx.utils import Abort
     from libtbx import easy_mp
-    import copy
+    import os, copy
+    from dxtbx.datablock import DataBlockFactory
 
     # Parse the command line
     params, options, all_paths = self.parser.parse_args(show_diff_phil=False, return_unhandled=True)
@@ -116,12 +117,41 @@ class Script(object):
       info('The following parameters have been modified:\n')
       info(diff_phil)
 
-    def do_work(filename):
-      Processor(copy.deepcopy(params)).process_file(filename)
+    # Import stuff
+    info("Loading files...")
+    datablocks = DataBlockFactory.from_filenames(all_paths)
 
+    if len(datablocks) == 0:
+      raise Abort('No datablocks specified')
+
+    # Handle still imagesets by breaking them apart into multiple datablocks
+    # Further handle single file still imagesets (like HDF5) by tagging each
+    # frame using its index
+    indices = []
+    basenames = []
+    split_datablocks = []
+    for datablock in datablocks:
+      for imageset in datablock.extract_imagesets():
+        for i in xrange(len(imageset)):
+          subset = imageset[i:i+1]
+          split_datablocks.append(DataBlockFactory.from_imageset(subset)[0])
+          indices.append(i)
+          basenames.append(os.path.splitext(os.path.basename(subset.paths()[0]))[0])
+    tags = []
+    for i, basename in zip(indices, basenames):
+      if basenames.count(basename) > 1:
+        tags.append("%s_%d"%(basename, i))
+      else:
+        tags.append(basename)
+
+    # Wrapper function
+    def do_work(item):
+      Processor(copy.deepcopy(params)).process_datablock(item[0], item[1])
+
+    # Process the data
     easy_mp.parallel_map(
       func=do_work,
-      iterable=all_paths,
+      iterable=zip(tags, split_datablocks),
       processes=params.mp.nproc,
       method=params.mp.method,
       preserve_order=True,
@@ -135,25 +165,9 @@ class Processor(object):
   def __init__(self, params):
     self.params = params
 
-  def process_file(self, filename):
-    from dxtbx.datablock import DataBlockFactory
+  def process_datablock(self, tag, datablock):
     import os
-    from logging import info
-    info("Loading %s"%filename)
-    try:
-      datablocks = DataBlockFactory.from_filenames([filename])
-    except Exception, e:
-      print "Error importing", filename, str(e)
-      return
-
-    # Import stuff
-    if len(datablocks) == 0:
-      raise Abort('No datablocks specified')
-    elif len(datablocks) > 1:
-      raise Abort('Only 1 datablock can be processed at a time.')
-    datablock = datablocks[0]
-
-    s = os.path.splitext(os.path.basename(filename))[0]
+    s = tag
 
     # before processing, set output paths according to the templates
     if self.params.output.datablock_filename is not None and "%s" in self.params.output.datablock_filename:
@@ -176,22 +190,22 @@ class Processor(object):
     try:
       observed = self.find_spots(datablock)
     except Exception, e:
-      print "Error spotfinding", filename, str(e)
+      print "Error spotfinding", tag, str(e)
       return
     try:
       experiments, indexed = self.index(datablock, observed)
     except Exception, e:
-      print "Couldn't index", filename, str(e)
+      print "Couldn't index", tag, str(e)
       return
     try:
       experiments = self.refine(experiments, indexed)
     except Exception, e:
-      print "Error refining", filename, str(e)
+      print "Error refining", tag, str(e)
       return
     try:
       integrated = self.integrate(experiments, indexed)
     except Exception, e:
-      print "Error integrating", filename, str(e)
+      print "Error integrating", tag, str(e)
       return
 
   def find_spots(self, datablock):
