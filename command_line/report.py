@@ -1765,7 +1765,7 @@ class IntensityAnalyser(object):
           'colorscale': 'Jet',
         }],
         'layout': {
-          'title': 'Difference between observed and calculated centroids in Z',
+          'title': 'Distribution of I/Sigma vs Z',
           'xaxis': {
             'title': 'Z',
             'showgrid': False,
