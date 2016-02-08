@@ -579,10 +579,9 @@ class indexer_base(object):
     self.reflections_input = self.reflections
     self.reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
-      if 'imageset_id' in self.reflections_input:
-        sel = (self.reflections_input['imageset_id'] == i)
-      else:
-        sel = (self.reflections_input['id'] == i)
+      if 'imageset_id' not in self.reflections_input:
+        self.reflections_input['imageset_id'] = self.reflections_input['id']
+      sel = (self.reflections_input['imageset_id'] == i)
       self.reflections.extend(self.map_spots_pixel_to_mm_rad(
         self.reflections_input.select(sel),
         imageset.get_detector(), imageset.get_scan()))
@@ -594,7 +593,6 @@ class indexer_base(object):
 
       from dials.command_line.discover_better_experimental_model \
            import discover_better_experimental_model, dps_phil_scope
-
 
       hardcoded_phil = dps_phil_scope.extract()
       hardcoded_phil.indexing.mm_search_scope = self.params.mm_search_scope
@@ -609,8 +607,6 @@ class indexer_base(object):
     spots_mm = self.reflections
     self.reflections = flex.reflection_table()
 
-    if 'imageset_id' not in spots_mm:
-      spots_mm['imageset_id'] = spots_mm['id']
     for i, imageset in enumerate(self.imagesets):
       spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
       self.map_centroids_to_reciprocal_space(

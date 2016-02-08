@@ -274,6 +274,9 @@ def run_dps(args):
   goniometer = imageset.get_goniometer()
   scan = imageset.get_scan()
 
+  if 'imageset_id' not in spots:
+    spots['imageset_id'] = spots['id']
+
   spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
     spots=spots, detector=detector, scan=scan)
 
