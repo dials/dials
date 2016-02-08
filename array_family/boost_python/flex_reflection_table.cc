@@ -15,6 +15,7 @@
 #include <dials/array_family/reflection_table.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/observation.h>
+#include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/vec3.h>
@@ -30,6 +31,7 @@ namespace dials { namespace af { namespace boost_python {
   using flex_table_suite::flex_table_wrapper;
   using dials::model::Shoebox;
   using dials::model::Observation;
+  using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
 
   /**
    * Construct a reflection table from a list of observations and shoeboxes
@@ -533,6 +535,45 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Compute phi range of reflection
+   */
+  template <typename T>
+  af::shared< vec2<double> > compute_phi_range(
+      T self,
+      vec3<double> m2,
+      vec3<double> s0,
+      double sigma_m,
+      double n_sigma) {
+
+    // Check contents
+    DIALS_ASSERT(sigma_m > 0);
+    DIALS_ASSERT(n_sigma > 0);
+    DIALS_ASSERT(self.contains("s1"));
+    DIALS_ASSERT(self.contains("xyzcal.mm"));
+
+    af::const_ref< vec3<double> > s1 = self["s1"];
+    af::const_ref< vec3<double> > xyz = self["xyzcal.mm"];
+    af::shared< vec2<double> > result(self.size());
+    double delta_m = sigma_m * n_sigma;
+
+    for (std::size_t i = 0; i < self.size(); ++i) {
+
+      // Create the coordinate system for the reflection
+      CoordinateSystem xcs(m2, s0, s1[i], xyz[i][2]);
+
+      /// Calculate the rotation angles at the following XDS
+      // e3 coordinates: -delta_m, +delta_m
+      double phi1 = xcs.to_rotation_angle_fast(-delta_m);
+      double phi2 = xcs.to_rotation_angle_fast(+delta_m);
+      if (phi2 < phi1) {
+        std::swap(phi1,phi2);
+      }
+      result[i] = vec2<double>(phi1,phi2);
+    }
+    return result;
+  }
+
+  /**
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
@@ -582,6 +623,8 @@ namespace dials { namespace af { namespace boost_python {
           &split_by_experiment_id<flex_table_type>)
         .def("split_indices_by_experiment_id",
           &split_indices_by_experiment_id<flex_table_type>)
+        .def("compute_phi_range",
+          &compute_phi_range<flex_table_type>)
         ;
 
       // Create the flags enum in the reflection table scope
