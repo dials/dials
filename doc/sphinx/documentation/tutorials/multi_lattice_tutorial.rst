@@ -117,20 +117,13 @@ multiple lattices using the parameter max_lattices=2 (e.g.)::
 
   dials.index datablock.json strong.pickle \
     max_lattices=2 \
-    refinement.reflections.use_all_reflections=true \
-    maximum_spot_error=3 maximum_phi_error=2
+    refinement.reflections.use_all_reflections=true
 
 ::
 
   The following parameters have been modified:
 
   indexing {
-    refinement_protocol {
-      outlier_rejection {
-        maximum_spot_error = 3
-        maximum_phi_error = 2
-      }
-    }
     multiple_lattice_search {
       max_lattices = 2
     }
@@ -248,7 +241,6 @@ P222.
   dials.index datablock.json strong.pickle \
     max_lattices=2 \
     refinement.reflections.use_all_reflections=true \
-    maximum_spot_error=3 maximum_phi_error=2 \
     space_group=P222
 
 ::
@@ -258,12 +250,6 @@ P222.
   indexing {
     known_symmetry {
       space_group = P222
-    }
-    refinement_protocol {
-      outlier_rejection {
-        maximum_spot_error = 3
-        maximum_phi_error = 2
-      }
     }
     multiple_lattice_search {
       max_lattices = 2

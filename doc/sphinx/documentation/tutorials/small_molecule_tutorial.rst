@@ -165,7 +165,6 @@ some?
     d_min_final = None
     verbosity = 1
     outlier_rejection {
-      maximum_spot_error = None
       hkl_tolerance = 0.3
     }
   }

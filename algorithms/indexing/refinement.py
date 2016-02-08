@@ -16,8 +16,7 @@ from cctbx.array_family import flex
 import math
 
 
-def refine(params, reflections, experiments, maximum_spot_error=None,
-           maximum_phi_error=None,
+def refine(params, reflections, experiments,
            verbosity=0, debug_plots=False):
   detector = experiments.detectors()[0]
 
@@ -26,46 +25,6 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     params, reflections, experiments, verbosity=verbosity)
 
   outliers = None
-
-  if maximum_spot_error is not None or maximum_phi_error is not None:
-    matches = refiner.get_matches()
-    x_residuals = matches['x_resid']
-    y_residuals = matches['y_resid']
-    phi_residuals = matches['phi_resid']
-    residuals = flex.vec3_double(x_residuals, y_residuals, phi_residuals)
-    frame_obs = matches['xyzobs.px.value'].parts()[2]
-    panel_ids = matches['panel']
-    crystal_ids = matches['id']
-    match_iobs = matches['iobs']
-    mm_residual_norms = flex.sqrt(
-      flex.pow2(x_residuals) + flex.pow2(y_residuals))
-    inlier_sel = flex.bool(len(matches), True)
-    if maximum_spot_error is not None:
-      # hard cutoff, but this is essentially what XDS does by default
-      # assumes pixel size is same for all panels and same in x and y
-      inlier_sel &= mm_residual_norms < (
-        maximum_spot_error * detector[0].get_pixel_size()[0])
-    if maximum_phi_error is not None:
-      inlier_sel &= flex.abs(phi_residuals) < (math.pi * maximum_phi_error/180)
-
-    print "Rejecting %i outlier%s" %plural_s(inlier_sel.count(False))
-    if debug_plots:
-      debug_plot_residuals(refiner, inlier_sel=inlier_sel)
-
-    # XXX Hack to do the outlier rejection without instatiating a new refiner
-    # XXX TODO move this outlier rejection into the refinement proper
-    refiner._refman._reflections = refiner._refman._reflections.select(inlier_sel)
-
-    # sort the inliers so they are in the same order
-    perm = flex.sort_permutation(match_iobs)
-    outliers = (~inlier_sel.select(perm)).iselection()
-
-  matches = refiner.get_matches()
-  crystal_ids = matches['id']
-  # DGW commented out as reflections.minimum_number_of_reflections no longer exists
-  #for i_cryst in range(flex.max(crystal_ids) + 1):
-  #  if (crystal_ids == i_cryst).count(True) < params.refinement.reflections.minimum_number_of_reflections:
-  #    raise RuntimeError("Insufficient matches for crystal %i" %(i_cryst+1))
   refined = refiner.run()
   if debug_plots:
     debug_plot_residuals(refiner)
@@ -102,8 +61,6 @@ def debug_plot_residuals(refiner, inlier_sel=None):
         x_residuals.select((~inlier_sel) & panel_sel & crystal_sel).as_numpy_array(),
         y_residuals.select((~inlier_sel) & panel_sel & crystal_sel).as_numpy_array(),
         c='r', alpha=0.5)
-      #r = maximum_spot_error * self.detector[0].get_pixel_size()
-      #pyplot.Circle((r, r), 0.5, color='b', fill=False)
       pyplot.axes().set_aspect('equal')
       pyplot.show()
 

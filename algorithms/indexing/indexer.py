@@ -223,20 +223,6 @@ indexing {
       .help = "Disable sanity check on unrealistic increases in unit cell volume"
               "during refinement."
       .expert_level = 1
-    outlier_rejection {
-      maximum_spot_error = None
-        .type = float(value_min=0)
-        .help = "Reject reflections whose predicted and observed centroids differ "
-                "by more than the given multiple of the pixel size."
-                "No outlier rejection is performed in the first macro cycle, and "
-                "in the second macro cycle twice the given multiple is used."
-      maximum_phi_error = None
-        .type = float(value_min=0)
-        .help = "Reject reflections whose predicted and observed phi centroids "
-                "differ by more than the given value (degrees)."
-                "No outlier rejection is performed in the first macro cycle, and "
-                "in the second macro cycle twice the given multiple is used."
-    }
   }
   method = *fft3d fft1d real_space_grid_search
     .type = choice
@@ -782,26 +768,11 @@ class indexer_base(object):
         self.reflections.unset_flags(sel, self.reflections.flags.indexed)
         self.unindexed_reflections = self.reflections.select(sel)
 
-        maximum_spot_error \
-          = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
-        maximum_phi_error \
-          = self.params.refinement_protocol.outlier_rejection.maximum_phi_error
-        if 1 and i_cycle == 0:
-          maximum_spot_error = None
-          maximum_phi_error = None
-        elif i_cycle == 1:
-          if maximum_spot_error is not None:
-            maximum_spot_error *= 2
-          if maximum_phi_error is not None:
-            maximum_phi_error *= 2
-
         reflections_for_refinement = self.reflections.select(
           self.indexed_reflections)
         try:
           refined_experiments, refined_reflections = self.refine(
-            experiments, reflections_for_refinement,
-            maximum_spot_error=maximum_spot_error,
-            maximum_phi_error=maximum_phi_error)
+            experiments, reflections_for_refinement)
         except RuntimeError, e:
           s = str(e)
           if ("below the configured limit" in s or
@@ -1415,13 +1386,10 @@ class indexer_base(object):
                         tolerance=params_simple.hkl_tolerance,
                         verbosity=verbosity)
 
-  def refine(self, experiments, reflections, maximum_spot_error=None,
-             maximum_phi_error=None):
+  def refine(self, experiments, reflections):
     from dials.algorithms.indexing.refinement import refine
     refiner, refined, outliers = refine(
       self.all_params, reflections, experiments,
-      maximum_spot_error=maximum_spot_error,
-      maximum_phi_error=maximum_phi_error,
       verbosity=self.params.refinement_protocol.verbosity,
       debug_plots=self.params.debug_plots)
     if outliers is not None:

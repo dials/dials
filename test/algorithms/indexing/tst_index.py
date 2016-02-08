@@ -340,7 +340,6 @@ def exercise_8():
                 "scan_range=0,10",
                 "beam.fix=all",
                 "detector.fix=all",
-                "maximum_spot_error=3",
                 "max_cell=70",
                 ]
   expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
@@ -385,15 +384,13 @@ def exercise_10():
                 "scan_range=0,10",
                 "beam.fix=all",
                 "detector.fix=all",
-                "maximum_spot_error=3",
-                "maximum_phi_error=2",
                 "max_lattices=3",
                 "index_assignment.method=local",
                 "nearest_neighbours=50",
                 ]
 
   expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.22, 0.26, 0.004)
+  expected_rmsds = (0.33, 0.40, 0.0022)
   expected_hall_symbol = ' P 2ac 2ab'
   n_expected_lattices = 3
 
@@ -439,8 +436,6 @@ def exercise_11():
                 "known_symmetry.space_group=P43212",
                 "beam.fix=all",
                 "detector.fix=all",
-                #"maximum_spot_error=3",
-                "maximum_spot_error=None",
                 "hkl_tolerance=0.5",
                 ]
 
@@ -471,7 +466,6 @@ def exercise_12():
                 "peak_search=clean",
                 "cluster_analysis_search=True",
                 "min_samples=15",
-                "maximum_spot_error=3",
                 "n_macro_cycles=4",
                 "reciprocal_space_grid.d_min=4"
                 ]

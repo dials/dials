@@ -256,20 +256,11 @@ class stills_indexer(indexer_base):
         sel.set_selected(self.reflections['id'] > -1, False)
         self.unindexed_reflections = self.reflections.select(sel)
 
-        maximum_spot_error \
-          = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
-        maximum_phi_error \
-          = self.params.refinement_protocol.outlier_rejection.maximum_phi_error
-        maximum_spot_error = None
-        maximum_phi_error = None
-
         reflections_for_refinement = self.reflections.select(
           self.indexed_reflections)
         try:
           refined_experiments, refined_reflections = self.refine(
-            experiments, reflections_for_refinement,
-            maximum_spot_error=maximum_spot_error,
-            maximum_phi_error=maximum_phi_error)
+            experiments, reflections_for_refinement)
         except RuntimeError, e:
           s = str(e)
           if ("below the configured limit" in s or
@@ -531,8 +522,7 @@ class stills_indexer(indexer_base):
 
       return od.get_cache_status()
 
-  def refine(self, experiments, reflections, maximum_spot_error=None,
-             maximum_phi_error=None):
+  def refine(self, experiments, reflections):
 
     sel = ((reflections['id'] >= -1))
     refl = reflections.select(sel)
