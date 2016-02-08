@@ -1852,18 +1852,20 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
     n_steps = int(math.ceil(d_phi / step_size))
     max_cell = flex.double()
     for n in range(n_steps):
-      sel = (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
-      rlp = reflections['rlp'].select(sel)
-      if len(rlp) == 0:
-        continue
-      try:
-        NN = neighbor_analysis(
-          rlp, entering_flags=entering_flags.select(sel),
-          tolerance=max_cell_multiplier,
-          percentile=nearest_neighbor_percentile)
-        max_cell.append(NN.max_cell)
-      except AssertionError:
-        continue
+      for imageset_id in range(flex.max(reflections['imageset_id'])+1):
+        sel = (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
+        sel &= reflections['imageset_id'] == imageset_id
+        if sel.count(True) == 0:
+          continue
+        try:
+          NN = neighbor_analysis(
+            reflections['rlp'].select(sel),
+            entering_flags=entering_flags.select(sel),
+            tolerance=max_cell_multiplier,
+            percentile=nearest_neighbor_percentile)
+          max_cell.append(NN.max_cell)
+        except AssertionError, e:
+          continue
       debug("%s %s %s"  %(
         phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
     if len(max_cell) == 0:
