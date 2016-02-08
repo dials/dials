@@ -1,6 +1,6 @@
 from __future__ import division
 
-def spot_counts_per_image_plot(reflections, char='*', width=60, height=10, scan_range=None):
+def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   import math
   from dials.array_family import flex
 
@@ -9,46 +9,46 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10, scan_
 
   x,y,z = reflections['xyzobs.px.value'].parts()
 
-  # z-coordinates 0-1 lie on the first image. Internally this is image number 0,
-  # but for the user this is image number 1. For the purposes of the histogram
-  # all spots that are exactly on the first image (z=0.5) should be mapped to
-  # image #1, therefore:
-  z = z + 0.5
+  min_z = flex.min(z)
+  max_z = flex.max(z)
 
-  if scan_range is None:
-    max_z = int(math.ceil(flex.max(z)))
-    min_z = int(math.floor(flex.min(z)))
-  else:
-    min_z, max_z = scan_range
+  # image numbers to display on x-axis label
+  xlab = (int(round(min_z + 0.5)), int(round(max_z + 0.5)))
+  # estimate the total number of images
+  image_count = xlab[1] - xlab[0] + 1
 
-  z_range = max_z - min_z
-  if z_range == 1:
+  z_range = max_z - min_z + 1
+  if z_range <= 1:
     return ''
 
-  width = min(z_range, width)
+  width = int(min(z_range, width))
   z_step = z_range / width
+  z_bound = min_z + z_step - 0.5
+# print [round(i * 10) / 10 for i in sorted(z)]
 
   counts = flex.double()
 
-  sel = (z < min_z + z_step)
+  sel = (z < z_bound)
   counts.append(sel.count(True))
+# print 0, ('-', z_bound), sel.count(True)
   for i in range(1, width-1):
-    sel = ((z >= (min_z + i * z_step)) & (z < min_z + (i + 1) * z_step))
+    sel = ((z >= z_bound) & (z < (z_bound + z_step)))
     counts.append(sel.count(True))
-  sel = (z >= max_z - z_step)
+#   print i, (z_bound, z_bound + z_step), sel.count(True)
+    z_bound += z_step
+  sel = (z >= z_bound)
+# print i + 1, (z_bound, '-'), sel.count(True)
   counts.append(sel.count(True))
-# print list(z)
-# for i in range(width):
-#   print i, (min_z + i * z_step, min_z + (i + 1) * z_step), counts[i]
 
   max_count = flex.max(counts)
   total_counts = flex.sum(counts)
+  assert total_counts == len(z)
   counts *= (height/max_count)
   counts = counts.iround()
 
   rows = []
   rows.append('%i spots found on %i images (max %i / bin)' %(
-    total_counts, z_range + 1, max_count))
+    total_counts, image_count, max_count))
 
   for i in range(height, 0, -1):
     row = []
@@ -59,10 +59,10 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10, scan_
         row.append(' ')
     rows.append(''.join(row))
 
-  padding = width - len(str(min_z)) - len(str(max_z))
-  rows.append('%i%s%i' % (min_z,
+  padding = width - len(str(xlab[0])) - len(str(xlab[1]))
+  rows.append('%i%s%i' % (xlab[0],
     (' ' if padding < 7 else 'image').center(padding),
-    max_z))
+    xlab[1]))
   return '\n'.join(rows)
 
 if __name__ == '__main__':

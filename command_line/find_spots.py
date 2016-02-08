@@ -151,9 +151,7 @@ class Script(object):
 
     for i, imageset in enumerate(datablocks[0].extract_imagesets()):
       ascii_plot = spot_counts_per_image_plot(
-        reflections.select(reflections['id'] == i),
-        scan_range = (imageset.get_array_range()[0] + 1,
-                      imageset.get_array_range()[1]))
+        reflections.select(reflections['id'] == i))
       if len(ascii_plot):
         info('\nHistogram of per-image spot count for imageset %i:' %i)
         info(ascii_plot)
