@@ -1862,8 +1862,8 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
           max_cell.append(NN.max_cell)
         except AssertionError, e:
           continue
-      debug("%s %s %s"  %(
-        phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
+        debug("%s %s %s"  %(
+          phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
     if len(max_cell) == 0:
       raise Sorry(
         "Couldn't determine suitable max_cell from %i reflections" %len(reflections))
