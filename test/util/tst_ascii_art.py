@@ -23,18 +23,18 @@ def exercise_spot_counts_per_image_plot():
   output = ascii_art.spot_counts_per_image_plot(refl)
 
   expected_output = '''\
-57769 spots found on 540 images (max 1120 / bin)
-     * ***** **********
- *************************************     *
+57769 spots found on 540 images (max 1122 / bin)
+     * ****  **********
+*************************************      *
 ******************************************** **
-***********************************************************
 ************************************************************
 ************************************************************
 ************************************************************
 ************************************************************
 ************************************************************
 ************************************************************
-1                          image                         540'''
+************************************************************
+1                         image                          540'''
   output = '\n'.join(line.rstrip() for line in output.splitlines())
   assert not show_diff(output, expected_output)
 
@@ -43,13 +43,13 @@ def exercise_spot_counts_per_image_plot():
     refl, char='o', width=80, height=15)
 
   expected_output = '''\
-57769 spots found on 540 images (max 886 / bin)
+57769 spots found on 540 images (max 894 / bin)
               o
-       o  ooo o ooooooooooooo o  o
-  oooooooooooooooooooooooooooooooooooo  ooo o  oo
+       o  o o o  o oooooooo   o  o
+  oooooooooooooooooooooooooooooooo ooo  ooo o  o
 ooooooooooooooooooooooooooooooooooooooooooooooooooooo o  oo
 ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo ooo     o
-ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo   ooooo
+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo   oo o o
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
@@ -59,7 +59,26 @@ oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-1                                    image                                   540'''
+1                                   image                                    540'''
+  output = '\n'.join(line.rstrip() for line in output.splitlines())
+  assert not show_diff(output, expected_output)
+
+  output = ascii_art.spot_counts_per_image_plot(
+    refl, char='#', width=7, height=10)
+
+  expected_output = '''\
+57769 spots found on 540 images (max 9300 / bin)
+###
+#####
+######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+1   540'''
   output = '\n'.join(line.rstrip() for line in output.splitlines())
   assert not show_diff(output, expected_output)
 
