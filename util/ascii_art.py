@@ -1,6 +1,6 @@
 from __future__ import division
 
-def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
+def spot_counts_per_image_plot(reflections, char='*', width=60, height=10, scan_range=None):
   import math
   from dials.array_family import flex
 
@@ -8,21 +8,38 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   assert len(char) == 1
 
   x,y,z = reflections['xyzobs.px.value'].parts()
-  max_z = int(math.ceil(flex.max(z)))
-  min_z = int(math.floor(flex.min(z)))
+
+  # z-coordinates 0-1 lie on the first image. Internally this is image number 0,
+  # but for the user this is image number 1. For the purposes of the histogram
+  # all spots that are exactly on the first image (z=0.5) should be mapped to
+  # image #1, therefore:
+  z = z + 0.5
+
+  if scan_range is None:
+    max_z = int(math.ceil(flex.max(z)))
+    min_z = int(math.floor(flex.min(z)))
+  else:
+    min_z, max_z = scan_range
 
   z_range = max_z - min_z
   if z_range == 1:
     return ''
 
   width = min(z_range, width)
-
   z_step = z_range / width
 
   counts = flex.double()
-  for i in range(width):
+
+  sel = (z < min_z + z_step)
+  counts.append(sel.count(True))
+  for i in range(1, width-1):
     sel = ((z >= (min_z + i * z_step)) & (z < min_z + (i + 1) * z_step))
     counts.append(sel.count(True))
+  sel = (z >= max_z - z_step)
+  counts.append(sel.count(True))
+# print list(z)
+# for i in range(width):
+#   print i, (min_z + i * z_step, min_z + (i + 1) * z_step), counts[i]
 
   max_count = flex.max(counts)
   total_counts = flex.sum(counts)
@@ -31,7 +48,7 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
 
   rows = []
   rows.append('%i spots found on %i images (max %i / bin)' %(
-    total_counts, z_range, max_count))
+    total_counts, z_range + 1, max_count))
 
   for i in range(height, 0, -1):
     row = []
@@ -42,26 +59,11 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
         row.append(' ')
     rows.append(''.join(row))
 
-  from libtbx.math_utils import iceil
-  first_image = '%i' %(min_z+1)
-  last_image = '%i' %max_z
-  if width < 10:
-    padding = ' ' * (width - len(first_image) - len(last_image))
-  else:
-    words = 'image'
-    padding1 = ' ' * (
-      iceil(width/2) - len(first_image) - iceil(len(words)/2))
-    padding2 = ' ' * (
-      iceil(width/2) - len(last_image) - iceil(len(words)/2))
-    padding = padding1 + words + padding2
-
-  while len(first_image + padding + last_image) < width:
-    padding += ' '
-  if len(padding):
-    rows.append(first_image + padding + last_image)
-
+  padding = width - len(str(min_z)) - len(str(max_z))
+  rows.append('%i%s%i' % (min_z,
+    (' ' if padding < 7 else 'image').center(padding),
+    max_z))
   return '\n'.join(rows)
-
 
 if __name__ == '__main__':
   import sys
