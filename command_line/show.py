@@ -112,6 +112,7 @@ def run(args):
   formats = OrderedDict([
     ('miller_index', '%i, %i, %i'),
     ('d','%.2f'),
+    ('dqe','%.3f'),
     ('id','%i'),
     ('imageset_id','%i'),
     ('panel','%i'),
