@@ -1202,6 +1202,9 @@ class RefinerFactory(object):
         raise Sorry("6 sigmas must be provided as the tie_to_target.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter.")
+      if tie.apply_to_all:
+        # get one experiment id for each parameterisation
+        tie.id = [e.get_experiment_ids()[0] for e in xl_uc_params]
       if not tie.id:
         raise Sorry("At least one experiment id must be provided as the "
                     "tie_to_target.id")

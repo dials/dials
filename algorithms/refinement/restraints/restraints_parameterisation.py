@@ -48,6 +48,10 @@ restraints
               "of any one of those experiments suffices to restrain that"
               "parameterisation."
       .type = ints(value_min=0)
+
+    apply_to_all = False
+      .help = "Shorthand to restrain the unit cells across all experiments"
+      .type = bool
   }
 
   tie_to_group
