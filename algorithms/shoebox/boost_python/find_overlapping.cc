@@ -28,8 +28,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("bbox"),
         arg("panel")));
 
-    class_<OverlapFinder>("OverlapFinder", no_init)
-      .def(init< const af::const_ref< af::tiny<int,2> > >())
+    class_<OverlapFinder>("OverlapFinder")
       .def("__call__", &OverlapFinder::operator())
       ;
   }

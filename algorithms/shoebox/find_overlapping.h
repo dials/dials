@@ -154,18 +154,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   class OverlapFinder {
   public:
 
-    OverlapFinder(const af::const_ref< af::tiny<int,2> > &groups) {
-      for (std::size_t i = 0; i < groups.size(); ++i) {
-        DIALS_ASSERT(groups[i][0] >= 0);
-        DIALS_ASSERT(groups[i][1] > groups[i][0]);
-        if (i > 0) {
-          DIALS_ASSERT(groups[i][0] >= groups[i-1][1]);
-        }
-        for (int j = groups[i][0]; j < groups[i][1]; ++j) {
-          exp_group_.push_back(i);
-        }
-      }
-      DIALS_ASSERT(exp_group_.size() > 0);
+    OverlapFinder() {
     }
 
     struct sort_by_group {
@@ -178,34 +167,28 @@ namespace dials { namespace algorithms { namespace shoebox {
     };
 
     AdjacencyList operator()(
-      const af::const_ref<int> &id,
-      const af::const_ref<int6> &bbox,
-      const af::const_ref<std::size_t> &panel) const {
+      const af::const_ref<std::size_t> &id,
+      const af::const_ref<std::size_t> &panel,
+      const af::const_ref<int6> &bbox) const {
 
       DIALS_ASSERT(panel.size() > 0);
       DIALS_ASSERT(panel.size() == bbox.size());
       DIALS_ASSERT(panel.size() == id.size());
-      DIALS_ASSERT(id.all_ge(0));
 
       // Get the maximum panel number
       std::size_t max_panel = af::max(panel);
+      std::size_t max_id = af::max(id);
+      std::size_t max_group = (max_panel+1)*(max_id+1);
 
       // The arrays to use in the collision detection
       std::vector<std::size_t> group(panel.size());
       std::vector<int6> data(panel.size());
       std::vector<std::size_t> index(panel.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
+        group[i] = id[i] * (max_panel+1) + panel[i];
         index[i] = i;
       }
       std::vector<std::size_t> offset;
-
-      // Construct a list of groups
-      for (std::size_t i = 0; i < id.size(); ++i) {
-        DIALS_ASSERT(id[i] < exp_group_.size());
-        std::size_t eg = exp_group_[id[i]];
-        std::size_t pp = panel[i];
-        group[i] = pp + eg*max_panel;
-      }
 
       // Sort arrays by group
       std::sort(index.begin(), index.end(), sort_by_group(group));
@@ -224,6 +207,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         }
       }
       offset.push_back(index.size());
+      DIALS_ASSERT(offset.size() <= max_group+1);
 
       // Do the collision detection for all bboxes in the same group
       AdjacencyList list(bbox.size());
@@ -248,10 +232,6 @@ namespace dials { namespace algorithms { namespace shoebox {
       list.finish();
       return list;
     }
-
-  private:
-
-    std::vector<std::size_t> exp_group_;
   };
 
 }}} // namespace dials::algorithms::shoebox

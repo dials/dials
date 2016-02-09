@@ -786,11 +786,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.set_flags(ninvfg > 0, self.flags.foreground_includes_bad_pixels)
     return (ntotal - nvalid) > 0
 
-  def find_overlaps(self, experiments):
+  def find_overlaps(self, experiments=None, border=0):
     '''
     Check for overlapping reflections.
 
     :param experiments: The experiment list
+    :param tolerance: A positive integer specifying border around shoebox
     :return: The overlap list
 
     '''
@@ -798,24 +799,47 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from itertools import groupby
     from scitbx.array_family import shared
 
-    # Group according to imageset
-    groups = groupby(
-      range(len(experiments)),
-      lambda x: experiments[x].imageset)
+    # Expand the bbox if necessary
+    if border > 0:
+      x0, x1, y0, y1, z0, z1 = self['bbox'].parts()
+      x0 -= border
+      x1 += border
+      y0 -= border
+      y1 += border
+      z0 -= border
+      z1 += border
+      bbox = flex.int(x0,x1,y0,y1,z0,z1)
+    else:
+      bbox = self['bbox']
 
-    # Get the experiment ids we're to treat together
-    group_ranges = shared.tiny_int_2()
-    for key, indices in groups:
-      indices = list(indices)
-      i0 = indices[0]
-      i1 = indices[-1] + 1
-      group_ranges.append((i0, i1))
+    # Get the panel and id
+    panel = self['panel']
+    exp_id = self['id']
+
+    # Group according to imageset
+    if experiments is not None:
+      groups = groupby(
+        range(len(experiments)),
+        lambda x: experiments[x].imageset)
+
+      # Get the experiment ids we're to treat together
+      lookup = {}
+      for j, (key, indices) in enumerate(groups):
+        for i in indices:
+          lookup[i] = j
+      group_id = flex.size_t([lookup[i] for i in self['id']])
+    elif "imageset_id" in self:
+      imageset_id = self['imageset_id']
+      assert imageset_id.all_ge(0)
+      group_id = flex.size_t(list(imageset_id))
+    else:
+      raise RuntimeError('Either need to supply experiments or have imageset_id')
 
     # Create the overlap finder
-    find_overlapping = OverlapFinder(group_ranges)
+    find_overlapping = OverlapFinder()
 
     # Find the overlaps
-    overlaps = find_overlapping(self['id'], self['bbox'], self['panel'])
+    overlaps = find_overlapping(group_id, panel, bbox)
     assert(overlaps.num_vertices() == len(self))
 
     # Return the overlaps

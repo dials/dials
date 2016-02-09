@@ -13,24 +13,25 @@ class Test(object):
 
   def run(self):
 
-    self.tst_init()
-    self.tst_resizing()
-    self.tst_iteration()
-    self.tst_row_operations()
-    self.tst_slicing()
-    self.tst_updating()
-    self.tst_select()
-    self.tst_set_selected()
-    self.tst_serialize()
-    self.tst_delete()
-    self.tst_del_selected()
-    self.tst_flags()
-    self.tst_copy()
-    self.tst_extract_shoeboxes()
-    self.tst_split_by_experiment_id()
-    self.tst_split_indices_by_experiment_id()
-    self.tst_split_partials()
-    self.tst_split_partials_with_shoebox()
+    #self.tst_init()
+    #self.tst_resizing()
+    #self.tst_iteration()
+    #self.tst_row_operations()
+    #self.tst_slicing()
+    #self.tst_updating()
+    #self.tst_select()
+    #self.tst_set_selected()
+    #self.tst_serialize()
+    #self.tst_delete()
+    #self.tst_del_selected()
+    #self.tst_flags()
+    #self.tst_copy()
+    #self.tst_extract_shoeboxes()
+    #self.tst_split_by_experiment_id()
+    #self.tst_split_indices_by_experiment_id()
+    #self.tst_split_partials()
+    #self.tst_split_partials_with_shoebox()
+    self.tst_find_overlapping()
 
   def tst_init(self):
     from dials.array_family import flex
@@ -1040,6 +1041,63 @@ class Test(object):
       assert(r1['panel'] == r2['panel'])
       assert(r1['shoebox'].data.as_double().as_1d().all_approx_equal(
         r2['shoebox'].data.as_double().as_1d()))
+
+    print 'OK'
+
+  def tst_find_overlapping(self):
+    from dials.array_family import flex
+    from random import randint, uniform
+    from dials.model.data import Shoebox
+    N = 10000
+    r = flex.reflection_table(N)
+    r['bbox'] = flex.int6(N)
+    r['panel'] = flex.size_t(N)
+    r['id'] = flex.int(N)
+    r['imageset_id'] = flex.int(N)
+    for i in range(N):
+      x0 = randint(0, 100)
+      x1 = randint(1, 10) + x0
+      y0 = randint(0, 100)
+      y1 = randint(1, 10) + y0
+      z0 = randint(0, 100)
+      z1 = randint(1, 10) + z0
+      panel = randint(0,2)
+      pid = randint(0,2)
+      r['bbox'][i] = (x0,x1,y0,y1,z0,z1)
+      r['panel'][i] = panel
+      r['id'][i] = pid
+      r['imageset_id'][i] = pid
+
+    def is_overlap(b0, b1, border):
+      b0 = b0[0]-border,b0[1]+border,b0[2]-border,b0[3]+border,b0[4]-border,b0[5]+border
+      b1 = b1[0]-border,b1[1]+border,b1[2]-border,b1[3]+border,b1[4]-border,b1[5]+border
+      if not (b1[0] > b0[1] or
+              b1[1] < b0[0] or
+              b1[2] > b0[3] or
+              b1[3] < b0[2] or
+              b1[4] > b0[5] or
+              b1[5] < b0[4]):
+        return True
+      return False
+
+    for i in [0, 5, 10]:
+      overlaps = r.find_overlaps()
+      for item in overlaps.edges():
+        i0 = overlaps.source(item)
+        i1 = overlaps.target(item)
+        r0 = r[i0]
+        r1 = r[i1]
+        p0 = r0['panel']
+        p1 = r1['panel']
+        b0 = r0['bbox']
+        b1 = r1['bbox']
+        j0 = r0['imageset_id']
+        j1 = r1['imageset_id']
+        assert j0 == j1
+        assert p0 == p1
+        assert is_overlap(b0,b1,i)
+
+
 
     print 'OK'
 
