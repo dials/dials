@@ -201,6 +201,4 @@ def run(args):
 
 if __name__ == '__main__':
   import sys
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
   run(sys.argv[1:])
