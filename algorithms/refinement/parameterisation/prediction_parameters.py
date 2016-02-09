@@ -98,6 +98,9 @@ class PredictionParameterisation(object):
     self._exp_to_param = {i: ParamSet(e2bp.get(i), e2xop.get(i),
         e2xucp.get(i), e2dp.get(i)) for i, _ in enumerate(experiments)}
 
+    # keep a null 3*3 matrix for comparison testing of detector derivatives
+    self._null_mat3 = matrix.sqr((0,0,0,0,0,0,0,0,0))
+
   def _len(self):
     length = 0
     if self._detector_parameterisations:
@@ -550,8 +553,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         # for this panel before moving on to the next
         iparam = self._iparam
         for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-          results[iparam][self._grad_names[0]].set_selected(sub_isel, dX)
-          results[iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+          if dX is not None:
+            results[iparam][self._grad_names[0]].set_selected(sub_isel, dX)
+          if dY is not None:
+            results[iparam][self._grad_names[1]].set_selected(sub_isel, dY)
           # increment the local parameter index pointer
           iparam += 1
 
@@ -724,13 +729,17 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
   def _detector_derivatives(self, dp, pv, D, panel_id):
     """helper function to convert derivatives of the detector state to
-    derivatives of the vector pv"""
+    derivatives of the vector pv. Derivatives that would all be null vectors
+    are replaced with None"""
 
     # get the derivatives of detector d matrix for this panel
     dd_ddet_p = dp.get_ds_dp(multi_state_elt=panel_id)
 
+    # replace explicit null derivatives with None
+    dd_ddet_p = [None if e == self._null_mat3 else e for e in dd_ddet_p]
+
     # calculate the derivative of pv for this parameter
-    dpv_ddet_p = [(D * (-1. * der).elems) * pv for der in dd_ddet_p]
+    dpv_ddet_p = [der if der is None else (D * (-1. * der).elems) * pv for der in dd_ddet_p]
 
     return dpv_ddet_p
 
@@ -820,10 +829,14 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     dY_dp = []
 
     for der in dpv_dp:
-      du_dp, dv_dp, dw_dp = der.parts()
+      if der is None:
+        dX_dp.append(None)
+        dY_dp.append(None)
+      else:
+        du_dp, dv_dp, dw_dp = der.parts()
 
-      dX_dp.append(w_inv * (du_dp - dw_dp * u_w_inv))
-      dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
+        dX_dp.append(w_inv * (du_dp - dw_dp * u_w_inv))
+        dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
 
     return dX_dp, dY_dp
 
