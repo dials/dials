@@ -63,6 +63,8 @@ index = False
   .type = bool
 integrate = False
   .type = bool
+indexing_min_spots = 10
+  .type = int(value_min=1)
 ''')
   if not os.access(filename, os.R_OK):
     raise RuntimeError("Server does not have read access to file %s" %filename)
@@ -71,6 +73,7 @@ integrate = False
     cl, custom_processor='collect_remaining')
   index = params.extract().index
   integrate = params.extract().integrate
+  indexing_min_spots = params.extract().indexing_min_spots
 
   from dials.command_line.find_spots import phil_scope as params
   from dxtbx.datablock import DataBlockFactory
@@ -90,7 +93,7 @@ integrate = False
     i=imageset.get_scan().get_image_range()[0]-1, plot=False)
   stats = stats.__dict__
 
-  if index and stats['n_spots_no_ice'] > 10:
+  if index and stats['n_spots_no_ice'] > indexing_min_spots:
     import logging
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     from dials.algorithms.indexing import indexer
