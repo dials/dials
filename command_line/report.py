@@ -2338,30 +2338,33 @@ class Analyser(object):
 
     for expt in experiments:
       for panel_id, panel in enumerate(expt.detector):
-        try:
-          expt_geom_table.append((
-              '<strong>Panel %i</strong>:' %(panel_id+1),
-              'Pixel size (mm):', '%.4f, %.4f' %panel.get_pixel_size(),
-              'Image size (pixels):', '%i, %i' %panel.get_image_size()))
-          expt_geom_table.append((
-              '', 'Trusted range:', '%g, %g' %panel.get_trusted_range(),
-              'Thickness (mm):', '%g' %panel.get_thickness()))
-          expt_geom_table.append(('', 'Material:', '%s' %panel.get_material(),
-                                  u'μ:', '%g' %panel.get_mu()))
-          expt_geom_table.append((
-              '', 'Fast axis:', latex_vector_template %panel.get_fast_axis(),
-              'Slow axis:', latex_vector_template %panel.get_slow_axis()))
-          expt_geom_table.append((
-              '', 'Origin:', latex_vector_template %panel.get_origin(),
-              'Distance (mm)', '%.4f' %panel.get_distance()))
-          expt_geom_table.append((
+        expt_geom_table.append((
+            '<strong>Panel %i</strong>:' %(panel_id+1),
+            'Pixel size (mm):', '%.4f, %.4f' %panel.get_pixel_size(),
+            'Image size (pixels):', '%i, %i' %panel.get_image_size()))
+        expt_geom_table.append((
+            '', 'Trusted range:', '%g, %g' %panel.get_trusted_range(),
+            'Thickness (mm):', '%g' %panel.get_thickness()))
+        expt_geom_table.append(('', 'Material:', '%s' %panel.get_material(),
+                                u'μ:', '%g' %panel.get_mu()))
+        expt_geom_table.append((
+            '', 'Fast axis:', latex_vector_template %panel.get_fast_axis(),
+            'Slow axis:', latex_vector_template %panel.get_slow_axis()))
+        expt_geom_table.append((
+            '', 'Origin:', latex_vector_template %panel.get_origin(),
+            'Distance (mm)', '%.4f' %panel.get_distance()))
+        if len(expt.detector) == 1:
+          try:
+            # does the beam intersect with the panel?
+            panel.get_beam_centre(expt.beam.get_s0())
+          except RuntimeError, e:
+            continue
+          else:
+            expt_geom_table.append((
               '', u'Max resolution (corners) (Å):',
               '%.2f' %panel.get_max_resolution_at_corners(expt.beam.get_s0()),
               u'Max resolution (inscribed circle) (Å):',
               '%.2f' %panel.get_max_resolution_ellipse(expt.beam.get_s0())))
-        except RuntimeError, e:
-          print e
-          print '... ignoring'
 
       if expt.scan is not None:
         expt_geom_table.append((
