@@ -35,7 +35,7 @@ def dR_from_axis_and_angle(axis, angle, deg=False):
 
   assert axis.n in ((3,1), (1,3))
   if (deg): angle *= pi/180
-  axis *= -1.
+  axis = -1. * axis.normalize()
   ca, sa  = cos(angle), sin(angle)
 
   return(matrix.sqr((sa * axis[0] * axis[0] - sa ,
