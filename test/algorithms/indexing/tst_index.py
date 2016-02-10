@@ -152,7 +152,7 @@ def exercise_1():
                 "debug=True"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.05, 0.04, 0.00032)
+  expected_rmsds = (0.05, 0.04, 0.0004)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -198,7 +198,7 @@ def exercise_3():
                 "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.05, 0.04, 0.0003)
+  expected_rmsds = (0.05, 0.041, 0.0004)
 
   # now enforce symmetry
   extra_args.append("known_symmetry.space_group=P4")
@@ -228,6 +228,7 @@ def exercise_4():
                 "n_macro_cycles=3",
                 "reciprocal_space_grid.d_min=4",
                 "outlier.algorithm=tukey",
+                "filter_overlaps=False", # P1_X6_1.pickle does not contain bbox!
                 "scan_range=0,50",
                 "scan_range=450,500",
                 "scan_range=850,900"]
