@@ -50,7 +50,9 @@ def dR_from_axis_and_angle(axis, angle, deg=False):
 
 def skew_symm(v):
   '''Make matrix [v]_x from v. Essentially multiply vector by SO(3) basis
-  set Lx, Ly, Lz. Equation (2) from Gallego & Yezzi paper.'''
+  set Lx, Ly, Lz. Equation (2) from Gallego & Yezzi paper.
+
+  NB a C++ version exists in gallego_yezzi.h.'''
   import scitbx.matrix
 
   L1 = scitbx.matrix.sqr((0, 0, 0, 0, 0, -1, 0, 1, 0))
@@ -65,7 +67,9 @@ def dRq_de(theta, e, q):
   '''Calculate derivative of rotated vector r = R*q with respect to the elements
   of the rotation axis e, where the angle of rotation is theta.
 
-  Implementation of Equation (8) from Gallego & Yezzi.'''
+  Implementation of Equation (8) from Gallego & Yezzi.
+
+  NB a C++ version exists in gallego_yezzi.h.'''
 
   from scitbx import matrix
 
@@ -136,28 +140,6 @@ def get_fd_gradients(mp, deltas, multi_state_elt=None):
   mp.set_param_vals(p_vals)
 
   return fd_grad
-
-def print_model_geometry(beam = None, detector = None, crystal = None):
-
-  # FIXME This function is essentially deprecated by the __str__ methods of
-  # each of the experimental models.
-
-  if beam:
-    print "beam s0 = (%.4f, %.4f, %.4f)" % beam.get_s0()
-  if detector:
-    print "sensor origin = (%.4f, %.4f, %.4f)" % detector[0].get_origin()
-    print "sensor dir1 = (%.4f, %.4f, %.4f)" % detector[0].get_fast_axis()
-    print "sensor dir2 = (%.4f, %.4f, %.4f)" % detector[0].get_slow_axis()
-  if crystal:
-    uc = crystal.get_unit_cell()
-    print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
-    print "crystal orientation matrix U ="
-    print crystal.get_U().round(4)
-
-def print_grads(grad_list):
-  for i, grad in enumerate(grad_list):
-    print ("Param %02d. Gradients: "
-           "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
 
 def get_panel_groups_at_depth(group, depth=0):
   """Return a list of the panel groups at a certain depth below the node group"""
