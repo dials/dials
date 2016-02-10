@@ -51,7 +51,6 @@ namespace dials { namespace refinement {
                         sa * axis_[2] * axis_[2] - sa);
   }
 
-
 }} // namespace dials::refinement
 
 #endif // DIALS_REFINEMENT_RTMATS_H

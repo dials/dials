@@ -12,9 +12,15 @@
 from __future__ import division
 from math import sin, cos, acos
 from scitbx import matrix
+from scitbx.array_family import flex #import dependency
+from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
 import random
 
 def dR_from_axis_and_angle(axis, angle, deg=False):
+  """Wrapper for C++ version of dR_from_axis_and_angle returning a matrix.sqr"""
+  return matrix.sqr(dR_cpp(axis, angle, deg))
+
+def dR_from_axis_and_angle_py(axis, angle, deg=False):
   """return the first derivative of a rotation matrix specified by its
   axis and angle"""
 
