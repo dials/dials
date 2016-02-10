@@ -300,8 +300,10 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
         # for this panel before moving on to the next
         iparam = self._iparam
         for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-          results[iparam]['dX_dp'].set_selected(sub_isel, dX)
-          results[iparam]['dY_dp'].set_selected(sub_isel, dY)
+          if dX is not None:
+            results[iparam]['dX_dp'].set_selected(sub_isel, dX)
+          if dY is not None:
+            results[iparam]['dY_dp'].set_selected(sub_isel, dY)
           # increment the local parameter index pointer
           iparam += 1
 
