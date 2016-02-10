@@ -57,20 +57,36 @@ indexing {
   max_cell = Auto
     .type = float(value_min=0)
     .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
-  max_cell_multiplier = 1.3
-    .type = float(value_min=0)
-    .help = "Multiply the estimated maximum basis vector length by this value."
-  max_cell_step_size = 45
-    .type = float(value_min=0)
-    .help = "Step size, in degrees, of the blocks used to peform the max_cell "
-            "estimation."
-  nearest_neighbor_percentile = 0.05
-    .type = float(value_min=0)
-    .help = "Percentile of NN histogram to use for max cell determination."
     .expert_level = 1
-  filter_ice = True
-    .type = bool
-    .help = "Ignore ice rings in initial indexing"
+  max_cell_estimation
+    .expert_level = 1
+  {
+    filter_ice = True
+      .type = bool
+      .help = "Filter out reflections at typical ice ring resolutions"
+              "before max_cell estimation."
+    filter_overlaps = True
+      .type = bool
+      .help = "Filter out reflections with overlapping bounding boxes before"
+              "max_cell estimation."
+    overlaps_border = 0
+      .type = int(value_min=0)
+      .help = "Optionally add a border around the bounding boxes before finding"
+              "overlaps."
+    multiplier = 1.3
+      .type = float(value_min=0)
+      .help = "Multiply the estimated maximum basis vector length by this value."
+      .expert_level = 2
+    step_size = 45
+      .type = float(value_min=0)
+      .help = "Step size, in degrees, of the blocks used to peform the max_cell "
+              "estimation."
+      .expert_level = 2
+    nearest_neighbor_percentile = 0.05
+      .type = float(value_min=0)
+      .help = "Percentile of NN histogram to use for max cell determination."
+      .expert_level = 2
+  }
   fft3d {
     peak_search = *flood_fill clean
       .type = choice
@@ -891,17 +907,20 @@ class indexer_base(object):
       self.refined_reflections['xyzcal.px'].set_selected(imgset_sel, xyzcal_px)
 
   def find_max_cell(self):
+    params = self.params.max_cell_estimation
     if self.params.max_cell is libtbx.Auto:
       if self.params.known_symmetry.unit_cell is not None:
         uc_params = self.target_symmetry_primitive.unit_cell().parameters()
-        self.params.max_cell = self.params.max_cell_multiplier * max(uc_params[:3])
+        self.params.max_cell = params.multiplier * max(uc_params[:3])
         info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
       else:
         self.params.max_cell = find_max_cell(
-          self.reflections, max_cell_multiplier=self.params.max_cell_multiplier,
-          step_size=self.params.max_cell_step_size,
-          nearest_neighbor_percentile=self.params.nearest_neighbor_percentile,
-          filter_ice=self.params.filter_ice)
+          self.reflections, max_cell_multiplier=params.multiplier,
+          step_size=params.step_size,
+          nearest_neighbor_percentile=params.nearest_neighbor_percentile,
+          filter_ice=params.filter_ice,
+          filter_overlaps=params.filter_overlaps,
+          overlaps_border=params.overlaps_border)
         info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
 
   def filter_reflections_by_scan_range(self):
@@ -1755,13 +1774,27 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 
 
 def find_max_cell(reflections, max_cell_multiplier, step_size,
-                  nearest_neighbor_percentile, filter_ice=True):
+                  nearest_neighbor_percentile, filter_ice=True,
+                  filter_overlaps=True, overlaps_border=0):
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
     from dials.algorithms.peak_finding.per_image_analysis import \
      ice_rings_selection
     ice_sel = ice_rings_selection(reflections)
     reflections = reflections.select(~ice_sel)
+    debug('Rejecting %i reflections at ice ring resolution' %ice_sel.count(True))
+
+  if filter_overlaps:
+    overlap_sel = flex.bool(len(reflections), False)
+
+    overlaps = reflections.find_overlaps(border=overlaps_border)
+    for item in overlaps.edges():
+      i0 = overlaps.source(item)
+      i1 = overlaps.target(item)
+      overlap_sel[i0] = True
+      overlap_sel[i1] = True
+    debug('Rejecting %i overlapping bounding boxes' %overlap_sel.count(True))
+    reflections = reflections.select(~overlap_sel)
 
   # Histogram spot counts in resolution bins: filter out outlier bin counts
   # according to the Tukey method

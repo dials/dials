@@ -44,8 +44,9 @@ class indexer_fft3d(indexer_base):
       # a little bit of rearrangement:
       #   d_min = 5 * max_cell/n_points
 
+      max_cell = self.params.max_cell
       d_min = (
-        5 * self.params.max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
+        5 * max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
       d_spacings = 1/self.reflections['rlp'].norms()
       self.params.fft3d.reciprocal_space_grid.d_min = max(
         d_min, min(d_spacings))
