@@ -88,11 +88,13 @@ integrate = False
   stats = per_image_analysis.stats_single_image(
     imageset, reflections,
     i=imageset.get_scan().get_image_range()[0]-1, plot=False)
+  stats = stats.__dict__
 
-  if index and stats.n_spots_no_ice > 10:
+  if index and stats['n_spots_no_ice'] > 10:
     import logging
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     from dials.algorithms.indexing import indexer
+    from dxtbx.serialize.crystal import to_dict
     interp = indexer.master_phil_scope.command_line_argument_interpreter()
     params, unhandled = interp.process_and_fetch(
       unhandled, custom_processor='collect_remaining')
@@ -109,14 +111,26 @@ integrate = False
     try:
       idxr = indexer.indexer_base.from_parameters(
         reflections, imagesets, params=params)
-      stats.crystal = idxr.refined_experiments.crystals()[0]
-      stats.n_indexed = len(idxr.refined_reflections)
-      stats.fraction_indexed = stats.n_indexed/len(reflections)
+      indexing_results = []
+      indexed_sel = idxr.refined_reflections.get_flags(
+        idxr.refined_reflections.flags.indexed)
+      indexed_sel &= ~(idxr.refined_reflections.get_flags(
+        idxr.refined_reflections.flags.centroid_outlier))
+      for i_expt, expt in enumerate(idxr.refined_experiments):
+        sel = idxr.refined_reflections['id'] == i_expt
+        sel &= indexed_sel
+        indexing_results.append({
+          'crystal': to_dict(expt.crystal),
+          'n_indexed': sel.count(True),
+          'fraction_indexed': sel.count(True)/sel.size()})
+      stats['lattices'] = indexing_results
+      stats['n_indexed'] = indexed_sel.count(True)
+      stats['fraction_indexed'] = indexed_sel.count(True)/indexed_sel.size()
     except Exception, e:
       print e
-      stats.crystal = None
-      stats.n_indexed = None
-      stats.fraction_indexed = None
+      #stats.crystal = None
+      #stats.n_indexed = None
+      #stats.fraction_indexed = None
 
     if integrate and stats.crystal is not None:
 
@@ -191,34 +205,20 @@ class handler(server_base.BaseHTTPRequestHandler):
     filename = s.path.split(';')[0]
     params = s.path.split(';')[1:]
     proc = current_process().name
+
+    d = {'image': filename}
+
     try:
       stats = work(filename, params)
-      response = [
-        '<image>%s</image>' % filename,
-        '<spot_count>%s</spot_count>' % stats.n_spots_total,
-        '<spot_count_no_ice>%s</spot_count_no_ice>' % stats.n_spots_no_ice,
-        '<d_min>%.2f</d_min>' % stats.estimated_d_min,
-        '<d_min_method_1>%.2f</d_min_method_1>' % stats.d_min_distl_method_1,
-        '<d_min_method_2>%.2f</d_min_method_2>' % stats.d_min_distl_method_2,
-        '<total_intensity>%.0f</total_intensity>' % stats.total_intensity,
-      ]
-      if hasattr(stats, 'crystal') and stats.crystal is not None:
-        response.append(
-          '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %stats.crystal.get_unit_cell().parameters())
-        response.append(
-          '<n_indexed>%i</n_indexed>' %stats.n_indexed)
-        response.append(
-          '<fraction_indexed>%.2f</fraction_indexed>' %stats.fraction_indexed)
-      if hasattr(stats, 'integrated_intensity'):
-        response.append(
-          '<integrated_intensity>%.0f</integrated_intensity>' %stats.integrated_intensity)
-
-      s.wfile.write('<response>\n%s\n</response>' % ('\n'.join(response)))
+      d.update(stats)
 
     except Exception, e:
-      #import traceback
-      #traceback.print_exc()
-      s.wfile.write('<response>error: %s</response>' % str(e))
+      d['error'] = str(e)
+
+    import json
+    response = json.dumps(d)
+    s.wfile.write(response)
+
     return
 
 def serve(httpd):
