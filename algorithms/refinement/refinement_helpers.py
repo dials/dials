@@ -30,6 +30,9 @@ def dR_from_axis_and_angle(axis, angle, deg=False):
   # RTMATS in order to match the axis_and_angle_as_r3_rotation_matrix
   # convention
 
+  # See also axis_and_angle_as_r3_derivative_wrt_angle, which does the same
+  # as this function, but this function is slightly faster.
+
   assert axis.n in ((3,1), (1,3))
   if (deg): angle *= pi/180
   axis *= -1.
