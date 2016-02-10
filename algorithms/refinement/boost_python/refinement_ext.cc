@@ -11,6 +11,7 @@ namespace dials { namespace refinement { namespace boost_python {
   void export_mahalanobis();
   void export_outlier_helpers();
   void export_calculate_cell_gradients();
+  void export_rtmats();
 
   BOOST_PYTHON_MODULE(dials_refinement_helpers_ext)
   {
@@ -19,6 +20,7 @@ namespace dials { namespace refinement { namespace boost_python {
     export_mahalanobis();
     export_outlier_helpers();
     export_calculate_cell_gradients();
+    export_rtmats();
   }
 
 }}} // namespace dials::refinement::boost_python
