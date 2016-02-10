@@ -2,7 +2,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
-#include "../parameterisation_helpers.h"
+#include "../parameterisation/parameterisation_helpers.h"
 
 using namespace boost::python;
 

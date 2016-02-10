@@ -1,7 +1,7 @@
 
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include "../outlier_helpers.h"
+#include "../outlier_detection/outlier_helpers.h"
 
 using namespace boost::python;
 

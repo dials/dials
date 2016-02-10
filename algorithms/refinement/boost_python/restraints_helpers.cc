@@ -10,7 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include "../restraints_helpers.h"
+#include "../restraints/restraints_helpers.h"
 
 using namespace boost::python;
 

@@ -1,7 +1,7 @@
 
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include "../mahalanobis.h"
+#include "../outlier_detection/mahalanobis.h"
 
 using namespace boost::python;
 
