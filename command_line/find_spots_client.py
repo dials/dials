@@ -13,6 +13,39 @@ def _nproc():
   from libtbx.introspection import number_of_processors
   return number_of_processors(return_value_if_unknown=-1)
 
+
+def response_to_xml(d):
+
+  if 'error' in d:
+    response = '%s' %d['error']
+  else:
+    response = '''\
+<image>%(image)s</image>,
+<spot_count>%(n_spots_total)s</spot_count>'
+<spot_count_no_ice>%(n_spots_no_ice)s</spot_count_no_ice>'
+<d_min>%(estimated_d_min).2f</d_min>
+<d_min_method_1>%(d_min_distl_method_1).2f</d_min_method_1>
+<d_min_method_2>%(d_min_distl_method_2).2f</d_min_method_2>
+<total_intensity>%(total_intensity).0f</total_intensity>''' %d
+
+  if 'lattices' in d:
+    from dxtbx.serialize.crystal import from_dict
+    for lattice in d['lattices']:
+      crystal = from_dict(lattice['crystal'])
+      response = '\n'.join([
+        response,
+        '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %(
+          crystal.get_unit_cell().parameters())])
+    response = '\n'.join([
+      response,
+      '<n_indexed>%i</n_indexed>' %d['n_indexed'],
+      '<fraction_indexed>%.2f</fraction_indexed>' %d['fraction_indexed']])
+  if 'integrated_intensity' in d:
+    response.append(
+      '<integrated_intensity>%.0f</integrated_intensity>' %d['integrated_intensity'])
+
+  return '<response>\n%s\n</response>' %response
+
 def work_all(host, port, filenames, params, plot=False, table=False,
              json_file=None, grid=None, nproc=None):
   from multiprocessing.pool import ThreadPool as thread_pool
@@ -28,38 +61,8 @@ def work_all(host, port, filenames, params, plot=False, table=False,
 
     import json
     d = json.loads(response)
-
-    if 'error' in d:
-      response = '%s' %d['error']
-    else:
-      response = '''\
-<image>%(image)s</image>,
-<spot_count>%(n_spots_total)s</spot_count>'
-<spot_count_no_ice>%(n_spots_no_ice)s</spot_count_no_ice>'
-<d_min>%(estimated_d_min).2f</d_min>
-<d_min_method_1>%(d_min_distl_method_1).2f</d_min_method_1>
-<d_min_method_2>%(d_min_distl_method_2).2f</d_min_method_2>
-<total_intensity>%(total_intensity).0f</total_intensity>''' %d
-
-    if 'lattices' in d:
-      from dxtbx.serialize.crystal import from_dict
-      for lattice in d['lattices']:
-        crystal = from_dict(lattice['crystal'])
-        response = '\n'.join([
-          response,
-          '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %(
-            crystal.get_unit_cell().parameters())])
-      response = '\n'.join([
-        response,
-        '<n_indexed>%i</n_indexed>' %d['n_indexed'],
-        '<fraction_indexed>%.2f</fraction_indexed>' %d['fraction_indexed']])
-    if 'integrated_intensity' in d:
-      response.append(
-        '<integrated_intensity>%.0f</integrated_intensity>' %d['integrated_intensity'])
-
-
     results.append(d)
-    print '<response>\n%s\n</response>' %response
+    print response_to_xml(d)
 
   if json_file is not None:
     'Writing results to %s' %json_file
@@ -177,7 +180,9 @@ if __name__ == '__main__':
     print 'Stopped %d findspots processes' % stopped
   else:
     if len(filenames) == 1:
-      print work(params.host, params.port, filenames[0], unhandled)
+      response = work(params.host, params.port, filenames[0], unhandled)
+      import json
+      print response_to_xml(json.loads(response))
     else:
       work_all(params.host, params.port, filenames, unhandled, plot=params.plot,
                table=params.table, json_file=params.json,
