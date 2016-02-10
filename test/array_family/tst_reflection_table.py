@@ -13,24 +13,24 @@ class Test(object):
 
   def run(self):
 
-    #self.tst_init()
-    #self.tst_resizing()
-    #self.tst_iteration()
-    #self.tst_row_operations()
-    #self.tst_slicing()
-    #self.tst_updating()
-    #self.tst_select()
-    #self.tst_set_selected()
-    #self.tst_serialize()
-    #self.tst_delete()
-    #self.tst_del_selected()
-    #self.tst_flags()
-    #self.tst_copy()
-    #self.tst_extract_shoeboxes()
-    #self.tst_split_by_experiment_id()
-    #self.tst_split_indices_by_experiment_id()
-    #self.tst_split_partials()
-    #self.tst_split_partials_with_shoebox()
+    self.tst_init()
+    self.tst_resizing()
+    self.tst_iteration()
+    self.tst_row_operations()
+    self.tst_slicing()
+    self.tst_updating()
+    self.tst_select()
+    self.tst_set_selected()
+    self.tst_serialize()
+    self.tst_delete()
+    self.tst_del_selected()
+    self.tst_flags()
+    self.tst_copy()
+    self.tst_extract_shoeboxes()
+    self.tst_split_by_experiment_id()
+    self.tst_split_indices_by_experiment_id()
+    self.tst_split_partials()
+    self.tst_split_partials_with_shoebox()
     self.tst_find_overlapping()
 
   def tst_init(self):
@@ -1080,8 +1080,8 @@ class Test(object):
         return True
       return False
 
-    for i in [0, 5, 10]:
-      overlaps = r.find_overlaps()
+    for i in [0, 2, 5]:
+      overlaps = r.find_overlaps(border=i)
       for item in overlaps.edges():
         i0 = overlaps.source(item)
         i1 = overlaps.target(item)

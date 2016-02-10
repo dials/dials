@@ -808,7 +808,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       y1 += border
       z0 -= border
       z1 += border
-      bbox = flex.int(x0,x1,y0,y1,z0,z1)
+      bbox = int6(x0,x1,y0,y1,z0,z1)
     else:
       bbox = self['bbox']
 
