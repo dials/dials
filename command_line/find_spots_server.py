@@ -87,13 +87,18 @@ indexing_min_spots = 10
   # no need to write the hot mask in the server/client
   params.spotfinder.write_hot_mask = False
   datablock = DataBlockFactory.from_filenames([filename])[0]
+  t0 = time.time()
   reflections = flex.reflection_table.from_observations(datablock, params)
+  t1 = time.time()
+  print 'Spotfinding took %.2f seconds' %(t1-t0)
   from dials.algorithms.peak_finding import per_image_analysis
   imageset = datablock.extract_imagesets()[0]
   stats = per_image_analysis.stats_single_image(
     imageset, reflections,
     i=imageset.get_scan().get_image_range()[0]-1, plot=False)
   stats = stats.__dict__
+  t2 = time.time()
+  print 'Resolution analysis took %.2f seconds' %(t2-t1)
 
   if index and stats['n_spots_no_ice'] > indexing_min_spots:
     import logging
@@ -139,6 +144,9 @@ indexing_min_spots = 10
       #stats.crystal = None
       #stats.n_indexed = None
       #stats.fraction_indexed = None
+    finally:
+      t3 = time.time()
+      print 'Indexing took %.2f seconds' %(t3-t2)
 
     if integrate and stats.has_key('lattices'):
 
@@ -202,6 +210,9 @@ indexing_min_spots = 10
       except Exception, e:
         print e
         stats['error'] = str(e)
+      finally:
+        t4 = time.time()
+        print 'Integration took %.2f seconds' %(t4-t3)
 
   return stats
   return stats.n_spots_total, stats.n_spots_no_ice
