@@ -14,7 +14,24 @@ from math import sin, cos, acos
 from scitbx import matrix
 from scitbx.array_family import flex #import dependency
 from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
+from dials_refinement_helpers_ext import CrystalOrientationCompose as xloc_cpp
 import random
+
+class CrystalOrientationCompose(xloc_cpp):
+  '''Wrapper for the C++ CrystalOrientationCompose class wiht accessors that
+  return matrix.sqr values.'''
+
+  def U(self):
+    return matrix.sqr(super(CrystalOrientationCompose, self).U())
+
+  def dU_dphi1(self):
+    return matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi1())
+
+  def dU_dphi2(self):
+    return matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi2())
+
+  def dU_dphi3(self):
+    return matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi3())
 
 def dR_from_axis_and_angle(axis, angle, deg=False):
   """Wrapper for C++ version of dR_from_axis_and_angle returning a matrix.sqr"""
