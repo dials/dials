@@ -100,6 +100,8 @@ class render_3d(object):
         sel = (self.reflections_input['imageset_id'] == i)
       else:
         sel = (self.reflections_input['id'] == i)
+      if isinstance(self.reflections_input['id'], flex.size_t):
+        self.reflections_input['id'] = self.reflections_input['id'].as_int()
       refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
         self.reflections_input.select(sel),
         imageset.get_detector(), imageset.get_scan())
