@@ -75,13 +75,15 @@ indexing_min_spots = 10
   integrate = params.extract().integrate
   indexing_min_spots = params.extract().indexing_min_spots
 
-  from dials.command_line.find_spots import phil_scope as params
+  from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
   from dxtbx.datablock import DataBlockFactory
   from dials.array_family import flex
-  interp = params.command_line_argument_interpreter()
-  params, unhandled = interp.process_and_fetch(
+  interp = find_spots_phil_scope.command_line_argument_interpreter()
+  phil_scope, unhandled = interp.process_and_fetch(
     unhandled, custom_processor='collect_remaining')
-  params = params.extract()
+  print 'The following spotfinding parameters have been modified:'
+  phil_scope.fetch_diff(source=find_spots_phil_scope).show()
+  params = phil_scope.extract()
   # no need to write the hot mask in the server/client
   params.spotfinder.write_hot_mask = False
   datablock = DataBlockFactory.from_filenames([filename])[0]
@@ -99,10 +101,12 @@ indexing_min_spots = 10
     from dials.algorithms.indexing import indexer
     from dxtbx.serialize.crystal import to_dict
     interp = indexer.master_phil_scope.command_line_argument_interpreter()
-    params, unhandled = interp.process_and_fetch(
+    phil_scope, unhandled = interp.process_and_fetch(
       unhandled, custom_processor='collect_remaining')
     imagesets = [imageset]
-    params = params.extract()
+    print 'The following indexing parameters have been modified:'
+    phil_scope.fetch_diff(source=indexer.master_phil_scope).show()
+    params = phil_scope.extract()
     params.indexing.scan_range=[]
 
     if (imageset.get_goniometer() is not None and
@@ -131,66 +135,73 @@ indexing_min_spots = 10
       stats['fraction_indexed'] = indexed_sel.count(True)/indexed_sel.size()
     except Exception, e:
       print e
+      stats['error'] = str(e)
       #stats.crystal = None
       #stats.n_indexed = None
       #stats.fraction_indexed = None
 
-    if integrate and stats.crystal is not None:
+    if integrate and stats.has_key('lattices'):
 
       from dials.algorithms.profile_model.factory import ProfileModelFactory
       from dials.algorithms.integration.integrator import IntegratorFactory
-      from dials.command_line.integrate import phil_scope
-      interp = phil_scope.command_line_argument_interpreter()
-      params, unhandled = interp.process_and_fetch(
+      from dials.command_line.integrate import phil_scope as integrate_phil_scope
+      interp = integrate_phil_scope.command_line_argument_interpreter()
+      phil_scope, unhandled = interp.process_and_fetch(
         unhandled, custom_processor='collect_remaining')
       imagesets = [imageset]
-      params = params.extract()
+      print 'The following integration parameters have been modified:'
+      phil_scope.fetch_diff(source=integrate_phil_scope).show()
+      params = phil_scope.extract()
 
-      params.profile.gaussian_rs.min_spots = 0
+      try:
+        params.profile.gaussian_rs.min_spots = 0
 
-      experiments = idxr.refined_experiments
-      reference = idxr.refined_reflections
+        experiments = idxr.refined_experiments
+        reference = idxr.refined_reflections
 
-      predicted = flex.reflection_table.from_predictions_multi(
-        experiments,
-        dmin=params.prediction.d_min,
-        dmax=params.prediction.d_max,
-        margin=params.prediction.margin,
-        force_static=params.prediction.force_static
-        )
+        predicted = flex.reflection_table.from_predictions_multi(
+          experiments,
+          dmin=params.prediction.d_min,
+          dmax=params.prediction.d_max,
+          margin=params.prediction.margin,
+          force_static=params.prediction.force_static
+          )
 
-      matched, reference = predicted.match_with_reference(reference)
-      assert(len(matched) == len(predicted))
-      assert(matched.count(True) <= len(reference))
-      if matched.count(True) == 0:
-        raise Sorry('''
-          Invalid input for reference reflections.
-          Zero reference spots were matched to predictions
-        ''')
-      elif matched.count(True) != len(reference):
-        from logging import info
-        info('')
-        info('*' * 80)
-        info('Warning: %d reference spots were not matched to predictions' % (
-          len(reference) - matched.count(True)))
-        info('*' * 80)
-        info('')
+        matched, reference, unmatched = predicted.match_with_reference(reference)
+        assert(len(matched) == len(predicted))
+        assert(matched.count(True) <= len(reference))
+        if matched.count(True) == 0:
+          raise Sorry('''
+            Invalid input for reference reflections.
+            Zero reference spots were matched to predictions
+          ''')
+        elif matched.count(True) != len(reference):
+          from logging import info
+          info('')
+          info('*' * 80)
+          info('Warning: %d reference spots were not matched to predictions' % (
+            len(reference) - matched.count(True)))
+          info('*' * 80)
+          info('')
 
-      # Compute the profile model
-      experiments = ProfileModelFactory.create(params, experiments, reference)
+        # Compute the profile model
+        experiments = ProfileModelFactory.create(params, experiments, reference)
 
-      # Compute the bounding box
-      predicted.compute_bbox(experiments)
+        # Compute the bounding box
+        predicted.compute_bbox(experiments)
 
-      # Create the integrator
-      integrator = IntegratorFactory.create(params, experiments, predicted)
+        # Create the integrator
+        integrator = IntegratorFactory.create(params, experiments, predicted)
 
-      # Integrate the reflections
-      reflections = integrator.integrate()
+        # Integrate the reflections
+        reflections = integrator.integrate()
 
-      #print len(reflections)
+        #print len(reflections)
 
-      stats.integrated_intensity = flex.sum(reflections['intensity.sum.value'])
+        stats['integrated_intensity'] = flex.sum(reflections['intensity.sum.value'])
+      except Exception, e:
+        print e
+        stats['error'] = str(e)
 
   return stats
   return stats.n_spots_total, stats.n_spots_no_ice

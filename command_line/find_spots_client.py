@@ -16,9 +16,7 @@ def _nproc():
 
 def response_to_xml(d):
 
-  if 'error' in d:
-    response = '%s' %d['error']
-  else:
+  if 'n_spots_total' in d:
     response = '''\
 <image>%(image)s</image>,
 <spot_count>%(n_spots_total)s</spot_count>'
@@ -27,6 +25,10 @@ def response_to_xml(d):
 <d_min_method_1>%(d_min_distl_method_1).2f</d_min_method_1>
 <d_min_method_2>%(d_min_distl_method_2).2f</d_min_method_2>
 <total_intensity>%(total_intensity).0f</total_intensity>''' %d
+
+  else:
+    assert 'error' in d
+    return '<response>\n%s\n</response>' %d['error']
 
   if 'lattices' in d:
     from dxtbx.serialize.crystal import from_dict
@@ -41,8 +43,9 @@ def response_to_xml(d):
       '<n_indexed>%i</n_indexed>' %d['n_indexed'],
       '<fraction_indexed>%.2f</fraction_indexed>' %d['fraction_indexed']])
   if 'integrated_intensity' in d:
-    response.append(
-      '<integrated_intensity>%.0f</integrated_intensity>' %d['integrated_intensity'])
+    response = '\n'.join([
+      response,
+      '<integrated_intensity>%.0f</integrated_intensity>' %d['integrated_intensity']])
 
   return '<response>\n%s\n</response>' %response
 
