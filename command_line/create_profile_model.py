@@ -31,6 +31,7 @@ phil_scope = parse('''
     .help = "The filename for the experiments"
 
   include scope dials.algorithms.profile_model.factory.phil_scope
+  include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 ''', process_includes=True)
 
 class Script(object):
@@ -60,6 +61,10 @@ class Script(object):
     from dials.util.options import flatten_reflections, flatten_experiments
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     from libtbx.utils import Sorry
+    from logging import info
+    from dials.util import log
+
+    log.config()
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -74,12 +79,35 @@ class Script(object):
       raise Sorry('no experiments were specified')
     reflections, _ = self.process_reference(reflections[0])
 
-    from dials.array_family import flex
-    Command.start('Removing invalid coordinates')
-    xyz = reflections['xyzcal.mm']
-    mask = flex.bool([x == (0, 0, 0) for x in xyz])
-    reflections.del_selected(mask)
-    Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
+    # Predict the reflections
+    info("")
+    info("=" * 80)
+    info("")
+    info("Predicting reflections")
+    info("")
+    predicted = flex.reflection_table.from_predictions_multi(
+      experiments,
+      dmin=params.prediction.d_min,
+      dmax=params.prediction.d_max,
+      margin=params.prediction.margin,
+      force_static=params.prediction.force_static)
+
+    # Match with predicted
+    matched, reflections, unmatched = predicted.match_with_reference(reflections)
+    assert(len(matched) == len(predicted))
+    assert(matched.count(True) <= len(reflections))
+    if matched.count(True) == 0:
+      raise Sorry('''
+        Invalid input for reference reflections.
+        Zero reference spots were matched to predictions
+      ''')
+    elif len(unmatched) != 0:
+      info('')
+      info('*' * 80)
+      info('Warning: %d reference spots were not matched to predictions' % (
+        len(unmatched)))
+      info('*' * 80)
+      info('')
 
     # Create the profile model
     experiments = ProfileModelFactory.create(params, experiments, reflections)
@@ -87,13 +115,13 @@ class Script(object):
       sigma_b = model.profile.sigma_b(deg=True)
       sigma_m = model.profile.sigma_m(deg=True)
       if type(sigma_b) == type(1.0):
-        print 'Sigma B: %f' % sigma_b
-        print 'Sigma M: %f' % sigma_m
+        info('Sigma B: %f' % sigma_b)
+        info('Sigma M: %f' % sigma_m)
       else: # scan varying
         mean_sigma_b = sum(sigma_b) / len(sigma_b)
         mean_sigma_m = sum(sigma_m) / len(sigma_m)
-        print 'Sigma B: %f' % mean_sigma_b
-        print 'Sigma M: %f' % mean_sigma_m
+        info('Sigma B: %f' % mean_sigma_b)
+        info('Sigma M: %f' % mean_sigma_m)
 
     # Wrtie the parameters
     Command.start("Writing experiments to %s" % params.output)
