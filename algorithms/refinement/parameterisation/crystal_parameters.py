@@ -19,6 +19,8 @@ from dials.algorithms.refinement.refinement_helpers \
     import dR_from_axis_and_angle
 from rstbx.symmetry.constraints.parameter_reduction \
     import symmetrize_reduce_enlarge
+from dials.algorithms.refinement.refinement_helpers \
+  import CrystalOrientationCompose
 
 class CrystalOrientationParameterisation(ModelParameterisation):
   """Parameterisation for crystal orientation, with angles expressed in
@@ -63,38 +65,16 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     # extract parameters from the internal list
     phi1, phi2, phi3 = self._param
 
-    # convert to radians
-    phi1rad, phi2rad, phi3rad = (phi1.value / 1000., phi2.value / 1000.,
-                                 phi3.value / 1000.)
+    # calculate using the helper class
+    coc = CrystalOrientationCompose(U0, phi1.value, phi1.axis,
+                                    phi2.value, phi2.axis,
+                                    phi3.value, phi3.axis)
 
-    # compose rotation matrices and their first order derivatives
-    Phi1 = (phi1.axis).axis_and_angle_as_r3_rotation_matrix(
-                                                        phi1rad, deg=False)
-    dPhi1_dphi1 = dR_from_axis_and_angle(phi1.axis, phi1rad, deg=False)
+    # compose new state
+    self._model.set_U(coc.U())
 
-    Phi2 = (phi2.axis).axis_and_angle_as_r3_rotation_matrix(
-                                                        phi2rad, deg=False)
-    dPhi2_dphi2 = dR_from_axis_and_angle(phi2.axis, phi2rad, deg=False)
-
-    Phi3 = (phi3.axis).axis_and_angle_as_r3_rotation_matrix(
-                                                        phi3rad, deg=False)
-    dPhi3_dphi3 = dR_from_axis_and_angle(phi3.axis, phi3rad, deg=False)
-
-    Phi21 = Phi2 * Phi1
-    Phi321 = Phi3 * Phi21
-
-    ### Compose new state
-
-    newU = Phi321 * U0
-    self._model.set_U(newU)
-
-    ### calculate derivatives of the state wrt parameters
-    dU_dphi1 = Phi3 * Phi2 * dPhi1_dphi1 * U0
-    dU_dphi2 = Phi3 * dPhi2_dphi2 * Phi1 * U0
-    dU_dphi3 = dPhi3_dphi3 * Phi21 * U0
-
-    # convert to mrad and store
-    self._dstate_dp = [dU_dphi1 / 1000., dU_dphi2 / 1000., dU_dphi3 / 1000.]
+    # store derivatives
+    self._dstate_dp = [coc.dU_dphi1(), coc.dU_dphi2(), coc.dU_dphi3()]
 
     return
 
