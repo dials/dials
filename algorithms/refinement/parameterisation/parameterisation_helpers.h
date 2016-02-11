@@ -9,13 +9,21 @@
 #include <dxtbx/model/panel.h>
 #include <dials/error.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+//#include <dials/algorithms/refinement/rtmats.h>
+#include <scitbx/math/r3_rotation.h>
 
 namespace dials { namespace refinement {
 
   using scitbx::vec3;
   using scitbx::mat3;
   using dxtbx::model::Detector;
-  //using dxtbx::model::Panel;
+  using scitbx::math::r3_rotation::axis_and_angle_as_matrix;
+
+  // declare this here - can't #include the header as the function is defined
+  // there, leading to multiple definitions
+  mat3<double> dR_from_axis_and_angle(const vec3<double> &axis,
+                                      double angle,
+                                      bool deg=false);
 
   af::shared < mat3 <double> >
   selected_multi_panel_compose(
@@ -372,6 +380,79 @@ namespace dials { namespace refinement {
       detector, selection.const_ref(), offsets, dir1s, dir2s, Tau1, dTau1_dtau1,
       Tau2, dTau2_dtau2, Tau3, dTau3_dtau3);
   }
+
+  /**
+   * Given an initial orientation matrix, the values of the three orientation
+   * parameters, phi1, phi2 and phi3 (in mrad), plus the axes about which these
+   * parameters act, calculate the new orientation U plus the derivatives
+   * dU/dphi1, dU/dphi2 and dU/dphi3
+   */
+  class CrystalOrientationCompose {
+
+  public:
+
+    CrystalOrientationCompose(
+        const mat3<double> &U0,
+        double phi1,
+        const vec3<double> &phi1_axis,
+        double phi2,
+        const vec3<double> &phi2_axis,
+        double phi3,
+        const vec3<double> &phi3_axis) {
+
+      // convert angles from mrad to radians
+      phi1 /= 1000.;
+      phi2 /= 1000.;
+      phi3 /= 1000.;
+
+      // compose rotation matrices and their first order derivatives
+      mat3<double> Phi1 = axis_and_angle_as_matrix(phi1_axis, phi1);
+      mat3<double> dPhi1_dphi1 = dR_from_axis_and_angle(phi1_axis, phi1);
+
+      mat3<double> Phi2 = axis_and_angle_as_matrix(phi2_axis, phi2);
+      mat3<double> dPhi2_dphi2 = dR_from_axis_and_angle(phi2_axis, phi2);
+
+      mat3<double> Phi3 = axis_and_angle_as_matrix(phi3_axis, phi3);
+      mat3<double> dPhi3_dphi3 = dR_from_axis_and_angle(phi3_axis, phi3);
+
+      // compose new state
+      mat3<double> Phi21 = Phi2 * Phi1;
+      mat3<double> Phi321 = Phi3 * Phi21;
+      U_ = Phi321 * U0;
+
+      // calculate derivatives of the state wrt parameters
+      dU_dphi1_ = (Phi3 * Phi2 * dPhi1_dphi1 * U0)/1000.0;
+      dU_dphi2_ = (Phi3 * dPhi2_dphi2 * Phi1 * U0)/1000.0;
+      dU_dphi3_ = (dPhi3_dphi3 * Phi21 * U0)/1000.0;
+
+    }
+
+    mat3<double>
+    U(){
+      return U_;
+    }
+
+    mat3<double>
+    dU_dphi1(){
+      return dU_dphi1_;
+    }
+
+    mat3<double>
+    dU_dphi2(){
+      return dU_dphi2_;
+    }
+
+    mat3<double>
+    dU_dphi3(){
+      return dU_dphi3_;
+    }
+
+  private:
+    mat3<double> U_;
+    mat3<double> dU_dphi1_;
+    mat3<double> dU_dphi2_;
+    mat3<double> dU_dphi3_;
+  };
 
 }} // namespace dials::refinement
 
