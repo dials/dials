@@ -82,7 +82,7 @@ indexing_min_spots = 10
   phil_scope, unhandled = interp.process_and_fetch(
     unhandled, custom_processor='collect_remaining')
   print 'The following spotfinding parameters have been modified:'
-  phil_scope.fetch_diff(source=find_spots_phil_scope).show()
+  find_spots_phil_scope.fetch_diff(source=phil_scope).show()
   params = phil_scope.extract()
   # no need to write the hot mask in the server/client
   params.spotfinder.write_hot_mask = False
@@ -110,7 +110,7 @@ indexing_min_spots = 10
       unhandled, custom_processor='collect_remaining')
     imagesets = [imageset]
     print 'The following indexing parameters have been modified:'
-    phil_scope.fetch_diff(source=indexer.master_phil_scope).show()
+    indexer.master_phil_scope.fetch_diff(source=phil_scope).show()
     params = phil_scope.extract()
     params.indexing.scan_range=[]
 
@@ -158,7 +158,7 @@ indexing_min_spots = 10
         unhandled, custom_processor='collect_remaining')
       imagesets = [imageset]
       print 'The following integration parameters have been modified:'
-      phil_scope.fetch_diff(source=integrate_phil_scope).show()
+      integrate_phil_scope.fetch_diff(source=phil_scope).show()
       params = phil_scope.extract()
 
       try:
