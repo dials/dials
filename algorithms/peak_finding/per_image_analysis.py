@@ -740,7 +740,7 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
                     noisiness_method_2=noisiness_method_2)
 
 
-def table(stats):
+def table(stats, perm=None, n_rows=None):
   n_spots_total = stats.n_spots_total
   n_spots_no_ice = stats.n_spots_no_ice
   n_spots_4A = stats.n_spots_4A
@@ -750,6 +750,10 @@ def table(stats):
   d_min_distl_method_2 = stats.d_min_distl_method_2
   noisiness_method_1 = stats.noisiness_method_1
   noisiness_method_2 = stats.noisiness_method_2
+  if hasattr(stats, 'image'):
+    image = stats.image
+  else:
+    image = flex.int(range(1, len(n_spots_total)+1)).as_std_string()
   if flex.double(estimated_d_min).all_eq(-1):
     estimated_d_min = None
   if flex.double(d_min_distl_method_1).all_eq(-1):
@@ -764,7 +768,12 @@ def table(stats):
     rows[0].append("d_min (distl method 1)")
   if d_min_distl_method_2 is not None:
     rows[0].append("d_min (distl method 2)")
-  for i_image in range(len(n_spots_total)):
+  if perm is None:
+    perm = range(len(n_spots_total))
+  if n_rows is not None:
+    n_rows = min(n_rows, len(perm))
+    perm = perm[:n_rows]
+  for i_image in perm:
     d_min_str = ''
     method1_str = ''
     method2_str = ''
@@ -778,7 +787,7 @@ def table(stats):
       method2_str = "%.2f" %d_min_distl_method_2[i_image]
       if noisiness_method_2 is not None:
         method2_str += " (%.2f)" %noisiness_method_2[i_image]
-    row = [str(int(i_image)+1),
+    row = [image[i_image],
            str(n_spots_total[i_image]),
            str(n_spots_no_ice[i_image]),
            #str(n_spots_4A[i_image]),
@@ -792,13 +801,13 @@ def table(stats):
     rows.append(row)
   return rows
 
-def print_table(stats, out=None):
+def print_table(stats, perm=None, n_rows=None, out=None):
   if out is None:
     import sys
     out = sys.stdout
   from libtbx import table_utils
 
-  rows = table(stats)
+  rows = table(stats, perm=perm, n_rows=n_rows)
   print >> out, table_utils.format(
     rows, has_header=True, prefix="| ", postfix=" |")
 
