@@ -270,50 +270,59 @@ def run(args):
           print >> f, "%f %f" %proj
 
   if params.plot.show or params.plot.filename:
+    plot_projections(
+      projections_all, filename=params.plot.filename, show=params.plot.show,
+      colours=params.plot.colours, marker_size=params.plot.marker_size,
+      font_size=params.plot.font_size, label_indices=params.plot.label_indices)
 
-    try:
-      import matplotlib
+def plot_projections(projections, filename=None, show=None,
+                     colours=None, marker_size=3, font_size=6,
+                     label_indices=False):
+  assert [filename, show].count(None) < 2
+  projections_all = projections
 
-      if not params.plot.show:
-        # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-        matplotlib.use('Agg') # use a non-interactive backend
-      from matplotlib import pyplot
-      from matplotlib import pylab
-    except ImportError:
-      raise Sorry("matplotlib must be installed to generate a plot.")
+  try:
+    import matplotlib
 
-    colours = params.plot.colours
-    if colours is None or len(colours) == 0:
-      colours = ['b'] * len(projections_all)
-    elif len(colours) < len(projections_all):
-      colours = colours * len(projections_all)
+    if not show:
+      # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+      matplotlib.use('Agg') # use a non-interactive backend
+    from matplotlib import pyplot
+    from matplotlib import pylab
+  except ImportError:
+    raise Sorry("matplotlib must be installed to generate a plot.")
 
-    fig = pyplot.figure()
+  if colours is None or len(colours) == 0:
+    colours = ['b'] * len(projections_all)
+  elif len(colours) < len(projections_all):
+    colours = colours * len(projections_all)
 
-    pyplot.scatter([0], [0], marker='+', c='0.75', s=100)
-    cir = pylab.Circle((0,0), radius=1.0, fill=False, color='0.75')
-    pylab.gca().add_patch(cir)
+  fig = pyplot.figure()
 
-    for i, projections in enumerate(projections_all):
-      x, y = projections.parts()
-      pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(),
-                     c=colours[i], s=params.plot.marker_size, edgecolors='none')
-      if params.plot.label_indices:
-        for j, (hkl, proj) in enumerate(zip(miller_indices, projections)):
-          # hack to not write two labels on top of each other
-          p1, p2 = (projections - proj).parts()
-          if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
-            continue
-          pyplot.text(proj[0], proj[1], str(hkl), fontsize=params.plot.font_size)
-    pyplot.axes().set_aspect('equal')
-    pyplot.xlim(-1.1,1.1)
-    pyplot.ylim(-1.1,1.1)
-    if params.plot.filename is not None:
-      pyplot.savefig(params.plot.filename,
-                     size_inches=(24,18),
-                     dpi=300)
-    if params.plot.show:
-      pyplot.show()
+  pyplot.scatter([0], [0], marker='+', c='0.75', s=100)
+  cir = pylab.Circle((0,0), radius=1.0, fill=False, color='0.75')
+  pylab.gca().add_patch(cir)
+
+  for i, projections in enumerate(projections_all):
+    x, y = projections.parts()
+    pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(),
+                   c=colours[i], s=marker_size, edgecolors='none')
+    if label_indices:
+      for j, (hkl, proj) in enumerate(zip(miller_indices, projections)):
+        # hack to not write two labels on top of each other
+        p1, p2 = (projections - proj).parts()
+        if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
+          continue
+        pyplot.text(proj[0], proj[1], str(hkl), fontsize=font_size)
+  pyplot.axes().set_aspect('equal')
+  pyplot.xlim(-1.1,1.1)
+  pyplot.ylim(-1.1,1.1)
+  if filename is not None:
+    pyplot.savefig(filename,
+                   size_inches=(24,18),
+                   dpi=300)
+  if show:
+    pyplot.show()
 
 
 if __name__ == '__main__':
