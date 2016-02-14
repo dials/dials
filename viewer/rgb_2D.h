@@ -163,11 +163,11 @@ namespace dials { namespace viewer { namespace boost_python {
 
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
-        if(max == -1 and min == -1){
+        if(max == -1 && min == -1){
           for (int col = 0; col < ncol; col++) {
             for (int row = 0; row < nrow ; row++) {
               loc_cel = data2d(row, col);
-              if(row == 0 and col == 0){
+              if(row == 0 && col == 0){
                 max = loc_cel;
                 min = loc_cel;
               }else{
@@ -192,14 +192,14 @@ namespace dials { namespace viewer { namespace boost_python {
         }
         int px_scale = 0;
 
-        if(ncol < 200 and nrow < 200){
+        if(ncol < 200 && nrow < 200){
 
           float diagn;
-            if(ncol < 20 and nrow < 20){
+            if(ncol < 20 && nrow < 20){
               px_scale = 85;
               //std::cout << "less than (20 * 20) pixels \n";
             }else{
-              diagn = sqrt(ncol * ncol + nrow * nrow);
+              diagn = sqrt((double)(ncol * ncol + nrow * nrow));
               px_scale = (1000.0 / diagn);
               //std::cout << "scale = " << px_scale << "\n";
             }
@@ -248,17 +248,17 @@ namespace dials { namespace viewer { namespace boost_python {
                     mask_pix_row < px_scale;
                     pix_row++,
                     mask_pix_row++){
-                  if( ( mask_vol[mask_pix_row][mask_pix_col][0] == 1 and
+                  if( ( mask_vol[mask_pix_row][mask_pix_col][0] == 1 &&
                       ( (loc_cel_int & Valid) == Valid ) )
-                      or
-                      ( mask_vol[mask_pix_row][mask_pix_col][1] == 1 and
+                      ||
+                      ( mask_vol[mask_pix_row][mask_pix_col][1] == 1 &&
                       ( (loc_cel_int & Foreground) == Foreground )  )
 
-                      or
-                      ( mask_vol[mask_pix_row][mask_pix_col][2] == 1 and
+                      ||
+                      ( mask_vol[mask_pix_row][mask_pix_col][2] == 1 &&
                       ( (loc_cel_int & BackgroundUsed) == BackgroundUsed ) )
-                      or
-                      ( mask_vol[mask_pix_row][mask_pix_col][3] == 1 and
+                      ||
+                      ( mask_vol[mask_pix_row][mask_pix_col][3] == 1 &&
                       ( (loc_cel_int & Background) == Background )  )  ){
                     bmp_dat(pix_row, pix_col, 0) = 150;
                     bmp_dat(pix_row, pix_col, 1) = 150;
@@ -275,7 +275,7 @@ namespace dials { namespace viewer { namespace boost_python {
                 if(err_conv == 0){
                   //std::cout << "data2d(row, col) = " << data2d(row, col) << "\n";
                   for(int dg_num = 0;
-                      dg_num < 12 and digit_val[dg_num] != 15;
+                      dg_num < 12 && digit_val[dg_num] != 15;
                       dg_num++){
 
                     for(int font_pix_col = 0, pix_col = col * px_scale + dg_num * 7;

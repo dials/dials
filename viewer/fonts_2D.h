@@ -371,7 +371,7 @@ int get_digits( double nm, int (&dgt_num)[15]){
     str = asc_str[i];
     dgt_num[i] = asc_str[i] - 48;
 
-    if( dgt_num[i] < 0 or dgt_num[i] > 9 ){
+    if( dgt_num[i] < 0 || dgt_num[i] > 9 ){
       if( str == "." ){
         dgt_num[i] = 10;
       }else if( str == "e" ){
