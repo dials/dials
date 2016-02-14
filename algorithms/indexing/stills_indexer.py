@@ -113,6 +113,9 @@ class stills_indexer(indexer_base):
     # specific modifications (don't re-index after choose best orientation matrix, but use the indexing from
     # choose best orientation matrix, also don't use macrocycles)
     # of refinement after indexing).
+    if self.params.refinement_protocol.n_macro_cycles > 1:
+      raise Sorry("For stills, please set refinement_protocol.n_macro_cycles = 1")
+
     self.reflections_input = self.reflections
     self.reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
@@ -209,9 +212,6 @@ class stills_indexer(indexer_base):
       elif len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
         break
-
-      assert self.params.refinement_protocol.n_macro_cycles == 1
-
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
