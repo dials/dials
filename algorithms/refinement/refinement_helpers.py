@@ -17,6 +17,21 @@ from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
 from dials_refinement_helpers_ext import CrystalOrientationCompose as xloc_cpp
 import random
 
+def ordinal_number(array_index=None, cardinal_number=None):
+  '''Return a string representing the ordinal number for the input integer. One
+  of array_index or cardinal_number must be set, depending on whether the
+  input is from a 0-based or 1-based sequence.
+
+  Based on Thad Guidry's post at
+  https://groups.google.com/forum/#!topic/openrefine/G7_PSdUeno0'''
+  if [array_index, cardinal_number].count(None) != 1:
+    raise ValueError("One of array_index or cardinal_number should be set")
+  if array_index is not None:
+    i = int(array_index) + 1
+  if cardinal_number is not None:
+    i = int(cardinal_number)
+  return str(i) + {1: 'st', 2: 'nd', 3: 'rd'}.get(4 if 10 <= i % 100 < 20 else i % 10, "th")
+
 class CrystalOrientationCompose(xloc_cpp):
   '''Wrapper for the C++ CrystalOrientationCompose class wiht accessors that
   return matrix.sqr values.'''
