@@ -397,175 +397,10 @@ class RefinerFactory(object):
     return cls._build_components(params,
                                  reflections,
                                  experiments,
-                                 crystal_ids=range(len(experiments)),
                                  verbosity=verbosity)
 
   @classmethod
-  def from_parameters_data_models(cls,
-                                  params,
-                                  reflections,
-                                  sweep=None,
-                                  beam=None,
-                                  goniometer=None,
-                                  detector=None,
-                                  scan=None,
-                                  image_width_rad=None,
-                                  sweep_range_rad=None,
-                                  crystal=None,
-                                  crystals=None,
-                                  crystal_ids=None,
-                                  verbosity=None):
-    """Given a set of parameters, reflections and experimental models for a
-    single Experiment, construct a refiner.
-
-    Mandatory arguments:
-      params - The input parameters as a phil scope_extract object
-      reflections - Input ReflectionList data
-
-    Argument alternatives:
-      sweep - Experimental models as a dxtbx sweep
-        or
-      /beam - A dxtbx Beam object
-      \detector - A dxtbx Detector object
-      crystal - A cctbx crystal_model object
-        or
-      /crystals - A list of cctbx crystal_model objects
-      \crystal_ids - A list of integer crystal ids to match to crystals
-
-    Optional arguments:
-      goniometer - A dxtbx Goniometer model
-      scan - A dxtbx Scan model
-        or
-      /image_width_rad - The 'width' of one image in radians
-      \sweep_range_rad - Pair of rotation scan extremes in radians
-      verbosity - An integer verbosity level
-
-    Returns:
-      The Refiner instance.
-
-    Notes
-    -----
-
-    The interface is intended to be flexible by allowing input to be passed in
-    various forms. Some are incompatible, e.g. passing a sweep alongside any
-    other dxtbx model is disallowed. Either a crystal or a list of crystals must
-    be provided (but not both). A list of crystals must be associated with a
-    list of crystal id integers to associate with the crystals.
-
-    The optional arguments determine the behaviour of the refiner, alongside the
-    phil parameters. Of particular interest, the presence of a goniometer model
-    decides whether the refinement is of a rotation scan, with a target
-    expressed in (X, Y, Phi) space, or of a still image, with an (X, Y) target.
-    For a rotation scan, a Scan object is optional. It is only used for some
-    information, which may be provided instead by using the image_width_rad and
-    sweep_range_rad arguments. It is even possible to specify none of
-    image_width_rad, sweep_range_rad or scan and still do (X, Y, Phi)
-    refinement, but in such a case the phil params should not specify
-    reflections.reflections_per_degree and must specify
-    target.rmsd_cutoff=absolute. This is checked to avoid illegal construction
-    of the target and reflection manager objects.
-
-    The steps performed by this factory function are:
-    * check for consistent input
-    * copy the input models and reflections
-    * set beam vectors in the working copy of reflections if not already set
-    * create parameterisations of the models that were provided, depending on
-      phil preferences for choices such as fixing certain parameters
-    * create a reflection manager, depending on phil preferences for decisions
-      regarding inclusion and random sampling criteria
-    * create a target function using phil parameters to determine the 'target
-      achieved' criterion, and the presence of a goniometer to determine whether
-      to include or ignore residuals in phi
-    * create a refinery (minimisation engine) using phil parameters to select a
-      particular algorithm, determine a maximum number of steps and to control
-      additional logging features
-    * package all the above together in a 'refiner' object, which provides the
-      interface for running refinement
-    * return that refiner
-
-    """
-
-    # if no verbosity override is given, take from the parameters
-    if not verbosity:
-      verbosity = params.refinement.verbosity
-
-    # checks on the input
-    if sweep:
-      if [beam, goniometer, detector, scan].count(None) != 4:
-        raise Sorry('You have a sweep but it is missing a beam, goniometer, '
-                    'detector or scan model')
-      beam = sweep.get_beam()
-      detector = sweep.get_detector()
-      goniometer = sweep.get_goniometer()
-      scan = sweep.get_scan()
-
-    # if either of these provided, both must be
-    if image_width_rad or sweep_range_rad:
-      assert image_width_rad and sweep_range_rad
-
-    # only one of image_width_rad or scan should be provided (or neither)
-    assert [image_width_rad, scan].count(None) >= 1
-    #if scan:
-      #image_width_rad = scan.get_oscillation(deg=False)[1]
-      #sweep_range_rad = scan.get_oscillation_range(deg=False)
-    if image_width_rad:
-      # create a dummy scan
-      from dxtbx.model.scan import scan_factory
-      sf = scan_factory()
-      sweep_width = abs(sweep_range_rad[1] - sweep_range_rad[0])
-      nimages = int(sweep_width / image_width_rad)
-      scan = sf.make_scan(image_range= (1, nimages),
-                          exposure_times = 0.,
-                          oscillation = (0, image_width_rad),
-                          epochs = range(nimages),
-                          deg = False)
-
-    if goniometer and not image_width_rad and not scan:
-      # This is not to be supported any more. Now we state we must have enough
-      # information to make a scan
-      raise Sorry("Goniometer provided, but not enough information about a scan!")
-      # if there was neither a scan nor the image width provided,
-      # the target rmsd must be provided in absolute terms
-      #assert params.refinement.target.rmsd_cutoff == "absolute"
-      # also there is no sweep range, so the reflection manager
-      # cannot sample by number of reflections per degree
-      #assert params.refinement.reflections.reflections_per_degree is None
-
-    # do we have the essential models?
-    assert [beam, detector].count(None) == 0
-    assert [crystal, crystals].count(None) == 1
-    if crystals: assert len(crystals) == len(crystal_ids)
-
-    # copy the models
-    from dxtbx.model import Beam
-    import copy
-    # use copy constructor
-    beam = Beam(beam)
-    detector = copy.deepcopy(detector)
-    if crystal:
-      crystals = [copy.deepcopy(crystal)]
-      crystal_ids = [0]
-    if crystals: crystals = copy.deepcopy(crystals)
-
-    # build an experiment list with the copied models
-    experiments = ExperimentList()
-    for crystal in crystals:
-      experiments.append(Experiment(
-        beam=beam, detector=detector, goniometer=goniometer,
-        scan=scan, crystal=crystal, imageset=None))
-
-    # copy and filter the reflections
-    reflections = cls._filter_reflections(reflections)
-
-    # Build components and return
-    return cls._build_components(params,
-                                 reflections,
-                                 experiments,
-                                 crystal_ids,
-                                 verbosity)
-
-  @classmethod
-  def _build_components(cls, params, reflections, experiments, crystal_ids,
+  def _build_components(cls, params, reflections, experiments,
                         verbosity):
     """low level build"""
 
@@ -663,7 +498,7 @@ class RefinerFactory(object):
     debug("Refinement engine built")
 
     # build refiner interface and return
-    return Refiner(reflections, experiments, crystal_ids,
+    return Refiner(reflections, experiments,
                     pred_param, param_reporter, refman, target, refinery,
                     verbosity=verbosity)
 
@@ -1452,12 +1287,6 @@ class Refiner(object):
     run
     rmsds
     get_experiments
-    get_beam
-    get_crystal
-    get_crystals
-    get_detector
-    get_goniometer
-    get_scan
     get_matches
     get_param_reporter
     parameter_correlation_plot
@@ -1477,15 +1306,13 @@ class Refiner(object):
 
     """
 
-  def __init__(self, reflections, experiments, crystal_ids,
+  def __init__(self, reflections, experiments,
                pred_param, param_reporter, refman, target, refinery,
                verbosity=0):
     """
     Mandatory arguments:
       reflections - Input ReflectionList data
-      beam - A dxtbx Beam object
-      crystals - A list of cctbx crystal_model objects
-      detector - A dxtbx Detector object
+      experiments - a dxtbx ExperimentList object
       pred_param - An object derived from the PredictionParameterisation class
       param_reporter -A ParameterReporter object
       refman - A ReflectionManager object
@@ -1493,31 +1320,12 @@ class Refiner(object):
       refinery - An object derived from the Refinery class
 
     Optional arguments:
-      goniometer - A dxtbx Goniometer object
-      scan - A dxtbx Scan object
       verbosity - An integer verbosity level
 
     """
 
-    # FIXME only models from the first Experiment are kept here
-    detector = experiments[0].detector
-    beam = experiments[0].beam
-    crystals = experiments.crystals()
-    goniometer = experiments[0].goniometer
-    scan = experiments[0].scan
-
-    # keep the data and models public for access after refinement
+    # the experimental models
     self._experiments = experiments
-    self._beam = beam
-    self._crystals = crystals
-    self._crystal_ids = crystal_ids
-    # only keep crystal if there is indeed only one
-    self._crystal = crystals[0] if len(crystals) == 1 else None
-    self._detector = detector
-
-    # these could be None (for stills/XFEL)
-    self._goniometer = goniometer
-    self._scan = scan
 
     # refinement module main objects
     self._pred_param = pred_param
@@ -1536,51 +1344,6 @@ class Refiner(object):
 
     from copy import deepcopy
     return deepcopy(self._experiments)
-
-  def get_beam(self):
-    """Return a copy of the beam model"""
-
-    from dxtbx.model import Beam
-    return Beam(self._beam)
-
-  def get_crystal(self):
-    """Return a copy of the crystal model, if present"""
-
-    from copy import deepcopy
-    if self._crystal:
-      return deepcopy(self._crystal)
-    else:
-      return None
-
-  def get_crystals(self):
-    """Return a copy of the crystal models (always present)"""
-
-    from copy import deepcopy
-    return deepcopy(self._crystals)
-
-  def get_detector(self):
-    """Return a copy of the detector model"""
-
-    from copy import deepcopy
-    return deepcopy(self._detector)
-
-  def get_goniometer(self):
-    """Return the goniometer model, if present"""
-
-    # this is unmodified by refinement, so safe to return directly without copy
-    if self._goniometer:
-      return self._goniometer
-    else:
-      return None
-
-  def get_scan(self):
-    """Return the scan model, if present"""
-
-    # this is unmodified by refinement, so safe to return directly without copy
-    if self._scan:
-      return self._scan
-    else:
-      return None
 
   def rmsds(self):
     """Return rmsds of the current model"""
