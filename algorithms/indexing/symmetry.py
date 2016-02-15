@@ -199,11 +199,12 @@ def refine_subgroup(args):
     dx = dall[0]; dy = dall[1]
     subgroup.rmsd = math.sqrt(dx*dx + dy*dy)
     subgroup.Nmatches = len(refinery.get_matches())
-    subgroup.scan = refinery.get_experiments()[0].scan
-    subgroup.goniometer = refinery.get_experiments()[0].goniometer
-    subgroup.beam = refinery.get_experiments()[0].beam
-    subgroup.detector = refinery.get_experiments()[0].detector
-    subgroup.refined_crystal = refinery.get_experiments()[0].crystal
+    refined_exps = refinery.get_experiments()
+    subgroup.scan = refined_exps[0].scan
+    subgroup.goniometer = refined_exps[0].goniometer
+    subgroup.beam = refined_exps[0].beam
+    subgroup.detector = refined_exps[0].detector
+    subgroup.refined_crystal = refined_exps[0].crystal
     cs = crystal.symmetry(
       unit_cell=subgroup.refined_crystal.get_unit_cell(),
       space_group=subgroup.refined_crystal.get_space_group())
