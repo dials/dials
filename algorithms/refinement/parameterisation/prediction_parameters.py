@@ -157,33 +157,34 @@ class PredictionParameterisation(object):
 
   def get_param_names(self):
     """Return a list of the names of parameters in the order they are
-    concatenated. Useful for output to log files and debugging."""
+    concatenated. Useful for output to log files and debugging. Use 1-based
+    indexing for indices in the names"""
     param_names = []
     if self._detector_parameterisations:
       det_param_name_lists = [x.get_param_names() for x in \
                          self._detector_parameterisations]
-      names = ["Detector%d" % i + x for i, l \
+      names = ["Detector%d" % (i + 1) + x for i, l \
                in enumerate(det_param_name_lists) for x in l]
       param_names.extend(names)
 
     if self._beam_parameterisations:
       beam_param_name_lists = [x.get_param_names() for x in \
                          self._beam_parameterisations]
-      params = ["Beam%d" % i + x for i, l \
+      params = ["Beam%d" % (i + 1) + x for i, l \
                 in enumerate(beam_param_name_lists) for x in l]
       param_names.extend(params)
 
     if self._xl_orientation_parameterisations:
       xlo_param_name_lists = [x.get_param_names() for x
                     in self._xl_orientation_parameterisations]
-      params = ["Crystal%d" % i + x for i, l \
+      params = ["Crystal%d" % (i + 1) + x for i, l \
                 in enumerate(xlo_param_name_lists) for x in l]
       param_names.extend(params)
 
     if self._xl_unit_cell_parameterisations:
       xluc_param_name_lists = [x.get_param_names() for x
                      in self._xl_unit_cell_parameterisations]
-      params = ["Crystal%d" % i + x for i, l \
+      params = ["Crystal%d" % (i + 1) + x for i, l \
                 in enumerate(xluc_param_name_lists) for x in l]
       param_names.extend(params)
 

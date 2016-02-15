@@ -648,7 +648,7 @@ class RefinerFactory(object):
     debug("Prediction equation parameterisation built")
     debug("Parameter order : name mapping")
     for i, e in enumerate(pred_param.get_param_names()):
-      debug("Parameter %03d : %s", i, e)
+      debug("Parameter %03d : %s", i + 1, e)
 
     # Set the prediction equation and restraints parameterisations
     # in the target object
@@ -926,19 +926,19 @@ class RefinerFactory(object):
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
-          name = 'Beam{0}'.format(i)
+          name = 'Beam{0}'.format(i + 1)
       for i, p in enumerate(xl_ori_params):
         net_nref = model_nparam_minus_nref(p, reflections)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
-          name = 'Crystal{0} orientation'.format(i)
+          name = 'Crystal{0} orientation'.format(i + 1)
       for i, p in enumerate(xl_uc_params):
         net_nref = model_nparam_minus_nref(p, reflections)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
-          name = 'Crystal{0} unit cell'.format(i)
+          name = 'Crystal{0} unit cell'.format(i + 1)
       for i, p in enumerate(det_params):
         try:
           pnl_groups = p.get_panel_ids_by_group()
@@ -949,7 +949,7 @@ class RefinerFactory(object):
               weak = p
               panels = gp
               pnl_gp = igp
-              name = 'Detector{0}PanelGroup{1}'.format(i, pnl_gp)
+              name = 'Detector{0}PanelGroup{1}'.format(i + 1, pnl_gp + 1)
         except:
           net_nref = model_nparam_minus_nref(p, reflections)
           if net_nref < nref_deficit:
@@ -957,7 +957,7 @@ class RefinerFactory(object):
             weak = p
             panels = None
             pnl_gp = None
-            name = 'Detector{0}'.format(i)
+            name = 'Detector{0}'.format(i + 1)
       return {'parameterisation':weak,
               'panels':panels,
               'panel_group_id':pnl_gp,
@@ -968,19 +968,19 @@ class RefinerFactory(object):
       failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
       for i, bp in enumerate(beam_params):
         if model_nparam_minus_nref(bp, reflections) < 0:
-          mdl = 'Beam{0}'.format(i)
+          mdl = 'Beam{0}'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
 
       for i, xlo in enumerate(xl_ori_params):
         if model_nparam_minus_nref(xlo, reflections) < 0:
-          mdl = 'Crystal{0} orientation'.format(i)
+          mdl = 'Crystal{0} orientation'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
 
       for i, xluc in enumerate(xl_uc_params):
         if model_nparam_minus_nref(xluc, reflections) < 0:
-          mdl = 'Crystal{0} unit cell'.format(i)
+          mdl = 'Crystal{0} unit cell'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
 
@@ -990,12 +990,12 @@ class RefinerFactory(object):
           for igp, gp in enumerate(pnl_groups):
             if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
               msg = 'Too few reflections to parameterise Detector{0} panel group {1}'
-              msg = msg.format(i, igp)
+              msg = msg.format(i + 1, igp + 1)
               msg += '\nTry modifying refinement.parameterisation.auto_reduction options'
               raise Sorry(msg)
         except AttributeError:
           if model_nparam_minus_nref(dp, reflections) < 0:
-            mdl = 'Detector{0}'.format(i)
+            mdl = 'Detector{0}'.format(i + 1)
             msg = failmsg.format(mdl)
             raise Sorry(msg)
 
@@ -1006,7 +1006,7 @@ class RefinerFactory(object):
         if model_nparam_minus_nref(bp, reflections) >= 0:
           tmp.append(bp)
         else:
-          mdl = 'Beam{0}'.format(i)
+          mdl = 'Beam{0}'.format(i + 1)
           msg = warnmsg.format(mdl)
           warning(msg)
       beam_params = tmp
@@ -1016,7 +1016,7 @@ class RefinerFactory(object):
         if model_nparam_minus_nref(xlo, reflections) >= 0:
           tmp.append(xlo)
         else:
-          mdl = 'Crystal{0} orientation'.format(i)
+          mdl = 'Crystal{0} orientation'.format(i + 1)
           msg = warnmsg.format(mdl)
           warning(msg)
       xl_ori_params = tmp
@@ -1026,7 +1026,7 @@ class RefinerFactory(object):
         if model_nparam_minus_nref(xluc, reflections) >= 0:
           tmp.append(xluc)
         else:
-          mdl = 'Crystal{0} unit cell'.format(i)
+          mdl = 'Crystal{0} unit cell'.format(i + 1)
           msg = warnmsg.format(mdl)
           warning(msg)
       xl_uc_params = tmp
@@ -1039,7 +1039,7 @@ class RefinerFactory(object):
           for igp, gp in enumerate(pnl_groups):
             if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
               msg = 'Too few reflections to parameterise Detector{0}PanelGroup{1}'
-              msg = msg.format(i, igp)
+              msg = msg.format(i + 1, igp + 1)
               warning(msg)
               gp_params = [gp == igp for gp in dp.get_param_panel_groups()]
               for j, val in enumerate(gp_params):
@@ -1048,13 +1048,13 @@ class RefinerFactory(object):
           if dp.num_free() > 0:
             tmp.append(dp)
           else:
-            msg = 'No parameters remain free for Detector{0}'.format(i)
+            msg = 'No parameters remain free for Detector{0}'.format(i + 1)
             warning(msg)
         except AttributeError:
           if model_nparam_minus_nref(dp, reflections) >= 0:
             tmp.append(dp)
           else:
-            mdl = 'Detector{0}'.format(i)
+            mdl = 'Detector{0}'.format(i + 1)
             msg = warnmsg.format(mdl)
             warning(msg)
       det_params = tmp
@@ -1859,7 +1859,7 @@ class Refiner(object):
     if self._goniometer: debug(str(self._goniometer))
     if self._scan: debug(str(self._scan))
     for i, x in zip(self._crystal_ids, self._crystals):
-      msg = "%d " % i
+      msg = "%d " % (i + 1)
       msg += str(x)
       debug(msg)
 

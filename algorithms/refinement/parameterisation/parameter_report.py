@@ -203,28 +203,28 @@ class ParameterReporter(object):
     if self._detector_parameterisations:
       det_param_name_lists = [x.get_param_names(only_free) for x in \
                          self._detector_parameterisations]
-      names = ["Detector%d" % i + x for i, l \
+      names = ["Detector%d" % (i + 1) + x for i, l \
                in enumerate(det_param_name_lists) for x in l]
       param_names.extend(names)
 
     if self._beam_parameterisations:
       src_param_name_lists = [x.get_param_names(only_free) for x in \
                          self._beam_parameterisations]
-      params = ["Source%d" % i + x for i, l \
+      params = ["Source%d" % (i + 1) + x for i, l \
                 in enumerate(src_param_name_lists) for x in l]
       param_names.extend(params)
 
     if self._xl_orientation_parameterisations:
       xlo_param_name_lists = [x.get_param_names(only_free) for x
                     in self._xl_orientation_parameterisations]
-      params = ["Crystal%d" % i + x for i, l \
+      params = ["Crystal%d" % (i + 1) + x for i, l \
                 in enumerate(xlo_param_name_lists) for x in l]
       param_names.extend(params)
 
     if self._xl_unit_cell_parameterisations:
       xluc_param_name_lists = [x.get_param_names(only_free) for x
                      in self._xl_unit_cell_parameterisations]
-      params = ["Crystal%d" % i + x for i, l \
+      params = ["Crystal%d" % (i + 1) + x for i, l \
                 in enumerate(xluc_param_name_lists) for x in l]
       param_names.extend(params)
 
