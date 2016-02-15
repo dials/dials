@@ -753,7 +753,7 @@ def table(stats, perm=None, n_rows=None):
   if hasattr(stats, 'image'):
     image = stats.image
   else:
-    image = flex.int(range(1, len(n_spots_total)+1)).as_std_string()
+    image = flex.int(range(1, len(n_spots_total)+1)).as_string()
   if flex.double(estimated_d_min).all_eq(-1):
     estimated_d_min = None
   if flex.double(d_min_distl_method_1).all_eq(-1):
