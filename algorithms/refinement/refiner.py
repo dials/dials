@@ -18,6 +18,7 @@ from logging import info, debug, warning
 
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.array_family import flex
+from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
@@ -1617,14 +1618,18 @@ class Refiner(object):
     ####################################
 
     debug("\nExperimental models before refinement:")
-    debug(str(self._beam))
-    debug(str(self._detector))
-    if self._goniometer: debug(str(self._goniometer))
-    if self._scan: debug(str(self._scan))
-    for i, x in zip(self._crystal_ids, self._crystals):
-      msg = "%d " % (i + 1)
-      msg += str(x)
-      debug(msg)
+    for i, beam in enumerate(self._experiments.beams()):
+      debug(ordinal_number(i) + ' ' + str(beam))
+    for i, detector in enumerate(self._experiments.detectors()):
+      debug(ordinal_number(i) + ' ' + str(detector))
+    for i, goniometer in enumerate(self._experiments.goniometers()):
+      if goniometer is None: continue
+      debug(ordinal_number(i) + ' ' + str(goniometer))
+    for i, scan in enumerate(self._experiments.scans()):
+      if scan is None: continue
+      debug(ordinal_number(i) + ' ' + str(scan))
+    for i, crystal in enumerate(self._experiments.crystals()):
+      debug(ordinal_number(i) + ' ' + str(crystal))
 
     self._refinery.run()
 
@@ -1662,14 +1667,18 @@ class Refiner(object):
           u_cov_list, b_cov_list, iexp)
 
     debug("\nExperimental models after refinement:")
-    debug(str(self._beam))
-    debug(str(self._detector))
-    if self._goniometer: debug(str(self._goniometer))
-    if self._scan: debug(str(self._scan))
-    for i, x in zip(self._crystal_ids, self._crystals):
-      msg = "%d " % i
-      msg += str(x)
-      debug(msg)
+    for i, beam in enumerate(self._experiments.beams()):
+      debug(ordinal_number(i) + ' ' + str(beam))
+    for i, detector in enumerate(self._experiments.detectors()):
+      debug(ordinal_number(i) + ' ' + str(detector))
+    for i, goniometer in enumerate(self._experiments.goniometers()):
+      if goniometer is None: continue
+      debug(ordinal_number(i) + ' ' + str(goniometer))
+    for i, scan in enumerate(self._experiments.scans()):
+      if scan is None: continue
+      debug(ordinal_number(i) + ' ' + str(scan))
+    for i, crystal in enumerate(self._experiments.crystals()):
+      debug(ordinal_number(i) + ' ' + str(crystal))
 
     # Report on the refined parameters
     debug(str(self._param_report))
