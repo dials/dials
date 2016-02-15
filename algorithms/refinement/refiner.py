@@ -1562,51 +1562,56 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    info("\nRMSDs by panel:")
+    for idetector, detector in enumerate(self._experiments.detectors()):
+      if len(detector) == 1: continue
+      info("\nDetector {0} RMSDs by panel:".format(idetector + 1))
 
-    header = ["Panel", "Nref"]
-    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
-      if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
-        header.append(name + "\n(px)")
-      elif name == "RMSD_Phi" and units == "rad": # convert radians to images for reporting of scans
-        header.append("RMSD_Z" + "\n(images)")
-      elif name == "RMSD_DeltaPsi" and units == "rad": # convert radians to degrees for reporting of stills
-        header.append(name + "\n(deg)")
-      else: # skip RMSDs that cannot be expressed in image/scan space
-        pass
+      header = ["Panel", "Nref"]
+      for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+        if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
+          header.append(name + "\n(px)")
+        elif name == "RMSD_Phi" and units == "rad": # convert radians to images for reporting of scans
+          header.append("RMSD_Z" + "\n(images)")
+        elif name == "RMSD_DeltaPsi" and units == "rad": # convert radians to degrees for reporting of stills
+          header.append(name + "\n(deg)")
+        else: # skip RMSDs that cannot be expressed in image/scan space
+          pass
 
-    rows = []
-    for ipanel, panel in enumerate(self._detector):
+      rows = []
+      for ipanel, panel in enumerate(detector):
 
-      px_size = panel.get_pixel_size()
-      px_per_mm = [1./e for e in px_size]
+        px_size = panel.get_pixel_size()
+        px_per_mm = [1./e for e in px_size]
 
-      scan = self._scan
-      try:
-        temp = scan.get_oscillation(deg=False)
-        images_per_rad  = 1./abs(scan.get_oscillation(deg=False)[1])
-      except AttributeError:
-        images_per_rad = None
+        if len(self._experiments.scans()) > 1:
+          warning('Multiple scans present. Only the first scan will be used '
+             'to determine the image width for reporting RMSDs')
+        scan = self._experiments.scans()[0]
+        try:
+          temp = scan.get_oscillation(deg=False)
+          images_per_rad  = 1./abs(scan.get_oscillation(deg=False)[1])
+        except AttributeError:
+          images_per_rad = None
 
-      num = self._target.get_num_matches_for_panel(ipanel)
-      if num <= 0: continue
-      raw_rmsds = self._target.rmsds_for_panel(ipanel)
-      if raw_rmsds is None: continue # skip panels where rmsd cannot be calculated
-      rmsds = []
-      for (name, units, rmsd) in zip(self._target.rmsd_names, self._target.rmsd_units, raw_rmsds):
-        if name == "RMSD_X" and units == "mm":
-          rmsds.append(rmsd * px_per_mm[0])
-        elif name == "RMSD_Y" and units == "mm":
-          rmsds.append(rmsd * px_per_mm[1])
-        elif name == "RMSD_Phi" and units == "rad":
-          rmsds.append(rmsd * images_per_rad)
-        elif name == "RMSD_DeltaPsi" and units == "rad":
-          rmsds.append(rmsd * rad2deg)
-      rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
+        num = self._target.get_num_matches_for_panel(ipanel)
+        if num <= 0: continue
+        raw_rmsds = self._target.rmsds_for_panel(ipanel)
+        if raw_rmsds is None: continue # skip panels where rmsd cannot be calculated
+        rmsds = []
+        for (name, units, rmsd) in zip(self._target.rmsd_names, self._target.rmsd_units, raw_rmsds):
+          if name == "RMSD_X" and units == "mm":
+            rmsds.append(rmsd * px_per_mm[0])
+          elif name == "RMSD_Y" and units == "mm":
+            rmsds.append(rmsd * px_per_mm[1])
+          elif name == "RMSD_Phi" and units == "rad":
+            rmsds.append(rmsd * images_per_rad)
+          elif name == "RMSD_DeltaPsi" and units == "rad":
+            rmsds.append(rmsd * rad2deg)
+        rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
 
-    if len(rows) > 0:
-      st = simple_table(rows, header)
-      info(st.format())
+      if len(rows) > 0:
+        st = simple_table(rows, header)
+        info(st.format())
 
     return
 
@@ -1637,7 +1642,8 @@ class Refiner(object):
     self.print_out_of_sample_rmsd_table()
     self.print_exp_rmsd_table()
 
-    if len(self._detector) > 1:
+    det_npanels = [len(d) for d in self._experiments.detectors()]
+    if any([n > 1 for n in det_npanels]):
       self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
