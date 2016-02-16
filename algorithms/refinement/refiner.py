@@ -97,8 +97,9 @@ refinement
         .type = choice(multi=True)
 
       fix_list = None
-        .type = ints(value_min=0)
-        .help = "Fix specified parameters by a list of indices"
+        .type = strings
+        .help = "Fix specified parameters by a list of 0-based indices or"
+                "partial names to match"
         .expert_level = 1
     }
 
@@ -112,8 +113,9 @@ refinement
       unit_cell
       {
         fix_list = None
-          .type = ints(value_min=0)
-          .help = "Fix specified parameters by a list of indices"
+          .type = strings
+          .help = "Fix specified parameters by a list of 0-based indices or"
+                  "partial names to match"
           .expert_level = 1
 
         %(uc_restraints_phil)s
@@ -122,8 +124,9 @@ refinement
       orientation
       {
         fix_list = None
-          .type = ints(value_min=0)
-          .help = "Fix specified parameters by a list of indices"
+          .type = strings
+          .help = "Fix specified parameters by a list of 0-based indices or"
+                  "partial names to match"
           .expert_level = 1
       }
 
@@ -181,8 +184,9 @@ refinement
         .type = choice
 
       fix_list = None
-        .type = ints(value_min=0)
-        .help = "Fix specified parameters by a list of indices"
+        .type = strings
+        .help = "Fix specified parameters by a list of 0-based indices or"
+                "partial names to match"
         .expert_level = 1
     }
 
@@ -551,9 +555,35 @@ class RefinerFactory(object):
     # Get the working set of reflections
     reflections = refman.get_matches()
 
+    # function to convert fix_lists into to_fix selections
+    def fixlist2sel(fix_list, parameter_names, prefix=""):
+      '''fix_list is a list of strings consisting either of indices or partial
+      names of parameters that should be fixed. These are compared with a list
+      of parameter names, with an optional prefix, to determine which parameters
+      should be fixed. The selection is returned as a boolean list.'''
+
+      sel = [False] * len(parameter_names)
+      parameter_names = [prefix + s for s in parameter_names]
+
+      # expand elements of the list that are comma separated strings
+      fix_list = [s for e in fix_list for s in e.split(',')]
+
+      for e in fix_list:
+        try:
+          i = int(e)
+          sel[i] = True
+        except ValueError:
+          pass
+        except IndexError:
+          pass
+        sel = [True if e in name else s for (name, s) in \
+          zip(parameter_names, sel)]
+
+      return sel
+
     # Parameterise unique Beams
     beam_params = []
-    for beam in experiments.beams():
+    for ibeam, beam in enumerate(experiments.beams()):
       # The Beam is parameterised with reference to a goniometer axis (or None).
       # Use the first (if any) Goniometers this Beam is associated with.
       exp_ids = experiments.indices(beam)
@@ -576,8 +606,9 @@ class RefinerFactory(object):
         beam_param.set_fixed(fix_list)
 
       if beam_options.fix_list:
-        to_fix = [True if i in beam_options.fix_list else False \
-                  for i in range(beam_param.num_total())]
+        to_fix = fixlist2sel(beam_options.fix_list,
+                             beam_param.get_param_names(only_free=False),
+                             "Beam{0}".format(ibeam + 1))
         beam_param.set_fixed(to_fix)
 
       if beam_param.num_free() > 0:
@@ -586,7 +617,7 @@ class RefinerFactory(object):
     # Parameterise unique Crystals
     xl_ori_params = []
     xl_uc_params = []
-    for crystal in experiments.crystals():
+    for icrystal, crystal in enumerate(experiments.crystals()):
       # This crystal can only ever appear either in scans or in stills
       # (otherwise it requires a different crystal model)
       exp_ids = experiments.indices(crystal)
@@ -655,13 +686,15 @@ class RefinerFactory(object):
           raise RuntimeError("crystal_options.fix value not recognised")
 
       if crystal_options.unit_cell.fix_list:
-        to_fix = [True if i in crystal_options.cell.fix_list else False \
-                  for i in range(num_uc)]
+        to_fix = fixlist2sel(crystal_options.unit_cell.fix_list,
+                             xl_uc_param.get_param_names(only_free=False),
+                             "Crystal{0}".format(icrystal + 1))
         xl_uc_param.set_fixed(to_fix)
 
       if crystal_options.orientation.fix_list:
-        to_fix = [True if i in crystal_options.orientation.fix_list else False \
-                  for i in range(num_ori)]
+        to_fix = fixlist2sel(crystal_options.orientation.fix_list,
+                             xl_ori_param.get_param_names(only_free=False),
+                             "Crystal{0}".format(icrystal + 1))
         xl_ori_param.set_fixed(to_fix)
 
       if xl_ori_param.num_free() > 0:
@@ -671,7 +704,7 @@ class RefinerFactory(object):
 
     # Parameterise unique Detectors
     det_params = []
-    for detector in experiments.detectors():
+    for idetector, detector in enumerate(experiments.detectors()):
 
       exp_ids = experiments.indices(detector)
       # Detector
@@ -714,8 +747,9 @@ class RefinerFactory(object):
           raise RuntimeError("detector_options.fix value not recognised")
 
       if detector_options.fix_list:
-        to_fix = [True if i in detector_options.fix_list else False \
-                  for i in range(det_param.num_total())]
+        to_fix = fixlist2sel(detector_options.fix_list,
+                             det_param.get_param_names(only_free=False),
+                             "Detector{0}".format(idetector + 1))
         det_param.set_fixed(to_fix)
 
       if det_param.num_free() > 0:
