@@ -167,7 +167,10 @@ class MTZExporter(object):
       keep_partials=params.mtz.keep_partials,
       min_isigi=params.mtz.min_isigi,
       force_static_model=params.mtz.force_static_model)
-    m.show_summary()
+    from cStringIO import StringIO
+    summary = StringIO()
+    m.show_summary(out=summary)
+    info(summary.getvalue())
 
 
 class NexusExporter(object):
