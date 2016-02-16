@@ -458,6 +458,18 @@ class indexer_base(object):
         else:
           assert False
 
+      if use_stills_indexer and has_sweeps:
+        # Ensure the indexer and downstream applications treat this as set of stills
+        from dxtbx.imageset import ImageSet
+        reset_sets = []
+        for i in xrange(len(imagesets)):
+          imagesweep = imagesets.pop(0)
+          imageset = ImageSet(imagesweep.reader())
+          imageset.set_scan(None)
+          imageset.set_goniometer(None)
+          reset_sets.append(imageset)
+        imagesets.extend(reset_sets)
+
       if params.indexing.method == "fft3d":
         if use_stills_indexer:
           from dials.algorithms.indexing.stills_indexer \
