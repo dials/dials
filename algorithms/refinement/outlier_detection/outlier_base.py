@@ -1,3 +1,4 @@
+from __future__ import division
 from logging import info, debug
 from libtbx.phil import parse
 from dials.array_family import flex
