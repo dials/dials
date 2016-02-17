@@ -137,7 +137,7 @@ indexing_min_spots = 10
           'fraction_indexed': sel.count(True)/sel.size()})
       stats['lattices'] = indexing_results
       stats['n_indexed'] = indexed_sel.count(True)
-      stats['fraction_indexed'] = indexed_sel.count(True)/indexed_sel.size()
+      stats['fraction_indexed'] = indexed_sel.count(True)/len(reflections)
     except Exception, e:
       print e
       stats['error'] = str(e)
