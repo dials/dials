@@ -87,6 +87,7 @@ def run():
     from scitbx.examples.bevington import non_linear_ls_eigen_wrapper
   except ImportError:
     print "Skipping tests in " + __file__ + " as SparseLevMar engine not available"
+    return
 
   tst = Test()
   tst.run()
