@@ -132,6 +132,16 @@ def run(args):
   if table:
     print_table(stats)
 
+  n_rows = 10
+  n_rows = min(n_rows, len(n_spots_total))
+  perm_n_spots_total = flex.sort_permutation(n_spots_total, reverse=True)
+  print 'Top %i images sorted by number of spots:' %n_rows
+  print_table(stats, perm=perm_n_spots_total, n_rows=n_rows)
+  if flex.max(n_indexed) > 0:
+    perm_n_indexed = flex.sort_permutation(n_indexed, reverse=True)
+    print 'Top %i images sorted by number of indexed reflections:' %n_rows
+    print_table(stats, perm=perm_n_indexed, n_rows=n_rows)
+
   print "Number of indexed lattices: ", (n_indexed > 0).count(True)
 
   print "Number with valid d_min but failed indexing: ", (
@@ -139,12 +149,6 @@ def run(args):
     (d_min_distl_method_2 > 0) &
     (estimated_d_min > 0) &
     (n_indexed == 0)).count(True)
-
-  n_rows = 10
-  n_rows = min(n_rows, len(n_spots_total))
-  perm_n_spots_total = flex.sort_permutation(n_spots_total, reverse=True)
-  print 'Top %i images sorted by number of spots:' %n_rows
-  print_table(stats, perm=perm_n_spots_total, n_rows=n_rows)
 
   n_bins = 20
   spot_count_histogram(
