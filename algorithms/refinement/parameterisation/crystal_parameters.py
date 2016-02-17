@@ -160,8 +160,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
 
   def set_state_uncertainties(self, var_cov, multi_state_elt=None):
 
-    from dials.algorithms.refinement.refinement_helpers import \
-        matrix_inverse_error_propagation
+    from scitbx.math.lefebvre import matrix_inverse_error_propagation
 
     # var_cov is the covariance matrix of elements of the B matrix. We
     # need to construct the covariance matrix of elements of the
