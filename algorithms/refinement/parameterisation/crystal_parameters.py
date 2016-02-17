@@ -160,117 +160,19 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
 
   def set_state_uncertainties(self, var_cov, multi_state_elt=None):
 
-    from scitbx.math.lefebvre import matrix_inverse_error_propagation
+    self._model.set_B_covariance(var_cov)
 
-    # var_cov is the covariance matrix of elements of the B matrix. We
-    # need to construct the covariance matrix of elements of the
-    # transpose of B. The vector of elements of B is related to the
-    # vector of elements of its transpose by a permutation, P.
-    P = matrix.sqr((1,0,0,0,0,0,0,0,0,
-                    0,0,0,1,0,0,0,0,0,
-                    0,0,0,0,0,0,1,0,0,
-                    0,1,0,0,0,0,0,0,0,
-                    0,0,0,0,1,0,0,0,0,
-                    0,0,0,0,0,0,0,1,0,
-                    0,0,1,0,0,0,0,0,0,
-                    0,0,0,0,0,1,0,0,0,
-                    0,0,0,0,0,0,0,0,1))
-
-    # We can use P to replace var_cov with the covariance matrix of
-    # elements of the transpose of B.
-    var_cov = P*var_cov*P
-
-    # From B = (O^-1)^T we can convert this
-    # to the covariance matrix of the real space orthogonalisation matrix
-    B = self.get_state()
-    Bt = B.transpose()
-    O = Bt.inverse()
-    cov_O = matrix_inverse_error_propagation(Bt, var_cov)
-
-    # The real space unit cell vectors are given by
-    vec_a = (O * matrix.col((1,0,0)))
-    vec_b = (O * matrix.col((0,1,0)))
-    vec_c = (O * matrix.col((0,0,1)))
-
-    # So the unit cell parameters are
-    a, b, c = vec_a.length(), vec_b.length(), vec_c.length()
-    alpha = acos(vec_b.dot(vec_c) / (b*c))
-    beta =  acos(vec_a.dot(vec_c) / (a*c))
-    gamma = acos(vec_a.dot(vec_b) / (a*b))
-
-    # The estimated errors are calculated by error propagation from cov_O. In
-    # each case we define a function F(O) that converts the matrix O into the
-    # unit cell parameter of interest. To do error propagation to get the
-    # variance of that cell parameter we need the Jacobian of the function.
-    # This is a 1*9 matrix of derivatives in the order of the elements of O
-    #
-    #     / dF   dF   dF   dF   dF   dF   dF   dF   dF  \
-    # J = | ---, ---, ---, ---, ---, ---, ---, ---, --- |
-    #     \ da1  db1  dc1  da2  db2  dc2  da3  db3  dc3 /
-    #
-
-    # For cell length |a|, F = sqrt(a1^2 + a2^2 + a3^2)
-    jacobian = matrix.rec(
-      (vec_a[0]/a, 0, 0, vec_a[1]/a, 0, 0, vec_a[2]/a, 0, 0), (1, 9))
-    var_a = (jacobian * cov_O * jacobian.transpose())[0]
-
-    # For cell length |b|, F = sqrt(b1^2 + b2^2 + b3^2)
-    jacobian = matrix.rec(
-      (0, vec_b[0]/b, 0, 0, vec_b[1]/b, 0, 0, vec_b[2]/b, 0), (1, 9))
-    var_b = (jacobian * cov_O * jacobian.transpose())[0]
-
-    # For cell length |c|, F = sqrt(c1^2 + c2^2 + c3^2)
-    jacobian = matrix.rec(
-      (0, 0, vec_c[0]/c, 0, 0, vec_c[1]/c, 0, 0, vec_c[2]/c), (1, 9))
-    jacobian_t = jacobian.transpose()
-    var_c = (jacobian * cov_O * jacobian.transpose())[0]
-
-    # For the unit cell angles we need to calculate derivatives of the angles
-    # with respect to the elements of O
-    from scitbx.math import angle_derivative_wrt_vectors
-    dalpha_db, dalpha_dc = angle_derivative_wrt_vectors(vec_b, vec_c)
-    dbeta_da, dbeta_dc = angle_derivative_wrt_vectors(vec_a, vec_c)
-    dgamma_da, dgamma_db = angle_derivative_wrt_vectors(vec_a, vec_b)
-
-    # For angle alpha, F = acos( b.c / |b||c|)
-    jacobian = matrix.rec(
-      (0, dalpha_db[0], dalpha_dc[0], 0, dalpha_db[1], dalpha_dc[1], 0,
-      dalpha_db[2], dalpha_dc[2]), (1, 9))
-    var_alpha = (jacobian * cov_O * jacobian.transpose())[0]
-
-    # For angle beta, F = acos( a.c / |a||c|)
-    jacobian = matrix.rec(
-      (dbeta_da[0], 0, dbeta_dc[0], dbeta_da[1], 0, dbeta_dc[1], dbeta_da[2],
-      0, dbeta_dc[2]), (1, 9))
-    var_beta = (jacobian * cov_O * jacobian.transpose())[0]
-
-    # For angle gamma, F = acos( a.b / |a||b|)
-    jacobian = matrix.rec(
-      (dgamma_da[0], dgamma_db[0], 0, dgamma_da[1], dgamma_db[1], 0,
-      dgamma_da[2], dgamma_db[2], 0), (1, 9))
-    var_gamma = (jacobian * cov_O * jacobian.transpose())[0]
-
-    # Symmetry constraints may mean variances of the angles should be zero.
-    # Floating point error could lead to negative variances. Ensure these are
-    # caught before taking their square root!
-    var_alpha = max(0, var_alpha)
-    var_beta = max(0, var_beta)
-    var_gamma = max(0, var_gamma)
-
-    # FIXME These estimates are not tested (how can we even do so? Use semi-
-    # synthetic datasets perhaps and look at true scatter?) plus we have nowhere
-    # to store this information. So for now just output to the debug log
-    rad2deg = 180. / pi
-    debug("Crystal %s refined cell parameters and estimated standard deviations:" %
+    # write errors to the debug log
+    a, b, c, alpha, beta, gamma = self._model.get_unit_cell().parameters()
+    sd_a, sd_b, sd_c, sd_alpha, sd_beta, sd_gamma = \
+      self._model.get_cell_parameter_sd()
+    debug("Crystal in experiment with id %s refined cell parameters and estimated standard deviations:" %
       ",".join(map(str, self.get_experiment_ids())))
-    debug(" a: {0:f} (+/- {1:f}) Angstroms".format(a, sqrt(var_a)))
-    debug(" b: {0:f} (+/- {1:f}) Angstroms".format(b, sqrt(var_b)))
-    debug(" c: {0:f} (+/- {1:f}) Angstroms".format(c, sqrt(var_c)))
-    debug(" alpha: {0:f} (+/- {1:f}) degrees".format(alpha * rad2deg,
-      sqrt(var_alpha) * rad2deg))
-    debug(" beta:  {0:f} (+/- {1:f}) degrees".format(beta * rad2deg,
-      sqrt(var_beta) * rad2deg))
-    debug(" gamma: {0:f} (+/- {1:f}) degrees".format(gamma * rad2deg,
-      sqrt(var_gamma) * rad2deg))
+    debug(" a: {0:f} (+/- {1:f}) Angstroms".format(a, sd_a))
+    debug(" b: {0:f} (+/- {1:f}) Angstroms".format(b, sd_b))
+    debug(" c: {0:f} (+/- {1:f}) Angstroms".format(c, sd_c))
+    debug(" alpha: {0:f} (+/- {1:f}) degrees".format(alpha, sd_alpha))
+    debug(" beta:  {0:f} (+/- {1:f}) degrees".format(beta, sd_beta))
+    debug(" gamma: {0:f} (+/- {1:f}) degrees".format(gamma, sd_gamma))
 
     return
