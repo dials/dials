@@ -754,6 +754,12 @@ def table(stats, perm=None, n_rows=None):
     image = stats.image
   else:
     image = flex.int(range(1, len(n_spots_total)+1)).as_string()
+  n_indexed = None
+  fraction_indexed = None
+  if hasattr(stats, 'n_indexed'):
+    n_indexed = stats.n_indexed
+  if hasattr(stats, 'fraction_indexed'):
+    fraction_indexed = stats.fraction_indexed
   if flex.double(estimated_d_min).all_eq(-1):
     estimated_d_min = None
   if flex.double(d_min_distl_method_1).all_eq(-1):
@@ -768,6 +774,10 @@ def table(stats, perm=None, n_rows=None):
     rows[0].append("d_min (distl method 1)")
   if d_min_distl_method_2 is not None:
     rows[0].append("d_min (distl method 2)")
+  if n_indexed is not None:
+    rows[0].append("#indexed")
+  if fraction_indexed is not None:
+    rows[0].append("fraction_indexed")
   if perm is None:
     perm = range(len(n_spots_total))
   if n_rows is not None:
@@ -798,6 +808,10 @@ def table(stats, perm=None, n_rows=None):
       row.append(method1_str)
     if d_min_distl_method_2 is not None:
       row.append(method2_str)
+    if n_indexed is not None:
+      row.append("%i" %n_indexed[i_image])
+    if fraction_indexed is not None:
+      row.append("%.2f" %fraction_indexed[i_image])
     rows.append(row)
   return rows
 

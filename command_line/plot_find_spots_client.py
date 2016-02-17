@@ -117,6 +117,8 @@ def run(args):
                      n_spots_total=n_spots_total,
                      n_spots_no_ice=n_spots_no_ice,
                      n_spots_4A=None,
+                     n_indexed=n_indexed,
+                     fraction_indexed=fraction_indexed,
                      total_intensity=total_intensity,
                      estimated_d_min=estimated_d_min,
                      d_min_distl_method_1=d_min_distl_method_1,
