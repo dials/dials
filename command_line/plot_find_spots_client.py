@@ -65,15 +65,19 @@ def run(args):
     image_names.append(str(r['image']))
     if 'n_indexed' in r:
       n_indexed.append(r['n_indexed'])
-      fraction_indexed.append(r['fraction_indexed'])
       n_lattices.append(len(r['lattices']))
       for d in r['lattices']:
         from dxtbx.serialize.crystal import from_dict
         crystals.append(from_dict(d['crystal']))
     else:
       n_indexed.append(0)
-      fraction_indexed.append(0)
       n_lattices.append(0)
+
+  if n_indexed.size():
+    sel = n_spots > 0
+    fraction_indexed = flex.double(n_indexed.size(), 0)
+    fraction_indexed.set_selected(
+      sel, n_indexed.select(sel)/n_spots.select(sel))
 
   import matplotlib
   matplotlib.use('Agg')
