@@ -215,6 +215,13 @@ class ReflectionManager(object):
     # print summary before outlier rejection
     self.print_stats_on_matches()
 
+    # reset centroid_outlier flags in both the working reflections and the
+    # original indexed reflections
+    mask = self._reflections.get_flags(self._reflections.flags.centroid_outlier)
+    self._reflections.unset_flags(mask, self._reflections.flags.centroid_outlier)
+    mask = self._indexed.get_flags(self._indexed.flags.centroid_outlier)
+    self._indexed.unset_flags(mask, self._indexed.flags.centroid_outlier)
+
     # outlier rejection if requested
     if self._outlier_detector is None:
       rejection_occurred = False
