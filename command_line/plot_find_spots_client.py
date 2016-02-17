@@ -475,6 +475,13 @@ def unit_cell_histograms(crystals):
   for i in range(6):
     histograms.append(flex.histogram(params[i], n_slots=100))
 
+  from cctbx import uctbx
+  median_unit_cell = uctbx.unit_cell([flex.median(p) for p in params])
+  modal_unit_cell = uctbx.unit_cell([
+    h.slot_centers()[flex.max_index(h.slots())] for h in histograms])
+  print 'Modal unit cell: %s' %str(modal_unit_cell)
+  print 'Median unit cell: %s' %str(median_unit_cell)
+
   return histograms
 
 def plot_unit_cell_histograms(crystals):
