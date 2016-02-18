@@ -95,7 +95,7 @@ for cmd in [%s]:
           print file,
           added_script = \
             '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
-            '[ -z "$BASH_VERSIONINFO" ] && {\n' \
+            '[ -n "$BASH_VERSION" ] && {\n' \
             ' source $(libtbx.find_in_repositories dials/util/autocomplete.sh)\n' \
             ' source %s\n' \
             '}\n' % (
