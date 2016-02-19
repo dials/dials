@@ -212,7 +212,6 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
 
   def create_viewer_panel (self) :
     self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
-      style=wx.glcanvas.WX_GL_DOUBLEBUFFER,
       #orthographic=True
       )
 
