@@ -16,7 +16,7 @@ what should usually be used to construct a Refiner."""
 from __future__ import division
 from logging import info, debug, warning
 
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
@@ -517,8 +517,11 @@ class RefinerFactory(object):
       else:
         params.refinement.parameterisation.sparse = False
       if params.refinement.mp.nproc > 1:
-        # sparse vectors cannot be pickled, so can't use easy_mp here
-        params.refinement.parameterisation.sparse = False
+        if params.refinement.refinery.engine != "SparseLevMar":
+          # sparse vectors cannot be pickled, so can't use easy_mp here
+          params.refinement.parameterisation.sparse = False
+        else:
+          pass # but SparseLevMar requires sparse jacobian; does not implement mp
     # Check incompatible selection
     elif params.refinement.parameterisation.sparse and \
       params.refinement.mp.nproc > 1:
@@ -820,7 +823,7 @@ class RefinerFactory(object):
               panels = gp
               pnl_gp = igp
               name = 'Detector{0}PanelGroup{1}'.format(i + 1, pnl_gp + 1)
-        except:
+        except Exception:
           net_nref = model_nparam_minus_nref(p, reflections)
           if net_nref < nref_deficit:
             nref_deficit = net_nref

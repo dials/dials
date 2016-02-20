@@ -41,31 +41,14 @@ class AdaptLstbxSparse(AdaptLstbxBase,non_linear_ls_eigen_wrapper):
 
     non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self._parameters))
 
-  def build_up(self, objective_only=False):
-
-    # set current parameter values
-    self.prepare_for_step()
-
-    # Reset the state to construction time, i.e. no equations accumulated
-    self.reset()
-
-    if objective_only:
-      residuals, weights = self._target.compute_residuals()
-      self.add_residuals(residuals, weights)
-    else:
-      blocks = self._target.split_matches_into_blocks(nproc = self._nproc)
-      if self._nproc > 1:
-        raise Sorry("""Multiprocessing is not presently implemented for sparse matrix LevMar.
-                    """)
-      else:
-        for block in blocks:
-          residuals, self._jacobian, weights = \
-            self._target.compute_residuals_and_gradients(block)
-          self.add_equations(residuals, self._jacobian, weights)
+  def set_nproc(self, *args, **kwargs):
+    # Multiprocessing is not implemented for sparse matrix LevMar
+    # XXX possible future path: pickle support for sparse::matrix, then divide up the Jacobian
+    self._nproc = 1
     return
 
   def finalise(self):
-    """in contract to dense matrix (traditional) LevMar, sparse matrix assumes
+    """in contrast to dense matrix (traditional) LevMar, sparse matrix assumes
        that the matrix is extremely large and not easily inverted.  Therefore,
        no attempt here to calculate esd's based on the variance covariance matrix."""
     self.show_eigen_summary()
