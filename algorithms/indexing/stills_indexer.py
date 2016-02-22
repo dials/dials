@@ -8,6 +8,7 @@ from logging import info, debug
 from dials.util import log
 debug_handle = log.debug_handle()
 info_handle = log.info_handle()
+import libtbx
 from libtbx.utils import Sorry
 from dials.algorithms.indexing.indexer import indexer_base
 from dials.algorithms.indexing.real_space_grid_search import indexer_real_space_grid_search
@@ -61,9 +62,6 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     # Stills-specific parameters we always want
     assert params.refinement.reflections.outlier.algorithm in (None, "null"), \
       "Cannot index, set refinement.reflections.outlier.algorithm=null" # we do our own outlier rejection
-    assert params.refinement.reflections.weighting_strategy.override == "stills", \
-      "Cannot index, set refinement.reflections.weighting_strategy.override=stills"
-    params.refinement.reflections.weighting_strategy.delpsi_constant=1000000.
 
     from dials.algorithms.refinement.refiner import RefinerFactory
     refiner = RefinerFactory.from_parameters_data_experiments(params,
@@ -107,6 +105,12 @@ class stills_indexer(indexer_base):
       idxr = stills_indexer_real_space_grid_search(reflections, imagesets, params=params)
 
     return idxr
+
+  def __init__(self, reflections, imagesets, params=None):
+    if params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
+      # The stills_indexer provides it's own outlier rejection
+      params.refinement.reflections.outlier.algorithm = 'null'
+    indexer_base.__init__(self, reflections, imagesets, params)
 
   def index(self):
     # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills

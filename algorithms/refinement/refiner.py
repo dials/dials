@@ -331,7 +331,7 @@ refinement
         .help = "selection of a strategy to override default weighting behaviour"
         .type = choice
 
-      delpsi_constant = 10000
+      delpsi_constant = 1000000
         .help = "used by the stills strategy to choose absolute weight value"
                 "for the angular distance from Ewald sphere term of the target"
                 "function, whilst the X and Y parts use statistical weights"

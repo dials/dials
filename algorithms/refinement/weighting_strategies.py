@@ -33,9 +33,9 @@ class StatisticalWeightingStrategy(object):
 class StillsWeightingStrategy(StatisticalWeightingStrategy):
   """Defines a single method that provides a ReflectionManager with a strategy
   for calculating weights for refinement. This version uses statistical weights
-  for X and Y and a fixed constant for the delta Psi part, defaulting to 10000"""
+  for X and Y and a fixed constant for the delta Psi part, defaulting to 1000000"""
 
-  def __init__(self, delpsi_constant=10000):
+  def __init__(self, delpsi_constant=1000000):
     self._delpsi_constant = delpsi_constant
 
   def calculate_weights(self, reflections):

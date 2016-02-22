@@ -222,7 +222,7 @@ indexing {
     .type = bool
     .expert_level = 1
   refinement_protocol {
-    n_macro_cycles = 5
+    n_macro_cycles = Auto
       .type = int(value_min=1)
     d_min_step = Auto
       .type = float(value_min=0.0)
@@ -394,6 +394,12 @@ class indexer_base(object):
         # different default to dials.refine
         # tukey is faster and more appropriate at the indexing step
         self.all_params.refinement.reflections.outlier.algorithm = 'tukey'
+
+    if self.params.refinement_protocol.n_macro_cycles in ('auto', libtbx.Auto):
+      if self.imagesets[0].get_goniometer() is None:
+        self.params.refinement_protocol.n_macro_cycles = 1
+      else:
+        self.params.refinement_protocol.n_macro_cycles = 5
 
     for imageset in imagesets[1:]:
       if imageset.get_detector().is_similar_to(self.imagesets[0].get_detector()):
