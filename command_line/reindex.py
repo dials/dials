@@ -18,10 +18,10 @@ from libtbx.phil import command_line
 from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
-from cctbx.array_family import flex
 from dxtbx.model.crystal import crystal_model
 from dxtbx.serialize import dump
 # from dials.util.command_line import Importer
+from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 
@@ -135,10 +135,26 @@ def run(args):
 
   if len(experiments) and len(reflections) and params.change_of_basis_op is libtbx.Auto:
     assert len(reflections) == 1
-    refl_copy = copy.deepcopy(reflections[0])
-    refl_copy['id'] = flex.int(len(refl_copy), -1)
+
+    # always re-map reflections to reciprocal space
+    from dials.algorithms.indexing import indexer
+    refl_copy = flex.reflection_table()
+    for i, imageset in enumerate(experiments.imagesets()):
+      if 'imageset_id' in reflections[0]:
+        sel = (reflections[0]['imageset_id'] == i)
+      else:
+        sel = (reflections[0]['id'] == i)
+      refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
+        reflections[0].select(sel),
+        imageset.get_detector(), imageset.get_scan())
+
+      indexer.indexer_base.map_centroids_to_reciprocal_space(
+        refl, imageset.get_detector(), imageset.get_beam(),
+        imageset.get_goniometer())
+      refl_copy.extend(refl)
 
     # index the reflection list using the input experiments list
+    refl_copy['id'] = flex.int(len(refl_copy), -1)
     from dials.algorithms.indexing import index_reflections
     index_reflections(refl_copy, experiments, tolerance=0.2)
     hkl_expt = refl_copy['miller_index']
