@@ -53,7 +53,9 @@ space_group = None
   .type = space_group
   .help = "The space group to be applied AFTER applying the change of basis "
            "operator."
-
+reference = None
+  .type = path
+  .help = "Reference experiment for determination of change of basis operator."
 output {
   experiments = reindexed_experiments.json
     .type = str
@@ -133,34 +135,55 @@ def run(args):
   if params.change_of_basis_op is None:
     raise Sorry("Please provide a change_of_basis_op.")
 
+  reference_crystal = None
+  if params.reference is not None:
+    from dxtbx.serialize import load
+    reference_experiments = load.experiment_list(
+      params.reference, check_format=False)
+    assert len(reference_experiments.crystals()) == 1
+    reference_crystal = reference_experiments.crystals()[0]
+
   if len(experiments) and len(reflections) and params.change_of_basis_op is libtbx.Auto:
-    assert len(reflections) == 1
+    if reference_crystal is not None:
+      from dials.algorithms.indexing.compare_orientation_matrices \
+           import difference_rotation_matrix_and_euler_angles
 
-    # always re-map reflections to reciprocal space
-    from dials.algorithms.indexing import indexer
-    refl_copy = flex.reflection_table()
-    for i, imageset in enumerate(experiments.imagesets()):
-      if 'imageset_id' in reflections[0]:
-        sel = (reflections[0]['imageset_id'] == i)
-      else:
-        sel = (reflections[0]['id'] == i)
-      refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-        reflections[0].select(sel),
-        imageset.get_detector(), imageset.get_scan())
+      cryst = experiments.crystals()[0]
+      R, euler_angles, change_of_basis_op = difference_rotation_matrix_and_euler_angles(
+        cryst, reference_crystal)
+      print "Change of basis op: %s" %change_of_basis_op
+      print "Rotation matrix to transform input crystal to reference::"
+      print R.mathematica_form(format="%.3f", one_row_per_line=True)
+      print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
 
-      indexer.indexer_base.map_centroids_to_reciprocal_space(
-        refl, imageset.get_detector(), imageset.get_beam(),
-        imageset.get_goniometer())
-      refl_copy.extend(refl)
+    else:
+      assert len(reflections) == 1
 
-    # index the reflection list using the input experiments list
-    refl_copy['id'] = flex.int(len(refl_copy), -1)
-    from dials.algorithms.indexing import index_reflections
-    index_reflections(refl_copy, experiments, tolerance=0.2)
-    hkl_expt = refl_copy['miller_index']
-    hkl_input = reflections[0]['miller_index']
+      # always re-map reflections to reciprocal space
+      from dials.algorithms.indexing import indexer
+      refl_copy = flex.reflection_table()
+      for i, imageset in enumerate(experiments.imagesets()):
+        if 'imageset_id' in reflections[0]:
+          sel = (reflections[0]['imageset_id'] == i)
+        else:
+          sel = (reflections[0]['id'] == i)
+        refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
+          reflections[0].select(sel),
+          imageset.get_detector(), imageset.get_scan())
 
-    change_of_basis_op = derive_change_of_basis_op(hkl_input, hkl_expt)
+        indexer.indexer_base.map_centroids_to_reciprocal_space(
+          refl, imageset.get_detector(), imageset.get_beam(),
+          imageset.get_goniometer())
+        refl_copy.extend(refl)
+
+      # index the reflection list using the input experiments list
+      refl_copy['id'] = flex.int(len(refl_copy), -1)
+      from dials.algorithms.indexing import index_reflections
+      index_reflections(refl_copy, experiments, tolerance=0.2)
+      hkl_expt = refl_copy['miller_index']
+      hkl_input = reflections[0]['miller_index']
+
+      change_of_basis_op = derive_change_of_basis_op(hkl_input, hkl_expt)
 
     # reset experiments list since we don't want to reindex this
     experiments = []
