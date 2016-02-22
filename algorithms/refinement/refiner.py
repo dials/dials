@@ -575,6 +575,7 @@ class RefinerFactory(object):
         try:
           i = int(e)
           sel[i] = True
+          continue
         except ValueError:
           pass
         except IndexError:
