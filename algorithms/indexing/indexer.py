@@ -1429,7 +1429,8 @@ class indexer_base(object):
     verbosity = self.params.refinement_protocol.verbosity
     reflections['xyzcal.mm'] = predicted['xyzcal.mm']
     reflections['entering'] = predicted['entering']
-    reflections.unset_flags(flex.bool(len(reflections)), reflections.flags.centroid_outlier)
+    reflections.unset_flags(
+      flex.bool(len(reflections), True), reflections.flags.centroid_outlier)
     assert reflections.get_flags(reflections.flags.centroid_outlier).count(True) == 0
     reflections.set_flags(predicted.get_flags(predicted.flags.centroid_outlier),
                           reflections.flags.centroid_outlier)
