@@ -570,7 +570,7 @@ class RefinerFactory(object):
 
       # expand elements of the list that are comma separated strings and remove
       # braces/brackets
-      fix_list = [s.strip('(){}[]') for e in fix_list for s in e.split(',')]
+      fix_list = [s.strip('(){}[]') for e in fix_list for s in str(e).split(',')]
       fix_list = [e for e in fix_list if e is not '']
       for e in fix_list:
         try:
