@@ -188,6 +188,10 @@ phil_scope = parse('''
         .type = ints(size=2)
         .help = "Override the image range"
 
+      extrapolate_scan = False
+        .type = bool
+        .help = "When overriding the image range, extrapolate exposure and epoch information from existing images"
+
       oscillation = None
         .type = floats(size=2)
         .help = "Override the image oscillation"
@@ -459,7 +463,19 @@ class Script(object):
             goniometer.set_setting_rotation(params.setting_rotation)
         def override_scan(scan, params):
           if params.image_range is not None:
+            most_recent_image = scan.get_image_range()[1] - 1
             scan.set_image_range(params.image_range)
+            if params.extrapolate_scan and params.image_range[1] > most_recent_image:
+              exposure_times = scan.get_exposure_times()
+              epochs = scan.get_epochs()
+              exposure_time = exposure_times[most_recent_image]
+              epoch_correction = epochs[most_recent_image]
+              for i in range(most_recent_image + 1, params.image_range[1]):
+                exposure_times[i] = exposure_time
+                epoch_correction += exposure_time
+                epochs[i] = epoch_correction
+              scan.set_epochs(epochs)
+              scan.set_exposure_times(exposure_times)
           if params.oscillation is not None:
             scan.set_oscillation(params.oscillation)
         for sweep in sweeps:
