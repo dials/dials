@@ -568,9 +568,10 @@ class RefinerFactory(object):
       sel = [False] * len(parameter_names)
       parameter_names = [prefix + s for s in parameter_names]
 
-      # expand elements of the list that are comma separated strings
-      fix_list = [s for e in fix_list for s in e.split(',')]
-
+      # expand elements of the list that are comma separated strings and remove
+      # braces/brackets
+      fix_list = [s.strip('(){}[]') for e in fix_list for s in e.split(',')]
+      fix_list = [e for e in fix_list if e is not '']
       for e in fix_list:
         try:
           i = int(e)
