@@ -31,6 +31,14 @@ def dials_version():
         with open(os.devnull, 'w') as devnull:
           version = subprocess.check_output(
             ["git", "describe", "--long"], cwd=dials_path, stderr=devnull).rstrip()
+          if version[0] == 'v':
+            version = version[1:].replace('.0-','.')
+          try:
+            branch = subprocess.check_output(["git", "describe", "--contains", "--all", "HEAD"], cwd=dials_path, stderr=devnull).rstrip()
+            if 'release' in branch:
+              version = version + '-release'
+          except Exception:
+            pass
         with open(version_file, 'w') as gv:
           gv.write(version)
       except Exception:
