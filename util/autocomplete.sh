@@ -70,7 +70,7 @@ function _dials_autocomplete ()
   # Load and cache pre-computed hints for the requested command
   if [[ ${_dials_autocomplete_cache} != $1 ]]; then
    # Check if the requested command is supported. If not, use default completion.
-   if [ ! -f ${_dials_autocomplete_path}$1 ]; then type compopt &>/dev/null && compopt -o default; return 0; fi
+   if [ ! -s ${_dials_autocomplete_path}$1 ]; then type compopt &>/dev/null && compopt -o default; return 0; fi
 
    source ${_dials_autocomplete_path}$1
    _dials_autocomplete_cache=$1
