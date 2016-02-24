@@ -134,7 +134,7 @@ namespace dials { namespace algorithms {
       return dqe_correction(
           det_[p].get_mu(),
           det_[p].get_thickness(),
-          s1, 
+          s1,
           det_[p].get_normal());
     }
 

@@ -131,6 +131,18 @@ class Importer(object):
     '''
     from dxtbx.datablock import DataBlockFactory
     from dials.phil import FilenameDataWrapper, DataBlockConverters
+    from glob import glob
+    from logging import info
+
+    # If filenames contain wildcards, expand
+    args_new = []
+    for arg in args:
+      if "*" in arg:
+        args_new.extend(glob(arg))
+      else:
+        args_new.append(arg)
+    args = args_new
+
     unhandled = []
     datablocks = DataBlockFactory.from_filenames(
       args,
