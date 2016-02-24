@@ -69,7 +69,11 @@ namespace dials { namespace algorithms {
     double t0,
     vec3<double> s1,
     vec3<double> n) {
-    double t = 0.1 * t0 / cos(n.angle(s1));
+    DIALS_ASSERT(mu >= 0);
+    DIALS_ASSERT(t0 >= 0);
+    double cos_angle = cos(n.angle(s1));
+    DIALS_ASSERT(cos_angle > 0);
+    double t = 0.1 * t0 / cos_angle;
     return 1.0 - exp(-mu * t);
   }
 
