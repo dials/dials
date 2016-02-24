@@ -112,8 +112,6 @@ namespace dials { namespace algorithms {
         pf_(beam.get_polarization_fraction()),
         m2_(goniometer.get_rotation_axis()),
         det_(detector) {
-          mu_ = detector[0].get_mu();
-          t0_ = detector[0].get_thickness();
     }
 
     /**
@@ -132,7 +130,11 @@ namespace dials { namespace algorithms {
      * @returns DQE term which needs to be divided by (i.e. is efficiency)
      */
     double dqe(vec3<double> s1, size_t p) const {
-      return dqe_correction(mu_, t0_, s1, det_[p].get_normal());
+      return dqe_correction(
+          det_[p].get_mu(),
+          det_[p].get_thickness(),
+          s1, 
+          det_[p].get_normal());
     }
 
   private:
@@ -142,8 +144,6 @@ namespace dials { namespace algorithms {
     double pf_;
     vec3<double> m2_;
     Detector det_;
-    double mu_;
-    double t0_;
   };
 
 
