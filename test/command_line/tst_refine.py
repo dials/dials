@@ -130,7 +130,7 @@ def test2():
     # check that the used_in_refinement flag got set correctly
     rt = flex.reflection_table.from_pickle('refined.pickle')
     uir = rt.get_flags(rt.flags.used_in_refinement)
-    assert uir.count(True) == self._history['num_reflections'][-1]
+    assert uir.count(True) == history['num_reflections'][-1]
 
   finally:
     os.chdir(cwd)
