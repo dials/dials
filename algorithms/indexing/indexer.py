@@ -311,6 +311,17 @@ master_phil_scope = iotbx.phil.parse("""
 include scope dials.algorithms.refinement.refiner.phil_scope
 """ %index_only_phil_str, process_includes=True)
 
+# override default refinement parameters
+master_phil_scope = master_phil_scope.fetch(source=iotbx.phil.parse(
+  """\
+refinement {
+  reflections {
+    use_all_reflections=False
+    reflections_per_degree=100
+  }
+}
+"""))
+
 master_params = master_phil_scope.fetch().extract()
 
 
