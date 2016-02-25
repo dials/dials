@@ -27,6 +27,7 @@ import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory, approx_equal
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from dials.array_family import flex
 
 def test1():
 
@@ -125,6 +126,11 @@ def test2():
                       (0.076603981, 0.085854175, 0.001153594)]
 
     assert approx_equal(history['rmsd'], expected_rmsds)
+
+    # check that the used_in_refinement flag got set correctly
+    rt = flex.reflection_table.from_pickle('refined.pickle')
+    uir = rt.get_flags(rt.flags.used_in_refinement)
+    assert uir.count(True) == self._history['num_reflections'][-1]
 
   finally:
     os.chdir(cwd)
