@@ -27,7 +27,7 @@ def index_reflections(
   UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
   imgset_ids = reflections['imageset_id'].select(sel)
 
-  for i_imgset, experiment in enumerate(experiments):
+  for i_imgset, imgset in enumerate(experiments.imagesets()):
     sel_imgset = (imgset_ids == i_imgset)
 
     result = AssignIndices(
@@ -41,7 +41,7 @@ def index_reflections(
     for i_cryst, cryst in enumerate(experiments.crystals()):
       sel_cryst = (crystal_ids == i_cryst)
       for i_expt in experiments.where(
-        crystal=cryst, imageset=experiment.imageset):
+        crystal=cryst, imageset=imgset):
         expt_ids.set_selected(sel_cryst, i_expt)
 
     reflections['miller_index'].set_selected(isel.select(sel_imgset), miller_indices)
