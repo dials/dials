@@ -366,11 +366,12 @@ class Script(object):
       if preds.has_key('entering'):
         reflections['entering'] = preds['entering']
 
-      # set centroid_outlier flag
+      # set used_in_refinement and centroid_outlier flags
       mask = preds.get_flags(preds.flags.centroid_outlier)
       reflections.set_flags(mask, reflections.flags.centroid_outlier)
+      mask = preds.get_flags(preds.flags.used_in_refinement)
+      reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
-      # FIXME redo outlier rejection on the new predictions with updated geometry
       info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
       reflections.as_pickle(params.output.reflections)
