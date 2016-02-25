@@ -316,7 +316,6 @@ master_phil_scope = master_phil_scope.fetch(source=iotbx.phil.parse(
   """\
 refinement {
   reflections {
-    use_all_reflections=False
     reflections_per_degree=100
   }
 }

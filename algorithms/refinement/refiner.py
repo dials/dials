@@ -278,7 +278,7 @@ refinement
     .help = "Parameters used by the reflection manager"
   {
 
-    reflections_per_degree = 100
+    reflections_per_degree = None
       .help = "The number of centroids per degree of the sweep to use in"
               "refinement."
       .type = float(value_min=0.)
@@ -293,11 +293,6 @@ refinement
               "Overrides reflections_per_degree if that produces a"
               "larger sample size."
       .type = int(value_min=1)
-
-    use_all_reflections = True
-      .help = "Override reflections_per_degree and use all available centroids"
-              "in refinement."
-      .type = bool
 
     random_seed = 42
       .help = "Random seed to use when sampling to create a working set of"
@@ -1169,10 +1164,6 @@ class RefinerFactory(object):
 
     # Shorten parameter path
     options = params.refinement.reflections
-    if options.use_all_reflections:
-      nref_per_degree = None
-    else:
-      nref_per_degree = options.reflections_per_degree
 
     # While a random subset of reflections is used, continue to
     # set random.seed to get consistent behaviour
@@ -1255,7 +1246,7 @@ class RefinerFactory(object):
 
     return refman(reflections=reflections,
             experiments=experiments,
-            nref_per_degree=nref_per_degree,
+            nref_per_degree=options.reflections_per_degree,
             max_sample_size = options.maximum_sample_size,
             min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,

@@ -145,7 +145,6 @@ def exercise_1():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["n_macro_cycles=3",
-                "use_all_reflections=True",
                 "discover_better_experimental_model=True",
                 "bin_size_fraction=0.25",
                 "outlier.algorithm=tukey",
@@ -334,7 +333,6 @@ def exercise_8():
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
   extra_args = ["indexing.method=real_space_grid_search",
                 "reflections_per_degree=10",
-                "use_all_reflections=True",
                 "n_macro_cycles=5",
                 "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
                 "known_symmetry.space_group=P212121",
@@ -378,7 +376,6 @@ def exercise_10():
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
   extra_args = ["indexing.method=real_space_grid_search",
                 "d_min_start=3",
-                "use_all_reflections=True",
                 "n_macro_cycles=3",
                 "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
                 "known_symmetry.space_group=P212121",
@@ -431,7 +428,6 @@ def exercise_11():
   assert os.path.exists(pickle_path)
 
   extra_args = ["indexing.method=real_space_grid_search",
-                "use_all_reflections=True",
                 "n_macro_cycles=3",
                 "known_symmetry.unit_cell=78,78,39,90,90,90",
                 "known_symmetry.space_group=P43212",
@@ -489,8 +485,7 @@ def exercise_13():
   hall_symbol = '-R 3 2"'
 
   for uc, hall in ((unit_cell, hall_symbol), (None, hall_symbol)):
-    extra_args = ["bin_size_fraction=0.25",
-                  "use_all_reflections=True"]
+    extra_args = ["bin_size_fraction=0.25"]
     if uc is not None:
       extra_args.append("known_symmetry.unit_cell=\"%s %s %s %s %s %s\"" %unit_cell.parameters())
     if hall is not None:
