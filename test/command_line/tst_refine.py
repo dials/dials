@@ -44,7 +44,7 @@ def test1():
     assert os.path.exists(pth)
 
   # set close_to_spindle_cutoff to old default
-  cmd = "dials.refine close_to_spindle_cutoff=0.05 " + \
+  cmd = "dials.refine close_to_spindle_cutoff=0.05 use_all_reflections=false " + \
         experiments_path + " " + pickle_path
   print cmd
 
@@ -92,12 +92,12 @@ def test2():
 
   # scan-static refinement first to get refined_experiments.json as start point
   cmd1 = "dials.refine " + experiments_path + " " + pickle_path + \
-    " reflections_per_degree=50 outlier.algorithm=null " + \
-    "close_to_spindle_cutoff=0.05"
+    " reflections_per_degree=50 use_all_reflections=false " + \
+    " outlier.algorithm=null close_to_spindle_cutoff=0.05"
   cmd2 = "dials.refine refined_experiments.json " + pickle_path + \
     " scan_varying=true output.history=history.pickle " + \
-    "reflections_per_degree=50 outlier.algorithm=null " + \
-    "close_to_spindle_cutoff=0.05"
+    " reflections_per_degree=50 use_all_reflections=false " + \
+    " outlier.algorithm=null close_to_spindle_cutoff=0.05"
 
   # work in a temporary directory
   cwd = os.path.abspath(os.curdir)

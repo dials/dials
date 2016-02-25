@@ -294,7 +294,7 @@ refinement
               "larger sample size."
       .type = int(value_min=1)
 
-    use_all_reflections = False
+    use_all_reflections = True
       .help = "Override reflections_per_degree and use all available centroids"
               "in refinement."
       .type = bool
