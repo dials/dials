@@ -14,6 +14,7 @@
 from __future__ import division
 from copy import deepcopy
 from libtbx.utils import Sorry
+from dials.array_family import flex
 
 help_message = '''
 
@@ -367,6 +368,9 @@ class Script(object):
         reflections['entering'] = preds['entering']
 
       # set used_in_refinement and centroid_outlier flags
+      assert len(preds) == len(reflections)
+      reflections.unset_flags(flex.size_t_range(len(reflections)),
+        reflections.flags.used_in_refinement | reflections.flags.centroid_outlier)
       mask = preds.get_flags(preds.flags.centroid_outlier)
       reflections.set_flags(mask, reflections.flags.centroid_outlier)
       mask = preds.get_flags(preds.flags.used_in_refinement)
