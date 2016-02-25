@@ -62,7 +62,7 @@ dials.reindex indexed.pickle change_of_basis_op=a,b,c
 # using all indexed reflections in the dataset and with outlier rejection switched on.
 
 dials.refine bravais_setting_9.json reindexed_reflections.pickle \
-outlier.algorithm=tukey use_all_reflections=true
+outlier.algorithm=tukey
 
 # We have done the best we can with a static model for the experiment.
 # However, a better model for the crystal might allow small misset rotations
@@ -75,7 +75,7 @@ outlier.algorithm=tukey use_all_reflections=true
 # previous job:
 
 dials.refine refined_experiments.json refined.pickle \
-outlier.algorithm=tukey use_all_reflections=true  \
+outlier.algorithm=tukey
 scan_varying=true output.experiments=sv_refined_experiments.json
 
 # Integration:

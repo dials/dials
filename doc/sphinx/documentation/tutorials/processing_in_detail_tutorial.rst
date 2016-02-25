@@ -241,31 +241,6 @@ fitting noise in the data. Figuring out the optimum number of points to use
 is challenging. Here we are happy with the default interval width of 36 degrees
 (this is a parameter at ``expert_level = 1``).
 
-Diffraction geometry refinement, even with a scan-varying crystal model,
-is hugely over-determined. So it is reasonable
-to use a small subset of the total number of reflections to refine the
-model. However, if we are being extra careful about data processing
-and don't mind a slightly longer run time we might want to use all reflections
-instead. In that case, we could use the following command::
-
-  dials.refine refined_experiments.json indexed.pickle scan_varying=true use_all_reflections=true
-
-This improves on the positional RMSDs from the previous job, but the angular
-RMSD is slightly worse. In any case, the differences are only in the third
-decimal place::
-
-  RMSDs by experiment:
-  -----------------------------------------------
-  | Exp | Nref   | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |        | (px)    | (px)    | (images) |
-  -----------------------------------------------
-  | 0   | 101878 | 0.26205 | 0.21742 | 0.13255  |
-  -----------------------------------------------
-
-The actual effect on the integrated data (in this case) of using
-the model refined against the full set of strong spots rather than
-the 100 reflections per degree subset quality is negligible.
-
 To view the smoothly varying crystal cell parameters use the following command::
 
   dials.plot_scan_varying_crystal refined_experiments.json

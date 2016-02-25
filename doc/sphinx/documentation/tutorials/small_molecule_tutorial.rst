@@ -1,6 +1,9 @@
 Running the Individual Steps: Small Molecule
 --------------------------------------------
 
+.. warning::
+   This tutorial is out of date! Default parameters and output have changed.
+
 FIXME write this section too, and in each section detail the available
 parameters. Guess it would also be rather nice to write about the available
 parameters, and :samp:`dials.parameters`. For this example will process some

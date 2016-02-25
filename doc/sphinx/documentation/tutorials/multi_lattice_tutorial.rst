@@ -116,8 +116,7 @@ remaining after indexing the first lattice, we can switch on indexing of
 multiple lattices using the parameter max_lattices=2 (e.g.)::
 
   dials.index datablock.json strong.pickle \
-    max_lattices=2 \
-    refinement.reflections.use_all_reflections=true
+    max_lattices=2
 
 ::
 
@@ -126,11 +125,6 @@ multiple lattices using the parameter max_lattices=2 (e.g.)::
   indexing {
     multiple_lattice_search {
       max_lattices = 2
-    }
-  }
-  refinement {
-    reflections {
-      use_all_reflections = true
     }
   }
   input {
@@ -240,7 +234,6 @@ P222.
 
   dials.index datablock.json strong.pickle \
     max_lattices=2 \
-    refinement.reflections.use_all_reflections=true \
     space_group=P222
 
 ::
@@ -253,11 +246,6 @@ P222.
     }
     multiple_lattice_search {
       max_lattices = 2
-    }
-  }
-  refinement {
-    reflections {
-      use_all_reflections = true
     }
   }
   input {
@@ -322,7 +310,7 @@ refinement step in here to allow e.g. scan varying refinement.
 ::
 
   dials.refine experiments.json indexed.pickle \
-    use_all_reflections=True scan_varying=True \
+    scan_varying=True \
     outlier.algorithm=tukey
 
 ::
@@ -336,7 +324,6 @@ refinement step in here to allow e.g. scan varying refinement.
       }
     }
     reflections {
-      use_all_reflections = True
       outlier {
         algorithm = null *tukey
       }
