@@ -75,7 +75,7 @@ outlier.algorithm=tukey
 # previous job:
 
 dials.refine refined_experiments.json refined.pickle \
-outlier.algorithm=tukey
+outlier.algorithm=tukey \
 scan_varying=true output.experiments=sv_refined_experiments.json
 
 # Integration:
