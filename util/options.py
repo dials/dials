@@ -468,7 +468,7 @@ class PhilCommandParser(object):
               .type = float(value_min=0.0)
               .help = "The slow axis tolerance"
 
-            origin = 1e-6
+            origin = 1e-3
               .type = float(value_min=0.0)
               .help = "The origin tolerance"
 
