@@ -11,6 +11,7 @@ info_handle = log.info_handle()
 import libtbx
 from libtbx.utils import Sorry
 from dials.algorithms.indexing.indexer import indexer_base
+from dials.algorithms.indexing.known_orientation import indexer_known_orientation
 from dials.algorithms.indexing.real_space_grid_search import indexer_real_space_grid_search
 from dials.algorithms.indexing.fft3d import indexer_fft3d
 from dials.algorithms.indexing.fft1d import indexer_fft1d
@@ -91,12 +92,8 @@ class stills_indexer(indexer_base):
       params = master_params
 
     if known_crystal_models is not None:
-      #from dials.algorithms.indexing.known_orientation \
-      #     import indexer_known_orientation
-      #idxr = indexer_known_orientation(
-      #  reflections, imagesets, params, known_crystal_models)
-      raise Sorry("Indexing from known crystal models not supported for stills")
-
+      idxr = stills_indexer_known_orientation(
+        reflections, imagesets, params, known_crystal_models)
     elif params.indexing.method == "fft3d":
       idxr = stills_indexer_fft3d(reflections, imagesets, params=params)
     elif params.indexing.method == "fft1d":
@@ -210,12 +207,18 @@ class stills_indexer(indexer_base):
       n_lattices_previous_cycle = len(experiments)
 
       experiments.extend(self.find_lattices())
-      self.reflections = self._best_indexed
       if len(experiments) == 0:
         raise Sorry("No suitable lattice could be found.")
       elif len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
         break
+
+      if hasattr(self, '_best_indexed'):
+        self.reflections = self._best_indexed
+      else:
+        self.index_reflections(
+          experiments, self.reflections,
+          verbosity=self.params.refinement_protocol.verbosity)
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
@@ -560,6 +563,9 @@ class stills_indexer(indexer_base):
     return refiner.get_experiments(), refl
 
 """ Mixin class definitions that override the dials indexing class methods specific to stills """
+class stills_indexer_known_orientation(indexer_known_orientation, stills_indexer):
+  pass
+
 class stills_indexer_real_space_grid_search(stills_indexer, indexer_real_space_grid_search):
   pass
 
