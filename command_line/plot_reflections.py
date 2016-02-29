@@ -168,8 +168,10 @@ def run(args):
   fig.set_dpi(params.output.dpi)
   pyplot.axes().set_aspect('equal')
   marker_size = params.output.marker_size
-  pyplot.scatter(obs_x, obs_y, marker='o', c='white', s=marker_size, alpha=1)
-  pyplot.scatter(pred_x, pred_y, marker='+', s=marker_size, c='blue')
+  if obs_x.size():
+    pyplot.scatter(obs_x, obs_y, marker='o', c='white', s=marker_size, alpha=1)
+  if pred_x.size():
+    pyplot.scatter(pred_x, pred_y, marker='+', s=marker_size, c='blue')
   #assert len(detector) == 1
   panel = detector[0]
   #if len(detector) > 1:
