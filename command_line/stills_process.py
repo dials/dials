@@ -124,7 +124,9 @@ class Script(object):
     else:
       def do_import(filename):
         info("Loading %s"%os.path.basename(filename))
-        return DataBlockFactory.from_filenames([filename])[0]
+        datablocks = DataBlockFactory.from_filenames([filename])
+        if len(datablocks) == 0:
+          raise Abort("Could not load %s"%filename)
 
       datablocks = easy_mp.parallel_map(
         func=do_import,
