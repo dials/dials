@@ -463,14 +463,16 @@ class Script(object):
             goniometer.set_setting_rotation(params.setting_rotation)
         def override_scan(scan, params):
           if params.image_range is not None:
-            most_recent_image = scan.get_image_range()[1] - 1
+            most_recent_image_index = scan.get_image_range()[1] - scan.get_image_range()[0]
             scan.set_image_range(params.image_range)
-            if params.extrapolate_scan and params.image_range[1] > most_recent_image:
+            if params.extrapolate_scan and \
+                (params.image_range[1] - params.image_range[0]) > most_recent_image_index:
               exposure_times = scan.get_exposure_times()
               epochs = scan.get_epochs()
-              exposure_time = exposure_times[most_recent_image]
-              epoch_correction = epochs[most_recent_image]
-              for i in range(most_recent_image + 1, params.image_range[1]):
+              exposure_time = exposure_times[most_recent_image_index]
+              epoch_correction = epochs[most_recent_image_index]
+              for i in range(most_recent_image_index + 1, \
+                  params.image_range[1] - params.image_range[0] + 1):
                 exposure_times[i] = exposure_time
                 epoch_correction += exposure_time
                 epochs[i] = epoch_correction
