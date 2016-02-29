@@ -7,7 +7,7 @@ class spot_wrapper(object):
     import wx
     from dials.util.spotfinder_frame import SpotFrame
 
-    app = wx.App(0)
+    app = wx.App()
 
     frame = SpotFrame(None, -1, "X-ray image display", size=(800,720),
       pos=(100,100),
