@@ -111,6 +111,14 @@ class Script(object):
 
 if __name__ == '__main__':
   import sys
+  import wx # It is unclear why, but it is crucial that wx
+            # is imported before the parser is run.
+            # Otherwise viewer will crash when run with
+            # .cbf image as parameter on linux with wxPython>=3
+            # The problem can be traced to
+            # dxtbx/format/FormatCBFFull.py:49
+            #  ''' from iotbx.detectors.cbf import CBFImage '''
+            # and the wx import must happen before that import.
 
   from dials.util.options import OptionParser
   from dials.util.options import flatten_datablocks
