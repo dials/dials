@@ -209,9 +209,6 @@ class stills_indexer(indexer_base):
       experiments.extend(self.find_lattices())
       if len(experiments) == 0:
         raise Sorry("No suitable lattice could be found.")
-      elif len(experiments) == n_lattices_previous_cycle:
-        # no more lattices found
-        break
 
       if hasattr(self, '_best_indexed'):
         self.reflections = self._best_indexed
@@ -219,6 +216,10 @@ class stills_indexer(indexer_base):
         self.index_reflections(
           experiments, self.reflections,
           verbosity=self.params.refinement_protocol.verbosity)
+
+      if len(experiments) == n_lattices_previous_cycle:
+        # no more lattices found
+        break
 
       if (self.target_symmetry_primitive is not None
           and self.target_symmetry_primitive.space_group() is not None):
