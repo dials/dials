@@ -1807,7 +1807,7 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
                   filter_overlaps=True, overlaps_border=0):
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
-    from dials.algorithms.peak_finding.per_image_analysis import \
+    from dials.algorithms.spot_finding.per_image_analysis import \
      ice_rings_selection
     ice_sel = ice_rings_selection(reflections)
     reflections = reflections.select(~ice_sel)

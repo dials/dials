@@ -95,7 +95,7 @@ def run(args):
   grid = params.grid
 
   from libtbx import group_args
-  from dials.algorithms.peak_finding.per_image_analysis \
+  from dials.algorithms.spot_finding.per_image_analysis \
        import plot_stats, print_table
 
   estimated_d_min = flex.double()

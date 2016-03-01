@@ -34,6 +34,72 @@ class Test(object):
 
     print 'OK'
 
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.generate_mask',
+      input_filename,
+      'output.mask=mask2.pickle',
+      'untrusted.rectangle=100,200,100,200'
+    ]).raise_if_errors()
+    assert(exists("mask2.pickle"))
+
+    print 'OK'
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.generate_mask',
+      input_filename,
+      'output.mask=mask3.pickle',
+      'untrusted.circle=100,100,10'
+    ]).raise_if_errors()
+    assert(exists("mask3.pickle"))
+
+    print 'OK'
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.generate_mask',
+      input_filename,
+      'output.mask=mask4.pickle',
+      'resolution_range=2,3',
+    ]).raise_if_errors()
+    assert(exists("mask4.pickle"))
+
+    print 'OK'
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.generate_mask',
+      input_filename,
+      'output.mask=mask5.pickle',
+      'd_min=3',
+      'd_max=2',
+    ]).raise_if_errors()
+    assert(exists("mask5.pickle"))
+
+    print 'OK'
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.generate_mask',
+      input_filename,
+      'output.mask=mask6.pickle',
+      '\'ice_rings{filter=True;d_min=2}\'',
+    ]).raise_if_errors()
+    assert(exists("mask6.pickle"))
+
+    print 'OK'
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.generate_mask',
+      input_filename,
+      'output.mask=mask3.pickle',
+      'untrusted.polygon=100,100,100,200,200,200,200,100'
+    ]).raise_if_errors()
+    assert(exists("mask3.pickle"))
+
+    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

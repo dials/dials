@@ -68,8 +68,16 @@ namespace dials { namespace af { namespace boost_python {
    */
   template <typename FloatType>
   typename af::flex< Shoebox<FloatType> >::type* from_pixel_list(
-      const PixelListLabeller &pixel, std::size_t panel,
-      std::size_t zstart, bool twod) {
+      const PixelListLabeller &pixel,
+      std::size_t panel,
+      std::size_t zstart,
+      bool twod,
+      std::size_t min_pixels,
+      std::size_t max_pixels) {
+
+    // Check the input
+    DIALS_ASSERT(min_pixels > 0);
+    DIALS_ASSERT(max_pixels > min_pixels);
 
     // Get the stuff from the label struct
     af::shared<int> labels = twod ? pixel.labels_2d() : pixel.labels_3d();
@@ -94,6 +102,7 @@ namespace dials { namespace af { namespace boost_python {
     }
 
     // Set the shoeboxes
+    std::vector<std::size_t> num_pixels(labels.size());
     for (std::size_t i = 0; i < labels.size(); ++i) {
       int l = labels[i];
       vec3<int> c = coords[i];
@@ -106,27 +115,32 @@ namespace dials { namespace af { namespace boost_python {
       if (c[1] >= result[l].bbox[3]) result[l].bbox[3] = c[1] + 1;
       if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
       if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
+      num_pixels[l]++;
     }
 
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i].allocate();
+      if (min_pixels <= num_pixels[i] && num_pixels[i] <= max_pixels) {
+        result[i].allocate();
+      }
     }
 
     // Set all the mask and data points
     for (std::size_t i = 0; i < labels.size(); ++i) {
       int l = labels[i];
-      FloatType v = values[i];
-      vec3<int> c = coords[i];
-      int ii = c[2] - result[l].bbox[0];
-      int jj = c[1] - result[l].bbox[2];
-      int kk = c[0] - result[l].bbox[4];
-      DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
-      DIALS_ASSERT(ii < result[l].xsize());
-      DIALS_ASSERT(jj < result[l].ysize());
-      DIALS_ASSERT(kk < result[l].zsize());
-      result[l].data(kk,jj,ii) = v;
-      result[l].mask(kk,jj,ii) = Valid | Foreground;
+      if (result[l].is_allocated()) {
+        FloatType v = values[i];
+        vec3<int> c = coords[i];
+        int ii = c[2] - result[l].bbox[0];
+        int jj = c[1] - result[l].bbox[2];
+        int kk = c[0] - result[l].bbox[4];
+        DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
+        DIALS_ASSERT(ii < result[l].xsize());
+        DIALS_ASSERT(jj < result[l].ysize());
+        DIALS_ASSERT(kk < result[l].zsize());
+        result[l].data(kk,jj,ii) = v;
+        result[l].mask(kk,jj,ii) = Valid | Foreground;
+      }
     }
 
     // Shift bbox z start position
@@ -315,6 +329,18 @@ namespace dials { namespace af { namespace boost_python {
     shared<bool> result(a.size(), af::init_functor_null<bool>());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].is_consistent();
+    }
+    return result;
+  }
+
+  /**
+   * Check if the arrays are allocated
+   */
+  template <typename FloatType>
+  shared<bool> is_allocated(const const_ref< Shoebox<FloatType> > &a) {
+    shared<bool> result(a.size(), af::init_functor_null<bool>());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].is_allocated();
     }
     return result;
   }
@@ -813,7 +839,9 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("pixel"),
             boost::python::arg("panel") = 0,
             boost::python::arg("zstart") = 0,
-            boost::python::arg("twod") = false)))
+            boost::python::arg("twod") = false,
+            boost::python::arg("min_pixels") = 1,
+            boost::python::arg("max_pixels") = 20)))
         .def("__init__", make_constructor(
           from_labels<2, FloatType>,
           default_call_policies(), (
@@ -845,6 +873,8 @@ namespace dials { namespace af { namespace boost_python {
           &deallocate<FloatType>)
         .def("is_consistent",
           &is_consistent<FloatType>)
+        .def("is_allocated",
+          &is_allocated<FloatType>)
         .def("panels",
           &panels<FloatType>)
         .def("bounding_boxes",

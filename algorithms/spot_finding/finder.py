@@ -1,5 +1,5 @@
 #
-# spot_finder.py
+# finder.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -38,25 +38,25 @@ class ExtractPixelsFromImage(object):
 
   def __init__(self,
                imageset,
-               threshold_image,
+               threshold_function,
                mask,
-               max_strong_pixel_fraction,
-               region_of_interest):
+               region_of_interest,
+               max_strong_pixel_fraction):
     '''
     Initialise the class
 
     :param imageset: The imageset to extract from
-    :param threshold_image: The function to threshold with
+    :param threshold_function: The function to threshold with
     :param mask: The image mask
-    :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
     :param region_of_interest: A region of interest to process
+    :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
 
     '''
-    self.threshold_image = threshold_image
+    self.threshold_function = threshold_function
     self.imageset = imageset
     self.mask = mask
-    self.max_strong_pixel_fraction = max_strong_pixel_fraction
     self.region_of_interest = region_of_interest
+    self.max_strong_pixel_fraction = max_strong_pixel_fraction
     if self.mask is not None:
       detector = self.imageset.get_detector()
       assert(len(self.mask) == len(detector))
@@ -109,11 +109,11 @@ class ExtractPixelsFromImage(object):
         assert y1 <= height, "y1 <= height"
         im_roi = im[y0:y1,x0:x1]
         mk_roi = mk[y0:y1,x0:x1]
-        tm_roi = self.threshold_image.compute_threshold(im_roi, mk_roi)
+        tm_roi = self.threshold_function.compute_threshold(im_roi, mk_roi)
         threshold_mask = flex.bool(im.accessor(),False)
         threshold_mask[y0:y1,x0:x1] = tm_roi
       else:
-        threshold_mask = self.threshold_image.compute_threshold(im, mk)
+        threshold_mask = self.threshold_function.compute_threshold(im, mk)
 
       # Add the pixel list
       plist = PixelList(frame, im, threshold_mask)
@@ -142,6 +142,48 @@ class ExtractPixelsFromImage(object):
     return Result(pixel_list)
 
 
+class batch_func(object):
+  '''
+  Process the batch iterables
+
+  '''
+  def __init__(self, func):
+    self.func = func
+
+  def __call__(self, index):
+    result = []
+    for i in index:
+      result.append(self.func(i))
+    return result
+
+class batch_iterable(object):
+  '''
+  Split the iterables into batches
+
+  '''
+  def __init__(self, iterable, chunksize):
+    self.iterable = iterable
+    self.chunksize = chunksize
+
+  def __iter__(self):
+    i = 0
+    while i < len(self.iterable):
+      j = i + self.chunksize
+      yield self.iterable[i:j]
+      i = j
+
+class batch_callback(object):
+  '''
+  Process the batch callback
+
+  '''
+  def __init__(self, callback):
+    self.callback = callback
+
+  def __call__(self, result):
+    for r in result:
+      self.callback(r)
+
 def batch_parallel_map(func=None,
                        iterable=None,
                        processes=None,
@@ -154,48 +196,6 @@ def batch_parallel_map(func=None,
   '''
   from libtbx import easy_mp
 
-  class batch_func(object):
-    '''
-    Process the batch iterables
-
-    '''
-    def __init__(self, func):
-      self.func = func
-
-    def __call__(self, index):
-      result = []
-      for i in index:
-        result.append(self.func(i))
-      return result
-
-  class batch_iterable(object):
-    '''
-    Split the iterables into batches
-
-    '''
-    def __init__(self, iterable, chunksize):
-      self.iterable = iterable
-      self.chunksize = chunksize
-
-    def __iter__(self):
-      i = 0
-      while i < len(self.iterable):
-        j = i + chunksize
-        yield self.iterable[i:j]
-        i = j
-
-  class batch_callback(object):
-    '''
-    Process the batch callback
-
-    '''
-    def __init__(self, callback):
-      self.callback = callback
-
-    def __call__(self, result):
-      for r in result:
-        self.callback(r)
-
   # Call the batches in parallel
   easy_mp.parallel_map(
     func=batch_func(func),
@@ -207,6 +207,35 @@ def batch_parallel_map(func=None,
     preserve_exception_message=True)
 
 
+class ExtractSpotsParallelTask(object):
+  '''
+  Execute the spot finder task in parallel
+
+  We need this external class so that we can pickle it for cluster jobs
+
+  '''
+  def __init__(self, function):
+    '''
+    Initialise with the function to call
+
+    '''
+    self.function = function
+
+  def __call__(self, task):
+    '''
+    Call the function with th task and save the IO
+
+    '''
+    from cStringIO import StringIO
+    from dials.util import log
+    import logging
+    log.config_simple_cached()
+    result = self.function(task)
+    handlers = logging.getLogger().handlers
+    assert len(handlers) == 1, "Invalid number of logging handlers"
+    return result, handlers[0].messages()
+
+
 class ExtractSpots(object):
   '''
   Class to find spots in an image and extract them into shoeboxes.
@@ -214,17 +243,19 @@ class ExtractSpots(object):
   '''
 
   def __init__(self,
-               threshold_image,
+               threshold_function=None,
                mask=None,
+               region_of_interest=None,
+               max_strong_pixel_fraction=0.1,
                mp_method='multiprocessing',
                nproc=1,
                mp_chunksize=1,
-               max_strong_pixel_fraction=0.1,
-               region_of_interest=None):
+               min_spot_size=1,
+               max_spot_size=20):
     '''
     Initialise the class with the strategy
 
-    :param threshold_image: The image thresholding strategy
+    :param threshold_function: The image thresholding strategy
     :param mask: The mask to use
     :param mp_method: The multi processing method
     :param nproc: The number of processors
@@ -232,13 +263,15 @@ class ExtractSpots(object):
 
     '''
     # Set the required strategies
-    self.threshold_image = threshold_image
+    self.threshold_function = threshold_function
     self.mask = mask
     self.mp_method = mp_method
     self.mp_chunksize = mp_chunksize
     self.nproc = nproc
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
     self.region_of_interest = region_of_interest
+    self.min_spot_size = min_spot_size
+    self.max_spot_size = max_spot_size
 
   def __call__(self, imageset):
     '''
@@ -269,11 +302,11 @@ class ExtractSpots(object):
 
     # The extract pixels function
     function = ExtractPixelsFromImage(
-        imageset,
-        self.threshold_image,
-        self.mask,
-        self.max_strong_pixel_fraction,
-        self.region_of_interest)
+        imageset                  = imageset,
+        threshold_function        = self.threshold_function,
+        mask                      = self.mask,
+        max_strong_pixel_fraction = self.max_strong_pixel_fraction,
+        region_of_interest        = self.region_of_interest)
 
     # The indices to iterate over
     indices = list(range(len(imageset)))
@@ -294,15 +327,6 @@ class ExtractSpots(object):
         for plabeller, plist in zip(pixel_labeller, result[0].pixel_list):
           plabeller.add(plist)
         result[0].pixel_list = None
-      def execute_task(task):
-        from cStringIO import StringIO
-        from dials.util import log
-        import logging
-        log.config_simple_cached()
-        result = function(task)
-        handlers = logging.getLogger().handlers
-        assert len(handlers) == 1, "Invalid number of logging handlers"
-        return result, handlers[0].messages()
 
       # Parallel reading of HDF5 from the same handle is not allowed. Python
       # multiprocessing is a bit messed up and used fork on linux so need to
@@ -312,7 +336,7 @@ class ExtractSpots(object):
         imageset.reader().nullify_format_instance()
 
       batch_parallel_map(
-        func=execute_task,
+        func=ExtractSpotsParallelTask(function),
         iterable=indices,
         processes=mp_nproc,
         callback=process_output,
@@ -334,9 +358,24 @@ class ExtractSpots(object):
       twod = True
     for i, p in enumerate(pixel_labeller):
       if p.num_pixels() > 0:
-        shoeboxes.extend(flex.shoebox(p, i, 0, twod))
+        shoeboxes.extend(
+          flex.shoebox(
+            p,
+            i,                   # panel
+            0,                   # zrange
+            twod,                # twod
+            self.min_spot_size,  # min_pixels
+            self.max_spot_size)) # max_pixels
     info('')
     info('Extracted {0} spots'.format(len(shoeboxes)))
+
+    # Get the unallocated spots and print some info
+    selection = shoeboxes.is_allocated()
+    shoeboxes = shoeboxes.select(selection)
+    info('Removed %d spots with size < %d or > %d pixels' % (
+      selection.count(False),
+      self.min_spot_size,
+      self.max_spot_size))
 
     # Return the shoeboxes
     return shoeboxes
@@ -348,8 +387,20 @@ class SpotFinder(object):
 
   '''
 
-  def __init__(self, find_spots=None, filter_spots=None, scan_range=None,
-               write_hot_mask=True):
+  def __init__(self,
+               threshold_function=None,
+               mask=None,
+               region_of_interest=None,
+               max_strong_pixel_fraction=0.1,
+               mp_method='multiprocessing',
+               nproc=1,
+               mp_chunksize=1,
+               mask_generator=None,
+               filter_spots=None,
+               scan_range=None,
+               write_hot_mask=True,
+               min_spot_size=1,
+               max_spot_size=20):
     '''
     Initialise the class.
 
@@ -359,12 +410,20 @@ class SpotFinder(object):
 
     '''
 
-    # Set the spot finding and filter functions
-    assert(find_spots != None and filter_spots != None)
-    self.find_spots = find_spots
+    # Set the filter and some other stuff
+    self.threshold_function = threshold_function
+    self.mask = mask
+    self.region_of_interest = region_of_interest
+    self.max_strong_pixel_fraction = max_strong_pixel_fraction
+    self.mp_method = mp_method
+    self.nproc = nproc
+    self.mp_chunksize = mp_chunksize
+    self.mask_generator = mask_generator
     self.filter_spots = filter_spots
     self.scan_range = scan_range
     self.write_hot_mask = write_hot_mask
+    self.min_spot_size = min_spot_size
+    self.max_spot_size = max_spot_size
 
   def __call__(self, datablock):
     '''
@@ -386,6 +445,7 @@ class SpotFinder(object):
       info('-' * 80)
       info('Finding strong spots in imageset %d' % i)
       info('-' * 80)
+      info('')
       table, hot_mask = self._find_in_imageset(imageset)
       table['id'] = flex.int(table.nrows(), i)
       reflections.extend(table)
@@ -421,10 +481,28 @@ class SpotFinder(object):
     :return: The observed spots
 
     '''
+    from dials.util.masking import MaskGenerator
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep
     from logging import info
+
+    # The input mask
+    mask = self.mask_generator.generate(imageset)
+    if self.mask is not None:
+      mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
+
+    # Set the spot finding algorithm
+    extract_spots = ExtractSpots(
+      threshold_function        = self.threshold_function,
+      mask                      = mask,
+      region_of_interest        = self.region_of_interest,
+      max_strong_pixel_fraction = self.max_strong_pixel_fraction,
+      mp_method                 = self.mp_method,
+      nproc                     = self.nproc,
+      mp_chunksize              = self.mp_chunksize,
+      min_spot_size             = self.min_spot_size,
+      max_spot_size             = self.max_spot_size)
 
     # Get the max scan range
     if isinstance(imageset, ImageSweep):
@@ -448,7 +526,7 @@ class SpotFinder(object):
       if isinstance(imageset, ImageSweep):
         j0 -= imageset.get_array_range()[0]
         j1 -= imageset.get_array_range()[0]
-      spots_all.extend(self.find_spots(imageset[j0:j1]))
+      spots_all.extend(extract_spots(imageset[j0:j1]))
 
     # Get the list of shoeboxes
     shoeboxes = flex.shoebox(spots_all)

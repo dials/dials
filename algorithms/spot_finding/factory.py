@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# spot_finder_factory.py
+# algorithm_factory.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -53,23 +53,18 @@ def generate_phil_scope():
       min_spot_size = Auto
         .help = "The minimum number of contiguous pixels for a spot"
                 "to be accepted by the filtering algorithm."
-        .type = int(value_min=0)
+        .type = int(value_min=1)
+
+      max_spot_size = 100
+        .help = "The maximum number of contiguous pixels for a spot"
+                "to be accepted by the filtering algorithm."
+        .type = int(value_min=1)
 
       max_separation = 2
         .help = "The maximum peak-to-centroid separation (in pixels)"
                 "for a spot to be accepted by the filtering algorithm."
         .type = float(value_min=0)
         .expert_level = 1
-
-      d_min = None
-        .help = "The high resolution limit in Angstrom for a spot to be"
-                "accepted by the filtering algorithm."
-        .type = float(value_min=0)
-
-      d_max = None
-        .help = "The low resolution limit in Angstrom for a spot to be"
-                "accepted by the filtering algorithm."
-        .type = float(value_min=0)
 
       max_strong_pixel_fraction = 0.25
         .help = "If the fraction of pixels in an image marked as strong is"
@@ -94,38 +89,7 @@ def generate_phil_scope():
           .type = bool
       }
 
-      ice_rings {
-        filter = False
-          .type = bool
-        unit_cell = 4.498,4.498,7.338,90,90,120
-          .type = unit_cell
-          .help = "The unit cell to generate d_spacings for powder rings."
-          .expert_level = 1
-        space_group = 194
-          .type = space_group
-          .help = "The space group used to generate d_spacings for powder rings."
-          .expert_level = 1
-        width = 0.06
-          .type = float(value_min=0.0)
-          .help = "The width of an ice ring (in d-spacing)."
-          .expert_level = 1
-      }
-
-      untrusted_polygon = None
-        .multiple = True
-        .type = ints(value_min=0)
-        .help = "The pixel coordinates (fast, slow) that define the corners "
-                "of the untrusted polygon. Spots whose centroids fall within "
-                "the bounds of the untrusted polygon will be rejected."
-
-      #untrusted_ellipse = None
-      #  .multiple = True
-      #  .type = ints(size=4, value_min=0)
-
-      #untrusted_rectangle = None
-      #  .multiple = True
-      #  .type = ints(size=4, value_min=0)
-
+      include scope dials.util.masking.phil_scope
     }
 
     mp {
@@ -222,50 +186,6 @@ class FilterRunner(object):
     return flags
 
 
-class MinPixelsFilter(object):
-  '''
-  Filter the reflections by the number of pixels in the shoeboxes.
-
-  '''
-
-  def __init__(self, num, code):
-    '''
-    Initialise
-
-    :param num: The minimum number of pixels allowed
-    :param code: The mask code to use for comparison
-
-    '''
-    self.code = code
-    self.num = num
-
-  def run(self, flags, observations=None, shoeboxes=None, **kwargs):
-    '''
-    Run the filtering.
-
-    '''
-
-    # Get the number of mask values matching the code
-    count = shoeboxes.count_mask_values(self.code)
-
-    # Return the flags of those > the given number
-    return flags.__and__(count >= self.num)
-
-  def __call__(self, flags, **kwargs):
-    '''
-    Call the filter and print information.
-
-    '''
-    from logging import info
-    num_before = flags.count(True)
-    flags = self.run(flags, **kwargs)
-    num_after = flags.count(True)
-    info('Filtered {0} of {1} spots by number of pixels'.format(
-      num_after,
-      num_before))
-    return flags
-
-
 class PeakCentroidDistanceFilter(object):
 
   def __init__(self, maxd):
@@ -300,145 +220,6 @@ class PeakCentroidDistanceFilter(object):
       num_before))
     return flags
 
-
-class CentroidResolutionFilter(object):
-
-  def __init__(self, d_min, d_max):
-    '''
-    Initialise
-
-    :param dmin: The maximum resolution
-    :param dmax: The minimum resolution
-
-    '''
-    if d_min == None:
-      self.d_min = 0.0
-    else:
-      self.d_min = d_min
-
-    if d_max == None:
-      self.d_max = 1000.0
-    else:
-      self.d_max = d_max
-
-  def run(self, flags, sweep=None, observations=None, **kwargs):
-    '''
-    Run the filtering.
-
-    '''
-
-    # Get all the observation resolutions
-    d = observations.resolution(sweep.get_beam(), sweep.get_detector())
-
-    # Return the flags of those in range
-    return (flags.__and__(d >= self.d_min)).__and__(d <= self.d_max)
-
-  def __call__(self, flags, **kwargs):
-    ''' Call the filter and print information. '''
-    from logging import info
-    num_before = flags.count(True)
-    flags = self.run(flags, **kwargs)
-    num_after = flags.count(True)
-    info('Filtered {0} of {1} spots by resolution'.format(
-      num_after,
-      num_before))
-    return flags
-
-
-class PowderRingFilter(object):
-
-  def __init__(self, crystal_symmetry, width=0.06):
-    self.crystal_symmetry = crystal_symmetry
-    self.width = width
-
-  def run(self, flags, sweep=None, observations=None, **kwargs):
-    from cctbx import uctbx
-
-    from dials.array_family import flex
-    from dxtbx import imageset
-    detector = sweep.get_detector()
-    beam = sweep.get_beam()
-
-    ms = self.crystal_symmetry.build_miller_set(
-      anomalous_flag=False, d_min=detector.get_max_resolution(beam.get_s0()))
-    ms = ms.sort(by_value="resolution")
-
-    miller_indices = flex.miller_index()
-    two_thetas_obs = flex.double()
-    wavelength = beam.get_wavelength()
-
-    half_width = 0.5 * self.width
-    for i, centroid in enumerate(observations):
-      if not flags[i]: continue
-      x, y = centroid.centroid.px_xy
-      d_spacing = detector[centroid.panel].get_resolution_at_pixel(
-        beam.get_s0(), (x, y))
-      for j, d in enumerate(ms.d_spacings().data()):
-        if abs(d - d_spacing) < half_width:
-          flags[i] = False
-          miller_indices.append(ms.indices()[j])
-          two_thetas_obs.append(uctbx.d_star_sq_as_two_theta(
-            uctbx.d_as_d_star_sq(d_spacing), wavelength=wavelength, deg=True))
-
-    return flags
-
-  def __call__(self, flags, **kwargs):
-    ''' Call the filter and print information. '''
-    from logging import info
-    num_before = flags.count(True)
-    flags = self.run(flags, **kwargs)
-    num_after = flags.count(True)
-    info('Filtered {0} of {1} spots by powder rings'.format(
-      num_after,
-      num_before))
-    return flags
-
-
-class polygon(object):
-  def __init__(self, vertices):
-    assert len(vertices) > 2
-    self.vertices = vertices
-
-  def is_inside(self, x, y):
-    # http://en.wikipedia.org/wiki/Point_in_polygon
-    # http://en.wikipedia.org/wiki/Even-odd_rule
-    poly = self.vertices
-    num = len(poly)
-    i = 0
-    j = num - 1
-    inside = False
-    for i in range(num):
-      if  ((poly[i][1] > y) != (poly[j][1] > y)) and \
-          (x < (poly[j][0] - poly[i][0]) * (y - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0]):
-        inside = not inside
-      j = i
-    return inside
-
-
-class UntrustedPolygonFilter(object):
-
-  def __init__(self, polygons):
-    self.polygons = polygons
-
-  def run(self, flags, sweep=None, observations=None, **kwargs):
-    for i, centroid in enumerate(observations):
-      if not flags[i]: continue
-      x, y = centroid.centroid.px_xy
-      for poly in self.polygons:
-        if poly.is_inside(x, y):
-          flags[i] = False
-    return flags
-
-  def __call__(self, flags, **kwargs):
-    ''' Call the filter and print information. '''
-    from logging import info
-    num_before = flags.count(True)
-    flags = self.run(flags, **kwargs)
-    num_after = flags.count(True)
-    info('Filtered {0} of {1} spots by untrusted polygons'.format(
-      num_after,
-      num_before))
-    return flags
 
 
 class BackgroundGradientFilter(object):
@@ -719,7 +500,8 @@ class SpotFinderFactory(object):
     :returns: The spot finder instance
 
     '''
-    from dials.algorithms.peak_finding.spot_finder import SpotFinder
+    from dials.util.masking import MaskGenerator
+    from dials.algorithms.spot_finding.finder import SpotFinder
     from libtbx.phil import parse
 
     if params is None:
@@ -729,38 +511,30 @@ class SpotFinderFactory(object):
     mask = SpotFinderFactory.load_image(params.spotfinder.lookup.mask)
     params.spotfinder.lookup.mask = mask
 
-    # Configure the algorithm and wrap it up
-    find_spots = SpotFinderFactory.configure_algorithm(params)
+    # Configure the filter options
     filter_spots = SpotFinderFactory.configure_filter(params)
-    return SpotFinder(
-      find_spots=find_spots,
-      filter_spots=filter_spots,
-      scan_range=params.spotfinder.scan_range,
-      write_hot_mask=params.spotfinder.write_hot_mask)
-
-  @staticmethod
-  def configure_algorithm(params):
-    '''
-    Given a set of parameters, construct the spot finder
-
-    :param params: The input parameters
-    :returns: The spot finder instance
-
-    '''
-    from dials.algorithms.peak_finding.spot_finder import ExtractSpots
 
     # Create the threshold strategy
-    threshold = SpotFinderFactory.configure_threshold(params)
+    threshold_function = SpotFinderFactory.configure_threshold(params)
+
+    # Configure the mask generator
+    mask_generator = MaskGenerator(params.spotfinder.filter)
 
     # Setup the spot finder
-    return ExtractSpots(
-      threshold_image=threshold,
-      mask=params.spotfinder.lookup.mask,
-      mp_method=params.spotfinder.mp.method,
-      nproc=params.spotfinder.mp.nproc,
-      mp_chunksize=params.spotfinder.mp.chunksize,
-      max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction,
-      region_of_interest=params.spotfinder.region_of_interest)
+    return SpotFinder(
+      threshold_function        = threshold_function,
+      mask                      = params.spotfinder.lookup.mask,
+      filter_spots              = filter_spots,
+      scan_range                = params.spotfinder.scan_range,
+      write_hot_mask            = params.spotfinder.write_hot_mask,
+      mp_method                 = params.spotfinder.mp.method,
+      nproc                     = params.spotfinder.mp.nproc,
+      mp_chunksize              = params.spotfinder.mp.chunksize,
+      max_strong_pixel_fraction = params.spotfinder.filter.max_strong_pixel_fraction,
+      region_of_interest        = params.spotfinder.region_of_interest,
+      mask_generator            = mask_generator,
+      min_spot_size             = params.spotfinder.filter.min_spot_size,
+      max_spot_size             = params.spotfinder.filter.max_spot_size)
 
   @staticmethod
   def configure_threshold(params):
@@ -791,41 +565,10 @@ class SpotFinderFactory(object):
     # Initialise an empty list of filters
     filters = []
 
-    # Add a min number of pixels filter
-    if params.spotfinder.filter.min_spot_size is not None:
-      filters.append(MinPixelsFilter(
-          params.spotfinder.filter.min_spot_size,
-          shoebox.MaskCode.Valid))
-
     # Add a peak-centroid distance filter
     if params.spotfinder.filter.max_separation is not None:
       filters.append(PeakCentroidDistanceFilter(
         params.spotfinder.filter.max_separation))
-
-    # Add a centroid resolution filter
-    if (params.spotfinder.filter.d_min is not None or
-        params.spotfinder.filter.d_max is not None):
-      filters.append(CentroidResolutionFilter(
-          params.spotfinder.filter.d_min,
-          params.spotfinder.filter.d_max))
-
-    if params.spotfinder.filter.ice_rings.filter:
-      crystal_symmetry = crystal.symmetry(
-        unit_cell=params.spotfinder.filter.ice_rings.unit_cell,
-        space_group=params.spotfinder.filter.ice_rings.space_group.group())
-      filters.append(
-        PowderRingFilter(crystal_symmetry,
-                         width=params.spotfinder.filter.ice_rings.width))
-
-    if len(params.spotfinder.filter.untrusted_polygon):
-      polygons = []
-      for vertices in params.spotfinder.filter.untrusted_polygon:
-        if vertices is not None:
-          assert len(vertices) % 2 == 0
-          vertices = [vertices[i*2:i*2+2] for i in range(len(vertices)//2)]
-          polygons.append(polygon(vertices))
-      if len(polygons):
-        filters.append(UntrustedPolygonFilter(polygons))
 
     if params.spotfinder.filter.background_gradient.filter:
       bg_filter_params = params.spotfinder.filter.background_gradient

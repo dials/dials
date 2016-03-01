@@ -76,7 +76,7 @@ phil_scope = parse('''
     .type = int(value_min=0)
     .help = "The verbosity level"
 
-  include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
+  include scope dials.algorithms.spot_finding.factory.phil_scope
 
 ''', process_includes=True)
 
@@ -172,7 +172,7 @@ class Script(object):
 
     # Print some per image statistics
     if params.per_image_statistics:
-      from dials.algorithms.peak_finding import per_image_analysis
+      from dials.algorithms.spot_finding import per_image_analysis
       from cStringIO import StringIO
       s = StringIO()
       for i, imageset in enumerate(datablocks[0].extract_imagesets()):

@@ -22,6 +22,25 @@ namespace dials { namespace model {
   using scitbx::af::int2;
   using scitbx::vec3;
 
+  namespace detail {
+
+    inline
+    bool lessthan(const vec3<int> &a, const vec3<int> &b) {
+      return (a[0] < b[0]
+          ? true
+          : (a[0] == b[0]
+            ? (a[1] < b[1]
+              ? true
+              : (a[1] == b[1]
+                ? (a[2] < b[2]
+                  ? true
+                  : false)
+                : false))
+            : false));
+    }
+
+  }
+
   /**
    * A class to hold a list of pixels
    */
@@ -216,6 +235,7 @@ namespace dials { namespace model {
       }
     }
 
+
     /**
      * @returns The image size
      */
@@ -280,33 +300,33 @@ namespace dials { namespace model {
       }
 
       // Calculate the coordinate indices
-      std::vector<std::size_t> idx(coords_.size());
       for (std::size_t i = 0; i < coords_.size(); ++i) {
-        idx[i] = index(coords_[i]);
-        if (i > 0) DIALS_ASSERT(idx[i] > idx[i-1]);
+        if (i > 0) {
+          DIALS_ASSERT(detail::lessthan(coords_[i-1], coords_[i]));
+        }
       }
 
       // Create a graph of coordinates
       AdjacencyList graph(coords_.size());
       std::size_t i1 = 0, i2 = 0, i3 = 0;
       for (; i1 < coords_.size()-1; ++i1) {
-        std::size_t idx0 = idx[i1];
-        std::size_t idx1 = idx0+1;
-        std::size_t idx2 = idx0+size_[1];
-        std::size_t idx3 = idx0+size_[0]*size_[1];
-        if (idx[i1+1] == idx1 && coords_[i1][2] < size_[1]-1) {
+        vec3<int> a0 = coords_[i1];
+        vec3<int> a1(a0[0], a0[1], a0[2]+1);
+        vec3<int> a2(a0[0], a0[1]+1, a0[2]);
+        vec3<int> a3(a0[0]+1, a0[1], a0[2]);
+        if (coords_[i1+1] == a1) {
           boost::add_edge(i1, i1+1, graph);
         }
-        if (coords_[i1][1] < size_[0]-1) {
-          for (; idx[i2] < idx2 && i2 < coords_.size()-1; ++i2);
-          if (idx[i2] == idx2) {
+        if (a0[1] < size_[0]-1) {
+          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size()-1; ++i2);
+          if (coords_[i2] == a2) {
             boost::add_edge(i1, i2, graph);
           }
         }
-        if (coords_[i1][0] < last_frame_-1) {
+        if (a0[0] < last_frame_-1) {
           if (i2 > i3) i3 = i2;
-          for (; idx[i3] < idx3 && i3 < coords_.size()-1; ++i3);
-          if (idx[i3] == idx3) {
+          for (; detail::lessthan(coords_[i3], a3) && i3 < coords_.size()-1; ++i3);
+          if (coords_[i3] == a3) {
             boost::add_edge(i1, i3, graph);
           }
         }
@@ -336,25 +356,25 @@ namespace dials { namespace model {
       }
 
       // Calculate the coordinate indices
-      std::vector<std::size_t> idx(coords_.size());
       for (std::size_t i = 0; i < coords_.size(); ++i) {
-        idx[i] = index(coords_[i]);
-        if (i > 0) DIALS_ASSERT(idx[i] > idx[i-1]);
+        if (i > 0) {
+          DIALS_ASSERT(detail::lessthan(coords_[i-1], coords_[i]));
+        }
       }
 
       // Create a graph of coordinates
       AdjacencyList graph(coords_.size());
       std::size_t i1 = 0, i2 = 0;
       for (; i1 < coords_.size()-1; ++i1) {
-        std::size_t idx0 = idx[i1];
-        std::size_t idx1 = idx0+1;
-        std::size_t idx2 = idx0+size_[1];
-        if (idx[i1+1] == idx1 && coords_[i1][2] < size_[1]-1) {
+        vec3<int> a0 = coords_[i1];
+        vec3<int> a1(a0[0], a0[1], a0[2]+1);
+        vec3<int> a2(a0[0], a0[1]+1, a0[2]);
+        if (coords_[i1+1] == a1) {
           boost::add_edge(i1, i1+1, graph);
         }
-        if (coords_[i1][1] < size_[0]-1) {
-          for (; idx[i2] < idx2 && i2 < coords_.size()-1; ++i2);
-          if (idx[i2] == idx2) {
+        if (a0[1] < size_[0]-1) {
+          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size()-1; ++i2);
+          if (coords_[i2] == a2) {
             boost::add_edge(i1, i2, graph);
           }
         }
@@ -369,15 +389,6 @@ namespace dials { namespace model {
     }
 
   private:
-
-    std::size_t index(vec3<int> a) const {
-      DIALS_ASSERT(a[0] >= first_frame_ && a[0] < last_frame_);
-      DIALS_ASSERT(a[1] >= 0 && a[1] < size_[0]);
-      DIALS_ASSERT(a[2] >= 0 && a[2] < size_[1]);
-      return ((std::size_t)(a[0] - first_frame_) * (std::size_t)size_[0] +
-              (std::size_t)a[1]) * (std::size_t)size_[1] +
-              (std::size_t)a[2];
-    }
 
     int2 size_;
     int first_frame_;

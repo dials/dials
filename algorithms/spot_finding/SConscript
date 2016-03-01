@@ -2,8 +2,8 @@
 Import('env')
 
 sources = [
-    'boost_python/peak_finding_ext.cc']
+    'boost_python/spot_finding_ext.cc']
 
-env.SharedLibrary(target='#/lib/dials_algorithms_peak_finding_ext',
+env.SharedLibrary(target='#/lib/dials_algorithms_spot_finding_ext',
     source=sources,
     LIBS=env["LIBS"])

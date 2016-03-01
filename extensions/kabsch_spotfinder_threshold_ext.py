@@ -100,7 +100,7 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
       info("Setting global_threshold: %i" %(
         params.spotfinder.threshold.xds.global_threshold))
 
-    from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
+    from dials.algorithms.spot_finding.threshold import XDSThresholdStrategy
     self._algorithm = XDSThresholdStrategy(
       kernel_size=params.spotfinder.threshold.xds.kernel_size,
       gain=params.spotfinder.threshold.xds.gain,
@@ -127,7 +127,7 @@ def estimate_global_threshold(image, mask=None):
 
   # Find the elbow point of the curve, in the same manner as that used by
   # distl spotfinder for resolution method 1 (Zhang et al 2006).
-  # See also dials/algorithms/peak_finding/per_image_analysis.py
+  # See also dials/algorithms/spot_finding/per_image_analysis.py
 
   x = threshold.as_double()
   y = n_above_threshold.as_double()

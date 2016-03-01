@@ -120,7 +120,7 @@ class IntegratorStills(object):
   def _match_with_reference(self, predicted, reference):
     ''' Match predictions with reference spots. '''
 
-    from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
+    from dials.algorithms.spot_finding.spot_matcher import SpotMatcher
     from dials.util.command_line import Command
     Command.start("Matching reference spots with predicted reflections")
     match = SpotMatcher(max_separation=1)

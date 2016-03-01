@@ -22,7 +22,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 654, len(reflections)
+    assert len(reflections) == 653, len(reflections)
     refl = reflections[0]
     assert approx_equal(refl['intensity.sum.value'], 42)
     assert approx_equal(refl['bbox'], (1398, 1400, 513, 515, 0, 1))
@@ -32,13 +32,13 @@ def exercise_spotfinder():
   print 'OK'
 
   # now with a resolution filter
-  args = ["dials.find_spots", "d_min=2", "d_max=15",
+  args = ["dials.find_spots", "filter.d_min=2", "filter.d_max=15",
           ' '.join(template), "output.reflections=spotfinder.pickle", "output.shoeboxes=False"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 468, len(reflections)
+    assert len(reflections) == 467, len(reflections)
     assert "shoebox" not in reflections
   print 'OK'
 
@@ -50,7 +50,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 679, len(reflections)
+    assert len(reflections) == 678, len(reflections)
   print 'OK'
 
   # Now with a user defined mask
@@ -107,7 +107,7 @@ def exercise_spotfinder():
 
 
 def exercise_polygon():
-  from dials.algorithms.peak_finding.spotfinder_factory import polygon
+  from dials.algorithms.polygon import polygon
 
   x = 1
   y = 1

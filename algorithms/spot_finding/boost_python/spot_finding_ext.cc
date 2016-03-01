@@ -1,5 +1,5 @@
 /*
- * peak_finding_ext.cc
+ * spot_finding_ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -15,7 +15,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  BOOST_PYTHON_MODULE(dials_algorithms_peak_finding_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_spot_finding_ext)
   {
   }
 

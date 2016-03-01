@@ -1265,7 +1265,7 @@ class SpotSettingsPanel (SettingsPanel) :
     imagesets = self.GetParent().GetParent().imagesets # XXX
     detector = imagesets[0].get_detector()
 
-    from dials.algorithms.peak_finding.spotfinder_factory import polygon
+    from dials.algorithms.spot_finding.factory import polygon
     polygons = self.settings.untrusted_polygon
 
     if len(detector) > 1:

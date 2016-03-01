@@ -4,7 +4,7 @@ from __future__ import division
 from dials.util.options import OptionParser
 from dials.util.options \
      import flatten_reflections, flatten_datablocks, flatten_experiments
-from dials.algorithms.peak_finding import per_image_analysis
+from dials.algorithms.spot_finding import per_image_analysis
 
 import iotbx.phil
 

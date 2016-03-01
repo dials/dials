@@ -91,7 +91,7 @@ indexing_min_spots = 10
   reflections = flex.reflection_table.from_observations(datablock, params)
   t1 = time.time()
   print 'Spotfinding took %.2f seconds' %(t1-t0)
-  from dials.algorithms.peak_finding import per_image_analysis
+  from dials.algorithms.spot_finding import per_image_analysis
   imageset = datablock.extract_imagesets()[0]
   stats = per_image_analysis.stats_single_image(
     imageset, reflections,

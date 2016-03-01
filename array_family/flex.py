@@ -151,7 +151,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The reflection table of observations
 
     '''
-    from dials.algorithms.peak_finding.spotfinder_factory \
+    from dials.algorithms.spot_finding.factory \
       import SpotFinderFactory
     from logging import info
     from libtbx import Auto
@@ -348,7 +348,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
              other reflection table
 
     '''
-    from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
+    from dials.algorithms.spot_finding.spot_matcher import SpotMatcher
     match = SpotMatcher(max_separation=2)
     oind, sind = match(other, self)
     return sind, oind

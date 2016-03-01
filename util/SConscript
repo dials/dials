@@ -2,7 +2,7 @@
 Import('env')
 
 sources = [
-    'boost_python/scale_down_array.cc']
+    'boost_python/ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_util_ext', 
     source=sources,

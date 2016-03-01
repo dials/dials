@@ -54,7 +54,7 @@ phil_scope = parse('''
       .help = "The number of processes to use."
   }
 
-  include scope dials.algorithms.peak_finding.spotfinder_factory.phil_scope
+  include scope dials.algorithms.spot_finding.factory.phil_scope
   include scope dials.algorithms.indexing.indexer.index_only_phil_scope
   include scope dials.algorithms.refinement.refiner.phil_scope
   include scope dials.algorithms.integration.integrator.phil_scope
