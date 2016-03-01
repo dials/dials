@@ -37,6 +37,20 @@ max_reflections = None
 """, process_includes=True)
 
 
+def beam_centre(detector, beam):
+  s0 = beam.get_s0()
+  x, y = (None, None)
+  for panel_id, panel in enumerate(detector):
+    try:
+      x, y = panel.get_ray_intersection(s0)
+    except RuntimeError:
+      continue
+    else:
+      if panel.is_coord_valid_mm((x, y)):
+        break
+  return panel_id, (x, y)
+
+
 def run(args):
 
   from dials.util.options import OptionParser
@@ -71,7 +85,15 @@ def run(args):
     print "Experiment %i:" %i_expt
     print str(expt.detector) + 'Max resolution: %f\n' %(
       expt.detector.get_max_resolution(expt.beam.get_s0()))
-    print expt.beam
+    panel_id, (x, y) = beam_centre(expt.detector, expt.beam)
+    if panel_id >= 0 and x is not None and y is not None:
+      if len(expt.detector) > 1:
+        beam_centre_str = "Beam centre: panel %i, (%.2f,%.2f)" %(panel_id, x, y)
+      else:
+        beam_centre_str = "Beam centre: (%.2f,%.2f)" %(x, y)
+    else:
+      beam_centre_str = ""
+    print str(expt.beam) + beam_centre_str + '\n'
     if expt.scan is not None:
       print expt.scan
     if expt.goniometer is not None:
@@ -102,7 +124,15 @@ def run(args):
       detector = imageset.get_detector()
       print str(detector) + 'Max resolution: %f\n' %(
         detector.get_max_resolution(imageset.get_beam().get_s0()))
-      print imageset.get_beam()
+      panel_id, (x, y) = beam_centre(detector, imageset.get_beam())
+      if panel_id >= 0 and x is not None and y is not None:
+        if len(detector) > 1:
+          beam_centre_str = "Beam centre: panel %i, (%.2f,%.2f)" %(panel_id, x, y)
+        else:
+          beam_centre_str = "Beam centre: (%.2f,%.2f)" %(x, y)
+      else:
+        beam_centre_str = ""
+      print str(imageset.get_beam()) + beam_centre_str + '\n'
       if imageset.get_scan() is not None:
         print imageset.get_scan()
       if imageset.get_goniometer() is not None:

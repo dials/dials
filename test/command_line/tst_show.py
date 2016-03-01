@@ -37,6 +37,7 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
+Beam centre: (212.48,220.00)
 
 Scan:
     image range:   {1,9}
@@ -86,6 +87,7 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
+Beam centre: (210.76,205.28)
 
 Scan:
     image range:   {1,540}
@@ -129,6 +131,7 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
+Beam centre: (212.48,220.00)
 
 Scan:
     image range:   {1,9}
