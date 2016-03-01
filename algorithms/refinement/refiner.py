@@ -1592,6 +1592,16 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
+    if len(self._experiments.scans()) > 1:
+      warning('Multiple scans present. Only the first scan will be used '
+         'to determine the image width for reporting RMSDs')
+    scan = self._experiments.scans()[0]
+    try:
+      temp = scan.get_oscillation(deg=False)
+      images_per_rad  = 1./abs(scan.get_oscillation(deg=False)[1])
+    except AttributeError:
+      images_per_rad = None
+
     for idetector, detector in enumerate(self._experiments.detectors()):
       if len(detector) == 1: continue
       info("\nDetector {0} RMSDs by panel:".format(idetector + 1))
@@ -1612,17 +1622,6 @@ class Refiner(object):
 
         px_size = panel.get_pixel_size()
         px_per_mm = [1./e for e in px_size]
-
-        if len(self._experiments.scans()) > 1:
-          warning('Multiple scans present. Only the first scan will be used '
-             'to determine the image width for reporting RMSDs')
-        scan = self._experiments.scans()[0]
-        try:
-          temp = scan.get_oscillation(deg=False)
-          images_per_rad  = 1./abs(scan.get_oscillation(deg=False)[1])
-        except AttributeError:
-          images_per_rad = None
-
         num = self._target.get_num_matches_for_panel(ipanel)
         if num <= 0: continue
         raw_rmsds = self._target.rmsds_for_panel(ipanel)
