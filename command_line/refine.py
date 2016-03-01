@@ -86,13 +86,12 @@ phil_scope = parse('''
                 "later inspection, replotting etc."
 
       col_select = None
-        .type = str
+        .type = strings
         .help = "Specific columns to include in the plots of parameter"
-                "correlations, either specifed by parameter name or column"
-                "number. Defaults to all columns."
+                "correlations, either specifed by parameter name or 0-based"
+                "column index. Defaults to all columns."
                 "This option is useful when there is a large number of"
                 "parameters"
-        .multiple = True
 
       steps = None
         .type = ints(value_min=0)
@@ -387,6 +386,7 @@ class Script(object):
         params.output.matches))
       matches.as_pickle(params.output.matches)
 
+    # Correlation plot
     if params.output.correlation_plot.filename is not None:
       from os.path import splitext
       root, ext = splitext(params.output.correlation_plot.filename)
@@ -395,10 +395,10 @@ class Script(object):
       steps = params.output.correlation_plot.steps
       if steps is None: steps = [history.get_nrows()-1]
 
-      # flatten list of column names
+      # extract individual column names or indices
       col_select = params.output.correlation_plot.col_select
       if len(col_select) != 0:
-        col_select = " ".join(params.output.correlation_plot.col_select).split()
+        col_select = [s.strip('(){}[]') for e in col_select for s in e.split(',')]
       else: col_select = None
       save_matrix = params.output.correlation_plot.save_matrix
 
@@ -406,13 +406,13 @@ class Script(object):
       for step in steps:
         fname_base = root + "_step%02d" % step
         plot_fname = fname_base + ext
-
         corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
-        plt = self.parameter_correlation_plot(corrmat, labels)
-        if plt is not None:
-          info('Saving parameter correlation plot to {}'.format(plot_fname))
-          plt.savefig(plot_fname)
-          num_plots += 1
+        if [corrmat, labels].count(None) == 0:
+          plt = self.parameter_correlation_plot(corrmat, labels)
+          if plt is not None:
+            info('Saving parameter correlation plot to {}'.format(plot_fname))
+            plt.savefig(plot_fname)
+            num_plots += 1
 
           if save_matrix:
             mat_fname = fname_base + ".pickle"

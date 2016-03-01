@@ -1432,9 +1432,10 @@ class Refiner(object):
         try:
           idx.append(int(col))
         except ValueError:
-          info("Invalid selection of columns for correlation plot. " + \
-               "No plot will be produced")
-          return None
+          msg = "Invalid selection of column '{0}' ".format(col)
+          msg += "for correlation plot. No plot will be produced"
+          warning(msg)
+          return None, None
     labels = [all_labels[e] for e in idx]
     num_cols = num_rows = len(labels)
 
