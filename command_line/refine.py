@@ -78,12 +78,9 @@ phil_scope = parse('''
         .help = "The base filename for output of plots of parameter"
                 "correlations. A file extension may be added to control"
                 "the type of output file, if it is one of matplotlib's"
-                "supported types"
-
-      save_matrix = False
-        .type = bool
-        .help = "Save the matrix and column labels in a pickle file for"
-                "later inspection, replotting etc."
+                "supported types. A pickle file with the same base filename"
+                "will also be created, containing the correlation matrix and"
+                "column labels for later inspection, replotting etc."
 
       col_select = None
         .type = strings
@@ -332,7 +329,6 @@ class Script(object):
       if len(col_select) != 0:
         col_select = [s.strip('(){}[]') for e in col_select for s in e.split(',')]
       else: col_select = None
-      save_matrix = params.output.correlation_plot.save_matrix
 
       num_plots = 0
       for step in steps:
@@ -346,13 +342,11 @@ class Script(object):
             info('Saving parameter correlation plot to {}'.format(plot_fname))
             plt.savefig(plot_fname)
             num_plots += 1
-
-          if save_matrix:
-            mat_fname = fname_base + ".pickle"
-            with open(mat_fname, 'wb') as handle:
-              py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
-              info('Saving parameter correlation matrix to {0}'.format(mat_fname))
-              pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
+          mat_fname = fname_base + ".pickle"
+          with open(mat_fname, 'wb') as handle:
+            py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
+            info('Saving parameter correlation matrix to {0}'.format(mat_fname))
+            pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
 
       if num_plots == 0:
         msg = "Sorry, no parameter correlation plots were produced. Please set " \
