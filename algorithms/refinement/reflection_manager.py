@@ -17,6 +17,8 @@ from logging import info, debug, warning
 from scitbx import matrix
 from dials.array_family import flex
 from dials.algorithms.refinement import weighting_strategies
+from dials.algorithms.refinement.refinement_helpers import \
+  calculate_frame_numbers
 
 # constants
 RAD2DEG = 180. / pi
@@ -186,7 +188,7 @@ class ReflectionManager(object):
       self._experiments)
 
     # set observed frame numbers for all reflections if not already present
-    self._calculate_frame_numbers(reflections)
+    calculate_frame_numbers(reflections, self._experiments)
 
     # reset all use flags
     self.reset_accepted_reflections(reflections)
@@ -252,29 +254,6 @@ class ReflectionManager(object):
     self._create_working_set()
 
     debug("Working set size = %d observations", self.get_sample_size())
-
-    return
-
-  def _calculate_frame_numbers(self, reflections):
-    """calculate observed frame numbers for reflections, if not already
-    set"""
-
-    if reflections.has_key('xyzobs.px.value'): return
-
-    # Frames are not set, so set them, with dummy observed pixel values
-    frames = flex.double(len(reflections), 0.)
-    for iexp, exp in enumerate(self._experiments):
-      scan = exp.scan
-      if not scan: continue
-      sel = reflections['id'] == iexp
-      xyzobs = reflections["xyzobs.mm.value"].select(sel)
-      angles = xyzobs.parts()[2]
-      to_update = scan.get_array_index_from_angle(angles, deg=False)
-      frames.set_selected(sel, to_update)
-    reflections['xyzobs.px.value'] = flex.vec3_double(
-            flex.double(len(reflections), 0.),
-            flex.double(len(reflections), 0.),
-            frames)
 
     return
 

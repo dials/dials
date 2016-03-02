@@ -14,6 +14,8 @@ from __future__ import division
 from os.path import splitext, basename
 from scitbx.array_family import flex
 from libtbx.utils import Sorry
+from dials.algorithms.refinement.refinement_helpers import \
+  calculate_frame_numbers
 
 help_message = '''
 
@@ -67,6 +69,12 @@ phil_scope = parse('''
             "(e.g. j0 <= j < j1)."
     .type = ints(size=2)
     .multiple = True
+
+  block_size = None
+    .type = float
+    .help = "Overrides scan_range if present. This option splits each sweep"
+            "into the nearest integer number of equal size blocks close to"
+            "block_size degrees in width"
 
 ''')
 
@@ -163,34 +171,6 @@ def slice_datablocks(datablocks, scan_ranges):
     scan.swap(scan[beg:end])
 
   return datablocks
-
-def calculate_frame_numbers(reflections, experiments):
-  """calculate observed frame numbers for all reflections, if not already
-  set"""
-
-  # FIXME this is adapted from ReflectionManager code. It does not really
-  # need to exist twice. Could ReflectionManager's version become a
-  # staticmethod instead, and then just reuse that?
-
-  # Only do this if we have to
-  if reflections.has_key('xyzobs.px.value'): return reflections
-
-  # Ok, frames are not set, so set them, with dummy observed pixel values
-  frames = flex.double(len(reflections), 0.)
-  for iexp, exp in enumerate(experiments):
-    scan = exp.scan
-    if not scan: continue
-    sel = reflections['id'] == iexp
-    xyzobs = reflections["xyzobs.mm.value"].select(sel)
-    angles = xyzobs.parts()[2]
-    to_update = scan.get_array_index_from_angle(angles, deg=False)
-    frames.set_selected(sel, to_update)
-  reflections['xyzobs.px.value'] = flex.vec3_double(
-          flex.double(len(reflections), 0.),
-          flex.double(len(reflections), 0.),
-          frames)
-
-  return reflections
 
 class Script(object):
   '''A class for running the script.'''

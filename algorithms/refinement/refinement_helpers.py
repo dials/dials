@@ -292,3 +292,27 @@ def string_sel(l, full_names, prefix=""):
       zip(full_names, sel)]
 
   return sel
+
+def calculate_frame_numbers(reflections, experiments):
+  """calculate observed frame numbers for all reflections, if not already
+  set"""
+
+  # Only do this if we have to
+  if reflections.has_key('xyzobs.px.value'): return reflections
+
+  # Ok, frames are not set, so set them, with dummy observed pixel values
+  frames = flex.double(len(reflections), 0.)
+  for iexp, exp in enumerate(experiments):
+    scan = exp.scan
+    if not scan: continue
+    sel = reflections['id'] == iexp
+    xyzobs = reflections["xyzobs.mm.value"].select(sel)
+    angles = xyzobs.parts()[2]
+    to_update = scan.get_array_index_from_angle(angles, deg=False)
+    frames.set_selected(sel, to_update)
+  reflections['xyzobs.px.value'] = flex.vec3_double(
+          flex.double(len(reflections), 0.),
+          flex.double(len(reflections), 0.),
+          frames)
+
+  return reflections
