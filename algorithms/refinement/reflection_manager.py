@@ -565,6 +565,7 @@ class StillsReflectionManager(ReflectionManager):
     info(msg)
     st = simple_table(rows, header)
     info(st.format())
+    info("")
 
     if nref < 20:
       debug("Fewer than 20 reflections matched!")
@@ -572,15 +573,21 @@ class StillsReflectionManager(ReflectionManager):
 
     sl = self._sort_obs_by_residual(l)
     debug("Reflections with the worst 20 positional residuals:")
-    debug("H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs")
-    fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
+    header = ['Miller index', 'x_resid', 'y_resid', 'pnl',
+              'x_obs', 'y_obs', 'x_obs\nweight', 'y_obs\nweight']
+    rows = []
     for i in xrange(20):
       e = sl[i]
-      msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                                             e['y_resid'],
-                                             e['xyzobs.mm.weights'][0],
-                                             e['xyzobs.mm.weights'][1]))
-      debug(msg)
-    debug("\n")
+      x_obs, y_obs, _ = e['xyzobs.mm.value']
+      rows.append(['% 3d, % 3d, % 3d'%e['miller_index'],
+                   '%5.3f'%e['x_resid'],
+                   '%5.3f'%e['y_resid'],
+                   '%d'%e['panel'],
+                   '%5.3f'%x_obs,
+                   '%5.3f'%y_obs,
+                   '%5.3f'%e['xyzobs.mm.weights'][0],
+                   '%5.3f'%e['xyzobs.mm.weights'][1]])
+    debug(simple_table(rows, header).format())
+    debug("")
 
     return
