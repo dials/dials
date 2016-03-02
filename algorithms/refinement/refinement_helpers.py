@@ -260,3 +260,35 @@ def corrgram(corrmat, labels):
 
   # FIXME should this also have a colorbar as legend?
   return plt
+
+def string_sel(l, full_names, prefix=""):
+  '''Provide flexible matching between a list of input strings, l,
+  consisting either of indices or partial names, and a list of full names,
+  with an optional shared prefix. The input list l may arrive from PHIL
+  conversion of the strings type. In that case, comma-separated values will
+  require splitting, and bracket characters will be removed. The values in
+  the processed list l should consist of integers or partial names. Integers
+  will be treated as 0-based indices and partial names will be matched to
+  as many full names as possible. The created selection is returned as a
+  boolean list.'''
+
+  sel = [False] * len(full_names)
+  full_names = [prefix + s for s in full_names]
+
+  # expand elements of the list that are comma separated strings and remove
+  # braces/brackets
+  l = [s.strip('(){}[]') for e in l for s in str(e).split(',')]
+  l = [e for e in l if e is not '']
+  for e in l:
+    try:
+      i = int(e)
+      sel[i] = True
+      continue
+    except ValueError:
+      pass
+    except IndexError:
+      pass
+    sel = [True if e in name else s for (name, s) in \
+      zip(full_names, sel)]
+
+  return sel

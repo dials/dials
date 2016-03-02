@@ -549,37 +549,11 @@ class RefinerFactory(object):
 
     # Shorten module paths
     import dials.algorithms.refinement.parameterisation as par
+    # function to convert fix_lists into to_fix selections
+    from dials.algorithms.refinement.refinement_helpers import string_sel
 
     # Get the working set of reflections
     reflections = refman.get_matches()
-
-    # function to convert fix_lists into to_fix selections
-    def fixlist2sel(fix_list, parameter_names, prefix=""):
-      '''fix_list is a list of strings consisting either of indices or partial
-      names of parameters that should be fixed. These are compared with a list
-      of parameter names, with an optional prefix, to determine which parameters
-      should be fixed. The selection is returned as a boolean list.'''
-
-      sel = [False] * len(parameter_names)
-      parameter_names = [prefix + s for s in parameter_names]
-
-      # expand elements of the list that are comma separated strings and remove
-      # braces/brackets
-      fix_list = [s.strip('(){}[]') for e in fix_list for s in str(e).split(',')]
-      fix_list = [e for e in fix_list if e is not '']
-      for e in fix_list:
-        try:
-          i = int(e)
-          sel[i] = True
-          continue
-        except ValueError:
-          pass
-        except IndexError:
-          pass
-        sel = [True if e in name else s for (name, s) in \
-          zip(parameter_names, sel)]
-
-      return sel
 
     # Parameterise unique Beams
     beam_params = []
@@ -606,9 +580,9 @@ class RefinerFactory(object):
         beam_param.set_fixed(fix_list)
 
       if beam_options.fix_list:
-        to_fix = fixlist2sel(beam_options.fix_list,
-                             beam_param.get_param_names(only_free=False),
-                             "Beam{0}".format(ibeam + 1))
+        to_fix = string_sel(beam_options.fix_list,
+                            beam_param.get_param_names(only_free=False),
+                            "Beam{0}".format(ibeam + 1))
         beam_param.set_fixed(to_fix)
 
       if beam_param.num_free() > 0:
@@ -686,15 +660,15 @@ class RefinerFactory(object):
           raise RuntimeError("crystal_options.fix value not recognised")
 
       if crystal_options.unit_cell.fix_list:
-        to_fix = fixlist2sel(crystal_options.unit_cell.fix_list,
-                             xl_uc_param.get_param_names(only_free=False),
-                             "Crystal{0}".format(icrystal + 1))
+        to_fix = string_sel(crystal_options.unit_cell.fix_list,
+                            xl_uc_param.get_param_names(only_free=False),
+                            "Crystal{0}".format(icrystal + 1))
         xl_uc_param.set_fixed(to_fix)
 
       if crystal_options.orientation.fix_list:
-        to_fix = fixlist2sel(crystal_options.orientation.fix_list,
-                             xl_ori_param.get_param_names(only_free=False),
-                             "Crystal{0}".format(icrystal + 1))
+        to_fix = string_sel(crystal_options.orientation.fix_list,
+                            xl_ori_param.get_param_names(only_free=False),
+                            "Crystal{0}".format(icrystal + 1))
         xl_ori_param.set_fixed(to_fix)
 
       if xl_ori_param.num_free() > 0:
@@ -747,9 +721,9 @@ class RefinerFactory(object):
           raise RuntimeError("detector_options.fix value not recognised")
 
       if detector_options.fix_list:
-        to_fix = fixlist2sel(detector_options.fix_list,
-                             det_param.get_param_names(only_free=False),
-                             "Detector{0}".format(idetector + 1))
+        to_fix = string_sel(detector_options.fix_list,
+                            det_param.get_param_names(only_free=False),
+                            "Detector{0}".format(idetector + 1))
         det_param.set_fixed(to_fix)
 
       if det_param.num_free() > 0:
@@ -1424,22 +1398,14 @@ class Refiner(object):
       col_select = range(corrmat.all()[0])
 
     all_labels = self._pred_param.get_param_names()
-    idx = []
-    for col in col_select:
-      try: # column is specified by name
-        idx.append(all_labels.index(col))
-      except ValueError: # column specified by number
-        try:
-          idx.append(int(col))
-        except ValueError:
-          msg = "Invalid selection of column '{0}' ".format(col)
-          msg += "for correlation plot. No plot will be produced"
-          warning(msg)
-          return None, None
-    labels = [all_labels[e] for e in idx]
+    from dials.algorithms.refinement.refinement_helpers import string_sel
+    sel = string_sel(col_select, all_labels)
+    labels = [e for e, s in zip(all_labels, sel) if s]
     num_cols = num_rows = len(labels)
+    if num_cols == 0: return None, None
 
     from scitbx.array_family import flex
+    idx = flex.bool(sel).iselection()
     sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
 
     for (i, x) in enumerate(idx):
