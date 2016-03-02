@@ -1,5 +1,5 @@
 from __future__ import division
-from logging import info, debug
+from logging import info, debug, warning
 from libtbx.phil import parse
 from dials.array_family import flex
 
@@ -46,11 +46,12 @@ class CentroidOutlier(object):
     sel = reflections.get_flags(reflections.flags.used_in_refinement)
     all_data = reflections.select(sel)
     all_data_indices = sel.iselection()
+    nexp = flex.max(all_data['id']) + 1
 
     jobs = []
     if self._separate_experiments:
       # split the data set by experiment id
-      for iexp in xrange(flex.max(all_data['id'] + 1)):
+      for iexp in xrange(nexp):
         sel = all_data['id'] == iexp
         job = {'id':iexp, 'panel':'all', 'data':all_data.select(sel),
                'indices':all_data_indices.select(sel)}
@@ -112,6 +113,26 @@ class CentroidOutlier(object):
     if self.nreject == 0: return False
 
     info("{0} reflections have been flagged as outliers".format(self.nreject))
+
+    if nexp > 1:
+      # table of rejections per experiment
+      from libtbx.table_utils import simple_table
+      header = ["Exp\nid", "Nref", "Nout", "%out"]
+      rows = []
+      outlier_sel = reflections.get_flags(reflections.flags.centroid_outlier)
+      outliers = reflections.select(outlier_sel)
+      for iexp in xrange(nexp):
+        nref = (reflections['id'] == iexp).count(True)
+        nout = (outliers['id'] == iexp).count(True)
+        p100 = nout / nref * 100.0
+        if p100 > 30.0:
+          msg = ("{0:3.1f}% of reflections were flagged as outliers from the"
+                 " Experiment with id {1}").format(p100, iexp)
+          warning(msg)
+        rows.append(["%d" % iexp, "%d" % nref, "%d" % nout, "%3.1f" % p100])
+      st = simple_table(rows, header)
+      debug("Outlier rejections per experiment:")
+      debug(st.format())
 
     return True
 
