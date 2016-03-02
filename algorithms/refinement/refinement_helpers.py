@@ -194,9 +194,9 @@ def get_panel_ids_at_root(panel_list, group):
   except AttributeError: # we got down to Panels
     return [panel_list.index(group)]
 
-def parameter_correlation_plot(corrmat, labels):
-  """Create a correlation matrix plot between columns of the Jacobian at
-  the specified refinement step. Inspired by R's corrplot and
+def corrgram(corrmat, labels):
+  """Create a correlation matrix plot or 'corrgram' for the provided
+  correlation matrix and row/column labels. Inspired by R's corrplot and
   https://github.com/louridas/corrplot/blob/master/corrplot.py"""
 
   try: # is corrmat a scitbx matrix?

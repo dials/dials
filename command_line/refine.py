@@ -340,9 +340,8 @@ class Script(object):
         plot_fname = fname_base + ext
         corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
         if [corrmat, labels].count(None) == 0:
-          from dials.algorithms.refinement.refinement_helpers import \
-            parameter_correlation_plot
-          plt = parameter_correlation_plot(corrmat, labels)
+          from dials.algorithms.refinement.refinement_helpers import corrgram
+          plt = corrgram(corrmat, labels)
           if plt is not None:
             info('Saving parameter correlation plot to {}'.format(plot_fname))
             plt.savefig(plot_fname)
