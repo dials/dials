@@ -167,74 +167,6 @@ class Script(object):
     return
 
   @staticmethod
-  def parameter_correlation_plot(corrmat, labels):
-    """Create a correlation matrix plot between columns of the Jacobian at
-    the specified refinement step. Inspired by R's corrplot and
-    https://github.com/louridas/corrplot/blob/master/corrplot.py"""
-
-    try: # is corrmat a scitbx matrix?
-      corrmat = corrmat.as_flex_double_matrix()
-    except AttributeError: # assume it is already a flex double matrix
-      pass
-    assert corrmat.is_square_matrix()
-
-    nr = corrmat.all()[0]
-    assert nr == len(labels)
-
-    from math import pi, sqrt
-    try:
-      import matplotlib
-      matplotlib.use('Agg')
-      import matplotlib.pyplot as plt
-      import matplotlib.cm as cm
-    except ImportError as e:
-      msg = "matplotlib modules not available " + str(e)
-      info(msg)
-      return None
-
-    plt.figure(1)
-    ax = plt.subplot(1, 1, 1, aspect='equal')
-    clrmap = cm.get_cmap('bwr')
-
-    for x in xrange(nr):
-      for y in xrange(nr):
-        d = corrmat[x, y]
-        d_abs = abs(d)
-        circ = plt.Circle((x, y),radius=0.9*sqrt(d_abs)/2)
-        circ.set_edgecolor('white')
-        # put data into range [0,1] and invert so that 1 == blue and 0 == red
-        facecolor = 1 - (0.5*d + 0.5)
-        circ.set_facecolor(clrmap(facecolor))
-        ax.add_artist(circ)
-    ax.set_xlim(-0.5, nr-0.5)
-    ax.set_ylim(-0.5, nr-0.5)
-
-    ax.xaxis.tick_top()
-    xtickslocs = range(len(labels))
-    ax.set_xticks(xtickslocs)
-    ax.set_xticklabels(labels, rotation=30, fontsize='small', ha='left')
-
-    ax.invert_yaxis()
-    ytickslocs = range(len(labels))
-    ax.set_yticks(ytickslocs)
-    ax.set_yticklabels(labels, fontsize='small')
-
-    xtickslocs = [e + 0.5 for e in range(len(labels))]
-    ax.set_xticks(xtickslocs, minor=True)
-    ytickslocs = [e + 0.5 for e in range(len(labels))]
-    ax.set_yticks(ytickslocs, minor=True)
-    plt.grid(color='0.8', which='minor', linestyle='-')
-
-    # suppress major tick marks
-    ax.tick_params(which='major', width=0)
-
-    # need this otherwise text gets clipped
-    plt.tight_layout()
-
-    # FIXME should this also have a colorbar as legend?
-    return plt
-
-  @staticmethod
   def check_input(reflections):
     '''Check the input is suitable for refinement. So far just check keys in
     the reflection table. Maybe later check experiments have overlapping models
@@ -408,7 +340,9 @@ class Script(object):
         plot_fname = fname_base + ext
         corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
         if [corrmat, labels].count(None) == 0:
-          plt = self.parameter_correlation_plot(corrmat, labels)
+          from dials.algorithms.refinement.refinement_helpers import \
+            parameter_correlation_plot
+          plt = parameter_correlation_plot(corrmat, labels)
           if plt is not None:
             info('Saving parameter correlation plot to {}'.format(plot_fname))
             plt.savefig(plot_fname)
