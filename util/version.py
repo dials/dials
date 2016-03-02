@@ -32,7 +32,8 @@ def dials_version():
           version = subprocess.check_output(
             ["git", "describe", "--long"], cwd=dials_path, stderr=devnull).rstrip()
           if version[0] == 'v':
-            version = version[1:].replace('.0-','.')
+            version = version[1:].replace('.0-','-')
+          version = version.replace('-', '.', 1)
           try:
             branch = subprocess.check_output(["git", "describe", "--contains", "--all", "HEAD"], cwd=dials_path, stderr=devnull).rstrip()
             if 'release' in branch:
