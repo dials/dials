@@ -97,6 +97,10 @@ phil_scope = parse('''
       .help = "Experimental geometry from this datablock.json or "
               "experiments.json will override the geometry from the "
               "image headers."
+
+    allow_multiple_sweeps = False
+      .type = bool
+      .help = "If False, raise an error if multiple sweeps are found"
   }
 
   geometry {
@@ -337,6 +341,10 @@ class Script(object):
         for s, d in zip(lookup_size, dark):
           assert s == d.all(), "Incompatible size"
 
+    # Only allow a single datablock
+    if len(datablocks) > 1:
+      raise Sorry("More than 1 datablock found")
+
     # Loop through the data blocks
     for i, datablock in enumerate(datablocks):
 
@@ -506,6 +514,24 @@ class Script(object):
         debug(sweep.get_goniometer())
         debug(sweep.get_detector())
         debug(sweep.get_scan())
+
+      # Only allow a single sweep
+      if params.input.allow_multiple_sweeps is False:
+        if len(sweeps) > 1:
+          raise Sorry('''
+            More than 1 sweep was found. Two things may be happening here:
+
+            1. There really is more than 1 sweep. If you expected this to be the
+               case, set the parameter allow_multiple_sweeps=True. If you don't
+               expect this, then check the input to dials.import.
+
+            2. There may be something wrong with your image headers (for example,
+               the rotation ranges of each image may not match up). You should
+               investigate what went wrong, but you can force dials.import to treat
+               your images as a single sweep by using the template=image_####.cbf
+               parameter (see help).
+          ''')
+
 
     # Write the datablock to a JSON or pickle file
     if params.output.datablock:

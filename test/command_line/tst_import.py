@@ -17,6 +17,35 @@ class Test(object):
     self.tst_import_beam_centre()
     self.tst_with_mask()
     self.tst_override_geometry()
+    self.tst_multiple_sweeps()
+
+  def tst_multiple_sweeps(self):
+    from glob import glob
+    import os
+    from libtbx import easy_run
+    from dxtbx.serialize import load
+
+    # Find the image files
+    image_files = glob(os.path.join(self.path, "centroid*.cbf"))
+    image_files = image_files[:3] + image_files[5:]
+    image_files = ' '.join(image_files)
+
+    # provide mosflm beam centre to dials.import
+    cmd = 'dials.import %s output.datablock=datablock_multiple_sweeps.json' % (image_files)
+    try:
+      easy_run.fully_buffered(cmd).raise_if_errors()
+      assert False, "Expected exception"
+    except Exception:
+      pass
+
+    cmd = 'dials.import %s output.datablock=datablock_multiple_sweeps.json allow_multiple_sweeps=True' % (image_files)
+    easy_run.fully_buffered(cmd).raise_if_errors()
+    assert os.path.exists("datablock_multiple_sweeps.json")
+    datablock = load.datablock("datablock_multiple_sweeps.json")[0]
+    imgset = datablock.extract_imagesets()
+    assert len(imgset) == 2
+
+    print 'OK'
 
   def tst_with_mask(self):
     from glob import glob
