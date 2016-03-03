@@ -350,7 +350,7 @@ class Script(object):
         if len(params.scan_range) == 1 and params.scan_range[0] is not None:
           ext = "_{0}_{1}.pickle".format(*params.scan_range[0])
         else:
-          ext = "_subsets.pickle"
+          ext = "_sliced.pickle"
         output_reflections_filename = bname + ext
 
       print 'Saving sliced reflections to {0}'.format(
@@ -368,7 +368,7 @@ class Script(object):
         if len(params.scan_range) == 1 and params.scan_range[0] is not None:
           ext = "_{0}_{1}.json".format(*params.scan_range[0])
         else:
-          ext = "_subsets.json"
+          ext = "_sliced.json"
         output_datablocks_filename = bname + ext
       print 'Saving sliced datablocks to {0}'.format(
         output_datablocks_filename)
