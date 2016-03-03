@@ -14,6 +14,8 @@ from __future__ import division
 from os.path import splitext, basename
 from scitbx.array_family import flex
 from libtbx.utils import Sorry
+from dxtbx.model.experiment.experiment_list import ExperimentList
+from dxtbx.datablock import DataBlock
 from dials.algorithms.refinement.refinement_helpers import \
   calculate_frame_numbers
 
@@ -78,6 +80,32 @@ phil_scope = parse('''
 
 ''')
 
+
+def calculate_block_ranges(scan, block_size):
+  '''
+
+  :param scans
+  :type a scan object
+  :param block_size:
+  :type block_size: target block size in degrees'''
+
+  scan_ranges = []
+  nimages = scan.get_num_images()
+  osc_range = scan.get_oscillation_range(deg=True)
+  osc_width = abs(osc_range[1] - osc_range[0])
+  nblocks = max(int(round(osc_width / block_size)), 1)
+  nblocks = min(nblocks, nimages)
+  # equal sized blocks except the last one that may contain extra images
+  # to make up the remainder
+  nimages_per_block = [nimages // nblocks] * (nblocks - 1) + \
+    [nimages // nblocks + nimages % nblocks]
+  start = scan.get_image_range()[0]
+  for nim in nimages_per_block:
+    scan_ranges.append((start, start + nim - 1))
+    start += nim
+
+  return scan_ranges
+
 def slice_experiments(experiments, scan_ranges):
   '''
 
@@ -109,8 +137,7 @@ def slice_experiments(experiments, scan_ranges):
 def slice_reflections(reflections, scan_ranges):
   '''
 
-  :param reflections: reflection table of input reflections which must contain
-                      the
+  :param reflections: reflection table of input reflections
   :type reflections: dials.array_family.flex.reflection_table
   :param scan_range: list of 2-tuples defining scan range for each experiment
                      id contained within the reflections
@@ -237,13 +264,60 @@ class Script(object):
     if len(params.scan_range) == 0:
       params.scan_range = [None]
 
-    # do slicing
-    if slice_exps:
-      sliced_experiments = slice_experiments(experiments, params.scan_range)
-    if slice_refs:
-      sliced_reflections = slice_reflections(reflections, params.scan_range)
-    if slice_dbs:
-      sliced_datablocks =  slice_datablocks(datablocks, params.scan_range)
+    # check if slicing into blocks
+    if params.block_size is not None:
+      # in this case for simplicity, ensure that there is either an
+      # an experiment list or datablocks, but not both. Ensure there is only
+      # a single scan contained within.
+      if [slice_exps, slice_dbs].count(True) != 1:
+        raise Sorry("For slicing into blocks please provide either datablocks"
+          " or experiments, but not both.")
+      if slice_exps:
+        if len(experiments) > 1:
+          raise Sorry("For slicing into blocks please provide a single "
+                      "scan only")
+        scan = experiments[0].scan
+      if slice_dbs:
+        scans = datablocks[0].unique_scans()
+        if len(scans) > 1 or len(datablocks) > 1:
+          raise Sorry("For slicing into blocks please provide a single "
+                      "scan only")
+        scan = scans[0]
+
+      # Having extracted the scan, calculate the blocks
+      params.scan_range = calculate_block_ranges(scan, params.block_size)
+
+      # Do the slicing then recombine
+      if slice_exps:
+        sliced = [slice_experiments(experiments, [sr])[0] \
+          for sr in params.scan_range]
+        sliced_experiments = ExperimentList()
+        for exp in sliced:
+          sliced_experiments.append(exp)
+
+      if slice_dbs:
+        sliced = [slice_datablocks(datablocks, [sr])[0] \
+          for sr in params.scan_range]
+        imagesets = [db.extract_imagesets()[0] for db in sliced]
+        sliced_datablocks = DataBlock(imagesets)
+
+      # slice reflections if present
+      if slice_refs:
+        sliced = [slice_reflections(reflections, [sr]) \
+          for sr in params.scan_range]
+        sliced_reflections = sliced[0]
+        for i, rt in enumerate(sliced[1:]):
+          rt['id'] += (i + 1) # set id
+          sliced_reflections.extend(rt)
+
+    else:
+      # slice each dataset into the requested subset
+      if slice_exps:
+        sliced_experiments = slice_experiments(experiments, params.scan_range)
+      if slice_refs:
+        sliced_reflections = slice_reflections(reflections, params.scan_range)
+      if slice_dbs:
+        sliced_datablocks = slice_datablocks(datablocks, params.scan_range)
 
     # Save sliced experiments
     if slice_exps:
@@ -256,7 +330,7 @@ class Script(object):
         if len(params.scan_range) == 1 and params.scan_range[0] is not None:
           ext = "_{0}_{1}.json".format(*params.scan_range[0])
         else:
-          ext = "_subsets.json"
+          ext = "_sliced.json"
         output_experiments_filename = bname + ext
       print 'Saving sliced experiments to {0}'.format(
         output_experiments_filename)
