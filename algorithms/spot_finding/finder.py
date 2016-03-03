@@ -285,11 +285,20 @@ class ExtractSpots(object):
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from dials.model.data import PixelListLabeller
-    from logging import info
+    from logging import info, warn
     from math import floor
+    import platform
+    from logging import warn
 
     # Change the number of processors if necessary
     mp_nproc = self.nproc
+    if platform.system() == "Windows" and mp_nproc > 1:
+      warn("")
+      warn("*" * 80)
+      warn("Multiprocessing is not available on windows. Setting nproc = 1")
+      warn("*" * 80)
+      warn("")
+      mp_nproc = 1
     if mp_nproc > len(imageset):
       mp_nproc = len(imageset)
     mp_method = self.mp_method
@@ -415,15 +424,15 @@ class SpotFinder(object):
     self.mask = mask
     self.region_of_interest = region_of_interest
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
-    self.mp_method = mp_method
-    self.nproc = nproc
-    self.mp_chunksize = mp_chunksize
     self.mask_generator = mask_generator
     self.filter_spots = filter_spots
     self.scan_range = scan_range
     self.write_hot_mask = write_hot_mask
     self.min_spot_size = min_spot_size
     self.max_spot_size = max_spot_size
+    self.mp_method = mp_method
+    self.mp_chunksize = mp_chunksize
+    self.nproc = nproc
 
   def __call__(self, datablock):
     '''

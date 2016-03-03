@@ -202,13 +202,20 @@ class Processor(object):
     '''
     from time import time
     from libtbx import easy_mp
-    from logging import info
-
+    from logging import info, warn
+    import platform
     start_time = time()
     self.manager.initialize()
     mp_method = self.manager.params.mp.method
     mp_nproc = min(len(self.manager), self.manager.params.mp.nproc)
     mp_nthreads = self.manager.params.mp.nthreads
+    if platform.system() == "Windows" and mp_nproc > 1:
+      warn("")
+      warn("*" * 80)
+      warn("Multiprocessing is not available on windows. Setting nproc = 1")
+      warn("*" * 80)
+      warn("")
+      mp_nproc = 1
     assert mp_nproc > 0, "Invalid number of processors"
     job.nthreads = mp_nthreads
     info(self.manager.summary())
