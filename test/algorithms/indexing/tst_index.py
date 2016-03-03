@@ -516,7 +516,7 @@ def exercise_14():
       os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
 
   args = ["dials.import", ' '.join(glob(os.path.join(tmp_dir, "image_00*.img"))),
-          "output.datablock=datablock.json"]
+          "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
   command = " ".join(args)
   #print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
