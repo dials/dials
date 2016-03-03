@@ -20,7 +20,7 @@ phil_scope = parse('''
         .type = bool
         .help = "Calculate a scan varying model"
 
-    min_spots = 100
+    min_spots_per_degree = 50
         .type = int(value_min=0)
         .help = "The minimum number of spots needed to do the profile modelling"
 
@@ -193,11 +193,26 @@ class Model(ProfileModelIface):
       import ProfileModelCalculator
     from dials.algorithms.profile_model.gaussian_rs.calculator \
       import ScanVaryingProfileModelCalculator
-    if len(reflections) < params.gaussian_rs.min_spots:
-      raise RuntimeError('''
-        Too few reflections for profile modelling:
-          expected > %d, got %d
-        ''' % (params.gaussian_rs.min_spots, len(reflections)))
+
+    if scan is not None:
+      num_degrees = scan.get_num_images() * scan.get_oscillation()[1]
+      spots_per_degree = len(reflections) / num_degrees
+      if spots_per_degree < params.gaussian_rs.min_spots_per_degree:
+        raise RuntimeError('''
+          Too few reflections for profile modelling:
+            expected > %d per degree, got %d (%d total)
+          ''' % (
+            params.gaussian_rs.min_spots_per_degree,
+            spots_per_degree,
+            len(reflections)))
+    else:
+      if len(reflections) < params.gaussian_rs.min_spots_per_degree:
+        raise RuntimeError('''
+          Too few reflections for profile modelling:
+            expected > %d, got %d
+          ''' % (
+            params.gaussian_rs.min_spots_per_degree,
+            len(reflections)))
     if not params.gaussian_rs.scan_varying:
       Calculator = ProfileModelCalculator
     else:
