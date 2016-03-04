@@ -247,6 +247,7 @@ class RestraintsParameterisation(object):
       row_start.append(irow)
       irow += len(res)
 
+    # keep track of the row at the start of group models
     group_model_irow = irow
 
     # process restraints residuals and weights for groups of models
@@ -254,7 +255,8 @@ class RestraintsParameterisation(object):
       residuals.extend(flex.double(r.restraint.residuals()))
       weights.extend(flex.double(r.restraint.weights()))
 
-    # set up a sparse matrix for the restraints jacobian
+    # now it is clear how many residuals there are we can set up a sparse
+    # matrix for the restraints jacobian
     nrows = len(residuals)
     gradients = sparse.matrix(nrows, self._nparam)
 
@@ -266,24 +268,13 @@ class RestraintsParameterisation(object):
       gradients.assign_block(grads, irow, icol)
 
     # assign gradients in blocks for the group model restraints
-    irow = group_model_irow
     for r in self._group_model_restraints:
       # loop over the included unit cell models, k
       for k, (icol, grads) in enumerate(zip(r.istart, r.restraint.gradients())):
-        this_cell_grads = flex.double(grads)
-        other_cells_grads = flex.double(r.restraint.gradients_of_the_mean(k)) * -1.0
-        # the cell model k has a parameterisation that starts with column icol.
-        # the block of gradients of its residuals wrt its parameters is the
-        # block this_cell_grads, whilst the block of gradients of other cell's
-        # residuals wrt its parameters is other_cells_grads.
-        #
-        # need to loop over the starting rows and write the blocks
-        for j in range(r.restraint._nxls):
-          jrow = irow + j * r.restraint.nrestraints_per_cell
-          if j == k:
-            gradients.assign_block(this_cell_grads, jrow, icol)
-          else:
-            gradients.assign_block(other_cells_grads, jrow, icol)
-      irow += r.restraint._nxls * r.restraint.nrestraints_per_cell
+        irow = group_model_irow
+        for grad in grads:
+          gradients.assign_block(grad, irow, icol)
+          irow += grad.n_rows
+      group_model_irow = irow
 
     return residuals, gradients, weights

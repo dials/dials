@@ -12,6 +12,7 @@
 
 from __future__ import division
 from scitbx.array_family import flex
+from scitbx import sparse
 from math import pi, sin, cos, sqrt
 from scitbx.math import angle_derivative_wrt_vectors
 from dials_refinement_helpers_ext import CalculateCellGradients
@@ -217,7 +218,11 @@ class MeanUnitCellTie(object):
            '{2} these are constrained to be equal. Only the strongest '
            'of these restraints will be retained for all crystals in '
            'the restrained group.')
-    for xlucp, grads in zip(self._xlucp, self.gradients()):
+    for ixl, xlucp in enumerate(self._xlucp):
+      B = xlucp.get_state()
+      dB_dp = flex.mat3_double(xlucp.get_ds_dp())
+      ccg = CalculateCellGradients(B, dB_dp)
+      grads = [ccg.da_dp(), ccg.db_dp(), ccg.dc_dp()]
       a, b, c, aa, bb, cc = xlucp.get_model().get_unit_cell().parameters()
       if abs(a - b) < 1e-10:
         grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[1])]
@@ -271,9 +276,11 @@ class MeanUnitCellTie(object):
     self.nrestraints_per_cell = self._sel.count(True)
 
     # repeat the weights for each unit cell being restrained
-    weights = flex.double([1./s**2 for s in sigma if s > 0.0])
-    self._weights = flex.double()
-    for xlucp in self._xlucp: self._weights.extend(weights)
+    weights = [1./s**2 for s in sigma if s > 0.0]
+    weights = [flex.double(self._nxls, w) for w in weights]
+    self._weights = weights[0]
+    for w in weights[1:]:
+      self._weights.extend(w)
 
     return
 
@@ -293,82 +300,58 @@ class MeanUnitCellTie(object):
     resid = [e for e in [resid_a, resid_b, resid_c,
                          resid_aa, resid_bb, resid_cc] if e is not None]
 
-    # flex array trickery to interlace the residuals
-    ncol = len(resid)
-    R = flex.double(flex.grid(self._nxls, ncol))
-    for i, r in enumerate(resid):
-      R.matrix_paste_column_in_place(r, i)
+    # stack the columns
+    R = resid[0]
+    for r in resid[1:]:
+      R.extend(r)
 
-    return R.as_1d()
+    return R
+
+  def _construct_grad_block(self, param_grads, i):
+    '''helper function to construct a block of gradients. The length of
+    param_grads is the number of columns of the block. i selects a row of
+    interest from the block corresponding to the residual for a particular
+    unit cell'''
+    mean_grads = param_grads * self._meangradfac
+    param_grads *= self._gradfac
+    block = sparse.matrix(self._nxls, len(param_grads))
+    for j, (g, mg) in enumerate(zip(param_grads, mean_grads)):
+      if abs(mg) > 1e-20: # skip gradients close to zero
+        col = flex.double(flex.grid(self._nxls, 1), -1. * mg)
+        block.assign_block(col, 0, j)
+      if abs(g) > 1e-20: # skip gradient close to zero
+        block[i, j] = g
+    return block
 
   def gradients(self):
     """A generator function to return the gradients dR/dp for all the restraints
-    referring to a particular crystal's cell parameters.
-    This only returns the gradients with respect to a single crystal
-    (the one referred to by that residual). Other residuals have non-zero
-    gradients however, due to the cell parameter target values being the mean
-    over all cells. The gradients of the mean parameter are also set and can
-    be accessed with a separate method"""
+    referring to a particular crystal's cell parameters. The return value is
+    a list of sparse matrices, one for each of the 6 cell parameters being
+    restrained. Each sparse matrix has as many columns as the crystal unit
+    cell parameterisation has parameters, and as many rows as there are crystals
+    being restrained. Gradients of zero are detected and not set in the sparse
+    matrices to save memory."""
 
-    for xlucp in self._xlucp:
+    for i, xlucp in enumerate(self._xlucp):
       B = xlucp.get_state()
       dB_dp = flex.mat3_double(xlucp.get_ds_dp())
       # Use C++ function for speed
       ccg = CalculateCellGradients(B, dB_dp)
       dRdp = []
-      self._dmeandp = []
       if self._sel[0]:
-        tmp = ccg.da_dp()
-        dRdp.append(list(tmp * self._gradfac))
+        dRdp.append(self._construct_grad_block(ccg.da_dp(), i))
       if self._sel[1]:
-        tmp = ccg.db_dp()
-        dRdp.append(list(tmp * self._gradfac))
+        dRdp.append(self._construct_grad_block(ccg.db_dp(), i))
       if self._sel[2]:
-        tmp = ccg.dc_dp()
-        dRdp.append(list(tmp * self._gradfac))
+        dRdp.append(self._construct_grad_block(ccg.dc_dp(), i))
       if self._sel[3]:
-        tmp = ccg.daa_dp()
-        dRdp.append(list(tmp * self._gradfac))
+        dRdp.append(self._construct_grad_block(ccg.daa_dp(), i))
       if self._sel[4]:
-        tmp = ccg.dbb_dp()
-        dRdp.append(list(tmp * self._gradfac))
+        dRdp.append(self._construct_grad_block(ccg.dbb_dp(), i))
       if self._sel[5]:
-        tmp = ccg.dcc_dp()
-        dRdp.append(list(tmp * self._gradfac))
+        dRdp.append(self._construct_grad_block(ccg.dcc_dp(), i))
 
       yield dRdp
-
-  def gradients_of_the_mean(self, icell):
-    """Return the gradients of the mean values of cell parameters for all the
-    restraints referring to a particular unit cell."""
-
-    xlucp = self._xlucp[icell]
-    B = xlucp.get_state()
-    dB_dp = flex.mat3_double(xlucp.get_ds_dp())
-    # Use C++ function for speed
-    ccg = CalculateCellGradients(B, dB_dp)
-    dmeandp = []
-    if self._sel[0]:
-      tmp = ccg.da_dp()
-      dmeandp.append(list(tmp * self._meangradfac))
-    if self._sel[1]:
-      tmp = ccg.db_dp()
-      dmeandp.append(list(tmp * self._meangradfac))
-    if self._sel[2]:
-      tmp = ccg.dc_dp()
-      dmeandp.append(list(tmp * self._meangradfac))
-    if self._sel[3]:
-      tmp = ccg.daa_dp()
-      dRdp.append(list(tmp * self._gradfac))
-      dmeandp.append(list(tmp * self._meangradfac))
-    if self._sel[4]:
-      tmp = ccg.dbb_dp()
-      dmeandp.append(list(tmp * self._meangradfac))
-    if self._sel[5]:
-      tmp = ccg.dcc_dp()
-      dmeandp.append(list(tmp * self._meangradfac))
-
-    return dmeandp
 
   def weights(self):
     '''Return the weights for the residuals vector'''
