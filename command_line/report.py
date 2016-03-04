@@ -53,6 +53,12 @@ phil_scope = libtbx.phil.parse('''
     json = None
       .type = path
       .help = "The name of the optional json file containing the plot data"
+    external_dependencies = *remote local embed
+      .type = choice
+      .help = "Whether to use remote external dependencies (files relocatable"
+              "but requires an internet connection), local (does not require"
+              "internet connection but files may not be relocatable) or embed"
+              "all external dependencies (inflates the html file size)."
   }
   grid_size = Auto
     .type = ints(size=2)
@@ -2242,7 +2248,8 @@ class Analyser(object):
           plotly_graphs[grouping].append(
             html_report.plotly_graph(json_data[grouping][graph], graph))
 
-      report = html_report.html_report()
+      report = html_report.html_report(
+        external_dependencies=self.params.output.external_dependencies)
 
       page_header = html_report.page_header('DIALS analysis report')
       report.add_content(page_header)
@@ -2438,6 +2445,7 @@ class Script(object):
       phil=phil_scope,
       read_reflections=True,
       read_experiments=True,
+      check_format=False,
       epilog=help_message)
 
   def run(self):

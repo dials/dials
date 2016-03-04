@@ -1,35 +1,74 @@
 
 class html_report(object):
 
-  def __init__(self):
+  def __init__(self, external_dependencies='remote'):
     self._content = []
+    self.external_dependencies = external_dependencies
 
   def header(self):
 
-    plotly_js = '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>'
-    bootstrap_js = '<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>'
-    jquery_js = '<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>'
-    bootstrap_css = '<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">'
-    mathjax_js = '<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>'
+    assert self.external_dependencies in ('remote', 'local', 'embed')
+
+    if self.external_dependencies == 'remote':
+
+      plotly_js = '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>'
+      bootstrap_js = '<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>'
+      jquery_js = '<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>'
+      bootstrap_css = '<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">'
+      katex_js = '<script type="text/javascript" src=https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js></script>'
+      katex_auto_render_js = '<script type="text/javascript" src=https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/contrib/auto-render.min.js></script>'
+      katex_css = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css">'
+
+    elif self.external_dependencies == 'local':
+      import libtbx.load_env
+      css_dir = libtbx.env.find_in_repositories('dials/static/css')
+      js_dir = libtbx.env.find_in_repositories('dials/static/js')
+      katex_dir = libtbx.env.find_in_repositories('dials/static/katex')
+
+      plotly_js = '<script src="%s/plotly-latest.min.js"></script>' %js_dir
+      bootstrap_js = '<script src="%s/bootstrap.min.js"></script>' %js_dir
+      jquery_js = '<script src="%s/jquery-1.12.0.min.js"></script>' %js_dir
+      bootstrap_css = '<link rel="stylesheet" href="%s/bootstrap.min.css">' %css_dir
+      katex_js = '<script type="text/javascript" src=%s/katex.min.js></script>' %katex_dir
+      katex_auto_render_js = '<script type="text/javascript" src=%s/contrib/auto-render.min.js></script>' %katex_dir
+      katex_css = '<link rel="stylesheet" href="%s/katex.min.css">' %katex_dir
+
+    elif self.external_dependencies == 'embed':
+      import os
+      import libtbx.load_env
+      css_dir = libtbx.env.find_in_repositories('dials/static/css')
+      js_dir = libtbx.env.find_in_repositories('dials/static/js')
+      katex_dir = libtbx.env.find_in_repositories('dials/static/katex')
+
+      plotly_js = '<script>%s</script>' %open(
+        os.path.join(js_dir, 'plotly-latest.min.js')).read()
+      bootstrap_js = '<script>%s</script>' %open(
+        os.path.join(js_dir, 'bootstrap.min.js')).read()
+      jquery_js = '<script>%s</script>' %open(
+        os.path.join(js_dir, 'jquery-1.12.0.min.js')).read()
+      bootstrap_css = '<style type="text/css">%s</style>' %open(
+        os.path.join(css_dir, 'bootstrap.min.css')).read()
+      katex_js = '<script>%s</script>' %open(
+        os.path.join(katex_dir, 'katex.min.js')).read()
+      katex_auto_render_js = '<script>%s</script>' %open(
+        os.path.join(katex_dir, 'contrib/auto-render.min.js')).read()
+      katex_css = '<style type="text/css">%s</style>' %open(
+        os.path.join(katex_dir, 'katex.min.css')).read()
 
     html_header = '''
+<!DOCTYPE html>
 <head>
 
 <!-- Plotly.js -->
 %(plotly_js)s
 
 <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-<script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-    "HTML-CSS": {
-      scale: 90,
-      minScaleAdjust: 50
-    }
-});
-</script>
+
 %(jquery_js)s
 %(bootstrap_js)s
-%(mathjax_js)s
+%(katex_js)s
+%(katex_auto_render_js)s
+%(katex_css)s
 %(bootstrap_css)s
 <style type="text/css">
 %(css)s
@@ -41,7 +80,9 @@ class html_report(object):
       'bootstrap_js': bootstrap_js,
       'bootstrap_css': bootstrap_css,
       'jquery_js': jquery_js,
-      'mathjax_js': mathjax_js,
+      'katex_js': katex_js,
+      'katex_auto_render_js': katex_auto_render_js,
+      'katex_css': katex_css,
       'css': self.css()}
 
     return html_header
@@ -64,8 +105,10 @@ body {
   margin-bottom: 20px;
 }
 
-.MathJax_Display {
-  text-align: left !important;
+.katex-display {
+  text-align: left;
+}
+
 }'''
 
   def body(self):
@@ -73,6 +116,10 @@ body {
 
 <body>
   %s
+  <script>
+    renderMathInElement(
+        document.body);
+  </script>
 </body>
 ''' %('\n'.join(content.html() for content in self._content))
 
