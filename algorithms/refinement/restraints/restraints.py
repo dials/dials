@@ -357,3 +357,18 @@ class MeanUnitCellTie(object):
     '''Return the weights for the residuals vector'''
 
     return self._weights
+
+
+class LowMemoryMeanUnitCellTie(MeanUnitCellTie):
+
+  def _construct_grad_block(self, param_grads, i):
+    '''helper function to construct a block of gradients. The length of
+    param_grads is the number of columns of the block. i selects a row of
+    interest from the block corresponding to the residual for a particular
+    unit cell'''
+    param_grads *= self._gradfac
+    block = sparse.matrix(self._nxls, len(param_grads))
+    for j, g in enumerate(param_grads):
+      if abs(g) > 1e-20: # skip gradient close to zero
+        block[i, j] = g
+    return block

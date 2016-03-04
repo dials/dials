@@ -18,6 +18,7 @@ from scitbx import sparse
 
 from dials.algorithms.refinement.restraints.restraints import SingleUnitCellTie
 from dials.algorithms.refinement.restraints.restraints import MeanUnitCellTie
+from dials.algorithms.refinement.restraints.restraints import LowMemoryMeanUnitCellTie
 
 # PHIL options for unit cell restraints
 uc_phil_str = '''
@@ -57,7 +58,7 @@ restraints
   tie_to_group
     .multiple = True
   {
-    target = *mean median
+    target = *mean low_memory_mean median
       .type = choice
       .help = "Function to tie group parameter values to"
 
@@ -222,6 +223,9 @@ class RestraintsParameterisation(object):
     # create new group of restraints
     if target == 'mean':
       tie = MeanUnitCellTie(model_parameterisations=params,
+                            sigma=sigma)
+    elif target == 'low_memory_mean':
+      tie = LowMemoryMeanUnitCellTie(model_parameterisations=params,
                             sigma=sigma)
     else:
       raise Sorry("target type {0} not available".format(target))
