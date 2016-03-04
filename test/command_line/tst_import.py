@@ -26,8 +26,8 @@ class Test(object):
     from dxtbx.serialize import load
 
     # Find the image files
-    image_files = glob(os.path.join(self.path, "centroid*.cbf"))
-    image_files = image_files[:3] + image_files[5:]
+    image_files = sorted(glob(os.path.join(self.path, "centroid*.cbf")))
+    del image_files[4] # Delete filename to force two sweeps
     image_files = ' '.join(image_files)
 
     # provide mosflm beam centre to dials.import
