@@ -20,9 +20,18 @@ phil_scope = parse('''
         .type = bool
         .help = "Calculate a scan varying model"
 
-    min_spots_per_degree = 50
+    min_spots
+      .help = "if (total_reflections > overall or reflections_per_degree >"
+              "per_degree) then do the profile modelling."
+    {
+      overall = 100
         .type = int(value_min=0)
         .help = "The minimum number of spots needed to do the profile modelling"
+
+      per_degree = 50
+        .type = int(value_min=0)
+        .help = "The minimum number of spots needed to do the profile modelling"
+    }
 
     filter
     {
@@ -194,25 +203,28 @@ class Model(ProfileModelIface):
     from dials.algorithms.profile_model.gaussian_rs.calculator \
       import ScanVaryingProfileModelCalculator
 
-    if scan is not None:
-      num_degrees = scan.get_num_images() * scan.get_oscillation()[1]
-      spots_per_degree = len(reflections) / num_degrees
-      if spots_per_degree < params.gaussian_rs.min_spots_per_degree:
-        raise RuntimeError('''
-          Too few reflections for profile modelling:
-            expected > %d per degree, got %d (%d total)
-          ''' % (
-            params.gaussian_rs.min_spots_per_degree,
-            spots_per_degree,
-            len(reflections)))
-    else:
-      if len(reflections) < params.gaussian_rs.min_spots_per_degree:
+    # Check the number of spots
+    if not len(reflections) > params.gaussian_rs.min_spots.overall:
+      if scan is not None:
+        num_degrees = scan.get_num_images() * scan.get_oscillation()[1]
+        spots_per_degree = len(reflections) / num_degrees
+        if not spots_per_degree > params.gaussian_rs.min_spots.per_degree:
+          raise RuntimeError('''
+            Too few reflections for profile modelling:
+              expected > %d per degree, got %d or > %d in total, got %d
+            ''' % (
+              params.gaussian_rs.min_spots.per_degree,
+              spots_per_degree,
+              params.gaussian_rs.min_spots.overall,
+              len(reflections)))
+      else:
         raise RuntimeError('''
           Too few reflections for profile modelling:
             expected > %d, got %d
           ''' % (
-            params.gaussian_rs.min_spots_per_degree,
+            params.gaussian_rs.min_spots.overall,
             len(reflections)))
+
     if not params.gaussian_rs.scan_varying:
       Calculator = ProfileModelCalculator
     else:
