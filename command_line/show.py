@@ -83,8 +83,12 @@ def run(args):
 
   for i_expt, expt in enumerate(experiments):
     print "Experiment %i:" %i_expt
-    print str(expt.detector) + 'Max resolution: %f\n' %(
+    print str(expt.detector)
+    print 'Max resolution (at corners): %f' % (
       expt.detector.get_max_resolution(expt.beam.get_s0()))
+    print 'Max resolution (inscribed):  %f' % (
+      expt.detector.get_max_inscribed_resolution(expt.beam.get_s0()))
+    print ''
     panel_id, (x, y) = beam_centre(expt.detector, expt.beam)
     if panel_id >= 0 and x is not None and y is not None:
       if len(expt.detector) > 1:
