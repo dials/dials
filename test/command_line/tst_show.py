@@ -28,7 +28,9 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
-Max resolution: 1.008178
+
+Max resolution (at corners): 1.008178
+Max resolution (inscribed):  1.361923
 
 Beam:
     wavelength: 0.9795
