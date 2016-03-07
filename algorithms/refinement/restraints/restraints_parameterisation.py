@@ -19,6 +19,7 @@ from scitbx import sparse
 from dials.algorithms.refinement.restraints.restraints import SingleUnitCellTie
 from dials.algorithms.refinement.restraints.restraints import MeanUnitCellTie
 from dials.algorithms.refinement.restraints.restraints import LowMemoryMeanUnitCellTie
+from dials.algorithms.refinement.restraints.restraints import MedianUnitCellTie
 
 # PHIL options for unit cell restraints
 uc_phil_str = '''
@@ -226,6 +227,9 @@ class RestraintsParameterisation(object):
                             sigma=sigma)
     elif target == 'low_memory_mean':
       tie = LowMemoryMeanUnitCellTie(model_parameterisations=params,
+                            sigma=sigma)
+    elif target == 'median':
+      tie = MedianUnitCellTie(model_parameterisations=params,
                             sigma=sigma)
     else:
       raise Sorry("target type {0} not available".format(target))

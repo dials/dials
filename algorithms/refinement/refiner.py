@@ -1056,8 +1056,6 @@ class RefinerFactory(object):
         rp.add_restraints_to_target_xl_unit_cell(exp_id, tie.values, tie.sigmas)
 
     for tie in cell_r.tie_to_group:
-      if tie.target == 'median':
-        raise Sorry('Ties to median are currently not available')
       if len(tie.sigmas) != 6:
         raise Sorry("6 sigmas must be provided as the tie_to_group.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "

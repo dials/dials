@@ -372,3 +372,43 @@ class LowMemoryMeanUnitCellTie(MeanUnitCellTie):
       if abs(g) > 1e-20: # skip gradient close to zero
         block[i, j] = g
     return block
+
+
+class MedianUnitCellTie(MeanUnitCellTie):
+
+  def residuals(self):
+    """Calculate and return the residuals"""
+
+    cells = [xlucp.get_model().get_unit_cell().parameters() for xlucp in self._xlucp]
+    a, b, c, aa, bb, cc = [flex.double(e) for e in zip(*cells)]
+    resid_a = a - flex.median(a) if self._sel[0] else None
+    resid_b = b - flex.median(b) if self._sel[1] else None
+    resid_c = c - flex.median(c) if self._sel[2] else None
+    resid_aa = aa - flex.median(aa) if self._sel[3] else None
+    resid_bb = bb - flex.median(bb) if self._sel[4] else None
+    resid_cc = cc - flex.median(cc) if self._sel[5] else None
+
+    # collect the residuals for restrained parameters only
+    resid = [e for e in [resid_a, resid_b, resid_c,
+                         resid_aa, resid_bb, resid_cc] if e is not None]
+
+    # stack the columns
+    R = resid[0]
+    for r in resid[1:]:
+      R.extend(r)
+
+    return R
+
+  def _construct_grad_block(self, param_grads, i):
+    '''helper function to construct a block of gradients. The length of
+    param_grads is the number of columns of the block. i selects a row of
+    interest from the block corresponding to the residual for a particular
+    unit cell'''
+    # this override removes the product with self._gradfac, which is only
+    # relevant for the 'mean' versions of this class.
+    # param_grads *= self._gradfac
+    block = sparse.matrix(self._nxls, len(param_grads))
+    for j, g in enumerate(param_grads):
+      if abs(g) > 1e-20: # skip gradient close to zero
+        block[i, j] = g
+    return block
