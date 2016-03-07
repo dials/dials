@@ -326,9 +326,6 @@ class Script(object):
 
       # extract individual column names or indices
       col_select = params.output.correlation_plot.col_select
-      if len(col_select) != 0:
-        col_select = [s.strip('(){}[]') for e in col_select for s in e.split(',')]
-      else: col_select = None
 
       num_plots = 0
       for step in steps:
