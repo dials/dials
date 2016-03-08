@@ -123,7 +123,7 @@ class Script(object):
         beam = imageset.get_beam()
         s0 = beam.get_s0()
         pixel_size = panel.get_pixel_size()
-        xlim, ylim = imageset[0].all()
+        xlim, ylim = imageset.get_raw_data(0)[0].all()
 
         # cache transformation
         xy = recviewer.get_target_pixels(panel, s0, xlim, ylim, self.max_resolution)
@@ -142,7 +142,7 @@ class Script(object):
             if self.reverse_phi == False: # FIXME: ???
                 angle *= -1
             rotated_S = S.rotate_around_origin(axis, angle)
-            recviewer.fill_voxels(imageset[i], self.grid, self.cnts, rotated_S, xy, rec_range)
+            recviewer.fill_voxels(imageset.get_raw_data(i)[0], self.grid, self.cnts, rotated_S, xy, rec_range)
 
 if __name__ == '__main__':
   from dials.util import halraiser

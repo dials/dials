@@ -142,9 +142,7 @@ class MaskGenerator(object):
     beam = imageset.get_beam()
 
     # Get the first image
-    image = imageset[0]
-    if not isinstance(image, tuple):
-      image = (image,)
+    image = imageset.get_raw_data(0)
     assert(len(detector) == len(image))
 
     # Create the mask for each image

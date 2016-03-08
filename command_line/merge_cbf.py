@@ -60,7 +60,9 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
 
       i_in = (i_out*n_images) + j
 
-      data_in = imageset[i_in]
+      data_in = imageset.get_raw_data(i_in)
+      assert len(data_in) == 1
+      data_in = data_in[0]
       if data_out is None:
         data_out = data_in
       else:

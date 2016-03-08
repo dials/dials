@@ -254,7 +254,7 @@ class BackgroundGradientFilter(object):
       def __getitem__(self, i):
         image_data = self._image_data.get(i)
         if image_data is None:
-          image_data = self.imageset[i]
+          image_data = self.imageset.get_raw_data(i)
           if len(self._image_data) >= self.size:
             # remove the oldest entry in the cache
             del self._image_data[self._image_data.keys()[0]]
