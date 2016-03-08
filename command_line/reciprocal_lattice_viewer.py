@@ -49,6 +49,8 @@ phil_scope= libtbx.phil.parse("""
     .type = int(value_min=1)
   experiment_ids = None
     .type = ints(value_min=-1)
+  autospin = False
+    .type = bool
 """)
 
 def settings () :
@@ -398,6 +400,11 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     self.flag_show_minimum_covering_sphere = False
     self.minimum_covering_sphere = None
     self.field_of_view_y = 0.001
+    if self.settings.autospin:
+      self.autospin_allowed = True
+      self.yspin = 1
+      self.xspin = 1
+      self.autospin = True
 
   def set_points(self, points):
     self.points = points
