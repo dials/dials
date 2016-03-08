@@ -6,6 +6,21 @@ from rstbx.viewer.frame import SettingsFrame, SettingsPanel
 from scitbx import matrix
 from dials.array_family import flex
 
+myEVT_LOADIMG = wx.NewEventType()
+EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
+class LoadImageEvent(wx.PyCommandEvent):
+    """Event to signal that an image should be loaded"""
+    def __init__(self, etype, eid, filename=None):
+        """Creates the event object"""
+        wx.PyCommandEvent.__init__(self, etype, eid)
+        self._filename = filename
+
+    def get_filename(self):
+        return self._filename
+def create_load_image_event(destination, filename):
+  wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
+
+
 class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
     self.imagesets = kwds["imagesets"]
@@ -74,7 +89,7 @@ class SpotFrame(XrayFrame) :
         d_spacings = 1/reflections[i_ref_list]['rlp'].norms()
         reflections[i_ref_list] = reflections[i_ref_list].select(d_spacings > self.params.d_min)
       self.reflections = reflections
-
+    self.Bind(EVT_LOADIMG, self.load_file_event)
 
   def setup_toolbar(self) :
     from wxtbx import bitmaps
@@ -287,12 +302,15 @@ class SpotFrame(XrayFrame) :
       self._image_chooser_tmp_clientdata.append(file_name_or_data)
       return len(self._image_chooser_tmp_key) + count
 
+  def load_file_event(self, evt):
+    self.load_image(evt.get_filename())
+
   def load_image (self, file_name_or_data) :
     """The load_image() function displays the image from @p
     file_name_or_data.  The chooser is updated appropriately.
     """
 
-    if len(self._image_chooser_tmp_key):
+    if self._image_chooser_tmp_key:
       starting_count = self.image_chooser.GetCount()
       n = len(self._image_chooser_tmp_key)
       self.image_chooser.AppendItems(self._image_chooser_tmp_key)
@@ -301,6 +319,11 @@ class SpotFrame(XrayFrame) :
           starting_count+i, self._image_chooser_tmp_clientdata[i])
       self._image_chooser_tmp_key = []
       self._image_chooser_tmp_clientdata = []
+    elif isinstance(file_name_or_data, basestring):
+      self.image_chooser.AppendItems([file_name_or_data])
+      key = self.get_key(file_name_or_data)
+      self.image_chooser.SetClientData(
+        self.image_chooser.GetCount() - 1, key)
 
     super(SpotFrame, self).load_image(file_name_or_data)
 
