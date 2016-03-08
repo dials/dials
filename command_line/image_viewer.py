@@ -96,6 +96,7 @@ class Script(object):
     self.imagesets = imagesets
     self.reflections = reflections
     self.crystals = crystals
+    self.wrapper = None
 
   def __call__(self):
     '''Run the script.'''
@@ -105,7 +106,8 @@ class Script(object):
 
   def view(self):
     from dials.util.spotfinder_wrap import spot_wrapper
-    spot_wrapper(params=self.params).display(
+    self.wrapper = spot_wrapper(params=self.params)
+    self.wrapper.display(
       imagesets=self.imagesets, reflections=self.reflections,
       crystals=self.crystals)
 
