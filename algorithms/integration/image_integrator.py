@@ -143,7 +143,7 @@ class Result(object):
 
   '''
 
-  def __init__(self, index, reflections, data=None):
+  def __init__(self, index, reflections):
     '''
     Initialise the data.
 
@@ -154,7 +154,6 @@ class Result(object):
     '''
     self.index = index
     self.reflections = reflections
-    self.data = data
 
 
 class Task(object):
@@ -162,13 +161,22 @@ class Task(object):
   A class to perform a null task.
 
   '''
-  def __init__(self, index, reflections):
+  def __init__(self,
+               index,
+               frames,
+               reflections,
+               experiments,
+               params,
+               executor):
     '''
     Initialise the task
 
     :param index: The index of the processing job
+    :param frames: The frames to process
     :param experiments: The list of experiments
     :param reflections: The list of reflections
+    :param params The processing parameters
+    :param executor: The executor class
 
     '''
     self.index = index
@@ -181,7 +189,9 @@ class Task(object):
     :return: The processed data
 
     '''
-    result = Result(self.index, self.reflections, None)
+
+    # Set the result values
+    result = Result(self.index, self.reflections)
     result.read_time = 0
     result.process_time = 0
     result.total_time = 0
@@ -220,10 +230,41 @@ class ManagerImage(object):
     self.time = TimingInfo()
 
   def initialize(self):
-    pass
+    '''
+    Initialise the processing
+
+    '''
+    from time import time
+
+    # Get the start time
+    start_time = time()
+
+    # Ensure the reflections contain bounding boxes
+    assert "bbox" in self.reflections, "Reflections have no bbox"
+
+    # Parallel reading of HDF5 from the same handle is not allowed. Python
+    # multiprocessing is a bit messed up and used fork on linux so need to
+    # close and reopen file.
+    from dxtbx.imageset import SingleFileReader
+    for exp in self.experiments:
+      if isinstance(exp.imageset.reader(), SingleFileReader):
+        exp.imageset.reader().nullify_format_instance()
+
+    # Set the initialization time
+    self.time.initialize = time() - start_time
 
   def task(self, index):
-    return Task(index, self.reflections)
+    '''
+    Get a task.
+
+    '''
+    return Task(
+        index       = index,
+        frames      = self.manager.frames(index),
+        reflections = self.manager.reflections(index),
+        experiments = self.experiments,
+        params      = self.params,
+        executor    = self.executor)
 
   def tasks(self):
     '''
@@ -234,20 +275,59 @@ class ManagerImage(object):
       yield self.task(i)
 
   def accumulate(self, task):
-    pass
+    '''
+    Accumulate the results.
+
+    '''
+    self.manager.accumulate(result.index, result.reflections)
+    self.time.read += result.read_time
+    self.time.process += result.process_time
+    self.time.total += result.total_time
 
   def finalize(self):
+    '''
+    Finalize the processing and finish.
+
+    '''
+    from time import time
+
+    # Get the start time
+    start_time = time()
+
+    # Check manager is finished
+    assert self.manager.finished(), "Manager is not finished"
+
+    # Update the time and finalized flag
+    self.time.finalize = time() - start_time
     self.finalized = True
 
   def result(self):
+    '''
+    Return the result.
+
+    :return: The result
+
+    '''
     assert self.finalized == True, "Manager is not finalized"
     return self.reflections
 
   def finished(self):
-    return self.finalized
+    '''
+    Return if all tasks have finished.
+
+    :return: True/False all tasks have finished
+
+    '''
+    return self.finalized and self.manager.finished()
 
   def __len__(self):
-    return 1
+    '''
+    Return the number of tasks.
+
+    :return: the number of tasks
+
+    '''
+    return len(self.manager)
 
   def summary(self):
     return ''

@@ -17,6 +17,7 @@ from dials.algorithms.integration.processor import ProcessorSingle2D
 from dials.algorithms.integration.processor import ProcessorStills
 from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
+from dials.algorithms.integration.image_integrator import ImageIntegrator
 from dials import phil
 import libtbx
 
@@ -111,7 +112,7 @@ def generate_phil_scope():
 
       }
 
-      integrator = *auto 3d flat3d 2d single2d stills
+      integrator = *auto 3d flat3d 2d single2d stills fast
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
@@ -1208,6 +1209,14 @@ class IntegratorStills(Integrator):
   FinalizerClass = FinalizerStills
 
 
+class IntegratorFast(ImageIntegrator):
+  '''
+  Fast integrator
+
+  '''
+  pass
+
+
 class IntegratorFactory(object):
   '''
   A factory for creating integrators.
@@ -1274,6 +1283,8 @@ class IntegratorFactory(object):
       IntegratorClass = IntegratorSingle2D
     elif params.integration.integrator == 'stills':
       IntegratorClass = IntegratorStills
+    elif params.integration.integrator == 'fast':
+      IntegratorClass = IntegratorFast
     else:
       raise RuntimeError("Unknown integration type")
 
