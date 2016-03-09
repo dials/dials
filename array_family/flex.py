@@ -585,7 +585,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
           expr.scan))
     return self['partiality']
 
-  def compute_mask(self, experiments, overlaps=None):
+  def compute_mask(self, experiments, image_volume=None, overlaps=None):
     '''
     Apply a mask to the shoeboxes.
 
@@ -600,7 +600,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         expr.beam,
         expr.detector,
         expr.goniometer,
-        expr.scan)
+        expr.scan,
+        image_volume=image_volume)
 
   def iterate_experiments_and_indices(self, experiments):
     '''

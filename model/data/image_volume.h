@@ -14,9 +14,12 @@
 #include <boost/unordered_map.hpp>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/image.h>
+#include <dials/model/data/mask_code.h>
 #include <dials/error.h>
 
 namespace dials { namespace model {
+
+  using dials::model::Valid;
 
   /**
    * A class to hold stuff for an image volume
@@ -103,7 +106,7 @@ namespace dials { namespace model {
       for (std::size_t j = 0; j < data.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < data.accessor()[1]; ++i) {
           data_(k,j,i) = (double)data(j,i);
-          mask_(k,j,i) = mask(j,i);
+          mask_(k,j,i) = (mask(j,i) ? Valid : 0);
         }
       }
     }

@@ -583,7 +583,9 @@ class ImageIntegratorExecutor(object):
       info('')
 
     # Compute the shoebox mask
-    image_volume.compute_mask(self.experiments, self.reflections)
+    reflections.compute_mask(
+      experiments  = experiments,
+      image_volume = image_volume)
 
     # Check for invalid pixels in foreground/background
     #reflections.is_overloaded(self.experiments)

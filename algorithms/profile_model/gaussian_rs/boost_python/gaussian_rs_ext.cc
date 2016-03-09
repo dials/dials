@@ -253,6 +253,12 @@ namespace boost_python {
         arg("s1"),
         arg("frame"),
         arg("panel")))
+      .def("__call__", &MaskCalculatorIface::volume, (
+        arg("volume"),
+        arg("bbox"),
+        arg("s1"),
+        arg("frame"),
+        arg("panel")))
       ;
 
     class_ <PartialityCalculatorIface, boost::noncopyable>(
