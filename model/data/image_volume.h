@@ -12,6 +12,7 @@
 #define DIALS_MODEL_DATA_IMAGE_VOLUME_H
 
 #include <boost/unordered_map.hpp>
+#include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/image.h>
 #include <dials/model/data/mask_code.h>
@@ -19,6 +20,7 @@
 
 namespace dials { namespace model {
 
+  using scitbx::af::int6;
   using dials::model::Valid;
 
   /**
@@ -95,6 +97,115 @@ namespace dials { namespace model {
      */
     af::versa < int, af::c_grid<3> > mask() const {
       return mask_;
+    }
+
+    /**
+     * Trim bbox to fit
+     */
+    int6 trim_bbox(int6 bbox) const {
+      int x0 = std::max(0, bbox[0]);
+      int y0 = std::max(0, bbox[2]);
+      int z0 = std::max(frame0_, bbox[4]);
+      int x1 = std::min((int)grid_[2], bbox[1]);
+      int y1 = std::min((int)grid_[1], bbox[3]);
+      int z1 = std::min(frame1_, bbox[5]);
+      DIALS_ASSERT(z1 > z0);
+      DIALS_ASSERT(y1 > y0);
+      DIALS_ASSERT(x1 > x0);
+      return int6(x0, x1, y0, y1, z0, z1);
+    }
+
+    /**
+     * Extract data with the given bbox
+     */
+    af::versa < double, af::c_grid<3> > extract_data(int6 bbox) const {
+      DIALS_ASSERT(bbox[0] >= 0);
+      DIALS_ASSERT(bbox[2] >= 0);
+      DIALS_ASSERT(bbox[4] >= frame0_);
+      DIALS_ASSERT(bbox[1] <= grid_[2]);
+      DIALS_ASSERT(bbox[3] <= grid_[1]);
+      DIALS_ASSERT(bbox[5] <= frame1_);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+      std::size_t xsize = bbox[1] - bbox[0];
+      std::size_t ysize = bbox[3] - bbox[2];
+      std::size_t zsize = bbox[5] - bbox[4];
+      af::versa< double, af::c_grid<3> > result(
+          af::c_grid<3>(zsize, ysize, xsize));
+      std::size_t i0 = bbox[0];
+      std::size_t j0 = bbox[2];
+      std::size_t k0 = bbox[4] - frame0_;
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            result(k,j,i) = data_(k+k0, j+j0, i+i0);
+          }
+        }
+      }
+      return result;
+    }
+
+    /**
+     * Extract data with the given bbox
+     */
+    af::versa < double, af::c_grid<3> > extract_background(int6 bbox) const {
+      DIALS_ASSERT(bbox[0] >= 0);
+      DIALS_ASSERT(bbox[2] >= 0);
+      DIALS_ASSERT(bbox[4] >= frame0_);
+      DIALS_ASSERT(bbox[1] <= grid_[2]);
+      DIALS_ASSERT(bbox[3] <= grid_[1]);
+      DIALS_ASSERT(bbox[5] <= frame1_);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+      std::size_t xsize = bbox[1] - bbox[0];
+      std::size_t ysize = bbox[3] - bbox[2];
+      std::size_t zsize = bbox[5] - bbox[4];
+      af::versa< double, af::c_grid<3> > result(
+          af::c_grid<3>(zsize, ysize, xsize));
+      std::size_t i0 = bbox[0];
+      std::size_t j0 = bbox[2];
+      std::size_t k0 = bbox[4] - frame0_;
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            result(k,j,i) = background_(k+k0, j+j0, i+i0);
+          }
+        }
+      }
+      return result;
+    }
+
+    /**
+     * Extract data with the given bbox
+     */
+    af::versa < int, af::c_grid<3> > extract_mask(int6 bbox) const {
+      DIALS_ASSERT(bbox[0] >= 0);
+      DIALS_ASSERT(bbox[2] >= 0);
+      DIALS_ASSERT(bbox[4] >= frame0_);
+      DIALS_ASSERT(bbox[1] <= grid_[2]);
+      DIALS_ASSERT(bbox[3] <= grid_[1]);
+      DIALS_ASSERT(bbox[5] <= frame1_);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+      std::size_t xsize = bbox[1] - bbox[0];
+      std::size_t ysize = bbox[3] - bbox[2];
+      std::size_t zsize = bbox[5] - bbox[4];
+      af::versa< int, af::c_grid<3> > result(
+          af::c_grid<3>(zsize, ysize, xsize));
+      std::size_t i0 = bbox[0];
+      std::size_t j0 = bbox[2];
+      std::size_t k0 = bbox[4] - frame0_;
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            result(k,j,i) = mask_(k+k0, j+j0, i+i0);
+          }
+        }
+      }
+      return result;
     }
 
     /**

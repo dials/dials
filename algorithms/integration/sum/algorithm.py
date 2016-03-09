@@ -20,17 +20,21 @@ class IntegrationAlgorithm(object):
     '''
     pass
 
-  def __call__(self, reflections):
+  def __call__(self, reflections, image_volume=None):
     '''Process the reflections.
 
     :param reflections: The reflections to integrate
     :return: The list of integrated reflections
 
     '''
+    from dials.algorithms.integration.sum import sum_image_volume
     from dials.array_family import flex
 
     # Integrate and return the reflections
-    intensity = reflections['shoebox'].summed_intensity()
+    if image_volume is None:
+      intensity = reflections['shoebox'].summed_intensity()
+    else:
+      intensity = sum_image_volume(reflections, image_volume)
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
     success = intensity.observed_success()

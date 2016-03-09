@@ -594,7 +594,8 @@ class ImageIntegratorExecutor(object):
     # Process the data
     #image_volume.compute_background(self.experiments, self.reflections)
     #image_volume.compute_centroid(self.experiments, self.reflections)
-    #image_volume.compute_summed_intensity(self.experiments, self.reflections)
+    reflections.compute_summed_intensity(
+      image_volume=image_volume)
 
     # Compute the number of background/foreground pixels
     #sbox = reflections['shoebox']

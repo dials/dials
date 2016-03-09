@@ -35,6 +35,9 @@ namespace dials { namespace model { namespace boost_python {
       .def("set_image", &ImageVolume::set_image<int>)
       .def("set_image", &ImageVolume::set_image<double>)
       .def("is_consistent", &ImageVolume::is_consistent)
+      .def("extract_data", &ImageVolume::extract_data)
+      .def("extract_background", &ImageVolume::extract_background)
+      .def("extract_mask", &ImageVolume::extract_mask)
       ;
 
     class_<MultiPanelImageVolume>("MultiPanelImageVolume")

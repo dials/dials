@@ -638,14 +638,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     self._centroid_algorithm(experiments).compute_centroid(self)
 
-  def compute_summed_intensity(self):
+  def compute_summed_intensity(self, image_volume=None):
     '''
     Compute intensity via summation integration.
 
     '''
     from dials.algorithms.integration.sum import IntegrationAlgorithm
     algorithm = IntegrationAlgorithm()
-    success = algorithm(self)
+    success = algorithm(self, image_volume=image_volume)
     self.set_flags(~success, self.flags.failed_during_summation)
 
   def compute_fitted_intensity(self, fitter):

@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/integration/sum/summation.h>
+#include <dials/algorithms/integration/sum/sum_image_volume.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 
 using namespace boost::python;
@@ -107,6 +108,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     summation_suite<float>();
     summation_suite<double>();
+
+    def("sum_image_volume", &sum_multi_panel_image_volume);
   }
 
 }}} // namespace = dials::algorithms::boost_python
