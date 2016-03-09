@@ -84,7 +84,7 @@ namespace dials { namespace algorithms {
           indices_[l] = i;
         }
       }
-      DIALS_ASSERT(indices_.size() >= bbox.size());
+      DIALS_ASSERT(indices_.size() == bbox.size());
 
       // Check we didn't make any mistakes
       for (std::size_t i = 0; i < count.size(); ++i) {

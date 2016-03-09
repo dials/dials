@@ -158,8 +158,10 @@ class Result(object):
 
 class Dataset(object):
 
-  def __init__(self, nframes, size):
+  def __init__(self, frames, size):
     from dials.array_family import flex
+    self.frames = frames
+    nframes = frames[1] - frames[0]
     self.data = []
     self.mask = []
     for sz in size:
@@ -250,14 +252,11 @@ class Task(object):
     except Exception:
       frame0, frame1 = (0, len(imageset))
 
-    # Initialise the executor
-    self.executor.initialize()
-
     # Initialise the dataset
     size = []
     for panel in self.experiments[0].detector:
       size.append(panel.get_image_size()[::-1])
-    dataset = Dataset(len(imageset), size)
+    dataset = Dataset((frame0, frame1), size)
 
     # Read all the images into a block of data
     read_time = 0.0
@@ -279,11 +278,11 @@ class Task(object):
 
     # Process the data
     st = time()
-    self.executor.process(dataset)
+    self.executor.process(
+      dataset,
+      self.experiments,
+      self.reflections)
     process_time = time() - st
-
-    # Finalize the executor
-    self.executor.finalize()
 
     # Set the result values
     result = Result(self.index, self.reflections)
@@ -337,6 +336,9 @@ class ManagerImage(object):
 
     # Ensure the reflections contain bounding boxes
     assert "bbox" in self.reflections, "Reflections have no bbox"
+
+    # Split the reflections into partials
+    self._split_reflections()
 
     # Create the reflection manager
     frames = self.experiments[0].scan.get_array_range()
@@ -432,6 +434,24 @@ class ManagerImage(object):
   def summary(self):
     return ''
 
+  def _split_reflections(self):
+    '''
+    Split the reflections into partials or over job boundaries
+
+    '''
+    from logging import info
+
+    # Optionally split the reflection table into partials, otherwise,
+    # split over job boundaries
+    num_full = len(self.reflections)
+    self.reflections.split_partials()
+    num_partial = len(self.reflections)
+    assert num_partial >= num_full, "Invalid number of partials"
+    if (num_partial > num_full):
+      info(' Split %d reflections into %d partial reflections\n' % (
+        num_full,
+        num_partial))
+
 
 class ProcessorImage(ProcessorImageBase):
   ''' Top level processor for per image processing. '''
@@ -446,19 +466,141 @@ class ProcessorImage(ProcessorImageBase):
     super(ProcessorImage, self).__init__(manager)
 
 
+class InitializerRot(object):
+  '''
+  A pre-processing class for oscillation data.
+
+  '''
+
+  def __init__(self,
+               experiments,
+               params):
+    '''
+    Initialise the pre-processor.
+
+    '''
+    self.experiments = experiments
+    self.params = params
+
+  def __call__(self, reflections):
+    '''
+    Do some pre-processing.
+
+    '''
+    from dials.array_family import flex
+    from scitbx.array_family import shared
+
+    # Compute some reflection properties
+    reflections.compute_zeta_multi(self.experiments)
+    reflections.compute_d(self.experiments)
+    reflections.compute_bbox(self.experiments)
+
+    # Filter the reflections by zeta
+    mask = flex.abs(reflections['zeta']) < self.params.filter.min_zeta
+    num_ignore = mask.count(True)
+    reflections.set_flags(mask, reflections.flags.dont_integrate)
+
+    # Filter the reflections by powder ring
+    if self.params.filter.powder_filter is not None:
+      mask = self.params.filter.powder_filter(reflections['d'])
+      reflections.set_flags(mask, reflections.flags.in_powder_ring)
+
+
+class FinalizerRot(object):
+  '''
+  A post-processing class for oscillation data.
+
+  '''
+
+  def __init__(self, experiments, params):
+    '''
+    Initialise the post processor.
+
+    '''
+    self.experiments = experiments
+    self.params = params
+
+  def __call__(self, reflections):
+    '''
+    Do some post processing.
+
+    '''
+
+    # Compute the corrections
+    reflections.compute_corrections(self.experiments)
+
+
 class ImageIntegratorExecutor(object):
 
   def __init__(self):
     pass
 
-  def initialize(self):
-    pass
+  def process(self, dataset, experiments, reflections):
+    from logging import info
+    from dials.algorithms.integration.processor import job
 
-  def process(self, dataset):
-    pass
+    # Compute the partiality
+    reflections.compute_partiality(experiments)
 
-  def finalize(self):
-    pass
+    # Get some info
+    full_value = 0.997
+    fully_recorded = reflections['partiality'] > full_value
+    npart = fully_recorded.count(False)
+    nfull = fully_recorded.count(True)
+    nice = reflections.get_flags(reflections.flags.in_powder_ring).count(True)
+    nint = reflections.get_flags(reflections.flags.dont_integrate).count(False)
+    ntot = len(reflections)
+
+    # Write some output
+    info(" Beginning integration job %d" % job.index)
+    info("")
+    info(" Frames: %d -> %d" % (dataset.frames[0], dataset.frames[1]))
+    info("")
+    info(" Number of reflections")
+    info("  Partial:     %d" % npart)
+    info("  Full:        %d" % nfull)
+    info("  In ice ring: %d" % nice)
+    info("  Integrate:   %d" % nint)
+    info("  Total:       %d" % ntot)
+    info("")
+
+    # Print a histogram of reflections on frames
+    if dataset.frames[1] - dataset.frames[0] > 1:
+      info(' The following histogram shows the number of reflections predicted')
+      info(' to have all or part of their intensity on each frame.')
+      info('')
+      info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
+      info('')
+
+    # Compute the shoebox mask
+    dataset.compute_mask(self.experiments, self.reflections)
+
+    # Check for invalid pixels in foreground/background
+    #reflections.is_overloaded(self.experiments)
+    #reflections.contains_invalid_pixels()
+
+    # Process the data
+    dataset.compute_background(self.experiments, self.reflections)
+    dataset.compute_centroid(self.experiments, self.reflections)
+    dataset.compute_summed_intensity(self.experiments, self.reflections)
+
+    # Compute the number of background/foreground pixels
+    sbox = reflections['shoebox']
+    code1 = MaskCode.Valid
+    code2 = MaskCode.Background | code1
+    code3 = MaskCode.BackgroundUsed | code2
+    code4 = MaskCode.Foreground | code1
+    reflections['num_pixels.valid'] = sbox.count_mask_values(code1)
+    reflections['num_pixels.background'] = sbox.count_mask_values(code2)
+    reflections['num_pixels.background_used'] = sbox.count_mask_values(code3)
+    reflections['num_pixels.foreground'] = sbox.count_mask_values(code4)
+
+    # Print some info
+    fmt = ' Integrated % 5d (sum) + % 5d (prf) / % 5d reflections'
+    nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
+    nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
+    ntot = len(reflections)
+    info(fmt % (nsum, nprf, ntot))
 
 
 class ImageIntegrator(object):
@@ -536,6 +678,12 @@ class ImageIntegrator(object):
     info(heading("Integrating reflections"))
     info("")
 
+    # Initialise the processing
+    initialize = InitializerRot(
+      self.experiments,
+      self.params)
+    initialize(self.reflections)
+
     # Construvt the image integrator processor
     processor = ProcessorImage(
       self.experiments,
@@ -545,6 +693,12 @@ class ImageIntegrator(object):
 
     # Do the processing
     self.reflections, time_info = processor.process()
+
+    # Finalise the processing
+    finalize = FinalizerRot(
+      self.experiments,
+      self.params)
+    finalize(self.reflections)
 
     # Create the integration report
     self.integration_report = IntegrationReport(
