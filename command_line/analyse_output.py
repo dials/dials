@@ -131,7 +131,7 @@ class per_panel_plot(object):
       elif n_cols == 1:
         axes = [[ax] for ax in axes]
       elif n_rows == 1:
-        axes_x = [axes]
+        axes = [axes]
 
       self.gridsize = tuple(
         int(math.ceil(i))
