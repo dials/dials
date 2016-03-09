@@ -46,6 +46,16 @@ namespace dials { namespace model {
         mask_(grid_, 0) {}
 
     /**
+     * Check the arrays all make sense
+     */
+    bool is_consistent() const {
+      return (
+        data_.accessor().all_eq(grid_) &&
+        background_.accessor().all_eq(grid_) &&
+        mask_.accessor().all_eq(grid_));
+    }
+
+    /**
      * @returns the first frame
      */
     int frame0() const {
