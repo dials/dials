@@ -37,7 +37,7 @@ namespace dials { namespace model {
                 std::size_t width)
       : frame0_(frame0),
         frame1_(frame1),
-        grid_(init_grid(frame1, frame0, height, width)),
+        grid_(init_grid(frame0, frame1, height, width)),
         data_(grid_, 0),
         background_(grid_, 0),
         mask_(grid_, 0) {}
@@ -144,7 +144,27 @@ namespace dials { namespace model {
      * @param x The image volume
      */
     void add(const ImageVolume &x) {
+      if (size() > 0) {
+        DIALS_ASSERT(x.frame0() == volume_[0].frame0());
+        DIALS_ASSERT(x.frame1() == volume_[0].frame1());
+      }
       volume_.push_back(x);
+    }
+
+    /**
+     * @returns The first frame
+     */
+    int frame0() const {
+      DIALS_ASSERT(size() > 0);
+      return volume_[0].frame0();
+    }
+
+    /**
+     * @returns The last frame
+     */
+    int frame1() const {
+      DIALS_ASSERT(size() > 0);
+      return volume_[0].frame1();
     }
 
     /**

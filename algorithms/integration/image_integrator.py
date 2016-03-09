@@ -216,6 +216,9 @@ class Task(object):
     :return: The processed data
 
     '''
+    from dials.model.data import make_image
+    from dials.model.data import MultiPanelImageVolume
+    from dials.model.data import ImageVolume
     from dials.algorithms.integration.processor import job
     from time import time
     from logging import info
@@ -257,25 +260,28 @@ class Task(object):
       frame0, frame1 = (0, len(imageset))
 
     # Initialise the dataset
-    size = []
+    image_volume = MultiPanelImageVolume()
     for panel in self.experiments[0].detector:
-      size.append(panel.get_image_size()[::-1])
-    dataset = Dataset((frame0, frame1), size)
+      image_volume.add(ImageVolume(
+        frame0,
+        frame1,
+        panel.get_image_size()[1],
+        panel.get_image_size()[0]))
 
     # Read all the images into a block of data
     read_time = 0.0
     for i in range(len(imageset)):
       st = time()
-      info("Reading image %d" % (self.frames[0] + i))
+      info("Reading image %d" % (frame0 + i))
       image = imageset.get_corrected_data(i)
       mask  = imageset.get_mask(i)
       if self.params.integration.lookup.mask is not None:
         assert len(mask) == len(self.params.lookup.mask), \
           "Mask/Image are incorrect size %d %d" % (
             len(mask),
-            len(self.params.lookup.mask))
-        mask = tuple(m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask))
-      dataset.set_image(i, image, mask)
+            len(self.params.integration.lookup.mask))
+        mask = tuple(m1 & m2 for m1, m2 in zip(self.params.integration.lookup.mask, mask))
+      image_volume.set_image(frame0 + i, make_image(image, mask))
       read_time += time() - st
       del image
       del mask
@@ -283,7 +289,7 @@ class Task(object):
     # Process the data
     st = time()
     self.executor.process(
-      dataset,
+      image_volume,
       self.experiments,
       self.reflections)
     process_time = time() - st
@@ -539,7 +545,7 @@ class ImageIntegratorExecutor(object):
   def __init__(self):
     pass
 
-  def process(self, dataset, experiments, reflections):
+  def process(self, image_volume, experiments, reflections):
     from dials.algorithms.integration.processor import job
     from logging import info
 
@@ -558,7 +564,7 @@ class ImageIntegratorExecutor(object):
     # Write some output
     info(" Beginning integration job %d" % job.index)
     info("")
-    info(" Frames: %d -> %d" % (dataset.frames[0], dataset.frames[1]))
+    info(" Frames: %d -> %d" % (image_volume.frame0(), image_volume.frame1()))
     info("")
     info(" Number of reflections")
     info("  Partial:     %d" % npart)
@@ -569,7 +575,7 @@ class ImageIntegratorExecutor(object):
     info("")
 
     # Print a histogram of reflections on frames
-    if dataset.frames[1] - dataset.frames[0] > 1:
+    if image_volume.frame1() - image_volume.frame0() > 1:
       info(' The following histogram shows the number of reflections predicted')
       info(' to have all or part of their intensity on each frame.')
       info('')
@@ -577,16 +583,16 @@ class ImageIntegratorExecutor(object):
       info('')
 
     # Compute the shoebox mask
-    dataset.compute_mask(self.experiments, self.reflections)
+    image_volume.compute_mask(self.experiments, self.reflections)
 
     # Check for invalid pixels in foreground/background
     #reflections.is_overloaded(self.experiments)
     #reflections.contains_invalid_pixels()
 
     # Process the data
-    #dataset.compute_background(self.experiments, self.reflections)
-    #dataset.compute_centroid(self.experiments, self.reflections)
-    #dataset.compute_summed_intensity(self.experiments, self.reflections)
+    #image_volume.compute_background(self.experiments, self.reflections)
+    #image_volume.compute_centroid(self.experiments, self.reflections)
+    #image_volume.compute_summed_intensity(self.experiments, self.reflections)
 
     # Compute the number of background/foreground pixels
     #sbox = reflections['shoebox']

@@ -37,6 +37,8 @@ namespace dials { namespace model { namespace boost_python {
       ;
 
     class_<MultiPanelImageVolume>("MultiPanelImageVolume")
+      .def("frame0", &MultiPanelImageVolume::frame0)
+      .def("frame1", &MultiPanelImageVolume::frame1)
       .def("add", &MultiPanelImageVolume::add)
       .def("get", &MultiPanelImageVolume::get)
       .def("set_image", &MultiPanelImageVolume::set_image<int>)
