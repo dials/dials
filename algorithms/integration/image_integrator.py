@@ -216,8 +216,12 @@ class Task(object):
     :return: The processed data
 
     '''
+    from dials.algorithms.integration.processor import job
     from time import time
     from logging import info
+
+    # Set the job index
+    job.index = self.index
 
     # Get the start time
     start_time = time()
@@ -536,8 +540,8 @@ class ImageIntegratorExecutor(object):
     pass
 
   def process(self, dataset, experiments, reflections):
-    from logging import info
     from dials.algorithms.integration.processor import job
+    from logging import info
 
     # Compute the partiality
     reflections.compute_partiality(experiments)
@@ -580,20 +584,20 @@ class ImageIntegratorExecutor(object):
     #reflections.contains_invalid_pixels()
 
     # Process the data
-    dataset.compute_background(self.experiments, self.reflections)
-    dataset.compute_centroid(self.experiments, self.reflections)
-    dataset.compute_summed_intensity(self.experiments, self.reflections)
+    #dataset.compute_background(self.experiments, self.reflections)
+    #dataset.compute_centroid(self.experiments, self.reflections)
+    #dataset.compute_summed_intensity(self.experiments, self.reflections)
 
     # Compute the number of background/foreground pixels
-    sbox = reflections['shoebox']
-    code1 = MaskCode.Valid
-    code2 = MaskCode.Background | code1
-    code3 = MaskCode.BackgroundUsed | code2
-    code4 = MaskCode.Foreground | code1
-    reflections['num_pixels.valid'] = sbox.count_mask_values(code1)
-    reflections['num_pixels.background'] = sbox.count_mask_values(code2)
-    reflections['num_pixels.background_used'] = sbox.count_mask_values(code3)
-    reflections['num_pixels.foreground'] = sbox.count_mask_values(code4)
+    #sbox = reflections['shoebox']
+    #code1 = MaskCode.Valid
+    #code2 = MaskCode.Background | code1
+    #code3 = MaskCode.BackgroundUsed | code2
+    #code4 = MaskCode.Foreground | code1
+    #reflections['num_pixels.valid'] = sbox.count_mask_values(code1)
+    #reflections['num_pixels.background'] = sbox.count_mask_values(code2)
+    #reflections['num_pixels.background_used'] = sbox.count_mask_values(code3)
+    #reflections['num_pixels.foreground'] = sbox.count_mask_values(code4)
 
     # Print some info
     fmt = ' Integrated % 5d (sum) + % 5d (prf) / % 5d reflections'
