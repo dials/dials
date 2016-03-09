@@ -156,6 +156,27 @@ class Result(object):
     self.reflections = reflections
 
 
+class Dataset(object):
+
+  def __init__(self, nframes, size):
+    from dials.array_family import flex
+    self.data = []
+    self.mask = []
+    for sz in size:
+      self.data.append(flex.double(flex.grid(nframes, sz[0], sz[1])))
+      self.mask.append(flex.bool(flex.grid(nframes, sz[0], sz[1])))
+
+  def set_image(self, index, data, mask):
+    from dials.array_family import flex
+    for d1, d2 in zip(self.data, data):
+      h,w = d2.all()
+      d2.reshape(flex.grid(1,h,w))
+      d1[index:index+1,:,:] = d2.as_double()
+    for m1, m2 in zip(self.mask, mask):
+      h,w = m2.all()
+      m2.reshape(flex.grid(1,h,w))
+      m1[index:index+1,:,:] = m2
+
 class Task(object):
   '''
   A class to perform a null task.
@@ -180,7 +201,11 @@ class Task(object):
 
     '''
     self.index = index
+    self.frames = frames
+    self.experiments = experiments
     self.reflections = reflections
+    self.params = params
+    self.executor = executor
 
   def __call__(self):
     '''
@@ -189,12 +214,82 @@ class Task(object):
     :return: The processed data
 
     '''
+    from time import time
+    from logging import info
+
+    # Get the start time
+    start_time = time()
+
+    # Check all reflections have same imageset and get it
+    exp_id = list(set(self.reflections['id']))
+    imageset = self.experiments[exp_id[0]].imageset
+    for i in exp_id[1:]:
+      assert self.experiments[i].imageset == imageset, "Task can only handle 1 imageset"
+
+    # Get the sub imageset
+    frame00, frame01 = self.frames
+    try:
+      frame10, frame11 = imageset.get_array_range()
+    except Exception:
+      frame10, frame11 = (0, len(imageset))
+    try:
+      assert frame00 < frame01
+      assert frame10 < frame11
+      assert frame00 >= frame10
+      assert frame01 <= frame11
+      index0 = frame00 - frame10
+      index1 = index0 + (frame01 - frame00)
+      assert index0 < index1
+      assert index0 >= 0
+      assert index1 <= len(imageset)
+      imageset = imageset[index0:index1]
+    except Exception:
+      raise RuntimeError('Programmer Error: bad array range')
+    try:
+      frame0, frame1 = imageset.get_array_range()
+    except Exception:
+      frame0, frame1 = (0, len(imageset))
+
+    # Initialise the executor
+    self.executor.initialize()
+
+    # Initialise the dataset
+    size = []
+    for panel in self.experiments[0].detector:
+      size.append(panel.get_image_size()[::-1])
+    dataset = Dataset(len(imageset), size)
+
+    # Read all the images into a block of data
+    read_time = 0.0
+    for i in range(len(imageset)):
+      st = time()
+      info("Reading image %d" % (self.frames[0] + i))
+      image = imageset.get_corrected_data(i)
+      mask  = imageset.get_mask(i)
+      if self.params.integration.lookup.mask is not None:
+        assert len(mask) == len(self.params.lookup.mask), \
+          "Mask/Image are incorrect size %d %d" % (
+            len(mask),
+            len(self.params.lookup.mask))
+        mask = tuple(m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask))
+      dataset.set_image(i, image, mask)
+      read_time += time() - st
+      del image
+      del mask
+
+    # Process the data
+    st = time()
+    self.executor.process(dataset)
+    process_time = time() - st
+
+    # Finalize the executor
+    self.executor.finalize()
 
     # Set the result values
     result = Result(self.index, self.reflections)
-    result.read_time = 0
-    result.process_time = 0
-    result.total_time = 0
+    result.read_time = read_time
+    result.process_time = process_time
+    result.total_time = time() - start_time
     return result
 
 
@@ -234,6 +329,7 @@ class ManagerImage(object):
     Initialise the processing
 
     '''
+    from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
     from time import time
 
     # Get the start time
@@ -241,6 +337,10 @@ class ManagerImage(object):
 
     # Ensure the reflections contain bounding boxes
     assert "bbox" in self.reflections, "Reflections have no bbox"
+
+    # Create the reflection manager
+    frames = self.experiments[0].scan.get_array_range()
+    self.manager = ReflectionManagerPerImage(frames, self.reflections)
 
     # Parallel reading of HDF5 from the same handle is not allowed. Python
     # multiprocessing is a bit messed up and used fork on linux so need to
@@ -261,7 +361,7 @@ class ManagerImage(object):
     return Task(
         index       = index,
         frames      = self.manager.frames(index),
-        reflections = self.manager.reflections(index),
+        reflections = self.manager.split(index),
         experiments = self.experiments,
         params      = self.params,
         executor    = self.executor)
@@ -274,7 +374,7 @@ class ManagerImage(object):
     for i in range(len(self)):
       yield self.task(i)
 
-  def accumulate(self, task):
+  def accumulate(self, result):
     '''
     Accumulate the results.
 
@@ -349,6 +449,15 @@ class ProcessorImage(ProcessorImageBase):
 class ImageIntegratorExecutor(object):
 
   def __init__(self):
+    pass
+
+  def initialize(self):
+    pass
+
+  def process(self, dataset):
+    pass
+
+  def finalize(self):
     pass
 
 
