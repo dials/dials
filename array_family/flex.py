@@ -331,13 +331,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param reverse: Reverse the sort order
 
     '''
-    import __builtin__
-    column = self[name]
-    indices = __builtin__.sorted(
-      range(len(self)),
-      key=lambda x: column[x],
-      reverse=reverse)
-    self.reorder(flex.size_t(indices))
+    perm = flex.sort_permutation(self[name], reverse=reverse)
+    self.reorder(perm)
 
   def match(self, other):
     '''
