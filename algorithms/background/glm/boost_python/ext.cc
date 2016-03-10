@@ -47,7 +47,8 @@ namespace dials { namespace algorithms { namespace background {
               arg("model"),
               arg("tuning_constant"),
               arg("max_iter"))))
-      .def("__call__", &Creator::operator())
+      .def("__call__", &Creator::shoebox)
+      .def("__call__", &Creator::volume)
       ;
 
     scope in_creator = creator;

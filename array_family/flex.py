@@ -619,14 +619,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     for experiment, indices in zip(experiments, index_list):
       yield experiment, indices
 
-  def compute_background(self, experiments):
+  def compute_background(self, experiments, image_volume=None):
     '''
     Helper function to compute the background.
 
     :param experiments: The list of experiments
 
     '''
-    success = self._background_algorithm(experiments).compute_background(self)
+    success = self._background_algorithm(experiments).compute_background(
+      self, image_volume)
     self.set_flags(~success, self.flags.failed_during_background_modelling)
 
   def compute_centroid(self, experiments, image_volume=None):

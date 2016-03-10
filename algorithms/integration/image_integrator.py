@@ -591,16 +591,18 @@ class ImageIntegratorExecutor(object):
     #reflections.is_overloaded(self.experiments)
     #reflections.contains_invalid_pixels()
 
-    # Process the data
-    #image_volume.compute_background(self.experiments, self.reflections)
-
-    # Compute the centroid
-    reflections.compute_centroid(
+    # Compute the background
+    reflections.compute_background(
       experiments  = experiments,
       image_volume = image_volume)
 
     # Compute the summed intensity
     reflections.compute_summed_intensity(
+      image_volume = image_volume)
+
+    # Compute the centroid
+    reflections.compute_centroid(
+      experiments  = experiments,
       image_volume = image_volume)
 
     # Compute the number of background/foreground pixels
