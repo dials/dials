@@ -639,7 +639,7 @@ class ImageIntegrator(object):
 
     '''
     # Check all reflections have same imageset and get it
-    imageset = sexperiments[0].imageset
+    imageset = experiments[0].imageset
     for expr in experiments:
       assert expr.imageset == imageset, "All experiments must share and imageset"
 
