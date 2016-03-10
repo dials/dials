@@ -92,9 +92,13 @@ namespace dials { namespace model { namespace boost_python {
       // Set some flags
       if (num5 > 0) {
         flags[i] |= BackgroundIncludesBadPixels;
+      } else {
+        flags[i] &= ~BackgroundIncludesBadPixels;
       }
       if (num6 > 0) {
         flags[i] |= ForegroundIncludesBadPixels;
+      } else {
+        flags[i] &= ~ForegroundIncludesBadPixels;
       }
 
       // Compute the mean (modelled) background and dispersion in background

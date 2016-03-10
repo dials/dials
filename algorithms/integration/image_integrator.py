@@ -272,7 +272,6 @@ class Task(object):
     read_time = 0.0
     for i in range(len(imageset)):
       st = time()
-      info("Reading image %d" % (frame0 + i))
       image = imageset.get_corrected_data(i)
       mask  = imageset.get_mask(i)
       if self.params.integration.lookup.mask is not None:
@@ -562,6 +561,7 @@ class ImageIntegratorExecutor(object):
     ntot = len(reflections)
 
     # Write some output
+    info("")
     info(" Beginning integration job %d" % job.index)
     info("")
     info(" Frames: %d -> %d" % (image_volume.frame0(), image_volume.frame1()))
@@ -604,6 +604,13 @@ class ImageIntegratorExecutor(object):
     # Get some reflection info
     image_volume.update_reflection_info(reflections)
 
+    # from matplotlib import pylab
+    # from dials.array_family import flex
+    # image = image_volume.get(0).mask()[0:1,:,:]
+    # image.reshape(flex.grid(image.all()[1], image.all()[2]))
+    # pylab.imshow(image.as_numpy_array(), interpolation='none')
+    # pylab.show()
+
     # Print some info
     fmt = ' Integrated % 5d (sum) + % 5d (prf) / % 5d reflections'
     nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
@@ -631,6 +638,10 @@ class ImageIntegrator(object):
     :param params: The parameters to use
 
     '''
+    # Check all reflections have same imageset and get it
+    imageset = sexperiments[0].imageset
+    for expr in experiments:
+      assert expr.imageset == imageset, "All experiments must share and imageset"
 
     # Save some stuff
     self.experiments = experiments
