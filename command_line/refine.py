@@ -110,7 +110,7 @@ phil_scope = parse('''
 phil_overrides = parse('''
   refinement
   {
-    verbosity = 1
+    verbosity = 2
   }
 ''')
 
@@ -222,8 +222,7 @@ class Script(object):
     self.check_input(reflections)
 
     # Configure the logging
-    log.config(params.refinement.verbosity,
-      info=params.output.log,
+    log.config(info=params.output.log,
       debug=params.output.debug_log)
     from dials.util.version import dials_version
     info(dials_version())

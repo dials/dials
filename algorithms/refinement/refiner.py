@@ -1542,14 +1542,14 @@ class Refiner(object):
     if len(rows) > 0:
       truncated = False
       max_rows = 100
-      if self._verbosity < 2 and len(rows) > max_rows:
+      if self._verbosity < 3 and len(rows) > max_rows:
         rows = rows[0:max_rows]
         truncated = True
       st = simple_table(rows, header)
       info(st.format())
       if truncated:
         info("Table truncated to show the first %d experiments only", max_rows)
-        info("Re-run with verbosity >= 2 to show all experiments")
+        info("Re-run with verbosity >= 3 to show all experiments")
 
     return
 
@@ -1619,7 +1619,7 @@ class Refiner(object):
     # Do refinement and return history #
     ####################################
 
-    if self._verbosity > 0:
+    if self._verbosity > 1:
       debug("\nExperimental models before refinement:")
       for i, beam in enumerate(self._experiments.beams()):
         debug(ordinal_number(i) + ' ' + str(beam))
@@ -1671,7 +1671,7 @@ class Refiner(object):
         self._pred_param.set_model_state_uncertainties(
           u_cov_list, b_cov_list, iexp)
 
-    if self._verbosity > 0:
+    if self._verbosity > 1:
       debug("\nExperimental models after refinement:")
       for i, beam in enumerate(self._experiments.beams()):
         debug(ordinal_number(i) + ' ' + str(beam))

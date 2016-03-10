@@ -214,7 +214,7 @@ class ReflectionManager(object):
     if self._verbosity > 0: debug("Finalising the Reflection Manager")
 
     # print summary before outlier rejection
-    if self._verbosity > 0: self.print_stats_on_matches()
+    if self._verbosity > 1: self.print_stats_on_matches()
 
     # reset centroid_outlier flags in both the working reflections and the
     # original indexed reflections
@@ -249,7 +249,7 @@ class ReflectionManager(object):
       debug("%d reflections remain in the manager", len(self._reflections))
 
     # print summary after outlier rejection
-    if rejection_occurred and self._verbosity > 0: self.print_stats_on_matches()
+    if rejection_occurred and self._verbosity > 1: self.print_stats_on_matches()
 
     # form working and free subsets
     self._create_working_set()
@@ -432,7 +432,7 @@ class ReflectionManager(object):
 
     # sorting is expensive and the following table is only of interest in
     # special cases, so return now if verbosity is not high
-    if self._verbosity < 2: return
+    if self._verbosity < 3: return
 
     if nref < 20:
       debug("Fewer than 20 reflections matched!")
@@ -554,7 +554,7 @@ class StillsReflectionManager(ReflectionManager):
 
     # sorting is expensive and the following table is only of interest in
     # special cases, so return now if verbosity is not high
-    if self._verbosity < 2: return
+    if self._verbosity < 3: return
 
     if nref < 20:
       debug("Fewer than 20 reflections matched!")
