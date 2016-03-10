@@ -183,9 +183,6 @@ class ModelParameterisation(object):
     If only_free, the names of fixed parameters are filtered from the
     returned list. Otherwise all parameter names are returned"""
 
-    # FIXME combine functionality with get_param_vals by returning a named,
-    # ordered list?
-
     if only_free:
       return [x.name for x in self._param if not x.get_fixed()]
 
@@ -334,8 +331,6 @@ class ModelParameterisation(object):
       state_cov = jacobian_t.matrix_transpose_multiply(tmp).as_scitbx_matrix()
       state_covs.append(state_cov)
 
-    #FIXME don't have anywhere to put this information yet! Probably need to
-    #assign it to the model somehow
     return state_covs
 
   #@abc.abstractmethod
