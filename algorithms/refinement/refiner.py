@@ -1538,7 +1538,7 @@ class Refiner(object):
 
     if len(rows) > 0:
       truncated = False
-      max_rows = 20
+      max_rows = 100
       if self._verbosity < 2 and len(rows) > max_rows:
         rows = rows[0:max_rows]
         truncated = True
