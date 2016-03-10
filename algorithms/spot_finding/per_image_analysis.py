@@ -544,7 +544,7 @@ def ice_rings_selection(reflections):
   width = 0.06
 
   ice_filter = filtering.PowderRingFilter(
-    unit_cell, space_group, 0.1, width)
+    unit_cell, space_group, flex.min(d_spacings)-width, width)
 
   ice_sel = ice_filter(d_spacings)
   return ice_sel
