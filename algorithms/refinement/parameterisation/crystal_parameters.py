@@ -162,17 +162,4 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
 
     self._model.set_B_covariance(var_cov)
 
-    # write errors to the debug log
-    a, b, c, alpha, beta, gamma = self._model.get_unit_cell().parameters()
-    sd_a, sd_b, sd_c, sd_alpha, sd_beta, sd_gamma = \
-      self._model.get_cell_parameter_sd()
-    debug("Crystal in experiment with id %s refined cell parameters and estimated standard deviations:" %
-      ",".join(map(str, self.get_experiment_ids())))
-    debug(" a: {0:f} (+/- {1:f}) Angstroms".format(a, sd_a))
-    debug(" b: {0:f} (+/- {1:f}) Angstroms".format(b, sd_b))
-    debug(" c: {0:f} (+/- {1:f}) Angstroms".format(c, sd_c))
-    debug(" alpha: {0:f} (+/- {1:f}) degrees".format(alpha, sd_alpha))
-    debug(" beta:  {0:f} (+/- {1:f}) degrees".format(beta, sd_beta))
-    debug(" gamma: {0:f} (+/- {1:f}) degrees".format(gamma, sd_gamma))
-
     return
