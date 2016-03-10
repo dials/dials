@@ -629,14 +629,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     success = self._background_algorithm(experiments).compute_background(self)
     self.set_flags(~success, self.flags.failed_during_background_modelling)
 
-  def compute_centroid(self, experiments):
+  def compute_centroid(self, experiments, image_volume=None):
     '''
     Helper function to compute the centroid.
 
     :param experiments: The list of experiments
 
     '''
-    self._centroid_algorithm(experiments).compute_centroid(self)
+    self._centroid_algorithm(experiments).compute_centroid(
+      self, image_volume=image_volume)
 
   def compute_summed_intensity(self, image_volume=None):
     '''

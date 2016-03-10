@@ -593,9 +593,15 @@ class ImageIntegratorExecutor(object):
 
     # Process the data
     #image_volume.compute_background(self.experiments, self.reflections)
-    #image_volume.compute_centroid(self.experiments, self.reflections)
+
+    # Compute the centroid
+    reflections.compute_centroid(
+      experiments  = experiments,
+      image_volume = image_volume)
+
+    # Compute the summed intensity
     reflections.compute_summed_intensity(
-      image_volume=image_volume)
+      image_volume = image_volume)
 
     # Compute the number of background/foreground pixels
     #sbox = reflections['shoebox']
@@ -723,3 +729,6 @@ class ImageIntegrator(object):
     # Print the time info
     info(str(time_info))
     info("")
+
+    # Return the reflections
+    return self.reflections
