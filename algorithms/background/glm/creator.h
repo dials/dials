@@ -123,7 +123,7 @@ namespace dials { namespace algorithms {
               mask.ref());
 
           // Need to set the background in volume
-          //v.set_background(bbox, bgrd.const_ref());
+          v.set_background(b, bgrd.const_ref());
         } catch(scitbx::error) {
           success[i] = false;
         } catch(dials::error) {

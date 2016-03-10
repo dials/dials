@@ -209,6 +209,99 @@ namespace dials { namespace model {
     }
 
     /**
+     * Set data with the given bbox
+     */
+    void set_data(int6 bbox, const af::const_ref < double, af::c_grid<3> > &data) {
+      DIALS_ASSERT(bbox[0] >= 0);
+      DIALS_ASSERT(bbox[2] >= 0);
+      DIALS_ASSERT(bbox[4] >= frame0_);
+      DIALS_ASSERT(bbox[1] <= grid_[2]);
+      DIALS_ASSERT(bbox[3] <= grid_[1]);
+      DIALS_ASSERT(bbox[5] <= frame1_);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+      std::size_t xsize = bbox[1] - bbox[0];
+      std::size_t ysize = bbox[3] - bbox[2];
+      std::size_t zsize = bbox[5] - bbox[4];
+      DIALS_ASSERT(xsize == data.accessor()[2]);
+      DIALS_ASSERT(ysize == data.accessor()[1]);
+      DIALS_ASSERT(zsize == data.accessor()[0]);
+      std::size_t i0 = bbox[0];
+      std::size_t j0 = bbox[2];
+      std::size_t k0 = bbox[4] - frame0_;
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            data_(k+k0, j+j0, i+i0) = data(k,j,i);
+          }
+        }
+      }
+    }
+
+    /**
+     * Set data with the given bbox
+     */
+    void set_background(int6 bbox, const af::const_ref < double, af::c_grid<3> > &background) {
+      DIALS_ASSERT(bbox[0] >= 0);
+      DIALS_ASSERT(bbox[2] >= 0);
+      DIALS_ASSERT(bbox[4] >= frame0_);
+      DIALS_ASSERT(bbox[1] <= grid_[2]);
+      DIALS_ASSERT(bbox[3] <= grid_[1]);
+      DIALS_ASSERT(bbox[5] <= frame1_);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+      std::size_t xsize = bbox[1] - bbox[0];
+      std::size_t ysize = bbox[3] - bbox[2];
+      std::size_t zsize = bbox[5] - bbox[4];
+      DIALS_ASSERT(xsize == background.accessor()[2]);
+      DIALS_ASSERT(ysize == background.accessor()[1]);
+      DIALS_ASSERT(zsize == background.accessor()[0]);
+      std::size_t i0 = bbox[0];
+      std::size_t j0 = bbox[2];
+      std::size_t k0 = bbox[4] - frame0_;
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            background_(k+k0, j+j0, i+i0) = background(k,j,i);
+          }
+        }
+      }
+    }
+
+    /**
+     * Set data with the given bbox
+     */
+    void set_mask(int6 bbox, const af::const_ref < int, af::c_grid<3> > &mask) {
+      DIALS_ASSERT(bbox[0] >= 0);
+      DIALS_ASSERT(bbox[2] >= 0);
+      DIALS_ASSERT(bbox[4] >= frame0_);
+      DIALS_ASSERT(bbox[1] <= grid_[2]);
+      DIALS_ASSERT(bbox[3] <= grid_[1]);
+      DIALS_ASSERT(bbox[5] <= frame1_);
+      DIALS_ASSERT(bbox[1] > bbox[0]);
+      DIALS_ASSERT(bbox[3] > bbox[2]);
+      DIALS_ASSERT(bbox[5] > bbox[4]);
+      std::size_t xsize = bbox[1] - bbox[0];
+      std::size_t ysize = bbox[3] - bbox[2];
+      std::size_t zsize = bbox[5] - bbox[4];
+      DIALS_ASSERT(xsize == mask.accessor()[2]);
+      DIALS_ASSERT(ysize == mask.accessor()[1]);
+      DIALS_ASSERT(zsize == mask.accessor()[0]);
+      std::size_t i0 = bbox[0];
+      std::size_t j0 = bbox[2];
+      std::size_t k0 = bbox[4] - frame0_;
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            mask_(k+k0, j+j0, i+i0) = mask(k,j,i);
+          }
+        }
+      }
+    }
+
+    /**
      * Set the image data
      * @param frame The frame number
      * @param data The data array
