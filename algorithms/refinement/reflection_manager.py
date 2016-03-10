@@ -160,7 +160,6 @@ class ReflectionManager(object):
                      verbosity=0):
 
     # set verbosity
-    # FIXME verbosity is deprecated now we use logging
     self._verbosity = verbosity
 
     # keep track of models
@@ -428,6 +427,10 @@ class ReflectionManager(object):
     info(st.format())
     info("")
 
+    # sorting is expensive and the following table is only of interest in
+    # special cases, so return now if verbosity is not high
+    if self._verbosity < 2: return
+
     if nref < 20:
       debug("Fewer than 20 reflections matched!")
       return
@@ -545,6 +548,10 @@ class StillsReflectionManager(ReflectionManager):
     st = simple_table(rows, header)
     info(st.format())
     info("")
+
+    # sorting is expensive and the following table is only of interest in
+    # special cases, so return now if verbosity is not high
+    if self._verbosity < 2: return
 
     if nref < 20:
       debug("Fewer than 20 reflections matched!")
