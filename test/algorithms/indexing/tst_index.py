@@ -147,8 +147,9 @@ def exercise_1():
   extra_args = ["n_macro_cycles=3",
                 "discover_better_experimental_model=True",
                 "bin_size_fraction=0.25",
-                "outlier.algorithm=tukey",
-                "debug=True"]
+                "scan_range=1,20",
+                "scan_range=250,270",
+                "scan_range=520,540"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.05, 0.04, 0.0004)
@@ -170,7 +171,6 @@ def exercise_2():
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=3",
                 "bin_size_fraction=0.25",
-                "outlier.algorithm=tukey",
                 "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
@@ -192,7 +192,6 @@ def exercise_3():
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=3",
-                "outlier.algorithm=tukey",
                 "bin_size_fraction=0.25",
                 "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
@@ -226,7 +225,6 @@ def exercise_4():
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=3",
                 "reciprocal_space_grid.d_min=4",
-                "outlier.algorithm=tukey",
                 "filter_overlaps=False", # P1_X6_1.pickle does not contain bbox!
                 "scan_range=0,50",
                 "scan_range=450,500",
@@ -360,7 +358,9 @@ def exercise_9():
   extra_args = ["n_macro_cycles=2",
                 "indexing.method=fft1d",
                 "bin_size_fraction=0.25",
-                ]
+                "scan_range=1,20",
+                "scan_range=250,270",
+                "scan_range=520,540"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.06, 0.05, 0.0005)
@@ -551,7 +551,7 @@ def exercise_15():
   pickle_path = os.path.join(data_dir, "strong.pickle")
   sweep_path = os.path.join(data_dir, "datablock_import.json")
   extra_args = ["max_try=10", "reflections_per_degree=50",
-                "outlier.algorithm=tukey", "known_symmetry.space_group=R3",
+                "known_symmetry.space_group=R3",
                 "n_macro_cycles=3"]
   expected_unit_cell = uctbx.unit_cell((48.397, 48.397, 284.767, 90, 90, 120))
   expected_rmsds = (0.06, 0.08, 0.22)
