@@ -214,7 +214,7 @@ class ReflectionManager(object):
     debug("Finalising the Reflection Manager")
 
     # print summary before outlier rejection
-    self.print_stats_on_matches()
+    if self._verbosity > 0: self.print_stats_on_matches()
 
     # reset centroid_outlier flags in both the working reflections and the
     # original indexed reflections
@@ -247,7 +247,7 @@ class ReflectionManager(object):
     debug("%d reflections remain in the manager", len(self._reflections))
 
     # print summary after outlier rejection
-    if rejection_occurred: self.print_stats_on_matches()
+    if rejection_occurred and self._verbosity > 0: self.print_stats_on_matches()
 
     # form working and free subsets
     self._create_working_set()
