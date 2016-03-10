@@ -11,12 +11,122 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <scitbx/array_family/flex_types.h>
+#include <dials/array_family/reflection_table.h>
 #include <dials/model/data/image_volume.h>
+#include <dials/model/data/mask_code.h>
 #include <dials/config.h>
 
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
+  using af::BackgroundIncludesBadPixels;
+  using af::ForegroundIncludesBadPixels;
+
+  static
+  void MultiPanelImageVolume_update_reflection_info(
+      MultiPanelImageVolume image_volume,
+      af::reflection_table reflections) {
+
+    // Check the input
+    DIALS_ASSERT(reflections.contains("bbox"));
+    DIALS_ASSERT(reflections.contains("panel"));
+
+    // Get some reflection table columns
+    af::const_ref<int6> bbox = reflections["bbox"];
+    af::const_ref<std::size_t> panel = reflections["panel"];
+
+    // Get the flags array
+    af::ref<std::size_t> flags = reflections["flags"];
+
+    // Set some information about number of pixels
+    af::ref<std::size_t> num_valid   = reflections["num_pixsls.valid"];
+    af::ref<std::size_t> num_bg      = reflections["num_pixels.background"];
+    af::ref<std::size_t> num_bg_used = reflections["num_pixels.background_used"];
+    af::ref<std::size_t> num_fg      = reflections["num_pixels.foreground"];
+
+    // Set some background information
+    af::ref<double> bg_mean = reflections["background.mean"];
+    af::ref<double> bg_disp = reflections["background.dispersion"];
+
+    // The mask codes
+    int mask_code1 = Valid;
+    int mask_code2 = Valid | Background;
+    int mask_code3 = Valid | Background | BackgroundUsed;
+    int mask_code4 = Valid | Foreground;
+
+    // Loop through each reflection
+    for (std::size_t i = 0; i < panel.size(); ++i) {
+
+      // Get the image volume
+      ImageVolume v = image_volume.get(panel[i]);
+      DIALS_ASSERT(v.is_consistent());
+
+      // Trim the bounding box
+      int6 b = v.trim_bbox(bbox[i]);
+
+      // Get the data arrays
+      af::const_ref < double, af::c_grid<3> > data = v.extract_data(b).const_ref();
+      af::const_ref < double, af::c_grid<3> > bgrd = v.extract_background(b).const_ref();
+      af::const_ref < int, af::c_grid<3> >    mask = v.extract_mask(b).const_ref();
+
+      // Compute numbers of pixels
+      std::size_t num1 = 0;
+      std::size_t num2 = 0;
+      std::size_t num3 = 0;
+      std::size_t num4 = 0;
+      std::size_t num5 = 0;
+      std::size_t num6 = 0;
+      for (std::size_t j = 0; j < mask.size(); ++j) {
+        if ((mask[j] & mask_code1) == mask_code1) num1++;
+        if ((mask[j] & mask_code2) == mask_code2) num2++;
+        if ((mask[j] & mask_code3) == mask_code3) num3++;
+        if ((mask[j] & mask_code4) == mask_code4) num4++;
+        if ((mask[j] & Background) && !(mask[j] & Valid)) num5++;
+        if ((mask[j] & Foreground) && !(mask[j] & Valid)) num6++;
+      }
+      num_valid[i]   = num1;
+      num_bg[i]      = num2;
+      num_bg_used[i] = num3;
+      num_fg[i]      = num4;
+
+      // Set some flags
+      if (num5 > 0) {
+        flags[i] |= BackgroundIncludesBadPixels;
+      }
+      if (num6 > 0) {
+        flags[i] |= ForegroundIncludesBadPixels;
+      }
+
+      // Compute the mean (modelled) background and dispersion in background
+      double fg_sum = 0.0;
+      double fg_cnt = 0.0;
+      double bg_sum = 0.0;
+      double bg_cnt = 0.0;
+      double bg_sum_sq = 0.0;
+      for (std::size_t j = 0; j < mask.size(); ++j) {
+        if (mask[j] & Foreground) {
+          fg_sum += bgrd[j];
+          fg_cnt += 1;
+        }
+        if ((mask[j] | mask_code2) == mask_code2) {
+          bg_sum += data[j];
+          bg_sum_sq += data[j] * data[j];
+          bg_cnt += 1;
+        }
+      }
+      if (fg_cnt > 0) {
+        bg_mean[i] = fg_sum / fg_cnt;
+      } else {
+        bg_mean[i] = 0.0;
+      }
+      if (bg_cnt > 0 && bg_sum > 0) {
+        bg_disp[i] = bg_sum_sq / bg_sum - bg_sum / bg_cnt;
+      } else {
+        bg_disp[i] = 0.0;
+      }
+    }
+
+  }
 
   void export_image_volume()
   {
@@ -47,9 +157,9 @@ namespace dials { namespace model { namespace boost_python {
       .def("get", &MultiPanelImageVolume::get)
       .def("set_image", &MultiPanelImageVolume::set_image<int>)
       .def("set_image", &MultiPanelImageVolume::set_image<double>)
+      .def("update_reflection_info", &MultiPanelImageVolume_update_reflection_info)
       .def("__len__", &MultiPanelImageVolume::size)
       ;
   }
 
 }}} // namespace dials::model::boost_python
-

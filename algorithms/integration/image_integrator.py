@@ -587,10 +587,6 @@ class ImageIntegratorExecutor(object):
       experiments  = experiments,
       image_volume = image_volume)
 
-    # Check for invalid pixels in foreground/background
-    #reflections.is_overloaded(self.experiments)
-    #reflections.contains_invalid_pixels()
-
     # Compute the background
     reflections.compute_background(
       experiments  = experiments,
@@ -605,16 +601,8 @@ class ImageIntegratorExecutor(object):
       experiments  = experiments,
       image_volume = image_volume)
 
-    # Compute the number of background/foreground pixels
-    #sbox = reflections['shoebox']
-    #code1 = MaskCode.Valid
-    #code2 = MaskCode.Background | code1
-    #code3 = MaskCode.BackgroundUsed | code2
-    #code4 = MaskCode.Foreground | code1
-    #reflections['num_pixels.valid'] = sbox.count_mask_values(code1)
-    #reflections['num_pixels.background'] = sbox.count_mask_values(code2)
-    #reflections['num_pixels.background_used'] = sbox.count_mask_values(code3)
-    #reflections['num_pixels.foreground'] = sbox.count_mask_values(code4)
+    # Get some reflection info
+    image_volume.update_reflection_info(reflections)
 
     # Print some info
     fmt = ' Integrated % 5d (sum) + % 5d (prf) / % 5d reflections'
