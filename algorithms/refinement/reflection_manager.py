@@ -211,7 +211,7 @@ class ReflectionManager(object):
     """Complete initialisation by performing outlier rejection and any
     requested subsetting. This function to be called by a Target object"""
 
-    debug("Finalising the Reflection Manager")
+    if self._verbosity > 0: debug("Finalising the Reflection Manager")
 
     # print summary before outlier rejection
     if self._verbosity > 0: self.print_stats_on_matches()
@@ -234,17 +234,19 @@ class ReflectionManager(object):
     ioutliers = self._reflections['iobs'].select(ioutliers)
     self._indexed.set_flags(ioutliers, self._indexed.flags.centroid_outlier)
 
+    if self._verbosity > 0:
+      msg = "Removing reflections not matched to predictions"
+      if rejection_occurred: msg += " or marked as outliers"
+      debug(msg)
+
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
-    msg = "Removing reflections not matched to predictions"
-    if rejection_occurred: msg += " or marked as outliers"
-    debug(msg)
-
     has_pred = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
     inlier = ~self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     self._reflections = self._reflections.select(has_pred & inlier)
 
-    debug("%d reflections remain in the manager", len(self._reflections))
+    if self._verbosity > 0:
+      debug("%d reflections remain in the manager", len(self._reflections))
 
     # print summary after outlier rejection
     if rejection_occurred and self._verbosity > 0: self.print_stats_on_matches()
@@ -252,7 +254,8 @@ class ReflectionManager(object):
     # form working and free subsets
     self._create_working_set()
 
-    debug("Working set size = %d observations", self.get_sample_size())
+    if self._verbosity > 0:
+      debug("Working set size = %d observations", self.get_sample_size())
 
     return
 

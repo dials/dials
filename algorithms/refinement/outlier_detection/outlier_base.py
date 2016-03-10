@@ -26,7 +26,12 @@ class CentroidOutlier(object):
     # the number of rejections
     self.nreject = 0
 
+    self._verbosity = 0
+
     return
+
+  def set_verbosity(self, verbosity):
+    self._verbosity = verbosity
 
   def _detect_outliers(cols):
     """Perform outlier detection using the input cols and return a flex.bool
@@ -101,7 +106,7 @@ class CentroidOutlier(object):
         msg = "For experiment: {0} and panel: {1}, ".format(iexp, ipanel)
         msg += "only {0} reflections are present. ".format(len(indices))
         msg += "All of these flagged as possible outliers."
-        debug(msg)
+        if self._verbosity > 0: debug(msg)
         ioutliers = indices
 
       # set those reflections as outliers in the original reflection table
@@ -112,9 +117,10 @@ class CentroidOutlier(object):
 
     if self.nreject == 0: return False
 
-    info("{0} reflections have been flagged as outliers".format(self.nreject))
+    if self._verbosity > 0:
+      info("{0} reflections have been flagged as outliers".format(self.nreject))
 
-    if nexp > 1:
+    if nexp > 1 and self._verbosity > 0:
       # table of rejections per experiment
       from libtbx.table_utils import simple_table
       header = ["Exp\nid", "Nref", "Nout", "%out"]
@@ -255,7 +261,7 @@ phil_scope = parse(phil_str)
 class CentroidOutlierFactory(object):
 
   @classmethod
-  def from_parameters_and_colnames(cls, params, colnames):
+  def from_parameters_and_colnames(cls, params, colnames, verbosity=0):
 
     # id the relevant scope for the requested method
     method = params.outlier.algorithm
@@ -276,12 +282,14 @@ class CentroidOutlierFactory(object):
     kwargs = dict((k, v) for k, v in algo_params.__dict__.items() \
       if not k.startswith('_'))
 
-    return outlier_detector(
+    od = outlier_detector(
       cols=colnames,
       min_num_obs=params.outlier.minimum_number_of_reflections,
       separate_experiments=params.outlier.separate_experiments,
       separate_panels=params.outlier.separate_panels,
       **kwargs)
+    od.set_verbosity(verbosity)
+    return od
 
 if __name__ == "__main__":
 

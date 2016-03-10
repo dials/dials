@@ -357,7 +357,8 @@ class AdaptLbfgs(Refinery):
     """
 
     self.update_journal()
-    debug("Step %d", self.history.get_nrows() - 1)
+    if self._verbosity > 0:
+      debug("Step %d", self.history.get_nrows() - 1)
 
     if self.test_for_termination():
       self.history.reason_for_termination = TARGET_ACHIEVED
@@ -647,7 +648,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
       # standard journalling
       self.update_journal()
-      debug("Step %d", self.history.get_nrows() - 1)
+      if self._verbosity > 0:
+        debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)
@@ -755,7 +757,8 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
       # standard journalling
       self.update_journal()
-      debug("Step %d", self.history.get_nrows() - 1)
+      if self._verbosity > 0:
+        debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)

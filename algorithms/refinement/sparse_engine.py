@@ -122,7 +122,8 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
 
       # standard journalling
       self.update_journal()
-      debug("Step %d", self.history.get_nrows() - 1)
+      if self._verbosity > 0:
+        debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)

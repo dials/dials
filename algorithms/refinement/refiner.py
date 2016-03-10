@@ -45,7 +45,7 @@ refinement
               "choices of refinement engine!"
   }
 
-  verbosity = 1
+  verbosity = 0
     .help = "verbosity level"
     .type = int(value_min=0)
 
@@ -407,7 +407,7 @@ class RefinerFactory(object):
     # check that the beam vectors are stored: if not, compute them
     refs_wo_s1_sel = (reflections['s1'].norms() < 1.e-6)
     nrefs_wo_s1 = refs_wo_s1_sel.count(True)
-    if nrefs_wo_s1 > 0:
+    if nrefs_wo_s1 > 0 and verbosity > 0:
       debug("Setting scattering vectors for %d reflections", nrefs_wo_s1)
     for i_expt, expt in enumerate(experiments):
       detector = expt.detector
@@ -453,49 +453,52 @@ class RefinerFactory(object):
       raise Sorry('Cannot refine a mixture of stills and scans')
     do_stills = exps_are_stills[0]
 
-    debug("\nBuilding reflection manager")
-    debug("Input reflection list size = %d observations", len(reflections))
+    if verbosity > 0:
+      debug("\nBuilding reflection manager")
+      debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
     refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
 
-    debug("Number of observations that pass initial inclusion criteria = %d",
-          refman.get_accepted_refs_size())
+    if verbosity > 0:
+      debug("Number of observations that pass initial inclusion criteria = %d",
+            refman.get_accepted_refs_size())
     sample_size = refman.get_sample_size()
-    if sample_size:
+    if sample_size and verbosity > 0:
       debug("Working set size = %d observations", sample_size)
-    debug("Reflection manager built\n")
+    if verbosity > 0: debug("Reflection manager built\n")
 
     # configure use of sparse data types
     params = cls.config_sparse(params, experiments)
 
-    debug("Building target function")
+    if verbosity > 0: debug("Building target function")
 
     # create target function
     target = cls.config_target(params, experiments, refman, do_stills)
 
-    debug("Target function built")
+    if verbosity > 0: debug("Target function built")
 
     # create parameterisations
     pred_param, param_reporter, restraints_parameterisation = \
             cls.config_parameterisation(params, experiments, refman, do_stills)
 
-    debug("Prediction equation parameterisation built")
-    debug("Parameter order : name mapping")
-    for i, e in enumerate(pred_param.get_param_names()):
-      debug("Parameter %03d : %s", i + 1, e)
+    if verbosity > 0:
+      debug("Prediction equation parameterisation built")
+      debug("Parameter order : name mapping")
+      for i, e in enumerate(pred_param.get_param_names()):
+        debug("Parameter %03d : %s", i + 1, e)
 
     # Set the prediction equation and restraints parameterisations
     # in the target object
     target.set_prediction_parameterisation(pred_param)
     target.set_restraints_parameterisation(restraints_parameterisation)
 
-    debug("Building refinement engine")
+    if verbosity > 0: debug("Building refinement engine")
 
     # create refinery
     refinery = cls.config_refinery(params, target, pred_param, verbosity)
 
-    debug("Refinement engine built")
+    if verbosity > 0: debug("Refinement engine built")
 
     # build refiner interface and return
     return Refiner(reflections, experiments,
@@ -1101,7 +1104,7 @@ class RefinerFactory(object):
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")
 
-    debug("Selected refinement engine type: %s", options.engine)
+    if verbosity > 0: debug("Selected refinement engine type: %s", options.engine)
 
     engine = refinery(target = target,
             prediction_parameterisation = pred_param,
@@ -1143,7 +1146,7 @@ class RefinerFactory(object):
       import random
       random.seed(options.random_seed)
       flex.set_random_seed(options.random_seed)
-      debug("Random seed set to %d", options.random_seed)
+      if verbosity > 0: debug("Random seed set to %d", options.random_seed)
 
     # check whether we deal with stills or scans
     if do_stills:
@@ -1188,7 +1191,7 @@ class RefinerFactory(object):
         colnames = ["x_resid", "y_resid", "phi_resid"]
       from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
       outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
-        options, colnames)
+        options, colnames, verbosity)
 
     # override default weighting strategy?
     weighting_strategy = None
@@ -1616,28 +1619,30 @@ class Refiner(object):
     # Do refinement and return history #
     ####################################
 
-    debug("\nExperimental models before refinement:")
-    for i, beam in enumerate(self._experiments.beams()):
-      debug(ordinal_number(i) + ' ' + str(beam))
-    for i, detector in enumerate(self._experiments.detectors()):
-      debug(ordinal_number(i) + ' ' + str(detector))
-    for i, goniometer in enumerate(self._experiments.goniometers()):
-      if goniometer is None: continue
-      debug(ordinal_number(i) + ' ' + str(goniometer))
-    for i, scan in enumerate(self._experiments.scans()):
-      if scan is None: continue
-      debug(ordinal_number(i) + ' ' + str(scan))
-    for i, crystal in enumerate(self._experiments.crystals()):
-      debug(ordinal_number(i) + ' ' + str(crystal))
+    if self._verbosity > 0:
+      debug("\nExperimental models before refinement:")
+      for i, beam in enumerate(self._experiments.beams()):
+        debug(ordinal_number(i) + ' ' + str(beam))
+      for i, detector in enumerate(self._experiments.detectors()):
+        debug(ordinal_number(i) + ' ' + str(detector))
+      for i, goniometer in enumerate(self._experiments.goniometers()):
+        if goniometer is None: continue
+        debug(ordinal_number(i) + ' ' + str(goniometer))
+      for i, scan in enumerate(self._experiments.scans()):
+        if scan is None: continue
+        debug(ordinal_number(i) + ' ' + str(scan))
+      for i, crystal in enumerate(self._experiments.crystals()):
+        debug(ordinal_number(i) + ' ' + str(crystal))
 
     self._refinery.run()
 
-    self.print_step_table()
-    self.print_out_of_sample_rmsd_table()
-    self.print_exp_rmsd_table()
+    if self._verbosity > 0:
+      self.print_step_table()
+      self.print_out_of_sample_rmsd_table()
+      self.print_exp_rmsd_table()
 
     det_npanels = [len(d) for d in self._experiments.detectors()]
-    if any([n > 1 for n in det_npanels]):
+    if any([n > 1 for n in det_npanels]) and self._verbosity > 0:
       self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
@@ -1666,22 +1671,23 @@ class Refiner(object):
         self._pred_param.set_model_state_uncertainties(
           u_cov_list, b_cov_list, iexp)
 
-    debug("\nExperimental models after refinement:")
-    for i, beam in enumerate(self._experiments.beams()):
-      debug(ordinal_number(i) + ' ' + str(beam))
-    for i, detector in enumerate(self._experiments.detectors()):
-      debug(ordinal_number(i) + ' ' + str(detector))
-    for i, goniometer in enumerate(self._experiments.goniometers()):
-      if goniometer is None: continue
-      debug(ordinal_number(i) + ' ' + str(goniometer))
-    for i, scan in enumerate(self._experiments.scans()):
-      if scan is None: continue
-      debug(ordinal_number(i) + ' ' + str(scan))
-    for i, crystal in enumerate(self._experiments.crystals()):
-      debug(ordinal_number(i) + ' ' + str(crystal))
+    if self._verbosity > 0:
+      debug("\nExperimental models after refinement:")
+      for i, beam in enumerate(self._experiments.beams()):
+        debug(ordinal_number(i) + ' ' + str(beam))
+      for i, detector in enumerate(self._experiments.detectors()):
+        debug(ordinal_number(i) + ' ' + str(detector))
+      for i, goniometer in enumerate(self._experiments.goniometers()):
+        if goniometer is None: continue
+        debug(ordinal_number(i) + ' ' + str(goniometer))
+      for i, scan in enumerate(self._experiments.scans()):
+        if scan is None: continue
+        debug(ordinal_number(i) + ' ' + str(scan))
+      for i, crystal in enumerate(self._experiments.crystals()):
+        debug(ordinal_number(i) + ' ' + str(crystal))
 
-    # Report on the refined parameters
-    debug(str(self._param_report))
+      # Report on the refined parameters
+      debug(str(self._param_report))
 
     # Return the refinement history
     return self._refinery.history

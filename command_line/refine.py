@@ -106,6 +106,16 @@ phil_scope = parse('''
   include scope dials.algorithms.refinement.refiner.phil_scope
 ''', process_includes=True)
 
+# local overrides for refiner.phil_scope
+phil_overrides = parse('''
+  refinement
+  {
+    verbosity = 1
+  }
+''')
+
+working_phil = phil_scope.fetch(sources=[phil_overrides])
+
 class Script(object):
   '''A class for running the script.'''
 
@@ -123,7 +133,7 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope,
+      phil=working_phil,
       read_reflections=True,
       read_experiments=True,
       check_format=False,
