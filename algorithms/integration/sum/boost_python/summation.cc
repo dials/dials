@@ -109,7 +109,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     summation_suite<float>();
     summation_suite<double>();
 
-    def("sum_image_volume", &sum_multi_panel_image_volume);
+    def("sum_image_volume", &sum_multi_panel_image_volume<float>);
   }
 
 }}} // namespace = dials::algorithms::boost_python

@@ -96,7 +96,9 @@ namespace dials { namespace algorithms {
      */
     af::shared<bool> volume(
         af::reflection_table reflections,
-        MultiPanelImageVolume volume) const {
+        MultiPanelImageVolume<> volume) const {
+      typedef MultiPanelImageVolume<>::float_type FloatType;
+
       DIALS_ASSERT(reflections.contains("bbox"));
       DIALS_ASSERT(reflections.contains("panel"));
       af::const_ref< int6 > bbox = reflections["bbox"];
@@ -105,14 +107,14 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < bbox.size(); ++i) {
 
         // Get the image volume
-        ImageVolume v = volume.get(panel[i]);
+        ImageVolume<> v = volume.get(panel[i]);
 
         // Trim the bbox
         int6 b = v.trim_bbox(bbox[i]);
 
         // Extract from image volume
-        af::versa< double, af::c_grid<3> > data = v.extract_data(b);
-        af::versa< double, af::c_grid<3> > bgrd = v.extract_background(b);
+        af::versa< FloatType, af::c_grid<3> > data = v.extract_data(b);
+        af::versa< FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
         af::versa< int,    af::c_grid<3> > mask = v.extract_mask(b);
 
         // Compute the background

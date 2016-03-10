@@ -65,7 +65,7 @@ namespace gaussian_rs {
 
     virtual
     void volume(
-        MultiPanelImageVolume image_volume,
+        MultiPanelImageVolume<> image_volume,
         const af::const_ref< int6 > &bbox,
         const af::const_ref< vec3<double> > &s1,
         const af::const_ref<double> &frame,
@@ -188,7 +188,7 @@ namespace gaussian_rs {
 
     virtual
     void volume(
-        MultiPanelImageVolume volume,
+        MultiPanelImageVolume<> volume,
         const af::const_ref< int6 > &bbox,
         const af::const_ref< vec3<double> > &s1,
         const af::const_ref< double > &frame,
@@ -203,8 +203,9 @@ namespace gaussian_rs {
 
   private:
 
+    template <typename FloatType>
     void volume_single(
-        ImageVolume volume,
+        ImageVolume<FloatType> volume,
         int6 bbox,
         vec3<double> s1,
         double frame,
@@ -606,7 +607,7 @@ namespace gaussian_rs {
 
     virtual
     void volume(
-        MultiPanelImageVolume volume,
+        MultiPanelImageVolume<> volume,
         const af::const_ref< int6 > &bbox,
         const af::const_ref< vec3<double> > &s1,
         const af::const_ref< double > &frame,
@@ -619,8 +620,9 @@ namespace gaussian_rs {
       }
     }
 
+    template <typename FloatType>
     void volume_single(
-        ImageVolume volume,
+        ImageVolume<FloatType> volume,
         int6 bbox,
         vec3<double> s1,
         double frame,

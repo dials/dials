@@ -30,11 +30,12 @@ namespace dials { namespace algorithms {
   /**
    * Compute the centroid from a single reflection
    */
+  template <typename FloatType>
   Centroid centroid_image_volume(
       int6 bbox,
-      ImageVolume volume) {
+      ImageVolume<FloatType> volume) {
 
-    typedef CentroidMaskedImage3d<double> Centroider;
+    typedef CentroidMaskedImage3d<FloatType> Centroider;
 
     // The mask code to use
     int mask_code = Valid | Foreground;
@@ -43,12 +44,12 @@ namespace dials { namespace algorithms {
     bbox = volume.trim_bbox(bbox);
 
     // Get some arrays
-    af::versa< double, af::c_grid<3> > data = volume.extract_data(bbox);
-    af::versa< double, af::c_grid<3> > bgrd = volume.extract_background(bbox);
+    af::versa< FloatType, af::c_grid<3> > data = volume.extract_data(bbox);
+    af::versa< FloatType, af::c_grid<3> > bgrd = volume.extract_background(bbox);
     af::versa< int,    af::c_grid<3> > mask = volume.extract_mask(bbox);
 
     // Compute the foreground boolean mask and background substracted data
-    af::versa< double, af::c_grid<3> > foreground_data(mask.accessor());
+    af::versa< FloatType, af::c_grid<3> > foreground_data(mask.accessor());
     af::versa< bool,   af::c_grid<3> > foreground_mask(mask.accessor());
     for (std::size_t i = 0; i < mask.size(); ++i) {
       foreground_data[i] = data[i] - bgrd[i];
@@ -151,8 +152,9 @@ namespace dials { namespace algorithms {
       }
     }
 
+    template <typename FloatType>
     void volume(af::reflection_table reflections,
-                MultiPanelImageVolume volume) const {
+                MultiPanelImageVolume<FloatType> volume) const {
       // Check stuff
       DIALS_ASSERT(reflections.is_consistent());
       DIALS_ASSERT(reflections.size() > 0);

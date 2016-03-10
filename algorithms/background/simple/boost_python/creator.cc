@@ -51,10 +51,11 @@ namespace dials { namespace algorithms { namespace background {
     return self(data, mask, background);
   }
 
+  template <typename FloatType>
   af::shared<bool> call_5(
       const Creator &self,
       af::reflection_table reflections,
-      MultiPanelImageVolume image_volume) {
+      MultiPanelImageVolume<FloatType> image_volume) {
     return self(reflections, image_volume);
   }
 
@@ -73,7 +74,7 @@ namespace dials { namespace algorithms { namespace background {
       .def("__call__", &call_2<float>)
       .def("__call__", &call_3<float>)
       .def("__call__", &call_4<float>)
-      .def("__call__", &call_5)
+      .def("__call__", &call_5<float>)
       ;
   }
 

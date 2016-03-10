@@ -38,7 +38,7 @@ namespace dials { namespace algorithms {
       .def("add", &add_detector)
       .def("add", &add_detector_and_scan)
       .def("__call__", &Centroider::shoebox)
-      .def("__call__", &Centroider::volume)
+      .def("__call__", &Centroider::volume<float>)
       ;
   }
 

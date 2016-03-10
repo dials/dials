@@ -22,9 +22,9 @@ namespace dials { namespace model { namespace boost_python {
   using af::BackgroundIncludesBadPixels;
   using af::ForegroundIncludesBadPixels;
 
-  static
+  template <typename FloatType>
   void MultiPanelImageVolume_update_reflection_info(
-      MultiPanelImageVolume image_volume,
+      MultiPanelImageVolume<FloatType> image_volume,
       af::reflection_table reflections) {
 
     // Check the input
@@ -58,15 +58,15 @@ namespace dials { namespace model { namespace boost_python {
     for (std::size_t i = 0; i < panel.size(); ++i) {
 
       // Get the image volume
-      ImageVolume v = image_volume.get(panel[i]);
+      ImageVolume<FloatType> v = image_volume.get(panel[i]);
       DIALS_ASSERT(v.is_consistent());
 
       // Trim the bounding box
       int6 b = v.trim_bbox(bbox[i]);
 
       // Get the data arrays
-      af::const_ref < double, af::c_grid<3> > data = v.extract_data(b).const_ref();
-      af::const_ref < double, af::c_grid<3> > bgrd = v.extract_background(b).const_ref();
+      af::const_ref < FloatType, af::c_grid<3> > data = v.extract_data(b).const_ref();
+      af::const_ref < FloatType, af::c_grid<3> > bgrd = v.extract_background(b).const_ref();
       af::const_ref < int, af::c_grid<3> >    mask = v.extract_mask(b).const_ref();
 
       // Compute numbers of pixels
@@ -128,38 +128,56 @@ namespace dials { namespace model { namespace boost_python {
 
   }
 
-  void export_image_volume()
-  {
-    class_<ImageVolume>("ImageVolume", no_init)
+  template <typename FloatType>
+  void image_volume_wrapper(const char *name) {
+
+    typedef ImageVolume<FloatType> Class;
+
+    class_<Class>(name, no_init)
       .def(init<
           int,
           int,
           std::size_t,
           std::size_t>())
-      .def("frame0", &ImageVolume::frame0)
-      .def("frame1", &ImageVolume::frame1)
-      .def("accessor", &ImageVolume::accessor)
-      .def("data", &ImageVolume::data)
-      .def("background", &ImageVolume::background)
-      .def("mask", &ImageVolume::mask)
-      .def("set_image", &ImageVolume::set_image<int>)
-      .def("set_image", &ImageVolume::set_image<double>)
-      .def("is_consistent", &ImageVolume::is_consistent)
-      .def("extract_data", &ImageVolume::extract_data)
-      .def("extract_background", &ImageVolume::extract_background)
-      .def("extract_mask", &ImageVolume::extract_mask)
+      .def("frame0", &Class::frame0)
+      .def("frame1", &Class::frame1)
+      .def("accessor", &Class::accessor)
+      .def("data", &Class::data)
+      .def("background", &Class::background)
+      .def("mask", &Class::mask)
+      .def("set_image", &Class::template set_image<int>)
+      .def("set_image", &Class::template set_image<double>)
+      .def("is_consistent", &Class::is_consistent)
+      .def("extract_data", &Class::extract_data)
+      .def("extract_background", &Class::extract_background)
+      .def("extract_mask", &Class::extract_mask)
       ;
 
-    class_<MultiPanelImageVolume>("MultiPanelImageVolume")
-      .def("frame0", &MultiPanelImageVolume::frame0)
-      .def("frame1", &MultiPanelImageVolume::frame1)
-      .def("add", &MultiPanelImageVolume::add)
-      .def("get", &MultiPanelImageVolume::get)
-      .def("set_image", &MultiPanelImageVolume::set_image<int>)
-      .def("set_image", &MultiPanelImageVolume::set_image<double>)
-      .def("update_reflection_info", &MultiPanelImageVolume_update_reflection_info)
-      .def("__len__", &MultiPanelImageVolume::size)
+  }
+
+  template <typename FloatType>
+  void multi_panel_image_volume_wrapper(const char *name) {
+
+    typedef MultiPanelImageVolume<FloatType> Class;
+
+    class_<Class>(name)
+      .def("frame0", &Class::frame0)
+      .def("frame1", &Class::frame1)
+      .def("add", &Class::add)
+      .def("get", &Class::get)
+      .def("set_image", &Class::template set_image<int>)
+      .def("set_image", &Class::template set_image<double>)
+      .def("update_reflection_info", &MultiPanelImageVolume_update_reflection_info<FloatType>)
+      .def("__len__", &Class::size)
       ;
+  }
+
+  void export_image_volume()
+  {
+    typedef ImageVolume<>::float_type FloatType;
+
+    image_volume_wrapper<FloatType>("ImageVolume");
+    multi_panel_image_volume_wrapper<FloatType>("MultiPanelImageVolume");
   }
 
 }}} // namespace dials::model::boost_python

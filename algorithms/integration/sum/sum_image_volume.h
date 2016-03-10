@@ -24,18 +24,19 @@ namespace dials { namespace algorithms {
   /**
    * Compute the summation intensity from a single reflection
    */
+  template <typename FloatType>
   Intensity sum_image_volume(
       int6 bbox,
-      ImageVolume volume) {
+      ImageVolume<FloatType> volume) {
 
     // Trim the bbox
-    bbox = volume.trim_bbox(bbox);
+    int6 trimmed_bbox = volume.trim_bbox(bbox);
 
     // Do the summation
-    Summation<double> summation(
-        volume.extract_data(bbox).const_ref(),
-        volume.extract_background(bbox).const_ref(),
-        volume.extract_mask(bbox).const_ref());
+    Summation<FloatType> summation(
+        volume.extract_data(trimmed_bbox).const_ref(),
+        volume.extract_background(trimmed_bbox).const_ref(),
+        volume.extract_mask(trimmed_bbox).const_ref());
 
     // Return the result
     Intensity result;
@@ -48,9 +49,10 @@ namespace dials { namespace algorithms {
   /**
    * Compute summation intensities from all reflections
    */
+  template <typename FloatType>
   af::shared<Intensity> sum_multi_panel_image_volume(
       af::reflection_table reflections,
-      MultiPanelImageVolume volume) {
+      MultiPanelImageVolume<FloatType> volume) {
     DIALS_ASSERT(reflections.contains("bbox"));
     DIALS_ASSERT(reflections.contains("panel"));
     af::const_ref<int6> bbox = reflections["bbox"];
