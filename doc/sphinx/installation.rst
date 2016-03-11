@@ -2,8 +2,30 @@
 Installation
 ++++++++++++
 
-Binary Installers
-=================
+Releases
+========
+
+Download the latest stable release build (DIALS 1.1):
+-----------------------------------------------------
+
+.. button::
+   :text: DIALS 1.1 Mac installer (OS X 10.11)
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-v1-1-macosx.pkg
+
+.. button::
+   :text: DIALS 1.1 Mac installer (OS X 10.6)
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-v1-1-macosx-10.6.pkg
+
+.. button::
+   :text: DIALS 1.1 Linux installer
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-v1-1-linux-x86_64.tar.xz
+
+.. button::
+   :text: DIALS 1.1 Source installer
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-v1-1-source.tar.xz
+
+Development Builds
+==================
 
 Nightly build installers are available for Linux and Mac OS and may be
 downloaded from `LBL <http://cci.lbl.gov/dials/installers/>`_ or
