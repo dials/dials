@@ -66,18 +66,16 @@ class Script(object):
       print "No Experiments found in the input"
       self.parser.print_help()
       return
-    if len(params.input.reflections) == 0:
-      print "No reflection data found in the input"
-      self.parser.print_help()
-      return
-    try:
-      assert len(params.input.reflections) == len(params.input.experiments)
-    except AssertionError:
-      raise Sorry("The number of input reflections files does not match the "
-        "number of input experiments")
+    if len(params.input.reflections):
+      if len(params.input.reflections) != len(params.input.experiments):
+        raise Sorry("The number of input reflections files does not match the "
+          "number of input experiments")
 
     experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)[0]
+    if len(params.input.reflections):
+      reflections = flatten_reflections(params.input.reflections)[0]
+    else:
+      reflections = None
 
     import math
     experiments_template = "%s_%%0%sd.json" %(
@@ -88,17 +86,18 @@ class Script(object):
       int(math.floor(math.log10(len(experiments))) + 1))
 
     for i, experiment in enumerate(experiments):
-      ref_sel = reflections.select(reflections['id'] == i)
-      ref_sel['id'] = flex.int(len(ref_sel), 0)
-
       from dxtbx.model.experiment.experiment_list import ExperimentList
       from dxtbx.serialize import dump
       experiment_filename = experiments_template %i
-      reflections_filename = reflections_template %i
       print 'Saving experiment %d to %s' %(i, experiment_filename)
       dump.experiment_list(ExperimentList([experiment]), experiment_filename)
-      print 'Saving reflections for experiment %d to %s' %(i, reflections_filename)
-      ref_sel.as_pickle(reflections_filename)
+
+      if reflections is not None:
+        reflections_filename = reflections_template %i
+        print 'Saving reflections for experiment %d to %s' %(i, reflections_filename)
+        ref_sel = reflections.select(reflections['id'] == i)
+        ref_sel['id'] = flex.int(len(ref_sel), 0)
+        ref_sel.as_pickle(reflections_filename)
 
     return
 

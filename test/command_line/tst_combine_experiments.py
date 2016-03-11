@@ -176,6 +176,15 @@ def test1():
     assert len(ref_single) == len(ref.select(ref['id'] == i))
     assert ref_single['id'].all_eq(0)
 
+  cmd = " ".join([
+    "dials.split_experiments",
+    "combined_experiments.json",
+    "output.experiments_prefix=test"])
+
+  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+  for i in range(len(exp)):
+    assert os.path.exists("test_%03d.json" %i)
+
   return
 
 def run():
