@@ -26,7 +26,7 @@ Explanation:  Several steps are performed: hot, update, base, build.  If desired
 * "base" downloads and installs python and third party python packages to the base directory
 * "build" configures and compiles dials and cctbx
 
-If you are a developer with an account at cci.lbl.gov you can add --cciuser=<your cci user name>. This will allow you to make commits back to the source tree. Similarly, if you have a source forge account, you can add --sfuser=<your source forge user name>. The DIALS builder pulls code from repositories in both locations.
+The DIALS builder pulls code from repositories in multiple locations. If you are a developer with an account at cci.lbl.gov you can add --cciuser=<your cci user name>. This will allow you to make commits back to the source tree. Similarly, if you have a source forge account, you can add --sfuser=<your source forge user name>. If you have an account at GitHub and have installed a registered SSH key on your machine, you can add --git-ssh.
 
 For subsequent login sessions, be sure to set the environment in order to use the command-line dispatchers::
 
@@ -76,7 +76,7 @@ This can be relocated to a new directory, untarred, then::
 Building Using Your Own Custom Python
 -------------------------------------
 
-Using your own python to configure and build DIALS requires the dependencies listed above to already be installed and properly configured. Instruct the builder to use your python thusly:
+Using your own python to configure and build DIALS requires the dependencies listed above to already be installed and properly configured. Instruct the builder to use your python thusly::
 
   python bootstrap.py --builder=dials --with-python=<absolute path to your python binary>
 
@@ -121,7 +121,7 @@ Now checkout the cctbx sources into the "cctbx\modules\cctbx_project" directory:
 In the "modules" directory of your cctbx installation, checkout the dials source
 in the following way::
 
-  svn checkout https://svn.code.sf.net/p/dials/code/trunk dials
+  git clone https://github.com/dials/dials.git dials
 
 This may take some time, but will fetch all the dials source code and deposit in
 in a folder called dials within the cctbx source directory.
