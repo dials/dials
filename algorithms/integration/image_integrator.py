@@ -604,13 +604,6 @@ class ImageIntegratorExecutor(object):
     # Get some reflection info
     image_volume.update_reflection_info(reflections)
 
-    # from matplotlib import pylab
-    # from dials.array_family import flex
-    # image = image_volume.get(0).mask()[0:1,:,:]
-    # image.reshape(flex.grid(image.all()[1], image.all()[2]))
-    # pylab.imshow(image.as_numpy_array(), interpolation='none')
-    # pylab.show()
-
     # Print some info
     fmt = ' Integrated % 5d (sum) + % 5d (prf) / % 5d reflections'
     nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)

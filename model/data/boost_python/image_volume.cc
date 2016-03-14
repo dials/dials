@@ -39,7 +39,7 @@ namespace dials { namespace model { namespace boost_python {
     af::ref<std::size_t> flags = reflections["flags"];
 
     // Set some information about number of pixels
-    af::ref<std::size_t> num_valid   = reflections["num_pixsls.valid"];
+    af::ref<std::size_t> num_valid   = reflections["num_pixels.valid"];
     af::ref<std::size_t> num_bg      = reflections["num_pixels.background"];
     //af::ref<std::size_t> num_bg_used = reflections["num_pixels.background_used"];
     af::ref<std::size_t> num_fg      = reflections["num_pixels.foreground"];
@@ -69,7 +69,7 @@ namespace dials { namespace model { namespace boost_python {
       // Get the data arrays
       af::versa < FloatType, af::c_grid<3> > data = v.extract_data(b);
       af::versa < FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-      af::versa < int, af::c_grid<3> >    mask = v.extract_mask(b, i);
+      af::versa < int, af::c_grid<3> >       mask = v.extract_mask(b, i);
 
       // Compute numbers of pixels
       std::size_t num1 = 0;
@@ -96,7 +96,6 @@ namespace dials { namespace model { namespace boost_python {
 
       // Set some flags
       if (num6 > 0) {
-        std::cout << "NUM: " <<  num6 << std::endl;
         flags[i] |= BackgroundIncludesBadPixels;
       } else {
         flags[i] &= ~BackgroundIncludesBadPixels;
