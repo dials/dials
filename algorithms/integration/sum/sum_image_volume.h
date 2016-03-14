@@ -26,6 +26,7 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   Intensity sum_image_volume(
+      std::size_t index,
       int6 bbox,
       ImageVolume<FloatType> volume) {
 
@@ -36,7 +37,7 @@ namespace dials { namespace algorithms {
     Summation<FloatType> summation(
         volume.extract_data(trimmed_bbox).const_ref(),
         volume.extract_background(trimmed_bbox).const_ref(),
-        volume.extract_mask(trimmed_bbox).const_ref());
+        volume.extract_mask(trimmed_bbox, index).const_ref());
 
     // Return the result
     Intensity result;
@@ -59,7 +60,7 @@ namespace dials { namespace algorithms {
     af::const_ref<std::size_t> panel = reflections["panel"];
     af::shared<Intensity> intensity(bbox.size());
     for (std::size_t i = 0; i < bbox.size(); ++i) {
-      intensity[i] = sum_image_volume(bbox[i], volume.get(panel[i]));
+      intensity[i] = sum_image_volume(i, bbox[i], volume.get(panel[i]));
     }
     return intensity;
   }

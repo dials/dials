@@ -197,7 +197,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(bbox.size() == frame.size());
       DIALS_ASSERT(bbox.size() == panel.size());
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i]);
+        volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
       }
     }
 
@@ -209,9 +209,9 @@ namespace gaussian_rs {
         int6 bbox,
         vec3<double> s1,
         double frame,
-        std::size_t panel_number) const {
+        std::size_t panel_number,
+        std::size_t index) const {
       DIALS_ASSERT(volume.is_consistent());
-      af::ref< int, af::c_grid<3> > mask = volume.mask().ref();
 
       // Get some bits from the shoebox
       double phi = phi0_ + (frame - index0_) * dphi_;
@@ -290,7 +290,7 @@ namespace gaussian_rs {
           for (std::size_t k = 0; k < zsize; ++k) {
             if (z0 + (int)k >= index0_ && z0 + (int)k < index1_) {
               int mask_value = (dxy <= 1.0) ? Foreground : Background;
-              mask(z0+k-frame0, y0+j, x0+i) |= mask_value;
+              volume.set_mask_value(z0+k-frame0, y0+j, x0+i, mask_value, index);
             }
           }
         }
@@ -616,7 +616,7 @@ namespace gaussian_rs {
       DIALS_ASSERT(bbox.size() == frame.size());
       DIALS_ASSERT(bbox.size() == panel.size());
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i]);
+        volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
       }
     }
 
@@ -626,9 +626,9 @@ namespace gaussian_rs {
         int6 bbox,
         vec3<double> s1,
         double frame,
-        std::size_t panel_number) const {
+        std::size_t panel_number,
+        std::size_t index) const {
       DIALS_ASSERT(volume.is_consistent());
-      af::ref< int, af::c_grid<3> > mask = volume.mask().ref();
 
       // Get some bits from the shoebox
       int x0 = bbox[0], x1 = bbox[1];
@@ -659,11 +659,6 @@ namespace gaussian_rs {
       // Get the panel
       const Panel& panel = detector_[panel_number];
 
-      // Check the size of the mask
-      DIALS_ASSERT(mask.accessor()[0] == zsize);
-      DIALS_ASSERT(mask.accessor()[1] == ysize);
-      DIALS_ASSERT(mask.accessor()[2] == xsize);
-
       // Create the coordinate system and generators
       CoordinateSystem2d cs(s0_, s1);
       double s0_length = s0_.length();
@@ -690,7 +685,7 @@ namespace gaussian_rs {
           double dxy4 = dxy_array(j+1,i+1);
           double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
           int mask_value = (dxy <= 1.0) ? Foreground : Background;
-          mask(z0-frame0, y0+j, x0+i) |= mask_value;
+          volume.set_mask_value(z0-frame0, y0+j, x0+i, mask_value, index);
         }
       }
     }

@@ -41,8 +41,9 @@ namespace dials { namespace model { namespace boost_python {
     // Set some information about number of pixels
     af::ref<std::size_t> num_valid   = reflections["num_pixsls.valid"];
     af::ref<std::size_t> num_bg      = reflections["num_pixels.background"];
-    af::ref<std::size_t> num_bg_used = reflections["num_pixels.background_used"];
+    //af::ref<std::size_t> num_bg_used = reflections["num_pixels.background_used"];
     af::ref<std::size_t> num_fg      = reflections["num_pixels.foreground"];
+    af::ref<std::size_t> num_ol      = reflections["num_pixels.overlapped"];
 
     // Set some background information
     af::ref<double> bg_mean = reflections["background.mean"];
@@ -53,6 +54,7 @@ namespace dials { namespace model { namespace boost_python {
     int mask_code2 = Valid | Background;
     int mask_code3 = Valid | Background | BackgroundUsed;
     int mask_code4 = Valid | Foreground;
+    int mask_code5 = Overlapped;
 
     // Loop through each reflection
     for (std::size_t i = 0; i < panel.size(); ++i) {
@@ -67,7 +69,7 @@ namespace dials { namespace model { namespace boost_python {
       // Get the data arrays
       af::const_ref < FloatType, af::c_grid<3> > data = v.extract_data(b).const_ref();
       af::const_ref < FloatType, af::c_grid<3> > bgrd = v.extract_background(b).const_ref();
-      af::const_ref < int, af::c_grid<3> >    mask = v.extract_mask(b).const_ref();
+      af::const_ref < int, af::c_grid<3> >    mask = v.extract_mask(b, i).const_ref();
 
       // Compute numbers of pixels
       std::size_t num1 = 0;
@@ -76,26 +78,29 @@ namespace dials { namespace model { namespace boost_python {
       std::size_t num4 = 0;
       std::size_t num5 = 0;
       std::size_t num6 = 0;
+      std::size_t num7 = 0;
       for (std::size_t j = 0; j < mask.size(); ++j) {
         if ((mask[j] & mask_code1) == mask_code1) num1++;
         if ((mask[j] & mask_code2) == mask_code2) num2++;
         if ((mask[j] & mask_code3) == mask_code3) num3++;
         if ((mask[j] & mask_code4) == mask_code4) num4++;
-        if ((mask[j] & Background) && !(mask[j] & Valid)) num5++;
-        if ((mask[j] & Foreground) && !(mask[j] & Valid)) num6++;
+        if ((mask[j] & mask_code5) == mask_code5) num5++;
+        if ((mask[j] & Background) && !(mask[j] & Valid)) num6++;
+        if ((mask[j] & Foreground) && !(mask[j] & Valid)) num7++;
       }
       num_valid[i]   = num1;
       num_bg[i]      = num2;
-      num_bg_used[i] = num3;
+      //num_bg_used[i] = num3;
       num_fg[i]      = num4;
+      num_ol[i]      = num5;
 
       // Set some flags
-      if (num5 > 0) {
+      if (num6 > 0) {
         flags[i] |= BackgroundIncludesBadPixels;
       } else {
         flags[i] &= ~BackgroundIncludesBadPixels;
       }
-      if (num6 > 0) {
+      if (num7 > 0) {
         flags[i] |= ForegroundIncludesBadPixels;
       } else {
         flags[i] &= ~ForegroundIncludesBadPixels;

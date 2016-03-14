@@ -32,6 +32,7 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   Centroid centroid_image_volume(
+      std::size_t index,
       int6 bbox,
       ImageVolume<FloatType> volume) {
 
@@ -46,7 +47,7 @@ namespace dials { namespace algorithms {
     // Get some arrays
     af::versa< FloatType, af::c_grid<3> > data = volume.extract_data(bbox);
     af::versa< FloatType, af::c_grid<3> > bgrd = volume.extract_background(bbox);
-    af::versa< int,    af::c_grid<3> > mask = volume.extract_mask(bbox);
+    af::versa< int,    af::c_grid<3> > mask = volume.extract_mask(bbox, index);
 
     // Compute the foreground boolean mask and background substracted data
     af::versa< FloatType, af::c_grid<3> > foreground_data(mask.accessor());
@@ -175,7 +176,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < bbox.size(); ++i) {
 
         // Compute the centroid
-        Centroid centroid = centroid_image_volume(bbox[i], volume.get(panel[i]));
+        Centroid centroid = centroid_image_volume(i, bbox[i], volume.get(panel[i]));
 
         // Get the panel
         DIALS_ASSERT(id[i] >= 0);

@@ -11,7 +11,7 @@
 #ifndef DIALS_MODEL_DATA_IMAGE_VOLUME_H
 #define DIALS_MODEL_DATA_IMAGE_VOLUME_H
 
-#include <boost/unordered_map.hpp>
+#include <stdint.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/image.h>
@@ -22,6 +22,22 @@ namespace dials { namespace model {
 
   using scitbx::af::int6;
   using dials::model::Valid;
+
+  class Label {
+  public:
+
+    Label():
+      first(-1),
+      second(-1) {}
+
+    bool contains(int index) const {
+      return first == index || second == index;
+    }
+
+    int first;
+    int second;
+  };
+
 
   /**
    * A class to hold stuff for an image volume
@@ -48,7 +64,8 @@ namespace dials { namespace model {
         grid_(init_grid(frame0, frame1, height, width)),
         data_(grid_, 0),
         background_(grid_, 0),
-        mask_(grid_, 0) {}
+        mask_(grid_, 0),
+        label_(grid_) {}
 
     /**
      * Check the arrays all make sense
@@ -57,7 +74,8 @@ namespace dials { namespace model {
       return (
         data_.accessor().all_eq(grid_) &&
         background_.accessor().all_eq(grid_) &&
-        mask_.accessor().all_eq(grid_));
+        mask_.accessor().all_eq(grid_) &&
+        label_.accessor().all_eq(grid_));
     }
 
     /**
@@ -100,6 +118,13 @@ namespace dials { namespace model {
      */
     af::versa < int, af::c_grid<3> > mask() const {
       return mask_;
+    }
+
+    /**
+     * @returns The labels
+     */
+    af::versa < Label, af::c_grid<3> > label1() const {
+      return label_;
     }
 
     /**
@@ -183,7 +208,7 @@ namespace dials { namespace model {
     /**
      * Extract data with the given bbox
      */
-    af::versa < int, af::c_grid<3> > extract_mask(int6 bbox) const {
+    af::versa < int, af::c_grid<3> > extract_mask(int6 bbox, std::size_t index) const {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -204,7 +229,16 @@ namespace dials { namespace model {
       for (std::size_t k = 0; k < zsize; ++k) {
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
-            result(k,j,i) = mask_(k+k0, j+j0, i+i0);
+            std::size_t l = grid_(k+k0, j+j0, i+i0);
+            int value = mask_[l];
+            if (value & Foreground) {
+              const Label &label = label_[l];
+              if (!label.contains(index)) {
+                value &= ~Foreground;
+                value &= ~Valid;
+              }
+            }
+            result(k,j,i) = value;
           }
         }
       }
@@ -276,7 +310,7 @@ namespace dials { namespace model {
     /**
      * Set data with the given bbox
      */
-    void set_mask(int6 bbox, const af::const_ref < int, af::c_grid<3> > &mask) {
+    void set_mask(int6 bbox, std::size_t index, const af::const_ref < int, af::c_grid<3> > &mask) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -298,10 +332,38 @@ namespace dials { namespace model {
       for (std::size_t k = 0; k < zsize; ++k) {
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
-            mask_(k+k0, j+j0, i+i0) = mask(k,j,i);
+            set_mask_value(k+k0, j+j0, i+i0, mask(k,j,i), index);
           }
         }
       }
+    }
+
+    /**
+     * Helper function to set mask value
+     */
+    void set_mask_value(std::size_t k, std::size_t j, std::size_t i, int value, std::size_t index) {
+      std::size_t l = grid_(k, j, i);
+      int value1 = mask_[l];
+      int value2 = value;
+      if (value1 & Foreground) {
+        value2 &= ~Background;
+      }
+      if (value2 & Foreground) {
+        value1 &= ~Background;
+        Label &label = label_[l];
+        if (label.first < 0) {
+          label.first = (int)index;
+        } else if (label.second < 0) {
+          label.second = (int)index;
+          value2 |= Overlapped;
+        } else {
+          label.first = -1;
+          label.second = -1;
+          value2 &= ~Valid;
+          value2 |= Overlapped;
+        }
+      }
+      mask_[l] = value1 | value2;
     }
 
     /**
@@ -347,7 +409,8 @@ namespace dials { namespace model {
     af::c_grid<3> grid_;
     af::versa <FloatType, af::c_grid<3> > data_;
     af::versa <FloatType, af::c_grid<3> > background_;
-    af::versa <int   , af::c_grid<3> > mask_;
+    af::versa <int,       af::c_grid<3> > mask_;
+    af::versa <Label,     af::c_grid<3> > label_;
   };
 
 

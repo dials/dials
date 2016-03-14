@@ -115,7 +115,7 @@ namespace dials { namespace algorithms {
         // Extract from image volume
         af::versa< FloatType, af::c_grid<3> > data = v.extract_data(b);
         af::versa< FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-        af::versa< int,    af::c_grid<3> > mask = v.extract_mask(b);
+        af::versa< int,    af::c_grid<3> > mask = v.extract_mask(b, i);
 
         // Compute the background
         try {
@@ -126,7 +126,6 @@ namespace dials { namespace algorithms {
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-          v.set_mask(b, mask.const_ref());
         } catch(scitbx::error) {
           success[i] = false;
         } catch(dials::error) {
