@@ -484,7 +484,7 @@ class SpotFrame(XrayFrame) :
 
       for i in range(1, self.params.sum_images):
         if (i_frame + i) >= len(imageset): break
-        raw_data_i = [imageset[i_frame + i]]
+        raw_data_i = imageset[i_frame + i]
         for j, rd in enumerate(raw_data):
           rd += raw_data_i[j]
 
