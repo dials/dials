@@ -52,6 +52,46 @@ def run():
   assert old_experiments[0].crystal.get_space_group().type().hall_symbol() == ' P 1'
   assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == ' P 1'
 
+  # set space group P4
+  from cctbx import sgtbx
+  cb_op = sgtbx.change_of_basis_op('a,b,c')
+  commands = ["dials.reindex",
+              experiments_path,
+              "space_group=P4",
+              "change_of_basis_op=%s" %str(cb_op),
+              "output.experiments=P4.json"]
+  command = " ".join(commands)
+  print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  # apply one of the symops from the space group
+  cb_op = sgtbx.change_of_basis_op('-x,-y,z')
+  commands = ["dials.reindex",
+              "P4.json",
+              "change_of_basis_op=%s" %str(cb_op),
+              "output.experiments=P4_reindexed.json"]
+  command = " ".join(commands)
+  print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  new_experiments1 = load.experiment_list(
+    'P4_reindexed.json', check_format=False)
+  assert approx_equal(
+    new_experiments1[0].crystal.get_A().elems,
+    old_experiments[0].crystal.change_basis(cb_op).get_A().elems)
+  #
+  cb_op = sgtbx.change_of_basis_op('-x,-y,z')
+  commands = ["dials.reindex",
+              "P4.json",
+              "change_of_basis_op=auto",
+              "reference=P4_reindexed.json",
+              "output.experiments=P4_reindexed2.json"]
+  command = " ".join(commands)
+  print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  new_experiments2 = load.experiment_list(
+    'P4_reindexed2.json', check_format=False)
+  assert approx_equal(
+    new_experiments1[0].crystal.get_A().elems,
+    new_experiments2[0].crystal.get_A().elems)
 
 
 

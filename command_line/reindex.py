@@ -143,7 +143,7 @@ def run(args):
     assert len(reference_experiments.crystals()) == 1
     reference_crystal = reference_experiments.crystals()[0]
 
-  if len(experiments) and len(reflections) and params.change_of_basis_op is libtbx.Auto:
+  if len(experiments) and params.change_of_basis_op is libtbx.Auto:
     if reference_crystal is not None:
       from dials.algorithms.indexing.compare_orientation_matrices \
            import difference_rotation_matrix_and_euler_angles
@@ -156,7 +156,7 @@ def run(args):
       print R.mathematica_form(format="%.3f", one_row_per_line=True)
       print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
 
-    else:
+    elif len(reflections):
       assert len(reflections) == 1
 
       # always re-map reflections to reciprocal space
@@ -185,8 +185,8 @@ def run(args):
 
       change_of_basis_op = derive_change_of_basis_op(hkl_input, hkl_expt)
 
-    # reset experiments list since we don't want to reindex this
-    experiments = []
+      # reset experiments list since we don't want to reindex this
+      experiments = []
 
   else:
     change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
