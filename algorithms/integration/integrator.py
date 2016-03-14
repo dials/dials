@@ -112,7 +112,7 @@ def generate_phil_scope():
 
       }
 
-      integrator = *auto 3d flat3d 2d single2d stills fast
+      integrator = *auto 3d flat3d 2d single2d stills volume
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
@@ -1209,9 +1209,9 @@ class IntegratorStills(Integrator):
   FinalizerClass = FinalizerStills
 
 
-class IntegratorFast(ImageIntegrator):
+class IntegratorVolume(ImageIntegrator):
   '''
-  Fast integrator
+  Volume integrator
 
   '''
   pass
@@ -1283,8 +1283,8 @@ class IntegratorFactory(object):
       IntegratorClass = IntegratorSingle2D
     elif params.integration.integrator == 'stills':
       IntegratorClass = IntegratorStills
-    elif params.integration.integrator == 'fast':
-      IntegratorClass = IntegratorFast
+    elif params.integration.integrator == 'volume':
+      IntegratorClass = IntegratorVolume
     else:
       raise RuntimeError("Unknown integration type")
 

@@ -67,9 +67,9 @@ namespace dials { namespace model { namespace boost_python {
       int6 b = v.trim_bbox(bbox[i]);
 
       // Get the data arrays
-      af::const_ref < FloatType, af::c_grid<3> > data = v.extract_data(b).const_ref();
-      af::const_ref < FloatType, af::c_grid<3> > bgrd = v.extract_background(b).const_ref();
-      af::const_ref < int, af::c_grid<3> >    mask = v.extract_mask(b, i).const_ref();
+      af::versa < FloatType, af::c_grid<3> > data = v.extract_data(b);
+      af::versa < FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
+      af::versa < int, af::c_grid<3> >    mask = v.extract_mask(b, i);
 
       // Compute numbers of pixels
       std::size_t num1 = 0;
@@ -96,6 +96,7 @@ namespace dials { namespace model { namespace boost_python {
 
       // Set some flags
       if (num6 > 0) {
+        std::cout << "NUM: " <<  num6 << std::endl;
         flags[i] |= BackgroundIncludesBadPixels;
       } else {
         flags[i] &= ~BackgroundIncludesBadPixels;

@@ -28,7 +28,8 @@ namespace dials { namespace algorithms {
   Intensity sum_image_volume(
       std::size_t index,
       int6 bbox,
-      ImageVolume<FloatType> volume) {
+      ImageVolume<FloatType> volume,
+      bool success) {
 
     // Trim the bbox
     int6 trimmed_bbox = volume.trim_bbox(bbox);
@@ -43,7 +44,7 @@ namespace dials { namespace algorithms {
     Intensity result;
     result.observed.value = summation.intensity();
     result.observed.variance = summation.variance();
-    result.observed.success = summation.success();
+    result.observed.success = summation.success() && success;
     return result;
   }
 
@@ -56,11 +57,17 @@ namespace dials { namespace algorithms {
       MultiPanelImageVolume<FloatType> volume) {
     DIALS_ASSERT(reflections.contains("bbox"));
     DIALS_ASSERT(reflections.contains("panel"));
+    DIALS_ASSERT(reflections.contains("fraction"));
     af::const_ref<int6> bbox = reflections["bbox"];
     af::const_ref<std::size_t> panel = reflections["panel"];
+    af::const_ref<double> fraction = reflections["fraction"];
     af::shared<Intensity> intensity(bbox.size());
     for (std::size_t i = 0; i < bbox.size(); ++i) {
-      intensity[i] = sum_image_volume(i, bbox[i], volume.get(panel[i]));
+      intensity[i] = sum_image_volume(
+          i,
+          bbox[i],
+          volume.get(panel[i]),
+          fraction[i] > 1.0-1e-6);
     }
     return intensity;
   }

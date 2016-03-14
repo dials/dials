@@ -594,7 +594,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     for expr, indices in self.iterate_experiments_and_indices(experiments):
-      expr.profile.compute_mask(
+      result = expr.profile.compute_mask(
         self.select(indices),
         expr.crystal,
         expr.beam,
@@ -602,6 +602,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         expr.goniometer,
         expr.scan,
         image_volume=image_volume)
+      if result is not None:
+        if 'fraction' not in self:
+          self['fraction'] = flex.double(len(self))
+        self['fraction'].set_selected(indices, result)
 
   def iterate_experiments_and_indices(self, experiments):
     '''

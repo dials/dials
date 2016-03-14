@@ -64,7 +64,7 @@ namespace gaussian_rs {
         const af::const_ref<std::size_t> &panel) const = 0;
 
     virtual
-    void volume(
+    af::shared<double> volume(
         MultiPanelImageVolume<> image_volume,
         const af::const_ref< int6 > &bbox,
         const af::const_ref< vec3<double> > &s1,
@@ -187,7 +187,7 @@ namespace gaussian_rs {
     }
 
     virtual
-    void volume(
+    af::shared<double> volume(
         MultiPanelImageVolume<> volume,
         const af::const_ref< int6 > &bbox,
         const af::const_ref< vec3<double> > &s1,
@@ -196,15 +196,17 @@ namespace gaussian_rs {
       DIALS_ASSERT(bbox.size() == s1.size());
       DIALS_ASSERT(bbox.size() == frame.size());
       DIALS_ASSERT(bbox.size() == panel.size());
+      af::shared<double> fraction(bbox.size());
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
+        fraction[i] = volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
       }
+      return fraction;
     }
 
   private:
 
     template <typename FloatType>
-    void volume_single(
+    double volume_single(
         ImageVolume<FloatType> volume,
         int6 bbox,
         vec3<double> s1,
@@ -222,11 +224,7 @@ namespace gaussian_rs {
       int height = volume.accessor()[1];
       int frame0 = volume.frame0();
       int frame1 = volume.frame1();
-      x0 = std::max(0, x0);
-      y0 = std::max(0, y0);
       z0 = std::max(frame0, z0);
-      x1 = std::min(width, x1);
-      y1 = std::min(height, y1);
       z1 = std::min(frame1, z1);
       DIALS_ASSERT(x1 > x0);
       DIALS_ASSERT(y1 > y0);
@@ -280,6 +278,8 @@ namespace gaussian_rs {
         }
       }
 
+      int num1 = 0;
+      int num2 = 0;
       for (int j = 0; j < ysize; ++j) {
         for (int i = 0; i < xsize; ++i) {
           double dxy1 = dxy_array(j,i);
@@ -287,14 +287,23 @@ namespace gaussian_rs {
           double dxy3 = dxy_array(j,i+1);
           double dxy4 = dxy_array(j+1,i+1);
           double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
+          int jj = y0 + j;
+          int ii = x0 + i;
           for (std::size_t k = 0; k < zsize; ++k) {
             if (z0 + (int)k >= index0_ && z0 + (int)k < index1_) {
               int mask_value = (dxy <= 1.0) ? Foreground : Background;
-              volume.set_mask_value(z0+k-frame0, y0+j, x0+i, mask_value, index);
+              if (jj >=0 && ii >= 0 && jj < height && ii < width) {
+                volume.set_mask_value(z0+k-frame0, jj, ii, mask_value, index);
+                num1++;
+              } else if (dxy <= 1.0) {
+                num2++;
+              }
             }
           }
         }
       }
+      DIALS_ASSERT(num1 + num2 > 0);
+      return (double)num1 / (double)(num1 + num2);
     }
 
     /**
@@ -606,7 +615,7 @@ namespace gaussian_rs {
     }
 
     virtual
-    void volume(
+    af::shared<double> volume(
         MultiPanelImageVolume<> volume,
         const af::const_ref< int6 > &bbox,
         const af::const_ref< vec3<double> > &s1,
@@ -615,13 +624,15 @@ namespace gaussian_rs {
       DIALS_ASSERT(bbox.size() == s1.size());
       DIALS_ASSERT(bbox.size() == frame.size());
       DIALS_ASSERT(bbox.size() == panel.size());
+      af::shared<double> fraction(bbox.size());
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
+        fraction[i] = volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
       }
+      return fraction;
     }
 
     template <typename FloatType>
-    void volume_single(
+    double volume_single(
         ImageVolume<FloatType> volume,
         int6 bbox,
         vec3<double> s1,
@@ -638,11 +649,7 @@ namespace gaussian_rs {
       int height = volume.accessor()[1];
       int frame0 = volume.frame0();
       int frame1 = volume.frame1();
-      x0 = std::max(0, x0);
-      y0 = std::max(0, y0);
       z0 = std::max(frame0, z0);
-      x1 = std::min(width, x1);
-      y1 = std::min(height, y1);
       z1 = std::min(frame1, z1);
       DIALS_ASSERT(x1 > x0);
       DIALS_ASSERT(y1 > y0);
@@ -677,6 +684,8 @@ namespace gaussian_rs {
           dxy_array(j,i) = (gxy[0]*gxy[0] + gxy[1]*gxy[1]) * delta_b_r2;
         }
       }
+      int num1 = 0;
+      int num2 = 0;
       for (int j = 0; j < ysize; ++j) {
         for (int i = 0; i < xsize; ++i) {
           double dxy1 = dxy_array(j,i);
@@ -685,9 +694,18 @@ namespace gaussian_rs {
           double dxy4 = dxy_array(j+1,i+1);
           double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
           int mask_value = (dxy <= 1.0) ? Foreground : Background;
-          volume.set_mask_value(z0-frame0, y0+j, x0+i, mask_value, index);
+          int jj = y0 + j;
+          int ii = x0 + i;
+          if (jj >= 0 && ii >= 0 && jj < height && ii < width) {
+            volume.set_mask_value(z0-frame0, y0+j, x0+i, mask_value, index);
+            num1++;
+          } else if (dxy <= 1.0) {
+            num2++;
+          }
         }
       }
+      DIALS_ASSERT(num1 + num2 > 0);
+      return (double)num2 / (double)(num1 + num2);
     }
 
   private:
