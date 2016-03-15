@@ -2,6 +2,7 @@
 Import('env')
 
 sources = [
+    'boost_python/image_volume.cc',
     'boost_python/adjacency_list.cc',
     'boost_python/shoebox.cc',
     'boost_python/observation.cc',

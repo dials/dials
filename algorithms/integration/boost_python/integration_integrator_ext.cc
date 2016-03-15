@@ -12,6 +12,7 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/integration/processor.h>
 #include <dials/algorithms/integration/integrator.h>
+#include <dials/algorithms/integration/manager.h>
 
 using namespace boost::python;
 
@@ -275,6 +276,20 @@ namespace dials { namespace algorithms { namespace boost_python {
           return_internal_reference<>())
       .def("data", &ReflectionManager::data)
       .def("num_reflections", &ReflectionManager::num_reflections)
+      ;
+
+    class_<ReflectionManagerPerImage>("ReflectionManagerPerImage", no_init)
+      .def(init<int2,
+                af::reflection_table>((
+          arg("frames"),
+          arg("data"))))
+      .def("__len__", &ReflectionManagerPerImage::size)
+      .def("finished", &ReflectionManagerPerImage::finished)
+      .def("accumulate", &ReflectionManagerPerImage::accumulate)
+      .def("split", &ReflectionManagerPerImage::split)
+      .def("frames", &ReflectionManagerPerImage::frames)
+      .def("data", &ReflectionManagerPerImage::data)
+      .def("num_reflections", &ReflectionManagerPerImage::num_reflections)
       ;
 
     class_<ExecutorWrapper, boost::noncopyable>("Executor")

@@ -39,11 +39,13 @@ class Algorithm(object):
         self.centroider.add(
           exp.detector)
 
-  def __call__(self, reflections):
+  def __call__(self, reflections, image_volume=None):
     '''
     Do the centroiding
 
     :param reflections: The reflection list
 
     '''
-    return self.centroider(reflections)
+    if image_volume is None:
+      return self.centroider(reflections)
+    return self.centroider(reflections, image_volume)

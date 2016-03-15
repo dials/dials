@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace background {
 
   template <typename FloatType>
   af::shared<bool> call_1(
-      const Creator<FloatType> &self,
+      const Creator &self,
       const af::const_ref< Shoebox<FloatType> > &sbox) {
     af::shared<double> mse(sbox.size());
     af::shared<double> dispersion(sbox.size());
@@ -28,7 +28,7 @@ namespace dials { namespace algorithms { namespace background {
 
   template <typename FloatType>
   af::shared<bool> call_2(
-      const Creator<FloatType> &self,
+      const Creator &self,
       const af::const_ref< Shoebox<FloatType> > &sbox,
       af::ref<double> mse,
       af::ref<double> dispersion) {
@@ -37,25 +37,31 @@ namespace dials { namespace algorithms { namespace background {
 
   template <typename FloatType>
   af::tiny<FloatType,2> call_3(
-      const Creator<FloatType> &self,
+      const Creator &self,
       Shoebox<FloatType> shoebox) {
     return self(shoebox);
   }
 
   template <typename FloatType>
   af::tiny<FloatType,2> call_4(
-      const Creator<FloatType> &self,
+      const Creator &self,
       const af::const_ref< FloatType, af::c_grid<3> > &data,
       af::ref< int, af::c_grid<3> > mask,
       af::ref< FloatType, af::c_grid<3> > background) {
     return self(data, mask, background);
   }
 
-
   template <typename FloatType>
+  af::shared<bool> call_5(
+      const Creator &self,
+      af::reflection_table reflections,
+      MultiPanelImageVolume<FloatType> image_volume) {
+    return self(reflections, image_volume);
+  }
+
   void creator_wrapper() {
 
-    class_< Creator<FloatType> >("Creator", no_init)
+    class_< Creator >("Creator", no_init)
       .def(init<
           boost::shared_ptr<Modeller>
         >((arg("modeller"))))
@@ -64,16 +70,18 @@ namespace dials { namespace algorithms { namespace background {
           boost::shared_ptr<OutlierRejector>
         >((arg("modeller"),
            arg("rejector"))))
-      .def("__call__", &call_1<FloatType>)
-      .def("__call__", &call_2<FloatType>)
-      .def("__call__", &call_3<FloatType>)
-      .def("__call__", &call_4<FloatType>);
+      .def("__call__", &call_1<float>)
+      .def("__call__", &call_2<float>)
+      .def("__call__", &call_3<float>)
+      .def("__call__", &call_4<float>)
+      .def("__call__", &call_5<float>)
+      ;
   }
 
 
   void export_creator()
   {
-    creator_wrapper<float>();
+    creator_wrapper();
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python

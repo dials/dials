@@ -147,11 +147,12 @@ class SimpleBackgroundExt(BackgroundIface):
     # Create the algorithm
     self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
 
-  def compute_background(self, reflections):
+  def compute_background(self, reflections, image_volume=None):
     '''
     Compute the background.
 
     :param reflections: The list of reflections
 
     '''
-    return self._algorithm.compute_background(reflections)
+    return self._algorithm.compute_background(
+      reflections, image_volume=image_volume)

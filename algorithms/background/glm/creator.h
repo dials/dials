@@ -13,13 +13,17 @@
 #define DIALS_ALGORITHMS_BACKGROUND_GLM_CREATOR_H
 
 #include <scitbx/glmtbx/robust_glm.h>
+#include <dials/array_family/reflection_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/shoebox.h>
+#include <dials/model/data/image_volume.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using model::Shoebox;
+  using model::ImageVolume;
+  using model::MultiPanelImageVolume;
 
   namespace detail {
 
@@ -66,11 +70,62 @@ namespace dials { namespace algorithms {
      * @param sbox The shoeboxes
      * @returns Success True/False
      */
-    af::shared<bool> operator()(af::ref< Shoebox<> > sbox) const {
+    af::shared<bool> shoebox(af::ref< Shoebox<> > sbox) const {
       af::shared<bool> success(sbox.size(), true);
       for (std::size_t i = 0; i < sbox.size(); ++i) {
         try {
-          compute(sbox[i]);
+          DIALS_ASSERT(sbox[i].is_consistent());
+          compute(
+              sbox[i].data.const_ref(),
+              sbox[i].background.ref(),
+              sbox[i].mask.ref());
+        } catch(scitbx::error) {
+          success[i] = false;
+        } catch(dials::error) {
+          success[i] = false;
+        }
+      }
+      return success;
+    }
+
+    /**
+     * Compute the background values
+     * @param reflections The reflection table
+     * @param volume The image volume
+     * @returns Success True/False
+     */
+    af::shared<bool> volume(
+        af::reflection_table reflections,
+        MultiPanelImageVolume<> volume) const {
+      typedef MultiPanelImageVolume<>::float_type FloatType;
+
+      DIALS_ASSERT(reflections.contains("bbox"));
+      DIALS_ASSERT(reflections.contains("panel"));
+      af::const_ref< int6 > bbox = reflections["bbox"];
+      af::const_ref< std::size_t > panel = reflections["panel"];
+      af::shared<bool> success(bbox.size(), true);
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+
+        // Get the image volume
+        ImageVolume<> v = volume.get(panel[i]);
+
+        // Trim the bbox
+        int6 b = v.trim_bbox(bbox[i]);
+
+        // Extract from image volume
+        af::versa< FloatType, af::c_grid<3> > data = v.extract_data(b);
+        af::versa< FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
+        af::versa< int,    af::c_grid<3> > mask = v.extract_mask(b, i);
+
+        // Compute the background
+        try {
+          compute(
+              data.const_ref(),
+              bgrd.ref(),
+              mask.ref());
+
+          // Need to set the background in volume
+          v.set_background(b, bgrd.const_ref());
         } catch(scitbx::error) {
           success[i] = false;
         } catch(dials::error) {
@@ -86,20 +141,23 @@ namespace dials { namespace algorithms {
      * Compute the background values for a single shoebox
      * @param sbox The shoebox
      */
-    void compute(Shoebox<> &sbox) const {
-      DIALS_ASSERT(sbox.is_consistent());
+    template <typename T>
+    void compute(
+        const af::const_ref< T, af::c_grid<3> > &data,
+        af::ref< T, af::c_grid<3> > background,
+        af::ref< int, af::c_grid<3> > mask) const {
       switch (model_) {
       case Constant2d:
-        compute_constant_2d(sbox);
+        compute_constant_2d(data, background, mask);
         break;
       case Constant3d:
-        compute_constant_3d(sbox);
+        compute_constant_3d(data, background, mask);
         break;
       case LogLinear2d:
-        compute_loglinear_2d(sbox);
+        compute_loglinear_2d(data, background, mask);
         break;
       case LogLinear3d:
-        compute_loglinear_3d(sbox);
+        compute_loglinear_3d(data, background, mask);
         break;
       default:
         DIALS_ERROR("Unknown Model");
@@ -110,16 +168,20 @@ namespace dials { namespace algorithms {
      * Compute the background values for a single shoebox
      * @param sbox The shoebox
      */
-    void compute_constant_2d(Shoebox<> &sbox) const {
+    template <typename T>
+    void compute_constant_2d(
+        const af::const_ref< T, af::c_grid<3> > &data,
+        af::ref< T, af::c_grid<3> > background,
+        af::ref< int, af::c_grid<3> > mask) const {
 
-      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
+      for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
 
         // Compute number of background pixels
         std::size_t num_background = 0;
         int mask_code = Valid | Background;
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            if ((mask(k,j,i) & mask_code) == mask_code) {
               num_background++;
             }
           }
@@ -129,12 +191,12 @@ namespace dials { namespace algorithms {
         // Allocate some arrays
         af::shared<double> Y(num_background, 0);
         std::size_t l = 0;
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            if ((mask(k,j,i) & mask_code) == mask_code) {
               DIALS_ASSERT(l < Y.size());
-              DIALS_ASSERT(sbox.data(k,j,i) >= 0);
-              Y[l++] = sbox.data(k,j,i);
+              DIALS_ASSERT(data(k,j,i) >= 0);
+              Y[l++] = data(k,j,i);
             }
           }
         }
@@ -156,14 +218,14 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(result.converged());
 
         // Compute the background
-        double background = result.mean();
+        double mean_background = result.mean();
 
         // Fill in the background shoebox values
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            sbox.background(k,j,i) = background;
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
-              sbox.mask(k,j,i) |= BackgroundUsed;
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            background(k,j,i) = mean_background;
+            if ((mask(k,j,i) & mask_code) == mask_code) {
+              mask(k,j,i) |= BackgroundUsed;
             }
           }
         }
@@ -174,13 +236,17 @@ namespace dials { namespace algorithms {
      * Compute the background values for a single shoebox
      * @param sbox The shoebox
      */
-    void compute_constant_3d(Shoebox<> &sbox) const {
+    template <typename T>
+    void compute_constant_3d(
+        const af::const_ref< T, af::c_grid<3> > &data,
+        af::ref< T, af::c_grid<3> > background,
+        af::ref< int, af::c_grid<3> > mask) const {
 
       // Compute number of background pixels
       std::size_t num_background = 0;
       int mask_code = Valid | Background;
-      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
-        if ((sbox.mask[i] & mask_code) == mask_code) {
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if ((mask[i] & mask_code) == mask_code) {
           num_background++;
         }
       }
@@ -189,11 +255,11 @@ namespace dials { namespace algorithms {
       // Allocate some arrays
       af::shared<double> Y(num_background, 0);
       std::size_t j = 0;
-      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
-        if ((sbox.mask[i] & mask_code) == mask_code) {
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if ((mask[i] & mask_code) == mask_code) {
           DIALS_ASSERT(j < Y.size());
-          DIALS_ASSERT(sbox.data[i] >= 0);
-          Y[j++] = sbox.data[i];
+          DIALS_ASSERT(data[i] >= 0);
+          Y[j++] = data[i];
         }
       }
       DIALS_ASSERT(j == Y.size());
@@ -214,13 +280,13 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(result.converged());
 
       // Compute the background
-      double background = result.mean();
+      double mean_background = result.mean();
 
       // Fill in the background shoebox values
-      for (std::size_t i = 0; i < sbox.background.size(); ++i) {
-        sbox.background[i] = background;
-        if ((sbox.mask[i] & mask_code) == mask_code) {
-          sbox.mask[i] |= BackgroundUsed;
+      for (std::size_t i = 0; i < background.size(); ++i) {
+        background[i] = mean_background;
+        if ((mask[i] & mask_code) == mask_code) {
+          mask[i] |= BackgroundUsed;
         }
       }
     }
@@ -229,16 +295,20 @@ namespace dials { namespace algorithms {
      * Compute the background values for a single shoebox
      * @param sbox The shoebox
      */
-    void compute_loglinear_2d(Shoebox<> &sbox) const {
+    template <typename T>
+    void compute_loglinear_2d(
+        const af::const_ref< T, af::c_grid<3> > &data,
+        af::ref< T, af::c_grid<3> > background,
+        af::ref< int, af::c_grid<3> > mask) const {
 
-      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
+      for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
 
         // Compute number of background pixels
         std::size_t num_background = 0;
         int mask_code = Valid | Background;
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            if ((mask(k,j,i) & mask_code) == mask_code) {
               num_background++;
             }
           }
@@ -249,12 +319,12 @@ namespace dials { namespace algorithms {
         af::versa<double, af::c_grid<2> > X(af::c_grid<2>(num_background,3),0);
         af::shared<double> Y(num_background, 0);
         std::size_t l = 0;
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            if ((mask(k,j,i) & mask_code) == mask_code) {
               DIALS_ASSERT(l < Y.size());
-              DIALS_ASSERT(sbox.data(k,j,i) >= 0);
-              Y[l] = sbox.data(k,j,i);
+              DIALS_ASSERT(data(k,j,i) >= 0);
+              Y[l] = data(k,j,i);
               X(l,0) = 1.0;
               X(l,1) = j+0.5;
               X(l,2) = i+0.5;
@@ -310,13 +380,13 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(b2 > -300 && b2 < 300);
 
         // Fill in the background shoebox values
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
             double eta = b0 + b1 * (j+0.5) + b2*(i+0.5);
-            double background = std::exp(eta);
-            sbox.background(k,j,i) = background;
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
-              sbox.mask(k,j,i) |= BackgroundUsed;
+            double b = std::exp(eta);
+            background(k,j,i) = b;
+            if ((mask(k,j,i) & mask_code) == mask_code) {
+              mask(k,j,i) |= BackgroundUsed;
             }
           }
         }
@@ -327,15 +397,19 @@ namespace dials { namespace algorithms {
      * Compute the background values for a single shoebox
      * @param sbox The shoebox
      */
-    void compute_loglinear_3d(Shoebox<> &sbox) const {
+    template <typename T>
+    void compute_loglinear_3d(
+        const af::const_ref< T, af::c_grid<3> > &data,
+        af::ref< T, af::c_grid<3> > background,
+        af::ref< int, af::c_grid<3> > mask) const {
 
       // Compute number of background pixels
       std::size_t num_background = 0;
       int mask_code = Valid | Background;
-      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+      for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            if ((mask(k,j,i) & mask_code) == mask_code) {
               num_background++;
             }
           }
@@ -347,13 +421,13 @@ namespace dials { namespace algorithms {
       af::versa<double, af::c_grid<2> > X(af::c_grid<2>(num_background,4),0);
       af::shared<double> Y(num_background, 0);
       std::size_t l = 0;
-      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
+      for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            if ((mask(k,j,i) & mask_code) == mask_code) {
               DIALS_ASSERT(l < Y.size());
-              DIALS_ASSERT(sbox.data(k,j,i) >= 0);
-              Y[l] = sbox.data(k,j,i);
+              DIALS_ASSERT(data(k,j,i) >= 0);
+              Y[l] = data(k,j,i);
               X(l,0) = 1.0;
               X(l,1) = k;
               X(l,2) = j;
@@ -418,13 +492,13 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(b3 > -300 && b3 < 300);
 
       // Fill in the background shoebox values
-      for (std::size_t k = 0; k < sbox.zsize(); ++k) {
-        for (std::size_t j = 0; j < sbox.ysize(); ++j) {
-          for (std::size_t i = 0; i < sbox.xsize(); ++i) {
-            double background = std::exp(b0 + b1*k + b2*j + b3*i);
-            sbox.background(k,j,i) = background;
-            if ((sbox.mask(k,j,i) & mask_code) == mask_code) {
-              sbox.mask(k,j,i) |= BackgroundUsed;
+      for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
+        for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
+            double b = std::exp(b0 + b1*k + b2*j + b3*i);
+            background(k,j,i) = b;
+            if ((mask(k,j,i) & mask_code) == mask_code) {
+              mask(k,j,i) |= BackgroundUsed;
             }
           }
         }
