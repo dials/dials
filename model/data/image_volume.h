@@ -11,7 +11,7 @@
 #ifndef DIALS_MODEL_DATA_IMAGE_VOLUME_H
 #define DIALS_MODEL_DATA_IMAGE_VOLUME_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/image.h>
