@@ -71,8 +71,7 @@ myscan = sf.make_scan(image_range = (1,300),
                       deg = True)
 sweep_range = myscan.get_oscillation_range(deg=False)
 assert approx_equal(sweep_range, (0., pi / 6.))
-temp = myscan.get_oscillation(deg=False)
-im_width = temp[1] - temp[0]
+im_width = myscan.get_oscillation(deg=False)[1]
 assert approx_equal(im_width, 0.1 * pi / 180.)
 
 # Create an ExperimentList for ScansRayPredictor

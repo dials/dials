@@ -89,8 +89,7 @@ myscan = sf.make_scan(image_range = (1,1800),
                       epochs = range(1800),
                       deg = True)
 sweep_range = myscan.get_oscillation_range(deg=False)
-temp = myscan.get_oscillation(deg=False)
-im_width = temp[1] - temp[0]
+im_width = myscan.get_oscillation(deg=False)[1]
 assert sweep_range == (0., pi)
 assert approx_equal(im_width, 0.1 * pi / 180.)
 

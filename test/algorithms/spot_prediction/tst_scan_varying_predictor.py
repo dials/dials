@@ -60,8 +60,7 @@ def setup_models(args):
                         epochs = range(180),
                         deg = True)
   sweep_range = scan.get_oscillation_range(deg=False)
-  temp = scan.get_oscillation(deg=False)
-  im_width = temp[1] - temp[0]
+  im_width = scan.get_oscillation(deg=False)[1]
   assert sweep_range == (0., pi)
   assert approx_equal(im_width, 1.0 * pi / 180.)
 
