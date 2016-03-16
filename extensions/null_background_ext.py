@@ -18,7 +18,7 @@ class NullBackgroundExt(BackgroundIface):
 
   name = 'null'
 
-  def compute_background(self, reflections):
+  def compute_background(self, reflections, image_volume=None):
     '''
     Compute the background.
 
