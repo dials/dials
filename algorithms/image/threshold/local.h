@@ -559,7 +559,7 @@ namespace dials { namespace algorithms {
             double a = m * y - x * x;
             double b = m * src[k] - x;
             double c = gain[k] * x * (m-1+nsig_b_ * std::sqrt(2*(m-1)));
-            double d = nsig_s_ * std::sqrt(x * m);
+            double d = nsig_s_ * std::sqrt(gain[k] * x * m);
             dst[k] = a > c && b > d;
           }
         }

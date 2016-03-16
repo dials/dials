@@ -104,6 +104,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                 int2, double, double, double, int>((
                     arg("image"),
                     arg("mask"),
+                    arg("gain"),
                     arg("size"),
                     arg("n_sigma_b"),
                     arg("n_sigma_s"),
