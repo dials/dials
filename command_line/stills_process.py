@@ -127,6 +127,9 @@ class Script(object):
         datablocks = DataBlockFactory.from_filenames([filename])
         if len(datablocks) == 0:
           raise Abort("Could not load %s"%filename)
+        if len(datablocks) > 1:
+          raise Abort("Got multiple datablocks from file %s"%filename)
+        return datablocks[0]
 
       datablocks = easy_mp.parallel_map(
         func=do_import,
