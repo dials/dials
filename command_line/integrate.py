@@ -315,6 +315,11 @@ class Script(object):
         Invalid input for reference reflections.
         Expected > %d indexed spots, got %d
       ''' % (0, len(reference)))
+    mask = reference.get_flags(reference.flags.centroid_outlier)
+    if mask.count(True) > 0:
+      rubbish.extend(reference.select(mask))
+      reference.del_selected(mask)
+      info(' removing %d reflections marked as centroid outliers' %  mask.count(True))
     mask = reference['miller_index'] == (0, 0, 0)
     if mask.count(True) > 0:
       rubbish.extend(reference.select(mask))
