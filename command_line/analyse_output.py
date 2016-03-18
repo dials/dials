@@ -182,15 +182,28 @@ class per_panel_plot(object):
         p.set_clim(clim)
 
       default_size = fig.get_size_inches()
-      fig.set_size_inches((n_cols*default_size[0], n_rows*default_size[1]))
+      if self.cbar_ylabel is not None and (n_cols, n_rows) == (1, 24):
+        fig.set_size_inches((n_cols*default_size[0], 0.15*n_rows*default_size[1]))
+      if self.cbar_ylabel is not None and (n_cols, n_rows) == (5, 24):
+        fig.set_size_inches((n_cols*default_size[0], 0.5*n_rows*default_size[1]))
+      else:
+        fig.set_size_inches((n_cols*default_size[0], n_rows*default_size[1]))
 
       #pyplot.tight_layout()
       if self.cbar_ylabel is not None:
         cax = fig.add_axes([0.9, 0.1, 0.03, 0.8])
-        cbar = fig.colorbar(ax, cax=cax)
-        cbar.ax.set_ylabel(self.cbar_ylabel, fontsize=n_cols*10)
-        cbar.ax.tick_params(labelsize=n_cols*8)
-        if n_panels > 1:
+        for ax in plots:
+          try:
+            cbar = fig.colorbar(ax, cax=cax)
+            cbar.ax.set_ylabel(self.cbar_ylabel, fontsize=n_cols*10)
+            cbar.ax.tick_params(labelsize=n_cols*8)
+          except Exception:
+            continue
+          else:
+            break
+        if 1 and (n_cols, n_rows) == (1, 24):
+          fig.subplots_adjust(hspace=0.1/(n_rows/2), right=0.8)
+        elif n_panels > 1:
           fig.subplots_adjust(hspace=0.1/n_rows, right=0.8)
 
       if self.title is not None:
