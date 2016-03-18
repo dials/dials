@@ -84,6 +84,28 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
+  /** @returns An array of background intensity values */
+  static
+  af::shared<double> intensity_background_value(
+      const af::const_ref<Intensity> &obj) {
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = obj[i].background.value;
+    }
+    return result;
+  }
+
+  /** @returns An array of background intensity variances */
+  static
+  af::shared<double> intensity_background_variance(
+      const af::const_ref<Intensity> &obj) {
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = obj[i].background.variance;
+    }
+    return result;
+  }
+
   void export_flex_intensity()
   {
     scitbx::af::boost_python::flex_wrapper <
@@ -97,7 +119,11 @@ namespace dials { namespace af { namespace boost_python {
       .def("corrected_value",
         &intensity_corrected_value)
       .def("corrected_variance",
-        &intensity_corrected_variance);
+        &intensity_corrected_variance)
+      .def("background_value",
+        &intensity_background_value)
+      .def("background_variance",
+        &intensity_background_variance);
   }
 
 }}} // namespace dials::af::boost_python

@@ -90,10 +90,19 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * @returns the standard deviation on the intensity
+     * @returns The background
      */
-    FloatType standard_deviation() const {
-      return std::sqrt(variance());
+    FloatType background() const {
+      return sum_b_;
+    }
+
+    /**
+     * @returns The background variance
+     */
+    FloatType background_variance() const {
+      FloatType m_n = n_background_ > 0 ?
+        (FloatType)n_signal_ / (FloatType)n_background_ : 0.0;
+      return std::abs(sum_b_) * (1.0 + m_n);
     }
 
     /**
@@ -101,6 +110,13 @@ namespace dials { namespace algorithms {
      */
     std::size_t n_signal() const {
       return n_signal_;
+    }
+
+    /**
+     * @returns the number of background pixels
+     */
+    std::size_t n_background() const {
+      return n_background_;
     }
 
     /**

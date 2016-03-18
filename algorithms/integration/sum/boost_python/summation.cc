@@ -46,10 +46,14 @@ namespace dials { namespace algorithms { namespace boost_python {
         &SummationType::intensity)
       .def("variance",
         &SummationType::variance)
-      .def("standard_deviation",
-        &SummationType::standard_deviation)
+      .def("background",
+        &SummationType::background)
+      .def("background_variance",
+        &SummationType::background_variance)
       .def("n_signal",
         &SummationType::n_signal)
+      .def("n_background",
+        &SummationType::n_background)
       .def("success",
         &SummationType::success)
       ;

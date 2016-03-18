@@ -442,11 +442,29 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
   # FIXME add DIALS_FLAG which can include e.g. was partial etc.
 
-  type_table = {'IPR': 'J', 'BGPKRATIOS': 'R', 'WIDTH': 'R', 'I': 'J',
-                'H': 'H', 'K': 'H', 'MPART': 'I', 'L': 'H', 'BATCH': 'B',
-                'M_ISYM': 'Y', 'SIGI': 'Q', 'FLAG': 'I', 'XDET': 'R', 'LP': 'R',
-                'YDET': 'R', 'SIGIPR': 'Q', 'FRACTIONCALC': 'R', 'ROT': 'R',
-                'DQE': 'R'}
+  type_table = {
+    'H': 'H',
+    'K': 'H',
+    'L': 'H',
+    'I': 'J',
+    'SIGI': 'Q',
+    'IPR': 'J',
+    'SIGIPR': 'Q',
+    'BG' : 'R',
+    'SIGBG' : 'R',
+    'XDET': 'R',
+    'YDET': 'R',
+    'BATCH': 'B',
+    'BGPKRATIOS': 'R',
+    'WIDTH': 'R',
+    'MPART': 'I',
+    'M_ISYM': 'Y',
+    'FLAG': 'I',
+    'LP': 'R',
+    'FRACTIONCALC': 'R',
+    'ROT': 'R',
+    'DQE': 'R',
+  }
 
   # derive index columns from original indices with
   #
@@ -499,6 +517,14 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     d.add_column('I', type_table['I']).set_values(I_sum.as_float())
     d.add_column('SIGI', type_table['SIGI']).set_values(
       flex.sqrt(V_sum).as_float())
+  if ('background.sum.value' in integrated_data and
+      'background.sum.variance' in integrated_data):
+    bg = integrated_data['background.sum.value']
+    varbg = integrated_data['background.sum.variance']
+    assert (varbg >= 0).count(False) == 0
+    sigbg = flex.sqrt(varbg)
+    d.add_column('BG', type_table['BG']).set_values(bg.as_float())
+    d.add_column('SIGBG', type_table['SIGBG']).set_values(sigbg.as_float())
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())

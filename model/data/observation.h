@@ -76,6 +76,7 @@ namespace dials { namespace model {
 
     IntensityData observed;
     IntensityData corrected;
+    IntensityData background;
 
     /** Default construct */
     Intensity() {}

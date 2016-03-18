@@ -44,6 +44,8 @@ namespace dials { namespace algorithms {
     Intensity result;
     result.observed.value = summation.intensity();
     result.observed.variance = summation.variance();
+    result.background.value = summation.background();
+    result.background.variance = summation.background_variance();
     result.observed.success = summation.success() && success;
     return result;
   }

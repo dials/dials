@@ -104,6 +104,7 @@ namespace dials { namespace model { namespace boost_python {
         arg("corrected"))))
       .def_readwrite("observed", &Intensity::observed)
       .def_readwrite("corrected", &Intensity::corrected)
+      .def_readwrite("background", &Intensity::background)
       .def("__eq__", &Intensity::operator==)
       .def("__ne__", &Intensity::operator!=);
 

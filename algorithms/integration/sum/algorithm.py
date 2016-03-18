@@ -37,6 +37,8 @@ class IntegrationAlgorithm(object):
       intensity = sum_image_volume(reflections, image_volume)
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
+    reflections['background.sum.value'] = intensity.background_value()
+    reflections['background.sum.variance'] = intensity.background_variance()
     success = intensity.observed_success()
     reflections.set_flags(success, reflections.flags.integrated_sum)
     return success
