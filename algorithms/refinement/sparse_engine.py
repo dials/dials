@@ -77,6 +77,12 @@ from engine import LevenbergMarquardtIterations
 class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquardtIterations):
   """Levenberg Marquardt with Sparse matrix algebra"""
 
+  def set_cholesky_factor(self):
+    """Override to disable this method of the base AdaptLstbx. For sparse, large
+    matrices this is numberically unstable; not to mention it is not implemented
+    for the Eigen wrapper"""
+    pass
+
   def run(self):
 
     # add an attribute to the journal
@@ -115,6 +121,11 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
 
       # solve the normal equations
       self.solve()
+
+      # The call to set_cholesky_factor is kept here for future merging of this
+      # run method and that of the base AdaptLstbx, however here it is
+      # overridden to do nothing
+      self.set_cholesky_factor()
 
       # standard journalling
       self.update_journal()

@@ -462,6 +462,9 @@ class AdaptLstbx(
     # required for restart to work (do I need that method?)
     self.x_0 = self.x.deep_copy()
 
+    # keep attribute for the Cholesky factor required for ESD calculation
+    self.cf = None
+
     normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
 
   def restart(self):
@@ -550,14 +553,22 @@ class AdaptLstbx(
       self.x, self.old_x = self.old_x, None
       return True
 
-  def finalise(self):
-    """perform various post-run tasks"""
+  def set_cholesky_factor(self):
+    """Set the Cholesky factor required for ESD calculation. This method is
+    valid only for the LSTBX dense matrix interface"""
+
+    self.cf = self.step_equations().cholesky_factor_packed_u().deep_copy()
+
+  def calculate_esds(self):
+    """Calculate ESDs of parameters"""
 
     # it is possible to get here with zero steps taken by the minimiser. For
     # example by failing for the MAX_TRIAL_ITERATIONS reason before any forward
     # steps are taken with the LevMar engine. If so the below is invalid,
     # so return early
     if self.history.get_nrows() == 0: return None
+
+    if self.cf is None: return None
 
     # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
     cf_inv = self.cf.matrix_packed_u_as_upper_triangle().\
@@ -687,8 +698,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       self.n_iterations += 1
       self.build_up()
 
-    self.cf = self.step_equations().cholesky_factor_packed_u()
-    self.finalise()
+    self.set_cholesky_factor()
+    self.calculate_esds()
 
     return
 
@@ -747,7 +758,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       # keep the cholesky factor for ESD calculation if we end this step. Doing
       # it here ensures the normal equations are solved (cholesky_factor_packed_u
       # can only be called if that is the case)
-      self.cf = self.step_equations().cholesky_factor_packed_u().deep_copy()
+      self.set_cholesky_factor()
 
       # standard journalling
       self.update_journal()
@@ -803,6 +814,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       # prepare for next step
       self.build_up()
 
-    self.finalise()
+    self.calculate_esds()
 
     return
