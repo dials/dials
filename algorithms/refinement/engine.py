@@ -640,9 +640,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       pvn = self.parameter_vector_norm()
       gn = self.opposite_of_gradient().norm_inf()
 
-      # debugging
-      #if self._verbosity > 3: self._print_normal_matrix()
-
       # solve the normal equations
       self.solve()
 
@@ -730,7 +727,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       return
 
     a = self.normal_matrix_packed_u()
-    self.mu = self.tau*flex.max(a.matrix_packed_u_diagonal())
+    self.mu = self.tau * flex.max(a.matrix_packed_u_diagonal())
 
     while True:
 
@@ -741,9 +738,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       # cache some items for the journal prior to solve
       pvn = self.parameter_vector_norm()
       gn = self.opposite_of_gradient().norm_inf()
-
-      # debugging
-      #if self._verbosity > 3: self._print_normal_matrix()
 
       a.matrix_packed_u_diagonal_add_in_place(self.mu)
 
