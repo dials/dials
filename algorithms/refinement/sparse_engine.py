@@ -90,8 +90,6 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
 
   def add_constant_to_diagonal(self, mu):
     '''Delegate to the method of non_linear_ls_eigen_wrapper'''
-    #a = self.normal_matrix_packed_u()
-    #a.matrix_packed_u_diagonal_add_in_place(self.mu)
     non_linear_ls_eigen_wrapper.add_constant_to_diagonal(self, self.mu)
 
   def run(self):
