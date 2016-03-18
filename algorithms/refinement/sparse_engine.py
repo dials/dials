@@ -10,7 +10,7 @@ from __future__ import division
 import libtbx
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
-from logging import debug
+from logging import info, debug
 from engine import TARGET_ACHIEVED,RMSD_CONVERGED,STEP_TOO_SMALL
 from engine import MAX_ITERATIONS,MAX_TRIAL_ITERATIONS,DOF_TOO_LOW
 
@@ -51,7 +51,8 @@ class AdaptLstbxSparse(AdaptLstbxBase,non_linear_ls_eigen_wrapper):
     """in contrast to dense matrix (traditional) LevMar, sparse matrix assumes
        that the matrix is extremely large and not easily inverted.  Therefore,
        no attempt here to calculate esd's based on the variance covariance matrix."""
-    self.show_eigen_summary()
+    if self._verbosity > 0:
+      self.show_eigen_summary()
     return
 
 from engine import GaussNewtonIterations as GaussNewtonIterationsBase
@@ -157,7 +158,8 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
       self.n_iterations += 1
       self.build_up(objective_only=True)
       objective_new = self.objective()
-      print "%5d %18.4f"%(self.n_iterations,objective_new), "%12.7f"%(self.mu)
+      if self._verbosity > 0:
+        info("%5d %18.4f %12.7f"%(self.n_iterations,objective_new, self.mu))
       actual_decrease = self._f - objective_new
       rho = actual_decrease/expected_decrease
       if rho > 0:
