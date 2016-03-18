@@ -13,6 +13,7 @@ from scitbx.array_family import flex
 from logging import info, debug
 from engine import TARGET_ACHIEVED,RMSD_CONVERGED,STEP_TOO_SMALL
 from engine import MAX_ITERATIONS,MAX_TRIAL_ITERATIONS,DOF_TOO_LOW
+from engine import DisableMPmixin
 
 try:
   from scitbx.examples.bevington import non_linear_ls_eigen_wrapper
@@ -24,7 +25,7 @@ except ImportError,e:
 
 from engine import AdaptLstbx as AdaptLstbxBase
 
-class AdaptLstbxSparse(AdaptLstbxBase,non_linear_ls_eigen_wrapper):
+class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapper):
   """Adapt the base class for Eigen"""
 
   def __init__(self, target, prediction_parameterisation, log=None,
@@ -33,19 +34,13 @@ class AdaptLstbxSparse(AdaptLstbxBase,non_linear_ls_eigen_wrapper):
                track_out_of_sample_rmsd = False, max_iterations = None):
 
     AdaptLstbxBase.__init__(self, target, prediction_parameterisation,
-             log=log, track_step=track_step,
+             log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
              track_parameter_correlation=track_parameter_correlation,
              track_out_of_sample_rmsd=track_out_of_sample_rmsd,
              max_iterations=max_iterations)
 
     non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self._parameters))
-
-  def set_nproc(self, *args, **kwargs):
-    # Multiprocessing is not implemented for sparse matrix LevMar
-    # XXX possible future path: pickle support for sparse::matrix, then divide up the Jacobian
-    self._nproc = 1
-    return
 
   def finalise(self):
     """in contrast to dense matrix (traditional) LevMar, sparse matrix assumes

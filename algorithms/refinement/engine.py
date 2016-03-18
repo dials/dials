@@ -275,9 +275,8 @@ class Refinery(object):
     return l1 > l2 and n1 <= n2
 
   def set_nproc(self, nproc):
-    """to be implemented only by derived classes that support multiprocessing"""
-
-    raise NotImplementedError()
+    """Set number of processors for multiprocessing. Override in derived classes
+    if a policy dictates that this must not be user-controlled"""
     self._nproc = nproc
     return
 
@@ -290,6 +289,15 @@ class Refinery(object):
 
     # Specify a minimizer and its parameters, and run
     raise NotImplementedError()
+
+class DisableMPmixin(object):
+  """A mixin class that disables setting of nproc for multiprocessing"""
+
+  def set_nproc(self, nproc):
+    if nproc != 1:
+      raise NotImplementedError()
+    return
+
 
 class AdaptLbfgs(Refinery):
   """Adapt Refinery for L-BFGS minimiser"""
@@ -369,10 +377,6 @@ class AdaptLbfgs(Refinery):
       return True
 
     return False
-
-  def set_nproc(self, nproc):
-    self._nproc = nproc
-    return
 
   def run_lbfgs(self, curvatures=False):
     """
@@ -459,10 +463,6 @@ class AdaptLstbx(
     self.x_0 = self.x.deep_copy()
 
     normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
-
-  def set_nproc(self, nproc):
-    self._nproc = nproc
-    return
 
   def restart(self):
     self.x = self.x_0.deep_copy()
