@@ -304,7 +304,10 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
 
   U = experiment.crystal.get_U()
-  F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
+  if experiment.goniometer is not None:
+    F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
+  else:
+    F = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
   unit_cell = experiment.crystal.get_unit_cell()
 
   from iotbx import mtz
