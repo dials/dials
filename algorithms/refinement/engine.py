@@ -716,6 +716,17 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     def fset(self, value):
       self._mu = value
 
+  def setup_mu(self):
+    '''Setup initial value for mu'''
+    a = self.normal_matrix_packed_u()
+    self.mu = self.tau * flex.max(a.matrix_packed_u_diagonal())
+    return
+
+  def add_constant_to_diagonal(self, mu):
+    '''Add the constant value mu to the diagonal of the normal matrix'''
+    a = self.normal_matrix_packed_u()
+    a.matrix_packed_u_diagonal_add_in_place(self.mu)
+
   def run(self):
 
     # add an attribute to the journal
@@ -737,8 +748,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       self.history.reason_for_termination = DOF_TOO_LOW
       return
 
-    a = self.normal_matrix_packed_u()
-    self.mu = self.tau * flex.max(a.matrix_packed_u_diagonal())
+    self.setup_mu()
 
     while True:
 
@@ -750,7 +760,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       pvn = self.parameter_vector_norm()
       gn = self.opposite_of_gradient().norm_inf()
 
-      a.matrix_packed_u_diagonal_add_in_place(self.mu)
+      self.add_constant_to_diagonal(self.mu)
 
       # solve the normal equations
       self.solve()

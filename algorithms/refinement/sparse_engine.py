@@ -78,10 +78,21 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
   """Levenberg Marquardt with Sparse matrix algebra"""
 
   def set_cholesky_factor(self):
-    """Override to disable this method of the base AdaptLstbx. For sparse, large
-    matrices this is numberically unstable; not to mention it is not implemented
-    for the Eigen wrapper"""
+    """Override that disables this method of the base AdaptLstbx. For
+    sparse, large matrices this is numberically unstable; not to mention it
+    is not implemented for the Eigen wrapper"""
     pass
+
+  def setup_mu(self):
+    '''Override that works with the Eigen wrapper'''
+    a_diag = self.get_normal_matrix_diagonal()
+    self.mu = self.tau * flex.max(a_diag)
+
+  def add_constant_to_diagonal(self, mu):
+    '''Delegate to the method of non_linear_ls_eigen_wrapper'''
+    #a = self.normal_matrix_packed_u()
+    #a.matrix_packed_u_diagonal_add_in_place(self.mu)
+    non_linear_ls_eigen_wrapper.add_constant_to_diagonal(self, self.mu)
 
   def run(self):
 
@@ -104,8 +115,7 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
       self.history.reason_for_termination = DOF_TOO_LOW
       return
 
-    a_diag = self.get_normal_matrix_diagonal()
-    self.mu = self.tau * flex.max(a_diag)
+    self.setup_mu()
 
     while True:
 
