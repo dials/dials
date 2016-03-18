@@ -42,14 +42,6 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
 
     non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self._parameters))
 
-  def finalise(self):
-    """in contrast to dense matrix (traditional) LevMar, sparse matrix assumes
-       that the matrix is extremely large and not easily inverted.  Therefore,
-       no attempt here to calculate esd's based on the variance covariance matrix."""
-    if self._verbosity > 0:
-      self.show_eigen_summary()
-    return
-
 from engine import GaussNewtonIterations as GaussNewtonIterationsBase
 class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
   """Refinery implementation, using lstbx Gauss Newton iterations"""
@@ -99,103 +91,13 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
       info("%5d %18.4f %12.7f"%(self.n_iterations, objective, self.mu))
 
   def run(self):
+    self._run_core()
 
-    # add an attribute to the journal
-    self.history.add_column("mu")
-    self.history.add_column("nu")
+    # In contrast to dense matrix (traditional) LevMar, sparse matrix assumes
+    # that the matrix is extremely large and not easily inverted. Therefore,
+    # no attempt here to calculate esd's based on the variance covariance
+    # matrix.
 
-    #FIXME need a much neater way of doing this stuff through
-    #inheritance
-    # set max iterations if not already.
-    if self._max_iterations is None:
-      self._max_iterations = 20
-
-    self.n_iterations = 0
-    nu = 2
-    self.build_up()
-
-    # return early if refinement is not possible
-    if self.dof < 1:
-      self.history.reason_for_termination = DOF_TOO_LOW
-      return
-
-    self.setup_mu()
-
-    while True:
-
-      # set functional and gradients for the step
-      self._f = self.objective()
-      self._g = -self.opposite_of_gradient()
-
-      # cache some items for the journal prior to solve
-      pvn = self.parameter_vector_norm()
-      gn = self.opposite_of_gradient().norm_inf()
-
-      self.add_constant_to_diagonal(self.mu)
-
-      # solve the normal equations
-      self.solve()
-
-      # The call to set_cholesky_factor is kept here for future merging of this
-      # run method and that of the base AdaptLstbx, however here it is
-      # overridden to do nothing
-      self.set_cholesky_factor()
-
-      # standard journalling
-      self.update_journal()
-      if self._verbosity > 0:
-        debug("Step %d", self.history.get_nrows() - 1)
-
-      # add cached items to the journal
-      self.history.set_last_cell("parameter_vector_norm", pvn)
-      self.history.set_last_cell("gradient_norm", gn)
-
-      # extra journalling post solve
-      self.history.set_last_cell("mu", self.mu)
-      self.history.set_last_cell("nu", nu)
-      if self.history.has_key("solution"):
-        self.history.set_last_cell("solution", self.actual.step().deep_copy())
-      self.history.set_last_cell("solution_norm", self.step().norm())
-      self.history.set_last_cell("reduced_chi_squared", self.chi_sq())
-
-      # test termination criteria before taking the next forward step
-      if self.had_too_small_a_step():
-        self.history.reason_for_termination = STEP_TOO_SMALL
-        break
-      if self.test_for_termination():
-        self.history.reason_for_termination = TARGET_ACHIEVED
-        break
-      if self.test_rmsd_convergence():
-        self.history.reason_for_termination = RMSD_CONVERGED
-        break
-      if self.n_iterations == self._max_iterations:
-        self.history.reason_for_termination = MAX_ITERATIONS
-        break
-
-      h = self.step()
-      expected_decrease = 0.5*h.dot(self.mu*h - self._g)
-      self.step_forward()
-      self.n_iterations += 1
-      self.build_up(objective_only=True)
-      objective_new = self.objective()
-      self.report_progress(objective_new)
-      actual_decrease = self._f - objective_new
-      rho = actual_decrease/expected_decrease
-      if rho > 0:
-        self.mu *= max(1/3, 1 - (2*rho - 1)**3)
-        nu = 2
-      else:
-        self.step_backward()
-        self.history.del_last_row()
-        if nu >= 8192:
-          self.history.reason_for_termination = MAX_TRIAL_ITERATIONS
-          break
-        self.mu *= nu
-        nu *= 2
-
-      # prepare for next step
-      self.build_up()
-
-    self.finalise()
-
+    if self._verbosity > 0:
+      self.show_eigen_summary()
     return

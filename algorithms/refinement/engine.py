@@ -733,7 +733,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     long-running methods'''
     pass
 
-  def run(self):
+  def _run_core(self):
 
     # add an attribute to the journal
     self.history.add_column("mu")
@@ -833,4 +833,9 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
     self.calculate_esds()
 
+    return
+
+  def run(self):
+    self._run_core()
+    self.calculate_esds()
     return
