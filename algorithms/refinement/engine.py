@@ -727,6 +727,12 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     a = self.normal_matrix_packed_u()
     a.matrix_packed_u_diagonal_add_in_place(self.mu)
 
+  def report_progress(self, objective):
+    '''Callback within the refinement main loop that can be overridden to
+    report the value of the objective function (and possibly) other details for
+    long-running methods'''
+    pass
+
   def run(self):
 
     # add an attribute to the journal
@@ -807,6 +813,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       self.n_iterations += 1
       self.build_up(objective_only=True)
       objective_new = self.objective()
+      self.report_progress(objective_new)
       actual_decrease = self._f - objective_new
       rho = actual_decrease/expected_decrease
       if rho > 0:

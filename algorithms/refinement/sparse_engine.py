@@ -92,6 +92,12 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
     '''Delegate to the method of non_linear_ls_eigen_wrapper'''
     non_linear_ls_eigen_wrapper.add_constant_to_diagonal(self, self.mu)
 
+  def report_progress(self, objective):
+    '''Override for the Eigen wrapper to provide live feedback of progress
+    of the refinement'''
+    if self._verbosity > 0:
+      info("%5d %18.4f %12.7f"%(self.n_iterations, objective, self.mu))
+
   def run(self):
 
     # add an attribute to the journal
@@ -172,8 +178,7 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
       self.n_iterations += 1
       self.build_up(objective_only=True)
       objective_new = self.objective()
-      if self._verbosity > 0:
-        info("%5d %18.4f %12.7f"%(self.n_iterations,objective_new, self.mu))
+      self.report_progress(objective_new)
       actual_decrease = self._f - objective_new
       rho = actual_decrease/expected_decrease
       if rho > 0:
