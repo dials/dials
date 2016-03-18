@@ -40,9 +40,10 @@ def exercise_1():
   from iotbx.reflection_file_reader import any_reflection_file
   reader = any_reflection_file(integrated_mtz)
   mtz_object = reader.file_content()
-  assert mtz_object.column_labels()[:14] == [
-    'H', 'K', 'L', 'M_ISYM', 'BATCH', 'IPR', 'SIGIPR', 'I', 'SIGI',
-    'FRACTIONCALC', 'XDET', 'YDET', 'ROT', 'LP']
+  assert mtz_object.column_labels()[:14] == ['H', 'K', 'L', 'M_ISYM', 'BATCH',
+                                             'IPR', 'SIGIPR', 'I', 'SIGI', 'BG',
+                                             'SIGBG', 'FRACTIONCALC', 'XDET',
+                                             'YDET']
 
   assert len(mtz_object.batches()) == 11
   batch = mtz_object.batches()[0]
