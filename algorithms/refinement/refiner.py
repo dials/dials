@@ -1574,7 +1574,7 @@ class Refiner(object):
       if len(detector) == 1: continue
       info("\nDetector {0} RMSDs by panel:".format(idetector + 1))
 
-      header = ["Panel", "Nref"]
+      header = ["Panel\nid", "Nref"]
       for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
         if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
           header.append(name + "\n(px)")
