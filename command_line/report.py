@@ -1896,12 +1896,77 @@ class ReferenceProfileAnalyser(object):
       return d
 
     mask = rlist.get_flags(rlist.flags.reference_spot)
+    d.update(self.reflection_correlations_vs_resolution(rlist))
     d.update(correlations("reference",  rlist.select(mask)))
     d.update(correlations("reflection", rlist))
     #ideal_correlations("reference", rlist.select(mask))
     #ideal_correlations("reflection", rlist)
 
     return {'reference': d}
+
+
+  def reflection_correlations_vs_resolution(self, rlist):
+    ''' Analyse the distribution of reference profiles. '''
+
+    print " Analysing reflection correlations vs resolution"
+    from cctbx import uctbx
+    from dials.algorithms.spot_finding.per_image_analysis import binner_d_star_cubed
+    profile_correlation = rlist['profile.correlation']
+    d_spacings = rlist['d']
+    d_star_sq = uctbx.d_as_d_star_sq(d_spacings)
+    binner = binner_d_star_cubed(d_spacings)
+    bin_centres = flex.double()
+    ccs = flex.double()
+    for bin in binner.bins:
+      d_min = bin.d_min
+      d_max = bin.d_max
+      ds3_min = 1/d_min**3
+      ds3_max = 1/d_max**3
+      ds3_centre = (ds3_max - ds3_min)/2 + ds3_min
+      d_centre = 1/ds3_centre**(1/3)
+      sel = (d_spacings < d_max) & (d_spacings >= d_min)
+      if sel.count(True) == 0:
+        continue
+      bin_centres.append(d_centre)
+      ccs.append(flex.mean(profile_correlation.select(sel)))
+
+    d_star_sq_bins = uctbx.d_as_d_star_sq(bin_centres)
+
+    def d_star_sq_to_d_ticks(d_star_sq, nticks):
+      from cctbx import uctbx
+      d_spacings = uctbx.d_star_sq_as_d(flex.double(d_star_sq))
+      min_d_star_sq = min(d_star_sq)
+      dstep = (max(d_star_sq) - min_d_star_sq)/nticks
+      tickvals = list(min_d_star_sq + (i*dstep) for i in range(nticks))
+      ticktext = ['%.2f' %(uctbx.d_star_sq_as_d(dsq)) for dsq in tickvals]
+      return tickvals, ticktext
+
+    tickvals, ticktext = d_star_sq_to_d_ticks(d_star_sq_bins, nticks=5)
+
+    return {
+      'reflection_cc_vs_resolution': {
+        'data': [
+          {
+            'x': list(d_star_sq_bins), # d_star_sq
+            'y': list(ccs),
+            'type': 'scatter',
+            'name': 'profile_correlation',
+          },
+        ],
+        'layout':{
+          'title': 'Reflection correlations vs resolution',
+          'xaxis': {
+            'title': u'Resolution (Å)',
+            'tickvals': tickvals,
+            'ticktext': ticktext,
+          },
+          'yaxis': {
+            'title': 'Correlation with reference profile',
+            'range': [0, 1]
+            },
+          },
+      },
+    }
 
   def reference_xy(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
@@ -2323,9 +2388,10 @@ class Analyser(object):
         print >> f, html.encode('ascii', 'xmlcharrefreplace')
 
     if self.params.output.json is not None:
+      import json
       print "Writing json data to: %s" %self.params.output.json
       with open(self.params.output.json, 'wb') as f:
-        print >> f, json_str
+        json.dump(json_data, f)
 
   def experiments_html(self, experiments):
     assert experiments is not None
