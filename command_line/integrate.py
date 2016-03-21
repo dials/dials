@@ -263,7 +263,7 @@ class Script(object):
       predicted = self.sample_predictions(experiments, predicted, params)
 
     # Compute the profile model
-    if params.create_profile_model:
+    if reference is not None and params.create_profile_model:
       experiments = ProfileModelFactory.create(params, experiments, reference)
     else:
       for expr in experiments:
