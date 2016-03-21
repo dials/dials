@@ -78,6 +78,10 @@ phil_scope = parse(
             "when experiment list contains a single imageset."
     .multiple = True
 
+  create_profile_model = True
+    .type = bool
+    .help = "Create the profile model"
+
   sampling
     .expert_level = 1
   {
@@ -259,9 +263,12 @@ class Script(object):
       predicted = self.sample_predictions(experiments, predicted, params)
 
     # Compute the profile model
-    if reference is not None:
+    if params.create_profile_model:
       experiments = ProfileModelFactory.create(params, experiments, reference)
-      del reference
+    else:
+      for expr in experiments:
+        expr.profile.params = params.profile
+    del reference
 
     # Compute the bounding box
     predicted.compute_bbox(experiments)
