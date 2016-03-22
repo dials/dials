@@ -103,7 +103,7 @@ class PlotData(object):
             'fast':f, 'slow':s,
             'fast_offset':f_off,
             'slow_offset':s_off,
-            'norm_offset':n_off}
+            'normal_offset':n_off}
 
 def extract_detectors():
   '''Check script input and return two detector models if all is okay'''
@@ -146,6 +146,33 @@ def extract_detectors():
   # ok here, return detectors
   return detector1, detector2
 
+def plot_stack_of_panels(panel_data, direction='fast'):
+  '''Plot data for each panel in a stack of subplots, with the first panel
+  at the top. This is appropriate for e.g. the 24 panel model for the I23
+  P12M detector, as it is simply unrolling the barrel to make a flat plot'''
+
+  fig, axarr = plt.subplots(len(panel_data), sharex=True)
+  axarr[0].set_title(r"$\Delta " + direction + "$")
+  plt.xlabel(direction + " (mm)")
+
+  for ipanel in range(len(panel_data)):
+    pnl_data = panel_data[ipanel]
+    f, s, offset = (pnl_data['fast'], pnl_data['slow'],
+                    pnl_data[direction + '_offset'])
+    ax=axarr[ipanel]
+    im = ax.hexbin(list(f), list(s), C=list(offset), gridsize=30)
+    ax.invert_yaxis()
+    ax.set_yticks([0., 20.])
+    ax.tick_params('y', labelsize='x-small')
+
+  fig.subplots_adjust(right=0.8)
+  cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
+  fig.colorbar(im, cax=cbar_ax)
+  cbar_ax.set_ylabel("$" + direction + "_{2} - " + direction + "_{1}$ (mm)")
+  plt.savefig(direction + "_diff.png")
+  plt.clf()
+
+
 def run():
 
   det1, det2 = extract_detectors()
@@ -153,82 +180,29 @@ def run():
   plot_data = PlotData(det1, det2)
 
   # do calculations in advance and store in a dictionary
-  dat={}
+  dat=[]
   for ipanel in range(len(det1)):
     print "Calc for panel", ipanel
-    dat[ipanel] = plot_data(ipanel)
+    dat.append(plot_data(ipanel))
 
   # set limits on colour scale to shifts of 2 pixels
   extrema = 1*0.172
 
   # first the fast plot
   print "Doing plot of offsets in the fast direction"
-  fig, axarr = plt.subplots(len(det1), sharex=True)
-  axarr[0].set_title(r"$\Delta fast$")
-  plt.xlabel("fast (mm)")
-
-  for ipanel in range(len(det1)):
-    pnl_data = dat[ipanel]
-    f, s, f_off, s_off, n_off = (pnl_data['fast'], pnl_data['slow'],
-      pnl_data['fast_offset'], pnl_data['slow_offset'], pnl_data['norm_offset'])
-    ax=axarr[ipanel]
-    im = ax.hexbin(list(f), list(s), C=list(f_off), gridsize=30)
-    ax.invert_yaxis()
-    ax.set_yticks([0., 20.])
-    ax.tick_params('y', labelsize='x-small')
-
-  fig.subplots_adjust(right=0.8)
-  cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-  fig.colorbar(im, cax=cbar_ax)
-  cbar_ax.set_ylabel(r"$fast_{2} - fast_{1}$ (mm)")
-  plt.savefig("fast_diff.png")
-  plt.clf()
+  plot_stack_of_panels(dat, 'fast')
 
   # now the slow plot
   print "Doing plot of offsets in the slow direction"
-  fig, axarr = plt.subplots(len(det1), sharex=True)
-  axarr[0].set_title(r"$\Delta slow$")
-  plt.xlabel("fast (mm)")
-
-  for ipanel in range(len(det1)):
-    pnl_data = dat[ipanel]
-    f, s, f_off, s_off, n_off = (pnl_data['fast'], pnl_data['slow'],
-      pnl_data['fast_offset'], pnl_data['slow_offset'], pnl_data['norm_offset'])
-    ax=axarr[ipanel]
-    im = ax.hexbin(list(f), list(s), C=list(s_off), gridsize=30)
-    ax.invert_yaxis()
-    ax.set_yticks([0., 20.])
-    ax.tick_params('y', labelsize='x-small')
-
-  fig.subplots_adjust(right=0.8)
-  cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-  fig.colorbar(im, cax=cbar_ax)
-  cbar_ax.set_ylabel(r"$slow_{2} - slow_{1}$ (mm)")
-  plt.savefig("slow_diff.png")
-  plt.clf()
+  plot_stack_of_panels(dat, 'slow')
 
   # finally the normal plot
   print "Doing plot of offsets in the normal direction"
+
   fig, axarr = plt.subplots(len(det1), sharex=True)
   axarr[0].set_title(r"$\Delta normal$")
   plt.xlabel("fast (mm)")
-
-  for ipanel in range(len(det1)):
-    pnl_data = dat[ipanel]
-    f, s, f_off, s_off, n_off = (pnl_data['fast'], pnl_data['slow'],
-      pnl_data['fast_offset'], pnl_data['slow_offset'], pnl_data['norm_offset'])
-    ax=axarr[ipanel]
-    im = ax.hexbin(list(f), list(s), C=list(n_off), gridsize=30)
-    ax.invert_yaxis()
-    ax.set_yticks([0., 20.])
-    ax.tick_params('y', labelsize='x-small')
-
-  fig.subplots_adjust(right=0.8)
-  cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-  fig.colorbar(im, cax=cbar_ax)
-  cbar_ax.set_ylabel(r"$normal_{2} - normal_{1}$ (mm)")
-  plt.savefig("normal_diff.png")
-  plt.clf()
+  plot_stack_of_panels(dat, 'normal')
 
   return
 
