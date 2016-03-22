@@ -69,6 +69,15 @@ output {
 include scope dials.algorithms.refinement.refiner.phil_scope
 """, process_includes=True)
 
+# override default refinement parameters
+phil_scope = phil_scope.fetch(source=iotbx.phil.parse(
+  """\
+refinement {
+  reflections {
+    reflections_per_degree=100
+  }
+}
+"""))
 
 def run(args):
   from dials.util import log
