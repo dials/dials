@@ -60,11 +60,28 @@ class dials_index(Job):
 class dials_refine_bravais_settings(Job):
   cmd = "dials.refine_bravais_settings experiments.json indexed.pickle"
 
+class dials_reindex(Job):
+  cmd = "dials.reindex indexed.pickle change_of_basis_op=a,b,c"
+
 class dials_refine(Job):
-  cmd = "dials.refine bravais_setting_9.json indexed.pickle scan_varying=true"
+  cmd = "dials.refine bravais_setting_9.json reindexed_reflections.pickle"
+
+class dials_sv_refine(Job):
+  cmd = "dials.refine refined_experiments.json refined.pickle scan_varying=true"
 
 class dials_integrate(Job):
-  cmd = "dials.integrate refined_experiments.json refined.pickle background.algorithm=glm nproc=4"
+  cmd = "dials.integrate refined_experiments.json refined.pickle nproc=4"
+
+class dials_report(Job):
+  cmd = "dials.report integrated_experiments.json integrated.pickle"
+
+  def __call__(self):
+    print self.cmd
+    result = self.timed_easy_run(self.cmd)
+    print "{0:.3f}s".format(result.time)
+    with open('dials-report.html') as f: result = f.readlines()
+    return result
+
 
 class LogWriter(object):
 
@@ -91,9 +108,15 @@ if (__name__ == "__main__") :
 
     refine_bravais_settings_log = dials_refine_bravais_settings()()
 
+    reindex_log = dials_reindex()()
+
     refine_log = dials_refine()()
 
+    sv_refine_log = dials_sv_refine()()
+
     integrate_log = dials_integrate()()
+
+    report_html = dials_report()()
 
     # if we got this far, assume it is okay to overwrite the logs
     dials_dir = libtbx.env.find_in_repositories("dials")
@@ -105,8 +128,9 @@ if (__name__ == "__main__") :
     log_writer("dials.find_spots.log", find_spots_log)
     log_writer("dials.index.log", index_log)
     log_writer("dials.refine_bravais_settings.log", refine_bravais_settings_log)
-    log_writer("dials.refine.log", refine_log)
+    log_writer("dials.refine.log", sv_refine_log)
     log_writer("dials.integrate.log", integrate_log)
+    log_writer("dials-report.html", report_html)
 
     print "Updated log files written to {0}".format(log_dir)
 
