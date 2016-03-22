@@ -19,83 +19,144 @@ each panel that take the first detector model to the second one as a heatmap
 """
 
 import sys
-from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from scitbx.array_family import flex
+from libtbx import phil
+from libtbx.utils import Sorry
 import matplotlib
 # Offline backend
 matplotlib.use("Agg")
 matplotlib.rc('font', family='serif')
 matplotlib.rc('font', serif='Times New Roman')
 from matplotlib import pyplot as plt
-from scitbx.array_family import flex
+
+help_message = '''
+
+Plots shifts between two detector models. The shifts are those that take pixel
+positions from the first detector (the reference) to the equivalent position
+on the second detector, and are expressed in the basis (fast, slow, normal) of
+each panel of the reference detector.
+
+Example::
+
+  dev.dials.plot_detector_shifts level0.json level1.json
+
+Here level0 might contain a hierarchical detector refined at hierarchy_level=0
+(i.e. bulk movements), while level1.json may contain a detector with metrology
+refined one level below that, starting from level0.json. The resulting plot
+will show the shifts that occurred during the refinement that resulted in
+level1.json.
+'''
+
+phil_scope = phil.parse('')
 
 # sample 1 pt per mm
 SAMPLE_FREQ = 1
 
-def get_plot_data(ipanel=0):
+class PlotData(object):
 
-  # panel 0 first
-  panel_a = det1[ipanel]
-  panel_b = det2[ipanel]
-  size_fast, size_slow = panel_a.get_image_size_mm()
-  assert size_fast, size_slow == panel_b.get_image_size_mm()
-  aspect = max(size_fast, size_slow) / min(size_fast, size_slow)
+  def __init__(self, detector1, detector2):
 
-  # num of sample intervals
-  n_fast = int((size_fast) / SAMPLE_FREQ)
-  n_slow = int((size_slow) / SAMPLE_FREQ)
+    self.det1 = detector1
+    self.det2 = detector2
 
-  # interval width
-  step_fast = size_fast / n_fast
-  step_slow = size_slow / n_slow
+  def __call__(self, ipanel=0):
 
-  # samples
-  samp_fast = [step_fast * i for i in range(n_fast + 1)]
-  samp_slow = [step_slow * i for i in range(n_slow + 1)]
+    panel_a = self.det1[ipanel]
+    panel_b = self.det2[ipanel]
+    size_fast, size_slow = panel_a.get_image_size_mm()
+    assert size_fast, size_slow == panel_b.get_image_size_mm()
+    aspect = max(size_fast, size_slow) / min(size_fast, size_slow)
 
-  lab1 = flex.vec3_double()
-  lab2 = flex.vec3_double()
-  sample_pts = flex.vec2_double()
+    # num of sample intervals
+    n_fast = int((size_fast) / SAMPLE_FREQ)
+    n_slow = int((size_slow) / SAMPLE_FREQ)
 
-  # loop
-  for s in samp_slow:
-    for f in samp_fast:
-      lab1.append(panel_a.get_lab_coord((f, s)))
-      lab2.append(panel_b.get_lab_coord((f, s)))
-      sample_pts.append((f,s))
+    # interval width
+    step_fast = size_fast / n_fast
+    step_slow = size_slow / n_slow
 
-  offset = lab2 - lab1
+    # samples
+    samp_fast = [step_fast * i for i in range(n_fast + 1)]
+    samp_slow = [step_slow * i for i in range(n_slow + 1)]
 
-  # reexpress offset in the basis fast, slow, normal of panel_a
-  f_off = offset.dot(panel_a.get_fast_axis())
-  s_off = offset.dot(panel_a.get_slow_axis())
-  n_off = offset.dot(panel_a.get_normal())
+    lab1 = flex.vec3_double()
+    lab2 = flex.vec3_double()
+    sample_pts = flex.vec2_double()
 
-  f, s = sample_pts.parts()
+    # loop
+    for s in samp_slow:
+      for f in samp_fast:
+        lab1.append(panel_a.get_lab_coord((f, s)))
+        lab2.append(panel_b.get_lab_coord((f, s)))
+        sample_pts.append((f,s))
 
-  return f, s, f_off, s_off, n_off
+    offset = lab2 - lab1
 
+    # reexpress offset in the basis fast, slow, normal of panel_a
+    f_off = offset.dot(panel_a.get_fast_axis())
+    s_off = offset.dot(panel_a.get_slow_axis())
+    n_off = offset.dot(panel_a.get_normal())
 
-if __name__ == "__main__":
+    f, s = sample_pts.parts()
 
-  assert len(sys.argv) == 3
+    return {'lab_coord':lab1,
+            'fast':f, 'slow':s,
+            'fast_offset':f_off,
+            'slow_offset':s_off,
+            'norm_offset':n_off}
 
-  exp1 = ExperimentListFactory.from_json_file(sys.argv[1],
-                check_format=False)
-  exp2 = ExperimentListFactory.from_json_file(sys.argv[2],
-                check_format=False)
+def extract_detectors():
+  '''Check script input and return two detector models if all is okay'''
 
-  # take the first experiment only
-  det1 = exp1[0].detector
-  det2 = exp2[0].detector
+  import libtbx.load_env
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_experiments
 
-  assert len(det1) == len(det2)
+  # The script usage
+  usage = ("usage: {0} [options] [param.phil] experiments1.json "
+           "experiments2.json").format(libtbx.env.dispatcher_name)
+
+  parser = OptionParser(
+    usage=usage,
+    phil=phil_scope,
+    read_experiments=True,
+    check_format=False,
+    epilog=help_message)
+
+  params, options = parser.parse_args(show_diff_phil=True)
+
+  if len(params.input.experiments) != 2:
+    raise Sorry("Please provide two experiment lists as input")
+
+  warnmsg = ("WARNING: The {0} experiment list contains more than one "
+             "detector. Only the first will be considered.")
+  detector1 = params.input.experiments[0].data.detectors()
+  if len(detector1) > 1:
+    print warnmsg.format("first")
+  detector1 = detector1[0]
+
+  detector2 = params.input.experiments[1].data.detectors()
+  if len(detector2) > 1:
+    print warnmsg.format("second")
+  detector2 = detector2[0]
+
+  if len(detector1) != len(detector2):
+    raise Sorry("The detectors do not contain the same number of panels")
+
+  # ok here, return detectors
+  return detector1, detector2
+
+def run():
+
+  det1, det2 = extract_detectors()
+
+  plot_data = PlotData(det1, det2)
 
   # do calculations in advance and store in a dictionary
   dat={}
   for ipanel in range(len(det1)):
     print "Calc for panel", ipanel
-    f, s, f_off, s_off, n_off = get_plot_data(ipanel)
-    dat[ipanel] = f, s, f_off, s_off, n_off
+    dat[ipanel] = plot_data(ipanel)
 
   # set limits on colour scale to shifts of 2 pixels
   extrema = 1*0.172
@@ -107,7 +168,9 @@ if __name__ == "__main__":
   plt.xlabel("fast (mm)")
 
   for ipanel in range(len(det1)):
-    f, s, f_off, s_off, n_off = dat[ipanel]
+    pnl_data = dat[ipanel]
+    f, s, f_off, s_off, n_off = (pnl_data['fast'], pnl_data['slow'],
+      pnl_data['fast_offset'], pnl_data['slow_offset'], pnl_data['norm_offset'])
     ax=axarr[ipanel]
     im = ax.hexbin(list(f), list(s), C=list(f_off), gridsize=30)
     ax.invert_yaxis()
@@ -128,7 +191,9 @@ if __name__ == "__main__":
   plt.xlabel("fast (mm)")
 
   for ipanel in range(len(det1)):
-    f, s, f_off, s_off, n_off = dat[ipanel]
+    pnl_data = dat[ipanel]
+    f, s, f_off, s_off, n_off = (pnl_data['fast'], pnl_data['slow'],
+      pnl_data['fast_offset'], pnl_data['slow_offset'], pnl_data['norm_offset'])
     ax=axarr[ipanel]
     im = ax.hexbin(list(f), list(s), C=list(s_off), gridsize=30)
     ax.invert_yaxis()
@@ -149,7 +214,9 @@ if __name__ == "__main__":
   plt.xlabel("fast (mm)")
 
   for ipanel in range(len(det1)):
-    f, s, f_off, s_off, n_off = dat[ipanel]
+    pnl_data = dat[ipanel]
+    f, s, f_off, s_off, n_off = (pnl_data['fast'], pnl_data['slow'],
+      pnl_data['fast_offset'], pnl_data['slow_offset'], pnl_data['norm_offset'])
     ax=axarr[ipanel]
     im = ax.hexbin(list(f), list(s), C=list(n_off), gridsize=30)
     ax.invert_yaxis()
@@ -162,3 +229,10 @@ if __name__ == "__main__":
   cbar_ax.set_ylabel(r"$normal_{2} - normal_{1}$ (mm)")
   plt.savefig("normal_diff.png")
   plt.clf()
+
+  return
+
+
+if __name__ == "__main__":
+
+  run()
