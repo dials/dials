@@ -5,22 +5,47 @@ from __future__ import division
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse("""\
-show_all_reflection_data = False
-  .type = bool
-  .help = "Whether or not to print individual reflections"
 """, process_includes=True)
 
 help_message = '''
 
 Examples::
 
-  dev.dials.duelling_profiles experiments.json reflections.pickle
+  dev.dials.duelling_profiles experiments.json integrated.pickle
 
 '''
 
+def model_reflection(reflection, crystal, profile):
+  hkl = reflection['miller_index']
+  i0 = reflection['intensity.sum.value'] / reflection['dqe']
+  s1 = reflection['s1']
+  xyz = reflection['xyzcal.px']
+  pixels = reflection['shoebox']
+  Amat = crystal.get_A_at_scan_point(int(xyz[2]))
+  return
+
 def main(reflections, experiments):
-  print len(reflections)
-  print experiments.crystal.num_scan_points
+  nref0 = len(reflections)
+  crystal = experiments.crystal
+  profile = experiments.profile
+
+  if 'intensity.prf.variance' in reflections:
+    selection = reflections.get_flags(
+      reflections.flags.integrated,
+      all=True)
+  else:
+    selection = reflections.get_flags(
+      reflections.flags.integrated_sum)
+  reflections = reflections.select(selection)
+
+  nref1 = len(reflections)
+
+  print 'Removed %d invalid reflections, %d remain' % (nref0-nref1, nref1)
+
+  for j, reflection in enumerate(reflections):
+    model_reflection(reflection, crystal, profile)
+
+  return
 
 def run(args):
   from dials.util.options import OptionParser
@@ -29,7 +54,7 @@ def run(args):
   from dials.util.options import flatten_reflections
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json experiments.json" % (
+  usage = "%s [options] integrated.pickle experiments.json" % (
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
@@ -46,6 +71,10 @@ def run(args):
 
   if len(experiments) != 1 or len(reflections) != 1:
     parser.print_help()
+    exit()
+
+  if not 'shoebox' in reflections[0]:
+    print 'Please add shoeboxes to reflection pickle'
     exit()
 
   main(reflections[0], experiments[0])
