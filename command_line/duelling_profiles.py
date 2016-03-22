@@ -5,6 +5,8 @@ from __future__ import division
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse("""\
+  method = *example nonsense
+    .type = choice
 """, process_includes=True)
 
 help_message = '''
@@ -25,7 +27,7 @@ def model_background(shoebox, mean_bg):
         shoebox[k, j, i] += g.next()
   return
 
-def model_reflection(reflection, experiment):
+def model_reflection_example(reflection, experiment):
   hkl = reflection['miller_index']
   i0 = reflection['intensity.sum.value'] / reflection['dqe']
   s1 = reflection['s1']
@@ -37,7 +39,11 @@ def model_reflection(reflection, experiment):
   Amat = crystal.get_A_at_scan_point(int(xyz[2]))
   return
 
-def main(reflections, experiment):
+def model_reflection_nonsense(reflection, experiment):
+  print 'nonsense'
+  return
+
+def main(reflections, experiment, method):
   nref0 = len(reflections)
 
   if 'intensity.prf.variance' in reflections:
@@ -54,7 +60,7 @@ def main(reflections, experiment):
   print 'Removed %d invalid reflections, %d remain' % (nref0 - nref1, nref1)
 
   for j, reflection in enumerate(reflections):
-    model_reflection(reflection, experiment)
+    globals()['model_reflection_%s' % method](reflection, experiment)
 
   return
 
@@ -88,7 +94,7 @@ def run(args):
     print 'Please add shoeboxes to reflection pickle'
     exit()
 
-  main(reflections[0], experiments[0])
+  main(reflections[0], experiments[0], params.method)
 
 if __name__ == '__main__':
   import sys
