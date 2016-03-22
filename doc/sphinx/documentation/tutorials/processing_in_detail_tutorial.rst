@@ -96,14 +96,24 @@ is no background border region displayed here.
 
 .. image:: /figures/found_spot.png
 
+Another very powerful tool for investigating problems with strong spot positions
+is :program:`dials.reciprocal_lattice_viewer`. This displays the strong spots
+in 3D, after mapping them from their detector positions to reciprocal space. In
+a favourable case like this you should be able to see the crystal's reciprocal
+lattice by eye in the strong spot positions. Some practice may be needed in
+rotating the lattice to an orientation that shows off the periodicity in
+reciprocal lattice positions.
+
+.. image:: /figures/reciprocal_lattice_strong.png
+
 Indexing
 ^^^^^^^^
 
-The next step will be indexing of the strong spots, which by default uses a 3D FFT
-algorithm, although the 1D FFT algorithm can be selected using the parameter
-:samp:`indexing.method=fft1d`. We will pass in all the strong spots found in
-the dataset - so no need to select subsets of images widely separated in
-:math:`\phi`.
+The next step will be indexing of the strong spots, which by default uses a
+3D FFT algorithm, although the 1D FFT algorithm can be selected using the
+parameter :samp:`indexing.method=fft1d`. We will pass in all the strong
+spots found in the dataset - so no need to select subsets of images widely
+separated in :math:`\phi`.
 
 ::
 
@@ -116,66 +126,55 @@ primitive lattice using space group P1.
 
 .. literalinclude:: logs/dials.index.log
 
-It is worth looking through this output to understand what the indexing program
-has done. Note that this log
-is automatically captured in the file :file:`dials.index.log`. There is also
-a somewhat more information written into :file:`dials.index.debug.log`, but
-this is probably only helpful if something has gone wrong and you are trying
-to track down why.
+It is worth looking through this output to understand what the indexing
+program has done. Note that this log is automatically captured in the file
+:file:`dials.index.log`. There is also a somewhat more information written
+into :file:`dials.index.debug.log`, but this is probably only helpful if
+something has gone wrong and you are trying to track down why.
 
 Inspecting the log shows that the indexing step is done at fairly low
-resolution: ``Setting d_min: 3.89``. The resolution limit of data that
-can be used in indexing is determined by the size of the 3D FFT grid and the
-likely maximum cell dimension. Here we
-used :math:`256^3` grid points: ``FFT gridding: (256,256,256)``.
-What follows are four macrocycles
-of refinement at increasing resolution to bootstrap the indexing solution to as
-many of the strong reflections as possible. In each case you can see that only
-8099 reflections are used in the refinement job. The diffraction geometry is
-here described by only 16 parameters (6 for the detector, 1 beam angle, 3
-crystal 'misset' angles and 6 triclinic cell parameters). The problem is thus
-hugely overdetermined. In order to save time, refinement uses a subset of the
-input reflections, by default using 100 reflections for every degree of the scan.
+resolution: ``Setting d_min: 3.89``. The resolution limit of data that can
+be used in indexing is determined by the size of the 3D FFT grid and the
+likely maximum cell dimension. Here we used the default :math:`256^3` grid
+points: ``FFT gridding: (256,256,256)``. What follows are macrocycles of
+refinement at increasing resolution to bootstrap the indexing solution to as
+many of the strong reflections as possible. In each case you can see that
+only 8099 reflections are used in the refinement job. The diffraction
+geometry is here described by only 16 parameters (6 for the detector, 1 beam
+angle, 3 crystal 'misset' angles and 6 triclinic cell parameters). The
+problem is thus hugely overdetermined. In order to save time, refinement
+uses a subset of the input reflections, by default using 100 reflections for
+every degree of the scan.
 
-Continuing to look through the log, we see that the first macrocyle of refinement makes
-a big improvement in the positional RMSDs. The second macrocycle includes more reflections, after
-extending to 3.2 Angstroms. The current model now shows slightly worse RMSDs
-at the start, now that the higher resolution reflections are included, but refinement reduces
-these again.
-A similar situation is observed on the third and fourth macrocycles.
-The RMSDs start higher again, now that more reflections are included, but refinement
-is able to drive these down a little.
-The final macrocycle includes data out to 1.3 Angstroms and refinement produces
-a final model with
-RMSDs of 0.043 mm in X, 0.033 mm in Y and 0.019 degrees in :math:`\phi`, corresponding
-to 0.25 pixels in X, 0.19 pixels in Y and 0.13 image widths in :math:`\phi`.
+Continuing to look through the log, we see that the first macrocyle of
+refinement makes a big improvement in the positional RMSDs. Second and
+subsequent macrocycles refine using the same number of reflections, but
+after extending to higher resolution. The RMSDs at the start of each cycle
+start off worse than at the end of the previous cycle, because the best fit
+model for lower resolution data is being applied to higher resolution
+reflections. As long as each macrocyle shows a reduction in RMSDs then
+refinement is doing its job of extending the applicability of the model out to
+a new resolution limit, until eventually the highest resolution strong
+spots have been considered. The final macrocycle includes data out to 1.26
+Angstroms and produces a final model with
+RMSDs of 0.045 mm in X, 0.036 mm in Y and 0.021 degrees in :math:`\phi`,
+corresponding to 0.26 pixels in X, 0.21 pixels in Y and 0.14 image widths in
+:math:`\phi`.
 
-Despite the high quality of this data, we notice from the ``Summary statistics``
-tables that there were some outliers identified and removed from
-refinement as resolution increases.
-In the final macrocyle, prior to outlier rejection, we see the
-distribution of positional residuals in the Y direction is tight around the
-median, except for extreme values both positive and negative of more than 1 mm.
-The angular residuals show a similar pattern with half the data having residuals
-of less than about 0.14 degrees from the predicted positions, but the extreme
-is as much as 1.4 degrees from the predicted diffraction angle. Large outliers
-can dominate refinement using a least squares target, so it is important
-to be able to remove these.
+Despite the high quality of this data, we notice from the log that at each
+macrocycle there were some outliers identified and removed from
+refinement as resolution increases. Large outliers can dominate refinement
+using a least squares target, so it is important to be able to remove these.
+More about this is discussed below in :ref:`sec-refinement`.
 
 If you want to specify the Bravais lattice for processing (i.e. include the
-lattice constraints in the refinement) then you need to either specify this
-lattice at this stage as
-
-::
-
-  space_group=P4
-
-as a command-line option to :doc:`dials.index <../programs/dials_index>`
-or you can use
-:doc:`dials.refine_bravais_settings <../programs/dials_refine_bravais_settings>`,
-which will take the results of the P1 autoindexing and run refinement with all
-of the possible Bravais settings applied - after which you may select the
-preferred solution.
+lattice constraints in the refinement) then you need to either request it at
+this stage using :samp:`space_group=P4` as a command-line option to
+:doc:`dials.index <../programs/dials_index>` or you can use
+:doc:`dials.refine_bravais_settings<../programs/dials_refine_bravais_settings>`,
+which will take the results of the P1 autoindexing and run refinement with
+all of the possible Bravais settings applied - after which you may select
+the preferred solution.
 
 ::
 
@@ -194,47 +193,56 @@ symmetry operators.
 
 In this example we would continue processing (i.e. proceed to the refinement
 step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
-necessary to reindex the :ref:`indexed.pickle <reflection_pickle>` file output by dials.index.
-However, in this case as the change of basis operator to the chosen setting
+necessary to reindex the :ref:`indexed.pickle <reflection_pickle>` file output
+by dials.index. In this case as the change of basis operator to the chosen setting
 is the identity operator (:samp:`a,b,c`) this step is not needed. We run it
 anyway to demonstrate its use::
 
   dials.reindex indexed.pickle change_of_basis_op=a,b,c
 
-This outputs the file :ref:`reindexed_reflections.pickle <reflection_pickle>` which should be
-used as input to downstream programs in place of :ref:`indexed.pickle <reflection_pickle>`.
+This outputs the file :file:`reindexed_reflections.pickle` which should be
+used as input to downstream programs in place of :file:`indexed.pickle`.
 
+.. _sec-refinement:
 
 Refinement
 ^^^^^^^^^^
 
-Although the model is already refined during indexing we can also add an
-explicit refinement
-step using :doc:`dials.refine <../programs/dials_refine>` in here. There
+The model is already refined during indexing, but we can also add an
+explicit refinement step using :doc:`dials.refine <../programs/dials_refine>`
+in here, to use all reflections in refinement rather than a subset and to
+fit a scan-varying model of the crystal. There
 are many options to refinement. As an
 aside, to show all the options up to and including ``expert_level = 1``
 use this command::
 
   dials.refine -c -e 1
 
-Equivalent command-line options exist for all the main DIALS programs.
+Equivalent command-line options exist for all the main DIALS programs. To
+refine a static model including the tetragonal constraints we just do::
 
-The main reason
-we may want to do an additional refinement job is to use a more sophisticated
-model for the crystal,
-allowing small misset rotations to occur over the course of the scan.
-There are usually even small changes to the
-cell dimensions (typically resulting in a net increase in cell volume) caused
-by exposure to radiation during data collection. To account for both of these
-effects we can extend our parameterisation to obtain a smoothed 'scan-varying'
-model for both the crystal orientation and unit cell. To do this, we run a
-further refinement job starting from the output of the previous job::
+  dials.refine bravais_setting_9.json reindexed_reflections.pickle
+
+Using all reflections in refinement provided a small reduction in RMSDs.
+However, the refined model is still static over the whole dataset. We may
+want to do an additional refinement job to use a more sophisticated model
+for the crystal, allowing small misset rotations to occur over the course of
+the scan. There are usually even small changes to the cell dimensions
+(typically resulting in a net increase in cell volume) caused by exposure to
+radiation during data collection. To account for both of these effects we
+can extend our parameterisation to obtain a smoothed 'scan-varying' model
+for both the crystal orientation and unit cell. To do this, we run a further
+refinement job starting from the output of the previous job::
 
   dials.refine bravais_setting_9.json indexed.pickle scan_varying=true
 
-The output for this job is
+.. container:: toggle
 
-.. literalinclude:: logs/dials.refine.log
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. literalinclude:: logs/dials.refine.log
 
 In this case we didn't alter the default choices that affect scan-varying
 refinement, the most important of which is the number of intervals into which
@@ -267,28 +275,15 @@ Integration
 ^^^^^^^^^^^
 
 After the refinement is done the next step is integration, which is performed
-by the program :doc:`dials.integrate <../programs/dials_integrate>`. Mostly, the
-default parameters are fine, which will perform XDS-like 3D profile fitting. However,
-for datasets with very weak background, such as this, the default :samp:`nsigma`
-background outlier rejection algorithm tends to underestimate the real background
-value. This is because that method is only really appropriate for values from
-a normal distribution, which is a poor approximation for a Poisson distibution
-with a small mean, and significant skewness. For this reason we switch off
-all outlier rejection from the background calculation.
-
-From checking the output of :samp:`dials.integrate -c` we see that the full
-parameter to do this is given by :samp:`integration.background.simple.outlier.algorithm=null`
-but partial string matching can be used for command line parameters when the
-partial match is unambiguous. This saves a lot of typing!
-
-We will also increase the number of processors used to speed the job up.
+by the program :doc:`dials.integrate <../programs/dials_integrate>`. Mostly,
+the default parameters are fine for Pilatus data, which will perform
+XDS-like 3D profile fitting while using a generalized linear model in order
+to fit a Poisson-distributed background model. We will also increase the
+number of processors used to speed the job up.
 
 ::
 
-  dials.integrate refined_experiments.json refined.pickle \
-  background.algorithm=glm nproc=4
-
-The log file is quite long.
+  dials.integrate refined_experiments.json refined.pickle nproc=4
 
 .. container:: toggle
 
@@ -298,17 +293,17 @@ The log file is quite long.
 
     .. literalinclude:: logs/dials.integrate.log
 
-Checking this output we see that after loading in the reference reflections
-from :file:`refined.pickle`,
-new predictions are made up to the highest resolution at the corner of the
-detector. This is fine, but if we wanted to we could have adjusted the
-resolution limits using parameters :samp:`dmin` and :samp:`dmax`. The predictions
-are made using the scan-varying crystal model recorded in
+Checking the log output we see that after loading in the reference
+reflections from :file:`refined.pickle`, new predictions are made up to the
+highest resolution at the corner of the detector. This is fine, but if we
+wanted to we could have adjusted the resolution limits using parameters
+:samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
+made using the scan-varying crystal model recorded in
 :file:`refined_experiments.json`. This ensures that prediction is made using
-the smoothly varying lattice and orientation that we determined in the refinement
-step. As this scan-varying model was determined in advance of integration, each
-of the integration jobs is independent and we can take advantage of true
-parallelism during processing.
+the smoothly varying lattice and orientation that we determined in the
+refinement step. As this scan-varying model was determined in advance of
+integration, each of the integration jobs is independent and we can take
+advantage of true parallelism during processing.
 
 The profile model is then calculated from the reflections in
 :file:`refined.pickle`. First reflections with a too small 'zeta'
@@ -319,13 +314,14 @@ From the remaining reflection shoeboxes, the average beam divergence and
 reflecting range is calculated, providing the two Guassian width parameters
 :math:`\sigma_D` and :math:`\sigma_M` used in the 3D profile model.
 
-Following this, the independent integration jobs are set up. These jobs overlap,
-so reflections are assigned to one or more jobs. What follows are blocks of
-information specific to each integration job.
+Following this, the independent integration jobs are set up. These jobs
+overlap, so reflections are assigned to one or more jobs. What follows are
+blocks of information specific to each integration job.
 
-After these jobs are finished, the reflections are 'post-processed', which includes
-the application of the LP correction to the intensities. Then summary tables
-are printed giving quality statistics first by frame, and then by resolution bin.
+After these jobs are finished, the reflections are 'post-processed', which
+includes the application of the LP correction to the intensities. Then
+summary tables are printed giving quality statistics first by frame, and
+then by resolution bin.
 
 Graphical analysis of the output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -399,6 +395,19 @@ Some of the most useful plots are
 
   .. image:: /figures/ioversigma_vs_z.png
 
+
+HTML report
+^^^^^^^^^^^
+
+The most important information provided by :prog:`dials.show`,
+:prog:`dials.plot_scan_varying_crystal` and :prog:`dials.analyse_output` can
+now be combined in one place by generating an HTML report using the program
+:prog:`dials.report`. This is run simply using::
+
+  dials.report integrated_experiments.json integrated.pickle
+
+which produces the file :file:`dials-report.html`. The report generated for
+this dataset can be seen here `dials-report.html <logs/dials-report.html>`_
 
 Exporting as MTZ
 ^^^^^^^^^^^^^^^^
