@@ -14,7 +14,7 @@ Tutorial data
 -------------
 
 The following example uses a Thaumatin dataset collected using beamline I04
-at Diamond Light Source which is available for download from |thaumatin|.
+at Diamond Light Source, which is available for download from |thaumatin|.
 
 .. |thaumatin| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10271.png
                :target: http://dx.doi.org/10.5281/zenodo.10271
@@ -102,7 +102,9 @@ in 3D, after mapping them from their detector positions to reciprocal space. In
 a favourable case like this you should be able to see the crystal's reciprocal
 lattice by eye in the strong spot positions. Some practice may be needed in
 rotating the lattice to an orientation that shows off the periodicity in
-reciprocal lattice positions.
+reciprocal lattice positions::
+
+  dials.reciprocal_lattice_viewer datablock.json strong.pickle
 
 .. image:: /figures/reciprocal_lattice_strong.png
 
@@ -124,7 +126,13 @@ provided at this stage using the :samp:`space_group` and :samp:`unit_cell`
 parameters, otherwise indexing and refinement will be carried out in the
 primitive lattice using space group P1.
 
-.. literalinclude:: logs/dials.index.log
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. literalinclude:: logs/dials.index.log
 
 It is worth looking through this output to understand what the indexing
 program has done. Note that this log is automatically captured in the file
@@ -166,6 +174,15 @@ macrocycle there were some outliers identified and removed from
 refinement as resolution increases. Large outliers can dominate refinement
 using a least squares target, so it is important to be able to remove these.
 More about this is discussed below in :ref:`sec-refinement`.
+
+After indexing it can be useful to inspect the reciprocal lattice again::
+
+  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+
+Now indexed/unindexed spots are differentiated by colour, and it is possible
+to see which spots were marked by :doc:`dials.refine <../programs/dials_refine>`
+as outliers. If you have a dataset with multiple lattice present, it may be
+possible to spot them in the unindexed reflections.
 
 If you want to specify the Bravais lattice for processing (i.e. include the
 lattice constraints in the refinement) then you need to either request it at
@@ -399,15 +416,15 @@ Some of the most useful plots are
 HTML report
 ^^^^^^^^^^^
 
-The most important information provided by :prog:`dials.show`,
-:prog:`dials.plot_scan_varying_crystal` and :prog:`dials.analyse_output` can
+The most important information provided by :program:`dials.show`,
+:program:`dials.plot_scan_varying_crystal` and :program:`dials.analyse_output` can
 now be combined in one place by generating an HTML report using the program
-:prog:`dials.report`. This is run simply using::
+:program:`dials.report`. This is run simply using::
 
   dials.report integrated_experiments.json integrated.pickle
 
 which produces the file :file:`dials-report.html`. The report generated for
-this dataset can be seen here `dials-report.html <logs/dials-report.html>`_
+this dataset can be seen here :download:`dials-report.html <logs/dials-report.html>`.
 
 Exporting as MTZ
 ^^^^^^^^^^^^^^^^
