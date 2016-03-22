@@ -15,19 +15,30 @@ Examples::
 
 '''
 
-def model_reflection(reflection, crystal, profile):
+def model_background(shoebox, mean_bg):
+  from scitbx.random import variate, poisson_distribution
+  dz, dy, dx = shoebox.focus()
+  g = variate(poisson_distribution(mean = mean_bg))
+  for k in range(dz):
+    for j in range(dy):
+      for i in range(dx):
+        shoebox[k, j, i] += g.next()
+  return
+
+def model_reflection(reflection, experiment):
   hkl = reflection['miller_index']
   i0 = reflection['intensity.sum.value'] / reflection['dqe']
   s1 = reflection['s1']
   xyz = reflection['xyzcal.px']
   pixels = reflection['shoebox']
+  mean_bg = reflection['background.mean']
+  crystal = experiment.crystal
+  profile = experiment.profile
   Amat = crystal.get_A_at_scan_point(int(xyz[2]))
   return
 
-def main(reflections, experiments):
+def main(reflections, experiment):
   nref0 = len(reflections)
-  crystal = experiments.crystal
-  profile = experiments.profile
 
   if 'intensity.prf.variance' in reflections:
     selection = reflections.get_flags(
@@ -40,10 +51,10 @@ def main(reflections, experiments):
 
   nref1 = len(reflections)
 
-  print 'Removed %d invalid reflections, %d remain' % (nref0-nref1, nref1)
+  print 'Removed %d invalid reflections, %d remain' % (nref0 - nref1, nref1)
 
   for j, reflection in enumerate(reflections):
-    model_reflection(reflection, crystal, profile)
+    model_reflection(reflection, experiment)
 
   return
 
