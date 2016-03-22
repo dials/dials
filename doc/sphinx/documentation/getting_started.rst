@@ -3,7 +3,7 @@ Getting started
 
 The aim of this tutorial is to provide a quick start guide to running DIALS for
 integrating good quality synchrotron X-ray diffraction data. Please note that
-DIALS only does data processing you will need to use e.g. Aimless for the
+DIALS only does data processing so you will need to use e.g. Aimless for the
 subsequent scaling.
 
 Introduction
