@@ -65,7 +65,7 @@ class PlotData(object):
     panel_b = self.det2[ipanel]
     size_fast, size_slow = panel_a.get_image_size_mm()
     assert size_fast, size_slow == panel_b.get_image_size_mm()
-    aspect = max(size_fast, size_slow) / min(size_fast, size_slow)
+    #aspect = max(size_fast, size_slow) / min(size_fast, size_slow)
 
     # num of sample intervals
     n_fast = int((size_fast) / SAMPLE_FREQ)
@@ -154,6 +154,7 @@ def plot_stack_of_panels(panel_data, direction='fast'):
   fig, axarr = plt.subplots(len(panel_data), sharex=True)
   axarr[0].set_title(r"$\Delta " + direction + "$")
   plt.xlabel(direction + " (mm)")
+  plt.setp(axarr.flat, aspect=1.0, adjustable='box-forced')
 
   for ipanel in range(len(panel_data)):
     pnl_data = panel_data[ipanel]
@@ -162,7 +163,7 @@ def plot_stack_of_panels(panel_data, direction='fast'):
     ax=axarr[ipanel]
     im = ax.hexbin(list(f), list(s), C=list(offset), gridsize=30)
     ax.invert_yaxis()
-    ax.set_yticks([0., 20.])
+    ax.set_yticks([]) # don't show axis labels on the stacked side
     ax.tick_params('y', labelsize='x-small')
 
   fig.subplots_adjust(right=0.8)
@@ -185,8 +186,10 @@ def run():
     print "Calc for panel", ipanel
     dat.append(plot_data(ipanel))
 
-  # set limits on colour scale to shifts of 2 pixels
-  extrema = 1*0.172
+  # set limits on colour scale to shifts of 2 pixels, using first panel of
+  # the reference detector to determine pixel size
+  #px_size = min(det1[0].get_pixel_size())
+  #extrema = 1*px_size
 
   # first the fast plot
   print "Doing plot of offsets in the fast direction"
@@ -198,10 +201,6 @@ def run():
 
   # finally the normal plot
   print "Doing plot of offsets in the normal direction"
-
-  fig, axarr = plt.subplots(len(det1), sharex=True)
-  axarr[0].set_title(r"$\Delta normal$")
-  plt.xlabel("fast (mm)")
   plot_stack_of_panels(dat, 'normal')
 
   return
