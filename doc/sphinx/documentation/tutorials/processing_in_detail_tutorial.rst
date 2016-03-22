@@ -50,45 +50,49 @@ enable us to do global refinement later on.
 
   dials.find_spots datablock.json nproc=4
 
-This will just report the number of spots found.
+.. container:: toggle
 
-.. literalinclude:: logs/dials.find_spots.log
+    .. container:: header
 
-The default parameters for :doc:`dials.find_spots </programs/dials_find_spots>`
-usually do a good job
-for Pilatus images, such as these. However they may not be optimal for data from
-other detector types, such as CCDs or image plates. Issues with incorrectly
-set gain or sigma thresholds might lead to far too many spots being extracted
-(for example). If you are having issues with spot finding, it is worth
-inspecting the images with :program:`dials.image_viewer`::
+        **Show/Hide Log**
+
+    .. literalinclude:: logs/dials.find_spots.log
+
+The default parameters for :doc:`dials.find_spots<../programs/dials_find_spots>`
+usually do a good job for Pilatus images, such as these. However they may
+not be optimal for data from other detector types, such as CCDs or image
+plates. Issues with incorrectly set gain or sigma thresholds might lead to
+far too many spots being extracted (for example). It is always worth
+inspecting the images with :program:`dials.image_viewer`, especially if you
+are having issues with spot finding::
 
   dials.image_viewer datablock.json
 
-Viewing the various images from 'image' to 'threshold' gives an idea of how the
-various parameters affect the spot finding algorithm. The final image,
-'threshold' is the one on which spots are found, so ensuring this produces peaks
-at real diffraction spot positions will give the best chance of success.
+Viewing the various images from 'image' to 'threshold' gives an idea of how
+the various parameters affect the spot finding algorithm. The final image,
+'threshold' is the one on which spots are found, so ensuring this produces
+peaks at real diffraction spot positions will give the best chance of success.
 
 Having found strong spots it is worth checking the image viewer again::
 
   dials.image_viewer datablock.json strong.pickle
 
 The :program:`dials.image_viewer` tool is not as fast as tools such as ADXV,
-however it does integrate well with DIALS data files. Information about
-the beam centre, spot centroids, reflection shoeboxes and other data stored in
-the pickle files created by DIALS programs can be overlaid on the diffraction
-images. You may need to adjust the colour scheme and brightness to get the best
-out of it. A brightness of 20 with the 'invert' colour scheme works well with
-this data. Move forward a few images to find a spot whose complete rocking curve
-is recorded. The highest valued pixel in that three dimensional spot is marked
-with a pink dot. The spot centre of mass is a red cross. This is usually close to
-the peak pixel, but slightly offset as the centroid algorithm allows to calculate
-the spot centre at a better precision than the pixel size and image angular 'width'.
-The strong pixels marked as being part of the peak are highlighted with a green
-dot. The reflection shoebox you see with a blue border is the smallest
-three dimensional box that
-can contain the continuous peak region, that is, there is no background border
-region displayed here.
+however it does integrate well with DIALS data files. Information about the
+beam centre, spot centroids, reflection shoeboxes and other data stored in
+the pickle files created by DIALS programs can be overlaid on the
+diffraction images. You may need to adjust the colour scheme and brightness
+to get the best out of it. A brightness of 20 with the 'invert' colour
+scheme works well with this data. Move forward a few images to find a spot
+whose complete rocking curve is recorded. The highest valued pixel in that
+three dimensional spot is marked with a pink dot. The spot centre of mass is
+a red cross. This is usually close to the peak pixel, but slightly offset as
+the centroid algorithm allows calculation of the spot centre at a better
+precision than the pixel size and image angular 'width'. The strong pixels
+marked as being part of the peak are highlighted with a green dot. The
+reflection shoebox you see with a blue border is the smallest three
+dimensional box that can contain the continuous peak region, that is, there
+is no background border region displayed here.
 
 .. image:: /figures/found_spot.png
 
@@ -166,9 +170,9 @@ lattice at this stage as
 
   space_group=P4
 
-as a command-line option to :doc:`dials.index </programs/dials_index>`
+as a command-line option to :doc:`dials.index <../programs/dials_index>`
 or you can use
-:doc:`dials.refine_bravais_settings </programs/dials_refine_bravais_settings>`,
+:doc:`dials.refine_bravais_settings <../programs/dials_refine_bravais_settings>`,
 which will take the results of the P1 autoindexing and run refinement with all
 of the possible Bravais settings applied - after which you may select the
 preferred solution.
@@ -206,7 +210,7 @@ Refinement
 
 Although the model is already refined during indexing we can also add an
 explicit refinement
-step using :doc:`dials.refine </programs/dials_refine>` in here. There
+step using :doc:`dials.refine <../programs/dials_refine>` in here. There
 are many options to refinement. As an
 aside, to show all the options up to and including ``expert_level = 1``
 use this command::
@@ -263,7 +267,7 @@ Integration
 ^^^^^^^^^^^
 
 After the refinement is done the next step is integration, which is performed
-by the program :doc:`dials.integrate </programs/dials_integrate>`. Mostly, the
+by the program :doc:`dials.integrate <../programs/dials_integrate>`. Mostly, the
 default parameters are fine, which will perform XDS-like 3D profile fitting. However,
 for datasets with very weak background, such as this, the default :samp:`nsigma`
 background outlier rejection algorithm tends to underestimate the real background
