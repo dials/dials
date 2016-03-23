@@ -5,7 +5,7 @@ from __future__ import division
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse("""\
-  method = *example nonsense
+  method = *example nonsense flat
     .type = choice
 """, process_includes=True)
 
@@ -40,7 +40,13 @@ def model_reflection_example(reflection, experiment):
   return
 
 def model_reflection_nonsense(reflection, experiment):
-  print 'nonsense'
+  return
+
+def model_reflection_flat(reflection, experiment):
+  pixels = reflection['shoebox']
+  pixels.flatten()
+  data = pixels.data
+  dz, dy, dx = data.focus()
   return
 
 def main(reflections, experiment, method):
