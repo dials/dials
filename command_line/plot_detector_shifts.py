@@ -17,8 +17,8 @@ at hierarchy_level=1), plot shifts in the fast, slow and normal directions on
 each panel that take the first detector model to the second one as a heatmap
 
 """
+from __future__ import division
 
-import sys
 from scitbx.array_family import flex
 from libtbx import phil
 from libtbx.utils import Sorry
@@ -51,6 +51,9 @@ phil_scope = phil.parse('''
 plot_type = *panel_stack spherical_polar
   .type = choice
   .help = "choose type of plot"
+tag = None
+  .type = str
+  .help = "output files will be pre-pended with this string"
 ''')
 
 # sample 1 pt per mm
@@ -109,7 +112,7 @@ class PlotData(object):
             'slow_offset':s_off,
             'normal_offset':n_off}
 
-def plot_stack_of_panels(panel_data, direction='fast'):
+def plot_stack_of_panels(panel_data, direction='fast', tag = ''):
   '''Plot data for each panel in a stack of subplots, with the first panel
   at the top. This is appropriate for e.g. the 24 panel model for the I23
   P12M detector, as it is simply unrolling the barrel to make a flat plot'''
@@ -136,10 +139,10 @@ def plot_stack_of_panels(panel_data, direction='fast'):
   cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
   fig.colorbar(im, cax=cbar_ax)
   cbar_ax.set_ylabel("$" + direction + "_{2} - " + direction + "_{1}$ (mm)")
-  plt.savefig(direction + "_diff.png")
+  plt.savefig(tag + direction + "_diff.png")
   plt.clf()
 
-def plot_spherical_polar(panel_data, beam, direction='fast'):
+def plot_spherical_polar(panel_data, beam, direction='fast', tag = ''):
   '''Plot data for all panels in a single plot by mapping pixel positions to
   the surface of the Ewald sphere, then plotting in 2D using azimuth and
   elevation angles. This distorts the image from a flat panel detector, but
@@ -199,7 +202,7 @@ def plot_spherical_polar(panel_data, beam, direction='fast'):
   cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
   fig.colorbar(im, cax=cbar_ax)
   cbar_ax.set_ylabel("$" + direction + "_{2} - " + direction + "_{1}$ (mm)")
-  plt.savefig(direction + "_diff.png")
+  plt.savefig(tag + direction + "_diff.png")
   plt.clf()
 
   return
@@ -211,7 +214,6 @@ class Script(object):
 
     import libtbx.load_env
     from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
 
     # The script usage
     usage = ("usage: {0} [options] [param.phil] experiments1.json "
@@ -268,26 +270,31 @@ class Script(object):
     #px_size = min(det1[0].get_pixel_size())
     #extrema = 1*px_size
 
+    if self.params.tag is None:
+      tag = ''
+    else:
+      tag = "%s_"%self.params.tag
+
     # first the fast plot
     print "Doing plot of offsets in the fast direction"
     if self.params.plot_type == 'panel_stack':
-      plot_stack_of_panels(dat, 'fast')
+      plot_stack_of_panels(dat, 'fast', tag)
     elif self.params.plot_type == 'spherical_polar':
-      plot_spherical_polar(dat, self.experiment1.beam, 'fast')
+      plot_spherical_polar(dat, self.experiment1.beam, 'fast', tag)
 
     # now the slow plot
     print "Doing plot of offsets in the slow direction"
     if self.params.plot_type == 'panel_stack':
-      plot_stack_of_panels(dat, 'slow')
+      plot_stack_of_panels(dat, 'slow', tag)
     elif self.params.plot_type == 'spherical_polar':
-      plot_spherical_polar(dat, self.experiment1.beam, 'slow')
+      plot_spherical_polar(dat, self.experiment1.beam, 'slow', tag)
 
     # finally the normal plot
     print "Doing plot of offsets in the normal direction"
     if self.params.plot_type == 'panel_stack':
-      plot_stack_of_panels(dat, 'normal')
+      plot_stack_of_panels(dat, 'normal', tag)
     elif self.params.plot_type == 'spherical_polar':
-      plot_spherical_polar(dat, self.experiment1.beam, 'normal')
+      plot_spherical_polar(dat, self.experiment1.beam, 'normal', tag)
     return
 
 
