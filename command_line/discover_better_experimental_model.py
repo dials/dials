@@ -82,13 +82,9 @@ class better_experimental_model_discovery(object):
 
     detector = self.imagesets[0].get_detector()
     beam = self.imagesets[0].get_beam()
-    goniometer = self.imagesets[0].get_goniometer()
     s0 = matrix.col(beam.get_s0())
     # construct two vectors that are perpendicular to the beam.  Gives a basis for refining beam
-    if goniometer is None:
-      axis = matrix.col((1,0,0))
-    else:
-      axis = matrix.col(goniometer.get_rotation_axis())
+    axis = matrix.col((1,0,0))
     beamr0 = s0.cross(axis).normalize()
     beamr1 = beamr0.cross(s0).normalize()
     beamr2 = beamr1.cross(s0).normalize()
@@ -325,7 +321,7 @@ def run_dps(args):
   #plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
   #plt.show()
 
-  info("Running DPS")
+  info("Running DPS using %i reflections" %len(data))
 
   DPS.index(raw_spot_input=data,
             panel_addresses=flex.int([s['panel'] for s in spots_mm]))
