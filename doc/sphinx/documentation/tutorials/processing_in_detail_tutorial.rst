@@ -424,7 +424,7 @@ now be combined in one place by generating an HTML report using the program
   dials.report integrated_experiments.json integrated.pickle
 
 which produces the file :file:`dials-report.html`. The report generated for
-this dataset can be seen here :download:`dials-report.html <logs/dials-report.html>`.
+this dataset can be seen here: :download:`dials-report.html <logs/dials-report.html>`.
 
 Exporting as MTZ
 ^^^^^^^^^^^^^^^^

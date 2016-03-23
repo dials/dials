@@ -91,7 +91,7 @@ integration. These two steps are therefor as follows::
   dials.refine experiments.json indexed.pickle
   dials.refine refined_experiments.json refined.pickle scan_varying=true
 
-The :file`refined_experiments.json` generated on the second step is what you
+The :file:`refined_experiments.json` generated on the second step is what you
 pass on to integration.
 
 Integration
