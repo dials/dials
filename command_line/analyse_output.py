@@ -184,7 +184,7 @@ class per_panel_plot(object):
       default_size = fig.get_size_inches()
       if self.cbar_ylabel is not None and (n_cols, n_rows) == (1, 24):
         fig.set_size_inches((n_cols*default_size[0], 0.15*n_rows*default_size[1]))
-      if self.cbar_ylabel is not None and (n_cols, n_rows) == (5, 24):
+      elif self.cbar_ylabel is not None and (n_cols, n_rows) == (5, 24):
         fig.set_size_inches((n_cols*default_size[0], 0.5*n_rows*default_size[1]))
       else:
         fig.set_size_inches((n_cols*default_size[0], n_rows*default_size[1]))
@@ -202,7 +202,7 @@ class per_panel_plot(object):
           else:
             break
         if 1 and (n_cols, n_rows) == (1, 24):
-          fig.subplots_adjust(hspace=0.1/(n_rows/2), right=0.8)
+          fig.subplots_adjust(hspace=0.1/(n_rows), right=0.8)
         elif n_panels > 1:
           fig.subplots_adjust(hspace=0.1/n_rows, right=0.8)
 
