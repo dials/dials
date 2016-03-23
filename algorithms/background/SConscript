@@ -24,6 +24,12 @@ env.SharedLibrary(target='#/lib/dials_algorithms_background_glm_ext',
       ],
     LIBS=env["LIBS"])
 
+env.SharedLibrary(target='#/lib/dials_algorithms_background_median_ext', 
+    source = [
+      'median/boost_python/ext.cc'
+      ],
+    LIBS=env["LIBS"])
+
 env.SharedLibrary(target='#/lib/dials_algorithms_background_const_d_ext', 
     source = [
       'const_d/boost_python/ext.cc'
