@@ -57,20 +57,6 @@ def default_centroid_algorithm():
   from dials.extensions import SimpleCentroidExt
   return strategy(SimpleCentroidExt)
 
-def is_gzip(filename):
-  if not '.gz' in filename[-3:]:
-    return False
-
-  magic = open(filename, 'rb').read(2)
-
-  return ord(magic[0]) == 0x1f and ord(magic[1]) == 0x8b
-
-def magic_open(filename, mode='rb'):
-  if is_gzip(filename):
-    import gzip
-    return gzip.GzipFile(filename, mode)
-  return open(filename, mode)
-
 class reflection_table_aux(boost.python.injector, reflection_table):
   '''
   An injector class to add additional methods to the reflection table.
@@ -196,8 +182,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     import cPickle as pickle
+    from libtbx import smart_open
 
-    with magic_open(filename, 'rb') as infile:
+    with smart_open.for_reading(filename, 'rb') as infile:
       result = pickle.load(infile)
       assert(isinstance(result, reflection_table))
       return result
