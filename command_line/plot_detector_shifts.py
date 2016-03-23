@@ -48,9 +48,9 @@ level1.json.
 '''
 
 phil_scope = phil.parse('''
-plot_type = *panel_stack spherical_grid
+plot_type = *panel_stack spherical_polar
   .type = choice
-  .help = ""
+  .help = "choose type of plot"
 ''')
 
 # sample 1 pt per mm
@@ -109,7 +109,6 @@ class PlotData(object):
             'slow_offset':s_off,
             'normal_offset':n_off}
 
-
 def plot_stack_of_panels(panel_data, direction='fast'):
   '''Plot data for each panel in a stack of subplots, with the first panel
   at the top. This is appropriate for e.g. the 24 panel model for the I23
@@ -117,7 +116,7 @@ def plot_stack_of_panels(panel_data, direction='fast'):
 
   fig, axarr = plt.subplots(len(panel_data), sharex=True)
   axarr[0].set_title(r"$\Delta " + direction + "$")
-  plt.xlabel(direction + " (mm)")
+  plt.xlabel("fast (mm)")
   plt.setp(axarr.flat, aspect=1.0, adjustable='box-forced')
 
   for ipanel in range(len(panel_data)):
@@ -125,7 +124,10 @@ def plot_stack_of_panels(panel_data, direction='fast'):
     f, s, offset = (pnl_data['fast'], pnl_data['slow'],
                     pnl_data[direction + '_offset'])
     ax=axarr[ipanel]
-    im = ax.hexbin(list(f), list(s), C=list(offset), gridsize=30)
+    im = ax.hexbin(f.as_numpy_array(),
+                   s.as_numpy_array(),
+                   offset.as_numpy_array(),
+                   gridsize=30)
     ax.invert_yaxis()
     ax.set_yticks([]) # don't show axis labels on the stacked side
     ax.tick_params('y', labelsize='x-small')
@@ -136,6 +138,71 @@ def plot_stack_of_panels(panel_data, direction='fast'):
   cbar_ax.set_ylabel("$" + direction + "_{2} - " + direction + "_{1}$ (mm)")
   plt.savefig(direction + "_diff.png")
   plt.clf()
+
+def plot_spherical_polar(panel_data, beam, direction='fast'):
+  '''Plot data for all panels in a single plot by mapping pixel positions to
+  the surface of the Ewald sphere, then plotting in 2D using azimuth and
+  elevation angles. This distorts the image from a flat panel detector, but
+  will work for any detector geometry. The equatorial plane for the spherical
+  coordinate system is defined by a beam direction and the lab X direction.
+  The azimuth and elevation angles are zero along the beam direction.'''
+
+  # lists for the plot axes
+  azimuth = flex.double()
+  elevation = flex.double()
+  offset = flex.double()
+
+  # define equatorial plane with two vectors, s0u and locx
+  from scitbx import matrix
+  s0u = matrix.col(beam.get_unit_s0())
+  labx = matrix.col((1, 0, 0))
+  norm = labx.cross(s0u).normalize()
+  locx = s0u.cross(norm).normalize()
+
+  # calculate components of the lab coords in the equatorial plane directions
+  for dat in panel_data:
+    lab = dat['lab_coord']
+    off = dat[direction + '_offset']
+    a = lab.dot(s0u)
+    b = lab.dot(locx)
+
+    # calculate vectors in the equatorial plane
+    plane_proj = a * flex.vec3_double(len(a), s0u) + \
+                 b * flex.vec3_double(len(b), locx)
+
+    # hence azimuthal angles
+    az = plane_proj.angle(s0u, deg=True)
+    neg = plane_proj.dot(locx) < 0.0
+    az.set_selected(neg, -1.0 * az.select(neg))
+
+    # and elevation angles
+    el = lab.angle(plane_proj, deg=True)
+    neg = lab.dot(norm) < 0.0
+    el.set_selected(neg, -1.0 * el.select(neg))
+
+    azimuth.extend(az)
+    elevation.extend(el)
+    offset.extend(off)
+
+  fig=plt.figure()
+  plt.xlabel("azimuth (degrees)")
+  plt.ylabel("elevation (degrees)")
+  ax=fig.add_subplot(111)
+  ax.set_title(r"$\Delta " + direction + "$")
+  im = ax.hexbin(azimuth.as_numpy_array(),
+                 elevation.as_numpy_array(),
+                 offset.as_numpy_array(),
+                 gridsize=100)
+  ax.set_xlim(flex.min(azimuth)*1.1, flex.max(azimuth)*1.1)
+  ax.set_ylim(flex.min(elevation)*1.1, flex.max(elevation)*1.1)
+  fig.subplots_adjust(right=0.8)
+  cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
+  fig.colorbar(im, cax=cbar_ax)
+  cbar_ax.set_ylabel("$" + direction + "_{2} - " + direction + "_{1}$ (mm)")
+  plt.savefig(direction + "_diff.png")
+  plt.clf()
+
+  return
 
 class Script(object):
 
@@ -205,17 +272,22 @@ class Script(object):
     print "Doing plot of offsets in the fast direction"
     if self.params.plot_type == 'panel_stack':
       plot_stack_of_panels(dat, 'fast')
+    elif self.params.plot_type == 'spherical_polar':
+      plot_spherical_polar(dat, self.experiment1.beam, 'fast')
 
     # now the slow plot
     print "Doing plot of offsets in the slow direction"
     if self.params.plot_type == 'panel_stack':
       plot_stack_of_panels(dat, 'slow')
+    elif self.params.plot_type == 'spherical_polar':
+      plot_spherical_polar(dat, self.experiment1.beam, 'slow')
 
     # finally the normal plot
     print "Doing plot of offsets in the normal direction"
     if self.params.plot_type == 'panel_stack':
       plot_stack_of_panels(dat, 'normal')
-
+    elif self.params.plot_type == 'spherical_polar':
+      plot_spherical_polar(dat, self.experiment1.beam, 'normal')
     return
 
 
