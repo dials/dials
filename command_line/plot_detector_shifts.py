@@ -47,7 +47,11 @@ will show the shifts that occurred during the refinement that resulted in
 level1.json.
 '''
 
-phil_scope = phil.parse('')
+phil_scope = phil.parse('''
+plot_type = *panel_stack spherical_grid
+  .type = choice
+  .help = ""
+''')
 
 # sample 1 pt per mm
 SAMPLE_FREQ = 1
@@ -105,46 +109,6 @@ class PlotData(object):
             'slow_offset':s_off,
             'normal_offset':n_off}
 
-def extract_detectors():
-  '''Check script input and return two detector models if all is okay'''
-
-  import libtbx.load_env
-  from dials.util.options import OptionParser
-  from dials.util.options import flatten_experiments
-
-  # The script usage
-  usage = ("usage: {0} [options] [param.phil] experiments1.json "
-           "experiments2.json").format(libtbx.env.dispatcher_name)
-
-  parser = OptionParser(
-    usage=usage,
-    phil=phil_scope,
-    read_experiments=True,
-    check_format=False,
-    epilog=help_message)
-
-  params, options = parser.parse_args(show_diff_phil=True)
-
-  if len(params.input.experiments) != 2:
-    raise Sorry("Please provide two experiment lists as input")
-
-  warnmsg = ("WARNING: The {0} experiment list contains more than one "
-             "detector. Only the first will be considered.")
-  detector1 = params.input.experiments[0].data.detectors()
-  if len(detector1) > 1:
-    print warnmsg.format("first")
-  detector1 = detector1[0]
-
-  detector2 = params.input.experiments[1].data.detectors()
-  if len(detector2) > 1:
-    print warnmsg.format("second")
-  detector2 = detector2[0]
-
-  if len(detector1) != len(detector2):
-    raise Sorry("The detectors do not contain the same number of panels")
-
-  # ok here, return detectors
-  return detector1, detector2
 
 def plot_stack_of_panels(panel_data, direction='fast'):
   '''Plot data for each panel in a stack of subplots, with the first panel
@@ -173,39 +137,89 @@ def plot_stack_of_panels(panel_data, direction='fast'):
   plt.savefig(direction + "_diff.png")
   plt.clf()
 
+class Script(object):
 
-def run():
+  def __init__(self):
+    '''Check script input and return two experiments if all is okay'''
 
-  det1, det2 = extract_detectors()
+    import libtbx.load_env
+    from dials.util.options import OptionParser
+    from dials.util.options import flatten_experiments
 
-  plot_data = PlotData(det1, det2)
+    # The script usage
+    usage = ("usage: {0} [options] [param.phil] experiments1.json "
+             "experiments2.json").format(libtbx.env.dispatcher_name)
 
-  # do calculations in advance and store in a dictionary
-  dat=[]
-  for ipanel in range(len(det1)):
-    print "Calc for panel", ipanel
-    dat.append(plot_data(ipanel))
+    parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      read_experiments=True,
+      check_format=False,
+      epilog=help_message)
 
-  # set limits on colour scale to shifts of 2 pixels, using first panel of
-  # the reference detector to determine pixel size
-  #px_size = min(det1[0].get_pixel_size())
-  #extrema = 1*px_size
+    params, options = parser.parse_args(show_diff_phil=True)
 
-  # first the fast plot
-  print "Doing plot of offsets in the fast direction"
-  plot_stack_of_panels(dat, 'fast')
+    if len(params.input.experiments) != 2:
+      raise Sorry("Please provide two experiment lists as input")
 
-  # now the slow plot
-  print "Doing plot of offsets in the slow direction"
-  plot_stack_of_panels(dat, 'slow')
+    warnmsg = ("WARNING: The {0} experiment list contains more than one "
+               "detector. Only the first will be considered.")
+    detector1 = params.input.experiments[0].data.detectors()
+    if len(detector1) > 1:
+      print warnmsg.format("first")
+    detector1 = detector1[0]
+    experiment1 = params.input.experiments[0].data[0]
 
-  # finally the normal plot
-  print "Doing plot of offsets in the normal direction"
-  plot_stack_of_panels(dat, 'normal')
+    detector2 = params.input.experiments[1].data.detectors()
+    if len(detector2) > 1:
+      print warnmsg.format("second")
+    detector2 = detector2[0]
+    experiment2 = params.input.experiments[1].data[0]
 
-  return
+    if len(detector1) != len(detector2):
+      raise Sorry("The detectors do not contain the same number of panels")
+
+    self.experiment1 = experiment1
+    self.experiment2 = experiment2
+    self.params = params
+    return
+
+  def __call__(self):
+
+    det1, det2 = self.experiment1.detector, self.experiment2.detector
+
+    plot_data = PlotData(det1, det2)
+
+    # do calculations in advance and store in a dictionary
+    dat=[]
+    for ipanel in range(len(det1)):
+      print "Calc for panel", ipanel
+      dat.append(plot_data(ipanel))
+
+    # set limits on colour scale to shifts of 2 pixels, using first panel of
+    # the reference detector to determine pixel size
+    #px_size = min(det1[0].get_pixel_size())
+    #extrema = 1*px_size
+
+    # first the fast plot
+    print "Doing plot of offsets in the fast direction"
+    if self.params.plot_type == 'panel_stack':
+      plot_stack_of_panels(dat, 'fast')
+
+    # now the slow plot
+    print "Doing plot of offsets in the slow direction"
+    if self.params.plot_type == 'panel_stack':
+      plot_stack_of_panels(dat, 'slow')
+
+    # finally the normal plot
+    print "Doing plot of offsets in the normal direction"
+    if self.params.plot_type == 'panel_stack':
+      plot_stack_of_panels(dat, 'normal')
+
+    return
 
 
 if __name__ == "__main__":
 
+  run = Script()
   run()
