@@ -208,6 +208,11 @@ indexing {
         .type = int(value_min=1)
     }
   }
+  check_misindexing {
+    grid_search_scope = 0
+      .type = int
+      .help = "Search scope for testing misindexing on h, k, l."
+  }
   optimise_initial_basis_vectors = False
     .type = bool
     .expert_level = 2
@@ -396,6 +401,7 @@ class indexer_base(object):
     self.params = params.indexing
     self.all_params = params
     self.refined_experiments = None
+    self.hkl_offset = None
 
     if self.all_params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
       if self.imagesets[0].get_goniometer() is None:
@@ -1201,6 +1207,43 @@ class indexer_base(object):
     def run_one_refinement(args):
       params, reflections, experiments = args
       indexed_reflections = reflections.select(reflections['id'] > -1)
+
+      from dials.command_line import check_indexing_symmetry
+      grid_search_scope = params.indexing.check_misindexing.grid_search_scope
+
+      best_offset = (0,0,0)
+      best_cc = 0.0
+      best_nref = 0
+
+      if grid_search_scope > 0:
+        offsets, ccs, nref \
+          = check_indexing_symmetry.get_indexing_offset_correlation_coefficients(
+          indexed_reflections, experiments.crystals()[0],
+          grid_search_scope=grid_search_scope)
+
+        if len(offsets) > 1:
+          max_nref = flex.max(nref)
+
+          # select "best" solution - needs nref > 0.5 max nref && highest CC
+          # FIXME perform proper statistical test in here do not like heuristics
+
+          for offset, cc, n in zip(offsets, ccs, nref):
+            if n < (max_nref // 2):
+              continue
+            if cc > best_cc:
+              best_cc = cc
+              best_offset = offset
+              best_nref = n
+
+          #print offsets[13], nref[13], '%.2f' %ccs[13] # (0,0,0)
+          #print best_offset, best_nref, '%.2f' %best_cc
+
+          if best_offset != (0,0,0):
+            debug('Applying h,k,l offset: (%i, %i, %i)' %best_offset
+                 + ' [cc = %.2f]' %best_cc)
+            indexed_reflections['miller_index'] = apply_hkl_offset(
+              indexed_reflections['miller_index'], best_offset)
+
       from dials.algorithms.refinement import RefinerFactory
       try:
         logger = logging.getLogger()
@@ -1220,7 +1263,8 @@ class indexer_base(object):
                         crystal=experiments.crystals()[0],
                         rmsds=rmsds,
                         n_indexed=len(indexed_reflections),
-                        fraction_indexed=float(len(indexed_reflections))/len(reflections))
+                        fraction_indexed=float(len(indexed_reflections))/len(reflections),
+                        hkl_offset=best_offset)
         return soln
       finally:
         logger.disabled = disabled
@@ -1328,6 +1372,7 @@ class indexer_base(object):
       best_solution = solutions.best_solution()
       debug("best model_likelihood: %.2f" %best_solution.model_likelihood)
       debug("best n_indexed: %i" %best_solution.n_indexed)
+      self.hkl_offset = best_solution.hkl_offset
       return best_solution.crystal, best_solution.n_indexed
     else:
       return None, None
@@ -1432,6 +1477,10 @@ class indexer_base(object):
                         experiments, self.d_min,
                         tolerance=params_simple.hkl_tolerance,
                         verbosity=verbosity)
+    if self.hkl_offset is not None and self.hkl_offset != (0,0,0):
+      reflections['miller_index'] = apply_hkl_offset(
+        reflections['miller_index'], self.hkl_offset)
+      self.hkl_offset = None
 
   def refine(self, experiments, reflections):
     from dials.algorithms.indexing.refinement import refine
@@ -2050,3 +2099,10 @@ def plot_centroid_weights_histograms(reflections, n_slots=50):
     ax.set_xlim(data_min, data_max+h.slot_width())
   pyplot.show()
 
+def apply_hkl_offset(indices, offset):
+  h, k, l = indices.as_vec3_double().parts()
+  h += offset[0]
+  k += offset[1]
+  l += offset[2]
+  return flex.miller_index(
+    h.iround(), k.iround(), l.iround())

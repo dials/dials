@@ -166,16 +166,14 @@ def offset_miller_indices(miller_indices, offset):
   return flex.miller_index(
     *[mi.iround() for mi in (miller_indices.as_vec3_double() + offset).parts()])
 
-def test_P1_crystal_indexing(reflections, experiment, params):
-  if params.grid_search_scope == 0:
-    return
+def get_indexing_offset_correlation_coefficients(
+    reflections, crystal, grid_search_scope, d_min=None, d_max=None,
+    map_to_asu=False):
 
   from copy import deepcopy
   from dials.array_family import flex
 
-  original_miller_indices = reflections['miller_index']
 
-  crystal = experiment.crystal
   space_group = crystal.get_space_group()
   unit_cell = crystal.get_unit_cell()
   from cctbx.crystal import symmetry as crystal_symmetry
@@ -186,46 +184,69 @@ def test_P1_crystal_indexing(reflections, experiment, params):
   data = reflections['intensity.sum.value'] / \
          flex.sqrt(reflections['intensity.sum.variance'])
 
+  ccs = flex.double()
+  offsets = flex.vec3_int()
+  nref = flex.size_t()
+
+  original_miller_indices = reflections['miller_index']
   ms = miller_set(cs, original_miller_indices)
   ms = ms.array(data)
 
-  if params.d_min or params.d_max:
-    ms = ms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+  if d_min is not None or d_max is not None:
+    ms = ms.resolution_filter(d_min=d_min, d_max=d_max)
 
-  if params.asu:
+  if map_to_asu:
     ms = ms.map_to_asu()
+
+  g = grid_search_scope
+
+  for h in range(-g, g + 1):
+    for k in range(-g, g + 1):
+      for l in range(-g, g + 1):
+        for smx in ['-x,-y,-z']:
+          #reindexed = deepcopy(reflections)
+          # hkl offset doubled as equivalent of h0 + 1, hI - 1
+          miller_indices = offset_miller_indices(
+            ms.indices(), (2 * h, 2 * k, 2* l))
+          reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
+            miller_indices)
+          rms = miller_set(cs, reindexed_miller_indices)
+          rms = rms.array(data)
+          #if params.d_min or params.d_max:
+            #rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
+
+          #if map_to_asu:
+            #rms = rms.map_to_asu()
+
+          intensity, intensity_rdx = rms.common_sets(ms)
+          cc = intensity.correlation(intensity_rdx).coefficient()
+
+          ccs.append(cc)
+          offsets.append((h, k, l))
+          nref.append(intensity.size())
+
+  return offsets, ccs, nref
+
+
+def test_P1_crystal_indexing(reflections, experiment, params):
+  if params.grid_search_scope == 0:
+    return
 
   print 'Checking HKL origin:'
   print ''
   print 'dH dK dL %6s %5s' % ('Nref', 'CC')
 
-  g = params.grid_search_scope
+  offsets, ccs, nref = get_indexing_offset_correlation_coefficients(
+    reflections, experiment.crystal,
+    grid_search_scope=params.grid_search_scope,
+    d_min=params.d_min,
+    d_max=params.d_max,
+    map_to_asu=params.asu)
 
-  for h in range(-g, g + 1):
-    for k in range(-g, g + 1):
-      for l in range(-g, g + 1):
-
-        for smx in ['-x,-y,-z']:
-          reindexed = deepcopy(reflections)
-          # hkl offset doubled as equivalent of h0 + 1, hI - 1
-          miller_indices = offset_miller_indices(reflections['miller_index'],
-                                                 (2 * h, 2 * k, 2* l))
-          reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
-            miller_indices)
-          rms = miller_set(cs, reindexed_miller_indices)
-          rms = rms.array(data)
-          if params.d_min or params.d_max:
-            rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
-
-          if params.asu:
-            rms = rms.map_to_asu()
-
-          intensity, intensity_rdx = rms.common_sets(ms)
-          cc = intensity.correlation(intensity_rdx).coefficient()
-
-          if cc > params.symop_threshold or (h == k == l == 0):
-            print '%2d %2d %2d %6d %.3f' % \
-              (h, k, l, intensity.size(), cc)
+  for (h, k, l), cc, n in zip(offsets, ccs, nref):
+    if cc > params.symop_threshold or (h == k == l == 0):
+      print '%2d %2d %2d %6d %.3f' % \
+            (h, k, l, n, cc)
 
   print ''
 
