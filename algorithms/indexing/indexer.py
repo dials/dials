@@ -1219,7 +1219,7 @@ class indexer_base(object):
         offsets, ccs, nref \
           = check_indexing_symmetry.get_indexing_offset_correlation_coefficients(
           indexed_reflections, experiments.crystals()[0],
-          grid_search_scope=grid_search_scope)
+          grid_search_scope=grid_search_scope, map_to_asu=True)
 
         if len(offsets) > 1:
           max_nref = flex.max(nref)
