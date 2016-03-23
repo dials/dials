@@ -299,7 +299,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     import cPickle as pickle
-    with open(filename, 'wb') as outfile:
+    from libtbx import smart_open
+
+    with smart_open.for_writing(filename, 'wb') as outfile:
       pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
   def as_h5(self, filename):
