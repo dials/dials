@@ -27,6 +27,13 @@ def model_background(shoebox, mean_bg):
         shoebox[k, j, i] += g.next()
   return
 
+def random_vector_cone(vector, sd=0.5):
+  import random
+  o0 = vector.ortho()
+  o1 = vector.cross(o0)
+  return vector.rotate(o0, random.gauss(0, sd),  deg = True).rotate(
+    o1, random.gauss(0, sd),  deg = True)
+
 def model_reflection_example(reflection, experiment):
   hkl = reflection['miller_index']
   i0 = reflection['intensity.sum.value'] / reflection['dqe']
