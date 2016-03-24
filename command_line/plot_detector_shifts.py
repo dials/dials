@@ -72,7 +72,6 @@ class PlotData(object):
     panel_b = self.det2[ipanel]
     size_fast, size_slow = panel_a.get_image_size_mm()
     assert size_fast, size_slow == panel_b.get_image_size_mm()
-    #aspect = max(size_fast, size_slow) / min(size_fast, size_slow)
 
     # num of sample intervals
     n_fast = int((size_fast) / SAMPLE_FREQ)
@@ -99,6 +98,9 @@ class PlotData(object):
 
     offset = lab2 - lab1
 
+    # store offset in the lab frame
+    x_off, y_off, z_off = offset.parts()
+
     # reexpress offset in the basis fast, slow, normal of panel_a
     f_off = offset.dot(panel_a.get_fast_axis())
     s_off = offset.dot(panel_a.get_slow_axis())
@@ -108,6 +110,9 @@ class PlotData(object):
 
     return {'lab_coord':lab1,
             'fast':f, 'slow':s,
+            'x_offset':x_off,
+            'y_offset':y_off,
+            'z_offset':z_off,
             'fast_offset':f_off,
             'slow_offset':s_off,
             'normal_offset':n_off}
@@ -275,28 +280,21 @@ class Script(object):
     else:
       tag = "%s_"%self.params.tag
 
-    # first the fast plot
-    print "Doing plot of offsets in the fast direction"
-    if self.params.plot_type == 'panel_stack':
-      plot_stack_of_panels(dat, 'fast', tag)
-    elif self.params.plot_type == 'spherical_polar':
-      plot_spherical_polar(dat, self.experiment1.beam, 'fast', tag)
+    # first the plots using offsets in local fast, slow, normal frames
+    for direction in ['fast', 'slow', 'normal']:
+      print "Doing plot of offsets in the {0} direction".format(direction)
+      if self.params.plot_type == 'panel_stack':
+        plot_stack_of_panels(dat, direction, tag)
+      elif self.params.plot_type == 'spherical_polar':
+        plot_spherical_polar(dat, self.experiment1.beam, direction, tag)
 
-    # now the slow plot
-    print "Doing plot of offsets in the slow direction"
-    if self.params.plot_type == 'panel_stack':
-      plot_stack_of_panels(dat, 'slow', tag)
-    elif self.params.plot_type == 'spherical_polar':
-      plot_spherical_polar(dat, self.experiment1.beam, 'slow', tag)
-
-    # finally the normal plot
-    print "Doing plot of offsets in the normal direction"
-    if self.params.plot_type == 'panel_stack':
-      plot_stack_of_panels(dat, 'normal', tag)
-    elif self.params.plot_type == 'spherical_polar':
-      plot_spherical_polar(dat, self.experiment1.beam, 'normal', tag)
-    return
-
+    # now plots using offsets in the laboratory frame
+    for direction in ['x', 'y', 'z']:
+      print "Doing plot of offsets in the laboratory {0} direction".format(direction)
+      if self.params.plot_type == 'panel_stack':
+        plot_stack_of_panels(dat, direction, tag)
+      elif self.params.plot_type == 'spherical_polar':
+        plot_spherical_polar(dat, self.experiment1.beam, direction, tag)
 
 if __name__ == "__main__":
 
