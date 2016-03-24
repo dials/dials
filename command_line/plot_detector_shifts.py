@@ -220,7 +220,8 @@ def plot_spherical_polar(panel_data, beam, direction='fast', tag = ''):
   plt.xlabel("azimuth (degrees)")
   plt.ylabel("elevation (degrees)")
   ax=fig.add_subplot(111)
-  ax.set_title(r"$\Delta " + direction + "$")
+  ax.set_aspect(1)
+  ax.set_title(r"$\Delta " + direction + "$" + " shifts")
   im = ax.hexbin(azimuth.as_numpy_array(),
                  elevation.as_numpy_array(),
                  offset.as_numpy_array(),
@@ -231,6 +232,7 @@ def plot_spherical_polar(panel_data, beam, direction='fast', tag = ''):
   cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
   fig.colorbar(im, cax=cbar_ax)
   cbar_ax.set_ylabel("$" + direction + "_{2} - " + direction + "_{1}$ (mm)")
+  fig.set_size_inches(10,10)
   plt.savefig(tag + direction + "_diff.png")
   plt.clf()
 
