@@ -27,12 +27,22 @@ def model_background(shoebox, mean_bg):
         shoebox[k, j, i] += g.next()
   return
 
-def random_vector_cone(vector, sd=0.5):
+def random_vector_2D(vector, sd=0.5):
+  '''Form random orthonormal basis including vector, rotate vector by random
+  amount sd in both normal directions.'''
   import random
   o0 = vector.ortho()
   o1 = vector.cross(o0)
   return vector.rotate(o0, random.gauss(0, sd),  deg = True).rotate(
     o1, random.gauss(0, sd),  deg = True)
+
+def random_vector_cone(vector, sd=0.5):
+  '''Pick orthogonal axis to vector, rotate by random angle about vector,
+  rotate vector about this by sd.'''
+  import random
+  o0 = vector.ortho()
+  o1 = vector.rotate(o0, random.random() * 2.0 * math.pi)
+  return vector.rotate(o1, random.gauss(0, sd),  deg = True)
 
 def model_reflection_example(reflection, experiment):
   hkl = reflection['miller_index']
