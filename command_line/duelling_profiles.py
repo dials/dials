@@ -7,6 +7,9 @@ import iotbx.phil
 phil_scope = iotbx.phil.parse("""\
   method = *example nonsense flat
     .type = choice
+  id = None
+    .type = int
+    .multiple = True
 """, process_includes=True)
 
 help_message = '''
@@ -66,7 +69,7 @@ def model_reflection_flat(reflection, experiment):
   dz, dy, dx = data.focus()
   return
 
-def main(reflections, experiment, method):
+def main(reflections, experiment, method, ids):
   nref0 = len(reflections)
 
   if 'intensity.prf.variance' in reflections:
@@ -83,7 +86,11 @@ def main(reflections, experiment, method):
   print 'Removed %d invalid reflections, %d remain' % (nref0 - nref1, nref1)
 
   for j, reflection in enumerate(reflections):
-    globals()['model_reflection_%s' % method](reflection, experiment)
+    if ids:
+      if j in ids:
+        globals()['model_reflection_%s' % method](reflection, experiment)
+    else:
+      globals()['model_reflection_%s' % method](reflection, experiment)
 
   return
 
@@ -117,7 +124,7 @@ def run(args):
     print 'Please add shoeboxes to reflection pickle'
     exit()
 
-  main(reflections[0], experiments[0], params.method)
+  main(reflections[0], experiments[0], params.method, params.id)
 
 if __name__ == '__main__':
   import sys
