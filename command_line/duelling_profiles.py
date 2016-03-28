@@ -10,6 +10,8 @@ phil_scope = iotbx.phil.parse("""\
   id = None
     .type = int
     .multiple = True
+  scale = 1.0
+    .type = float
   rs_node_size = 0.0
     .type = float
 """, process_includes=True)
@@ -122,11 +124,14 @@ def model_reflection_rt0(reflection, experiment, params):
   data = pixels.data
   dz, dy, dx = data.focus()
 
+  # since now 2D dats
+  data.reshape(flex.grid(dy, dx))
+
   print 'Observed reflection (flattened in Z):'
   print
   for j in range(dy):
     for i in range(dx):
-      print '%4d' % data[(0, j, i)],
+      print '%4d' % data[(j, i)],
     print
 
   sigma_m = experiment.profile.sigma_m() * d2r
@@ -141,7 +146,7 @@ def model_reflection_rt0(reflection, experiment, params):
 
   bbox = reflection['bbox']
 
-  scale = 1
+  scale = params.scale
   print '%d rays' % (int(round(i0 * scale)))
   for i in range(int(round(i0 * scale))):
     b = random_vector_cone(s0, sigma_b)
@@ -166,6 +171,10 @@ def model_reflection_rt0(reflection, experiment, params):
       continue
     x -= bbox[0]
     y -= bbox[2]
+    # FIXME in here try to work out probability distribution along path
+    # length through the detector sensitive surface i.e. deposit fractional
+    # counts along pixels (and allow for DQE i.e. photon passing right through
+    # the detector)
     patch[(int(y), int(x))] += 1.0 / scale
 
   print 'Simulated reflection (flattened in Z):'
