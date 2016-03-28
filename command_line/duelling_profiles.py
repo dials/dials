@@ -59,8 +59,68 @@ def model_reflection_example(reflection, experiment):
   Amat = crystal.get_A_at_scan_point(int(xyz[2]))
   return
 
+def predict_angles(p0_star, experiment):
+  '''Predict Ewald sphere crossing angle for RLP x'''
+
+  from scitbx import matrix
+  import math
+
+  # Kabsch frame
+  a = matrix.col(experiment.goniometer.get_rotation_axis())
+  b = matrix.col(experiment.beam.get_s0())
+
+  m2 = a.normalize()
+  m1 = m2.cross(b.normalize())
+  m3 = m1.cross(m2)
+
+  p0_sqr = p0_star.dot(p0_star)
+  rho = math.sqrt(p0_sqr - p0_star.dot(m2) ** 2)
+  p_star_m3 = (-0.5 * p0_sqr - p0_star.dot(m2) * b.dot(m2)) / b.dot(m3)
+  p_star_m2 = p0_star.dot(m2)
+  p_star_m1 = math.sqrt(rho ** 2 - p_star_m3 ** 2)
+
+  p0_star_m1 = p0_star.dot(m1)
+  p0_star_m2 = p0_star.dot(m2)
+  p0_star_m3 = p0_star.dot(m3)
+
+  cp1 = + p_star_m1 * p0_star_m1 +  p_star_m3 * p0_star_m3
+  cp2 = - p_star_m1 * p0_star_m1 +  p_star_m3 * p0_star_m3
+  sp1 = + p_star_m1 * p0_star_m3 -  p_star_m3 * p0_star_m1
+  sp2 = - p_star_m1 * p0_star_m3 -  p_star_m3 * p0_star_m1
+
+  return math.atan2(sp1, cp1), math.atan2(sp2, cp2)
+
 def model_reflection_nonsense(reflection, experiment):
-  return
+  import math
+  from scitbx import matrix
+
+  d2r = 180.0 / math.pi
+
+  hkl = reflection['miller_index']
+  xyz = reflection['xyzcal.px']
+  xyz_mm = reflection['xyzcal.mm']
+  Amat = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(xyz[2])))
+  p0_star = Amat * hkl
+
+  angles = predict_angles(p0_star, experiment)
+  angle = angles[0] if (abs(angles[0] - xyz_mm[2]) <
+                        abs(angles[1] - xyz_mm[2])) else angles[1]
+
+  pixels = reflection['shoebox']
+  pixels.flatten()
+  data = pixels.data
+  dz, dy, dx = data.focus()
+
+  print 'Observed reflection (flattened in Z)'
+  for j in range(dy):
+    for i in range(dx):
+      print '%4d' % data[(0, j, i)],
+    print
+
+  good = data.as_1d().select(data.as_1d() > 0)
+  from dials.array_family import flex
+
+  return flex.sum(good)
 
 def model_reflection_flat(reflection, experiment):
   pixels = reflection['shoebox']
