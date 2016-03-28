@@ -10,6 +10,8 @@ phil_scope = iotbx.phil.parse("""\
   id = None
     .type = int
     .multiple = True
+  rs_node_size = 0.0
+    .type = float
 """, process_includes=True)
 
 help_message = '''
@@ -47,7 +49,7 @@ def random_vector_cone(vector, sd):
   o1 = vector.rotate(o0, random.random() * 2.0 * math.pi)
   return vector.rotate(o1, random.gauss(0, sd))
 
-def model_reflection_example(reflection, experiment):
+def model_reflection_example(reflection, experiment, params):
   hkl = reflection['miller_index']
   i0 = reflection['intensity.sum.value'] / reflection['dqe']
   s1 = reflection['s1']
@@ -93,7 +95,7 @@ def predict_angles(p0_star, experiment, s0=None):
 
   return math.atan2(sp1, cp1), math.atan2(sp2, cp2)
 
-def model_reflection_rt0(reflection, experiment):
+def model_reflection_rt0(reflection, experiment, params):
   import math
   from scitbx import matrix
   from dials.array_family import flex
@@ -144,6 +146,13 @@ def model_reflection_rt0(reflection, experiment):
   for i in range(int(round(i0 * scale))):
     b = random_vector_cone(s0, sigma_b)
     p0 = random_vector_cone(Amat * hkl, sigma_m)
+    if params.rs_node_size > 0:
+      ns = params.rs_node_size
+      import random
+      dp0 = matrix.col((random.gauss(0, ns),
+                        random.gauss(0, ns),
+                        random.gauss(0, ns)))
+      p0 += dp0
     angles = predict_angles(p0, experiment, b)
     r = angles[0] if (abs(angles[0] - r0) <
                       abs(angles[1] - r0)) else angles[1]
@@ -151,6 +160,10 @@ def model_reflection_rt0(reflection, experiment):
     s1 = p + b
     panel, xy = detector.get_ray_intersection(s1)
     x, y = detector[panel].millimeter_to_pixel(xy)
+    if x < bbox[0] or x >= bbox[1]:
+      continue
+    if y < bbox[2] or y >= bbox[3]:
+      continue
     x -= bbox[0]
     y -= bbox[2]
     patch[(int(y), int(x))] += 1.0 / scale
@@ -162,19 +175,16 @@ def model_reflection_rt0(reflection, experiment):
       print '%4d' % int(patch[(j, i)]),
     print
 
-
-
-
   return
 
-def model_reflection_flat(reflection, experiment):
+def model_reflection_flat(reflection, experiment, params):
   pixels = reflection['shoebox']
   pixels.flatten()
   data = pixels.data
   dz, dy, dx = data.focus()
   return
 
-def main(reflections, experiment, method, ids):
+def main(reflections, experiment, method, ids, params):
   nref0 = len(reflections)
 
   if 'intensity.prf.variance' in reflections:
@@ -193,9 +203,9 @@ def main(reflections, experiment, method, ids):
   for j, reflection in enumerate(reflections):
     if ids:
       if j in ids:
-        globals()['model_reflection_%s' % method](reflection, experiment)
+        globals()['model_reflection_%s' % method](reflection, experiment, params)
     else:
-      globals()['model_reflection_%s' % method](reflection, experiment)
+      globals()['model_reflection_%s' % method](reflection, experiment, params)
 
   return
 
@@ -229,7 +239,7 @@ def run(args):
     print 'Please add shoeboxes to reflection pickle'
     exit()
 
-  main(reflections[0], experiments[0], params.method, params.id)
+  main(reflections[0], experiments[0], params.method, params.id, params)
 
 if __name__ == '__main__':
   import sys
