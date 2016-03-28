@@ -12,6 +12,8 @@ phil_scope = iotbx.phil.parse("""\
     .multiple = True
   scale = 1.0
     .type = float
+  show = False
+    .type = bool
   rs_node_size = 0.0
     .type = float
 """, process_includes=True)
@@ -144,12 +146,13 @@ def model_reflection_rt0(reflection, experiment, params):
   # since now 2D data
   data.reshape(flex.grid(dy, dx))
 
-  print 'Observed reflection (flattened in Z):'
-  print
-  for j in range(dy):
-    for i in range(dx):
-      print '%4d' % data[(j, i)],
+  if params.show:
+    print 'Observed reflection (flattened in Z):'
     print
+    for j in range(dy):
+      for i in range(dx):
+        print '%4d' % data[(j, i)],
+      print
 
   sigma_m = experiment.profile.sigma_m() * d2r
   sigma_b = experiment.profile.sigma_b() * d2r
@@ -164,7 +167,8 @@ def model_reflection_rt0(reflection, experiment, params):
   bbox = reflection['bbox']
 
   scale = params.scale
-  print '%d rays' % (int(round(i0 * scale)))
+  if params.show:
+    print '%d rays' % (int(round(i0 * scale)))
   for i in range(int(round(i0 * scale))):
     b = random_vector_cone(s0, sigma_b)
     p0 = random_vector_cone(Amat * hkl, sigma_m)
@@ -194,12 +198,13 @@ def model_reflection_rt0(reflection, experiment, params):
     # the detector)
     patch[(int(y), int(x))] += 1.0 / scale
 
-  print 'Simulated reflection (flattened in Z):'
-  print
-  for j in range(dy):
-    for i in range(dx):
-      print '%4d' % int(patch[(j, i)]),
+  if params.show:
+    print 'Simulated reflection (flattened in Z):'
     print
+    for j in range(dy):
+      for i in range(dx):
+        print '%4d' % int(patch[(j, i)]),
+      print
 
   print 'Correlation coefficient: %.3f' % profile_correlation(data, patch)
 
