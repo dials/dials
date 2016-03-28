@@ -18,6 +18,8 @@ phil_scope = iotbx.phil.parse("""\
     .type = float
   min_isum = None
     .type = float
+  debug = False
+    .type = bool
 """, process_includes=True)
 
 help_message = '''
@@ -118,6 +120,10 @@ def profile_correlation(data, model):
   correlation = flex.linear_correlation(data, model)
   return correlation.coefficient()
 
+def abs_angle(a, b):
+  import math
+  return abs(math.atan2(math.sin(b - a), math.cos(b - a)))
+
 def model_reflection_rt0(reflection, experiment, params):
   import math
   from scitbx import matrix
@@ -128,10 +134,20 @@ def model_reflection_rt0(reflection, experiment, params):
   hkl = reflection['miller_index']
   xyz = reflection['xyzcal.px']
   xyz_mm = reflection['xyzcal.mm']
+
+  if params.debug:
+    print 'hkl = %d %d %d' % hkl
+    print 'xyz px = %f %f %f' % xyz
+    print 'xyz mm = %f %f %f' % xyz_mm
+
   Amat = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(xyz[2])))
   p0_star = Amat * hkl
 
   angles = predict_angles(p0_star, experiment)
+
+  if params.debug:
+    print 'angles = %f %f' % angles
+
   angle = angles[0] if (abs(angles[0] - xyz_mm[2]) <
                         abs(angles[1] - xyz_mm[2])) else angles[1]
 
@@ -140,10 +156,13 @@ def model_reflection_rt0(reflection, experiment, params):
   if params.min_isum:
     if i0 < params.min_isum:
       return
-  
+
   s1 = reflection['s1']
   a = matrix.col(experiment.goniometer.get_rotation_axis())
   s0 = matrix.col(experiment.beam.get_s0())
+
+  if params.debug:
+    print 's1 = %f %f %f' % s1
 
   pixels = reflection['shoebox']
   pixels.flatten()
@@ -187,8 +206,8 @@ def model_reflection_rt0(reflection, experiment, params):
                         random.gauss(0, ns)))
       p0 += dp0
     angles = predict_angles(p0, experiment, b)
-    r = angles[0] if (abs(angles[0] - r0) <
-                      abs(angles[1] - r0)) else angles[1]
+    r = angles[0] if (abs_angle(angles[0], r0) <
+                      abs_angle(angles[1], r0)) else angles[1]
     p = p0.rotate(a, r)
     s1 = p + b
     panel, xy = detector.get_ray_intersection(s1)
@@ -246,6 +265,7 @@ def main(reflections, experiment, method, ids, params):
       if j in ids:
         globals()['model_reflection_%s' % method](reflection, experiment, params)
     else:
+      print j
       globals()['model_reflection_%s' % method](reflection, experiment, params)
 
   return
