@@ -97,6 +97,23 @@ def predict_angles(p0_star, experiment, s0=None):
 
   return math.atan2(sp1, cp1), math.atan2(sp2, cp2)
 
+def profile_correlation(data, model):
+  '''Compute CC between reflection profiles data and model.'''
+
+  from dials.array_family import flex
+
+  assert(data.focus() == model.focus())
+
+  sel = data.as_1d() > 0
+
+  model = model.as_1d().select(sel)
+  data = data.as_1d().select(sel).as_double()
+
+  assert(len(data) == len(model))
+
+  correlation = flex.linear_correlation(data, model)
+  return correlation.coefficient()
+
 def model_reflection_rt0(reflection, experiment, params):
   import math
   from scitbx import matrix
@@ -183,6 +200,8 @@ def model_reflection_rt0(reflection, experiment, params):
     for i in range(dx):
       print '%4d' % int(patch[(j, i)]),
     print
+
+  print 'Correlation coefficient: %.3f' % profile_correlation(data, patch)
 
   return
 
