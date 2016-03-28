@@ -141,7 +141,7 @@ def model_reflection_rt0(reflection, experiment, params):
   data = pixels.data
   dz, dy, dx = data.focus()
 
-  # since now 2D dats
+  # since now 2D data
   data.reshape(flex.grid(dy, dx))
 
   print 'Observed reflection (flattened in Z):'
