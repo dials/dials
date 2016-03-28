@@ -213,7 +213,8 @@ def model_reflection_rt0(reflection, experiment, params):
         print '%4d' % int(patch[(j, i)]),
       print
 
-  print 'Correlation coefficient: %.3f' % profile_correlation(data, patch)
+  print 'Correlation coefficient: %.3f isum: %.1f ' % (
+      profile_correlation(data, patch), i0)
 
   return
 
