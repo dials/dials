@@ -16,6 +16,8 @@ phil_scope = iotbx.phil.parse("""\
     .type = bool
   rs_node_size = 0.0
     .type = float
+  min_isum = None
+    .type = float
 """, process_includes=True)
 
 help_message = '''
@@ -134,6 +136,11 @@ def model_reflection_rt0(reflection, experiment, params):
                         abs(angles[1] - xyz_mm[2])) else angles[1]
 
   i0 = reflection['intensity.sum.value']# / reflection['dqe']
+
+  if params.min_isum:
+    if i0 < params.min_isum:
+      return
+  
   s1 = reflection['s1']
   a = matrix.col(experiment.goniometer.get_rotation_axis())
   s0 = matrix.col(experiment.beam.get_s0())
