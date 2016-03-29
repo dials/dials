@@ -10,6 +10,10 @@ phil_scope = iotbx.phil.parse("""\
   id = None
     .type = int
     .multiple = True
+  id_start = None
+    .type = int
+  id_end = None
+    .type = int
   scale = 1.0
     .type = float
   show = False
@@ -211,6 +215,8 @@ def model_reflection_rt0(reflection, experiment, params):
     p = p0.rotate(a, r)
     s1 = p + b
     panel, xy = detector.get_ray_intersection(s1)
+
+    # FIXME DO NOT USE THIS FUNCTION EVENTUALLY...
     x, y = detector[panel].millimeter_to_pixel(xy)
     if x < bbox[0] or x >= bbox[1]:
       continue
@@ -244,8 +250,11 @@ def model_reflection_flat(reflection, experiment, params):
   dz, dy, dx = data.focus()
   return
 
-def main(reflections, experiment, method, ids, params):
+def main(reflections, experiment, params):
   nref0 = len(reflections)
+
+  method = params.method
+  ids = params.id
 
   if 'intensity.prf.variance' in reflections:
     selection = reflections.get_flags(
@@ -264,6 +273,12 @@ def main(reflections, experiment, method, ids, params):
     if ids:
       if j in ids:
         globals()['model_reflection_%s' % method](reflection, experiment, params)
+    elif params.id_start and params.id_end:
+      if j < params.id_start or j >= params.id_end:
+        continue
+      print j
+      globals()['model_reflection_%s' % method](reflection, experiment, params)
+
     else:
       print j
       globals()['model_reflection_%s' % method](reflection, experiment, params)
@@ -300,7 +315,7 @@ def run(args):
     print 'Please add shoeboxes to reflection pickle'
     exit()
 
-  main(reflections[0], experiments[0], params.method, params.id, params)
+  main(reflections[0], experiments[0], params)
 
 if __name__ == '__main__':
   import sys
