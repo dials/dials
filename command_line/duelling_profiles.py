@@ -105,6 +105,9 @@ def predict_angles(p0_star, experiment, s0=None):
   sp1 = + p_star_m1 * p0_star_m3 -  p_star_m3 * p0_star_m1
   sp2 = - p_star_m1 * p0_star_m3 -  p_star_m3 * p0_star_m1
 
+  # FIXME determine order of these (entering, exiting) so usage may be
+  # more efficient...
+
   return math.atan2(sp1, cp1), math.atan2(sp2, cp2)
 
 def profile_correlation(data, model):
