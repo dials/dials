@@ -1,8 +1,10 @@
 from __future__ import division
 
 def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
-  import math
   from dials.array_family import flex
+
+  if len(reflections) == 0:
+    return '\n'
 
   assert isinstance(char, basestring)
   assert len(char) == 1

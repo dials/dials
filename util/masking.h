@@ -203,7 +203,13 @@ namespace dials { namespace util {
       for (std::size_t j = 0; j < resolution_.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < resolution_.accessor()[1]; ++i) {
           vec2<double> px(i+0.5,j+0.5);
-          resolution_(j,i) = panel.get_resolution_at_pixel(s0, px);
+          try {
+            resolution_(j,i) = panel.get_resolution_at_pixel(s0, px);
+          }
+          catch(dxtbx::error) {
+            // Known failure: resolution at beam center is undefined
+            resolution_(j,i) = 0.0;
+          }
         }
       }
     }
