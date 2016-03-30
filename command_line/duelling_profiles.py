@@ -5,7 +5,7 @@ from __future__ import division
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse("""\
-  method = *example rt0 flat
+  method = *example rt0 flat predict
     .type = choice
   id = None
     .type = int
@@ -73,13 +73,44 @@ def model_reflection_example(reflection, experiment, params):
   Amat = crystal.get_A_at_scan_point(int(xyz[2]))
   return
 
+def model_reflection_predict(reflection, experiment, params):
+  import math
+  from scitbx import matrix
+  from dials.array_family import flex
+
+  d2r = math.pi / 180.0
+
+  hkl = reflection['miller_index']
+  xyz = reflection['xyzcal.px']
+  xyz_mm = reflection['xyzcal.mm']
+
+  if params.debug:
+    print 'hkl = %d %d %d' % hkl
+    print 'xyz px = %f %f %f' % xyz
+    print 'xyz mm = %f %f %f' % xyz_mm
+
+  Amat = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(xyz[2])))
+  p0_star = Amat * hkl
+
+  angles = predict_angles(p0_star, experiment)
+
+  if params.debug:
+    print 'angles = %f %f' % angles
+
+  angle = angles[0] if reflection['entering'] else angles[1]
+
+  if abs_angle(angle, xyz_mm[2]) > 1.0e-3:
+    raise RuntimeError, '%f %f' % (angle, xyz_mm[2])
+
+  return
+
 def predict_angles(p0_star, experiment, s0=None):
-  '''Predict Ewald sphere crossing angle for RLP x'''
+  '''Predict Ewald sphere crossing angle for RLP x, returned in order
+  (entering, exiting).'''
 
   from scitbx import matrix
   import math
 
-  # Kabsch frame
   a = matrix.col(experiment.goniometer.get_rotation_axis())
   if s0 is None:
     b = matrix.col(experiment.beam.get_s0())
@@ -104,9 +135,6 @@ def predict_angles(p0_star, experiment, s0=None):
   cp2 = - p_star_m1 * p0_star_m1 +  p_star_m3 * p0_star_m3
   sp1 = + p_star_m1 * p0_star_m3 -  p_star_m3 * p0_star_m1
   sp2 = - p_star_m1 * p0_star_m3 -  p_star_m3 * p0_star_m1
-
-  # FIXME determine order of these (entering, exiting) so usage may be
-  # more efficient...
 
   return math.atan2(sp1, cp1), math.atan2(sp2, cp2)
 
@@ -184,7 +212,7 @@ def model_reflection_rt0(reflection, experiment, params):
     print
     for j in range(dy):
       for i in range(dx):
-        print '%4d' % data[(j, i)],
+        print '%5d' % data[(j, i)],
       print
 
   sigma_m = experiment.profile.sigma_m() * d2r
@@ -213,8 +241,7 @@ def model_reflection_rt0(reflection, experiment, params):
                         random.gauss(0, ns)))
       p0 += dp0
     angles = predict_angles(p0, experiment, b)
-    r = angles[0] if (abs_angle(angles[0], r0) <
-                      abs_angle(angles[1], r0)) else angles[1]
+    r = angles[0] if reflection['entering'] else angles[1]
     p = p0.rotate(a, r)
     s1 = p + b
     panel, xy = detector.get_ray_intersection(s1)
@@ -238,7 +265,7 @@ def model_reflection_rt0(reflection, experiment, params):
     print
     for j in range(dy):
       for i in range(dx):
-        print '%4d' % int(patch[(j, i)]),
+        print '%5d' % int(patch[(j, i)]),
       print
 
   print 'Correlation coefficient: %.3f isum: %.1f ' % (
