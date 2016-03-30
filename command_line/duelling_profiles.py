@@ -94,6 +94,8 @@ def model_reflection_predict(reflection, experiment, params):
 
   angles = predict_angles(p0_star, experiment)
 
+  assert(angles)
+
   if params.debug:
     print 'angles = %f %f' % angles
 
@@ -125,6 +127,8 @@ def predict_angles(p0_star, experiment, s0=None):
   rho = math.sqrt(p0_sqr - p0_star.dot(m2) ** 2)
   p_star_m3 = (-0.5 * p0_sqr - p0_star.dot(m2) * b.dot(m2)) / b.dot(m3)
   p_star_m2 = p0_star.dot(m2)
+  if rho ** 2 < p_star_m3 ** 2:
+    return None
   p_star_m1 = math.sqrt(rho ** 2 - p_star_m3 ** 2)
 
   p0_star_m1 = p0_star.dot(m1)
@@ -174,11 +178,17 @@ def model_reflection_rt0(reflection, experiment, params):
     print 'hkl = %d %d %d' % hkl
     print 'xyz px = %f %f %f' % xyz
     print 'xyz mm = %f %f %f' % xyz_mm
+    if reflection['entering']:
+      print 'entering'
+    else:
+      print 'exiting'
 
   Amat = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(xyz[2])))
   p0_star = Amat * hkl
 
   angles = predict_angles(p0_star, experiment)
+
+  assert(angles)
 
   if params.debug:
     print 'angles = %f %f' % angles
@@ -241,6 +251,9 @@ def model_reflection_rt0(reflection, experiment, params):
                         random.gauss(0, ns)))
       p0 += dp0
     angles = predict_angles(p0, experiment, b)
+    if angles is None:
+      # scattered ray ended up in blind region
+      continue
     r = angles[0] if reflection['entering'] else angles[1]
     p = p0.rotate(a, r)
     s1 = p + b
