@@ -31,7 +31,7 @@ are there 8 different ways that a detector's 'fast' and 'slow' axes could
 be aligned with the vertical and horizontal directions of the detector's
 housing, but processing packages have their own coordinate conventions that
 map these to 'X' and 'Y' directions, either in pixels or millimetres. It is
-not surprise that sometimes meaning gets lost in translation here.
+not surprising that sometimes meaning gets lost in translation here.
 Whatever the cause, incorrect or wrongly interpreted image headers are a
 reality that we have to be aware of. Some programs go as far as to ignore
 the image headers entirely and pass the responsiblity on to the supposed
@@ -58,7 +58,7 @@ download from |DPF3|.
 .. |DPF3| image:: https://zenodo.org/badge/doi/10.5281/zenodo.45756.svg
           :target: http://dx.doi.org/10.5281/zenodo.45756
 
-This dataset consists of a tar archive of bz2-compressed images. Very recent
+The dataset consists of a tar archive of bz2-compressed images. Very recent
 versions of DIALS can read these directly, however here we shall be using
 DIALS 1.1, as included in CCP4 7.0. In that case, we need to uncompress the
 image files first. To do that, we first extract the archive::
@@ -128,12 +128,13 @@ which produces output including the experimental geometry::
       Fixed rotation:  {1,0,0,0,1,0,0,0,1}
       Setting rotation:{1,0,0,0,1,0,0,0,1}
 
-At the moment we don't know that any of this is wrong. Happily, the 19-ID-specific
-format has recognised the 'inverse :math:`\phi`' rotation of the goniometer at this
-beamline, and thus produced a rotation axis of ``{-1,0,0}`` rather than
-``{1,0,0}``. These inverse :math:`\phi` settings can the cause of problems with
-processing data from currently unrecognised beamlines. As an aside, in such
-a case we could force the rotation axis to be whatever we want like this::
+At the moment we don't know that any of this is wrong. Happily, the
+19-ID-specific format has recognised the 'inverse :math:`\phi`' rotation of
+the goniometer at this beamline, and thus produced a rotation axis of
+``{-1,0,0}`` rather than ``{1,0,0}``. These inverse :math:`\phi` settings
+can be the cause of problems with processing data from currently
+unrecognised beamlines. As an aside, in such a case we could force the
+rotation axis to be whatever we want like this::
 
   dials.import x247398/t1.0*.img geometry.goniometer.rotation_axis=-1,0,0
 
@@ -165,17 +166,17 @@ After finding strong spots it is *always* worth viewing them using
 
 .. image:: /figures/dpf3_bad_found_spot.png
 
-In this case, we might already start to worry that something is not quite
-right. Instead of neat columns of points corresponding to a regular
-reciprocal lattice grid, the points are aligned in curved or even spiral
-tracks. Extreme cases of this may indicate something grossly wrong, like an
-inverted :math:`\phi` direction. In this instance the lattice is still
-detectable, just distorted. We understand this as inaccurate mapping from
-detector to reciprocal space. If the diffraction geometry model is wrong, then
-:program:`dials.reciprocal_lattice_viewer` can't calculate the reciprocal
-lattice position for each centroid properly. This can cause problems with
-indexing because that requires exactly the same step of mapping centroid
-positions from detector to reciprocal space.
+Presented with this view, we might already start to worry that something is
+not quite right. Instead of neat columns of points corresponding to a
+regular reciprocal lattice grid, the points are aligned in curved or even
+spiral tracks. Extreme cases of this may indicate something grossly wrong,
+like an inverted :math:`\phi` direction. In this instance the lattice is
+still detectable, just distorted. We understand this as inaccurate mapping
+from detector to reciprocal space. If the diffraction geometry model is
+wrong, then :program:`dials.reciprocal_lattice_viewer` can't calculate the
+reciprocal lattice position for each centroid properly. This can cause
+problems with indexing because that requires exactly the same step of
+mapping centroid positions from detector to reciprocal space.
 
 Notwithstanding these concerns, we press on into indexing anyway.
 
@@ -348,7 +349,7 @@ the result::
   dials.reindex indexed.pickle hkl_offset=1,0,1
   dials.refine experiments.json reindexed_reflections.pickle
 
-Checking the table at the end of the log file that seems to be even worse!::
+Checking the table at the end of the log file, this seems to be even worse!:
 
   --------------------------------------------
   | Exp | Nref  | RMSD_X | RMSD_Y | RMSD_Z   |
@@ -480,9 +481,6 @@ giving the outlier rejection a second chance starting from the improved model::
   | 0   | 14760 | 0.53932 | 0.60676 | 0.22887  |
   ----------------------------------------------
 
-Bootstrap indexing
-------------------
-
 Now we see many more reflections survived outlier rejection, and the RMSDs
 remain passably okay. Remember though that this model was ultimately derived
 from an indexing job in which fewer than one third of the found spots were
@@ -490,8 +488,13 @@ indexed, using bad geometry. Some areas of reciprocal space are poorly
 sampled with indexed reflections, which means we won't be doing the best job
 in refinement, especially if fitting a scan-varying crystal model.
 Furthermore, we won't have the best reference profiles for spots in these
-regions during integration. What we would like to do is take the refined
-geometry as a better starting point for indexing. We do that like this::
+regions during integration.
+
+Bootstrap indexing
+------------------
+
+What we would like to do is take the refined geometry as a better starting
+point for indexing. We do that like this::
 
   dials.import input.datablock=datablock.json output.datablock=recycled.json reference_geometry=refined_experiments.json
   dials.index recycled.json strong.pickle output.experiments=corrected_experiments.json output.reflections=corrected_indexed.pickle
