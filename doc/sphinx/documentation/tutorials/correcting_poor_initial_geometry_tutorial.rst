@@ -9,8 +9,8 @@ is incorrect information about the experimental geometry in the input. This
 will often cause outright failures in indexing, but sometimes more subtle
 effects are possible, such as misindexing. In such cases, it may be possible
 to index and refine a lattice that on the face of it looks reasonable but is
-actually shifted so that H, K or L (or some combination of these) are off by
-some integer value (often +/- 1).
+actually shifted so that :math:`h`, :math:`k` or :math:`l` (or some
+combination of these) are off by some integer value (often +/- 1).
 
 DIALS uses the information written to the image headers to form its initial
 model for the experiment geometry. That is, we trust that the beamline has been
