@@ -349,7 +349,9 @@ the result::
   dials.reindex indexed.pickle hkl_offset=1,0,1
   dials.refine experiments.json reindexed_reflections.pickle
 
-Checking the table at the end of the log file, this seems to be even worse!:
+Checking the table at the end of the log file, this seems to be even worse!
+
+::
 
   --------------------------------------------
   | Exp | Nref  | RMSD_X | RMSD_Y | RMSD_Z   |
