@@ -330,7 +330,13 @@ def model_reflection_rt0(reflection, experiment, params):
   angle = angles[0] if (abs(angles[0] - xyz_mm[2]) <
                         abs(angles[1] - xyz_mm[2])) else angles[1]
 
-  i0 = reflection['intensity.sum.value']# / reflection['dqe']
+  if params.debug:
+    print 'dqe = %f' % reflection['dqe']
+
+  if params.physics:
+    i0 = reflection['intensity.sum.value'] / reflection['dqe']
+  else:
+    i0 = reflection['intensity.sum.value']
 
   if params.min_isum:
     if i0 < params.min_isum:
