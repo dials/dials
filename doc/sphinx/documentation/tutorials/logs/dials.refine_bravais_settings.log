@@ -1,4 +1,4 @@
-DIALS 1.dev.75-g8c1986a
+DIALS 1.dev.121-g581cc32
 The following parameters have been modified:
 
 input {
@@ -20,5 +20,5 @@ Solution Metric fit  rmsd  min/max cc #spots lattice                            
        1     0.0000 0.059         -/-   8099      aP  57.81  57.78 150.03  90.01  89.99  89.99  501130      a,b,c
 -----------------------------------------------------------------------------------------------------------------
 
-usr+sys time: 0.86 seconds
-wall clock time: 8.29 seconds
+usr+sys time: 1.08 seconds, ticks: 3088663, micro-seconds/tick: 0.350
+wall clock time: 23.90 seconds

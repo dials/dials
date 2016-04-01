@@ -1,4 +1,4 @@
-DIALS 1.dev.75-g8c1986a
+DIALS 1.dev.121-g581cc32
 The following parameters have been modified:
 
 refinement {
@@ -87,4 +87,4 @@ Saving refined experiments to refined_experiments.json
 Updating predictions for indexed reflections
 Saving reflections with updated predictions to refined.pickle
 
-Total time taken: 25.22s
+Total time taken: 27.59s

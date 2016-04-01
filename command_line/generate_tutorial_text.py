@@ -2,27 +2,23 @@
 
 from __future__ import division
 import os
-import time
 import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
-from libtbx import easy_run
+from dials.util.procrunner import run_process
 
 class Job(object):
-
   def __call__(self):
     print self.cmd
-    result = self.timed_easy_run(self.cmd)
-    print "{0:.3f}s".format(result.time)
-    return result.stdout_lines
+    self.result = run_process(self.cmd.split(' '))
+    print "running command took {0:.2f} seconds\n".format(self.result['runtime'])
+    assert self.result['exitcode'] == 0
+    self.mangle_result()
+    return self.result
 
-  @staticmethod
-  def timed_easy_run(cmd):
-    ts = time.time()
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    te = time.time()
-    result.time = te-ts
-    return result
+  def mangle_result(self):
+    ''' function that can be overridden to change the return values after execution '''
+    pass
 
 class dials_import(Job):
 
@@ -75,12 +71,8 @@ class dials_integrate(Job):
 class dials_report(Job):
   cmd = "dials.report integrated_experiments.json integrated.pickle"
 
-  def __call__(self):
-    print self.cmd
-    result = self.timed_easy_run(self.cmd)
-    print "{0:.3f}s".format(result.time)
-    with open('dials-report.html') as f: result = f.readlines()
-    return result
+  def mangle_result(self):
+    self.result['stdout'] = open('dials-report.html').read()
 
 
 class LogWriter(object):
@@ -88,10 +80,9 @@ class LogWriter(object):
   def __init__(self, log_dir):
     self.log_dir = log_dir
 
-  def __call__(self, filename, text):
+  def __call__(self, filename, result):
     with open(os.path.join(self.log_dir, filename), "w") as f:
-      for line in text:
-        f.write(line + "\n")
+      f.write(result['stdout'])
 
 if (__name__ == "__main__") :
 

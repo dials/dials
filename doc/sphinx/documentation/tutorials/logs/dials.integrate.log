@@ -1,4 +1,4 @@
-DIALS 1.dev.75-g8c1986a
+DIALS 1.dev.121-g581cc32
 The following parameters have been modified:
 
 integration {
@@ -21,7 +21,7 @@ Processing reference reflections
  removing 11382 reflections marked as centroid outliers
  using 103300 indexed reflections
  found 12748 junk reflections
- time taken: 0.0564389
+ time taken: 0.0513818
 
 
 ================================================================================
@@ -157,8 +157,8 @@ Processing reflections in the following blocks of images:
  37 [20  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0111402 GB
 
  Modelled     0 /    39 reflection profiles on image 1
@@ -249,8 +249,8 @@ Processing reflections in the following blocks of images:
  56 [7  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.00933445 GB
 
  Modelled   124 /   130 reflection profiles on image 30
@@ -333,8 +333,8 @@ Processing reflections in the following blocks of images:
  75 [10  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.00980183 GB
 
  Modelled   115 /   119 reflection profiles on image 49
@@ -416,8 +416,8 @@ Processing reflections in the following blocks of images:
  94 [10  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0100015 GB
 
  Modelled   101 /   103 reflection profiles on image 68
@@ -499,8 +499,8 @@ Processing reflections in the following blocks of images:
  113 [15  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0103486 GB
 
  Modelled   129 /   132 reflection profiles on image 87
@@ -582,8 +582,8 @@ Processing reflections in the following blocks of images:
  132 [15  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0102304 GB
 
  Modelled    98 /   106 reflection profiles on image 106
@@ -666,8 +666,8 @@ Processing reflections in the following blocks of images:
  151 [13  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0103305 GB
 
  Modelled    89 /    92 reflection profiles on image 125
@@ -750,8 +750,8 @@ Processing reflections in the following blocks of images:
  170 [19  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0108806 GB
 
  Modelled    98 /   100 reflection profiles on image 144
@@ -834,8 +834,8 @@ Processing reflections in the following blocks of images:
  189 [13  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0105591 GB
 
  Modelled   112 /   118 reflection profiles on image 163
@@ -917,8 +917,8 @@ Processing reflections in the following blocks of images:
  208 [11  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0100563 GB
 
  Modelled   106 /   109 reflection profiles on image 182
@@ -1000,8 +1000,8 @@ Processing reflections in the following blocks of images:
  227 [15  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.010178 GB
 
  Modelled    93 /    93 reflection profiles on image 201
@@ -1083,8 +1083,8 @@ Processing reflections in the following blocks of images:
  246 [10  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.00986521 GB
 
  Modelled    94 /    96 reflection profiles on image 220
@@ -1167,8 +1167,8 @@ Processing reflections in the following blocks of images:
  265 [10  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0104188 GB
 
  Modelled   117 /   123 reflection profiles on image 239
@@ -1251,8 +1251,8 @@ Processing reflections in the following blocks of images:
  284 [12  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0102912 GB
 
  Modelled    93 /    98 reflection profiles on image 258
@@ -1335,8 +1335,8 @@ Processing reflections in the following blocks of images:
  303 [11  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0106872 GB
 
  Modelled   105 /   106 reflection profiles on image 277
@@ -1419,8 +1419,8 @@ Processing reflections in the following blocks of images:
  322 [14  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0102806 GB
 
  Modelled   132 /   136 reflection profiles on image 296
@@ -1503,8 +1503,8 @@ Processing reflections in the following blocks of images:
  341 [13  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0107247 GB
 
  Modelled   118 /   118 reflection profiles on image 315
@@ -1587,8 +1587,8 @@ Processing reflections in the following blocks of images:
  360 [13  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0106282 GB
 
  Modelled    99 /   103 reflection profiles on image 334
@@ -1671,8 +1671,8 @@ Processing reflections in the following blocks of images:
  379 [14  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0108671 GB
 
  Modelled   106 /   110 reflection profiles on image 353
@@ -1755,8 +1755,8 @@ Processing reflections in the following blocks of images:
  398 [15  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0107054 GB
 
  Modelled    97 /    99 reflection profiles on image 372
@@ -1838,8 +1838,8 @@ Processing reflections in the following blocks of images:
  417 [14  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0107707 GB
 
  Modelled   118 /   120 reflection profiles on image 391
@@ -1922,8 +1922,8 @@ Processing reflections in the following blocks of images:
  436 [13  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0116424 GB
 
  Modelled   119 /   122 reflection profiles on image 410
@@ -2006,8 +2006,8 @@ Processing reflections in the following blocks of images:
  455 [16  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0104107 GB
 
  Modelled    88 /    88 reflection profiles on image 429
@@ -2089,8 +2089,8 @@ Processing reflections in the following blocks of images:
  474 [18  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0106606 GB
 
  Modelled    84 /    89 reflection profiles on image 448
@@ -2173,8 +2173,8 @@ Processing reflections in the following blocks of images:
  493 [17  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0110985 GB
 
  Modelled    88 /    92 reflection profiles on image 467
@@ -2257,8 +2257,8 @@ Processing reflections in the following blocks of images:
  512 [25  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0111266 GB
 
  Modelled   106 /   111 reflection profiles on image 486
@@ -2341,8 +2341,8 @@ Processing reflections in the following blocks of images:
  531 [1  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0102484 GB
 
  Modelled   112 /   114 reflection profiles on image 505
@@ -2413,8 +2413,8 @@ Processing reflections in the following blocks of images:
  539 [533 ]: **********************************
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0106912 GB
 
  Modelled   101 /   106 reflection profiles on image 521
@@ -2598,12 +2598,12 @@ Processing reflections in the following blocks of images:
 
 
  ----------------------------------
-         Read time | 173.46 seconds
-      Extract time |   1.27 seconds
-  Pre-process time |   0.15 seconds
-      Process time |  82.67 seconds
+         Read time | 244.79 seconds
+      Extract time |   1.57 seconds
+  Pre-process time |   0.27 seconds
+      Process time |  60.06 seconds
  Post-process time |   0.00 seconds
-        Total time | 258.76 seconds
+        Total time | 314.77 seconds
          User time |   0.00 seconds
  ----------------------------------
 
@@ -2705,8 +2705,8 @@ Processing reflections in the following blocks of images:
  35 [65  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0456264 GB
 
  Integrated   217 (sum) +   217 (prf) /  241 reflections on image 1
@@ -2796,8 +2796,8 @@ Processing reflections in the following blocks of images:
  53 [58  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0428396 GB
 
  Integrated    56 (sum) +    56 (prf) /   63 reflections on image 28
@@ -2878,8 +2878,8 @@ Processing reflections in the following blocks of images:
  71 [47  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0429891 GB
 
  Integrated    53 (sum) +    52 (prf) /   61 reflections on image 46
@@ -2960,8 +2960,8 @@ Processing reflections in the following blocks of images:
  89 [59  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.043817 GB
 
  Integrated    34 (sum) +    34 (prf) /   45 reflections on image 64
@@ -3042,8 +3042,8 @@ Processing reflections in the following blocks of images:
  107 [55  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0429853 GB
 
  Integrated    55 (sum) +    55 (prf) /   62 reflections on image 82
@@ -3124,8 +3124,8 @@ Processing reflections in the following blocks of images:
  125 [49  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0431124 GB
 
  Integrated    45 (sum) +    42 (prf) /   54 reflections on image 100
@@ -3206,8 +3206,8 @@ Processing reflections in the following blocks of images:
  143 [64  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0427745 GB
 
  Integrated    44 (sum) +    44 (prf) /   52 reflections on image 118
@@ -3288,8 +3288,8 @@ Processing reflections in the following blocks of images:
  161 [54  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0442593 GB
 
  Integrated    46 (sum) +    46 (prf) /   50 reflections on image 136
@@ -3370,8 +3370,8 @@ Processing reflections in the following blocks of images:
  179 [65  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0430055 GB
 
  Integrated    40 (sum) +    40 (prf) /   45 reflections on image 154
@@ -3452,8 +3452,8 @@ Processing reflections in the following blocks of images:
  197 [68  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0437753 GB
 
  Integrated    49 (sum) +    49 (prf) /   55 reflections on image 172
@@ -3534,8 +3534,8 @@ Processing reflections in the following blocks of images:
  215 [53  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0431395 GB
 
  Integrated    48 (sum) +    47 (prf) /   53 reflections on image 190
@@ -3616,8 +3616,8 @@ Processing reflections in the following blocks of images:
  233 [55  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0441813 GB
 
  Integrated    47 (sum) +    46 (prf) /   54 reflections on image 208
@@ -3698,8 +3698,8 @@ Processing reflections in the following blocks of images:
  251 [55  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0425182 GB
 
  Integrated    43 (sum) +    43 (prf) /   51 reflections on image 226
@@ -3780,8 +3780,8 @@ Processing reflections in the following blocks of images:
  269 [49  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0435909 GB
 
  Integrated    47 (sum) +    47 (prf) /   54 reflections on image 244
@@ -3862,8 +3862,8 @@ Processing reflections in the following blocks of images:
  287 [47  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0437141 GB
 
  Integrated    49 (sum) +    49 (prf) /   56 reflections on image 262
@@ -3944,8 +3944,8 @@ Processing reflections in the following blocks of images:
  305 [52  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0439509 GB
 
  Integrated    47 (sum) +    46 (prf) /   51 reflections on image 280
@@ -4026,8 +4026,8 @@ Processing reflections in the following blocks of images:
  323 [48  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0424392 GB
 
  Integrated    39 (sum) +    39 (prf) /   40 reflections on image 298
@@ -4108,8 +4108,8 @@ Processing reflections in the following blocks of images:
  341 [59  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0432524 GB
 
  Integrated    46 (sum) +    46 (prf) /   53 reflections on image 316
@@ -4190,8 +4190,8 @@ Processing reflections in the following blocks of images:
  359 [51  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0430914 GB
 
  Integrated    42 (sum) +    42 (prf) /   47 reflections on image 334
@@ -4272,8 +4272,8 @@ Processing reflections in the following blocks of images:
  377 [53  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0428262 GB
 
  Integrated    44 (sum) +    44 (prf) /   51 reflections on image 352
@@ -4354,8 +4354,8 @@ Processing reflections in the following blocks of images:
  395 [48  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0428098 GB
 
  Integrated    51 (sum) +    50 (prf) /   55 reflections on image 370
@@ -4436,8 +4436,8 @@ Processing reflections in the following blocks of images:
  413 [58  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0428097 GB
 
  Integrated    46 (sum) +    46 (prf) /   52 reflections on image 388
@@ -4518,8 +4518,8 @@ Processing reflections in the following blocks of images:
  431 [48  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0433767 GB
 
  Integrated    48 (sum) +    48 (prf) /   57 reflections on image 406
@@ -4600,8 +4600,8 @@ Processing reflections in the following blocks of images:
  449 [60  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0429706 GB
 
  Integrated    38 (sum) +    37 (prf) /   43 reflections on image 424
@@ -4682,8 +4682,8 @@ Processing reflections in the following blocks of images:
  467 [48  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0432027 GB
 
  Integrated    49 (sum) +    49 (prf) /   58 reflections on image 442
@@ -4764,8 +4764,8 @@ Processing reflections in the following blocks of images:
  485 [51  ]: 
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0430571 GB
 
  Integrated    49 (sum) +    49 (prf) /   55 reflections on image 460
@@ -4846,8 +4846,8 @@ Processing reflections in the following blocks of images:
  503 [72  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0434697 GB
 
  Integrated    45 (sum) +    45 (prf) /   50 reflections on image 478
@@ -4928,8 +4928,8 @@ Processing reflections in the following blocks of images:
  521 [59  ]: *
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0439704 GB
 
  Integrated    41 (sum) +    41 (prf) /   46 reflections on image 496
@@ -5010,8 +5010,8 @@ Processing reflections in the following blocks of images:
  539 [2057]: **************************************
 
  Memory usage:
-  Total system memory: 16.7858 GB
-  Limit shoebox memory: 3.14734 GB
+  Total system memory: 16.6661 GB
+  Limit shoebox memory: 3.12489 GB
   Required shoebox memory: 0.0439137 GB
 
  Integrated    47 (sum) +    47 (prf) /   52 reflections on image 514
@@ -5641,18 +5641,18 @@ Processing reflections in the following blocks of images:
  ---------------------------------------------------------------
 
  ----------------------------------
-         Read time | 165.89 seconds
-      Extract time |   4.31 seconds
-  Pre-process time |   0.57 seconds
-      Process time | 341.37 seconds
+         Read time | 212.32 seconds
+      Extract time |   4.91 seconds
+  Pre-process time |   0.70 seconds
+      Process time | 253.88 seconds
  Post-process time |   0.00 seconds
-        Total time | 515.83 seconds
+        Total time | 490.98 seconds
          User time |   0.00 seconds
  ----------------------------------
 
 Saving 378365 reflections to integrated.pickle
- time taken: 0.565642
+ time taken: 2.14957
 Saving the experiments to integrated_experiments.json
- time taken: 0.0182619
+ time taken: 0.0804141
 
-Total time taken: 219.298606
+Total time taken: 239.211999
