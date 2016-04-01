@@ -330,6 +330,12 @@ def model_reflection_rt0(reflection, experiment, params):
   angle = angles[0] if (abs(angles[0] - xyz_mm[2]) <
                         abs(angles[1] - xyz_mm[2])) else angles[1]
 
+  # FIX DQE for this example *** NOT PORTABLE ***
+  p = experiment.detector[reflection['panel']]
+  n = matrix.col(p.get_normal())
+  s1 = matrix.col(reflection['s1'])
+  t = p.get_thickness() / math.cos(s1.angle(n))
+  reflection['dqe'] = (1.0 - math.exp(-p.get_mu() * t))
   if params.debug:
     print 'dqe = %f' % reflection['dqe']
 
