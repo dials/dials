@@ -195,7 +195,7 @@ def model_path_through_sensor(detector, reflection, s1, patch, scale):
   bbox = reflection['bbox']
 
   for x, y, l in pixels:
-    deposit = photon * (1 - math.exp(-mu * l))
+    deposit = photon * (1 - math.exp(-mu * l * 0.1))
     photon -= deposit
     if x < bbox[0] or x >= bbox[1]:
       continue
@@ -335,7 +335,9 @@ def model_reflection_rt0(reflection, experiment, params):
   n = matrix.col(p.get_normal())
   s1 = matrix.col(reflection['s1'])
   t = p.get_thickness() / math.cos(s1.angle(n))
-  reflection['dqe'] = (1.0 - math.exp(-p.get_mu() * t))
+  if params.debug:
+    print 'old dqe = %f' % reflection['dqe']
+  reflection['dqe'] = (1.0 - math.exp(-p.get_mu() * t * 0.1))
   if params.debug:
     print 'dqe = %f' % reflection['dqe']
 
