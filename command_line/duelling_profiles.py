@@ -18,6 +18,8 @@ phil_scope = iotbx.phil.parse("""\
     .type = float
   show = False
     .type = bool
+  physics = False
+    .type = bool
   rs_node_size = 0.0
     .type = float
   min_isum = None
@@ -71,6 +73,138 @@ def model_reflection_example(reflection, experiment, params):
   crystal = experiment.crystal
   profile = experiment.profile
   Amat = crystal.get_A_at_scan_point(int(xyz[2]))
+  return
+
+def trace_path(x0, y0, v, f, s, t0, p):
+  '''x0, y0 impact position in mm, v, f, s are vectors of the ray and fast
+  and slow directions in lab frame, t0 is thickness in mm and p pixel size in
+  mm'''
+
+  import math
+
+  n = f.cross(s)
+  a = v.angle(n)
+  t = t0 / math.cos(a)
+
+  dx = t0 * v.dot(f) / v.dot(n)
+  dy = t0 * v.dot(s) / v.dot(n)
+  x1 = x0 + dx
+  y1 = y0 + dy
+
+  nx0 = x0 / p
+  nx1 = x1 / p
+  ny0 = y0 / p
+  ny1 = y1 / p
+
+  pixels = []
+
+  if abs(dy) > abs(dx):
+    if dy > 0:
+      start, end, step = int(ny0), int(ny1) + 1, 1
+      d0, d1 = 0, 1
+    else:
+      start, end, step = int(ny0), int(ny1) - 1, -1
+      d0, d1 = -1, 0
+
+    m = dx / dy
+    s = int(round(m / abs(m))) * step
+    pixels = []
+    for j in range(start, end, step):
+      if j == start:
+        l0 = ny0
+      else:
+        l0 = j + d0 * step
+      if j == (end - step):
+        l1 = ny1
+      else:
+        l1 = j + d1 * step
+
+      m0 = nx0 + (l0 - ny0) * m
+      m1 = nx0 + (l1 - ny0) * m
+      c = int(m0) if s < 0 else int(m1)
+      if int(m1) != int(m0):
+        l2 = l0 + (c - m0) / m
+        _s = p * math.sqrt((l2 - l0) ** 2 + (c - m0) ** 2) / math.sin(a)
+        pixels.append((int(m0), int(l0), _s))
+        _s = p * math.sqrt((l1 - l2) ** 2 + (m1 - c) ** 2) / math.sin(a)
+        pixels.append((int(m1), int(l0), _s))
+      else:
+        _s = p * math.sqrt((l1 - l0) ** 2 + (m1 - m0) ** 2) / math.sin(a)
+        pixels.append((int(c), int(l0), _s))
+
+  else:
+    if dx > 0:
+      start, end, step = int(nx0), int(nx1) + 1, 1
+      d0, d1 = 0, 1
+    else:
+      start, end, step = int(nx0), int(nx1) - 1, -1
+      d0, d1 = -1, 0
+    m = dy / dx
+    s = int(round(m / abs(m))) * step
+    for j in range(start, end, step):
+      if j == start:
+        l0 = nx0
+      else:
+        l0 = j + d0 * step
+      if j == (end - step):
+        l1 = nx1
+      else:
+        l1 = j + d1 * step
+
+      m0 = ny0 + (l0 - nx0) * m
+      m1 = ny0 + (l1 - nx0) * m
+      c = int(m0) if s < 0 else int(m1)
+      if int(m1) != int(m0):
+        l2 = l0 + (c - m0) / m
+        _s = p * math.sqrt((l2 - l0) ** 2 + (c - m0) ** 2) / math.sin(a)
+        pixels.append((int(l0), int(m0), _s))
+        _s = p * math.sqrt((l1 - l2) ** 2 + (m1 - c) ** 2) / math.sin(a)
+        pixels.append((int(l0), int(m1), _s))
+      else:
+        _s = p * math.sqrt((l1 - l0) ** 2 + (m1 - m0) ** 2) / math.sin(a)
+        pixels.append((int(l0), int(c), _s))
+  return pixels
+
+
+def model_path_through_sensor(detector, reflection, s1, patch, scale):
+  '''Model the passage of the ray s1 through the detector, depositing
+  fractional counts in patch as we go.'''
+
+  import math
+  from scitbx import matrix
+
+  p, xy = detector.get_ray_intersection(s1)
+  x0, y0 = xy
+
+  panel = detector[p]
+
+  mu = panel.get_mu()
+  t0 = panel.get_thickness()
+  pixel = panel.get_pixel_size()
+  f = matrix.col(panel.get_fast_axis())
+  s = matrix.col(panel.get_slow_axis())
+  n = f.cross(s)
+  t = t0 / math.cos(s1.angle(n))
+
+  v = s1.normalize()
+
+  pixels = trace_path(x0, y0, v, f, s, t0, pixel[0])
+
+  photon = scale
+
+  bbox = reflection['bbox']
+
+  for x, y, l in pixels:
+    deposit = photon * (1 - math.exp(-mu * l))
+    photon -= deposit
+    if x < bbox[0] or x >= bbox[1]:
+      continue
+    if y < bbox[2] or y >= bbox[3]:
+      continue
+    x -= bbox[0]
+    y -= bbox[2]
+    patch[(y, x)] += deposit
+
   return
 
 def model_reflection_predict(reflection, experiment, params):
@@ -257,21 +391,26 @@ def model_reflection_rt0(reflection, experiment, params):
     r = angles[0] if reflection['entering'] else angles[1]
     p = p0.rotate(a, r)
     s1 = p + b
-    panel, xy = detector.get_ray_intersection(s1)
 
-    # FIXME DO NOT USE THIS FUNCTION EVENTUALLY...
-    x, y = detector[panel].millimeter_to_pixel(xy)
-    if x < bbox[0] or x >= bbox[1]:
-      continue
-    if y < bbox[2] or y >= bbox[3]:
-      continue
-    x -= bbox[0]
-    y -= bbox[2]
-    # FIXME in here try to work out probability distribution along path
-    # length through the detector sensitive surface i.e. deposit fractional
-    # counts along pixels (and allow for DQE i.e. photon passing right through
-    # the detector)
-    patch[(int(y), int(x))] += 1.0 / scale
+    if params.physics:
+      model_path_through_sensor(detector, reflection, s1, patch, scale)
+
+    else:
+      panel, xy = detector.get_ray_intersection(s1)
+
+      # FIXME DO NOT USE THIS FUNCTION EVENTUALLY...
+      x, y = detector[panel].millimeter_to_pixel(xy)
+      if x < bbox[0] or x >= bbox[1]:
+        continue
+      if y < bbox[2] or y >= bbox[3]:
+        continue
+      x -= bbox[0]
+      y -= bbox[2]
+      # FIXME in here try to work out probability distribution along path
+      # length through the detector sensitive surface i.e. deposit fractional
+      # counts along pixels (and allow for DQE i.e. photon passing right through
+      # the detector)
+      patch[(int(y), int(x))] += 1.0 / scale
 
   if params.show:
     print 'Simulated reflection (flattened in Z):'
