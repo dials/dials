@@ -197,18 +197,23 @@ class Refinery(object):
     """Return a 1D flex array containing the upper diagonal values of the
     correlation matrix calculated between columns of 2D matrix m"""
 
-    try: # convert matrices of type scitbx_sparse_ext.matrix
-      m = m.as_dense_matrix()
+    try: # convert a flex.double matrix to sparse
+      nr, nc = m.all()
+      from scitbx import sparse
+      m2 = sparse.matrix(nr, nc)
+      m2.assign_block(m, 0, 0)
+      m = m2
     except AttributeError:
-      pass
-    ncol = m.all()[1]
-    packed_len = (ncol*(ncol + 1)) // 2
+      pass # assume m is already scitbx_sparse_ext.matrix
+
+    packed_len = (m.n_cols*(m.n_cols + 1)) // 2
     i = 0
     tmp = flex.double(packed_len)
-    for col1 in range(ncol):
-      for col2 in range(col1, ncol):
-        tmp[i] = flex.linear_correlation(m.matrix_copy_column(col1),
-                                     m.matrix_copy_column(col2)).coefficient()
+    for col1 in range(m.n_cols):
+      for col2 in range(col1, m.n_cols):
+        tmp[i] = flex.linear_correlation(
+                    m.col(col1).as_dense_vector(),
+                    m.col(col2).as_dense_vector()).coefficient()
         i += 1
 
     return tmp
