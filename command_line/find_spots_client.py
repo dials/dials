@@ -181,6 +181,16 @@ if __name__ == '__main__':
   if len(unhandled) and unhandled[0] == 'stop':
     stopped = stop(params.host, params.port, params.nproc)
     print 'Stopped %d findspots processes' % stopped
+  elif len(unhandled) and unhandled[0] == 'ping':
+    from urllib2 import urlopen
+    url = 'http://%s:%i' %(params.host, params.port)
+    try:
+      data = urlopen(url).read()
+      print "Success"
+      sys.exit(0)
+    except Exception:
+      print "Failure"
+      sys.exit(1)
   else:
     if len(filenames) == 1:
       response = work(params.host, params.port, filenames[0], unhandled)
