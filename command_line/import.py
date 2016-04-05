@@ -27,7 +27,7 @@ the template= parameter where the consecutive digits representing the image
 numbers in the filenames are replaced with '#' characters.
 
 The geometry can be set manually by either specifying a datablock.json file
-contaning the reference geometry, by setting the mosflm beam centre or by
+containing the reference geometry, by setting the mosflm beam centre or by
 setting each variable to be overriden.
 
 Examples::
