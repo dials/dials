@@ -158,7 +158,10 @@ def plot_grid_of_panels(panel_data, nrow, ncol, direction='fast', tag = ''):
     ax.tick_params('y', labelsize='x-small')
 
   clim_low, clim_high = zip(*clim)
-  clim = (min(clim_low), max(clim_high))
+  # ensure that the colour scale is equally centred around zero
+  # i.e. zero is the same colour on all plots
+  clim = max(abs(min(clim_low)), max(clim_high))
+  clim = (-clim, clim)
   if (clim[1] - clim[0]) < 1e-12:
     print "...skipping plot with shift too small to show"
     return
