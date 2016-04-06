@@ -703,12 +703,12 @@ class indexer_base(object):
       experiments.extend(self.find_lattices())
 
       if self.params.refinement_protocol.d_min_step is libtbx.Auto:
-        if self.d_min is None:
+        n_cycles = self.params.refinement_protocol.n_macro_cycles
+        if self.d_min is None or n_cycles == 1:
           self.params.refinement_protocol.d_min_step = 0
         else:
           d_spacings = 1/self.reflections['rlp'].norms()
           d_min_all = flex.min(d_spacings)
-          n_cycles = self.params.refinement_protocol.n_macro_cycles
           self.params.refinement_protocol.d_min_step \
             = (self.d_min - d_min_all)/(n_cycles-1)
           info("Using d_min_step %.1f"
