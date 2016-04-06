@@ -131,6 +131,7 @@ class CentroidOutlier(object):
         nref = (reflections['id'] == iexp).count(True)
         nout = (outliers['id'] == iexp).count(True)
         if nref == 0:
+          p100 = 0
           msg = ("No reflections associated with"
                  " Experiment with id {0}").format(iexp)
           warning(msg)
