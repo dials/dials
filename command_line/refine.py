@@ -12,7 +12,6 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import division
-from copy import deepcopy
 from libtbx.utils import Sorry
 from dials.array_family import flex
 
@@ -45,6 +44,12 @@ phil_scope = parse('''
     reflections = refined.pickle
       .type = str
       .help = "The filename for reflections with updated predictions"
+
+    include_unused_reflections = True
+      .type = bool
+      .help = "If True, keep reflections unused in refinement in updated"
+              "reflections file. Otherwise, remove them"
+      .expert_level = 1
 
     matches = None
       .type = str
@@ -315,7 +320,11 @@ class Script(object):
 
       info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
-      reflections.as_pickle(params.output.reflections)
+      if params.output.include_unused_reflections:
+        reflections.as_pickle(params.output.reflections)
+      else:
+        sel = reflections.get_flags(reflections.flags.used_in_refinement)
+        reflections.select(sel).as_pickle(params.output.reflections)
 
     # For debugging, if requested save matches to file
     if params.output.matches:

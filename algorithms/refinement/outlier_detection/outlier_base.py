@@ -130,11 +130,16 @@ class CentroidOutlier(object):
       for iexp in xrange(nexp):
         nref = (reflections['id'] == iexp).count(True)
         nout = (outliers['id'] == iexp).count(True)
-        p100 = nout / nref * 100.0
-        if p100 > 30.0:
-          msg = ("{0:3.1f}% of reflections were flagged as outliers from the"
-                 " Experiment with id {1}").format(p100, iexp)
+        if nref == 0:
+          msg = ("No reflections associated with"
+                 " Experiment with id {0}").format(iexp)
           warning(msg)
+        else:
+          p100 = nout / nref * 100.0
+          if p100 > 30.0:
+            msg = ("{0:3.1f}% of reflections were flagged as outliers from the"
+                   " Experiment with id {1}").format(p100, iexp)
+            warning(msg)
         rows.append(["%d" % iexp, "%d" % nref, "%d" % nout, "%3.1f" % p100])
       st = simple_table(rows, header)
       debug("Outlier rejections per experiment:")
