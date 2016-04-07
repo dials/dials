@@ -24,6 +24,10 @@ phil_scope = iotbx.phil.parse("""\
     .type = float
   min_isum = None
     .type = float
+  num = -1
+    .type = int
+  seed = -1
+    .type = int
   debug = False
     .type = bool
 """, process_includes=True)
@@ -205,7 +209,7 @@ def model_path_through_sensor(detector, reflection, s1, patch, scale):
     y -= bbox[2]
     patch[(y, x)] += deposit
 
-  return
+  return scale - photon
 
 def model_reflection_predict(reflection, experiment, params):
   import math
@@ -461,9 +465,27 @@ def main(reflections, experiment, params):
       reflections.flags.integrated_sum)
   reflections = reflections.select(selection)
 
+  # filter according to rules
+
+  if params.min_isum:
+    selection = reflections['intensity.sum.value'] > params.min_isum
+    reflections = reflections.select(selection)
+
+  if params.num > len(reflections):
+    raise RuntimeError, 'you asked for too many reflections sorry'
+
+  if params.seed > 0 and params.num > 0:
+    import random
+    from dials.array_family import flex
+    random.seed(params.seed)
+    selected = flex.bool(len(reflections), False)
+    while len(selected.iselection()) < params.num:
+      selected[random.randint(0, len(reflections))] = True
+    reflections = reflections.select(selected)
+
   nref1 = len(reflections)
 
-  print 'Removed %d invalid reflections, %d remain' % (nref0 - nref1, nref1)
+  print 'Removed %d reflections, %d remain' % (nref0 - nref1, nref1)
 
   for j, reflection in enumerate(reflections):
     if ids:
