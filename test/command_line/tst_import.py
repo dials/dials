@@ -1,4 +1,5 @@
 from __future__ import division
+from libtbx.test_utils import approx_equal
 
 class Test(object):
   def __init__(self):
@@ -161,7 +162,8 @@ class Test(object):
     assert os.path.exists("mosflm_beam_centre.json")
     datablock = load.datablock("mosflm_beam_centre.json")[0]
     imgset = datablock.extract_imagesets()[0]
-    assert imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0()) == (200,100)
+    beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
+    assert approx_equal(beam_centre, (200,100))
 
     # provide an alternative datablock.json to get geometry from
     cmd = 'dials.import %s reference_geometry=mosflm_beam_centre.json output.datablock=mosflm_beam_centre2.json' %image_files
@@ -169,7 +171,8 @@ class Test(object):
     assert os.path.exists("mosflm_beam_centre2.json")
     datablock = load.datablock("mosflm_beam_centre2.json")[0]
     imgset = datablock.extract_imagesets()[0]
-    assert imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0()) == (200,100)
+    beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
+    assert approx_equal(beam_centre, (200,100))
 
     print 'OK'
 
