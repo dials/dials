@@ -28,6 +28,10 @@ phil_scope = iotbx.phil.parse("""\
     .type = int
   seed = -1
     .type = int
+  sigma_m = 0
+    .type = float
+  sigma_b = 0
+    .type = float
   debug = False
     .type = bool
 """, process_includes=True)
@@ -377,8 +381,15 @@ def model_reflection_rt0(reflection, experiment, params):
         print '%5d' % data[(j, i)],
       print
 
-  sigma_m = experiment.profile.sigma_m() * d2r
-  sigma_b = experiment.profile.sigma_b() * d2r
+  if params.sigma_m > 0:
+    sigma_m = params.sigma_m
+  else:
+    sigma_m = experiment.profile.sigma_m() * d2r
+
+  if params.sigma_b > 0:
+    sigma_b = params.sigma_b
+  else:
+    sigma_b = experiment.profile.sigma_b() * d2r
 
   r0 = xyz_mm[2]
 
