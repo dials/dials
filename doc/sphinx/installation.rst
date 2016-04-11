@@ -2,27 +2,27 @@
 Installation
 ++++++++++++
 
-Stable Release: DIALS 1.1.2
+Stable Release: DIALS 1.1.3
 ===========================
 
 The current stable releases can be downloaded from `Github <https://github.com/dials/dials/releases/tag/v1.1.0>`_,
- where you can also find further `release notes <https://github.com/dials/dials/releases/tag/v1.1.0>`_.
+where you can also find further `release notes <https://github.com/dials/dials/releases/tag/v1.1.0>`_.
 
 .. button::
-   :text: DIALS 1.1.2 Mac installer (OS X 10.11)
-   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-2-macosx.pkg
+   :text: DIALS 1.1.3 Mac installer (OS X 10.11)
+   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-3-macosx.pkg
 
 .. button::
-   :text: DIALS 1.1.2 Mac installer (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-2-macosx-10.6.pkg
+   :text: DIALS 1.1.3 Mac installer (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-3-macosx-10.6.pkg
 
 .. button::
-   :text: DIALS 1.1.2 Linux installer
-   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-2-linux-x86_64.tar.xz
+   :text: DIALS 1.1.3 Linux installer
+   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-3-linux-x86_64.tar.xz
 
 .. button::
-   :text: DIALS 1.1.2 Source installer
-   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-2-source.tar.xz
+   :text: DIALS 1.1.3 Source installer
+   :link: https://github.com/dials/dials/releases/download/v1.1.0/dials-v1-1-3-source.tar.xz
 
 Development Builds
 ==================
