@@ -382,12 +382,12 @@ def model_reflection_rt0(reflection, experiment, params):
       print
 
   if params.sigma_m > 0:
-    sigma_m = params.sigma_m
+    sigma_m = params.sigma_m * d2r
   else:
     sigma_m = experiment.profile.sigma_m() * d2r
 
   if params.sigma_b > 0:
-    sigma_b = params.sigma_b
+    sigma_b = params.sigma_b * d2r
   else:
     sigma_b = experiment.profile.sigma_b() * d2r
 
