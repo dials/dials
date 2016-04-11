@@ -203,7 +203,7 @@ def model_path_through_sensor(detector, reflection, s1, patch, scale):
   bbox = reflection['bbox']
 
   for x, y, l in pixels:
-    deposit = photon * (1 - math.exp(-mu * l * 0.1))
+    deposit = photon * (1 - math.exp(-mu * l))
     photon -= deposit
     if x < bbox[0] or x >= bbox[1]:
       continue
