@@ -73,7 +73,7 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(t0 >= 0);
     double cos_angle = cos(n.angle(s1));
     cos_angle = std::abs(cos_angle);
-    double t = 0.1 * t0 / cos_angle;
+    double t = t0 / cos_angle;
     return 1.0 - exp(-mu * t);
   }
 
