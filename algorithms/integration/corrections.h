@@ -57,7 +57,7 @@ namespace dials { namespace algorithms {
 
   /**
    * Compute the DQE correction for a single reflection
-   * @param mu attenuation coefficient (/cm as per standards)
+   * @param mu attenuation coefficient in mm^-1
    * @param t0 thickness of sensor in mm
    * @param s1 direction of diffracted ray
    * @param n detector / panel normal for this reflection
