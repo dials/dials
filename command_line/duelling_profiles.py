@@ -449,10 +449,11 @@ def model_reflection_rt0(reflection, experiment, params):
         print '%5d' % int(patch[(j, i)]),
       print
 
-  print 'Correlation coefficient: %.3f isum: %.1f ' % (
-      profile_correlation(data, patch), i0)
 
-  return
+  cc = profile_correlation(data, patch)
+  print 'Correlation coefficient: %.3f isum: %.1f ' % (cc, i0)
+
+  return cc
 
 def model_reflection_flat(reflection, experiment, params):
   pixels = reflection['shoebox']
@@ -498,21 +499,25 @@ def main(reflections, experiment, params):
 
   print 'Removed %d reflections, %d remain' % (nref0 - nref1, nref1)
 
+  results = []
+
   for j, reflection in enumerate(reflections):
     if ids:
       if j in ids:
-        globals()['model_reflection_%s' % method](reflection, experiment, params)
+        result = globals()['model_reflection_%s' % method](reflection, experiment, params)
     elif params.id_start and params.id_end:
       if j < params.id_start or j >= params.id_end:
         continue
       print j
-      globals()['model_reflection_%s' % method](reflection, experiment, params)
+      result = globals()['model_reflection_%s' % method](reflection, experiment, params)
 
     else:
       print j
-      globals()['model_reflection_%s' % method](reflection, experiment, params)
+      result = globals()['model_reflection_%s' % method](reflection, experiment, params)
+    if not result is None:
+      results.append(result)
 
-  return
+  return results
 
 def run(args):
   from dials.util.options import OptionParser
@@ -544,7 +549,10 @@ def run(args):
     print 'Please add shoeboxes to reflection pickle'
     exit()
 
-  main(reflections[0], experiments[0], params)
+  results = main(reflections[0], experiments[0], params)
+
+  if results:
+    print 'mean result: %.3f' % (sum(results) / len(results))
 
 if __name__ == '__main__':
   import sys
