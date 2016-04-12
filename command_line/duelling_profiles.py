@@ -32,6 +32,8 @@ phil_scope = iotbx.phil.parse("""\
     .type = float
   sigma_b = 0
     .type = float
+  sigma_l = 0
+    .type = float
   debug = False
     .type = bool
 """, process_includes=True)
@@ -404,7 +406,12 @@ def model_reflection_rt0(reflection, experiment, params):
   if params.show:
     print '%d rays' % (int(round(i0 * scale)))
   for i in range(int(round(i0 * scale))):
-    b = random_vector_cone(s0, sigma_b)
+    if params.sigma_l:
+      import random
+      l_scale = random.gauss(1, params.sigma_l)
+      b = random_vector_cone(s0 * l_scale, sigma_b)
+    else:
+      b = random_vector_cone(s0, sigma_b)
     p0 = random_vector_cone(Amat * hkl, sigma_m)
     if params.rs_node_size > 0:
       ns = params.rs_node_size
@@ -502,6 +509,7 @@ def main(reflections, experiment, params):
   results = []
 
   for j, reflection in enumerate(reflections):
+    result = None
     if ids:
       if j in ids:
         result = globals()['model_reflection_%s' % method](reflection, experiment, params)
