@@ -49,22 +49,28 @@ Example::
 '''
 
 phil_scope = phil.parse('''
-num_reflections = 300
+num_reflections = 2000
   .type = int(value_min = 2)
   .help = "The number of strongest reflections to calculate potential Bijvoet"
           "pairings for."
 pair_cutoff
 {
-  frac_intensity = 0.001
+  frac_intensity = 0.0001
     .type = float
     .help = "Fractional intensity difference below which a potential Bijvoet"
             "pair may be constructed. f = 0.5 * |I1 - I2| / (I1 + I2). If"
             "f < pair_cutoff, assume a Bijvoet pairing. In future, better to"
-            "use probabilities"
-  distance = 10
+            "use probabilities."
+  distance = 20.0
     .type = float
     .help = "Distance cutoff in millimetres below which two centroids will"
-            "not be considered a Bijvoet pair"
+            "not be considered a Bijvoet pair."
+  radius = 4.0
+    .type = float
+    .help = "Maximum difference in radius, using the current beam centre,"
+            "between potential Bijvoet pairs. Equivalently, this sets a"
+            "maximum distance from the current beam centre that lines"
+            "intersecting at the new beam centre will be found."
 }
 beam_centre_convention = *mosflm dials
   .type = choice
@@ -95,13 +101,13 @@ class PutativeBijvoetPair(object):
     self.I1 = r1['intensity.sum.value']
     self.I2 = r2['intensity.sum.value']
 
-    pt1 = matrix.col((x1, y1))
-    pt2 = matrix.col((x2, y2))
+    self.pt1 = matrix.col((x1, y1))
+    self.pt2 = matrix.col((x2, y2))
 
-    connector = (pt2 - pt1)
+    connector = (self.pt2 - self.pt1)
     self.distance = connector.length()
 
-    midpoint = pt1 + 0.5 * connector
+    midpoint = self.pt1 + 0.5 * connector
 
     # unit vector along the bisector
     R = matrix.sqr((0, -1, 1, 0))
@@ -120,10 +126,13 @@ class PutativeBijvoetPair(object):
 
 class PutativeBijvoetPairFactory(object):
 
-  def __init__(self, intensity_cutoff, distance_cutoff):
+  def __init__(self, intensity_cutoff, distance_cutoff, radius_cutoff,
+               beam_centre):
 
     self.intensity_cutoff = intensity_cutoff
     self.distance_cutoff = distance_cutoff
+    self.radius_cutoff = radius_cutoff
+    self.beam_centre = matrix.col(beam_centre)
     self.last_refusal_reason = None
 
   def __call__(self, r1, r2):
@@ -131,6 +140,12 @@ class PutativeBijvoetPairFactory(object):
     pair = PutativeBijvoetPair(r1, r2)
     if pair.distance < self.distance_cutoff:
       self.last_refusal_reason = 'distance'
+      return None
+
+    rad1 = (pair.pt1 - self.beam_centre).length()
+    rad2 = (pair.pt2 - self.beam_centre).length()
+    if abs(rad1 - rad2) > self.radius_cutoff:
+      self.last_refusal_reason = 'radius'
       return None
 
     fracIdiff = 0.5 * abs(pair.I1 - pair.I2) / (pair.I1 + pair.I2)
@@ -227,6 +242,16 @@ class Script(object):
                   'supported by this program.')
     self.panel = detector[0]
 
+    # get current beam centre and detector size
+    beam_centre = self.panel.get_ray_intersection(self.beam.get_s0())
+    xlim, ylim = self.panel.get_image_size_mm()
+    if self.params.beam_centre_convention == 'mosflm':
+      beam_centre = beam_centre[1], beam_centre[0]
+      xlim, ylim = ylim, xlim
+    self.beam_centre = beam_centre
+    self.xlim = xlim
+    self.ylim = ylim
+
     # For convenience, set centroid X and Y in their own columns of the
     # reflection table, taking into account the coordinate system convention.
     # If using the mosflm coordinate system this has X and Y reversed wrt DIALS.
@@ -239,7 +264,9 @@ class Script(object):
 
     self.pair_factory = PutativeBijvoetPairFactory(
       intensity_cutoff=params.pair_cutoff.frac_intensity,
-      distance_cutoff=params.pair_cutoff.distance)
+      distance_cutoff=params.pair_cutoff.distance,
+      radius_cutoff=params.pair_cutoff.radius,
+      beam_centre=self.beam_centre)
 
     return
 
@@ -284,21 +311,14 @@ class Script(object):
               [pair.bisector_y1, pair.bisector_y2],
               'g-', alpha=0.1, linewidth=5)
 
-    # get current beam centre and detector size
-    beam_centre = self.panel.get_ray_intersection(self.beam.get_s0())
-    xlim, ylim = self.panel.get_image_size_mm()
-    if self.params.beam_centre_convention == 'mosflm':
-      beam_centre = beam_centre[1], beam_centre[0]
-      xlim, ylim = ylim, xlim
-
     # plot the current beam centre
-    ax.plot(beam_centre[0], beam_centre[1], 'bo')
+    ax.plot(self.beam_centre[0], self.beam_centre[1], 'bo')
 
     # set a sensible plot window field of view
     #ax.set_xlim(beam_centre[0] - xlim / 20, beam_centre[0] + xlim / 20)
     #ax.set_ylim(beam_centre[1] - ylim / 20, beam_centre[1] + ylim / 20)
-    ax.set_xlim(beam_centre[0] - 10, beam_centre[0] + 10)
-    ax.set_ylim(beam_centre[1] - 10, beam_centre[1] + 10)
+    ax.set_xlim(self.beam_centre[0] - 10, self.beam_centre[0] + 10)
+    ax.set_ylim(self.beam_centre[1] - 10, self.beam_centre[1] + 10)
 
     plt.show()
     plt.close()
