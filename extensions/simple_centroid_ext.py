@@ -29,7 +29,7 @@ class SimpleCentroidExt(CentroidIface):
     '''
     self.experiments = experiments
 
-  def compute_centroid(self, reflections):
+  def compute_centroid(self, reflections, image_volume=None):
     '''
     Compute the centroid.
 
@@ -38,4 +38,4 @@ class SimpleCentroidExt(CentroidIface):
     '''
     from dials.algorithms.centroid.simple.algorithm import Algorithm
     algorithm = Algorithm(self.experiments)
-    return algorithm(reflections)
+    return algorithm(reflections, image_volume=image_volume)

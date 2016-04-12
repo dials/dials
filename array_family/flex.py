@@ -580,7 +580,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
           expr.scan))
     return self['partiality']
 
-  def compute_mask(self, experiments, overlaps=None):
+  def compute_mask(self, experiments, image_volume=None, overlaps=None):
     '''
     Apply a mask to the shoeboxes.
 
@@ -589,13 +589,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     for expr, indices in self.iterate_experiments_and_indices(experiments):
-      expr.profile.compute_mask(
+      result = expr.profile.compute_mask(
         self.select(indices),
         expr.crystal,
         expr.beam,
         expr.detector,
         expr.goniometer,
-        expr.scan)
+        expr.scan,
+        image_volume=image_volume)
+      if result is not None:
+        if 'fraction' not in self:
+          self['fraction'] = flex.double(len(self))
+        self['fraction'].set_selected(indices, result)
 
   def iterate_experiments_and_indices(self, experiments):
     '''
@@ -613,33 +618,35 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     for experiment, indices in zip(experiments, index_list):
       yield experiment, indices
 
-  def compute_background(self, experiments):
+  def compute_background(self, experiments, image_volume=None):
     '''
     Helper function to compute the background.
 
     :param experiments: The list of experiments
 
     '''
-    success = self._background_algorithm(experiments).compute_background(self)
+    success = self._background_algorithm(experiments).compute_background(
+      self, image_volume)
     self.set_flags(~success, self.flags.failed_during_background_modelling)
 
-  def compute_centroid(self, experiments):
+  def compute_centroid(self, experiments, image_volume=None):
     '''
     Helper function to compute the centroid.
 
     :param experiments: The list of experiments
 
     '''
-    self._centroid_algorithm(experiments).compute_centroid(self)
+    self._centroid_algorithm(experiments).compute_centroid(
+      self, image_volume=image_volume)
 
-  def compute_summed_intensity(self):
+  def compute_summed_intensity(self, image_volume=None):
     '''
     Compute intensity via summation integration.
 
     '''
     from dials.algorithms.integration.sum import IntegrationAlgorithm
     algorithm = IntegrationAlgorithm()
-    success = algorithm(self)
+    success = algorithm(self, image_volume=image_volume)
     self.set_flags(~success, self.flags.failed_during_summation)
 
   def compute_fitted_intensity(self, fitter):

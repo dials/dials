@@ -41,7 +41,7 @@ class BackgroundAlgorithm(object):
       tuning_constant=tuning_constant,
       max_iter=100)
 
-  def compute_background(self, reflections):
+  def compute_background(self, reflections, image_volume=None):
     '''
     Compute the backgrond.
 
@@ -51,8 +51,11 @@ class BackgroundAlgorithm(object):
     from dials.array_family import flex
 
     # Do the background subtraction
-    success = self._create(reflections['shoebox'])
-    reflections['background.mean'] = flex.double(
-      [sbox.background[0] for sbox in reflections['shoebox']])
+    if image_volume is None:
+      success = self._create(reflections['shoebox'])
+      reflections['background.mean'] = flex.double([
+        sbox.background[0] for sbox in reflections['shoebox']])
+    else:
+      success = self._create(reflections, image_volume)
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
     return success

@@ -19,6 +19,7 @@
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/scan.h>
 #include <dials/model/data/shoebox.h>
+#include <dials/model/data/image_volume.h>
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
@@ -37,6 +38,8 @@ namespace gaussian_rs {
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using dials::model::Shoebox;
+  using dials::model::ImageVolume;
+  using dials::model::MultiPanelImageVolume;
 
 
   /**
@@ -56,6 +59,14 @@ namespace gaussian_rs {
     virtual
     void array(
         af::ref< Shoebox<> > shoebox,
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref<double> &frame,
+        const af::const_ref<std::size_t> &panel) const = 0;
+
+    virtual
+    af::shared<double> volume(
+        MultiPanelImageVolume<> image_volume,
+        const af::const_ref< int6 > &bbox,
         const af::const_ref< vec3<double> > &s1,
         const af::const_ref<double> &frame,
         const af::const_ref<std::size_t> &panel) const = 0;
@@ -175,7 +186,125 @@ namespace gaussian_rs {
       }
     }
 
+    virtual
+    af::shared<double> volume(
+        MultiPanelImageVolume<> volume,
+        const af::const_ref< int6 > &bbox,
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref< double > &frame,
+        const af::const_ref< std::size_t > &panel) const {
+      DIALS_ASSERT(bbox.size() == s1.size());
+      DIALS_ASSERT(bbox.size() == frame.size());
+      DIALS_ASSERT(bbox.size() == panel.size());
+      af::shared<double> fraction(bbox.size());
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        fraction[i] = volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
+      }
+      return fraction;
+    }
+
   private:
+
+    template <typename FloatType>
+    double volume_single(
+        ImageVolume<FloatType> volume,
+        int6 bbox,
+        vec3<double> s1,
+        double frame,
+        std::size_t panel_number,
+        std::size_t index) const {
+      DIALS_ASSERT(volume.is_consistent());
+
+      // Get some bits from the shoebox
+      double phi = phi0_ + (frame - index0_) * dphi_;
+      int x0 = bbox[0], x1 = bbox[1];
+      int y0 = bbox[2], y1 = bbox[3];
+      int z0 = bbox[4], z1 = bbox[5];
+      int width = volume.accessor()[2];
+      int height = volume.accessor()[1];
+      int frame0 = volume.frame0();
+      int frame1 = volume.frame1();
+      z0 = std::max(frame0, z0);
+      z1 = std::min(frame1, z1);
+      DIALS_ASSERT(x1 > x0);
+      DIALS_ASSERT(y1 > y0);
+      DIALS_ASSERT(z1 > z0);
+
+      int xsize = x1 - x0;
+      int ysize = y1 - y0;
+      int zsize = z1 - z0;
+
+      // Get the divergence and mosaicity for this point
+      double delta_b_r2 = 0.0;
+      double delta_m_r2 = 0.0;
+      if (delta_b_r_.size() == 1) {
+        delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
+        delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
+      } else {
+        int frame0 = index0_;
+        int index = (int)std::floor(frame) - frame0;
+        if (index < 0) {
+          delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
+          delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
+        } else if (index >= delta_b_r_.size()) {
+          delta_b_r2 = delta_b_r_.back()*delta_b_r_.back();
+          delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
+        } else {
+          delta_b_r2 = delta_b_r_[index]*delta_b_r_[index];
+          delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
+        }
+      }
+
+      // Get the panel
+      const Panel& panel = detector_[panel_number];
+
+      // Create the coordinate system and generators
+      CoordinateSystem cs(m2_, s0_, s1, phi);
+      double s0_length = s0_.length();
+
+      // Loop through all the pixels in the shoebox, transform the point
+      // to the reciprocal space coordinate system and check that it is
+      // within the ellipse defined by:
+      // (c1 / delta_b)^2 + (c2 / delta_b)^2 <= 1
+      // Mark those points within as Foreground and those without as
+      // Background.
+
+      af::versa< double, af::c_grid<2> > dxy_array(af::c_grid<2>(ysize+1,xsize+1));
+      for (int j = 0; j <= ysize; ++j) {
+        for (int i = 0; i <= xsize; ++i) {
+          vec2<double> gxy = cs.from_beam_vector(
+              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
+          dxy_array(j,i) = (gxy[0]*gxy[0] + gxy[1]*gxy[1]) * delta_b_r2;
+        }
+      }
+
+      int num1 = 0;
+      int num2 = 0;
+      for (int j = 0; j < ysize; ++j) {
+        for (int i = 0; i < xsize; ++i) {
+          double dxy1 = dxy_array(j,i);
+          double dxy2 = dxy_array(j+1,i);
+          double dxy3 = dxy_array(j,i+1);
+          double dxy4 = dxy_array(j+1,i+1);
+          double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
+          int jj = y0 + j;
+          int ii = x0 + i;
+          for (std::size_t k = 0; k < zsize; ++k) {
+            if (z0 + (int)k >= index0_ && z0 + (int)k < index1_) {
+              int mask_value = (dxy <= 1.0) ? Foreground : Background;
+              if (jj >=0 && ii >= 0 && jj < height && ii < width) {
+                volume.set_mask_value(z0+k-frame0, jj, ii, mask_value, index);
+                num1++;
+              } else if (dxy <= 1.0) {
+                num2++;
+              }
+            }
+          }
+        }
+      }
+      DIALS_ASSERT(num1 + num2 > 0);
+      return (double)num1 / (double)(num1 + num2);
+    }
 
     /**
      * Set all the foreground/background pixels in the shoebox mask.
@@ -483,6 +612,100 @@ namespace gaussian_rs {
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         this->single(shoeboxes[i], s1[i], frame[i], panel[i]);
       }
+    }
+
+    virtual
+    af::shared<double> volume(
+        MultiPanelImageVolume<> volume,
+        const af::const_ref< int6 > &bbox,
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref< double > &frame,
+        const af::const_ref< std::size_t > &panel) const {
+      DIALS_ASSERT(bbox.size() == s1.size());
+      DIALS_ASSERT(bbox.size() == frame.size());
+      DIALS_ASSERT(bbox.size() == panel.size());
+      af::shared<double> fraction(bbox.size());
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        fraction[i] = volume_single(volume.get(panel[i]), bbox[i], s1[i], frame[i], panel[i], i);
+      }
+      return fraction;
+    }
+
+    template <typename FloatType>
+    double volume_single(
+        ImageVolume<FloatType> volume,
+        int6 bbox,
+        vec3<double> s1,
+        double frame,
+        std::size_t panel_number,
+        std::size_t index) const {
+      DIALS_ASSERT(volume.is_consistent());
+
+      // Get some bits from the shoebox
+      int x0 = bbox[0], x1 = bbox[1];
+      int y0 = bbox[2], y1 = bbox[3];
+      int z0 = bbox[4], z1 = bbox[5];
+      int width = volume.accessor()[2];
+      int height = volume.accessor()[1];
+      int frame0 = volume.frame0();
+      int frame1 = volume.frame1();
+      z0 = std::max(frame0, z0);
+      z1 = std::min(frame1, z1);
+      DIALS_ASSERT(x1 > x0);
+      DIALS_ASSERT(y1 > y0);
+      DIALS_ASSERT(z1 > z0);
+      int xsize = x1 - x0;
+      int ysize = y1 - y0;
+      int zsize = z1 - z0;
+      DIALS_ASSERT(zsize == 1);
+
+      /* DIALS_ASSERT(z >= z0 && z < z1); */
+      double delta_b_r2 = delta_b_r_ * delta_b_r_;
+      /* double delta_m_r2 = delta_m_r_ * delta_m_r_; */
+
+      // Get the panel
+      const Panel& panel = detector_[panel_number];
+
+      // Create the coordinate system and generators
+      CoordinateSystem2d cs(s0_, s1);
+      double s0_length = s0_.length();
+
+      // Loop through all the pixels in the shoebox, transform the point
+      // to the reciprocal space coordinate system and check that it is
+      // within the ellipse defined by:
+      // (c1 / delta_b)^2 + (c2 / delta_b)^2 <= 1
+      // Mark those points within as Foreground and those without as
+      // Background.
+      af::versa< double, af::c_grid<2> > dxy_array(af::c_grid<2>(ysize+1,xsize+1));
+      for (int j = 0; j <= ysize; ++j) {
+        for (int i = 0; i <= xsize; ++i) {
+          vec2<double> gxy = cs.from_beam_vector(
+              panel.get_pixel_lab_coord(vec2<double>(x0+i, y0+j)).normalize() * s0_length);
+          dxy_array(j,i) = (gxy[0]*gxy[0] + gxy[1]*gxy[1]) * delta_b_r2;
+        }
+      }
+      int num1 = 0;
+      int num2 = 0;
+      for (int j = 0; j < ysize; ++j) {
+        for (int i = 0; i < xsize; ++i) {
+          double dxy1 = dxy_array(j,i);
+          double dxy2 = dxy_array(j+1,i);
+          double dxy3 = dxy_array(j,i+1);
+          double dxy4 = dxy_array(j+1,i+1);
+          double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
+          int mask_value = (dxy <= 1.0) ? Foreground : Background;
+          int jj = y0 + j;
+          int ii = x0 + i;
+          if (jj >= 0 && ii >= 0 && jj < height && ii < width) {
+            volume.set_mask_value(z0-frame0, y0+j, x0+i, mask_value, index);
+            num1++;
+          } else if (dxy <= 1.0) {
+            num2++;
+          }
+        }
+      }
+      DIALS_ASSERT(num1 + num2 > 0);
+      return (double)num2 / (double)(num1 + num2);
     }
 
   private:

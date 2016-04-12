@@ -379,6 +379,7 @@ class Model(ProfileModelIface):
                    detector,
                    goniometer=None,
                    scan=None,
+                   image_volume=None,
                    **kwargs):
     '''
     Given an experiment and list of reflections, compute the
@@ -410,11 +411,19 @@ class Model(ProfileModelIface):
       delta_m)
 
     # Mask the foreground region
-    return mask_foreground(
-      reflections['shoebox'],
-      reflections['s1'],
-      reflections['xyzcal.px'].parts()[2],
-      reflections['panel'])
+    if image_volume is None:
+      return mask_foreground(
+        reflections['shoebox'],
+        reflections['s1'],
+        reflections['xyzcal.px'].parts()[2],
+        reflections['panel'])
+    else:
+      return mask_foreground(
+        image_volume,
+        reflections['bbox'],
+        reflections['s1'],
+        reflections['xyzcal.px'].parts()[2],
+        reflections['panel'])
 
   def fitting_class(self):
     '''

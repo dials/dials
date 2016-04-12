@@ -14,10 +14,12 @@
 #include <omptbx/omp_or_stubs.h>
 #include <cmath>
 #include <boost/shared_ptr.hpp>
+#include <dials/array_family/reflection_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/background/simple/outlier_rejector.h>
 #include <dials/algorithms/background/simple/modeller.h>
 #include <dials/model/data/shoebox.h>
+#include <dials/model/data/image_volume.h>
 #include <dials/error.h>
 
 
@@ -27,15 +29,14 @@ namespace dials { namespace algorithms { namespace background {
   using dials::model::Valid;
   using dials::model::Background;
   using dials::model::BackgroundUsed;
+  using model::ImageVolume;
+  using model::MultiPanelImageVolume;
 
   /**
    * Class to create background shoebox
    */
-  template <typename FloatType = float>
   class Creator {
   public:
-
-    typedef FloatType float_type;
 
     /**
      * Initialise with the desired modeller.
@@ -64,6 +65,7 @@ namespace dials { namespace algorithms { namespace background {
      * @param shoeboxes The list of shoeboxes
      * @return Success True/False per shoebox
      */
+    template <typename FloatType>
     af::shared<bool> operator()(
         const af::const_ref< Shoebox<FloatType> > &shoeboxes,
         af::ref<double> mse,
@@ -88,9 +90,56 @@ namespace dials { namespace algorithms { namespace background {
     }
 
     /**
+     * Compute the background values
+     * @param reflections The reflection table
+     * @param volume The image volume
+     * @returns Success True/False
+     */
+    template <typename FloatType>
+    af::shared<bool> operator()(
+        af::reflection_table reflections,
+        MultiPanelImageVolume<FloatType> volume) const {
+      DIALS_ASSERT(reflections.contains("bbox"));
+      DIALS_ASSERT(reflections.contains("panel"));
+      af::const_ref< int6 > bbox = reflections["bbox"];
+      af::const_ref< std::size_t > panel = reflections["panel"];
+      af::shared<bool> success(bbox.size(), true);
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+
+        // Get the image volume
+        ImageVolume<FloatType> v = volume.get(panel[i]);
+
+        // Trim the bbox
+        int6 b = v.trim_bbox(bbox[i]);
+
+        // Extract from image volume
+        af::versa< FloatType, af::c_grid<3> > data = v.extract_data(b);
+        af::versa< FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
+        af::versa< int,    af::c_grid<3> > mask = v.extract_mask(b, i);
+
+        // Compute the background
+        try {
+          this->operator()(
+              data.const_ref(),
+              mask.ref(),
+              bgrd.ref());
+
+          // Need to set the background in volume
+          v.set_background(b, bgrd.const_ref());
+        } catch(scitbx::error) {
+          success[i] = false;
+        } catch(dials::error) {
+          success[i] = false;
+        }
+      }
+      return success;
+    }
+
+    /**
      * Create the background for the shoebox
      * @param shoebox The shoebox
      */
+    template <typename FloatType>
     af::tiny<FloatType,2> operator()(Shoebox<FloatType> shoebox) const {
       return this->operator()(
           shoebox.data.const_ref(),
@@ -104,6 +153,7 @@ namespace dials { namespace algorithms { namespace background {
      * @param mask The shoebox mask values
      * @param background The shoebox background
      */
+    template <typename FloatType>
     af::tiny<FloatType,2> operator()(
         const af::const_ref< FloatType, af::c_grid<3> > &data_in,
         af::ref< int, af::c_grid<3> > mask,

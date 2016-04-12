@@ -76,7 +76,7 @@ class BackgroundAlgorithm(object):
     rejector = select_rejector()
     self._creator = Creator(modeller, rejector)
 
-  def compute_background(self, reflections):
+  def compute_background(self, reflections, image_volume=None):
     '''
     Compute the backgrond.
 
@@ -86,12 +86,15 @@ class BackgroundAlgorithm(object):
     from dials.array_family import flex
 
     # Do the background subtraction
-    reflections['background.mse'] = flex.double(len(reflections))
-    reflections['background.dispersion'] = flex.double(len(reflections))
-    success = self._creator(
-      reflections['shoebox'],
-      reflections['background.mse'],
-      reflections['background.dispersion'])
-    reflections['background.mean'] = reflections['shoebox'].mean_background()
+    if image_volume is None:
+      reflections['background.mse'] = flex.double(len(reflections))
+      reflections['background.dispersion'] = flex.double(len(reflections))
+      success = self._creator(
+        reflections['shoebox'],
+        reflections['background.mse'],
+        reflections['background.dispersion'])
+      reflections['background.mean'] = reflections['shoebox'].mean_background()
+    else:
+      success = self._creator(reflections, image_volume)
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
     return success
