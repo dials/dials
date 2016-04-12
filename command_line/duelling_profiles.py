@@ -34,6 +34,8 @@ phil_scope = iotbx.phil.parse("""\
     .type = float
   sigma_l = 0
     .type = float
+  sigma_cell = 0
+    .type = float
   debug = False
     .type = bool
 """, process_includes=True)
@@ -309,6 +311,7 @@ def abs_angle(a, b):
 
 def model_reflection_rt0(reflection, experiment, params):
   import math
+  import random
   from scitbx import matrix
   from dials.array_family import flex
 
@@ -407,12 +410,15 @@ def model_reflection_rt0(reflection, experiment, params):
     print '%d rays' % (int(round(i0 * scale)))
   for i in range(int(round(i0 * scale))):
     if params.sigma_l:
-      import random
       l_scale = random.gauss(1, params.sigma_l)
       b = random_vector_cone(s0 * l_scale, sigma_b)
     else:
       b = random_vector_cone(s0, sigma_b)
-    p0 = random_vector_cone(Amat * hkl, sigma_m)
+    if params.sigma_cell:
+      cell_scale = random.gauss(1, params.sigma_cell)
+      p0 = random_vector_cone(cell_scale * Amat * hkl, sigma_m)
+    else:
+      p0 = random_vector_cone(Amat * hkl, sigma_m)
     if params.rs_node_size > 0:
       ns = params.rs_node_size
       import random
