@@ -36,6 +36,11 @@ scan_range = None
     "(e.g. j0 <= j < j1)."
   .type = ints(size=2)
   .multiple = True
+max_reflections = 10000
+  .type = int(value_min=1)
+  .help = "Maximum number of reflections to use in the search for better"
+          "experimental model. If the number of input reflections is greater"
+          "then a random subset of reflections will be used."
 mm_search_scope = 4.0
   .help = "Global radius of origin offset search."
   .type = float(value_min=0)
@@ -263,42 +268,21 @@ class better_experimental_model_discovery(object):
 
 
 def run_dps(args):
-  imageset, spots, params = args
+  imageset, spots_mm, max_cell, params = args
 
   detector = imageset.get_detector()
   beam = imageset.get_beam()
   goniometer = imageset.get_goniometer()
   scan = imageset.get_scan()
 
-  if 'imageset_id' not in spots:
-    spots['imageset_id'] = spots['id']
-
-  spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
-    spots=spots, detector=detector, scan=scan)
-
-  indexer_base.map_centroids_to_reciprocal_space(
-    spots_mm, detector=detector, beam=beam, goniometer=goniometer)
-
-  if params.d_min is not None:
-    d_spacings = 1/spots_mm['rlp'].norms()
-    sel = d_spacings > params.d_min
-    spots_mm = spots_mm.select(sel)
-
-  # derive a max_cell from mm spots
-  # derive a grid sampling from spots
-
   from rstbx.indexing_api.lattice import DPS_primitive_lattice
   # max_cell: max possible cell in Angstroms; set to None, determine from data
   # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
-  from dials.algorithms.indexing.indexer import find_max_cell
-  max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
-                           step_size=10,
-                           nearest_neighbor_percentile=0.05)
-
   DPS = DPS_primitive_lattice(max_cell=max_cell,
                               recommended_grid_sampling_rad=None,
                               horizon_phil=params)
+
   from scitbx import matrix
   DPS.S0_vector = matrix.col(beam.get_s0())
   DPS.inv_wave = 1./beam.get_wavelength()
@@ -331,8 +315,8 @@ def run_dps(args):
     [s.dvec for s in DPS.getSolutions()]), amax=DPS.amax)
 
 
-def discover_better_experimental_model(imagesets, spot_lists, params,
-                                       nproc=1, wide_search_binning=1):
+def discover_better_experimental_model(
+  imagesets, spot_lists, params, dps_params, nproc=1, wide_search_binning=1):
   assert len(imagesets) == len(spot_lists)
   assert len(imagesets) > 0
   # XXX should check that all the detector and beam objects are the same
@@ -342,7 +326,45 @@ def discover_better_experimental_model(imagesets, spot_lists, params,
       spots, imageset.get_detector(), imageset.get_scan())
     for spots, imageset in zip(spot_lists, imagesets)]
 
-  args = [(imageset, spots, params)
+  spot_lists_mm = []
+  max_cell_list = []
+
+  for imageset, spots in zip(imagesets, spot_lists):
+    if 'imageset_id' not in spots:
+      spots['imageset_id'] = spots['id']
+
+    spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
+      spots=spots, detector=imageset.get_detector(), scan=imageset.get_scan())
+
+    indexer_base.map_centroids_to_reciprocal_space(
+      spots_mm, detector=imageset.get_detector(), beam=imageset.get_beam(),
+      goniometer=imageset.get_goniometer())
+
+    if dps_params.d_min is not None:
+      d_spacings = 1/spots_mm['rlp'].norms()
+      sel = d_spacings > dps_params.d_min
+      spots_mm = spots_mm.select(sel)
+
+    # derive a max_cell from mm spots
+
+    from dials.algorithms.indexing.indexer import find_max_cell
+    max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
+                             step_size=10,
+                             nearest_neighbor_percentile=0.05)
+    max_cell_list.append(max_cell)
+
+    if (params.max_reflections is not None and
+        spots_mm.size() > params.max_reflections):
+      info('Selecting subset of %i reflections for analysis'
+           %params.max_reflections)
+      perm = flex.random_permutation(spots_mm.size())
+      sel = perm[:params.max_reflections]
+      spots_mm = spots_mm.select(sel)
+
+    spot_lists_mm.append(spots_mm)
+
+  max_cell = flex.median(flex.double(max_cell_list))
+  args = [(imageset, spots, max_cell, dps_params)
           for imageset, spots in zip(imagesets, spot_lists_mm)]
 
   from libtbx import easy_mp
@@ -362,9 +384,9 @@ def discover_better_experimental_model(imagesets, spot_lists, params,
   beam = imagesets[0].get_beam()
 
   # perform calculation
-  if params.indexing.improve_local_scope == "origin_offset":
+  if dps_params.indexing.improve_local_scope == "origin_offset":
     discoverer = better_experimental_model_discovery(
-      imagesets, spot_lists_mm, solution_lists, amax_list, params,
+      imagesets, spot_lists_mm, solution_lists, amax_list, dps_params,
       wide_search_binning=wide_search_binning)
     new_detector = discoverer.optimize_origin_offset_local_scope()
     old_beam_centre = detector.get_ray_intersection(beam.get_s0())[1]
@@ -374,7 +396,7 @@ def discover_better_experimental_model(imagesets, spot_lists, params,
     info("Shift: %.2f mm, %.2f mm" %(
       matrix.col(old_beam_centre)-matrix.col(new_beam_centre)).elems)
     return new_detector, beam
-  elif params.indexing.improve_local_scope=="S0_vector":
+  elif dps_params.indexing.improve_local_scope=="S0_vector":
     raise NotImplementedError()
 
 
@@ -423,13 +445,13 @@ def run(args):
       filter_reflections_by_scan_range(refl, params.scan_range)
       for refl in reflections]
 
-  hardcoded_phil = dps_phil_scope.extract()
+  dps_params = dps_phil_scope.extract()
   # for development, we want an exhaustive plot of beam probability map:
-  hardcoded_phil.indexing.plot_search_scope = params.plot_search_scope
-  hardcoded_phil.indexing.mm_search_scope = params.mm_search_scope
+  dps_params.indexing.plot_search_scope = params.plot_search_scope
+  dps_params.indexing.mm_search_scope = params.mm_search_scope
 
   new_detector, new_beam = discover_better_experimental_model(
-    imagesets, reflections, hardcoded_phil, nproc=params.nproc,
+    imagesets, reflections, params, dps_params, nproc=params.nproc,
     wide_search_binning=params.wide_search_binning)
   for imageset in imagesets:
     imageset.set_detector(new_detector)
