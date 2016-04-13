@@ -109,6 +109,7 @@ class Test(object):
     assert(table.is_consistent())
     assert(len(table['col1']) == 10)
     assert(len(table['col2']) == 10)
+    assert len(table) == table.size()
     print 'OK'
 
     # Resize the table (should resize all columns)

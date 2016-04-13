@@ -1235,6 +1235,7 @@ namespace flex_table_suite {
         .def("nrows", &flex_table_type::nrows)
         .def("ncols", &flex_table_type::ncols)
         .def("is_consistent", &flex_table_type::is_consistent)
+        .def("size", &flex_table_type::size)
         .def("__len__", &flex_table_type::size)
         .def("__contains__", &has_key<flex_table_type>)
         .def("__getitem__", &getitem_column<flex_table_type>)
