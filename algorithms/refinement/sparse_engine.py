@@ -99,5 +99,5 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
     # matrix.
 
     if self._verbosity > 0:
-      self.show_eigen_summary()
+      info(self.get_eigen_summary())
     return
