@@ -145,7 +145,6 @@ def exercise_1():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["n_macro_cycles=3",
-                "discover_better_experimental_model=True",
                 "bin_size_fraction=0.25",
                 "scan_range=1,20",
                 "scan_range=250,270",

@@ -35,9 +35,6 @@ indexing {
   nproc = 1
     .type = int(value_min=1)
     .help = "The number of processes to use."
-  discover_better_experimental_model = False
-    .type = bool
-    .expert_level = 1
   mm_search_scope = 4.0
     .help = "Global radius of origin offset search."
     .type = float(value_min=0)
@@ -624,21 +621,6 @@ class indexer_base(object):
     self.filter_reflections_by_scan_range()
     if len(self.reflections) == 0:
       raise Sorry("No reflections left to index!")
-
-    if self.params.discover_better_experimental_model:
-
-      from dials.command_line.discover_better_experimental_model \
-           import discover_better_experimental_model, dps_phil_scope
-
-      hardcoded_phil = dps_phil_scope.extract()
-      hardcoded_phil.indexing.mm_search_scope = self.params.mm_search_scope
-
-      new_detector, new_beam = discover_better_experimental_model(
-        [self.imagesets[0]], [self.reflections], hardcoded_phil, nproc=self.params.nproc,
-        wide_search_binning=self.params.wide_search_binning)
-
-      self.imagesets[0].set_detector(new_detector)
-      self.imagesets[0].set_beam(new_beam)
 
     spots_mm = self.reflections
     self.reflections = flex.reflection_table()
