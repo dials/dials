@@ -251,7 +251,7 @@ can extend our parameterisation to obtain a smoothed 'scan-varying' model
 for both the crystal orientation and unit cell. To do this, we run a further
 refinement job starting from the output of the previous job::
 
-  dials.refine bravais_setting_9.json indexed.pickle scan_varying=true
+  dials.refine refined_experiments.json refined.pickle scan_varying=true
 
 .. container:: toggle
 
