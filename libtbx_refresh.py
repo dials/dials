@@ -27,7 +27,7 @@ except Exception:
   pass
 
 def _install_dials_autocompletion():
-  '''generate init.sh and SConscript file in /build/dials/autocomplete'''
+  '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
   import os
 
