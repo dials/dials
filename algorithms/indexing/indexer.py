@@ -1042,6 +1042,11 @@ class indexer_base(object):
                                           max_combinations=1):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
+    if (self.target_symmetry_primitive is not None and
+        self.target_symmetry_primitive.unit_cell() is not None):
+      target_min_cell = self.target_symmetry_primitive.minimum_cell().unit_cell()
+    else:
+      target_min_cell = None
 
     # select unique combinations of input vectors to test
     # the order of combinations is such that combinations comprising vectors
@@ -1144,11 +1149,20 @@ class indexer_base(object):
           if cb_op_extra is not None:
             cb_op_to_primitive = cb_op_extra * cb_op_to_primitive
           best_model = model.change_basis(cb_op_to_primitive)
+
+          def is_similar_cell(uc1, uc2):
+            return uc1.is_similar_to(
+              uc2,
+              relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+              absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)
+
           if (self.target_symmetry_primitive.unit_cell() is not None
-              and not best_model.get_unit_cell().is_similar_to(
-            self.target_symmetry_primitive.unit_cell(),
-            relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-              absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance)):
+              and not (
+                is_similar_cell(best_model.get_unit_cell(),
+                                self.target_symmetry_primitive.unit_cell())
+                or
+                is_similar_cell(
+                  best_model.get_unit_cell().minimum_cell(), target_min_cell))):
             best_model = None
             continue
           else:
