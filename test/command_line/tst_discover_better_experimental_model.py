@@ -84,7 +84,7 @@ def exercise_2():
   data_dir = os.path.join(xia2_regression, "test_data", "i04_bag_training")
 
   import glob
-  g = glob.glob(os.path.join(data_dir, "*.cbf"))
+  g = glob.glob(os.path.join(data_dir, "*.cbf*"))
   if len(g) == 0:
     print "Skipping exercise_2(): xia2_regression files not downloaded."
     print "Run xia2_regression.fetch_test_data first."
