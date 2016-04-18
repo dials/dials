@@ -946,6 +946,83 @@ namespace dials { namespace algorithms {
     const double ML_half_mosaicity_deg_;
     const double ML_domain_size_ang_;
   };
+
+  /**
+   * Stills prediction using the SphericalRelpStillsRayPredictor.
+   */
+  class SphericalRelpStillsReflectionPredictor : public StillsDeltaPsiReflectionPredictor {
+
+  typedef cctbx::miller::index<> miller_index;
+
+  public:
+
+    /**
+      * Initialise the predictor
+      */
+    SphericalRelpStillsReflectionPredictor(
+        const Beam &beam,
+        const Detector &detector,
+        mat3<double> ub,
+        const cctbx::uctbx::unit_cell &unit_cell,
+        const cctbx::sgtbx::space_group_type &space_group_type,
+        const double &dmin)
+      : StillsDeltaPsiReflectionPredictor(beam,
+        detector, ub, unit_cell, space_group_type, dmin),
+        spherical_relp_predict_ray_(beam.get_s0()) {}
+
+    /**
+     * Predict reflections for UB. Also filters based on ewald sphere proximity.
+     * Override uses SphericalRelpStillsRayPredictor.
+     * @param ub The UB matrix
+     * @returns A reflection table.
+     */
+    af::reflection_table for_ub(const mat3<double> &ub) {
+
+      // Create the reflection table and the local container
+      af::reflection_table table;
+      stills_prediction_data predictions(table);
+
+      // Create the index generate and loop through the indices. For each index,
+      // predict the rays and append to the reflection table
+      IndexGenerator indices(unit_cell_, space_group_type_, dmin_);
+      for (;;) {
+        miller_index h = indices.next();
+        if (h.is_zero()) {
+          break;
+        }
+
+        Ray ray;
+        ray = spherical_relp_predict_ray_(h, ub);
+        double delpsi = std::abs(spherical_relp_predict_ray_.get_delpsi());
+        if(delpsi < 0.0015)
+          append_for_index(predictions, ub, h);
+      }
+
+      // Return the reflection table
+      return table;
+    }
+
+  protected:
+
+    /**
+     * Predict reflections for the given HKL.
+     * Override uses SphericalRelpStillsRayPredictor.
+     * @param p The reflection data
+     * @param h The miller index
+     */
+    virtual void append_for_index(stills_prediction_data &p,
+        const mat3<double> ub,
+        const miller_index &h, int panel=-1) {
+      //af::small<Ray, 2> rays = predict_rays_(h, ub_);
+      Ray ray;
+      ray = spherical_relp_predict_ray_(h, ub);
+      double delpsi = spherical_relp_predict_ray_.get_delpsi();
+      append_for_ray(p, h, ray, panel, delpsi);
+    }
+
+    SphericalRelpStillsRayPredictor spherical_relp_predict_ray_;
+  };
+
 }} // namespace dials::algorithms
 
 #endif // DIALS_ALGORITHMS_SPOT_PREDICTION_REFLECTION_PREDICTOR_H
