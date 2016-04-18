@@ -101,6 +101,32 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
       else:
         new_header.append('%s\n' % record)
 
+    loop_lines = [n for n, record in enumerate(new_header) if record.startswith('loop_')]
+    multiply_fields = { '_diffrn_scan_axis.angle_range', '_diffrn_scan_axis.angle_increment', \
+                        '_diffrn_scan_axis.displacement_range', '_diffrn_scan_axis.displacement_increment', \
+                        '_diffrn_scan_frame.integration_time', '_diffrn_scan_frame.exposure_time', \
+                        '_array_intensities.overload' }
+    for loop_start in loop_lines:
+      n = loop_start
+      modifiers = []
+      while True:
+        n = n + 1
+        line = new_header[n].strip()
+        if line in { '', ';' }: # end of loop
+          break
+        elif line.startswith('_'): # loop header
+          if line in multiply_fields:
+            modifiers.append(n_images)
+          else:
+            modifiers.append(None)
+        elif any(modifiers): # loop body
+          # NOTE: This can break when fields are modified in loops with
+          #   'Strings with spaces, as they are seen as multiple columns, or with'
+          #   _multiple _columns _defined _on _same _line _they _are _seen _as _one _column
+          new_line = [ element if modifier is None else '%f' % (float(element) * modifier) \
+                       for modifier, element in zip(modifiers, line.split()) ]
+          new_header[n] = '%s\r\n' % ' '.join(new_line)
+
     tailer = data[data_offset + 4 + old_size:]
 
     with open(out_image, 'wb') as f:
