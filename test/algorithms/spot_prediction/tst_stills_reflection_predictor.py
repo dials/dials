@@ -126,10 +126,35 @@ class Test(object):
 
     print "OK"
 
+  def spherical_relp(self):
+
+    # cache objects from the model
+    UB = self.crystal.get_U() * self.crystal.get_B()
+    s0 = matrix.col(self.beam.get_s0())
+    es_radius = s0.length()
+
+    # create the predictor and predict for reflection table
+    from dials.algorithms.spot_prediction import StillsReflectionPredictor
+    predictor = StillsReflectionPredictor(self.experiment, spherical_relp=True)
+    predictor.for_reflection_table(self.reflections, UB)
+
+    # for every reflection, reconstruct relp centre q, recalculate s1 and
+    # compare
+    from libtbx.test_utils import approx_equal
+    for ref in self.reflections:
+      q = UB * matrix.col(ref['miller_index'])
+      s1 = (s0 + q).normalize() * es_radius
+      assert approx_equal(s1, ref['s1'])
+
+    print "OK"
+
+
 if __name__ == '__main__':
 
   test = Test()
   test.run()
+  test.spherical_relp()
 
   test = Test(test_nave_model=True)
   test.run()
+
