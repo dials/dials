@@ -68,15 +68,21 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
     margin)
 
 
-def StillsReflectionPredictor(experiment, dmin=None, **kwargs):
+def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False,
+                              **kwargs):
   '''
-  A constructor for the reflection predictor.
+  A factory function for the reflection predictor.
 
   :param experiment: The experiment to predict for
   :param dmin: The maximum resolution to predict to
+  :param spherical_relp: Whether to use the spherical relp prediction model
   :return: The spot predictor
 
   '''
+
+  # FIXME Selection of reflection predictor type is ugly. What is a better
+  # way here? Should it be based entirely on the existence of certain types
+  # of profile model within the experiment?
 
   # Get dmin if it is not set
   if dmin is None:
@@ -96,6 +102,15 @@ def StillsReflectionPredictor(experiment, dmin=None, **kwargs):
         experiment.crystal._ML_domain_size_ang)
   except AttributeError:
     pass
+
+  if spherical_relp:
+    return SphericalRelpStillsReflectionPredictor(
+      experiment.beam,
+      experiment.detector,
+      experiment.crystal.get_A(),
+      experiment.crystal.get_unit_cell(),
+      experiment.crystal.get_space_group().type(),
+      dmin)
 
   return StillsDeltaPsiReflectionPredictor(
     experiment.beam,
