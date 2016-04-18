@@ -10,6 +10,7 @@
 
 from __future__ import division
 from scitbx import matrix
+from math import sqrt
 
 class Test(object):
 
@@ -138,12 +139,15 @@ class Test(object):
     predictor = StillsReflectionPredictor(self.experiment, spherical_relp=True)
     predictor.for_reflection_table(self.reflections, UB)
 
-    # for every reflection, reconstruct relp centre q, recalculate s1 and
-    # compare
+    # for every reflection, reconstruct relp centre q, calculate s1 according
+    # to the formula in stills_prediction_nave3.pdf and compare
     from libtbx.test_utils import approx_equal
     for ref in self.reflections:
       q = UB * matrix.col(ref['miller_index'])
-      s1 = (s0 + q).normalize() * es_radius
+      radicand = q.length_sq() + 2.0 * q.dot(s0) + s0.length_sq()
+      assert radicand > 0.0
+      denom = sqrt(radicand)
+      s1 = es_radius * (q + s0) / denom
       assert approx_equal(s1, ref['s1'])
 
     print "OK"
