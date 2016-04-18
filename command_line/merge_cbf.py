@@ -88,13 +88,16 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
     old_size = 0
 
     for record in cbf_header.split('\n')[:-1]:
+      rsplit = record.split(' ')
       if 'X-Binary-Size:' in record:
         old_size = int(record.split()[-1])
         new_header.append('X-Binary-Size: %d\r\n' % len(compressed))
       elif 'Content-MD5' in record:
         pass
-      elif '# Angle_increment' in record:
-        new_header.append('# Angle_increment %.4f deg.\r\n' %out_oscillation)
+      elif len(rsplit) > 3 and rsplit[1] in { \
+        'Exposure_time', 'Angle_increment', 'Exposure_period', 'Count_cutoff', \
+        'Phi_increment', 'Omega_increment', 'Chi_increment' }:
+        new_header.append('%s\n' % ' '.join(rsplit[:2] + ['%f' % (n_images * float(rsplit[2]))] + rsplit[3:]))
       else:
         new_header.append('%s\n' % record)
 
