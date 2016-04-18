@@ -208,19 +208,28 @@ class MaskGenerator(object):
             mask_untrusted_polygon(mask, polygon)
 
       # Create the resolution mask generator
-      resolution_mask_generator = ResolutionMaskGenerator(beam, panel)
+      class ResolutionMaskGeneratorGetter(object):
+        def __init__(self, beam, panel):
+          self.beam = beam
+          self.panel = panel
+          self.result = None
+        def __call__(self):
+          if self.result is None:
+            self.result = ResolutionMaskGenerator(beam, panel)
+          return self.result
+      get_resolution_mask_generator = ResolutionMaskGeneratorGetter(beam, panel)
 
       # Generate high and low resolution masks
       if self.params.d_min is not None:
         info("Generating high resolution mask:")
         info(" d_min = %f" % self.params.d_min)
-        resolution_mask_generator.apply(mask, 0, self.params.d_min)
+        get_resolution_mask_generator().apply(mask, 0, self.params.d_min)
       if self.params.d_max is not None:
         info("Generating low resolution mask:")
         info(" d_max = %f" % self.params.d_max)
         d_min = self.params.d_max
         d_max = max(d_min + 1, 1e9)
-        resolution_mask_generator.apply(mask, d_min, d_max)
+        get_resolution_mask_generator().apply(mask, d_min, d_max)
 
       # Mask out the resolution range
       for drange in self.params.resolution_range:
@@ -230,7 +239,7 @@ class MaskGenerator(object):
         info("Generating resolution range mask:")
         info(" d_min = %f" % d_min)
         info(" d_max = %f" % d_max)
-        resolution_mask_generator.apply(mask, d_min, d_max)
+        get_resolution_mask_generator().apply(mask, d_min, d_max)
 
       # Mask out the resolution ranges for the ice rings
       for drange in generate_ice_ring_resolution_ranges(
@@ -241,7 +250,7 @@ class MaskGenerator(object):
         info("Generating ice ring mask:")
         info(" d_min = %f" % d_min)
         info(" d_max = %f" % d_max)
-        resolution_mask_generator.apply(mask, d_min, d_max)
+        get_resolution_mask_generator().apply(mask, d_min, d_max)
 
       # Add to the list
       masks.append(mask)
