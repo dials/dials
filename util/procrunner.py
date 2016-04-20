@@ -165,8 +165,12 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
 
   runtime = timeit.default_timer() - start_time
   if debug:
-    print "Process ended after %.1f seconds with exit code %d (T%.2fs)" % \
-      (runtime, p.returncode, timeit.default_timer() - max_time)
+    if timeout is not None:
+      print "Process ended after %.1f seconds with exit code %d (T%.2fs)" % \
+        (runtime, p.returncode, timeit.default_timer() - max_time)
+    else:
+      print "Process ended after %.1f seconds with exit code %d" % \
+        (runtime, p.returncode)
 
   stdout = stdout.get_output()
   stderr = stderr.get_output()
