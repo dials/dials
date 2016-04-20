@@ -79,6 +79,7 @@ tst_list = (
     "$D/test/command_line/tst_apply_mask.py",
     "$D/test/command_line/tst_check_indexing_symmetry.py",
     "$D/test/command_line/tst_combine_experiments.py",
+    "$D/test/command_line/tst_combine_found_spots.py",
     "$D/test/command_line/tst_compare_orientation_matrices.py",
     "$D/test/command_line/tst_create_profile_model.py",
     "$D/test/command_line/tst_estimate_gain.py",
