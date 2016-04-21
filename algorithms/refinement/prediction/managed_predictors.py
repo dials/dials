@@ -71,11 +71,12 @@ class ExperimentsPredictor(object):
   predictor in each case.
   """
 
-  def __init__(self, experiments, force_stills=False):
+  def __init__(self, experiments, force_stills=False, spherical_relp=False):
     """Construct by linking to instances of experimental model classes"""
 
     self._experiments = experiments
     self._force_stills = force_stills
+    self._spherical_relp = spherical_relp
     self.update()
 
   def update(self):
@@ -84,10 +85,11 @@ class ExperimentsPredictor(object):
     sc = ScanStaticReflectionPredictor
     st = StillsReflectionPredictor
     if self._force_stills:
-      self._predictors = [st(e) for e in self._experiments]
-    else:
-      self._predictors = [sc(e) if e.goniometer else st(e) \
+      self._predictors = [st(e, spherical_relp=self._spherical_relp) \
                           for e in self._experiments]
+    else:
+      self._predictors = [sc(e) if e.goniometer else st(e,
+        spherical_relp=self._spherical_relp) for e in self._experiments]
     self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
 
   def predict(self, reflections):
