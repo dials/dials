@@ -1220,6 +1220,7 @@ class SphericalRelpStillsPredictionParameterisation(
       e1 = self._e1.select(isel)
       DeltaPsi = self._DeltaPsi.select(isel)
       s1 = self._s1.select(isel)
+      nu = self._nu.select(isel)
       q_s0 = self._q_s0.select(isel)
       inv_s = self._inv_s.select(isel)
       inv_sss = self._inv_sss.select(isel)
