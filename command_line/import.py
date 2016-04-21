@@ -300,6 +300,8 @@ class Script(object):
         datablocks = importer.datablocks
       elif len(params.input.directory) > 0:
         datablocks = DataBlockFactory.from_filenames(params.input.directory)
+        if len(datablocks) == 0:
+          raise Sorry('No datablocks found in directories %s' % params.input.directory)
       else:
         self.parser.print_help()
         exit(0)

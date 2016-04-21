@@ -720,6 +720,10 @@ class OptionParser(OptionParserBase):
     # Return the parameters
     if return_unhandled:
       return params, options, args
+    elif len(args) > 0:
+      msg = 'Unable to handle the following arguments:\n'
+      msg += '\n'.join(['  %s' % a for a in args])
+      raise Sorry(msg)
     return params, options
 
   @property
