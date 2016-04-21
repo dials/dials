@@ -1,4 +1,5 @@
 # Ignored Mathematica files shall be prefixed by _
+.cache
 _*.nb
 *.fdb_latexmk
 *.gz
