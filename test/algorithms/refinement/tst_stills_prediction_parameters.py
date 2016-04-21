@@ -17,6 +17,7 @@ import sys
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.phil import parse
 from scitbx.math import five_number_summary
+from libtbx.test_utils import approx_equal
 
 #### dials imports
 from dials.array_family import flex
@@ -35,6 +36,8 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
   import StillsPredictionParameterisation
+from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+  import SphericalRelpStillsPredictionParameterisation
 
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
@@ -121,29 +124,13 @@ class Test(object):
 
     return
 
-  def run_old(self, verbose = False):
-
-    # Build a prediction parameterisation for the stills experiment
-    pred_param = StillsPredictionParameterisation(self.stills_experiments,
-                   detector_parameterisations = [self.det_param],
-                   beam_parameterisations = [self.s0_param],
-                   xl_orientation_parameterisations = [self.xlo_param],
-                   xl_unit_cell_parameterisations = [self.xluc_param])
-
-    # Predict the reflections in place. Must do this ahead of calculating
-    # the analytical gradients so quantities like s1 are correct
-    from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    ref_predictor = ExperimentsPredictor(self.stills_experiments)
-    ref_predictor.update()
-    ref_predictor.predict(self.reflections)
-
-    # get analytical gradients
-    an_grads = pred_param.get_gradients(self.reflections)
+  def get_fd_gradients(self, pred_param, ref_predictor):
 
     # get finite difference gradients
     p_vals = pred_param.get_param_vals()
     deltas = [1.e-7] * len(p_vals)
 
+    fd_grads = []
     p_names = pred_param.get_param_names()
     for i in range(len(deltas)):
 
@@ -182,14 +169,50 @@ class Test(object):
       y_grads /= deltas[i]
       delpsi_grads /= deltas[i]
 
+      fd_grads.append({'name':p_names[i],
+                       'dX_dp':x_grads,
+                       'dY_dp':y_grads,
+                       'dDeltaPsi_dp':delpsi_grads})
+
+    # return to the initial state
+    pred_param.set_param_vals(p_vals)
+
+    return fd_grads
+
+  def run_stills_pred_param(self, verbose = False):
+
+    if verbose:
+      print 'Testing derivatives for StillsPredictionParameterisation'
+      print '========================================================'
+
+    # Build a prediction parameterisation for the stills experiment
+    pred_param = StillsPredictionParameterisation(self.stills_experiments,
+                   detector_parameterisations = [self.det_param],
+                   beam_parameterisations = [self.s0_param],
+                   xl_orientation_parameterisations = [self.xlo_param],
+                   xl_unit_cell_parameterisations = [self.xluc_param])
+
+    # Predict the reflections in place. Must do this ahead of calculating
+    # the analytical gradients so quantities like s1 are correct
+    from dials.algorithms.refinement.prediction import ExperimentsPredictor
+    ref_predictor = ExperimentsPredictor(self.stills_experiments)
+    ref_predictor.update()
+    ref_predictor.predict(self.reflections)
+
+    # get analytical gradients
+    an_grads = pred_param.get_gradients(self.reflections)
+
+    fd_grads = self.get_fd_gradients(pred_param, ref_predictor)
+
+    for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
+
       # compare FD with analytical calculations
-      if verbose: print "\n\nParameter {0}: {1}". format(i,  p_names[i])
-      grads = (x_grads, y_grads, delpsi_grads)
+      if verbose: print "\nParameter {0}: {1}". format(i,  fd_grad['name'])
 
       for idx, name in enumerate(["dX_dp", "dY_dp", "dDeltaPsi_dp"]):
         if verbose: print name
-        a = grads[idx]
-        b = an_grads[i][name]
+        a = fd_grad[name]
+        b = an_grad[name]
 
         abs_error = a - b
         denom = a + b
@@ -261,18 +284,64 @@ class Test(object):
             "normalised error: {1:9.6f}").format(n_outliers, tst_val)
           # largest normalied error now about -4. for dX/dp of Detector0Tau1
           assert abs(tst_val) < 4.5
+    if verbose: print
 
-    # return to the initial state
-    pred_param.set_param_vals(p_vals)
     return
+
+  def run_spherical_relp_stills_pred_param(self, verbose=True):
+
+    if verbose:
+      print 'Testing derivatives for SphericalRelpStillsPredictionParameterisation'
+      print '====================================================================='
+
+    # Build a prediction parameterisation for the stills experiment
+    pred_param = SphericalRelpStillsPredictionParameterisation(
+                   self.stills_experiments,
+                   detector_parameterisations = [self.det_param],
+                   beam_parameterisations = [self.s0_param],
+                   xl_orientation_parameterisations = [self.xlo_param],
+                   xl_unit_cell_parameterisations = [self.xluc_param])
+
+    # Predict the reflections in place. Must do this ahead of calculating
+    # the analytical gradients so quantities like s1 are correct
+    from dials.algorithms.refinement.prediction import ExperimentsPredictor
+    ref_predictor = ExperimentsPredictor(self.stills_experiments,
+      spherical_relp=True)
+    ref_predictor.update()
+    ref_predictor.predict(self.reflections)
+
+    # get analytical gradients
+    an_grads = pred_param.get_gradients(self.reflections)
+
+    fd_grads = self.get_fd_gradients(pred_param, ref_predictor)
+
+    # compare FD with analytical calculations
+    for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
+      if verbose: print "\nParameter {0}: {1}". format(i,  fd_grad['name'])
+      for idx, name in enumerate(["dX_dp", "dY_dp", "dDeltaPsi_dp"]):
+        if verbose: print name
+        for a, b in zip(an_grad[name], fd_grad[name]):
+          if name == 'dDeltaPsi_dp':
+            # DeltaPsi errors are much worse than X, Y errors!
+            # FIXME, look into this further
+            assert approx_equal(a,b, eps=5e-3)
+          else:
+            assert approx_equal(a,b, eps=5e-6)
+        if verbose: print "OK"
+    if verbose: print
 
 if __name__ == "__main__":
 
-  test = Test()
   # switch this to true to see summary output
-  test.run_old(verbose=True)
+  verbose=False
+
+  test = Test()
+  test.run_stills_pred_param(verbose)
 
   # In comparison with FD approximations, the worst gradients by far are dX/dp
   # and dY/dp for parameter Crystal0g_param_3. Is this to do with the geometry
   # of the test case?
+
+  test.run_spherical_relp_stills_pred_param(verbose)
+
   print "OK"
