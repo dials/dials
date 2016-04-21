@@ -200,6 +200,12 @@ refinement
               "oscillation width as a still"
       .type = bool
       .expert_level = 1
+
+    spherical_relp_model = False
+      .help = "For stills refinement, set true to use the spherical relp model"
+              "for prediction and gradients."
+      .type = bool
+      .expert_level = 1
   }
 
   refinery
@@ -548,6 +554,7 @@ class RefinerFactory(object):
     crystal_options = params.refinement.parameterisation.crystal
     detector_options = params.refinement.parameterisation.detector
     sparse = params.refinement.parameterisation.sparse
+    spher_relp = params.refinement.parameterisation.spherical_relp_model
     auto_reduction = params.refinement.parameterisation.auto_reduction
 
     # Shorten module paths
@@ -964,11 +971,19 @@ class RefinerFactory(object):
     # Prediction equation parameterisation
     if do_stills: # doing stills
       if sparse:
-        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+        if spher_relp:
+          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+            import SphericalRelpStillsPredictionParameterisationSparse as StillsPredictionParameterisation
+        else:
+          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
             import StillsPredictionParameterisationSparse as StillsPredictionParameterisation
       else:
-        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-            import StillsPredictionParameterisation
+        if spher_relp:
+          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+            import SphericalRelpStillsPredictionParameterisation as StillsPredictionParameterisation
+        else:
+          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+              import StillsPredictionParameterisation
       pred_param = StillsPredictionParameterisation(
           experiments,
           det_params, beam_params, xl_ori_params, xl_uc_params)
@@ -1244,6 +1259,7 @@ class RefinerFactory(object):
     # Shorten parameter paths
     options = params.refinement.target
     sparse = params.refinement.parameterisation.sparse
+    srm = params.refinement.parameterisation.spherical_relp_model
 
     if options.rmsd_cutoff == "fraction_of_bin_size":
       absolute_cutoffs = None
@@ -1255,7 +1271,8 @@ class RefinerFactory(object):
 
     # build managed reflection predictors
     from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    ref_predictor = ExperimentsPredictor(experiments, do_stills)
+    ref_predictor = ExperimentsPredictor(experiments, do_stills,
+                                         spherical_relp=srm)
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if do_stills:
