@@ -88,6 +88,15 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False,
   if dmin is None:
     dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
 
+  if spherical_relp:
+    return SphericalRelpStillsReflectionPredictor(
+      experiment.beam,
+      experiment.detector,
+      experiment.crystal.get_A(),
+      experiment.crystal.get_unit_cell(),
+      experiment.crystal.get_space_group().type(),
+      dmin)
+
   # Create the reflection predictor
   try:
     if experiment.crystal._ML_half_mosaicity_deg is not None and experiment.crystal._ML_domain_size_ang is not None:
@@ -102,15 +111,6 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False,
         experiment.crystal._ML_domain_size_ang)
   except AttributeError:
     pass
-
-  if spherical_relp:
-    return SphericalRelpStillsReflectionPredictor(
-      experiment.beam,
-      experiment.detector,
-      experiment.crystal.get_A(),
-      experiment.crystal.get_unit_cell(),
-      experiment.crystal.get_space_group().type(),
-      dmin)
 
   return StillsDeltaPsiReflectionPredictor(
     experiment.beam,
