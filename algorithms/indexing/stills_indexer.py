@@ -131,24 +131,6 @@ class stills_indexer(indexer_base):
     if len(self.reflections) == 0:
       raise Sorry("No reflections left to index!")
 
-    if self.params.discover_better_experimental_model:
-
-      from dials.command_line.discover_better_experimental_model \
-           import discover_better_experimental_model
-
-      from rstbx.phil.phil_preferences import indexing_api_defs
-      import iotbx.phil
-      hardcoded_phil = iotbx.phil.parse(
-        input_string=indexing_api_defs).extract()
-      hardcoded_phil.indexing.mm_search_scope = self.params.mm_search_scope
-
-      new_detector, new_beam = discover_better_experimental_model(
-        [self.imagesets[0]], [self.reflections], hardcoded_phil, nproc=self.params.nproc,
-        wide_search_binning=self.params.wide_search_binning)
-
-      self.imagesets[0].set_detector(new_detector)
-      self.imagesets[0].set_beam(new_beam)
-
     spots_mm = self.reflections
     self.reflections = flex.reflection_table()
 
