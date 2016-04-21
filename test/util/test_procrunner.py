@@ -54,7 +54,7 @@ def test_run_command_runs_command_and_directs_pipelines(mock_subprocess, mock_st
   actual = dials.util.procrunner.run_process(command, 0.5, False)
 
   assert mock_subprocess.Popen.called
-  mock_streamreader.assert_has_calls([mock.call(stream_stdout, output=mock.ANY), mock.call(stream_stderr, output=mock.ANY)], any_order=True)
+  mock_streamreader.assert_has_calls([mock.call(stream_stdout, output=mock.ANY, debug=mock.ANY), mock.call(stream_stderr, output=mock.ANY, debug=mock.ANY)], any_order=True)
   assert not mock_process.terminate.called
   assert not mock_process.kill.called
   assert actual == expected
