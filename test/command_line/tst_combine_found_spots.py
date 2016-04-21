@@ -6,6 +6,10 @@ def run():
   import os.path
   from glob import glob
 
+  if not libtbx.env.has_module("dials_regression"):
+    print "Skipping exercise_spotfinder: dials_regression not present"
+    return
+
   data_dir = libtbx.env.find_in_repositories(
     relative_path="dials_regression/centroid_test_data",
     test=os.path.isdir)
