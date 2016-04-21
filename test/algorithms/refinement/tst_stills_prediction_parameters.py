@@ -44,232 +44,233 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \
     CrystalUnitCellParameterisation
 
-def run(verbose = False):
-  #### Create models
+class Test(object):
 
-  # build models, with a larger crystal than default in order to get plenty of
-  # reflections on the 'still' image
-  overrides = """
-  geometry.parameters.crystal.a.length.range=40 50;
-  geometry.parameters.crystal.b.length.range=40 50;
-  geometry.parameters.crystal.c.length.range=40 50;
-  geometry.parameters.random_seed = 42"""
+  def __init__(self):
 
-  master_phil = parse("""
-      include scope dials.test.algorithms.refinement.geometry_phil
-      """, process_includes=True)
+    self.create_models()
+    self.generate_reflections()
 
-  models = Extract(master_phil, overrides)
+  def create_models(self):
 
-  mydetector = models.detector
-  mygonio = models.goniometer
-  mycrystal = models.crystal
-  mybeam = models.beam
+    # build models, with a larger crystal than default in order to get plenty of
+    # reflections on the 'still' image
+    overrides = """
+    geometry.parameters.crystal.a.length.range=40 50;
+    geometry.parameters.crystal.b.length.range=40 50;
+    geometry.parameters.crystal.c.length.range=40 50;
+    geometry.parameters.random_seed = 42"""
 
-  # Build a mock scan for a 3 degree sweep
-  from dxtbx.model.scan import scan_factory
-  sf = scan_factory()
-  myscan = sf.make_scan(image_range = (1,1),
-                        exposure_times = 0.1,
-                        oscillation = (0, 3.0),
-                        epochs = range(1),
-                        deg = True)
-  sweep_range = myscan.get_oscillation_range(deg=False)
+    master_phil = parse("""
+        include scope dials.test.algorithms.refinement.geometry_phil
+        """, process_includes=True)
 
-  #### Create parameterisations of these models
+    models = Extract(master_phil, overrides)
 
-  det_param = DetectorParameterisationSinglePanel(mydetector)
-  s0_param = BeamParameterisation(mybeam, mygonio)
-  xlo_param = CrystalOrientationParameterisation(mycrystal)
-  xluc_param = CrystalUnitCellParameterisation(mycrystal)
+    # keep track of the models
+    self.detector = models.detector
+    self.gonio = models.goniometer
+    self.crystal = models.crystal
+    self.beam = models.beam
 
-  # Create a scans ExperimentList, only for generating reflections
-  experiments = ExperimentList()
-  experiments.append(Experiment(
-        beam=mybeam, detector=mydetector, goniometer=mygonio, scan=myscan,
-        crystal=mycrystal, imageset=None))
+    # Create a stills ExperimentList
+    self.stills_experiments = ExperimentList()
+    self.stills_experiments.append(Experiment(beam=self.beam,
+                                              detector=self.detector,
+                                              crystal=self.crystal,
+                                              imageset=None))
 
-  # Create a stills ExperimentList
-  stills_experiments = ExperimentList()
-  stills_experiments.append(Experiment(
-        beam=mybeam, detector=mydetector, crystal=mycrystal, imageset=None))
+    # keep track of the parameterisation of the models
+    self.det_param = DetectorParameterisationSinglePanel(self.detector)
+    self.s0_param = BeamParameterisation(self.beam, self.gonio)
+    self.xlo_param = CrystalOrientationParameterisation(self.crystal)
+    self.xluc_param = CrystalUnitCellParameterisation(self.crystal)
 
-  #### Generate reflections
+  def generate_reflections(self):
 
-  # Create a ScansRayPredictor
-  ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    # Build a mock scan for a 3 degree sweep
+    from dxtbx.model.scan import scan_factory
+    sf = scan_factory()
+    self.scan = sf.make_scan(image_range = (1,1),
+                          exposure_times = 0.1,
+                          oscillation = (0, 3.0),
+                          epochs = range(1),
+                          deg = True)
+    sweep_range = self.scan.get_oscillation_range(deg=False)
 
-  # Generate rays
-  resolution = 2.0
-  index_generator = IndexGenerator(mycrystal.get_unit_cell(),
-                        space_group(space_group_symbols(1).hall()).type(),
-                        resolution)
-  indices = index_generator.to_array()
-  rays = ray_predictor.predict(indices)
+    # Create a scans ExperimentList, only for generating reflections
+    experiments = ExperimentList()
+    experiments.append(Experiment(
+          beam=self.beam, detector=self.detector, goniometer=self.gonio, scan=self.scan,
+          crystal=self.crystal, imageset=None))
 
-  # Make a standard reflection_table and copy in the ray data
-  reflections = flex.reflection_table.empty_standard(len(rays))
-  reflections.update(rays)
+    # Create a ScansRayPredictor
+    ray_predictor = ScansRayPredictor(experiments, sweep_range)
 
-  # Build a prediction parameterisation for the stills experiment
-  pred_param = StillsPredictionParameterisation(stills_experiments,
-                 detector_parameterisations = [det_param],
-                 beam_parameterisations = [s0_param],
-                 xl_orientation_parameterisations = [xlo_param],
-                 xl_unit_cell_parameterisations = [xluc_param])
+    # Generate rays - only to work out which hkls are predicted
+    resolution = 2.0
+    index_generator = IndexGenerator(self.crystal.get_unit_cell(),
+                          space_group(space_group_symbols(1).hall()).type(),
+                          resolution)
+    indices = index_generator.to_array()
+    rays = ray_predictor.predict(indices)
 
-  # use a ReflectionManager to keep track of predictions
-  from dials.algorithms.refinement.reflection_manager import \
-    StillsReflectionManager
-  refman = StillsReflectionManager(reflections, stills_experiments,
-                                   outlier_detector=None)
+    # Make a standard reflection_table and copy in the ray data
+    self.reflections = flex.reflection_table.empty_standard(len(rays))
+    self.reflections.update(rays)
 
-  # Make a reflection predictor of the type expected by the Target class
-  from dials.algorithms.refinement.prediction import ExperimentsPredictor
-  ref_predictor = ExperimentsPredictor(stills_experiments)
+    return
 
-  # Make a target to ensure reflections are predicted with the stills predictor.
-  # This sets the "delpsical.rad" column.
-  from dials.algorithms.refinement.target_stills import \
-    LeastSquaresStillsResidualWithRmsdCutoff
-  target = LeastSquaresStillsResidualWithRmsdCutoff(stills_experiments,
-      ref_predictor, refman, pred_param, restraints_parameterisation=None)
+  def run_old(self, verbose = False):
 
-  # get predictions from the reflection manager
-  reflections = refman.get_matches()
+    # Build a prediction parameterisation for the stills experiment
+    pred_param = StillsPredictionParameterisation(self.stills_experiments,
+                   detector_parameterisations = [self.det_param],
+                   beam_parameterisations = [self.s0_param],
+                   xl_orientation_parameterisations = [self.xlo_param],
+                   xl_unit_cell_parameterisations = [self.xluc_param])
 
-  # get analytical gradients
-  an_grads = pred_param.get_gradients(reflections)
-
-  # get finite difference gradients
-  p_vals = pred_param.get_param_vals()
-  deltas = [1.e-7] * len(p_vals)
-
-  p_names = pred_param.get_param_names()
-  for i in range(len(deltas)):
-
-    # save parameter value
-    val = p_vals[i]
-
-    # calc reverse state
-    p_vals[i] -= deltas[i] / 2.
-    pred_param.set_param_vals(p_vals)
-
+    # Predict the reflections in place. Must do this ahead of calculating
+    # the analytical gradients so quantities like s1 are correct
+    from dials.algorithms.refinement.prediction import ExperimentsPredictor
+    ref_predictor = ExperimentsPredictor(self.stills_experiments)
     ref_predictor.update()
-    ref_predictor.predict(reflections)
+    ref_predictor.predict(self.reflections)
 
-    x, y, _ = reflections['xyzcal.mm'].deep_copy().parts()
-    delpsi = reflections['delpsical.rad'].deep_copy()
-    rev_state = flex.vec3_double(x, y, delpsi)
+    # get analytical gradients
+    an_grads = pred_param.get_gradients(self.reflections)
 
-    # calc forward state
-    p_vals[i] += deltas[i]
-    pred_param.set_param_vals(p_vals)
+    # get finite difference gradients
+    p_vals = pred_param.get_param_vals()
+    deltas = [1.e-7] * len(p_vals)
 
-    ref_predictor.update()
-    ref_predictor.predict(reflections)
+    p_names = pred_param.get_param_names()
+    for i in range(len(deltas)):
 
-    x, y, _ = reflections['xyzcal.mm'].deep_copy().parts()
-    delpsi = reflections['delpsical.rad'].deep_copy()
-    fwd_state = flex.vec3_double(x, y, delpsi)
+      # save parameter value
+      val = p_vals[i]
 
-    # reset parameter to saved value
-    p_vals[i] = val
+      # calc reverse state
+      p_vals[i] -= deltas[i] / 2.
+      pred_param.set_param_vals(p_vals)
 
-    # finite difference
-    fd = (fwd_state - rev_state)
-    x_grads, y_grads, delpsi_grads = fd.parts()
-    x_grads /= deltas[i]
-    y_grads /= deltas[i]
-    delpsi_grads /= deltas[i]
+      ref_predictor.update()
+      ref_predictor.predict(self.reflections)
 
-    # compare FD with analytical calculations
-    if verbose: print "\n\nParameter {0}: {1}". format(i,  p_names[i])
-    grads = (x_grads, y_grads, delpsi_grads)
+      x, y, _ = self.reflections['xyzcal.mm'].deep_copy().parts()
+      delpsi = self.reflections['delpsical.rad'].deep_copy()
+      rev_state = flex.vec3_double(x, y, delpsi)
 
-    for idx, name in enumerate(["dX_dp", "dY_dp", "dDeltaPsi_dp"]):
-      if verbose: print name
-      a = grads[idx]
-      b = an_grads[i][name]
+      # calc forward state
+      p_vals[i] += deltas[i]
+      pred_param.set_param_vals(p_vals)
 
-      abs_error = a - b
-      denom = a + b
+      ref_predictor.update()
+      ref_predictor.predict(self.reflections)
 
-      fns = five_number_summary(abs_error)
-      if verbose: print ("  summary of absolute errors: %9.6f %9.6f %9.6f " + \
-        "%9.6f %9.6f") % fns
-      assert flex.max(flex.abs(abs_error)) < 0.0003
-      # largest absolute error found to be about 0.00025 for dY/dp of
-      # Crystal0g_param_3. Reject outlying absolute errors and test again.
-      iqr = fns[3] - fns[1]
+      x, y, _ = self.reflections['xyzcal.mm'].deep_copy().parts()
+      delpsi = self.reflections['delpsical.rad'].deep_copy()
+      fwd_state = flex.vec3_double(x, y, delpsi)
 
-      # skip further stats on errors with an iqr of near zero, e.g. dDeltaPsi_dp
-      # for detector parameters, which are all equal to zero
-      if iqr < 1.e-10:
-        continue
+      # reset parameter to saved value
+      p_vals[i] = val
 
-      sel1 = abs_error < fns[3] + 1.5 * iqr
-      sel2 = abs_error > fns[1] - 1.5 * iqr
-      sel = sel1 & sel2
-      tst = flex.max_index(flex.abs(abs_error.select(sel)))
-      tst_val = abs_error.select(sel)[tst]
-      n_outliers = sel.count(False)
-      if verbose: print ("  {0} outliers rejected, leaving greatest " + \
-        "absolute error: {1:9.6f}").format(n_outliers, tst_val)
-      # largest absolute error now 0.000086 for dX/dp of Beam0Mu2
-      assert abs(tst_val) < 0.00009
+      # finite difference
+      fd = (fwd_state - rev_state)
+      x_grads, y_grads, delpsi_grads = fd.parts()
+      x_grads /= deltas[i]
+      y_grads /= deltas[i]
+      delpsi_grads /= deltas[i]
 
-      # Completely skip parameters with FD gradients all zero (e.g. gradients of
-      # DeltaPsi for detector parameters)
-      sel1 = flex.abs(a) < 1.e-10
-      if sel1.all_eq(True):
-        continue
+      # compare FD with analytical calculations
+      if verbose: print "\n\nParameter {0}: {1}". format(i,  p_names[i])
+      grads = (x_grads, y_grads, delpsi_grads)
 
-      # otherwise calculate normalised errors, by dividing absolute errors by
-      # the IQR (more stable than relative error calculation)
-      norm_error = abs_error / iqr
-      fns = five_number_summary(norm_error)
-      if verbose: print ("  summary of normalised errors: %9.6f %9.6f %9.6f " + \
-        "%9.6f %9.6f") % fns
-      # largest normalised error found to be about 25.7 for dY/dp of
-      # Crystal0g_param_3.
-      try:
-        assert flex.max(flex.abs(norm_error)) < 30
-      except AssertionError as e:
-        e.args += ("extreme normalised error value: {0}".format(
-                   flex.max(flex.abs(norm_error))),)
-        raise e
+      for idx, name in enumerate(["dX_dp", "dY_dp", "dDeltaPsi_dp"]):
+        if verbose: print name
+        a = grads[idx]
+        b = an_grads[i][name]
 
-      # Reject outlying normalised errors and test again
-      iqr = fns[3] - fns[1]
-      if iqr > 0.:
-        sel1 = norm_error < fns[3] + 1.5 * iqr
-        sel2 = norm_error > fns[1] - 1.5 * iqr
+        abs_error = a - b
+        denom = a + b
+
+        fns = five_number_summary(abs_error)
+        if verbose: print ("  summary of absolute errors: %9.6f %9.6f %9.6f " + \
+          "%9.6f %9.6f") % fns
+        assert flex.max(flex.abs(abs_error)) < 0.0003
+        # largest absolute error found to be about 0.00025 for dY/dp of
+        # Crystal0g_param_3. Reject outlying absolute errors and test again.
+        iqr = fns[3] - fns[1]
+
+        # skip further stats on errors with an iqr of near zero, e.g. dDeltaPsi_dp
+        # for detector parameters, which are all equal to zero
+        if iqr < 1.e-10:
+          continue
+
+        sel1 = abs_error < fns[3] + 1.5 * iqr
+        sel2 = abs_error > fns[1] - 1.5 * iqr
         sel = sel1 & sel2
-        tst = flex.max_index(flex.abs(norm_error.select(sel)))
-        tst_val = norm_error.select(sel)[tst]
+        tst = flex.max_index(flex.abs(abs_error.select(sel)))
+        tst_val = abs_error.select(sel)[tst]
         n_outliers = sel.count(False)
+        if verbose: print ("  {0} outliers rejected, leaving greatest " + \
+          "absolute error: {1:9.6f}").format(n_outliers, tst_val)
+        # largest absolute error now 0.000086 for dX/dp of Beam0Mu2
+        assert abs(tst_val) < 0.00009
 
-        # most outliers found for for dY/dp of Crystal0g_param_3 (which had
-        # largest errors, so no surprise there).
+        # Completely skip parameters with FD gradients all zero (e.g. gradients of
+        # DeltaPsi for detector parameters)
+        sel1 = flex.abs(a) < 1.e-10
+        if sel1.all_eq(True):
+          continue
+
+        # otherwise calculate normalised errors, by dividing absolute errors by
+        # the IQR (more stable than relative error calculation)
+        norm_error = abs_error / iqr
+        fns = five_number_summary(norm_error)
+        if verbose: print ("  summary of normalised errors: %9.6f %9.6f %9.6f " + \
+          "%9.6f %9.6f") % fns
+        # largest normalised error found to be about 25.7 for dY/dp of
+        # Crystal0g_param_3.
         try:
-          assert n_outliers < 250
+          assert flex.max(flex.abs(norm_error)) < 30
         except AssertionError as e:
-          e.args += ("too many outliers rejected: {0}".format(n_outliers),)
+          e.args += ("extreme normalised error value: {0}".format(
+                     flex.max(flex.abs(norm_error))),)
           raise e
 
-        if verbose: print ("  {0} outliers rejected, leaving greatest " + \
-          "normalised error: {1:9.6f}").format(n_outliers, tst_val)
-        # largest normalied error now about -4. for dX/dp of Detector0Tau1
-        assert abs(tst_val) < 4.5
+        # Reject outlying normalised errors and test again
+        iqr = fns[3] - fns[1]
+        if iqr > 0.:
+          sel1 = norm_error < fns[3] + 1.5 * iqr
+          sel2 = norm_error > fns[1] - 1.5 * iqr
+          sel = sel1 & sel2
+          tst = flex.max_index(flex.abs(norm_error.select(sel)))
+          tst_val = norm_error.select(sel)[tst]
+          n_outliers = sel.count(False)
 
-  # return to the initial state
-  pred_param.set_param_vals(p_vals)
+          # most outliers found for for dY/dp of Crystal0g_param_3 (which had
+          # largest errors, so no surprise there).
+          try:
+            assert n_outliers < 250
+          except AssertionError as e:
+            e.args += ("too many outliers rejected: {0}".format(n_outliers),)
+            raise e
+
+          if verbose: print ("  {0} outliers rejected, leaving greatest " + \
+            "normalised error: {1:9.6f}").format(n_outliers, tst_val)
+          # largest normalied error now about -4. for dX/dp of Detector0Tau1
+          assert abs(tst_val) < 4.5
+
+    # return to the initial state
+    pred_param.set_param_vals(p_vals)
+    return
 
 if __name__ == "__main__":
 
+  test = Test()
   # switch this to true to see summary output
-  run(verbose=False)
+  test.run_old(verbose=True)
 
   # In comparison with FD approximations, the worst gradients by far are dX/dp
   # and dY/dp for parameter Crystal0g_param_3. Is this to do with the geometry
