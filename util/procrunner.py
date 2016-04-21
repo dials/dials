@@ -12,11 +12,12 @@ dummy = False
 
 class _NonBlockingStreamReader:
   '''Reads a stream in a thread to avoid blocking/deadlocks'''
-  def __init__(self, stream, output=True):
+  def __init__(self, stream, output=True, debug=False):
     self._stream = stream
     self._buffer = StringIO.StringIO()
     self._terminated = False
     self._closed = False
+    self._debug = debug
 
     def _thread_write_stream_to_buffer():
       line = True
@@ -37,7 +38,16 @@ class _NonBlockingStreamReader:
 
   def get_output(self):
     if not self.has_finished():
-      raise Exception('thread did not terminate')
+      if self._debug:
+        underrun_debug_timer = timeit.default_timer()
+        print "NBSR underrun"
+      self._thread.join()
+      if not self.has_finished():
+        if self._debug:
+          print "NBSR join after %f seconds, underrun not resolved" % (timeit.default_timer() - underrun_debug_timer)
+        raise Exception('thread did not terminate')
+      if self._debug:
+        print "NBSR underrun resolved after %f seconds" % (timeit.default_timer() - underrun_debug_timer)
     if self._closed:
       raise Exception('streamreader double-closed')
     self._closed = True
@@ -115,8 +125,8 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
     max_time = start_time + timeout
 
   p = subprocess.Popen(command, shell=False, stdin=stdin_pipe, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout)
-  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr)
+  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout, debug=debug)
+  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr, debug=debug)
   if stdin is not None:
     stdin = _NonBlockingStreamWriter(p.stdin, data=stdin)
 
