@@ -937,7 +937,9 @@ class StillsPredictionParameterisationSparse(SparseGradientVectorMixin,
 
 class SphericalRelpStillsPredictionParameterisation(
   StillsPredictionParameterisation):
-  '''
+  '''Modified StillsPredictionParameterisation for the model that assumes
+  relps are spherical and prediction requires that this sphere intersects the
+  Ewald sphere, not that the relp centre is rotated onto the Ewald sphere
   '''
 
   def _get_gradients_core(self, reflections, D, s0, U, B, axis, fixed_rotation, callback=None):
@@ -974,7 +976,7 @@ class SphericalRelpStillsPredictionParameterisation(
     self._q_s0 = self._q + self._s0
     s = self._q_s0.norms()
     ss = self._q_s0.dot(self._q_s0)
-    sss = self._s * self._ss
+    sss = s * ss
     self._inv_s = 1. / s
     self._inv_sss = 1. / sss
 
@@ -1174,7 +1176,7 @@ class SphericalRelpStillsPredictionParameterisation(
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(
-        xlop, B, h, e1, DeltaPsi, s1, nu, inv_s, inv_sss, r, s0, D)
+        xlop, B, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -1230,7 +1232,7 @@ class SphericalRelpStillsPredictionParameterisation(
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(
-        xlucp, U, h, e1, DeltaPsi, s1, nu, inv_s, inv_sss, r, s0, D)
+        xlucp, U, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D)
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
       dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
@@ -1320,8 +1322,8 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_unit_cell_derivatives(self, xlucp, U, h, e1, DeltaPsi, s1, nu, inv_s,
-                                inv_sss, r, s0, D):
+  def _xl_unit_cell_derivatives(self, xlucp, U, h, e1, DeltaPsi, s1, nu,
+                                q_s0, inv_s, inv_sss, r, s0, D):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
@@ -1351,11 +1353,6 @@ class SphericalRelpStillsPredictionParameterisation(
 
       # term 2
       term2 = (nu * q_s0 * q_s0.dot(dq)) * inv_sss
-
-      # derivative of the axis e1
-      q_dot_dq = q.dot(dq)
-      dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
-      de1_dp = dq0.cross(s0u)
 
       # calculate the derivative of pv for this parameter
       dpv = D * (term1 - term2)
