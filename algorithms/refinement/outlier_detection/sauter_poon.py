@@ -22,6 +22,7 @@ class SauterPoon(CentroidOutlier):
                min_num_obs=20,
                separate_experiments=True,
                separate_panels=True,
+               block_width=None,
                px_sz=(1,1),
                verbose=False,
                pdf=None):
@@ -32,7 +33,8 @@ class SauterPoon(CentroidOutlier):
       cols=["miller_index", "xyzobs.px.value", "xyzcal.px"],
       min_num_obs=min_num_obs,
       separate_experiments=separate_experiments,
-      separate_panels=separate_panels)
+      separate_panels=separate_panels,
+      block_width=block_width)
 
     self._px_sz = px_sz
     self._verbose = verbose

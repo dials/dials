@@ -2,6 +2,9 @@ from __future__ import division
 from logging import info, debug, warning
 from libtbx.phil import parse
 from dials.array_family import flex
+from math import pi
+
+RAD2DEG = 180./pi
 
 class CentroidOutlier(object):
   """Base class for centroid outlier detection algorithms"""
@@ -9,7 +12,8 @@ class CentroidOutlier(object):
   def __init__(self, cols=["x_resid", "y_resid", "phi_resid"],
                min_num_obs=20,
                separate_experiments=True,
-               separate_panels=True):
+               separate_panels=True,
+               block_width=None):
 
     # column names of the data in which to look for outliers
     self._cols = cols
@@ -22,6 +26,9 @@ class CentroidOutlier(object):
     # all experiments and panels
     self._separate_experiments = separate_experiments
     self._separate_panels = separate_panels
+
+    # block width for splitting scans over phi, or None for no split
+    self._block_width = block_width
 
     # the number of rejections
     self.nreject = 0
@@ -76,20 +83,61 @@ class CentroidOutlier(object):
         indices = job['indices']
         for ipanel in xrange(flex.max(data['panel']) + 1):
           sel = data['panel'] == ipanel
-          job2 = {'id':iexp, 'panel':ipanel, 'data':data.select(sel),
+          job = {'id':iexp, 'panel':ipanel, 'data':data.select(sel),
                   'indices':indices.select(sel)}
-          jobs2.append(job2)
+          jobs2.append(job)
     else:
       # keep the splits as they are
       jobs2 = jobs
 
+    jobs3 = []
+    if self._block_width is not None:
+      # split into equal-sized phi ranges
+      for job in jobs2:
+        data = job['data']
+        iexp = job['id']
+        indices = job['indices']
+        phi = data['xyzobs.mm.value'].parts()[2]
+        phi_low = flex.min(phi)
+        phi_range = flex.max(phi) - phi_low
+        if phi_range == 0.0: # detect stills and do not split
+          jobs3.append(job)
+          continue
+        nblocks = int(round(RAD2DEG * phi_range / self._block_width))
+        nblocks = max(1, nblocks)
+        real_width = phi_range / nblocks
+        block_end = 0.0
+        for iblock in xrange(nblocks - 1): # all except the last block
+          block_start = iblock * real_width
+          block_end = (iblock + 1) * real_width
+          sel = (phi >=  (phi_low + block_start)) & \
+                (phi < (phi_low + block_end))
+          job = {'id':iexp, 'panel':ipanel, 'data':data.select(sel),
+                 'indices':indices.select(sel),
+                 'phi_start':RAD2DEG*(phi_low + block_start),
+                 'phi_end':RAD2DEG*(phi_low + block_end)}
+          jobs3.append(job)
+        # now last block
+        sel = phi >= (phi_low + block_end)
+        job = {'id':iexp, 'panel':ipanel, 'data':data.select(sel),
+               'indices':indices.select(sel),
+               'phi_start':RAD2DEG*(phi_low + block_start),
+               'phi_end':RAD2DEG*(phi_low + block_end)}
+        jobs3.append(job)
+    else:
+      # keep the splits as they are
+      jobs3 = jobs2
+
     # now loop over the lowest level of splits
-    for job in jobs2:
+    for job in jobs3:
 
       data = job['data']
       indices = job['indices']
       iexp = job['id']
       ipanel = job['panel']
+
+      if job.has_key('phi_start'):
+        debug("Reflections in range {phi_start} <= phi < {phi_end}:".format(**job))
 
       if len(indices) >= self._min_num_obs:
 
@@ -103,6 +151,8 @@ class CentroidOutlier(object):
         ioutliers = indices.select(outliers)
 
       else:
+        if job.has_key('phi_start'):
+          debug("Reflections in range {phi_start} <= phi < {phi_end}:".format(**job))
         msg = "For experiment: {0} and panel: {1}, ".format(iexp, ipanel)
         msg += "only {0} reflections are present. ".format(len(indices))
         msg += "All of these flagged as possible outliers."
@@ -175,6 +225,17 @@ outlier
             "panel of a multi-panel detector model. Otherwise data from across"
             "all panels will be combined for outlier rejection."
     .type = bool
+
+  separate_blocks = True
+    .help = "If true, for scans outlier rejection will be performed separately"
+            "in equal-width blocks of phi, controlled by the parameter"
+            "outlier.block_width."
+    .type = bool
+
+  block_width = 10.0
+    .help = "If separate_blocks, a scan will be divided into equal-sized blocks"
+            "with width (in degrees) close to this value for outlier rejection."
+    .type = float(value_min=1.0)
 
   tukey
     .help = "Options for the tukey outlier rejector"
@@ -288,11 +349,14 @@ class CentroidOutlierFactory(object):
     kwargs = dict((k, v) for k, v in algo_params.__dict__.items() \
       if not k.startswith('_'))
 
+    if not params.outlier.separate_blocks:
+      params.outlier.block_width = None
     od = outlier_detector(
       cols=colnames,
       min_num_obs=params.outlier.minimum_number_of_reflections,
       separate_experiments=params.outlier.separate_experiments,
       separate_panels=params.outlier.separate_panels,
+      block_width=params.outlier.block_width,
       **kwargs)
     od.set_verbosity(verbosity)
     return od
