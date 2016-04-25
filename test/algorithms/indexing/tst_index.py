@@ -230,7 +230,7 @@ def exercise_4():
                 "scan_range=850,900"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.06, 0.06, 0.0004)
+  expected_rmsds = (0.061, 0.06, 0.00042)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
