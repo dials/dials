@@ -1202,6 +1202,7 @@ class RefinerFactory(object):
     else:
       if do_stills:
         colnames = ["x_resid", "y_resid"]
+        options.outlier.block_width=None
       else:
         colnames = ["x_resid", "y_resid", "phi_resid"]
       from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory

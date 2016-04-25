@@ -176,7 +176,10 @@ class CentroidOutlier(object):
         if self._separate_experiments: row.append(str(iexp))
         if self._separate_panels: row.append(str(ipanel))
         if self._block_width is not None:
-          row.append('{phi_start:.2f} - {phi_end:.2f}'.format(**job))
+          try:
+            row.append('{phi_start:.2f} - {phi_end:.2f}'.format(**job))
+          except KeyError:
+            row.append('{0:.2f} - {1:.2f}'.format(0.0,0.0))
         if nref == 0:
           p100 = 0
           msg = ("No reflections associated with job {0}").format(i)
