@@ -36,7 +36,7 @@ phil_scope = phil.parse("""
 rs_mapper
   .short_caption = Reciprocal space mapper
 {
-  map_file = None
+  map_file = rs_mapper_output.ccp4
     .type = path
     .optional = False
     .multiple= False
