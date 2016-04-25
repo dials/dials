@@ -53,6 +53,10 @@ class CentroidOutlier(object):
     """Identify outliers in the input and set the centroid_outlier flag.
     Return True if any outliers were detected, otherwise False"""
 
+    if self._verbosity > 0:
+      info("Detecting centroid outliers using the {0} algorithm".format(
+        type(self).__name__))
+
     # check the columns are present
     for col in self._cols: assert reflections.has_key(col)
 
@@ -163,7 +167,7 @@ class CentroidOutlier(object):
 
       else:
         msg = "For job {0}, only {1} reflections are present.".format(i, nref)
-        msg += "All of these flagged as possible outliers."
+        msg += " All of these flagged as possible outliers."
         if self._verbosity > 0: debug(msg)
         ioutliers = indices
 
