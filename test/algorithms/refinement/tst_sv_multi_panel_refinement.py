@@ -52,7 +52,8 @@ class Test(object):
 
     experiments_path = os.path.join(self._data_dir, 'experiments.json')
     reflections_path = os.path.join(self._data_dir, 'indexed.pickle')
-    cmd="dials.refine {0} {1} scan_varying=true history=history.pickle".format(
+    cmd=("dials.refine {0} {1} scan_varying=true history=history.pickle"
+         " outlier.separate_blocks=False").format(
       experiments_path, reflections_path)
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
