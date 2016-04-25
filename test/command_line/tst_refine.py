@@ -43,9 +43,9 @@ def test1():
   for pth in (experiments_path, pickle_path):
     assert os.path.exists(pth)
 
-  # set close_to_spindle_cutoff to old default
+  # set some old defaults
   cmd = "dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " + \
-        experiments_path + " " + pickle_path
+        "outlier.separate_blocks=False " + experiments_path + " " + pickle_path
   print cmd
 
   # work in a temporary directory
