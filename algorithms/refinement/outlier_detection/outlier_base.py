@@ -99,6 +99,9 @@ class CentroidOutlier(object):
         iexp = job['id']
         indices = job['indices']
         phi = data['xyzobs.mm.value'].parts()[2]
+        if len(phi) == 0: # detect no data in the job
+          jobs3.append(job)
+          continue
         phi_low = flex.min(phi)
         phi_range = flex.max(phi) - phi_low
         if phi_range == 0.0: # detect stills and do not split
