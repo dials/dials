@@ -125,8 +125,8 @@ class CentroidOutlier(object):
         sel = phi >= (phi_low + block_end)
         job = {'id':iexp, 'panel':ipanel, 'data':data.select(sel),
                'indices':indices.select(sel),
-               'phi_start':RAD2DEG*(phi_low + block_start),
-               'phi_end':RAD2DEG*(phi_low + block_end)}
+               'phi_start':RAD2DEG*(phi_low + block_end),
+               'phi_end':RAD2DEG*(phi_low + phi_range)}
         jobs3.append(job)
     else:
       # keep the splits as they are
