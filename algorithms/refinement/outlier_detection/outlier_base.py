@@ -1,6 +1,7 @@
 from __future__ import division
 from logging import info, debug, warning
 from libtbx.phil import parse
+from libtbx.table_utils import simple_table
 from dials.array_family import flex
 from math import pi
 
@@ -128,18 +129,25 @@ class CentroidOutlier(object):
       # keep the splits as they are
       jobs3 = jobs2
 
+    # Work out the format of the jobs table
+    if self._verbosity > 0:
+      header = ['Job']
+      if self._separate_experiments: header.append('Exp\nid')
+      if self._separate_panels: header.append('Panel\nid')
+      if self._block_width is not None: header.append('Block range\n(deg)')
+      header.extend(['Nref', 'Nout', '%out'])
+      rows = []
+
     # now loop over the lowest level of splits
-    for job in jobs3:
+    for i, job in enumerate(jobs3):
 
       data = job['data']
       indices = job['indices']
       iexp = job['id']
       ipanel = job['panel']
+      nref = len(indices)
 
-      if job.has_key('phi_start'):
-        debug("Reflections in range {phi_start} <= phi < {phi_end}:".format(**job))
-
-      if len(indices) >= self._min_num_obs:
+      if nref >= self._min_num_obs:
 
         # get the subset of data as a list of columns
         cols = [data[col] for col in self._cols]
@@ -151,10 +159,7 @@ class CentroidOutlier(object):
         ioutliers = indices.select(outliers)
 
       else:
-        if job.has_key('phi_start'):
-          debug("Reflections in range {phi_start} <= phi < {phi_end}:".format(**job))
-        msg = "For experiment: {0} and panel: {1}, ".format(iexp, ipanel)
-        msg += "only {0} reflections are present. ".format(len(indices))
+        msg = "For job {0}, only {1} reflections are present.".format(i, nref)
         msg += "All of these flagged as possible outliers."
         if self._verbosity > 0: debug(msg)
         ioutliers = indices
@@ -162,38 +167,33 @@ class CentroidOutlier(object):
       # set those reflections as outliers in the original reflection table
       reflections.set_flags(ioutliers,
         reflections.flags.centroid_outlier)
+      nout = len(ioutliers)
+      self.nreject += nout
 
-      self.nreject += len(ioutliers)
-
-    if self.nreject == 0: return False
-
-    if self._verbosity > 0:
-      info("{0} reflections have been flagged as outliers".format(self.nreject))
-
-    if nexp > 1 and self._verbosity > 0:
-      # table of rejections per experiment
-      from libtbx.table_utils import simple_table
-      header = ["Exp\nid", "Nref", "Nout", "%out"]
-      rows = []
-      outlier_sel = reflections.get_flags(reflections.flags.centroid_outlier)
-      outliers = reflections.select(outlier_sel)
-      for iexp in xrange(nexp):
-        nref = (reflections['id'] == iexp).count(True)
-        nout = (outliers['id'] == iexp).count(True)
+      # Add job data to the table
+      if self._verbosity > 0:
+        row = [str(i + 1)]
+        if self._separate_experiments: row.append(str(iexp))
+        if self._separate_panels: row.append(str(ipanel))
+        if self._block_width is not None:
+          row.append('{phi_start:.2f} - {phi_end:.2f}'.format(**job))
         if nref == 0:
           p100 = 0
-          msg = ("No reflections associated with"
-                 " Experiment with id {0}").format(iexp)
+          msg = ("No reflections associated with job {0}").format(i)
           warning(msg)
         else:
           p100 = nout / nref * 100.0
           if p100 > 30.0:
-            msg = ("{0:3.1f}% of reflections were flagged as outliers from the"
-                   " Experiment with id {1}").format(p100, iexp)
-            warning(msg)
-        rows.append(["%d" % iexp, "%d" % nref, "%d" % nout, "%3.1f" % p100])
+            msg = ("{0:3.1f}% of reflections were flagged as outliers from job"
+                   " {1}").format(p100, i)
+        row.extend([str(nref), str(nout), '%3.1f' % p100])
+        rows.append(row)
+
+    if self.nreject == 0: return False
+    if self._verbosity > 0:
+      info("{0} reflections have been flagged as outliers".format(self.nreject))
+      debug("Outlier rejections per job:")
       st = simple_table(rows, header)
-      debug("Outlier rejections per experiment:")
       debug(st.format())
 
     return True
