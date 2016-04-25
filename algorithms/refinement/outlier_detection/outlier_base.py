@@ -232,7 +232,7 @@ outlier
             "outlier.block_width."
     .type = bool
 
-  block_width = 10.0
+  block_width = 18.0
     .help = "If separate_blocks, a scan will be divided into equal-sized blocks"
             "with width (in degrees) close to this value for outlier rejection."
     .type = float(value_min=1.0)
