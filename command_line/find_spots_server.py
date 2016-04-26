@@ -93,9 +93,13 @@ indexing_min_spots = 10
   print 'Spotfinding took %.2f seconds' %(t1-t0)
   from dials.algorithms.spot_finding import per_image_analysis
   imageset = datablock.extract_imagesets()[0]
+  scan = imageset.get_scan()
+  if scan is not None:
+    i = scan.get_array_range()[0]
+  else:
+    i = 0
   stats = per_image_analysis.stats_single_image(
-    imageset, reflections,
-    i=imageset.get_scan().get_image_range()[0]-1, plot=False)
+    imageset, reflections, i=i, plot=False)
   stats = stats.__dict__
   t2 = time.time()
   print 'Resolution analysis took %.2f seconds' %(t2-t1)
