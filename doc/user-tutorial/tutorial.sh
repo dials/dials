@@ -44,7 +44,6 @@ dials.find_spots datablock.json nproc=4
 
 dials.index datablock.json strong.pickle
 
-
 # Take the results of the P1 autoindexing and run refinement
 # with all of the possible Bravais settings applied
 
@@ -57,12 +56,10 @@ dials.refine_bravais_settings experiments.json indexed.pickle
 
 dials.reindex indexed.pickle change_of_basis_op=a,b,c
 
-# During indexing we saw the presence of outliers that we would like to exclude
-# from refinement, and we also used a subset of reflections. Now we will repeat
-# using all indexed reflections in the dataset and with outlier rejection switched on.
+# During indexing we used a subset of reflections. Now we will repeat refinement
+# using all indexed reflections and a more complex outlier rejection algorithm
 
-dials.refine bravais_setting_9.json reindexed_reflections.pickle \
-outlier.algorithm=tukey
+dials.refine bravais_setting_9.json reindexed_reflections.pickle
 
 # We have done the best we can with a static model for the experiment.
 # However, a better model for the crystal might allow small misset rotations
@@ -74,9 +71,7 @@ outlier.algorithm=tukey
 # To do this, we run a further refinement job starting from the output of the
 # previous job:
 
-dials.refine refined_experiments.json refined.pickle \
-outlier.algorithm=tukey \
-scan_varying=true output.experiments=sv_refined_experiments.json
+dials.refine refined_experiments.json refined.pickle scan_varying=true
 
 # Integration:
 # Next step reads the indexed reflections to determine strong reflections for profile
@@ -84,8 +79,10 @@ scan_varying=true output.experiments=sv_refined_experiments.json
 # background determination with no outlier rejection and XDS-style 3D profile
 # fitting. These commands are most likely to change and can be viewed by running
 
-dials.integrate sv_refined_experiments.json refined.pickle \
-outlier.algorithm=null nproc=4
+dials.integrate refined_experiments.json refined.pickle nproc=4
+
+dials.report integrated_experiments.json integrated.pickle
+
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
