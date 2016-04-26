@@ -18,9 +18,9 @@ def response_to_xml(d):
 
   if 'n_spots_total' in d:
     response = '''\
-<image>%(image)s</image>,
-<spot_count>%(n_spots_total)s</spot_count>'
-<spot_count_no_ice>%(n_spots_no_ice)s</spot_count_no_ice>'
+<image>%(image)s</image>
+<spot_count>%(n_spots_total)s</spot_count>
+<spot_count_no_ice>%(n_spots_no_ice)s</spot_count_no_ice>
 <d_min>%(estimated_d_min).2f</d_min>
 <d_min_method_1>%(d_min_distl_method_1).2f</d_min_method_1>
 <d_min_method_2>%(d_min_distl_method_2).2f</d_min_method_2>
