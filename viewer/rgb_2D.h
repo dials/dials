@@ -161,6 +161,9 @@ namespace dials { namespace viewer { namespace boost_python {
         double loc_cel, dif = 0;
         int loc_cel_int;
 
+
+
+
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
         if(max == -1 && min == -1){
@@ -182,6 +185,7 @@ namespace dials { namespace viewer { namespace boost_python {
           }
         }
 
+
         dif = max - min;
 
         for (int col = 0; col < ncol; col++) {
@@ -192,6 +196,7 @@ namespace dials { namespace viewer { namespace boost_python {
         }
         int px_scale = 0;
 
+        /*
         if(ncol < 200 && nrow < 200){
 
           float diagn;
@@ -206,6 +211,10 @@ namespace dials { namespace viewer { namespace boost_python {
         }else{
             px_scale = 1;
         }
+        */
+        px_scale = 85;
+
+        std::cout << "\n px_scale = " << px_scale << "\n";
 
         flex_int bmp_dat(flex_grid<>(nrow * px_scale, ncol * px_scale, 3),0);
 
@@ -213,6 +222,10 @@ namespace dials { namespace viewer { namespace boost_python {
         int pix_row, pix_col;
         int col, row;
         int mask_pix_col, mask_pix_row;
+
+        std::cout << "\n ncol =" << ncol << " \n";
+
+        std::cout << "\n nrow =" << nrow << " \n";
 
         for (col = 0; col < ncol; col++) {
           for (row = 0; row < nrow; row++) {
@@ -237,6 +250,8 @@ namespace dials { namespace viewer { namespace boost_python {
                                                  scaled_array(row, col))];
                 }
               }
+
+              //std::cout << "\n col, row = " << col << ", " << row << "\n";
 
               // Painting mask into the scaled pixel
               for(mask_pix_col = 0, pix_col = col * px_scale;
@@ -263,12 +278,14 @@ namespace dials { namespace viewer { namespace boost_python {
                     bmp_dat(pix_row, pix_col, 0) = 150;
                     bmp_dat(pix_row, pix_col, 1) = 150;
                     bmp_dat(pix_row, pix_col, 2) = 150;
+
                   }
 
                 }
               }
 
               // Painting intensity value into the scaled pixel
+
               if(show_nums == true) {
 
                 err_conv = get_digits(data2d(row, col), digit_val);
@@ -308,15 +325,18 @@ namespace dials { namespace viewer { namespace boost_python {
                   }
                 }
               }
+
             }else{
+
               bmp_dat(row, col, 0) = red_byte[int(scaled_array(row, col))];
               bmp_dat(row, col, 1) = green_byte[int(scaled_array(row, col))];
               bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
             }
 
           }
+
         }
-        //std::cout << "\n building BMP \n";
+        std::cout << "\n building BMP \n";
 
       return bmp_dat;
       }
