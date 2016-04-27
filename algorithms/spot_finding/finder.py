@@ -479,6 +479,9 @@ class SpotFinder(object):
       flex.size_t_range(len(reflections)),
       reflections.flags.strong)
 
+    # Check for overloads
+    reflections.is_overloaded(datablock)
+
     # Return the reflections
     return reflections
 
