@@ -377,7 +377,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     o.set_detlm(flex.float([0.0, panel.get_image_size()[0],
                             0.0, panel.get_image_size()[1],
                             0, 0, 0, 0]))
-    o.set_dx(flex.float([panel.get_distance(), 0.0]))
+    o.set_dx(flex.float([panel.get_directed_distance(), 0.0]))
 
     # goniometer axes and names, and scan axis number, and number of axes, missets
     o.set_e1(flex.float(axis))

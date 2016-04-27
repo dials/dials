@@ -395,7 +395,7 @@ class SpotFrame(XrayFrame) :
         [uctbx.d_star_sq_as_d((i+1)*step) for i in range(0, n_rings)])
 
     wavelength = beam.get_wavelength()
-    distance = abs(detector[0].get_distance())
+    distance = detector[0].get_distance()
     pixel_size = detector[0].get_pixel_size()[0] # FIXME assumes square pixels, and that all panels use same pixel size
 
     twotheta = uctbx.d_star_sq_as_two_theta(

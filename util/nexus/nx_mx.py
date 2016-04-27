@@ -202,7 +202,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
   assert([p.get_trusted_range() == trusted_range for p in detector].count(False) == 0)
 
   # Take the distance and beam centre from the first panel
-  #distance = detector[0].get_distance()
+  #distance = detector[0].get_directed_distance()
   #beam_centre_x, beam_centre_y = detector[0].get_beam_centre(beam.get_s0())
 
   # Set the detector properties

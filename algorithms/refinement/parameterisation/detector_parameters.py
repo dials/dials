@@ -82,7 +82,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # set up the parameters.
     # distance from lab origin to detector model plane along its normal, in
     # initial orientation
-    distance = panel.get_distance()
+    distance = panel.get_directed_distance()
     dist = Parameter(distance, dn, 'length (mm)', 'Dist')
 
     # shift in the detector model plane to locate dorg, in initial
@@ -470,7 +470,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
     # set up the parameters.
     # distance from lab origin to mid_panel plane along its normal,
     # in initial orientation
-    distance = mid_panel.get_distance()
+    distance = mid_panel.get_directed_distance()
     dist = Parameter(distance, dn, 'length (mm)', 'Dist')
 
     # shift in the detector model plane to locate dorg, in initial
@@ -954,7 +954,7 @@ class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel
       # set up the parameters.
       # distance from lab origin to ref_panel plane along its normal,
       # in initial orientation
-      distance = ref_panel.get_distance()
+      distance = ref_panel.get_directed_distance()
       dist = Parameter(distance, dn,
         'length (mm)', 'Group{0}Dist'.format(igp + 1))
 
@@ -1170,7 +1170,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       # set up the parameters.
       # distance from lab origin to ref_panel plane along its normal,
       # in initial orientation
-      distance = self._groups[igp].get_distance()
+      distance = self._groups[igp].get_directed_distance()
       dist = Parameter(distance,
         dn, 'length (mm)', 'Group{0}Dist'.format(igp + 1))
 

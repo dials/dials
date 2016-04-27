@@ -77,7 +77,7 @@ def dump(experiments, directory):
     directory, template = os.path.split(imageset.get_template())
     symmetry = cryst_mosflm.get_space_group().type().number()
     beam_centre = tuple(reversed(detector[0].get_beam_centre(beam.get_s0())))
-    distance = detector[0].get_distance()
+    distance = detector[0].get_directed_distance()
 
     with open(mosflm_in, "wb") as f:
       print >> f, write_mosflm_input(directory=directory,
