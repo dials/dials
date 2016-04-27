@@ -28,9 +28,7 @@ their contents (:ref:`datablock.json <datablock-json>`) is written. It's worth n
 this file is changed subsequent processing can
 use this.
 
-::
-
-  dials.import data/th_8_2_0*cbf
+.. literalinclude:: logs/dials.import.cmd
 
 The output just describes what the software understands of the images it was
 passed, in this case one sweep of data containing 540 images.
@@ -46,9 +44,7 @@ It takes a little while because we are finding spots on every image in the
 dataset. This reflects the modular philosophy of the DIALS toolkit and will
 enable us to do global refinement later on.
 
-::
-
-  dials.find_spots datablock.json nproc=4
+.. literalinclude:: logs/dials.find_spots.cmd
 
 .. container:: toggle
 
@@ -117,9 +113,7 @@ parameter :samp:`indexing.method=fft1d`. We will pass in all the strong
 spots found in the dataset - so no need to select subsets of images widely
 separated in :math:`\phi`.
 
-::
-
-  dials.index datablock.json strong.pickle
+.. literalinclude:: logs/dials.index.cmd
 
 If known, the space group and unit cell can be
 provided at this stage using the :samp:`space_group` and :samp:`unit_cell`
@@ -193,9 +187,7 @@ which will take the results of the P1 autoindexing and run refinement with
 all of the possible Bravais settings applied - after which you may select
 the preferred solution.
 
-::
-
-  dials.refine_bravais_settings experiments.json indexed.pickle
+.. literalinclude:: logs/dials.refine_bravais_settings.cmd
 
 gives a table containing scoring data and unit cell for
 each Bravais setting. The scores include the the metric fit (in degrees),
@@ -213,9 +205,9 @@ step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
 necessary to reindex the :ref:`indexed.pickle <reflection_pickle>` file output
 by dials.index. In this case as the change of basis operator to the chosen setting
 is the identity operator (:samp:`a,b,c`) this step is not needed. We run it
-anyway to demonstrate its use::
+anyway to demonstrate its use.
 
-  dials.reindex indexed.pickle change_of_basis_op=a,b,c
+.. literalinclude:: logs/dials.reindex.cmd
 
 This outputs the file :file:`reindexed_reflections.pickle` which should be
 used as input to downstream programs in place of :file:`indexed.pickle`.
@@ -236,9 +228,9 @@ use this command::
   dials.refine -c -e 1
 
 Equivalent command-line options exist for all the main DIALS programs. To
-refine a static model including the tetragonal constraints we just do::
+refine a static model including the tetragonal constraints we just do:
 
-  dials.refine bravais_setting_9.json reindexed_reflections.pickle
+.. literalinclude:: logs/dials.refine.cmd
 
 Using all reflections in refinement provided a small reduction in RMSDs.
 However, the refined model is still static over the whole dataset. We may
@@ -249,9 +241,9 @@ the scan. There are usually even small changes to the cell dimensions
 radiation during data collection. To account for both of these effects we
 can extend our parameterisation to obtain a smoothed 'scan-varying' model
 for both the crystal orientation and unit cell. To do this, we run a further
-refinement job starting from the output of the previous job::
+refinement job starting from the output of the previous job:
 
-  dials.refine refined_experiments.json refined.pickle scan_varying=true
+.. literalinclude:: logs/dials.sv_refine.cmd
 
 .. container:: toggle
 
@@ -259,7 +251,7 @@ refinement job starting from the output of the previous job::
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs/dials.refine.log
+    .. literalinclude:: logs/dials.sv_refine.log
 
 In this case we didn't alter the default choices that affect scan-varying
 refinement, the most important of which is the number of intervals into which
@@ -298,9 +290,7 @@ XDS-like 3D profile fitting while using a generalized linear model in order
 to fit a Poisson-distributed background model. We will also increase the
 number of processors used to speed the job up.
 
-::
-
-  dials.integrate refined_experiments.json refined.pickle nproc=4
+.. literalinclude:: logs/dials.integrate.cmd
 
 .. container:: toggle
 
@@ -421,7 +411,7 @@ The most important information provided by :program:`dials.show`,
 now be combined in one place by generating an HTML report using the program
 :program:`dials.report`. This is run simply using::
 
-  dials.report integrated_experiments.json integrated.pickle
+.. literalinclude:: logs/dials.integrate.cmd
 
 which produces the file :file:`dials-report.html`. The report generated for
 this dataset can be seen here: :download:`dials-report.html <logs/dials-report.html>`.
@@ -433,68 +423,11 @@ The final step of dials processing is to export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
 and aimless_.
 
-::
-
-  dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mtz
+.. literalinclude:: logs/dials.export.cmd
 
 And this is the output, showing the reflection file statistics.
 
-::
-
-  The following parameters have been modified:
-
-  mtz {
-    hklout = "integrated.mtz"
-  }
-  input {
-    experiments = refined_experiments.json
-    reflections = integrated.pickle
-  }
-
-  Removing 23949 reflections with negative variance
-  Removing 27432 profile reflections with negative variance
-  Removing 2 reflections with I/Sig(I) < -5.0
-  Removing 0 profile reflections with I/Sig(I) < -5.0
-  Removing 4039 incomplete reflections
-  Title: from dials.export
-  Space group symbol from file: P4
-  Space group number from file: 75
-  Space group from matrices: P 4 (No. 75)
-  Point group symbol from file: 4
-  Number of batches: 540
-  Number of crystals: 1
-  Number of Miller indices: 323359
-  Resolution range: 150.012 1.17004
-  History:
-  Crystal 1:
-    Name: XTAL
-    Project: DIALS
-    Id: 1
-    Unit cell: (57.7873, 57.7873, 150.012, 90, 90, 90)
-    Number of datasets: 1
-    Dataset 1:
-      Name: FROMDIALS
-      Id: 1
-      Wavelength: 0.97625
-      Number of columns: 15
-      label        #valid  %valid    min     max type
-      H            323359 100.00%   0.00   46.00 H: index h,k,l
-      K            323359 100.00%   0.00   47.00 H: index h,k,l
-      L            323359 100.00%   0.00  114.00 H: index h,k,l
-      M_ISYM       323359 100.00%   1.00    8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH        323359 100.00%   2.00  539.00 B: BATCH number
-      IPR          323359 100.00%  -2.22 3937.64 J: intensity
-      SIGIPR       323359 100.00%   0.05   62.78 Q: standard deviation
-      I            323359 100.00% -32.84 4228.04 J: intensity
-      SIGI         323359 100.00%   0.11   65.18 Q: standard deviation
-      FRACTIONCALC 323359 100.00%   1.00    1.00 R: real
-      XDET         323359 100.00%   6.60 2456.31 R: real
-      YDET         323359 100.00%   5.79 2520.56 R: real
-      ROT          323359 100.00%  82.01  162.69 R: real
-      LP           323359 100.00%   0.00    0.76 R: real
-      DQE          323359 100.00%   0.71    0.86 R: real
-
-
+.. literalinclude:: logs/dials.export.log
 
 What to do Next
 ---------------
