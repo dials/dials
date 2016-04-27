@@ -33,8 +33,11 @@ class Script(object):
     from dials.util.options import OptionParser
     from libtbx.phil import parse
     import libtbx.load_env
+    from operator import itemgetter
 
-    flag_names = sorted(flex.reflection_table.flags.names.keys())
+    flags = list(flex.reflection_table.flags.names.iteritems())
+    flags.sort(key=itemgetter(0))
+    self.flag_names, self.flag_values = zip(*flags)
     phil_str = '''
 
       output {
@@ -57,7 +60,7 @@ class Script(object):
           .multiple = True
       }
 
-    ''' % tuple([' '.join(flag_names)] * 2)
+    ''' % tuple([' '.join(self.flag_names)] * 2)
 
     phil_scope = parse(phil_str)
 
@@ -71,6 +74,23 @@ class Script(object):
       phil=phil_scope,
       epilog=help_message,
       read_reflections=True)
+
+  def analysis(self, reflections):
+    '''Print a table of flags present in the reflections file'''
+
+    from libtbx.table_utils import simple_table
+    header = ['flag','nref']
+    rows = []
+    for name, val in zip(self.flag_names, self.flag_values):
+      n = (reflections.get_flags(val)).count(True)
+      if n > 0: rows.append([name, "%d" % n])
+    if len(rows) > 0:
+      st = simple_table(rows, header)
+      print st.format()
+    else:
+      print "No flags set"
+
+    return
 
   def run(self):
     '''Execute the script.'''
@@ -90,6 +110,10 @@ class Script(object):
     reflections = reflections[0]
 
     print "{0} reflections loaded".format(len(reflections))
+
+    if len(params.inclusions.flag) == 0 and len(params.exclusions.flag) == 0:
+      print "No filter specified. Performing analysis instead."
+      return self.analysis(reflections)
 
     # Build up the initial inclusion selection
     if len(params.inclusions.flag) == 0:
