@@ -523,6 +523,7 @@ class indexer_base(object):
     target_space_group = self.params.known_symmetry.space_group
     if target_space_group is not None:
       target_space_group = target_space_group.group()
+      target_space_group = target_space_group.build_derived_patterson_group()
 
     if target_unit_cell is not None or target_space_group is not None:
 
@@ -536,9 +537,9 @@ class indexer_base(object):
         space_groups = [target_space_group]
         if target_space_group.conventional_centring_type_symbol() != 'P':
           space_groups.append(sgtbx.space_group())
-        for target_space_group in space_groups:
+        for target in space_groups:
           cs = crystal.symmetry(
-            unit_cell=target_unit_cell, space_group=target_space_group,
+            unit_cell=target_unit_cell, space_group=target,
             assert_is_compatible_unit_cell=False)
           target_best_cell = cs.best_cell().unit_cell()
           subgroups = lattice_symmetry.metric_subgroups(cs, max_delta=0.1)
@@ -572,7 +573,7 @@ class indexer_base(object):
         self.cb_op_inp_ref = cb_op_best_ref * cb_op_inp_best
         self.target_symmetry_reference_setting = crystal.symmetry(
           unit_cell=target_unit_cell.change_basis(self.cb_op_inp_ref),
-          space_group=self.params.known_symmetry.space_group.as_reference_setting().group())
+          space_group=target_space_group.info().as_reference_setting().group())
 
       elif target_unit_cell is not None:
         self.target_symmetry_reference_setting = crystal.symmetry(
@@ -732,19 +733,21 @@ class indexer_base(object):
           experiments, self.reflections,
           verbosity=self.params.refinement_protocol.verbosity)
 
-        if (i_cycle == 0 and self.target_symmetry_primitive is not None
-            and self.target_symmetry_primitive.space_group() is not None):
+
+        if (i_cycle == 0 and self.params.known_symmetry.space_group is not None):
           # now apply the space group symmetry only after the first indexing
           # need to make sure that the symmetrized orientation is similar to the P1 model
+          target_space_group = self.target_symmetry_primitive.space_group()
           for i_cryst, cryst in enumerate(experiments.crystals()):
             if i_cryst >= n_lattices_previous_cycle:
               new_cryst, cb_op_to_primitive = self.apply_symmetry(
-                cryst, self.target_symmetry_primitive,
-                space_group_only=True)
+                cryst, target_space_group)
               if self.cb_op_primitive_inp is not None:
                 new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
                 info(new_cryst.get_space_group().info())
               cryst.update(new_cryst)
+              cryst.set_space_group(
+                self.params.known_symmetry.space_group.group())
               for i_expt, expt in enumerate(experiments):
                 if expt.crystal is not cryst:
                   continue
@@ -1308,11 +1311,10 @@ class indexer_base(object):
         if experiments[0].crystal.get_unit_cell().volume() < self.params.min_cell_volume:
           continue
 
-      if (self.target_symmetry_primitive is not None
-          and self.target_symmetry_primitive.space_group() is not None):
+      if self.params.known_symmetry.space_group is not None:
+        target_space_group = self.target_symmetry_primitive.space_group()
         new_crystal, cb_op_to_primitive = self.apply_symmetry(
-          experiments[0].crystal, self.target_symmetry_primitive,
-          space_group_only=True)
+          experiments[0].crystal, target_space_group)
         if new_crystal is None:
           continue
         experiments[0].crystal.update(new_crystal)
@@ -1398,16 +1400,7 @@ class indexer_base(object):
       reflections['id'] = flex.int(len(reflections), -1)
       self.index_reflections(experiments, reflections)
 
-  def apply_symmetry(self, crystal_model, target_symmetry,
-                     cell_only=False,
-                     space_group_only=False):
-    assert [cell_only, space_group_only].count(True) < 2
-    unit_cell = crystal_model.get_unit_cell()
-    target_unit_cell = target_symmetry.unit_cell()
-    if cell_only:
-      target_space_group = sgtbx.space_group('P 1')
-    else:
-      target_space_group = target_symmetry.space_group()
+  def apply_symmetry(self, crystal_model, target_space_group):
     A = crystal_model.get_A()
 
     from cctbx.crystal_orientation import crystal_orientation
