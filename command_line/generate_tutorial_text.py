@@ -14,7 +14,7 @@ class Job(object):
     print "running command took {0:.2f} seconds\n".format(self.result['runtime'])
     assert self.result['exitcode'] == 0
     self.mangle_result()
-    return self.result
+    return {'cmd':self.cmd, 'result':self.result['stdout']}
 
   def mangle_result(self):
     ''' function that can be overridden to change the return values after execution '''
@@ -75,14 +75,17 @@ class dials_report(Job):
     self.result['stdout'] = open('dials-report.html').read()
 
 
-class LogWriter(object):
+class JobWriter(object):
+  '''Class to save job command and result to files'''
 
-  def __init__(self, log_dir):
-    self.log_dir = log_dir
+  def __init__(self, directory):
+    self.directory = directory
 
-  def __call__(self, filename, result):
-    with open(os.path.join(self.log_dir, filename), "w") as f:
-      f.write(result['stdout'])
+  def __call__(self, cmd_filename, result_filename, job):
+    with open(os.path.join(self.directory, cmd_filename), "w") as f:
+      f.write(job['cmd'])
+    with open(os.path.join(self.directory, result_filename), "w") as f:
+      f.write(job['result'])
 
 if (__name__ == "__main__") :
 
@@ -91,39 +94,40 @@ if (__name__ == "__main__") :
   os.chdir(tmp_dir)
 
   try:
-    import_log = dials_import()()
+    import_job = dials_import()()
 
-    find_spots_log = dials_find_spots()()
+    find_spots_job = dials_find_spots()()
 
-    index_log = dials_index()()
+    index_job = dials_index()()
 
-    refine_bravais_settings_log = dials_refine_bravais_settings()()
+    refine_bravais_settings_job = dials_refine_bravais_settings()()
 
-    reindex_log = dials_reindex()()
+    reindex_job = dials_reindex()()
 
-    refine_log = dials_refine()()
+    refine_job = dials_refine()()
 
-    sv_refine_log = dials_sv_refine()()
+    sv_refine_job = dials_sv_refine()()
 
-    integrate_log = dials_integrate()()
+    integrate_job = dials_integrate()()
 
-    report_html = dials_report()()
+    report_html_job = dials_report()()
 
     # if we got this far, assume it is okay to overwrite the logs
     dials_dir = libtbx.env.find_in_repositories("dials")
-    log_dir = os.path.join(dials_dir, "doc", "sphinx", "documentation",
+    result_dir = os.path.join(dials_dir, "doc", "sphinx", "documentation",
                            "tutorials", "logs")
 
-    log_writer = LogWriter(log_dir)
-    log_writer("dials.import.log", import_log)
-    log_writer("dials.find_spots.log", find_spots_log)
-    log_writer("dials.index.log", index_log)
-    log_writer("dials.refine_bravais_settings.log", refine_bravais_settings_log)
-    log_writer("dials.refine.log", sv_refine_log)
-    log_writer("dials.integrate.log", integrate_log)
-    log_writer("dials-report.html", report_html)
+    job_writer = JobWriter(result_dir)
+    job_writer("dials.import.cmd", "dials.import.log", import_job)
+    job_writer("dials.find_spots.cmd", "dials.find_spots.log", find_spots_job)
+    job_writer("dials.index.cmd", "dials.index.log", index_job)
+    job_writer("dials.refine_bravais_settings.cmd",
+               "dials.refine_bravais_settings.log", refine_bravais_settings_job)
+    job_writer("dials.refine.cmd","dials.refine.log", sv_refine_job)
+    job_writer("dials.integrate.cmd", "dials.integrate.log", integrate_job)
+    job_writer("dials-report.cmd", "dials-report.html", report_html_job)
 
-    print "Updated log files written to {0}".format(log_dir)
+    print "Updated result files written to {0}".format(result_dir)
 
   finally:
     os.chdir(cwd)
