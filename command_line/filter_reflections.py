@@ -91,16 +91,15 @@ class Script(object):
 
     print "{0} reflections loaded".format(len(reflections))
 
-    if len(params.inclusions.flag) == 0:
-      self.parser.print_help()
-      raise Sorry('No inclusion criteria given')
-
     # Build up the initial inclusion selection
-    inc = flex.bool(len(reflections))
-    for flag in params.inclusions.flag:
-      sel = reflections.get_flags(getattr(reflections.flags, flag))
-      inc = inc | sel
-    reflections = reflections.select(inc)
+    if len(params.inclusions.flag) == 0:
+      inc = flex.bool(len(reflections), True)
+    else:
+      inc = flex.bool(len(reflections), False)
+      for flag in params.inclusions.flag:
+        sel = reflections.get_flags(getattr(reflections.flags, flag))
+        inc = inc | sel
+      reflections = reflections.select(inc)
 
     print "{0} reflections selected to form the working set".format(len(reflections))
 
