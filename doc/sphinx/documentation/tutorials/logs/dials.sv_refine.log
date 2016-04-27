@@ -1,0 +1,91 @@
+DIALS 1.dev.218-g7118d05
+The following parameters have been modified:
+
+refinement {
+  parameterisation {
+    crystal {
+      scan_varying = True
+    }
+  }
+}
+input {
+  experiments = refined_experiments.json
+  reflections = refined.pickle
+}
+
+Configuring refiner
+
+Summary statistics for 114451 observations matched to predictions:
+-------------------------------------------------------------------------
+|                   | Min     | Q1       | Med        | Q3      | Max   |
+-------------------------------------------------------------------------
+| Xc - Xo (mm)      | -0.5229 | -0.03449 | -0.003114  | 0.03183 | 0.642 |
+| Yc - Yo (mm)      | -1.4    | -0.02898 | -0.0001579 | 0.02948 | 1.249 |
+| Phic - Phio (deg) | -1.828  | -0.015   | -0.0004129 | 0.01441 | 1.894 |
+| X weights         | 135.2   | 371.8    | 393.6      | 402.7   | 405.6 |
+| Y weights         | 153.1   | 362.1    | 389.3      | 401.4   | 405.6 |
+| Phi weights       | 304     | 519.3    | 530.3      | 533.3   | 533.3 |
+-------------------------------------------------------------------------
+
+Detecting centroid outliers using the MCD algorithm
+11958 reflections have been flagged as outliers
+
+Summary statistics for 102493 observations matched to predictions:
+----------------------------------------------------------------------------
+|                   | Min      | Q1       | Med        | Q3      | Max     |
+----------------------------------------------------------------------------
+| Xc - Xo (mm)      | -0.1637  | -0.03295 | -0.002696  | 0.03048 | 0.1441  |
+| Yc - Yo (mm)      | -0.1424  | -0.02649 | -6.433e-06 | 0.02723 | 0.1237  |
+| Phic - Phio (deg) | -0.08115 | -0.01295 | 2.26e-05   | 0.01354 | 0.06881 |
+| X weights         | 135.2    | 377.9    | 395.3      | 403     | 405.6   |
+| Y weights         | 153.1    | 369.9    | 391.8      | 401.9   | 405.6   |
+| Phi weights       | 318.9    | 519.2    | 529.8      | 533.3   | 533.3   |
+----------------------------------------------------------------------------
+
+Performing refinement of a single Experiment...
+
+Refinement steps:
+--------------------------------------------------
+| Step | Nref   | RMSD_X   | RMSD_Y   | RMSD_Phi |
+|      |        | (mm)     | (mm)     | (deg)    |
+--------------------------------------------------
+| 0    | 102493 | 0.045242 | 0.039952 | 0.020438 |
+| 1    | 102493 | 0.044871 | 0.037612 | 0.020386 |
+| 2    | 102493 | 0.044877 | 0.037561 | 0.020373 |
+| 3    | 102493 | 0.044886 | 0.037521 | 0.020299 |
+| 4    | 102493 | 0.044897 | 0.037494 | 0.02012  |
+| 5    | 102493 | 0.044904 | 0.037484 | 0.0199   |
+| 6    | 102493 | 0.044906 | 0.037482 | 0.019799 |
+| 7    | 102493 | 0.044906 | 0.037482 | 0.019787 |
+| 8    | 102493 | 0.044906 | 0.037482 | 0.019787 |
+--------------------------------------------------
+RMSD no longer decreasing
+
+RMSDs by experiment:
+-----------------------------------------------
+| Exp | Nref   | RMSD_X  | RMSD_Y  | RMSD_Z   |
+| id  |        | (px)    | (px)    | (images) |
+-----------------------------------------------
+| 0   | 102493 | 0.26108 | 0.21792 | 0.13191  |
+-----------------------------------------------
+
+Final refined crystal model:
+Crystal:
+    Unit cell: (57.784, 57.784, 150.001, 90.000, 90.000, 90.000)
+    Space group: P 4
+    U matrix:  {{ 0.3455, -0.2590, -0.9020},
+                { 0.8914,  0.3911,  0.2291},
+                { 0.2934, -0.8831,  0.3660}}
+    B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                { 0.0000,  0.0173,  0.0000},
+                { 0.0000, -0.0000,  0.0067}}
+    A = UB:    {{ 0.0060, -0.0045, -0.0060},
+                { 0.0154,  0.0068,  0.0015},
+                { 0.0051, -0.0153,  0.0024}}
+    A sampled at 541 scan points
+
+Saving refined experiments to refined_experiments.json
+Updating predictions for indexed reflections
+Saving reflections with updated predictions to refined.pickle
+
+Total time taken: 25.74s

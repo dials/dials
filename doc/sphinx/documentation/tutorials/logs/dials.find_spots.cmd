@@ -1,0 +1,1 @@
+dials.find_spots datablock.json nproc=4

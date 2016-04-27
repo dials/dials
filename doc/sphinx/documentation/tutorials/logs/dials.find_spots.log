@@ -1,4 +1,4 @@
-DIALS 1.dev.121-g581cc32
+DIALS 1.dev.218-g7118d05
 The following parameters have been modified:
 
 spotfinder {
@@ -584,4 +584,4 @@ Histogram of per-image spot count for imageset 0:
 
 --------------------------------------------------------------------------------
 Saved 116048 reflections to strong.pickle
-Time Taken: 105.954334
+Time Taken: 57.216542
