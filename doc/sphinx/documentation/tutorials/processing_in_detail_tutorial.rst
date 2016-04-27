@@ -409,7 +409,7 @@ HTML report
 The most important information provided by :program:`dials.show`,
 :program:`dials.plot_scan_varying_crystal` and :program:`dials.analyse_output` can
 now be combined in one place by generating an HTML report using the program
-:program:`dials.report`. This is run simply using::
+:program:`dials.report`. This is run simply using:
 
 .. literalinclude:: logs/dials.integrate.cmd
 
