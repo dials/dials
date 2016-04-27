@@ -5,7 +5,7 @@
 # commands
 #
 # The function contains a debugging routine, which is enabled by setting
-# the environmental variable DIALS_AUTOCOMPLETE to any non-empty value.
+# the environmental variable DIALS_AUTOCOMPLETE_DEBUG to any non-empty value.
 # Information is written to the file completion.log in the current working
 # directory. This can then be monitored in another terminal with e.g.
 #   watch -n 0.1 cat completion.log
@@ -120,7 +120,8 @@ function _dials_autocomplete ()
   COMPREPLY=( $(compgen -W "${_dials_autocomplete_values}" -- "${cur}") \
               $(compgen -f -X "!*.json" -- "${cur}") \
               $(compgen -f -X "!*.pickle" -- "${cur}") \
-              $(compgen -f -X "!*.phil" -- "${cur}") )
+              $(compgen -f -X "!*.phil" -- "${cur}") \
+              $(compgen -d -S"/" -- "${cur}" ) )
   unset -f _dials_autocomplete_values
   type compopt &>/dev/null && compopt -o nospace
   if [[ ${#COMPREPLY[@]} == 1 ]]; then
@@ -129,8 +130,8 @@ function _dials_autocomplete ()
    if [[ ${_dials_autocomplete_values} != "" ]] ; then
      COMPREPLY=( ${_dials_autocomplete_values} )
    fi
-   # If the only option is not ending in '.' or '=', then append a space
-   if [[ ${COMPREPLY[0]} != *. && ${COMPREPLY[0]} != *= ]] ; then
+   # If the only option is not ending in '.', '=' or '/', then append a space
+   if [[ ${COMPREPLY[0]} != *. && ${COMPREPLY[0]} != *= && ${COMPREPLY[0]} != */ ]] ; then
     type compopt &>/dev/null && compopt +o nospace || COMPREPLY=( "${COMPREPLY[0]} " )
    fi
   fi
