@@ -74,6 +74,9 @@ class dials_report(Job):
   def mangle_result(self):
     self.result['stdout'] = open('dials-report.html').read()
 
+class dials_export(Job):
+  cmd = "dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mtz"
+
 
 class JobWriter(object):
   '''Class to save job command and result to files'''
@@ -112,6 +115,8 @@ if (__name__ == "__main__") :
 
     report_html_job = dials_report()()
 
+    export_job = dials_export()()
+
     # if we got this far, assume it is okay to overwrite the logs
     dials_dir = libtbx.env.find_in_repositories("dials")
     result_dir = os.path.join(dials_dir, "doc", "sphinx", "documentation",
@@ -123,9 +128,12 @@ if (__name__ == "__main__") :
     job_writer("dials.index.cmd", "dials.index.log", index_job)
     job_writer("dials.refine_bravais_settings.cmd",
                "dials.refine_bravais_settings.log", refine_bravais_settings_job)
-    job_writer("dials.refine.cmd","dials.refine.log", sv_refine_job)
+    job_writer("dials.reindex.cmd", "dials.reindex.log", reindex_job)
+    job_writer("dials.refine.cmd","dials.refine.log", refine_job)
+    job_writer("dials.sv_refine.cmd","dials.sv_refine.log", sv_refine_job)
     job_writer("dials.integrate.cmd", "dials.integrate.log", integrate_job)
     job_writer("dials-report.cmd", "dials-report.html", report_html_job)
+    job_writer("dials-export.cmd", "dials.export.log", export_job)
 
     print "Updated result files written to {0}".format(result_dir)
 
