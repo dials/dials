@@ -12,6 +12,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_reflections
 
 from __future__ import division
+from dials.array_family import flex
 
 help_message = '''
 
@@ -33,7 +34,8 @@ class Script(object):
     from libtbx.phil import parse
     import libtbx.load_env
 
-    phil_scope = parse('''
+    flag_names = sorted(flex.reflection_table.flags.names.keys())
+    phil_str = '''
 
       output {
         reflections = 'filtered.pickle'
@@ -42,20 +44,23 @@ class Script(object):
       }
 
       inclusions {
-        flag = integrated_prf overloaded integrated_sum centroid_outlier bad_spot dont_integrate reference_spot overlapped_bg observed used_in_refinement used_in_modelling predicted in_powder_ring bad_shoebox indexed strong integrated overlapped_fg
+        flag = %s
           .type = choice
           .help = "Include reflections with this flag to form the working set."
           .multiple = True
       }
 
       exclusions {
-        flag = integrated_prf overloaded integrated_sum centroid_outlier bad_spot dont_integrate reference_spot overlapped_bg observed used_in_refinement used_in_modelling predicted in_powder_ring bad_shoebox indexed strong integrated overlapped_fg
+        flag = %s
           .type = choice
           .help = "Exclude reflections from the working set with this flag."
           .multiple = True
       }
 
-    ''')
+    ''' % tuple([' '.join(flag_names)] * 2)
+
+    phil_scope = parse(phil_str)
+
 
     # The script usage
     usage  = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
