@@ -263,11 +263,18 @@ class ReflectionManager(object):
     """Create a selection of observations that pass certain conditions.
 
     This step includes rejection of reflections too close to the spindle,
-    reflections measured outside the scan range and rejection of the (0,0,0)
-    Miller index. Outlier rejection is done later."""
+    reflections measured outside the scan range, rejection of the (0,0,0)
+    Miller index and rejection of reflections with the overload flag set.
+    Outlier rejection is done later."""
 
     # first exclude reflections with miller index set to 0,0,0
-    sel = obs_data['miller_index'] != (0,0,0)
+    sel1 = obs_data['miller_index'] != (0,0,0)
+
+    # exclude reflections with overloads, as these have worse centroids
+    sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
+
+    # combine selections
+    sel = sel1 | sel2
     inc = flex.size_t_range(len(obs_data)).select(sel)
     obs_data = obs_data.select(sel)
 
