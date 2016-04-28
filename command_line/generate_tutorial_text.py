@@ -132,8 +132,8 @@ if (__name__ == "__main__") :
     job_writer("dials.refine.cmd","dials.refine.log", refine_job)
     job_writer("dials.sv_refine.cmd","dials.sv_refine.log", sv_refine_job)
     job_writer("dials.integrate.cmd", "dials.integrate.log", integrate_job)
-    job_writer("dials-report.cmd", "dials-report.html", report_html_job)
-    job_writer("dials-export.cmd", "dials.export.log", export_job)
+    job_writer("dials.report.cmd", "dials-report.html", report_html_job)
+    job_writer("dials.export.cmd", "dials.export.log", export_job)
 
     print "Updated result files written to {0}".format(result_dir)
 
