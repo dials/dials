@@ -26,9 +26,10 @@ The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that the image headers are read, and a file describing
 their contents (:ref:`datablock.json <datablock-json>`) is written. It's worth noting that if
 this file is changed subsequent processing can
-use this.
+use this::
 
-.. literalinclude:: logs/dials.import.cmd
+  dials.import data/th_8_2_0*cbf
+
 
 The output just describes what the software understands of the images it was
 passed, in this case one sweep of data containing 540 images.
