@@ -33,8 +33,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("UB_matrices"),
         arg("tolerance") = 0.3)))
       .def("miller_indices", &w_t::miller_indices)
-      .def("crystal_ids", &w_t::crystal_ids)
-      .def("n_rejects", &w_t::n_rejects);
+      .def("crystal_ids", &w_t::crystal_ids);
   }
 
   void export_assign_indices_local() {
@@ -54,8 +53,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("l_min") = 0.8,
         arg("nearest_neighbours") = 20)))
       .def("miller_indices", &w_t::miller_indices)
-      .def("crystal_ids", &w_t::crystal_ids)
-      .def("n_rejects", &w_t::n_rejects);
+      .def("crystal_ids", &w_t::crystal_ids);
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_indexing_ext)

@@ -42,8 +42,7 @@ namespace dials { namespace algorithms {
       )
       : miller_indices_(
           reciprocal_space_points.size(), cctbx::miller::index<>(0,0,0)),
-        crystal_ids_(reciprocal_space_points.size(), -1),
-        n_rejects_(0) {
+        crystal_ids_(reciprocal_space_points.size(), -1) {
 
       DIALS_ASSERT(reciprocal_space_points.size() == phi.size());
 
@@ -92,7 +91,6 @@ namespace dials { namespace algorithms {
         }
         int i_best_lattice = af::min_index(n.const_ref());
         if (n[i_best_lattice] > tolerance_sq) {
-          n_rejects_++;
           continue;
         }
         cctbx::miller::index<> hkl = potential_hkls[i_best_lattice];
@@ -147,14 +145,9 @@ namespace dials { namespace algorithms {
       return crystal_ids_;
     }
 
-    std::size_t n_rejects() {
-      return n_rejects_;
-    }
-
   private:
     af::shared<cctbx::miller::index<> > miller_indices_;
     af::shared<int> crystal_ids_;
-    std::size_t n_rejects_;
   };
 
 
@@ -186,8 +179,7 @@ namespace dials { namespace algorithms {
       : miller_indices_(
           reciprocal_space_points.size(), cctbx::miller::index<>(0,0,0)),
         /*subtree_ids_(reciprocal_space_points.size(), 0),*/
-        crystal_ids_(reciprocal_space_points.size(), -1),
-        n_rejects_(0) {
+        crystal_ids_(reciprocal_space_points.size(), -1) {
 
       DIALS_ASSERT(reciprocal_space_points.size() == phi.size());
 
@@ -373,15 +365,10 @@ namespace dials { namespace algorithms {
       return crystal_ids_;
     }
 
-    std::size_t n_rejects() {
-      return n_rejects_;
-    }
-
   private:
     af::shared<cctbx::miller::index<> > miller_indices_;
     af::shared<std::size_t> subtree_ids_;
     af::shared<int> crystal_ids_;
-    std::size_t n_rejects_;
   };
 
 
