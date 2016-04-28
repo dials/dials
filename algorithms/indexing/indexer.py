@@ -741,7 +741,6 @@ class indexer_base(object):
                 cryst, target_space_group)
               if self.cb_op_primitive_inp is not None:
                 new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
-                info(new_cryst.get_space_group().info())
               cryst.update(new_cryst)
               cryst.set_space_group(
                 self.params.known_symmetry.space_group.group())
@@ -760,6 +759,8 @@ class indexer_base(object):
                   miller_indices = self.cb_op_primitive_inp.apply(miller_indices)
                   self.reflections['miller_index'].set_selected(
                     self.reflections['id'] == i_expt, miller_indices)
+          info("\nIndexed crystal models:")
+          self.show_experiments(experiments, self.reflections, d_min=self.d_min)
 
         if len(experiments) > 1:
           from dials.algorithms.indexing.compare_orientation_matrices \
@@ -872,8 +873,7 @@ class indexer_base(object):
         experiments = refined_experiments
         self.refined_experiments = refined_experiments
 
-        info("")
-        info("Refined crystal models:")
+        info("\nRefined crystal models:")
         self.show_experiments(
           self.refined_experiments, self.reflections, d_min=self.d_min)
 
