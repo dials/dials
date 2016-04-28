@@ -223,9 +223,8 @@ namespace dials { namespace viewer { namespace boost_python {
         int col, row;
         int mask_pix_col, mask_pix_row;
 
-        std::cout << "\n ncol =" << ncol << " \n";
-
-        std::cout << "\n nrow =" << nrow << " \n";
+        //std::cout << "\n ncol =" << ncol << " \n";
+        //std::cout << "\n nrow =" << nrow << " \n";
 
         for (col = 0; col < ncol; col++) {
           for (row = 0; row < nrow; row++) {

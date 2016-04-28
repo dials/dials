@@ -123,13 +123,17 @@ class wxbmp_from_np_array(object):
 
     err_code = self.wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
 
+    test_log = '''
     print "self.vl_min, self.vl_max = ", self.vl_min, self.vl_max
     print "err_code =", err_code
-    print "\n before crash \n"
+    print "before crash"
+    '''
 
     img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
 
-    print "\n after crash \n"
+    test_log_02 = '''
+    print "after crash"
+    '''
 
     np_img_array = img_array_tmp.as_numpy_array()
 
