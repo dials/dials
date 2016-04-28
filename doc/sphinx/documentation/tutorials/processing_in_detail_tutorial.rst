@@ -412,7 +412,7 @@ The most important information provided by :program:`dials.show`,
 now be combined in one place by generating an HTML report using the program
 :program:`dials.report`. This is run simply using:
 
-.. literalinclude:: logs/dials.integrate.cmd
+.. literalinclude:: logs/dials.report.cmd
 
 which produces the file :file:`dials-report.html`. The report generated for
 this dataset can be seen here: :download:`dials-report.html <logs/dials-report.html>`.
