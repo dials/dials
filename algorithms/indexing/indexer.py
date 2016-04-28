@@ -717,18 +717,6 @@ class indexer_base(object):
         # that a reflection doesn't belong to any lattice so far
         self.reflections['id'] = flex.int(len(self.reflections), -1)
 
-        #if (i_cycle == 0 and self.target_symmetry_primitive is not None
-            #and self.target_symmetry_primitive.unit_cell() is not None):
-          ## if a target cell is given make sure that we match any permutation
-          ## of the cell dimensions
-          #for i_cryst, cryst in enumerate(experiments.crystals()):
-            #if i_cryst >= n_lattices_previous_cycle:
-              #new_cryst, _ = self.apply_symmetry(
-                #cryst, self.target_symmetry_primitive,
-                #return_primitive_setting=True,
-                #cell_only=True)
-              #experiments.crystals()[i_cryst].update(new_cryst)
-
         self.index_reflections(experiments, self.reflections)
 
         if (i_cycle == 0 and self.params.known_symmetry.space_group is not None):
@@ -1279,11 +1267,7 @@ class indexer_base(object):
     import copy
     params = copy.deepcopy(self.all_params)
     params.refinement.parameterisation.crystal.scan_varying = False
-    #params.refinement.parameterisation.detector.fix = "all"
-    #params.refinement.parameterisation.beam.fix = "all"
     params.refinement.refinery.max_iterations = 4
-    # DGW commented out as reflections.minimum_number_of_reflections no longer exists
-    #params.refinement.reflections.minimum_number_of_reflections = 1
     params.refinement.reflections.reflections_per_degree = min(
       params.refinement.reflections.reflections_per_degree, 20)
 
@@ -1369,9 +1353,6 @@ class indexer_base(object):
       if soln is None:
         continue
       solutions.append(soln)
-      #debug("unit_cell: " + str(soln.crystal.get_unit_cell()))
-      #debug("model_likelihood: %.2f" %soln.model_likelihood)
-      #debug("n_indexed: %i" %soln.n_indexed)
 
     if len(solutions):
       debug(str(solutions))
@@ -1437,7 +1418,6 @@ class indexer_base(object):
     orient_best = orient.change_basis(
       matrix.sqr(cb_op_inp_best.c().as_double_array()[0:9]).transpose())
     constrain_orient = orient_best.constrain(best_subgroup['system'])
-    #best_orientation = constrain_orient
 
     best_subsym = best_subgroup['best_subsym']
     cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
