@@ -4,9 +4,7 @@ from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import *
 from logging import info, debug
 
-def index_reflections(
-    reflections, experiments, d_min=None,
-    tolerance=0.3, verbosity=0):
+def index_reflections(reflections, experiments, d_min=None, tolerance=0.3):
   reciprocal_lattice_points = reflections['rlp']
   reflections['miller_index'] = flex.miller_index(len(reflections), (0,0,0))
   if d_min is not None:
@@ -35,7 +33,6 @@ def index_reflections(
 
     miller_indices = result.miller_indices()
     crystal_ids = result.crystal_ids()
-    n_rejects = result.n_rejects()
 
     expt_ids = flex.int(crystal_ids.size(), -1)
     for i_cryst, cryst in enumerate(experiments.crystals()):
@@ -49,19 +46,10 @@ def index_reflections(
     reflections.set_flags(
       reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
 
-  if verbosity > 0:
-    for i_expt, expt in enumerate(experiments):
-      info("model %i (%i reflections):" %(
-        i_expt+1, (reflections['id'] == i_expt).count(True)))
-      info(expt.crystal)
-      info("")
-
-    info("%i unindexed reflections" %n_rejects)
-
 
 def index_reflections_local(
     reflections, experiments, d_min=None,
-    epsilon=0.05, delta=8, l_min=0.8, nearest_neighbours=20, verbosity=0):
+    epsilon=0.05, delta=8, l_min=0.8, nearest_neighbours=20):
   from scitbx import matrix
   from libtbx.math_utils import nearest_integer as nint
   reciprocal_lattice_points = reflections['rlp']
@@ -89,10 +77,8 @@ def index_reflections_local(
     nearest_neighbours=nearest_neighbours)
   miller_indices = result.miller_indices()
   crystal_ids = result.crystal_ids()
-  n_rejects = result.n_rejects()
   hkl = miller_indices.as_vec3_double().iround()
 
-  n_rejects = (crystal_ids < 0).count(True)
   assert miller_indices.select(crystal_ids < 0).all_eq((0,0,0))
 
   for i_cryst in set(crystal_ids):
@@ -128,12 +114,3 @@ def index_reflections_local(
   reflections['id'].set_selected(isel, refs['id'])
   reflections.set_flags(
     reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
-
-  if verbosity > 0:
-    for i_cryst, cryst in enumerate(experiments.crystals()):
-      info("model %i (%i reflections):" %(
-        i_cryst+1, (reflections['id'] == i_cryst).count(True)))
-      info(cryst)
-      info("")
-
-    info("%i unindexed reflections" %n_rejects)

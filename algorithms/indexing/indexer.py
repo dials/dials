@@ -729,10 +729,7 @@ class indexer_base(object):
                 #cell_only=True)
               #experiments.crystals()[i_cryst].update(new_cryst)
 
-        self.index_reflections(
-          experiments, self.reflections,
-          verbosity=self.params.refinement_protocol.verbosity)
-
+        self.index_reflections(experiments, self.reflections)
 
         if (i_cycle == 0 and self.params.known_symmetry.space_group is not None):
           # now apply the space group symmetry only after the first indexing
@@ -875,6 +872,11 @@ class indexer_base(object):
         experiments = refined_experiments
         self.refined_experiments = refined_experiments
 
+        info("")
+        info("Refined crystal models:")
+        self.show_experiments(
+          self.refined_experiments, self.reflections, d_min=self.d_min)
+
         if (i_cycle >=2 and
             self.d_min == self.params.refinement_protocol.d_min_final):
           info("Target d_min_final reached: finished with refinement")
@@ -888,14 +890,6 @@ class indexer_base(object):
            import show_rotation_matrix_differences
       show_rotation_matrix_differences(
         self.refined_experiments.crystals(), out=info_handle)
-
-    info("Final refined crystal models:")
-    for i, crystal_model in enumerate(self.refined_experiments.crystals()):
-      n_indexed = 0
-      for i_expt in experiments.where(crystal=crystal_model):
-        n_indexed += (self.reflections['id'] == i).count(True)
-      info("model %i (%i reflections):" %(i+1, n_indexed))
-      info(crystal_model)
 
     self.refined_reflections['xyzcal.px'] = flex.vec3_double(
       len(self.refined_reflections))
@@ -924,6 +918,20 @@ class indexer_base(object):
         z_px = z_rad
       xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
       self.refined_reflections['xyzcal.px'].set_selected(imgset_sel, xyzcal_px)
+
+  def show_experiments(self, experiments, reflections, d_min=None):
+    if d_min is not None:
+      reciprocal_lattice_points = reflections['rlp']
+      if d_min is not None:
+        d_spacings = 1/reciprocal_lattice_points.norms()
+        reflections = reflections.select(d_spacings > d_min)
+    for i_expt, expt in enumerate(experiments):
+      info("model %i (%i reflections):" %(
+        i_expt+1, (reflections['id'] == i_expt).count(True)))
+      info(expt.crystal)
+
+    indexed = reflections.get_flags(reflections.flags.indexed)
+    info("%i unindexed reflections" %indexed.count(False))
 
   def find_max_cell(self):
     params = self.params.max_cell_estimation
@@ -1451,7 +1459,7 @@ class indexer_base(object):
     model = model.change_basis(cb_op_best_primitive)
     return model, cb_op_inp_primitive
 
-  def index_reflections(self, experiments, reflections, verbosity=0):
+  def index_reflections(self, experiments, reflections):
     if self.params.index_assignment.method == 'local':
       params_local = self.params.index_assignment.local
       from dials.algorithms.indexing import index_reflections_local
@@ -1459,15 +1467,13 @@ class indexer_base(object):
         reflections,
         experiments, self.d_min, epsilon=params_local.epsilon,
         delta=params_local.delta, l_min=params_local.l_min,
-        nearest_neighbours=params_local.nearest_neighbours,
-        verbosity=verbosity)
+        nearest_neighbours=params_local.nearest_neighbours)
     else:
       params_simple = self.params.index_assignment.simple
       from dials.algorithms.indexing import index_reflections
       index_reflections(reflections,
                         experiments, self.d_min,
-                        tolerance=params_simple.hkl_tolerance,
-                        verbosity=verbosity)
+                        tolerance=params_simple.hkl_tolerance)
     if self.hkl_offset is not None and self.hkl_offset != (0,0,0):
       reflections['miller_index'] = apply_hkl_offset(
         reflections['miller_index'], self.hkl_offset)
