@@ -324,7 +324,7 @@ namespace dials { namespace viewer { namespace boost_python {
           }
 
         }
-        std::cout << "\n building BMP \n";
+        //std::cout << "\n building BMP \n";
 
       return bmp_dat;
       }
