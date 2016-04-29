@@ -196,25 +196,14 @@ namespace dials { namespace viewer { namespace boost_python {
         }
         int px_scale = 0;
 
-        /*
+
         if(ncol < 200 && nrow < 200){
-
-          float diagn;
-            if(ncol < 20 && nrow < 20){
-              px_scale = 85;
-              //std::cout << "less than (20 * 20) pixels \n";
-            }else{
-              diagn = sqrt((double)(ncol * ncol + nrow * nrow));
-              px_scale = (1000.0 / diagn);
-              //std::cout << "scale = " << px_scale << "\n";
-            }
+          px_scale = 85;
+          //std::cout << "less than (200 * 200) pixels \n";
         }else{
-            px_scale = 1;
+          px_scale = 1;
         }
-        */
-        px_scale = 85;
-
-        std::cout << "\n px_scale = " << px_scale << "\n";
+        //std::cout << "\n px_scale = " << px_scale << "\n";
 
         flex_int bmp_dat(flex_grid<>(nrow * px_scale, ncol * px_scale, 3),0);
 
