@@ -203,19 +203,20 @@ class stills_indexer(indexer_base):
         # no more lattices found
         break
 
-      if (self.target_symmetry_primitive is not None
-          and self.target_symmetry_primitive.space_group() is not None):
+      if (self.params.known_symmetry.space_group is not None):
         # now apply the space group symmetry only after the first indexing
         # need to make sure that the symmetrized orientation is similar to the P1 model
+        target_space_group = self.target_symmetry_primitive.space_group()
         for i_cryst, cryst in enumerate(experiments.crystals()):
           if i_cryst >= n_lattices_previous_cycle:
             new_cryst, cb_op_to_primitive = self.apply_symmetry(
-              cryst, self.target_symmetry_primitive,
-              space_group_only=True)
+              cryst, target_space_group)
             if self.cb_op_primitive_inp is not None:
               new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
               info(new_cryst.get_space_group().info())
             cryst.update(new_cryst)
+            cryst.set_space_group(
+              self.params.known_symmetry.space_group.group())
             for i_expt, expt in enumerate(experiments):
               if expt.crystal is not cryst:
                 continue
@@ -232,37 +233,41 @@ class stills_indexer(indexer_base):
                 self.reflections['miller_index'].set_selected(
                   self.reflections['id'] == i_expt, miller_indices)
 
-        info("")
-        info("#" * 80)
-        info("Starting refinement")
-        info("#" * 80)
-        info("")
-        self.indexed_reflections = (self.reflections['id'] > -1)
+        if self.params.stills.index_only:
+          refined_experiments = experiments
+          refined_reflections = self.reflections
+        else:
+          info("")
+          info("#" * 80)
+          info("Starting refinement")
+          info("#" * 80)
+          info("")
+          self.indexed_reflections = (self.reflections['id'] > -1)
 
-        sel = flex.bool(len(self.reflections), False)
-        lengths = 1/self.reflections['rlp'].norms()
-        isel = (lengths >= self.d_min).iselection()
-        sel.set_selected(isel, True)
-        sel.set_selected(self.reflections['id'] > -1, False)
-        self.unindexed_reflections = self.reflections.select(sel)
+          sel = flex.bool(len(self.reflections), False)
+          lengths = 1/self.reflections['rlp'].norms()
+          isel = (lengths >= self.d_min).iselection()
+          sel.set_selected(isel, True)
+          sel.set_selected(self.reflections['id'] > -1, False)
+          self.unindexed_reflections = self.reflections.select(sel)
 
-        reflections_for_refinement = self.reflections.select(
-          self.indexed_reflections)
-        try:
-          refined_experiments, refined_reflections = self.refine(
-            experiments, reflections_for_refinement)
-        except RuntimeError, e:
-          s = str(e)
-          if ("below the configured limit" in s or
-              "Insufficient matches for crystal" in s):
-            if len(experiments) == 1:
-              raise Sorry(e)
-            had_refinement_error = True
-            info("Refinement failed:")
-            info(s)
-            del experiments[-1]
-            break
-          raise
+          reflections_for_refinement = self.reflections.select(
+            self.indexed_reflections)
+          try:
+            refined_experiments, refined_reflections = self.refine(
+              experiments, reflections_for_refinement)
+          except RuntimeError, e:
+            s = str(e)
+            if ("below the configured limit" in s or
+                "Insufficient matches for crystal" in s):
+              if len(experiments) == 1:
+                raise Sorry(e)
+              had_refinement_error = True
+              info("Refinement failed:")
+              info(s)
+              del experiments[-1]
+              break
+            raise
 
         # sanity check for unrealistic unit cell volume increase during refinement
         # usually this indicates too many parameters are being refined given the
@@ -397,41 +402,52 @@ class stills_indexer(indexer_base):
       indexed = refl.select(refl['id'] >= 0)
       indexed = indexed.select(indexed.get_flags(indexed.flags.indexed))
 
-      print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification"%icm
-      acceptance_flags = self.identify_outliers(params, experiments, indexed)
-      #create a new "indexed" list with outliers thrown out:
-      indexed = indexed.select(acceptance_flags)
+      if params.indexing.stills.index_only:
+        from dials.algorithms.refinement.prediction import ExperimentsPredictor
+        ref_predictor = ExperimentsPredictor(experiments, force_stills=True,
+                                             spherical_relp=params.refinement.parameterisation.spherical_relp_model)
+        rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor.predict(indexed))
+        candidates.append(candidate_info(crystal = cm,
+                                         n_indexed = len(indexed),
+                                         rmsd = rmsd,
+                                         indexed = indexed,
+                                         experiments = experiments))
+      else:
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification"%icm
+        acceptance_flags = self.identify_outliers(params, experiments, indexed)
+        #create a new "indexed" list with outliers thrown out:
+        indexed = indexed.select(acceptance_flags)
 
-      print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection"%icm
-      R = e_refine(params = params, experiments=experiments, reflections=indexed, graph_verbose=False)
-      ref_experiments = R.get_experiments()
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection"%icm
+        R = e_refine(params = params, experiments=experiments, reflections=indexed, graph_verbose=False)
+        ref_experiments = R.get_experiments()
 
-      # try to improve the outcome with a second round of outlier rejection post-initial refinement:
-      acceptance_flags = self.identify_outliers(params, ref_experiments, indexed)
+        # try to improve the outcome with a second round of outlier rejection post-initial refinement:
+        acceptance_flags = self.identify_outliers(params, ref_experiments, indexed)
 
-      # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-      nv0 = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
-      crystal_model_nv0 = nv0()
-      acceptance_flags_nv0 = nv0.nv_acceptance_flags
-      indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
+        # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
+        nv0 = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
+        crystal_model_nv0 = nv0()
+        acceptance_flags_nv0 = nv0.nv_acceptance_flags
+        indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
-      print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection"%icm
-      R = e_refine(params = params, experiments=ref_experiments, reflections=indexed, graph_verbose=False)
-      ref_experiments = R.get_experiments()
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection"%icm
+        R = e_refine(params = params, experiments=ref_experiments, reflections=indexed, graph_verbose=False)
+        ref_experiments = R.get_experiments()
 
-      nv = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
-      crystal_model = nv()
+        nv = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
+        crystal_model = nv()
 
-      rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
+        rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
 
-      print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done"%icm
-      candidates.append(candidate_info(crystal = crystal_model,
-                                       green_curve_area = nv.green_curve_area,
-                                       ewald_proximal_volume = nv.ewald_proximal_volume(),
-                                       n_indexed = len(indexed),
-                                       rmsd = rmsd,
-                                       indexed = indexed,
-                                       experiments = ref_experiments))
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done"%icm
+        candidates.append(candidate_info(crystal = crystal_model,
+                                         green_curve_area = nv.green_curve_area,
+                                         ewald_proximal_volume = nv.ewald_proximal_volume(),
+                                         n_indexed = len(indexed),
+                                         rmsd = rmsd,
+                                         indexed = indexed,
+                                         experiments = ref_experiments))
 
     if len(candidates) == 0:
       raise Sorry("No suitable indexing solution found")
@@ -440,26 +456,28 @@ class stills_indexer(indexer_base):
     for i,XX in enumerate(candidates):
       print "\n****Candidate %d"%i,XX
       cc = XX.crystal
-      print "  half mosaicity %5.2f deg."%(cc._ML_half_mosaicity_deg)
-      print "  domain size %.0f Ang."%(cc._ML_domain_size_ang)
+      if hasattr(cc, '_ML_half_mosaicity_deg'):
+        print "  half mosaicity %5.2f deg."%(cc._ML_half_mosaicity_deg)
+        print "  domain size %.0f Ang."%(cc._ML_domain_size_ang)
     print "\n**** BEST CANDIDATE:"
 
     results = flex.double([c.rmsd for c in candidates])
     best = candidates[flex.min_index(results)]
     print best
 
-    if best.rmsd > 1.5:
-      raise Sorry ("RMSD too high, %f" %rmsd)
+    if not params.indexing.stills.index_only:
+      if best.rmsd > 1.5:
+        raise Sorry ("RMSD too high, %f" %rmsd)
 
-    if best.ewald_proximal_volume > 0.0015:
-      raise Sorry ("Ewald proximity volume too high, %f"%best.ewald_proximal_volume)
+      if best.ewald_proximal_volume > 0.0015:
+        raise Sorry ("Ewald proximity volume too high, %f"%best.ewald_proximal_volume)
 
-    if len(candidates) > 1:
-      for i in xrange(len(candidates)):
-        if i == flex.min_index(results):
-          continue
-        if best.ewald_proximal_volume > candidates[i].ewald_proximal_volume:
-          print "Couldn't figure out which candidate is best; picked the one with the best RMSD."
+      if len(candidates) > 1:
+        for i in xrange(len(candidates)):
+          if i == flex.min_index(results):
+            continue
+          if best.ewald_proximal_volume > candidates[i].ewald_proximal_volume:
+            print "Couldn't figure out which candidate is best; picked the one with the best RMSD."
 
     best.indexed['entering'] = flex.bool(best.n_indexed, False)
 
