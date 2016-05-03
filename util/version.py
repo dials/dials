@@ -43,7 +43,7 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
       version = version[1:].replace('.0-','-')
     version = version.replace('-', '.', 1)
     # If we are on a release branch, then append a '-release'-tag
-    if 'release' in branch:
+    if 'dials-1' in branch:
       version = version + '-release'
   return version
 
