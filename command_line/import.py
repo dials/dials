@@ -251,9 +251,8 @@ class Script(object):
     import cPickle as pickle
     from libtbx.utils import Sorry
 
-    # Parse the command line arguments
-    params, options = self.parser.parse_args(show_diff_phil=False)
-    datablocks = flatten_datablocks(params.input.datablock)
+    # Parse the command line arguments in two passes to set up logging early
+    params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
 
     # Configure logging
     log.config(
@@ -262,6 +261,10 @@ class Script(object):
       debug=params.output.debug_log)
     from dials.util.version import dials_version
     info(dials_version())
+
+    # Parse the command line arguments completely
+    params, options = self.parser.parse_args(show_diff_phil=False)
+    datablocks = flatten_datablocks(params.input.datablock)
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()

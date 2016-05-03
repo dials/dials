@@ -292,13 +292,15 @@ class PhilCommandParser(object):
     '''
     return self.system_phil.fetch_diff(source=self.phil)
 
-  def parse_args(self, args, verbose=False, return_unhandled=False):
+  def parse_args(self, args, verbose=False, return_unhandled=False, quick_parse=False):
     '''
     Parse the command line arguments.
 
     :param args: The input arguments
     :param verbose: Print verbose output
     :param return_unhandled: True/False also return unhandled arguments
+    :param quick_parse: Return as fast as possible and without reading any data,
+                        ignoring class constructor options.
     :return: The options and parameters and (optionally) unhandled arguments
 
     '''
@@ -349,6 +351,10 @@ class PhilCommandParser(object):
 
     # Extract the parameters
     params = self._phil.extract()
+
+    # Stop at this point if quick_parse is set. A second pass may be needed.
+    if quick_parse:
+      return params, unhandled
 
     # Create some comparison functions
     if self._read_datablocks_from_images:
@@ -670,13 +676,15 @@ class OptionParser(OptionParserBase):
       config_options=self.system_phil.as_str() != '',
       **kwargs)
 
-  def parse_args(self, args=None, show_diff_phil=False, return_unhandled=False):
+  def parse_args(self, args=None, show_diff_phil=False, return_unhandled=False, quick_parse=False):
     '''
     Parse the command line arguments and get system configuration.
 
     :param args: The input arguments
     :param show_diff_phil: True/False Print the diff phil
     :param return_unhandled: True/False return unhandled arguments
+    :param quick_parse: Return as fast as possible and without reading any data,
+                        ignoring class constructor options
     :return: The options and phil parameters
 
     '''
@@ -708,7 +716,8 @@ class OptionParser(OptionParserBase):
     params, args = self._phil_parser.parse_args(
       args,
       options.verbose > 0,
-      return_unhandled=return_unhandled)
+      return_unhandled=return_unhandled,
+      quick_parse=quick_parse)
 
     # Print the diff phil
     if show_diff_phil:
@@ -720,7 +729,7 @@ class OptionParser(OptionParserBase):
     # Return the parameters
     if return_unhandled:
       return params, options, args
-    elif len(args) > 0:
+    elif len(args) > 0 and not quick_parse:
       msg = 'Unable to handle the following arguments:\n'
       msg += '\n'.join(['  %s' % a for a in args])
       raise Sorry(msg)
