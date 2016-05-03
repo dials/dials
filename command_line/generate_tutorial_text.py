@@ -75,7 +75,7 @@ class dials_report(Job):
     self.result['stdout'] = open('dials-report.html').read()
 
 class dials_export(Job):
-  cmd = "dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mtz"
+  cmd = "dials.export integrated.pickle integrated_experiments.json mtz.hklout=integrated.mtz"
 
 
 class JobWriter(object):
