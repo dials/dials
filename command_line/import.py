@@ -358,7 +358,7 @@ class Script(object):
       if not stills:
         num_stills = 0
       else:
-        num_stills = len(stills)
+        num_stills = sum([len(s) for s in stills])
 
       for imageset in sweeps + stills:
         if imageset.get_beam() == None or imageset.get_detector() == None:
