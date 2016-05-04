@@ -247,11 +247,11 @@ class flex_arr_img_panel(wx.Panel):
       self.first_lst_in, self.segn_lst_in = data_in_one, data_in_two
 
     self.bmp_lst = self._mi_list_of_wxbitmaps()
-    self.panel_01 = buttons_panel(self)
-    self.panel_02 = multi_img_scrollable(self, self.bmp_lst)
+    self.panel_left = buttons_panel(self)
+    self.panel_right = multi_img_scrollable(self, self.bmp_lst)
     sizer = wx.BoxSizer(wx.HORIZONTAL)
-    sizer.Add(self.panel_01, 0, wx.EXPAND)
-    sizer.Add(self.panel_02, 1, wx.EXPAND)
+    sizer.Add(self.panel_left, 0, wx.EXPAND)
+    sizer.Add(self.panel_right, 1, wx.EXPAND)
     self.SetSizer(sizer)
     self.Show(True)
 
@@ -282,27 +282,27 @@ class flex_arr_img_panel(wx.Panel):
     self.row_pos = num
     self.assign_row_pos()
     self.bmp_lst = self._mi_list_of_wxbitmaps()
-    self.panel_02.img_refresh(self.bmp_lst)
+    self.panel_right.img_refresh(self.bmp_lst)
 
   def to_hide_nums(self):
     self.show_nums = False
     self.bmp_lst = self._mi_list_of_wxbitmaps()
-    self.panel_02.img_refresh(self.bmp_lst)
+    self.panel_right.img_refresh(self.bmp_lst)
 
   def to_show_nums(self):
     self.show_nums = True
     self.bmp_lst = self._mi_list_of_wxbitmaps()
-    self.panel_02.img_refresh(self.bmp_lst)
+    self.panel_right.img_refresh(self.bmp_lst)
 
   def to_show_mask(self):
     self.show_mask = True
     self.bmp_lst = self._mi_list_of_wxbitmaps()
-    self.panel_02.img_refresh(self.bmp_lst)
+    self.panel_right.img_refresh(self.bmp_lst)
 
   def to_hide_mask(self):
     self.show_mask = False
     self.bmp_lst = self._mi_list_of_wxbitmaps()
-    self.panel_02.img_refresh(self.bmp_lst)
+    self.panel_right.img_refresh(self.bmp_lst)
 
   def to_re_zoom(self, rot_sn):
     if( rot_sn > 0 ):
@@ -320,7 +320,7 @@ class flex_arr_img_panel(wx.Panel):
           self.scale = 0.2
 
     self.bmp_lst = self._mi_list_of_wxbitmaps(re_scaling = True)
-    self.panel_02.img_refresh(self.bmp_lst)
+    self.panel_right.img_refresh(self.bmp_lst)
 
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
@@ -490,8 +490,48 @@ class buttons_panel(wx.Panel):
       self.my_sizer.Add(Show_Msk_CheckBox, proportion = 0,
                         flag = wx.ALIGN_TOP, border = 5)
 
+    label_palette = wx.StaticText(self, -1, "\nColour Palettes")
+
+    RadButtb2w = wx.RadioButton(self, -1, "black2white")
+    RadButtw2b = wx.RadioButton(self, -1, "white2black")
+    RadButtha = wx.RadioButton(self, -1, "hot ascend")
+    RadButthd = wx.RadioButton(self, -1, "hot descend")
+
+    RadButtb2w.Bind(wx.EVT_RADIOBUTTON, self.OnButtb2w)
+    RadButtw2b.Bind(wx.EVT_RADIOBUTTON, self.OnButtw2b)
+    RadButtha.Bind(wx.EVT_RADIOBUTTON, self.OnButtha)
+    RadButthd.Bind(wx.EVT_RADIOBUTTON, self.OnButthd)
+
+    self.my_sizer.Add(label_palette, proportion = 0,
+                      flag = wx.ALIGN_TOP, border = 5)
+
+    self.my_sizer.Add(RadButtb2w, proportion = 0,
+                      flag = wx.ALIGN_TOP, border = 5)
+    self.my_sizer.Add(RadButtw2b, proportion = 0,
+                      flag = wx.ALIGN_TOP, border = 5)
+    self.my_sizer.Add(RadButtha, proportion = 0,
+                      flag = wx.ALIGN_TOP, border = 5)
+    self.my_sizer.Add(RadButthd, proportion = 0,
+                      flag = wx.ALIGN_TOP, border = 5)
+
+
     self.my_sizer.SetMinSize((50, 300))
     self.SetSizer(self.my_sizer)
+
+
+
+
+  def OnButtb2w(self, event):
+    print "OnButtb2w(self, event)"
+
+  def OnButtw2b(self, event):
+    print "OnButtw2b(self, event)"
+
+  def OnButtha(self, event):
+    print "OnButtha(self, event)"
+
+  def OnButthd(self, event):
+    print "OnButthd(self, event)"
 
   def OnItsCheckbox(self, event):
 
