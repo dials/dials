@@ -265,7 +265,9 @@ class Script(object):
     plt.title('Cell volume')
 
     basename = os.path.join(self._directory, "unit_cell")
-    plt.savefig(basename + self._format)
+    fullname = basename + self._format
+    print "Saving unit cell plot to {0}".format(fullname)
+    plt.savefig(fullname)
 
   def plot_orientation(self, dat):
     try:
@@ -304,7 +306,9 @@ class Script(object):
     plt.title(r'$\phi_3$')
 
     basename = os.path.join(self._directory, "orientation")
-    plt.savefig(basename + self._format)
+    fullname = basename + self._format
+    print "Saving orientation plot to {0}".format(fullname)
+    plt.savefig(fullname)
 
 if __name__ == '__main__':
   from dials.util import halraiser
