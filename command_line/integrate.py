@@ -263,10 +263,14 @@ class Script(object):
       predicted = self.sample_predictions(experiments, predicted, params)
 
     # Compute the profile model
-    if reference is not None and params.create_profile_model:
+    if (params.create_profile_model and
+        reference is not None and
+        "shoebox" in reference):
       experiments = ProfileModelFactory.create(params, experiments, reference)
     else:
       for expr in experiments:
+        if expr.profile is None:
+          raise Sorry('No profile information in experiment list')
         expr.profile.params = params.profile
     del reference
 
