@@ -50,9 +50,7 @@ namespace dials { namespace viewer { namespace boost_python {
       if(err_conv == 1){
         std::cout << "\nerror converting\n";
       }
-
     }
-
     return bmp_dat;
   }
 
@@ -154,6 +152,8 @@ namespace dials { namespace viewer { namespace boost_python {
       }
 
       flex_int gen_bmp(flex_double & data2d, flex_double & mask2d, bool show_nums ) {
+
+        std::cout << "\n show_nums =" << show_nums << "\n";
 
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
