@@ -48,10 +48,10 @@ if(__name__ == "__main__"):
 
 
             different_mask_values = '''
-            MaskCode.Valid           =  "\\\\\"
-            MaskCode.Foreground      =  "/////"
-            MaskCode.Background      =  "|||||"
-            MaskCode.BackgroundUsed  =  "-----"
+            MaskCode.Valid           =  "\\\\\\"
+            MaskCode.Foreground      =  "//////"
+            MaskCode.Background      =  "||||||"
+            MaskCode.BackgroundUsed  =  "------"
             '''
 
 

@@ -477,17 +477,27 @@ class buttons_panel(wx.Panel):
     Show_Its_CheckBox.SetValue(True)
     Show_Its_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnItsCheckbox)
 
-    if( self.parent_panel.segn_lst_in != None ):
-      Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
-      Show_Msk_CheckBox.SetValue(True)
-      Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
-
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
     self.my_sizer.Add(Show_Its_CheckBox, proportion = 0,
                       flag = wx.ALIGN_TOP, border = 5)
 
     if( self.parent_panel.segn_lst_in != None ):
+      Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
+      Show_Msk_CheckBox.SetValue(True)
+      Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
+
       self.my_sizer.Add(Show_Msk_CheckBox, proportion = 0,
+                        flag = wx.ALIGN_TOP, border = 5)
+
+      masck_conv_str =  "\n Mask Convention:"
+      masck_conv_str += "\n [Valid]                      =  \\\\\\\\\\\\  "
+      masck_conv_str += "\n [Foreground]           =  //////  "
+      masck_conv_str += "\n [Background]          =  ||||||  "
+      masck_conv_str += "\n [BackgroundUsed]  =  ------"
+
+
+      label_mask = wx.StaticText(self, -1, masck_conv_str )
+      self.my_sizer.Add(label_mask , proportion = 0,
                         flag = wx.ALIGN_TOP, border = 5)
 
     label_palette = wx.StaticText(self, -1, "\nColour Palettes")
