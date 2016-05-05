@@ -232,6 +232,7 @@ class flex_arr_img_panel(wx.Panel):
     super(flex_arr_img_panel, self).__init__(parent_frame)
     self.show_nums = True
     self.show_mask = True
+    self.palette = "black2white"
     self.row_pos = 0
     self.Pframe = parent_frame
 
@@ -303,6 +304,15 @@ class flex_arr_img_panel(wx.Panel):
     self.show_mask = False
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_right.img_refresh(self.bmp_lst)
+
+
+  def to_change_palette(self, palette_name = None):
+    if( palette_name == None ):
+      print "Something went wrong"
+    else:
+      self.palette = palette_name
+      self.bmp_lst = self._mi_list_of_wxbitmaps()
+      self.panel_right.img_refresh(self.bmp_lst)
 
   def to_re_zoom(self, rot_sn):
     if( rot_sn > 0 ):
@@ -502,26 +512,26 @@ class buttons_panel(wx.Panel):
 
     label_palette = wx.StaticText(self, -1, "\nColour Palettes")
 
-    RadButtb2w = wx.RadioButton(self, -1, "black2white")
-    RadButtw2b = wx.RadioButton(self, -1, "white2black")
-    RadButtha = wx.RadioButton(self, -1, "hot ascend")
-    RadButthd = wx.RadioButton(self, -1, "hot descend")
+    self.RadButtb2w = wx.RadioButton(self, -1, "black2white")
+    self.RadButtw2b = wx.RadioButton(self, -1, "white2black")
+    self.RadButtha = wx.RadioButton(self, -1, "hot ascend")
+    self.RadButthd = wx.RadioButton(self, -1, "hot descend")
 
-    RadButtb2w.Bind(wx.EVT_RADIOBUTTON, self.OnButtb2w)
-    RadButtw2b.Bind(wx.EVT_RADIOBUTTON, self.OnButtw2b)
-    RadButtha.Bind(wx.EVT_RADIOBUTTON, self.OnButtha)
-    RadButthd.Bind(wx.EVT_RADIOBUTTON, self.OnButthd)
+    self.RadButtb2w.Bind(wx.EVT_RADIOBUTTON, self.OnButtb2w)
+    self.RadButtw2b.Bind(wx.EVT_RADIOBUTTON, self.OnButtw2b)
+    self.RadButtha.Bind(wx.EVT_RADIOBUTTON, self.OnButtha)
+    self.RadButthd.Bind(wx.EVT_RADIOBUTTON, self.OnButthd)
 
     self.my_sizer.Add(label_palette, proportion = 0,
                       flag = wx.ALIGN_TOP, border = 5)
 
-    self.my_sizer.Add(RadButtb2w, proportion = 0,
+    self.my_sizer.Add(self.RadButtb2w, proportion = 0,
                       flag = wx.ALIGN_TOP, border = 5)
-    self.my_sizer.Add(RadButtw2b, proportion = 0,
+    self.my_sizer.Add(self.RadButtw2b, proportion = 0,
                       flag = wx.ALIGN_TOP, border = 5)
-    self.my_sizer.Add(RadButtha, proportion = 0,
+    self.my_sizer.Add(self.RadButtha, proportion = 0,
                       flag = wx.ALIGN_TOP, border = 5)
-    self.my_sizer.Add(RadButthd, proportion = 0,
+    self.my_sizer.Add(self.RadButthd, proportion = 0,
                       flag = wx.ALIGN_TOP, border = 5)
 
 
@@ -529,19 +539,29 @@ class buttons_panel(wx.Panel):
     self.SetSizer(self.my_sizer)
 
 
-
-
   def OnButtb2w(self, event):
-    print "OnButtb2w(self, event)"
+    self.OnButtUpdate()
 
   def OnButtw2b(self, event):
-    print "OnButtw2b(self, event)"
+    self.OnButtUpdate()
 
   def OnButtha(self, event):
-    print "OnButtha(self, event)"
+    self.OnButtUpdate()
 
   def OnButthd(self, event):
-    print "OnButthd(self, event)"
+    self.OnButtUpdate()
+
+  def OnButtUpdate(self):
+    print "OnButtUpdate(self):"
+    if( self.RadButtb2w.GetValue() == True ):
+        self.parent_panel.to_change_palette( "black2white" )
+    elif( self.RadButtw2b.GetValue() == True ):
+        self.parent_panel.to_change_palette( "white2black" )
+    elif( self.RadButtha.GetValue() == True ):
+        self.parent_panel.to_change_palette( "hot ascend" )
+    else:
+        self.parent_panel.to_change_palette( "hot descend" )
+
 
   def OnItsCheckbox(self, event):
 
