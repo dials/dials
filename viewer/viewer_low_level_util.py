@@ -274,7 +274,8 @@ class flex_arr_img_panel(wx.Panel):
       else:
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
       return self.lst_bmp_obj.get_wxbitmap_lst(show_nums = self.show_nums,
-                                      scale = self.scale)
+                                               palette = self.palette,
+                                               scale = self.scale)
 
     else:
       return self.lst_bmp_obj.scaling(scale = self.scale)

@@ -23,7 +23,7 @@ from dials_viewer_ext import rgb_img
 
 class wxbmp_from_np_array(object):
 
-  def __init__(self, lst_data_in, show_nums = True, lst_data_mask_in = None):
+  def __init__(self, lst_data_in, show_nums = True, palette = "black2white", lst_data_mask_in = None):
     self.wx_bmp_arr = rgb_img()
     if(lst_data_in == [None] and lst_data_mask_in == [None] ):
       self._ini_wx_bmp_lst = None
@@ -59,11 +59,11 @@ class wxbmp_from_np_array(object):
             tmp_data2d_mask = None
 
           traditional_generator_of_images_with_matplotlib = '''
-          data_sigle_img = self._wx_img(tmp_data2d, show_nums, tmp_data2d_mask)
+          data_sigle_img = self._wx_img(tmp_data2d, show_nums, palette, tmp_data2d_mask)
           #'''
 
           #new_generator_of_images_with_cpp = '''
-          data_sigle_img = self._wx_img_w_cpp(tmp_data2d, show_nums, tmp_data2d_mask)
+          data_sigle_img = self._wx_img_w_cpp(tmp_data2d, show_nums, palette, tmp_data2d_mask)
           #'''
 
           single_block_lst_01.append(data_sigle_img)
@@ -104,7 +104,7 @@ class wxbmp_from_np_array(object):
 
 
 
-  def _wx_img_w_cpp(self, np_2d_tmp, show_nums, np_2d_mask = None):
+  def _wx_img_w_cpp(self, np_2d_tmp, show_nums, palette, np_2d_mask = None):
 
     xmax = np_2d_tmp.shape[0]
     ymax = np_2d_tmp.shape[1]
@@ -130,6 +130,9 @@ class wxbmp_from_np_array(object):
     '''
 
     img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
+    print "palette =", palette
+    #img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, palette, show_nums)
+
 
     test_log_02 = '''
     print "after crash"
@@ -151,7 +154,7 @@ class wxbmp_from_np_array(object):
 
 
 
-  def _wx_img(self, np_2d_tmp, show_nums, np_2d_mask = None):
+  def _wx_img(self, np_2d_tmp, show_nums, palette, np_2d_mask = None):
 
     d = self.vl_max - self.vl_min
     vl_mid_low = self.vl_min + d / 3.0

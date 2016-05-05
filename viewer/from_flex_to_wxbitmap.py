@@ -91,9 +91,9 @@ class wxbitmap_convert(object):
     #returning numpy arrays in the rare case where they might be needed
     return self.lst_3d_data
 
-  def get_wxbitmap_lst(self, show_nums = True, scale = 1.0):
+  def get_wxbitmap_lst(self, show_nums = True, palette = "black2white", scale = 1.0):
     #returning wxbitmaps needed to be shown
-    self.local_bmp = wxbmp_from_np_array(self.lst_3d_data, show_nums, self.lst_3d_mask)
+    self.local_bmp = wxbmp_from_np_array(self.lst_3d_data, show_nums, palette, self.lst_3d_mask)
     return self.scaling(scale)
 
   def scaling(self, scale = 1.0):
