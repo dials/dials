@@ -21,7 +21,7 @@ specified criteria, to write out a subset of the original file.
 
 Example::
 
-  dev.dials.filter_reflections refined.pickle include.flag=used_in_refinement
+  dev.dials.filter_reflections refined.pickle inclusions.flag=used_in_refinement
 
 '''
 
