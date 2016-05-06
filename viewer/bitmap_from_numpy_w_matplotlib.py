@@ -129,10 +129,6 @@ class wxbmp_from_np_array(object):
     print "before crash"
     '''
 
-
-
-
-
     print "palette =", palette
     if( palette == "black2white" ):
       palette_num = 1

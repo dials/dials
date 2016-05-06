@@ -84,9 +84,13 @@ namespace dials { namespace viewer { namespace boost_python {
   {
 
     private:
-      int red_byte[255 * 3 + 1];
-      int green_byte[255 * 3 + 1];
-      int blue_byte[255 * 3 + 1];
+      int hot_pal_red_byte[255 * 3 + 1];
+      int hot_pal_green_byte[255 * 3 + 1];
+      int hot_pal_blue_byte[255 * 3 + 1];
+
+      int gray_all_rgb_byte[255 * 3 + 1];
+
+
       double max, min;
       int err_conv;
 
@@ -96,31 +100,38 @@ namespace dials { namespace viewer { namespace boost_python {
     public:
       rgb_img() {
 
+        // Generating grayscale palette
+        for (int i = 0; i < 255 * 3; i++){
+          gray_all_rgb_byte[i] = int(i / 3);
+        }
+        gray_all_rgb_byte[765] = 255;
+
+        // Generating hot colour palette
         for (int i = 0; i < 255; i++){
-          red_byte[i] = i;
-          green_byte[i + 255] = i;
-          blue_byte[i + 255 * 2 ] = i;
+          hot_pal_red_byte[i] = i;
+          hot_pal_green_byte[i + 255] = i;
+          hot_pal_blue_byte[i + 255 * 2 ] = i;
         }
 
         for (int i = 255; i < 255 * 3; i++){
-          red_byte[i] = 255;
+          hot_pal_red_byte[i] = 255;
         }
 
         for (int i = 0; i < 255; i++){
-          green_byte[i] = 0;
+          hot_pal_green_byte[i] = 0;
         }
 
         for (int i = 255 * 2; i < 255 * 3; i++){
-          green_byte[i] = 255;
+          hot_pal_green_byte[i] = 255;
         }
 
         for (int i = 0; i < 255 * 2; i++){
-          blue_byte[i] = 0;
+          hot_pal_blue_byte[i] = 0;
         }
 
-        blue_byte[765] = 255;
-        green_byte[765] = 255;
-        red_byte[765] = 255;
+        hot_pal_blue_byte[765] = 255;
+        hot_pal_green_byte[765] = 255;
+        hot_pal_red_byte[765] = 255;
 
         max = -1;
         min = -1;
@@ -154,6 +165,19 @@ namespace dials { namespace viewer { namespace boost_python {
       flex_int gen_bmp(flex_double & data2d, flex_double & mask2d, bool show_nums, int palette_num ) {
         std::cout << "\n show_nums =" << show_nums << "\n";
         std::cout << "\n palette_num =" << palette_num << "\n";
+
+        /*
+            print "palette =", palette
+            if( palette == "black2white" ):
+              palette_num = 1
+            elif( palette == "white2black" ):
+              palette_num = 2
+            elif( palette == "hot ascend" ):
+              palette_num = 3
+            else: # assuming "hot descend"
+              palette_num = 4
+         * */
+
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
 
@@ -229,16 +253,45 @@ namespace dials { namespace viewer { namespace boost_python {
                     pix_row < row * px_scale + px_scale;
                     pix_row++){
 
-                  bmp_dat(pix_row, pix_col, 0) = red_byte[int(
-                                                 scaled_array(row, col))];
-                  bmp_dat(pix_row, pix_col, 1) = green_byte[int(
-                                                 scaled_array(row, col))];
-                  bmp_dat(pix_row, pix_col, 2) = blue_byte[int(
-                                                 scaled_array(row, col))];
+                  if(palette_num == 1 ){
+
+                      bmp_dat(pix_row, pix_col, 0) = gray_all_rgb_byte[int(
+                                                     scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 1) = gray_all_rgb_byte[int(
+                                                     scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 2) = gray_all_rgb_byte[int(
+                                                     scaled_array(row, col))];
+
+                  }else if( palette_num == 2 ){
+
+                      bmp_dat(pix_row, pix_col, 0) = gray_all_rgb_byte[int(
+                                                     765 - scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 1) = gray_all_rgb_byte[int(
+                                                     765 - scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 2) = gray_all_rgb_byte[int(
+                                                     765 - scaled_array(row, col))];
+
+                  }else if( palette_num == 3 ){
+
+                      bmp_dat(pix_row, pix_col, 0) = hot_pal_red_byte[int(
+                                                     scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 1) = hot_pal_green_byte[int(
+                                                     scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 2) = hot_pal_blue_byte[int(
+                                                     scaled_array(row, col))];
+
+                  }else{
+
+                      bmp_dat(pix_row, pix_col, 0) = hot_pal_red_byte[int(
+                                                     765 - scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 1) = hot_pal_green_byte[int(
+                                                     765 - scaled_array(row, col))];
+                      bmp_dat(pix_row, pix_col, 2) = hot_pal_blue_byte[int(
+                                                     765 - scaled_array(row, col))];
+
+                  }
                 }
               }
-
-              //std::cout << "\n col, row = " << col << ", " << row << "\n";
 
               // Painting mask into the scaled pixel
               for(mask_pix_col = 0, pix_col = col * px_scale;
@@ -262,9 +315,15 @@ namespace dials { namespace viewer { namespace boost_python {
                       ||
                       ( mask_vol[mask_pix_row][mask_pix_col][3] == 1 &&
                       ( (loc_cel_int & Background) == Background )  )  ){
-                    bmp_dat(pix_row, pix_col, 0) = 150;
-                    bmp_dat(pix_row, pix_col, 1) = 150;
-                    bmp_dat(pix_row, pix_col, 2) = 150;
+                      if( palette_num == 1 || palette_num == 2 ){
+                        bmp_dat(pix_row, pix_col, 0) = 250;
+                        bmp_dat(pix_row, pix_col, 1) = 50;
+                        bmp_dat(pix_row, pix_col, 2) = 50;
+                      }else{
+                        bmp_dat(pix_row, pix_col, 0) = 150;
+                        bmp_dat(pix_row, pix_col, 1) = 150;
+                        bmp_dat(pix_row, pix_col, 2) = 150;
+                    }
 
                   }
 
@@ -293,19 +352,52 @@ namespace dials { namespace viewer { namespace boost_python {
                           font_pix_row++){
 
                         if(font_vol[font_pix_row][font_pix_col][digit_val[dg_num]] == 1){
-                          if( scaled_array(row, col) < 255 ){
-                            bmp_dat(pix_row, pix_col, 0) = 255;
-                            bmp_dat(pix_row, pix_col, 1) = 255;
-                            bmp_dat(pix_row, pix_col, 2) = 0;
-                          }else if( scaled_array(row, col) > 255 * 2 ){
-                            bmp_dat(pix_row, pix_col, 0) = 0;
-                            bmp_dat(pix_row, pix_col, 1) = 0;
-                            bmp_dat(pix_row, pix_col, 2) = 0;
+
+                          if(palette_num == 1 || palette_num == 3 ){
+                              if( scaled_array(row, col) < 255 ){
+                                bmp_dat(pix_row, pix_col, 0) = 255;
+                                bmp_dat(pix_row, pix_col, 1) = 255;
+                                bmp_dat(pix_row, pix_col, 2) = 0;
+                              }else if( scaled_array(row, col) > 255 * 2 ){
+                                bmp_dat(pix_row, pix_col, 0) = 0;
+                                bmp_dat(pix_row, pix_col, 1) = 0;
+                                bmp_dat(pix_row, pix_col, 2) = 0;
+                              }else{
+                                bmp_dat(pix_row, pix_col, 0) = 00;
+                                bmp_dat(pix_row, pix_col, 1) = 00;
+                                bmp_dat(pix_row, pix_col, 2) = 255;
+                              }
+
+
+
                           }else{
-                            bmp_dat(pix_row, pix_col, 0) = 00;
-                            bmp_dat(pix_row, pix_col, 1) = 00;
-                            bmp_dat(pix_row, pix_col, 2) = 255;
+
+
+                              if( scaled_array(row, col) < 255 ){
+
+                                bmp_dat(pix_row, pix_col, 0) = 0;
+                                bmp_dat(pix_row, pix_col, 1) = 0;
+                                bmp_dat(pix_row, pix_col, 2) = 0;
+
+
+                              }else if( scaled_array(row, col) > 255 * 2 ){
+                                bmp_dat(pix_row, pix_col, 0) = 255;
+                                bmp_dat(pix_row, pix_col, 1) = 255;
+                                bmp_dat(pix_row, pix_col, 2) = 0;
+
+
+                              }else{
+
+                                bmp_dat(pix_row, pix_col, 0) = 00;
+                                bmp_dat(pix_row, pix_col, 1) = 00;
+                                bmp_dat(pix_row, pix_col, 2) = 255;
+
+                              }
+
+
+
                           }
+
                         }
                       }
                     }
@@ -315,9 +407,9 @@ namespace dials { namespace viewer { namespace boost_python {
 
             }else{
 
-              bmp_dat(row, col, 0) = red_byte[int(scaled_array(row, col))];
-              bmp_dat(row, col, 1) = green_byte[int(scaled_array(row, col))];
-              bmp_dat(row, col, 2) = blue_byte[int(scaled_array(row, col))];
+              bmp_dat(row, col, 0) = hot_pal_red_byte[int(scaled_array(row, col))];
+              bmp_dat(row, col, 1) = hot_pal_green_byte[int(scaled_array(row, col))];
+              bmp_dat(row, col, 2) = hot_pal_blue_byte[int(scaled_array(row, col))];
             }
 
           }
