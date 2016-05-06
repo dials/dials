@@ -101,6 +101,10 @@ phil_scope = parse('''
     allow_multiple_sweeps = False
       .type = bool
       .help = "If False, raise an error if multiple sweeps are found"
+
+    as_grid_scan = False
+      .type = bool
+      .help = "Import as grid scan"
   }
 
   geometry {
@@ -349,6 +353,18 @@ class Script(object):
     # Only allow a single datablock
     if len(datablocks) > 1:
       raise Sorry("More than 1 datablock found")
+
+    # Convert all to ImageGrid
+    if params.input.as_grid_scan:
+      from logging import info
+      from dxtbx.datablock import DataBlock
+      from dxtbx.imageset import ImageGrid
+      sweeps = datablocks[0].extract_sweeps()
+      stills = datablocks[0].extract_stills()
+      imagesets = []
+      for iset in sweeps + stills:
+        imagesets.append(ImageGrid.from_imageset(iset))
+      datablocks = [DataBlock(imagesets)]
 
     # Loop through the data blocks
     for i, datablock in enumerate(datablocks):
