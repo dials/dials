@@ -151,10 +151,9 @@ namespace dials { namespace viewer { namespace boost_python {
         return 0;
       }
 
-      flex_int gen_bmp(flex_double & data2d, flex_double & mask2d, bool show_nums ) {
-
+      flex_int gen_bmp(flex_double & data2d, flex_double & mask2d, bool show_nums, int palette_num ) {
         std::cout << "\n show_nums =" << show_nums << "\n";
-
+        std::cout << "\n palette_num =" << palette_num << "\n";
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
 

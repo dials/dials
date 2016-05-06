@@ -64,7 +64,7 @@ if(__name__ == "__main__"):
     lst_flex.append(data_xyz_flex)
     lst_flex_norm.append(data_flex_norm)
 
-
   show_3d(data_xyz_flex, data_flex_mask)
+  show_3d(data_xyz_flex)
   show_3d(lst_flex)
   show_3d(lst_flex_norm)

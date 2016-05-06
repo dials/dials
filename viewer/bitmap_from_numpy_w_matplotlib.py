@@ -129,10 +129,21 @@ class wxbmp_from_np_array(object):
     print "before crash"
     '''
 
-    img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums)
-    print "palette =", palette
-    #img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, palette, show_nums)
 
+
+
+
+    print "palette =", palette
+    if( palette == "black2white" ):
+      palette_num = 1
+    elif( palette == "white2black" ):
+      palette_num = 2
+    elif( palette == "hot ascend" ):
+      palette_num = 3
+    else: # assuming "hot descend"
+      palette_num = 4
+
+    img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums, palette_num)
 
     test_log_02 = '''
     print "after crash"
