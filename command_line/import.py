@@ -105,6 +105,10 @@ phil_scope = parse('''
     as_grid_scan = False
       .type = bool
       .help = "Import as grid scan"
+
+    grid_size = None
+      .type = ints(size=2)
+      .help = "If importing as a grid scan set the size"
   }
 
   geometry {
@@ -359,11 +363,13 @@ class Script(object):
       from logging import info
       from dxtbx.datablock import DataBlock
       from dxtbx.imageset import ImageGrid
+      if params.input.grid_size is None:
+        raise Sorry("The input.grid_size parameter is required")
       sweeps = datablocks[0].extract_sweeps()
       stills = datablocks[0].extract_stills()
       imagesets = []
       for iset in sweeps + stills:
-        imagesets.append(ImageGrid.from_imageset(iset))
+        imagesets.append(ImageGrid.from_imageset(iset, params.input.grid_size))
       datablocks = [DataBlock(imagesets)]
 
     # Loop through the data blocks
