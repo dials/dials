@@ -523,6 +523,11 @@ class Script(object):
       # Only allow a single sweep
       if params.input.allow_multiple_sweeps is False:
         if len(sweeps) > 1:
+
+          # Print some info about multuple sweeps
+          self.diagnose_multiple_sweeps(sweeps, params)
+
+          # Raise exception
           raise Sorry('''
             More than 1 sweep was found. Two things may be happening here:
 
@@ -544,6 +549,26 @@ class Script(object):
       info('Writing datablocks to %s' % params.output.datablock)
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock, compact=params.output.compact)
+
+  def diagnose_multiple_sweeps(self, sweeps, params):
+    ''' Print a diff between sweeps. '''
+    from logging import info
+    info("")
+    for i in range(1, len(sweeps)):
+      info("=" * 80)
+      info("Diff between sweep %d and %d" % (i-1, i))
+      info("")
+      self.print_sweep_diff(sweeps[i-1], sweeps[i], params)
+    info("=" * 80)
+    info("")
+
+  def print_sweep_diff(self, sweep1, sweep2, params):
+    ''' Print a diff between sweeps. '''
+    from dxtbx.datablock import SweepDiff
+    diff = SweepDiff(params.input.tolerance)
+    diff(sweep1, sweep2)
+
+
 
 if __name__ == '__main__':
   from dials.util import halraiser
