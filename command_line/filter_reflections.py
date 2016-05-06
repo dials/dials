@@ -19,6 +19,14 @@ help_message = '''
 This program takes reflection files as input and filters them based on user-
 specified criteria, to write out a subset of the original file.
 
+Currently, only filtering by reflection flags is supported. Inclusions are
+processed first and are combined by logical OR. Specifying no inclusions is a
+special case in which all reflections are included for further filtering.
+Exclusions are then processed, such that reflections are removed only if none of
+the specified flags are set. Different results, such as filtering to include
+only reflections with both flag1 AND flag2 set may be achieved by multiple runs
+of the program.
+
 Example::
 
   dev.dials.filter_reflections refined.pickle inclusions.flag=used_in_refinement
