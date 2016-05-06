@@ -361,29 +361,36 @@ class ExtractSpots(object):
 
     # Extract the pixel lists into a list of reflections
     shoeboxes = flex.shoebox()
+    spotsizes = flex.size_t()
     if isinstance(imageset, ImageSweep):
       twod = False
     else:
       twod = True
     for i, p in enumerate(pixel_labeller):
       if p.num_pixels() > 0:
-        shoeboxes.extend(
-          flex.shoebox(
+        creator = flex.PixelListShoeboxCreator(
             p,
             i,                   # panel
             0,                   # zrange
             twod,                # twod
             self.min_spot_size,  # min_pixels
-            self.max_spot_size)) # max_pixels
+            self.max_spot_size)  # max_pixels
+        shoeboxes.extend(creator.result())
+        spotsizes.extend(creator.spot_size())
     info('')
     info('Extracted {0} spots'.format(len(shoeboxes)))
 
     # Get the unallocated spots and print some info
     selection = shoeboxes.is_allocated()
     shoeboxes = shoeboxes.select(selection)
-    info('Removed %d spots with size < %d or > %d pixels' % (
-      selection.count(False),
-      self.min_spot_size,
+    ntoosmall = (spotsizes < self.min_spot_size).count(True)
+    ntoolarge = (spotsizes > self.max_spot_size).count(True)
+    assert ntoosmall + ntoolarge == selection.count(False)
+    info('Removed %d spots with size < %d pixels' % (
+      ntoosmall,
+      self.min_spot_size))
+    info('Removed %d spots with size > %d pixels' % (
+      ntoolarge,
       self.max_spot_size))
 
     # Return the shoeboxes

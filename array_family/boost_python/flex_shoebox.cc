@@ -67,92 +67,112 @@ namespace dials { namespace af { namespace boost_python {
    * Construct an array of shoebxoes from a spot labelling class
    */
   template <typename FloatType>
-  typename af::flex< Shoebox<FloatType> >::type* from_pixel_list(
-      const PixelListLabeller &pixel,
-      std::size_t panel,
-      std::size_t zstart,
-      bool twod,
-      std::size_t min_pixels,
-      std::size_t max_pixels) {
+  class PixelListShoeboxCreator {
+  public:
 
-    // Check the input
-    DIALS_ASSERT(min_pixels > 0);
-    DIALS_ASSERT(max_pixels > min_pixels);
+    PixelListShoeboxCreator(
+        const PixelListLabeller &pixel,
+        std::size_t panel,
+        std::size_t zstart,
+        bool twod,
+        std::size_t min_pixels,
+        std::size_t max_pixels) {
 
-    // Get the stuff from the label struct
-    af::shared<int> labels = twod ? pixel.labels_2d() : pixel.labels_3d();
-    af::shared<double> values = pixel.values();
-    af::shared< vec3<int> > coords = pixel.coords();
-    DIALS_ASSERT(labels.size() == values.size());
-    DIALS_ASSERT(labels.size() == coords.size());
+      // Check the input
+      DIALS_ASSERT(min_pixels > 0);
+      DIALS_ASSERT(max_pixels > min_pixels);
 
-    // Get the number of labels and allocate the array
-    std::size_t num = af::max(labels.const_ref()) + 1;
-    af::shared< Shoebox<FloatType> > result(num, Shoebox<FloatType>());
+      // Get the stuff from the label struct
+      af::shared<int> labels = twod ? pixel.labels_2d() : pixel.labels_3d();
+      af::shared<double> values = pixel.values();
+      af::shared< vec3<int> > coords = pixel.coords();
+      DIALS_ASSERT(labels.size() == values.size());
+      DIALS_ASSERT(labels.size() == coords.size());
 
-    // Initialise the bboxes
-    int xsize = pixel.size()[1];
-    int ysize = pixel.size()[0];
-    int2 minmaxz = pixel.frame_range();
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i].panel = panel;
-      result[i].bbox[0] = xsize; result[i].bbox[1] = 0;
-      result[i].bbox[2] = ysize; result[i].bbox[3] = 0;
-      result[i].bbox[4] = minmaxz[1]; result[i].bbox[5] = minmaxz[0];
-    }
+      // Get the number of labels and allocate the array
+      std::size_t num = af::max(labels.const_ref()) + 1;
+      result_ = af::shared< Shoebox<FloatType> >(num, Shoebox<FloatType>());
+      spot_size_ = af::shared<std::size_t>(num, 0);
 
-    // Set the shoeboxes
-    std::vector<std::size_t> num_pixels(labels.size());
-    for (std::size_t i = 0; i < labels.size(); ++i) {
-      int l = labels[i];
-      vec3<int> c = coords[i];
-      DIALS_ASSERT(c[2] < xsize && c[2] >= 0);
-      DIALS_ASSERT(c[1] < ysize && c[1] >= 0);
-      DIALS_ASSERT(c[0] < minmaxz[1] && c[0] >= minmaxz[0]);
-      if (c[2] <  result[l].bbox[0]) result[l].bbox[0] = c[2];
-      if (c[2] >= result[l].bbox[1]) result[l].bbox[1] = c[2] + 1;
-      if (c[1] <  result[l].bbox[2]) result[l].bbox[2] = c[1];
-      if (c[1] >= result[l].bbox[3]) result[l].bbox[3] = c[1] + 1;
-      if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
-      if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
-      num_pixels[l]++;
-    }
-
-    // Allocate all the arrays
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      if (min_pixels <= num_pixels[i] && num_pixels[i] <= max_pixels) {
-        result[i].allocate();
+      // Initialise the bboxes
+      int xsize = pixel.size()[1];
+      int ysize = pixel.size()[0];
+      int2 minmaxz = pixel.frame_range();
+      for (std::size_t i = 0; i < result_.size(); ++i) {
+        result_[i].panel = panel;
+        result_[i].bbox[0] = xsize; result_[i].bbox[1] = 0;
+        result_[i].bbox[2] = ysize; result_[i].bbox[3] = 0;
+        result_[i].bbox[4] = minmaxz[1]; result_[i].bbox[5] = minmaxz[0];
       }
-    }
 
-    // Set all the mask and data points
-    for (std::size_t i = 0; i < labels.size(); ++i) {
-      int l = labels[i];
-      if (result[l].is_allocated()) {
-        FloatType v = values[i];
+      // Set the shoeboxes
+      std::vector<std::size_t> num_pixels(num);
+      for (std::size_t i = 0; i < labels.size(); ++i) {
+        int l = labels[i];
         vec3<int> c = coords[i];
-        int ii = c[2] - result[l].bbox[0];
-        int jj = c[1] - result[l].bbox[2];
-        int kk = c[0] - result[l].bbox[4];
-        DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
-        DIALS_ASSERT(ii < result[l].xsize());
-        DIALS_ASSERT(jj < result[l].ysize());
-        DIALS_ASSERT(kk < result[l].zsize());
-        result[l].data(kk,jj,ii) = v;
-        result[l].mask(kk,jj,ii) = Valid | Foreground;
+        DIALS_ASSERT(l < num_pixels.size());
+        DIALS_ASSERT(c[2] < xsize && c[2] >= 0);
+        DIALS_ASSERT(c[1] < ysize && c[1] >= 0);
+        DIALS_ASSERT(c[0] < minmaxz[1] && c[0] >= minmaxz[0]);
+        if (c[2] <  result_[l].bbox[0]) result_[l].bbox[0] = c[2];
+        if (c[2] >= result_[l].bbox[1]) result_[l].bbox[1] = c[2] + 1;
+        if (c[1] <  result_[l].bbox[2]) result_[l].bbox[2] = c[1];
+        if (c[1] >= result_[l].bbox[3]) result_[l].bbox[3] = c[1] + 1;
+        if (c[0] <  result_[l].bbox[4]) result_[l].bbox[4] = c[0];
+        if (c[0] >= result_[l].bbox[5]) result_[l].bbox[5] = c[0] + 1;
+        num_pixels[l]++;
+      }
+
+      // Copy the spot size
+      std::copy(num_pixels.begin(), num_pixels.end(), spot_size_.begin());
+
+      // Allocate all the arrays
+      for (std::size_t i = 0; i < result_.size(); ++i) {
+        if (min_pixels <= num_pixels[i] && num_pixels[i] <= max_pixels) {
+          result_[i].allocate();
+        }
+      }
+
+      // Set all the mask and data points
+      for (std::size_t i = 0; i < labels.size(); ++i) {
+        int l = labels[i];
+        if (result_[l].is_allocated()) {
+          FloatType v = values[i];
+          vec3<int> c = coords[i];
+          int ii = c[2] - result_[l].bbox[0];
+          int jj = c[1] - result_[l].bbox[2];
+          int kk = c[0] - result_[l].bbox[4];
+          DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
+          DIALS_ASSERT(ii < result_[l].xsize());
+          DIALS_ASSERT(jj < result_[l].ysize());
+          DIALS_ASSERT(kk < result_[l].zsize());
+          result_[l].data(kk,jj,ii) = v;
+          result_[l].mask(kk,jj,ii) = Valid | Foreground;
+        }
+      }
+
+      // Shift bbox z start position
+      for (std::size_t i = 0; i < result_.size(); ++i) {
+        result_[i].bbox[4] += zstart;
+        result_[i].bbox[5] += zstart;
       }
     }
 
-    // Shift bbox z start position
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i].bbox[4] += zstart;
-      result[i].bbox[5] += zstart;
+    af::shared< Shoebox<FloatType> > result() const {
+      DIALS_ASSERT(result_.size() == spot_size_.size());
+      return result_;
     }
 
-    // Return the array
-    return new typename af::flex< Shoebox<FloatType> >::type(
-      result, af::flex_grid<>(num));
-  }
+    af::shared<std::size_t> spot_size() const {
+      DIALS_ASSERT(result_.size() == spot_size_.size());
+      return spot_size_;
+    }
+
+  private:
+
+    af::shared< Shoebox<FloatType> > result_;
+    af::shared< std::size_t > spot_size_;
+  };
 
   /**
    * Construct an array of shoebxoes from a spot labelling class
@@ -833,15 +853,15 @@ namespace dials { namespace af { namespace boost_python {
 
     return scitbx::af::boost_python::flex_wrapper <
       shoebox_type, return_internal_reference<> >::plain(name)
-        .def("__init__", make_constructor(
-          from_pixel_list<FloatType>,
-          default_call_policies(), (
-            boost::python::arg("pixel"),
-            boost::python::arg("panel") = 0,
-            boost::python::arg("zstart") = 0,
-            boost::python::arg("twod") = false,
-            boost::python::arg("min_pixels") = 1,
-            boost::python::arg("max_pixels") = 20)))
+        /* .def("__init__", make_constructor( */
+        /*   from_pixel_list<FloatType>, */
+        /*   default_call_policies(), ( */
+        /*     boost::python::arg("pixel"), */
+        /*     boost::python::arg("panel") = 0, */
+        /*     boost::python::arg("zstart") = 0, */
+        /*     boost::python::arg("twod") = false, */
+        /*     boost::python::arg("min_pixels") = 1, */
+        /*     boost::python::arg("max_pixels") = 20))) */
         .def("__init__", make_constructor(
           from_labels<2, FloatType>,
           default_call_policies(), (
@@ -924,6 +944,23 @@ namespace dials { namespace af { namespace boost_python {
 
   void export_flex_shoebox() {
     flex_shoebox_wrapper<ProfileFloatType>("shoebox");
+
+    class_<PixelListShoeboxCreator<ProfileFloatType> >("PixelListShoeboxCreator", no_init)
+      .def(init<const PixelListLabeller&,
+                std::size_t,
+                std::size_t,
+                bool,
+                std::size_t,
+                std::size_t>((
+            boost::python::arg("pixel"),
+            boost::python::arg("panel") = 0,
+            boost::python::arg("zstart") = 0,
+            boost::python::arg("twod") = false,
+            boost::python::arg("min_pixels") = 1,
+            boost::python::arg("max_pixels") = 20)))
+      .def("result", &PixelListShoeboxCreator<ProfileFloatType>::result)
+      .def("spot_size", &PixelListShoeboxCreator<ProfileFloatType>::spot_size)
+      ;
   }
 
 }}} // namespace dials::af::boost_python
