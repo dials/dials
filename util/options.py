@@ -50,7 +50,7 @@ tolerance
       .type = float(value_min=0.0)
       .help = "The slow axis tolerance"
 
-    origin = 1e-3
+    origin = 5e-2
       .type = float(value_min=0.0)
       .help = "The origin tolerance"
 
