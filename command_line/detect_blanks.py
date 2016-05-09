@@ -42,8 +42,11 @@ def blank_counts_analysis(reflections, scan, phi_step, fractional_loss):
   n_images_per_step = iceil(phi_step/osc)
   phi_step = n_images_per_step * osc
 
-  phi_min = flex.min(phi)
-  phi_max = flex.max(phi)
+  array_range = scan.get_array_range()
+  phi_min = scan.get_angle_from_array_index(array_range[0])
+  phi_max = scan.get_angle_from_array_index(array_range[1])
+  assert phi_min <= flex.min(phi)
+  assert phi_max >= flex.max(phi)
   n_steps = iceil((phi_max - phi_min)/phi_step)
 
   hist = flex.histogram(z_px, n_slots=n_steps)
