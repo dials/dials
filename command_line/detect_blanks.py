@@ -1,5 +1,7 @@
 from __future__ import division
 
+import math
+
 from logging import info
 from libtbx.math_utils import iceil, ifloor
 import libtbx.phil
@@ -153,13 +155,15 @@ def blank_regions_from_sel(d):
   xhigh = d['xhigh']
 
   blank_regions = []
+  n = len(blank_sel)
 
   for i in range(len(blank_sel)):
     if blank_sel[i]:
       if i == 0 or not blank_sel[i-1]:
-        blank_start = xlow[i]
-      blank_end = xhigh[i]
-    if not blank_sel[i] and i > 0 and blank_sel[i-1]:
+        blank_start = math.floor(xlow[i])
+      blank_end = math.ceil(xhigh[i])
+    if ((not blank_sel[i] and i > 0 and blank_sel[i-1]) or
+        (i == (n-1) and blank_sel[i-1])):
       blank_regions.append((blank_start, blank_end))
 
   return blank_regions
@@ -224,12 +228,14 @@ def run(args):
   strong_sel = reflections.get_flags(reflections.flags.strong)
   indexed_sel &= (~centroid_outlier_sel)
 
+  offset = scan.get_image_range()[0]
+
   info('Analysis of %i strong reflections:' %strong_sel.count(True))
   strong_results = blank_counts_analysis(
     reflections.select(strong_sel), scan, phi_step=params.phi_step,
     fractional_loss=params.counts_fractional_loss)
   for blank_start, blank_end in strong_results['blank_regions']:
-    info('Potential blank images: %i -> %i' %(blank_start, blank_end))
+    info('Potential blank images: %i -> %i' %(blank_start+offset, blank_end+offset))
 
   indexed_results = None
   if indexed_sel.count(True) > 0:
@@ -238,7 +244,7 @@ def run(args):
       reflections.select(indexed_sel), scan, phi_step=params.phi_step,
       fractional_loss=params.counts_fractional_loss)
     for blank_start, blank_end in indexed_results['blank_regions']:
-      info('Potential blank images: %i -> %i' %(blank_start, blank_end))
+      info('Potential blank images: %i -> %i' %(blank_start+offset, blank_end+offset))
 
   integrated_results = None
   if integrated_sel.count(True) > 0:
@@ -247,7 +253,7 @@ def run(args):
       reflections.select(integrated_sel), scan, phi_step=params.phi_step,
       fractional_loss=params.misigma_fractional_loss)
     for blank_start, blank_end in integrated_results['blank_regions']:
-      info('Potential blank images: %i -> %i' %(blank_start, blank_end))
+      info('Potential blank images: %i -> %i' %(blank_start+offset, blank_end+offset))
 
   d = {
     'strong': strong_results,
