@@ -127,9 +127,9 @@ class wxbmp_from_np_array(object):
     print "self.vl_min, self.vl_max = ", self.vl_min, self.vl_max
     print "err_code =", err_code
     print "before crash"
+    print "palette =", palette
     '''
 
-    print "palette =", palette
     if( palette == "black2white" ):
       palette_num = 1
     elif( palette == "white2black" ):

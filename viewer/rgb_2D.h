@@ -163,9 +163,14 @@ namespace dials { namespace viewer { namespace boost_python {
       }
 
       flex_int gen_bmp(flex_double & data2d, flex_double & mask2d, bool show_nums, int palette_num ) {
+
+        // debugging palette number passed from Python
+        /*
         std::cout << "\n show_nums =" << show_nums << "\n";
         std::cout << "\n palette_num =" << palette_num << "\n";
+        */
 
+        // Python code that numbers palette
         /*
             print "palette =", palette
             if( palette == "black2white" ):
@@ -176,16 +181,13 @@ namespace dials { namespace viewer { namespace boost_python {
               palette_num = 3
             else: # assuming "hot descend"
               palette_num = 4
-         * */
+        */
 
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
 
         double loc_cel, dif = 0;
         int loc_cel_int;
-
-
-
 
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
@@ -261,7 +263,6 @@ namespace dials { namespace viewer { namespace boost_python {
                                                      scaled_array(row, col))];
                       bmp_dat(pix_row, pix_col, 2) = gray_all_rgb_byte[int(
                                                      scaled_array(row, col))];
-
                   }else if( palette_num == 2 ){
 
                       bmp_dat(pix_row, pix_col, 0) = gray_all_rgb_byte[int(
@@ -270,7 +271,6 @@ namespace dials { namespace viewer { namespace boost_python {
                                                      765 - scaled_array(row, col))];
                       bmp_dat(pix_row, pix_col, 2) = gray_all_rgb_byte[int(
                                                      765 - scaled_array(row, col))];
-
                   }else if( palette_num == 3 ){
 
                       bmp_dat(pix_row, pix_col, 0) = hot_pal_red_byte[int(
@@ -279,7 +279,6 @@ namespace dials { namespace viewer { namespace boost_python {
                                                      scaled_array(row, col))];
                       bmp_dat(pix_row, pix_col, 2) = hot_pal_blue_byte[int(
                                                      scaled_array(row, col))];
-
                   }else{
 
                       bmp_dat(pix_row, pix_col, 0) = hot_pal_red_byte[int(
@@ -288,7 +287,6 @@ namespace dials { namespace viewer { namespace boost_python {
                                                      765 - scaled_array(row, col))];
                       bmp_dat(pix_row, pix_col, 2) = hot_pal_blue_byte[int(
                                                      765 - scaled_array(row, col))];
-
                   }
                 }
               }
@@ -343,13 +341,11 @@ namespace dials { namespace viewer { namespace boost_python {
 
                     for(int font_pix_col = 0, pix_col = col * px_scale + dg_num * 7;
                         font_pix_col < 7;
-                        pix_col++,
-                        font_pix_col++){
+                        pix_col++, font_pix_col++){
 
                       for(int font_pix_row = 0, pix_row = row * px_scale + 14;
                           font_pix_row < 14;
-                          pix_row++,
-                          font_pix_row++){
+                          pix_row++, font_pix_row++){
 
                         if(font_vol[font_pix_row][font_pix_col][digit_val[dg_num]] == 1){
 
@@ -367,37 +363,21 @@ namespace dials { namespace viewer { namespace boost_python {
                                 bmp_dat(pix_row, pix_col, 1) = 00;
                                 bmp_dat(pix_row, pix_col, 2) = 255;
                               }
-
-
-
                           }else{
-
-
                               if( scaled_array(row, col) < 255 ){
-
                                 bmp_dat(pix_row, pix_col, 0) = 0;
                                 bmp_dat(pix_row, pix_col, 1) = 0;
                                 bmp_dat(pix_row, pix_col, 2) = 0;
-
-
                               }else if( scaled_array(row, col) > 255 * 2 ){
                                 bmp_dat(pix_row, pix_col, 0) = 255;
                                 bmp_dat(pix_row, pix_col, 1) = 255;
                                 bmp_dat(pix_row, pix_col, 2) = 0;
-
-
                               }else{
-
                                 bmp_dat(pix_row, pix_col, 0) = 00;
                                 bmp_dat(pix_row, pix_col, 1) = 00;
                                 bmp_dat(pix_row, pix_col, 2) = 255;
-
                               }
-
-
-
                           }
-
                         }
                       }
                     }
