@@ -235,6 +235,7 @@ class flex_arr_img_panel(wx.Panel):
     self.palette = "black2white"
     self.row_pos = 0
     self.Pframe = parent_frame
+    self.local_bbox = (0,0,2,2,4,4)
 
   def ini_n_intro(self, data_in_one, data_in_two = None):
 
@@ -246,6 +247,8 @@ class flex_arr_img_panel(wx.Panel):
 
     else:
       self.first_lst_in, self.segn_lst_in = data_in_one, data_in_two
+      print "flex array entered"
+      self.local_bbox = None
 
     self.bmp_lst = self._mi_list_of_wxbitmaps()
     self.panel_left = buttons_panel(self)
@@ -263,6 +266,10 @@ class flex_arr_img_panel(wx.Panel):
       self.segn_lst_in = \
                               self.table[self.row_pos]['shoebox'].data, \
                               self.table[self.row_pos]['shoebox'].mask
+
+      self.local_bbox = self.table[self.row_pos]['bbox']
+
+
     except:
       self.first_lst_in, self.segn_lst_in = None, None
 
@@ -394,7 +401,12 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
       for i, i_bmp in enumerate(lst_1d):
         local_bitmap = wx.StaticBitmap(self, bitmap = i_bmp)
-        slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
+        if( self.parent_panel.local_bbox == None ):
+          slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
+        else:
+          bbx = self.parent_panel.local_bbox
+          slice_string = "Slice[ "+ str(bbx[0]) + ":" + str(bbx[1]) + ", " + str(bbx[2]) + ":"  + str(bbx[3]) + ", " + str(i) + ":" + str(i+1) + "]"
+
         slice_sub_info_txt = wx.StaticText(self, -1, slice_string)
 
         sigle_slice_sizer = wx.BoxSizer(wx.VERTICAL)
