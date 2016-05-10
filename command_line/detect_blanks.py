@@ -228,14 +228,12 @@ def run(args):
   strong_sel = reflections.get_flags(reflections.flags.strong)
   indexed_sel &= (~centroid_outlier_sel)
 
-  offset = scan.get_image_range()[0]
-
   info('Analysis of %i strong reflections:' %strong_sel.count(True))
   strong_results = blank_counts_analysis(
     reflections.select(strong_sel), scan, phi_step=params.phi_step,
     fractional_loss=params.counts_fractional_loss)
   for blank_start, blank_end in strong_results['blank_regions']:
-    info('Potential blank images: %i -> %i' %(blank_start+offset, blank_end+offset))
+    info('Potential blank images: %i -> %i' %(blank_start+1, blank_end+1))
 
   indexed_results = None
   if indexed_sel.count(True) > 0:
@@ -244,7 +242,7 @@ def run(args):
       reflections.select(indexed_sel), scan, phi_step=params.phi_step,
       fractional_loss=params.counts_fractional_loss)
     for blank_start, blank_end in indexed_results['blank_regions']:
-      info('Potential blank images: %i -> %i' %(blank_start+offset, blank_end+offset))
+      info('Potential blank images: %i -> %i' %(blank_start+1, blank_end+1))
 
   integrated_results = None
   if integrated_sel.count(True) > 0:
@@ -253,7 +251,7 @@ def run(args):
       reflections.select(integrated_sel), scan, phi_step=params.phi_step,
       fractional_loss=params.misigma_fractional_loss)
     for blank_start, blank_end in integrated_results['blank_regions']:
-      info('Potential blank images: %i -> %i' %(blank_start+offset, blank_end+offset))
+      info('Potential blank images: %i -> %i' %(blank_start+1, blank_end+1))
 
   d = {
     'strong': strong_results,
