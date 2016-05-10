@@ -518,11 +518,17 @@ class Script(object):
           override_beam(still.get_beam(), params.geometry.beam)
           override_detector(still.get_detector(), params.geometry.detector)
 
-      # Print some data block info
+      # Print some data block info - override the output of image range
+      # if appropriate
+      image_range = params.geometry.scan.image_range
+
       info("-" * 80)
       info("DataBlock %d" % i)
       info("  format: %s" % str(datablock.format_class()))
-      info("  num images: %d" % datablock.num_images())
+      if image_range is None:
+        info("  num images: %d" % datablock.num_images())
+      else:
+        info("  num images: %d" % (image_range[1] - image_range[0] + 1))
       info("  num sweeps: %d" % len(sweeps))
       info("  num stills: %d" % num_stills)
 
