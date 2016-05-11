@@ -9,8 +9,6 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.import_xds
-
 from __future__ import division
 
 class SpotXDSImporter(object):
