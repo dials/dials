@@ -102,15 +102,13 @@ class wxbmp_from_np_array(object):
     ymax = np_2d_tmp.shape[0]
 
     if(np_2d_mask == None):
-      np_2d_mask = np.zeros( (xmax, ymax), 'double')
+      np_2d_mask = np.zeros( (ymax, xmax), 'double')
 
     transposed_data = np.zeros( (ymax, xmax), 'double')
     transposed_mask = np.zeros( (ymax, xmax), 'double')
 
     transposed_data[:,:] = np_2d_tmp
     transposed_mask[:,:] = np_2d_mask
-
-
 
     flex_data_in = flex.double(transposed_data)
     flex_mask_in = flex.double(transposed_mask)
