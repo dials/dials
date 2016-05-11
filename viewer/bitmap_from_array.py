@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  bitmap_from_numpy_w_matplotlib.py
+#  bitmap_from_array.py
 #
 #  Copyright (C) 2014 Diamond Light Source
 #
