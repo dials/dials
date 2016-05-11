@@ -142,71 +142,6 @@ class ExtractPixelsFromImage(object):
     return Result(pixel_list)
 
 
-class batch_func(object):
-  '''
-  Process the batch iterables
-
-  '''
-  def __init__(self, func):
-    self.func = func
-
-  def __call__(self, index):
-    result = []
-    for i in index:
-      result.append(self.func(i))
-    return result
-
-class batch_iterable(object):
-  '''
-  Split the iterables into batches
-
-  '''
-  def __init__(self, iterable, chunksize):
-    self.iterable = iterable
-    self.chunksize = chunksize
-
-  def __iter__(self):
-    i = 0
-    while i < len(self.iterable):
-      j = i + self.chunksize
-      yield self.iterable[i:j]
-      i = j
-
-class batch_callback(object):
-  '''
-  Process the batch callback
-
-  '''
-  def __init__(self, callback):
-    self.callback = callback
-
-  def __call__(self, result):
-    for r in result:
-      self.callback(r)
-
-def batch_parallel_map(func=None,
-                       iterable=None,
-                       processes=None,
-                       callback=None,
-                       method=None,
-                       chunksize=1):
-  '''
-  A function to run jobs in batches in each process
-
-  '''
-  from libtbx import easy_mp
-
-  # Call the batches in parallel
-  easy_mp.parallel_map(
-    func=batch_func(func),
-    iterable=batch_iterable(iterable, chunksize),
-    processes=processes,
-    callback=batch_callback(callback),
-    method=method,
-    preserve_order=True,
-    preserve_exception_message=True)
-
-
 class ExtractSpotsParallelTask(object):
   '''
   Execute the spot finder task in parallel
@@ -247,8 +182,9 @@ class ExtractSpots(object):
                mask=None,
                region_of_interest=None,
                max_strong_pixel_fraction=0.1,
-               mp_method='multiprocessing',
-               nproc=1,
+               mp_method=None,
+               mp_nproc=1,
+               mp_njobs=1,
                mp_chunksize=1,
                min_spot_size=1,
                max_spot_size=20):
@@ -267,7 +203,8 @@ class ExtractSpots(object):
     self.mask = mask
     self.mp_method = mp_method
     self.mp_chunksize = mp_chunksize
-    self.nproc = nproc
+    self.mp_nproc = mp_nproc
+    self.mp_njobs = mp_njobs
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
     self.region_of_interest = region_of_interest
     self.min_spot_size = min_spot_size
@@ -285,28 +222,35 @@ class ExtractSpots(object):
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from dials.model.data import PixelListLabeller
+    from dials.util.mp import batch_multi_node_parallel_map
     from logging import info, warn
-    from math import floor
+    from math import floor, ceil
     import platform
     from logging import warn
 
     # Change the number of processors if necessary
-    mp_nproc = self.nproc
-    if platform.system() == "Windows" and mp_nproc > 1:
+    mp_nproc = self.mp_nproc
+    mp_njobs = self.mp_njobs
+    if platform.system() == "Windows" and (mp_nproc > 1 or mp_njobs > 1):
       warn("")
       warn("*" * 80)
-      warn("Multiprocessing is not available on windows. Setting nproc = 1")
+      warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")
       warn("*" * 80)
       warn("")
       mp_nproc = 1
-    if mp_nproc > len(imageset):
-      mp_nproc = len(imageset)
+      mp_njobs = 1
+    if mp_nproc * mp_njobs > len(imageset):
+      mp_nproc = min(mp_nproc, len(imageset))
+      mp_njobs = int(ceil(len(imageset) / mp_nproc))
+
     mp_method = self.mp_method
     mp_chunksize = self.mp_chunksize
-    len_by_nproc = int(floor(len(imageset) / mp_nproc))
+    len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
     if mp_chunksize > len_by_nproc:
       mp_chunksize = len_by_nproc
     assert mp_nproc > 0, "Invalid number of processors"
+    assert mp_njobs > 0, "Invalid number of jobs"
+    assert mp_njobs == 1 or mp_method is not None, "Invalid cluster method"
     assert mp_chunksize > 0, "Invalid chunk size"
 
     # The extract pixels function
@@ -326,8 +270,11 @@ class ExtractSpots(object):
 
     # Do the processing
     info('Extracting strong pixels from images')
-    info(' Using %s with %d parallel job(s)\n' % (mp_method, mp_nproc))
-    if mp_nproc > 1:
+    if mp_njobs > 1:
+      info(' Using %s with %d parallel job(s) and %d processes per node\n' % (mp_method, mp_njobs, mp_nproc))
+    else:
+      info(' Using multiprocessing with %d parallel job(s)\n' % (mp_nproc))
+    if mp_nproc > 1 or mp_njobs > 1:
       def process_output(result):
         import logging
         for message in result[1]:
@@ -344,13 +291,14 @@ class ExtractSpots(object):
       if isinstance(imageset.reader(), SingleFileReader):
         imageset.reader().nullify_format_instance()
 
-      batch_parallel_map(
-        func=ExtractSpotsParallelTask(function),
-        iterable=indices,
-        processes=mp_nproc,
-        callback=process_output,
-        method=mp_method,
-        chunksize=mp_chunksize)
+      batch_multi_node_parallel_map(
+        func           = ExtractSpotsParallelTask(function),
+        iterable       = indices,
+        nproc          = mp_nproc,
+        njobs          = mp_njobs,
+        cluster_method = mp_method,
+        chunksize      = mp_chunksize,
+        callback       = process_output)
     else:
       for task in indices:
         result = function(task)
@@ -408,8 +356,9 @@ class SpotFinder(object):
                mask=None,
                region_of_interest=None,
                max_strong_pixel_fraction=0.1,
-               mp_method='multiprocessing',
-               nproc=1,
+               mp_method=None,
+               mp_nproc=1,
+               mp_njobs=1,
                mp_chunksize=1,
                mask_generator=None,
                filter_spots=None,
@@ -439,7 +388,8 @@ class SpotFinder(object):
     self.max_spot_size = max_spot_size
     self.mp_method = mp_method
     self.mp_chunksize = mp_chunksize
-    self.nproc = nproc
+    self.mp_nproc = mp_nproc
+    self.mp_njobs = mp_njobs
 
   def __call__(self, datablock):
     '''
@@ -518,7 +468,8 @@ class SpotFinder(object):
       region_of_interest        = self.region_of_interest,
       max_strong_pixel_fraction = self.max_strong_pixel_fraction,
       mp_method                 = self.mp_method,
-      nproc                     = self.nproc,
+      mp_nproc                  = self.mp_nproc,
+      mp_njobs                  = self.mp_njobs,
       mp_chunksize              = self.mp_chunksize,
       min_spot_size             = self.min_spot_size,
       max_spot_size             = self.max_spot_size)

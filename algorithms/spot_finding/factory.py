@@ -93,13 +93,17 @@ def generate_phil_scope():
     }
 
     mp {
-      method = *multiprocessing sge lsf pbs
+      method = *none sge lsf pbs
         .type = choice
-        .help = "The multiprocessing method to use"
+        .help = "The cluster method to use"
+
+      njobs = 1
+        .type = int(value_min=1)
+        .help = "The number of cluster jobs to use"
 
       nproc = 1
         .type = int(value_min=1)
-        .help = "The number of processes to use."
+        .help = "The number of processes to use per cluster job"
 
       chunksize = 20
         .type = int(value_min=1)
@@ -528,7 +532,8 @@ class SpotFinderFactory(object):
       scan_range                = params.spotfinder.scan_range,
       write_hot_mask            = params.spotfinder.write_hot_mask,
       mp_method                 = params.spotfinder.mp.method,
-      nproc                     = params.spotfinder.mp.nproc,
+      mp_nproc                  = params.spotfinder.mp.nproc,
+      mp_njobs                  = params.spotfinder.mp.njobs,
       mp_chunksize              = params.spotfinder.mp.chunksize,
       max_strong_pixel_fraction = params.spotfinder.filter.max_strong_pixel_fraction,
       region_of_interest        = params.spotfinder.region_of_interest,
