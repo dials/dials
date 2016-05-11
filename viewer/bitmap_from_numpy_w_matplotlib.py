@@ -106,8 +106,11 @@ class wxbmp_from_np_array(object):
 
   def _wx_img_w_cpp(self, np_2d_tmp, show_nums, palette, np_2d_mask = None):
 
-    xmax = np_2d_tmp.shape[0]
-    ymax = np_2d_tmp.shape[1]
+    #xmax = np_2d_tmp.shape[0]
+    #ymax = np_2d_tmp.shape[1]
+
+    xmax = np_2d_tmp.shape[1]
+    ymax = np_2d_tmp.shape[0]
 
     if(np_2d_mask == None):
       np_2d_mask = np.zeros( (xmax, ymax), 'double')
@@ -115,8 +118,13 @@ class wxbmp_from_np_array(object):
     transposed_data = np.zeros( (ymax, xmax), 'double')
     transposed_mask = np.zeros( (ymax, xmax), 'double')
 
-    transposed_data[:,:] = np.transpose(np_2d_tmp)
-    transposed_mask[:,:] = np.transpose(np_2d_mask)
+    #transposed_data[:,:] = np.transpose(np_2d_tmp)
+    #transposed_mask[:,:] = np.transpose(np_2d_mask)
+
+    transposed_data[:,:] = np_2d_tmp
+    transposed_mask[:,:] = np_2d_mask
+
+
 
     flex_data_in = flex.double(transposed_data)
     flex_mask_in = flex.double(transposed_mask)

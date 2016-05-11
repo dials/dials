@@ -405,7 +405,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
           slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
         else:
           bbx = self.parent_panel.local_bbox
-          slice_string = "Slice[ "+ str(bbx[0]) + ":" + str(bbx[1]) + ", " + str(bbx[2]) + ":"  + str(bbx[3]) + ", " + str(i) + ":" + str(i+1) + "]"
+          slice_string = "Image # " + str(bbx[4] + i)
 
         slice_sub_info_txt = wx.StaticText(self, -1, slice_string)
 
