@@ -524,6 +524,10 @@ class SpotFinderFactory(object):
     # Configure the mask generator
     mask_generator = MaskGenerator(params.spotfinder.filter)
 
+    # Make sure 'none' is interpreted as None
+    if params.spotfinder.mp.method == 'none':
+      params.spotfinder.mp.method = None
+
     # Setup the spot finder
     return SpotFinder(
       threshold_function        = threshold_function,

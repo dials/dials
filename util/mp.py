@@ -1,4 +1,13 @@
-
+#!/usr/bin/env python
+#
+# mp.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 
 from __future__ import division
 
@@ -81,7 +90,6 @@ def multi_node_parallel_map(
     njobs=1,
     nproc=1,
     cluster_method=None,
-    qsub_command=None,
     asynchronous=True,
     callback=None,
     preserve_order=True,
@@ -109,6 +117,9 @@ def multi_node_parallel_map(
     cluster_callback = MultiNodeClusterCallback(callback)
   else:
     cluster_callback = None
+
+  # Set the command
+  qsub_command = 'qsub -pe smp %d' % nproc
 
   # Do the parallel map on the cluster
   parallel_map(
