@@ -274,7 +274,7 @@ class ReflectionManager(object):
     sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
 
     # combine selections
-    sel = sel1 | sel2
+    sel = sel1 & sel2
     inc = flex.size_t_range(len(obs_data)).select(sel)
     obs_data = obs_data.select(sel)
 
