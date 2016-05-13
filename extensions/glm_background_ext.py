@@ -14,7 +14,7 @@ from dials.interfaces import BackgroundIface
 
 
 class SimpleBackgroundExt(BackgroundIface):
-  ''' An extension class implementing XDS background subtraction. '''
+  ''' An extension class implementing a robust GLM background algorithm. '''
 
   name = 'glm'
 

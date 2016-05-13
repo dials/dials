@@ -14,7 +14,7 @@ from dials.interfaces import BackgroundIface
 
 
 class SimpleBackgroundExt(BackgroundIface):
-  ''' An extension class implementing XDS background subtraction. '''
+  ''' An extension class implementing simple background subtraction. '''
 
   name = 'simple'
 
@@ -25,7 +25,7 @@ class SimpleBackgroundExt(BackgroundIface):
       outlier
         .help = "Outlier rejection prior to background fit"
       {
-        algorithm = null *nsigma truncated normal mosflm tukey
+        algorithm = *null nsigma truncated normal mosflm tukey
           .help = "The outlier rejection algorithm."
           .type = choice
 
