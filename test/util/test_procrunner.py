@@ -8,13 +8,14 @@ import pytest
 @mock.patch('dials.util.procrunner._NonBlockingStreamReader')
 @mock.patch('dials.util.procrunner.time')
 @mock.patch('dials.util.procrunner.subprocess')
-def test_run_command_aborts_after_timeout(mock_subprocess, mock_time, mock_streamreader):
+@mock.patch('dials.util.procrunner.Queue')
+def test_run_command_aborts_after_timeout(mock_queue, mock_subprocess, mock_time, mock_streamreader):
   mock_process = mock.Mock()
   mock_process.returncode = None
   mock_subprocess.Popen.return_value = mock_process
   task = ['___']
 
-  with pytest.raises(Exception):
+  with pytest.raises(RuntimeError):
     dials.util.procrunner.run_process(task, -1, False)
 
   assert mock_subprocess.Popen.called
@@ -54,7 +55,8 @@ def test_run_command_runs_command_and_directs_pipelines(mock_subprocess, mock_st
   actual = dials.util.procrunner.run_process(command, 0.5, False)
 
   assert mock_subprocess.Popen.called
-  mock_streamreader.assert_has_calls([mock.call(stream_stdout, output=mock.ANY, debug=mock.ANY), mock.call(stream_stderr, output=mock.ANY, debug=mock.ANY)], any_order=True)
+  mock_streamreader.assert_has_calls([mock.call(stream_stdout, output=mock.ANY, debug=mock.ANY, notify=mock.ANY),
+                                      mock.call(stream_stderr, output=mock.ANY, debug=mock.ANY, notify=mock.ANY)], any_order=True)
   assert not mock_process.terminate.called
   assert not mock_process.kill.called
   assert actual == expected
@@ -70,7 +72,7 @@ def test_nonblockingstreamreader_can_read():
       self.data.append(string)
     def readline(self):
       while (len(self.data) == 0) and not self.closed:
-        time.sleep(0.3)
+        time.sleep(0.2)
       return self.data.pop(0) if len(self.data) > 0 else ''
     def close(self):
       self.closed=True
@@ -84,7 +86,7 @@ def test_nonblockingstreamreader_can_read():
   assert not streamreader.has_finished()
 
   teststream.close()
-  time.sleep(0.6)
+  time.sleep(0.4)
 
   assert streamreader.has_finished()
   assert streamreader.get_output() == ''.join(testdata)

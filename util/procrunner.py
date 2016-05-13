@@ -1,5 +1,6 @@
 from __future__ import division
 import cStringIO as StringIO
+import Queue
 import subprocess
 import time
 import timeit
@@ -12,12 +13,13 @@ dummy = False
 
 class _NonBlockingStreamReader:
   '''Reads a stream in a thread to avoid blocking/deadlocks'''
-  def __init__(self, stream, output=True, debug=False):
-    self._stream = stream
+  def __init__(self, stream, output=True, debug=False, notify=None):
     self._buffer = StringIO.StringIO()
-    self._terminated = False
     self._closed = False
     self._debug = debug
+    self._notify_queue = notify
+    self._stream = stream
+    self._terminated = False
 
     def _thread_write_stream_to_buffer():
       line = True
@@ -28,6 +30,10 @@ class _NonBlockingStreamReader:
           if output:
             print line,
       self._terminated = True
+      if self._debug:
+        print "Stream reader terminated"
+      if self._notify_queue:
+        self._notify_queue.put_nowait(True)
 
     self._thread = Thread(target = _thread_write_stream_to_buffer)
     self._thread.daemon = True
@@ -40,7 +46,7 @@ class _NonBlockingStreamReader:
     if not self.has_finished():
       if self._debug:
         underrun_debug_timer = timeit.default_timer()
-        print "NBSR underrun"
+        print "NBSR underrun" # Main thread overtook stream reading thread.
       self._thread.join()
       if not self.has_finished():
         if self._debug:
@@ -57,12 +63,13 @@ class _NonBlockingStreamReader:
 
 class _NonBlockingStreamWriter:
   '''Writes to a stream in a thread to avoid blocking/deadlocks'''
-  def __init__(self, stream, data, debug=False):
+  def __init__(self, stream, data, debug=False, notify=None):
     self._buffer = data
     self._buffer_len = len(data)
     self._buffer_pos = 0
     self._debug = debug
     self._max_block_len = 4096
+    self._notify_queue = notify
     self._stream = stream
     self._terminated = False
 
@@ -85,6 +92,8 @@ class _NonBlockingStreamWriter:
           print "wrote %d bytes to stream" % len(block)
       self._stream.close()
       self._terminated = True
+      if self._notify_queue:
+        self._notify_queue.put_nowait(True)
 
     self._thread = Thread(target = _thread_write_buffer_to_stream)
     self._thread.daemon = True
@@ -120,15 +129,17 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
              'timeout': False, 'runtime': 0,
              'time_start': time_start, 'time_end': time_start }
 
+  thread_communication = Queue.Queue()
+
   start_time = timeit.default_timer()
   if timeout is not None:
     max_time = start_time + timeout
 
   p = subprocess.Popen(command, shell=False, stdin=stdin_pipe, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout, debug=debug)
-  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr, debug=debug)
+  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout, debug=debug, notify=thread_communication)
+  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr, debug=debug, notify=thread_communication)
   if stdin is not None:
-    stdin = _NonBlockingStreamWriter(p.stdin, data=stdin)
+    stdin = _NonBlockingStreamWriter(p.stdin, data=stdin, debug=debug, notify=thread_communication)
 
   timeout_encountered = False
 
@@ -137,13 +148,17 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
     if debug and timeout is not None:
       print "still running (T%.2fs)" % (timeit.default_timer() - max_time)
 
-    # sleep some time
+    # wait for some time or until a stream is closed
     try:
-      time.sleep(0.5)
+      if thread_communication.get(True, 0.5):
+        if debug:
+          print "Event received from stream tread"
     except KeyboardInterrupt:
       p.kill() # if user pressed Ctrl+C we won't be able to produce a proper report anyway
                # but at least make sure the child process dies with us
       raise
+    except Queue.Empty:
+      pass # expected exception, nothing happened for the timeout period
 
     # check if process is still running
     p.poll()
@@ -156,7 +171,10 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
 
     # send terminate signal and wait some time for buffers to be read
     p.terminate()
-    time.sleep(0.5)
+    try:
+      thread_communication.get(True, 0.5)
+    except Queue.Empty:
+      pass # expected exception, nothing happened for the timeout period
     if (not stdout.has_finished() or not stderr.has_finished()):
       time.sleep(2)
     p.poll()
@@ -165,13 +183,16 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
     # thread still alive
     # send kill signal and wait some more time for buffers to be read
     p.kill()
-    time.sleep(0.5)
+    try:
+      thread_communication.get(True, 0.5)
+    except Queue.Empty:
+      pass # expected exception, nothing happened for the timeout period
     if (not stdout.has_finished() or not stderr.has_finished()):
       time.sleep(5)
     p.poll()
 
   if p.returncode is None:
-    raise Exception("Process won't terminate")
+    raise RuntimeError("Process won't terminate")
 
   runtime = timeit.default_timer() - start_time
   if debug:
