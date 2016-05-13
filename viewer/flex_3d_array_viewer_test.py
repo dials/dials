@@ -4,7 +4,7 @@
 #
 #  test for slice_viewer.py
 #
-#  Copyright (C) 2014 Diamond Light Source
+#  Copyright (C) 2016 Diamond Light Source
 #
 #  Author: Luis Fuentes-Montero (Luiso)
 #
