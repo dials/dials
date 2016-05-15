@@ -25,9 +25,6 @@ namespace dials { namespace viewer { namespace boost_python {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
 
-//  using scitbx::af::int3;
-//  using scitbx::af::int6;
-
   using dials::model::Valid;
   using dials::model::Background;
   using dials::model::BackgroundUsed;
@@ -170,7 +167,7 @@ namespace dials { namespace viewer { namespace boost_python {
         std::cout << "\n palette_num =" << palette_num << "\n";
         */
 
-        // Python code that numbers palette
+        // Python code that enumerates palette
         /*
             print "palette =", palette
             if( palette == "black2white" ):
