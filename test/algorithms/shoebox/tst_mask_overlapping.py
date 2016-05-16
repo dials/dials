@@ -125,7 +125,8 @@ class Test(object):
             for i in range(bbox_3[0], bbox_3[1]):
               mask_coord.append(matrix.col((i+0.5, j+0.5, k+0.5)))
 
-        dist = lambda a, m: numpy.array([(a - b).length() for b in m])
+        def dist(a, m):
+          return numpy.array([(a - b).length() for b in m])
 
         # Find the indices in the intersection area where r2 is closer to
         # the point than r1

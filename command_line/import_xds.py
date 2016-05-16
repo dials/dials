@@ -430,7 +430,6 @@ class Script(object):
     # Select the importer class
     if params.input.method == 'experiment':
       importer = XDSFileImporter(args)
-      pass
     else:
       importer = self.select_importer(args)
 

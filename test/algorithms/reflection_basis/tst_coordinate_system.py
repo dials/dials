@@ -332,7 +332,8 @@ class TestToBeamVector(object):
     min_shift = -0.5
     max_shift = +0.5
     range_shift = max_shift - min_shift
-    random_shift = lambda: min_shift + random.random() * range_shift
+    def random_shift():
+      return min_shift + random.random() * range_shift
 
     # Loop a number of times
     num = 1000
@@ -392,7 +393,8 @@ class TestToRotationAngle(object):
     min_shift = -20.0 * pi / 180.0
     max_shift = +20.0 * pi / 180.0
     range_shift = max_shift - min_shift
-    random_shift = lambda: min_shift + random.random() * range_shift
+    def random_shift():
+      return min_shift + random.random() * range_shift
 
     # Loop a number of times
     num = 1000
