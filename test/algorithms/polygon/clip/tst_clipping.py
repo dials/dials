@@ -13,10 +13,10 @@ def point_in_polygon(point, poly):
 def generate_intersecting(subject_size=None, target_size=None):
   from random import randint
 
-  if subject_size == None:
+  if subject_size is None:
     subject_size = randint(3, 10)
 
-  if target_size == None:
+  if target_size is None:
     target_size = 4
 
   bbox = (0.0, 10.0, 0.0, 10.0)
@@ -28,10 +28,10 @@ def generate_intersecting(subject_size=None, target_size=None):
 def generate_non_intersecting(subject_size=None, target_size=None):
   from random import randint
 
-  if subject_size == None:
+  if subject_size is None:
     subject_size = randint(3, 10)
 
-  if target_size == None:
+  if target_size is None:
     target_size = 4
 
   bbox = (0.0, 10.0, 0.0, 10.0)

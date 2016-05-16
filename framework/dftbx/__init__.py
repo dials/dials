@@ -6,5 +6,5 @@ except Exception:
 else:
   ext = boost.python.import_ext("dftbx_ext", optional = False)
 
-if not ext is None:
+if ext is not None:
   from dftbx_ext import *

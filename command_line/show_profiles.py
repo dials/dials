@@ -19,7 +19,7 @@ def show_profiles(integrated_pickle, isig_limit = None):
   integrated_data = flex.reflection_table.from_pickle(integrated_pickle)
 
   for j, r in enumerate(integrated_data):
-    if not isig_limit is None:
+    if isig_limit is not None:
       if r['intensity.sum.value'] <= 0:
         continue
       if r['intensity.sum.value'] / math.sqrt(r['intensity.sum.variance']) < isig_limit:

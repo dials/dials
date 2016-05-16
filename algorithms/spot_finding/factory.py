@@ -168,7 +168,7 @@ class FilterRunner(object):
     from scitbx.array_family import flex
 
     # If flags are not set then create a list of Trues
-    if flags == None:
+    if flags is None:
       length = 0
       if predictions:
         length = len(predictions)

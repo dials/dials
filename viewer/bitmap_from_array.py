@@ -38,7 +38,7 @@ class wxbmp_from_np_array(object):
         # remember to put here some assertion to check that
         # both arrays have the same shape
 
-        if(lst_data_mask_in != None):
+        if lst_data_mask_in is not None:
           data_3d_in_mask = lst_data_mask_in[lst_pos]
 
         log_msg = '''
@@ -53,7 +53,7 @@ class wxbmp_from_np_array(object):
         for z in range(z_dp):
           #print "z =", z
           tmp_data2d[:, :] = data_3d_in[z:z + 1, :, :]
-          if(lst_data_mask_in != None):
+          if lst_data_mask_in is not None:
             tmp_data2d_mask[:, :] = data_3d_in_mask[z:z + 1, :, :]
           else:
             tmp_data2d_mask = None
@@ -101,7 +101,7 @@ class wxbmp_from_np_array(object):
     xmax = np_2d_tmp.shape[1]
     ymax = np_2d_tmp.shape[0]
 
-    if(np_2d_mask == None):
+    if np_2d_mask is None:
       np_2d_mask = np.zeros( (ymax, xmax), 'double')
 
     transposed_data = np.zeros( (ymax, xmax), 'double')

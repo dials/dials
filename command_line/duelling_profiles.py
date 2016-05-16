@@ -528,7 +528,7 @@ def main(reflections, experiment, params):
     else:
       print j
       result = globals()['model_reflection_%s' % method](reflection, experiment, params)
-    if not result is None:
+    if result is not None:
       results.append(result)
 
   return results

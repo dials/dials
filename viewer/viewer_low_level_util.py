@@ -28,12 +28,12 @@ class grid_frame(wx.Frame):
 
 
 
-    if( text_data != None ):
+    if text_data is not None:
       self.myGrid = text_data
 
     self.my_sizer = wx.BoxSizer(wx.VERTICAL)
 
-    if( text_data != None ):
+    if text_data is not None:
       self.my_sizer.Add(self.myGrid, proportion = 3,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
 
@@ -59,7 +59,7 @@ class flex_3d_frame(wx.Frame):
     self.img_panel = in_upper_panel
     self.myGrid = None
 
-    if( text_data != None ):
+    if text_data is not None:
       self.myGrid = text_data
 
 
@@ -67,7 +67,7 @@ class flex_3d_frame(wx.Frame):
     self.my_sizer.Add(self.img_panel, proportion = 2,
                       flag =  wx.EXPAND | wx.ALL, border = 3)
 
-    if( text_data != None ):
+    if text_data is not None:
       self.my_sizer.Add(self.myGrid, proportion = 3,
                         flag =  wx.EXPAND | wx.ALL, border = 3)
 
@@ -315,7 +315,7 @@ class flex_arr_img_panel(wx.Panel):
 
 
   def to_change_palette(self, palette_name = None):
-    if( palette_name == None ):
+    if palette_name is None:
       print "Something went wrong"
     else:
       self.palette = palette_name

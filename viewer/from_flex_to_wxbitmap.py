@@ -24,12 +24,12 @@ class wxbitmap_convert(object):
   '''
   def __init__(self, data_in_n1, data_in_n2 = None):
 
-    if(data_in_n1 == None and data_in_n2 == None):
+    if data_in_n1 is None and data_in_n2 is None:
 
       self.lst_3d_data = [None]
       self.lst_3d_mask = [None]
 
-    elif( data_in_n1 != None and data_in_n2 == None ):
+    elif data_in_n1 is not None and data_in_n2 is None:
       self.lst_3d_mask = None
       #No double list given
 
