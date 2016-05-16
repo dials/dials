@@ -133,7 +133,6 @@ from dials.algorithms.refinement.reflection_manager import ReflectionManager
 refman = ReflectionManager(obs_refs, experiments, outlier_detector=None)
 
 # Redefine the reflection predictor to use the type expected by the Target class
-from dials.algorithms.refinement.prediction import ExperimentsPredictor
 ref_predictor = ExperimentsPredictor(experiments)
 
 # make a target to ensure reflections are predicted and refman is finalised

@@ -190,7 +190,6 @@ refman = ReflectionManager(obs_refs, experiments)
 ##############################
 
 # Redefine the reflection predictor to use the type expected by the Target class
-from dials.algorithms.refinement.prediction import ExperimentsPredictor
 ref_predictor = ExperimentsPredictor(experiments)
 
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(

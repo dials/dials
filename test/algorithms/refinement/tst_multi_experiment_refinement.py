@@ -255,7 +255,6 @@ xl2uc_param.set_param_vals(xluc_p_vals[1])
 
 # make a refiner
 from dials.algorithms.refinement.refiner import phil_scope
-from libtbx.phil import parse
 params = phil_scope.fetch(source=parse('')).extract()
 
 # in case we want a plot

@@ -186,7 +186,6 @@ xluc_param.set_param_vals(xluc_p_vals[0])
 
 # make a refiner
 from dials.algorithms.refinement.refiner import phil_scope
-from libtbx.phil import parse
 params = phil_scope.fetch(source=parse('')).extract()
 
 # Change this to get a plot
