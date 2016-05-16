@@ -161,8 +161,8 @@ class Report(object):
     '''
     from collections import OrderedDict
     result = OrderedDict()
-    result['tables'] = dict([(table.name, table.as_dict()) for table in self.tables ])
-    result['arrays'] = dict([(array.name, array.as_dict()) for array in self.arrays ])
+    result['tables'] = {table.name: table.as_dict() for table in self.tables}
+    result['arrays'] = {array.name: array.as_dict() for array in self.arrays}
     return result
 
   def as_str(self, prefix=''):

@@ -83,14 +83,14 @@ class PredictionParameterisation(object):
       raise RuntimeError("There are no free parameters for refinement")
 
     # Calculate Experiment to parameterisation mapping
-    e2bp = dict([(ids, i) for i, dp in enumerate(beam_parameterisations) \
-                 for ids in dp.get_experiment_ids()])
-    e2xop = dict([(ids, i) for i, dp in enumerate(xl_orientation_parameterisations) \
-                 for ids in dp.get_experiment_ids()])
-    e2xucp = dict([(ids, i) for i, dp in enumerate(xl_unit_cell_parameterisations) \
-                  for ids in dp.get_experiment_ids()])
-    e2dp = dict([(ids, i) for i, dp in enumerate(detector_parameterisations) \
-                 for ids in dp.get_experiment_ids()])
+    e2bp = {ids: i for i, dp in enumerate(beam_parameterisations) \
+                 for ids in dp.get_experiment_ids()}
+    e2xop = {ids: i for i, dp in enumerate(xl_orientation_parameterisations) \
+                 for ids in dp.get_experiment_ids()}
+    e2xucp = {ids: i for i, dp in enumerate(xl_unit_cell_parameterisations) \
+                  for ids in dp.get_experiment_ids()}
+    e2dp = {ids: i for i, dp in enumerate(detector_parameterisations) \
+                 for ids in dp.get_experiment_ids()}
     from collections import namedtuple
     ParamSet = namedtuple('ParamSet', ['beam_param', 'xl_ori_param',
                                          'xl_uc_param', 'det_param'])
