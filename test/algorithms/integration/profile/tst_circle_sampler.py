@@ -177,7 +177,7 @@ class Test(object):
       assert(index0 == index1[0])
       if index0 % 9 == 0:
         assert(len(index1) == 9)
-        assert(all([idx == index0 + i for i, idx in enumerate(index1)]))
+        assert(all(idx == index0 + i for i, idx in enumerate(index1)))
       else:
         assert(len(index1) == 4)
         assert(index1[1] == (index0 // 9) * 9)

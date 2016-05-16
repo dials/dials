@@ -28,7 +28,7 @@ def cov(*args):
   arrays of equal length)"""
 
   lens = [len(e) for e in args]
-  assert all([e == lens[0] for e in lens])
+  assert all( e == lens[0] for e in lens)
 
   ncols = len(args)
   cov = flex.double(flex.grid(ncols, ncols))
@@ -136,7 +136,7 @@ class FastMCD(object):
 
     # number of observations
     lens = [len(e) for e in self._data]
-    assert all([e == lens[0] for e in lens])
+    assert all( e == lens[0] for e in lens)
     self._n = lens[0]
 
     # some input checks
