@@ -219,7 +219,6 @@ indexing_min_spots = 10
         print 'Integration took %.2f seconds' %(t4-t3)
 
   return stats
-  return stats.n_spots_total, stats.n_spots_no_ice
 
 class handler(server_base.BaseHTTPRequestHandler):
   def do_GET(s):
