@@ -20,7 +20,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
   """Parameterisation for a single abstract panel
   plane, with angles expressed in mrad"""
 
-  def __init__(self, detector, experiment_ids=[0]):
+  def __init__(self, detector, experiment_ids=None):
 
     # The state of a single Panel is its detector matrix d = (d1|d2|d0).
     # However, for the purposes of parameterisation we choose a different
@@ -55,6 +55,8 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # dorg, d1 and d2.
 
     # get some vectors we need from the Panel
+    if experiment_ids is None:
+      experiment_ids = [0]
     panel = detector[0]
     so = matrix.col(panel.get_origin())
     d1 = matrix.col(panel.get_fast_axis())
@@ -392,7 +394,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
   """Parameterisation for a multiple panel detector, treated as a single
   rigid block with 6 DOF."""
 
-  def __init__(self, detector, beam, experiment_ids=[0]):
+  def __init__(self, detector, beam, experiment_ids=None):
 
     # The state of each Panel in the detector model is its matrix
     # d = (d1|d2|d0). We need to define a new coordinate system rigidly
@@ -418,6 +420,8 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
     # orientation of whichever Panel has its centre most closely
     # located to the direct beam intersection. Call this 'mid_panel'
 
+    if experiment_ids is None:
+      experiment_ids = [0]
     beam_centres = [matrix.col(p.get_beam_centre(beam.get_unit_s0())) \
                     for p in detector]
     panel_centres = [0.5 * matrix.col(p.get_image_size_mm())
@@ -868,10 +872,12 @@ class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel
   This is the initial version that sets new panel states directly. The new
   (preferred) version sets at the group level instead."""
 
-  def __init__(self, detector, beam, experiment_ids=[0], level=0):
+  def __init__(self, detector, beam, experiment_ids=None, level=0):
     """The additional 'level' argument selects which level of the detector
     hierarchy is chosen to determine panel groupings that are treated as
     separate rigid blocks."""
+    if experiment_ids is None:
+      experiment_ids = [0]
 
     try:
       h = detector.hierarchy()
@@ -1072,10 +1078,12 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
   panel groups selected at some level of the hierarchy are treated as single
   rigid blocks with 6 DOF."""
 
-  def __init__(self, detector, experiment_ids=[0], level=0):
+  def __init__(self, detector, experiment_ids=None, level=0):
     """The additional 'level' argument selects which level of the detector
     hierarchy is chosen to determine panel groupings that are treated as
     separate rigid blocks."""
+    if experiment_ids is None:
+      experiment_ids = [0]
 
     try:
       h = detector.hierarchy()

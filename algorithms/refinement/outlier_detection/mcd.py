@@ -21,7 +21,7 @@ class MCD(CentroidOutlier):
   calculated using the robust location and scatter estimate from the Minimum
   Covariance Determinant estimate."""
 
-  def __init__(self, cols=["x_resid", "y_resid", "phi_resid"],
+  def __init__(self, cols=None,
                min_num_obs=20,
                separate_experiments=True,
                separate_panels=True,
@@ -35,6 +35,8 @@ class MCD(CentroidOutlier):
                k3=100,
                threshold_probability=0.975):
 
+    if cols is None:
+      cols = ["x_resid", "y_resid", "phi_resid"]
     CentroidOutlier.__init__(self,
       cols=cols,
       min_num_obs=min_num_obs,

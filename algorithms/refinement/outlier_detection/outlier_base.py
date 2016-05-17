@@ -10,13 +10,15 @@ RAD2DEG = 180./pi
 class CentroidOutlier(object):
   """Base class for centroid outlier detection algorithms"""
 
-  def __init__(self, cols=["x_resid", "y_resid", "phi_resid"],
+  def __init__(self, cols=None,
                min_num_obs=20,
                separate_experiments=True,
                separate_panels=True,
                block_width=None):
 
     # column names of the data in which to look for outliers
+    if cols is None:
+      cols = ["x_resid", "y_resid", "phi_resid"]
     self._cols = cols
 
     # minimum number of observations per panel below which all reflections will

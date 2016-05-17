@@ -22,7 +22,7 @@ class BeamParameterisation(ModelParameterisation):
   Pass in a goniometer (if present) to ensure consistent definition of the
   beam rotation angles with respect to the spindle-beam plane."""
 
-  def __init__(self, beam, goniometer=None, experiment_ids=[0]):
+  def __init__(self, beam, goniometer=None, experiment_ids=None):
 
     # The state of the beam model consists of the s0 vector that it is
     # modelling. The initial state is the direction of this vector at the point
@@ -34,6 +34,8 @@ class BeamParameterisation(ModelParameterisation):
     # model.
 
     ### Set up the initial state
+    if experiment_ids is None:
+      experiment_ids = [0]
     s0 = matrix.col(beam.get_s0())
     s0dir = matrix.col(beam.get_unit_s0())
     istate = s0dir
