@@ -25,27 +25,26 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
 
   # write R script
 
-  f = open(rscript, "w")
-
-  f.write("# Run this from within R using\n" + \
-          "# install.packages('rgl')\n" + \
-          "# source('%s')\n\n" % rscript)
-  f.write("library(rgl)\n")
-  f.write("p_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[0].elems)
-  f.write("q_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[1].elems)
-  f.write("r_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[2].elems)
-  f.write("source <- c(%.9f, %.9f, %.9f)\n" % reeke_model._source.elems)
-  f.write("rot_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._axis.elems)
-  f.write("phi_range <- c(%.9f, %.9f)\n" % reeke_model._phi_range)
-  f.write("half_osc <- matrix(data = c(" + \
+  with open(rscript, "w") as f:
+    f.write("# Run this from within R using\n" + \
+            "# install.packages('rgl')\n" + \
+            "# source('%s')\n\n" % rscript)
+    f.write("library(rgl)\n")
+    f.write("p_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[0].elems)
+    f.write("q_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[1].elems)
+    f.write("r_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[2].elems)
+    f.write("source <- c(%.9f, %.9f, %.9f)\n" % reeke_model._source.elems)
+    f.write("rot_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._axis.elems)
+    f.write("phi_range <- c(%.9f, %.9f)\n" % reeke_model._phi_range)
+    f.write("half_osc <- matrix(data = c(" + \
           "%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f" % \
           reeke_model._r_half_osc.elems + \
           "), nrow=3, byrow=T)\n")
-  f.write("dstarmax <- %.9f\n" % reeke_model._dstarmax)
-  f.write("perm <- solve(matrix(data = c(" + \
+    f.write("dstarmax <- %.9f\n" % reeke_model._dstarmax)
+    f.write("perm <- solve(matrix(data = c(" + \
           "%d,%d,%d,%d,%d,%d,%d,%d,%d" % reeke_model._permutation.elems + \
           "), nrow=3, byrow=T))\n")
-  f.write("\n# draw the Ewald and limiting spheres\n" + \
+    f.write("\n# draw the Ewald and limiting spheres\n" + \
           "open3d()\n" + \
           "spheres3d(source,radius=sqrt(sum(source*source)),color='#CCCCFF'," + \
           "alpha=0.3)\n" + \
@@ -82,25 +81,22 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
           "lines3d(circ)\n" + \
           "\n# load the generated indices\n"
           "pts <- read.csv('./%s')\n" % dat)
-  f.write("\n# convert h, k, l to reciprocal space coordinates\n" + \
+    f.write("\n# convert h, k, l to reciprocal space coordinates\n" + \
           "conv <- function(h) {p <- perm %*% h\n" + \
           "    return(p[1]*p_ax + p[2]*q_ax + p[3]*r_ax)}\n" + \
           "pts <- t(apply(pts, MARGIN = 1, FUN = conv))\n" + \
           "\n# draw the generated indices\n" + \
           "points3d(pts, col='blue')\n" + \
           "\n")
-  f.close()
 
   # write data file
 
   indices = reeke_model.generate_indices()
 
-  f = open(dat, "w")
-  f.write("h, k, l\n")
-
-  for hkl in indices:
-    f.write("%d, %d, %d\n" % hkl)
-  f.close()
+  with open(dat, "w") as f:
+    f.write("h, k, l\n")
+    for hkl in indices:
+      f.write("%d, %d, %d\n" % hkl)
 
   print "Generated indices were written to %s" % dat
   print "An R script for visualising these was written to %s," % rscript

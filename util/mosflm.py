@@ -24,22 +24,22 @@ def dump(experiments, directory):
   :param directory: The directory to write to
 
   '''
-  for i in range(len(experiments)):
+  for i, experiment in enumerate(experiments):
     suffix = ""
     if len(experiments) > 1:
-      suffix = "_%i" %(i+1)
+      suffix = "_%i" % (i+1)
 
     sub_dir = "%s%s" % (directory, suffix)
     if not os.path.isdir(sub_dir):
       os.makedirs(sub_dir)
-    detector = experiments[i].detector
-    beam = experiments[i].beam
-    scan = experiments[i].scan
-    goniometer = experiments[i].goniometer
+    detector = experiment.detector
+    beam = experiment.beam
+    scan = experiment.scan
+    goniometer = experiment.goniometer
 
     # XXX imageset is getting the experimental geometry from the image files
     # rather than the input experiments.json file
-    imageset = experiments[i].imageset
+    imageset = experiment.imageset
 
     from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
     R_to_mosflm = align_reference_frame(
@@ -47,7 +47,7 @@ def dump(experiments, directory):
       goniometer.get_rotation_axis(), (0.0, 0.0, 1.0))
     #print R_to_mosflm
 
-    cryst = experiments[i].crystal
+    cryst = experiment.crystal
     cryst = cryst.change_basis(
       cryst.get_space_group().info()\
         .change_of_basis_op_to_reference_setting())
@@ -97,7 +97,7 @@ def format_mosflm_mat(A, U, unit_cell, missets=(0,0,0)):
     lines.append(("%12.8f" * 3) %A.elems[i*3:3*(i+1)])
   lines.append(("%12.3f" * 3) %missets)
   for i in range(3):
-    lines.append("%12.8f"*3 %U.elems[i*3:3*(i+1)])
+    lines.append("%12.8f" * 3 %U.elems[i*3:3*(i+1)])
   lines.append(("%12.4f" * 6) %uc_params)
   lines.append(("%12.3f" * 3) %missets)
   return "\n".join(lines)

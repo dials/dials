@@ -54,8 +54,8 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
 
   for i in range(height, 0, -1):
     row = []
-    for j in range(len(counts)):
-      if counts[j] > (i-1):
+    for j, c in enumerate(counts):
+      if c > (i - 1):
         row.append(char)
       else:
         row.append(' ')

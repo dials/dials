@@ -148,7 +148,6 @@ class Script(object):
 
     matches = refiner.get_matches()
 
-    f = open(filename,"w")
     header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
         "Y_calc\tPhi_calc")
     msg_temp = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t%9.6f")
@@ -158,25 +157,25 @@ class Script(object):
       msg_temp += "\t%9.6f"
     header += "\n"
     msg_temp += "\n"
-    f.write(header)
 
-    for m in matches:
-      (h, k, l) = m['miller_index']
-      frame = m['xyzobs.px.value'][2]
-      x_obs, y_obs, phi_obs = m['xyzobs.mm.value']
-      x_calc, y_calc, phi_calc = m['xyzcal.mm']
-      if has_del_psi:
-        del_psi = m['delpsical.rad']
-        msg = msg_temp % (h, k, l,
+    with open(filename,"w") as f:
+      f.write(header)
+
+      for m in matches:
+        (h, k, l) = m['miller_index']
+        frame = m['xyzobs.px.value'][2]
+        x_obs, y_obs, phi_obs = m['xyzobs.mm.value']
+        x_calc, y_calc, phi_calc = m['xyzcal.mm']
+        if has_del_psi:
+          del_psi = m['delpsical.rad']
+          msg = msg_temp % (h, k, l,
                           frame, x_obs, y_obs, phi_obs,
-                     x_calc, y_calc, phi_calc, del_psi)
-      else:
-        msg = msg_temp % (h, k, l,
+                          x_calc, y_calc, phi_calc, del_psi)
+        else:
+          msg = msg_temp % (h, k, l,
                           frame, x_obs, y_obs, phi_obs,
                           x_calc, y_calc, phi_calc)
-      f.write(msg)
-    f.close()
-    return
+        f.write(msg)
 
   @staticmethod
   def check_input(reflections):

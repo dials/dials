@@ -69,7 +69,7 @@ class Interface(object):
 
     # Get all the subclasses
     stack = list(cls.__subclasses__())
-    while len(stack) > 0:
+    while stack:
       cls = stack.pop()
       yield cls
       stack.extend(cls.__subclasses__())
@@ -114,11 +114,11 @@ class Interface(object):
             names.append(ext.name)
           if default_index < 0:
             default_index = 0
-          if len(names) > 0:
+          if names:
             names[default_index] = '*' + names[default_index]
           return names
         exts = list(cls.extensions())
-        if len(list(exts)) > 0:
+        if exts:
           algorithm = parse('''
             algorithm = %s
               .help = "The choice of algorithm"

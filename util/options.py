@@ -811,7 +811,7 @@ class OptionParser(OptionParserBase):
       # Extract parameter choice lists
       if d.object.type.phil_type == "choice":
         parameter_choice_list[d.path] = \
-          [w[1:] if w.startswith("*") else w for w in [str(x) for x in d.object.words] ]
+          [w[1:] if w.startswith("*") else w for w in (str(x) for x in d.object.words) ]
       elif d.object.type.phil_type == "bool":
         parameter_choice_list[d.path] = ["true", "false"]
 

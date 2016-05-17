@@ -19,7 +19,7 @@ def dump(experiments, reflections, directory):
   from dxtbx.serialize import xds
   if len(experiments) > 0:
 
-    for i in range(len(experiments)):
+    for i, experiment in enumerate(experiments):
       suffix = ""
       if len(experiments) > 1:
         suffix = "_%i" %(i+1)
@@ -29,12 +29,12 @@ def dump(experiments, reflections, directory):
         os.makedirs(sub_dir)
       # XXX imageset is getting the experimental geometry from the image files
       # rather than the input experiments.json file
-      imageset = experiments[i].imageset
-      imageset.set_detector(experiments[i].detector)
-      imageset.set_beam(experiments[i].beam)
-      imageset.set_goniometer(experiments[i].goniometer)
-      imageset.set_scan(experiments[i].scan)
-      crystal_model = experiments[i].crystal
+      imageset = experiment.imageset
+      imageset.set_detector(experiment.detector)
+      imageset.set_beam(experiment.beam)
+      imageset.set_goniometer(experiment.goniometer)
+      imageset.set_scan(experiment.scan)
+      crystal_model = experiment.crystal
       crystal_model = crystal_model.change_basis(
         crystal_model.get_space_group().info()\
           .change_of_basis_op_to_reference_setting())

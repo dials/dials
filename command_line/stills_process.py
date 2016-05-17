@@ -95,7 +95,7 @@ class Script(object):
     params, options, all_paths = self.parser.parse_args(show_diff_phil=False, return_unhandled=True)
 
     # Check we have some filenames
-    if len(all_paths) == 0:
+    if not all_paths:
       self.parser.print_help()
       return
 

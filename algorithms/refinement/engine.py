@@ -396,9 +396,8 @@ class AdaptLbfgs(Refinery):
 
     log = ref_log.getvalue()
     if self._log:
-      f = open(self._log, "a")
-      f.write(log)
-      f.close()
+      with open(self._log, "a") as f:
+        f.write(log)
     ref_log.close()
 
     pos = log.rfind("lbfgs minimizer stop: ")

@@ -155,11 +155,11 @@ def run(args):
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
 
-  if len(experiments) == 0:
+  if not experiments:
     parser.print_help()
     return
 
-  if len(params.hkl) == 0 and params.hkl_limit is None:
+  if not params.hkl and params.hkl_limit is None:
     from libtbx.utils import Sorry
     raise Sorry("Please provide hkl or hkl_limit parameters.")
 
@@ -237,7 +237,7 @@ def run(args):
 
   projections_all = [projections_ref]
 
-  if len(experiments) > 0:
+  if experiments:
     from dials.algorithms.indexing.compare_orientation_matrices import \
         difference_rotation_matrix_and_euler_angles
 

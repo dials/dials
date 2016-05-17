@@ -80,8 +80,8 @@ class Table(object):
     rows = []
     for row in self.rows:
       row_out = OrderedDict()
-      for j in range(len(row)):
-        row_out[self.cols[j][0]] = row[j]
+      for j, r in enumerate(row):
+        row_out[self.cols[j][0]] = r
       rows.append(row_out)
 
     # Create the output
@@ -100,8 +100,8 @@ class Table(object):
     '''
     from libtbx.table_utils import format as table
     rows = [[col[1] for col in self.cols]]
-    for i in range(len(self.rows)):
-      rows.append([str(x) for x in self.rows[i]])
+    for i, row in enumerate(self.rows):
+      rows.append([str(x) for x in row])
     text = [
       prefix + self.title,
       table(rows, has_header=True, justify='left', prefix=prefix),

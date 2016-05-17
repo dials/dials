@@ -252,7 +252,7 @@ class Script(object):
       reflections = reflections[0]
 
       # calculate frame numbers if needed
-      if len(experiments) > 0:
+      if experiments:
         reflections = calculate_frame_numbers(reflections, experiments)
 
       # if we still don't have the right column give up
@@ -261,7 +261,7 @@ class Script(object):
           "there are no experiments provided to calculate these.")
 
     # set trivial case where no scan range is provided at all
-    if len(params.scan_range) == 0:
+    if not params.scan_range:
       params.scan_range = [None]
 
     # check if slicing into blocks

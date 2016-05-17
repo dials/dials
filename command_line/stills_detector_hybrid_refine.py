@@ -371,9 +371,9 @@ class Script(object):
       info='dials.refine.log', debug='dials.refine.debug.log')
 
     # Try to obtain the models and data
-    if len(params.input.experiments) == 0:
+    if not params.input.experiments:
       raise Sorry("No Experiments found in the input")
-    if len(params.input.reflections) == 0:
+    if not params.input.reflections:
       raise Sorry("No reflection data found in the input")
     try:
       assert len(params.input.reflections) == len(params.input.experiments)
@@ -400,16 +400,16 @@ class Script(object):
       panel_oris = []
       for exp_wrapper in params.input.experiments:
         exp = exp_wrapper.data[0]
-        if len(panel_oris) == 0:
-          for i, panel in enumerate(exp.detector):
-            panel_fasts.append(col(panel.get_fast_axis()))
-            panel_slows.append(col(panel.get_slow_axis()))
-            panel_oris.append(col(panel.get_origin()))
-        else:
+        if panel_oris:
           for i, panel in enumerate(exp.detector):
             panel_fasts[i] += col(panel.get_fast_axis())
             panel_slows[i] += col(panel.get_slow_axis())
             panel_oris[i] += col(panel.get_origin())
+        else:
+          for i, panel in enumerate(exp.detector):
+            panel_fasts.append(col(panel.get_fast_axis()))
+            panel_slows.append(col(panel.get_slow_axis()))
+            panel_oris.append(col(panel.get_origin()))
 
       ref_exp = copy.deepcopy(params.input.experiments[0].data[0])
       for i, panel in enumerate(ref_exp.detector):

@@ -21,9 +21,8 @@ def exercise_spots_xds():
 """
 
   tmp_dir = os.path.abspath(open_tmp_directory())
-  f = open(os.path.join(tmp_dir, "SPOT.XDS"), mode="wb")
-  f.write(txt)
-  f.close()
+  with open(os.path.join(tmp_dir, "SPOT.XDS"), mode="wb") as f:
+    f.write(txt)
 
   output_pickle = "%s.pickle" %f.name[:-4]
   args = ["dials.import_xds", f.name, #xparm_file,

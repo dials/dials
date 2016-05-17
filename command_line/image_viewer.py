@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# display_spots.py
+# image_viewer.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #

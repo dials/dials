@@ -246,7 +246,7 @@ def run(args):
     return column
 
 
-  if len(keys_to_print):
+  if keys_to_print:
     keys = [k for k in keys_to_print if k in rlist]
     rows = [keys]
     max_reflections = len(rlist)

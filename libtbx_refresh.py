@@ -6,7 +6,7 @@ try:
   import os
   dials_path = libtbx.env.dist_path('dials')
   filenames = glob(os.path.join(dials_path, "extensions", "*.pyc"))
-  if len(filenames) > 0:
+  if filenames:
     print "Cleaning up 'dials/extensions':"
     for filename in filenames:
       print " Deleting %s" % filename

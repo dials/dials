@@ -54,14 +54,14 @@ def run(args):
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
 
-  if len(reflections) == 0 or (len(experiments) == 0 and len(datablocks) == 0):
+  if not any([reflections, experiments, datablocks]):
     parser.print_help()
     return
 
   if len(reflections) != 1:
     raise Sorry('exactly 1 reflection table must be specified')
   if len(datablocks) != 1:
-    if len(experiments):
+    if experiments:
       if len(experiments.imagesets()) != 1:
         raise Sorry('exactly 1 datablock must be specified')
       imageset = experiments.imagesets()[0]

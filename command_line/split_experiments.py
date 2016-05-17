@@ -62,17 +62,17 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=True)
 
     # Try to load the models and data
-    if len(params.input.experiments) == 0:
+    if not params.input.experiments:
       print "No Experiments found in the input"
       self.parser.print_help()
       return
-    if len(params.input.reflections):
+    if params.input.reflections:
       if len(params.input.reflections) != len(params.input.experiments):
         raise Sorry("The number of input reflections files does not match the "
           "number of input experiments")
 
     experiments = flatten_experiments(params.input.experiments)
-    if len(params.input.reflections):
+    if params.input.reflections:
       reflections = flatten_reflections(params.input.reflections)[0]
     else:
       reflections = None

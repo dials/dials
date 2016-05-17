@@ -93,8 +93,8 @@ class Test(object):
       shutil.copyfile(join(self.path, "centroid_000%d.cbf" % i),
                       "centroid_001%d.cbf" % i)
 
-    infile = open("experiments.json", "r")
-    lines = infile.readlines()
+    with open("experiments.json", "r") as infile:
+      lines = infile.readlines()
     inscan = False
     inimagerange = False
     inoscillation = False
@@ -129,10 +129,8 @@ class Test(object):
             break
     assert(done1)
     assert(done2)
-    infile.close()
-    outfile = open("experiments.json", "w")
-    outfile.write('\n'.join(lines))
-    outfile.close()
+    with open("experiments.json", "w") as outfile:
+      outfile.write('\n'.join(lines))
 
     # Call dials.integrate
     easy_run.fully_buffered([

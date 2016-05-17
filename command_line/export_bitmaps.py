@@ -160,9 +160,8 @@ def run(args):
         output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
 
       print "Exporting %s" %path
-      tmp_stream = open(path, 'wb')
-      pil_img.save(tmp_stream, format=params.format)
-      tmp_stream.close()
+      with open(path, 'wb') as tmp_stream:
+        pil_img.save(tmp_stream, format=params.format)
 
 def image_filter(raw_data, mask, display,
                  gain_value, nsigma_b, nsigma_s, global_threshold,
