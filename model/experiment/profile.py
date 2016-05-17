@@ -20,7 +20,7 @@ class ProfileModelIface(ProfileModelBaseIface):
   '''
 
   @classmethod
-  def create(Class,
+  def create(cls,
              params,
              reflections,
              crystal,

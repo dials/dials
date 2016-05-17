@@ -14,6 +14,7 @@ dummy = False
 class _NonBlockingStreamReader:
   '''Reads a stream in a thread to avoid blocking/deadlocks'''
   def __init__(self, stream, output=True, debug=False, notify=None):
+    '''Creates and starts a thread which reads from a stream.'''
     self._buffer = StringIO.StringIO()
     self._closed = False
     self._debug = debug
@@ -40,9 +41,12 @@ class _NonBlockingStreamReader:
     self._thread.start()
 
   def has_finished(self):
+    '''Returns whether the thread reading from the stream is still alive.'''
     return self._terminated
 
   def get_output(self):
+    '''Retrieve the stored data in full.
+       This call may block if the reading thread has not yet terminated.'''
     if not self.has_finished():
       if self._debug:
         underrun_debug_timer = timeit.default_timer()
@@ -64,6 +68,7 @@ class _NonBlockingStreamReader:
 class _NonBlockingStreamWriter:
   '''Writes to a stream in a thread to avoid blocking/deadlocks'''
   def __init__(self, stream, data, debug=False, notify=None):
+    '''Creates and starts a thread which writes data to stream.'''
     self._buffer = data
     self._buffer_len = len(data)
     self._buffer_pos = 0
@@ -100,12 +105,15 @@ class _NonBlockingStreamWriter:
     self._thread.start()
 
   def has_finished(self):
+    '''Returns whether the thread writing to the stream is still alive.'''
     return self._terminated
 
   def bytes_sent(self):
+    '''Return the number of bytes written so far.'''
     return self._buffer_pos
 
   def bytes_remaining(self):
+    '''Return the number of bytes still to be written.'''
     return self._buffer_len - self._buffer_pos
 
 def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=True, print_stderr=True):
@@ -150,9 +158,11 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
 
     # wait for some time or until a stream is closed
     try:
-      if thread_communication.get(True, 0.5):
-        if debug:
-          print "Event received from stream tread"
+      # Wait for up to 0.5 seconds or for any signal from the stdin/out streams,
+      # which could indicate that the process has terminated.
+      event = thread_communication.get(True, 0.5)
+      if event and debug:
+        print "Event received from stream tread"
     except KeyboardInterrupt:
       p.kill() # if user pressed Ctrl+C we won't be able to produce a proper report anyway
                # but at least make sure the child process dies with us

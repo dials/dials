@@ -102,7 +102,7 @@ class Model(ProfileModelIface):
       assert(self._n_sigma > 0)
 
   @classmethod
-  def from_dict(Class, obj):
+  def from_dict(cls, obj):
     ''' Convert the profile model from a dictionary. '''
     if obj['__id__'] != "gaussian_rs":
       raise RuntimeError('expected __id__ gaussian_rs, got %s' % obj['__id__'])
@@ -113,7 +113,7 @@ class Model(ProfileModelIface):
       assert(len(sigma_b) == len(sigma_m))
       sigma_b = flex.double(sigma_b)
       sigma_m = flex.double(sigma_m)
-    return Class(None, n_sigma, sigma_b, sigma_m, deg=True)
+    return cls(None, n_sigma, sigma_b, sigma_m, deg=True)
 
   def to_dict(self):
     ''' Convert the model to a dictionary. '''
@@ -177,7 +177,7 @@ class Model(ProfileModelIface):
     return 1
 
   @classmethod
-  def create(Class,
+  def create(cls,
              params,
              reflections,
              crystal,
@@ -237,7 +237,7 @@ class Model(ProfileModelIface):
       goniometer,
       scan,
       params.gaussian_rs.filter.min_zeta)
-    return Class(
+    return cls(
       params=params,
       n_sigma=3.0,
       sigma_b=calculator.sigma_b(),

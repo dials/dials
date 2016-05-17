@@ -25,7 +25,7 @@ class GaussianRSProfileModelExt(ProfileModelIface):
     return phil_scope
 
   @classmethod
-  def algorithm(self):
+  def algorithm(cls):
     from dials.algorithms.profile_model.gaussian_rs import Model
     return Model
 

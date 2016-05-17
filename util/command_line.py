@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import time
 
 def parse_range_list_string(string):
   """Parse a string in the following ways:
@@ -47,18 +48,18 @@ class ProgressBarTimer:
 
   def __init__(self):
     """ Init the progress bar timer. """
-    from time import time
-    self._last_time = time()
+    self._last_time = time.time()
     self._last_perc = 0
     self._update_period = 0.5
     self._n_seconds_left = -1
 
+  def get_elapsed_time(self):
+    return time.time() - self._last_time
+
   def update(self, percent):
     """ Update the timer. """
-    from time import time
-
     # Get the current time diff between last time
-    curr_time = time()
+    curr_time = time.time()
     diff_time = curr_time - self._last_time
 
     # Only update after certain period or at 100%
@@ -93,7 +94,6 @@ class ProgressBar:
     self._length = length
 
     self._timer = ProgressBarTimer()
-    self._start_time = self._timer._last_time
 
     # Print 0 percent
     self.update(0)
@@ -163,12 +163,10 @@ class ProgressBar:
 
     ''' Print the 'end of comand' string.'''
     from sys import stdout
-    from time import time
-
 
     if self._estimate_time:
       # Get the time string
-      time_string = '{0:.2f}s'.format(time() - self._start_time)
+      time_string = '{0:.2f}s'.format(self._timer.get_elapsed_time())
 
       # Truncate the string
       max_length = self._length - self._indent - len(time_string) - 1
@@ -182,7 +180,7 @@ class ProgressBar:
 
     else:
 
-      # Truncaet the string
+      # Truncate the string
       max_length = self._length - self._indent
       string = string[:max_length]
 
@@ -208,60 +206,58 @@ class Command(object):
   print_time = True
 
   @classmethod
-  def start(self, string):
+  def start(cls, string):
     ''' Print the 'start command' string.'''
     from sys import stdout
-    from time import time
     # from termcolor import colored
 
     # Get the command start time
-    self._start_time = time()
+    cls._start_time = time.time()
 
     # do not output if not a tty
     if not stdout.isatty():
       return
 
     # Truncate the string to the maximum length
-    max_length = self.max_length - self.indent - 3
+    max_length = cls.max_length - cls.indent - 3
     string = string[:max_length]
-    string = (' ' * self.indent) + string + '...'
+    string = (' ' * cls.indent) + string + '...'
 
     # Write the string to stdout
     stdout.write(string)
     stdout.flush()
 
   @classmethod
-  def end(self, string):
-    ''' Print the 'end of comand' string.'''
+  def end(cls, string):
+    ''' Print the 'end of command' string.'''
     from sys import stdout
-    from time import time
     #from termcolor import colored
 
     # Check if we want to print the time or not
-    if self.print_time:
+    if cls.print_time:
 
       # Get the time string
-      time_string = '{0:.2f}s'.format(time() - self._start_time)
+      time_string = '{0:.2f}s'.format(time.time() - cls._start_time)
 
       # Truncate the string
-      max_length = self.max_length - self.indent - len(time_string) - 1
+      max_length = cls.max_length - cls.indent - len(time_string) - 1
       string = string[:max_length]
 
       # Add an indent and a load of dots and then the time string
       dot_length = 1 + max_length - len(string)
-      string = (' ' * self.indent) + string
+      string = (' ' * cls.indent) + string
       string = string + '.' * (dot_length)
       string = string + time_string
 
     else:
 
-      # Truncaet the string
-      max_length = self.max_length - self.indent
+      # Truncate the string
+      max_length = cls.max_length - cls.indent
       string = string[:max_length]
 
       # Add a load of dots
       dot_length = max_length - len(string)
-      string = (' ' * self.indent) + string
+      string = (' ' * cls.indent) + string
       string = string + '.' * (dot_length)
 
     # Write the string to stdout

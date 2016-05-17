@@ -651,16 +651,16 @@ class CommandState(object):
     return dictionary
 
   @classmethod
-  def from_dict(Class, dictionary):
+  def from_dict(cls, dictionary):
     '''
     Convert the dictionary to the state
 
     '''
-    state = Class()
+    state = cls()
     for key, value in dictionary.iteritems():
       if key == 'children':
         for item in value:
-          child = Class.from_dict(item)
+          child = cls.from_dict(item)
           child.parent = state
           state.children.append(child)
       else:
@@ -1138,7 +1138,7 @@ class RefineBravaisSettings(Command):
     self.check_files_exist(self.filenames.values())
 
   @classmethod
-  def bravais_summary(Class, state):
+  def bravais_summary(cls, state):
     '''
     Get the bravais summary
 
@@ -1148,13 +1148,13 @@ class RefineBravaisSettings(Command):
       return json.load(summary_file)
 
   @classmethod
-  def bravais_setting_filenames(Class, state):
+  def bravais_setting_filenames(cls, state):
     '''
     Get the bravais setting filenames
 
     '''
     from os.path import join
-    bs_summary = Class.bravais_summary(state)
+    bs_summary = cls.bravais_summary(state)
     bs_filenames = {}
     for name, value in bs_summary.iteritems():
       bs_filenames[name] = join(state.directory, 'bravais_setting_%s.json' % name)
@@ -1484,18 +1484,18 @@ class ApplicationState(object):
     return obj
 
   @classmethod
-  def from_dict(Class, dictionary):
+  def from_dict(cls, dictionary):
     '''
     Load the class from a dictionary
 
     '''
-    memento = Class.Memento(
+    memento = cls.Memento(
       counter   = dictionary['counter'],
       current   = dictionary['current'],
       mode      = dictionary['mode'],
       directory = dictionary['directory'],
       commands  = CommandState.from_dict(dictionary['commands']))
-    return Class(memento=memento)
+    return cls(memento=memento)
 
   def dump(self, filename):
     '''
@@ -1509,7 +1509,7 @@ class ApplicationState(object):
       json.dump(self.as_dict(), outfile, indent=2, ensure_ascii=True)
 
   @classmethod
-  def load(Class, filename):
+  def load(cls, filename):
     '''
     Load the state from file
 
@@ -1544,7 +1544,7 @@ class ApplicationState(object):
         rv[key] = value
       return rv
     with open(filename) as infile:
-      return Class.from_dict(json.load(infile, object_hook=_decode_dict))
+      return cls.from_dict(json.load(infile, object_hook=_decode_dict))
 
 
 class Controller(object):
