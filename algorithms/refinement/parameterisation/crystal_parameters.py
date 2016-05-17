@@ -26,7 +26,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
   """Parameterisation for crystal orientation, with angles expressed in
   mrad"""
 
-  def __init__(self, crystal, experiment_ids=[0]):
+  def __init__(self, crystal, experiment_ids=None):
 
     # The state of a crystal orientation parameterisation is an orientation
     # matrix '[U]'. The initial state is a snapshot of the crystal
@@ -37,6 +37,8 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     # [U] = [Phi3][Phi2][Phi1][U0]
 
     ### Set up the initial state
+    if experiment_ids is None:
+      experiment_ids = [0]
     istate = crystal.get_U()
 
     ### Set up the parameters
@@ -87,7 +89,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
 class CrystalUnitCellParameterisation(ModelParameterisation):
   """Parameterisation for the unit cell"""
 
-  def __init__(self, crystal, experiment_ids=[0]):
+  def __init__(self, crystal, experiment_ids=None):
 
     # The state of the unit cell parameterisation is the reciprocal space
     # orthogonalisation matrix 'B'. The initial state is irrelevant for
@@ -98,6 +100,8 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     # parameters are irrelevant and are set here to None.
 
     ### Set up the initial state
+    if experiment_ids is None:
+      experiment_ids = [0]
     istate = None
 
     ### Set up symmetrizing object

@@ -56,7 +56,9 @@ To stop the server::
 
 stop = False
 
-def work(filename, cl=[]):
+def work(filename, cl=None):
+  if cl is None:
+    cl = []
   import libtbx.phil
   phil_scope = libtbx.phil.parse('''\
 index = False
