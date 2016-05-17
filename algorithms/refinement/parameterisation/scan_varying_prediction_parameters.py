@@ -64,20 +64,20 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     nref = len(reflections)
     # set columns for U and B if needed
-    if not reflections.has_key('u_matrix'):
+    if 'u_matrix' not in reflections:
       reflections['u_matrix'] = flex.mat3_double(nref)
-    if not reflections.has_key('b_matrix'):
+    if 'b_matrix' not in reflections:
       reflections['b_matrix'] = flex.mat3_double(nref)
 
     # set columns in the reflection table to store the derivative of state for
     # each reflection, if needed
     null = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
-    if self._xl_orientation_parameterisations and not reflections.has_key("dU_dp0"):
+    if self._xl_orientation_parameterisations and "dU_dp0" not in reflections:
       max_free_U_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
       for i in range(max_free_U_params):
         colname = "dU_dp{0}".format(i)
         reflections[colname] = flex.mat3_double(nref, null)
-    if self._xl_unit_cell_parameterisations and not reflections.has_key("dB_dp0"):
+    if self._xl_unit_cell_parameterisations and "dB_dp0" not in reflections:
       max_free_B_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
       for i in range(max_free_B_params):
         colname = "dB_dp{0}".format(i)

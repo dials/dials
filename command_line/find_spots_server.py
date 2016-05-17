@@ -152,7 +152,7 @@ indexing_min_spots = 10
       t3 = time.time()
       print 'Indexing took %.2f seconds' %(t3-t2)
 
-    if integrate and stats.has_key('lattices'):
+    if integrate and 'lattices' in stats:
 
       from dials.algorithms.profile_model.factory import ProfileModelFactory
       from dials.algorithms.integration.integrator import IntegratorFactory

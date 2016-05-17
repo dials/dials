@@ -172,7 +172,7 @@ class Target(object):
 
     # set the entering flags if this has not been done
     from dials.algorithms.refinement.reflection_manager import calculate_entering_flags
-    if not reflections.has_key("entering"):
+    if "entering" not in reflections:
       reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
 
     # can only predict for experiments that exist and within the scan range

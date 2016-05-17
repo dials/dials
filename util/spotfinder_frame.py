@@ -780,7 +780,7 @@ class SpotFrame(XrayFrame) :
                                "#ff7f00", "#ffff33", "#a65628", "#f781bf",
                                "#999999"] * 10
     for ref_list in self.reflections:
-      if ref_list.has_key('bbox'):
+      if 'bbox' in ref_list:
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
         bbox_sel = (i_frame >= z0) & (i_frame < z1)
@@ -790,7 +790,7 @@ class SpotFrame(XrayFrame) :
           nx = x1 - x0 # size of reflection box in x-direction
           ny = y1 - y0 # size of reflection box in y-direction
           #nz = z1 - z0 # number of frames this spot appears on
-          if (self.settings.show_all_pix and reflection.has_key('shoebox')
+          if (self.settings.show_all_pix and 'shoebox' in reflection
               and reflection['shoebox'].mask.size() > 0):
             self.show_all_pix_timer.start()
             shoebox = reflection['shoebox']
@@ -843,7 +843,7 @@ class SpotFrame(XrayFrame) :
             shoebox_data.extend(lines)
             self.show_shoebox_timer.stop()
 
-          if (self.settings.show_max_pix and reflection.has_key('shoebox')
+          if (self.settings.show_max_pix and 'shoebox' in reflection
               and reflection['shoebox'].data.size() > 0):
             self.show_max_pix_timer.start()
             shoebox = reflection['shoebox'].data
@@ -862,7 +862,7 @@ class SpotFrame(XrayFrame) :
             self.show_max_pix_timer.stop()
 
           if (self.settings.show_ctr_mass and
-              reflection.has_key('xyzobs.px.value')):
+              'xyzobs.px.value' in reflection):
             self.show_ctr_mass_timer.start()
             centroid = reflection['xyzobs.px.value']
             if math.floor(centroid[2]) == i_frame:
@@ -877,10 +877,10 @@ class SpotFrame(XrayFrame) :
               ctr_mass_data.extend(lines)
             self.show_ctr_mass_timer.stop()
 
-      if ((ref_list.has_key('xyzcal.px') or ref_list.has_key('xyzcal.mm')) and
-          (self.settings.show_predictions or (
-            self.settings.show_miller_indices and ref_list.has_key('miller_index')))):
-        if ref_list.has_key('xyzcal.px'):
+      if ('xyzcal.px' in ref_list or 'xyzcal.mm' in ref_list) and
+         (self.settings.show_predictions or
+           (self.settings.show_miller_indices and 'miller_index' in ref_list)):
+        if 'xyzcal.px' in ref_list:
           frame_numbers = ref_list['xyzcal.px'].parts()[2]
         else:
           phi = ref_list['xyzcal.mm'].parts()[2]
@@ -891,15 +891,15 @@ class SpotFrame(XrayFrame) :
           frame_predictions_sel = (
             (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
           for reflection in ref_list.select(frame_predictions_sel & expt_sel):
-            if (self.settings.show_predictions and
-                reflection.has_key('xyzcal.px')):
-              x, y = map_coords(reflection['xyzcal.px'][0]+ 0.5,
+            if self.settings.show_predictions and
+               'xyzcal.px' in reflection:
+              x, y = map_coords(reflection['xyzcal.px'][0] + 0.5,
                                 reflection['xyzcal.px'][1] + 0.5,
                                 reflection['panel'])
               predictions_data.append(
                 (x, y, {'colour':self.prediction_colours[i_expt]}))
-            elif (self.settings.show_predictions and
-                  reflection.has_key('xyzcal.mm')):
+            elif self.settings.show_predictions and
+                 'xyzcal.mm' in reflection:
               x, y = detector[reflection['panel']].millimeter_to_pixel(
                 reflection['xyzcal.mm'][:2])
               x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])

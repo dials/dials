@@ -152,7 +152,7 @@ class Script(object):
     header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
         "Y_calc\tPhi_calc")
     msg_temp = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t%9.6f")
-    has_del_psi = matches.has_key('delpsical.rad')
+    has_del_psi = 'delpsical.rad' in matches
     if has_del_psi:
       header += "\tDelta_Psi"
       msg_temp += "\t%9.6f"
@@ -187,7 +187,7 @@ class Script(object):
     msg = "The supplied reflection table does not have the required data " + \
       "column: {0}"
     for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
-      if not reflections.has_key(key):
+      if key not in reflections:
         msg = msg.format(key)
         raise Sorry(msg)
 
@@ -306,7 +306,7 @@ class Script(object):
       reflections['s1'] = preds['s1']
       reflections['xyzcal.mm'] = preds['xyzcal.mm']
       reflections['xyzcal.px'] = preds['xyzcal.px']
-      if preds.has_key('entering'):
+      if 'entering' in preds:
         reflections['entering'] = preds['entering']
 
       # set used_in_refinement and centroid_outlier flags

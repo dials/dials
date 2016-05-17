@@ -1474,7 +1474,7 @@ class Refiner(object):
     rad2deg = 180/pi
 
     # check if it makes sense to proceed
-    if not self._refinery.history.has_key("out_of_sample_rmsd"): return
+    if not "out_of_sample_rmsd" in self._refinery.history: return
     nref = len(self.get_free_reflections())
     if nref < 10: return # don't do anything if very few refs
 

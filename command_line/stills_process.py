@@ -331,9 +331,9 @@ class Processor(object):
     # Integrate the reflections
     integrated = integrator.integrate()
 
-    if integrated.has_key('intensity.prf.value'):
+    if 'intensity.prf.value' in integrated:
       method = 'prf' # integration by profile fitting
-    elif integrated.has_key('intensity.sum.value'):
+    elif 'intensity.sum.value' in integrated:
       method = 'sum' # integration by simple summation
     integrated = integrated.select(integrated['intensity.' + method + '.variance'] > 0) # keep only spots with sigmas above zero
 

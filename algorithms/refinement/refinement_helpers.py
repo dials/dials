@@ -298,7 +298,7 @@ def calculate_frame_numbers(reflections, experiments):
   set"""
 
   # Only do this if we have to
-  if reflections.has_key('xyzobs.px.value'): return reflections
+  if 'xyzobs.px.value' in reflections: return reflections
 
   # Ok, frames are not set, so set them, with dummy observed pixel values
   frames = flex.double(len(reflections), 0.)

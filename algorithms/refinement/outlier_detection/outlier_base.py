@@ -58,7 +58,7 @@ class CentroidOutlier(object):
         type(self).__name__))
 
     # check the columns are present
-    for col in self._cols: assert reflections.has_key(col)
+    for col in self._cols: assert col in reflections
 
     sel = reflections.get_flags(reflections.flags.used_in_refinement)
     all_data = reflections.select(sel)

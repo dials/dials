@@ -256,7 +256,7 @@ class Script(object):
         reflections = calculate_frame_numbers(reflections, experiments)
 
       # if we still don't have the right column give up
-      if not reflections.has_key('xyzobs.px.value'):
+      if 'xyzobs.px.value' not in reflections:
         raise Sorry("These reflections do not have frame numbers set, and "
           "there are no experiments provided to calculate these.")
 

@@ -117,7 +117,7 @@ class render_3d(object):
   def set_points(self):
     reflections = self.reflections
 
-    if reflections.has_key('miller_index'):
+    if 'miller_index' in reflections:
       indexed_sel = reflections.get_flags(reflections.flags.indexed)
       if self.settings.display == 'indexed':
         reflections = reflections.select(indexed_sel)

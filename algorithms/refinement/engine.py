@@ -180,13 +180,13 @@ class Refinery(object):
     self.history.set_last_cell("rmsd", self._target.rmsds())
     self.history.set_last_cell("parameter_vector", self._parameters.get_param_vals())
     self.history.set_last_cell("objective", self._f)
-    if self.history.has_key("gradient"):
+    if "gradient" in self.history:
       self.history.set_last_cell("gradient", self._g)
-    if self.history.has_key("parameter_correlation"):
+    if "parameter_correlation" in self.history:
       if self._jacobian is not None:
         self.history.set_last_cell("parameter_correlation",
           self._packed_corr_mat(self._jacobian))
-    if self.history.has_key("out_of_sample_rmsd"):
+    if "out_of_sample_rmsd" in self.history:
       preds = self._target.predict_for_free_reflections()
       self.history.set_last_cell("out_of_sample_rmsd",
         self._target.rmsds_for_reflection_table(preds))
@@ -223,7 +223,7 @@ class Refinery(object):
     the Jacobian that was stored in the journal at the given step number. If
     not available, return None"""
 
-    if self.history.has_key("parameter_correlation") is False: return None
+    if "parameter_correlation" not in self.history: return None
     try:
       packed = self.history["parameter_correlation"][step]
     except IndexError:
@@ -669,7 +669,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       self.history.set_last_cell("gradient_norm", gn)
 
       # extra journalling post solve
-      if self.history.has_key("solution"):
+      if "solution" in self.history:
         self.history.set_last_cell("solution", self.actual.step().deep_copy())
       self.history.set_last_cell("solution_norm", self.step().norm())
       self.history.set_last_cell("reduced_chi_squared", self.chi_sq())
@@ -793,7 +793,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       # extra journalling post solve
       self.history.set_last_cell("mu", self.mu)
       self.history.set_last_cell("nu", nu)
-      if self.history.has_key("solution"):
+      if "solution" in self.history:
         self.history.set_last_cell("solution", self.actual.step().deep_copy())
       self.history.set_last_cell("solution_norm", self.step().norm())
       self.history.set_last_cell("reduced_chi_squared", self.chi_sq())

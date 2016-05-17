@@ -104,7 +104,7 @@ class ExperimentsPredictor(object):
       refs = reflections.select(sel)
 
       # determine whether to try scan-varying prediction
-      if refs.has_key('ub_matrix'):
+      if 'ub_matrix' in refs:
         UBs = refs['ub_matrix']
         # predict and assign in place
         self._predictors[iexp].for_reflection_table(refs, UBs)
