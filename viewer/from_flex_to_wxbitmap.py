@@ -74,8 +74,8 @@ class wxbitmap_convert(object):
         self.lst_3d_mask.append(img2_np)
 
 
-        if img1_np.shape[0] == 0 or img1_np.shape[1] == 0 or
-           img1_np.shape[2] == 0 or img2_np.shape[0] == 0 or
+        if img1_np.shape[0] == 0 or img1_np.shape[1] == 0 or \
+           img1_np.shape[2] == 0 or img2_np.shape[0] == 0 or \
            img2_np.shape[1] == 0 or img2_np.shape[2] == 0:
 
           self.lst_3d_data = [None]
