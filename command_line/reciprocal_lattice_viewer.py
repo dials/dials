@@ -168,7 +168,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
     app = wx.GetApp()
-    if (getattr(app, "settings", None) is not None) :
+    if getattr(app, "settings", None) is not None:
       # XXX copying the initial settings avoids awkward interactions when
       # multiple viewer windows are opened
       self.settings = copy.deepcopy(app.settings)
@@ -200,7 +200,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.settings_panel.add_experiments_buttons()
 
   def OnActive (self, event) :
-    if (self.IsShown()) and (type(self.viewer).__name__ != "_wxPyDeadObject") :
+    if self.IsShown() and type(self.viewer).__name__ != "_wxPyDeadObject":
       self.viewer.Refresh()
 
   def OnClose (self, event) :
@@ -209,7 +209,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     event.Skip()
 
   def OnDestroy (self, event) :
-    if (self.parent is not None) :
+    if self.parent is not None:
       self.parent.viewer = None
     event.Skip()
 
@@ -258,7 +258,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     from wx.lib.agw import floatspin
     self.d_min_ctrl = floatspin.FloatSpin(parent=self, increment=0.05, digits=2)
     self.d_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
-    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
       self.d_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
     box = wx.BoxSizer(wx.HORIZONTAL)
     self.panel_sizer.Add(box)
@@ -282,7 +282,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
 
     self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
     self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
-    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
       self.beam_fast_ctrl.SetBackgroundColour(self.GetBackgroundColour())
     box = wx.BoxSizer(wx.HORIZONTAL)
     self.panel_sizer.Add(box)
@@ -293,7 +293,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
 
     self.beam_slow_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
     self.beam_slow_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
-    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
       self.beam_slow_ctrl.SetBackgroundColour(self.GetBackgroundColour())
     box = wx.BoxSizer(wx.HORIZONTAL)
     self.panel_sizer.Add(box)
@@ -305,7 +305,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.marker_size_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0,
                                           min_val=1)
     self.marker_size_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
-    if (wx.VERSION >= (2,9)) : # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
       self.marker_size_ctrl.SetBackgroundColour(self.GetBackgroundColour())
     box = wx.BoxSizer(wx.HORIZONTAL)
     self.panel_sizer.Add(box)
@@ -420,7 +420,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     self.colors = colors
 
   def draw_points(self):
-    if (self.points_display_list is None):
+    if self.points_display_list is None:
       self.points_display_list = gltbx.gl_managed.display_list()
       self.points_display_list.compile()
       glLineWidth(1)
@@ -472,7 +472,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
     glDisable(GL_LIGHTING)
     glColor3f(1.0, 1.0, 1.0)
-    #if (self.settings.black_background) :
+    #if self.settings.black_background:
       #glColor3f(1.0, 1.0, 1.0)
     #else :
       #glColor3f(0.,0.,0.)

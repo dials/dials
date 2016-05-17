@@ -6,7 +6,7 @@ class Test(object):
   def __init__(self):
     import libtbx.load_env
     try:
-      dials_regression = libtbx.env.dist_path( 'dials_regression' )
+      dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
       print 'FAIL: dials_regression not configured'
       exit(0)

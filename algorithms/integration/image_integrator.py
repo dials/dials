@@ -419,7 +419,7 @@ class ManagerImage(object):
     :return: The result
 
     '''
-    assert self.finalized == True, "Manager is not finalized"
+    assert self.finalized, "Manager is not finalized"
     return self.reflections
 
   def finished(self):
@@ -456,7 +456,7 @@ class ManagerImage(object):
     self.reflections.split_partials()
     num_partial = len(self.reflections)
     assert num_partial >= num_full, "Invalid number of partials"
-    if (num_partial > num_full):
+    if num_partial > num_full:
       info(' Split %d reflections into %d partial reflections\n' % (
         num_full,
         num_partial))

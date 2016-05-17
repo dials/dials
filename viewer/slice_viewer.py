@@ -101,7 +101,7 @@ class show_reflections(show_3d):
     #two_windows = True
     print "two_windows =", two_windows
 
-    if(two_windows == True):
+    if two_windows:
       app = show_tabl_2fr_wx_app(redirect = False)
     else:
       app = show_tabl_1fr_wx_app(redirect = False)
@@ -128,7 +128,7 @@ class show_tabl_2fr_wx_app(wx.App):
 
   def in_tabl(self, table, two_windows):
     self.data_grid.ini_n_intro(table)
-    if(two_windows == True):
+    if two_windows:
       print "two_windows =", two_windows
       self.flex_panel.ini_n_intro(table)
       self.info_panel.ini_n_intro(table)
@@ -154,7 +154,7 @@ class show_tabl_1fr_wx_app(wx.App):
 
   def in_tabl(self, table, two_windows):
 
-    #if(two_windows == False):
+    #if not two_windows:
     self.upper_panel.ini_n_intro(table)
     self.data_grid.ini_n_intro(table)
 

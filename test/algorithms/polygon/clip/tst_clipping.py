@@ -372,7 +372,7 @@ class TestLineWithRect(object):
       line = (point1, point2)
       line, status = clip.line_with_rect(line, self.box)
       if self.intersects(point1, point2):
-        assert(status == True)
+        assert(status)
       else:
         assert(status == False)
 

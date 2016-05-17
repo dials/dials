@@ -187,37 +187,37 @@ class Test(object):
             coord = matrix.col(sampler.coord(l2))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
-            weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+            weight = sampler.weight(l1, (coord + coord1)/2.0)
             assert(abs(weight - 0.5) < eps)
           if i > 0:
             coord = matrix.col(sampler.coord(l3))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
-            weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+            weight = sampler.weight(l1, (coord1 + coord)/2.0)
             assert(abs(weight - 0.5) < eps)
           if j < ny-1:
             coord = matrix.col(sampler.coord(l4))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
-            weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+            weight = sampler.weight(l1, (coord + coord1)/2.0)
             assert(abs(weight - 0.5) < eps)
           if j > 0:
             coord = matrix.col(sampler.coord(l5))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
-            weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+            weight = sampler.weight(l1, (coord1 + coord)/2.0)
             assert(abs(weight - 0.5) < eps)
           if k < nz-1:
             coord = matrix.col(sampler.coord(l6))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
-            weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+            weight = sampler.weight(l1, (coord + coord1)/2.0)
             assert(abs(weight - 0.5) < eps)
           if k > 0:
             coord = matrix.col(sampler.coord(l7))
             weight = sampler.weight(l1, coord)
             assert(abs(weight - expected) < eps)
-            weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+            weight = sampler.weight(l1, (coord1 + coord)/2.0)
             assert(abs(weight - 0.5) < eps)
 
     print 'OK'

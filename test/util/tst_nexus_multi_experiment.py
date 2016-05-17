@@ -156,23 +156,23 @@ def run_single(experiments1, filename):
   num = len(beam1)
   for i in range(0,num-1):
     for j in range(1,num):
-      if (beam1[i] == beam1[j]):
+      if beam1[i] == beam1[j]:
         assert(beam2[i] == beam2[j])
       else:
         assert(beam2[i] != beam2[j])
-      if (detector1[i] == detector1[j]):
+      if detector1[i] == detector1[j]:
         assert(detector2[i] == detector2[j])
       else:
         assert(detector2[i] != detector2[j])
-      if (goniometer1[i] == goniometer1[j]):
+      if goniometer1[i] == goniometer1[j]:
         assert(goniometer2[i] == goniometer2[j])
       else:
         assert(goniometer2[i] != goniometer2[j])
-      if (scan1[i] == scan1[j]):
+      if scan1[i] == scan1[j]:
         assert(scan2[i] == scan2[j])
       else:
         assert(scan2[i] != scan2[j])
-      if (crystal1[i] == crystal1[j]):
+      if crystal1[i] == crystal1[j]:
         assert(crystal2[i] == crystal2[j])
       else:
         assert(crystal2[i] != crystal2[j])

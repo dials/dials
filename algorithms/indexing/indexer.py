@@ -723,7 +723,7 @@ class indexer_base(object):
 
         self.index_reflections(experiments, self.reflections)
 
-        if (i_cycle == 0 and self.params.known_symmetry.space_group is not None):
+        if i_cycle == 0 and self.params.known_symmetry.space_group is not None:
           # now apply the space group symmetry only after the first indexing
           # need to make sure that the symmetrized orientation is similar to the P1 model
           target_space_group = self.target_symmetry_primitive.space_group()

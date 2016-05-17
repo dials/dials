@@ -31,7 +31,7 @@ def random_rotation():
 def any_compatible_unit_cell(space_group, volume=None, asu_volume=None):
   # based on sgtbx.any_compatible_unit_cell()
   assert [volume, asu_volume].count(None) == 1
-  if (volume is None):
+  if volume is None:
     volume = asu_volume * space_group.order_z()
   sg_number = space_group.type().number()
   a = 1.
@@ -56,15 +56,15 @@ def any_compatible_unit_cell(space_group, volume=None, asu_volume=None):
     else:
       print a, b, c, alpha, beta, gamma
 
-  if   (sg_number <   3):
+  if sg_number <   3:
     params = (a, b, c, alpha, beta, gamma)
-  elif (sg_number <  16):
+  elif sg_number <  16:
     params = (a, b, c, 90, beta, 90)
-  elif (sg_number <  75):
+  elif sg_number <  75:
     params = (a, b, c, 90, 90, 90)
-  elif (sg_number < 143):
+  elif sg_number < 143:
     params = (a, a, c, 90, 90, 90)
-  elif (sg_number < 195):
+  elif sg_number < 195:
     params = (a, a, c, 90, 90, 120)
   else:
     params = (a, a, a, 90, 90, 90)

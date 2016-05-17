@@ -102,13 +102,13 @@ class Test(object):
       z1 = randint(1, 10) + z0
       try:
         shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
-        assert(shoebox.is_consistent() == False)
+        assert(not shoebox.is_consistent())
         shoebox.allocate()
-        assert(shoebox.is_consistent() == True)
+        assert(shoebox.is_consistent())
         shoebox.data = flex.real(flex.grid(20,20, 20))
-        assert(shoebox.is_consistent() == False)
+        assert(not shoebox.is_consistent())
         shoebox.deallocate()
-        assert(shoebox.is_consistent() == False)
+        assert(not shoebox.is_consistent())
       except Exception, e:
         print x0, y0, z0, x1, y1, z1
         raise
@@ -124,19 +124,19 @@ class Test(object):
     srange = (0, 100)
 
     shoebox = Shoebox((10, 20, 10, 20, 10, 20))
-    assert(shoebox.is_bbox_within_image_volume(isize, srange) == True)
+    assert(shoebox.is_bbox_within_image_volume(isize, srange))
     shoebox = Shoebox((-10, 20, 10, 20, 10, 20))
-    assert(shoebox.is_bbox_within_image_volume(isize, srange) == False)
+    assert(not shoebox.is_bbox_within_image_volume(isize, srange))
     shoebox = Shoebox((10, 20, -10, 20, 10, 20))
-    assert(shoebox.is_bbox_within_image_volume(isize, srange) == False)
+    assert(not shoebox.is_bbox_within_image_volume(isize, srange))
     shoebox = Shoebox((10, 20, 10, 20, -10, 20))
-    assert(shoebox.is_bbox_within_image_volume(isize, srange) == False)
+    assert(not shoebox.is_bbox_within_image_volume(isize, srange))
     shoebox = Shoebox((10, 1020, 10, 20, 10, 20))
-    assert(shoebox.is_bbox_within_image_volume(isize, srange) == False)
+    assert(not shoebox.is_bbox_within_image_volume(isize, srange))
     shoebox = Shoebox((10, 20, 10, 1020, 10, 20))
-    assert(shoebox.is_bbox_within_image_volume(isize, srange) == False)
+    assert(not shoebox.is_bbox_within_image_volume(isize, srange))
     shoebox = Shoebox((10, 20, 10, 20, 10, 1020))
-    assert(shoebox.is_bbox_within_image_volume(isize, srange) == False)
+    assert(not shoebox.is_bbox_within_image_volume(isize, srange))
 
     # Test passed
     print 'OK'
@@ -264,9 +264,9 @@ class Test(object):
     shoeboxes = pickle.loads(data)
     for i in xrange(len(shoeboxes)):
       if i < 4:
-        assert(shoeboxes[i].all_foreground_valid() == False)
+        assert(not shoeboxes[i].all_foreground_valid())
       else:
-        assert(shoeboxes[i].all_foreground_valid() == True)
+        assert(shoeboxes[i].all_foreground_valid())
     print 'OK'
 
   def random_shoeboxes(self, num, mask=False):
@@ -310,7 +310,7 @@ class Test(object):
     tot = 0
     mask_code = MaskCode.Valid | MaskCode.Foreground
     for i in range(len(shoebox.data)):
-      if (shoebox.mask[i] & mask_code == mask_code):
+      if shoebox.mask[i] & mask_code == mask_code:
         tot += shoebox.data[i]
     if tot > 0:
       shoebox.data *= intensity / tot

@@ -175,7 +175,7 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
       thread_communication.get(True, 0.5)
     except Queue.Empty:
       pass # expected exception, nothing happened for the timeout period
-    if (not stdout.has_finished() or not stderr.has_finished()):
+    if not stdout.has_finished() or not stderr.has_finished():
       time.sleep(2)
     p.poll()
 
@@ -187,7 +187,7 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
       thread_communication.get(True, 0.5)
     except Queue.Empty:
       pass # expected exception, nothing happened for the timeout period
-    if (not stdout.has_finished() or not stderr.has_finished()):
+    if not stdout.has_finished() or not stderr.has_finished():
       time.sleep(5)
     p.poll()
 

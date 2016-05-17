@@ -127,8 +127,8 @@ class Test(object):
             inoscillation = False
             inscan = False
             break
-    assert(done1 == True)
-    assert(done2 == True)
+    assert(done1)
+    assert(done2)
     infile.close()
     outfile = open("experiments.json", "w")
     outfile.write('\n'.join(lines))

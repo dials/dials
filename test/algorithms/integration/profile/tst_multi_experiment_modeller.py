@@ -29,7 +29,7 @@ class Test(object):
         assert(self.index == other.index)
 
       def finalize(self):
-        assert(self.accumulated == True)
+        assert(self.accumulated)
         self.finalized = True
 
     # The expected number of reflections

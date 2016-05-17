@@ -139,7 +139,7 @@ class Script(object):
             osc_range = imageset.get_scan(i).get_oscillation_range()
             print "Oscillation range: %.1f - %.1f" % (osc_range[0], osc_range[1])
             angle = (osc_range[0] + osc_range[1]) / 2 / 180 * math.pi
-            if self.reverse_phi == False: # FIXME: ???
+            if not self.reverse_phi: # FIXME: ???
                 angle *= -1
             rotated_S = S.rotate_around_origin(axis, angle)
             recviewer.fill_voxels(imageset.get_raw_data(i)[0], self.grid, self.cnts, rotated_S, xy, rec_range)

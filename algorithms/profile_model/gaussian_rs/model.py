@@ -81,7 +81,7 @@ class Model(ProfileModelIface):
     from dials.array_family import flex
     self.params = params
     self._n_sigma = n_sigma
-    if deg == True:
+    if deg:
       self._sigma_b = sigma_b * pi / 180.0
       self._sigma_m = sigma_m * pi / 180.0
     else:
@@ -138,7 +138,7 @@ class Model(ProfileModelIface):
       sigma_b = self._sigma_b
     else:
       sigma_b = self._sigma_b[index]
-    if deg == True:
+    if deg:
       return sigma_b * 180.0 / pi
     return sigma_b
 
@@ -149,7 +149,7 @@ class Model(ProfileModelIface):
       sigma_m = self._sigma_m
     else:
       sigma_m = self._sigma_m[index]
-    if deg == True:
+    if deg:
       return sigma_m * 180.0 / pi
     return sigma_m
 

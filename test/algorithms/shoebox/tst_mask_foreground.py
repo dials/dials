@@ -130,7 +130,7 @@ class Test(object):
                 z0 + k < zrange[0] or z0 + k >= zrange[1]):
               value2 = MaskCode.Valid
             else:
-              if (de <= 1.0):
+              if de <= 1.0:
                 value2 = MaskCode.Valid | MaskCode.Foreground
               else:
                 value2 = MaskCode.Valid | MaskCode.Background

@@ -24,7 +24,7 @@ def calc_2D_rmsd_and_displacements(reflections):
 
   displacements = flex.vec2_double(reflections['xyzobs.px.value'].parts()[0], reflections['xyzobs.px.value'].parts()[1]) - \
                   flex.vec2_double(reflections['xyzcal.px'].parts()[0], reflections['xyzcal.px'].parts()[1])
-  rmsd = math.sqrt(flex.mean(displacements.dot( displacements )))
+  rmsd = math.sqrt(flex.mean(displacements.dot(displacements)))
 
   return rmsd,displacements
 
@@ -203,7 +203,7 @@ class stills_indexer(indexer_base):
         # no more lattices found
         break
 
-      if (self.params.known_symmetry.space_group is not None):
+      if self.params.known_symmetry.space_group is not None:
         # now apply the space group symmetry only after the first indexing
         # need to make sure that the symmetrized orientation is similar to the P1 model
         target_space_group = self.target_symmetry_primitive.space_group()

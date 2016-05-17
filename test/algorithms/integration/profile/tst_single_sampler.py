@@ -136,13 +136,13 @@ class Test(object):
         coord = matrix.col(sampler.coord(k-1))
         weight = sampler.weight(k, coord)
         assert(abs(weight - expected) < eps)
-        weight = sampler.weight(k, ( coord + coord1 )/2.0)
+        weight = sampler.weight(k, (coord + coord1)/2.0)
         assert(abs(weight - 0.5) < eps)
       if k < nz-1:
         coord = matrix.col(sampler.coord(k+1))
         weight = sampler.weight(k, coord)
         assert(abs(weight - expected) < eps)
-        weight = sampler.weight(k, ( coord + coord1 )/2.0)
+        weight = sampler.weight(k, (coord + coord1)/2.0)
         assert(abs(weight - 0.5) < eps)
 
     print 'OK'

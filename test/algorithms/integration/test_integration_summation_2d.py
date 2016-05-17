@@ -56,17 +56,17 @@ def run(i, imp):
   # calling the functions that we need to test
   # first select the algorithm for background calculation
 
-  if(imp == "inclined"):
+  if imp == "inclined":
     print "testing inclined_background_subtractor"
     from dials.algorithms.background.inclined_background_subtractor \
      import layering_and_background_plane
     layering_and_background_plane(ref_table)
-  elif(imp == "flat"):
+  elif imp == "flat":
     print "testing flat_background_subtractor"
     from dials.algorithms.background.flat_background_subtractor \
      import layering_and_background_avg
     layering_and_background_avg(ref_table)
-  elif(imp == "curved" ):
+  elif imp == "curved":
     print "testing curved_background_subtractor"
     from dials.algorithms.background.curved_background_subtractor \
      import layering_and_background_modl
@@ -85,9 +85,9 @@ def run(i, imp):
   resl_its = ref_table['intensity.sum.value']
   resl_var = ref_table['intensity.sum.variance']
   for n_its in range(len(resl_its)):
-    if(resl_its[n_its] <= i_to_compare[n_its] + i and \
+    if resl_its[n_its] <= i_to_compare[n_its] + i and \
        resl_its[n_its] >= i_to_compare[n_its] - i and \
-       resl_var[n_its] > resl_its[n_its] ):
+       resl_var[n_its] > resl_its[n_its]:
       print "Ok ", n_its
     else:
       print "Wrong num", n_its

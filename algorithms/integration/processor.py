@@ -473,8 +473,7 @@ class Task(object):
         output.as_pickle('shoeboxes_%d.pickle' % self.index)
 
     # Delete the shoeboxes
-    if (self.params.debug.output == False or
-        self.params.debug.separate_files == True):
+    if self.params.debug.separate_files or not self.params.debug.output:
       del self.reflections['shoebox']
 
     # Finalize the executor
@@ -627,7 +626,7 @@ class Manager(object):
     :return: The result
 
     '''
-    assert self.finalized == True, "Manager is not finalized"
+    assert self.finalized, "Manager is not finalized"
     return self.manager.data(), self.data
 
   def finished(self):
@@ -656,9 +655,9 @@ class Manager(object):
     from logging import info
     from math import ceil, pi
     if self.params.block.size == libtbx.Auto:
-      if (self.params.mp.nproc == 1 and
-          self.params.debug.output == False and
-          self.params.block.force == False):
+      if self.params.mp.nproc == 1 \
+          and not self.params.debug.output \
+          and not self.params.block.force:
         self.params.block.size = None
       else:
         assert self.params.block.threshold > 0, "Threshold must be > 0"
@@ -721,7 +720,7 @@ class Manager(object):
       self.reflections.split_partials()
       num_partial = len(self.reflections)
       assert num_partial >= num_full, "Invalid number of partials"
-      if (num_partial > num_full):
+      if num_partial > num_full:
         info(' Split %d reflections into %d partial reflections\n' % (
           num_full,
           num_partial))
@@ -730,7 +729,7 @@ class Manager(object):
       self.jobs.split(self.reflections)
       num_partial = len(self.reflections)
       assert num_partial >= num_full, "Invalid number of partials"
-      if (num_partial > num_full):
+      if num_partial > num_full:
         num_split = num_partial - num_full
         info(' Split %d reflections overlapping job boundaries\n' % num_split)
 
@@ -747,7 +746,7 @@ class Manager(object):
     from dials.array_family import flex
 
     # Set the memory usage per processor
-    if (self.params.mp.method == 'multiprocessing' and self.params.mp.nproc > 1):
+    if self.params.mp.method == 'multiprocessing' and self.params.mp.nproc > 1:
 
       # Get the maximum shoebox memory
       max_memory = flex.max(self.jobs.shoebox_memory(

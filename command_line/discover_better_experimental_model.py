@@ -149,10 +149,10 @@ class better_experimental_model_discovery(object):
         selfOO.wide_search_offset = wide_search_offset
         for ii in range(selfOO.n+1):
           selfOO.starting_simplex.append(flex.random_double(selfOO.n))
-        selfOO.optimizer = simplex_opt( dimension=selfOO.n,
-                                      matrix  = selfOO.starting_simplex,
-                                      evaluator = selfOO,
-                                      tolerance=1e-7)
+        selfOO.optimizer = simplex_opt(dimension=selfOO.n,
+                                       matrix=selfOO.starting_simplex,
+                                       evaluator=selfOO,
+                                       tolerance=1e-7)
         selfOO.x = selfOO.optimizer.get_solution()
         selfOO.offset = selfOO.x[0]*0.2*beamr1 + selfOO.x[1]*0.2*beamr2
         if selfOO.wide_search_offset is not None:
@@ -233,7 +233,7 @@ class better_experimental_model_discovery(object):
     return self.sum_score_detail(spots_mm['rlp'], solutions, amax=amax)
 
   def sum_score_detail(self, reciprocal_space_vectors, solutions, granularity=None, amax=None):
-    """Evaluates the probability that the trial value of ( S0_vector | origin_offset ) is correct,
+    """Evaluates the probability that the trial value of (S0_vector | origin_offset) is correct,
        given the current estimate and the observations.  The trial value comes through the
        reciprocal space vectors, and the current estimate comes through the short list of
        DPS solutions. Actual return value is a sum of NH terms, one for each DPS solution, each ranging
@@ -252,11 +252,11 @@ class better_experimental_model_discovery(object):
       kmax = dfft.kmax();
       #kval_cutoff = self.raw_spot_input.size()/4.0; # deprecate record
       kval_cutoff = reciprocal_space_vectors.size()/4.0; # deprecate record
-      if ( kval > kval_cutoff ):
+      if kval > kval_cutoff:
         ff=dfft.fft_result;
         kbeam = ((-dfft.pmin)/dfft.delta_p) + 0.5;
         Tkmax = cmath.phase(ff[kmax]);
-        backmax = math.cos(Tkmax+(2*math.pi*kmax*kbeam/(2*ff.size()-1)) );
+        backmax = math.cos(Tkmax+(2*math.pi*kmax*kbeam/(2*ff.size()-1)));
         ### Here it should be possible to calculate a gradient.
         ### Then minimize with respect to two coordinates.  Use lbfgs?  Have second derivatives?
         ### can I do something local to model the cosine wave?

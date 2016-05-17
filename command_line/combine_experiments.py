@@ -189,7 +189,7 @@ class Script(object):
         raise Sorry("{0} is not a valid experiment ID".format(ref_crystal))
 
     if ref_detector is not None:
-      assert params.reference_from_experiment.average_detector == False
+      assert not params.reference_from_experiment.average_detector
       try:
         ref_detector = flat_exps[ref_detector].detector
       except IndexError:

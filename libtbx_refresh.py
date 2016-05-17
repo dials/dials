@@ -67,7 +67,7 @@ for cmd in [%s]:
   Requires(ac, Dir(libtbx.env.under_build('lib')))
   Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'options.py'))
   Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'autocomplete.sh'))
-''' % ( ', '.join(["'%s'" % cmd for cmd in command_list]) ))
+''' % ', '.join(["'%s'" % cmd for cmd in command_list]))
 
   # Generate a bash script activating command line completion for each relevant command
   with open(os.path.join(output_directory, 'bash.sh'), 'w') as script:

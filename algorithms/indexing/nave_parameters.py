@@ -50,9 +50,9 @@ class nave_parameters(object):
     excursion_rads_env = flex.double()
     for x in xrange(0,n_bins):
       subset = order[x*bin_sz:(x+1)*bin_sz]
-      two_thetas_env.append( flex.mean(two_thetas.select(subset)) )
-      dspacings_env.append( flex.mean(dspacings.select(subset)))
-      excursion_rads_env.append( flex.max( flex.abs( excursion_rad.select(subset))))
+      two_thetas_env.append(flex.mean(two_thetas.select(subset)))
+      dspacings_env.append(flex.mean(dspacings.select(subset)))
+      excursion_rads_env.append(flex.max(flex.abs(excursion_rad.select(subset))))
 
     #  Second -- parameter fit
         ## solve the normal equations
@@ -137,8 +137,8 @@ class nave_parameters(object):
     R_L = 1./self.experiments[0].beam.get_wavelength() # radius of Ewald sphere
 
     # TT is the outermost two-theta angle to perform the volume integration (hi-resolution cutoff)
-    TT = 2. * math.asin( self.experiments[0].beam.get_wavelength() /
-                         (2. * self.params.indexing.stills.ewald_proximity_resolution_cutoff) )
+    TT = 2. * math.asin(self.experiments[0].beam.get_wavelength() /
+                         (2. * self.params.indexing.stills.ewald_proximity_resolution_cutoff))
 
     part_vol = math.pi * (2./3.) * (1. - math.cos(TT))
     Ewald_sphere_volume = part_vol * math.pow(R_L, 3.) # base volume of Ewald sphere segment
@@ -151,8 +151,8 @@ class nave_parameters(object):
     for x in xrange(N_terms):
       phi = (x/N_terms) * TT
       # inner integral over radius r
-      integral = math.pow( R_prime + (self._ML_full_mosaicity_rad * R_L * math.sin(phi)/2.), 3.) - \
-                 math.pow( R_prime, 3. )
+      integral = math.pow(R_prime + (self._ML_full_mosaicity_rad * R_L * math.sin(phi)/2.), 3.) - \
+                 math.pow(R_prime, 3.)
       summation += (integral * math.sin(phi)) * (TT/N_terms)
     mosaicity_volume = (2./3.) * math.pi * summation
 

@@ -181,7 +181,7 @@ class IntegratorStills(object):
       reflections['bbox'],
       experiments[0].imageset.get_raw_data(0)[0] >= 0,
       array_range)
-    reflections.del_selected(mask != True)
+    reflections.del_selected(not mask)
     Command.end('Filtered %d reflections by detector mask' % len(reflections))
 
     # Filter the reflections by zeta

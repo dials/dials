@@ -67,7 +67,7 @@ class neighbor_analysis(object):
     self.percentile = direct[perm[int(percentile * len(rs_vectors))]]
 
     #MAXTOL = 1.5 # Margin of error for max unit cell estimate
-    #self.max_cell = max( MAXTOL * most_probable_neighbor,
+    #self.max_cell = max(MAXTOL * most_probable_neighbor,
                          #MAXTOL * self.percentile)
 
     if False:

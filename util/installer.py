@@ -12,7 +12,7 @@ import os.path
 import sys
 libtbx_path = os.path.join(
   os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "lib")
-if (not libtbx_path in sys.path) :
+if not libtbx_path in sys.path:
   sys.path.append(libtbx_path)
 from libtbx.auto_build import install_distribution
 
@@ -40,5 +40,5 @@ class installer (install_distribution.installer) :
       if file_name.startswith("phenix") :
         os.remove(os.path.join(bin_dir, file_name))
 
-if (__name__ == "__main__") :
+if __name__ == "__main__":
   installer(sys.argv[1:])

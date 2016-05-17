@@ -208,7 +208,7 @@ def run(args):
     'profile.correlation', 'profile.rmsd'
   )
 
-  profile_fit_keys = ('miller_index', 'd', )
+  profile_fit_keys = ('miller_index', 'd',)
 
   centroid_keys = (
     'miller_index', 'd', 'xyzcal.mm', 'xyzcal.px', 'xyzobs.mm.value',

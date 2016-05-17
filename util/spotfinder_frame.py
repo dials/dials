@@ -296,7 +296,7 @@ class SpotFrame(XrayFrame) :
       key = self.get_key(file_name_or_data)
       count = self.image_chooser.GetCount()
       for i in xrange(count) :
-        if (key == str(self.image_chooser.GetClientData(i))) :
+        if key == str(self.image_chooser.GetClientData(i)):
           return i
       self._image_chooser_tmp_key.append(key)
       self._image_chooser_tmp_clientdata.append(file_name_or_data)
@@ -328,11 +328,11 @@ class SpotFrame(XrayFrame) :
     super(SpotFrame, self).load_image(file_name_or_data)
 
   def OnShowSettings (self, event) :
-    if (self.settings_frame is None) :
+    if self.settings_frame is None:
       frame_rect = self.GetRect()
       display_rect = wx.GetClientDisplayRect()
       x_start = frame_rect[0] + frame_rect[2]
-      if (x_start > (display_rect[2] - 400)) :
+      if x_start > (display_rect[2] - 400):
         x_start = display_rect[2] - 400
       y_start = frame_rect[1]
       self.settings_frame = SpotSettingsFrame(self, -1, "Settings",
@@ -421,7 +421,7 @@ class SpotFrame(XrayFrame) :
                  for pxl in L_pixels]
 
     # Remove the old ring layer, and draw a new one.
-    if (hasattr(self, "_ring_layer") and self._ring_layer is not None):
+    if hasattr(self, "_ring_layer") and self._ring_layer is not None:
       self.pyslip.DeleteLayer(self._ring_layer)
       self._ring_layer = None
     self._ring_layer = self.pyslip.AddPointLayer(
@@ -458,7 +458,7 @@ class SpotFrame(XrayFrame) :
               'textcolour': textcolour}))
 
     # Remove the old resolution text layer, and draw a new one.
-    if (hasattr(self, "_resolution_text_layer") and self._resolution_text_layer is not None):
+    if hasattr(self, "_resolution_text_layer") and self._resolution_text_layer is not None:
       self.pyslip.DeleteLayer(self._resolution_text_layer)
       self._resolution_text_layer = None
     self._resolution_text_layer = self.pyslip.AddTextLayer(

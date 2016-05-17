@@ -221,7 +221,7 @@ def simple_gaussian_spots(params):
       index = dxyz <= 1.0
       index.reshape(mask.accessor())
       mask.set_selected(index, MaskCode.Valid | MaskCode.Foreground)
-      mask.set_selected(index != True, MaskCode.Valid | MaskCode.Background)
+      mask.set_selected(not index, MaskCode.Valid | MaskCode.Background)
 
     sbox = shoebox[i].data
 

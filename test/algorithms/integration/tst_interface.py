@@ -214,7 +214,7 @@ class TestJobList(object):
       for i in range(len(blocks)):
         b0 = blocks[i][0]
         b1 = blocks[i][1]
-        if (z0 >= b0 and z1 <= b1):
+        if z0 >= b0 and z1 <= b1:
           success = True
           break
       assert(success)

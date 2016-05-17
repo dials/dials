@@ -383,7 +383,7 @@ class PhilCommandParser(object):
     unhandled = []
     interpretor = self.system_phil.command_line_argument_interpreter()
     for arg in args:
-      if (os.path.isfile(arg) and os.path.getsize(arg) > 0):
+      if os.path.isfile(arg) and os.path.getsize(arg) > 0:
         name, ext = os.path.splitext(arg)
         if ext in ['.phil', '.param', '.params', '.eff', '.def']:
           try:
@@ -395,11 +395,11 @@ class PhilCommandParser(object):
               raise
         else:
           unhandled.append(arg)
-      elif (arg.find("=") >= 0):
+      elif arg.find("=") >= 0:
         try:
           user_phils.append(interpretor.process_arg(arg=arg))
         except Exception:
-          if return_unhandled == True:
+          if return_unhandled:
             unhandled.append(arg)
           else:
             raise
@@ -724,7 +724,7 @@ class OptionParser(OptionParserBase):
     # Print the diff phil
     if show_diff_phil:
       diff_phil_str = self.diff_phil.as_str()
-      if (diff_phil_str is not ''):
+      if diff_phil_str is not '':
         print 'The following parameters have been modified:\n'
         print diff_phil_str
 

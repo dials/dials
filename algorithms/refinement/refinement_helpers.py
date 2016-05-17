@@ -72,7 +72,7 @@ def dR_from_axis_and_angle_py(axis, angle, deg=False):
   # as this function, but this function is faster.
 
   assert axis.n in ((3,1), (1,3))
-  if (deg): angle *= pi/180
+  if deg: angle *= pi/180
   axis = -1. * axis.normalize()
   ca, sa  = cos(angle), sin(angle)
 

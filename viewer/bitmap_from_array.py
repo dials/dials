@@ -25,7 +25,7 @@ class wxbmp_from_np_array(object):
 
   def __init__(self, lst_data_in, show_nums = True, palette = "black2white", lst_data_mask_in = None):
     self.wx_bmp_arr = rgb_img()
-    if(lst_data_in == [None] and lst_data_mask_in == [None] ):
+    if lst_data_in == [None] and lst_data_mask_in == [None]:
       self._ini_wx_bmp_lst = None
 
     else:
@@ -46,8 +46,8 @@ class wxbmp_from_np_array(object):
         '''
         self.vl_max = float(np.amax(data_3d_in))
         self.vl_min = float(np.amin(data_3d_in))
-        tmp_data2d = np.zeros( (xmax, ymax), 'double')
-        tmp_data2d_mask = np.zeros( (xmax, ymax), 'double')
+        tmp_data2d = np.zeros((xmax, ymax), 'double')
+        tmp_data2d_mask = np.zeros((xmax, ymax), 'double')
         z_dp = data_3d_in.shape[0]
         single_block_lst_01 = []
         for z in range(z_dp):
@@ -66,7 +66,7 @@ class wxbmp_from_np_array(object):
 
 
   def bmp_lst_scaled(self, scale = 1.0):
-    if( self._ini_wx_bmp_lst == None):
+    if self._ini_wx_bmp_lst == None:
 
       NewW = 350
       NewH = 50
@@ -102,10 +102,10 @@ class wxbmp_from_np_array(object):
     ymax = np_2d_tmp.shape[0]
 
     if np_2d_mask is None:
-      np_2d_mask = np.zeros( (ymax, xmax), 'double')
+      np_2d_mask = np.zeros((ymax, xmax), 'double')
 
-    transposed_data = np.zeros( (ymax, xmax), 'double')
-    transposed_mask = np.zeros( (ymax, xmax), 'double')
+    transposed_data = np.zeros((ymax, xmax), 'double')
+    transposed_mask = np.zeros((ymax, xmax), 'double')
 
     transposed_data[:,:] = np_2d_tmp
     transposed_mask[:,:] = np_2d_mask
@@ -122,11 +122,11 @@ class wxbmp_from_np_array(object):
     print "palette =", palette
     '''
 
-    if( palette == "black2white" ):
+    if palette == "black2white":
       palette_num = 1
-    elif( palette == "white2black" ):
+    elif palette == "white2black":
       palette_num = 2
-    elif( palette == "hot ascend" ):
+    elif palette == "hot ascend":
       palette_num = 3
     else: # assuming "hot descend"
       palette_num = 4
@@ -139,13 +139,13 @@ class wxbmp_from_np_array(object):
 
     np_img_array = img_array_tmp.as_numpy_array()
 
-    height = np.size( np_img_array[:, 0:1, 0:1] )
-    width = np.size(  np_img_array[0:1, :, 0:1] )
-    img_array = np.empty( (height, width, 3),'uint8')
+    height = np.size(np_img_array[:, 0:1, 0:1])
+    width = np.size( np_img_array[0:1, :, 0:1])
+    img_array = np.empty((height, width, 3),'uint8')
     img_array[:,:,:] = np_img_array[:,:,:]
 
     self._wx_image = wx.EmptyImage(width, height)
-    self._wx_image.SetData( img_array.tostring() )
+    self._wx_image.SetData(img_array.tostring())
 
     data_to_become_bmp = (self._wx_image, width, height)
 

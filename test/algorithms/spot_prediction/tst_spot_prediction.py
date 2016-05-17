@@ -91,7 +91,7 @@ class TestSpotPredictor:
     for r in self.reflections:
       gen_hkl[r['miller_index']] = True
     for hkl in self.integrate_handle.hkl:
-      assert(gen_hkl[hkl] == True)
+      assert(gen_hkl[hkl])
 
     print "OK"
 
@@ -123,7 +123,7 @@ class TestSpotPredictor:
         my_phi1 = my_phi[1]
         diff0 = abs(xds_phi - my_phi0)
         diff1 = abs(xds_phi - my_phi1)
-        if (diff0 < diff1):
+        if diff0 < diff1:
           my_phi = my_phi0
         else:
           my_phi = my_phi1
@@ -174,7 +174,7 @@ class TestSpotPredictor:
         my_xy1 = my_xy[1]
         diff0 = (matrix.col(xds_xy) - matrix.col(my_xy0)).length()
         diff1 = (matrix.col(xds_xy) - matrix.col(my_xy1)).length()
-        if (diff0 < diff1):
+        if diff0 < diff1:
           my_xy = my_xy0
         else:
           my_xy = my_xy1

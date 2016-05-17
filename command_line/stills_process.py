@@ -379,7 +379,7 @@ class Processor(object):
       # Split everything into separate experiments for pickling
       for e_number in xrange(len(experiments)):
         experiment = experiments[e_number]
-        e_selection = flex.bool( [r['id']==e_number for r in integrated])
+        e_selection = flex.bool([r['id']==e_number for r in integrated])
         reflections = integrated.select(e_selection)
 
         frame = ConstructFrame(reflections, experiment).make_frame()

@@ -506,7 +506,7 @@ def points_below_line(d_star_sq, log_i_over_sigi, m, c):
 
   from scitbx import matrix
   p1 = matrix.col((0, c))
-  p2 = matrix.col(( 1, m*1 + c))
+  p2 = matrix.col((1, m*1 + c))
 
   def side(p1, p2, p):
     diff = p2 - p1

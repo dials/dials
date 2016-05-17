@@ -24,7 +24,7 @@ except ImportError, e:
   pass
 '''
 
-if(__name__ == "__main__"):
+if __name__ == "__main__":
   lst_flex = []
   lst_flex_norm = []
 
@@ -42,7 +42,7 @@ if(__name__ == "__main__"):
         for col in range(size_x):
           data_xyz_flex[frm, row, col] += (row * 2 + col * 2 + frm * 2)
           tot += data_xyz_flex[frm, row, col]
-          if( row > 1 and row < size_xyz - 2 and col > 1 and col < size_x - 2 ):
+          if row > 1 and row < size_xyz - 2 and col > 1 and col < size_x - 2:
             data_flex_mask[frm, row, col] = MaskCode.Foreground
 
 

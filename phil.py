@@ -37,7 +37,7 @@ class DataBlockConverters(object):
     from dxtbx.datablock import DataBlockFactory
     from os.path import exists
     from libtbx.utils import Sorry
-    if (s is None):
+    if s is None:
       return None
     if s not in self.cache:
       if not exists(s):
@@ -51,7 +51,7 @@ class DataBlockConverters(object):
     return self.from_string(libtbx.phil.str_from_words(words=words))
 
   def as_words(self, python_object, master):
-    if (python_object is None):
+    if python_object is None:
       value = "None"
     else:
       value = python_object.filename
@@ -75,7 +75,7 @@ class ExperimentListConverters(object):
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     from os.path import exists
     from libtbx.utils import Sorry
-    if (s is None):
+    if s is None:
       return None
     if s not in self.cache:
       if not exists(s):
@@ -89,7 +89,7 @@ class ExperimentListConverters(object):
     return self.from_string(libtbx.phil.str_from_words(words=words))
 
   def as_words(self, python_object, master):
-    if (python_object is None):
+    if python_object is None:
       value = "None"
     else:
       value = python_object.filename
@@ -110,7 +110,7 @@ class ReflectionTableConverters(object):
     from dials.array_family import flex
     from os.path import exists
     from libtbx.utils import Sorry
-    if (s is None):
+    if s is None:
       return None
     if s not in self.cache:
       if not exists(s):
@@ -122,7 +122,7 @@ class ReflectionTableConverters(object):
     return self.from_string(libtbx.phil.str_from_words(words=words))
 
   def as_words(self, python_object, master):
-    if (python_object is None):
+    if python_object is None:
       value = "None"
     else:
       value = python_object.filename
@@ -141,7 +141,7 @@ class ReflectionTableSelectorConverters(object):
 
   def from_string(self, s):
     from dials.array_family import flex
-    if (s is None):
+    if s is None:
       return None
     import re
     regex = r"^\s*([\w\.]+)\s*(<=|!=|==|>=|<|>|&)\s*(.+)\s*$"
@@ -160,7 +160,7 @@ class ReflectionTableSelectorConverters(object):
     return self.from_string(libtbx.phil.str_from_words(words=words))
 
   def as_words(self, python_object, master):
-    if (python_object is None):
+    if python_object is None:
       value = "None"
     else:
       value = "%s%s%s" % (python_object.column,
@@ -186,7 +186,7 @@ def parse(
       converter_registry=None,
       process_includes=False):
   ''' Redefinition of the parse function. '''
-  if (converter_registry is None):
+  if converter_registry is None:
     converter_registry = default_converter_registry
   return libtbx.phil.parse(
     input_string=input_string,

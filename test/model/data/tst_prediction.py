@@ -21,7 +21,7 @@ class Test(object):
 
     assert(self.pred.miller_index == (1, 2, 3))
     assert(self.pred.panel == 7)
-    assert(self.pred.entering == True)
+    assert(self.pred.entering)
     assert(abs(self.pred.beam_vector[0] - 4) <= eps)
     assert(abs(self.pred.beam_vector[1] - 5) <= eps)
     assert(abs(self.pred.beam_vector[2] - 6) <= eps)

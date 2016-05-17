@@ -1660,7 +1660,7 @@ class Refiner(object):
       self.print_exp_rmsd_table()
 
     det_npanels = [len(d) for d in self._experiments.detectors()]
-    if any( n > 1 for n in det_npanels) and self._verbosity > 0:
+    if any(n > 1 for n in det_npanels) and self._verbosity > 0:
       self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models

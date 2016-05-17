@@ -299,7 +299,7 @@ class ParameterManager(object):
     from libtbx.phil import parse
     from libtbx.utils import Sorry
     import shlex
-    if short_syntax == True:
+    if short_syntax:
       working_phil = self.working_phil.peek()
       for parameter in shlex.split(parameters):
         interpretor = self.master_phil.command_line_argument_interpreter()
@@ -323,10 +323,10 @@ class ParameterManager(object):
 
     '''
     working_phil = self.working_phil.peek()
-    if diff == False:
-      result = working_phil
-    else:
+    if diff:
       result = self.master_phil.fetch_diff(source=working_phil)
+    else:
+      result = working_phil
     return result
 
 
@@ -696,9 +696,9 @@ class Command(object):
 
     # Check the parent
     if parent is not None:
-      if parent.applied == False:
+      if not parent.applied:
         raise RuntimeError('Parent job %d not applied' % parent.index)
-      if parent.success == False:
+      if not parent.success:
         raise RuntimeError('Parent job %d failed' % parent.index)
       if parent.index >= index:
         raise RuntimeError('Invalid parent/child indices: %d / %d' % (parent.index, index))
@@ -737,7 +737,7 @@ class Command(object):
     from os import makedirs
 
     # Check that the command has not already been run
-    if self.state.applied == True:
+    if self.state.applied:
       raise RuntimeError('This command has already been run')
     self.state.applied = True
 
@@ -1586,7 +1586,7 @@ class Controller(object):
     self.state_filename = join(directory, state_filename)
 
     # Read state if available
-    if recover == True and exists(state_filename):
+    if recover and exists(state_filename):
       self.state = ApplicationState.load(state_filename)
       print "Recovered state from %s" % state_filename
       print self.get_history()

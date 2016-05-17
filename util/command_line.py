@@ -69,7 +69,7 @@ class ProgressBarTimer:
       # Check the difference in percentage and calculate
       # number of seconds remaining
       diff_perc = percent - self._last_perc
-      if (diff_perc == 0):
+      if diff_perc == 0:
         self._n_seconds_left = 0
       else:
         self._n_seconds_left = diff_time * (100 - percent) / diff_perc

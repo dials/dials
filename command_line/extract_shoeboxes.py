@@ -84,10 +84,10 @@ class Script(object):
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
     datablocks = flatten_datablocks(params.input.datablock)
-    if len(experiments) == 0 and len(datablocks) == 0 and len(reflections) == 0:
+    if not any(experiments, datablocks, reflections):
       self.parser.print_help()
       exit(0)
-    elif (len(experiments) != 0 and len(datablocks) != 0):
+    elif experiments and datablocks:
       raise Sorry('Both experiment list and datablocks set')
     elif len(experiments) > 1:
       raise Sorry('More than 1 experiment set')

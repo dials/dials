@@ -11,13 +11,13 @@ class TestCoordinateSystem(object):
 
     # Coordinate sensitive to length of vectors, so need to ensure that
     # lengths of both s0 and s1 are equal
-    self.s0 = ( 0.013141995425357206,
+    self.s0 = (0.013141995425357206,
                 0.002199999234194632,
                 1.4504754950989514)
     self.s1 = (-0.01752795848400313,
                -0.24786554213968193,
                 1.4290948735525306)
-    self.m2 = ( 0.999975, -0.001289, -0.006968)
+    self.m2 = (0.999975, -0.001289, -0.006968)
     self.phi = 5.83575672475 * pi / 180
     self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
 
@@ -123,13 +123,13 @@ class TestFromBeamVector(object):
 
     from math import pi
 
-    self.s0 = ( 0.013141995425357206,
+    self.s0 = (0.013141995425357206,
                 0.002199999234194632,
                 1.4504754950989514)
     self.s1 = (-0.01752795848400313,
                -0.24786554213968193,
                 1.4290948735525306)
-    self.m2 = ( 0.999975, -0.001289, -0.006968)
+    self.m2 = (0.999975, -0.001289, -0.006968)
     self.phi = 5.83575672475 * pi / 180
 
     self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
@@ -191,13 +191,13 @@ class TestFromRotationAngle(object):
 
     from math import pi
 
-    self.s0 = ( 0.013141995425357206,
+    self.s0 = (0.013141995425357206,
                 0.002199999234194632,
                 1.4504754950989514)
     self.s1 = (-0.01752795848400313,
                -0.24786554213968193,
                 1.4290948735525306)
-    self.m2 = ( 0.999975, -0.001289, -0.006968)
+    self.m2 = (0.999975, -0.001289, -0.006968)
     self.phi = 5.83575672475 * pi / 180
 
 
@@ -256,13 +256,13 @@ class TestToBeamVector(object):
 
     from math import pi
 
-    self.s0 = ( 0.013141995425357206,
+    self.s0 = (0.013141995425357206,
                 0.002199999234194632,
                 1.4504754950989514)
     self.s1 = (-0.01752795848400313,
                -0.24786554213968193,
                 1.4290948735525306)
-    self.m2 = ( 0.999975, -0.001289, -0.006968)
+    self.m2 = (0.999975, -0.001289, -0.006968)
     self.phi = 5.83575672475 * pi / 180
 
     self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
@@ -372,13 +372,13 @@ class TestToRotationAngle(object):
 
     from math import pi
 
-    self.s0 = ( 0.013141995425357206,
+    self.s0 = (0.013141995425357206,
                 0.002199999234194632,
                 1.4504754950989514)
     self.s1 = (-0.01752795848400313,
                -0.24786554213968193,
                 1.4290948735525306)
-    self.m2 = ( 0.999975, -0.001289, -0.006968)
+    self.m2 = (0.999975, -0.001289, -0.006968)
     self.phi = 5.83575672475 * pi / 180
 
     self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)

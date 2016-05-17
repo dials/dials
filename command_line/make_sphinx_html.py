@@ -24,7 +24,7 @@ def recursive_overwrite(src, dest, ignore=None):
   else:
     shutil.copyfile(src, dest)
 
-if (__name__ == "__main__") :
+if __name__ == "__main__":
   cctbx_base = libtbx.env.find_in_repositories("cctbx_project")
   dials_dir = libtbx.env.find_in_repositories("dials")
   dials_github_io = libtbx.env.find_in_repositories("dials.github.io")

@@ -78,7 +78,7 @@ class flex_3d_frame(wx.Frame):
     self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
 
   def OnCloseWindow(self, event):
-    if( self.table_exist == False ):
+    if not self.table_exist:
       #print "from flex_3d_frame self.myGrid = None"
       event.Skip()
     else:
@@ -131,13 +131,13 @@ class MyGrid(gridlib.Grid):
     self.sorted_flags = []
 
     for key in table_in.keys():
-      if(key != "shoebox"):
+      if key != "shoebox":
         col_label = str(key)
         col_content = map(str, table_in[key])
 
         str_len = bigger_size(col_label, col_content)
 
-        if(str_len > len(col_label)):
+        if str_len > len(col_label):
           lng_dif = int(float(str_len - len(col_label)) * 1.6)
           add_str = ' ' * lng_dif
           col_label = add_str + col_label + add_str
@@ -170,7 +170,7 @@ class MyGrid(gridlib.Grid):
     time1 = time.time()
     #'''
 
-    if(evt.GetCol() == -1):
+    if evt.GetCol() == -1:
       self.repaint_img(evt.GetRow())
     else:
       self.set_my_table(evt.GetCol())
@@ -214,7 +214,7 @@ class MyGrid(gridlib.Grid):
     self.SetTable(tableBase)
     self.Refresh()
     #self.AutoSizeColumn(1)
-    for i in range( len(self.lst_keys) ):
+    for i in range(len(self.lst_keys)):
       self.AutoSizeColLabelSize(i)
 
     #self.AutoSizeColumns(True)
@@ -241,7 +241,7 @@ class flex_arr_img_panel(wx.Panel):
 
     self.scale = 1.0
 
-    if( isinstance(data_in_one, flex.reflection_table) ):
+    if isinstance(data_in_one, flex.reflection_table):
       self.table = data_in_one
       self.assign_row_pos()
 
@@ -275,8 +275,8 @@ class flex_arr_img_panel(wx.Panel):
 
   def _mi_list_of_wxbitmaps(self, re_scaling = False):
 
-    if( re_scaling == False ):
-      if( self.show_mask == True ):
+    if not re_scaling:
+      if self.show_mask:
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
       else:
         self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, None)
@@ -323,17 +323,17 @@ class flex_arr_img_panel(wx.Panel):
       self.panel_right.img_refresh(self.bmp_lst)
 
   def to_re_zoom(self, rot_sn):
-    if( rot_sn > 0 ):
+    if rot_sn > 0:
       for ntimes in range(int(math.fabs(rot_sn))):
         self.scale = self.scale * 1.05
-        if( self.scale > 3.0 ):
+        if self.scale > 3.0:
           #Maximum possible zoom reached
           self.scale = 3.0
 
-    elif( rot_sn < 0):
+    elif rot_sn < 0:
       for ntimes in range(int(math.fabs(rot_sn))):
         self.scale = self.scale * 0.95
-        if( self.scale < 0.2 ):
+        if self.scale < 0.2:
           #Minimum possible zoom reached
           self.scale = 0.2
 
@@ -401,7 +401,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
       for i, i_bmp in enumerate(lst_1d):
         local_bitmap = wx.StaticBitmap(self, bitmap = i_bmp)
-        if( self.parent_panel.local_bbox == None ):
+        if self.parent_panel.local_bbox == None:
           slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
         else:
           bbx = self.parent_panel.local_bbox
@@ -451,8 +451,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     View_start_y = View_start_y * y_scroll_increment
     '''
 
-    self.x_uni = float( View_start_x + self.Mouse_Pos_x ) / float(v_size_x)
-    self.y_uni = float( View_start_y + self.Mouse_Pos_y ) / float(v_size_y)
+    self.x_uni = float(View_start_x + self.Mouse_Pos_x) / float(v_size_x)
+    self.y_uni = float(View_start_y + self.Mouse_Pos_y) / float(v_size_y)
 
 
   def img_refresh(self, i_bmp_new):
@@ -462,7 +462,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 
   def OnIdle(self, event):
-    if( self.scroll_rot != 0 ):
+    if self.scroll_rot != 0:
 
       self.SetScrollRate(1, 1)
 
@@ -481,7 +481,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
       self.Scroll(new_scroll_pos_x, new_scroll_pos_y)
 
     else:
-      if(self.old_Mouse_Pos_x != -1 and self.old_Mouse_Pos_y != -1):
+      if self.old_Mouse_Pos_x != -1 and self.old_Mouse_Pos_y != -1:
         #print "need to move IMG"
         pass
 
@@ -504,7 +504,7 @@ class buttons_panel(wx.Panel):
     self.my_sizer.Add(Show_Its_CheckBox, proportion = 0,
                       flag = wx.ALIGN_TOP, border = 5)
 
-    if( self.parent_panel.segn_lst_in != None ):
+    if self.parent_panel.segn_lst_in != None:
       Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
       Show_Msk_CheckBox.SetValue(True)
       Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
@@ -519,7 +519,7 @@ class buttons_panel(wx.Panel):
       masck_conv_str += "\n [BackgroundUsed]  =  ------"
 
 
-      label_mask = wx.StaticText(self, -1, masck_conv_str )
+      label_mask = wx.StaticText(self, -1, masck_conv_str)
       self.my_sizer.Add(label_mask , proportion = 0,
                         flag = wx.ALIGN_TOP, border = 5)
 
@@ -566,26 +566,26 @@ class buttons_panel(wx.Panel):
 
   def OnButtUpdate(self):
     print "OnButtUpdate(self):"
-    if( self.RadButtb2w.GetValue() == True ):
-        self.parent_panel.to_change_palette( "black2white" )
-    elif( self.RadButtw2b.GetValue() == True ):
-        self.parent_panel.to_change_palette( "white2black" )
-    elif( self.RadButtha.GetValue() == True ):
-        self.parent_panel.to_change_palette( "hot ascend" )
+    if self.RadButtb2w.GetValue():
+        self.parent_panel.to_change_palette("black2white")
+    elif self.RadButtw2b.GetValue():
+        self.parent_panel.to_change_palette("white2black")
+    elif self.RadButtha.GetValue():
+        self.parent_panel.to_change_palette("hot ascend")
     else:
-        self.parent_panel.to_change_palette( "hot descend" )
+        self.parent_panel.to_change_palette("hot descend")
 
 
   def OnItsCheckbox(self, event):
 
-    if(event.IsChecked() == True):
+    if event.IsChecked():
       self.parent_panel.to_show_nums()
     else:
       self.parent_panel.to_hide_nums()
 
   def OnMskCheckbox(self, event):
 
-    if(event.IsChecked() == True):
+    if event.IsChecked():
       self.parent_panel.to_show_mask()
     else:
       self.parent_panel.to_hide_mask()
@@ -595,20 +595,20 @@ def bigger_size(str_label, lst_col):
   lng_lst_col = len(lst_col)
   lng_final = lng_label_ini
 
-  if( lng_lst_col < 30 ):
+  if lng_lst_col < 30:
     pos_lst = range(lng_lst_col)
 
   else:
     pos_lst = range(15)
-    pos_lst += range(lng_lst_col - 15, lng_lst_col )
+    pos_lst += range(lng_lst_col - 15, lng_lst_col)
 
   lng_cel_zero = 0
   for pos in pos_lst:
     lng_cel_pos = len(str(lst_col[pos]))
-    if( lng_cel_pos > lng_cel_zero ):
+    if lng_cel_pos > lng_cel_zero:
       lng_cel_zero = lng_cel_pos
 
-    if(lng_cel_zero > lng_label_ini):
+    if lng_cel_zero > lng_label_ini:
       lng_final = lng_cel_zero
 
   return lng_final

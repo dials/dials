@@ -90,7 +90,7 @@ class JobWriter(object):
     with open(os.path.join(self.directory, result_filename), "w") as f:
       f.write(job['result'])
 
-if (__name__ == "__main__") :
+if __name__ == "__main__":
 
   cwd = os.path.abspath(os.curdir)
   tmp_dir = open_tmp_directory(suffix="generate_tutorial_text")

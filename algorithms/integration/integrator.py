@@ -919,7 +919,7 @@ class Integrator(object):
 
     # Check if we want to do some profile fitting
     fitting_class = [e.profile.fitting_class() for e in self.experiments]
-    fitting_avail = all( c is not None for c in fitting_class)
+    fitting_avail = all(c is not None for c in fitting_class)
     if self.params.profile.fitting and fitting_avail:
       profile_fitting = True
       profile_fitter = None

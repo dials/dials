@@ -106,7 +106,7 @@ def solve_r3_rotation_for_angles_given_axes(R, e1, e2, e3,
   norm = v1.dot(v1)*w1.dot(w1)
   # If norm = 0, rotations 1 & 3 are around same axis (for this phi2),
   # so any value for phi1 is OK
-  if (norm > 1.0e-8):
+  if norm > 1.0e-8:
     norm = math.sqrt(norm)
     # cos(phi1) = (v1.w1)/norm
     # sin(phi1) = (v1.w1 x e1)/norm

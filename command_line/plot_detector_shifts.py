@@ -250,9 +250,9 @@ def guess_grid_size(detector):
   pnl_sizes = [p.get_image_size() for p in detector]
 
   # check all sizes are equal
-  if not all( s == pxl_sizes[0] for s in pxl_sizes[1:]):
+  if not all(s == pxl_sizes[0] for s in pxl_sizes[1:]):
     return None
-  if not all( s == pnl_sizes[0] for s in pnl_sizes[1:]):
+  if not all(s == pnl_sizes[0] for s in pnl_sizes[1:]):
     return None
 
   # take the first

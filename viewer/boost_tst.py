@@ -17,7 +17,7 @@ from dials.array_family import flex
 import boost.python
 #from dials_viewer_ext import gen_font_img, rgb_img
 from dials_viewer_ext import rgb_img, gen_str_tst
-if(__name__ == "__main__"):
+if __name__ == "__main__":
   tmp_not_needed = '''
   size_xyz = 7
 

@@ -314,15 +314,15 @@ def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
     cb_op_inp_minimum=change_of_basis_op(str(cb_op_inp_minimum),stop_chars='',r_den=144,t_den=144)
     cb_op_inp_best = cb_op_best_cell * cb_op_minimum_ref * cb_op_inp_minimum
     # Use identity change-of-basis operator if possible
-    if (best_subsym.unit_cell().is_similar_to(input_symmetry.unit_cell())):
+    if best_subsym.unit_cell().is_similar_to(input_symmetry.unit_cell()):
       cb_op_corr = cb_op_inp_best.inverse()
       try:
         best_subsym_corr = best_subsym.change_basis(cb_op_corr)
       except RuntimeError, e:
-        if (str(e).find("Unsuitable value for rational rotation matrix.") < 0):
+        if str(e).find("Unsuitable value for rational rotation matrix.") < 0:
           raise
       else:
-        if (best_subsym_corr.space_group() == best_subsym.space_group()):
+        if best_subsym_corr.space_group() == best_subsym.space_group():
           cb_op_inp_best = cb_op_corr * cb_op_inp_best
 
     max_angular_difference = find_max_delta(

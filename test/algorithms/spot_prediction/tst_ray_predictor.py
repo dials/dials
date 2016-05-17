@@ -122,7 +122,7 @@ class TestRayPredictor:
         my_phi1 = my_phi[1]
         diff0 = abs(xds_phi - my_phi0)
         diff1 = abs(xds_phi - my_phi1)
-        if (diff0 < diff1):
+        if diff0 < diff1:
           my_phi = my_phi0
         else:
           my_phi = my_phi1

@@ -46,9 +46,9 @@ class wxbitmap_convert(object):
 
     else:
       #Got two arguments
-      if( type(data_in_n1) is list and type(data_in_n2) is list):
+      if type(data_in_n1) is list and type(data_in_n2) is list:
         #Got two lists
-        if( len(data_in_n1) == len(data_in_n2) ):
+        if len(data_in_n1) == len(data_in_n2):
           self.lst_3d_data = []
           self.lst_3d_mask = []
           for lst_pos in range(len(data_in_n1)):
@@ -61,7 +61,7 @@ class wxbitmap_convert(object):
           # might be a good idea to raise a runtime error here
           print "the two lists do NOT have the same size"
 
-      elif( type(data_in_n1) is not list and type(data_in_n2) is not list ):
+      elif type(data_in_n1) is not list and type(data_in_n2) is not list:
         #Got two blocks
 
         self.lst_3d_data = []
@@ -74,9 +74,9 @@ class wxbitmap_convert(object):
         self.lst_3d_mask.append(img2_np)
 
 
-        if( img1_np.shape[0] == 0 or img1_np.shape[1] == 0 or
-            img1_np.shape[2] == 0 or img2_np.shape[0] == 0 or
-            img2_np.shape[1] == 0 or img2_np.shape[2] == 0    ):
+        if img1_np.shape[0] == 0 or img1_np.shape[1] == 0 or
+           img1_np.shape[2] == 0 or img2_np.shape[0] == 0 or
+           img2_np.shape[1] == 0 or img2_np.shape[2] == 0:
 
           self.lst_3d_data = [None]
           self.lst_3d_mask = [None]

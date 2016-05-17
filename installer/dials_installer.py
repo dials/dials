@@ -1,11 +1,10 @@
 from __future__ import division
 import shutil
 import os.path
-op = os.path
 import sys
 libtbx_path = os.path.join(
   os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "lib")
-if (not libtbx_path in sys.path) :
+if libtbx_path not in sys.path:
   sys.path.append(libtbx_path)
 from libtbx.auto_build import install_distribution
 from libtbx.auto_build.installer_utils import *
@@ -44,5 +43,5 @@ class installer(install_distribution.installer):
   except ValueError:
     pass
 
-if (__name__ == "__main__") :
+if __name__ == "__main__":
   installer(sys.argv[1:]).install()
