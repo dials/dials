@@ -1539,7 +1539,7 @@ class Refiner(object):
       try:
         temp = scan.get_oscillation(deg=False)
         images_per_rad  = 1./abs(scan.get_oscillation(deg=False)[1])
-      except AttributeError:
+      except (AttributeError, ZeroDivisionError):
         images_per_rad = None
 
       raw_rmsds = self._target.rmsds_for_experiment(iexp)
