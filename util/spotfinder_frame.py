@@ -877,7 +877,7 @@ class SpotFrame(XrayFrame) :
               ctr_mass_data.extend(lines)
             self.show_ctr_mass_timer.stop()
 
-      if ('xyzcal.px' in ref_list or 'xyzcal.mm' in ref_list) and
+      if ('xyzcal.px' in ref_list or 'xyzcal.mm' in ref_list) and \
          (self.settings.show_predictions or
            (self.settings.show_miller_indices and 'miller_index' in ref_list)):
         if 'xyzcal.px' in ref_list:
@@ -891,14 +891,14 @@ class SpotFrame(XrayFrame) :
           frame_predictions_sel = (
             (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
           for reflection in ref_list.select(frame_predictions_sel & expt_sel):
-            if self.settings.show_predictions and
+            if self.settings.show_predictions and \
                'xyzcal.px' in reflection:
               x, y = map_coords(reflection['xyzcal.px'][0] + 0.5,
                                 reflection['xyzcal.px'][1] + 0.5,
                                 reflection['panel'])
               predictions_data.append(
                 (x, y, {'colour':self.prediction_colours[i_expt]}))
-            elif self.settings.show_predictions and
+            elif self.settings.show_predictions and \
                  'xyzcal.mm' in reflection:
               x, y = detector[reflection['panel']].millimeter_to_pixel(
                 reflection['xyzcal.mm'][:2])
