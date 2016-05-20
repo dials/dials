@@ -59,6 +59,38 @@ class html_report(object):
 <!DOCTYPE html>
 <head>
 
+<!-- Definitions for compatibility with the ccp4i2 browser -->
+<script>
+    if (!Function.prototype.bind) {
+        Function.prototype.bind = function(oThis) {
+            if (typeof this !== 'function') {
+                // closest thing possible to the ECMAScript 5
+                // internal IsCallable function
+                throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+            }
+
+            var aArgs   = Array.prototype.slice.call(arguments, 1),
+            fToBind = this,
+            fNOP    = function() {},
+            fBound  = function() {
+                return fToBind.apply(this instanceof fNOP
+                                     ? this
+                                     : oThis,
+                                     aArgs.concat(Array.prototype.slice.call(arguments)));
+            };
+
+            if (this.prototype) {
+                // Function.prototype doesn't have a prototype property
+                fNOP.prototype = this.prototype;
+            }
+            fBound.prototype = new fNOP();
+
+            return fBound;
+        };
+    }
+    if (typeof Float64Array === 'undefined') Float64Array = Float32Array;
+</script>
+
 <!-- Plotly.js -->
 %(plotly_js)s
 
