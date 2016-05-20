@@ -57,9 +57,8 @@ def dials_version():
   version = None
 
   try:
-    import libtbx.load_env
     import os
-    dials_path = libtbx.env.dist_path('dials')
+    dials_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     version_file = os.path.join(dials_path, '.gitversion')
 
     # 1. Try to access information in .git directory
