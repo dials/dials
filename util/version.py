@@ -16,6 +16,11 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
     # Obtain name of the current branch. If this fails then the other commands will probably also fail
     branch = subprocess.check_output(["git", "describe", "--contains", "--all", "HEAD"],
       cwd=dials_path, stderr=devnull).rstrip()
+    releasebranch = 'dials-1' in branch
+
+    # Always treat merges as single commit on release branches
+    if releasebranch:
+      treat_merges_as_single_commit = True
 
     # Get descriptive version string, eg. v1.1.0-1-g56f9cd7
     if treat_merges_as_single_commit:
@@ -43,7 +48,7 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
       version = version[1:].replace('.0-','-')
     version = version.replace('-', '.', 1)
     # If we are on a release branch, then append a '-release'-tag
-    if 'dials-1' in branch:
+    if releasebranch:
       version = version + '-release'
   return version
 
