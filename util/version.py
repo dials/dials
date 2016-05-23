@@ -8,7 +8,7 @@ __dials_version_default = "1.2"
 #  3. a dash followed by the number of commits since that tag
 #  4. a dash followed by a lowercase 'g' and the current commit id
 
-def get_git_version(dials_path, treat_merges_as_single_commit=False):
+def get_git_version(dials_path, treat_merges_as_single_commit=True):
   import os
   import subprocess
   version = None
