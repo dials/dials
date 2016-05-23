@@ -150,6 +150,12 @@ namespace dials { namespace algorithms {
     af::shared<int> crystal_ids_;
   };
 
+  typedef struct edge_ {
+    std::size_t i;
+    std::size_t j;
+    double l_ij;
+    cctbx::miller::index<> h_ij;
+  } MyEdge;
 
   template <typename Edge>
   struct record_dfs_order : public boost::default_dfs_visitor
@@ -178,22 +184,17 @@ namespace dials { namespace algorithms {
       )
       : miller_indices_(
           reciprocal_space_points.size(), cctbx::miller::index<>(0,0,0)),
-        /*subtree_ids_(reciprocal_space_points.size(), 0),*/
         crystal_ids_(reciprocal_space_points.size(), -1) {
 
       DIALS_ASSERT(reciprocal_space_points.size() == phi.size());
 
       using annlib_adaptbx::AnnAdaptor;
       using namespace boost;
-      typedef property<edge_weight_t, double> EdgeWeightProperty;
-      typedef adjacency_list<vecS, vecS, undirectedS, no_property,
-        EdgeWeightProperty > Graph;
 
-      typedef graph_traits<Graph>::vertex_descriptor Vertex;
+      typedef adjacency_list<vecS, vecS, undirectedS, no_property, MyEdge > Graph;
+
+      typedef Graph::vertex_descriptor Vertex;
       typedef graph_traits<Graph>::edge_descriptor Edge;
-
-      typedef boost::property_map< Graph, boost::vertex_index_t>::type VertexIndexMap;
-      typedef boost::property_map< Graph, boost::edge_weight_t>::type WeightMap;
 
       // convert into a single array for input to AnnAdaptor
       // based on flex.vec_3.as_double()
@@ -212,7 +213,6 @@ namespace dials { namespace algorithms {
 
       typedef std::pair<const int, const int> pair_t;
 
-      double sum_l_ij = 0;
       const double one_over_epsilon = 1.0/epsilon;
 
       // loop over crystals and assign one hkl per crystal per reflection
@@ -221,9 +221,6 @@ namespace dials { namespace algorithms {
         scitbx::mat3<double> const &A_inv = A.inverse();
 
         Graph G(reciprocal_space_points.size());
-        std::map<pair_t, cctbx::miller::index<> > edge_to_h_ij;
-        std::map<pair_t, double> edge_to_l_ij;
-        WeightMap weight = get(edge_weight, G);
 
         for (std::size_t i=0; i < reciprocal_space_points.size(); i++) {
           std::size_t i_k = i * nearest_neighbours;
@@ -242,6 +239,7 @@ namespace dials { namespace algorithms {
             }
             scitbx::vec3<double> d_h = h_f - h_ij;
 
+            // calculate l_ij
             double exponent = 0;
             for (std::size_t ii=0; ii<3; ii++) {
               exponent += std::pow(
@@ -251,40 +249,47 @@ namespace dials { namespace algorithms {
             }
             exponent *= -2;
             double l_ij = 1 - std::exp(exponent);
-            sum_l_ij += l_ij;
-            std::pair<Edge, bool> myPair = add_edge(i, j, G);
-            weight[myPair.first] = l_ij;
 
-            edge_to_h_ij.insert(
-              std::pair<pair_t, cctbx::miller::index<> >(pair_t(i, j), h_ij));
-            edge_to_h_ij.insert(
-              std::pair<pair_t, cctbx::miller::index<> >(pair_t(j, i), -h_ij));
-            edge_to_l_ij.insert(std::pair<pair_t, double>(pair_t(i, j), l_ij));
-            edge_to_l_ij.insert(std::pair<pair_t, double>(pair_t(j, i), l_ij));
+            // add the edge
+            Edge e1; bool b1;
+            boost::tie(e1, b1) = add_edge(i, j, G);
+
+            // set the edge properties
+            G[e1].h_ij = h_ij;
+            G[e1].l_ij = l_ij;
+            G[e1].i = i;
+            G[e1].j = j;
           }
         }
 
         //create a graph for the MST
         Graph MST(reciprocal_space_points.size());
-        WeightMap weightMST = get(edge_weight, MST);
 
+        // compute the minimum spanning tree
         std::vector< Edge > spanning_tree;
-        kruskal_minimum_spanning_tree(G, std::back_inserter(spanning_tree));
+        kruskal_minimum_spanning_tree(G, std::back_inserter(spanning_tree),
+          boost::weight_map(boost::get(&MyEdge::l_ij, G)));
 
         for(size_t i = 0; i < spanning_tree.size(); ++i){
-          //get the edge
-          Edge e = spanning_tree[i];
-          //get the vertices
-          add_edge(source(e, G), target(e, G), MST);
-          weightMST[e] = weight[e];
+          // get the edge
+          Edge e1 = spanning_tree[i];
+
+          // add the edge to MST
+          Edge e2; bool b2;
+          boost::tie(e2, b2) = add_edge(source(e1, G), target(e1, G), MST);
+
+          // copy over edge properties
+          MST[e2].h_ij = G[e1].h_ij;
+          MST[e2].l_ij = G[e1].l_ij;
+          MST[e2].i = G[e1].i;
+          MST[e2].j = G[e1].j;
+
         }
 
         // Get the connected components in case there is more than one tree
         std::vector<int> component(num_vertices(MST));
         connected_components(MST, &component[0]);
 
-        /*int num = connected_components(MST, &component[0]);*/
-        /*std::cout << "Total number of components: " << num << std::endl;*/
 
         // Record the order of edges for a depth first search so we can walk
         // the tree later
@@ -311,8 +316,12 @@ namespace dials { namespace algorithms {
             next_subtree += 1;
           }
           last_component = component[i];
-          cctbx::miller::index<> h_ij = edge_to_h_ij[pair_t(i, j)];
-          double l_ij = edge_to_l_ij[pair_t(i, j)];
+          cctbx::miller::index<> h_ij = MST[e].h_ij;
+          if (i == MST[e].j) {
+            // edge is other direction, negate h_ij
+            h_ij = -h_ij;
+          }
+          double l_ij = MST[e].l_ij;
           hkl_ints_[j] = hkl_ints_[i] - h_ij;
           if (l_ij < l_min) {
             subtree_ids_[j] = subtree_ids_[i];
