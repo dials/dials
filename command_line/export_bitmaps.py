@@ -151,7 +151,11 @@ def run(args):
       flex_image.prep_string()
       import Image
       # XXX is size//binning safe here?
-      pil_img = Image.fromstring(
+      try:
+        get_im = Image.fromstring # removed in Pillow 3.0.0
+      except AttributeError:
+        get_im = Image.frombytes
+      pil_img = get_im(
         'RGB', (flex_image.size2()//binning,
                 flex_image.size1()//binning),
         flex_image.export_string)
