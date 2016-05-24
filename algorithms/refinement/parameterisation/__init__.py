@@ -9,5 +9,5 @@ from prediction_parameters import PredictionParameterisation # import dependency
 from prediction_parameters import XYPhiPredictionParameterisation # import dependency
 from scan_varying_crystal_parameters import ScanVaryingCrystalOrientationParameterisation # import dependency
 from scan_varying_crystal_parameters import ScanVaryingCrystalUnitCellParameterisation # import dependency
-from scan_varying_prediction_parameters import VaryingCrystalPredictionParameterisation  # import dependency
+from scan_varying_prediction_parameters import ScanVaryingPredictionParameterisation  # import dependency
 from parameter_report import ParameterReporter # import dependency

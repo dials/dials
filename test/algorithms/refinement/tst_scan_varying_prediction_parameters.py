@@ -35,7 +35,7 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor, \
 #### Import model parameterisations
 
 from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import \
-    VaryingCrystalPredictionParameterisation, VaryingCrystalPredictionParameterisationFast
+    ScanVaryingPredictionParameterisation, ScanVaryingPredictionParameterisationFast
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
@@ -108,11 +108,11 @@ sweep_range = myscan.get_oscillation_range(deg=False)
 #### Unit tests
 
 # Build a prediction equation parameterisation
-#pred_param = VaryingCrystalPredictionParameterisation(experiments, [det_param],
+#pred_param = ScanVaryingPredictionParameterisation(experiments, [det_param],
 #                                        [s0_param], [xlo_param], [xluc_param])
 # Use the 'fast' version as this is the default and is expected to have larger
 # errors in the analytical gradients
-pred_param = VaryingCrystalPredictionParameterisationFast(experiments, [det_param],
+pred_param = ScanVaryingPredictionParameterisationFast(experiments, [det_param],
                                         [s0_param], [xlo_param], [xluc_param])
 
 # Generate some reflections

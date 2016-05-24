@@ -132,11 +132,11 @@ class StillsDetectorRefinerFactory(RefinerFactory):
       #if crystal_options.scan_varying:
       #  if crystal_options.UB_model_per == "reflection":
       #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      #    #  import VaryingCrystalPredictionParameterisation as PredParam
+      #    #  import ScanVaryingPredictionParameterisation as PredParam
       #    raise NotImplementedError("currently only for stills")
       #  elif crystal_options.UB_model_per == "image":
       #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      #    #  import VaryingCrystalPredictionParameterisationFast as PredParam
+      #    #  import ScanVaryingPredictionParameterisationFast as PredParam
       #    raise NotImplementedError("currently only for stills")
       #  else:
       #    raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +

@@ -21,8 +21,8 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 
 from dials.array_family import flex
 
-class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
-  """Support crystal parameterisations that vary with time (via the proxy of
+class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
+  """Support model parameterisations that vary with time (via the proxy of
   "observed image number")"""
 
   def _get_xl_orientation_parameterisation(self, experiment_id):
@@ -530,7 +530,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # first call, only a variance-covariance matrix is supplied
     if var_cov is not None:
       assert [obs_image_number, experiment_id].count(None) == 2
-      super(VaryingCrystalPredictionParameterisation,
+      super(ScanVaryingPredictionParameterisation,
             self).calculate_model_state_uncertainties(var_cov)
       return
 
@@ -575,8 +575,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return
 
-class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParameterisation):
-  """Overloads compose to calculate UB model per block rather than per
+class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameterisation):
+  """Overloads compose to calculate model states per block rather than per
   reflection"""
 
   def compose(self, reflections):
@@ -640,10 +640,10 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
 
     return
 
-class VaryingCrystalPredictionParameterisationSparse(
-    SparseGradientVectorMixin, VaryingCrystalPredictionParameterisation):
+class ScanVaryingPredictionParameterisationSparse(
+    SparseGradientVectorMixin, ScanVaryingPredictionParameterisation):
   pass
 
-class VaryingCrystalPredictionParameterisationFastSparse(
-    SparseGradientVectorMixin, VaryingCrystalPredictionParameterisationFast):
+class ScanVaryingPredictionParameterisationFastSparse(
+    SparseGradientVectorMixin, ScanVaryingPredictionParameterisationFast):
   pass

@@ -993,17 +993,17 @@ class RefinerFactory(object):
         if crystal_options.UB_model_per == "reflection":
           if sparse:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import VaryingCrystalPredictionParameterisationSparse as PredParam
+              import ScanVaryingPredictionParameterisationSparse as PredParam
           else:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import VaryingCrystalPredictionParameterisation as PredParam
+              import ScanVaryingPredictionParameterisation as PredParam
         elif crystal_options.UB_model_per == "image" or crystal_options.UB_model_per == "block":
           if sparse:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import VaryingCrystalPredictionParameterisationFastSparse as PredParam
+              import ScanVaryingPredictionParameterisationFastSparse as PredParam
           else:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import VaryingCrystalPredictionParameterisationFast as PredParam
+              import ScanVaryingPredictionParameterisationFast as PredParam
         else:
           raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
                              " is not a recognised option")
@@ -1666,11 +1666,11 @@ class Refiner(object):
     # write scan varying setting matrices back to crystal models
     #FIXME tidy up
     from dials.algorithms.refinement.parameterisation import \
-      VaryingCrystalPredictionParameterisation
+      ScanVaryingPredictionParameterisation
     from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      import VaryingCrystalPredictionParameterisationFast
-    if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation) or \
-       isinstance(self._pred_param, VaryingCrystalPredictionParameterisationFast):
+      import ScanVaryingPredictionParameterisationFast
+    if isinstance(self._pred_param, ScanVaryingPredictionParameterisation) or \
+       isinstance(self._pred_param, ScanVaryingPredictionParameterisationFast):
       for iexp, exp in enumerate(self._experiments):
         ar_range = exp.scan.get_array_range()
         A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],

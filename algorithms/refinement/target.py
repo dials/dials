@@ -87,7 +87,7 @@ class Target(object):
     # current geometry
     self._reflection_predictor.update()
 
-    # duck-typing for VaryingCrystalPredictionParameterisation. Only this
+    # duck-typing for ScanVaryingPredictionParameterisation. Only this
     # class has a compose(reflections) method. Sets ub_matrix (and caches
     # derivatives).
     try:
