@@ -83,34 +83,48 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     taking care of whether it is a scan-varying parameterisation or not"""
 
     if parameterisation is None: return None
-    try:
+    if hasattr(parameterisation, 'compose'):
       parameterisation.compose(frame)
-    except AttributeError:
-      pass
+
     return parameterisation.get_state()
 
   def _prepare_for_compose(self, reflections):
 
     nref = len(reflections)
-    # set columns for U and B if needed
+    # set columns if needed
     if 'u_matrix' not in reflections:
       reflections['u_matrix'] = flex.mat3_double(nref)
     if 'b_matrix' not in reflections:
       reflections['b_matrix'] = flex.mat3_double(nref)
+    if 's0' not in reflections:
+      reflections['s0'] = flex.vec3_double(nref)
+    if 'd_matrix' not in reflections:
+      reflections['d_matrix'] = flex.mat3_double(nref)
 
     # set columns in the reflection table to store the derivative of state for
     # each reflection, if needed
-    null = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
-    if self._xl_orientation_parameterisations and "dU_dp0" not in reflections:
-      max_free_U_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
-      for i in range(max_free_U_params):
+    null9 = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
+    null3 = (0., 0., 0.)
+    if self._varying_xl_orientations and "dU_dp0" not in reflections:
+      max_free_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
+      for i in range(max_free_params):
         colname = "dU_dp{0}".format(i)
-        reflections[colname] = flex.mat3_double(nref, null)
-    if self._xl_unit_cell_parameterisations and "dB_dp0" not in reflections:
-      max_free_B_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
-      for i in range(max_free_B_params):
+        reflections[colname] = flex.mat3_double(nref, null9)
+    if self._varying_xl_unit_cells and "dB_dp0" not in reflections:
+      max_free_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
+      for i in range(max_free_params):
         colname = "dB_dp{0}".format(i)
-        reflections[colname] = flex.mat3_double(nref, null)
+        reflections[colname] = flex.mat3_double(nref, null9)
+    if self._varying_detectors and "dd_dp0" not in reflections:
+      max_free_params = max([e.num_free() for e in self._detector_parameterisations])
+      for i in range(max_free_params):
+        colname = "dd_dp{0}".format(i)
+        reflections[colname] = flex.mat3_double(nref, null9)
+    if self._varying_beams and "ds0_dp0" not in reflections:
+      max_free_params = max([e.num_free() for e in self._beam_parameterisations])
+      for i in range(max_free_params):
+        colname = "ds0_dp{0}".format(i)
+        reflections[colname] = flex.vec3_double(nref, null3)
 
     return
 
