@@ -66,6 +66,15 @@ class PredictionParameterisation(object):
                xl_orientation_parameterisations = None,
                xl_unit_cell_parameterisations = None):
 
+    if detector_parameterisations is None:
+      detector_parameterisations = []
+    if beam_parameterisations is None:
+      beam_parameterisations = []
+    if xl_orientation_parameterisations is None:
+      xl_orientation_parameterisations = []
+    if xl_unit_cell_parameterisations is None:
+      xl_unit_cell_parameterisations = []
+
     # References to the underlying models
     self._experiments = experiments
 

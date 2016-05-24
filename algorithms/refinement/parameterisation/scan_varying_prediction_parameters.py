@@ -25,6 +25,35 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
   """Support model parameterisations that vary with time (via the proxy of
   "observed image number")"""
 
+  def __init__(self,
+               experiments,
+               detector_parameterisations = None,
+               beam_parameterisations = None,
+               xl_orientation_parameterisations = None,
+               xl_unit_cell_parameterisations = None):
+
+    if detector_parameterisations is None:
+      detector_parameterisations = []
+    if beam_parameterisations is None:
+      beam_parameterisations = []
+    if xl_orientation_parameterisations is None:
+      xl_orientation_parameterisations = []
+    if xl_unit_cell_parameterisations is None:
+      xl_unit_cell_parameterisations = []
+
+    # determine once which types of parameterisations are scan-varying
+    self._varying_detectors = any(hasattr(p, 'compose') for p in detector_parameterisations)
+    self._varying_beams = any(hasattr(p, 'compose') for p in beam_parameterisations)
+    self._varying_xl_orientations = any(hasattr(p, 'compose') for p in xl_orientation_parameterisations)
+    self._varying_xl_unit_cells = any(hasattr(p, 'compose') for p in xl_unit_cell_parameterisations)
+
+    super(ScanVaryingPredictionParameterisation, self).__init__(
+      experiments,
+      detector_parameterisations = detector_parameterisations,
+      beam_parameterisations = beam_parameterisations,
+      xl_orientation_parameterisations = xl_orientation_parameterisations,
+      xl_unit_cell_parameterisations = xl_unit_cell_parameterisations)
+
   def _get_xl_orientation_parameterisation(self, experiment_id):
     """Return the crystal orientation parameterisation for the requested
     experiment number (or None if the crystal orientation in that experiment
