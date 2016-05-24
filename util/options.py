@@ -18,6 +18,7 @@ import libtbx.phil
 tolerance_phil_scope = libtbx.phil.parse('''
 tolerance
     .help = "Tolerances used to determine shared models"
+    .expert_level = 2
   {
 
   beam {
