@@ -28,7 +28,7 @@ if __name__ == "__main__":
   lst_flex = []
   lst_flex_norm = []
 
-  for size_xyz in range(10, 8, -1):
+  for size_xyz in range(8, 6, -1):
 
     size_x = size_xyz * 2
 
