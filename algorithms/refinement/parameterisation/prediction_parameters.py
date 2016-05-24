@@ -111,22 +111,16 @@ class PredictionParameterisation(object):
     self._null_mat3 = matrix.sqr((0,0,0,0,0,0,0,0,0))
 
   def _len(self):
+
     length = 0
-    if self._detector_parameterisations:
-      for model in self._detector_parameterisations:
-        length += model.num_free()
-
-    if self._beam_parameterisations:
-      for model in self._beam_parameterisations:
-        length += model.num_free()
-
-    if self._xl_orientation_parameterisations:
-      for model in self._xl_orientation_parameterisations:
-        length += model.num_free()
-
-    if self._xl_unit_cell_parameterisations:
-      for model in self._xl_unit_cell_parameterisations:
-        length += model.num_free()
+    for model in self._detector_parameterisations:
+      length += model.num_free()
+    for model in self._beam_parameterisations:
+      length += model.num_free()
+    for model in self._xl_orientation_parameterisations:
+      length += model.num_free()
+    for model in self._xl_unit_cell_parameterisations:
+      length += model.num_free()
 
     return length
 
@@ -208,25 +202,21 @@ class PredictionParameterisation(object):
     assert len(vals) == len(self)
     it = iter(vals)
 
-    if self._detector_parameterisations:
-      for model in self._detector_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_vals(tmp)
+    for model in self._detector_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_vals(tmp)
 
-    if self._beam_parameterisations:
-      for model in self._beam_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_vals(tmp)
+    for model in self._beam_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_vals(tmp)
 
-    if self._xl_orientation_parameterisations:
-      for model in self._xl_orientation_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_vals(tmp)
+    for model in self._xl_orientation_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_vals(tmp)
 
-    if self._xl_unit_cell_parameterisations:
-      for model in self._xl_unit_cell_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_vals(tmp)
+    for model in self._xl_unit_cell_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_vals(tmp)
 
   def set_param_esds(self, esds):
     """Set the estimated standard deviations of parameter values of the
@@ -238,25 +228,21 @@ class PredictionParameterisation(object):
     assert len(esds) == len(self)
     it = iter(esds)
 
-    if self._detector_parameterisations:
-      for model in self._detector_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_esds(tmp)
+    for model in self._detector_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_esds(tmp)
 
-    if self._beam_parameterisations:
-      for model in self._beam_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_esds(tmp)
+    for model in self._beam_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_esds(tmp)
 
-    if self._xl_orientation_parameterisations:
-      for model in self._xl_orientation_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_esds(tmp)
+    for model in self._xl_orientation_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_esds(tmp)
 
-    if self._xl_unit_cell_parameterisations:
-      for model in self._xl_unit_cell_parameterisations:
-        tmp = [it.next() for i in range(model.num_free())]
-        model.set_param_esds(tmp)
+    for model in self._xl_unit_cell_parameterisations:
+      tmp = [it.next() for i in range(model.num_free())]
+      model.set_param_esds(tmp)
 
   def calculate_model_state_uncertainties(self, var_cov):
     """
@@ -267,57 +253,53 @@ class PredictionParameterisation(object):
     uncertainty of state."""
 
     i = 0
-    if self._detector_parameterisations:
-      for model in self._detector_parameterisations:
-        n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
-        state_covs = model.calculate_state_uncertainties(sub)
-        if state_covs is None: continue
-        if len(state_covs) == 1:
-          model.set_state_uncertainties(state_covs[0])
-        else:
-          for i_state, state_cov in enumerate(state_covs):
-            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
-        i += n
+    for model in self._detector_parameterisations:
+      n = model.num_free()
+      sub = var_cov.matrix_copy_block(i, i, n, n)
+      state_covs = model.calculate_state_uncertainties(sub)
+      if state_covs is None: continue
+      if len(state_covs) == 1:
+        model.set_state_uncertainties(state_covs[0])
+      else:
+        for i_state, state_cov in enumerate(state_covs):
+          model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
+      i += n
 
-    if self._beam_parameterisations:
-      for model in self._beam_parameterisations:
-        n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
-        state_covs = model.calculate_state_uncertainties(sub)
-        if state_covs is None: continue
-        if len(state_covs) == 1:
-          model.set_state_uncertainties(state_covs[0])
-        else:
-          for i_state, state_cov in enumerate(state_covs):
-            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
-        i += n
+    for model in self._beam_parameterisations:
+      n = model.num_free()
+      sub = var_cov.matrix_copy_block(i, i, n, n)
+      state_covs = model.calculate_state_uncertainties(sub)
+      if state_covs is None: continue
+      if len(state_covs) == 1:
+        model.set_state_uncertainties(state_covs[0])
+      else:
+        for i_state, state_cov in enumerate(state_covs):
+          model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
+      i += n
 
-    if self._xl_orientation_parameterisations:
-      for model in self._xl_orientation_parameterisations:
-        n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
-        state_covs = model.calculate_state_uncertainties(sub)
-        if state_covs is None: continue
-        if len(state_covs) == 1:
-          model.set_state_uncertainties(state_covs[0])
-        else:
-          for i_state, state_cov in enumerate(state_covs):
-            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
-        i += n
+    for model in self._xl_orientation_parameterisations:
+      n = model.num_free()
+      sub = var_cov.matrix_copy_block(i, i, n, n)
+      state_covs = model.calculate_state_uncertainties(sub)
+      if state_covs is None: continue
+      if len(state_covs) == 1:
+        model.set_state_uncertainties(state_covs[0])
+      else:
+        for i_state, state_cov in enumerate(state_covs):
+          model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
+      i += n
 
-    if self._xl_unit_cell_parameterisations:
-      for model in self._xl_unit_cell_parameterisations:
-        n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
-        state_covs = model.calculate_state_uncertainties(sub)
-        if state_covs is None: continue
-        if len(state_covs) == 1:
-          model.set_state_uncertainties(state_covs[0])
-        else:
-          for i_state, state_cov in enumerate(state_covs):
-            model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
-        i += n
+    for model in self._xl_unit_cell_parameterisations:
+      n = model.num_free()
+      sub = var_cov.matrix_copy_block(i, i, n, n)
+      state_covs = model.calculate_state_uncertainties(sub)
+      if state_covs is None: continue
+      if len(state_covs) == 1:
+        model.set_state_uncertainties(state_covs[0])
+      else:
+        for i_state, state_cov in enumerate(state_covs):
+          model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
+      i += n
 
     return
 
