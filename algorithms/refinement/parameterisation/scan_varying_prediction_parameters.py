@@ -192,7 +192,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         s0 = self._get_state_from_parameterisation(bp, frame)
         if s0 is None: s0 = exp.beam.get_s0()
 
-        if dp.is_multi_state():
+        if dp is not None and dp.is_multi_state():
           dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt = panel)
         else:
           dmat  = self._get_state_from_parameterisation(dp, frame)
@@ -203,14 +203,26 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
                'b_matrix':B.elems,
                's0_vector':s0,
                'd_matrix':dmat}
-        if xl_op is not None:
+        if xl_op is not None and self._varying_xl_orientations:
           for j, dU in enumerate(xl_op.get_ds_dp()):
             colname = "dU_dp{0}".format(j)
             row[colname] = dU
-        if xl_ucp is not None:
+        if xl_ucp is not None and self._varying_xl_unit_cells:
           for j, dB in enumerate(xl_ucp.get_ds_dp()):
             colname = "dB_dp{0}".format(j)
             row[colname] = dB
+        if bp is not None and self._varying_beams:
+          for j, ds0 in enumerate(bp.get_ds_dp()):
+            colname = "ds0_dp{0}".format(j)
+            row[colname] = ds0
+        if dp is not None and self._varying_detectors:
+          if dp.is_multi_state:
+            dds = dp.get_ds_dp(multi_state_elt=pnl)
+          else:
+            dds = dp.get_ds_dp()
+          for j, dd in enumerate(dds):
+            colname = "dd_dp{0}".format(j)
+            row[colname] = dd
         reflections[i] = row
 
     # set the UB matrices for prediction
@@ -714,12 +726,13 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
         s0 = self._get_state_from_parameterisation(bp, frame)
         if s0 is None: s0 = exp.beam.get_s0()
 
-        # set states
+        # set states for crystal and beam
         reflections['u_matrix'].set_selected(subsel, U.elems)
         reflections['b_matrix'].set_selected(subsel, B.elems)
         reflections['s0_vector'].set_selected(subsel, s0.elems)
 
-        if dp.is_multi_state():
+        # set states and derivatives for multi-panel detector
+        if dp is not None and dp.is_multi_state():
 
           # loop through the panels in this detector
           for panel_id, _ in enumerate(exp.detector):
@@ -730,25 +743,39 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
               # if no reflections intersect this panel, skip calculation
               continue
 
-            dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt = panel_id)
+            dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt=panel_id)
             if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
             reflections['d_matrix'].set_selected(subsel2, dmat)
 
-        else:
+            if dp is not None and self._varying_detectors:
+              for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id)):
+                colname = "dd_dp{0}".format(j)
+                reflections[colname].set_selected(subsel, dd)
+
+        else: # set states and derivatives for single panel detector
 
           dmat  = self._get_state_from_parameterisation(dp, frame)
           if dmat is None: dmat = exp.detector[panel].get_d_matrix()
           reflections['d_matrix'].set_selected(subsel, dmat)
 
-        # set derivatives of the states
-        if xl_op is not None:
+          if dp is not None and self._varying_detectors:
+            for j, dd in enumerate(dp.get_ds_dp()):
+              colname = "dd_dp{0}".format(j)
+              reflections[colname].set_selected(subsel, dd)
+
+        # set derivatives of the states for crystal and beam
+        if xl_op is not None and self._varying_xl_orientations:
           for j, dU in enumerate(xl_op.get_ds_dp()):
             colname = "dU_dp{0}".format(j)
             reflections[colname].set_selected(subsel, dU)
-        if xl_ucp is not None:
+        if xl_ucp is not None and self._varying_xl_unit_cells:
           for j, dB in enumerate(xl_ucp.get_ds_dp()):
             colname = "dB_dp{0}".format(j)
             reflections[colname].set_selected(subsel, dB)
+        if bp is not None and self._varying_beams:
+          for j, ds0 in enumerate(bp.get_ds_dp()):
+            colname = "ds0_dp{0}".format(j)
+            reflections[colname].set_selected(subsel, ds0)
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']

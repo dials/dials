@@ -260,14 +260,21 @@ params = phil_scope.fetch(source=parse('')).extract()
 # in case we want a plot
 params.refinement.refinery.track_parameter_correlation=True
 
-# DEBUG scan varying by uncommenting the following line
-#params.refinement.parameterisation.crystal.scan_varying=True
 
+# scan static first
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params, obs_refs,
   experiments, verbosity=0)
-
 history = refiner.run()
+print "OK"
+
+# scan varying
+params.refinement.parameterisation.crystal.scan_varying=True
+refiner = RefinerFactory.from_parameters_data_experiments(params, obs_refs,
+  experiments, verbosity=0)
+history = refiner.run()
+print "OK"
+
 #plt = refiner.parameter_correlation_plot(len(history["parameter_correlation"])-1)
 #plt.show()
 
@@ -276,4 +283,3 @@ history = refiner.run()
 #for beam in expts.beams(): print beam
 #for detector in expts.detectors(): print detector
 #for crystal in  expts.crystals(): print crystal
-print "OK"
