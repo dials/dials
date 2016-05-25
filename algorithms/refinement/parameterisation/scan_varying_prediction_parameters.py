@@ -42,10 +42,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       xl_unit_cell_parameterisations = []
 
     # determine once which types of parameterisations are scan-varying
-    self._varying_detectors = any(hasattr(p, 'compose') for p in detector_parameterisations)
-    self._varying_beams = any(hasattr(p, 'compose') for p in beam_parameterisations)
-    self._varying_xl_orientations = any(hasattr(p, 'compose') for p in xl_orientation_parameterisations)
-    self._varying_xl_unit_cells = any(hasattr(p, 'compose') for p in xl_unit_cell_parameterisations)
+    self._varying_detectors = any(hasattr(p, 'num_sets') for p in detector_parameterisations)
+    self._varying_beams = any(hasattr(p, 'num_sets') for p in beam_parameterisations)
+    self._varying_xl_orientations = any(hasattr(p, 'num_sets') for p in xl_orientation_parameterisations)
+    self._varying_xl_unit_cells = any(hasattr(p, 'num_sets') for p in xl_unit_cell_parameterisations)
 
     super(ScanVaryingPredictionParameterisation, self).__init__(
       experiments,
@@ -83,7 +83,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     taking care of whether it is a scan-varying parameterisation or not"""
 
     if parameterisation is None: return None
-    if hasattr(parameterisation, 'compose'):
+    if hasattr(parameterisation, 'num_sets'):
       parameterisation.compose(frame)
 
     return parameterisation.get_state()
@@ -96,8 +96,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       reflections['u_matrix'] = flex.mat3_double(nref)
     if 'b_matrix' not in reflections:
       reflections['b_matrix'] = flex.mat3_double(nref)
-    if 's0' not in reflections:
-      reflections['s0'] = flex.vec3_double(nref)
+    if 's0_vector' not in reflections:
+      reflections['s0_vector'] = flex.vec3_double(nref)
     if 'd_matrix' not in reflections:
       reflections['d_matrix'] = flex.mat3_double(nref)
 
