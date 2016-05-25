@@ -158,9 +158,20 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         B = self._get_state_from_parameterisation(xl_ucp, frame)
         if B is None: B = exp.crystal.get_B()
 
+        s0 = self._get_state_from_parameterisation(bp, frame)
+        if s0 is None: s0 = exp.beam.get_s0()
+
+        if dp.is_multi_state():
+          dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt = panel)
+        else:
+          dmat  = self._get_state_from_parameterisation(dp, frame)
+        if dmat is None: dmat = exp.detector[panel].get_d_matrix()
+
         # set states and their derivatives into reflections
         row = {'u_matrix':U.elems,
-               'b_matrix':B.elems}
+               'b_matrix':B.elems,
+               's0_vector':s0,
+               'd_matrix':dmat}
         if xl_op is not None:
           for j, dU in enumerate(xl_op.get_ds_dp()):
             colname = "dU_dp{0}".format(j)
@@ -667,6 +678,28 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
         # set states
         reflections['u_matrix'].set_selected(subsel, U.elems)
         reflections['b_matrix'].set_selected(subsel, B.elems)
+        reflections['s0_vector'].set_selected(subsel, s0.elems)
+
+        if dp.is_multi_state():
+
+          # loop through the panels in this detector
+          for panel_id, _ in enumerate(exp.detector):
+
+            # get the right subset of array indices to set for this panel
+            subsel2 = subsel.select(panels == panel_id)
+            if len(subsel2) == 0:
+              # if no reflections intersect this panel, skip calculation
+              continue
+
+            dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt = panel_id)
+            if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
+            reflections['d_matrix'].set_selected(subsel2, dmat)
+
+        else:
+
+          dmat  = self._get_state_from_parameterisation(dp, frame)
+          if dmat is None: dmat = exp.detector[panel].get_d_matrix()
+          reflections['d_matrix'].set_selected(subsel, dmat)
 
         # set derivatives of the states
         if xl_op is not None:

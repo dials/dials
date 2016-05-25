@@ -120,6 +120,12 @@ class ModelParameterisation(object):
     self._exp_ids = experiment_ids
     return
 
+  def is_multi_state(self):
+    """query whether this is a multi-state parameterisation or not (e.g. true
+    for a multi-panel detector parameterisation)"""
+
+    return self._is_multi_state
+
   def num_free(self):
     """the number of free parameters"""
 
