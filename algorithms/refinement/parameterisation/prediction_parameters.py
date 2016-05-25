@@ -531,7 +531,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
           continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
+        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
+          parameterisation=dp)
 
         # convert to dX/dp, dY/dp and assign the elements of the vectors
         # corresponding to this experiment and panel
@@ -594,7 +595,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dpv_dbeam_p, dphi_dbeam_p = self._beam_derivatives(bp, r, e_X_r, e_r_s0, D)
+      dpv_dbeam_p, dphi_dbeam_p = self._beam_derivatives(r, e_X_r, e_r_s0, D,
+        parameterisation=bp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -648,7 +650,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(
-          xlop, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D)
+          axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D,
+          parameterisation=xlop)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -702,7 +705,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(
-        xlucp, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D)
+        axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D,
+        parameterisation=xlucp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -719,7 +723,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return results
 
-  def _detector_derivatives(self, dp, pv, D, panel_id, dd_ddet_p=None):
+  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None, dd_ddet_p=None):
     """helper function to convert derivatives of the detector state to
     derivatives of the vector pv. Derivatives that would all be null vectors
     are replaced with None"""
@@ -727,7 +731,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     if dd_ddet_p is None:
 
       # get the derivatives of detector d matrix for this panel
-      dd_ddet_p = dp.get_ds_dp(multi_state_elt=panel_id)
+      dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id)
 
       # replace explicit null derivatives with None
       dd_ddet_p = [None if e == self._null_mat3 else \
@@ -738,14 +742,14 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return dpv_ddet_p
 
-  def _beam_derivatives(self, bp, r, e_X_r, e_r_s0, D, ds0_dbeam_p=None):
+  def _beam_derivatives(self, r, e_X_r, e_r_s0, D, parameterisation=None, ds0_dbeam_p=None):
     """helper function to extend the derivatives lists by
     derivatives of the beam parameterisations"""
 
     if ds0_dbeam_p is None:
 
       # get the derivatives of the beam vector wrt the parameters
-      ds0_dbeam_p = bp.get_ds_dp()
+      ds0_dbeam_p = parameterisation.get_ds_dp()
 
       ds0_dbeam_p = [flex.vec3_double(len(r), e.elems) for e in ds0_dbeam_p]
 
@@ -764,15 +768,15 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dphi_dp
 
-  def _xl_orientation_derivatives(self, xlop, axis, fixed_rotation, phi_calc, h,
-    s1, e_X_r, e_r_s0, B, D, dU_dxlo_p=None):
+  def _xl_orientation_derivatives(self, axis, fixed_rotation, phi_calc, h,
+    s1, e_X_r, e_r_s0, B, D, parameterisation=None, dU_dxlo_p=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
     if dU_dxlo_p is None:
 
       # get derivatives of the U matrix wrt the parameters
-      dU_dxlo_p = [flex.mat3_double(len(B), der.elems) for der in xlop.get_ds_dp()]
+      dU_dxlo_p = [flex.mat3_double(len(B), der.elems) for der in parameterisation.get_ds_dp()]
 
     dphi_dp = []
     dpv_dp = []
@@ -794,15 +798,15 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dphi_dp
 
-  def _xl_unit_cell_derivatives(self, xlucp, axis, fixed_rotation, phi_calc, h,
-    s1, e_X_r, e_r_s0, U, D, dB_dxluc_p=None):
+  def _xl_unit_cell_derivatives(self, axis, fixed_rotation, phi_calc, h,
+    s1, e_X_r, e_r_s0, U, D, parameterisation=None, dB_dxluc_p=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
     if dB_dxluc_p is None:
 
       # get derivatives of the B matrix wrt the parameters
-      dB_dxluc_p = [flex.mat3_double(len(U), der.elems) for der in xlucp.get_ds_dp()]
+      dB_dxluc_p = [flex.mat3_double(len(U), der.elems) for der in parameterisation.get_ds_dp()]
 
     dphi_dp = []
     dpv_dp = []

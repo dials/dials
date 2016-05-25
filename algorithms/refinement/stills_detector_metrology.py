@@ -361,7 +361,8 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
           continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
+        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
+          parameterisation=dp)
 
         # convert to dX/dp, dY/dp and assign the elements of the vectors
         # corresponding to this experiment and panel

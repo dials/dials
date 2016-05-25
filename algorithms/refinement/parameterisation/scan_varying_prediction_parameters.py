@@ -383,7 +383,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
           continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
+        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
+          parameterisation=dp)
 
         # convert to dX/dp, dY/dp and assign the elements of the vectors
         # corresponding to this experiment and panel
@@ -440,7 +441,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dpv_dbeam_p, dphi_dbeam_p = self._beam_derivatives(bp, r, e_X_r, e_r_s0, D)
+      dpv_dbeam_p, dphi_dbeam_p = self._beam_derivatives(r, e_X_r, e_r_s0, D,
+        parameterisation=bp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -492,7 +494,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       dU_dxlo_p = [reflections["dU_dp{0}".format(i)].select(isel) \
                    for i in range(xlop.num_free())]
       dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(
-        dU_dxlo_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D)
+        axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D,
+        dU_dxlo_p=dU_dxlo_p)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -542,7 +545,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       dB_dxluc_p = [reflections["dB_dp{0}".format(i)].select(isel) \
                    for i in range(xlucp.num_free())]
       dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(
-        dB_dxluc_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D)
+        axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D,
+        dB_dxluc_p=dB_dxluc_p)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -558,53 +562,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         self._iparam += 1
 
     return results
-
-  def _xl_orientation_derivatives(self, dU_dxlo_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D):
-    """helper function to extend the derivatives lists by
-    derivatives of the crystal orientation parameterisations"""
-
-    dphi_dp = []
-    dpv_dp = []
-
-    # loop through the parameters
-    for der_mat in dU_dxlo_p:
-
-      # calculate the derivative of r for this parameter
-      # FIXME COULD DO THIS BETTER WITH __rmul__?!
-      tmp = fixed_rotation * der_mat * B * h
-      dr = tmp.rotate_around_origin(axis, phi_calc)
-
-      # calculate the derivative of phi for this parameter
-      dphi = -1.0 * dr.dot(s1) / e_r_s0
-      dphi_dp.append(dphi)
-
-      # calculate the derivative of pv for this parameter
-      dpv_dp.append(D * (dr + e_X_r * dphi))
-
-    return dpv_dp, dphi_dp
-
-  def _xl_unit_cell_derivatives(self, dB_dxluc_p, axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D):
-    """helper function to extend the derivatives lists by
-    derivatives of the crystal unit cell parameterisations"""
-
-    dphi_dp = []
-    dpv_dp = []
-
-    # loop through the parameters
-    for der_mat in dB_dxluc_p:
-
-      # calculate the derivative of r for this parameter
-      tmp = fixed_rotation * U * der_mat * h
-      dr = tmp.rotate_around_origin(axis, phi_calc)
-
-      # calculate the derivative of phi for this parameter
-      dphi = -1.0 * dr.dot(s1) / e_r_s0
-      dphi_dp.append(dphi)
-
-      # calculate the derivative of pv for this parameter
-      dpv_dp.append(D * (dr + e_X_r * dphi))
-
-    return dpv_dp, dphi_dp
 
   def calculate_model_state_uncertainties(self, var_cov=None,
                                           obs_image_number=None,

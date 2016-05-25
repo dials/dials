@@ -544,7 +544,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
+        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
+          parameterisation=dp)
 
         # convert to dX/dp, dY/dp and assign the elements of the vectors
         # corresponding to this experiment and panel
@@ -613,7 +614,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(
-          bp, s0, s0u, wl, r, e1, q, c0, DeltaPsi, D)
+          s0, s0u, wl, r, e1, q, c0, DeltaPsi, D, parameterisation=bp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this parameterisation
@@ -671,7 +672,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(
-        xlop, B, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D)
+        B, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D,
+        parameterisation=xlop)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -729,7 +731,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(
-        xlucp, U, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D)
+        U, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D,
+        parameterisation=xlucp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -746,13 +749,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return results
 
-  def _detector_derivatives(self, dp, pv, D, panel_id):
+  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None):
     """helper function to convert derivatives of the detector state to
     derivatives of the vector pv. Derivatives that would all be null vectors
     are replaced with None"""
 
     # get the derivatives of detector d matrix for this panel
-    dd_ddet_p = dp.get_ds_dp(multi_state_elt=panel_id)
+    dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id)
 
     # replace explicit null derivatives with None
     dd_ddet_p = [None if e == self._null_mat3 else e for e in dd_ddet_p]
@@ -762,12 +765,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dpv_ddet_p
 
-  def _beam_derivatives(self, bp, s0, s0u, wl, r, e1, q, c0, DeltaPsi, D):
+  def _beam_derivatives(self, s0, s0u, wl, r, e1, q, c0, DeltaPsi, D,
+    parameterisation=None):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
     # get the derivatives of the beam vector wrt the parameters
-    ds0_dbeam_p = bp.get_ds_dp()
+    ds0_dbeam_p = parameterisation.get_ds_dp()
 
     dDeltaPsi_dp = []
     dpv_dp = []
@@ -805,13 +809,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_orientation_derivatives(self, xlop, B, h, e1, DeltaPsi, s1, q,
-                                  q_scalar, qq, q0, r, s0, s0u, D):
+  def _xl_orientation_derivatives(self, B, h, e1, DeltaPsi, s1, q,
+      q_scalar, qq, q0, r, s0, s0u, D, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
     # get derivatives of the U matrix wrt the parameters
-    dU_dxlo_p = xlop.get_ds_dp()
+    dU_dxlo_p = parameterisation.get_ds_dp()
 
     dDeltaPsi_dp = []
     dpv_dp = []
@@ -855,13 +859,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_unit_cell_derivatives(self, xlucp, U, h, e1, DeltaPsi, s1, q,
-                                  q_scalar, qq, q0, r, s0, s0u, D):
+  def _xl_unit_cell_derivatives(self, U, h, e1, DeltaPsi, s1, q,
+                      q_scalar, qq, q0, r, s0, s0u, D, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
     # get derivatives of the B matrix wrt the parameters
-    dB_dxluc_p = xlucp.get_ds_dp()
+    dB_dxluc_p = parameterisation.get_ds_dp()
 
     dDeltaPsi_dp = []
     dpv_dp = []
@@ -1047,7 +1051,8 @@ class SphericalRelpStillsPredictionParameterisation(
           continue
         sub_pv = self._pv.select(sub_isel)
         sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
+        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
+          parameterisation=dp)
 
         # convert to dX/dp, dY/dp and assign the elements of the vectors
         # corresponding to this experiment and panel
@@ -1119,7 +1124,8 @@ class SphericalRelpStillsPredictionParameterisation(
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(
-          bp, s0, s0u, nu, r, e1, q_s0, inv_s, inv_sss, DeltaPsi, D)
+          s0, s0u, nu, r, e1, q_s0, inv_s, inv_sss, DeltaPsi, D,
+          parameterisation=bp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this parameterisation
@@ -1176,7 +1182,8 @@ class SphericalRelpStillsPredictionParameterisation(
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(
-        xlop, B, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D)
+        B, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D,
+        parameterisation=xlop)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -1233,7 +1240,8 @@ class SphericalRelpStillsPredictionParameterisation(
       v_w_inv = self._v_w_inv.select(isel)
 
       dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(
-        xlucp, U, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D)
+        U, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D,
+        parameterisation=xlucp)
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
       dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
@@ -1249,13 +1257,13 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return results
 
-  def _beam_derivatives(self, bp, s0, s0u, nu, r, e1, q_s0, inv_s,
-                        inv_sss, DeltaPsi, D):
+  def _beam_derivatives(self, s0, s0u, nu, r, e1, q_s0, inv_s,
+                        inv_sss, DeltaPsi, D, parameterisation=None):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
     # get the derivatives of the beam vector wrt the parameters
-    ds0_dbeam_p = bp.get_ds_dp()
+    ds0_dbeam_p = parameterisation.get_ds_dp()
 
     dDeltaPsi_dp = []
     dpv_dp = []
@@ -1286,13 +1294,13 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_orientation_derivatives(self, xlop, B, h, e1, DeltaPsi, s1, nu, q_s0,
-                                  inv_s, inv_sss, r, s0, D):
+  def _xl_orientation_derivatives(self, B, h, e1, DeltaPsi, s1, nu, q_s0,
+                              inv_s, inv_sss, r, s0, D, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
     # get derivatives of the U matrix wrt the parameters
-    dU_dxlo_p = xlop.get_ds_dp()
+    dU_dxlo_p = parameterisation.get_ds_dp()
 
     dDeltaPsi_dp = []
     dpv_dp = []
@@ -1323,13 +1331,13 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_unit_cell_derivatives(self, xlucp, U, h, e1, DeltaPsi, s1, nu,
-                                q_s0, inv_s, inv_sss, r, s0, D):
+  def _xl_unit_cell_derivatives(self, U, h, e1, DeltaPsi, s1, nu,
+      q_s0, inv_s, inv_sss, r, s0, D, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
     # get derivatives of the B matrix wrt the parameters
-    dB_dxluc_p = xlucp.get_ds_dp()
+    dB_dxluc_p = parameterisation.get_ds_dp()
 
     dDeltaPsi_dp = []
     dpv_dp = []
