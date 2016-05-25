@@ -128,6 +128,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       reflections['s0_vector'] = flex.vec3_double(nref)
     if 'd_matrix' not in reflections:
       reflections['d_matrix'] = flex.mat3_double(nref)
+    if 'D_matrix' not in reflections:
+      reflections['D_matrix'] = flex.mat3_double(nref)
 
     # set columns in the reflection table to store the derivative of state for
     # each reflection, if needed
@@ -197,12 +199,15 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         else:
           dmat  = self._get_state_from_parameterisation(dp, frame)
         if dmat is None: dmat = exp.detector[panel].get_d_matrix()
+        Dmat = exp.detector[panel].get_D_matrix() # actually need D, but need
+        # the above to compose at the right frame
 
         # set states and their derivatives into reflections
         row = {'u_matrix':U.elems,
                'b_matrix':B.elems,
                's0_vector':s0,
-               'd_matrix':dmat}
+               'd_matrix':dmat,
+               'D_matrix':Dmat}
         if xl_op is not None and self._varying_xl_orientations:
           for j, dU in enumerate(xl_op.get_ds_dp()):
             colname = "dU_dp{0}".format(j)
@@ -250,15 +255,15 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return U*B
 
   # overloaded for the scan-varying case
-  def _get_U_B_for_experiment(self, crystal, reflections, isel):
-    """helper function to return either a single U, B pair (for scan-static) or
-    U, B arrays (scan-varying; overloaded in derived class) for a particular
-    experiment."""
+  def _get_model_data_for_experiment(self, experiment, reflections):
+    """helper function to return model data s0, U, B and D for a particular
+    experiment. In this scan-varying overload this is trivial because these
+    values are already set as arrays in the reflection table"""
 
-    # crystal ignored here (it is needed for the scan-static version only)
-    U = reflections['u_matrix'].select(isel)
-    B = reflections['b_matrix'].select(isel)
-    return U, B
+    return {'s0':reflections['s0_vector'],
+            'U':reflections['u_matrix'],
+            'B':reflections['b_matrix'],
+            'D':reflections['D_matrix']}
 
   def _get_gradients_core(self, reflections, D, s0, U, B, axis, fixed_rotation, callback=None):
     """Calculate gradients of the prediction formula with respect to
@@ -702,7 +707,9 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
 
             dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt=panel_id)
             if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
+            Dmat = exp.detector[panel_id].get_D_matrix()
             reflections['d_matrix'].set_selected(subsel2, dmat)
+            reflections['D_matrix'].set_selected(subsel2, Dmat)
 
             if dp is not None and self._varying_detectors:
               for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id)):
@@ -712,8 +719,10 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
         else: # set states and derivatives for single panel detector
 
           dmat  = self._get_state_from_parameterisation(dp, frame)
-          if dmat is None: dmat = exp.detector[panel].get_d_matrix()
+          if dmat is None: dmat = exp.detector[0].get_d_matrix()
+          Dmat = exp.detector[0].get_D_matrix()
           reflections['d_matrix'].set_selected(subsel, dmat)
+          reflections['D_matrix'].set_selected(subsel, Dmat)
 
           if dp is not None and self._varying_detectors:
             for j, dd in enumerate(dp.get_ds_dp()):

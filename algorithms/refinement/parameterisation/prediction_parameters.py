@@ -329,26 +329,16 @@ class PredictionParameterisation(object):
     for iexp, exp in enumerate(self._experiments):
 
       sel = reflections['id'] == iexp
-      isel = sel.iselection()
+      subref = reflections.select(sel)
+      states = self._get_model_data_for_experiment(exp, subref)
 
-      # D matrix array
-      panels = reflections['panel'].select(isel)
-      for ipanel, D_mat in enumerate([p.get_D_matrix() for p in exp.detector]):
-        subsel = isel.select(panels == ipanel)
-        D.set_selected(subsel, D_mat)
-
-      # s0 array
-      s0.set_selected(isel, exp.beam.get_s0())
-
-      # U and B arrays
-      exp_U, exp_B = self._get_U_B_for_experiment(exp.crystal, reflections, isel)
-      U.set_selected(isel, exp_U)
-      B.set_selected(isel, exp_B)
-
-      # axis array
+      D.set_selected(sel, states['D'])
+      s0.set_selected(sel, states['s0'])
+      U.set_selected(sel, states['U'])
+      B.set_selected(sel, states['B'])
       if exp.goniometer:
-        axis.set_selected(isel, exp.goniometer.get_rotation_axis())
-        fixed_rotation.set_selected(isel, exp.goniometer.get_fixed_rotation())
+        axis.set_selected(sel, exp.goniometer.get_rotation_axis())
+        fixed_rotation.set_selected(sel, exp.goniometer.get_fixed_rotation())
 
     return self._get_gradients_core(reflections, D, s0, U, B, axis, fixed_rotation, callback)
 
@@ -371,13 +361,24 @@ class PredictionParameterisation(object):
 
     return results
 
-  def _get_U_B_for_experiment(self, crystal, reflections, isel):
-    """helper function to return either a single U, B pair (for scan-static) or
-    U, B arrays (scan-varying) for a particular experiment."""
+  def _get_model_data_for_experiment(self, experiment, reflections):
+    """helper function to return model data s0, U, B and D for a particular
+    experiment. D is always returned as an array the same length as the
+    reflections for the experiment, whereas here U, B and s0 are returned as
+    single matrices or vectors. In the scan-varying overload these will all be
+    arrays."""
 
-    # isel and reflections ignored here (they are needed for the scan-varying
-    # overload)
-    return crystal.get_U(), crystal.get_B()
+    # D matrix array
+    D = flex.mat3_double(len(reflections))
+    panels = reflections['panel']
+    for ipanel, D_mat in enumerate([p.get_D_matrix() for p in experiment.detector]):
+      sel = panels == ipanel
+      D.set_selected(sel, D_mat)
+
+    return {'s0':experiment.beam.get_s0(),
+            'U':experiment.crystal.get_U(),
+            'B':experiment.crystal.get_B(),
+            'D':D}
 
 
 class SparseGradientVectorMixin(object):
