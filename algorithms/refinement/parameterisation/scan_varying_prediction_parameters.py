@@ -78,15 +78,43 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return xl_ucp
 
-  def _get_state_from_parameterisation(self, parameterisation, frame):
+  def _get_beam_parameterisation(self, experiment_id):
+    """Return the beam parameterisation for the requested
+    experiment number (or None if the beam in that experiment
+    is not parameterised)"""
+
+    param_set = self._exp_to_param[experiment_id]
+    bp = None
+    if param_set.beam_param is not None:
+      bp = self._beam_parameterisations[param_set.beam_param]
+
+    return bp
+
+  def _get_detector_parameterisation(self, experiment_id):
+    """Return the detector parameterisation for the requested
+    experiment number (or None if the detector in that experiment
+    is not parameterised)"""
+
+    param_set = self._exp_to_param[experiment_id]
+    dp = None
+    if param_set.det_param is not None:
+      dp = self._detector_parameterisations[param_set.det_param]
+
+    return dp
+
+  def _get_state_from_parameterisation(self, parameterisation, frame,
+                                       multi_state_elt=None):
     """Get the model state from the parameterisation at the specified frame,
     taking care of whether it is a scan-varying parameterisation or not"""
 
     if parameterisation is None: return None
     if hasattr(parameterisation, 'num_sets'):
       parameterisation.compose(frame)
-
-    return parameterisation.get_state()
+    if multi_state_elt is None:
+      state = parameterisation.get_state()
+    else:
+      state = parameterisation.get_state(multi_state_elt = multi_state_elt)
+    return state
 
   def _prepare_for_compose(self, reflections):
 
@@ -141,15 +169,18 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       sel = reflections['id'] == iexp
       isel = sel.iselection()
 
-      # get their frame numbers
+      # get their frame numbers and intersecting panels
       obs_image_numbers = (reflections['xyzobs.px.value'].parts()[2]).select(isel)
+      panels = reflections['panel'].select(isel)
 
-      # identify which crystal parameterisations to use for this experiment
+      # identify which parameterisations to use for this experiment
       xl_op = self._get_xl_orientation_parameterisation(iexp)
       xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
+      bp = self._get_beam_parameterisation(iexp)
+      dp = self._get_detector_parameterisation(iexp)
 
       # get state and derivatives for each reflection
-      for i, frame in zip(isel, obs_image_numbers):
+      for i, frame, pnl in zip(isel, obs_image_numbers, panels):
 
         # model states at current frame
         U = self._get_state_from_parameterisation(xl_op, frame)
@@ -648,9 +679,11 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
 
       blocks = reflections['block'].select(isel)
 
-      # identify which crystal parameterisations to use for this experiment
+      # identify which parameterisations to use for this experiment
       xl_op = self._get_xl_orientation_parameterisation(iexp)
       xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
+      bp = self._get_beam_parameterisation(iexp)
+      dp = self._get_detector_parameterisation(iexp)
 
       # get state and derivatives for each block
       for block in xrange(flex.min(blocks),
@@ -659,6 +692,9 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
         # determine the subset of reflections this affects
         subsel = isel.select(blocks == block)
         if len(subsel) == 0: continue
+
+        # get the panels hit by these reflections
+        panels = reflections['panel'].select(subsel)
 
         # get the integer frame number nearest the centre of that block
         frames = reflections['block_centre'].select(subsel)
@@ -674,6 +710,9 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
 
         B = self._get_state_from_parameterisation(xl_ucp, frame)
         if B is None: B = exp.crystal.get_B()
+
+        s0 = self._get_state_from_parameterisation(bp, frame)
+        if s0 is None: s0 = exp.beam.get_s0()
 
         # set states
         reflections['u_matrix'].set_selected(subsel, U.elems)
