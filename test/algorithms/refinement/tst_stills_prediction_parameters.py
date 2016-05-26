@@ -116,7 +116,7 @@ class Test(object):
                           space_group(space_group_symbols(1).hall()).type(),
                           resolution)
     indices = index_generator.to_array()
-    rays = ray_predictor.predict(indices)
+    rays = ray_predictor(indices)
 
     # Make a standard reflection_table and copy in the ray data
     self.reflections = flex.reflection_table.empty_standard(len(rays))
@@ -141,8 +141,7 @@ class Test(object):
       p_vals[i] -= deltas[i] / 2.
       pred_param.set_param_vals(p_vals)
 
-      ref_predictor.update()
-      ref_predictor.predict(self.reflections)
+      ref_predictor(self.reflections)
 
       x, y, _ = self.reflections['xyzcal.mm'].deep_copy().parts()
       delpsi = self.reflections['delpsical.rad'].deep_copy()
@@ -152,8 +151,7 @@ class Test(object):
       p_vals[i] += deltas[i]
       pred_param.set_param_vals(p_vals)
 
-      ref_predictor.update()
-      ref_predictor.predict(self.reflections)
+      ref_predictor(self.reflections)
 
       x, y, _ = self.reflections['xyzcal.mm'].deep_copy().parts()
       delpsi = self.reflections['delpsical.rad'].deep_copy()
@@ -196,8 +194,7 @@ class Test(object):
     # the analytical gradients so quantities like s1 are correct
     from dials.algorithms.refinement.prediction import ExperimentsPredictor
     ref_predictor = ExperimentsPredictor(self.stills_experiments)
-    ref_predictor.update()
-    ref_predictor.predict(self.reflections)
+    ref_predictor(self.reflections)
 
     # get analytical gradients
     an_grads = pred_param.get_gradients(self.reflections)
@@ -307,8 +304,7 @@ class Test(object):
     from dials.algorithms.refinement.prediction import ExperimentsPredictor
     ref_predictor = ExperimentsPredictor(self.stills_experiments,
       spherical_relp=True)
-    ref_predictor.update()
-    ref_predictor.predict(self.reflections)
+    ref_predictor(self.reflections)
 
     # get analytical gradients
     an_grads = pred_param.get_gradients(self.reflections)

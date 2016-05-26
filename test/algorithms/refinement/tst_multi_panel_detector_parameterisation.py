@@ -230,8 +230,8 @@ if __name__ == '__main__':
   ref_predictor = ScansRayPredictor(experiments_single_panel, sweep_range)
 
   # get two sets of identical reflections
-  obs_refs = ref_predictor.predict(indices)
-  obs_refs2 = ref_predictor.predict(indices)
+  obs_refs = ref_predictor(indices)
+  obs_refs2 = ref_predictor(indices)
   for r1, r2 in zip(obs_refs, obs_refs2):
     assert r1['s1'] == r2['s1']
 

@@ -150,7 +150,7 @@ indices = index_generator.to_array()
 # Build a ray predictor and predict rays close to the Ewald sphere by using
 # the narrow rotation scan
 ref_predictor = ScansRayPredictor(scans_experiments, sweep_range)
-obs_refs = ref_predictor.predict(indices, experiment_id=0)
+obs_refs = ref_predictor(indices, experiment_id=0)
 
 # Take only those rays that intersect the detector
 intersects = ray_intersection(mydetector, obs_refs)
@@ -171,8 +171,7 @@ obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
 # Re-predict using the stills reflection predictor
 stills_ref_predictor = ExperimentsPredictor(stills_experiments)
-stills_ref_predictor.update()
-obs_refs_stills = stills_ref_predictor.predict(obs_refs)
+obs_refs_stills = stills_ref_predictor(obs_refs)
 
 # Set 'observed' centroids from the predicted ones
 obs_refs_stills['xyzobs.mm.value'] = obs_refs_stills['xyzcal.mm']

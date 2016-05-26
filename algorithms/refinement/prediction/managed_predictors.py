@@ -22,8 +22,9 @@ from math import pi
 from scitbx import matrix
 from dials.algorithms.spot_prediction import ScanStaticRayPredictor
 
-from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
-from dials.algorithms.spot_prediction import StillsReflectionPredictor
+from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor as sc
+from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor as sv
+from dials.algorithms.spot_prediction import StillsReflectionPredictor as st
 
 class ScansRayPredictor(object):
   """
@@ -39,18 +40,8 @@ class ScansRayPredictor(object):
 
     self._experiments = experiments
     self._sweep_range = sweep_range
-    self.update()
 
-  def update(self):
-    """Build RayPredictor objects for the current geometry of each Experiment"""
-
-    self._ray_predictors = [ScanStaticRayPredictor(e.beam.get_s0(),
-      e.goniometer.get_rotation_axis(),
-      e.goniometer.get_fixed_rotation(),
-      self._sweep_range) for e in self._experiments]
-    self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
-
-  def predict(self, hkl, experiment_id=0, UB=None):
+  def __call__(self, hkl, experiment_id=0, UB=None):
     """
     Solve the prediction formula for the reflecting angle phi.
 
@@ -58,9 +49,16 @@ class ScansRayPredictor(object):
     for use in refinement with time-varying crystal parameters
     """
 
-    UB_ = UB if UB else self._UBs[experiment_id]
+    e = self._experiments[experiment_id]
+    ray_predictor = ScanStaticRayPredictor(
+      e.beam.get_s0(),
+      e.goniometer.get_rotation_axis(),
+      e.goniometer.get_fixed_rotation(),
+      self._sweep_range)
 
-    rays = self._ray_predictors[experiment_id](hkl, UB_)
+    UB_ = UB if UB else e.crystal.get_A()
+
+    rays = ray_predictor(hkl, UB_)
 
     return rays
 
@@ -77,25 +75,17 @@ class ExperimentsPredictor(object):
     self._experiments = experiments
     self._force_stills = force_stills
     self._spherical_relp = spherical_relp
-    self.update()
 
-  def update(self):
-    """Build predictor objects for the current geometry of each Experiment"""
+  def __call__(self, reflections):
+    """Predict for all reflections at the current model geometry"""
 
-    sc = ScanStaticReflectionPredictor
-    st = StillsReflectionPredictor
     if self._force_stills:
-      self._predictors = [st(e, spherical_relp=self._spherical_relp) \
+      predictors = [st(e, spherical_relp=self._spherical_relp) \
                           for e in self._experiments]
     else:
-      self._predictors = [sc(e) if e.goniometer else st(e,
+      predictors = [sc(e) if e.goniometer else st(e,
         spherical_relp=self._spherical_relp) for e in self._experiments]
     self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
-
-  def predict(self, reflections):
-    """
-    Predict for all reflections
-    """
 
     for iexp, e in enumerate(self._experiments):
 
@@ -103,14 +93,23 @@ class ExperimentsPredictor(object):
       sel = reflections['id'] == iexp
       refs = reflections.select(sel)
 
-      # determine whether to try scan-varying prediction
-      if 'ub_matrix' in refs:
-        UBs = refs['ub_matrix']
-        # predict and assign in place
-        self._predictors[iexp].for_reflection_table(refs, UBs)
+      # stills
+      if not e.goniometer or self._force_stills:
+        predictor = st(e, spherical_relp=self._spherical_relp)
+        UB = e.crystal.get_A()
+        predictor.for_reflection_table(refs, UB)
+      # scan-varying
+      elif 'ub_matrix' in refs:
+        predictor = sv(e)
+        UB = refs['ub_matrix']
+        s0 = refs['s0_vector']
+        dmat = refs['d_matrix']
+        predictor.for_reflection_table(refs, UB, s0, dmat)
+      # scan static
       else:
-        # predict and assign in place
-        self._predictors[iexp].for_reflection_table(refs, self._UBs[iexp])
+        predictor = sc(e)
+        UB = e.crystal.get_A()
+        predictor.for_reflection_table(refs, UB)
 
       # write predictions back to overall reflections
       reflections.set_selected(sel, refs)

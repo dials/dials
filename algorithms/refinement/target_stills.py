@@ -57,14 +57,10 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     return
 
   def  _predict_core(self, reflections):
-
     """perform prediction for the specified reflections"""
-    # update the reflection_predictor with the scan-independent part of the
-    # current geometry
-    self._reflection_predictor.update()
 
     # do prediction (updates reflection table in situ).
-    self._reflection_predictor.predict(reflections)
+    self._reflection_predictor(reflections)
 
     x_obs, y_obs, _ = reflections['xyzobs.mm.value'].parts()
     delpsi = reflections['delpsical.rad']

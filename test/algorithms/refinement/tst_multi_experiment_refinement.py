@@ -197,9 +197,9 @@ indices2 = index_generator.to_array()
 
 # Predict rays within the sweep range. Set experiment IDs
 ray_predictor = ScansRayPredictor(experiments, sweep_range)
-obs_refs1 = ray_predictor.predict(indices1, experiment_id=0)
+obs_refs1 = ray_predictor(indices1, experiment_id=0)
 obs_refs1['id'] = flex.int(len(obs_refs1), 0)
-obs_refs2 = ray_predictor.predict(indices1, experiment_id=1)
+obs_refs2 = ray_predictor(indices1, experiment_id=1)
 obs_refs2['id'] = flex.int(len(obs_refs2), 1)
 
 # Take only those rays that intersect the detector
@@ -211,8 +211,8 @@ obs_refs2 = obs_refs2.select(intersects)
 # Make a reflection predictor and re-predict for all these reflections. The
 # result is the same, but we gain also the flags and xyzcal.px columns
 ref_predictor = ExperimentsPredictor(experiments)
-obs_refs1 = ref_predictor.predict(obs_refs1)
-obs_refs2 = ref_predictor.predict(obs_refs2)
+obs_refs1 = ref_predictor(obs_refs1)
+obs_refs2 = ref_predictor(obs_refs2)
 
 # Set 'observed' centroids from the predicted ones
 obs_refs1['xyzobs.mm.value'] = obs_refs1['xyzcal.mm']

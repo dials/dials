@@ -44,7 +44,7 @@ def generate_reflections(experiments):
   scan = experiments[0].scan
   sweep_range = scan.get_oscillation_range(deg=False)
   ray_predictor = ScansRayPredictor(experiments, sweep_range)
-  obs_refs = ray_predictor.predict(indices)
+  obs_refs = ray_predictor(indices)
 
   # Take only those rays that intersect the detector
   intersects = ray_intersection(detector, obs_refs)
@@ -54,7 +54,7 @@ def generate_reflections(experiments):
   # result is the same, but we gain also the flags and xyzcal.px columns
   ref_predictor = ExperimentsPredictor(experiments)
   obs_refs['id'] = flex.int(len(obs_refs), 0)
-  obs_refs = ref_predictor.predict(obs_refs)
+  obs_refs = ref_predictor(obs_refs)
 
   # Set 'observed' centroids from the predicted ones
   obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']

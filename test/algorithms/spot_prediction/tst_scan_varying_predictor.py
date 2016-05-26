@@ -89,7 +89,7 @@ def ref_gen_static(experiments):
   # Predict rays within the sweep range
   sweep_range = scan.get_oscillation_range(deg=False)
   ray_predictor = ScansRayPredictor(experiments, sweep_range)
-  refs = ray_predictor.predict(indices)
+  refs = ray_predictor(indices)
 
   # Take only those rays that intersect the detector
   intersects = ray_intersection(detector, refs)
@@ -99,7 +99,7 @@ def ref_gen_static(experiments):
   # result is the same, but we gain also the flags and xyzcal.px columns
   ref_predictor = ExperimentsPredictor(experiments)
   refs['id'] = flex.int(len(refs), 0)
-  refs = ref_predictor.predict(refs)
+  refs = ref_predictor(refs)
 
   return refs
 

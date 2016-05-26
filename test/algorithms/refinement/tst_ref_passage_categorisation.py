@@ -83,14 +83,14 @@ experiments.append(Experiment(
 # Select those that are excited in a 30 degree sweep and get angles
 UB = mycrystal.get_U() * mycrystal.get_B()
 ray_predictor = ScansRayPredictor(experiments, sweep_range)
-obs_refs = ray_predictor.predict(indices)
+obs_refs = ray_predictor(indices)
 
 # Set the experiment number
 obs_refs['id'] = flex.int(len(obs_refs), 0)
 
 # Calculate intersections
 ref_predictor = ExperimentsPredictor(experiments)
-obs_refs = ref_predictor.predict(obs_refs)
+obs_refs = ref_predictor(obs_refs)
 
 print "Total number of observations made", len(obs_refs)
 

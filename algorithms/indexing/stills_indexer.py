@@ -406,7 +406,7 @@ class stills_indexer(indexer_base):
         from dials.algorithms.refinement.prediction import ExperimentsPredictor
         ref_predictor = ExperimentsPredictor(experiments, force_stills=True,
                                              spherical_relp=params.refinement.parameterisation.spherical_relp_model)
-        rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor.predict(indexed))
+        rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
         candidates.append(candidate_info(crystal = cm,
                                          n_indexed = len(indexed),
                                          rmsd = rmsd,

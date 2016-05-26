@@ -83,10 +83,6 @@ class Target(object):
   def _predict_core(self, reflections):
     """perform prediction for the specified reflections"""
 
-    # update the reflection_predictor with the scan-independent part of the
-    # current geometry
-    self._reflection_predictor.update()
-
     # duck-typing for ScanVaryingPredictionParameterisation. Only this
     # class has a compose(reflections) method. Sets ub_matrix (and caches
     # derivatives).
@@ -99,8 +95,7 @@ class Target(object):
     # do prediction (updates reflection table in situ). Scan-varying prediction
     # is done automatically if the crystal has scan-points (assuming reflections
     # have ub_matrix set)
-
-    self._reflection_predictor.predict(reflections)
+    self._reflection_predictor(reflections)
 
     x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
     x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
