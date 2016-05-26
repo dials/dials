@@ -12,6 +12,7 @@ from dials.algorithms.refinement.parameterisation.model_parameters \
         import Parameter, ModelParameterisation
 from math import exp
 import abc
+from scitbx import sparse
 
 class ScanVaryingParameterSet(Parameter):
   """Testing a class for a scan-varying parameter, in which values at rotation
@@ -146,7 +147,8 @@ class GaussianSmoother(object):
   def value_weight(self, x, param):
     pass
 
-    weight = [0.0] * len(self._positions)
+    # use sparse storage as only self._naverage (default 3) values are non-zero
+    weight = sparse.vector(self._nvalues)
 
     # normalised coordinate
     z = (x - self._x0) / self._spacing
@@ -174,9 +176,10 @@ class GaussianSmoother(object):
     for i in range(i1, i2):
 
       ds = (z - self._positions[i]) / self._sigma
-      weight[i] = exp(-ds*ds)
-      sumwv += weight[i] * values[i]
-      sumweight  += weight[i]
+      w = exp(-ds*ds)
+      sumwv += w * values[i]
+      sumweight  += w
+      weight[i] = w
 
     if sumweight > 0.0:
       value = sumwv / sumweight;

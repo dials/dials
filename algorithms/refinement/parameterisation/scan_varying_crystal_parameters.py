@@ -81,9 +81,9 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
     # calculate derivatives of angles wrt underlying parameters.
     # FIXME write up notes in orange notebook
-    dphi1_dp = [e / phi1_sumweights for e in phi1_weights]
-    dphi2_dp = [e / phi2_sumweights for e in phi2_weights]
-    dphi3_dp = [e / phi3_sumweights for e in phi3_weights]
+    dphi1_dp = phi1_weights * (1. / phi1_sumweights)
+    dphi2_dp = phi2_weights * (1. / phi2_sumweights)
+    dphi3_dp = phi3_weights * (1. / phi3_sumweights)
 
     # convert angles to radians
     phi1rad, phi2rad, phi3rad = (phi1 / 1000., phi2 / 1000.,
@@ -111,9 +111,11 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
     dU_dphi3 = dPhi3_dphi3 * Phi21 * U0 / 1000.
 
     # calculate derivatives of state wrt underlying parameters
-    dU_dp1 = [dU_dphi1 * e for e in dphi1_dp]
-    dU_dp2 = [dU_dphi2 * e for e in dphi2_dp]
-    dU_dp3 = [dU_dphi3 * e for e in dphi3_dp]
+    #dU_dp1 = [None] * dphi1_dp.size
+    #for (i, v) in dphi1_dp: dU_dp1[i] = dU_dphi1 * v
+    dU_dp1 = [dU_dphi1 * e for e in dphi1_dp.as_dense_vector()]
+    dU_dp2 = [dU_dphi2 * e for e in dphi2_dp.as_dense_vector()]
+    dU_dp3 = [dU_dphi3 * e for e in dphi3_dp.as_dense_vector()]
 
     # store derivatives as list-of-lists
     self._dstate_dp = [dU_dp1, dU_dp2, dU_dp3]
@@ -172,14 +174,15 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
     """calculate state and derivatives for model at image number t"""
 
     # extract values and weights at time t using the smoother
-    data = [self._smoother.value_weight(t, pset) for pset in self._param]
+    vals, weights, sumweights = zip(*(self._smoother.value_weight(t, pset) for pset in self._param))
 
     # obtain metrical matrix parameters on natural scale
-    vals = [val / 1.e5 for val, weights, sumweight in data]
+    vals = [v * 1.e-5 for v in vals]
 
     # calculate derivatives of metrical matrix parameters wrt underlying
     # scan-varying parameters
-    dvals_dp =  [tuple([e / sw for e in w]) for v, w, sw in data]
+    inv_sumw = [1. / sw for sw in sumweights]
+    dvals_dp =  [e * isw for e, isw in zip(weights, inv_sumw)]
 
     # set parameter values in the symmetrizing object and obtain new B
     try:
@@ -200,11 +203,11 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
     # get the derivatives of state wrt metrical matrix parameters on the
     # adjusted scale
-    dB_dval = [matrix.sqr(e) / 1.e5 \
+    dB_dval = [matrix.sqr(e) * 1.e-5 \
                        for e in self._S.forward_gradients()]
 
     # calculate derivatives of state wrt underlying parameters
-    self._dstate_dp = [[b * e for e in a] for a, b in zip(dvals_dp, dB_dval)]
+    self._dstate_dp = [[b * e for e in a.as_dense_vector()] for a, b in zip(dvals_dp, dB_dval)]
 
     return
 
