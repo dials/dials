@@ -46,6 +46,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
     # Set up the initial state
     istate = crystal.get_U()
+    self._U_at_t = istate
 
     # Set up the parameters
     phi1 = ScanVaryingParameterSet(0.0, nv,
@@ -111,11 +112,12 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
     dU_dphi3 = dPhi3_dphi3 * Phi21 * U0 / 1000.
 
     # calculate derivatives of state wrt underlying parameters
-    #dU_dp1 = [None] * dphi1_dp.size
-    #for (i, v) in dphi1_dp: dU_dp1[i] = dU_dphi1 * v
-    dU_dp1 = [dU_dphi1 * e for e in dphi1_dp.as_dense_vector()]
-    dU_dp2 = [dU_dphi2 * e for e in dphi2_dp.as_dense_vector()]
-    dU_dp3 = [dU_dphi3 * e for e in dphi3_dp.as_dense_vector()]
+    dU_dp1 = [None] * dphi1_dp.size
+    for (i, v) in dphi1_dp: dU_dp1[i] = dU_dphi1 * v
+    dU_dp2 = [None] * dphi2_dp.size
+    for (i, v) in dphi2_dp: dU_dp2[i] = dU_dphi2 * v
+    dU_dp3 = [None] * dphi3_dp.size
+    for (i, v) in dphi3_dp: dU_dp3[i] = dU_dphi3 * v
 
     # store derivatives as list-of-lists
     self._dstate_dp = [dU_dp1, dU_dp2, dU_dp3]
@@ -151,6 +153,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
     ### Set up the initial state
     istate = None
+    self._B_at_t = crystal.get_B()
 
     ### Set up symmetrizing object
     self._S = symmetrize_reduce_enlarge(crystal.get_space_group())
@@ -208,6 +211,9 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
     # calculate derivatives of state wrt underlying parameters
     self._dstate_dp = [[b * e for e in a.as_dense_vector()] for a, b in zip(dvals_dp, dB_dval)]
+    self._dstate_dp = [[None] * e.size for e in dvals_dp]
+    for i, (dv, dB) in enumerate(zip(dvals_dp, dB_dval)):
+      for j, e in dv: self._dstate_dp[i][j] = e * dB
 
     return
 

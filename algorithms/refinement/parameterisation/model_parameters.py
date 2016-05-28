@@ -118,6 +118,7 @@ class ModelParameterisation(object):
     self._dstate_dp = [None] * len(param_list)
     self._is_multi_state = is_multi_state
     self._exp_ids = experiment_ids
+    self._null_state = self.get_state() * 0.0
     return
 
   def is_multi_state(self):
@@ -266,29 +267,40 @@ class ModelParameterisation(object):
     # value of get_ds_dp.
     pass
 
-  def get_ds_dp(self, only_free = True, multi_state_elt=None):
+  def get_ds_dp(self, only_free = True, multi_state_elt=None, use_none_as_null=False):
     """get a list of derivatives of the state wrt each parameter, as
     a list in the same order as the internal list of parameters.
 
     If only_free, the derivatives with respect to fixed parameters
     are omitted from the returned list. Otherwise a list for all
-    parameters is returned, with values of 0.0 for the fixed
-    parameters.
+    parameters is returned, with null values for the fixed parameters.
 
     For a multi-state parameterisation, the requested state is
-    selected passing an integer array index in multi_state_elt"""
+    selected passing an integer array index in multi_state_elt
+
+    The internal list of derivatives self._dstate_dp may use None for null
+    elements. By default these are converted to the null state, but
+    optionally these may remain None to detect them easier and avoid
+    doing calculations on null elements"""
+
+    if use_none_as_null:
+      null = None
+    else:
+      null = self._null_state
 
     if only_free:
-      grads = [ds_dp for ds_dp, p in zip(self._dstate_dp, self._param) \
-               if not p.get_fixed()]
+      grads = [ds_dp for ds_dp, p in zip(self._dstate_dp, self._param) if not p.get_fixed()]
     else:
-      grads = [0. * ds_dp if p.get_fixed() else ds_dp \
-                  for ds_dp, p in zip(self._dstate_dp, self._param)]
+      grads = self._dstate_dp
 
-    if multi_state_elt is not None and self._is_multi_state:
-      return [e[multi_state_elt] for e in grads]
-    else:
-      return grads
+    if self._is_multi_state:
+      if multi_state_elt is None:
+        return [[null if e is None else e for e in ds_dp] for ds_dp in grads]
+      else:
+        return [null if e[multi_state_elt] is None else e[multi_state_elt] for e in grads]
+
+    return [null if e is None else e for e in grads]
+
 
   def calculate_state_uncertainties(self, var_cov):
     """Given a variance-covariance array for the parameters of this model,

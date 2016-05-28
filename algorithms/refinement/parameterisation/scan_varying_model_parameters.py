@@ -345,7 +345,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
   #def get_state(self): inherited unchanged from ModelParameterisation
 
-  def get_ds_dp(self, only_free = True):
+  def get_ds_dp(self, only_free = True, use_none_as_null=False):
     """get a list of derivatives of the state wrt each parameter, as
     a list in the same order as the internal list of parameters. Requires
     compose to be called first at scan coordinate 't' so that each
@@ -355,15 +355,25 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
     If only_free, the derivatives with respect to fixed parameters are
     omitted from the returned list. Otherwise a list for all parameters is
-    returned, with values of 0.0 for the fixed parameters"""
+    returned, with null values for the fixed parameters.
+
+    The internal list of derivatives self._dstate_dp may use None for null
+    elements. By default these are converted to the null state, but
+    optionally these may remain None to detect them easier and avoid
+    doing calculations on null elements
+    """
+
+    if use_none_as_null:
+      null = None
+    else:
+      null = self._null_state
 
     if only_free:
-
-      return [ds_dp for row, p in zip(self._dstate_dp, self._param) \
-              if not p.get_fixed() for ds_dp in row]
+      return [null if ds_dp is None else ds_dp for row, p in zip(
+              self._dstate_dp, self._param) if not p.get_fixed() for ds_dp in row]
 
     else:
-      return [0. * ds_dp if p.get_fixed() else ds_dp \
+      return [null if p.get_fixed() or ds_dp is None else ds_dp \
               for row, p in zip(self._dstate_dp, self._param) \
               for ds_dp in row]
 

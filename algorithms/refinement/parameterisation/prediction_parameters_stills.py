@@ -680,9 +680,12 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
       for dX, dY, dDeltaPsi in zip(dX_dxlo_p, dY_dxlo_p, ddelpsi_dxlo_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dDeltaPsi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
@@ -755,10 +758,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     are replaced with None"""
 
     # get the derivatives of detector d matrix for this panel
-    dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id)
+    dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id,
+                                           use_none_as_null=True)
 
     # replace explicit null derivatives with None
-    dd_ddet_p = [None if e == self._null_mat3 else e for e in dd_ddet_p]
+    dd_ddet_p = [None if e is None else e for e in dd_ddet_p]
 
     # calculate the derivative of pv for this parameter
     dpv_ddet_p = [der if der is None else (D * (-1. * der).elems) * pv for der in dd_ddet_p]
@@ -771,13 +775,18 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     beam parameterisations"""
 
     # get the derivatives of the beam vector wrt the parameters
-    ds0_dbeam_p = parameterisation.get_ds_dp()
+    ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
     dDeltaPsi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in ds0_dbeam_p:
+
+      if der is None:
+        dpv_dp.append(None)
+        dDeltaPsi_dp.append(None)
+        continue
 
       # repeat the derivative in an array
       ds0 = flex.vec3_double(len(s0u), der.elems)
@@ -815,13 +824,18 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     derivatives of the crystal orientation parameterisations"""
 
     # get derivatives of the U matrix wrt the parameters
-    dU_dxlo_p = parameterisation.get_ds_dp()
+    dU_dxlo_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
     dDeltaPsi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in dU_dxlo_p:
+
+      if der is None:
+        dpv_dp.append(None)
+        dDeltaPsi_dp.append(None)
+        continue
 
       der_mat = flex.mat3_double(len(B), der.elems)
 
@@ -865,13 +879,18 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     derivatives of the crystal unit cell parameterisations"""
 
     # get derivatives of the B matrix wrt the parameters
-    dB_dxluc_p = parameterisation.get_ds_dp()
+    dB_dxluc_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
     dDeltaPsi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in dB_dxluc_p:
+
+      if der is None:
+        dpv_dp.append(None)
+        dDeltaPsi_dp.append(None)
+        continue
 
       der_mat = flex.mat3_double(len(U), der.elems)
 
@@ -1263,13 +1282,18 @@ class SphericalRelpStillsPredictionParameterisation(
     beam parameterisations"""
 
     # get the derivatives of the beam vector wrt the parameters
-    ds0_dbeam_p = parameterisation.get_ds_dp()
+    ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
     dDeltaPsi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in ds0_dbeam_p:
+
+      if der is None:
+        dpv_dp.append(None)
+        dDeltaPsi_dp.append(None)
+        continue
 
       # repeat the derivative in an array
       ds0 = flex.vec3_double(len(s0u), der.elems)
@@ -1300,13 +1324,18 @@ class SphericalRelpStillsPredictionParameterisation(
     derivatives of the crystal orientation parameterisations"""
 
     # get derivatives of the U matrix wrt the parameters
-    dU_dxlo_p = parameterisation.get_ds_dp()
+    dU_dxlo_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
     dDeltaPsi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in dU_dxlo_p:
+
+      if der is None:
+        dpv_dp.append(None)
+        dDeltaPsi_dp.append(None)
+        continue
 
       der_mat = flex.mat3_double(len(B), der.elems)
 
@@ -1337,13 +1366,18 @@ class SphericalRelpStillsPredictionParameterisation(
     derivatives of the crystal unit cell parameterisations"""
 
     # get derivatives of the B matrix wrt the parameters
-    dB_dxluc_p = parameterisation.get_ds_dp()
+    dB_dxluc_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
     dDeltaPsi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in dB_dxluc_p:
+
+      if der is None:
+        dpv_dp.append(None)
+        dDeltaPsi_dp.append(None)
+        continue
 
       der_mat = flex.mat3_double(len(U), der.elems)
 

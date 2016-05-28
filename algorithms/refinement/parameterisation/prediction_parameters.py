@@ -107,9 +107,6 @@ class PredictionParameterisation(object):
     self._exp_to_param = {i: ParamSet(e2bp.get(i), e2xop.get(i),
         e2xucp.get(i), e2dp.get(i)) for i, _ in enumerate(experiments)}
 
-    # keep a null 3*3 matrix for comparison testing of detector derivatives
-    self._null_mat3 = matrix.sqr((0,0,0,0,0,0,0,0,0))
-
   def _len(self):
 
     length = 0
@@ -659,9 +656,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
       for dX, dY, dphi in zip(dX_dxlo_p, dY_dxlo_p, dphi_dxlo_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dphi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
@@ -714,9 +714,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
       for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dphi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
@@ -732,10 +735,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     if dd_ddet_p is None:
 
       # get the derivatives of detector d matrix for this panel
-      dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id)
+      dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id,
+                                             use_none_as_null=True)
 
       # replace explicit null derivatives with None
-      dd_ddet_p = [None if e == self._null_mat3 else \
+      dd_ddet_p = [None if e is None else \
                    flex.mat3_double(len(D), e.elems) for e in dd_ddet_p]
 
     # calculate the derivative of pv for this parameter
@@ -750,15 +754,21 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     if ds0_dbeam_p is None:
 
       # get the derivatives of the beam vector wrt the parameters
-      ds0_dbeam_p = parameterisation.get_ds_dp()
+      ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
-      ds0_dbeam_p = [flex.vec3_double(len(r), e.elems) for e in ds0_dbeam_p]
+      ds0_dbeam_p = [None if e is None else flex.vec3_double(len(r), e.elems) \
+                     for e in ds0_dbeam_p]
 
     dphi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in ds0_dbeam_p:
+
+      if der is None:
+        dphi_dp.append(None)
+        dpv_dp.append(None)
+        continue
 
       # calculate the derivative of phi for this parameter
       dphi = (r.dot(der) / e_r_s0) * -1.0
@@ -777,13 +787,19 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     if dU_dxlo_p is None:
 
       # get derivatives of the U matrix wrt the parameters
-      dU_dxlo_p = [flex.mat3_double(len(B), der.elems) for der in parameterisation.get_ds_dp()]
+      dU_dxlo_p = [None if der is None else flex.mat3_double(len(B), der.elems) \
+                   for der in parameterisation.get_ds_dp(use_none_as_null=True)]
 
     dphi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in dU_dxlo_p:
+
+      if der is None:
+        dphi_dp.append(None)
+        dpv_dp.append(None)
+        continue
 
       # calculate the derivative of r for this parameter
       # FIXME COULD DO THIS BETTER WITH __rmul__?!
@@ -807,13 +823,19 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     if dB_dxluc_p is None:
 
       # get derivatives of the B matrix wrt the parameters
-      dB_dxluc_p = [flex.mat3_double(len(U), der.elems) for der in parameterisation.get_ds_dp()]
+      dB_dxluc_p = [None if der is None else flex.mat3_double(len(U), der.elems) \
+                    for der in parameterisation.get_ds_dp(use_none_as_null=True)]
 
     dphi_dp = []
     dpv_dp = []
 
     # loop through the parameters
     for der in dB_dxluc_p:
+
+      if der is None:
+        dphi_dp.append(None)
+        dpv_dp.append(None)
+        continue
 
       # calculate the derivative of r for this parameter
       tmp = fixed_rotation * (U * der * h)

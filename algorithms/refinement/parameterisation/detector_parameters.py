@@ -1000,7 +1000,7 @@ class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel
 
     # reset the list that holds derivatives
     for i in range(len(self._dstate_dp)):
-      self._dstate_dp[i] = [matrix.sqr((0,0,0,0,0,0,0,0,0))] * len(self._model)
+      self._dstate_dp[i] = [None] * len(self._model)
 
     # loop over groups of panels collecting derivatives of the state wrt
     # parameters
@@ -1057,11 +1057,6 @@ class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel
 
       # The results come back as a single array, convert it to a 2D array
       result = ([[matrix.sqr(ret[j*len(offsets)+i]) for i in xrange(len(offsets))] for j in xrange(6)])
-
-      # Store the results
-      # extract this particular block of parameters
-      dstate_dp = self._dstate_dp[(igp*6):(igp*6 + 6)]
-      # we set the derivatives for those panels that are in this group
 
       # loop over the 6 parameters of this block. i is the index to assign to,
       # res are the derivatives for that particular parameter
@@ -1225,7 +1220,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
     # reset the list that holds derivatives
     for i in range(len(self._dstate_dp)):
-      self._dstate_dp[i] = [matrix.sqr((0,0,0,0,0,0,0,0,0))] * len(self._model)
+      self._dstate_dp[i] = [None] * len(self._model)
 
     # loop over groups of panels collecting derivatives of the state wrt
     # parameters

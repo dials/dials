@@ -507,9 +507,12 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
       for dX, dY, dphi in zip(dX_dxlo_p, dY_dxlo_p, dphi_dxlo_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dphi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
@@ -558,9 +561,12 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
       for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dphi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
@@ -712,7 +718,9 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
             reflections['D_matrix'].set_selected(subsel2, Dmat)
 
             if dp is not None and self._varying_detectors:
-              for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id)):
+              for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id,
+                                                  use_none_as_null=True)):
+                if dd is None: continue
                 colname = "dd_dp{0}".format(j)
                 reflections[colname].set_selected(subsel, dd)
 
@@ -725,21 +733,25 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
           reflections['D_matrix'].set_selected(subsel, Dmat)
 
           if dp is not None and self._varying_detectors:
-            for j, dd in enumerate(dp.get_ds_dp()):
+            for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
+              if dd is None: continue
               colname = "dd_dp{0}".format(j)
               reflections[colname].set_selected(subsel, dd)
 
         # set derivatives of the states for crystal and beam
         if xl_op is not None and self._varying_xl_orientations:
-          for j, dU in enumerate(xl_op.get_ds_dp()):
+          for j, dU in enumerate(xl_op.get_ds_dp(use_none_as_null=True)):
+            if dU is None: continue
             colname = "dU_dp{0}".format(j)
             reflections[colname].set_selected(subsel, dU)
         if xl_ucp is not None and self._varying_xl_unit_cells:
-          for j, dB in enumerate(xl_ucp.get_ds_dp()):
+          for j, dB in enumerate(xl_ucp.get_ds_dp(use_none_as_null=True)):
+            if dB is None: continue
             colname = "dB_dp{0}".format(j)
             reflections[colname].set_selected(subsel, dB)
         if bp is not None and self._varying_beams:
-          for j, ds0 in enumerate(bp.get_ds_dp()):
+          for j, ds0 in enumerate(bp.get_ds_dp(use_none_as_null=True)):
+            if ds0 is None: continue
             colname = "ds0_dp{0}".format(j)
             reflections[colname].set_selected(subsel, ds0)
 
