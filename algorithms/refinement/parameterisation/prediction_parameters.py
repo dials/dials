@@ -377,6 +377,27 @@ class PredictionParameterisation(object):
             'B':experiment.crystal.get_B(),
             'D':D}
 
+  # The detector derivatives calculation is shared by scans and stills type
+  # prediction, so this method is here, in the base class.
+  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None, dd_ddet_p=None):
+    """helper function to convert derivatives of the detector state to
+    derivatives of the vector pv. Derivatives that would all be null vectors
+    are replaced with None"""
+
+    if dd_ddet_p is None:
+
+      # get the derivatives of detector d matrix for this panel
+      dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id,
+                                             use_none_as_null=True)
+
+      # replace explicit null derivatives with None
+      dd_ddet_p = [None if e is None else \
+                   flex.mat3_double(len(D), e.elems) for e in dd_ddet_p]
+
+    # calculate the derivative of pv for this parameter
+    dpv_ddet_p = [der if der is None else (D * (der * -1.)) * pv for der in dd_ddet_p]
+
+    return dpv_ddet_p
 
 class SparseGradientVectorMixin(object):
   """Mixin class to use sparse vectors for storage of gradients of the
@@ -726,26 +747,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         self._iparam += 1
 
     return results
-
-  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None, dd_ddet_p=None):
-    """helper function to convert derivatives of the detector state to
-    derivatives of the vector pv. Derivatives that would all be null vectors
-    are replaced with None"""
-
-    if dd_ddet_p is None:
-
-      # get the derivatives of detector d matrix for this panel
-      dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id,
-                                             use_none_as_null=True)
-
-      # replace explicit null derivatives with None
-      dd_ddet_p = [None if e is None else \
-                   flex.mat3_double(len(D), e.elems) for e in dd_ddet_p]
-
-    # calculate the derivative of pv for this parameter
-    dpv_ddet_p = [der if der is None else (D * (der * -1.)) * pv for der in dd_ddet_p]
-
-    return dpv_ddet_p
 
   def _beam_derivatives(self, r, e_X_r, e_r_s0, D, parameterisation=None, ds0_dbeam_p=None):
     """helper function to extend the derivatives lists by

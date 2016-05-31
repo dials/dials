@@ -752,23 +752,6 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return results
 
-  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None):
-    """helper function to convert derivatives of the detector state to
-    derivatives of the vector pv. Derivatives that would all be null vectors
-    are replaced with None"""
-
-    # get the derivatives of detector d matrix for this panel
-    dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id,
-                                           use_none_as_null=True)
-
-    # replace explicit null derivatives with None
-    dd_ddet_p = [None if e is None else e for e in dd_ddet_p]
-
-    # calculate the derivative of pv for this parameter
-    dpv_ddet_p = [der if der is None else (D * (-1. * der).elems) * pv for der in dd_ddet_p]
-
-    return dpv_ddet_p
-
   def _beam_derivatives(self, s0, s0u, wl, r, e1, q, c0, DeltaPsi, D,
     parameterisation=None):
     """helper function to extend the derivatives lists by derivatives of the
