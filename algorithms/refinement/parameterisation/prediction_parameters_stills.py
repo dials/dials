@@ -449,37 +449,16 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
   _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
-  def _get_gradients_core(self, reflections, D, s0, U, B, axis, fixed_rotation, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
-    because these are stills"""
-
-    # pv is the 'projection vector' for the ray along s1.
-    self._D = D
-    self._s1 = reflections['s1']
-    self._pv = D * self._s1
-
-    # also need quantities derived from pv, precalculated for efficiency
-    u, v, w = self._pv.parts()
-    self._w_inv = 1/w
-    self._u_w_inv = u * self._w_inv
-    self._v_w_inv = v * self._w_inv
+  def _get_gradients_stills_setup(self, reflections):
 
     self._DeltaPsi = reflections['delpsical.rad']
 
     # q is the reciprocal lattice vector, in the lab frame
-    self._UB = U * B
-    self._U = U
-    self._B = B
-    self._h = reflections['miller_index'].as_vec3_double()
     self._q = (self._UB * self._h)
     self._q_scalar = self._q.norms()
     self._qq = self._q_scalar * self._q_scalar
 
     # r is the reciprocal lattice vector rotated to the Ewald sphere
-    self._s0 = s0
     self._r = self._s1 - self._s0
 
     # we also need the unit directions q0 and s0u
@@ -498,82 +477,10 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     # we want the wavelength
     self._wavelength = 1. / self._s0.norms()
 
-    # Set up empty list in which to store gradients
-    m = len(reflections)
-    results = []
+    return
 
-    # determine experiment to indices mappings once, here
-    experiment_to_idx = []
-    for iexp, exp in enumerate(self._experiments):
-
-      sel = reflections['id'] == iexp
-      isel = sel.iselection()
-      experiment_to_idx.append(isel)
-
-    # reset a pointer to the parameter number
-    self._iparam = 0
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
-
-    # loop over the detector parameterisations
-    for dp in self._detector_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in dp.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
-
-      # Access the detector model being parameterised
-      detector = dp.get_model()
-
-      # Get panel numbers of the affected reflections
-      panel = reflections['panel'].select(isel)
-
-      # Extend derivative vectors for this detector parameterisation
-      results = self._extend_gradient_vectors(results, m, dp.num_free(),
-        keys=self._grad_names)
-
-      # loop through the panels in this detector
-      for panel_id, _ in enumerate(detector):
-
-        # get the right subset of array indices to set for this panel
-        sub_isel = isel.select(panel == panel_id)
-        if len(sub_isel) == 0:
-          # if no reflections intersect this panel, skip calculation
-          continue
-        sub_pv = self._pv.select(sub_isel)
-        sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
-          parameterisation=dp)
-
-        # convert to dX/dp, dY/dp and assign the elements of the vectors
-        # corresponding to this experiment and panel
-        sub_w_inv = self._w_inv.select(sub_isel)
-        sub_u_w_inv = self._u_w_inv.select(sub_isel)
-        sub_v_w_inv = self._v_w_inv.select(sub_isel)
-        dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-          sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p)
-
-        # use a local parameter index pointer because we set all derivatives
-        # for this panel before moving on to the next
-        iparam = self._iparam
-        for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-          if dX is not None:
-            results[iparam][self._grad_names[0]].set_selected(sub_isel, dX)
-          if dY is not None:
-            results[iparam][self._grad_names[1]].set_selected(sub_isel, dY)
-          # increment the local parameter index pointer
-          iparam += 1
-
-      if callback is not None:
-        iparam = self._iparam
-        for i in range(dp.num_free()):
-          results[iparam] = callback(results[iparam])
-          iparam += 1
-
-      # increment the parameter index pointer to the last detector parameter
-      self._iparam += dp.num_free()
+  # NB shared by stills type prediction parameterisations
+  def _grads_beam_loop(self, reflections, results, callback=None):
 
     # loop over the beam parameterisations
     for bp in self._beam_parameterisations:
@@ -581,10 +488,10 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
       for exp_id in bp.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
+        isel.extend(self._experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this beam parameterisation
-      results = self._extend_gradient_vectors(results, m, bp.num_free(),
+      results = self._extend_gradient_vectors(results, self._nref, bp.num_free(),
         keys=self._grad_names)
 
       if len(isel) == 0:
@@ -598,23 +505,12 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           self._iparam += bp.num_free()
         continue
 
-      # Get required data from those reflections
-      s0 = self._s0.select(isel)
-      s0u = self._s0u.select(isel)
-      wl = self._wavelength.select(isel)
-      r = self._r.select(isel)
-      e1 = self._e1.select(isel)
-      q = self._q.select(isel)
-      c0 = self._c0.select(isel)
-      DeltaPsi = self._DeltaPsi.select(isel)
-      D = self._D.select(isel)
-
       w_inv = self._w_inv.select(isel)
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(
-          s0, s0u, wl, r, e1, q, c0, DeltaPsi, D, parameterisation=bp)
+      dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(isel,
+          parameterisation=bp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this parameterisation
@@ -629,16 +525,39 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         # increment the parameter index pointer
         self._iparam += 1
 
+    return results
+
+  def _get_gradients_core(self, reflections, callback=None):
+    """Calculate gradients of the prediction formula with respect to
+    each of the parameters of the contained models, for reflection h
+    with scattering vector s that intersects panel panel_id. That is,
+    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
+    because these are stills"""
+
+    self._get_gradients_stills_setup(reflections)
+
+    # Set up empty list in which to store gradients
+    results = []
+
+    ### Work through the parameterisations, calculating their contributions
+    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
+
+    # loop over detector parameterisations
+    results = self._grads_detector_loop(reflections, results, callback)
+
+    # loop over the beam parameterisations
+    results = self._grads_beam_loop(reflections, results, callback)
+
     # loop over the crystal orientation parameterisations
     for xlop in self._xl_orientation_parameterisations:
 
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
       for exp_id in xlop.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
+        isel.extend(self._experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this crystal orientation parameterisation
-      results = self._extend_gradient_vectors(results, m, xlop.num_free(),
+      results = self._extend_gradient_vectors(results, self._nref, xlop.num_free(),
         keys=self._grad_names)
 
       if len(isel) == 0:
@@ -697,10 +616,10 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
       for exp_id in xlucp.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
+        isel.extend(self._experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this crystal unit cell parameterisation
-      results = self._extend_gradient_vectors(results, m, xlucp.num_free(),
+      results = self._extend_gradient_vectors(results, self._nref, xlucp.num_free(),
         keys=self._grad_names)
 
       if len(isel) == 0:
@@ -752,10 +671,20 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return results
 
-  def _beam_derivatives(self, s0, s0u, wl, r, e1, q, c0, DeltaPsi, D,
-    parameterisation=None):
+  def _beam_derivatives(self, isel, parameterisation=None):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
+
+    # Get required data
+    s0 = self._s0.select(isel)
+    s0u = self._s0u.select(isel)
+    wl = self._wavelength.select(isel)
+    r = self._r.select(isel)
+    e1 = self._e1.select(isel)
+    q = self._q.select(isel)
+    c0 = self._c0.select(isel)
+    DeltaPsi = self._DeltaPsi.select(isel)
+    D = self._D.select(isel)
 
     # get the derivatives of the beam vector wrt the parameters
     ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
@@ -948,37 +877,16 @@ class SphericalRelpStillsPredictionParameterisation(
   Ewald sphere, not that the relp centre is rotated onto the Ewald sphere
   '''
 
-  def _get_gradients_core(self, reflections, D, s0, U, B, axis, fixed_rotation, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
-    because these are stills"""
-
-    # pv is the 'projection vector' for the ray along s1.
-    self._D = D
-    self._s1 = reflections['s1']
-    self._pv = D * self._s1
-
-    # also need quantities derived from pv, precalculated for efficiency
-    u, v, w = self._pv.parts()
-    self._w_inv = 1/w
-    self._u_w_inv = u * self._w_inv
-    self._v_w_inv = v * self._w_inv
+  def _get_gradients_stills_setup(self, reflections):
 
     self._DeltaPsi = reflections['delpsical.rad']
 
     # q is the reciprocal lattice vector, in the lab frame
-    self._UB = U * B
-    self._U = U
-    self._B = B
-    self._h = reflections['miller_index'].as_vec3_double()
     self._q = (self._UB * self._h)
     #self._q_scalar = self._q.norms()
     #self._qq = self._q_scalar * self._q_scalar
 
     # quantities involving the direct beam vector
-    self._s0 = s0
     self._q_s0 = self._q + self._s0
     s = self._q_s0.norms()
     ss = self._q_s0.dot(self._q_s0)
@@ -1007,140 +915,28 @@ class SphericalRelpStillsPredictionParameterisation(
     self._nu = self._s0.norms()
     self._wavelength = 1. / self._nu
 
+    return
+
+  def _get_gradients_core(self, reflections, callback=None):
+    """Calculate gradients of the prediction formula with respect to
+    each of the parameters of the contained models, for reflection h
+    with scattering vector s that intersects panel panel_id. That is,
+    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
+    because these are stills"""
+
+    self._get_gradients_stills_setup(reflections)
+
     # Set up empty list in which to store gradients
-    m = len(reflections)
     results = []
-
-    # determine experiment to indices mappings once, here
-    experiment_to_idx = []
-    for iexp, exp in enumerate(self._experiments):
-
-      sel = reflections['id'] == iexp
-      isel = sel.iselection()
-      experiment_to_idx.append(isel)
-
-    # reset a pointer to the parameter number
-    self._iparam = 0
 
     ### Work through the parameterisations, calculating their contributions
     ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
 
-    # loop over the detector parameterisations
-    for dp in self._detector_parameterisations:
+    # loop over detector parameterisations
+    results = self._grads_detector_loop(reflections, results, callback)
 
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in dp.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
-
-      # Access the detector model being parameterised
-      detector = dp.get_model()
-
-      # Get panel numbers of the affected reflections
-      panel = reflections['panel'].select(isel)
-
-      # Extend derivative vectors for this detector parameterisation
-      results = self._extend_gradient_vectors(results, m, dp.num_free(),
-        keys=self._grad_names)
-
-      # loop through the panels in this detector
-      for panel_id, _ in enumerate(detector):
-
-        # get the right subset of array indices to set for this panel
-        sub_isel = isel.select(panel == panel_id)
-        if len(sub_isel) == 0:
-          # if no reflections intersect this panel, skip calculation
-          continue
-        sub_pv = self._pv.select(sub_isel)
-        sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
-          parameterisation=dp)
-
-        # convert to dX/dp, dY/dp and assign the elements of the vectors
-        # corresponding to this experiment and panel
-        sub_w_inv = self._w_inv.select(sub_isel)
-        sub_u_w_inv = self._u_w_inv.select(sub_isel)
-        sub_v_w_inv = self._v_w_inv.select(sub_isel)
-        dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-          sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p)
-
-        # use a local parameter index pointer because we set all derivatives
-        # for this panel before moving on to the next
-        iparam = self._iparam
-        for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-          if dX is not None:
-            results[iparam][self._grad_names[0]].set_selected(sub_isel, dX)
-          if dY is not None:
-            results[iparam][self._grad_names[1]].set_selected(sub_isel, dY)
-          # increment the local parameter index pointer
-          iparam += 1
-
-      if callback is not None:
-        iparam = self._iparam
-        for i in range(dp.num_free()):
-          results[iparam] = callback(results[iparam])
-          iparam += 1
-
-      # increment the parameter index pointer to the last detector parameter
-      self._iparam += dp.num_free()
-
-    # loop over the beam parameterisations
-    for bp in self._beam_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in bp.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this beam parameterisation
-      results = self._extend_gradient_vectors(results, m, bp.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation of
-        # gradients, but must still process null gradients by a callback
-        if callback is not None:
-          for iparam in xrange(bp.num_free()):
-            results[self._iparam] = callback(results[self._iparam])
-            self._iparam += 1
-        else:
-          self._iparam += bp.num_free()
-        continue
-
-      # Get required data from those reflections
-      s0 = self._s0.select(isel)
-      s0u = self._s0u.select(isel)
-      #wl = self._wavelength.select(isel)
-      nu = self._nu.select(isel)
-      r = self._r.select(isel)
-      e1 = self._e1.select(isel)
-      q_s0 = self._q_s0.select(isel)
-      inv_s = self._inv_s.select(isel)
-      inv_sss = self._inv_sss.select(isel)
-      #c0 = self._c0.select(isel)
-      DeltaPsi = self._DeltaPsi.select(isel)
-      D = self._D.select(isel)
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(
-          s0, s0u, nu, r, e1, q_s0, inv_s, inv_sss, DeltaPsi, D,
-          parameterisation=bp)
-
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this parameterisation
-      dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
-      for dX, dY, dDeltaPsi in zip(dX_dbeam_p, dY_dbeam_p, ddelpsi_dbeam_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
+    # loop over beam parameterisations
+    results = self._grads_beam_loop(reflections, results, callback)
 
     # loop over the crystal orientation parameterisations
     for xlop in self._xl_orientation_parameterisations:
@@ -1148,10 +944,10 @@ class SphericalRelpStillsPredictionParameterisation(
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
       for exp_id in xlop.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
+        isel.extend(self._experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this crystal orientation parameterisation
-      results = self._extend_gradient_vectors(results, m, xlop.num_free(),
+      results = self._extend_gradient_vectors(results, self._nref, xlop.num_free(),
         keys=self._grad_names)
 
       if len(isel) == 0:
@@ -1206,10 +1002,10 @@ class SphericalRelpStillsPredictionParameterisation(
       # Determine (sub)set of reflections affected by this parameterisation
       isel = flex.size_t()
       for exp_id in xlucp.get_experiment_ids():
-        isel.extend(experiment_to_idx[exp_id])
+        isel.extend(self._experiment_to_idx[exp_id])
 
       # Extend derivative vectors for this crystal unit cell parameterisation
-      results = self._extend_gradient_vectors(results, m, xlucp.num_free(),
+      results = self._extend_gradient_vectors(results, self._nref, xlucp.num_free(),
         keys=self._grad_names)
 
       if len(isel) == 0:
@@ -1259,10 +1055,21 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return results
 
-  def _beam_derivatives(self, s0, s0u, nu, r, e1, q_s0, inv_s,
-                        inv_sss, DeltaPsi, D, parameterisation=None):
+  def _beam_derivatives(self, isel, parameterisation=None):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
+
+    # Get required data
+    s0 = self._s0.select(isel)
+    s0u = self._s0u.select(isel)
+    nu = self._nu.select(isel)
+    r = self._r.select(isel)
+    e1 = self._e1.select(isel)
+    q_s0 = self._q_s0.select(isel)
+    inv_s = self._inv_s.select(isel)
+    inv_sss = self._inv_sss.select(isel)
+    DeltaPsi = self._DeltaPsi.select(isel)
+    D = self._D.select(isel)
 
     # get the derivatives of the beam vector wrt the parameters
     ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
