@@ -416,6 +416,8 @@ class IndexParameterManager(ParameterManager):
       description=None
         .type = str
       input {
+        experiments = None
+          .type = str
         datablock = None
           .type = str
         reflections = None
@@ -704,6 +706,8 @@ class Command(object):
         raise RuntimeError('Invalid parent/child indices: %d / %d' % (parent.index, index))
       if parent.workspace is not None and parent.workspace != workspace:
         raise RuntimeError('Invalid parent/child worksapce: %s / %s' % (parent.workspace, workspace))
+      if parent.name not in self.allowed_parents:
+        raise RuntimeError('Invalid parent/child: %s / %s' % (parent.name, self.name))
 
     # Set the phil stuff and description
     description = phil_scope.get(diff=False).extract().description
@@ -909,6 +913,8 @@ class Import(Command):
 
   name = 'import'
 
+  allowed_parents = ['clean']
+
   def run(self):
     '''
     Run the import command
@@ -947,6 +953,8 @@ class FindSpots(Command):
   '''
 
   name='find_spots'
+
+  allowed_parents = ['import']
 
   def run(self):
     '''
@@ -995,6 +1003,8 @@ class DiscoverBetterExperimentalModel(Command):
 
   name='discover_better_experimental_model'
 
+  allowed_parents = ['find_spots']
+
   def run(self):
     '''
     Run the index command
@@ -1041,6 +1051,12 @@ class Index(Command):
   '''
 
   name = 'index'
+
+  allowed_parents = [
+    'find_spots',
+    'discover_better_experimental_model',
+    'index'
+  ]
 
   def run(self):
     '''
@@ -1096,6 +1112,8 @@ class RefineBravaisSettings(Command):
   '''
 
   name='refine_bravais_settings'
+
+  allowed_parents = ['index']
 
   def run(self):
     '''
@@ -1169,6 +1187,8 @@ class Reindex(Command):
 
   name='reindex'
 
+  allowed_parents = ['refine_bravais_settings']
+
   def run(self):
     '''
     Run the index command
@@ -1225,6 +1245,13 @@ class Refine(Command):
 
   name = 'refine'
 
+  allowed_parents = [
+    'index',
+    'reindex',
+    'refine',
+    'integrate'
+  ]
+
   def run(self):
     '''
     Run the refine command
@@ -1276,6 +1303,13 @@ class Integrate(Command):
 
   name = 'integrate'
 
+  allowed_parents = [
+    'index',
+    'reindex',
+    'refine',
+    'integrate'
+  ]
+
   def run(self):
     '''
     Run the integrate command
@@ -1325,6 +1359,8 @@ class Export(Command):
   '''
 
   name = 'export'
+
+  allowed_parents = ['integrate']
 
   def run(self):
     '''
