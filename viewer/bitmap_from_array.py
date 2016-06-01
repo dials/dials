@@ -133,10 +133,6 @@ class wxbmp_from_np_array(object):
 
     img_array_tmp = self.wx_bmp_arr.gen_bmp(flex_data_in, flex_mask_in, show_nums, palette_num)
 
-    test_log_02 = '''
-    print "after crash"
-    '''
-
     np_img_array = img_array_tmp.as_numpy_array()
 
     height = np.size(np_img_array[:, 0:1, 0:1])
