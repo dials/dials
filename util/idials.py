@@ -571,29 +571,43 @@ class CommandState(object):
     Return the command state as a dictionary
 
     '''
+    from os.path import join
+    if self.workspace is None:
+      workspace = None
+    else:
+      workspace = join(self.workspace, "")
     dictionary = {}
     for key, value in self.__dict__.iteritems():
       if key == 'parent':
         continue
       elif key == 'children':
         value = [c.as_dict() for c in value]
+      elif key == 'workspace':
+        continue
+      elif workspace is not None and isinstance(value, str) and value.startswith(workspace):
+        value = join('${workspace}', value[len(workspace):])
       dictionary[key] = value
     return dictionary
 
   @classmethod
-  def from_dict(cls, dictionary):
+  def from_dict(cls, dictionary, workspace=None):
     '''
     Convert the dictionary to the state
 
     '''
+    from os.path import join
     state = cls()
+    state.workspace = workspace
     for key, value in dictionary.iteritems():
       if key == 'children':
         for item in value:
-          child = cls.from_dict(item)
+          child = cls.from_dict(item, workspace=workspace)
           child.parent = state
           state.children.append(child)
       else:
+        placeholder = join("${workspace}", "")
+        if isinstance(value, str) and value.startswith(placeholder):
+          value = join(workspace, value[len(placeholder):])
         setattr(state, key, value)
     return state
 
@@ -824,13 +838,6 @@ class InitialState(CommandState):
       workspace   = None,
       applied     = True,
       success     = True)
-
-  def apply(self):
-    '''
-    Override apply since we have nothing to do here
-
-    '''
-    raise RuntimeError("Programming error: nothing to do")
 
 
 class Import(Command):
@@ -1357,22 +1364,22 @@ class ApplicationState(object):
 
     '''
     def __init__(self,
-                 directory=None,
+                 workspace=None,
                  current=None,
                  commands=None,
                  counter=None,
                  mode=None):
-      self.directory = directory
+      self.workspace = workspace
       self.current = current
       self.commands = commands
       self.counter = counter
       self.mode = mode
 
-  def __init__(self, directory=None, memento=None):
+  def __init__(self, workspace=None, memento=None):
     '''
     Initialise the state
 
-    :param directory: The output directory
+    :param workspace: The output workspace
 
     '''
 
@@ -1384,13 +1391,13 @@ class ApplicationState(object):
       self.counter = Counter()
       self.current = InitialState()
       self.command_tree = CommandTree(self.current, self.counter)
-      self.directory = directory
+      self.workspace = workspace
       self.mode = 'import'
     else:
       self.counter = Counter(memento.counter)
       self.command_tree = CommandTree(memento.commands, self.counter)
       self.current = self.command_tree.goto(memento.current)
-      self.directory = memento.directory
+      self.workspace = memento.workspace
       self.mode = memento.mode
 
   def run(self):
@@ -1403,7 +1410,7 @@ class ApplicationState(object):
       parent     = self.current,
       index      = self.counter.current(),
       phil_scope = self.parameters[self.mode],
-      workspace  = self.directory)
+      workspace  = self.workspace)
 
     # Increment the counter
     self.counter.incr()
@@ -1420,15 +1427,6 @@ class ApplicationState(object):
     '''
     self.current = self.command_tree.goto(index)
 
-  def history(self):
-    '''
-    Get the command history
-
-    :return The command history
-
-    '''
-    return self.command_tree.string(current=self.current.index)
-
   def as_dict(self):
     '''
     Return the application state as a dictionary
@@ -1440,7 +1438,7 @@ class ApplicationState(object):
       'counter'   : self.counter.current(),
       'current'   : self.current.index,
       'mode'      : self.mode,
-      'directory' : self.directory,
+      'workspace' : self.workspace,
       'commands'  : self.command_tree.root.as_dict()
     }
 
@@ -1457,8 +1455,10 @@ class ApplicationState(object):
       counter   = dictionary['counter'],
       current   = dictionary['current'],
       mode      = dictionary['mode'],
-      directory = dictionary['directory'],
-      commands  = CommandState.from_dict(dictionary['commands']))
+      workspace = dictionary['workspace'],
+      commands  = CommandState.from_dict(
+        dictionary['commands'],
+        workspace = dictionary['workspace']))
     return cls(memento=memento)
 
   def dump(self, filename):
@@ -1635,6 +1635,24 @@ class Controller(object):
     self.state.parameters[self.get_mode()].redo()
     self.state.dump(self.state_filename)
 
+  def get_command_tree(self):
+    '''
+    Get the tree of nodes
+
+    :return The tree of nodes
+
+    '''
+    return self.state.command_tree
+
+  def get_current(self):
+    '''
+    Get the current node
+
+    :return The current node
+
+    '''
+    return self.state.current
+
   def get_history(self):
     '''
     Get the history as a string
@@ -1642,7 +1660,7 @@ class Controller(object):
     :return: The history string
 
     '''
-    return self.state.history()
+    return self.get_command_tree().string(current=self.get_current().index)
 
   def get_models(self):
     '''
