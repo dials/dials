@@ -517,9 +517,12 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
       for dX, dY, dDeltaPsi in zip(dX_dbeam_p, dY_dbeam_p, ddelpsi_dbeam_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dDeltaPsi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
@@ -578,29 +581,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return results
 
-  def _get_gradients_core(self, reflections, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
-    because these are stills"""
-
-    self._get_gradients_stills_setup(reflections)
-
-    # Set up empty list in which to store gradients
-    results = []
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
-
-    # loop over detector parameterisations
-    results = self._grads_detector_loop(reflections, results, callback)
-
-    # loop over the beam parameterisations
-    results = self._grads_beam_loop(reflections, results, callback)
-
-    # loop over the crystal orientation parameterisations
-    results = self._grads_xl_orientation_loop(reflections, results, callback)
+  def _grads_xl_unit_cell_loop(self, reflections, results, callback=None):
 
     # loop over the crystal unit cell parameterisations
     for xlucp in self._xl_unit_cell_parameterisations:
@@ -637,13 +618,45 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
         w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
       for dX, dY, dDeltaPsi in zip(dX_dxluc_p, dY_dxluc_p, ddelpsi_dxluc_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dDeltaPsi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
         if callback is not None:
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
+
+    return results
+
+  def _get_gradients_core(self, reflections, callback=None):
+    """Calculate gradients of the prediction formula with respect to
+    each of the parameters of the contained models, for reflection h
+    with scattering vector s that intersects panel panel_id. That is,
+    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
+    because these are stills"""
+
+    self._get_gradients_stills_setup(reflections)
+
+    # Set up empty list in which to store gradients
+    results = []
+
+    ### Work through the parameterisations, calculating their contributions
+    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
+
+    # loop over detector parameterisations
+    results = self._grads_detector_loop(reflections, results, callback)
+
+    # loop over the beam parameterisations
+    results = self._grads_beam_loop(reflections, results, callback)
+
+    # loop over the crystal orientation parameterisations
+    results = self._grads_xl_orientation_loop(reflections, results, callback)
+
+    # loop over the crystal unit cell parameterisations
+    results = self._grads_xl_unit_cell_loop(reflections, results, callback)
 
     return results
 
@@ -920,74 +933,6 @@ class SphericalRelpStillsPredictionParameterisation(
     self._wavelength = 1. / self._nu
 
     return
-
-  def _get_gradients_core(self, reflections, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
-    because these are stills"""
-
-    self._get_gradients_stills_setup(reflections)
-
-    # Set up empty list in which to store gradients
-    results = []
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
-
-    # loop over detector parameterisations
-    results = self._grads_detector_loop(reflections, results, callback)
-
-    # loop over beam parameterisations
-    results = self._grads_beam_loop(reflections, results, callback)
-
-    # loop over the crystal orientation parameterisations
-    results = self._grads_xl_orientation_loop(reflections, results, callback)
-
-    # loop over the crystal unit cell parameterisations
-    for xlucp in self._xl_unit_cell_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in xlucp.get_experiment_ids():
-        isel.extend(self._experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this crystal unit cell parameterisation
-      results = self._extend_gradient_vectors(results, self._nref, xlucp.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation of
-        # gradients, but must still process null gradients by a callback
-        if callback is not None:
-          for iparam in xrange(xlucp.num_free()):
-            results[self._iparam] = callback(results[self._iparam])
-            self._iparam += 1
-        else:
-          self._iparam += xlucp.num_free()
-        continue
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(isel,
-        parameterisation=xlucp)
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this experiment
-      dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
-      for dX, dY, dDeltaPsi in zip(dX_dxluc_p, dY_dxluc_p, ddelpsi_dxluc_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
-
-    return results
 
   def _beam_derivatives(self, isel, parameterisation=None):
     """helper function to extend the derivatives lists by derivatives of the

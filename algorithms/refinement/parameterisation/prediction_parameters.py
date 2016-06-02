@@ -668,6 +668,57 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return results
 
+  # NB shared by scans type prediction parameterisations
+  def _grads_xl_unit_cell_loop(self, reflections, results, callback=None):
+
+    # loop over the crystal unit cell parameterisations
+    for xlucp in self._xl_unit_cell_parameterisations:
+
+      # Determine (sub)set of reflections affected by this parameterisation
+      isel = flex.size_t()
+      for exp_id in xlucp.get_experiment_ids():
+        isel.extend(self._experiment_to_idx[exp_id])
+
+      # Extend derivative vectors for this crystal unit cell parameterisation
+      results = self._extend_gradient_vectors(results, self._nref, xlucp.num_free(),
+        keys=self._grad_names)
+
+      if len(isel) == 0:
+        # if no reflections are in this experiment, skip calculation of
+        # gradients, but must still process null gradients by a callback
+        if callback is not None:
+          for iparam in xrange(xlucp.num_free()):
+            results[self._iparam] = callback(results[self._iparam])
+            self._iparam += 1
+        else:
+          self._iparam += xlucp.num_free()
+        continue
+
+      w_inv = self._w_inv.select(isel)
+      u_w_inv = self._u_w_inv.select(isel)
+      v_w_inv = self._v_w_inv.select(isel)
+
+      dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(isel,
+        parameterisation=xlucp, reflections=reflections)
+
+      # convert to dX/dp, dY/dp and assign the elements of the vectors
+      # corresponding to this experiment
+      dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+        w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
+      for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
+        if dX is not None:
+          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+        if dY is not None:
+          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+        if dphi is not None:
+          results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
+        if callback is not None:
+          results[self._iparam] = callback(results[self._iparam])
+        # increment the parameter index pointer
+        self._iparam += 1
+
+    return results
+
   def _get_gradients_core(self, reflections, callback=None):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
@@ -693,62 +744,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     results = self._grads_xl_orientation_loop(reflections, results, callback)
 
     # loop over the crystal unit cell parameterisations
-    for xlucp in self._xl_unit_cell_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in xlucp.get_experiment_ids():
-        isel.extend(self._experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this crystal unit cell parameterisation
-      results = self._extend_gradient_vectors(results, self._nref, xlucp.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation of
-        # gradients, but must still process null gradients by a callback
-        if callback is not None:
-          for iparam in xrange(xlucp.num_free()):
-            results[self._iparam] = callback(results[self._iparam])
-            self._iparam += 1
-        else:
-          self._iparam += xlucp.num_free()
-        continue
-
-      # Get required data from those reflections
-      axis = self._axis.select(isel)
-      fixed_rotation = self._fixed_rotation.select(isel)
-      phi_calc = self._phi_calc.select(isel)
-      h = self._h.select(isel)
-      s1 = self._s1.select(isel)
-      e_X_r = self._e_X_r.select(isel)
-      e_r_s0 = self._e_r_s0.select(isel)
-      U = self._U.select(isel)
-      D = self._D.select(isel)
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(
-        axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D,
-        parameterisation=xlucp)
-
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this experiment
-      dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
-      for dX, dY, dphi in zip(dX_dxluc_p, dY_dxluc_p, dphi_dxluc_p):
-        if dX is not None:
-          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        if dY is not None:
-          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        if dphi is not None:
-          results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
+    results = self._grads_xl_unit_cell_loop(reflections, results, callback)
 
     return results
 
@@ -795,15 +791,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
-    if dU_dxlo_p is None:
-
-      # get derivatives of the U matrix wrt the parameters
-      dU_dxlo_p = [None if der is None else flex.mat3_double(len(isel), der.elems) \
-                   for der in parameterisation.get_ds_dp(use_none_as_null=True)]
-
-    dphi_dp = []
-    dpv_dp = []
-
     # Get required data
     axis = self._axis.select(isel)
     fixed_rotation = self._fixed_rotation.select(isel)
@@ -814,6 +801,15 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     e_r_s0 = self._e_r_s0.select(isel)
     B = self._B.select(isel)
     D = self._D.select(isel)
+
+    if dU_dxlo_p is None:
+
+      # get derivatives of the U matrix wrt the parameters
+      dU_dxlo_p = [None if der is None else flex.mat3_double(len(isel), der.elems) \
+                   for der in parameterisation.get_ds_dp(use_none_as_null=True)]
+
+    dphi_dp = []
+    dpv_dp = []
 
     # loop through the parameters
     for der in dU_dxlo_p:
@@ -837,15 +833,26 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dphi_dp
 
-  def _xl_unit_cell_derivatives(self, axis, fixed_rotation, phi_calc, h,
-    s1, e_X_r, e_r_s0, U, D, parameterisation=None, dB_dxluc_p=None):
+  def _xl_unit_cell_derivatives(self, isel, parameterisation=None,
+    dB_dxluc_p=None, reflections=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
+
+    # Get required data
+    axis = self._axis.select(isel)
+    fixed_rotation = self._fixed_rotation.select(isel)
+    phi_calc = self._phi_calc.select(isel)
+    h = self._h.select(isel)
+    s1 = self._s1.select(isel)
+    e_X_r = self._e_X_r.select(isel)
+    e_r_s0 = self._e_r_s0.select(isel)
+    U = self._U.select(isel)
+    D = self._D.select(isel)
 
     if dB_dxluc_p is None:
 
       # get derivatives of the B matrix wrt the parameters
-      dB_dxluc_p = [None if der is None else flex.mat3_double(len(U), der.elems) \
+      dB_dxluc_p = [None if der is None else flex.mat3_double(len(isel), der.elems) \
                     for der in parameterisation.get_ds_dp(use_none_as_null=True)]
 
     dphi_dp = []
