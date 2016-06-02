@@ -291,35 +291,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_unit_cell_derivatives(isel, parameterisation, dB_dxluc_p)
 
-  def _get_gradients_core(self, reflections, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    that reflects at rotation angle phi with scattering vector s that
-    intersects panel panel_id. That is, calculate dX/dp, dY/dp and
-    dphi/dp"""
-
-    self._get_gradients_scans_setup(reflections)
-
-    # Set up empty list in which to store gradients
-    results = []
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[phi]/dp
-
-    # loop over detector parameterisations
-    results = self._grads_detector_loop(reflections, results, callback)
-
-    # loop over the beam parameterisations
-    results = self._grads_beam_loop(reflections, results, callback)
-
-    # loop over the crystal orientation parameterisations
-    results = self._grads_xl_orientation_loop(reflections, results, callback)
-
-    # loop over the crystal unit cell parameterisations
-    results = self._grads_xl_unit_cell_loop(reflections, results, callback)
-
-    return results
-
   def calculate_model_state_uncertainties(self, var_cov=None,
                                           obs_image_number=None,
                                           experiment_id=None):

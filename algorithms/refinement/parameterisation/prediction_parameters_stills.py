@@ -449,7 +449,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
   _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
-  def _get_gradients_stills_setup(self, reflections):
+  def _local_setup(self, reflections):
 
     self._DeltaPsi = reflections['delpsical.rad']
 
@@ -628,35 +628,6 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
-
-    return results
-
-  def _get_gradients_core(self, reflections, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
-    because these are stills"""
-
-    self._get_gradients_stills_setup(reflections)
-
-    # Set up empty list in which to store gradients
-    results = []
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
-
-    # loop over detector parameterisations
-    results = self._grads_detector_loop(reflections, results, callback)
-
-    # loop over the beam parameterisations
-    results = self._grads_beam_loop(reflections, results, callback)
-
-    # loop over the crystal orientation parameterisations
-    results = self._grads_xl_orientation_loop(reflections, results, callback)
-
-    # loop over the crystal unit cell parameterisations
-    results = self._grads_xl_unit_cell_loop(reflections, results, callback)
 
     return results
 
@@ -894,7 +865,7 @@ class SphericalRelpStillsPredictionParameterisation(
   Ewald sphere, not that the relp centre is rotated onto the Ewald sphere
   '''
 
-  def _get_gradients_stills_setup(self, reflections):
+  def _local_setup(self, reflections):
 
     self._DeltaPsi = reflections['delpsical.rad']
 

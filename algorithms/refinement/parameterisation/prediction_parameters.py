@@ -357,7 +357,25 @@ class PredictionParameterisation(object):
     # reset a pointer to the parameter number
     self._iparam = 0
 
-    return self._get_gradients_core(reflections, callback)
+    # do additional setup specified by derived classes
+    self._local_setup(reflections)
+
+    # Set up empty list in which to store gradients
+    results = []
+
+    # loop over detector parameterisations
+    results = self._grads_detector_loop(reflections, results, callback)
+
+    # loop over the beam parameterisations
+    results = self._grads_beam_loop(reflections, results, callback)
+
+    # loop over the crystal orientation parameterisations
+    results = self._grads_xl_orientation_loop(reflections, results, callback)
+
+    # loop over the crystal unit cell parameterisations
+    results = self._grads_xl_unit_cell_loop(reflections, results, callback)
+
+    return results
 
   @staticmethod
   def _extend_gradient_vectors(results, m, n,
@@ -512,7 +530,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
   _grad_names = ("dX_dp", "dY_dp", "dphi_dp")
 
-  def _get_gradients_scans_setup(self, reflections):
+  def _local_setup(self, reflections):
     # Spindle rotation matrices for every reflection
     #R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
     #R = flex.mat3_double(len(reflections))
@@ -716,35 +734,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
-
-    return results
-
-  def _get_gradients_core(self, reflections, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    that reflects at rotation angle phi with scattering vector s that
-    intersects panel panel_id. That is, calculate dX/dp, dY/dp and
-    dphi/dp"""
-
-    self._get_gradients_scans_setup(reflections)
-
-    # Set up empty list in which to store gradients
-    results = []
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[phi]/dp
-
-    # loop over detector parameterisations
-    results = self._grads_detector_loop(reflections, results, callback)
-
-    # loop over the beam parameterisations
-    results = self._grads_beam_loop(reflections, results, callback)
-
-    # loop over the crystal orientation parameterisations
-    results = self._grads_xl_orientation_loop(reflections, results, callback)
-
-    # loop over the crystal unit cell parameterisations
-    results = self._grads_xl_unit_cell_loop(reflections, results, callback)
 
     return results
 
