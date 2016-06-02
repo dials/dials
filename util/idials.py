@@ -42,78 +42,94 @@ class ExternalCommand(object):
 
   '''
 
-  def __init__(self, command, filename=None, output=sys.stdout, wait_time=0.1):
+  def __init__(self,
+               command,
+               stdout=sys.stdout,
+               stderr=sys.stderr,
+               stdout_filename=None,
+               stderr_filename=None):
     '''
     Run the command
 
     :param command: The command to run
-    :param filename: The filename for stdout and stderr
-    :param output: Write stdout and stderr to additional output
-    :param wait_time: Wait time for polling file output
+    :param stdout: File object to write stdout
+    :param stderr: File object to write stderr
+    :param stdout_filename The filename to log stdout
+    :param stderr_filename The filename to log stderr
 
     '''
     import subprocess
-    import time
+    import threading
+
+    # A class to handle stdout/stderr writing
+    class StreamThread(threading.Thread):
+      def __init__(self, buffer, output):
+        super(StreamThread, self).__init__()
+        self.buffer = buffer
+        self.output = output
+      def run(self):
+        while True:
+          line = self.buffer.readline()
+          for out in self.output:
+            out.write(line)
+            out.flush()
+          if line == '':
+            break
 
     # Create the command string
     if not isinstance(command, str):
       command = subprocess.list2cmdline(command)
 
+    # Run the command
+    process = subprocess.Popen(
+      command,
+      shell=True,
+      universal_newlines=True,
+      bufsize=-1,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE)
 
-    # Open the file for output and input
-    if filename is not None:
-      with open(filename, "w") as outfile:
-        with open(filename, "r") as infile:
+    # Create the list of file handles to write to
+    stdout = [stdout]
+    stderr = [stderr]
+    if stdout_filename is not None:
+      stdout_file = open(stdout_filename, "w")
+      stdout.append(stdout_file)
+    if stderr_filename is not None:
+      if stderr_filename == stdout_filename:
+        stderr_file = stdout_file
+      else:
+        stderr_file = open(stderr_filename, "w")
+      stderr.append(stderr_file)
 
-          # Start the process
-          process = subprocess.Popen(
-            command,
-            stdout=outfile,
-            stderr=outfile,
-            shell=True,
-            universal_newlines=True,
-            bufsize=-1)
+    # Create the stream thread and wait until the threads exit
+    stdout_thread = StreamThread(process.stdout, stdout)
+    stderr_thread = StreamThread(process.stderr, stderr)
+    stdout_thread.start()
+    stderr_thread.start()
+    stdout_thread.join()
+    stderr_thread.join()
 
-          # Write the lines of the file to the output
-          if output is not None:
-            while True:
-              line = infile.readline()
-              if not line:
-                if process.poll() is not None:
-                  break
-                time.sleep(wait_time)
-              else:
-                output.write(line)
-
-          # Get the result
-          self.result = process.wait()
-
-    else:
-      # Start the process
-      process = subprocess.Popen(
-        command,
-        stdout=output,
-        stderr=output,
-        shell=True,
-        universal_newlines=True,
-        bufsize=-1)
-
-      # Get the result
-      self.result = process.wait()
+    # Get the result
+    self.result = process.wait()
 
 
-
-def run_external_command(command, filename=None, output=sys.stdout, wait_time=0.1):
+def run_external_command(command,
+                         stdout=sys.stdout,
+                         stderr=sys.stderr,
+                         stdout_filename=None,
+                         stderr_filename=None):
   '''
   Helper function to run command
 
   :param command: The command to run
-  :param filename: The filename to output
-  :param output: The buffer to write to
-  :param wait_time: The polling timeout
+  :param stdout: File object to write stdout
+  :param stderr: File object to write stderr
+  :param stdout_filename The filename to log stdout
+  :param stderr_filename The filename to log stderr
 
   '''
-  command = ExternalCommand(command, filename, output, wait_time)
+  command = ExternalCommand(command, stdout, stderr, stdout_filename, stderr_filename)
   if command.result != 0:
     raise RuntimeError('Error: external command failed')
 
@@ -674,7 +690,7 @@ class Command(object):
     if self.state.parent is not None:
       self.state.parent.children.append(self.state)
 
-  def apply(self):
+  def apply(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Apply the command
 
@@ -695,7 +711,7 @@ class Command(object):
     makedirs(self.state.directory)
 
     # Run the command (override this method)
-    self.run()
+    self.run(stdout=stdout, stderr=stderr)
 
     # Set success
     self.state.success = True
@@ -703,14 +719,14 @@ class Command(object):
     # Return the state
     return self.state
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the command
 
     '''
     pass
 
-  def generate_report(self):
+  def generate_report(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Helper function to run dials.report
 
@@ -728,7 +744,7 @@ class Command(object):
       command.append('input.experiments=%s' % self.state.experiments)
     command.append('input.reflections=%s' % self.state.reflections)
     command.append('output.html=%s' % self.state.report)
-    run_external_command(command)
+    run_external_command(command, stdout=stdout, stderr=stderr)
 
   def check_files_exist(self, filenames=None):
     '''
@@ -850,7 +866,7 @@ class Import(Command):
 
   allowed_parents = ['clean']
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the import command
 
@@ -875,7 +891,12 @@ class Import(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.import', self.state.parameters], self.state.output)
+    run_external_command(
+      ['dials.import', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -891,7 +912,7 @@ class FindSpots(Command):
 
   allowed_parents = ['import']
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the find_spots command
 
@@ -920,11 +941,15 @@ class FindSpots(Command):
     outfile.close()
 
     # Run find spots
-    run_external_command(['dials.find_spots', self.state.parameters],
-                         self.state.output)
+    run_external_command(
+      ['dials.find_spots', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Generate the report
-    self.generate_report()
+    self.generate_report(stdout=stdout, stderr=stderr)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -940,7 +965,7 @@ class DiscoverBetterExperimentalModel(Command):
 
   allowed_parents = ['find_spots']
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the index command
 
@@ -969,11 +994,15 @@ class DiscoverBetterExperimentalModel(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.discover_better_experimental_model',
-                          self.state.parameters], self.state.output)
+    run_external_command(
+      ['dials.discover_better_experimental_model', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Generate the report
-    self.generate_report()
+    self.generate_report(stdout=stdout, stderr=stderr)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -993,7 +1022,7 @@ class Index(Command):
     'index'
   ]
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the index command
 
@@ -1030,11 +1059,15 @@ class Index(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.index', self.state.parameters],
-                         self.state.output)
+    run_external_command(
+      ['dials.index', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Generate the report
-    self.generate_report()
+    self.generate_report(stdout=stdout, stderr=stderr)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -1050,7 +1083,7 @@ class RefineBravaisSettings(Command):
 
   allowed_parents = ['index']
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the refine_bravais_settings command
 
@@ -1079,8 +1112,12 @@ class RefineBravaisSettings(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.refine_bravais_settings',
-                          self.state.parameters], self.state.output)
+    run_external_command(
+      ['dials.refine_bravais_settings', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Read the summary and check all json files exist
     for item, filename in self.bravais_setting_filenames(self.state).iteritems():
@@ -1124,7 +1161,7 @@ class Reindex(Command):
 
   allowed_parents = ['refine_bravais_settings']
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the index command
 
@@ -1162,11 +1199,15 @@ class Reindex(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.reindex', self.state.parameters],
-                         self.state.output)
+    run_external_command(
+      ['dials.reindex', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Generate the report
-    self.generate_report()
+    self.generate_report(stdout=stdout, stderr=stderr)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -1187,7 +1228,7 @@ class Refine(Command):
     'integrate'
   ]
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the refine command
 
@@ -1220,11 +1261,15 @@ class Refine(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.refine', self.state.parameters],
-                         self.state.output)
+    run_external_command(
+      ['dials.refine', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Generate the report
-    self.generate_report()
+    self.generate_report(stdout=stdout, stderr=stderr)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -1245,7 +1290,7 @@ class Integrate(Command):
     'integrate'
   ]
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the integrate command
 
@@ -1277,11 +1322,15 @@ class Integrate(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.integrate', self.state.parameters],
-                         self.state.output)
+    run_external_command(
+      ['dials.integrate', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Generate the report
-    self.generate_report()
+    self.generate_report(stdout=stdout, stderr=stderr)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -1297,7 +1346,7 @@ class Export(Command):
 
   allowed_parents = ['integrate']
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the export command
 
@@ -1329,8 +1378,12 @@ class Export(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(['dials.export', self.state.parameters],
-                         self.state.output)
+    run_external_command(
+      ['dials.export', self.state.parameters],
+      stdout=stdout,
+      stderr=stderr,
+      stdout_filename=self.state.output,
+      stderr_filename=self.state.output)
 
     # Check the files exist
     self.check_files_exist(self.filenames.values())
@@ -1400,7 +1453,7 @@ class ApplicationState(object):
       self.workspace = memento.workspace
       self.mode = memento.mode
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run the command for the given mode
 
@@ -1416,7 +1469,7 @@ class ApplicationState(object):
     self.counter.incr()
 
     # Apply the command
-    self.current = command.apply()
+    self.current = command.apply(stdout=stdout, stderr=stderr)
 
   def goto(self, index):
     '''
@@ -1544,7 +1597,11 @@ class Controller(object):
     :param recover: Recover the state if available
 
     '''
+    from multiprocessing import Lock
     from os.path import exists, abspath, join
+
+    # Create the lock
+    self.lock = Lock()
 
     # Set some stuff
     self.state_filename = join(directory, state_filename)
@@ -1571,13 +1628,15 @@ class Controller(object):
     :param mode: The mode to set
 
     '''
-    # Is mode available?
-    if mode not in self.mode_list:
-      raise RuntimeError('Unknown mode: %s' % mode)
+    with self.lock:
 
-    # Set the mode
-    self.state.mode = mode
-    self.state.dump(self.state_filename)
+      # Is mode available?
+      if mode not in self.mode_list:
+        raise RuntimeError('Unknown mode: %s' % mode)
+
+      # Set the mode
+      self.state.mode = mode
+      self.state.dump(self.state_filename)
 
   def get_mode(self):
     '''
@@ -1596,17 +1655,18 @@ class Controller(object):
     :param show_syntax: Use command line string
 
     '''
-    from libtbx.utils import Sorry
-    self.state.parameters[self.get_mode()].set(parameters, short_syntax=short_syntax)
-    self.state.dump(self.state_filename)
+    with self.lock:
+      self.state.parameters[self.get_mode()].set(parameters, short_syntax=short_syntax)
+      self.state.dump(self.state_filename)
 
   def reset_parameters(self):
     '''
     Reset the parameters to the default values
 
     '''
-    self.state.parameters[self.get_mode()].reset()
-    self.state.dump(self.state_filename)
+    with self.lock:
+      self.state.parameters[self.get_mode()].reset()
+      self.state.dump(self.state_filename)
 
   def get_parameters(self, diff=True, mode=None):
     '''
@@ -1624,16 +1684,18 @@ class Controller(object):
     Undo the last parameter changes
 
     '''
-    self.state.parameters[self.get_mode()].undo()
-    self.state.dump(self.state_filename)
+    with self.lock:
+      self.state.parameters[self.get_mode()].undo()
+      self.state.dump(self.state_filename)
 
   def redo_parameters(self):
     '''
     Redo the last parameter changes
 
     '''
-    self.state.parameters[self.get_mode()].redo()
-    self.state.dump(self.state_filename)
+    with self.lock:
+      self.state.parameters[self.get_mode()].redo()
+      self.state.dump(self.state_filename)
 
   def get_command_tree(self):
     '''
@@ -1696,17 +1758,71 @@ class Controller(object):
     :param index: The index to go to
 
     '''
-    self.state.goto(index)
-    self.state.dump(self.state_filename)
+    with self.lock:
+      self.state.goto(index)
+      self.state.dump(self.state_filename)
 
-  def run(self):
+  def run(self, stdout=sys.stdout, stderr=sys.stderr):
     '''
     Run a program
 
     '''
-    try:
-      self.state.run()
-      self.state.dump(self.state_filename)
-    except Exception:
-      self.state.dump(self.state_filename)
-      raise
+    import threading
+
+    class AsyncCommand(threading.Thread):
+      '''
+      Run the command asynchronously
+
+      '''
+      def __init__(self, controller, stdout=sys.stdout, stderr=sys.stderr):
+        '''
+        Init the command
+
+        '''
+        from Queue import Queue
+        super(AsyncCommand, self).__init__()
+        self.controller = controller
+        self.stdout = stdout
+        self.stderr = stderr
+        self.finished = False
+        self.status = Queue()
+        self.controller.lock.acquire()
+
+      def run(self):
+        '''
+        Run the command
+
+        '''
+        try:
+          self.controller.state.run(stdout=self.stdout, stderr=self.stderr)
+          self.status.put(None)
+        except Exception:
+          self.status.put(sys.exc_info())
+        self.controller.state.dump(self.controller.state_filename)
+        self.controller.lock.release()
+        self.finished = True
+
+      def wait(self):
+        '''
+        Wait for the command
+
+        '''
+        ex_info = self.status.get()
+        if ex_info is not None:
+          raise ex_info[1]
+        self.join()
+
+      def ready(self):
+        '''
+        Check if the command is finished
+
+        '''
+        return self.finished
+
+    # Create the command and return
+    command = AsyncCommand(
+      self,
+      stdout=stdout,
+      stderr=stderr)
+    command.start()
+    return command

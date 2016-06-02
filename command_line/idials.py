@@ -228,7 +228,7 @@ class Console(Cmd):
   def do_run(self, line):
     ''' Run a program '''
     try:
-      self.controller.run()
+      self.controller.run().wait()
       self.print_history()
     except Exception, e:
       print_error(e)
@@ -322,7 +322,7 @@ class Console(Cmd):
       self.controller.set_mode(mode)
       self.prompt = "%s >> " % self.controller.get_mode()
       self.controller.set_parameters(parameters, short_syntax=True)
-      self.controller.run()
+      self.controller.run().wait()
       self.controller.undo_parameters()
       self.print_history()
     except Exception, e:
