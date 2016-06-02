@@ -359,7 +359,68 @@ class PredictionParameterisation(object):
 
     return self._get_gradients_core(reflections, callback)
 
-  # NB shared by all types of prediction parameterisation
+  @staticmethod
+  def _extend_gradient_vectors(results, m, n,
+                               keys=("dX_dp", "dY_dp", "dZ_dp")):
+    """Extend results list by n empty results. These will each be a dictionary
+    indexed by the given keys. The value for each key will be an empty vector of
+    size m, to store the derivatives of n parameters, for m reflections.
+    This method may be overriden by a derived class to e.g. use sparse
+    vectors"""
+
+    new_results = []
+    for i in range(n):
+      result = {}
+      for key in keys:
+        result[key] = flex.double(m, 0.)
+      new_results.append(result)
+    results.extend(new_results)
+
+    return results
+
+  def _get_model_data_for_experiment(self, experiment, reflections):
+    """helper function to return model data s0, U, B and D for a particular
+    experiment. D is always returned as an array the same length as the
+    reflections for the experiment, whereas here U, B and s0 are returned as
+    single matrices or vectors. In the scan-varying overload these will all be
+    arrays."""
+
+    # D matrix array
+    D = flex.mat3_double(len(reflections))
+    panels = reflections['panel']
+    for ipanel, D_mat in enumerate([p.get_D_matrix() for p in experiment.detector]):
+      sel = panels == ipanel
+      D.set_selected(sel, D_mat)
+
+    return {'s0':experiment.beam.get_s0(),
+            'U':experiment.crystal.get_U(),
+            'B':experiment.crystal.get_B(),
+            'D':D}
+
+  # The detector derivatives calculation is shared by scans and stills type
+  # prediction, so this method is here, in the base class.
+  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None, dd_ddet_p=None):
+    """helper function to convert derivatives of the detector state to
+    derivatives of the vector pv. Derivatives that would all be null vectors
+    are replaced with None"""
+
+    if dd_ddet_p is None:
+
+      # get the derivatives of detector d matrix for this panel
+      dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id,
+                                             use_none_as_null=True)
+
+      # replace explicit null derivatives with None
+      dd_ddet_p = [None if e is None else \
+                   flex.mat3_double(len(D), e.elems) for e in dd_ddet_p]
+
+    # calculate the derivative of pv for this parameter
+    dpv_ddet_p = [der if der is None else (D * (der * -1.)) * pv for der in dd_ddet_p]
+
+    return dpv_ddet_p
+
+  # Also shared by all types of prediction parameterisation, so defined in the
+  # base class
   def _grads_detector_loop(self, reflections, results, callback=None):
 
     # loop over the detector parameterisations
@@ -422,66 +483,6 @@ class PredictionParameterisation(object):
       self._iparam += dp.num_free()
 
     return results
-
-  @staticmethod
-  def _extend_gradient_vectors(results, m, n,
-                               keys=("dX_dp", "dY_dp", "dZ_dp")):
-    """Extend results list by n empty results. These will each be a dictionary
-    indexed by the given keys. The value for each key will be an empty vector of
-    size m, to store the derivatives of n parameters, for m reflections.
-    This method may be overriden by a derived class to e.g. use sparse
-    vectors"""
-
-    new_results = []
-    for i in range(n):
-      result = {}
-      for key in keys:
-        result[key] = flex.double(m, 0.)
-      new_results.append(result)
-    results.extend(new_results)
-
-    return results
-
-  def _get_model_data_for_experiment(self, experiment, reflections):
-    """helper function to return model data s0, U, B and D for a particular
-    experiment. D is always returned as an array the same length as the
-    reflections for the experiment, whereas here U, B and s0 are returned as
-    single matrices or vectors. In the scan-varying overload these will all be
-    arrays."""
-
-    # D matrix array
-    D = flex.mat3_double(len(reflections))
-    panels = reflections['panel']
-    for ipanel, D_mat in enumerate([p.get_D_matrix() for p in experiment.detector]):
-      sel = panels == ipanel
-      D.set_selected(sel, D_mat)
-
-    return {'s0':experiment.beam.get_s0(),
-            'U':experiment.crystal.get_U(),
-            'B':experiment.crystal.get_B(),
-            'D':D}
-
-  # The detector derivatives calculation is shared by scans and stills type
-  # prediction, so this method is here, in the base class.
-  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None, dd_ddet_p=None):
-    """helper function to convert derivatives of the detector state to
-    derivatives of the vector pv. Derivatives that would all be null vectors
-    are replaced with None"""
-
-    if dd_ddet_p is None:
-
-      # get the derivatives of detector d matrix for this panel
-      dd_ddet_p = parameterisation.get_ds_dp(multi_state_elt=panel_id,
-                                             use_none_as_null=True)
-
-      # replace explicit null derivatives with None
-      dd_ddet_p = [None if e is None else \
-                   flex.mat3_double(len(D), e.elems) for e in dd_ddet_p]
-
-    # calculate the derivative of pv for this parameter
-    dpv_ddet_p = [der if der is None else (D * (der * -1.)) * pv for der in dd_ddet_p]
-
-    return dpv_ddet_p
 
 class SparseGradientVectorMixin(object):
   """Mixin class to use sparse vectors for storage of gradients of the
@@ -616,26 +617,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return results
 
-  def _get_gradients_core(self, reflections, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    that reflects at rotation angle phi with scattering vector s that
-    intersects panel panel_id. That is, calculate dX/dp, dY/dp and
-    dphi/dp"""
-
-    self._get_gradients_scans_setup(reflections)
-
-    # Set up empty list in which to store gradients
-    results = []
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[phi]/dp
-
-    # loop over detector parameterisations
-    results = self._grads_detector_loop(reflections, results, callback)
-
-    # loop over the beam parameterisations
-    results = self._grads_beam_loop(reflections, results, callback)
+  # NB shared by scans type prediction parameterisations
+  def _grads_xl_orientation_loop(self, reflections, results, callback=None):
 
     # loop over the crystal orientation parameterisations
     for xlop in self._xl_orientation_parameterisations:
@@ -660,24 +643,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
           self._iparam += xlop.num_free()
         continue
 
-      # Get required data from those reflections
-      axis = self._axis.select(isel)
-      fixed_rotation = self._fixed_rotation.select(isel)
-      phi_calc = self._phi_calc.select(isel)
-      h = self._h.select(isel)
-      s1 = self._s1.select(isel)
-      e_X_r = self._e_X_r.select(isel)
-      e_r_s0 = self._e_r_s0.select(isel)
-      B = self._B.select(isel)
-      D = self._D.select(isel)
-
       w_inv = self._w_inv.select(isel)
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(
-          axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D,
-          parameterisation=xlop)
+      dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(isel,
+        parameterisation=xlop, reflections=reflections)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -694,6 +665,32 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
+
+    return results
+
+  def _get_gradients_core(self, reflections, callback=None):
+    """Calculate gradients of the prediction formula with respect to
+    each of the parameters of the contained models, for reflection h
+    that reflects at rotation angle phi with scattering vector s that
+    intersects panel panel_id. That is, calculate dX/dp, dY/dp and
+    dphi/dp"""
+
+    self._get_gradients_scans_setup(reflections)
+
+    # Set up empty list in which to store gradients
+    results = []
+
+    ### Work through the parameterisations, calculating their contributions
+    ### to derivatives d[pv]/dp and d[phi]/dp
+
+    # loop over detector parameterisations
+    results = self._grads_detector_loop(reflections, results, callback)
+
+    # loop over the beam parameterisations
+    results = self._grads_beam_loop(reflections, results, callback)
+
+    # loop over the crystal orientation parameterisations
+    results = self._grads_xl_orientation_loop(reflections, results, callback)
 
     # loop over the crystal unit cell parameterisations
     for xlucp in self._xl_unit_cell_parameterisations:
@@ -793,19 +790,30 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dphi_dp
 
-  def _xl_orientation_derivatives(self, axis, fixed_rotation, phi_calc, h,
-    s1, e_X_r, e_r_s0, B, D, parameterisation=None, dU_dxlo_p=None):
+  def _xl_orientation_derivatives(self, isel, parameterisation=None,
+    dU_dxlo_p=None, reflections=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
     if dU_dxlo_p is None:
 
       # get derivatives of the U matrix wrt the parameters
-      dU_dxlo_p = [None if der is None else flex.mat3_double(len(B), der.elems) \
+      dU_dxlo_p = [None if der is None else flex.mat3_double(len(isel), der.elems) \
                    for der in parameterisation.get_ds_dp(use_none_as_null=True)]
 
     dphi_dp = []
     dpv_dp = []
+
+    # Get required data
+    axis = self._axis.select(isel)
+    fixed_rotation = self._fixed_rotation.select(isel)
+    phi_calc = self._phi_calc.select(isel)
+    h = self._h.select(isel)
+    s1 = self._s1.select(isel)
+    e_X_r = self._e_X_r.select(isel)
+    e_r_s0 = self._e_r_s0.select(isel)
+    B = self._B.select(isel)
+    D = self._D.select(isel)
 
     # loop through the parameters
     for der in dU_dxlo_p:

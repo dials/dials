@@ -527,26 +527,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return results
 
-  def _get_gradients_core(self, reflections, callback=None):
-    """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
-    because these are stills"""
-
-    self._get_gradients_stills_setup(reflections)
-
-    # Set up empty list in which to store gradients
-    results = []
-
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
-
-    # loop over detector parameterisations
-    results = self._grads_detector_loop(reflections, results, callback)
-
-    # loop over the beam parameterisations
-    results = self._grads_beam_loop(reflections, results, callback)
+  # NB shared by stills type prediction parameterisations
+  def _grads_xl_orientation_loop(self, reflections, results, callback=None):
 
     # loop over the crystal orientation parameterisations
     for xlop in self._xl_orientation_parameterisations:
@@ -571,27 +553,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           self._iparam += xlop.num_free()
         continue
 
-      # Get required data from those reflections
-      B = self._B.select(isel)
-      h = self._h.select(isel)
-      e1 = self._e1.select(isel)
-      DeltaPsi = self._DeltaPsi.select(isel)
-      s1 = self._s1.select(isel)
-      q = self._q.select(isel)
-      q_scalar = self._q_scalar.select(isel)
-      qq = self._qq.select(isel)
-      q0 = self._q0.select(isel)
-      r = self._r.select(isel)
-      s0 = self._s0.select(isel)
-      s0u = self._s0u.select(isel)
-      D = self._D.select(isel)
-
       w_inv = self._w_inv.select(isel)
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(
-        B, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D,
+      dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(isel,
         parameterisation=xlop)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
@@ -609,6 +575,32 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           results[self._iparam] = callback(results[self._iparam])
         # increment the parameter index pointer
         self._iparam += 1
+
+    return results
+
+  def _get_gradients_core(self, reflections, callback=None):
+    """Calculate gradients of the prediction formula with respect to
+    each of the parameters of the contained models, for reflection h
+    with scattering vector s that intersects panel panel_id. That is,
+    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis and fixed_rotation
+    because these are stills"""
+
+    self._get_gradients_stills_setup(reflections)
+
+    # Set up empty list in which to store gradients
+    results = []
+
+    ### Work through the parameterisations, calculating their contributions
+    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
+
+    # loop over detector parameterisations
+    results = self._grads_detector_loop(reflections, results, callback)
+
+    # loop over the beam parameterisations
+    results = self._grads_beam_loop(reflections, results, callback)
+
+    # loop over the crystal orientation parameterisations
+    results = self._grads_xl_orientation_loop(reflections, results, callback)
 
     # loop over the crystal unit cell parameterisations
     for xlucp in self._xl_unit_cell_parameterisations:
@@ -633,27 +625,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           self._iparam += xlucp.num_free()
         continue
 
-      # Get required data from those reflections
-      U = self._U.select(isel)
-      h = self._h.select(isel)
-      e1 = self._e1.select(isel)
-      DeltaPsi = self._DeltaPsi.select(isel)
-      s1 = self._s1.select(isel)
-      q = self._q.select(isel)
-      q_scalar = self._q_scalar.select(isel)
-      qq = self._qq.select(isel)
-      q0 = self._q0.select(isel)
-      r = self._r.select(isel)
-      s0 = self._s0.select(isel)
-      s0u = self._s0u.select(isel)
-      D = self._D.select(isel)
-
       w_inv = self._w_inv.select(isel)
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(
-        U, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D,
+      dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(isel,
         parameterisation=xlucp)
 
       # convert to dX/dp, dY/dp and assign the elements of the vectors
@@ -730,10 +706,24 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_orientation_derivatives(self, B, h, e1, DeltaPsi, s1, q,
-      q_scalar, qq, q0, r, s0, s0u, D, parameterisation=None):
+  def _xl_orientation_derivatives(self, isel, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
+
+    # Get required data
+    B = self._B.select(isel)
+    h = self._h.select(isel)
+    e1 = self._e1.select(isel)
+    DeltaPsi = self._DeltaPsi.select(isel)
+    s1 = self._s1.select(isel)
+    q = self._q.select(isel)
+    q_scalar = self._q_scalar.select(isel)
+    qq = self._qq.select(isel)
+    q0 = self._q0.select(isel)
+    r = self._r.select(isel)
+    s0 = self._s0.select(isel)
+    s0u = self._s0u.select(isel)
+    D = self._D.select(isel)
 
     # get derivatives of the U matrix wrt the parameters
     dU_dxlo_p = parameterisation.get_ds_dp(use_none_as_null=True)
@@ -785,10 +775,24 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_unit_cell_derivatives(self, U, h, e1, DeltaPsi, s1, q,
-                      q_scalar, qq, q0, r, s0, s0u, D, parameterisation=None):
+  def _xl_unit_cell_derivatives(self, isel, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
+
+    # Get required data
+    U = self._U.select(isel)
+    h = self._h.select(isel)
+    e1 = self._e1.select(isel)
+    DeltaPsi = self._DeltaPsi.select(isel)
+    s1 = self._s1.select(isel)
+    q = self._q.select(isel)
+    q_scalar = self._q_scalar.select(isel)
+    qq = self._qq.select(isel)
+    q0 = self._q0.select(isel)
+    r = self._r.select(isel)
+    s0 = self._s0.select(isel)
+    s0u = self._s0u.select(isel)
+    D = self._D.select(isel)
 
     # get derivatives of the B matrix wrt the parameters
     dB_dxluc_p = parameterisation.get_ds_dp(use_none_as_null=True)
@@ -939,62 +943,7 @@ class SphericalRelpStillsPredictionParameterisation(
     results = self._grads_beam_loop(reflections, results, callback)
 
     # loop over the crystal orientation parameterisations
-    for xlop in self._xl_orientation_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in xlop.get_experiment_ids():
-        isel.extend(self._experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this crystal orientation parameterisation
-      results = self._extend_gradient_vectors(results, self._nref, xlop.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation of
-        # gradients, but must still process null gradients by a callback
-        if callback is not None:
-          for iparam in xrange(xlop.num_free()):
-            results[self._iparam] = callback(results[self._iparam])
-            self._iparam += 1
-        else:
-          self._iparam += xlop.num_free()
-        continue
-
-      # Get required data from those reflections
-      B = self._B.select(isel)
-      h = self._h.select(isel)
-      e1 = self._e1.select(isel)
-      DeltaPsi = self._DeltaPsi.select(isel)
-      s1 = self._s1.select(isel)
-      nu = self._nu.select(isel)
-      q_s0 = self._q_s0.select(isel)
-      inv_s = self._inv_s.select(isel)
-      inv_sss = self._inv_sss.select(isel)
-      r = self._r.select(isel)
-      s0 = self._s0.select(isel)
-      D = self._D.select(isel)
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(
-        B, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D,
-        parameterisation=xlop)
-
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this experiment
-      dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
-      for dX, dY, dDeltaPsi in zip(dX_dxlo_p, dY_dxlo_p, ddelpsi_dxlo_p):
-        results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
+    results = self._grads_xl_orientation_loop(reflections, results, callback)
 
     # loop over the crystal unit cell parameterisations
     for xlucp in self._xl_unit_cell_parameterisations:
@@ -1019,26 +968,11 @@ class SphericalRelpStillsPredictionParameterisation(
           self._iparam += xlucp.num_free()
         continue
 
-      # Get required data from those reflections
-      U = self._U.select(isel)
-      h = self._h.select(isel)
-      e1 = self._e1.select(isel)
-      DeltaPsi = self._DeltaPsi.select(isel)
-      s1 = self._s1.select(isel)
-      nu = self._nu.select(isel)
-      q_s0 = self._q_s0.select(isel)
-      inv_s = self._inv_s.select(isel)
-      inv_sss = self._inv_sss.select(isel)
-      r = self._r.select(isel)
-      s0 = self._s0.select(isel)
-      D = self._D.select(isel)
-
       w_inv = self._w_inv.select(isel)
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(
-        U, h, e1, DeltaPsi, s1, nu, q_s0, inv_s, inv_sss, r, s0, D,
+      dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(isel,
         parameterisation=xlucp)
       # convert to dX/dp, dY/dp and assign the elements of the vectors
       # corresponding to this experiment
@@ -1108,10 +1042,23 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_orientation_derivatives(self, B, h, e1, DeltaPsi, s1, nu, q_s0,
-                              inv_s, inv_sss, r, s0, D, parameterisation=None):
+  def _xl_orientation_derivatives(self, isel, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
+
+    # Get required data
+    B = self._B.select(isel)
+    h = self._h.select(isel)
+    e1 = self._e1.select(isel)
+    DeltaPsi = self._DeltaPsi.select(isel)
+    s1 = self._s1.select(isel)
+    nu = self._nu.select(isel)
+    q_s0 = self._q_s0.select(isel)
+    inv_s = self._inv_s.select(isel)
+    inv_sss = self._inv_sss.select(isel)
+    r = self._r.select(isel)
+    s0 = self._s0.select(isel)
+    D = self._D.select(isel)
 
     # get derivatives of the U matrix wrt the parameters
     dU_dxlo_p = parameterisation.get_ds_dp(use_none_as_null=True)
@@ -1150,10 +1097,23 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_unit_cell_derivatives(self, U, h, e1, DeltaPsi, s1, nu,
-      q_s0, inv_s, inv_sss, r, s0, D, parameterisation=None):
+  def _xl_unit_cell_derivatives(self, isel, parameterisation=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
+
+    # Get required data
+    U = self._U.select(isel)
+    h = self._h.select(isel)
+    e1 = self._e1.select(isel)
+    DeltaPsi = self._DeltaPsi.select(isel)
+    s1 = self._s1.select(isel)
+    nu = self._nu.select(isel)
+    q_s0 = self._q_s0.select(isel)
+    inv_s = self._inv_s.select(isel)
+    inv_sss = self._inv_sss.select(isel)
+    r = self._r.select(isel)
+    s0 = self._s0.select(isel)
+    D = self._D.select(isel)
 
     # get derivatives of the B matrix wrt the parameters
     dB_dxluc_p = parameterisation.get_ds_dp(use_none_as_null=True)

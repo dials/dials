@@ -265,6 +265,20 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             'B':reflections['b_matrix'],
             'D':reflections['D_matrix']}
 
+  def _xl_orientation_derivatives(self, isel, parameterisation, reflections):
+    """Determine whether dU_dp was precalculated then call the base class
+    method"""
+
+    if self._varying_xl_orientations:
+      dU_dxlo_p = [reflections["dU_dp{0}".format(i)].select(isel) \
+        for i in range(parameterisation.num_free())]
+    else:
+      dU_dxlo_p = None
+
+    return super(ScanVaryingPredictionParameterisation,
+      self)._xl_orientation_derivatives(isel, parameterisation, dU_dxlo_p)
+
+
   def _get_gradients_core(self, reflections, callback=None):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
@@ -287,59 +301,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     results = self._grads_beam_loop(reflections, results, callback)
 
     # loop over the crystal orientation parameterisations
-    for xlop in self._xl_orientation_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in xlop.get_experiment_ids():
-        isel.extend(self._experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this crystal orientation parameterisation
-      results = self._extend_gradient_vectors(results, self._nref, xlop.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation
-        self._iparam += xlop.num_free()
-        continue
-
-      # Get required data from those reflections
-      axis = self._axis.select(isel)
-      fixed_rotation = self._fixed_rotation.select(isel)
-      phi_calc = self._phi_calc.select(isel)
-      h = self._h.select(isel)
-      s1 = self._s1.select(isel)
-      e_X_r = self._e_X_r.select(isel)
-      e_r_s0 = self._e_r_s0.select(isel)
-      B = self._B.select(isel)
-      D = self._D.select(isel)
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      # get derivatives of the U matrix wrt the parameters
-      dU_dxlo_p = [reflections["dU_dp{0}".format(i)].select(isel) \
-                   for i in range(xlop.num_free())]
-      dpv_dxlo_p, dphi_dxlo_p = self._xl_orientation_derivatives(
-        axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, B, D,
-        dU_dxlo_p=dU_dxlo_p)
-
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this experiment
-      dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
-      for dX, dY, dphi in zip(dX_dxlo_p, dY_dxlo_p, dphi_dxlo_p):
-        if dX is not None:
-          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        if dY is not None:
-          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        if dphi is not None:
-          results[self._iparam][self._grad_names[2]].set_selected(isel, dphi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
+    results = self._grads_xl_orientation_loop(reflections, results, callback)
 
     # loop over the crystal unit cell parameterisations
     for xlucp in self._xl_unit_cell_parameterisations:
@@ -373,8 +335,11 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       u_w_inv = self._u_w_inv.select(isel)
       v_w_inv = self._v_w_inv.select(isel)
 
-      dB_dxluc_p = [reflections["dB_dp{0}".format(i)].select(isel) \
-                   for i in range(xlucp.num_free())]
+      if self._varying_xl_unit_cells:
+        dB_dxluc_p = [reflections["dB_dp{0}".format(i)].select(isel) \
+                     for i in range(xlucp.num_free())]
+      else:
+        dB_dxluc_p = None
       dpv_dxluc_p, dphi_dxluc_p =  self._xl_unit_cell_derivatives(
         axis, fixed_rotation, phi_calc, h, s1, e_X_r, e_r_s0, U, D,
         dB_dxluc_p=dB_dxluc_p)
