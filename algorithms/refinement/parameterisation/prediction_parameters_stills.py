@@ -444,12 +444,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
   Concrete class that inherits functionality of the PredictionParameterisation
   parent class and provides a detector space implementation of the get_gradients
   function for still images.
-
   """
 
   _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
   def _local_setup(self, reflections):
+    """Setup additional attributes used in gradients calculation. These are
+    specific to stills-type prediction parameterisations"""
 
     self._DeltaPsi = reflections['delpsical.rad']
 
@@ -479,159 +480,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  # NB shared by stills type prediction parameterisations
-  def _grads_beam_loop(self, reflections, results, callback=None):
-
-    # loop over the beam parameterisations
-    for bp in self._beam_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in bp.get_experiment_ids():
-        isel.extend(self._experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this beam parameterisation
-      results = self._extend_gradient_vectors(results, self._nref, bp.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation of
-        # gradients, but must still process null gradients by a callback
-        if callback is not None:
-          for iparam in xrange(bp.num_free()):
-            results[self._iparam] = callback(results[self._iparam])
-            self._iparam += 1
-        else:
-          self._iparam += bp.num_free()
-        continue
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(isel,
-          parameterisation=bp)
-
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this parameterisation
-      dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
-      for dX, dY, dDeltaPsi in zip(dX_dbeam_p, dY_dbeam_p, ddelpsi_dbeam_p):
-        if dX is not None:
-          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        if dY is not None:
-          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        if dDeltaPsi is not None:
-          results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
-
-    return results
-
-  # NB shared by stills type prediction parameterisations
-  def _grads_xl_orientation_loop(self, reflections, results, callback=None):
-
-    # loop over the crystal orientation parameterisations
-    for xlop in self._xl_orientation_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in xlop.get_experiment_ids():
-        isel.extend(self._experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this crystal orientation parameterisation
-      results = self._extend_gradient_vectors(results, self._nref, xlop.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation of
-        # gradients, but must still process null gradients by a callback
-        if callback is not None:
-          for iparam in xrange(xlop.num_free()):
-            results[self._iparam] = callback(results[self._iparam])
-            self._iparam += 1
-        else:
-          self._iparam += xlop.num_free()
-        continue
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(isel,
-        parameterisation=xlop)
-
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this experiment
-      dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
-      for dX, dY, dDeltaPsi in zip(dX_dxlo_p, dY_dxlo_p, ddelpsi_dxlo_p):
-        if dX is not None:
-          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        if dY is not None:
-          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        if dDeltaPsi is not None:
-          results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
-
-    return results
-
-  def _grads_xl_unit_cell_loop(self, reflections, results, callback=None):
-
-    # loop over the crystal unit cell parameterisations
-    for xlucp in self._xl_unit_cell_parameterisations:
-
-      # Determine (sub)set of reflections affected by this parameterisation
-      isel = flex.size_t()
-      for exp_id in xlucp.get_experiment_ids():
-        isel.extend(self._experiment_to_idx[exp_id])
-
-      # Extend derivative vectors for this crystal unit cell parameterisation
-      results = self._extend_gradient_vectors(results, self._nref, xlucp.num_free(),
-        keys=self._grad_names)
-
-      if len(isel) == 0:
-        # if no reflections are in this experiment, skip calculation of
-        # gradients, but must still process null gradients by a callback
-        if callback is not None:
-          for iparam in xrange(xlucp.num_free()):
-            results[self._iparam] = callback(results[self._iparam])
-            self._iparam += 1
-        else:
-          self._iparam += xlucp.num_free()
-        continue
-
-      w_inv = self._w_inv.select(isel)
-      u_w_inv = self._u_w_inv.select(isel)
-      v_w_inv = self._v_w_inv.select(isel)
-
-      dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(isel,
-        parameterisation=xlucp)
-
-      # convert to dX/dp, dY/dp and assign the elements of the vectors
-      # corresponding to this experiment
-      dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-        w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
-      for dX, dY, dDeltaPsi in zip(dX_dxluc_p, dY_dxluc_p, ddelpsi_dxluc_p):
-        if dX is not None:
-          results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
-        if dY is not None:
-          results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
-        if dDeltaPsi is not None:
-          results[self._iparam][self._grad_names[2]].set_selected(isel, dDeltaPsi)
-        if callback is not None:
-          results[self._iparam] = callback(results[self._iparam])
-        # increment the parameter index pointer
-        self._iparam += 1
-
-    return results
-
-  def _beam_derivatives(self, isel, parameterisation=None):
+  def _beam_derivatives(self, isel, parameterisation=None, reflections=None):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
@@ -690,7 +539,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_orientation_derivatives(self, isel, parameterisation=None):
+  def _xl_orientation_derivatives(self, isel, parameterisation=None,
+    reflections=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
@@ -759,7 +609,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_unit_cell_derivatives(self, isel, parameterisation=None):
+  def _xl_unit_cell_derivatives(self, isel, parameterisation=None,
+    reflections=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
@@ -905,7 +756,7 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return
 
-  def _beam_derivatives(self, isel, parameterisation=None):
+  def _beam_derivatives(self, isel, parameterisation=None, reflections=None):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
@@ -958,7 +809,8 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_orientation_derivatives(self, isel, parameterisation=None):
+  def _xl_orientation_derivatives(self, isel, parameterisation=None,
+    reflections=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
@@ -1013,7 +865,8 @@ class SphericalRelpStillsPredictionParameterisation(
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_unit_cell_derivatives(self, isel, parameterisation=None):
+  def _xl_unit_cell_derivatives(self, isel, parameterisation=None,
+    reflections=None):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
