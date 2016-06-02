@@ -60,6 +60,7 @@ class ExtractPixelsFromImage(object):
     if self.mask is not None:
       detector = self.imageset.get_detector()
       assert(len(self.mask) == len(detector))
+    self.first = True
 
   def __call__(self, index):
     '''
@@ -73,6 +74,15 @@ class ExtractPixelsFromImage(object):
     from dials.array_family import flex
     from math import ceil
     from logging import info
+
+      # Parallel reading of HDF5 from the same handle is not allowed. Python
+      # multiprocessing is a bit messed up and used fork on linux so need to
+      # close and reopen file.
+    if self.first:
+      from dxtbx.imageset import SingleFileReader
+      if isinstance(self.imageset.reader(), SingleFileReader):
+        self.imageset.reader().nullify_format_instance()
+      self.first = False
 
     # Get the frame number
     if isinstance(self.imageset, ImageSweep):
@@ -283,14 +293,6 @@ class ExtractSpots(object):
         for plabeller, plist in zip(pixel_labeller, result[0].pixel_list):
           plabeller.add(plist)
         result[0].pixel_list = None
-
-      # Parallel reading of HDF5 from the same handle is not allowed. Python
-      # multiprocessing is a bit messed up and used fork on linux so need to
-      # close and reopen file.
-      from dxtbx.imageset import SingleFileReader
-      if isinstance(imageset.reader(), SingleFileReader):
-        imageset.reader().nullify_format_instance()
-
       batch_multi_node_parallel_map(
         func           = ExtractSpotsParallelTask(function),
         iterable       = indices,
