@@ -239,6 +239,9 @@ class SpotFrame(XrayFrame) :
       self.sel_image_layer = None
 
     untrusted_polygons = self.settings.untrusted_polygon
+    if not len(untrusted_polygons):
+      return
+
     data = []
     d = {}
     for polygon in untrusted_polygons:
@@ -691,7 +694,7 @@ class SpotFrame(XrayFrame) :
               renderer = self.pyslip.LightweightDrawPointLayer2,
               show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
         self.draw_all_pix_timer.stop()
-      if self.settings.show_shoebox:
+      if self.settings.show_shoebox and len(shoebox_data):
         self.draw_shoebox_timer.start()
         self.shoebox_layer = self.pyslip.AddPolygonLayer(
           shoebox_data, map_rel=True, visible=True,
@@ -699,7 +702,7 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<shoebox_layer>')
         self.draw_shoebox_timer.stop()
-      if self.settings.show_ctr_mass:
+      if self.settings.show_ctr_mass and len(ctr_mass_data):
         self.draw_ctr_mass_timer.start()
         self.ctr_mass_layer = self.pyslip.AddPolygonLayer(
           ctr_mass_data, map_rel=True, visible=True,
@@ -707,7 +710,7 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<ctr_mass_layer>')
         self.draw_ctr_mass_timer.stop()
-      if self.settings.show_max_pix:
+      if self.settings.show_max_pix and len(max_pix_data):
         self.draw_max_pix_timer.start()
         self.max_pix_layer = self.pyslip.AddPointLayer(
           max_pix_data, color="pink", name="<max_pix_layer>",
@@ -715,7 +718,7 @@ class SpotFrame(XrayFrame) :
           renderer = self.pyslip.LightweightDrawPointLayer,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
         self.draw_max_pix_timer.stop()
-      if True:
+      if len(vector_data) and len(vector_text_data):
         self.vector_layer = self.pyslip.AddPolygonLayer(
           vector_data, map_rel=True, visible=True,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
