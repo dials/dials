@@ -1,0 +1,11 @@
+{% extends "report.html" %}
+
+{% block external_dependencies %}
+<script src="{{ static_dir }}/js/jquery-1.12.0.min.js"></script>
+<script src="{{ static_dir }}/js/plotly-latest.min.js"></script>
+<script src="{{ static_dir }}/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="{{ static_dir }}/katex/katex.min.js"></script>
+<script type="text/javascript" src="{{ static_dir }}/katex/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="{{ static_dir }}/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ static_dir }}/katex/katex.min.css">
+{% endblock external_dependencies %}

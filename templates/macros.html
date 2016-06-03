@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+
+{% macro table(rows, has_column_header=false, has_row_header=false) -%}
+    <div class="table-responsive">
+        <table class="table table-hover table-condensed">
+            {% for row in rows %}
+            {% set outer_loop = loop %}
+            <tr>
+            {% for item in row %}
+                {% if (outer_loop.first and has_row_header) or
+                      (loop.first and has_column_header) %}
+                    <th>{{ item }}</th>
+                {% else %}
+                    <td>{{ item }}</td>
+                {% endif %}
+            {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+{%- endmacro %}
+
+{% macro plotly_graph(div_id, json_data) -%}
+    <div class="col-xs-6 col-sm-6 col-md-4 plot" id="{{ div_id }}"></div>
+    <script>
+        var graphs_{{ div_id }} = {{ json_data }};
+        Plotly.newPlot({{ div_id }}, graphs_{{ div_id }}.data, graphs_{{ div_id }}.layout);
+    </script>
+{%- endmacro %}
+
+{% macro panel(panel_title, panel_id, graphs) -%}
+<div class="panel panel-default">
+    <div class="panel-heading" data-toggle="collapse" href="#collapse_{{ panel_id }}">
+        <h4 class="panel-title">
+            <a>{{ panel_title }}</a>
+        </h4>
+    </div>
+    <div id="collapse_{{ panel_id }}" class="panel-collapse collapse">
+        <div class="panel-body">
+            <div class="container-fluid">
+                {% for div_id, json_data in graphs.iteritems() %}
+                    {{ plotly_graph(div_id, json_data) }}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{%- endmacro %}

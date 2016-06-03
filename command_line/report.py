@@ -2294,94 +2294,46 @@ class Analyser(object):
       json_data.update(
         {'strong': {}, 'centroid': {}, 'intensity': {}, 'reference': {}})
 
-    crystal_html = ''
-    experimental_geometry_html = ''
+    crystal_table = None
+    expt_geom_table = None
     if experiments is not None:
       analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
       json_data.update(analyse(experiments))
-      crystal_html, experimental_geometry_html = self.experiments_html(
-        experiments)
-
-    from dials.report import html_report
+      crystal_table, expt_geom_table = self.experiments_table(experiments)
 
     if self.params.output.html is not None:
 
-      plotly_graphs = {}
-      for grouping in json_data.keys():
-        plotly_graphs[grouping] = []
-        for graph in json_data[grouping].keys():
-          plotly_graphs[grouping].append(
-            html_report.plotly_graph(json_data[grouping][graph], graph))
+      from jinja2 import Environment, ChoiceLoader, PackageLoader
+      loader = ChoiceLoader([PackageLoader('dials', 'templates'),
+                             PackageLoader('dials', 'static', encoding='utf-8')])
+      env = Environment(loader=loader)
 
-      report = html_report.html_report(
-        external_dependencies=self.params.output.external_dependencies)
+      import json
+      graphs = OrderedDict()
+      for k, v in json_data.iteritems():
+        graph_group = OrderedDict()
+        for kk, vv in v.iteritems():
+          graph_group[kk] = json.dumps(vv)
+        graphs[k] = graph_group
 
-      page_header = html_report.page_header('DIALS analysis report')
-      report.add_content(page_header)
+      import libtbx.load_env
+      static_dir = libtbx.env.find_in_repositories('dials/static')
 
-      # Experiments panel
-
-      expt_panel = html_report.panel('Experiments', 'expt', show=True)
-      expt_table = html_report.table_responsive(crystal_html)
-      expt_panel.add_content(expt_table)
-
-      geom_panel = html_report.panel('Experimental geometry', 'geom')
-      geom_table = html_report.table_responsive(experimental_geometry_html)
-      geom_panel.add_content(geom_table)
-
-      scan_varying_panel = html_report.panel(
-        'Analysis of scan-varying crystal model', 'scan_varying')
-      container = html_report.container_fluid()
-      for graph in plotly_graphs['scan_varying']:
-        container.add_content(graph)
-      scan_varying_panel.add_content(container)
-
-      expts_panel_group = html_report.panel_group(
-        [geom_panel, scan_varying_panel])
-      expt_panel.add_content(expts_panel_group)
-
-      experiments_panel_group = html_report.panel_group([expt_panel])
-      report.add_content(experiments_panel_group)
-
-      # Dials analysis plots panel
-
-      panels = []
-
-      panel = html_report.panel('Analysis of strong reflections', 'strong')
-      container = html_report.container_fluid()
-      for graph in plotly_graphs['strong']:
-        container.add_content(graph)
-      panel.add_content(container)
-      panels.append(panel)
-
-      panel = html_report.panel('Analysis of reflection centroids', 'centroids')
-      container = html_report.container_fluid()
-      for graph in plotly_graphs['centroid']:
-        container.add_content(graph)
-      panel.add_content(container)
-      panels.append(panel)
-
-      panel = html_report.panel('Analysis of reflection intensities', 'intensity')
-      container = html_report.container_fluid()
-      for graph in plotly_graphs['intensity']:
-        container.add_content(graph)
-      panel.add_content(container)
-      panels.append(panel)
-
-      panel = html_report.panel('Analysis of reference profiles', 'reference')
-      container = html_report.container_fluid()
-      for graph in plotly_graphs['reference']:
-        container.add_content(graph)
-      panel.add_content(container)
-      panels.append(panel)
-
-      analysis_panel_group = html_report.panel_group(panels)
-      div = html_report.div()
-      div.add_content(html_report.raw_html('<h2>DIALS analysis plots</h2>'))
-      div.add_content(analysis_panel_group)
-      report.add_content(div)
-
-      html = report.html()
+      if self.params.output.external_dependencies == 'local':
+        template = env.get_template('report_local_dep.html')
+      elif self.params.output.external_dependencies == 'embed':
+        template = env.get_template('report_embed_dep.html')
+      else:
+        template = env.get_template('report.html')
+      html = template.render(page_title='DIALS analysis report',
+                             scan_varying_graphs=graphs['scan_varying'],
+                             strong_graphs=graphs['strong'],
+                             centroid_graphs=graphs['centroid'],
+                             intensity_graphs=graphs['intensity'],
+                             reference_graphs=graphs['reference'],
+                             crystal_table=crystal_table,
+                             geometry_table=expt_geom_table,
+                             static_dir=static_dir)
 
       print "Writing html report to: %s" %self.params.output.html
       with open(self.params.output.html, 'wb') as f:
@@ -2393,7 +2345,7 @@ class Analyser(object):
       with open(self.params.output.json, 'wb') as f:
         json.dump(json_data, f)
 
-  def experiments_html(self, experiments):
+  def experiments_table(self, experiments):
     assert experiments is not None
 
     crystal_table = []
@@ -2484,16 +2436,7 @@ class Analyser(object):
         while len(table[i_row]) < 5:
           table[i_row] = list(table[i_row]) + ['']
 
-    from xia2.lib.tabulate import tabulate
-    experimental_geometry_html = tabulate(expt_geom_table, tablefmt='html')
-    experimental_geometry_html = experimental_geometry_html.replace(
-      '<table>', '<table class="table table-hover table-condensed">')
-
-    crystal_html = tabulate(crystal_table, tablefmt='html')
-    crystal_html = crystal_html.replace(
-      '<table>', '<table class="table table-hover table-condensed">')
-
-    return crystal_html, experimental_geometry_html
+    return crystal_table, expt_geom_table
 
 
 class Script(object):

@@ -1,0 +1,50 @@
+{% extends "report_base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ page_title }}</h1>
+</div>
+
+<div class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-heading" data-toggle="collapse" href="#collapse_expt">
+            <h4 class="panel-title">
+                <a>Experiments</a>
+            </h4>
+        </div>
+        <div id="collapse_expt" class="panel-collapse collapse in">
+            <div class="panel-body">
+                {{ macros.table(crystal_table) }}
+                <div class="panel-group">
+                    <div class="panel panel-default">
+                        <div class="panel-heading" data-toggle="collapse" href="#collapse_geom">
+                            <h4 class="panel-title">
+                                <a>Experimental geometry</a>
+                            </h4>
+                        </div>
+                        <div id="collapse_geom" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                {{ macros.table(geometry_table) }}
+                            </div>
+                        </div>
+                    </div>
+                    {{ macros.panel('Analysis of scan-varying crystal model',
+                                    'scan_varying', scan_varying_graphs) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <h2>DIALS analysis plots</h2>
+
+    <div class="panel-group">
+        {{ macros.panel('Analysis of strong reflections', 'strong', strong_graphs) }}
+        {{ macros.panel('Analysis of reflection centroids', 'centroid', centroid_graphs) }}
+        {{ macros.panel('Analysis of reflection intensities', 'intensity', intensity_graphs) }}
+        {{ macros.panel('Analysis of reference profiles', 'reference', reference_graphs) }}
+    </div>
+
+</div>
+
+{% endblock %}

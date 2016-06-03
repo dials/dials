@@ -1,0 +1,25 @@
+{% extends "report.html" %}
+
+{% block external_dependencies %}
+<script>
+    {% include "js/jquery-1.12.0.min.js" %}
+</script>
+<script>
+    {% include "js/plotly-latest.min.js" %}
+</script>
+<script>
+    {% include "js/bootstrap.min.js" %}
+</script>
+<script>
+    {% include "katex/katex.min.js" %}
+</script>
+<script>
+    {% include "katex/contrib/auto-render.min.js" %}
+</script>
+<style type="text/css">
+    {% include "css/bootstrap.min.css" %}
+</style>
+<style type="text/css">
+    {% include "katex/katex.min.css" %}
+</style>
+{% endblock external_dependencies %}
