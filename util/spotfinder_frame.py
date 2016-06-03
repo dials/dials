@@ -325,7 +325,8 @@ class SpotFrame(XrayFrame) :
       self.image_chooser.SetClientData(
         self.image_chooser.GetCount() - 1, key)
 
-    super(SpotFrame, self).load_image(file_name_or_data)
+    super(SpotFrame, self).load_image(
+      file_name_or_data, get_raw_data=self.get_raw_data)
 
   def OnShowSettings (self, event) :
     if self.settings_frame is None:
@@ -494,12 +495,12 @@ class SpotFrame(XrayFrame) :
       self.update_statusbar() # XXX Not always working?
       self.Layout()
 
-  def show_filters(self):
+  def get_raw_data(self, image):
     from dials.algorithms.image.threshold import KabschDebug
     from dials.array_family import flex
 
-    image = self.pyslip.tiles.raw_image
     detector = image.get_detector()
+    image.set_raw_data(None)
     raw_data = image.get_raw_data()
     if not isinstance(raw_data, tuple):
       raw_data = (raw_data,)
@@ -537,43 +538,46 @@ class SpotFrame(XrayFrame) :
 
       if self.settings.show_mean_filter:
         mean = [kabsch.mean() for kabsch in kabsch_debug_list]
-        self.pyslip.tiles.set_image_data(mean)
+        raw_data = mean
       elif self.settings.show_variance_filter:
         variance = [kabsch.variance() for kabsch in kabsch_debug_list]
-        self.pyslip.tiles.set_image_data(variance)
+        raw_data = variance
       elif self.settings.show_dispersion:
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
-        self.pyslip.tiles.set_image_data(cv)
+        raw_data = cv
       elif self.settings.show_sigma_b_filter:
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         cv_mask = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
         cv_mask = [mask.as_1d().as_double() for mask in cv_mask]
         for i, mask in enumerate(cv_mask):
           mask.reshape(cv[i].accessor())
-        self.pyslip.tiles.set_image_data(cv_mask)
+        raw_data = cv_mask
       elif self.settings.show_sigma_s_filter:
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         value_mask = [kabsch.value_mask() for kabsch in kabsch_debug_list]
         value_mask = [mask.as_1d().as_double() for mask in value_mask]
         for i, mask in enumerate(value_mask):
           mask.reshape(cv[i].accessor())
-        self.pyslip.tiles.set_image_data(value_mask)
+        raw_data = value_mask
       elif self.settings.show_global_threshold_filter:
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         global_mask = [kabsch.global_mask() for kabsch in kabsch_debug_list]
         global_mask = [mask.as_1d().as_double() for mask in global_mask]
         for i, mask in enumerate(global_mask):
           mask.reshape(cv[i].accessor())
-        self.pyslip.tiles.set_image_data(global_mask)
+        raw_data = global_mask
       elif self.settings.show_threshold_map:
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
         final_mask = [mask.as_1d().as_double() for mask in final_mask]
         for i, mask in enumerate(final_mask):
           mask.reshape(cv[i].accessor())
-        self.pyslip.tiles.set_image_data(final_mask)
-    else:
-      self.pyslip.tiles.set_image_data(raw_data)
+        raw_data = final_mask
+    return tuple(raw_data)
+
+  def show_filters(self):
+    raw_data = self.get_raw_data(self.pyslip.tiles.raw_image)
+    self.pyslip.tiles.set_image_data(raw_data)
     self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
     self.update_statusbar() # XXX Not always working?
     self.Layout()
@@ -724,8 +728,8 @@ class SpotFrame(XrayFrame) :
           name='<vector_text_layer>',
           colour='#F62817')
     self.sum_images()
-    if self.params.sum_images == 1:
-      self.show_filters()
+    #if self.params.sum_images == 1:
+      #self.show_filters()
     if self.settings.show_resolution_rings:
       self.draw_resolution_rings()
     elif self.settings.show_ice_rings:
@@ -1369,4 +1373,4 @@ class SpotSettingsPanel (SettingsPanel) :
       else:
         btn.SetValue(False)
 
-    self.GetParent().GetParent().update_settings(layout=False)
+    self.GetParent().GetParent().show_filters()
