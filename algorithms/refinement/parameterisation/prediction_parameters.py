@@ -7,17 +7,19 @@
 #  included in the root directory of this package.
 #
 
-#### Python and general cctbx imports
-
 from __future__ import division
 from scitbx import matrix
-
-#### DIALS imports
-
 from dials.array_family import flex
 
-"""This version of PredictionParameterisation vectorises calculations over
-reflections, using flex arrays"""
+"""The PredictionParameterisation class ties together parameterisations for
+individual experimental models: beam, crystal orientation, crystal unit cell
+and detector into a parameterisation for the reflection prediction equation.
+Methods are provided to get and set the global list of parameters in a defined
+order and calculate the gradients of the predicted centroids with respect to
+the global parameters. A concrete version of this class is provided for
+scan-static reflection prediction for rotation data, where the predicted
+centroid is expressed as X, Y, phi. Other versions of the class are defined
+elsewhere."""
 
 class PredictionParameterisation(object):
   """
@@ -33,24 +35,16 @@ class PredictionParameterisation(object):
   expressed in detector space (X, Y, phi) or orthogonalised reciprocal space.
 
   It is assumed that the provided model parameterisations will be one of four
-  types:
+  types (the goniometer is not yet parameterised):
 
   * Detector parameterisation
   * Beam parameterisation
   * Crystal orientation parameterisation
   * Crystal unit cell parameterisation
 
-  One of each must be supplied for each Experiment. These could be satisfied by
-  a dummy class if no parameterisation is desired for some model.
-
-  We also need access to the underlying models that are parameterised. The
-  model parameterisation objects do not provide access to these models as it is
-  not their job to do so. Instead we keep a separate reference to an
-  ExperimentList that allows access to the relevant models.
-
-  The goniometer is not yet parameterised, but we need it for the equations if
-  we are doing parameterisation in X, Y, Phi space. Conversely, if
-  parameterisation is only in X, Y space, the goniometer model is optional.
+  No more than one of each type must be supplied for each Experiment. Omitting
+  a parameterisation for any of the types is allowed, which implies that the
+  attached model is fixed in refinement of that Experiment.
 
   A class implementing PredictionParameterisation is used by a Refinery
   object directly, which takes the list of parameters, and indirectly via a
@@ -103,7 +97,6 @@ class PredictionParameterisation(object):
     from collections import namedtuple
     ParamSet = namedtuple('ParamSet', ['beam_param', 'xl_ori_param',
                                          'xl_uc_param', 'det_param'])
-
     self._exp_to_param = {i: ParamSet(e2bp.get(i), e2xop.get(i),
         e2xucp.get(i), e2dp.get(i)) for i, _ in enumerate(experiments)}
 
@@ -125,7 +118,7 @@ class PredictionParameterisation(object):
     return self._length
 
   def get_param_vals(self):
-    """return a concatenated list of parameters from each of the components
+    """Return a concatenated list of parameters from each of the components
     in the global model"""
 
     global_p_list = []
@@ -157,8 +150,7 @@ class PredictionParameterisation(object):
 
   def get_param_names(self):
     """Return a list of the names of parameters in the order they are
-    concatenated. Useful for output to log files and debugging. Use 1-based
-    indexing for indices in the names"""
+    concatenated. Use 1-based indexing for indices in the names."""
 
     param_names = []
     if self._detector_parameterisations:
@@ -193,9 +185,8 @@ class PredictionParameterisation(object):
 
   def set_param_vals(self, vals):
     """Set the parameter values of the contained models to the values in
-    vals. This list must be of the same length as the result of
-    get_param_vals and must contain the parameter values in the same order!
-    This order is to be maintained by any sensible refinement engine."""
+    vals. This list must be of the same length as the result of get_param_vals
+    and must contain the parameter values in the same order."""
 
     assert len(vals) == len(self)
     it = iter(vals)
@@ -220,8 +211,7 @@ class PredictionParameterisation(object):
     """Set the estimated standard deviations of parameter values of the
     contained models to the values in esds. This list must be of the same length
     as the result of get_param_vals and must contain the parameter values in the
-    same order! This order is to be maintained by any sensible refinement
-    engine."""
+    same order."""
 
     assert len(esds) == len(self)
     it = iter(esds)
@@ -243,12 +233,11 @@ class PredictionParameterisation(object):
       model.set_param_esds(tmp)
 
   def calculate_model_state_uncertainties(self, var_cov):
-    """
-    Take the variance-covariance matrix of all free parameters calculated by
-    the minimisation engine. For each parameterisation in the global model,
-    extract the subset of this matrix for the associated block of parameters.
-    Pass this on to the relevant model parameterisation to calculate its own
-    uncertainty of state."""
+    """Take a variance-covariance matrix of all free parameters (probably
+    calculated by a minimisation engine). For each parameterisation in the
+    global model, extract the subset of this matrix for the associated block
+    of parameters. Pass this on to the relevant model parameterisation to
+    calculate its own uncertainty of state."""
 
     i = 0
     for model in self._detector_parameterisations:
@@ -302,19 +291,13 @@ class PredictionParameterisation(object):
     return
 
   def get_gradients(self, reflections, callback=None):
-    """
-    Calculate gradients of the prediction formula with respect to each
+    """Calculate gradients of the prediction formula with respect to each
     of the parameters of the contained models, for all of the reflections.
+    This method sets up required quantities relevant to the current step of
+    refinement and then loops over the parameterisations of each type extending
+    a results list each time."""
 
-    To be implemented by a derived class, which determines the space of the
-    prediction formula (e.g. we calculate dX/dp, dY/dp, dphi/dp for the
-    prediction formula for a rotation scan expressed in detector space, but
-    dX/dp, dY/dp, dDeltaPsi/dp for stills type prediction.
-    """
-
-    ### Calculate various quantities of interest for the reflections
-
-    # Set up arrays of values for each reflection
+    # Set up arrays of quantities of interest for each reflection
     self._nref = len(reflections)
     self._D = flex.mat3_double(self._nref)
     self._s0 = flex.vec3_double(self._nref)
@@ -323,10 +306,10 @@ class PredictionParameterisation(object):
     self._axis = flex.vec3_double(self._nref)
     self._fixed_rotation = flex.mat3_double(self._nref)
 
-    # set up experiment to index mapping
+    # Set up experiment to index mapping
     self._experiment_to_idx = []
 
-    # populate values in these arrays
+    # Populate values in these arrays
     for iexp, exp in enumerate(self._experiments):
 
       sel = reflections['id'] == iexp
@@ -343,49 +326,47 @@ class PredictionParameterisation(object):
         self._axis.set_selected(sel, exp.goniometer.get_rotation_axis())
         self._fixed_rotation.set_selected(sel, exp.goniometer.get_fixed_rotation())
 
-    # derived values
+    # Other derived values
+    self._h = reflections['miller_index'].as_vec3_double()
+    self._UB = self._U * self._B
     self._s1 = reflections['s1']
     self._pv = self._D * self._s1 # 'projection vector' for the ray along s1.
-    self._UB = self._U * self._B
-    self._h = reflections['miller_index'].as_vec3_double()
 
-    # also need quantities derived from pv, precalculated for efficiency
+    # Quantities derived from pv, precalculated for efficiency
     u, v, w = self._pv.parts()
-    self._w_inv = 1/w
+    self._w_inv = 1./w
     self._u_w_inv = u * self._w_inv
     self._v_w_inv = v * self._w_inv
 
-    # reset a pointer to the parameter number
+    # Reset a pointer to the parameter number
     self._iparam = 0
 
-    # do additional setup specified by derived classes
+    # Do additional setup specified by derived classes
     self._local_setup(reflections)
 
     # Set up empty list in which to store gradients
     results = []
 
-    # loop over detector parameterisations
+    # loop over detector parameterisations and extend results
     results = self._grads_detector_loop(reflections, results, callback)
 
-    # loop over the beam parameterisations
+    # loop over the beam parameterisations and extend results
     results = self._grads_beam_loop(reflections, results, callback)
 
-    # loop over the crystal orientation parameterisations
+    # loop over the crystal orientation parameterisations and extend results
     results = self._grads_xl_orientation_loop(reflections, results, callback)
 
-    # loop over the crystal unit cell parameterisations
+    # loop over the crystal unit cell parameterisations and extend results
     results = self._grads_xl_unit_cell_loop(reflections, results, callback)
 
     return results
 
   @staticmethod
-  def _extend_gradient_vectors(results, m, n,
-                               keys=("dX_dp", "dY_dp", "dZ_dp")):
+  def _extend_gradient_vectors(results, m, n, keys=("dX_dp", "dY_dp", "dZ_dp")):
     """Extend results list by n empty results. These will each be a dictionary
     indexed by the given keys. The value for each key will be an empty vector of
-    size m, to store the derivatives of n parameters, for m reflections.
-    This method may be overriden by a derived class to e.g. use sparse
-    vectors"""
+    size m, to store the derivatives of n parameters, for m reflections. This
+    method may be overriden by a derived class to e.g. use sparse vectors"""
 
     new_results = []
     for i in range(n):
@@ -398,7 +379,7 @@ class PredictionParameterisation(object):
     return results
 
   def _get_model_data_for_experiment(self, experiment, reflections):
-    """helper function to return model data s0, U, B and D for a particular
+    """Helper function to return model data s0, U, B and D for a particular
     experiment. D is always returned as an array the same length as the
     reflections for the experiment, whereas here U, B and s0 are returned as
     single matrices or vectors. In the scan-varying overload these will all be
@@ -418,8 +399,9 @@ class PredictionParameterisation(object):
 
   # The detector derivatives calculation is shared by scans and stills type
   # prediction, so this method is here, in the base class.
-  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None, dd_ddet_p=None):
-    """helper function to convert derivatives of the detector state to
+  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None,
+                            dd_ddet_p=None):
+    """Helper function to convert derivatives of the detector state to
     derivatives of the vector pv. Derivatives that would all be null vectors
     are replaced with None"""
 
@@ -699,7 +681,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     # r is the reciprocal lattice vector, in the lab frame
     self._phi_calc = reflections['xyzcal.mm'].parts()[2]
-    self._r = (self._fixed_rotation * (self._UB * self._h)).rotate_around_origin(self._axis, self._phi_calc)
+    q = self._fixed_rotation * (self._UB * self._h)
+    self._r = q.rotate_around_origin(self._axis, self._phi_calc)
 
     # All of the derivatives of phi have a common denominator, given by
     # (e X r).s0, where e is the rotation axis. Calculate this once, here.
@@ -749,8 +732,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
   def _beam_derivatives(self, isel, parameterisation=None,
     ds0_dbeam_p=None, reflections=None):
-    """helper function to extend the derivatives lists by
-    derivatives of the beam parameterisations"""
+    """helper function to extend the derivatives lists by derivatives of the
+    beam parameterisations."""
 
     # Get required data
     r = self._r.select(isel)
@@ -788,8 +771,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
   def _xl_orientation_derivatives(self, isel, parameterisation=None,
     dU_dxlo_p=None, reflections=None):
-    """helper function to extend the derivatives lists by
-    derivatives of the crystal orientation parameterisations"""
+    """helper function to extend the derivatives lists by derivatives of the
+    crystal orientation parameterisations"""
 
     # Get required data
     axis = self._axis.select(isel)
@@ -904,4 +887,5 @@ class XYPhiPredictionParameterisationSparse(SparseGradientVectorMixin,
   """A version of XYPhiPredictionParameterisation that uses a sparse matrix
   data structure for memory efficiency when there are a large number of
   Experiments"""
+
   pass

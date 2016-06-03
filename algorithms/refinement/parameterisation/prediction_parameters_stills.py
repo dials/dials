@@ -7,12 +7,7 @@
 #  included in the root directory of this package.
 #
 
-#### Python and general cctbx imports
-
 from __future__ import division
-
-#### DIALS imports
-
 from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.prediction_parameters \
   import PredictionParameterisation, SparseGradientVectorMixin
@@ -440,17 +435,18 @@ from dials_refinement_helpers_ext import dRq_de
 
 
 class StillsPredictionParameterisation(PredictionParameterisation):
-  """
-  Concrete class that inherits functionality of the PredictionParameterisation
-  parent class and provides a detector space implementation of the get_gradients
-  function for still images.
-  """
+  """Concrete class that inherits functionality of the
+  PredictionParameterisation parent class and provides a detector space
+  implementation of the get_gradients function for still images. Gradients of
+  the minimum rotation to the Ewald sphere, DeltaPsi, are calculated for use
+  as a restraint in refinement"""
 
   _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
   def _local_setup(self, reflections):
     """Setup additional attributes used in gradients calculation. These are
-    specific to stills-type prediction parameterisations"""
+    specific to the stills-type prediction parameterisations that rotates the
+    relp q onto the Ewald sphere by an angle DeltaPsi before prediction"""
 
     self._DeltaPsi = reflections['delpsical.rad']
 
@@ -541,8 +537,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
   def _xl_orientation_derivatives(self, isel, parameterisation=None,
     reflections=None):
-    """helper function to extend the derivatives lists by
-    derivatives of the crystal orientation parameterisations"""
+    """helper function to extend the derivatives lists by derivatives of the
+    crystal orientation parameterisations"""
 
     # Get required data
     B = self._B.select(isel)
@@ -611,8 +607,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
   def _xl_unit_cell_derivatives(self, isel, parameterisation=None,
     reflections=None):
-    """helper function to extend the derivatives lists by
-    derivatives of the crystal unit cell parameterisations"""
+    """helper function to extend the derivatives lists by derivatives of the
+    crystal unit cell parameterisations"""
 
     # Get required data
     U = self._U.select(isel)
@@ -700,7 +696,6 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return dX_dp, dY_dp
 
-
 class StillsPredictionParameterisationSparse(SparseGradientVectorMixin,
   StillsPredictionParameterisation):
   """A version of StillsPredictionParameterisation that uses a sparse matrix
@@ -711,19 +706,22 @@ class StillsPredictionParameterisationSparse(SparseGradientVectorMixin,
 
 class SphericalRelpStillsPredictionParameterisation(
   StillsPredictionParameterisation):
-  '''Modified StillsPredictionParameterisation for the model that assumes
+  """Modified StillsPredictionParameterisation for the model that assumes
   relps are spherical and prediction requires that this sphere intersects the
-  Ewald sphere, not that the relp centre is rotated onto the Ewald sphere
-  '''
+  Ewald sphere, not that the relp centre is rotated onto the Ewald sphere.
+  Gradients of DeltaPsi are still calculated for use as a restraint."""
 
   def _local_setup(self, reflections):
+    """Setup additional attributes used in gradients calculation. These are
+    specific to the stills-type prediction parameterisations that leaves the
+    relp q generally off the Ewald sphere but assumes it has spherical extent
+    which intersects the Ewald sphere. Gradients of the minimum rotation
+    angle DeltaPsi are still calculated for use as a restraint"""
 
     self._DeltaPsi = reflections['delpsical.rad']
 
     # q is the reciprocal lattice vector, in the lab frame
     self._q = (self._UB * self._h)
-    #self._q_scalar = self._q.norms()
-    #self._qq = self._q_scalar * self._q_scalar
 
     # quantities involving the direct beam vector
     self._q_s0 = self._q + self._s0

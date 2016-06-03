@@ -7,23 +7,18 @@
 #  included in the root directory of this package.
 #
 
-# Python imports
 from __future__ import division
 from math import floor
-
-# cctbx imports
 from scitbx import matrix
-
-# dials imports
-#from dials_refinement_helpers_ext import *
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     XYPhiPredictionParameterisation, SparseGradientVectorMixin
 
 from dials.array_family import flex
 
 class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
-  """Support model parameterisations that vary with time (via the proxy of
-  "observed image number")"""
+  """An extension of the rotation scans version of the
+  PredictionParameterisation class that supports model parameterisations that
+  vary smoothly with the observed image number"""
 
   def __init__(self,
                experiments,
@@ -41,12 +36,17 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     if xl_unit_cell_parameterisations is None:
       xl_unit_cell_parameterisations = []
 
-    # determine once which types of parameterisations are scan-varying
-    self._varying_detectors = any(hasattr(p, 'num_sets') for p in detector_parameterisations)
-    self._varying_beams = any(hasattr(p, 'num_sets') for p in beam_parameterisations)
-    self._varying_xl_orientations = any(hasattr(p, 'num_sets') for p in xl_orientation_parameterisations)
-    self._varying_xl_unit_cells = any(hasattr(p, 'num_sets') for p in xl_unit_cell_parameterisations)
+    # determine once here which types of parameterisations are scan-varying
+    self._varying_detectors = any(hasattr(p, 'num_sets')
+      for p in detector_parameterisations)
+    self._varying_beams = any(hasattr(p, 'num_sets')
+      for p in beam_parameterisations)
+    self._varying_xl_orientations = any(hasattr(p, 'num_sets')
+      for p in xl_orientation_parameterisations)
+    self._varying_xl_unit_cells = any(hasattr(p, 'num_sets')
+      for p in xl_unit_cell_parameterisations)
 
+    # set up base class
     super(ScanVaryingPredictionParameterisation, self).__init__(
       experiments,
       detector_parameterisations = detector_parameterisations,
@@ -79,9 +79,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return xl_ucp
 
   def _get_beam_parameterisation(self, experiment_id):
-    """Return the beam parameterisation for the requested
-    experiment number (or None if the beam in that experiment
-    is not parameterised)"""
+    """Return the beam parameterisation for the requested experiment number
+    (or None if the beam in that experiment is not parameterised)"""
 
     param_set = self._exp_to_param[experiment_id]
     bp = None
@@ -91,9 +90,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return bp
 
   def _get_detector_parameterisation(self, experiment_id):
-    """Return the detector parameterisation for the requested
-    experiment number (or None if the detector in that experiment
-    is not parameterised)"""
+    """Return the detector parameterisation for the requested experiment number
+    (or None if the detector in that experiment is not parameterised)"""
 
     param_set = self._exp_to_param[experiment_id]
     dp = None
@@ -108,8 +106,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     taking care of whether it is a scan-varying parameterisation or not"""
 
     if parameterisation is None: return None
-    if hasattr(parameterisation, 'num_sets'):
-      parameterisation.compose(frame)
+    if hasattr(parameterisation, 'num_sets'): parameterisation.compose(frame)
     if multi_state_elt is None:
       state = parameterisation.get_state()
     else:
@@ -117,6 +114,9 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return state
 
   def _prepare_for_compose(self, reflections):
+    """Add columns to the reflection table to hold the varying state matrices
+    or vectors for the experimental models, if required. Also add columns for
+    the derivatives of states that are scan-varying"""
 
     nref = len(reflections)
     # set columns if needed
@@ -159,9 +159,9 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return
 
   def compose(self, reflections):
-    """Compose scan-varying crystal parameterisations at the specified image
-    number, for the specified experiment, for all reflections. Put the U, B and
-    UB matrices in the reflection table, and cache the derivatives."""
+    """Compose scan-varying crystal parameterisations at each observed image
+    number, for each experiment, for all reflections. Put the U, B and UB
+    matrices in the reflection table, and cache the derivatives."""
 
     self._prepare_for_compose(reflections)
 
@@ -235,11 +235,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return
 
+  # called by refiner.run for setting the crystal scan points
   def get_UB(self, obs_image_number, experiment_id):
     """Extract the setting matrix from the contained scan-dependent crystal
     parameterisations at specified image number."""
-
-    # called by refiner.run for setting the crystal scan points
 
     # identify which crystal parameterisations to use for this experiment
     xl_op = self._get_xl_orientation_parameterisation(experiment_id)
@@ -248,7 +247,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     # model states at current frame
     U = self._get_state_from_parameterisation(xl_op, obs_image_number)
     if U is None: U = self._experiments[experiment_id].crystal.get_U()
-
     B = self._get_state_from_parameterisation(xl_ucp, obs_image_number)
     if B is None: B = self._experiments[experiment_id].crystal.get_B()
 
@@ -294,12 +292,11 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
   def calculate_model_state_uncertainties(self, var_cov=None,
                                           obs_image_number=None,
                                           experiment_id=None):
-    """
-    Take the variance-covariance matrix of all free parameters calculated by
-    the minimisation engine. For each parameterisation in the global model,
-    extract the subset of this matrix for the associated block of parameters.
-    Pass this on to the relevant model parameterisation to calculate its own
-    uncertainty of state.
+    """Take a variance-covariance matrix of all free parameters (probably
+    calculated by a minimisation engine). For each parameterisation in the
+    global model, extract the subset of this matrix for the associated block
+    of parameters. Pass this on to the relevant model parameterisation to
+    calculate its own uncertainty of state.
 
     This scan-varying version should first be called with var_cov set but
     obs_image_number=None and experiment_id=None. This calls the scan-static
@@ -428,7 +425,8 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
               # if no reflections intersect this panel, skip calculation
               continue
 
-            dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt=panel_id)
+            dmat  = self._get_state_from_parameterisation(dp,
+              frame, multi_state_elt=panel_id)
             if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
             Dmat = exp.detector[panel_id].get_D_matrix()
             reflections['d_matrix'].set_selected(subsel2, dmat)
