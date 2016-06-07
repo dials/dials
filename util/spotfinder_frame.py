@@ -42,6 +42,8 @@ class SpotFrame(XrayFrame) :
     self._ring_layer = None
     self._resolution_text_layer = None
     self.sel_image_layer = None
+    self.mask_layer = None
+    self.mask = self.params.mask
 
     from libtbx.utils import time_log
     self.show_all_pix_timer = time_log("show_all_pix")
@@ -723,6 +725,17 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<vector_text_layer>',
           colour='#F62817')
+    if self.mask:
+      if self.mask_layer is not None:
+        self.pyslip.DeleteLayer(self.mask_layer)
+        self.mask_layer = None
+      all_mask_data = self.get_mask_data()
+      self.mask_layer = self.pyslip.AddPointLayer(
+        all_mask_data, name="<mask_layer>",
+        radius=3,
+        renderer = self.pyslip.DrawPointLayer,
+        show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
+
     self.sum_images()
     if self.params.sum_images == 1:
       self.show_filters()
@@ -734,6 +747,28 @@ class SpotFrame(XrayFrame) :
       space_group = sgtbx.space_group_info(number=194).group()
       self.draw_resolution_rings(unit_cell=unit_cell, space_group=space_group)
     self.drawUntrustedPolygons()
+
+  def get_mask_data(self):
+    from scitbx.array_family import flex
+    import math
+
+    if self.mask is None:
+      return
+
+    def map_coords(x, y, p):
+      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+          p, y - 0.5, x - 0.5)
+      return self.pyslip.tiles.picture_fast_slow_to_map_relative(
+        x, y)
+
+    all_mask_data = []
+    for p, mask_p in enumerate(self.mask):
+      for i in (~mask_p).iselection():
+        y, x = i//mask_p.focus()[1],i%mask_p.focus()[1]
+        assert not mask_p[y,x]
+        all_mask_data.append(map_coords(x + 0.5, y + 0.5, p))
+    return all_mask_data
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex

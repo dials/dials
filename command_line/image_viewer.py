@@ -82,6 +82,9 @@ image_viewer {
     .type = ints(value_min=0)
   d_min = None
     .type = float(value_min=0)
+  mask = None
+    .type = str
+    .help = path to mask pickle file
 }
 """)
 
@@ -112,7 +115,6 @@ class Script(object):
       crystals=self.crystals)
 
 if __name__ == '__main__':
-  import sys
   import wx # It is unclear why, but it is crucial that wx
             # is imported before the parser is run.
             # Otherwise viewer will crash when run with
@@ -157,6 +159,10 @@ if __name__ == '__main__':
     crystals = experiments.crystals()
   else:
     raise RuntimeError("No imageset could be constructed")
+
+  if params.image_viewer.mask is not None:
+    from libtbx import easy_pickle
+    params.image_viewer.mask = easy_pickle.load(params.image_viewer.mask)
 
   runner = Script(
     params=params.image_viewer,
