@@ -13,17 +13,11 @@ ii) you have sphinx and dependencies (docutils, etc.) installed in your
 iii) Install biopython if you don’t already have it (this is to populate the
    publications section):
 
-   $ curl http://biopython.org/DIST/biopython-1.65.tar.gz > biopython-1.65.tar.gz
-   $ tar -xzvf biopython-1.65.tar.gz
-   $ cd biopython-1.65
-   $ dials.python setup.py build install
+   $ libtbx.python -m pip install biopython
 
 iv) Get the alabaster sphinx theme:
 
-   $ curl https://pypi.python.org/packages/source/a/alabaster/alabaster-0.6.3.tar.gz > alabaster-0.6.3.tar.gz
-   $ tar -xzvf alabaster-0.6.3.tar.gz
-   $ cd alabaster-0.6.3
-   $ dials.python setup.py build install
+   $ libtbx.python -m pip install alabaster
 
 To update the DIALS webpages:
 
