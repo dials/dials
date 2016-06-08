@@ -42,6 +42,8 @@ class SpotFrame(XrayFrame) :
     self._ring_layer = None
     self._resolution_text_layer = None
     self.sel_image_layer = None
+    self.mask_layer = None
+    self.mask = self.params.mask
 
     from libtbx.utils import time_log
     self.show_all_pix_timer = time_log("show_all_pix")
@@ -723,6 +725,17 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<vector_text_layer>',
           colour='#F62817')
+    if self.mask:
+      if self.mask_layer is not None:
+        self.pyslip.DeleteLayer(self.mask_layer)
+        self.mask_layer = None
+      all_mask_data = self.get_mask_data()
+      self.mask_layer = self.pyslip.AddPointLayer(
+        all_mask_data, name="<mask_layer>",
+        radius=3,
+        renderer = self.pyslip.DrawPointLayer,
+        show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
+
     self.sum_images()
     if self.params.sum_images == 1:
       self.show_filters()
@@ -734,6 +747,28 @@ class SpotFrame(XrayFrame) :
       space_group = sgtbx.space_group_info(number=194).group()
       self.draw_resolution_rings(unit_cell=unit_cell, space_group=space_group)
     self.drawUntrustedPolygons()
+
+  def get_mask_data(self):
+    from scitbx.array_family import flex
+    import math
+
+    if self.mask is None:
+      return
+
+    def map_coords(x, y, p):
+      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+          p, y - 0.5, x - 0.5)
+      return self.pyslip.tiles.picture_fast_slow_to_map_relative(
+        x, y)
+
+    all_mask_data = []
+    for p, mask_p in enumerate(self.mask):
+      for i in (~mask_p).iselection():
+        y, x = i//mask_p.focus()[1],i%mask_p.focus()[1]
+        assert not mask_p[y,x]
+        all_mask_data.append(map_coords(x + 0.5, y + 0.5, p))
+    return all_mask_data
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
@@ -783,7 +818,10 @@ class SpotFrame(XrayFrame) :
       if ref_list.has_key('bbox'):
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
-        bbox_sel = (i_frame >= z0) & (i_frame < z1)
+        # ticket #107
+        n = self.params.sum_images - 1
+        # bbox_sel = (i_frame >= z0) & ((i_frame + n) < z1)
+        bbox_sel = ~ ((i_frame > z1) | ((i_frame + n) < z0))
         for reflection in ref_list.select(bbox_sel):
           x0, x1, y0, y1, z0, z1 = reflection['bbox']
           panel = reflection['panel']
@@ -791,11 +829,10 @@ class SpotFrame(XrayFrame) :
           ny = y1 - y0 # size of reflection box in y-direction
           #nz = z1 - z0 # number of frames this spot appears on
           if (self.settings.show_all_pix and reflection.has_key('shoebox')
-              and reflection['shoebox'].mask.size() > 0):
+              and reflection['shoebox'].mask.size() > 0 and n == 1):
             self.show_all_pix_timer.start()
             shoebox = reflection['shoebox']
             iz = i_frame - z0
-            #print i_frame, z0, iz
             if not reflection['id'] in all_pix_data:
               all_pix_data[reflection['id']] = []
 
@@ -851,9 +888,7 @@ class SpotFrame(XrayFrame) :
             offset, k = divmod(offset, shoebox.all()[2])
             offset, j = divmod(offset, shoebox.all()[1])
             offset, i = divmod(offset, shoebox.all()[0])
-            #assert offset == 0
             max_index = (i, j, k)
-            #assert shoebox[max_index] == flex.max(shoebox)
             if z0 + max_index[0] == i_frame:
               x, y = map_coords(x0 + max_index[2] + 0.5,
                                 y0 + max_index[1] + 0.5,
@@ -865,7 +900,10 @@ class SpotFrame(XrayFrame) :
               reflection.has_key('xyzobs.px.value')):
             self.show_ctr_mass_timer.start()
             centroid = reflection['xyzobs.px.value']
-            if math.floor(centroid[2]) == i_frame:
+            # ticket #107
+            n = self.params.sum_images - 1
+            if math.floor(centroid[2]) >= i_frame and \
+              math.ceil(centroid[2]) < (i_frame + n):
               x,y = map_coords(
                 centroid[0], centroid[1], reflection['panel'])
               xm1,ym1 = map_coords(

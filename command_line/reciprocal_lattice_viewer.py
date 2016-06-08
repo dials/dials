@@ -41,6 +41,10 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
   d_min = None
     .type = float(value_min=0.0)
+  z_min = None
+    .type = float
+  z_max = None
+    .type = float
   display = *all unindexed indexed
     .type = choice
   outlier_display = outliers inliers
@@ -53,7 +57,7 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
 """)
 
-def settings () :
+def settings():
   return phil_scope.fetch().extract()
 
 class render_3d(object):
@@ -141,6 +145,18 @@ class render_3d(object):
       reflections = reflections.select(d_spacings > self.settings.d_min)
     else:
       self.settings.d_min = flex.min(d_spacings)
+    if self.settings.z_min is not None:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      reflections = reflections.select(z >= self.settings.z_min)
+    else:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      self.settings.z_min = flex.min(z)
+    if self.settings.z_max is not None:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      reflections = reflections.select(z <= self.settings.z_max)
+    else:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      self.settings.z_max = flex.max(z)
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)
     colors = flex.vec3_double(len(points), (1,1,1))
@@ -179,16 +195,12 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.sizer.Add(self.settings_panel, 0, wx.EXPAND)
     self.create_viewer_panel()
     self.sizer.Add(self.viewer, 1, wx.EXPAND|wx.ALL)
-    #self.SetupToolbar()
-    #self.SetupMenus()
-    #self.add_view_specific_functions()
-    #self.SetMenuBar(self.menubar)
-    #self.toolbar.Realize()
     self.SetSizer(self.sizer)
     self.sizer.SetSizeHints(self)
     self.Bind(wx.EVT_CLOSE, self.OnClose, self)
     self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy, self)
     self.Bind(wx.EVT_ACTIVATE, self.OnActive)
+    self.viewer.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
     self.viewer.SetFocus()
 
   def load_models(self, imagesets, reflections):
@@ -213,6 +225,37 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
       self.parent.viewer = None
     event.Skip()
 
+  def OnKeyDown(self, event):
+    key = event.GetUnicodeKey()
+    if key == wx.WXK_NONE:
+      key = event.GetKeyCode()
+    dxs = {wx.WXK_LEFT:-1,
+           wx.WXK_RIGHT:+1,
+           wx.WXK_UP:0,
+           wx.WXK_DOWN:0}
+    dys = {wx.WXK_LEFT:0,
+           wx.WXK_RIGHT:0,
+           wx.WXK_UP:+1,
+           wx.WXK_DOWN:-1}
+
+    if key in dxs:
+      dx = dxs[key]
+      dy = dys[key]
+      if event.ShiftDown():
+        scale = 0.1
+      else:
+        scale = 1.0
+      self.do_Step(dx, dy, scale)
+
+  def do_Step(self, dx, dy, scale):
+    v = self.viewer
+    rc = v.rotation_center
+    glMatrixMode(GL_MODELVIEW)
+    gltbx.util.rotate_object_about_eye_x_and_y(
+      scale, rc[0], rc[1], rc[2],
+      dx, dy, 0, 0)
+    v.OnRedraw()
+
   def create_viewer_panel (self) :
     self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
       #orthographic=True
@@ -224,6 +267,8 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
   def set_points(self):
     render_3d.set_points(self)
     self.settings_panel.d_min_ctrl.SetValue(self.settings.d_min)
+    self.settings_panel.z_min_ctrl.SetValue(self.settings.z_min)
+    self.settings_panel.z_max_ctrl.SetValue(self.settings.z_max)
 
   def update_settings(self, *args, **kwds):
     detector = self.imagesets[0].get_detector()
@@ -266,6 +311,28 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.d_min_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.d_min_ctrl)
+
+    self.z_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+    self.z_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.z_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Min Z")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.z_min_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_min_ctrl)
+
+    self.z_max_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+    self.z_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.z_max_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Max Z")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.z_max_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_max_ctrl)
 
     ctrls = self.create_controls(
       setting="show_rotation_axis",
@@ -365,6 +432,8 @@ class settings_window (wxtbx.utils.SettingsPanel) :
 
   def OnChangeSettings(self, event):
     self.settings.d_min = self.d_min_ctrl.GetValue()
+    self.settings.z_min = self.z_min_ctrl.GetValue()
+    self.settings.z_max = self.z_max_ctrl.GetValue()
     self.settings.beam_centre = (
       self.beam_fast_ctrl.GetValue(), self.beam_slow_ctrl.GetValue())
     self.settings.marker_size = self.marker_size_ctrl.GetValue()
@@ -409,11 +478,8 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
   def set_points(self, points):
     self.points = points
     self.points_display_list = None
-    #self.draw_points()
     if self.minimum_covering_sphere is None:
       self.update_minimum_covering_sphere()
-    #if not self.GL_uninitialised:
-      #self.fit_into_viewport()
 
   def set_colors(self, colors):
     assert len(colors) == len(self.points)
@@ -440,9 +506,6 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
   #--- user input and settings
   def update_settings (self) :
     self.points_display_list = None
-    #self.DrawGL()
-    #if not self.GL_uninitialised:
-      #self.fit_into_viewport()
     self.Refresh()
 
   def update_minimum_covering_sphere(self):
@@ -472,10 +535,6 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
     glDisable(GL_LIGHTING)
     glColor3f(1.0, 1.0, 1.0)
-    #if (self.settings.black_background) :
-      #glColor3f(1.0, 1.0, 1.0)
-    #else :
-      #glColor3f(0.,0.,0.)
     glLineWidth(1.0)
     glBegin(GL_LINES)
     glVertex3f(0.,0.,0.)
