@@ -105,7 +105,7 @@ def generate_phil_scope():
         .type = int(value_min=1)
         .help = "The number of processes to use per cluster job"
 
-      chunksize = 20
+      chunksize = auto
         .type = int(value_min=1)
         .help = "The number of jobs to process per process"
     }
