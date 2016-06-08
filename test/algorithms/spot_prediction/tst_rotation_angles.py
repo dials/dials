@@ -1,20 +1,29 @@
 from __future__ import division
 
+import libtbx.load_env
+from os.path import realpath, dirname, join, isdir
+have_dials_regression = libtbx.env.has_module("dials_regression")
+if have_dials_regression:
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression", test=isdir)
+
 def run():
+  if not have_dials_regression:
+    print "Skipping test: dials_regression not available."
+    return
+
   from scitbx import matrix
   from iotbx.xds import xparm, integrate_hkl
   from dials.util import ioutil
   from math import ceil
   from dials.algorithms.spot_prediction import RotationAngles
-  from os.path import realpath, dirname, join
   import dxtbx
   from rstbx.cftbx.coordinate_frame_converter import \
       coordinate_frame_converter
 
   # The XDS files to read from
-  test_path = dirname(dirname(dirname(realpath(__file__))))
-  integrate_filename = join(test_path, 'data/sim_mx/INTEGRATE.HKL')
-  gxparm_filename = join(test_path, 'data/sim_mx/GXPARM.XDS')
+  integrate_filename = join(dials_regression, 'data/sim_mx/INTEGRATE.HKL')
+  gxparm_filename = join(dials_regression, 'data/sim_mx/GXPARM.XDS')
 
   # Read the XDS files
   integrate_handle = integrate_hkl.reader()

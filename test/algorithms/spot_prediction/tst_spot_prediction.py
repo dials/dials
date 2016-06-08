@@ -1,4 +1,12 @@
 from __future__ import division
+from os.path import realpath, dirname, join, isdir
+import libtbx.load_env
+
+
+have_dials_regression = libtbx.env.has_module("dials_regression")
+if have_dials_regression:
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression", test=isdir)
 
 class TestSpotPredictor:
 
@@ -9,16 +17,14 @@ class TestSpotPredictor:
     from iotbx.xds import xparm, integrate_hkl
     from dials.util import ioutil
     from math import ceil
-    from os.path import realpath, dirname, join
     import dxtbx
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
     from scitbx import matrix
 
     # The XDS files to read from
-    test_path = dirname(dirname(dirname(realpath(__file__))))
-    integrate_filename = join(test_path, 'data/sim_mx/INTEGRATE.HKL')
-    gxparm_filename = join(test_path, 'data/sim_mx/GXPARM.XDS')
+    integrate_filename = join(dials_regression, 'data/sim_mx/INTEGRATE.HKL')
+    gxparm_filename = join(dials_regression, 'data/sim_mx/GXPARM.XDS')
 
     # Read the XDS files
     self.integrate_handle = integrate_hkl.reader()
@@ -199,6 +205,9 @@ class TestSpotPredictor:
 
 if __name__ == '__main__':
   from dials.test import cd_auto
-  with cd_auto(__file__):
-    test = TestSpotPredictor()
-    test.run()
+  if have_dials_regression:
+    with cd_auto(__file__):
+      test = TestSpotPredictor()
+      test.run()
+  else:
+    print "Skipping test: dials_regression not available."

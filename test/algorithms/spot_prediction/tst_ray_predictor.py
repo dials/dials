@@ -1,4 +1,11 @@
 from __future__ import division
+import libtbx.load_env
+from os.path import join, isdir
+
+have_dials_regression = libtbx.env.has_module("dials_regression")
+if have_dials_regression:
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression", test=isdir)
 
 class TestRayPredictor:
 
@@ -8,21 +15,14 @@ class TestRayPredictor:
     from iotbx.xds import xparm, integrate_hkl
     from dials.util import ioutil
     from math import ceil
-    from os.path import join
     import dxtbx
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
     from scitbx import matrix
-    import libtbx.load_env
-    try:
-      dials_path = libtbx.env.dist_path('dials')
-    except KeyError, e:
-      print 'FAIL: dials not configured'
-      exit(0)
 
     # The XDS files to read from
-    integrate_filename = join(dials_path, 'test/data/sim_mx/INTEGRATE.HKL')
-    gxparm_filename = join(dials_path, 'test/data/sim_mx/GXPARM.XDS')
+    integrate_filename = join(dials_regression, 'data/sim_mx/INTEGRATE.HKL')
+    gxparm_filename = join(dials_regression, 'data/sim_mx/GXPARM.XDS')
 
     # Read the XDS files
     self.integrate_handle = integrate_hkl.reader()
@@ -218,7 +218,10 @@ class TestRayPredictor:
     self.test_new_from_array()
 
 if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    test = TestRayPredictor()
-    test.run()
+  if have_dials_regression:
+    from dials.test import cd_auto
+    with cd_auto(__file__):
+      test = TestRayPredictor()
+      test.run()
+  else:
+    print "Skipping test: dials_regression not available."
