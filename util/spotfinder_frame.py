@@ -819,7 +819,7 @@ class SpotFrame(XrayFrame) :
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
         # ticket #107
-        n = self.params.sum_images
+        n = self.params.sum_images - 1
         # bbox_sel = (i_frame >= z0) & ((i_frame + n) < z1)
         bbox_sel = ~ ((i_frame > z1) | ((i_frame + n) < z0))
         for reflection in ref_list.select(bbox_sel):
@@ -901,7 +901,7 @@ class SpotFrame(XrayFrame) :
             self.show_ctr_mass_timer.start()
             centroid = reflection['xyzobs.px.value']
             # ticket #107
-            n = self.params.sum_images
+            n = self.params.sum_images - 1
             if math.floor(centroid[2]) >= i_frame and \
               math.ceil(centroid[2]) < (i_frame + n):
               x,y = map_coords(
