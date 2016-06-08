@@ -43,8 +43,8 @@ def run():
 
   # Get individual xds generated hkl
   xds_h = [hkl[0] for hkl in integrate_handle.hkl]
-  xds_k = [hkl[0] for hkl in integrate_handle.hkl]
-  xds_l = [hkl[0] for hkl in integrate_handle.hkl]
+  xds_k = [hkl[1] for hkl in integrate_handle.hkl]
+  xds_l = [hkl[2] for hkl in integrate_handle.hkl]
 
   # Get min/max generated hkl
   min_gen_h, max_gen_h = numpy.min(gen_h), numpy.max(gen_h)
