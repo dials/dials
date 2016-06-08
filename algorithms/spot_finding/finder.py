@@ -260,6 +260,7 @@ class ExtractSpots(object):
     if mp_chunksize == libtbx.Auto:
       import math
       mp_chunksize = int(math.ceil(len(imageset) / (mp_njobs * mp_nproc)))
+      info("Setting chunksize=%i" %mp_chunksize)
 
     len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
     if mp_chunksize > len_by_nproc:
