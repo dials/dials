@@ -41,6 +41,10 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
   d_min = None
     .type = float(value_min=0.0)
+  z_min = None
+    .type = float
+  z_max = None
+    .type = float
   display = *all unindexed indexed
     .type = choice
   outlier_display = outliers inliers
@@ -53,7 +57,7 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
 """)
 
-def settings () :
+def settings():
   return phil_scope.fetch().extract()
 
 class render_3d(object):
@@ -141,6 +145,18 @@ class render_3d(object):
       reflections = reflections.select(d_spacings > self.settings.d_min)
     else:
       self.settings.d_min = flex.min(d_spacings)
+    if self.settings.z_min is not None:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      reflections = reflections.select(z >= self.settings.z_min)
+    else:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      self.settings.z_min = flex.min(z)
+    if self.settings.z_max is not None:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      reflections = reflections.select(z <= self.settings.z_max)
+    else:
+      z = reflections['xyzobs.px.value'].parts()[2]
+      self.settings.z_max = flex.max(z)
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)
     colors = flex.vec3_double(len(points), (1,1,1))
@@ -251,6 +267,8 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
   def set_points(self):
     render_3d.set_points(self)
     self.settings_panel.d_min_ctrl.SetValue(self.settings.d_min)
+    self.settings_panel.z_min_ctrl.SetValue(self.settings.z_min)
+    self.settings_panel.z_max_ctrl.SetValue(self.settings.z_max)
 
   def update_settings(self, *args, **kwds):
     detector = self.imagesets[0].get_detector()
@@ -293,6 +311,28 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.d_min_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.d_min_ctrl)
+
+    self.z_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+    self.z_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.z_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Min Z")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.z_min_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_min_ctrl)
+
+    self.z_max_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+    self.z_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.z_max_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Max Z")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.z_max_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_max_ctrl)
 
     ctrls = self.create_controls(
       setting="show_rotation_axis",
@@ -392,6 +432,8 @@ class settings_window (wxtbx.utils.SettingsPanel) :
 
   def OnChangeSettings(self, event):
     self.settings.d_min = self.d_min_ctrl.GetValue()
+    self.settings.z_min = self.z_min_ctrl.GetValue()
+    self.settings.z_max = self.z_max_ctrl.GetValue()
     self.settings.beam_centre = (
       self.beam_fast_ctrl.GetValue(), self.beam_slow_ctrl.GetValue())
     self.settings.marker_size = self.marker_size_ctrl.GetValue()
@@ -464,9 +506,6 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
   #--- user input and settings
   def update_settings (self) :
     self.points_display_list = None
-    #self.DrawGL()
-    #if not self.GL_uninitialised:
-      #self.fit_into_viewport()
     self.Refresh()
 
   def update_minimum_covering_sphere(self):
