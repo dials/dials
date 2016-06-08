@@ -1,5 +1,5 @@
 from __future__ import division
-from logging import info, debug, warning
+from logging import info, debug
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
@@ -192,7 +192,7 @@ class CentroidOutlier(object):
         if nref == 0:
           p100 = 0
           msg = ("No reflections associated with job {0}").format(i)
-          warning(msg)
+          debug(msg)
         else:
           p100 = nout / nref * 100.0
           if p100 > 30.0:
