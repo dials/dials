@@ -825,7 +825,10 @@ class SpotFrame(XrayFrame) :
       if 'bbox' in ref_list:
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
-        bbox_sel = (i_frame >= z0) & (i_frame < z1)
+        # ticket #107
+        n = self.params.sum_images
+        # bbox_sel = (i_frame >= z0) & ((i_frame + n) < z1)
+        bbox_sel = ~ ((i_frame > z1) | ((i_frame + n) < z0))
         for reflection in ref_list.select(bbox_sel):
           x0, x1, y0, y1, z0, z1 = reflection['bbox']
           panel = reflection['panel']
@@ -833,11 +836,10 @@ class SpotFrame(XrayFrame) :
           ny = y1 - y0 # size of reflection box in y-direction
           #nz = z1 - z0 # number of frames this spot appears on
           if (self.settings.show_all_pix and 'shoebox' in reflection
-              and reflection['shoebox'].mask.size() > 0):
+              and reflection['shoebox'].mask.size() > 0 and n == 1):
             self.show_all_pix_timer.start()
             shoebox = reflection['shoebox']
             iz = i_frame - z0
-            #print i_frame, z0, iz
             if not reflection['id'] in all_pix_data:
               all_pix_data[reflection['id']] = []
 
@@ -893,9 +895,7 @@ class SpotFrame(XrayFrame) :
             offset, k = divmod(offset, shoebox.all()[2])
             offset, j = divmod(offset, shoebox.all()[1])
             offset, i = divmod(offset, shoebox.all()[0])
-            #assert offset == 0
             max_index = (i, j, k)
-            #assert shoebox[max_index] == flex.max(shoebox)
             if z0 + max_index[0] == i_frame:
               x, y = map_coords(x0 + max_index[2] + 0.5,
                                 y0 + max_index[1] + 0.5,
@@ -907,7 +907,10 @@ class SpotFrame(XrayFrame) :
               'xyzobs.px.value' in reflection):
             self.show_ctr_mass_timer.start()
             centroid = reflection['xyzobs.px.value']
-            if math.floor(centroid[2]) == i_frame:
+            # ticket #107
+            n = self.params.sum_images
+            if math.floor(centroid[2]) >= i_frame and \
+              math.ceil(centroid[2]) < (i_frame + n):
               x,y = map_coords(
                 centroid[0], centroid[1], reflection['panel'])
               xm1,ym1 = map_coords(
