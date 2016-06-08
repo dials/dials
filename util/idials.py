@@ -12,13 +12,6 @@
 from __future__ import division
 import sys
 
-try:
-  # try importing scipy.linalg before any cctbx modules to avoid segfault on
-  # some platforms
-  import scipy.linalg # import dependency
-except ImportError, e:
-  pass
-
 
 class ActionError(RuntimeError):
   '''
