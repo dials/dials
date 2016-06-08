@@ -37,7 +37,7 @@ To update the DIALS webpages:
 
 4) View the documentation! e.g. on mac:
 
-   $ open $(libtbx.find_in_repositories htdocs)/doc/index.html
+   $ open $(libtbx.find_in_repositories dials.github.io)/index.html
 
 5) Either (i) commit the resulting changes to the dials.github.io repository to
    make modifications immediately available or (ii) wait for the next Jenkins
