@@ -83,8 +83,15 @@ class installer(install_distribution.installer):
 
     rmdir('base/lib/python2.7/test')
     rmdir('base/man')
+    rmdir('base/share/doc')
     rmdir('base/share/gtk-doc')
+    rmdir('base/share/hdf5_examples')
+    rmdir('modules/boost/libs/python/example')
     rmdir('modules/cbflib/doc')
+    rmdir('modules/cbflib/examples')
+    rmdir('modules/cbflib/ply-3.2/doc')
+    rmdir('modules/cbflib/ply-3.2/example')
+    rmdir('modules/cbflib/ply-3.2/test')
 
 if __name__ == "__main__":
   installer(sys.argv[1:]).install()
