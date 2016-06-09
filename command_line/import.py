@@ -208,6 +208,10 @@ phil_scope = parse('''
         .type = floats(size=2)
         .help = "Override the image oscillation"
 
+      convert_stills_to_sweeps = False
+        .type = bool
+        .help = "When overriding the scan, convert stills into sweeps"
+
     }
 
     mosflm_beam_centre = None
@@ -232,54 +236,94 @@ phil_scope = parse('''
 ''')
 
 
-class Script(object):
-  ''' Class to parse the command line options. '''
+class DataBlockImporter(object):
+  '''
+  A class to manage the import of the datablocks
 
-  def __init__(self):
-    ''' Set the expected options. '''
-    from dials.util.options import OptionParser
-    import libtbx.load_env
+  '''
 
-    # Create the option parser
-    usage = "usage: %s [options] /path/to/image/files" % libtbx.env.dispatcher_name
-    self.parser = OptionParser(
-      usage=usage,
-      sort_options=True,
-      phil=phil_scope,
-      read_datablocks_from_images=True,
-      epilog=help_message)
+  def __init__(self, params):
+    '''
+    Init the class
 
-  def run(self):
-    ''' Parse the options. '''
-    from dxtbx.datablock import DataBlockFactory
+    '''
+    self.params = params
+
+  def __call__(self):
+    '''
+    Import the datablocks
+
+    '''
     from dxtbx.datablock import DataBlockTemplateImporter
+    from dxtbx.datablock import DataBlockFactory
     from dials.util.options import flatten_datablocks
-    from dials.util import log
-    from logging import info, debug
-    import cPickle as pickle
     from libtbx.utils import Sorry
 
-    # Parse the command line arguments in two passes to set up logging early
-    params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
+    # Get the datablocks
+    datablocks = flatten_datablocks(self.params.input.datablock)
 
-    # Configure logging
-    log.config(
-      params.verbosity,
-      info=params.output.log,
-      debug=params.output.debug_log)
-    from dials.util.version import dials_version
-    info(dials_version())
+    # Check we have some filenames
+    if len(datablocks) == 0:
 
-    # Parse the command line arguments completely
-    params, options = self.parser.parse_args(show_diff_phil=False)
-    datablocks = flatten_datablocks(params.input.datablock)
+      # Check if a template has been set and print help if not, otherwise try to
+      # import the images based on the template input
+      if len(self.params.input.template) > 0:
+        importer = DataBlockTemplateImporter(
+          self.params.input.template,
+          max(self.params.verbosity-1, 0))
+        datablocks = importer.datablocks
+        if len(datablocks) == 0:
+          raise Sorry('No datablocks found matching template %s' % self.params.input.template)
+      elif len(self.params.input.directory) > 0:
+        datablocks = DataBlockFactory.from_filenames(
+          self.params.input.directory,
+          max(self.params.verbosity-1, 0))
+        if len(datablocks) == 0:
+          raise Sorry('No datablocks found in directories %s' % self.params.input.directory)
+      else:
+        self.parser.print_help()
+        exit(0)
+    if len(datablocks) > 1:
+      raise Sorry("More than 1 datablock found")
 
-    # Log the diff phil
-    diff_phil = self.parser.diff_phil.as_str()
-    if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+    # Return the datablocks
+    return datablocks[0]
 
+
+class ReferenceGeometryUpdater(object):
+  '''
+  A class to replace beam + detector with a reference
+
+  '''
+
+  def __init__(self, params):
+    '''
+    Load the reference geometry
+
+    '''
+    self.reference = self.load_reference_geometry(params)
+
+  def __call__(self, imageset):
+    '''
+    Replace with the reference geometry
+
+    '''
+    # Check static detector items are the same
+    assert self.reference.detector.is_similar_to(
+      imageset.get_detector(),
+      static_only=True)
+
+    # Set beam and detector
+    imageset.set_beam(self.reference.beam)
+    imageset.set_detector(self.reference.detector)
+    return imageset
+
+  def load_reference_geometry(self, params):
+    '''
+    Load a reference geoetry file
+
+    '''
+    from collections import namedtuple
     # Load reference geometry
     reference_detector = None
     reference_beam = None
@@ -298,25 +342,328 @@ class Script(object):
         imageset = datablock[0].extract_imagesets()[0]
         reference_detector = imageset.get_detector()
         reference_beam = imageset.get_beam()
+    Reference = namedtuple("Reference", ["detector", "beam"])
+    return Reference(detector=reference_detector, beam=reference_beam)
 
-    # Check we have some filenames
-    if len(datablocks) == 0:
 
-      # Check if a template has been set and print help if not, otherwise try to
-      # import the images based on the template input
-      if len(params.input.template) > 0:
-        importer = DataBlockTemplateImporter(
-          params.input.template,
-          options.verbose)
-        datablocks = importer.datablocks
-      elif len(params.input.directory) > 0:
-        datablocks = DataBlockFactory.from_filenames(params.input.directory)
-        if len(datablocks) == 0:
-          raise Sorry('No datablocks found in directories %s' % params.input.directory)
-      else:
-        self.parser.print_help()
-        exit(0)
+class MosflmBeamCenterUpdater(object):
+  '''
+  A class to replace geometry with mosflm beam centre
 
+  '''
+  def __init__(self, params):
+    '''
+    Set the params
+
+    '''
+    self.params = params
+
+  def __call__(self, imageset):
+    '''
+    Replace the geometry
+
+    '''
+    from dxtbx.model.detector_helpers import set_mosflm_beam_centre
+    set_mosflm_beam_centre(
+      imageset.get_detector(),
+      imageset.get_beam(),
+      self.params.geometry.mosflm_beam_centre)
+    return imageset
+
+
+class ManualGeometryUpdater(object):
+  '''
+  A class to update the geometry manually
+
+  '''
+  def __init__(self, params):
+    '''
+    Save the params
+
+    '''
+    self.params = params
+
+  def __call__(self, imageset):
+    '''
+    Override the parameters
+
+    '''
+    from dxtbx.imageset import ImageSweep
+    if isinstance(imageset, ImageSweep):
+      self.override_beam(
+        imageset.get_beam(),
+        self.params.geometry.beam)
+      self.override_detector(
+        imageset.get_detector(),
+        self.params.geometry.detector)
+      self.override_goniometer(
+        imageset.get_goniometer(),
+        self.params.geometry.goniometer)
+      self.override_scan(
+        imageset.get_scan(),
+        self.params.geometry.scan)
+    elif not self.params.geometry.scan.convert_stills_to_sweeps:
+      for i in range(len(imageset)):
+        self.override_beam(
+          imageset.get_beam(index=i),
+          self.params.geometry.beam)
+        self.override_detector(
+          imageset.get_detector(index=i),
+          self.params.geometry.detector)
+        self.override_goniometer(
+          imageset.get_goniometer(index=i),
+          self.params.geometry.goniometer)
+        self.override_scan(
+          imageset.get_scan(index=i),
+          self.params.geometry.scan)
+    else:
+      imageset = self.convert_stills_to_sweep(imageset)
+    return imageset
+
+  def convert_stills_to_sweep(self, imageset):
+    from dxtbx.model import Scan
+    assert self.params.geometry.scan.oscillation is not None
+    for i in range(len(imageset)):
+      self.override_beam(
+        imageset.get_beam(index=i),
+        self.params.geometry.beam)
+      self.override_detector(
+        imageset.get_detector(index=i),
+        self.params.geometry.detector)
+      self.override_goniometer(
+        imageset.get_goniometer(index=i),
+        self.params.geometry.goniometer)
+    beam = imageset.get_beam(index=0)
+    detector = imageset.get_detector(index=0)
+    goniometer = imageset.get_goniometer(index=0)
+    for i in range(1, len(imageset)):
+      assert beam.is_similar_to(
+        imageset.get_beam(index=i),
+        wavelength_tolerance            = self.params.input.tolerance.beam.wavelength,
+        direction_tolerance             = self.params.input.tolerance.beam.direction,
+        polarization_normal_tolerance   = self.params.input.tolerance.beam.polarization_normal,
+        polarization_fraction_tolerance = self.params.input.tolerance.beam.polarization_fraction)
+      assert detector.is_similar_to(
+        imageset.get_detector(index=i),
+        fast_axis_tolerance = self.params.input.tolerance.detector.fast_axis,
+        slow_axis_tolerance = self.params.input.tolerance.detector.slow_axis,
+        origin_tolerance    = self.params.input.tolerance.detector.origin)
+      assert goniometer.is_similar_to(
+        imageset.get_goniometer(index=i),
+        rotation_axis_tolerance    = self.params.input.tolerance.goniometer.rotation_axis,
+        fixed_rotation_tolerance   = self.params.input.tolerance.goniometer.fixed_rotation,
+        setting_rotation_tolerance = self.params.input.tolerance.goniometer.setting_rotation)
+    assert beam is not None
+    assert detector is not None
+    assert goniometer is not None
+    if self.params.geometry.scan.image_range is not None:
+      image_range = self.params.geometry.scan.image_range
+    else:
+      image_range = (1, len(imageset))
+    oscillation = self.params.geometry.scan.oscillation
+    scan = Scan(image_range=image_range, oscillation=oscillation)
+    from dxtbx.sweep_filenames import template_regex
+    from dxtbx.imageset import ImageSetFactory
+    indices      = list(range(image_range[0], image_range[1]+1))
+    template = template_regex(imageset.get_path(0))[0]
+    if template is None:
+      paths = [imageset.get_path(i) for i in range(len(imageset))]
+      assert len(set(paths)) == 1
+      template = paths[0]
+    new_sweep = ImageSetFactory.make_sweep(
+      template     = template,
+      indices      = indices,
+      format_class = imageset.reader().get_format_class(),
+      beam         = beam,
+      detector     = detector,
+      goniometer   = goniometer,
+      scan         = scan)
+    return new_sweep
+
+  def override_beam(self, beam, params):
+    '''
+    Override the beam parameters
+
+    '''
+    if params.wavelength is not None:
+      beam.set_wavelength(params.wavelength)
+    if params.direction is not None:
+      beam.set_direction(params.direction)
+
+  def override_detector(self, detector, params):
+    '''
+    Override the detector parameters
+
+    '''
+    from libtbx.utils import Sorry
+
+    # need to gather material from multiple phil parameters to set
+    frame_hash = { }
+    for panel_params in params.panel:
+      panel_id = panel_params.id
+      panel = detector[panel_params.id]
+
+      if not panel_id in frame_hash:
+        frame_hash[panel_id] = {'fast_axis':None,
+                                'slow_axis':None,
+                                'origin':None}
+
+      if panel_params.fast_axis is not None:
+        frame_hash[panel_id]['fast_axis'] = panel_params.fast_axis
+      if panel_params.slow_axis is not None:
+        frame_hash[panel_id]['slow_axis'] = panel_params.slow_axis
+      if panel_params.origin is not None:
+        frame_hash[panel_id]['origin'] = panel_params.origin
+
+      if panel_params.name is not None:
+        panel.set_name(panel_params.name)
+      if panel_params.type is not None:
+        panel.set_type(panel_params.type)
+      if panel_params.pixel_size is not None:
+        panel.set_pixel_size(panel_params.pixel_size)
+      if panel_params.image_size is not None:
+        panel.set_image_size(panel_params.image_size)
+      if panel_params.trusted_range is not None:
+        panel.set_trusted_range(panel_params.trusted_range)
+      if panel_params.thickness is not None:
+        panel.set_thickness(panel_params.thickness)
+      if panel_params.material is not None:
+        panel.set_material(panel_params.material)
+
+    for panel_id in frame_hash:
+      fast_axis = frame_hash[panel_id]['fast_axis']
+      slow_axis = frame_hash[panel_id]['slow_axis']
+      origin = frame_hash[panel_id]['origin']
+      if [fast_axis, slow_axis, origin].count(None) == 0:
+        panel = detector[panel_id]
+        panel.set_frame(fast_axis, slow_axis, origin)
+      elif [fast_axis, slow_axis, origin].count(None) != 3:
+        raise Sorry("fast_axis, slow_axis and origin must be set together")
+
+  def override_goniometer(self, goniometer, params):
+    '''
+    Override the goniometer parameters
+
+    '''
+    if goniometer is not None:
+      if params.rotation_axis is not None:
+        goniometer.set_rotation_axis(params.rotation_axis)
+      if params.fixed_rotation is not None:
+        goniometer.set_fixed_rotation(params.fixed_rotation)
+      if params.setting_rotation is not None:
+        goniometer.set_setting_rotation(params.setting_rotation)
+
+  def override_scan(self, scan, params):
+    '''
+    Override the scan parameters
+
+    '''
+    if scan is not None:
+      if params.image_range is not None:
+        most_recent_image_index = scan.get_image_range()[1] - scan.get_image_range()[0]
+        scan.set_image_range(params.image_range)
+        if params.extrapolate_scan and \
+            (params.image_range[1] - params.image_range[0]) > most_recent_image_index:
+          exposure_times = scan.get_exposure_times()
+          epochs = scan.get_epochs()
+          exposure_time = exposure_times[most_recent_image_index]
+          epoch_correction = epochs[most_recent_image_index]
+          for i in range(most_recent_image_index + 1, \
+              params.image_range[1] - params.image_range[0] + 1):
+            exposure_times[i] = exposure_time
+            epoch_correction += exposure_time
+            epochs[i] = epoch_correction
+          scan.set_epochs(epochs)
+          scan.set_exposure_times(exposure_times)
+      if params.oscillation is not None:
+        scan.set_oscillation(params.oscillation)
+
+
+class MetaDataUpdater(object):
+  '''
+  A class to manage updating the datablock metadata
+
+  '''
+  def __init__(self, params):
+    '''
+    Init the class
+
+    '''
+    self.params = params
+
+    # Create the geometry updater
+    if self.params.input.reference_geometry is not None:
+      self.update_geometry = ReferenceGeometryUpdater(self.params)
+    elif self.params.geometry.mosflm_beam_centre is not None:
+      self.update_geometry = MosflmBeamCenterUpdater(self.params)
+    else:
+      self.update_geometry = ManualGeometryUpdater(self.params)
+
+  def __call__(self, datablock):
+    '''
+    Transform the metadata
+
+    '''
+    from dxtbx.datablock import DataBlock
+
+    # Import the lookup data
+    lookup = self.import_lookup_data(self.params)
+
+    # Convert all to ImageGrid
+    if self.params.input.as_grid_scan:
+      datablock = self.convert_to_grid_scan(datablock, self.params)
+
+    # Init imageset list
+    imageset_list = []
+
+    # Loop through imagesets
+    for imageset in datablock.extract_imagesets():
+
+      # Check beam and detector are present
+      if imageset.get_beam() == None or imageset.get_detector() == None:
+        raise Sorry('''
+          Imageset contains no beam or detector model. This means you will be
+          unable to process your data.
+
+          Possible causes of this error are:
+             - A problem reading the images with one of the dxtbx format classes
+             - A lack of header information in the file itself.
+        ''')
+
+      # Set the external lookups
+      imageset = self.update_lookup(imageset, lookup)
+
+      # Update the geometry
+      imageset = self.update_geometry(imageset)
+
+      # Append to new imageset list
+      imageset_list.append(imageset)
+
+    # Return the datablock
+    return DataBlock(imageset_list)
+
+  def update_lookup(self, imageset, lookup):
+    if lookup.size is not None:
+      d = imageset.get_detector()
+      assert len(lookup.size) == len(d), "Incompatible size"
+      for s, p in zip(lookup.size, d):
+        assert s == p.get_image_size()[::-1], "Incompatible size"
+      if lookup.mask.filename is not None:
+        imageset.external_lookup.mask = lookup.mask
+      if lookup.gain.filename is not None:
+        imageset.external_lookup.gain = lookup.gain
+      if lookup.dark.filename is not None:
+        imageset.external_lookup.pedestal = lookup.dark
+    return imageset
+
+  def import_lookup_data(self, params):
+    '''
+    Get the lookup data
+
+    '''
+    from collections import namedtuple
+    from dxtbx.imageset import ExternalLookupItem
+    import cPickle as pickle
     # Check the lookup inputs
     mask_filename = None
     gain_filename = None
@@ -353,233 +700,165 @@ class Script(object):
         assert len(dark) == len(lookup_size), "Incompatible size"
         for s, d in zip(lookup_size, dark):
           assert s == d.all(), "Incompatible size"
+    Lookup = namedtuple("Lookup", ['size', 'mask', 'gain', 'dark'])
+    return Lookup(
+      size=lookup_size,
+      mask=ExternalLookupItem(data=mask, filename=mask_filename),
+      gain=ExternalLookupItem(data=gain, filename=gain_filename),
+      dark=ExternalLookupItem(data=dark, filename=dark_filename))
 
-    # Only allow a single datablock
-    if len(datablocks) > 1:
-      raise Sorry("More than 1 datablock found")
+  def convert_to_grid_scan(self, datablock, params):
+    '''
+    Convert the imagesets to grid scans
 
-    # Convert all to ImageGrid
-    if params.input.as_grid_scan:
-      from logging import info
-      from dxtbx.datablock import DataBlock
-      from dxtbx.imageset import ImageGrid
-      if params.input.grid_size is None:
-        raise Sorry("The input.grid_size parameter is required")
-      sweeps = datablocks[0].extract_sweeps()
-      stills = datablocks[0].extract_stills()
-      imagesets = []
-      for iset in sweeps + stills:
-        imagesets.append(ImageGrid.from_imageset(iset, params.input.grid_size))
-      datablocks = [DataBlock(imagesets)]
-
-    # Loop through the data blocks
-    for i, datablock in enumerate(datablocks):
-
-      # Extract any sweeps
-      sweeps = datablock.extract_sweeps()
-
-      # Extract any stills
-      stills = datablock.extract_stills()
-      if not stills:
-        num_stills = 0
-      else:
-        num_stills = sum([len(s) for s in stills])
-
-      for imageset in sweeps + stills:
-        if imageset.get_beam() == None or imageset.get_detector() == None:
-          raise Sorry('''
-            Imageset contains no beam or detector model. This means you will be
-            unable to process your data.
-
-            Possible causes of this error are:
-               - A problem reading the images with one of the dxtbx format classes
-               - A lack of header information in the file itself.
-          ''')
-
-      # Set the external lookups
-      if lookup_size is not None:
-        for imageset in sweeps + stills:
-          d = imageset.get_detector()
-          assert len(lookup_size) == len(d), "Incompatible size"
-          for s, p in zip(lookup_size, d):
-            assert s == p.get_image_size()[::-1], "Incompatible size"
-          if mask_filename is not None:
-            imageset.external_lookup.mask.data = mask
-            imageset.external_lookup.mask.filename = mask_filename
-          if gain_filename is not None:
-            imageset.external_lookup.gain.data = gain
-            imageset.external_lookup.gain.filename = gain_filename
-          if dark_filename is not None:
-            imageset.external_lookup.pedestal.data = dark
-            imageset.external_lookup.pedestal.filename = dark_filename
-
-      # Override the geometry. Use the reference geometry first, if set.
-      # Otherwise use the mosflm beam centre and finally look to see if
-      # any items have been otherwise overridden
-      if reference_beam is not None and reference_detector is not None:
-        for sweep in sweeps:
-          assert reference_detector.is_similar_to(
-            sweep.get_detector(),
-            static_only=True)
-          sweep.set_beam(reference_beam)
-          sweep.set_detector(reference_detector)
-        for still in stills:
-          assert reference_detector.is_similar_to(still.get_detector())
-          still.set_beam(reference_beam)
-          still.set_detector(reference_detector)
-      elif params.geometry.mosflm_beam_centre is not None:
-        from dxtbx.model.detector_helpers import set_mosflm_beam_centre
-        for sweep in sweeps:
-          set_mosflm_beam_centre(
-            sweep.get_detector(),
-            sweep.get_beam(),
-            params.geometry.mosflm_beam_centre)
-        for still in stills:
-          set_mosflm_beam_centre(
-            still.get_detector(),
-            still.get_beam(),
-            params.geometry.mosflm_beam_centre)
-      else:
-        def override_beam(beam, params):
-          if params.wavelength is not None:
-            beam.set_wavelength(params.wavelength)
-          if params.direction is not None:
-            beam.set_direction(params.direction)
-        def override_detector(detector, params):
-          # need to gather material from multiple phil parameters to set
-          frame_hash = { }
-          for panel_params in params.panel:
-            panel_id = panel_params.id
-            panel = detector[panel_params.id]
-
-            if not panel_id in frame_hash:
-              frame_hash[panel_id] = {'fast_axis':None,
-                                      'slow_axis':None,
-                                      'origin':None}
-
-            if panel_params.fast_axis is not None:
-              frame_hash[panel_id]['fast_axis'] = panel_params.fast_axis
-            if panel_params.slow_axis is not None:
-              frame_hash[panel_id]['slow_axis'] = panel_params.slow_axis
-            if panel_params.origin is not None:
-              frame_hash[panel_id]['origin'] = panel_params.origin
-
-            if panel_params.name is not None:
-              panel.set_name(panel_params.name)
-            if panel_params.type is not None:
-              panel.set_type(panel_params.type)
-            if panel_params.pixel_size is not None:
-              panel.set_pixel_size(panel_params.pixel_size)
-            if panel_params.image_size is not None:
-              panel.set_image_size(panel_params.image_size)
-            if panel_params.trusted_range is not None:
-              panel.set_trusted_range(panel_params.trusted_range)
-            if panel_params.thickness is not None:
-              panel.set_thickness(panel_params.thickness)
-            if panel_params.material is not None:
-              panel.set_material(panel_params.material)
-
-          for panel_id in frame_hash:
-            fast_axis = frame_hash[panel_id]['fast_axis']
-            slow_axis = frame_hash[panel_id]['slow_axis']
-            origin = frame_hash[panel_id]['origin']
-            # FIXME warn user if not (all none or all not none)
-            if (fast_axis is not None and
-                slow_axis is not None and
-                origin is not None):
-              panel = detector[panel_id]
-              panel.set_frame(fast_axis, slow_axis, origin)
-        def override_goniometer(goniometer, params):
-          if params.rotation_axis is not None:
-            goniometer.set_rotation_axis(params.rotation_axis)
-          if params.fixed_rotation is not None:
-            goniometer.set_fixed_rotation(params.fixed_rotation)
-          if params.setting_rotation is not None:
-            goniometer.set_setting_rotation(params.setting_rotation)
-        def override_scan(scan, params):
-          if params.image_range is not None:
-            most_recent_image_index = scan.get_image_range()[1] - scan.get_image_range()[0]
-            scan.set_image_range(params.image_range)
-            if params.extrapolate_scan and \
-                (params.image_range[1] - params.image_range[0]) > most_recent_image_index:
-              exposure_times = scan.get_exposure_times()
-              epochs = scan.get_epochs()
-              exposure_time = exposure_times[most_recent_image_index]
-              epoch_correction = epochs[most_recent_image_index]
-              for i in range(most_recent_image_index + 1, \
-                  params.image_range[1] - params.image_range[0] + 1):
-                exposure_times[i] = exposure_time
-                epoch_correction += exposure_time
-                epochs[i] = epoch_correction
-              scan.set_epochs(epochs)
-              scan.set_exposure_times(exposure_times)
-          if params.oscillation is not None:
-            scan.set_oscillation(params.oscillation)
-        for sweep in sweeps:
-          override_beam(sweep.get_beam(), params.geometry.beam)
-          override_detector(sweep.get_detector(), params.geometry.detector)
-          override_goniometer(sweep.get_goniometer(), params.geometry.goniometer)
-          override_scan(sweep.get_scan(), params.geometry.scan)
-        for still in stills:
-          override_beam(still.get_beam(), params.geometry.beam)
-          override_detector(still.get_detector(), params.geometry.detector)
-
-      # Print some data block info - override the output of image range
-      # if appropriate
-      image_range = params.geometry.scan.image_range
-
-      info("-" * 80)
-      info("DataBlock %d" % i)
-      info("  format: %s" % str(datablock.format_class()))
-      if image_range is None:
-        info("  num images: %d" % datablock.num_images())
-      else:
-        info("  num images: %d" % (image_range[1] - image_range[0] + 1))
-      info("  num sweeps: %d" % len(sweeps))
-      info("  num stills: %d" % num_stills)
-
-      # Loop through all the sweeps
-      for j, sweep in enumerate(sweeps):
-        debug("")
-        debug("Sweep %d" % j)
-        debug("  Length %d" % len(sweep))
-        debug(sweep.get_beam())
-        debug(sweep.get_goniometer())
-        debug(sweep.get_detector())
-        debug(sweep.get_scan())
-
-      # Only allow a single sweep
-      if params.input.allow_multiple_sweeps is False:
-        if len(sweeps) > 1:
-
-          # Print some info about multuple sweeps
-          self.diagnose_multiple_sweeps(sweeps, params)
-
-          # Raise exception
-          raise Sorry('''
-            More than 1 sweep was found. Two things may be happening here:
-
-            1. There really is more than 1 sweep. If you expected this to be the
-               case, set the parameter allow_multiple_sweeps=True. If you don't
-               expect this, then check the input to dials.import.
-
-            2. There may be something wrong with your image headers (for example,
-               the rotation ranges of each image may not match up). You should
-               investigate what went wrong, but you can force dials.import to treat
-               your images as a single sweep by using the template=image_####.cbf
-               parameter (see help).
-          ''')
+    '''
+    from logging import info
+    from dxtbx.datablock import DataBlock
+    from dxtbx.imageset import ImageGrid
+    if params.input.grid_size is None:
+      raise Sorry("The input.grid_size parameter is required")
+    sweeps = datablock.extract_sweeps()
+    stills = datablock.extract_stills()
+    imagesets = []
+    for iset in sweeps + stills:
+      imagesets.append(ImageGrid.from_imageset(iset, params.input.grid_size))
+    return DataBlock(imagesets)
 
 
-    # Write the datablock to a JSON or pickle file
+class Script(object):
+  ''' Class to parse the command line options. '''
+
+  def __init__(self):
+    ''' Set the expected options. '''
+    from dials.util.options import OptionParser
+    import libtbx.load_env
+
+    # Create the option parser
+    usage = "usage: %s [options] /path/to/image/files" % libtbx.env.dispatcher_name
+    self.parser = OptionParser(
+      usage=usage,
+      sort_options=True,
+      phil=phil_scope,
+      read_datablocks_from_images=True,
+      epilog=help_message)
+
+  def run(self):
+    ''' Parse the options. '''
+    from dials.util import log
+    from logging import info, debug
+    from libtbx.utils import Sorry
+
+    # Parse the command line arguments in two passes to set up logging early
+    params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
+
+    # Configure logging
+    log.config(
+      params.verbosity,
+      info=params.output.log,
+      debug=params.output.debug_log)
+    from dials.util.version import dials_version
+    info(dials_version())
+
+    # Parse the command line arguments completely
+    params, options = self.parser.parse_args(show_diff_phil=False)
+
+    # Log the diff phil
+    diff_phil = self.parser.diff_phil.as_str()
+    if diff_phil is not '':
+      info('The following parameters have been modified:\n')
+      info(diff_phil)
+
+    # Setup the datablock importer
+    datablock_importer = DataBlockImporter(params)
+
+    # Setup the metadata updater
+    metadata_updater = MetaDataUpdater(params)
+
+    # Get the datablocks
+    datablock = metadata_updater(datablock_importer())
+
+    # Extract any sweeps
+    sweeps = datablock.extract_sweeps()
+
+    # Extract any stills
+    stills = datablock.extract_stills()
+    if not stills:
+      num_stills = 0
+    else:
+      num_stills = sum([len(s) for s in stills])
+
+    # Print some data block info - override the output of image range
+    # if appropriate
+    image_range = params.geometry.scan.image_range
+
+    info("-" * 80)
+    info("  format: %s" % str(datablock.format_class()))
+    if image_range is None:
+      info("  num images: %d" % datablock.num_images())
+    else:
+      info("  num images: %d" % (image_range[1] - image_range[0] + 1))
+    info("  num sweeps: %d" % len(sweeps))
+    info("  num stills: %d" % num_stills)
+
+    # Loop through all the sweeps
+    for j, sweep in enumerate(sweeps):
+      debug("")
+      debug("Sweep %d" % j)
+      debug("  Length %d" % len(sweep))
+      debug(sweep.get_beam())
+      debug(sweep.get_goniometer())
+      debug(sweep.get_detector())
+      debug(sweep.get_scan())
+
+    # Only allow a single sweep
+    if params.input.allow_multiple_sweeps is False:
+      self.assert_single_sweep(sweeps, params)
+
+    # Write the datablocks to file
+    self.write_datablocks([datablock], params)
+
+  def write_datablocks(self, datablocks, params):
+    '''
+    Output the datablock to file.
+
+    '''
+    from logging import info
     if params.output.datablock:
       info("-" * 80)
       info('Writing datablocks to %s' % params.output.datablock)
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock, compact=params.output.compact)
 
+  def assert_single_sweep(self, sweeps, params):
+    '''
+    Print an error message if more than 1 sweep
+
+    '''
+    if len(sweeps) > 1:
+
+      # Print some info about multuple sweeps
+      self.diagnose_multiple_sweeps(sweeps, params)
+
+      # Raise exception
+      raise Sorry('''
+        More than 1 sweep was found. Two things may be happening here:
+
+        1. There really is more than 1 sweep. If you expected this to be the
+           case, set the parameter allow_multiple_sweeps=True. If you don't
+           expect this, then check the input to dials.import.
+
+        2. There may be something wrong with your image headers (for example,
+           the rotation ranges of each image may not match up). You should
+           investigate what went wrong, but you can force dials.import to treat
+           your images as a single sweep by using the template=image_####.cbf
+           parameter (see help).
+      ''')
+
   def diagnose_multiple_sweeps(self, sweeps, params):
-    ''' Print a diff between sweeps. '''
+    '''
+    Print a diff between sweeps.
+
+    '''
     from logging import info
     info("")
     for i in range(1, len(sweeps)):
@@ -591,7 +870,10 @@ class Script(object):
     info("")
 
   def print_sweep_diff(self, sweep1, sweep2, params):
-    ''' Print a diff between sweeps. '''
+    '''
+    Print a diff between sweeps.
+
+    '''
     from dxtbx.datablock import SweepDiff
     diff = SweepDiff(params.input.tolerance)
     diff(sweep1, sweep2)
