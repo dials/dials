@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 27050135 Refinement
 * .. pubmed:: 25286849 Multilattice
 * .. pubmed:: 25242914 dxtbx
 * .. pubmed:: 24507780 diffuse
