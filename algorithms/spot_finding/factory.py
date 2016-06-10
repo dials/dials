@@ -335,51 +335,7 @@ class BackgroundGradientFilter(object):
       if abs(a) > self.gradient_cutoff or abs(b) > self.gradient_cutoff:
         flags[perm[i]] = False
 
-      # FIXME should this commented out section be removed?
-      #if abs(a) < self.gradient_cutoff and abs(b) < self.gradient_cutoff:
-        #flags[i] = False
-
-      #if x2-x1 > 10 or y2-y1 > 10:
-        #print a, b, d, flags[perm[i]]
-        #bg = flex.double(data.accessor())
-        #for x in range(ex2-ex1):
-          #for y in range(ey2-ey1):
-            #z = a * x + b * y + d
-            #bg[0,y,x] = z
-
-        #model = modeller.create(data-bg, mask)
-        #d, a, b = model.params()[:3]
-        #c = -1
-
-        #bg2 = flex.double(data.accessor())
-        #for x in range(ex2-ex1):
-          #for y in range(ey2-ey1):
-            #z = a * x + b * y + d
-            #bg2[0,y,x] = z
-        ##print a, b, d
-
-        #from matplotlib import pyplot
-        #fig, axes = pyplot.subplots(nrows=1, ncols=5)
-        #im0 = axes[0].imshow(data.as_numpy_array()[i_z,:,:], interpolation='none')
-        #im1 = axes[1].imshow(mask.as_numpy_array()[i_z,:,:], interpolation='none')
-        #im2 = axes[2].imshow(bg.as_numpy_array()[i_z,:,:], interpolation='none')
-        #im3 = axes[3].imshow((data-bg).as_numpy_array()[i_z,:,:], interpolation='none')
-        #im4 = axes[4].imshow(bg2.as_numpy_array()[i_z,:,:], interpolation='none')
-        ##pyplot.colorbar(im0)
-        ##pyplot.colorbar(im1)
-        ##pyplot.colorbar(im2)
-        ##pyplot.colorbar(im3)
-        #pyplot.show()
-
-      #from matplotlib import pyplot
-      #fig, axes = pyplot.subplots(nrows=1, ncols=2)
-      #im0 = axes[0].imshow(data.as_numpy_array()[i_z,:,:], interpolation='none')
-      #im1 = axes[1].imshow(bg.as_numpy_array()[i_z,:,:], interpolation='none')
-      #pyplot.colorbar(im1)
-      #pyplot.show()
-
     t1 = time.time()
-    #print "Time fit_bg: %s" %(t1-t0)
 
     return flags
 
