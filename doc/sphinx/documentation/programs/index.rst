@@ -32,6 +32,7 @@ Utilities:
    dials_report
    dials_plot_scan_varying_crystal
    dials_find_spots_server
+   dials_find_spots_apache_server
    dials_apply_mask
    dials_create_profile_model
    dials_estimate_gain

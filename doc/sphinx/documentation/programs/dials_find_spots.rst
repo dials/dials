@@ -1,3 +1,5 @@
+.. _dials-find-spots:
+
 dials.find_spots
 ================
 
