@@ -45,7 +45,7 @@ phil_scope= libtbx.phil.parse("""
     .type = float
   z_max = None
     .type = float
-  display = *all unindexed indexed
+  display = *all unindexed indexed integrated
     .type = choice
   outlier_display = outliers inliers
     .type = choice
@@ -123,10 +123,14 @@ class render_3d(object):
 
     if 'miller_index' in reflections:
       indexed_sel = reflections.get_flags(reflections.flags.indexed)
+      integrated_sel = reflections.get_flags(reflections.flags.integrated)
+
       if self.settings.display == 'indexed':
         reflections = reflections.select(indexed_sel)
       elif self.settings.display == 'unindexed':
         reflections = reflections.select(~indexed_sel)
+      elif self.settings.display == 'integrated':
+        reflections = reflections.select(integrated_sel)
 
       outlier_sel = reflections.get_flags(reflections.flags.centroid_outlier)
       if self.settings.outlier_display == 'outliers':
@@ -386,8 +390,9 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.btn.AddSegment("all")
     self.btn.AddSegment("indexed")
     self.btn.AddSegment("unindexed")
+    self.btn.AddSegment("integrated")
     self.btn.SetSelection(
-      ["all", "indexed", "unindexed"].index(self.settings.display))
+      ["all", "indexed", "unindexed", "integrated"].index(self.settings.display))
     self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeSettings, self.btn)
     self.GetSizer().Add(self.btn, 0, wx.ALL, 5)
 
@@ -437,7 +442,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.settings.beam_centre = (
       self.beam_fast_ctrl.GetValue(), self.beam_slow_ctrl.GetValue())
     self.settings.marker_size = self.marker_size_ctrl.GetValue()
-    for i, display in enumerate(("all", "indexed", "unindexed")):
+    for i, display in enumerate(("all", "indexed", "unindexed", "integrated")):
       if self.btn.values[i]:
         self.settings.display = display
         break
