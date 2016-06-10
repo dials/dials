@@ -822,6 +822,9 @@ class SpotFrame(XrayFrame) :
                                "#ff7f00", "#ffff33", "#a65628", "#f781bf",
                                "#999999"] * 10
     for ref_list in self.reflections:
+      if self.settings.show_integrated:
+        integrated_sel = ref_list.get_flags(ref_list.flags.integrated)
+        ref_list = ref_list.select(integrated_sel)
       if 'bbox' in ref_list:
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
@@ -1051,6 +1054,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_max_pix = self.params.show_max_pix
     self.settings.show_all_pix = self.params.show_all_pix
     self.settings.show_shoebox = self.params.show_shoebox
+    self.settings.show_integrated = self.params.show_integrated
     self.settings.show_predictions = self.params.show_predictions
     self.settings.show_miller_indices = self.params.show_miller_indices
     self.settings.show_mean_filter = self.params.display == "mean"
@@ -1159,6 +1163,11 @@ class SpotSettingsPanel (SettingsPanel) :
     self.miller_indices.SetValue(self.settings.show_miller_indices)
     grid.Add(self.miller_indices, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
+    # Integration shoeboxes only
+    self.integrated = wx.CheckBox(self, -1, "Integrated only")
+    self.integrated.SetValue(self.settings.show_integrated)
+    grid.Add(self.integrated, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
     self.clear_all_button = wx.Button(self, -1, "Clear all")
     grid.Add(self.clear_all_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
@@ -1266,6 +1275,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.shoebox)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.predictions)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.integrated)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
 
     self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
@@ -1300,6 +1310,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_max_pix = self.max_pix.GetValue()
       self.settings.show_all_pix = self.all_pix.GetValue()
       self.settings.show_shoebox = self.shoebox.GetValue()
+      self.settings.show_integrated = self.integrated.GetValue()
       self.settings.show_predictions = self.predictions.GetValue()
       self.settings.show_miller_indices = self.miller_indices.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
