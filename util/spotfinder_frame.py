@@ -972,17 +972,27 @@ class SpotFrame(XrayFrame) :
       phi = scan.get_angle_from_array_index(
         i_frame-imageset.get_array_range()[0], deg=True)
       axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
-      beam_centre = detector[0].get_ray_intersection(beam.get_s0())
-      beam_x, beam_y = detector[0].millimeter_to_pixel(beam_centre)
-      beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, 0)
+      if len(detector) == 1:
+        beam_centre = detector[0].get_ray_intersection(beam.get_s0())
+        beam_x, beam_y = detector[0].millimeter_to_pixel(beam_centre)
+        beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, 0)
+      else:
+        panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+        beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, panel)
       lines = []
       for i, h in enumerate(((10,0,0), (0,10,0), (0,0,10))):
         r = A * matrix.col(h)
         r_phi = r.rotate_around_origin(axis, phi, deg=True)
         s1 = matrix.col(beam.get_s0()) + r_phi
-        x, y = detector[0].get_ray_intersection(s1)
-        x, y = detector[0].millimeter_to_pixel((x,y))
-        x, y = map_coords(x+ 0.5, y + 0.5, 0)
+        if len(detector) == 1:
+          xy = detector[0].get_ray_intersection(s1)
+          x, y = detector[0].millimeter_to_pixel(xy)
+          x, y = map_coords(x + 0.5, y + 0.5, 0)
+        else:
+          panel, xy = detector.get_ray_intersection(s1)
+          x, y = detector[panel].millimeter_to_pixel(xy)
+          x, y = map_coords(x + 0.5, y + 0.5, panel)
         vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
 
         vector_text_data.append((x, y, ('a*', 'b*', 'c*')[i],
