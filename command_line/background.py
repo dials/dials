@@ -55,7 +55,7 @@ def run(args):
   imageset = imagesets[0]
 
   for indx in imageset.indices():
-    print 'For frame %d' % indx
+    print 'For frame %d:' % indx
     background(imageset, indx, params)
 
 def background(imageset, indx, params):
@@ -72,17 +72,11 @@ def background(imageset, indx, params):
 
   n = matrix.col(detector.get_normal()).normalize()
   b = matrix.col(beam.get_s0()).normalize()
-  distance = math.fabs(matrix.col(detector.get_origin()).dot(n))
   wavelength = beam.get_wavelength()
 
-  # FIXME I can probably remove this
   if math.fabs(b.dot(n)) < 0.95:
     from libtbx.utils import Sorry
     raise Sorry('Detector not perpendicular to beam')
-
-  pixel = detector.get_pixel_size()
-  beam_centre = detector.get_beam_centre(beam.get_s0())
-  image_size = detector.get_image_size_mm()
 
   data = imageset.get_raw_data(indx)
   assert(len(data) == 1)
@@ -102,21 +96,28 @@ def background(imageset, indx, params):
   signal = data.select(peak_pixels.iselection())
   background = data.select((~bad & ~peak_pixels).iselection())
 
-  ny, nx = data.focus()
+  # print some summary information
+  print 'Mean background: %.3f' % (flex.sum(background) / background.size())
+  print 'Max/total signal pixels: %.0f / %.0f' % (flex.max(signal),
+                                                 flex.sum(signal))
+  print 'Peak/background/hot pixels: %d / %d / %d' % (peak_pixels.count(True),
+                                                      background.size(),
+                                                      hot.count(True))
 
   # compute histogram of two-theta values, then same weighted
   # by pixel values, finally divide latter by former to get
   # the radial profile out, need to set the number of bins
   # sensibly; flex.histogram does not allow weights so use
-  # numpy.histogram to get the same effect... inspired by method
-  # in PyFAI
+  # numpy.histogram to get the same effect... inspired by
+  # method in PyFAI
+
   two_theta_array = detector.get_two_theta_array(beam.get_s0())
   two_theta_array.reshape(flex.grid(data.focus()))
   two_theta_array.as_1d().set_selected((bad | peak_pixels).iselection(), 0.0)
   data.as_1d().set_selected((bad | peak_pixels).iselection(), 0.0)
 
-  # numpy land
-
+  # numpy land :-(
+  import numpy
   n_bins = params.bins
   n_two_theta = two_theta_array.as_1d().as_numpy_array()
   n_data = data.as_1d().as_numpy_array()
@@ -124,7 +125,6 @@ def background(imageset, indx, params):
 
   tt_range = 0, flex.max(two_theta_array)
 
-  import numpy
   ref, junk = numpy.histogram(n_two_theta, bins=n_bins, range=tt_range)
   val, junk = numpy.histogram(n_two_theta, bins=n_bins, weights=n_data,
                               range=tt_range)
@@ -134,8 +134,9 @@ def background(imageset, indx, params):
   I = val / ref
   I2 = val2 / ref
 
-  for j in range(1, len(I)):
-    tt = tt_range[0] + j * (1.0 / n_bins) * (tt_range[1] - tt_range[0])
+  print '%8s %8s %8s' % ('d', 'I', 'sig')
+  for j in range(0, len(I)):
+    tt = tt_range[0] + (j + 0.5) * (1.0 / n_bins) * (tt_range[1] - tt_range[0])
     d = wavelength / (2.0 * math.sin(0.5 * tt))
     print '%8.3f %8.3f %8.3f' % (d, I[j], math.sqrt(I2[j] - I[j]**2))
 
