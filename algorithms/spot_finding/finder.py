@@ -75,9 +75,9 @@ class ExtractPixelsFromImage(object):
     from math import ceil
     from logging import info
 
-      # Parallel reading of HDF5 from the same handle is not allowed. Python
-      # multiprocessing is a bit messed up and used fork on linux so need to
-      # close and reopen file.
+    # Parallel reading of HDF5 from the same handle is not allowed. Python
+    # multiprocessing is a bit messed up and used fork on linux so need to
+    # close and reopen file.
     if self.first:
       from dxtbx.imageset import SingleFileReader
       if isinstance(self.imageset.reader(), SingleFileReader):
