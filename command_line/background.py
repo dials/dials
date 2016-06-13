@@ -13,8 +13,11 @@ Examples::
 '''
 
 phil_scope = iotbx.phil.parse("""\
-bins = 300
+bins = 100
   .type = int
+frames = None
+  .type = int
+  .multiple = True
 """, process_includes=True)
 
 def main():
@@ -54,7 +57,11 @@ def run(args):
 
   imageset = imagesets[0]
 
-  for indx in imageset.indices():
+  images = imageset.indices()
+  if params.frames:
+    images = params.frames
+
+  for indx in images:
     print 'For frame %d:' % indx
     background(imageset, indx, params)
 
