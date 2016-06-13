@@ -306,6 +306,25 @@ indexing {
       .type = bool
       .help = If true, no attempt is made to refine the model. The indexing \
               solution with the best RMSD is chosen.
+    isoforms
+      .help = Constrain the unit cell to specific values during refinement after initial indexing.
+      .multiple=True
+    {
+      name=None
+        .type=str
+      cell=None
+        .type=unit_cell
+      lookup_symbol=None
+        .type=str
+        .help=The sgtbx lookup symbol of the reflections pointgroup
+      rmsd_target_mm=None
+        .type=float
+        .help=Maximum acceptable DIALS positional rmsd, in mm
+      beam_restraint=None
+        .type=floats(size=2)
+        .help=Known beam position in mm X,Y, rmsd_target_mm is reused here as a circle of confusion
+        .help=to assure that no images are accepted where the lattice is misindexed by a unit shift.
+    }
   }
 }
 """

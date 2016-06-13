@@ -253,6 +253,65 @@ class stills_indexer(indexer_base):
 
           reflections_for_refinement = self.reflections.select(
             self.indexed_reflections)
+
+          if len(self.params.stills.isoforms) > 0:
+            import copy
+            isoform_experiments = ExperimentList()
+            isoform_reflections = flex.reflection_table()
+            # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
+            self.all_params.refinement.reflections.outlier.algorithm = "null"
+            self.all_params.refinement.parameterisation.crystal.fix = "cell"
+            self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
+
+            for expt_id, experiment in enumerate(experiments):
+              reflections = reflections_for_refinement.select(reflections_for_refinement['id'] == expt_id)
+              reflections['id'] = flex.int(len(reflections),0)
+              refiners = []
+              for isoform in self.params.stills.isoforms:
+                iso_experiment = copy.deepcopy(experiment)
+                crystal = iso_experiment.crystal
+                if isoform.lookup_symbol != crystal.get_space_group().type().lookup_symbol():
+                  info("Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"%(crystal.get_space_group().type().lookup_symbol(), isoform.name, isoform.lookup_symbol))
+                  continue
+                crystal.set_B(isoform.cell.fractionalization_matrix())
+
+                info("Refining isoform %s"%isoform.name)
+                refiners.append(e_refine(params=self.all_params, experiments=ExperimentList([iso_experiment]), reflections=reflections, graph_verbose=False))
+
+              positional_rmsds = [math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2) for P in refiners]
+              info("Positional rmsds for all isoforms:" + str(positional_rmsds))
+              minrmsd_mm = min(positional_rmsds)
+              minindex = positional_rmsds.index(minrmsd_mm)
+              info("The smallest rmsd is %5.1f um from isoform %s" % (
+                1000. * minrmsd_mm, self.params.stills.isoforms[minindex].name))
+              if self.params.stills.isoforms[minindex].rmsd_target_mm is not None:
+                info("Asserting %f < %f"%(minrmsd_mm, self.params.stills.isoforms[minindex].rmsd_target_mm))
+                assert minrmsd_mm < self.params.stills.isoforms[minindex].rmsd_target_mm
+              info("Acceptable rmsd for isoform %s." % (self.params.stills.isoforms[minindex].name))
+              if len(self.params.stills.isoforms) == 2:
+                info("Rmsd gain over the other isoform %5.1f um." % (
+                1000. * abs(positional_rmsds[0] - positional_rmsds[1])))
+              R = refiners[minindex]
+              # Now one last check to see if direct beam is out of bounds
+              if self.params.stills.isoforms[minindex].beam_restraint is not None:
+                from scitbx import matrix
+                refined_beam = matrix.col(
+                  R.get_experiments()[0].detector[0].get_beam_centre_lab(experiments[0].beam.get_s0())[0:2])
+                known_beam = matrix.col(self.params.stills.isoforms[minindex].beam_restraint)
+                info("Asserting difference in refined beam center and expected beam center %f < %f"%((refined_beam - known_beam).length(), self.params.stills.isoforms[
+                  minindex].rmsd_target_mm))
+                assert (refined_beam - known_beam).length() < self.params.stills.isoforms[minindex].rmsd_target_mm
+                # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
+
+              experiment = R.get_experiments()[0]
+              experiment.crystal.identified_isoform = self.params.stills.isoforms[minindex].name
+
+              isoform_experiments.append(experiment)
+              reflections['id'] = flex.int(len(reflections),expt_id)
+              isoform_reflections.extend(reflections)
+            experiments = isoform_experiments
+            reflections_for_refinement = isoform_reflections
+
           try:
             refined_experiments, refined_reflections = self.refine(
               experiments, reflections_for_refinement)
