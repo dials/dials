@@ -118,28 +118,25 @@ def background(imageset, indx, params):
   # numpy.histogram to get the same effect... inspired by
   # method in PyFAI
 
+  data = data.as_1d()
   two_theta_array = detector.get_two_theta_array(beam.get_s0())
-  two_theta_array.reshape(flex.grid(data.focus()))
-  two_theta_array.as_1d().set_selected((bad | peak_pixels).iselection(), 0.0)
-  data.as_1d().set_selected((bad | peak_pixels).iselection(), 0.0)
+  two_theta_array.set_selected((bad | peak_pixels).iselection(), 0.0)
+  data.set_selected((bad | peak_pixels).iselection(), 0.0)
 
-  # numpy land :-(
-  import numpy
+  # new fangled flex.weighted_histogram :-)
   n_bins = params.bins
-  n_two_theta = two_theta_array.as_1d().as_numpy_array()
-  n_data = data.as_1d().as_numpy_array()
-  n_data2 = (data * data).as_1d().as_numpy_array()
+  h0 = flex.weighted_histogram(two_theta_array, n_slots=n_bins)
+  h1 = flex.weighted_histogram(two_theta_array, data, n_slots=n_bins)
+  h2 = flex.weighted_histogram(two_theta_array, data * data, n_slots=n_bins)
+
+  d0 = h0.slots()
+  d1 = h1.slots()
+  d2 = h2.slots()
+
+  I = d1 / d0
+  I2 = d2 / d0
 
   tt_range = 0, flex.max(two_theta_array)
-
-  ref, junk = numpy.histogram(n_two_theta, bins=n_bins, range=tt_range)
-  val, junk = numpy.histogram(n_two_theta, bins=n_bins, weights=n_data,
-                              range=tt_range)
-  val2, junk = numpy.histogram(n_two_theta, bins=n_bins, weights=n_data2,
-                               range=tt_range)
-
-  I = val / ref
-  I2 = val2 / ref
 
   print '%8s %8s %8s' % ('d', 'I', 'sig')
   for j in range(0, len(I)):
