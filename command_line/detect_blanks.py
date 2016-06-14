@@ -5,6 +5,7 @@ import math
 from logging import info
 from libtbx.math_utils import iceil, ifloor
 import libtbx.phil
+from libtbx.utils import Sorry
 from scitbx import matrix
 from scitbx.array_family import flex
 
@@ -35,6 +36,8 @@ help_message = '''\
 
 
 def blank_counts_analysis(reflections, scan, phi_step, fractional_loss):
+  if not len(reflections):
+    raise Sorry('Input contains no reflections')
 
   xyz_px = reflections['xyzobs.px.value']
   x_px, y_px, z_px = xyz_px.parts()
