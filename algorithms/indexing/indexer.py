@@ -1010,6 +1010,11 @@ class indexer_base(object):
       sel = (panel_numbers == i_panel)
       isel = sel.iselection()
       spots_panel = spots.select(panel_numbers == i_panel)
+      # e.g. data imported from XDS; no variance known then; since is used
+      # only for weights assign as 1 => uniform weights
+      if not 'xyzobs.px.variance' in spots_panel:
+        spots_panel['xyzobs.px.variance'] = flex.vec3_double(
+            len(spots_panel), (1,1,1))
       centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
         detector[i_panel], scan,
         spots_panel['xyzobs.px.value'],
@@ -1861,7 +1866,9 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
     reflections = reflections.select(~ice_sel)
     debug('Rejecting %i reflections at ice ring resolution' %ice_sel.count(True))
 
-  if filter_overlaps:
+  # need bounding box in reflections to find overlaps; this is not there if
+  # spots are from XDS (for example)
+  if filter_overlaps and 'bbox' in reflections:
     overlap_sel = flex.bool(len(reflections), False)
 
     overlaps = reflections.find_overlaps(border=overlaps_border)
