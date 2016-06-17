@@ -167,7 +167,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     # Get the integrator from the input parameters
     info('Configuring spot finder from input parameters')
-    find_spots = SpotFinderFactory.from_parameters(params)
+    find_spots = SpotFinderFactory.from_parameters(
+      datablock=datablock, 
+      params=params)
 
     # Find the spots
     return find_spots(datablock)
