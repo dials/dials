@@ -578,6 +578,12 @@ class SpotFrame(XrayFrame) :
         for i, mask in enumerate(final_mask):
           mask.reshape(cv[i].accessor())
         raw_data = final_mask
+
+      if (self.settings.show_sigma_b_filter or
+          self.settings.show_sigma_s_filter or
+          self.settings.show_global_threshold_filter or
+          self.settings.show_threshold_map):
+        raw_data = (500 * d for d in raw_data)
     return tuple(raw_data)
 
   def show_filters(self):
