@@ -66,3 +66,12 @@ DIALS Newsletter Articles
 
 .. |Computational Crystallography Newsletter| replace:: *Computational Crystallography Newsletter*
 .. _Computational Crystallography Newsletter: http://www.phenix-online.org/newsletter
+
+
+DIALS Reports
+-------------
+
+* `DIALS Framework Report`_
+   - The requirements for and the design of the DIALS framework is described in this report, submitted as the first project deliverable for the BioStruct-X 18 month report.
+
+.. _DIALS Framework Report: ../documents/DIALS_Framework_Report.pdf
