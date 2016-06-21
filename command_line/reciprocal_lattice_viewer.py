@@ -123,12 +123,13 @@ class render_3d(object):
 
     if 'miller_index' in reflections:
       indexed_sel = reflections.get_flags(reflections.flags.indexed)
+      strong_sel = reflections.get_flags(reflections.flags.strong)
       integrated_sel = reflections.get_flags(reflections.flags.integrated)
 
       if self.settings.display == 'indexed':
         reflections = reflections.select(indexed_sel)
       elif self.settings.display == 'unindexed':
-        reflections = reflections.select(~indexed_sel)
+        reflections = reflections.select(strong_sel & ~indexed_sel)
       elif self.settings.display == 'integrated':
         reflections = reflections.select(integrated_sel)
 
