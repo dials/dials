@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 from __future__ import division
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
+from libtbx.utils import Sorry
 
 help_message = '''
 
@@ -495,7 +496,6 @@ class ManualGeometryUpdater(object):
     Override the detector parameters
 
     '''
-    from libtbx.utils import Sorry
 
     # need to gather material from multiple phil parameters to set
     frame_hash = { }
@@ -746,7 +746,6 @@ class Script(object):
     ''' Parse the options. '''
     from dials.util import log
     from logging import info, debug
-    from libtbx.utils import Sorry
 
     # Parse the command line arguments in two passes to set up logging early
     params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
