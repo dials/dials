@@ -36,7 +36,9 @@ Contact
 =======
 
 For feature requests, bug reports or any other information, please contact
-the DIALS developers at dials-support@lists.sourceforge.net.
+the DIALS developers at dials-support@lists.sourceforge.net. For wider
+discussion about the project you may sign up to the `dials-general`_ mailing
+list.
 
 Funding
 =======
@@ -56,3 +58,4 @@ grant R01-GM095887.  Work at LBNL is performed under
 .. _`National Institutes of Health`: http://www.nih.gov/
 .. _`National Institute of General Medical Sciences`: http://www.nigms.nih.gov/
 .. _`Department of Energy`: http://www.energy.gov/
+.. _`dials-general`: https://www.jiscmail.ac.uk/cgi-bin/webadmin?A0=DIALS-GENERAL

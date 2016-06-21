@@ -1,6 +1,7 @@
-=========
+
++++++++++
 Workshops
-=========
++++++++++
 
 * `DIALS-1`_: June 2012 (Diamond Light Source, UK)
 
