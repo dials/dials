@@ -197,7 +197,7 @@ class XDSFileImporter(object):
 
     # Print some general info
     print '-' * 80
-    print 'Read %d experiments' % len(experiments)
+    print 'Read %d experiments from %s' % (len(experiments), xds_file)
 
     # Attempt to create scan-varying crystal model if requested
     if params.read_varying_crystal:
