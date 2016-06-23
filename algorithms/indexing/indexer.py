@@ -1858,6 +1858,7 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 def find_max_cell(reflections, max_cell_multiplier, step_size,
                   nearest_neighbor_percentile, filter_ice=True,
                   filter_overlaps=True, overlaps_border=0):
+  debug('Finding suitable max_cell based on %i reflections' % len(reflections))
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
     from dials.algorithms.spot_finding.per_image_analysis import \
@@ -1879,6 +1880,7 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
       overlap_sel[i1] = True
     debug('Rejecting %i overlapping bounding boxes' %overlap_sel.count(True))
     reflections = reflections.select(~overlap_sel)
+  debug('%i reflections remain for max_cell identification' % len(reflections))
 
   # Histogram spot counts in resolution bins: filter out outlier bin counts
   # according to the Tukey method
