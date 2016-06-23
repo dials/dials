@@ -38,7 +38,6 @@ def run(args):
     phil=phil_scope,
     read_datablocks=True,
     read_datablocks_from_images=True,
-    check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
@@ -97,8 +96,11 @@ def background(imageset, indx, params):
 
   data = data.as_double()
 
+  from dxtbx import datablock
+
   spot_params = phil_scope.fetch(source=parse("")).extract()
-  threshold_function = SpotFinderFactory.configure_threshold(spot_params)
+  threshold_function = SpotFinderFactory.configure_threshold(
+    spot_params, datablock.DataBlock([imageset]))
   peak_pixels = threshold_function.compute_threshold(data, ~bad)
   signal = data.select(peak_pixels.iselection())
   background = data.select((~bad & ~peak_pixels).iselection())
