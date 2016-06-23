@@ -137,14 +137,14 @@ def background(imageset, indx, params):
 
   I = d1 / d0
   I2 = d2 / d0
+  sig = flex.sqrt(I2 - flex.pow2(I))
 
-  tt_range = 0, flex.max(two_theta_array)
+  tt = h0.slot_centers()
 
   print '%8s %8s %8s' % ('d', 'I', 'sig')
-  for j in range(0, len(I)):
-    tt = tt_range[0] + (j + 0.5) * (1.0 / n_bins) * (tt_range[1] - tt_range[0])
-    d = wavelength / (2.0 * math.sin(0.5 * tt))
-    print '%8.3f %8.3f %8.3f' % (d, I[j], math.sqrt(I2[j] - I[j]**2))
+  for j in range(len(I)):
+    d = wavelength / (2.0 * math.sin(0.5 * tt[j]))
+    print '%8.3f %8.3f %8.3f' % (d, I[j], sig[j])
 
 if __name__ == '__main__':
   main()
