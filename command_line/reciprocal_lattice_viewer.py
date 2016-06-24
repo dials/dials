@@ -122,9 +122,22 @@ class render_3d(object):
     reflections = self.reflections
 
     if 'miller_index' in reflections:
+      if 'flags' not in reflections:
+        reflections.set_flags(
+          reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
+        reflections['id'].set_selected(
+          reflections['miller_index'] == (0,0,0), -1)
+        reflections.set_flags(
+          flex.bool(len(reflections), True), reflections.flags.strong)
+        reflections.set_flags(
+          flex.bool(len(reflections), False), reflections.flags.integrated)
+        reflections.set_flags(
+          flex.bool(len(reflections), False), reflections.flags.centroid_outlier)
+
       indexed_sel = reflections.get_flags(reflections.flags.indexed)
       strong_sel = reflections.get_flags(reflections.flags.strong)
       integrated_sel = reflections.get_flags(reflections.flags.integrated)
+      outlier_sel = reflections.get_flags(reflections.flags.centroid_outlier)
 
       if self.settings.display == 'indexed':
         reflections = reflections.select(indexed_sel)
@@ -133,7 +146,6 @@ class render_3d(object):
       elif self.settings.display == 'integrated':
         reflections = reflections.select(integrated_sel)
 
-      outlier_sel = reflections.get_flags(reflections.flags.centroid_outlier)
       if self.settings.outlier_display == 'outliers':
         reflections = reflections.select(outlier_sel)
       if self.settings.outlier_display == 'inliers':
