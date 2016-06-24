@@ -543,12 +543,15 @@ def ice_rings_selection(reflections):
   space_group = sgtbx.space_group_info(number=194).group()
   width = 0.06
 
-  ice_filter = filtering.PowderRingFilter(
-    unit_cell, space_group, flex.min(d_spacings)-width, width)
+  if d_spacings:
+    ice_filter = filtering.PowderRingFilter(
+      unit_cell, space_group, flex.min(d_spacings)-width, width)
 
-  ice_sel = ice_filter(d_spacings)
-  return ice_sel
+    ice_sel = ice_filter(d_spacings)
 
+    return ice_sel
+  else:
+    return None
 
 def resolution_histogram(reflections, imageset, plot_filename=None):
   d_star_sq = flex.pow2(reflections['rlp'].norms())
@@ -657,7 +660,10 @@ def stats_single_image(imageset, reflections, i=None, resolution_analysis=True,
   #plot_ordered_d_star_sq(reflections, imageset)
   reflections_all = reflections
   ice_sel = ice_rings_selection(reflections_all)
-  reflections_no_ice = reflections_all.select(~ice_sel)
+  if ice_sel is not None:
+    reflections_no_ice = reflections_all.select(~ice_sel)
+  else:
+    reflections_no_ice = reflections_all
   n_spots_total = len(reflections_all)
   n_spots_no_ice = len(reflections_no_ice)
   n_spot_4A = (d_spacings > 4).count(True)
