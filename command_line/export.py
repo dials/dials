@@ -82,14 +82,14 @@ phil_scope = parse('''
       .type = bool
       .help = "Force program to use static model even if scan varying is present"
 
-    hklout = hklout.mtz
+    hklout = integrated.mtz
       .type = str
       .help = "The output MTZ file"
   }
 
   nxs {
 
-    hklout = hklout.nxs
+    hklout = integrated.nxs
       .type = str
       .help = "The output Nexus file"
 
@@ -113,11 +113,11 @@ phil_scope = parse('''
 
   output {
 
-    log = dials.export_mtz.log
+    log = dials.export.log
       .type = str
       .help = "The log filename"
 
-    debug_log = dials.export_mtz.debug.log
+    debug_log = dials.export.debug.log
       .type = str
       .help = "The debug log filename"
 

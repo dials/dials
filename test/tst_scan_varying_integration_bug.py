@@ -35,7 +35,7 @@ def exercise_1():
     # print cmd
     result = easy_run.fully_buffered(cmd).raise_if_errors()
 
-  integrated_mtz = "hklout.mtz"
+  integrated_mtz = "integrated.mtz"
   assert os.path.exists(integrated_mtz)
   from iotbx.reflection_file_reader import any_reflection_file
   reader = any_reflection_file(integrated_mtz)

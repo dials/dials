@@ -40,7 +40,7 @@ class Test(object):
       self.reflections
     ]).raise_if_errors()
 
-    assert exists("hklout.nxs")
+    assert exists("integrated.nxs")
 
     print 'OK'
 
@@ -56,7 +56,7 @@ class Test(object):
       self.reflections
     ]).raise_if_errors()
 
-    assert exists("hklout.mtz")
+    assert exists("integrated.mtz")
 
     print 'OK'
 
