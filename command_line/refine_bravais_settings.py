@@ -79,6 +79,32 @@ refinement {
 }
 """))
 
+def bravais_lattice_to_space_groups(chiral_only=True):
+  from cctbx import sgtbx
+  from cctbx.sgtbx import bravais_types
+  from libtbx.containers import OrderedDict
+  bravais_lattice_to_sg = OrderedDict()
+  for sgn in range(230):
+    sg = sgtbx.space_group_info(number=sgn+1).group()
+    if (not chiral_only) or (sg.is_chiral()):
+      bravais_lattice = bravais_types.bravais_lattice(group=sg)
+      bravais_lattice_to_sg.setdefault(str(bravais_lattice), [])
+      bravais_lattice_to_sg[str(bravais_lattice)].append(sg)
+  return bravais_lattice_to_sg
+
+def bravais_lattice_to_space_group_table(chiral_only=True):
+  from logging import info
+  bravais_lattice_to_sg = bravais_lattice_to_space_groups(
+    chiral_only=chiral_only)
+  info('Chiral space groups corresponding to each Bravais lattice:')
+  for bravais_lattice, space_groups in bravais_lattice_to_sg.iteritems():
+    info(': '.join(
+      [bravais_lattice,
+       ' '.join(
+         [sg.type().lookup_symbol().replace(' 1', '').replace(' ', '')
+          for sg in space_groups])]))
+
+
 def run(args):
   from dials.util import log
   from logging import info
@@ -139,6 +165,8 @@ def run(args):
 
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic
+
+  bravais_lattice_to_space_group_table()
 
   cb_op_to_primitive = experiments[0].crystal.get_space_group().info()\
     .change_of_basis_op_to_primitive_setting()
