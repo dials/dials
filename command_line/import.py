@@ -47,10 +47,10 @@ Examples::
 
   find . -name "image_*.cbf" | dials.import
 
-  dials.import <<eof
+  dials.import << EOF
   image_1.cbf
   image_2.cbf
-  eof
+  EOF
 
 '''
 

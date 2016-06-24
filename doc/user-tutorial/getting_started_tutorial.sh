@@ -68,10 +68,10 @@ dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mt
 
 pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
 
-aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << eof
+aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << EOF
 resolution 1.3
 anomalous off
-eof
+EOF
 
 ctruncate -hklin scaled.mtz -hklout truncated.mtz \
 -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
