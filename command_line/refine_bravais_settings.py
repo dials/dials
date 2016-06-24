@@ -101,8 +101,14 @@ def bravais_lattice_to_space_group_table(chiral_only=True):
     info(': '.join(
       [bravais_lattice,
        ' '.join(
-         [sg.type().lookup_symbol().replace(' 1', '').replace(' ', '')
-          for sg in space_groups])]))
+         [short_space_group_name(sg) for sg in space_groups])]))
+
+def short_space_group_name(space_group):
+  sgt = space_group.type()
+  symbol = sgt.lookup_symbol()
+  if sgt.number() > 1:
+    symbol = symbol.replace(' 1', '')
+  return symbol.replace(' ', '')
 
 
 def run(args):
