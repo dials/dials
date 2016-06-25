@@ -43,11 +43,11 @@ def show_rotation_matrix_differences(crystal_models, out=None, miller_indices=No
     for j in range(i+1, len(crystal_models)):
       R_ij, euler_angles, cb_op = difference_rotation_matrix_and_euler_angles(
         crystal_models[i], crystal_models[j])
-      print "Change of basis op: %s" %cb_op
-      print "Rotation matrix to transform crystal %i to crystal %i:" %(
+      print >> out, "Change of basis op: %s" %cb_op
+      print >> out, "Rotation matrix to transform crystal %i to crystal %i:" %(
         i+1, j+1)
-      print R_ij.mathematica_form(format="%.3f", one_row_per_line=True)
-      print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
+      print >> out, R_ij.mathematica_form(format="%.3f", one_row_per_line=True)
+      print >> out, "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
       if miller_indices is not None:
         for hkl in miller_indices:
           cm_i = crystal_models[i]
@@ -64,5 +64,5 @@ def show_rotation_matrix_differences(crystal_models, out=None, miller_indices=No
           v_i = hkl[0] * a_star_i + hkl[1] * b_star_i + hkl[2] * c_star_i
           v_j = hkl[0] * a_star_j + hkl[1] * b_star_j + hkl[2] * c_star_j
 
-          print '(%i,%i,%i):' %hkl, '%.2f deg' %v_i.angle(v_j, deg=True)
-      print
+          print >> out, '(%i,%i,%i):' %hkl, '%.2f deg' %v_i.angle(v_j, deg=True)
+      print >> out
