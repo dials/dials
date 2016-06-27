@@ -61,7 +61,7 @@ class Test(object):
 
     # provide mosflm beam centre to dials.import
     cmd = 'dials.import %s mask=%s output.datablock=datablock_with_mask.json' % (image_files, mask_filename)
-    easy_run.fully_buffered(cmd)
+    easy_run.fully_buffered(cmd).raise_if_errors()
     assert os.path.exists("datablock_with_mask.json")
     datablock = load.datablock("datablock_with_mask.json")[0]
     imgset = datablock.extract_imagesets()[0]
@@ -116,7 +116,7 @@ class Test(object):
 
     # provide mosflm beam centre to dials.import
     cmd = 'dials.import %s geometry.phil output.datablock=override_geometry.json' %image_files
-    easy_run.fully_buffered(cmd)
+    easy_run.fully_buffered(cmd).raise_if_errors()
     assert os.path.exists("override_geometry.json")
     datablock = load.datablock("override_geometry.json")[0]
     imgset = datablock.extract_imagesets()[0]
@@ -158,7 +158,7 @@ class Test(object):
 
     # provide mosflm beam centre to dials.import
     cmd = 'dials.import %s mosflm_beam_centre=100,200 output.datablock=mosflm_beam_centre.json' %image_files
-    easy_run.fully_buffered(cmd)
+    easy_run.fully_buffered(cmd).raise_if_errors()
     assert os.path.exists("mosflm_beam_centre.json")
     datablock = load.datablock("mosflm_beam_centre.json")[0]
     imgset = datablock.extract_imagesets()[0]
@@ -167,7 +167,7 @@ class Test(object):
 
     # provide an alternative datablock.json to get geometry from
     cmd = 'dials.import %s reference_geometry=mosflm_beam_centre.json output.datablock=mosflm_beam_centre2.json' %image_files
-    easy_run.fully_buffered(cmd)
+    easy_run.fully_buffered(cmd).raise_if_errors()
     assert os.path.exists("mosflm_beam_centre2.json")
     datablock = load.datablock("mosflm_beam_centre2.json")[0]
     imgset = datablock.extract_imagesets()[0]
