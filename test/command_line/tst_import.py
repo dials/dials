@@ -96,7 +96,7 @@ class Test(object):
               image_size = 30,40
               trusted_range = 50,60
               thickness = 70
-              material = "New material"
+              material = "Si"
               fast_axis = -1,0,0
               slow_axis = 0,-1,0
               origin = 100,100,100
@@ -134,7 +134,7 @@ class Test(object):
     assert detector[0].get_image_size() == (30,40)
     assert detector[0].get_trusted_range() == (50,60)
     assert detector[0].get_thickness() == 70
-    assert detector[0].get_material() == "New material"
+    assert detector[0].get_material() == "Si"
     assert detector[0].get_fast_axis() == (-1,0,0)
     assert detector[0].get_slow_axis() == (0,-1,0)
     assert detector[0].get_origin() == (100,100,100)
