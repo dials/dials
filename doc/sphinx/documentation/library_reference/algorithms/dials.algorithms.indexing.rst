@@ -4,7 +4,7 @@ dials.algorithms.indexing
 
 .. contents:: Table of Contents
 
-.. automodule:: dials.algorithms.indexing.indexer2
+.. automodule:: dials.algorithms.indexing.indexer
     :members:
     :undoc-members:
     :show-inheritance:
