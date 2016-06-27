@@ -395,7 +395,9 @@ class ManualGeometryUpdater(object):
         self.params.geometry.beam)
       self.override_detector(
         imageset.get_detector(),
-        self.params.geometry.detector)
+        self.params.geometry.detector,
+        imageset.get_beam(),
+        self.params.geometry.beam)
       self.override_goniometer(
         imageset.get_goniometer(),
         self.params.geometry.goniometer)
@@ -409,7 +411,9 @@ class ManualGeometryUpdater(object):
           self.params.geometry.beam)
         self.override_detector(
           imageset.get_detector(index=i),
-          self.params.geometry.detector)
+          self.params.geometry.detector,
+          imageset.get_beam(index=i),
+          self.params.geometry.beam)
         self.override_goniometer(
           imageset.get_goniometer(index=i),
           self.params.geometry.goniometer)
@@ -490,7 +494,7 @@ class ManualGeometryUpdater(object):
     if params.direction is not None:
       beam.set_direction(params.direction)
 
-  def override_detector(self, detector, params):
+  def override_detector(self, detector, params, beam, beam_params):
     '''
     Override the detector parameters
 
@@ -528,6 +532,21 @@ class ManualGeometryUpdater(object):
         panel.set_thickness(panel_params.thickness)
       if panel_params.material is not None:
         panel.set_material(panel_params.material)
+
+      # Update the parallax correction
+      if (panel_params.material is not None or
+          panel_params.thickness is not None or
+          beam_params.wavelength is not None):
+        from dxtbx.model import ParallaxCorrectedPxMmStrategy
+        from cctbx.eltbx import attenuation_coefficient
+        table = attenuation_coefficient.get_table(panel.get_material())
+        mu = table.mu_at_angstrom(beam.get_wavelength()) / 10.0
+        t0 = panel.get_thickness()
+        px_mm = ParallaxCorrectedPxMmStrategy(mu, t0)
+        panel.set_px_mm_strategy(px_mm)
+        panel.set_mu(mu)
+
+
 
     for panel_id in frame_hash:
       fast_axis = frame_hash[panel_id]['fast_axis']
