@@ -1,9 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_sphinx_html
 
 from __future__ import division
-from libtbx import easy_run
+from dials.util.procrunner import run_process
 import libtbx.load_env
-import os.path as op
 import shutil
 import os
 
@@ -30,10 +29,14 @@ if __name__ == "__main__":
   dials_github_io = libtbx.env.find_in_repositories("dials.github.io")
   assert (dials_github_io is not None)
   assert (cctbx_base is not None)
-  base_dir = op.dirname(cctbx_base)
+  base_dir = os.path.dirname(cctbx_base)
   dest_dir = dials_github_io
-  os.chdir(op.join(dials_dir, "doc", "sphinx"))
-  easy_run.call("make clean")
-  easy_run.call("make html")
+  os.chdir(os.path.join(dials_dir, "doc", "sphinx"))
+  result = run_process(["make", "clean"])
+  assert result['exitcode'] == 0, \
+      'make clean failed with exit code %d' % result['exitcode']
+  result = run_process(["make", "html"])
+  assert result['exitcode'] == 0, \
+      'make html failed with exit code %d' % result['exitcode']
   print "Copying HTML pages to", dest_dir
   recursive_overwrite("build/html", dest_dir)
