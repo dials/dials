@@ -108,13 +108,24 @@ class render_3d(object):
         sel = (self.reflections_input['id'] == i)
       if isinstance(self.reflections_input['id'], flex.size_t):
         self.reflections_input['id'] = self.reflections_input['id'].as_int()
-      refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-        self.reflections_input.select(sel),
-        imageset.get_detector(), imageset.get_scan())
 
-      indexer.indexer_base.map_centroids_to_reciprocal_space(
-        refl, imageset.get_detector(), imageset.get_beam(),
-        imageset.get_goniometer())
+      # 155 handle data from predictions *only* if that is what we have
+      if 'xyzobs.px.value' in self.reflections_input:
+        refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
+          self.reflections_input.select(sel),
+          imageset.get_detector(), imageset.get_scan())
+
+        indexer.indexer_base.map_centroids_to_reciprocal_space(
+          refl, imageset.get_detector(), imageset.get_beam(),
+          imageset.get_goniometer())
+
+      else:
+        # work on xyzcal.mm
+        refl = self.reflections_input.select(sel)
+        indexer.indexer_base.map_centroids_to_reciprocal_space(
+          refl, imageset.get_detector(), imageset.get_beam(),
+          imageset.get_goniometer(), calculated=True)
+
       reflections.extend(refl)
       self.reflections = reflections
 
@@ -158,21 +169,28 @@ class render_3d(object):
         reflections = reflections.select(sel)
 
     d_spacings = 1/reflections['rlp'].norms()
+
+    # 155 handle data from predictions *only* if that is what we have
+    if 'xyzobs.px.value' in self.reflections_input:
+      use_column = 'xyzobs.px.value'
+    else:
+      use_column = 'xyzcal.px'
+
     if self.settings.d_min is not None:
       reflections = reflections.select(d_spacings > self.settings.d_min)
     else:
       self.settings.d_min = flex.min(d_spacings)
     if self.settings.z_min is not None:
-      z = reflections['xyzobs.px.value'].parts()[2]
+      z = reflections[use_column].parts()[2]
       reflections = reflections.select(z >= self.settings.z_min)
     else:
-      z = reflections['xyzobs.px.value'].parts()[2]
+      z = reflections[use_column].parts()[2]
       self.settings.z_min = flex.min(z)
     if self.settings.z_max is not None:
-      z = reflections['xyzobs.px.value'].parts()[2]
+      z = reflections[use_column].parts()[2]
       reflections = reflections.select(z <= self.settings.z_max)
     else:
-      z = reflections['xyzobs.px.value'].parts()[2]
+      z = reflections[use_column].parts()[2]
       self.settings.z_max = flex.max(z)
     points = reflections['rlp'] * 100
     self.viewer.set_points(points)

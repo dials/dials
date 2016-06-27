@@ -1025,7 +1025,8 @@ class indexer_base(object):
     return spots
 
   @staticmethod
-  def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
+  def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer,
+                                        calculated=False):
     """Map mm/radian spot centroids to reciprocal space.
 
     Used to convert spot centroids provided in mm/radian units to reciprocal space
@@ -1048,7 +1049,10 @@ class indexer_base(object):
     for i_panel in range(len(detector)):
       sel = (panel_numbers == i_panel)
       spots_panel = spots_mm.select(panel_numbers == i_panel)
-      x, y, rot_angle = spots_panel['xyzobs.mm.value'].parts()
+      if calculated:
+        x, y, rot_angle = spots_panel['xyzcal.mm'].parts()
+      else:
+        x, y, rot_angle = spots_panel['xyzobs.mm.value'].parts()
       s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
       s1 = s1/s1.norms() * (1/beam.get_wavelength())
       spots_mm['s1'].set_selected(sel, s1)
