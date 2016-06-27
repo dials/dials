@@ -92,6 +92,7 @@ Also we would like to read :samp:`datablock.json` with the DIALS API rather than
 extracting the sweep templates using something like :program:`grep`.
 
 .. highlight:: python
+
 The script we used to do this is reproduced below. You can copy this into a file,
 save it as :samp:`process_TehA.py` and then run it as follows::
 

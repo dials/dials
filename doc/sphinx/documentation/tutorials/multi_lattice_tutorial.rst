@@ -1,5 +1,5 @@
 Multi-lattice Tutorial
-=================
+======================
 
 Introduction
 ------------
@@ -13,11 +13,6 @@ datasets which are contained in the file `semisynthetic_multilattice_data_2.tar.
 
 .. |semisynthetic| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10820.png
                :target: http://dx.doi.org/10.5281/zenodo.10820
-
-A complete example script can be found
-:download:`here<../user-tutorial/multi_lattice_tutorial.sh>`, which can be run as follows::
-
-  ./multi_latice_tutorial.sh /path/to/semisynthetic_multilattice_data
 
 Import
 ^^^^^^
@@ -182,7 +177,7 @@ multiple lattices using the parameter max_lattices=2 (e.g.)::
 
 
 Next we run
-:doc:`dials.refine_bravais_settings </programs/dials_refine_bravais_settings>`
+:doc:`dials.refine_bravais_settings </documentation/programs/dials_refine_bravais_settings>`
 refining each indexing solution (separately) in all Bravais settings
 consistent with the indexed unit cell. In this example we would continue
 processing using bravais_setting_5.json, i.e. solution number 5.
@@ -399,7 +394,7 @@ Integration
 ^^^^^^^^^^^
 
 After the refinement is done the next step is integration, which is performed
-by the program :doc:`dials.integrate </programs/dials_integrate>`.
+by the program :doc:`dials.integrate </documentation/programs/dials_integrate>`.
 
 ::
 
@@ -720,7 +715,7 @@ Exporting as MTZ
 
 The final step of dials processing is to export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
-and aimless_. Currently :doc:`dials.export </programs/dials_export>`
+and aimless_. Currently :doc:`dials.export </documentation/programs/dials_export>`
 only supports one experiment at a time, therefore it is necessary to first
 split the :samp:`integrated_experiments.json` and :samp:`integrated.pickle` into
 separate files

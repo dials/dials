@@ -22,7 +22,8 @@ For the following tutorials we suggest using the latest version of DIALS::
 
    $ module load dials/latest
 
-The thaumatin dataset used in the :doc:`processing_in_detail_tutorial` is centrally
+The thaumatin dataset used in the
+:doc:`documentation/tutorials/processing_in_detail_tutorial` is centrally
 available on the Diamond filesystem at
 :samp:`/dls/mx-scratch/dials_tutorial/i04_thaumatin/`.
 

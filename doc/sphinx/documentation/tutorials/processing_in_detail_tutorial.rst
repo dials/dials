@@ -409,7 +409,7 @@ HTML report
 
 The most important information provided by :doc:`dials.show <../programs/dials_show>`,
 :doc:`dials.plot_scan_varying_crystal <../programs/dials_plot_scan_varying_crystal>`
-and :doc:`dials.analyse_output <../programs/dials_analyse_output>` can
+and :samp:`dials.analyse_output` can
 now be combined in one place within an HTML report generated using the program
 :doc:`dials.report <../programs/dials_report>`.
 This is run simply with:
