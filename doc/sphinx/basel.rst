@@ -24,8 +24,8 @@ General
 
    Main documentation page <index>
    documentation/programs/index
-   documnentation/conventions
-   documnentation/library_reference/index
+   documentation/conventions
+   documentation/library_reference/index
 
 * :ref:`genindex`
 * :ref:`modindex`
