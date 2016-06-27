@@ -117,6 +117,8 @@ class ModelParameterisation(object):
     self._num_free = None
     self._dstate_dp = [None] * len(param_list)
     self._is_multi_state = is_multi_state
+    if is_multi_state:
+      self._multi_state_derivatives = [None] * len(model)
     self._exp_ids = experiment_ids
     self._null_state = self.get_state() * 0.0
     return
@@ -288,16 +290,17 @@ class ModelParameterisation(object):
     else:
       null = self._null_state
 
+    if self._is_multi_state:
+      if multi_state_elt is None:
+        raise ValueError('Must provide multi_state_elt for a multi-state parameterisation')
+      else:
+        # copy results for the state of interest
+        self._dstate_dp = self._multi_state_derivatives[multi_state_elt]
+
     if only_free:
       grads = [ds_dp for ds_dp, p in zip(self._dstate_dp, self._param) if not p.get_fixed()]
     else:
       grads = self._dstate_dp
-
-    if self._is_multi_state:
-      if multi_state_elt is None:
-        return [[null if e is None else e for e in ds_dp] for ds_dp in grads]
-      else:
-        return [null if e[multi_state_elt] is None else e[multi_state_elt] for e in grads]
 
     return [null if e is None else e for e in grads]
 
@@ -306,28 +309,19 @@ class ModelParameterisation(object):
     """Given a variance-covariance array for the parameters of this model,
     propagate those estimated errors into the uncertainties of the model state"""
 
-    # the gradients are in an n-element list, each element of which is an
-    # object of length m with the same dimensions as the model state. The
-    # elements of this object contains the gradient of the state element in
-    # the equivalent position
-    grads = self.get_ds_dp()
-
-    if len(grads) == 0: return
-
+    grads = []
     if self._is_multi_state:
-      # in this case the gradients are an n-element list, each element of which
-      # is a list of length of the number of states. Each element of the list
-      # is an object of length m with the same dimensions as the model state.
-      # Reshape this data so that the list over the number of states becomes
-      # the outer level.
-      reshaped = []
-      for i in range(len(grads[0])):
-        reshaped.append([g[i] for g in grads])
-      grads = reshaped
+      i = 0
+      while True:
+        try:
+          grads.append(self.get_ds_dp(multi_state_elt=i))
+          i += 1
+        except IndexError:
+          break
     else:
-      # we only have a single state, so put gradients in a 1-elt list to mimic
-      # the structure of the multi-state case
-      grads = [grads]
+      grads.append(self.get_ds_dp())
+
+    if len(grads[0]) == 0: return
 
     # the jacobian is the m*n matrix of partial derivatives of the m state
     # elements wrt the n parameters

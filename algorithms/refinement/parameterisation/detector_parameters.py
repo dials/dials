@@ -539,7 +539,9 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
                               Tau1, dTau1_dtau1, Tau2, dTau2_dtau2, Tau3, dTau3_dtau3)
 
     # Store the results.  The results come back as a single array, convert it to a 2D array
-    self._dstate_dp = [[matrix.sqr(ret[j*len(self._offsets)+i]) for i in xrange(len(self._offsets))] for j in xrange(len(self._param))]
+    self._multi_state_derivatives = [[matrix.sqr(ret[j*len(self._offsets)+i]) \
+        for j in xrange(len(self._param))] \
+        for i in xrange(len(self._offsets))]
 
     return
 
@@ -724,8 +726,8 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
     ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
 
     # reset stored derivatives
-    for i in range(len(self._dstate_dp)):
-      self._dstate_dp[i] = [None] * len(detector)
+    for i in range(len(detector)):
+      self._multi_state_derivatives[i] = [None] * len(self._dstate_dp)
 
     # calculate derivatives of the attached Panel matrices
     # ====================================================
@@ -837,234 +839,13 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
 
       # combine these vectors together into derivatives of the panel
       # matrix d and store them, converting angles back to mrad
-
-      # derivative wrt dist
-      self._dstate_dp[0][panel_id] = matrix.sqr(ddir1_ddist.elems +
-                  ddir2_ddist.elems + do_ddist.elems).transpose()
-
-      # derivative wrt shift1
-      self._dstate_dp[1][panel_id] = matrix.sqr(ddir1_dshift1.elems +
-                  ddir2_dshift1.elems + do_dshift1.elems).transpose()
-
-      # derivative wrt shift2
-      self._dstate_dp[2][panel_id] = matrix.sqr(ddir1_dshift2.elems +
-                  ddir2_dshift2.elems + do_dshift2.elems).transpose()
-
-      # derivative wrt tau1
-      self._dstate_dp[3][panel_id] = matrix.sqr(ddir1_dtau1.elems +
-                  ddir2_dtau1.elems + do_dtau1.elems).transpose() / 1000.
-
-      # derivative wrt tau2
-      self._dstate_dp[4][panel_id] = matrix.sqr(ddir1_dtau2.elems +
-                  ddir2_dtau2.elems + do_dtau2.elems).transpose() / 1000.
-
-      # derivative wrt tau3
-      self._dstate_dp[5][panel_id] = matrix.sqr(ddir1_dtau3.elems +
-                  ddir2_dtau3.elems + do_dtau3.elems).transpose() / 1000.
-
-    return
-
-class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel):
-  """Parameterisation for a multiple panel detector with a hierarchy, where
-  panel groups selected at some level of the hierarchy are treated as single
-  rigid blocks with 6 DOF.
-
-  This is the initial version that sets new panel states directly. The new
-  (preferred) version sets at the group level instead."""
-
-  def __init__(self, detector, beam, experiment_ids=None, level=0):
-    """The additional 'level' argument selects which level of the detector
-    hierarchy is chosen to determine panel groupings that are treated as
-    separate rigid blocks."""
-    if experiment_ids is None:
-      experiment_ids = [0]
-
-    try:
-      h = detector.hierarchy()
-    except AttributeError:
-      print "This detector does not have a hierarchy"
-      raise
-
-    # list the panel groups at the chosen level
-    try:
-      groups = get_panel_groups_at_depth(h, level)
-    except AttributeError:
-      print "Cannot access the hierarchy at the depth level={0}".format(level)
-      raise
-
-    # collect the panel ids for each Panel within the groups
-    panels = [p for p in detector]
-    self._panel_ids_by_group = [get_panel_ids_at_root(panels, g) for g in groups]
-
-    p_list = []
-    istate = []
-    self._offsets = []
-    self._dir1s = []
-    self._dir2s = []
-
-    # loop over the groups, collecting initial parameters and states
-    for igp, pnl_ids in enumerate(self._panel_ids_by_group):
-
-      # determine which panel in the group is nearest to the direct beam. Call
-      # this the reference panel for this group
-      beam_centres = [matrix.col(detector[i].get_beam_centre(beam.get_unit_s0())) \
-                      for i in pnl_ids]
-      panel_centres = [0.5 * matrix.col(detector[i].get_image_size_mm())
-                       for i in pnl_ids]
-      beam_to_centres = [(a - b).length() for a, b in \
-                        zip(beam_centres, panel_centres)]
-      ref_panel_id = beam_to_centres.index(min(beam_to_centres))
-      ref_panel = detector[ref_panel_id]
-
-      # get some vectors we need from the ref_panel
-      so = matrix.col(ref_panel.get_origin())
-      d1 = matrix.col(ref_panel.get_fast_axis())
-      d2 = matrix.col(ref_panel.get_slow_axis())
-      dn = matrix.col(ref_panel.get_normal())
-
-      # we choose the dorg vector for this group to terminate in the centre of
-      # the ref_panel, and the offset between the end of the dorg vector and
-      # each Panel origin is a coordinate matrix with elements in the basis d1,
-      # d2, dn. We need also each Panel's plane directions dir1 and dir2 in
-      # terms of d1, d2 and dn.
-      ref_panel_centre = panel_centres[ref_panel_id]
-      dorg = so + ref_panel_centre[0] * d1 + ref_panel_centre[1] * d2
-
-      offsets, dir1s, dir2s = [], [], []
-      for p in [detector[i] for i in pnl_ids]:
-        offset = matrix.col(p.get_origin()) - dorg
-        offsets.append(matrix.col((offset.dot(d1),
-                                   offset.dot(d2),
-                                   offset.dot(dn))))
-        dir1 = matrix.col(p.get_fast_axis())
-        dir1_new_basis = matrix.col((dir1.dot(d1),
-                                     dir1.dot(d2),
-                                     dir1.dot(dn)))
-        dir1s.append(dir1_new_basis)
-        dir2 = matrix.col(p.get_slow_axis())
-        dir2_new_basis = matrix.col((dir2.dot(d1),
-                                     dir2.dot(d2),
-                                     dir2.dot(dn)))
-        dir2s.append(dir2_new_basis)
-
-      # The offsets and directions in the d1, d2, dn basis are fixed
-      # quantities, not dependent on parameter values. Keep these as separate
-      # sub-lists for each group
-      self._offsets.append(offsets)
-      self._dir1s.append(dir1s)
-      self._dir2s.append(dir2s)
-
-      # Set up the initial state for this group. This is the basis d1, d2, dn.
-      istate.append({'d1':d1, 'd2':d2, 'dn':dn})
-
-      # set up the parameters.
-      # distance from lab origin to ref_panel plane along its normal,
-      # in initial orientation
-      distance = ref_panel.get_directed_distance()
-      dist = Parameter(distance, dn,
-        'length (mm)', 'Group{0}Dist'.format(igp + 1))
-
-      # shift in the detector model plane to locate dorg, in initial
-      # orientation
-      shift = dorg - dn * distance
-      shift1 = Parameter(shift.dot(d1), d1,
-        'length (mm)', 'Group{0}Shift1'.format(igp + 1))
-      shift2 = Parameter(shift.dot(d2), d2,
-        'length (mm)', 'Group{0}Shift2'.format(igp + 1))
-
-      # rotations of the plane through its origin about:
-      # 1) axis normal to initial orientation
-      # 2) d1 axis of initial orientation
-      # 3) d2 axis of initial orientation
-      tau1 = Parameter(0, dn, 'angle (mrad)', 'Group{0}Tau1'.format(igp + 1))
-      tau2 = Parameter(0, d1, 'angle (mrad)', 'Group{0}Tau2'.format(igp + 1))
-      tau3 = Parameter(0, d2, 'angle (mrad)', 'Group{0}Tau3'.format(igp + 1))
-
-      # extend the parameter list with those pertaining to this group
-      p_list.extend([dist, shift1, shift2, tau1, tau2, tau3])
-
-    # set up the base class
-    ModelParameterisation.__init__(self, detector, istate, p_list,
-                                   experiment_ids=experiment_ids,
-                                   is_multi_state=True)
-
-    # call compose to calculate all the derivatives
-    self.compose()
-
-    return
-
-  def compose(self):
-
-    from dials_refinement_helpers_ext import multi_panel_compose
-    from scitbx.array_family import flex
-
-    # reset the list that holds derivatives
-    for i in range(len(self._dstate_dp)):
-      self._dstate_dp[i] = [None] * len(self._model)
-
-    # loop over groups of panels collecting derivatives of the state wrt
-    # parameters
-    param = iter(self._param)
-    for igp, pnl_ids in enumerate(self._panel_ids_by_group):
-
-      # extract parameters from the internal list
-      dist = param.next()
-      shift1 = param.next()
-      shift2 = param.next()
-      tau1 = param.next()
-      tau2 = param.next()
-      tau3 = param.next()
-
-      param_vals = flex.double((dist.value, shift1.value, shift2.value,
-                                  tau1.value, tau2.value, tau3.value))
-      param_axes = flex.vec3_double((dist.axis, shift1.axis, shift2.axis,
-                                      tau1.axis, tau2.axis, tau3.axis))
-      offsets = flex.vec3_double(self._offsets[igp])
-      dir1s = flex.vec3_double(self._dir1s[igp])
-      dir2s = flex.vec3_double(self._dir2s[igp])
-
-      # convert angles to radians
-      tau1rad = tau1.value / 1000.
-      tau2rad = tau2.value / 1000.
-      tau3rad = tau3.value / 1000.
-
-      # compose rotation matrices and their first order derivatives
-      Tau1 = (tau1.axis).axis_and_angle_as_r3_rotation_matrix(tau1rad,
-                                                              deg=False)
-      dTau1_dtau1 = dR_from_axis_and_angle(tau1.axis, tau1rad, deg=False)
-
-      Tau2 = (tau2.axis).axis_and_angle_as_r3_rotation_matrix(tau2rad,
-                                                              deg=False)
-      dTau2_dtau2 = dR_from_axis_and_angle(tau2.axis, tau2rad, deg=False)
-
-      Tau3 = (tau3.axis).axis_and_angle_as_r3_rotation_matrix(tau3rad,
-                                                              deg=False)
-      dTau3_dtau3 = dR_from_axis_and_angle(tau3.axis, tau3rad, deg=False)
-
-      # Compose the new state
-      initial_state = self._initial_state[igp]
-      ret = multi_panel_compose(flex.vec3_double([initial_state[tag] for tag in ('d1','d2','dn')]),
-                                param_vals,
-                                param_axes,
-                                self._model,
-                                flex.int(pnl_ids),
-                                offsets,
-                                dir1s,
-                                dir2s,
-                                Tau1, dTau1_dtau1,
-                                Tau2, dTau2_dtau2,
-                                Tau3, dTau3_dtau3)
-
-      # The results come back as a single array, convert it to a 2D array
-      result = ([[matrix.sqr(ret[j*len(offsets)+i]) for i in xrange(len(offsets))] for j in xrange(6)])
-
-      # loop over the 6 parameters of this block. i is the index to assign to,
-      # res are the derivatives for that particular parameter
-      for i, res in zip(range((igp*6), (igp*6 + 6)), result):
-
-        # loop over the panels in this group
-        for j, pnl_id in enumerate(pnl_ids):
-          self._dstate_dp[i][pnl_id] = res[j]
+      self._multi_state_derivatives[panel_id] = \
+        [matrix.sqr(ddir1_ddist.elems + ddir2_ddist.elems + do_ddist.elems).transpose(),
+         matrix.sqr(ddir1_dshift1.elems + ddir2_dshift1.elems + do_dshift1.elems).transpose(),
+         matrix.sqr(ddir1_dshift2.elems + ddir2_dshift2.elems + do_dshift2.elems).transpose(),
+         matrix.sqr(ddir1_dtau1.elems + ddir2_dtau1.elems + do_dtau1.elems).transpose() / 1000.,
+         matrix.sqr(ddir1_dtau2.elems + ddir2_dtau2.elems + do_dtau2.elems).transpose() / 1000.,
+         matrix.sqr(ddir1_dtau3.elems + ddir2_dtau3.elems + do_dtau3.elems).transpose() / 1000.]
 
     return
 
@@ -1219,8 +1000,8 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
   def compose(self):
 
     # reset the list that holds derivatives
-    for i in range(len(self._dstate_dp)):
-      self._dstate_dp[i] = [None] * len(self._model)
+    for i in range(len(self._model)):
+      self._multi_state_derivatives[i] = [None] * len(self._dstate_dp)
 
     # loop over groups of panels collecting derivatives of the state wrt
     # parameters
@@ -1398,10 +1179,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       # derivative wrt tau3
       ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
 
-      # reset stored derivatives
-      #for i in range(len(self._dstate_dp)):
-      #  self._dstate_dp[i] = [None] * len(detector)
-
       # calculate derivatives of the attached Panel matrices
       # ====================================================
       for (panel_id, offset, dir1_new_basis, dir2_new_basis) in \
@@ -1514,340 +1291,35 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
         # matrix d and store them, converting angles back to mrad
 
         i = igp * 6
+
         # derivative wrt dist
-        self._dstate_dp[i][panel_id] = matrix.sqr(ddir1_ddist.elems +
-                    ddir2_ddist.elems + do_ddist.elems).transpose()
+        self._multi_state_derivatives[panel_id][i] = \
+          matrix.sqr(ddir1_ddist.elems + ddir2_ddist.elems +
+                     do_ddist.elems).transpose()
 
         # derivative wrt shift1
-        self._dstate_dp[i+1][panel_id] = matrix.sqr(ddir1_dshift1.elems +
-                    ddir2_dshift1.elems + do_dshift1.elems).transpose()
+        self._multi_state_derivatives[panel_id][i+1] = \
+          matrix.sqr(ddir1_dshift1.elems +
+                     ddir2_dshift1.elems + do_dshift1.elems).transpose()
 
         # derivative wrt shift2
-        self._dstate_dp[i+2][panel_id] = matrix.sqr(ddir1_dshift2.elems +
+        self._multi_state_derivatives[panel_id][i+2] = \
+          matrix.sqr(ddir1_dshift2.elems +
                     ddir2_dshift2.elems + do_dshift2.elems).transpose()
 
         # derivative wrt tau1
-        self._dstate_dp[i+3][panel_id] = matrix.sqr(ddir1_dtau1.elems +
+        self._multi_state_derivatives[panel_id][i+3] = \
+          matrix.sqr(ddir1_dtau1.elems +
                     ddir2_dtau1.elems + do_dtau1.elems).transpose() / 1000.
 
         # derivative wrt tau2
-        self._dstate_dp[i+4][panel_id] = matrix.sqr(ddir1_dtau2.elems +
+        self._multi_state_derivatives[panel_id][i+4] = \
+          matrix.sqr(ddir1_dtau2.elems +
                     ddir2_dtau2.elems + do_dtau2.elems).transpose() / 1000.
 
         # derivative wrt tau3
-        self._dstate_dp[i+5][panel_id] = matrix.sqr(ddir1_dtau3.elems +
+        self._multi_state_derivatives[panel_id][i+5] = \
+          matrix.sqr(ddir1_dtau3.elems +
                     ddir2_dtau3.elems + do_dtau3.elems).transpose() / 1000.
 
     return
-
-#  def compose(self):
-#
-#    # extract items from the initial state
-#    id1 = self._initial_state['d1']
-#    id2 = self._initial_state['d2']
-#    idn = self._initial_state['dn']
-#
-#    # extract parameters from the internal list
-#    dist, shift1, shift2, tau1, tau2, tau3 = self._param
-#
-#    # Extract the detector model
-#    detector = self._model
-#
-#    # convert angles to radians
-#    tau1rad = tau1.value / 1000.
-#    tau2rad = tau2.value / 1000.
-#    tau3rad = tau3.value / 1000.
-#
-#    # compose rotation matrices and their first order derivatives
-#    Tau1 = (tau1.axis).axis_and_angle_as_r3_rotation_matrix(tau1rad,
-#                                                            deg=False)
-#    dTau1_dtau1 = dR_from_axis_and_angle(tau1.axis, tau1rad, deg=False)
-#
-#    Tau2 = (tau2.axis).axis_and_angle_as_r3_rotation_matrix(tau2rad,
-#                                                            deg=False)
-#    dTau2_dtau2 = dR_from_axis_and_angle(tau2.axis, tau2rad, deg=False)
-#
-#    Tau3 = (tau3.axis).axis_and_angle_as_r3_rotation_matrix(tau3rad,
-#                                                            deg=False)
-#    dTau3_dtau3 = dR_from_axis_and_angle(tau3.axis, tau3rad, deg=False)
-#
-#    Tau32 = Tau3 * Tau2
-#    Tau321 = Tau32 * Tau1
-#
-#    # Compose new state
-#    # =================
-#    # First the frame positioned at a distance from the lab origin
-#    P0 = dist.value * dist.axis # distance along initial detector normal
-#    Px = P0 + id1 # point at the end of d1 in lab frame
-#    Py = P0 + id2 # point at the end of d2 in lab frame
-#
-#    # detector shift vector
-#    dsv = P0 + shift1.value * shift1.axis + shift2.value * shift2.axis
-#
-#    # compose dorg point
-#    dorg = Tau321 * dsv - Tau32 * P0 + P0
-#
-#    # compose new d1, d2 and dn and ensure frame remains orthonormal.
-#    d1 = (Tau321 * (Px - P0)).normalize()
-#    d2 = (Tau321 * (Py - P0)).normalize()
-#    dn = d1.cross(d2).normalize()
-#    d2 = dn.cross(d1)
-#
-#    # compose new Panel origins
-#    origins = [dorg + offset[0] * d1 + \
-#                      offset[1] * d2 + \
-#                      offset[2] * dn for offset in self._offsets]
-#
-#    # compose new Panel directions
-#    dir1s = [vec[0] * d1 + \
-#             vec[1] * d2 + \
-#             vec[2] * dn for vec in self._dir1s]
-#    dir2s = [vec[0] * d1 + \
-#             vec[1] * d2 + \
-#             vec[2] * dn for vec in self._dir2s]
-#
-#    # now update the panels with their new position and orientation.
-#    for p, dir1, dir2, org in zip(detector, dir1s, dir2s, origins):
-#
-#      p.set_frame(dir1, dir2, org)
-#
-#    # calculate derivatives of the state wrt parameters
-#    # =================================================
-#    # Start with the dorg vector, where
-#    # dorg = Tau321 * dsv - Tau32 * P0 + P0
-#
-#    # derivative wrt dist
-#    dP0_ddist = dist.axis
-#    ddsv_ddist = dP0_ddist
-#    ddorg_ddist = Tau321 * ddsv_ddist - Tau32 * dP0_ddist + \
-#                  dP0_ddist
-#
-#    # derivative wrt shift1
-#    ddsv_dshift1 = shift1.axis
-#    ddorg_dshift1 = Tau321 * ddsv_dshift1
-#
-#    # derivative wrt shift2
-#    ddsv_dshift2 = shift2.axis
-#    ddorg_dshift2 = Tau321 * ddsv_dshift2
-#
-#    # derivative wrt tau1
-#    dTau321_dtau1 = Tau32 * dTau1_dtau1
-#    ddorg_dtau1 = dTau321_dtau1 * dsv
-#
-#    # derivative wrt tau2
-#    dTau32_dtau2 = Tau3 * dTau2_dtau2
-#    dTau321_dtau2 = dTau32_dtau2 * Tau1
-#    ddorg_dtau2 = dTau321_dtau2 * dsv - dTau32_dtau2 * P0
-#
-#    # derivative wrt tau3
-#    dTau32_dtau3 = dTau3_dtau3 * Tau2
-#    dTau321_dtau3 = dTau32_dtau3 * Tau1
-#    ddorg_dtau3 = dTau321_dtau3 * dsv - dTau32_dtau3 * P0
-#
-#    # Now derivatives of the direction d1, where
-#    # d1 = (Tau321 * (Px - P0)).normalize()
-#    # For calc of derivatives ignore the normalize(), which should
-#    # be unnecessary anyway as Px - P0 is a unit vector and Tau321 a
-#    # pure rotation.
-#
-#    # derivative wrt dist
-#    # dPx_ddist = dist.axis; dP0_ddist = dist.axis, so these cancel
-#    dd1_ddist = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt shift1
-#    dd1_dshift1 = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt shift2
-#    dd1_dshift2 = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt tau1
-#    dd1_dtau1 = dTau321_dtau1 * (Px - P0)
-#
-#    # derivative wrt tau2
-#    dd1_dtau2 = dTau321_dtau2 * (Px - P0)
-#
-#    # derivative wrt tau3
-#    dd1_dtau3 = dTau321_dtau3 * (Px - P0)
-#
-#    # Derivatives of the direction d2, where
-#    # d2 = (Tau321 * (Py - P0)).normalize()
-#
-#    # derivative wrt dist
-#    dd2_ddist = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt shift1
-#    dd2_dshift1 = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt shift2
-#    dd2_dshift2 = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt tau1
-#    dd2_dtau1 = dTau321_dtau1 * (Py - P0)
-#
-#    # derivative wrt tau2
-#    dd2_dtau2 = dTau321_dtau2 * (Py - P0)
-#
-#    # derivative wrt tau3
-#    dd2_dtau3 = dTau321_dtau3 * (Py - P0)
-#
-#    # Derivatives of the direction dn, where
-#    # dn = d1.cross(d2).normalize()
-#
-#    # derivative wrt dist
-#    ddn_ddist = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt shift1
-#    ddn_dshift1 = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt shift2
-#    ddn_dshift2 = matrix.col((0., 0., 0.))
-#
-#    # derivative wrt tau1. Product rule for cross product applies
-#    ddn_dtau1 = dd1_dtau1.cross(d2) + d1.cross(dd2_dtau1)
-#
-#    # derivative wrt tau2
-#    ddn_dtau2 = dd1_dtau2.cross(d2) + d1.cross(dd2_dtau2)
-#
-#    # derivative wrt tau3
-#    ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
-#
-#    # reset stored derivatives
-#    for i in range(len(self._dstate_dp)):
-#      self._dstate_dp[i] = [None] * len(detector)
-#
-#    # calculate derivatives of the attached Panel matrices
-#    # ====================================================
-#    for panel_id, (offset, dir1_new_basis, dir2_new_basis) in enumerate(
-#                            zip(self._offsets, self._dir1s, self._dir2s)):
-#
-#      # Panel origin:
-#      # o = dorg + offset[0] * d1 + offset[1] * d2 + offset[2] * dn
-#
-#      # derivative wrt dist. NB only ddorg_ddist is not null! The other
-#      # elements are left here to aid understanding, but should be removed
-#      # when this class is ported to C++ for speed.
-#      do_ddist = ddorg_ddist + offset[0] * dd1_ddist + \
-#                               offset[1] * dd2_ddist + \
-#                               offset[2] * ddn_ddist
-#
-#      # derivative wrt shift1. NB only ddorg_dshift1 is non-null.
-#      do_dshift1 = ddorg_dshift1 + offset[0] * dd1_dshift1 + \
-#                                   offset[1] * dd2_dshift1 + \
-#                                   offset[2] * ddn_dshift1
-#
-#      # derivative wrt shift2. NB only ddorg_dshift2 is non-null.
-#      do_dshift2 = ddorg_dshift2 + offset[0] * dd1_dshift2 + \
-#                                   offset[1] * dd2_dshift2 + \
-#                                   offset[2] * ddn_dshift2
-#
-#      # derivative wrt tau1
-#      do_dtau1 = ddorg_dtau1 + offset[0] * dd1_dtau1 + \
-#                               offset[1] * dd2_dtau1 + \
-#                               offset[2] * ddn_dtau1
-#
-#      # derivative wrt tau2
-#      do_dtau2 = ddorg_dtau2 + offset[0] * dd1_dtau2 + \
-#                               offset[1] * dd2_dtau2 + \
-#                               offset[2] * ddn_dtau2
-#
-#      # derivative wrt tau3
-#      do_dtau3 = ddorg_dtau3 + offset[0] * dd1_dtau3 + \
-#                               offset[1] * dd2_dtau3 + \
-#                               offset[2] * ddn_dtau3
-#
-#      # Panel dir1:
-#      # dir1 = dir1_new_basis[0] * d1 + dir1_new_basis[1] * d2 +
-#      #        dir1_new_basis[2] * dn
-#
-#      # derivative wrt dist. NB These are all null.
-#      ddir1_ddist = dir1_new_basis[0] * dd1_ddist + \
-#                    dir1_new_basis[1] * dd2_ddist + \
-#                    dir1_new_basis[2] * ddn_ddist
-#
-#      # derivative wrt shift1. NB These are all null.
-#      ddir1_dshift1 = dir1_new_basis[0] * dd1_dshift1 + \
-#                      dir1_new_basis[1] * dd2_dshift1 + \
-#                      dir1_new_basis[2] * ddn_dshift1
-#
-#      # derivative wrt shift2. NB These are all null.
-#      ddir1_dshift2 = dir1_new_basis[0] * dd1_dshift2 + \
-#                      dir1_new_basis[1] * dd2_dshift2 + \
-#                      dir1_new_basis[2] * ddn_dshift2
-#
-#      # derivative wrt tau1
-#      ddir1_dtau1 = dir1_new_basis[0] * dd1_dtau1 + \
-#                    dir1_new_basis[1] * dd2_dtau1 + \
-#                    dir1_new_basis[2] * ddn_dtau1
-#
-#      # derivative wrt tau2
-#      ddir1_dtau2 = dir1_new_basis[0] * dd1_dtau2 + \
-#                    dir1_new_basis[1] * dd2_dtau2 + \
-#                    dir1_new_basis[2] * ddn_dtau2
-#
-#      # derivative wrt tau3
-#      ddir1_dtau3 = dir1_new_basis[0] * dd1_dtau3 + \
-#                    dir1_new_basis[1] * dd2_dtau3 + \
-#                    dir1_new_basis[2] * ddn_dtau3
-#
-#      # Panel dir2:
-#      # dir2 = dir2_new_basis[0] * d1 + dir2_new_basis[1] * d2 +
-#      #        dir2_new_basis[2] * dn
-#
-#      # derivative wrt dist. NB These are all null.
-#      ddir2_ddist = dir2_new_basis[0] * dd1_ddist + \
-#                    dir2_new_basis[1] * dd2_ddist + \
-#                    dir2_new_basis[2] * ddn_ddist
-#
-#      # derivative wrt shift1. NB These are all null.
-#      ddir2_dshift1 = dir2_new_basis[0] * dd1_dshift1 + \
-#                      dir2_new_basis[1] * dd2_dshift1 + \
-#                      dir2_new_basis[2] * ddn_dshift1
-#
-#      # derivative wrt shift2. NB These are all null.
-#      ddir2_dshift2 = dir2_new_basis[0] * dd1_dshift2 + \
-#                      dir2_new_basis[1] * dd2_dshift2 + \
-#                      dir2_new_basis[2] * ddn_dshift2
-#
-#      # derivative wrt tau1
-#      ddir2_dtau1 = dir2_new_basis[0] * dd1_dtau1 + \
-#                    dir2_new_basis[1] * dd2_dtau1 + \
-#                    dir2_new_basis[2] * ddn_dtau1
-#
-#      # derivative wrt tau2
-#      ddir2_dtau2 = dir2_new_basis[0] * dd1_dtau2 + \
-#                    dir2_new_basis[1] * dd2_dtau2 + \
-#                    dir2_new_basis[2] * ddn_dtau2
-#
-#      # derivative wrt tau3
-#      ddir2_dtau3 = dir2_new_basis[0] * dd1_dtau3 + \
-#                    dir2_new_basis[1] * dd2_dtau3 + \
-#                    dir2_new_basis[2] * ddn_dtau3
-#
-#      # combine these vectors together into derivatives of the panel
-#      # matrix d and store them, converting angles back to mrad
-#
-#      # derivative wrt dist
-#      self._dstate_dp[0][panel_id] = matrix.sqr(ddir1_ddist.elems +
-#                  ddir2_ddist.elems + do_ddist.elems).transpose()
-#
-#      # derivative wrt shift1
-#      self._dstate_dp[1][panel_id] = matrix.sqr(ddir1_dshift1.elems +
-#                  ddir2_dshift1.elems + do_dshift1.elems).transpose()
-#
-#      # derivative wrt shift2
-#      self._dstate_dp[2][panel_id] = matrix.sqr(ddir1_dshift2.elems +
-#                  ddir2_dshift2.elems + do_dshift2.elems).transpose()
-#
-#      # derivative wrt tau1
-#      self._dstate_dp[3][panel_id] = matrix.sqr(ddir1_dtau1.elems +
-#                  ddir2_dtau1.elems + do_dtau1.elems).transpose() / 1000.
-#
-#      # derivative wrt tau2
-#      self._dstate_dp[4][panel_id] = matrix.sqr(ddir1_dtau2.elems +
-#                  ddir2_dtau2.elems + do_dtau2.elems).transpose() / 1000.
-#
-#      # derivative wrt tau3
-#      self._dstate_dp[5][panel_id] = matrix.sqr(ddir1_dtau3.elems +
-#                  ddir2_dtau3.elems + do_dtau3.elems).transpose() / 1000.
-#
-#    return
