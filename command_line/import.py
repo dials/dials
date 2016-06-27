@@ -282,8 +282,7 @@ class DataBlockImporter(object):
         if len(datablocks) == 0:
           raise Sorry('No datablocks found in directories %s' % self.params.input.directory)
       else:
-        self.parser.print_help()
-        exit(0)
+        raise Sorry('No datablocks found')
     if len(datablocks) > 1:
       raise Sorry("More than 1 datablock found")
 
