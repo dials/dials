@@ -26,9 +26,6 @@ Examples::
 '''
 
 phil_scope= libtbx.phil.parse("""
-  data = None
-    .type = path
-    .optional = False
   reverse_phi = False
     .type = bool
     .optional = True
