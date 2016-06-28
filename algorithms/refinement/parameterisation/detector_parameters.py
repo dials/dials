@@ -909,8 +909,12 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       # centres then projecting that point onto the group frame.
       centroid = reduce(lambda a,b: a+b, panel_centres_in_lab_frame) / len(
         panel_centres_in_lab_frame)
-      gp_centroid = matrix.col(self._groups[igp].get_ray_intersection(centroid))
-      dorg = go + gp_centroid[0] * d1 + gp_centroid[1] * d2
+      try:
+        gp_centroid = matrix.col(self._groups[igp].get_ray_intersection(centroid))
+        dorg = go + gp_centroid[0] * d1 + gp_centroid[1] * d2
+      except RuntimeError: # workaround for a group frame that passes through
+        # the origin
+        dorg = matrix.col((0., 0., 0.))
 
       # The offset between the end of the dorg vector and
       # each Panel origin is a coordinate matrix with elements in the basis d1,
