@@ -106,7 +106,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     taking care of whether it is a scan-varying parameterisation or not"""
 
     if parameterisation is None: return None
-    if hasattr(parameterisation, 'num_sets'): parameterisation.compose(frame)
+    if hasattr(parameterisation, 'num_sets') and not self._current_frame.get(
+        parameterisation) == frame:
+      parameterisation.compose(frame)
+      self._current_frame[parameterisation] = frame
     if multi_state_elt is None:
       state = parameterisation.get_state()
     else:
@@ -180,6 +183,9 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
       bp = self._get_beam_parameterisation(iexp)
       dp = self._get_detector_parameterisation(iexp)
+
+      # reset current frame cache for scan-varying parameterisations
+      self._current_frame = {}
 
       # get state and derivatives for each reflection
       for i, frame, pnl in zip(isel, obs_image_numbers, panels):
@@ -378,6 +384,9 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
       xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
       bp = self._get_beam_parameterisation(iexp)
       dp = self._get_detector_parameterisation(iexp)
+
+      # reset current frame cache for scan-varying parameterisations
+      self._current_frame = {}
 
       # get state and derivatives for each block
       for block in xrange(flex.min(blocks),
