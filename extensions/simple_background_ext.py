@@ -25,7 +25,7 @@ class SimpleBackgroundExt(BackgroundIface):
       outlier
         .help = "Outlier rejection prior to background fit"
       {
-        algorithm = *null nsigma truncated normal mosflm tukey
+        algorithm = *null nsigma truncated normal plane tukey
           .help = "The outlier rejection algorithm."
           .type = choice
 
@@ -63,7 +63,7 @@ class SimpleBackgroundExt(BackgroundIface):
             .type = int
         }
 
-        mosflm
+        plane
           .help = "Parameters for mosflm-like outlier rejector. This algorithm"
                   "is mainly used in conjunction with a linear 2d background."
           .expert_level = 1
@@ -137,9 +137,9 @@ class SimpleBackgroundExt(BackgroundIface):
       kwargs['upper'] = params.outlier.nsigma.upper
     elif params.outlier.algorithm == 'normal':
       kwargs['min_pixels'] = params.outlier.normal.min_pixels
-    elif params.outlier.algorithm == 'mosflm':
-      kwargs['fraction'] = params.outlier.mosflm.fraction
-      kwargs['n_sigma'] = params.outlier.mosflm.n_sigma
+    elif params.outlier.algorithm == 'plane':
+      kwargs['fraction'] = params.outlier.plane.fraction
+      kwargs['n_sigma'] = params.outlier.plane.n_sigma
     elif params.outlier.algorithm == 'tukey':
       kwargs['lower'] = params.outlier.tukey.lower
       kwargs['upper'] = params.outlier.tukey.upper
