@@ -46,7 +46,7 @@ class BackgroundAlgorithm(object):
         return Linear2dModeller()
       elif model == 'linear3d':
         return Linear3dModeller()
-      raise RuntimeError("Unexpected background model %s" % model)
+      raise RuntimeError("Unexpected background model: %s" % model)
 
     def select_rejector():
       if outlier == 'null':
@@ -62,7 +62,7 @@ class BackgroundAlgorithm(object):
       elif outlier == 'normal':
         return NormalOutlierRejector(
           kwargs.get("min_pixels", 10))
-      elif outlier == 'mosflm':
+      elif outlier == 'plane':
         return MosflmOutlierRejector(
           kwargs.get("fraction", 1.0),
           kwargs.get("n_sigma", 4.0))
@@ -70,7 +70,7 @@ class BackgroundAlgorithm(object):
         return TukeyOutlierRejector(
           kwargs.get("lower", 1.5),
           kwargs.get("upper", 1.5))
-      raise RuntimeError("Unexpected outlier rejector %s" % outlier.algorithm)
+      raise RuntimeError("Unexpected outlier rejector: %s" % outlier)
 
     modeller = select_modeller()
     rejector = select_rejector()
