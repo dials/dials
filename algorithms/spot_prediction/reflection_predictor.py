@@ -11,6 +11,7 @@
 
 from __future__ import division
 from libtbx.phil import parse
+from libtbx.utils import Sorry
 
 # The phil parameters
 phil_scope = parse('''
@@ -79,6 +80,12 @@ class ReflectionPredictor(object):
           mask = result['d'] > dmax
           result.del_selected(mask)
         return result
+
+    # Check prediction to maximum resolution is possible
+    wl = experiment.beam.get_wavelength()
+    if dmin is not None and dmin < 0.5 * wl:
+      raise Sorry("Prediction at dmin of {0} is not possible "
+                  "with wavelength {1}".format(dmin, wl))
 
     # Select the predictor class
     if isinstance(experiment.imageset, ImageSweep):
