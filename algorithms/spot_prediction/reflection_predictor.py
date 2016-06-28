@@ -84,7 +84,7 @@ class ReflectionPredictor(object):
     # Check prediction to maximum resolution is possible
     wl = experiment.beam.get_wavelength()
     if dmin is not None and dmin < 0.5 * wl:
-      raise Sorry("Prediction at dmin of {0} is not possible "
+      raise Sorry("Prediction at d_min of {0} is not possible "
                   "with wavelength {1}".format(dmin, wl))
 
     # Select the predictor class
