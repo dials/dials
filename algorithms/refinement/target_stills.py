@@ -75,10 +75,11 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     return reflections
 
-  def predict_for_reflection_table(self, reflections):
+  def predict_for_reflection_table(self, reflections, skip_derivatives=False):
     """perform prediction for all reflections in the supplied table"""
 
-    # predict
+    # Just predict. The other preparation is irrelevant for stills, as is
+    # skip_derivatives
     return self._predict_core(reflections)
 
   @staticmethod

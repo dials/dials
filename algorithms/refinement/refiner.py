@@ -1730,16 +1730,19 @@ class Refiner(object):
 
   def predict_for_indexed(self):
     """perform prediction for all the indexed reflections passed into
-    refinement and additionally set the used_in_refinement flag"""
+    refinement and additionally set the used_in_refinement flag. Do not
+    compose the derivatives of states of the model as this is expensive and
+    they are not needed outside of a refinement run"""
 
-    reflections = self.predict_for_reflection_table(self._refman.get_indexed())
+    reflections = self.predict_for_reflection_table(self._refman.get_indexed(),
+      skip_derivatives=True)
     mask = self.selection_used_for_refinement()
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
     return reflections
 
-  def predict_for_reflection_table(self, reflections):
+  def predict_for_reflection_table(self, reflections, skip_derivatives=False):
     """perform prediction for all reflections in the supplied table"""
 
     # delegate to the target object, which has access to the predictor
-    return self._target.predict_for_reflection_table(reflections)
+    return self._target.predict_for_reflection_table(reflections, skip_derivatives)
 

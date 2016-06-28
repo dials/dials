@@ -80,7 +80,7 @@ class Target(object):
     self._restraints_parameterisation = restraints_parameterisation
     return
 
-  def _predict_core(self, reflections):
+  def _predict_core(self, reflections, skip_derivatives=False):
     """perform prediction for the specified reflections"""
 
     # duck-typing for ScanVaryingPredictionParameterisation. Only this
@@ -88,7 +88,7 @@ class Target(object):
     # derivatives).
     try:
       self._prediction_parameterisation.compose(
-          reflections)
+          reflections, skip_derivatives)
     except AttributeError:
       pass
 
@@ -162,7 +162,7 @@ class Target(object):
 
     return self._predict_core(refs)
 
-  def predict_for_reflection_table(self, reflections):
+  def predict_for_reflection_table(self, reflections, skip_derivatives=False):
     """perform prediction for all reflections in the supplied table"""
 
     # set the entering flags if this has not been done
@@ -192,7 +192,7 @@ class Target(object):
     # determine indices to include and predict on the subset
     inc = inc.select(to_keep)
     sub_refl = reflections.select(inc)
-    preds = self._predict_core(sub_refl)
+    preds = self._predict_core(sub_refl, skip_derivatives)
 
     # set updated subset back into place
     reflections.set_selected(inc, preds)

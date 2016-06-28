@@ -161,10 +161,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return
 
-  def compose(self, reflections):
+  def compose(self, reflections, skip_derivatives=False):
     """Compose scan-varying crystal parameterisations at each observed image
     number, for each experiment, for all reflections. Put the U, B and UB
-    matrices in the reflection table, and cache the derivatives."""
+    matrices in the reflection table, and cache the derivatives if requested"""
 
     self._prepare_for_compose(reflections)
 
@@ -214,26 +214,27 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
                's0_vector':s0,
                'd_matrix':dmat,
                'D_matrix':Dmat}
-        if xl_op is not None and self._varying_xl_orientations:
-          for j, dU in enumerate(xl_op.get_ds_dp()):
-            colname = "dU_dp{0}".format(j)
-            row[colname] = dU
-        if xl_ucp is not None and self._varying_xl_unit_cells:
-          for j, dB in enumerate(xl_ucp.get_ds_dp()):
-            colname = "dB_dp{0}".format(j)
-            row[colname] = dB
-        if bp is not None and self._varying_beams:
-          for j, ds0 in enumerate(bp.get_ds_dp()):
-            colname = "ds0_dp{0}".format(j)
-            row[colname] = ds0
-        if dp is not None and self._varying_detectors:
-          if dp.is_multi_state:
-            dds = dp.get_ds_dp(multi_state_elt=pnl)
-          else:
-            dds = dp.get_ds_dp()
-          for j, dd in enumerate(dds):
-            colname = "dd_dp{0}".format(j)
-            row[colname] = dd
+        if not skip_derivatives:
+          if xl_op is not None and self._varying_xl_orientations:
+            for j, dU in enumerate(xl_op.get_ds_dp()):
+              colname = "dU_dp{0}".format(j)
+              row[colname] = dU
+          if xl_ucp is not None and self._varying_xl_unit_cells:
+            for j, dB in enumerate(xl_ucp.get_ds_dp()):
+              colname = "dB_dp{0}".format(j)
+              row[colname] = dB
+          if bp is not None and self._varying_beams:
+            for j, ds0 in enumerate(bp.get_ds_dp()):
+              colname = "ds0_dp{0}".format(j)
+              row[colname] = ds0
+          if dp is not None and self._varying_detectors:
+            if dp.is_multi_state:
+              dds = dp.get_ds_dp(multi_state_elt=pnl)
+            else:
+              dds = dp.get_ds_dp()
+            for j, dd in enumerate(dds):
+              colname = "dd_dp{0}".format(j)
+              row[colname] = dd
         reflections[i] = row
 
     # set the UB matrices for prediction
@@ -364,7 +365,7 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
   """Overloads compose to calculate model states per block rather than per
   reflection"""
 
-  def compose(self, reflections):
+  def compose(self, reflections, skip_derivatives=False):
     """Compose scan-varying crystal parameterisations at the specified image
     number, for the specified experiment, for each image. Put the U, B and
     UB matrices in the reflection table, and cache the derivatives."""
@@ -441,7 +442,7 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
             reflections['d_matrix'].set_selected(subsel2, dmat)
             reflections['D_matrix'].set_selected(subsel2, Dmat)
 
-            if dp is not None and self._varying_detectors:
+            if dp is not None and self._varying_detectors and not skip_derivatives:
               for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id,
                                                   use_none_as_null=True)):
                 if dd is None: continue
@@ -456,28 +457,29 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
           reflections['d_matrix'].set_selected(subsel, dmat)
           reflections['D_matrix'].set_selected(subsel, Dmat)
 
-          if dp is not None and self._varying_detectors:
+          if dp is not None and self._varying_detectors and not skip_derivatives:
             for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
               if dd is None: continue
               colname = "dd_dp{0}".format(j)
               reflections[colname].set_selected(subsel, dd)
 
         # set derivatives of the states for crystal and beam
-        if xl_op is not None and self._varying_xl_orientations:
-          for j, dU in enumerate(xl_op.get_ds_dp(use_none_as_null=True)):
-            if dU is None: continue
-            colname = "dU_dp{0}".format(j)
-            reflections[colname].set_selected(subsel, dU)
-        if xl_ucp is not None and self._varying_xl_unit_cells:
-          for j, dB in enumerate(xl_ucp.get_ds_dp(use_none_as_null=True)):
-            if dB is None: continue
-            colname = "dB_dp{0}".format(j)
-            reflections[colname].set_selected(subsel, dB)
-        if bp is not None and self._varying_beams:
-          for j, ds0 in enumerate(bp.get_ds_dp(use_none_as_null=True)):
-            if ds0 is None: continue
-            colname = "ds0_dp{0}".format(j)
-            reflections[colname].set_selected(subsel, ds0)
+        if not skip_derivatives:
+          if xl_op is not None and self._varying_xl_orientations:
+            for j, dU in enumerate(xl_op.get_ds_dp(use_none_as_null=True)):
+              if dU is None: continue
+              colname = "dU_dp{0}".format(j)
+              reflections[colname].set_selected(subsel, dU)
+          if xl_ucp is not None and self._varying_xl_unit_cells:
+            for j, dB in enumerate(xl_ucp.get_ds_dp(use_none_as_null=True)):
+              if dB is None: continue
+              colname = "dB_dp{0}".format(j)
+              reflections[colname].set_selected(subsel, dB)
+          if bp is not None and self._varying_beams:
+            for j, ds0 in enumerate(bp.get_ds_dp(use_none_as_null=True)):
+              if ds0 is None: continue
+              colname = "ds0_dp{0}".format(j)
+              reflections[colname].set_selected(subsel, ds0)
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
