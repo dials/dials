@@ -119,18 +119,21 @@ class Script(object):
 
     # Import stuff
     info("Loading files...")
-    if len(all_paths) == 1:
-      datablocks = DataBlockFactory.from_filenames(all_paths)
-    else:
-      def do_import(filename):
-        info("Loading %s"%os.path.basename(filename))
+    def do_import(filename):
+      info("Loading %s"%os.path.basename(filename))
+      try:
+        datablocks = DataBlockFactory.from_json_file(filename)
+      except ValueError:
         datablocks = DataBlockFactory.from_filenames([filename])
-        if len(datablocks) == 0:
-          raise Abort("Could not load %s"%filename)
-        if len(datablocks) > 1:
-          raise Abort("Got multiple datablocks from file %s"%filename)
-        return datablocks[0]
+      if len(datablocks) == 0:
+        raise Abort("Could not load %s"%filename)
+      if len(datablocks) > 1:
+        raise Abort("Got multiple datablocks from file %s"%filename)
+      return datablocks[0]
 
+    if len(all_paths) == 1:
+      datablocks = [do_import(all_paths[0])]
+    else:
       datablocks = easy_mp.parallel_map(
         func=do_import,
         iterable=all_paths,
