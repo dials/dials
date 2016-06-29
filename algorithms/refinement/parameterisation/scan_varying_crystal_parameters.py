@@ -16,7 +16,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
                ScanVaryingModelParameterisation, \
                GaussianSmoother
 from dials.algorithms.refinement.refinement_helpers \
-    import dR_from_axis_and_angle
+    import dR_from_axis_and_angle, CrystalOrientationCompose
 
 class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
   """A work-in-progress time-dependent parameterisation for crystal
@@ -86,30 +86,14 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
     dphi2_dp = phi2_weights * (1. / phi2_sumweights)
     dphi3_dp = phi3_weights * (1. / phi3_sumweights)
 
-    # convert angles to radians
-    phi1rad, phi2rad, phi3rad = (phi1 / 1000., phi2 / 1000.,
-                                 phi3 / 1000.)
-
-    # compose rotation matrices and their first order derivatives wrt angle
-    Phi1 = (phi1_set.axis).axis_and_angle_as_r3_rotation_matrix(phi1rad, deg=False)
-    dPhi1_dphi1 = dR_from_axis_and_angle(phi1_set.axis, phi1rad, deg=False)
-
-    Phi2 = (phi2_set.axis).axis_and_angle_as_r3_rotation_matrix(phi2rad, deg=False)
-    dPhi2_dphi2 = dR_from_axis_and_angle(phi2_set.axis, phi2rad, deg=False)
-
-    Phi3 = (phi3_set.axis).axis_and_angle_as_r3_rotation_matrix(phi3rad, deg=False)
-    dPhi3_dphi3 = dR_from_axis_and_angle(phi3_set.axis, phi3rad, deg=False)
-
-    Phi21 = Phi2 * Phi1
-    Phi321 = Phi3 * Phi21
-
-    # Compose new state
-    self._U_at_t = Phi321 * U0
-
-    # calculate derivatives of the state wrt angle, convert back to mrad
-    dU_dphi1 = Phi3 * Phi2 * dPhi1_dphi1 * U0 / 1000.
-    dU_dphi2 = Phi3 * dPhi2_dphi2 * Phi1 * U0 / 1000.
-    dU_dphi3 = dPhi3_dphi3 * Phi21 * U0 / 1000.
+    # calculate state and derivatives using the helper class
+    coc = CrystalOrientationCompose(U0, phi1, phi1_set.axis,
+                                    phi2, phi2_set.axis,
+                                    phi3, phi3_set.axis)
+    self._U_at_t = coc.U()
+    dU_dphi1 = coc.dU_dphi1()
+    dU_dphi2 = coc.dU_dphi2()
+    dU_dphi3 = coc.dU_dphi3()
 
     # calculate derivatives of state wrt underlying parameters
     dU_dp1 = [None] * dphi1_dp.size
