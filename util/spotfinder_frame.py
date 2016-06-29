@@ -1407,8 +1407,14 @@ class SpotSettingsPanel (SettingsPanel) :
     print "Saved mask.pickle"
 
   def OnUpdateKabschDebug(self, event):
-    self.OnUpdateCM(event)
-    self.GetParent().GetParent().show_filters()
+    if self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue() \
+    or self.settings.nsigma_s != self.nsigma_s_ctrl.GetPhilValue() \
+    or self.settings.global_threshold != self.global_threshold_ctrl.GetPhilValue() \
+    or self.settings.kernel_size != self.kernel_size_ctrl.GetPhilValue() \
+    or self.settings.min_local != self.min_local_ctrl.GetPhilValue() \
+    or self.settings.gain != self.gain_ctrl.GetPhilValue():
+      self.OnUpdateCM(event)
+      self.GetParent().GetParent().show_filters()
 
   def OnKabschDebug(self, event):
     button = event.GetEventObject()
