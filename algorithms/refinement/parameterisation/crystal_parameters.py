@@ -56,7 +56,7 @@ class CrystalOrientationParameterisation(ModelParameterisation,
     #
     # [U] = [Phi3][Phi2][Phi1][U0]
 
-    ### Set up the initial state
+    # set up the initial state
     if experiment_ids is None:
       experiment_ids = [0]
     istate = crystal.get_U()
