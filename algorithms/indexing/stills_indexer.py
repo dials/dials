@@ -525,10 +525,10 @@ class stills_indexer(indexer_base):
     print best
 
     if not params.indexing.stills.index_only:
-      if best.rmsd > 1.5:
+      if best.rmsd > params.indexing.stills.rmsd_min_px:
         raise Sorry ("RMSD too high, %f" %rmsd)
 
-      if best.ewald_proximal_volume > 0.0015:
+      if best.ewald_proximal_volume > params.indexing.stills.ewald_proximal_volume_max:
         raise Sorry ("Ewald proximity volume too high, %f"%best.ewald_proximal_volume)
 
       if len(candidates) > 1:

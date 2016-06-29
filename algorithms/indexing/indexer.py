@@ -306,6 +306,14 @@ indexing {
       .type = bool
       .help = If true, no attempt is made to refine the model. The indexing \
               solution with the best RMSD is chosen.
+    rmsd_min_px = 1.5
+      .type = float
+      .help = Minimum acceptable RMSD for choosing candidate basis solutions \
+              (in pixels)
+    ewald_proximal_volume_max = 0.0015
+      .type = float
+      .help = Maximum acceptable ewald proximal volume when choosing candidate \
+              basis solutions
     isoforms
       .help = Constrain the unit cell to specific values during refinement after initial indexing.
       .multiple=True
