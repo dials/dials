@@ -22,7 +22,27 @@ from rstbx.symmetry.constraints.parameter_reduction \
 from dials.algorithms.refinement.refinement_helpers \
   import CrystalOrientationCompose
 
-class CrystalOrientationParameterisation(ModelParameterisation):
+class CrystalOrientationMixin(object):
+  """Mix-in class defining some functionality unique to crystal orientation
+  parameterisations that can be shared by static and scan-varying versions"""
+
+  @staticmethod
+  def _build_p_list(parameter_type=Parameter):
+    """Build the list of parameters, using the parameter_type callback to
+    select between versions of the Parameter class"""
+
+    # set up the parameters
+    phi1 = parameter_type(.0, matrix.col((1, 0, 0)), 'angle (mrad)', 'Phi1')
+    phi2 = parameter_type(.0, matrix.col((0, 1, 0)), 'angle (mrad)', 'Phi2')
+    phi3 = parameter_type(.0, matrix.col((0, 0, 1)), 'angle (mrad)', 'Phi3')
+
+    # build the parameter list in a specific,  maintained order
+    p_list = [phi1, phi2, phi3]
+
+    return p_list
+
+class CrystalOrientationParameterisation(ModelParameterisation,
+  CrystalOrientationMixin):
   """Parameterisation for crystal orientation, with angles expressed in
   mrad"""
 
@@ -41,13 +61,8 @@ class CrystalOrientationParameterisation(ModelParameterisation):
       experiment_ids = [0]
     istate = crystal.get_U()
 
-    ### Set up the parameters
-    phi1 = Parameter(.0, matrix.col((1, 0, 0)), 'angle (mrad)', 'Phi1')
-    phi2 = Parameter(.0, matrix.col((0, 1, 0)), 'angle (mrad)', 'Phi2')
-    phi3 = Parameter(.0, matrix.col((0, 0, 1)), 'angle (mrad)', 'Phi3')
-
-    # build the parameter list in a specific,  maintained order
-    p_list = [phi1, phi2, phi3]
+    # build the parameter list
+    p_list = self._build_p_list()
 
     # set up the base class
     ModelParameterisation.__init__(self, crystal, istate, p_list,

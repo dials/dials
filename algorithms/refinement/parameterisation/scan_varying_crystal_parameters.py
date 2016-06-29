@@ -15,10 +15,13 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
         import ScanVaryingParameterSet, \
                ScanVaryingModelParameterisation, \
                GaussianSmoother
+from dials.algorithms.refinement.parameterisation.crystal_parameters \
+    import CrystalOrientationMixin
 from dials.algorithms.refinement.refinement_helpers \
     import dR_from_axis_and_angle, CrystalOrientationCompose
 
-class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
+class ScanVaryingCrystalOrientationParameterisation(
+  ScanVaryingModelParameterisation, CrystalOrientationMixin):
   """A work-in-progress time-dependent parameterisation for crystal
   orientation, with angles expressed in mrad"""
 
@@ -48,16 +51,12 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
     istate = crystal.get_U()
     self._U_at_t = istate
 
-    # Set up the parameters
-    phi1 = ScanVaryingParameterSet(0.0, nv,
-                        matrix.col((1., 0., 0.)), 'angle (mrad)', 'Phi1')
-    phi2 = ScanVaryingParameterSet(0.0, nv,
-                        matrix.col((0., 1., 0.)), 'angle (mrad)', 'Phi2')
-    phi3 = ScanVaryingParameterSet(0.0, nv,
-                        matrix.col((0., 0., 1.)), 'angle (mrad)', 'Phi3')
+    # Factory function to provide to _build_p_list
+    def parameter_type(value, axis, ptype, name):
+      return ScanVaryingParameterSet(value, nv, axis, ptype, name)
 
-    # Build the list of parameter sets in a specific, maintained order
-    p_list = [phi1, phi2, phi3]
+    # Build the parameter list
+    p_list = self._build_p_list(parameter_type)
 
     # Set up the base class
     ScanVaryingModelParameterisation.__init__(self, crystal, istate,
