@@ -16,7 +16,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
                ScanVaryingModelParameterisation, \
                GaussianSmoother
 from dials.algorithms.refinement.parameterisation.crystal_parameters \
-    import CrystalOrientationMixin
+    import CrystalOrientationMixin, CrystalUnitCellMixin
 from dials.algorithms.refinement.refinement_helpers \
     import dR_from_axis_and_angle, CrystalOrientationCompose
 
@@ -116,7 +116,8 @@ class ScanVaryingCrystalOrientationParameterisation(
     return self._U_at_t
 
 
-class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisation):
+class ScanVaryingCrystalUnitCellParameterisation(
+  ScanVaryingModelParameterisation, CrystalUnitCellMixin):
   """A work-in-progress time-dependent parameterisation for the crystal
   unit cell"""
 
@@ -134,20 +135,16 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
     smoother = GaussianSmoother(t_range, num_intervals)
     nv = smoother.num_values()
 
-    ### Set up the initial state
+    # Set up the initial state
     istate = None
     self._B_at_t = crystal.get_B()
 
-    ### Set up symmetrizing object
-    self._S = symmetrize_reduce_enlarge(crystal.get_space_group())
-    self._S.set_orientation(orientation=crystal.get_B())
-    X = self._S.forward_independent_parameters()
-    dB_dp = self._S.forward_gradients()
-    B = self._S.backward_orientation(independent=X).reciprocal_matrix()
+    # Factory function to provide to _build_p_list
+    def parameter_type(value, name):
+      return ScanVaryingParameterSet(value, nv, name=name)
 
-    ### Set up the independent parameters, with a change of scale
-    p_list = [ScanVaryingParameterSet(e * 1.e5, nv, name = "g_param_%d" % i) \
-              for i, e in enumerate(X)]
+    # Build the parameter list
+    p_list = self._build_p_list(crystal, parameter_type)
 
     # Set up the base class
     ScanVaryingModelParameterisation.__init__(self, crystal, istate,
@@ -160,37 +157,16 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
     """calculate state and derivatives for model at image number t"""
 
     # extract values and weights at time t using the smoother
-    vals, weights, sumweights = zip(*(self._smoother.value_weight(t, pset) for pset in self._param))
-
-    # obtain metrical matrix parameters on natural scale
-    vals = [v * 1.e-5 for v in vals]
+    vals, weights, sumweights = zip(*(self._smoother.value_weight(t,
+      pset) for pset in self._param))
 
     # calculate derivatives of metrical matrix parameters wrt underlying
     # scan-varying parameters
     inv_sumw = [1. / sw for sw in sumweights]
     dvals_dp =  [e * isw for e, isw in zip(weights, inv_sumw)]
 
-    # set parameter values in the symmetrizing object and obtain new B
-    try:
-      self._B_at_t = matrix.sqr(
-                  self._S.backward_orientation(vals).reciprocal_matrix())
-    except RuntimeError as e:
-      from libtbx.utils import Sorry
-      # write original error to debug log
-      debug('Unable to compose the crystal model')
-      debug('Original error message: {0}'.format(str(e)))
-      debug('Failing now.')
-      raise Sorry('Unable to compose the crystal model. Please check that the '
-                  'experiments match the indexing of the reflections.')
-
-    # returns the independent parameters given the set_orientation() B matrix
-    # used here for side effects
-    self._S.forward_independent_parameters()
-
-    # get the derivatives of state wrt metrical matrix parameters on the
-    # adjusted scale
-    dB_dval = [matrix.sqr(e) * 1.e-5 \
-                       for e in self._S.forward_gradients()]
+    # calculate new B and derivatives
+    self._B_at_t, dB_dval = self._compose_core(vals)
 
     # calculate derivatives of state wrt underlying parameters
     self._dstate_dp = [[b * e for e in a.as_dense_vector()] for a, b in zip(dvals_dp, dB_dval)]

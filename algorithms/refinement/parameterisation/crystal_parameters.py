@@ -101,7 +101,57 @@ class CrystalOrientationParameterisation(ModelParameterisation,
     # argument is allowed
     return matrix.sqr(self._model.get_U())
 
-class CrystalUnitCellParameterisation(ModelParameterisation):
+class CrystalUnitCellMixin(object):
+  """Mix-in class defining some functionality unique to crystal unit cell
+  parameterisations that can be shared by static and scan-varying versions"""
+
+  def _build_p_list(self, crystal, parameter_type=Parameter):
+    """Build the list of parameters, using the parameter_type callback to
+    select between versions of the Parameter class"""
+
+    # Set up symmetrizing object
+    self._S = symmetrize_reduce_enlarge(crystal.get_space_group())
+    self._S.set_orientation(orientation=crystal.get_B())
+    X = self._S.forward_independent_parameters()
+    dB_dp = self._S.forward_gradients()
+    B = self._S.backward_orientation(independent=X).reciprocal_matrix()
+
+    # Set up the independent parameters, with a change of scale
+    p_list = [parameter_type(e * 1.e5, name = "g_param_%d" % i) \
+              for i, e in enumerate(X)]
+
+    return p_list
+
+  def _compose_core(self, raw_vals):
+
+    # obtain metrical matrix parameters on natural scale
+    vals = [v * 1.e-5 for v in raw_vals]
+
+    # set parameter values in the symmetrizing object and obtain new B
+    try:
+      newB = matrix.sqr(
+            self._S.backward_orientation(vals).reciprocal_matrix())
+    except RuntimeError as e:
+      from libtbx.utils import Sorry
+      # write original error to debug log
+      debug('Unable to compose the crystal model')
+      debug('Original error message: {0}'.format(str(e)))
+      debug('Failing now.')
+      raise Sorry('Unable to compose the crystal model. Please check that the '
+                  'experiments match the indexing of the reflections.')
+
+    # returns the independent parameters given the set_orientation() B matrix
+    # used here for side effects
+    self._S.forward_independent_parameters()
+
+    # get the derivatives of state wrt metrical matrix parameters on the
+    # adjusted scale
+    dB_dval = [matrix.sqr(e) * 1.e-5 \
+                       for e in self._S.forward_gradients()]
+
+    return newB, dB_dval
+
+class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixin):
   """Parameterisation for the unit cell"""
 
   def __init__(self, crystal, experiment_ids=None):
@@ -119,16 +169,8 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
       experiment_ids = [0]
     istate = None
 
-    ### Set up symmetrizing object
-    self._S = symmetrize_reduce_enlarge(crystal.get_space_group())
-    self._S.set_orientation(orientation=crystal.get_B())
-    X = self._S.forward_independent_parameters()
-    dB_dp = self._S.forward_gradients()
-    B = self._S.backward_orientation(independent=X).reciprocal_matrix()
-
-    ### Set up the independent parameters, with a change of scale
-    p_list = [Parameter(e * 1.e5, name = "g_param_%d" % i) \
-              for i, e in enumerate(X)]
+    # build the parameter list
+    p_list = self._build_p_list(crystal)
 
     # set up the base class
     ModelParameterisation.__init__(self, crystal, istate, p_list,
@@ -142,32 +184,11 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
   def compose(self):
     """calculate state and derivatives"""
 
-    # obtain parameters on natural scale
-    p_vals = [p.value / 1.e5 for p in self._param]
-
-    # set parameter values in the symmetrizing object and obtain new B
-    try:
-      newB = matrix.sqr(
-            self._S.backward_orientation(p_vals).reciprocal_matrix())
-    except RuntimeError as e:
-      from libtbx.utils import Sorry
-      # write original error to debug log
-      debug('Unable to compose the crystal model')
-      debug('Original error message: {0}'.format(str(e)))
-      debug('Failing now.')
-      raise Sorry('Unable to compose the crystal model. Please check that the '
-                  'experiments match the indexing of the reflections.')
+    # calculate new B and derivatives
+    newB, self._dstate_dp = self._compose_core([p.value for p in self._param])
 
     # Now pass new B to the crystal model
     self._model.set_B(newB)
-
-    # returns the independent parameters given the set_orientation() B
-    # matrix. Used here for side effects
-    self._S.forward_independent_parameters()
-
-    # get the gradients on the adjusted scale
-    self._dstate_dp = [matrix.sqr(e) / 1.e5 \
-                       for e in self._S.forward_gradients()]
 
     return
 
