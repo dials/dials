@@ -1245,12 +1245,12 @@ class SpotSettingsPanel (SettingsPanel) :
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.brightness_txt_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_b_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.nsigma_s_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.global_threshold_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.kernel_size_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.min_local_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.gain_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_b_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_s_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.global_threshold_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.kernel_size_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.min_local_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.gain_ctrl)
 
     grid2 = wx.FlexGridSizer(cols=4, rows=2)
     s.Add(grid2)
@@ -1405,6 +1405,10 @@ class SpotSettingsPanel (SettingsPanel) :
     easy_pickle.dump('mask.pickle', tuple(masks))
 
     print "Saved mask.pickle"
+
+  def OnUpdateKabschDebug(self, event):
+    self.OnUpdateCM(event)
+    self.GetParent().GetParent().show_filters()
 
   def OnKabschDebug(self, event):
     button = event.GetEventObject()
