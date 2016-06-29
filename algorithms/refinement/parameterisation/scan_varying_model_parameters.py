@@ -25,18 +25,17 @@ class ScanVaryingParameterSet(Parameter):
   def __init__(self, value, num_samples = 5, axis = None, ptype = None,
                name = "ScanVaryingParameterSet"):
 
+    assert num_samples >= 2 #otherwise use scan-independent parameterisation
+
+    value = [value] * num_samples
+    self._name_stem = name
+    name = [e + "_sample%d" % i for i, e in enumerate(
+      [self._name_stem] * num_samples)]
+
     Parameter.__init__(self, value, axis, ptype, name)
 
-    assert num_samples >= 2 #otherwise use scan-independent parameterisation
-    self._num_samples = num_samples
-    self._value = [value] * num_samples
     self._esd = [None] * num_samples
-    self._axis = axis
-    self._ptype = ptype
-    self._name_stem = name
-    self._name = [e + "_sample%d" % i for i, e in \
-                  enumerate([self._name_stem] * num_samples)]
-    self._fixed = False
+    self._num_samples = num_samples
 
     return
 
