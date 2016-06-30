@@ -189,6 +189,19 @@ class ComputeEsdReflectingRange(object):
       from math import pi, exp
       import random
 
+      # FIXME in here this code is very unstable or actually broken if
+      # we pass in a few lone images i.e. screening shots - propose need
+      # for alternative algorithm, in meantime can avoid code death if
+      # something like this
+      #
+      # if scan.get_num_images() == 1:
+      #   self.sigma = 0.5 * scan.get_oscillation_range()[1] * pi / 180.0
+      #   return
+      #
+      # is used... @JMP please could we discuss? assert best method to get
+      # sigma_m in that case is actually to look at present / absent
+      # reflections as per how Mosflm does it...
+
       # Initialise the function used in likelihood estimation.
       self._R = FractionOfObservedIntensity(crystal, beam, detector, goniometer,
                                             scan, reflections)
