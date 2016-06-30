@@ -1,8 +1,11 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.background
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import division
 
 import iotbx.phil
+from scitbx.array_family import flex
 
 help_message = '''
 
@@ -18,6 +21,8 @@ bins = 100
 frames = None
   .type = int
   .multiple = True
+plot = False
+  .type = bool
 """, process_includes=True)
 
 def main():
@@ -60,9 +65,25 @@ def run(args):
   if params.frames:
     images = params.frames
 
+  d_spacings = []
+  intensities = []
+  sigmas = []
+
   for indx in images:
     print 'For frame %d:' % indx
-    background(imageset, indx, params)
+    d, I, sig = background(imageset, indx, params)
+    d_spacings.append(d)
+    intensities.append(I)
+    sigmas.append(sig)
+
+  if params.plot:
+    from matplotlib import pyplot
+    fig = pyplot.figure()
+    for d, I, sig in zip(d_spacings, intensities, sigmas):
+      ds2 = 1/flex.pow2(d)
+      pyplot.plot(ds2, I)
+
+    pyplot.show()
 
 def background(imageset, indx, params):
   from dials.array_family import flex
@@ -140,11 +161,13 @@ def background(imageset, indx, params):
   sig = flex.sqrt(I2 - flex.pow2(I))
 
   tt = h0.slot_centers()
+  d_spacings = wavelength / (2.0 * flex.sin(0.5 * tt))
 
   print '%8s %8s %8s' % ('d', 'I', 'sig')
   for j in range(len(I)):
-    d = wavelength / (2.0 * math.sin(0.5 * tt[j]))
-    print '%8.3f %8.3f %8.3f' % (d, I[j], sig[j])
+    print '%8.3f %8.3f %8.3f' % (d_spacings[j], I[j], sig[j])
+
+  return d_spacings, I, sig
 
 if __name__ == '__main__':
   main()
