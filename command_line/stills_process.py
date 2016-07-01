@@ -3,6 +3,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process
 
 from __future__ import division
+from libtbx.utils import Sorry
 
 help_message = '''
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image
@@ -346,20 +347,18 @@ class Processor(object):
     # Integrate the reflections
     integrated = integrator.integrate()
 
+    # verify sigmas are sensible
     if 'intensity.prf.value' in integrated:
-      # integration by profile fitting, keep only spots with sigmas above zero
-      integrated = integrated.select(integrated['intensity.prf.variance'] > 0)
-      assert len(integrated.select(integrated['intensity.prf.variance'] <= 0)) == 0
+      if (integrated['intensity.prf.variance'] <= 0).count(True) > 0:
+        raise Sorry("Found negative variances")
     if 'intensity.sum.value' in integrated:
-      # integration by summation, keep only spots with sigmas above zero
-      integrated = integrated.select(integrated['intensity.sum.variance'] > 0)
-      assert len(integrated.select(integrated['intensity.sum.variance'] <= 0)) == 0
+      if (integrated['intensity.sum.variance'] <= 0).count(True) > 0:
+        raise Sorry("Found negative variances")
       # apply detector gain to summation variances
       integrated['intensity.sum.variance'] *= self.params.integration.summation.detector_gain
     if 'background.sum.value' in integrated:
-      # integration by summation, keep only spots with background sigmas above zero
-      integrated = integrated.select(integrated['background.sum.variance'] > 0)
-      assert len(integrated.select(integrated['background.sum.variance'] <= 0)) == 0
+      if (integrated['background.sum.variance'] <= 0).count(True) > 0:
+        raise Sorry("Found negative variances")
       # apply detector gain to background summation variances
       integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
 
@@ -439,7 +438,6 @@ class Processor(object):
     from dials.array_family import flex
     from logging import info
     from time import time
-    from libtbx.utils import Sorry
     if reference is None:
       return None, None
     st = time()
