@@ -269,7 +269,7 @@ history = refiner.run()
 print "OK"
 
 # scan varying
-params.refinement.parameterisation.crystal.scan_varying=True
+params.refinement.parameterisation.scan_varying=True
 refiner = RefinerFactory.from_parameters_data_experiments(params, obs_refs,
   experiments, verbosity=0)
 history = refiner.run()

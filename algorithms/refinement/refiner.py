@@ -29,7 +29,11 @@ from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
   import uc_phil_str as uc_restraints_phil_str
-format_data = {'outlier_phil':outlier_phil_str, 'uc_restraints_phil':uc_restraints_phil_str}
+from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
+  import phil_str as sv_phil_str
+format_data = {'outlier_phil':outlier_phil_str,
+               'uc_restraints_phil':uc_restraints_phil_str,
+               'sv_phil_str':sv_phil_str}
 phil_scope = parse('''
 
 refinement
@@ -83,6 +87,20 @@ refinement
         .type = choice
     }
 
+    scan_varying = False
+      .help = "Allow models that are not forced to be static to vary during the
+               scan"
+      .type = bool
+
+    compose_model_per = reflection image *block
+      .help = "For scan-varying parameterisations, compose a new model either"
+              "every reflection (slow), every image (faster, less accurate) or"
+              "within blocks of a width specified in the reflections"
+              "parameters. When this block width is larger than the image width"
+              "the result is faster again, with another trade-off in accuracy"
+      .type = choice
+      .expert_level = 1
+
     beam
       .help = "beam parameters"
     {
@@ -101,6 +119,14 @@ refinement
         .help = "Fix specified parameters by a list of 0-based indices or"
                 "partial names to match"
         .expert_level = 1
+
+      force_static = True
+        .type = bool
+        .help = "Force a static parameterisation for the beam when doing"
+                "scan-varying refinement"
+        .expert_level = 1
+
+      %(sv_phil_str)s
     }
 
     crystal
@@ -111,6 +137,7 @@ refinement
         .type = choice
 
       unit_cell
+        .expert_level = 1
       {
         fix_list = None
           .type = strings
@@ -119,47 +146,34 @@ refinement
           .expert_level = 1
 
         %(uc_restraints_phil)s
+
+      force_static = False
+        .type = bool
+        .help = "Force a static parameterisation for the crystal orientation"
+                "when doing scan-varying refinement"
+        .expert_level = 1
+
+        %(sv_phil_str)s
       }
 
       orientation
+        .expert_level = 1
       {
         fix_list = None
           .type = strings
           .help = "Fix specified parameters by a list of 0-based indices or"
                   "partial names to match"
           .expert_level = 1
-      }
 
-      scan_varying = False
-        .help = "Parameterise the crystal to vary during the scan"
+      force_static = False
         .type = bool
-
-      num_intervals = *fixed_width absolute
-        .help = "Choose the way to determine the number of intervals for scan-"
-                "varying refinement"
-        .type = choice
+        .help = "Force a static parameterisation for the crystal unit cell"
+                "when doing scan-varying refinement"
         .expert_level = 1
 
-      interval_width_degrees = 36.0
-        .help = "Width of scan between checkpoints in degrees"
-        .type = float(value_min=0.)
-        .expert_level = 1
-
-      absolute_num_intervals = 5
-        .help = "Number of intervals between checkpoints if scan_varying"
-                "refinement is requested"
-        .type = int(value_min=1)
-        .expert_level = 1
-
-      UB_model_per = reflection image *block
-        .help = "Compose a new crystal model either every reflection (slow),"
-                "every image (faster, less accurate) or within blocks of a"
-                "width specified in the reflections parameters. When this block"
-                "width is larger than the image width the result is faster"
-                "again, with another trade-off in accuracy"
-        .type = choice
-        .expert_level = 1
-     }
+        %(sv_phil_str)s
+      }
+    }
 
     detector
       .help = "detector parameters"
@@ -320,7 +334,7 @@ refinement
       .help = "Width of a reflection 'block' (in degrees) determining how fine-"
               "grained the model used for scan-varying prediction during"
               "refinement is. Currently only has any effect if the crystal"
-              "parameterisation is set to use UB_model_per=block"
+              "parameterisation is set to use compose_model_per=block"
       .type = float(value_min = 0.)
       .expert_level = 1
 
@@ -549,13 +563,8 @@ class RefinerFactory(object):
         parameter reporter.
     """
 
-    # Shorten parameter paths
-    beam_options = params.refinement.parameterisation.beam
-    crystal_options = params.refinement.parameterisation.crystal
-    detector_options = params.refinement.parameterisation.detector
-    sparse = params.refinement.parameterisation.sparse
-    spher_relp = params.refinement.parameterisation.spherical_relp_model
-    auto_reduction = params.refinement.parameterisation.auto_reduction
+    # Shorten options path
+    options = params.refinement.parameterisation
 
     # Shorten module paths
     import dials.algorithms.refinement.parameterisation as par
@@ -577,20 +586,20 @@ class RefinerFactory(object):
       # Parameterise, passing the goniometer (but accepts None)
       beam_param = par.BeamParameterisation(beam, goniometer,
                                                        experiment_ids=exp_ids)
-      if beam_options.fix:
+      if options.beam.fix:
         fix_list = [False, False, False]
-        if "all" in beam_options.fix:
+        if "all" in options.beam.fix:
           fix_list = [True, True, True]
-        if "in_spindle_plane" in beam_options.fix:
+        if "in_spindle_plane" in options.beam.fix:
           fix_list[0] = True
-        if "out_spindle_plane" in beam_options.fix:
+        if "out_spindle_plane" in options.beam.fix:
           fix_list[1] = True
-        if "wavelength" in beam_options.fix:
+        if "wavelength" in options.beam.fix:
           fix_list[2] = True
         beam_param.set_fixed(fix_list)
 
-      if beam_options.fix_list:
-        to_fix = string_sel(beam_options.fix_list,
+      if options.beam.fix_list:
+        to_fix = string_sel(options.beam.fix_list,
                             beam_param.get_param_names(only_free=False),
                             "Beam{0}".format(ibeam + 1))
         beam_param.set_fixed(to_fix)
@@ -613,35 +622,54 @@ class RefinerFactory(object):
           raise Sorry('A crystal model appears in a mixture of scan and still '
                       'experiments, which is not supported')
 
-      if crystal_options.scan_varying:
-        # If a crystal is scan-varying, then it must always be found alongside
-        # the same Scan and Goniometer in any Experiments in which it appears
-        if [goniometer, scan].count(None) != 0:
-          raise Sorry('A scan-varying crystal model cannot be created because '
-                      'a scan or goniometer model is missing')
-        if not all(g is goniometer and s is scan for (g, s) in assoc_models):
-          raise Sorry('A single scan-varying crystal model cannot be refined '
-                      'when associated with more than one scan or goniometer')
+      if options.scan_varying:
+        if (not options.crystal.orientation.force_static or
+            not options.crystal.unit_cell.force_static):
+          # If a crystal is scan-varying, then it must always be found alongside
+          # the same Scan and Goniometer in any Experiments in which it appears
+          if [goniometer, scan].count(None) != 0:
+            raise Sorry('A scan-varying crystal model cannot be created because '
+                        'a scan or goniometer model is missing')
+          if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+            raise Sorry('A single scan-varying crystal model cannot be refined '
+                        'when associated with more than one scan or goniometer')
+        sweep_range_deg = scan.get_oscillation_range(deg=True)
+        array_range = scan.get_array_range()
 
-        if crystal_options.num_intervals == "fixed_width":
-          sweep_range_deg = scan.get_oscillation_range(deg=True)
-          deg_per_interval = crystal_options.interval_width_degrees
-          n_intervals = max(int(
-            abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
-        else:
-          n_intervals = crystal_options.absolute_num_intervals
+        # orientation parameterisation
+        if not options.crystal.orientation.force_static:
+          if options.crystal.orientation.smoother.num_intervals == "fixed_width":
+            deg_per_interval = options.crystal.orientation.smoother.interval_width_degrees
+            n_intervals = max(int(
+              abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+          else:
+            n_intervals = options.crystal.orientation.smoother.absolute_num_intervals
+          xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
+                                              crystal,
+                                              array_range,
+                                              n_intervals,
+                                              experiment_ids=exp_ids)
+        else: # force model to be static
+          xl_ori_param = par.CrystalOrientationParameterisation(crystal,
+                                                          experiment_ids=exp_ids)
 
-        xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
-                                            crystal,
-                                            scan.get_array_range(),
-                                            n_intervals,
-                                            experiment_ids=exp_ids)
-        xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
-                                            crystal,
-                                            scan.get_array_range(),
-                                            n_intervals,
-                                            experiment_ids=exp_ids)
-      else:
+        # unit cell parameterisation
+        if not options.crystal.unit_cell.force_static:
+          if options.crystal.unit_cell.smoother.num_intervals == "fixed_width":
+            deg_per_interval = options.crystal.unit_cell.smoother.interval_width_degrees
+            n_intervals = max(int(
+              abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+          else:
+            n_intervals = options.crystal.unit_cell.smoother.absolute_num_intervals
+          xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
+                                              crystal,
+                                              array_range,
+                                              n_intervals,
+                                              experiment_ids=exp_ids)
+        else: # force model to be static
+          xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
+                                                          experiment_ids=exp_ids)
+      else: # all models scan-static
         xl_ori_param = par.CrystalOrientationParameterisation(crystal,
                                                         experiment_ids=exp_ids)
         xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
@@ -658,25 +686,25 @@ class RefinerFactory(object):
       except AttributeError:
         num_uc = xl_uc_param.num_total()
 
-      if crystal_options.fix:
-        if crystal_options.fix == "all":
+      if options.crystal.fix:
+        if options.crystal.fix == "all":
           xl_ori_param.set_fixed([True] * num_ori)
           xl_uc_param.set_fixed([True] * num_uc)
-        elif crystal_options.fix == "cell":
+        elif options.crystal.fix == "cell":
           xl_uc_param.set_fixed([True] * num_uc)
-        elif crystal_options.fix == "orientation":
+        elif options.crystal.fix == "orientation":
           xl_ori_param.set_fixed([True] * num_ori)
         else: # can only get here if refinement.phil is broken
-          raise RuntimeError("crystal_options.fix value not recognised")
+          raise RuntimeError("crystal.fix value not recognised")
 
-      if crystal_options.unit_cell.fix_list:
-        to_fix = string_sel(crystal_options.unit_cell.fix_list,
+      if options.crystal.unit_cell.fix_list:
+        to_fix = string_sel(options.crystal.unit_cell.fix_list,
                             xl_uc_param.get_param_names(only_free=False),
                             "Crystal{0}".format(icrystal + 1))
         xl_uc_param.set_fixed(to_fix)
 
-      if crystal_options.orientation.fix_list:
-        to_fix = string_sel(crystal_options.orientation.fix_list,
+      if options.crystal.orientation.fix_list:
+        to_fix = string_sel(options.crystal.orientation.fix_list,
                             xl_ori_param.get_param_names(only_free=False),
                             "Crystal{0}".format(icrystal + 1))
         xl_ori_param.set_fixed(to_fix)
@@ -692,46 +720,46 @@ class RefinerFactory(object):
 
       exp_ids = experiments.indices(detector)
       # Detector
-      if detector_options.panels == "automatic":
+      if options.detector.panels == "automatic":
         if len(detector) > 1:
           try:
             h = detector.hierarchy()
             det_param = par.DetectorParameterisationHierarchical(detector,
-                experiment_ids=exp_ids, level=detector_options.hierarchy_level)
+                experiment_ids=exp_ids, level=options.detector.hierarchy_level)
           except AttributeError:
             det_param = par.DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
         else:
           det_param = par.DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
-      elif detector_options.panels == "single":
+      elif options.detector.panels == "single":
         det_param = par.DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
-      elif detector_options.panels == "multiple":
+      elif options.detector.panels == "multiple":
         det_param = par.DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
-      elif detector_options.panels == "hierarchical":
+      elif options.detector.panels == "hierarchical":
         det_param = par.DetectorParameterisationHierarchical(detector, beam,
-                experiment_ids=exp_ids, level=detector_options.hierarchy_level)
+                experiment_ids=exp_ids, level=options.detector.hierarchy_level)
       else: # can only get here if refinement.phil is broken
-        raise RuntimeError("detector_options.panels value not recognised")
+        raise RuntimeError("detector.panels value not recognised")
 
-      if detector_options.fix:
-        if detector_options.fix == "all":
+      if options.detector.fix:
+        if options.detector.fix == "all":
           det_param.set_fixed([True] * det_param.num_total())
-        elif detector_options.fix == "position":
+        elif options.detector.fix == "position":
           to_fix = [e.param_type.startswith('length') \
                     for e in det_param.get_params(only_free = False)]
           det_param.set_fixed(to_fix)
-        elif detector_options.fix == "orientation":
+        elif options.detector.fix == "orientation":
           to_fix = [e.param_type.startswith('angle') \
                     for e in det_param.get_params(only_free = False)]
           det_param.set_fixed(to_fix)
         else: # can only get here if refinement.phil is broken
-          raise RuntimeError("detector_options.fix value not recognised")
+          raise RuntimeError("detector.fix value not recognised")
 
-      if detector_options.fix_list:
-        to_fix = string_sel(detector_options.fix_list,
+      if options.detector.fix_list:
+        to_fix = string_sel(options.detector.fix_list,
                             det_param.get_param_names(only_free=False),
                             "Detector{0}".format(idetector + 1))
         det_param.set_fixed(to_fix)
@@ -744,7 +772,7 @@ class RefinerFactory(object):
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
       nparam = p.num_free()
-      cutoff = auto_reduction.min_nref_per_parameter * nparam
+      cutoff = options.auto_reduction.min_nref_per_parameter * nparam
       isel = flex.size_t()
       for exp_id in exp_ids:
         isel.extend((reflections['id'] == exp_id).iselection())
@@ -758,7 +786,7 @@ class RefinerFactory(object):
       fixlist = p.get_fixed()
       free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)]
       nparam = free_gp_params.count(True)
-      cutoff = auto_reduction.min_nref_per_parameter * nparam
+      cutoff = options.auto_reduction.min_nref_per_parameter * nparam
       isel = flex.size_t()
       for exp_id in exp_ids:
         subsel = (reflections['id'] == exp_id).iselection()
@@ -817,7 +845,7 @@ class RefinerFactory(object):
               'panel_group_id':pnl_gp,
               'name':name}
 
-    if auto_reduction.action == 'fail':
+    if options.auto_reduction.action == 'fail':
       failmsg = 'Too few reflections to parameterise {0}'
       failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
       for i, bp in enumerate(beam_params):
@@ -853,7 +881,7 @@ class RefinerFactory(object):
             msg = failmsg.format(mdl)
             raise Sorry(msg)
 
-    elif auto_reduction.action == 'fix':
+    elif options.auto_reduction.action == 'fix':
       warnmsg = 'Too few reflections to parameterise {0}'
       tmp = []
       for i, bp in enumerate(beam_params):
@@ -913,7 +941,7 @@ class RefinerFactory(object):
             warning(msg)
       det_params = tmp
 
-    elif auto_reduction.action == 'remove':
+    elif options.auto_reduction.action == 'remove':
       warnmsg = 'Too few reflections to parameterise {0}'
       warnmsg += '\nAssociated reflections will be removed from the Reflection Manager'
       while True:
@@ -961,8 +989,8 @@ class RefinerFactory(object):
     # Now we have the final list of model parameterisations, build a restraints
     # parameterisation (if requested). Only unit cell restraints are supported
     # at the moment.
-    if any([crystal_options.unit_cell.restraints.tie_to_target,
-            crystal_options.unit_cell.restraints.tie_to_group]):
+    if any([options.crystal.unit_cell.restraints.tie_to_target,
+            options.crystal.unit_cell.restraints.tie_to_group]):
       restraints_param = cls.config_restraints(params, det_params, beam_params,
         xl_ori_params, xl_uc_params)
     else:
@@ -970,15 +998,15 @@ class RefinerFactory(object):
 
     # Prediction equation parameterisation
     if do_stills: # doing stills
-      if sparse:
-        if spher_relp:
+      if options.sparse:
+        if options.spherical_relp_model:
           from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
             import SphericalRelpStillsPredictionParameterisationSparse as StillsPredictionParameterisation
         else:
           from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
             import StillsPredictionParameterisationSparse as StillsPredictionParameterisation
       else:
-        if spher_relp:
+        if options.spherical_relp_model:
           from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
             import SphericalRelpStillsPredictionParameterisation as StillsPredictionParameterisation
         else:
@@ -989,29 +1017,29 @@ class RefinerFactory(object):
           det_params, beam_params, xl_ori_params, xl_uc_params)
 
     else: # doing scans
-      if crystal_options.scan_varying:
-        if crystal_options.UB_model_per == "reflection":
-          if sparse:
+      if options.scan_varying:
+        if options.compose_model_per == "reflection":
+          if options.sparse:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
               import ScanVaryingPredictionParameterisationSparse as PredParam
           else:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
               import ScanVaryingPredictionParameterisation as PredParam
-        elif crystal_options.UB_model_per == "image" or crystal_options.UB_model_per == "block":
-          if sparse:
+        elif options.compose_model_per == "image" or options.compose_model_per == "block":
+          if options.sparse:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
               import ScanVaryingPredictionParameterisationFastSparse as PredParam
           else:
             from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
               import ScanVaryingPredictionParameterisationFast as PredParam
         else:
-          raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
+          raise RuntimeError("UB_model_per=" + options.scan_varying +
                              " is not a recognised option")
         pred_param = PredParam(
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
-        if sparse:
+        if options.sparse:
           from dials.algorithms.refinement.parameterisation.prediction_parameters \
             import XYPhiPredictionParameterisationSparse as PredParam
         else:
@@ -1227,12 +1255,12 @@ class RefinerFactory(object):
         *options.weighting_strategy.constants, stills=do_stills)
 
     # calculate reflection block_width?
-    if params.refinement.parameterisation.crystal.scan_varying:
+    if params.refinement.parameterisation.scan_varying:
       from dials.algorithms.refinement.reflection_manager import BlockCalculator
       block_calculator = BlockCalculator(experiments, reflections)
-      if params.refinement.parameterisation.crystal.UB_model_per == "block":
+      if params.refinement.parameterisation.compose_model_per == "block":
         reflections = block_calculator.per_width(options.block_width, deg=True)
-      elif params.refinement.parameterisation.crystal.UB_model_per == "image":
+      elif params.refinement.parameterisation.compose_model_per == "image":
         reflections = block_calculator.per_image()
 
     return refman(reflections=reflections,
@@ -1683,7 +1711,15 @@ class Refiner(object):
         state_cov_list = [self._pred_param.calculate_model_state_uncertainties(
           obs_image_number=t, experiment_id=iexp) for t in range(ar_range[0],
                                                             ar_range[1]+1)]
-        u_cov_list, b_cov_list = zip(*state_cov_list)
+        if 'U_cov' in state_cov_list[0]:
+          u_cov_list = [e['U_cov'] for e in state_cov_list]
+        else:
+          u_cov_list = None
+
+        if 'B_cov' in state_cov_list[0]:
+          b_cov_list = [e['B_cov'] for e in state_cov_list]
+        else:
+          b_cov_list = None
 
         # return these to the model parameterisations to be set in the models
         self._pred_param.set_model_state_uncertainties(

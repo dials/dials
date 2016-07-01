@@ -321,43 +321,49 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       return
 
     # later calls, only an experiment and image number are supplied
-    else:
-      # identify the crystal parameterisations for this experiment
-      xl_op = self._get_xl_orientation_parameterisation(experiment_id)
-      xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
+    # identify the crystal parameterisations for this experiment
+    xl_op = self._get_xl_orientation_parameterisation(experiment_id)
+    xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
 
-      # compose at the requested image number and calculate using the cached
-      # varcov matrices. Take the first elt of the list becase the crystal
-      # parameterisations are not multi-state
-      try:
-        xl_op.compose(obs_image_number)
-        U_cov = xl_op.calculate_state_uncertainties(var_cov=None)[0]
-      except AttributeError:
-        U_cov = None
+    result = {}
 
-      try:
-        xl_ucp.compose(obs_image_number)
-        B_cov = xl_ucp.calculate_state_uncertainties(var_cov=None)[0]
-      except AttributeError:
-        B_cov = None
+    # compose at the requested image number and calculate using the cached
+    # varcov matrices. Take the first elt of the list becase the crystal
+    # parameterisations are not multi-state
+    try:
+      xl_op.compose(obs_image_number)
+      result['U_cov'] = xl_op.calculate_state_uncertainties(var_cov=None)[0]
+    except TypeError:
+      pass
 
-    return U_cov, B_cov
+    try:
+      xl_ucp.compose(obs_image_number)
+      result['B_cov'] = xl_ucp.calculate_state_uncertainties(var_cov=None)[0]
+    except TypeError:
+      pass
+
+    return result
 
   def set_model_state_uncertainties(self, u_cov_list, b_cov_list,
                                           experiment_id=None):
-    """Identify the parameterisation"""
+    """Identify the crystal parameterisations and set the list of covariance
+    matrices, if available. They will only be available if the parameterisation
+    is a scan-varying type, otherwise they are None"""
 
     xl_op = self._get_xl_orientation_parameterisation(experiment_id)
     xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
-    try:
-      xl_op.set_state_uncertainties(u_cov_list)
-    except AttributeError:
-      pass
 
-    try:
-      xl_ucp.set_state_uncertainties(b_cov_list)
-    except AttributeError:
-      pass
+    if u_cov_list:
+      try:
+        xl_op.set_state_uncertainties(u_cov_list)
+      except AttributeError:
+        pass
+
+    if b_cov_list:
+      try:
+        xl_ucp.set_state_uncertainties(b_cov_list)
+      except AttributeError:
+        pass
 
     return
 

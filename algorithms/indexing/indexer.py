@@ -1306,7 +1306,7 @@ class indexer_base(object):
 
     import copy
     params = copy.deepcopy(self.all_params)
-    params.refinement.parameterisation.crystal.scan_varying = False
+    params.refinement.parameterisation.scan_varying = False
     params.refinement.refinery.max_iterations = 4
     params.refinement.reflections.reflections_per_degree = min(
       params.refinement.reflections.reflections_per_degree, 20)
