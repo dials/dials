@@ -10,7 +10,7 @@ seperately.
 '''
 
 from libtbx.phil import parse
-phil_scope = parse('''
+control_phil_str = '''
   verbosity = 1
     .type = int(value_min=0)
     .help = "The verbosity level"
@@ -53,6 +53,9 @@ phil_scope = parse('''
       .type = int(value_min=1)
       .help = "The number of processes to use."
   }
+'''
+
+dials_phil_str = '''
 
   include scope dials.algorithms.spot_finding.factory.phil_scope
   include scope dials.algorithms.indexing.indexer.index_only_phil_scope
@@ -68,7 +71,9 @@ phil_scope = parse('''
         .help = Multiplier for variances after integration. See Leslie 1999.
     }
   }
-''', process_includes=True)
+'''
+
+phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True)
 
 class Script(object):
   '''A class for running the script.'''
