@@ -61,6 +61,13 @@ phil_scope = parse('''
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
+  integration {
+    summation {
+      detector_gain = 1
+        .type = float
+        .help = Multiplier for variances after integration. See Leslie 1999.
+    }
+  }
 ''', process_includes=True)
 
 class Script(object):
@@ -334,10 +341,15 @@ class Processor(object):
     # Integrate the reflections
     integrated = integrator.integrate()
 
+    method = None
     if 'intensity.prf.value' in integrated:
       method = 'prf' # integration by profile fitting
-    elif 'intensity.sum.value' in integrated:
-      method = 'sum' # integration by simple summation
+    if 'intensity.sum.value' in integrated:
+      if method is None:
+        method = 'sum' # integration by simple summation
+      integrated['intensity.sum.variance'] *= self.params.integration.summation.detector_gain
+      integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
+
     integrated = integrated.select(integrated['intensity.' + method + '.variance'] > 0) # keep only spots with sigmas above zero
     len_all = len(integrated)
     integrated = integrated.select(~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels))
@@ -385,7 +397,7 @@ class Processor(object):
       # Split everything into separate experiments for pickling
       for e_number in xrange(len(experiments)):
         experiment = experiments[e_number]
-        e_selection = flex.bool([r['id']==e_number for r in integrated])
+        e_selection = integrated['id'] == e_number
         reflections = integrated.select(e_selection)
 
         frame = ConstructFrame(reflections, experiment).make_frame()
