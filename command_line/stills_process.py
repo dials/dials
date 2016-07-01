@@ -278,7 +278,7 @@ class Processor(object):
 
     params = copy.deepcopy(self.params)
     # don't do scan-varying refinement during indexing
-    params.refinement.parameterisation.crystal.scan_varying = False
+    params.refinement.parameterisation.scan_varying = False
 
     from dials.algorithms.indexing.indexer import indexer_base
     idxr = indexer_base.from_parameters(
