@@ -2,6 +2,8 @@ from __future__ import division
 
 def run():
   import os
+  import shutil
+  import fileinput
   import libtbx.load_env
   from libtbx import easy_run
   from libtbx.test_utils import show_diff
@@ -11,9 +13,16 @@ def run():
     print 'FAIL: dials_regression not configured'
     exit(0)
 
-  path = os.path.join(dials_regression, "experiment_test_data")
+  path = os.path.join(
+    dials_regression, "experiment_test_data/experiment_1.json")
+  newpath = os.path.join(os.getcwd(), 'experiments.json')
+  shutil.copyfile(path, newpath)
+  for line in fileinput.FileInput(newpath, inplace=True):
+    if '$DIALS_REGRESSION' in line:
+      line = line.replace('$DIALS_REGRESSION', dials_regression)
+    print line
 
-  cmd = "dials.export format=mosflm %s/experiment_1.json" %path
+  cmd = "dials.export format=mosflm %s" %newpath
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("mosflm/index.mat")
   with open("mosflm/index.mat", "rb") as f:
