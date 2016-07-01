@@ -346,16 +346,23 @@ class Processor(object):
     # Integrate the reflections
     integrated = integrator.integrate()
 
-    method = None
     if 'intensity.prf.value' in integrated:
-      method = 'prf' # integration by profile fitting
+      # integration by profile fitting, keep only spots with sigmas above zero
+      integrated = integrated.select(integrated['intensity.prf.variance'] > 0)
+      assert len(integrated.select(integrated['intensity.prf.variance'] <= 0)) == 0
     if 'intensity.sum.value' in integrated:
-      if method is None:
-        method = 'sum' # integration by simple summation
+      # integration by summation, keep only spots with sigmas above zero
+      integrated = integrated.select(integrated['intensity.sum.variance'] > 0)
+      assert len(integrated.select(integrated['intensity.sum.variance'] <= 0)) == 0
+      # apply detector gain to summation variances
       integrated['intensity.sum.variance'] *= self.params.integration.summation.detector_gain
+    if 'background.sum.value' in integrated:
+      # integration by summation, keep only spots with background sigmas above zero
+      integrated = integrated.select(integrated['background.sum.variance'] > 0)
+      assert len(integrated.select(integrated['background.sum.variance'] <= 0)) == 0
+      # apply detector gain to background summation variances
       integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
 
-    integrated = integrated.select(integrated['intensity.' + method + '.variance'] > 0) # keep only spots with sigmas above zero
     len_all = len(integrated)
     integrated = integrated.select(~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels))
     print "Filtering %d reflections with at least one bad foreground pixel out of %d"%(len_all-len(integrated), len_all)
