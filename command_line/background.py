@@ -16,7 +16,7 @@ Examples::
 '''
 
 phil_scope = iotbx.phil.parse("""\
-bins = 100
+n_bins = 100
   .type = int
 frames = None
   .type = int
@@ -71,7 +71,12 @@ def run(args):
 
   for indx in images:
     print 'For frame %d:' % indx
-    d, I, sig = background(imageset, indx, params)
+    d, I, sig = background(imageset, indx, n_bins=params.n_bins)
+
+    print '%8s %8s %8s' % ('d', 'I', 'sig')
+    for j in range(len(I)):
+      print '%8.3f %8.3f %8.3f' % (d[j], I[j], sig[j])
+
     d_spacings.append(d)
     intensities.append(I)
     sigmas.append(sig)
@@ -85,7 +90,7 @@ def run(args):
 
     pyplot.show()
 
-def background(imageset, indx, params):
+def background(imageset, indx, n_bins):
   from dials.array_family import flex
   from libtbx.phil import parse
   from scitbx import matrix
@@ -147,7 +152,6 @@ def background(imageset, indx, params):
   data.set_selected((bad | peak_pixels).iselection(), 0.0)
 
   # new fangled flex.weighted_histogram :-)
-  n_bins = params.bins
   h0 = flex.weighted_histogram(two_theta_array, n_slots=n_bins)
   h1 = flex.weighted_histogram(two_theta_array, data, n_slots=n_bins)
   h2 = flex.weighted_histogram(two_theta_array, data * data, n_slots=n_bins)
@@ -162,10 +166,6 @@ def background(imageset, indx, params):
 
   tt = h0.slot_centers()
   d_spacings = wavelength / (2.0 * flex.sin(0.5 * tt))
-
-  print '%8s %8s %8s' % ('d', 'I', 'sig')
-  for j in range(len(I)):
-    print '%8.3f %8.3f %8.3f' % (d_spacings[j], I[j], sig[j])
 
   return d_spacings, I, sig
 

@@ -56,7 +56,7 @@ Examples::
 
 phil_scope = parse('''
 
-  format = *mtz nxs mosflm xds
+  format = *mtz nxs mosflm xds best
     .type = choice
     .help = "The output file format"
 
@@ -83,14 +83,14 @@ phil_scope = parse('''
       .help = "Force program to use static model even if scan varying is present"
 
     hklout = integrated.mtz
-      .type = str
+      .type = path
       .help = "The output MTZ file"
   }
 
   nxs {
 
     hklout = integrated.nxs
-      .type = str
+      .type = path
       .help = "The output Nexus file"
 
   }
@@ -98,7 +98,7 @@ phil_scope = parse('''
   mosflm {
 
     directory = mosflm
-      .type = str
+      .type = path
       .help = "The output directory for mosflm output"
 
   }
@@ -106,19 +106,32 @@ phil_scope = parse('''
   xds {
 
     directory = xds
-      .type = str
+      .type = path
       .help = "The output directory for xds output"
+
+  }
+
+  best {
+
+    prefix = best
+      .type = str
+      .help = "The prefix for the output file names for best"
+              "(.hkl, .dat and .par files)"
+
+    n_bins = 100
+      .type = int(value_min=1)
+      .help = "Number of resolution bins for background estimation"
 
   }
 
   output {
 
     log = dials.export.log
-      .type = str
+      .type = path
       .help = "The log filename"
 
     debug_log = dials.export.debug.log
-      .type = str
+      .type = path
       .help = "The debug log filename"
 
   }
@@ -289,6 +302,51 @@ class XDSExporter(object):
       self.params.xds.directory)
 
 
+class BestExporter(object):
+  '''
+  A class to export stuff in BEST format
+
+  '''
+
+  def __init__(self, params, experiments, reflections):
+    '''
+    Initialise the exporter
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+
+    '''
+
+    # Check the input
+    if len(experiments) == 0:
+      raise Sorry('BEST exporter requires an experiment list')
+    if len(reflections) == 0:
+      raise Sorry('BEST exporter require a reflection table')
+
+    # Save the stuff
+    self.params = params
+    self.experiments = experiments
+    self.reflections = reflections
+
+  def export(self):
+    '''
+    Export the files
+
+    '''
+    from dials.util import best
+
+    experiment = self.experiments[0]
+    reflections = self.reflections[0]
+    imageset = experiment.imageset
+    prefix = self.params.best.prefix
+
+    best.write_background_file(
+      '%s.dat' %prefix, imageset, n_bins=self.params.best.n_bins)
+    best.write_integrated_hkl(prefix, reflections)
+    best.write_par_file('%s.par' %prefix, experiment)
+
+
 if __name__ == '__main__':
   import libtbx.load_env
   from dials.util.options import OptionParser
@@ -307,7 +365,6 @@ if __name__ == '__main__':
     usage = usage,
     read_experiments=True,
     read_reflections=True,
-    check_format=False,
     phil=phil_scope,
     epilog=help_message)
 
@@ -344,6 +401,8 @@ if __name__ == '__main__':
     exporter = MosflmExporter(params, experiments, reflections)
   elif params.format == 'xds':
     exporter = XDSExporter(params, experiments, reflections)
+  elif params.format == 'best':
+    exporter = BestExporter(params, experiments, reflections)
   else:
     raise Sorry('Unknown format: %s' % params.format)
 
