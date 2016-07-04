@@ -13,12 +13,17 @@
 from __future__ import division
 from dials.array_family import flex
 from scitbx.math import angle_derivative_wrt_vectors
-from math import sqrt
+from math import sqrt, pi
+from logging import info
 
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 from dials.algorithms.refinement.target import Target
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
       PredictionParameterisation
+
+# constants
+RAD2DEG = 180. / pi
+DEG2RAD = pi / 180.
 
 class ConstantTwoThetaWeightingStrategy(object):
 
@@ -53,7 +58,32 @@ class TwoThetaReflectionManager(ReflectionManager):
     return
 
   def print_stats_on_matches(self):
-    print("Placeholder for print_stats_on_matches")
+
+    l = self.get_matches()
+    nref = len(l)
+
+    from libtbx.table_utils import simple_table
+    from scitbx.math import five_number_summary
+    twotheta_resid = l['2theta_resid']
+    w_2theta = l['2theta.weights']
+
+    msg = "\nSummary statistics for {0} observations".format(nref) +\
+          " matched to predictions:"
+    header = ["", "Min", "Q1", "Med", "Q3", "Max"]
+    rows = []
+    try:
+      row_data = five_number_summary(twotheta_resid)
+      rows.append(["2theta_c - 2theta_o (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+      row_data = five_number_summary(w_2theta)
+      rows.append(["2theta weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
+      st = simple_table(rows, header)
+    except IndexError:
+      # zero length reflection list
+      warning("Unable to calculate summary statistics for zero observations")
+      return
+    info(msg)
+    info(st.format())
+    info("")
 
 class TwoThetaTarget(Target):
   _grad_names = ['d2theta_dp']
