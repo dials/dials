@@ -18,7 +18,7 @@ from scitbx import matrix
 from dials.array_family import flex
 from dials.algorithms.refinement import weighting_strategies
 from dials.algorithms.refinement.refinement_helpers import \
-  calculate_frame_numbers
+  calculate_frame_numbers, set_obs_s1
 
 # constants
 RAD2DEG = 180. / pi
@@ -171,6 +171,11 @@ class ReflectionManager(object):
     # unset the refinement flags (creates flags field if needed)
     reflections.unset_flags(flex.size_t_range(len(reflections)),
         flex.reflection_table.flags.used_in_refinement)
+
+    # check that the observed beam vectors are stored: if not, compute them
+    n_s1_set = set_obs_s1(reflections, experiments)
+    if n_s1_set > 0 and verbosity > 0:
+      debug("Set scattering vectors for %d reflections", n_s1_set)
 
     # keep track of the original indices of the reflections
     reflections['iobs'] = flex.size_t_range(len(reflections))

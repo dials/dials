@@ -19,7 +19,6 @@ from logging import info, debug, warning
 from dxtbx.model.experiment.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
-from dials.algorithms.refinement.refinement_helpers import set_obs_s1
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
@@ -424,11 +423,6 @@ class RefinerFactory(object):
   def _build_components(cls, params, reflections, experiments,
                         verbosity):
     """low level build"""
-
-    # check that the observed beam vectors are stored: if not, compute them
-    n_s1_set = set_obs_s1(reflections, experiments)
-    if n_s1_set > 0 and verbosity > 0:
-      debug("Set scattering vectors for %d reflections", n_s1_set)
 
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XYDelPsi (stills) type, the
