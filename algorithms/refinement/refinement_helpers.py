@@ -316,3 +316,25 @@ def calculate_frame_numbers(reflections, experiments):
           frames)
 
   return reflections
+
+def set_obs_s1(reflections, experiments):
+  """Set observed s1 vectors for reflections if required, return the number
+  of reflections that have been set."""
+
+  refs_wo_s1_sel = (reflections['s1'].norms() < 1.e-6)
+  nrefs_wo_s1 = refs_wo_s1_sel.count(True)
+  if nrefs_wo_s1 == 0: return nrefs_wo_s1
+
+  for i_expt, expt in enumerate(experiments):
+    detector = expt.detector
+    beam = expt.beam
+    expt_sel = reflections['id'] == i_expt
+    for i_panel, panel in enumerate(detector):
+      panel_sel = reflections['panel'] == i_panel
+      isel = (expt_sel & panel_sel & refs_wo_s1_sel).iselection()
+      spots = reflections.select(isel)
+      x, y, rot_angle = spots['xyzobs.mm.value'].parts()
+      s1 = panel.get_lab_coord(flex.vec2_double(x,y))
+      s1 = s1/s1.norms() * (1/beam.get_wavelength())
+      reflections['s1'].set_selected(isel, s1)
+  return nrefs_wo_s1

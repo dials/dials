@@ -19,6 +19,7 @@ from logging import info, debug, warning
 from dxtbx.model.experiment.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
+from dials.algorithms.refinement.refinement_helpers import set_obs_s1
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
@@ -424,28 +425,10 @@ class RefinerFactory(object):
                         verbosity):
     """low level build"""
 
-    # check that the beam vectors are stored: if not, compute them
-    refs_wo_s1_sel = (reflections['s1'].norms() < 1.e-6)
-    nrefs_wo_s1 = refs_wo_s1_sel.count(True)
-    if nrefs_wo_s1 > 0 and verbosity > 0:
-      debug("Setting scattering vectors for %d reflections", nrefs_wo_s1)
-    for i_expt, expt in enumerate(experiments):
-      detector = expt.detector
-      beam = expt.beam
-      expt_sel = reflections['id'] == i_expt
-      for i_panel, panel in enumerate(detector):
-        panel_sel = reflections['panel'] == i_panel
-        isel = (expt_sel & panel_sel & refs_wo_s1_sel).iselection()
-        spots = reflections.select(isel)
-        x, y, rot_angle = spots['xyzobs.mm.value'].parts()
-        s1 = panel.get_lab_coord(flex.vec2_double(x,y))
-        s1 = s1/s1.norms() * (1/beam.get_wavelength())
-        reflections['s1'].set_selected(isel, s1)
-
-    # unset the refinement flags (creates flags field if needed)
-    from dials.array_family.flex import reflection_table
-    reflections.unset_flags(flex.size_t_range(len(reflections)),
-        reflection_table.flags.used_in_refinement)
+    # check that the observed beam vectors are stored: if not, compute them
+    n_s1_set = set_obs_s1(reflections, experiments)
+    if n_s1_set > 0 and verbosity > 0:
+      debug("Set scattering vectors for %d reflections", n_s1_set)
 
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XYDelPsi (stills) type, the
