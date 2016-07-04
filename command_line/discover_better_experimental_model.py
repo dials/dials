@@ -332,6 +332,15 @@ def discover_better_experimental_model(
   spot_lists_mm = []
   max_cell_list = []
 
+  detector = imagesets[0].get_detector()
+  beam = imagesets[0].get_beam()
+
+  beam_panel = detector.get_panel_intersection(beam.get_s0())
+
+  if beam_panel == -1:
+    from libtbx.utils import Sorry
+    raise Sorry, 'input beam does not intersect detector'
+
   for imageset, spots in zip(imagesets, spot_lists):
     if 'imageset_id' not in spots:
       spots['imageset_id'] = spots['id']
