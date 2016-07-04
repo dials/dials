@@ -29,6 +29,9 @@ nproc = Auto
   .type = int(value_min=1)
 plot_search_scope = False
   .type = bool
+max_cell = None
+  .type = float
+  .help = "Known max cell (otherwise will compute from spot positions)"
 scan_range = None
   .help = "The range of images to use in indexing. Number of arguments"
     "must be a factor of two. Specifying \"0 0\" will use all images"
@@ -347,11 +350,12 @@ def discover_better_experimental_model(
 
     # derive a max_cell from mm spots
 
-    from dials.algorithms.indexing.indexer import find_max_cell
-    max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
-                             step_size=10,
-                             nearest_neighbor_percentile=0.05)
-    max_cell_list.append(max_cell)
+    if params.max_cell is None:
+      from dials.algorithms.indexing.indexer import find_max_cell
+      max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
+                               step_size=10,
+                               nearest_neighbor_percentile=0.05)
+      max_cell_list.append(max_cell)
 
     if (params.max_reflections is not None and
         spots_mm.size() > params.max_reflections):
@@ -363,7 +367,10 @@ def discover_better_experimental_model(
 
     spot_lists_mm.append(spots_mm)
 
-  max_cell = flex.median(flex.double(max_cell_list))
+  if params.max_cell is None:
+    max_cell = flex.median(flex.double(max_cell_list))
+  else:
+    max_cell = params.max_cell
   args = [(imageset, spots, max_cell, dps_params)
           for imageset, spots in zip(imagesets, spot_lists_mm)]
 
