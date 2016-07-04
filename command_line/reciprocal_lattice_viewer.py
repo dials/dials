@@ -621,14 +621,22 @@ def run(args):
     parser.print_help()
     exit(0)
 
-  reflections = reflections[0]
-
   if len(datablocks) == 0 and len(experiments) > 0:
     imagesets = experiments.imagesets()
   else:
     imagesets = []
     for datablock in datablocks:
       imagesets.extend(datablock.extract_imagesets())
+
+  if len(reflections) > 1:
+    assert len(reflections) == len(imagesets)
+    from scitbx.array_family import flex
+    for i in range(len(reflections)):
+      reflections[i]['imageset_id'] = flex.int(len(reflections[i]), i)
+      if i > 0:
+        reflections[0].extend(reflections[i])
+
+  reflections = reflections[0]
 
   import wxtbx.app
   a = wxtbx.app.CCTBXApp(0)
