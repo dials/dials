@@ -364,18 +364,21 @@ class Target(object):
     else:
       matches = self._matches
 
-    # Here we hardcode *three* types of residual, which might correspond to
-    # X, Y, Phi (scans case) or X, Y, DeltaPsi (stills case).
+    # The gradients are provided as a list of dictionaries, where the
+    # dictionaries have keys corresponding to gradients of the different types
+    # of residual involved. For example, for scans the keys are 'dX_dp',
+    # 'dY_dp', 'dphi_dp'. Reshape this data structure so that all the gradients
+    # of a particular type of residual are kept together
     gradients = self.calculate_gradients(matches)
-    dX_dp = [g[self._grad_names[0]] for g in gradients]
-    dY_dp = [g[self._grad_names[1]] for g in gradients]
-    dZ_dp = [g[self._grad_names[2]] for g in gradients]
+    reshaped = []
+    for key in self._grad_names:
+      reshaped.append([g[key] for g in gradients])
 
     residuals, weights = self._extract_residuals_and_weights(matches)
 
-    nelem = len(matches) * 3
+    nelem = len(matches) * len(self._grad_names)
     nparam = len(self._prediction_parameterisation)
-    jacobian = self._build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam)
+    jacobian = self._build_jacobian(*reshaped, nelem=nelem, nparam=nparam)
 
     return(residuals, jacobian, weights)
 
@@ -393,7 +396,7 @@ class Target(object):
       return None
 
   @staticmethod
-  def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam):
+  def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem=None, nparam=None):
     """construct Jacobian from lists of gradient vectors. This method may be
     overridden for the case where these vectors use sparse storage"""
 
@@ -573,7 +576,7 @@ class SparseGradientsMixin:
   that employed sparse storage."""
 
   @staticmethod
-  def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam):
+  def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem=None, nparam=None):
     """construct Jacobian from lists of sparse gradient vectors."""
 
     nref = int(nelem / 3)
