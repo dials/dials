@@ -168,6 +168,10 @@ class ReflectionManager(object):
     self._axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
     self._s0vecs = [matrix.col(e.beam.get_s0()) for e in self._experiments]
 
+    # unset the refinement flags (creates flags field if needed)
+    reflections.unset_flags(flex.size_t_range(len(reflections)),
+        flex.reflection_table.flags.used_in_refinement)
+
     # keep track of the original indices of the reflections
     reflections['iobs'] = flex.size_t_range(len(reflections))
 
