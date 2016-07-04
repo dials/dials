@@ -423,19 +423,29 @@ class SpotFrame(XrayFrame) :
       beam_pixel_fast + self._center[0], beam_pixel_slow + self._center[1])
 
     # XXX Transparency?
-    ring_data = [(center[0], center[1], {"colour": "red", "radius": pxl})
-                 for pxl in L_pixels]
-
     # Remove the old ring layer, and draw a new one.
     if hasattr(self, "_ring_layer") and self._ring_layer is not None:
       self.pyslip.DeleteLayer(self._ring_layer)
       self._ring_layer = None
-    self._ring_layer = self.pyslip.AddPointLayer(
+    ring_data = []
+    for pxl in L_pixels:
+      # ellipse axes
+      xext = (center[0], center[1] + pxl)
+      yext = (center[0] + pxl, center[1])
+      p = (center, xext, yext)
+      ring_data.append((p, self.pyslip.DefaultPolygonPlacement,
+                        self.pyslip.DefaultPolygonWidth, 'red', True,
+                        self.pyslip.DefaultPolygonFilled, self.pyslip.DefaultPolygonFillcolour,
+                        self.pyslip.DefaultPolygonOffsetX, self.pyslip.DefaultPolygonOffsetY, None))
+
+    self._ring_layer = self.pyslip.AddLayer(
+      self.pyslip.DrawLightweightEllipticalSpline,
       ring_data,
-      map_rel=True,
-      visible=True,
+      True,
+      True,
       show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-      renderer=self._draw_rings_layer,
+      selectable=False,
+      type=self.pyslip.TypeEllipse,
       name="<ring_layer>")
 
     def rotate_around_point(vector, point, angle, deg=False):
