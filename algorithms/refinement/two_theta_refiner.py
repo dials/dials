@@ -17,6 +17,7 @@ from math import sqrt, pi
 from logging import info
 
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
+from dials.algorithms.refinement.prediction import ExperimentsPredictor
 from dials.algorithms.refinement.target import Target
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
       PredictionParameterisation
@@ -55,6 +56,10 @@ class TwoThetaReflectionManager(ReflectionManager):
     self._reflections['2theta_obs.rad'] = calc_2theta(self._reflections,
       self._experiments)
 
+    # placeholder for calculated 2theta angles
+    self._reflections['2theta_cal.rad'] = flex.double(
+      len(self._reflections), 0.0)
+
     return
 
   def print_stats_on_matches(self):
@@ -85,6 +90,30 @@ class TwoThetaReflectionManager(ReflectionManager):
     info(st.format())
     info("")
 
+class TwoThetaExperimentsPredictor(ExperimentsPredictor):
+
+  def __call__(self, reflections):
+    """Predict 2theta angles for all reflections at the current model geometry"""
+
+    for iexp, e in enumerate(self._experiments):
+
+      # select the reflections for this experiment only
+      sel = reflections['id'] == iexp
+      refs = reflections.select(sel)
+
+      B = flex.mat3_double(len(reflections), e.crystal.get_B())
+      r0 = B * reflections['miller_index'].as_vec3_double()
+      r0len = r0.norms()
+      wl = e.beam.get_wavelength()
+
+      # 2theta = 2 * arcsin( |r0| / (2 * |s0| ) )
+      twotheta = 2.0 * flex.asin(0.5 * r0len * wl)
+
+      # write predictions back to overall reflections
+      reflections['2theta_cal.rad'].set_selected(sel, twotheta)
+
+    return reflections
+
 class TwoThetaTarget(Target):
   _grad_names = ['d2theta_dp']
   rmsd_names = ["RMSD_2theta"]
@@ -114,12 +143,12 @@ class TwoThetaTarget(Target):
     # reset the 'use' flag for all observations
     self._reflection_manager.reset_accepted_reflections()
 
-    # standard centroid prediction
-    reflections = self._predict_core(reflections)
+    # set twotheta in place
+    self._reflection_predictor(reflections)
 
-    # calculate two theta values and residuals
-    twotheta = calc_2theta(reflections, self._experiments)
-    reflections['2theta_resid'] = twotheta - reflections['2theta_obs.rad']
+    # calculate  residuals
+    reflections['2theta_resid'] = (reflections['2theta_cal.rad'] -
+                                   reflections['2theta_obs.rad'])
     reflections['2theta_resid2'] = reflections['2theta_resid']**2
 
     # set used_in_refinement flag to all those that had predictions
@@ -196,35 +225,6 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
     return
 
   def _local_setup(self, reflections):
-    # r is the reciprocal lattice vector, in the lab frame
-    self._phi_calc = reflections['xyzcal.mm'].parts()[2]
-    q = self._fixed_rotation * (self._UB * self._h)
-    self._r = q.rotate_around_origin(self._axis, self._phi_calc)
-
-    # All of the derivatives of phi have a common denominator, given by
-    # (e X r).s0, where e is the rotation axis. Calculate this once, here.
-    self._e_X_r = self._axis.cross(self._r)
-    self._e_r_s0 = (self._e_X_r).dot(self._s0)
-
-    # catch small values of e_r_s0
-    e_r_s0_mag = flex.abs(self._e_r_s0)
-    try:
-      assert flex.min(e_r_s0_mag) > 1.e-6
-    except AssertionError as e:
-      imin = flex.min_index(e_r_s0_mag)
-      print "(e X r).s0 too small:"
-      print "for", (e_r_s0_mag <= 1.e-6).count(True), "reflections"
-      print "out of", len(e_r_s0_mag), "total"
-      print "such as", reflections['miller_index'][imin]
-      print "with scattering vector", reflections['s1'][imin]
-      print "where r =", self._r[imin]
-      print "e =", self._axis[imin]
-      print "s0 =", self._s0[imin]
-      print ("this reflection forms angle with the equatorial plane "
-             "normal:")
-      vecn = matrix.col(self._s0[imin]).cross(matrix.col(self._axis[imin])).normalize()
-      print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
-      raise e
 
     # we want the wavelength
     self._wavelength = 1. / self._s0.norms()

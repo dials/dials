@@ -140,13 +140,8 @@ class Script(object):
     return
 
   def combine_crystals(self, experiments):
-    '''Replace all crystals in the experiments list with the first crystal.
-    This is reasonable if their orientations differ by small amounts, as
-    would be expected for multiple scans at different goniometer settings'''
+    '''Replace all crystals in the experiments list with the first crystal'''
 
-    #FIXME If the crystal orientations do differ significantly then can
-    # fold this back into a change in the goniometer in the cone around the
-    # beam?
     from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
     new_experiments=ExperimentList()
     ref_crystal = experiments[0].crystal
@@ -184,10 +179,9 @@ class Script(object):
         CrystalUnitCellParameterisation
     from dials.algorithms.refinement.parameterisation.parameter_report import \
         ParameterReporter
-    from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    from dials.algorithms.refinement.two_theta_refiner import \
-      TwoThetaReflectionManager, TwoThetaTarget, \
-      TwoThetaPredictionParameterisation
+    from dials.algorithms.refinement.two_theta_refiner import (
+      TwoThetaReflectionManager, TwoThetaTarget, TwoThetaExperimentsPredictor,
+      TwoThetaPredictionParameterisation)
 
     verb = params.refinement.verbosity
 
@@ -212,7 +206,7 @@ class Script(object):
        outlier_detector=None, verbosity=verb)
 
     # Reflection predictor
-    ref_predictor = ExperimentsPredictor(experiments)
+    ref_predictor = TwoThetaExperimentsPredictor(experiments)
 
     # Two theta target
     target = TwoThetaTarget(experiments, ref_predictor, refman, pred_param)
