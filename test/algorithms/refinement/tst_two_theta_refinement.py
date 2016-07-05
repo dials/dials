@@ -23,8 +23,9 @@ from math import pi
 from copy import deepcopy
 from logging import info, debug, warning
 
-from dials.algorithms.refinement.two_theta_refiner import \
-  TwoThetaReflectionManager, TwoThetaTarget, TwoThetaPredictionParameterisation
+from dials.algorithms.refinement.two_theta_refiner import (
+  TwoThetaReflectionManager, TwoThetaTarget, TwoThetaExperimentsPredictor,
+  TwoThetaPredictionParameterisation)
 
 def generate_reflections(experiments):
 
@@ -76,49 +77,24 @@ def generate_reflections(experiments):
 def test_fd_derivatives():
   '''Test derivatives of the prediction equation'''
 
-  #import sys
-  #from math import pi
-  #from cctbx.sgtbx import space_group, space_group_symbols
-  #from libtbx.test_utils import approx_equal
   from libtbx.phil import parse
-  #from scitbx.array_family import flex
 
-  ##### Import model builder
-
+  # Import model builder
   from setup_geometry import Extract
 
-  ##### Imports for reflection prediction
-
+  # Imports for reflection prediction
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
   from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
   from dials.algorithms.refinement.prediction import ScansRayPredictor, \
     ExperimentsPredictor
 
-  ##### Import model parameterisations
-  #
-  #from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-  #    XYPhiPredictionParameterisation
-  #from dials.algorithms.refinement.parameterisation.detector_parameters import \
-  #    DetectorParameterisationSinglePanel
-  #from dials.algorithms.refinement.parameterisation.beam_parameters import \
-  #    BeamParameterisation
-  #from dials.algorithms.refinement.parameterisation.crystal_parameters import \
-  #    CrystalOrientationParameterisation, \
-  #    CrystalUnitCellParameterisation
-
-  from time import time
-  start_time = time()
-
-  #### Create models
-
+  # Create models
   overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50
   geometry.parameters.crystal.c.length.range = 10 50"""
-
   master_phil = parse("""
       include scope dials.test.algorithms.refinement.geometry_phil
       """, process_includes=True)
-
   models = Extract(master_phil, overrides)
 
   mydetector = models.detector
@@ -136,11 +112,7 @@ def test_fd_derivatives():
                         epochs = range(720),
                         deg = True)
 
-  #### Create parameterisations of these models
-
-  #det_param = DetectorParameterisationSinglePanel(mydetector)
-  #s0_param = BeamParameterisation(mybeam, mygonio)
-  #xlo_param = CrystalOrientationParameterisation(mycrystal)
+  # Create a parameterisation of the crystal unit cell
   from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalUnitCellParameterisation
   xluc_param = CrystalUnitCellParameterisation(mycrystal)
@@ -151,9 +123,7 @@ def test_fd_derivatives():
         beam=mybeam, detector=mydetector, goniometer=mygonio, scan=myscan,
         crystal=mycrystal, imageset=None))
 
-  #### Unit tests
-
-  # Build a prediction parameterisation
+  # Build a prediction parameterisation for two theta prediction
   pred_param = TwoThetaPredictionParameterisation(experiments,
                  detector_parameterisations = None,
                  beam_parameterisations = None,
@@ -163,54 +133,22 @@ def test_fd_derivatives():
   # Generate some reflections
   obs_refs, ref_predictor = generate_reflections(experiments)
 
-  # Generate reflections
-  #resolution = 2.0
-  #index_generator = IndexGenerator(mycrystal.get_unit_cell(),
-  #                      space_group(space_group_symbols(1).hall()).type(),
-  #                      resolution)
-  #indices = index_generator.to_array()
-  #
-  ## Predict rays within the sweep range
-  #ray_predictor = ScansRayPredictor(experiments, sweep_range)
-  #obs_refs = ray_predictor(indices)
-  #
-  ## Take only those rays that intersect the detector
-  #intersects = ray_intersection(mydetector, obs_refs)
-  #obs_refs = obs_refs.select(intersects)
-  #
-  ## Make a reflection predictor and re-predict for all these reflections. The
-  ## result is the same, but we gain also the flags and xyzcal.px columns
-  #ref_predictor = ExperimentsPredictor(experiments)
-  #obs_refs['id'] = flex.int(len(obs_refs), 0)
-  #obs_refs = ref_predictor(obs_refs)
-  #
-  ## Set 'observed' centroids from the predicted ones
-  #obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
-  #
-  ## Invent some variances for the centroid positions of the simulated data
-  #im_width = 0.1 * pi / 180.
-  #px_size = mydetector[0].get_pixel_size()
-  #var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
-  #var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
-  #var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
-  #obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
-
-  # use a ReflectionManager to exclude reflections too close to the spindle
+  # Build a ReflectionManager with overloads for handling 2theta residuals
   refman = TwoThetaReflectionManager(obs_refs, experiments, outlier_detector=None)
 
-  # Redefine the reflection predictor to use the type expected by the Target class
-  ref_predictor = ExperimentsPredictor(experiments)
+  # Build a TwoThetaExperimentsPredictor
+  ref_predictor = TwoThetaExperimentsPredictor(experiments)
 
-  # make a target to ensure reflections are predicted and refman is finalised
+  # Make a target for the least squares 2theta residual
   target = TwoThetaTarget(experiments, ref_predictor, refman, pred_param)
 
-  # keep only those reflections that pass inclusion criteria and have predictions
+  # Keep only reflections that pass inclusion criteria and have predictions
   reflections = refman.get_matches()
 
-  # get analytical gradients
+  # Get analytical gradients
   an_grads = pred_param.get_gradients(reflections)
 
-  # get finite difference gradients
+  # Get finite difference gradients
   p_vals = pred_param.get_param_vals()
   deltas = [1.e-7] * len(p_vals)
 
@@ -223,7 +161,6 @@ def test_fd_derivatives():
 
     target.predict()
     reflections = refman.get_matches()
-    #ref_predictor(reflections)
 
     rev_state = reflections['2theta_resid'].deep_copy()
 
@@ -232,7 +169,6 @@ def test_fd_derivatives():
 
     target.predict()
     reflections = refman.get_matches()
-    #ref_predictor(reflections)
 
     fwd_state = reflections['2theta_resid'].deep_copy()
     p_vals[i] = val
@@ -241,13 +177,10 @@ def test_fd_derivatives():
     fd /= deltas[i]
 
     # compare with analytical calculation
-    assert approx_equal(fd, an_grads[i]["d2theta_dp"], eps=5.e-6)
+    assert approx_equal(fd, an_grads[i]["d2theta_dp"], eps=1.e-6)
 
   # return to the initial state
   pred_param.set_param_vals(p_vals)
-
-  finish_time = time()
-  print "Time Taken: ",finish_time - start_time
 
   return
 
@@ -304,7 +237,7 @@ def test_refinement():
         scan=scan, crystal=crystal, imageset=None))
 
   # simulate some reflections
-  refs, ref_predictor = generate_reflections(experiments)
+  refs, _ = generate_reflections(experiments)
 
   # change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of
   # alpha and beta angles)
@@ -342,10 +275,14 @@ def test_refinement():
   param_reporter = ParameterReporter(det_param, beam_param,
                                      xlo_param, [xluc_param])
 
-  # reflection manager and target function
+  # reflection manager
   refman = TwoThetaReflectionManager(refs, experiments, nref_per_degree=20,
     verbosity=2)
 
+  # reflection predictor
+  ref_predictor = TwoThetaExperimentsPredictor(experiments)
+
+  # target function
   target = TwoThetaTarget(experiments, ref_predictor, refman, pred_param)
 
   # minimisation engine
@@ -376,12 +313,12 @@ def test_refinement():
   # compare crystal with original crystal
   refined_xl = refiner.get_experiments()[0].crystal
 
-  print refined_xl
+  #print refined_xl
   assert refined_xl.is_similar_to(orig_xl, uc_rel_length_tolerance=0.001,
     uc_abs_angle_tolerance=0.01)
 
-  print "Unit cell esds:"
-  print refined_xl.get_cell_parameter_sd()
+  #print "Unit cell esds:"
+  #print refined_xl.get_cell_parameter_sd()
 
   return
 

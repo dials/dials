@@ -51,6 +51,7 @@ tst_list = (
     "$D/test/algorithms/refinement/tst_restraints_parameterisation.py",
     "$D/test/algorithms/refinement/tst_sv_multi_panel_refinement.py",
     "$D/test/algorithms/refinement/tst_xfel_metrology.py",
+    "$D/test/algorithms/refinement/tst_two_theta_refinement.py",
     "$D/test/algorithms/reflection_basis/tst_beam_vector_map.py",
     "$D/test/algorithms/reflection_basis/tst_coordinate_system.py",
     "$D/test/algorithms/reflection_basis/tst_grid_index_generator.py",
