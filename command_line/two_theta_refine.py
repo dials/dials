@@ -1,0 +1,392 @@
+#!/usr/bin/env python
+#
+#  two_theta_refine.py
+#
+#  Copyright (C) 2016 Diamond Light Source and STFC Rutherford Appleton
+#  Laboratory, UK.
+#
+#  Author: David Waterman
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+
+from __future__ import division
+from libtbx.utils import Sorry
+from dials.array_family import flex
+from time import time
+import cPickle as pickle
+from logging import info
+from dials.util import log
+
+help_message = '''
+
+Refine the unit cell(s) of input experiments against the input indexed
+reflections using a 2theta angle target. Report the refined cell and its
+estimated standard deviation.
+
+Examples::
+
+  dials.two_theta_refine integrated_experiments.json integrated.pickle
+
+  dials.two_theta_refine integrated_experiments.json integrated.pickle \
+    correlation_plot.filename=corrplot.png
+'''
+
+# The phil scope
+from libtbx.phil import parse
+phil_scope = parse('''
+
+  output {
+    experiments = refined_cell.json
+      .type = str
+      .help = "The filename for experimental models including refined cells"
+
+    log = dials.two_theta_refine.log
+      .type = str
+
+    debug_log = dials.two_theta_refine.debug.log
+      .type = str
+
+    # FIXME include this directly from the original rather than copy here
+    correlation_plot
+      .expert_level = 1
+    {
+      filename = None
+        .type = str
+        .help = "The base filename for output of plots of parameter"
+                "correlations. A file extension may be added to control"
+                "the type of output file, if it is one of matplotlib's"
+                "supported types. A pickle file with the same base filename"
+                "will also be created, containing the correlation matrix and"
+                "column labels for later inspection, replotting etc."
+
+      col_select = None
+        .type = strings
+        .help = "Specific columns to include in the plots of parameter"
+                "correlations, either specifed by parameter name or 0-based"
+                "column index. Defaults to all columns."
+                "This option is useful when there is a large number of"
+                "parameters"
+
+      steps = None
+        .type = ints(value_min=0)
+        .help = "Steps for which to make correlation plots. By default only"
+                "the final step is plotted. Uses zero-based numbering, so"
+                "the first step is numbered 0."
+    }
+  }
+
+  #FIXME expose _some_ of the Refiner options?
+  #include scope dials.algorithms.refinement.refiner.phil_scope
+
+  refinement
+    .help = "Parameters to configure the refinement"
+  {
+    verbosity = 2
+      .help = "verbosity level"
+      .type = int(value_min=0)
+
+    filter_integrated_centroids = True
+      .type = bool
+      .help = "If integrated centroids are provided, filter these so that only"
+              "those with both the 'integrated' and 'strong' flags are used"
+
+    combine_crystal_models = True
+      .type = bool
+      .help = "When multiple experiments are provided as input, combine these to"
+              "fit the best single crystal model for all the data, or keep these"
+              "models separate."
+  }
+''', process_includes=True)
+
+working_phil = phil_scope.fetch()
+
+class Script(object):
+  '''A class for running the script.'''
+
+  def __init__(self):
+    '''Initialise the script.'''
+    from dials.util.options import OptionParser
+    import libtbx.load_env
+
+    # The script usage
+    usage  = "usage: %s [options] [param.phil] " \
+             "experiments.json reflections.pickle" \
+               % libtbx.env.dispatcher_name
+
+    # Create the parser
+    self.parser = OptionParser(
+      usage=usage,
+      phil=working_phil,
+      read_reflections=True,
+      read_experiments=True,
+      check_format=False,
+      epilog=help_message)
+
+  @staticmethod
+  def check_input(reflections):
+    '''Check the input is suitable for refinement. So far just check keys in
+    the reflection table. Maybe later check experiments have overlapping models
+    etc.'''
+
+    msg = "The supplied reflection table does not have the required data " + \
+      "column: {0}"
+    for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
+      if key not in reflections:
+        msg = msg.format(key)
+        raise Sorry(msg)
+
+    # FIXME add other things to be checked here
+    return
+
+  def combine_crystals(self, experiments):
+    '''Replace all crystals in the experiments list with the first crystal.
+    This is reasonable if their orientations differ by small amounts, as
+    would be expected for multiple scans at different goniometer settings'''
+
+    #FIXME If the crystal orientations do differ significantly then can
+    # fold this back into a change in the goniometer in the cone around the
+    # beam?
+    from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+    new_experiments=ExperimentList()
+    ref_crystal = experiments[0].crystal
+    for exp in experiments:
+      new_experiments.append(Experiment(beam=exp.beam,
+                                        detector=exp.detector,
+                                        scan=exp.scan,
+                                        goniometer=exp.goniometer,
+                                        crystal=ref_crystal,
+                                        imageset=exp.imageset))
+    return new_experiments
+
+  @staticmethod
+  def filter_integrated_centroids(reflections):
+    '''Filter reflections to include only those with the integrated and the
+    strong flag set, but only if there are apparently some integrated
+    reflections'''
+
+    orig_len = len(reflections)
+    inc = flex.bool(orig_len, False)
+    mask = reflections.get_flags(reflections.flags.integrated)
+    if mask.count(True) == 0: return reflections
+    reflections = reflections.select(mask)
+    mask = reflections.get_flags(reflections.flags.strong)
+    reflections = reflections.select(mask)
+
+    info('{0} out of {1} reflections remain after filtering to keep only strong'
+        ' and integrated centroids'.format(len(reflections), orig_len))
+    return reflections
+
+  @staticmethod
+  def create_refiner(params, reflections, experiments):
+
+    from dials.algorithms.refinement.parameterisation.crystal_parameters import \
+        CrystalUnitCellParameterisation
+    from dials.algorithms.refinement.parameterisation.parameter_report import \
+        ParameterReporter
+    from dials.algorithms.refinement.prediction import ExperimentsPredictor
+    from dials.algorithms.refinement.two_theta_refiner import \
+      TwoThetaReflectionManager, TwoThetaTarget, \
+      TwoThetaPredictionParameterisation
+
+    verb = params.refinement.verbosity
+
+    # Only parameterise the crystal unit cell
+    det_params = None
+    beam_params = None
+    xlo_params = None
+    xluc_params = []
+    for icrystal, crystal in enumerate(experiments.crystals()):
+      exp_ids = experiments.indices(crystal)
+      xluc_params.append(CrystalUnitCellParameterisation(crystal,
+                        experiment_ids=exp_ids))
+
+    # Two theta prediction equation parameterisation
+    pred_param = TwoThetaPredictionParameterisation(experiments,
+      det_params, beam_params, xlo_params, xluc_params)
+    param_reporter = ParameterReporter(det_params, beam_params,
+                                       xlo_params, xluc_params)
+
+    # ReflectionManager, currently without outlier rejection
+    refman = TwoThetaReflectionManager(reflections, experiments,
+       outlier_detector=None, verbosity=verb)
+
+    # Reflection predictor
+    ref_predictor = ExperimentsPredictor(experiments)
+
+    # Two theta target
+    target = TwoThetaTarget(experiments, ref_predictor, refman, pred_param)
+
+    # Do a correlation plot?
+    tpc = params.output.correlation_plot.filename is not None
+
+    # Minimisation engine - FIXME not many choices exposed yet. Do we want
+    # more cowbell?
+    from dials.algorithms.refinement.engine \
+      import LevenbergMarquardtIterations as Refinery
+    refinery = Refinery(target = target,
+                        prediction_parameterisation = pred_param,
+                        log = None,
+                        verbosity = verb,
+                        track_step = False,
+                        track_gradient = False,
+                        track_parameter_correlation = tpc,
+                        max_iterations = 20)
+
+    # Refiner
+    from dials.algorithms.refinement.refiner import Refiner
+    refiner = Refiner(reflections=reflections,
+                      experiments=experiments,
+                      pred_param=pred_param,
+                      param_reporter=param_reporter,
+                      refman=refman,
+                      target=target,
+                      refinery=refinery,
+                      verbosity=verb)
+
+    return refiner
+
+  @staticmethod
+  def cell_param_table(crystal):
+    '''Construct a table of cell parameters and their ESDs'''
+
+    from libtbx.table_utils import simple_table
+    cell = crystal.get_unit_cell().parameters()
+    esd = crystal.get_cell_parameter_sd()
+    header = ["Parameter", "Estimated sd"]
+    rows = []
+    for p, e in zip(cell, esd):
+      rows.append(["%.5g" % p, "%.5g" % e])
+    st = simple_table(rows, header)
+    return st.format()
+
+  def run(self):
+    '''Execute the script.'''
+    from dials.algorithms.refinement.two_theta_refiner import \
+      TwoThetaReflectionManager, TwoThetaTarget, \
+      TwoThetaPredictionParameterisation
+    from dials.util.options import flatten_reflections, flatten_experiments
+
+    start_time = time()
+
+    # Parse the command line
+    params, options = self.parser.parse_args(show_diff_phil=False)
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
+
+    # Try to load the models and data
+    nexp = len(experiments)
+    if nexp == 0:
+      print "No Experiments found in the input"
+      self.parser.print_help()
+      return
+    if len(reflections) == 0:
+      print "No reflection data found in the input"
+      self.parser.print_help()
+      return
+    if len(reflections) > 1:
+      raise Sorry("Only one reflections list can be imported at present")
+    reflections = reflections[0]
+
+    self.check_input(reflections)
+
+    # Configure the logging
+    log.config(info=params.output.log,
+      debug=params.output.debug_log)
+    from dials.util.version import dials_version
+    info(dials_version())
+
+    # Log the diff phil
+    diff_phil = self.parser.diff_phil.as_str()
+    if diff_phil is not '':
+      info('The following parameters have been modified:\n')
+      info(diff_phil)
+
+    # Combine crystals?
+    if params.refinement.combine_crystal_models and len(experiments) > 1:
+      info('Combining {0} crystal models'.format(len(experiments)))
+      experiments = self.combine_crystals(experiments)
+
+    # Filter integrated centroids?
+    if params.refinement.filter_integrated_centroids:
+      reflections = self.filter_integrated_centroids(reflections)
+
+    # Get the refiner
+    info('Configuring refiner')
+    refiner = self.create_refiner(params, reflections, experiments)
+
+    # Refine the geometry
+    if nexp == 1:
+      info('Performing refinement of a single Experiment...')
+    else:
+      info('Performing refinement of {0} Experiments...'.format(nexp))
+
+    # Refine and get the refinement history
+    history = refiner.run()
+
+    # get the refined experiments
+    experiments = refiner.get_experiments()
+    crystals = experiments.crystals()
+
+    if len(crystals) == 1:
+      # output the refined model for information
+      info('')
+      info('Final refined crystal model:')
+      info(crystals[0])
+      info(self.cell_param_table(crystals[0]))
+
+    # Save the refined experiments to file
+    output_experiments_filename = params.output.experiments
+    info('Saving refined experiments to {0}'.format(output_experiments_filename))
+    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+    dump = ExperimentListDumper(experiments)
+    dump.as_json(output_experiments_filename)
+
+    # Correlation plot
+    if params.output.correlation_plot.filename is not None:
+      from os.path import splitext
+      root, ext = splitext(params.output.correlation_plot.filename)
+      if not ext: ext = ".pdf"
+
+      steps = params.output.correlation_plot.steps
+      if steps is None: steps = [history.get_nrows()-1]
+
+      # extract individual column names or indices
+      col_select = params.output.correlation_plot.col_select
+
+      num_plots = 0
+      for step in steps:
+        fname_base = root + "_step%02d" % step
+        plot_fname = fname_base + ext
+        corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
+        if [corrmat, labels].count(None) == 0:
+          from dials.algorithms.refinement.refinement_helpers import corrgram
+          plt = corrgram(corrmat, labels)
+          if plt is not None:
+            info('Saving parameter correlation plot to {}'.format(plot_fname))
+            plt.savefig(plot_fname)
+            num_plots += 1
+          mat_fname = fname_base + ".pickle"
+          with open(mat_fname, 'wb') as handle:
+            py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
+            info('Saving parameter correlation matrix to {0}'.format(mat_fname))
+            pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
+
+      if num_plots == 0:
+        msg = "Sorry, no parameter correlation plots were produced. Please set " \
+              "track_parameter_correlation=True to ensure correlations are " \
+              "tracked, and make sure correlation_plot.col_select is valid."
+        info(msg)
+
+    # Log the total time taken
+    info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
+
+    return
+
+if __name__ == '__main__':
+  from dials.util import halraiser
+  try:
+    script = Script()
+    script.run()
+  except Exception as e:
+    halraiser(e)
