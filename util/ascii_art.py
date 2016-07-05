@@ -21,7 +21,7 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
 
   z_range = max_z - min_z + 1
   if z_range <= 1:
-    return ''
+    return '%i spots found on 1 image' %len(reflections)
 
   width = int(min(z_range, width))
   z_step = z_range / width
