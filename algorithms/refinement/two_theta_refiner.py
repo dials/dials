@@ -226,21 +226,18 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
       print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
       raise e
 
+    # we want the wavelength
+    self._wavelength = 1. / self._s0.norms()
+
     return
 
   def _xl_unit_cell_derivatives(self, isel, parameterisation=None,
     reflections=None):
 
     # Get required data
-    axis = self._axis.select(isel)
-    fixed_rotation = self._fixed_rotation.select(isel)
-    phi_calc = self._phi_calc.select(isel)
     h = self._h.select(isel)
-    s1 = self._s1.select(isel)
-    s0 = self._s0.select(isel)
-    e_X_r = self._e_X_r.select(isel)
-    e_r_s0 = self._e_r_s0.select(isel)
-    U = self._U.select(isel)
+    B = self._B.select(isel)
+    wl = self._wavelength.select(isel)
 
     # get derivatives of the B matrix wrt the parameters
     dB_dxluc_p = [None if der is None else flex.mat3_double(len(isel), der.elems) \
@@ -255,23 +252,17 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
         d2theta_dp.append(None)
         continue
 
-      # calculate the derivative of r for this parameter
-      tmp = fixed_rotation * (U * der * h)
-      dr = tmp.rotate_around_origin(axis, phi_calc)
+      r0 = B * h
+      dr0 = der * h
+      r0len = r0.norms()
+      dr0len = dr0.dot(r0) / r0len
 
-      # calculate the derivative of phi for this parameter
-      dphi = -1.0 * dr.dot(s1) / e_r_s0
+      # 2theta = 2 * arcsin( |r0| / (2 * |s0| ) )
+      sintheta = 0.5 * r0len * wl
+      fac = 1.0 / flex.sqrt(flex.double(len(wl), 1.0) - sintheta**2)
+      val = fac * wl * dr0len
 
-      # Only changes that leave r on the Ewald sphere are allowed. That
-      # constraint is encoded by the addition of terms to dr (see the refinement
-      # paper)
-      ds1 = dr + e_X_r * dphi
-      d2theta_ds1 = []
-      for a, b in zip(s1, s0):
-        d, _ = angle_derivative_wrt_vectors(a, b)
-        d2theta_ds1.append(d)
-      d2theta_ds1 = flex.vec3_double(d2theta_ds1)
-      d2theta_dp.append(d2theta_ds1.dot(ds1))
+      d2theta_dp.append(val)
 
     return d2theta_dp
 
