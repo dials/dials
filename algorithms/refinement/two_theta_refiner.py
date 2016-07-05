@@ -40,16 +40,18 @@ def calc_2theta(reflections, experiments):
   twotheta = flex.double(len(reflections), 0.)
   for iexp, exp in enumerate(experiments):
     isel = (reflections['id'] == iexp).iselection()
+    sub_ref = reflections.select(isel)
     s0 = matrix.col(exp.beam.get_s0())
     for ipanel in range(len(exp.detector)):
-      sel = (reflections['panel'] == ipanel)
-      panel_ref = reflections.select(sel)
+      sel = (sub_ref['panel'] == ipanel)
+      panel_ref = sub_ref.select(sel)
       x, y, phi = panel_ref['xyzobs.mm.value'].parts()
       s1 = exp.detector[ipanel].get_lab_coord(flex.vec2_double(x,y))
       s1 = s1/s1.norms() * s0.length()
 
-      sub_isel = sel.select(isel)
+      sub_isel = isel.select(sel)
       twotheta.set_selected(sub_isel, s1.angle(s0))
+
   return twotheta
 
 class TwoThetaReflectionManager(ReflectionManager):
