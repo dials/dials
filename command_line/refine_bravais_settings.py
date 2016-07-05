@@ -92,12 +92,14 @@ def bravais_lattice_to_space_groups(chiral_only=True):
       bravais_lattice_to_sg[str(bravais_lattice)].append(sg)
   return bravais_lattice_to_sg
 
-def bravais_lattice_to_space_group_table(chiral_only=True):
+def bravais_lattice_to_space_group_table(bravais_settings=None, chiral_only=True):
   from logging import info
   bravais_lattice_to_sg = bravais_lattice_to_space_groups(
     chiral_only=chiral_only)
   info('Chiral space groups corresponding to each Bravais lattice:')
   for bravais_lattice, space_groups in bravais_lattice_to_sg.iteritems():
+    if bravais_settings is not None and bravais_lattice not in bravais_settings:
+      continue
     info(': '.join(
       [bravais_lattice,
        ' '.join(
@@ -172,8 +174,6 @@ def run(args):
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic
 
-  bravais_lattice_to_space_group_table()
-
   cb_op_to_primitive = experiments[0].crystal.get_space_group().info()\
     .change_of_basis_op_to_primitive_setting()
   if experiments[0].crystal.get_space_group().n_ltr() > 1:
@@ -191,6 +191,8 @@ def run(args):
     params, experiments, reflections, lepage_max_delta=params.lepage_max_delta,
     nproc=params.nproc, refiner_verbosity=params.verbosity)
   s = StringIO()
+  possible_bravais_settings = set(solution['bravais'] for solution in Lfat)
+  bravais_lattice_to_space_group_table(possible_bravais_settings)
   Lfat.labelit_printout(out=s)
   info(s.getvalue())
   from json import dumps
