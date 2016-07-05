@@ -570,7 +570,7 @@ def exercise_16():
   sweep_paths = [
     glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "*_datablock_import.json"))[0]
     for i in range(4)]
-  extra_args = ["known_symmetry.space_group=I4"]
+  extra_args = ["known_symmetry.space_group=I4", "filter_ice=False"]
   expected_unit_cell = uctbx.unit_cell(
     (7.310, 7.310, 6.820, 90.000, 90.000, 90.000))
   expected_rmsds = (0.10, 0.7, 0.5)

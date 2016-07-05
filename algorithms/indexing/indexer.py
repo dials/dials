@@ -1941,15 +1941,15 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
                            percentile=nearest_neighbor_percentile)
     max_cell = NN.max_cell
   else:
-    phi_min = flex.min(phi_deg)
-    phi_max = flex.max(phi_deg)
-    d_phi = phi_max - phi_min
-    n_steps = int(math.ceil(d_phi / step_size))
     max_cell = flex.double()
-    for n in range(n_steps):
-      for imageset_id in range(flex.max(reflections['imageset_id'])+1):
-        sel = (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
-        sel &= reflections['imageset_id'] == imageset_id
+    for imageset_id in range(flex.max(reflections['imageset_id'])+1):
+      sel = reflections['imageset_id'] == imageset_id
+      phi_min = flex.min(phi_deg.select(sel))
+      phi_max = flex.max(phi_deg.select(sel))
+      d_phi = phi_max - phi_min
+      n_steps = max(int(math.ceil(d_phi / step_size)), 1)
+      for n in range(n_steps):
+        sel &= (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
         if sel.count(True) == 0:
           continue
         try:
