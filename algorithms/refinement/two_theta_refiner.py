@@ -112,6 +112,9 @@ class TwoThetaExperimentsPredictor(ExperimentsPredictor):
       # write predictions back to overall reflections
       reflections['2theta_cal.rad'].set_selected(sel, twotheta)
 
+      # set predicted flag
+      reflections.set_flags(sel, reflections.flags.predicted)
+
     return reflections
 
 class TwoThetaTarget(Target):
