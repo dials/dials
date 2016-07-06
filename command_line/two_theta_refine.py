@@ -250,7 +250,7 @@ class Script(object):
     header = ["Parameter", "Estimated sd"]
     rows = []
     for p, e in zip(cell, esd):
-      rows.append(["%.5g" % p, "%.5g" % e])
+      rows.append(["%9.5f" % p, "%9.5f" % e])
     st = simple_table(rows, header)
     return st.format()
 
