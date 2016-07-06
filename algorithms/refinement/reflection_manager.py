@@ -154,7 +154,7 @@ class ReflectionManager(object):
                      nref_per_degree=None,
                      max_sample_size=None,
                      min_sample_size=0,
-                     close_to_spindle_cutoff=0.1,
+                     close_to_spindle_cutoff=0.02,
                      outlier_detector=None,
                      weighting_strategy_override=None,
                      verbosity=0):
