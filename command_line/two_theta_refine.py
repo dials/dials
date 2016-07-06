@@ -11,12 +11,13 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from libtbx.utils import Sorry
-from dials.array_family import flex
-from time import time
 import cPickle as pickle
-from logging import info
+from dials.array_family import flex
 from dials.util import log
+from dials.util.version import dials_version
+from libtbx.utils import Sorry
+from logging import info
+from time import time
 
 help_message = '''
 
@@ -29,7 +30,7 @@ Examples::
   dials.two_theta_refine integrated_experiments.json integrated.pickle
 
   dials.two_theta_refine integrated_experiments.json integrated.pickle \
-    correlation_plot.filename=corrplot.png
+    correlation_plot.filename=corrplot.png cif=refined_cell.cif
 '''
 
 # The phil scope
@@ -46,6 +47,11 @@ phil_scope = parse('''
 
     debug_log = dials.two_theta_refine.debug.log
       .type = str
+
+    cif = None
+      .type = str
+      .help = "Write unit cell error information in a Crystallographic"
+              "Information File (CIF)"
 
     # FIXME include this directly from the original rather than copy here
     correlation_plot
@@ -254,6 +260,43 @@ class Script(object):
     st = simple_table(rows, header)
     return st.format()
 
+  @staticmethod
+  def generate_cif(crystal, file):
+    info('Saving CIF information to %s' % file)
+    import datetime
+    import iotbx.cif.model
+    block = iotbx.cif.model.block()
+    block["_audit_creation_method"] = dials_version()
+    block["_audit_creation_date"] = datetime.date.today().isoformat()
+#   block["_publ_section_references"] = '' # once there is a reference...
+
+    def format_value_with_esd(value, esd, decimal_places):
+      return "%%.%df(%%d)" % decimal_places % (value, round(esd * (10 ** decimal_places)))
+
+    for cell, esd, cifname in zip(crystal.get_unit_cell().parameters(),
+                                  crystal.get_cell_parameter_sd(),
+                                  ['length_a', 'length_b', 'length_c', 'angle_alpha', 'angle_beta', 'angle_gamma']):
+      block['_cell_%s' % cifname] = format_value_with_esd(cell, esd, 4)
+#   TODOs:
+#   block['_cell_volume'] = format_value_with_esd(1, 1, 4)
+#   block['_cell_measurement_reflns_used'] = unit_cell_data['sampling']['used_reflections']
+#   block['_cell_measurement_theta_min'] = unit_cell_data['sampling']['used_min_2theta'] / 2
+#   block['_cell_measurement_theta_max'] = unit_cell_data['sampling']['used_max_2theta'] / 2
+#   block['_diffrn_reflns_number'] = unit_cell_data['reflections']['count']
+#   block['_diffrn_reflns_limit_h_min'] = unit_cell_data['reflections']['min_miller'][0]
+#   block['_diffrn_reflns_limit_h_max'] = unit_cell_data['reflections']['max_miller'][0]
+#   block['_diffrn_reflns_limit_k_min'] = unit_cell_data['reflections']['min_miller'][1]
+#   block['_diffrn_reflns_limit_k_max'] = unit_cell_data['reflections']['max_miller'][1]
+#   block['_diffrn_reflns_limit_l_min'] = unit_cell_data['reflections']['min_miller'][2]
+#   block['_diffrn_reflns_limit_l_max'] = unit_cell_data['reflections']['max_miller'][2]
+#   block['_diffrn_reflns_theta_min'] = unit_cell_data['reflections']['min_2theta'] / 2
+#   block['_diffrn_reflns_theta_max'] = unit_cell_data['reflections']['max_2theta'] / 2
+
+    cif = iotbx.cif.model.cif()
+    cif['two_theta_refine'] = block
+    with open(file, 'w') as fh:
+      cif.show(out=fh)
+
   def run(self):
     '''Execute the script.'''
     from dials.algorithms.refinement.two_theta_refiner import \
@@ -287,7 +330,6 @@ class Script(object):
     # Configure the logging
     log.config(info=params.output.log,
       debug=params.output.debug_log)
-    from dials.util.version import dials_version
     info(dials_version())
 
     # Log the diff phil
@@ -371,6 +413,9 @@ class Script(object):
               "track_parameter_correlation=True to ensure correlations are " \
               "tracked, and make sure correlation_plot.col_select is valid."
         info(msg)
+
+    if params.output.cif is not None:
+      self.generate_cif(crystals[0], file=params.output.cif)
 
     # Log the total time taken
     info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
