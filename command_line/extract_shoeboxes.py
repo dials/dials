@@ -84,7 +84,7 @@ class Script(object):
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
     datablocks = flatten_datablocks(params.input.datablock)
-    if not any(experiments, datablocks, reflections):
+    if not any([experiments, datablocks, reflections]):
       self.parser.print_help()
       exit(0)
     elif experiments and datablocks:
