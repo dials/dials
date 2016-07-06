@@ -102,6 +102,11 @@ phil_scope = parse('''
       .help = "When multiple experiments are provided as input, combine these to"
               "fit the best single crystal model for all the data, or keep these"
               "models separate."
+
+    triclinic = False
+      .type = bool
+      .help = "If true remove symmetry constraints and refine a triclinic cell"
+              "by converting to P 1"
   }
 ''', process_includes=True)
 
@@ -177,6 +182,21 @@ class Script(object):
     info('{0} out of {1} reflections remain after filtering to keep only strong'
         ' and integrated centroids'.format(len(reflections), orig_len))
     return reflections
+
+  @staticmethod
+  def convert_to_P1(reflections, experiments):
+    '''Convert the input crystals to P 1 and reindex the reflections'''
+    from cctbx.sgtbx import space_group
+    for iexp, exp in enumerate(experiments):
+      sel = reflections['id'] == iexp
+      xl = exp.crystal
+      sg = xl.get_space_group()
+      op = sg.info().change_of_basis_op_to_primitive_setting()
+      exp.crystal = xl.change_basis(op)
+      exp.crystal.set_space_group(space_group("P 1"))
+      hkl_reindexed = op.apply(reflections['miller_index'].select(sel))
+      reflections['miller_index'].set_selected(sel, hkl_reindexed)
+    return reflections, experiments
 
   @staticmethod
   def create_refiner(params, reflections, experiments):
@@ -358,6 +378,10 @@ class Script(object):
     if diff_phil is not '':
       info('The following parameters have been modified:\n')
       info(diff_phil)
+
+    # Convert to P 1?
+    if params.refinement.triclinic:
+      reflections, experiments = self.convert_to_P1(reflections, experiments)
 
     # Combine crystals?
     if params.refinement.combine_crystal_models and len(experiments) > 1:
