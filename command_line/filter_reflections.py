@@ -127,10 +127,11 @@ class Script(object):
     if len(params.inclusions.flag) == 0:
       inc = flex.bool(len(reflections), True)
     else:
-      inc = flex.bool(len(reflections), False)
+      # 2016/07/06 GW logic here not right should be && for each flag not or?
+      inc = flex.bool(len(reflections), True)
       for flag in params.inclusions.flag:
         sel = reflections.get_flags(getattr(reflections.flags, flag))
-        inc = inc | sel
+        inc = inc & sel
       reflections = reflections.select(inc)
 
     print "{0} reflections selected to form the working set".format(len(reflections))
