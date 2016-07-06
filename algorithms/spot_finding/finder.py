@@ -181,6 +181,50 @@ class ExtractSpotsParallelTask(object):
     return result, handlers[0].messages()
 
 
+class ReflectionTableCreator(object):
+  '''
+  A class to filter shoeboxes and create reflection table
+
+  '''
+
+  def __init__(self, filter_spots):
+    '''
+    Initialise the reflection table creator
+
+    '''
+    self.filter_spots = filter_spots
+
+  def __call__(self, imageset, shoeboxes):
+    '''
+    Filter shoeboxes and create reflection table
+
+    '''
+    from dials.array_family import flex
+    from logging import info
+
+    # Calculate the spot centroids
+    centroid = shoeboxes.centroid_valid()
+    info('Calculated {0} spot centroids'.format(len(shoeboxes)))
+
+    # Calculate the spot intensities
+    intensity = shoeboxes.summed_intensity()
+    info('Calculated {0} spot intensities'.format(len(shoeboxes)))
+
+    # Create the observations
+    observed = flex.observation(shoeboxes.panels(), centroid, intensity)
+
+    # Filter the reflections and select only the desired spots
+    flags = self.filter_spots(None,
+        sweep=imageset,
+        observations=observed,
+        shoeboxes=shoeboxes)
+    observed = observed.select(flags)
+    shoeboxes = shoeboxes.select(flags)
+
+    # Return as a reflection list
+    return flex.reflection_table(observed, shoeboxes)
+
+
 class ExtractSpots(object):
   '''
   Class to find spots in an image and extract them into shoeboxes.
@@ -197,7 +241,8 @@ class ExtractSpots(object):
                mp_njobs=1,
                mp_chunksize=1,
                min_spot_size=1,
-               max_spot_size=20):
+               max_spot_size=20,
+               filter_spots=None):
     '''
     Initialise the class with the strategy
 
@@ -219,6 +264,7 @@ class ExtractSpots(object):
     self.region_of_interest = region_of_interest
     self.min_spot_size = min_spot_size
     self.max_spot_size = max_spot_size
+    self.filter_spots = filter_spots
 
   def __call__(self, imageset):
     '''
@@ -350,8 +396,12 @@ class ExtractSpots(object):
       ntoolarge,
       self.max_spot_size))
 
-    # Return the shoeboxes
-    return shoeboxes
+    # Create reflection table
+    creator = ReflectionTableCreator(self.filter_spots)
+    reflections = creator(imageset, shoeboxes)
+
+    # Return the reflections
+    return reflections
 
 
 class SpotFinder(object):
@@ -421,7 +471,7 @@ class SpotFinder(object):
       info('Finding strong spots in imageset %d' % i)
       info('-' * 80)
       info('')
-      table, hot_mask = self._find_in_imageset(imageset)
+      table, hot_mask = self._find_spots_in_imageset(imageset)
       table['id'] = flex.int(table.nrows(), i)
       reflections.extend(table)
 
@@ -451,7 +501,7 @@ class SpotFinder(object):
     # Return the reflections
     return reflections
 
-  def _find_in_imageset(self, imageset):
+  def _find_spots_in_imageset(self, imageset):
     '''
     Do the spot finding.
 
@@ -481,7 +531,8 @@ class SpotFinder(object):
       mp_njobs                  = self.mp_njobs,
       mp_chunksize              = self.mp_chunksize,
       min_spot_size             = self.min_spot_size,
-      max_spot_size             = self.max_spot_size)
+      max_spot_size             = self.max_spot_size,
+      filter_spots              = self.filter_spots)
 
     # Get the max scan range
     if isinstance(imageset, ImageSweep):
@@ -496,7 +547,7 @@ class SpotFinder(object):
       scan_range = self.scan_range
 
     # Get spots from bits of scan
-    spots_all = []
+    reflections = flex.reflection_table()
     for scan in scan_range:
       j0, j1 = scan
       assert(j1 >= j0 and j0 > max_scan_range[0] and j1 <= max_scan_range[1])
@@ -505,24 +556,28 @@ class SpotFinder(object):
       if isinstance(imageset, ImageSweep):
         j0 -= imageset.get_array_range()[0]
         j1 -= imageset.get_array_range()[0]
-      spots_all.extend(extract_spots(imageset[j0:j1]))
+      reflections.extend(extract_spots(imageset[j0:j1]))
 
-    # Get the list of shoeboxes
-    shoeboxes = flex.shoebox(spots_all)
+    # Find hot pixels
+    hot_mask = self._find_hot_pixels(imageset, reflections)
 
-    # Calculate the spot centroids
-    centroid = shoeboxes.centroid_valid()
-    info('Calculated {0} spot centroids'.format(len(shoeboxes)))
+    # Return as a reflection list
+    return reflections, hot_mask
 
-    # Calculate the spot intensities
-    intensity = shoeboxes.summed_intensity()
-    info('Calculated {0} spot intensities'.format(len(shoeboxes)))
+  def _find_hot_pixels(self, imageset, reflections):
+    '''
+    Find hot pixels in images
 
-    # Create the observations
-    observed = flex.observation(shoeboxes.panels(), centroid, intensity)
+    '''
+    from dials.array_family import flex
+    from logging import info
 
     # Write the hot mask
-    if self.write_hot_mask:
+    if self.write_hot_mask and "shoeboxes" in reflections:
+
+      # Get the shoeboxes
+      shoeboxes = reflections['shoeboxes']
+
       # Find spots which cover the whole scan range
       bbox = flex.int6([sbox.bbox for sbox in shoeboxes])
       z0, z1 = bbox.parts()[4:6]
@@ -550,13 +605,5 @@ class SpotFinder(object):
     else:
       hot_mask = None
 
-    # Filter the reflections and select only the desired spots
-    flags = self.filter_spots(None,
-        sweep=imageset,
-        observations=observed,
-        shoeboxes=shoeboxes)
-    observed = observed.select(flags)
-    shoeboxes = shoeboxes.select(flags)
-
-    # Return as a reflection list
-    return flex.reflection_table(observed, shoeboxes), hot_mask
+    # Return the hot mask
+    return hot_mask
