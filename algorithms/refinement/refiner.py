@@ -1521,11 +1521,14 @@ class Refiner(object):
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
       if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
         header.append(name + "\n(px)")
-      elif name == "RMSD_Phi" and units == "rad": # convert radians to images for reporting of scans
+      elif name == "RMSD_Phi" and units == "rad":
+        # will convert radians to images for reporting of scans
         header.append("RMSD_Z" + "\n(images)")
-      elif name == "RMSD_DeltaPsi" and units == "rad": # convert radians to degrees for reporting of stills
+      elif units == "rad":
+        # will convert other angles in radians to degrees (e.g. for
+        # RMSD_DeltaPsi and RMSD_2theta)
         header.append(name + "\n(deg)")
-      else: # skip RMSDs that cannot be expressed in image/scan space
+      else: # skip other/unknown RMSDs
         pass
 
     rows = []
@@ -1558,7 +1561,7 @@ class Refiner(object):
           rmsds.append(rmsd * px_per_mm[1])
         elif name == "RMSD_Phi" and units == "rad":
           rmsds.append(rmsd * images_per_rad)
-        elif name == "RMSD_DeltaPsi" and units == "rad":
+        elif units == "rad":
           rmsds.append(rmsd * rad2deg)
       rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
 
