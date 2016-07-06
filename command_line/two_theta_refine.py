@@ -253,10 +253,14 @@ class Script(object):
     from libtbx.table_utils import simple_table
     cell = crystal.get_unit_cell().parameters()
     esd = crystal.get_cell_parameter_sd()
-    header = ["Parameter", "Estimated sd"]
+    vol = crystal.get_unit_cell().volume()
+    vol_esd = crystal.get_cell_volume_sd()
+    header = ["Parameter", "Value", "Estimated sd"]
     rows = []
-    for p, e in zip(cell, esd):
-      rows.append(["%9.5f" % p, "%9.5f" % e])
+    names = ["a", "b", "c", "alpha", "beta", "gamma"]
+    for n, p, e in zip(names, cell, esd):
+      rows.append([n, "%9.5f" % p, "%9.5f" % e])
+    rows.append(["\nvolume", "\n%9.5f" % vol, "\n%9.5f" % vol_esd])
     st = simple_table(rows, header)
     return st.format()
 
