@@ -308,8 +308,28 @@ class Script(object):
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+
+    # set up global experiments and reflections lists
+    from dials.array_family import flex
+    reflections = flex.reflection_table()
+    global_id = 0
+    from dxtbx.model.experiment.experiment_list import ExperimentList
+    experiments=ExperimentList()
+
+    # loop through the input, building up the global lists
+    nrefs_per_exp = []
+    for ref_wrapper, exp_wrapper in zip(params.input.reflections,
+                                        params.input.experiments):
+      refs = ref_wrapper.data
+      exps = exp_wrapper.data
+      for i, exp in enumerate(exps):
+        sel = refs['id'] == i
+        sub_ref = refs.select(sel)
+        nrefs_per_exp.append(len(sub_ref))
+        sub_ref['id'] = flex.int(len(sub_ref), global_id)
+        reflections.extend(sub_ref)
+        experiments.append(exp)
+        global_id += 1
 
     # Try to load the models and data
     nexp = len(experiments)
@@ -321,9 +341,6 @@ class Script(object):
       print "No reflection data found in the input"
       self.parser.print_help()
       return
-    if len(reflections) > 1:
-      raise Sorry("Only one reflections list can be imported at present")
-    reflections = reflections[0]
 
     self.check_input(reflections)
 
