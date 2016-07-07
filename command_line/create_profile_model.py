@@ -26,6 +26,10 @@ Examples::
 '''
 
 phil_scope = parse('''
+  subtract_background = False
+    .type = bool
+    .help = "Subtract background from pixel data before computing profile"
+    .expert_level = 2
   output = experiments_with_profile_model.json
     .type = str
     .help = "The filename for the experiments"
@@ -77,7 +81,10 @@ class Script(object):
       raise Sorry('exactly 1 reflection table must be specified')
     if len(experiments) == 0:
       raise Sorry('no experiments were specified')
-    reflections, _ = self.process_reference(reflections[0])
+    if (not 'background.mean' in reference) and params.subtract_background:
+      raise Sorry('for subtract_background need background.mean in reflections')
+
+    reflections, _ = self.process_reference(reflections[0], params)
 
     # Predict the reflections
     info("")
@@ -130,7 +137,7 @@ class Script(object):
       outfile.write(dump.as_json())
     Command.end("Wrote experiments to %s" % params.output)
 
-  def process_reference(self, reference):
+  def process_reference(self, reference, params):
     ''' Load the reference spots. '''
     from dials.array_family import flex
     from logging import info
@@ -166,7 +173,14 @@ class Script(object):
       ''' % mask.count(True))
     info(' using %d indexed reflections' % len(reference))
     info(' found %d junk reflections' % len(rubbish))
+    from dials.array_family import flex
+    if 'background.mean' in reference and params.subtract_background:
+      info(' subtracting background from %d reference reflections' %
+           len(reference))
+      for spot in reference:
+        spot['shoebox'].data -= spot['background.mean']
     info(' time taken: %g' % (time() - st))
+
     return reference, rubbish
 
 if __name__ == '__main__':
