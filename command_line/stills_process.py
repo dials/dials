@@ -357,8 +357,11 @@ class Processor(object):
       # apply detector gain to summation variances
       integrated['intensity.sum.variance'] *= self.params.integration.summation.detector_gain
     if 'background.sum.value' in integrated:
-      if (integrated['background.sum.variance'] <= 0).count(True) > 0:
+      if (integrated['background.sum.variance'] < 0).count(True) > 0:
         raise Sorry("Found negative variances")
+      if (integrated['background.sum.variance'] == 0).count(True) > 0:
+        print "Filtering %d reflections with zero background variance" % ((integrated['background.sum.variance'] == 0).count(True))
+        integrated = integrated.select(integrated['background.sum.variance'] > 0)
       # apply detector gain to background summation variances
       integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
 
