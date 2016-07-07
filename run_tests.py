@@ -45,6 +45,7 @@ tst_list = (
     "$D/test/algorithms/refinement/tst_refine_multi_wedges.py",
     "$D/test/algorithms/refinement/tst_refinement_regression.py",
     "$D/test/algorithms/refinement/tst_rotation_decomposition.py",
+    "$D/test/algorithms/refinement/tst_scan_varying_model_parameters.py",
     "$D/test/algorithms/refinement/tst_scan_varying_prediction_parameters.py",
     "$D/test/algorithms/refinement/tst_stills_prediction_parameters.py",
     "$D/test/algorithms/refinement/tst_stills_refinement.py",

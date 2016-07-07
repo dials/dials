@@ -16,6 +16,8 @@ import random
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 from dxtbx.model.crystal import crystal_model
+from dxtbx.model.beam import Beam
+from dxtbx.model.goniometer import Goniometer
 
 # DIALS imports
 from dials.algorithms.refinement.refinement_helpers \
@@ -25,6 +27,8 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters \
     import ScanVaryingCrystalOrientationParameterisation, \
            ScanVaryingCrystalUnitCellParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters \
+    import ScanVaryingBeamParameterisation
 
 class SmootherTest(object):
   """Test a bare parameter set with the smoother"""
@@ -74,7 +78,7 @@ class SmootherTest(object):
 
     print "OK"
 
-# Use classes to wrap up ScanVaryingCrystal*Parameterisation with
+# Use classes to wrap up ScanVarying*Parameterisation classes with
 # compose and get_state overridden, so they can be passed to the existing FD
 # derivative code.
 class TestOrientationModel(ScanVaryingCrystalOrientationParameterisation):
@@ -82,6 +86,11 @@ class TestOrientationModel(ScanVaryingCrystalOrientationParameterisation):
   def __init__(self, image_number, *args):
 
     ScanVaryingCrystalOrientationParameterisation.__init__(self, *args)
+
+    # set overloads now, after construction of the base class
+    self.compose = self._compose
+    self.get_state = self._get_state
+
     self.set_time_point(image_number)
 
   def set_time_point(self, t):
@@ -89,14 +98,14 @@ class TestOrientationModel(ScanVaryingCrystalOrientationParameterisation):
     self.image_number = t
     self.compose()
 
-  def compose(self):
-    """override compose to pass in the requested t"""
+  def _compose(self):
+    """override for compose to pass in the requested t"""
 
     ScanVaryingCrystalOrientationParameterisation.compose(self,
             self.image_number)
 
-  def get_state(self):
-    """override get state to do so only at the requested t"""
+  def _get_state(self):
+    """override for get_state to do so only at the requested t"""
 
     # ensure the state is updated by re-composing
     self.compose()
@@ -107,6 +116,11 @@ class TestUnitCellModel(ScanVaryingCrystalUnitCellParameterisation):
   def __init__(self, image_number, *args):
 
     ScanVaryingCrystalUnitCellParameterisation.__init__(self, *args)
+
+    # set overloads now, after construction of the base class
+    self.compose = self._compose
+    self.get_state = self._get_state
+
     self.set_time_point(image_number)
 
   def set_time_point(self, t):
@@ -114,21 +128,50 @@ class TestUnitCellModel(ScanVaryingCrystalUnitCellParameterisation):
     self.image_number = t
     self.compose()
 
-  def compose(self):
-    """override compose to pass in the requested t"""
+  def _compose(self):
+    """override for compose to pass in the requested t"""
 
     ScanVaryingCrystalUnitCellParameterisation.compose(self,
             self.image_number)
 
-  def get_state(self):
-    """override get state to do so only at the requested t"""
+  def _get_state(self):
+    """override for get_state to do so only at the requested t"""
 
     # ensure the state is updated by re-composing
     self.compose()
     return ScanVaryingCrystalUnitCellParameterisation.get_state(self)
 
+class TestBeamModel(ScanVaryingBeamParameterisation):
 
-class TestScanVaryingCrystalParameterisation(object):
+  def __init__(self, image_number, *args):
+
+    ScanVaryingBeamParameterisation.__init__(self, *args)
+
+    # set overloads now, after construction of the base class
+    self.compose = self._compose
+    self.get_state = self._get_state
+
+    self.set_time_point(image_number)
+
+  def set_time_point(self, t):
+
+    self.image_number = t
+    self.compose()
+
+  def _compose(self):
+    """override for compose to pass in the requested t"""
+
+    ScanVaryingBeamParameterisation.compose(self,
+            self.image_number)
+
+  def _get_state(self):
+    """override for get_state to do so only at the requested t"""
+
+    # ensure the state is updated by re-composing
+    self.compose()
+    return ScanVaryingBeamParameterisation.get_state(self)
+
+class TestScanVaryingModelParameterisation(object):
 
   def __init__(self, plots = False):
 
@@ -147,6 +190,15 @@ class TestScanVaryingCrystalParameterisation(object):
         self.random_direction_close_to(matrix.col((0, 0, 1)))
     self.xl = crystal_model(a, b, c, space_group_symbol = "P 1")
 
+    # Make a beam with wavelength in the range 0.8--1.2 and s0 direction close
+    # to 0,0,1
+    s0 = random.uniform(0.8, 1.2) * \
+        self.random_direction_close_to(matrix.col((0, 0, 1)))
+    self.beam = Beam(s0)
+
+    # Make a standard goniometer model along X
+    self.goniometer = Goniometer((1,0,0))
+
   def random_direction_close_to(self, vector):
     return vector.rotate_around_origin(matrix.col(
                 (random.random(),
@@ -154,7 +206,7 @@ class TestScanVaryingCrystalParameterisation(object):
                  random.random())).normalize(),
                  random.gauss(0, 1.0),  deg = True)
 
-class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalParameterisation):
+class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingModelParameterisation):
   """Test a ScanVaryingCrystalOrientationParameterisation"""
 
   def test_num_intervals(self, nintervals):
@@ -315,12 +367,11 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
 
     self.test_random()
 
-class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingCrystalParameterisation):
+class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingModelParameterisation):
   """Basic test of a ScanVaryingCrystalUnitCellParameterisation"""
 
   def test_num_intervals(self, nintervals):
     """Test a range of different numbers of intervals"""
-
 
     # Parameterise the crystal with the image range and five intervals. Init
     # TestOrientationModel to explore gradients at image 50
@@ -339,9 +390,6 @@ class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingCrystalParam
     # calculate state and gradients at image 50
     xl_ucp.compose()
 
-    xl_uc_an_ds_dp = xl_ucp.get_ds_dp()
-    xl_uc_fd_ds_dp = get_fd_gradients(xl_ucp, [1.e-7] * num_param)
-
     null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
 
     # compare analytical and finite difference derivatives at image 50
@@ -351,6 +399,50 @@ class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingCrystalParam
 
     for e, f in zip(an_ds_dp, fd_ds_dp):
       assert(approx_equal((e - f), null_mat, eps = 1.e-6))
+
+    print "OK"
+    return
+
+  def run(self):
+
+    for n in (1, 2, 3, 4, 5, 6, 7):
+      self.test_num_intervals(n)
+
+    return
+
+class TestScanVaryingBeamParameterisation(TestScanVaryingModelParameterisation):
+  """Basic test of a ScanVaryingBeamParameterisation"""
+
+  def test_num_intervals(self, nintervals):
+    """Test a range of different numbers of intervals"""
+
+    # Parameterise the crystal with the image range and five intervals. Init
+    # TestOrientationModel to explore gradients at image 50
+    beam_p = TestBeamModel(50, self.beam, self.image_range, nintervals,
+      self.goniometer)
+
+    # How many parameters?
+    num_param = beam_p.num_free()
+
+    # apply a random parameter shift to the beam, on order of 2% of
+    # the initial values
+    p_vals = beam_p.get_param_vals()
+    sigmas = [0.02  * p for p in p_vals]
+    new_vals = random_param_shift(p_vals, sigmas)
+    beam_p.set_param_vals(new_vals)
+
+    # calculate state and gradients at image 50
+    beam_p.compose()
+
+    null_vec = matrix.col((0., 0., 0.))
+
+    # compare analytical and finite difference derivatives at image 50
+    an_ds_dp = beam_p.get_ds_dp()
+    fd_ds_dp = get_fd_gradients(beam_p, [1.e-7] * num_param)
+    param_names = beam_p.get_param_names()
+
+    for e, f in zip(an_ds_dp, fd_ds_dp):
+      assert(approx_equal((e - f), null_vec, eps = 1.e-6))
 
     print "OK"
     return
@@ -377,4 +469,8 @@ if __name__ == '__main__':
 
   print "Testing the ScanVaryingCrystalUnitCellParameterisation"
   test = TestScanVaryingCrystalUnitCellParameterisation(plots = False)
+  test.run()
+
+  print "Testing the ScanVaryingBeamParameterisation"
+  test = TestScanVaryingBeamParameterisation(plots = False)
   test.run()
