@@ -545,11 +545,24 @@ class RefinerFactory(object):
 
     # Shorten module paths
     import dials.algorithms.refinement.parameterisation as par
+
     # function to convert fix_lists into to_fix selections
     from dials.algorithms.refinement.refinement_helpers import string_sel
 
     # Get the working set of reflections
     reflections = refman.get_matches()
+
+    # Define a helper function for parameter fixing
+    def filter_parameter_names(parameterisation):
+      # scan-varying suffixes like '_sample1' should be removed from
+      # the list of parameter names so that it is num_free in length
+      import re
+      pattern = re.compile(r"_sample[0-9]+$")
+      names = [pattern.sub('', e) for e in parameterisation.get_param_names(only_free=False)]
+      filtered_names = []
+      for name in names:
+        if name not in filtered_names: filtered_names.append(name)
+      return filtered_names
 
     # Parameterise unique Beams
     beam_params = []
@@ -557,27 +570,71 @@ class RefinerFactory(object):
       # The Beam is parameterised with reference to a goniometer axis (or None).
       # Use the first (if any) Goniometers this Beam is associated with.
       exp_ids = experiments.indices(beam)
-      assoc_gonios = [experiments[i].goniometer for i in exp_ids]
-      goniometer = assoc_gonios[0]
+      assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
+                      for i in exp_ids]
+      goniometer, scan = assoc_models[0]
 
-      # Parameterise, passing the goniometer (but accepts None)
-      beam_param = par.BeamParameterisation(beam, goniometer,
+      if options.scan_varying:
+        if (not options.beam.force_static or
+            not options.beam.force_static):
+          # If a beam is scan-varying, then it must always be found alongside
+          # the same Scan and Goniometer in any Experiments in which it appears
+          if [goniometer, scan].count(None) != 0:
+            raise Sorry('A scan-varying beam model cannot be created because '
+                        'a scan or goniometer model is missing')
+          if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+            raise Sorry('A single scan-varying beam model cannot be refined '
+                        'when associated with more than one scan or goniometer')
+        sweep_range_deg = scan.get_oscillation_range(deg=True)
+        array_range = scan.get_array_range()
+
+        if not options.beam.force_static:
+          if options.beam.smoother.num_intervals == "fixed_width":
+            deg_per_interval = options.beam.smoother.interval_width_degrees
+            n_intervals = max(int(
+              abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+          else:
+            n_intervals = options.beam.smoother.absolute_num_intervals
+          beam_param = par.ScanVaryingBeamParameterisation(
+                                              beam,
+                                              array_range,
+                                              n_intervals,
+                                              goniometer=goniometer,
+                                              experiment_ids=exp_ids)
+        else: # force model to be static
+          beam_param = par.BeamParameterisation(beam, goniometer,
                                                        experiment_ids=exp_ids)
-      if options.beam.fix:
-        fix_list = [False, False, False]
-        if "all" in options.beam.fix:
-          fix_list = [True, True, True]
-        if "in_spindle_plane" in options.beam.fix:
-          fix_list[0] = True
-        if "out_spindle_plane" in options.beam.fix:
-          fix_list[1] = True
-        if "wavelength" in options.beam.fix:
-          fix_list[2] = True
-        beam_param.set_fixed(fix_list)
+      else:
+        # Parameterise scan static beam, passing the goniometer
+        beam_param = par.BeamParameterisation(beam, goniometer,
+                                                       experiment_ids=exp_ids)
 
+      # get number of fixable units, either parameters or parameter sets in
+      # the scan-varying case
+      try:
+        num_beam = beam_param.num_sets()
+      except AttributeError:
+        num_beam = beam_param.num_total()
+
+      fix_list = []
       if options.beam.fix_list:
-        to_fix = string_sel(options.beam.fix_list,
-                            beam_param.get_param_names(only_free=False),
+        fix_list.extend(options.beam.fix_list)
+
+      if options.beam.fix:
+        if "all" in options.beam.fix:
+          beam_param.set_fixed([True] * num_beam)
+        if "in_spindle_plane" in options.beam.fix:
+          fix_list.append('Mu1')
+        if "out_spindle_plane" in options.beam.fix:
+          fix_list.append('Mu2')
+        if "wavelength" in options.beam.fix:
+          fix_list.append('nu')
+
+      if fix_list:
+        names = filter_parameter_names(beam_param)
+        assert len(names) == num_beam
+        to_fix = string_sel(fix_list,
+                            names,
                             "Beam{0}".format(ibeam + 1))
         beam_param.set_fixed(to_fix)
 
@@ -663,6 +720,14 @@ class RefinerFactory(object):
       except AttributeError:
         num_uc = xl_uc_param.num_total()
 
+      ori_fix_list = []
+      if options.crystal.orientation.fix_list:
+        ori_fix_list.extend(options.crystal.orientation.fix_list)
+
+      cell_fix_list = []
+      if options.crystal.unit_cell.fix_list:
+        cell_fix_list.extend(options.crystal.unit_cell.fix_list)
+
       if options.crystal.fix:
         if options.crystal.fix == "all":
           xl_ori_param.set_fixed([True] * num_ori)
@@ -674,15 +739,19 @@ class RefinerFactory(object):
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("crystal.fix value not recognised")
 
-      if options.crystal.unit_cell.fix_list:
-        to_fix = string_sel(options.crystal.unit_cell.fix_list,
-                            xl_uc_param.get_param_names(only_free=False),
+      if cell_fix_list:
+        names = filter_parameter_names(xl_uc_param)
+        assert len(names) == num_uc
+        to_fix = string_sel(fix_list,
+                            names,
                             "Crystal{0}".format(icrystal + 1))
         xl_uc_param.set_fixed(to_fix)
 
-      if options.crystal.orientation.fix_list:
-        to_fix = string_sel(options.crystal.orientation.fix_list,
-                            xl_ori_param.get_param_names(only_free=False),
+      if ori_fix_list:
+        names = filter_parameter_names(xl_ori_param)
+        assert len(names) == num_ori
+        to_fix = string_sel(fix_list,
+                            names,
                             "Crystal{0}".format(icrystal + 1))
         xl_ori_param.set_fixed(to_fix)
 
