@@ -81,7 +81,7 @@ class Script(object):
       raise Sorry('exactly 1 reflection table must be specified')
     if len(experiments) == 0:
       raise Sorry('no experiments were specified')
-    if (not 'background.mean' in reference) and params.subtract_background:
+    if (not 'background.mean' in reflections[0]) and params.subtract_background:
       raise Sorry('for subtract_background need background.mean in reflections')
 
     reflections, _ = self.process_reference(reflections[0], params)
