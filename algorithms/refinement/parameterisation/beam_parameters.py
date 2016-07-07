@@ -34,11 +34,12 @@ class BeamMixin(object):
       s0_plane_dir2 = s0.cross(s0_plane_dir1).normalize()
 
     # rotation around s0_plane_dir1
-    mu1 = Parameter(.0, s0_plane_dir1, 'angle (mrad)', 'Mu1')
+    mu1 = parameter_type(.0, s0_plane_dir1, 'angle (mrad)', 'Mu1')
     # rotation around s0_plane_dir2
-    mu2 = Parameter(.0, s0_plane_dir2, 'angle (mrad)', 'Mu2')
+    mu2 = parameter_type(.0, s0_plane_dir2, 'angle (mrad)', 'Mu2')
     # length of s0
-    nu = Parameter(s0.length(), ptype='wavenumber (Angstroem^-1)', name='nu')
+    nu = parameter_type(s0.length(), axis=None,
+      ptype='wavenumber (Angstroem^-1)', name='nu')
 
     # build the parameter list in a specific,  maintained order
     p_list = [mu1, mu2, nu]
@@ -64,16 +65,16 @@ class BeamMixin(object):
     s0 = nu * s0_new_dir
 
     # calculate derivatives of the beam direction wrt angles:
-    #  - derivative wrt mu1
+    #  1) derivative wrt mu1
     dMu21_dmu1 = Mu2 * dMu1_dmu1
     ds0_new_dir_dmu1 = dMu21_dmu1 * is0
 
-    #  - derivative wrt mu2
+    #  2) derivative wrt mu2
     dMu21_dmu2 = dMu2_dmu2 * Mu1
     ds0_new_dir_dmu2 = dMu21_dmu2 * is0
 
     # calculate derivatives of the attached beam vector, converting
-    # parameters back to mrad, and store
+    # parameters back to mrad
     ds0_dval = [ds0_new_dir_dmu1 * nu / 1000.,
                 ds0_new_dir_dmu2 * nu / 1000.,
                 s0_new_dir]
