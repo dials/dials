@@ -40,7 +40,7 @@ def test1():
   pkl_path = [os.path.join(data_dir, e) for e in pkl_path]
 
   for pth in exp_path + pkl_path:
-    assert os.path.exists(pth)
+    assert os.path.exists(pth), "%s missing" % pth
 
   cmd = "dials.two_theta_refine " + " ".join(exp_path) + " " + " ".join(pkl_path)
   print cmd
