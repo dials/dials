@@ -65,7 +65,7 @@ class ComputeEsdBeamDivergence(object):
     for r in range(len(reflections)):
 
       # Get the coordinates and values of valid shoebox pixels
-      # FIXME maybe I note in Kabsch (2010) §3.1 step (v) is
+      # FIXME maybe I note in Kabsch (2010) s3.1 step (v) is
       # background subtraction, appears to be missing here.
       mask = shoebox[r].mask != 0
       coords = shoebox[r].coords(mask)
