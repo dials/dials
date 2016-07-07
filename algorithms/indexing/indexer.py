@@ -790,13 +790,13 @@ class indexer_base(object):
             R_ab, axis, angle, cb_op_ab = \
               difference_rotation_matrix_axis_angle(cryst_a, cryst_b)
             min_angle = self.params.multiple_lattice_search.minimum_angular_separation
-            if angle < min_angle: # degrees
+            if abs(angle) < min_angle: # degrees
               info("Crystal models too similar, rejecting crystal %i:" %(
                 len(experiments)))
               info("Rotation matrix to transform crystal %i to crystal %i" %(
                 i_a+1, len(experiments)))
               info(R_ab)
-              info("Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis)
+              info("Rotation of %.3f degrees" %angle + " about axis (%.3f, %.3f, %.3f)" %axis)
               #show_rotation_matrix_differences([cryst_a, cryst_b])
               have_similar_crystal_models = True
               del experiments[-1]
@@ -1371,7 +1371,7 @@ class indexer_base(object):
           R_ab, axis, angle, cb_op_ab = \
             difference_rotation_matrix_axis_angle(cryst_a, cryst_b)
           min_angle = self.params.multiple_lattice_search.minimum_angular_separation
-          if angle < min_angle: # degrees
+          if abs(angle) < min_angle: # degrees
             orientation_too_similar = True
             break
         if orientation_too_similar:
