@@ -22,8 +22,8 @@ from dials.algorithms.refinement.refinement_helpers \
 
 class ScanVaryingCrystalOrientationParameterisation(
   ScanVaryingModelParameterisation, CrystalOrientationMixin):
-  """A work-in-progress time-dependent parameterisation for crystal
-  orientation, with angles expressed in mrad"""
+  """Scan-varying parameterisation for crystal orientation, with angles
+  expressed in mrad"""
 
   def __init__(self, crystal, t_range, num_intervals, experiment_ids=None):
     if experiment_ids is None:
@@ -118,8 +118,7 @@ class ScanVaryingCrystalOrientationParameterisation(
 
 class ScanVaryingCrystalUnitCellParameterisation(
   ScanVaryingModelParameterisation, CrystalUnitCellMixin):
-  """A work-in-progress time-dependent parameterisation for the crystal
-  unit cell"""
+  """Scan-varying parameterisation for the crystal unit cell"""
 
   def __init__(self, crystal, t_range, num_intervals, experiment_ids=None):
     if experiment_ids is None:
