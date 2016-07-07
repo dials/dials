@@ -270,6 +270,19 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             'B':reflections['b_matrix'],
             'D':reflections['D_matrix']}
 
+  def _beam_derivatives(self, isel, parameterisation, reflections):
+    """Determine whether ds0_dp was precalculated then call the base class
+    method"""
+
+    if self._varying_beams:
+      ds0_dxluc_p = [reflections["ds0_dp{0}".format(i)].select(isel) \
+        for i in range(parameterisation.num_free())]
+    else:
+      ds0_dxluc_p = None
+
+    return super(ScanVaryingPredictionParameterisation,
+      self)._beam_derivatives(isel, parameterisation, ds0_dxluc_p)
+
   def _xl_orientation_derivatives(self, isel, parameterisation, reflections):
     """Determine whether dU_dp was precalculated then call the base class
     method"""
