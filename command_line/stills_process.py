@@ -347,6 +347,10 @@ class Processor(object):
     # Integrate the reflections
     integrated = integrator.integrate()
 
+    len_all = len(integrated)
+    integrated = integrated.select(~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels))
+    print "Filtering %d reflections with at least one bad foreground pixel out of %d"%(len_all-len(integrated), len_all)
+
     # verify sigmas are sensible
     if 'intensity.prf.value' in integrated:
       if (integrated['intensity.prf.variance'] <= 0).count(True) > 0:
@@ -364,10 +368,6 @@ class Processor(object):
         integrated = integrated.select(integrated['background.sum.variance'] > 0)
       # apply detector gain to background summation variances
       integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
-
-    len_all = len(integrated)
-    integrated = integrated.select(~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels))
-    print "Filtering %d reflections with at least one bad foreground pixel out of %d"%(len_all-len(integrated), len_all)
 
     if self.params.output.integrated_filename:
       # Save the reflections
