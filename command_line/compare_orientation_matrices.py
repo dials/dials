@@ -27,6 +27,10 @@ phil_scope = iotbx.phil.parse(
 hkl = None
   .type = ints(size=3)
   .multiple=True
+comparison = *pairwise sequential
+  .type = choice
+space_group = None
+  .type = space_group
 ''')
 
 
@@ -56,8 +60,14 @@ def run(args):
 
   from dials.algorithms.indexing.compare_orientation_matrices import \
        show_rotation_matrix_differences
-  show_rotation_matrix_differences(experiments.crystals(),
-                                   miller_indices=hkl)
+  crystals = []
+  for experiment in experiments:
+    crystal = experiment.crystal
+    if params.space_group is not None:
+      crystal.set_space_group(params.space_group.group())
+    crystals.append(crystal)
+
+  show_rotation_matrix_differences(crystals, miller_indices=hkl, comparison=params.comparison)
 
 
 if __name__ == '__main__':
