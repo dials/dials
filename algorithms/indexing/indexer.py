@@ -783,20 +783,20 @@ class indexer_base(object):
 
         if len(experiments) > 1:
           from dials.algorithms.indexing.compare_orientation_matrices \
-               import difference_rotation_matrix_and_euler_angles
+               import difference_rotation_matrix_axis_angle
           cryst_b = experiments.crystals()[-1]
           have_similar_crystal_models = False
           for i_a, cryst_a in enumerate(experiments.crystals()[:-1]):
-            R_ab, euler_angles, cb_op_ab = \
-              difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
+            R_ab, axis, angle, cb_op_ab = \
+              difference_rotation_matrix_axis_angle(cryst_a, cryst_b)
             min_angle = self.params.multiple_lattice_search.minimum_angular_separation
-            if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
+            if angle < min_angle: # degrees
               info("Crystal models too similar, rejecting crystal %i:" %(
                 len(experiments)))
               info("Rotation matrix to transform crystal %i to crystal %i" %(
                 i_a+1, len(experiments)))
               info(R_ab)
-              info("Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles)
+              info("Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis)
               #show_rotation_matrix_differences([cryst_a, cryst_b])
               have_similar_crystal_models = True
               del experiments[-1]
@@ -1314,7 +1314,7 @@ class indexer_base(object):
     args = []
 
     from dials.algorithms.indexing.compare_orientation_matrices \
-         import difference_rotation_matrix_and_euler_angles
+         import difference_rotation_matrix_axis_angle
     for cm in candidate_orientation_matrices:
       sel = (self.reflections['id'] == -1)
       if self.d_min is not None:
@@ -1368,11 +1368,10 @@ class indexer_base(object):
         orientation_too_similar = False
         cryst_b = experiments[0].crystal
         for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
-          R_ab, euler_angles, cb_op_ab = \
-            difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
+          R_ab, axis, angle, cb_op_ab = \
+            difference_rotation_matrix_axis_angle(cryst_a, cryst_b)
           min_angle = self.params.multiple_lattice_search.minimum_angular_separation
-          #print euler_angles
-          if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
+          if angle < min_angle: # degrees
             orientation_too_similar = True
             break
         if orientation_too_similar:
@@ -1642,7 +1641,7 @@ class Solution(group_args):
 
 
 def filter_doubled_cell(solutions):
-  from dials.algorithms.indexing.compare_orientation_matrices import difference_rotation_matrix_and_euler_angles
+  from dials.algorithms.indexing.compare_orientation_matrices import difference_rotation_matrix_axis_angle
   accepted_solutions = []
   for i1, s1 in enumerate(solutions):
     doubled_cell = False
@@ -1660,8 +1659,8 @@ def filter_doubled_cell(solutions):
           continue
         if new_unit_cell.is_similar_to(s2.crystal.get_unit_cell(),
                                        relative_length_tolerance=0.05):
-          R, ea, cb = difference_rotation_matrix_and_euler_angles(new_cryst, s2.crystal)
-          if ((max(ea) < 1) and
+          R, axis, angle, cb = difference_rotation_matrix_axis_angle(new_cryst, s2.crystal)
+          if ((angle < 1) and
               (s1.n_indexed < (1.1 * s2.n_indexed))):
             doubled_cell = True
             break

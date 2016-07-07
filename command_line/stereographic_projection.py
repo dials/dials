@@ -239,12 +239,12 @@ def run(args):
 
   if experiments:
     from dials.algorithms.indexing.compare_orientation_matrices import \
-        difference_rotation_matrix_and_euler_angles
+        difference_rotation_matrix_axis_angle
 
     for expt in experiments[1:]:
       cryst = expt.crystal
       if params.frame == 'crystal':
-        R_ij, euler_angles, cb_op = difference_rotation_matrix_and_euler_angles(
+        R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
           ref_crystal, cryst)
         U = R_ij
       elif params.use_starting_angle:

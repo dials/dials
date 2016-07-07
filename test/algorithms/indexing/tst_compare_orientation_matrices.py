@@ -24,10 +24,11 @@ def exercise():
                             R * real_space_c,
                             space_group=sgtbx.space_group('P 1'))
   assert approx_equal(crystal_b.get_U() * crystal_a.get_U().transpose(), R)
-  best_R_ab, best_euler_angles, best_cb_op = \
-    compare_orientation_matrices.difference_rotation_matrix_and_euler_angles(
+  best_R_ab, best_axis, best_angle, best_cb_op = \
+    compare_orientation_matrices.difference_rotation_matrix_axis_angle(
       crystal_a,
       crystal_b)
+  best_euler_angles = euler.xyz_angles(best_R_ab)
   assert approx_equal(best_euler_angles, euler_angles)
   assert best_cb_op.is_identity_op()
   assert approx_equal(best_R_ab, R)
@@ -44,10 +45,11 @@ def exercise():
                             space_group=sgtbx.space_group('I 2 3'))
   cb_op = sgtbx.change_of_basis_op('z,x,y')
   crystal_b = crystal_b.change_basis(cb_op)
-  best_R_ab, best_euler_angles, best_cb_op = \
-    compare_orientation_matrices.difference_rotation_matrix_and_euler_angles(
+  best_R_ab, best_axis, best_angle, best_cb_op = \
+    compare_orientation_matrices.difference_rotation_matrix_axis_angle(
       crystal_a,
       crystal_b)
+  best_euler_angles = euler.xyz_angles(best_R_ab)
   assert approx_equal(best_euler_angles, euler_angles)
   assert best_cb_op.c() == cb_op.inverse().c()
   assert approx_equal(best_R_ab, R)

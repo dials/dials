@@ -146,15 +146,15 @@ def run(args):
   if len(experiments) and params.change_of_basis_op is libtbx.Auto:
     if reference_crystal is not None:
       from dials.algorithms.indexing.compare_orientation_matrices \
-           import difference_rotation_matrix_and_euler_angles
+           import difference_rotation_matrix_axis_angle
 
       cryst = experiments.crystals()[0]
-      R, euler_angles, change_of_basis_op = difference_rotation_matrix_and_euler_angles(
+      R, axis, angle, change_of_basis_op = difference_rotation_matrix_axis_angle(
         cryst, reference_crystal)
       print "Change of basis op: %s" %change_of_basis_op
       print "Rotation matrix to transform input crystal to reference::"
       print R.mathematica_form(format="%.3f", one_row_per_line=True)
-      print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
+      print "Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis
 
     elif len(reflections):
       assert len(reflections) == 1
