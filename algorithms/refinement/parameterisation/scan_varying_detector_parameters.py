@@ -41,25 +41,11 @@ class ScanVaryingDetectorParameterisationSinglePanel(
     # Set up the initial state and parameter list
     dat = self._init_core(detector, parameter_type)
 
-    # set up the base class#
+    self._d_at_t = matrix.sqr(detector[0].get_d_matrix())
+
+    # set up the base class
     ScanVaryingModelParameterisation.__init__(self, detector, dat['istate'],
       dat['p_list'], smoother, experiment_ids=experiment_ids)
-
-    return
-
-  def compose(self):
-
-    # extract parameters from the internal list
-    dist, shift1, shift2, tau1, tau2, tau3 = self._param
-
-    new_state, self._dstate_dp = self._compose_core(dist, shift1, shift2, tau1,
-      tau2, tau3)
-
-    # now update the panel with its new position and orientation.
-    # The detector is self._model, the panel is the first in the
-    # detector
-    (self._model)[0].set_frame(
-      new_state['d1'], new_state['d2'], new_state['origin'])
 
     return
 
@@ -129,7 +115,7 @@ class ScanVaryingDetectorParameterisationSinglePanel(
     for (i, v) in dtau3_dp: dd_dp6[i] = dd_dval[5] * v
 
     # store derivatives as list-of-lists
-    self._dstate_dp = [dd_dp2, dd_dp3, dd_dp4, dd_dp5, dd_dp6]
+    self._dstate_dp = [dd_dp1, dd_dp2, dd_dp3, dd_dp4, dd_dp5, dd_dp6]
 
     return
 
