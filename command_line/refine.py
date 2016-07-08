@@ -260,10 +260,17 @@ class Script(object):
         params.output.centroids))
       self.write_centroids_table(refiner, params.output.centroids)
 
+    # Get the refined experiments
+    experiments = refiner.get_experiments()
+
     # Write scan-varying parameters to file, if there were any
     if params.output.parameter_table:
-      scan = refiner.get_scan()
-      if scan:
+      scans = experiments.scans()
+      if len(scans) > 1:
+        info("Writing a scan-varying parameter table is only supported "
+             "for refinement of a single scan")
+      else:
+        scan = scans[0]
         text = refiner.get_param_reporter().varying_params_vs_image_number(
             scan.get_array_range())
         if text:
@@ -275,10 +282,7 @@ class Script(object):
         else:
           info("No scan-varying parameter table to write")
 
-    # get the refined experiments
-    experiments = refiner.get_experiments()
     crystals = experiments.crystals()
-
     if len(crystals) == 1:
       # output the refined model for information
       info('')
