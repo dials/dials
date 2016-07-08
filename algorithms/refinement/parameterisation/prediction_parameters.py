@@ -399,11 +399,15 @@ class PredictionParameterisation(object):
 
   # The detector derivatives calculation is shared by scans and stills type
   # prediction, so this method is here, in the base class.
-  def _detector_derivatives(self, pv, D, panel_id, parameterisation=None,
-                            dd_ddet_p=None):
+  def _detector_derivatives(self, isel, panel_id, parameterisation=None,
+                            dd_ddet_p=None, reflections=None):
     """Helper function to convert derivatives of the detector state to
     derivatives of the vector pv. Derivatives that would all be null vectors
     are replaced with None"""
+
+    # Get required data
+    pv = self._pv.select(isel)
+    D = self._D.select(isel)
 
     if dd_ddet_p is None:
 
@@ -450,10 +454,9 @@ class PredictionParameterisation(object):
         if len(sub_isel) == 0:
           # if no reflections intersect this panel, skip calculation
           continue
-        sub_pv = self._pv.select(sub_isel)
-        sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
-          parameterisation=dp)
+
+        dpv_ddet_p = self._detector_derivatives(sub_isel, panel_id,
+          parameterisation=dp, reflections=reflections)
 
         # convert to dX/dp, dY/dp and assign the elements of the vectors
         # corresponding to this experiment and panel

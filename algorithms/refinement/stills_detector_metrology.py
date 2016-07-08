@@ -359,10 +359,8 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
         if len(sub_isel) == 0:
           # if no reflections intersect this panel, skip calculation
           continue
-        sub_pv = self._pv.select(sub_isel)
-        sub_D = self._D.select(sub_isel)
-        dpv_ddet_p = self._detector_derivatives(sub_pv, sub_D, panel_id,
-          parameterisation=dp)
+        dpv_ddet_p = self._detector_derivatives(sub_isel, panel_id,
+          parameterisation=dp, reflections=reflections)
 
         # convert to dX/dp, dY/dp and assign the elements of the vectors
         # corresponding to this experiment and panel

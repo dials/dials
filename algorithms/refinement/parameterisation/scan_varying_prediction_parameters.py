@@ -309,6 +309,19 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_unit_cell_derivatives(isel, parameterisation, dB_dxluc_p)
 
+  def _detector_derivatives(self, isel, panel_id, parameterisation, reflections):
+    """Determine whether dd_dp was precalculated then call the base class
+    method"""
+
+    if self._varying_detectors:
+      dd_ddet_p = [reflections["dd_dp{0}".format(i)].select(isel) \
+        for i in range(parameterisation.num_free())]
+    else:
+      dd_ddet_p = None
+
+    return super(ScanVaryingPredictionParameterisation,
+      self)._detector_derivatives(isel, panel_id, parameterisation, dd_ddet_p)
+
   def calculate_model_state_uncertainties(self, var_cov=None,
                                           obs_image_number=None,
                                           experiment_id=None):
