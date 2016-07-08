@@ -413,6 +413,8 @@ class Script(object):
     # Refine and get the refinement history
     history = refiner.run()
 
+    from dials.util.command_line import interactive_console; interactive_console(); 1/0 #XXXXX DEBUG
+
     # get the refined experiments
     experiments = refiner.get_experiments()
     crystals = experiments.crystals()

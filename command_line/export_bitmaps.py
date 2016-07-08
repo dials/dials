@@ -149,7 +149,10 @@ def run(args):
 
       # now export as a bitmap
       flex_image.prep_string()
-      import Image
+      try:
+        from PIL import Image
+      except ImportError:
+        import Image
       # XXX is size//binning safe here?
       try: # fromstring raises Exception in Pillow >= 3.0.0
         pil_img = Image.fromstring('RGB',
