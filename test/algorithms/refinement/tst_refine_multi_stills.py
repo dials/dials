@@ -51,8 +51,6 @@ def test1():
                 check_format=False)
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
   print "OK"
 
   # compare results
@@ -109,8 +107,6 @@ def test2():
       "refined_experiments_nproc4.json", check_format=False)
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
   print "OK"
 
   # compare results

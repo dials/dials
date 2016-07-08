@@ -51,8 +51,6 @@ def test1():
     ref = flex.reflection_table.from_pickle("filtered.pickle")
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
 
   # The test selects only 1 reflection
   assert len(ref) == 1

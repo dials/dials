@@ -98,8 +98,6 @@ def test1(averaged_reference_detector=False):
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
 
   print "OK"
   return

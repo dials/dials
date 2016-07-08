@@ -43,7 +43,6 @@ def test1():
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
   finally:
     os.chdir(cwd)
-    shutil.rmtree(tmp_dir)
 
   print "OK"
   return

@@ -73,10 +73,9 @@ class Test(object):
     os.chdir(self._tmp_dir)
 
   def _finish(self):
-    """Change back to the original directory and delete the temp dir"""
+    """Change back to the original directory"""
 
     os.chdir(self._cwd)
-    shutil.rmtree(self._tmp_dir)
     return
 
   def _combine(self):

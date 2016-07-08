@@ -62,8 +62,6 @@ def test1():
                 check_format=False)[0]
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
 
   # test refined models against expected
   assert reg_exp.crystal == ref_exp.crystal
@@ -134,8 +132,6 @@ def test2():
 
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
 
   print "OK"
   return

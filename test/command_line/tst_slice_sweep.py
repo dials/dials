@@ -56,8 +56,6 @@ def test1():
       sliced_refs = pickle.load(f)
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
 
   # simple test of results
   assert sliced_exp.scan.get_image_range() == (1, 20)
