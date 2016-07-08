@@ -346,7 +346,8 @@ class Script(object):
 
       num_plots = 0
       for step in steps:
-        fname_base = root + "_step%02d" % step
+        fname_base = root
+        if len(steps) > 1: fname_base += "_step%02d" % step
         plot_fname = fname_base + ext
         corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
         if [corrmat, labels].count(None) == 0:
