@@ -16,47 +16,16 @@ from model_parameters import Parameter, ModelParameterisation
 from dials.algorithms.refinement.refinement_helpers import \
     dR_from_axis_and_angle, get_panel_groups_at_depth, get_panel_ids_at_root
 
-class DetectorParameterisationSinglePanel(ModelParameterisation):
-  """Parameterisation for a single abstract panel
-  plane, with angles expressed in mrad"""
+class DetectorMixin(object):
+  """Mix-in class defining some functionality unique to detector
+  parameterisations that can be shared by static and scan-varying versions"""
 
-  def __init__(self, detector, experiment_ids=None):
-
-    # The state of a single Panel is its detector matrix d = (d1|d2|d0).
-    # However, for the purposes of parameterisation we choose a different
-    # vector than d0 to locate the Panel. That's because we want to perform
-    # rotations around a point on the detector surface, and d0 points to the
-    # corner of the Panel. To avoid excess correlations between 'tilt' and
-    # 'twist' angles with the detector distance, we prefer to perform
-    # rotations around a point located at the centre of the Panel. This is
-    # usually close to point of intersection with the plane normal drawn
-    # from the origin of the laboratory frame.
-    #
-    # Therefore we define:
-    #
-    # * a vector 'dorg' locating the centre of the single Panel
-    # * a pair of orthogonal unit directions 'd1' and 'd2' forming a plane
-    #   with its origin at the end of the vector dorg
-    # * a third unit direction 'dn', orthogonal to both 'd1' & 'd2'.
-    # * offsets to locate the origin d0 of the Panel frame from the
-    #   tip of the dorg vector, in terms of the coordinate system
-    #   formed by d1, d2 and dn.
-    #
-    # Held separately in attribute 'models' are:
-    # * references to the detector objects contained in this model
-    #
-    # For this simplified class there is only a single Panel frame
-    # and the vector dn is not actually required, because the plane formed
-    # by d1 and d2 is coplanar with the sensor plane. Therefore the
-    # offset is fully in terms of d1 and d2
-
-    # set up the initial state of the detector parameterisation from the
-    # orientation of the single Panel it contains, in terms of the vectors
-    # dorg, d1 and d2.
+  @staticmethod
+  def _init_core(detector, parameter_type=Parameter):
+    """Calculate initial state and list of parameters, using the parameter_type
+    callback to select between versions of the Parameter class"""
 
     # get some vectors we need from the Panel
-    if experiment_ids is None:
-      experiment_ids = [0]
     panel = detector[0]
     so = matrix.col(panel.get_origin())
     d1 = matrix.col(panel.get_fast_axis())
@@ -85,43 +54,33 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # distance from lab origin to detector model plane along its normal, in
     # initial orientation
     distance = panel.get_directed_distance()
-    dist = Parameter(distance, dn, 'length (mm)', 'Dist')
+    dist = parameter_type(distance, dn, 'length (mm)', 'Dist')
 
     # shift in the detector model plane to locate dorg, in initial
     # orientation
     shift = dorg - dn * distance
-    shift1 = Parameter(shift.dot(d1), d1, 'length (mm)', 'Shift1')
-    shift2 = Parameter(shift.dot(d2), d2, 'length (mm)', 'Shift2')
+    shift1 = parameter_type(shift.dot(d1), d1, 'length (mm)', 'Shift1')
+    shift2 = parameter_type(shift.dot(d2), d2, 'length (mm)', 'Shift2')
 
     # rotations of the plane through its origin about:
     # 1) axis normal to initial orientation
     # 2) d1 axis of initial orientation
     # 3) d2 axis of initial orientation
-    tau1 = Parameter(0, dn, 'angle (mrad)', 'Tau1')
-    tau2 = Parameter(0, d1, 'angle (mrad)', 'Tau2')
-    tau3 = Parameter(0, d2, 'angle (mrad)', 'Tau3')
+    tau1 = parameter_type(0, dn, 'angle (mrad)', 'Tau1')
+    tau2 = parameter_type(0, d1, 'angle (mrad)', 'Tau2')
+    tau3 = parameter_type(0, d2, 'angle (mrad)', 'Tau3')
 
     # build the parameter list in a specific,  maintained order
     p_list = [dist, shift1, shift2, tau1, tau2, tau3]
 
-    # set up the base class
-    ModelParameterisation.__init__(self, detector, istate, p_list,
-                                   experiment_ids=experiment_ids)
+    return {'istate':istate, 'p_list':p_list}
 
-    # call compose to calculate all the derivatives
-    self.compose()
-
-    return
-
-  def compose(self):
+  def _compose_core(self, dist, shift1, shift2, tau1, tau2, tau3):
 
     # extract items from the initial state
     id1 = self._initial_state['d1']
     id2 = self._initial_state['d2']
     ioffset = self._initial_state['offset']
-
-    # extract parameters from the internal list
-    dist, shift1, shift2, tau1, tau2, tau3 = self._param
 
     # convert angles to radians
     tau1rad = tau1.value / 1000.
@@ -168,15 +127,10 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # compose new sensor origin
     o = dorg + ioffset[0] * d1 + ioffset[1] * d2
 
-    # compose new panel dir1, dir2. For this model with a single
-    # sensor, this is trivial as they are the same as d1 and d2
-    dir1 = d1
-    dir2 = d2
-
-    # now update the panel with its new position and orientation.
-    # The detector is self._model, the panel is the first in the
-    # detector
-    (self._model)[0].set_frame(dir1, dir2, o)
+    # keep the new state for return
+    new_state = {'d1':d1,
+                 'd2':d2,
+                 'origin':o}
 
     # calculate derivatives of the state wrt parameters
     # =================================================
@@ -307,80 +261,107 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     do_dtau3 = ddorg_dtau3 + ioffset[0] * dd1_dtau3 + \
                ioffset[1] * dd2_dtau3
 
-    # sensor dir1:
-    # dir1 = d1
-
-    # derivative wrt dist
-    ddir1_ddist = dd1_ddist
-
-    # derivative wrt shift1
-    ddir1_dshift1 = dd1_dshift1
-
-    # derivative wrt shift2
-    ddir1_dshift2 = dd1_dshift2
-
-    # derivative wrt tau1
-    ddir1_dtau1 = dd1_dtau1
-
-    # derivative wrt tau2
-    ddir1_dtau2 = dd1_dtau2
-
-    # derivative wrt tau3
-    ddir1_dtau3 = dd1_dtau3
-
-    # sensor dir2:
-    # dir2 = d2
-
-    # derivative wrt dist
-    ddir2_ddist = dd2_ddist
-
-    # derivative wrt shift1
-    ddir2_dshift1 = dd2_dshift1
-
-    # derivative wrt shift2
-    ddir2_dshift2 = dd2_dshift2
-
-    # derivative wrt tau1
-    ddir2_dtau1 = dd2_dtau1
-
-    # derivative wrt tau2
-    ddir2_dtau2 = dd2_dtau2
-
-    # derivative wrt tau3
-    ddir2_dtau3 = dd2_dtau3
-
     # combine these vectors together into derivatives of the sensor
-    # matrix d and store them, converting angles back to mrad
+    # matrix d, converting angles back to mrad
+    dd_dval = []
 
     # derivative wrt dist
-    self._dstate_dp[0] = matrix.sqr(ddir1_ddist.elems +
-                          ddir2_ddist.elems +
-                          do_ddist.elems).transpose()
+    dd_dval.append(matrix.sqr(dd1_ddist.elems +
+                              dd2_ddist.elems +
+                              do_ddist.elems).transpose())
 
     # derivative wrt shift1
-    self._dstate_dp[1] = matrix.sqr(ddir1_dshift1.elems +
-                          ddir2_dshift1.elems +
-                          do_dshift1.elems).transpose()
+    dd_dval.append(matrix.sqr(dd1_dshift1.elems +
+                              dd2_dshift1.elems +
+                              do_dshift1.elems).transpose())
 
     # derivative wrt shift2
-    self._dstate_dp[2] = matrix.sqr(ddir1_dshift2.elems +
-                          ddir2_dshift2.elems +
-                          do_dshift2.elems).transpose()
+    dd_dval.append(matrix.sqr(dd1_dshift2.elems +
+                              dd2_dshift2.elems +
+                              do_dshift2.elems).transpose())
 
     # derivative wrt tau1
-    self._dstate_dp[3] = matrix.sqr(ddir1_dtau1.elems +
-                          ddir2_dtau1.elems +
-                          do_dtau1.elems).transpose() / 1000.
+    dd_dval.append(matrix.sqr(dd1_dtau1.elems +
+                              dd2_dtau1.elems +
+                              do_dtau1.elems).transpose() / 1000.)
 
     # derivative wrt tau2
-    self._dstate_dp[4] = matrix.sqr(ddir1_dtau2.elems +
-                          ddir2_dtau2.elems +
-                          do_dtau2.elems).transpose() / 1000.
+    dd_dval.append(matrix.sqr(dd1_dtau2.elems +
+                              dd2_dtau2.elems +
+                              do_dtau2.elems).transpose() / 1000.)
 
     # derivative wrt tau3
-    self._dstate_dp[5] = matrix.sqr(ddir1_dtau3.elems +
-                          ddir2_dtau3.elems +
-                          do_dtau3.elems).transpose() / 1000.
+    dd_dval.append(matrix.sqr(dd1_dtau3.elems +
+                              dd2_dtau3.elems +
+                              do_dtau3.elems).transpose() / 1000.)
+
+    return new_state, dd_dval
+
+class DetectorParameterisationSinglePanel(ModelParameterisation, DetectorMixin):
+  """Parameterisation for a single abstract panel plane, with angles expressed
+  in mrad"""
+
+  def __init__(self, detector, experiment_ids=None):
+
+    # The state of a single Panel is its detector matrix d = (d1|d2|d0).
+    # However, for the purposes of parameterisation we choose a different
+    # vector than d0 to locate the Panel. That's because we want to perform
+    # rotations around a point on the detector surface, and d0 points to the
+    # corner of the Panel. To avoid excess correlations between 'tilt' and
+    # 'twist' angles with the detector distance, we prefer to perform
+    # rotations around a point located at the centre of the Panel. This is
+    # usually close to point of intersection with the plane normal drawn
+    # from the origin of the laboratory frame.
+    #
+    # Therefore we define:
+    #
+    # * a vector 'dorg' locating the centre of the single Panel
+    # * a pair of orthogonal unit directions 'd1' and 'd2' forming a plane
+    #   with its origin at the end of the vector dorg
+    # * a third unit direction 'dn', orthogonal to both 'd1' & 'd2'.
+    # * offsets to locate the origin d0 of the Panel frame from the
+    #   tip of the dorg vector, in terms of the coordinate system
+    #   formed by d1, d2 and dn.
+    #
+    # Held separately in attribute 'models' are:
+    # * references to the detector objects contained in this model
+    #
+    # For this simplified class there is only a single Panel frame
+    # and the vector dn is not actually required, because the plane formed
+    # by d1 and d2 is coplanar with the sensor plane. Therefore the
+    # offset is fully in terms of d1 and d2
+
+    # set up the initial state of the detector parameterisation from the
+    # orientation of the single Panel it contains, in terms of the vectors
+    # dorg, d1 and d2.
+
+    if experiment_ids is None:
+      experiment_ids = [0]
+
+    dat = self._init_core(detector)
+
+    # set up the base class
+    ModelParameterisation.__init__(self, detector, dat['istate'], dat['p_list'],
+                                   experiment_ids=experiment_ids)
+
+    # call compose to calculate all the derivatives
+    self.compose()
+
+    return
+
+  def compose(self):
+
+    # extract parameters from the internal list
+    dist, shift1, shift2, tau1, tau2, tau3 = self._param
+
+    new_state, self._dstate_dp = self._compose_core(dist, shift1, shift2, tau1,
+      tau2, tau3)
+
+    # now update the panel with its new position and orientation.
+    # The detector is self._model, the panel is the first in the
+    # detector
+    (self._model)[0].set_frame(
+      new_state['d1'], new_state['d2'], new_state['origin'])
 
     return
 
