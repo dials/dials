@@ -1065,13 +1065,15 @@ class indexer_base(object):
       s1 = s1/s1.norms() * (1/beam.get_wavelength())
       spots_mm['s1'].set_selected(sel, s1)
       S = s1 - beam.get_s0()
-      # XXX what about if goniometer fixed rotation is not identity?
       if goniometer is not None:
         rotation_axis = matrix.col(goniometer.get_rotation_axis())
         fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
+        # FIXME GW/RJG assert these are bring provided in the wrong order
+        # => obvious in RLV since phi axis does not point in right direction
+        # => swapping them makes discover better experimental model work in
+        # some cases but breaks multi-sweep index => investigate
         spots_mm['rlp'].set_selected(sel, S.rotate_around_origin(
-          goniometer.get_rotation_axis(),
-          -rot_angle))
+          goniometer.get_rotation_axis(), -rot_angle))
         spots_mm['rlp'].set_selected(
           sel, tuple(fixed_rotation.inverse()) * spots_mm['rlp'].select(sel))
       else:
