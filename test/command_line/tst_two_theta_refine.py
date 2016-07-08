@@ -42,7 +42,7 @@ def test1():
   for pth in exp_path + pkl_path:
     assert os.path.exists(pth), "%s missing" % pth
 
-  cmd = "dials.two_theta_refine " + " ".join(exp_path) + " " + " ".join(pkl_path)
+  cmd = "dials.two_theta_refine " + " ".join(exp_path) + " " + " ".join(pkl_path) + " cif=refined_cell.cif"
   print cmd
 
   # work in a temporary directory
@@ -55,8 +55,6 @@ def test1():
                 check_format=False)
   finally:
     os.chdir(cwd)
-    # clean up tmp dir
-    shutil.rmtree(tmp_dir)
 
   xls = ref_exp.crystals()
   assert len(xls) == 1 # crystal models should have been combined

@@ -150,7 +150,8 @@ class Script(object):
     # FIXME add other things to be checked here
     return
 
-  def combine_crystals(self, experiments):
+  @staticmethod
+  def combine_crystals(experiments):
     '''Replace all crystals in the experiments list with the first crystal'''
 
     from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
@@ -287,11 +288,14 @@ class Script(object):
     return st.format()
 
   @staticmethod
-  def generate_cif(crystal, reflections, file):
+  def generate_cif(experiments, crystal, input_reflections, refiner, file):
     info('Saving CIF information to %s' % file)
     from cctbx import miller
     import datetime
+    from dials.algorithms.refinement.two_theta_refiner import calc_2theta
     import iotbx.cif.model
+    import math
+
     block = iotbx.cif.model.block()
     block["_audit_creation_method"] = dials_version()
     block["_audit_creation_date"] = datetime.date.today().isoformat()
@@ -306,23 +310,23 @@ class Script(object):
       block['_cell_%s' % cifname] = format_value_with_esd(cell, esd, 4)
     block['_cell_volume'] = format_value_with_esd(crystal.get_unit_cell().volume(), crystal.get_cell_volume_sd(), 4)
 
-    miller_span = miller.index_span(reflections['miller_index'])
+    used_reflections = refiner.get_matches()
+    block['_cell_measurement_reflns_used'] = len(used_reflections)
+    block['_cell_measurement_theta_min'] = flex.min(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
+    block['_cell_measurement_theta_max'] = flex.max(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
+    block['_diffrn_reflns_number'] = len(input_reflections)
+    miller_span = miller.index_span(input_reflections['miller_index'])
     min_h, min_k, min_l = miller_span.min()
     max_h, max_k, max_l = miller_span.max()
-
-#   TODOs:
-    block['_cell_measurement_reflns_used'] = len(reflections)
-#   block['_cell_measurement_theta_min'] = unit_cell_data['sampling']['used_min_2theta'] / 2
-#   block['_cell_measurement_theta_max'] = unit_cell_data['sampling']['used_max_2theta'] / 2
-    block['_diffrn_reflns_number'] = len(reflections)
     block['_diffrn_reflns_limit_h_min'] = min_h
     block['_diffrn_reflns_limit_h_max'] = max_h
     block['_diffrn_reflns_limit_k_min'] = min_k
     block['_diffrn_reflns_limit_k_max'] = max_k
     block['_diffrn_reflns_limit_l_min'] = min_l
     block['_diffrn_reflns_limit_l_max'] = max_l
-#   block['_diffrn_reflns_theta_min'] = unit_cell_data['reflections']['min_2theta'] / 2
-#   block['_diffrn_reflns_theta_max'] = unit_cell_data['reflections']['max_2theta'] / 2
+    input_reflections_tt = calc_2theta(input_reflections, experiments)
+    block['_diffrn_reflns_theta_min'] = flex.min(input_reflections_tt) * 180 / math.pi / 2
+    block['_diffrn_reflns_theta_max'] = flex.max(input_reflections_tt) * 180 / math.pi / 2
 
     cif = iotbx.cif.model.cif()
     cif['two_theta_refine'] = block
@@ -343,7 +347,7 @@ class Script(object):
 
     # set up global experiments and reflections lists
     from dials.array_family import flex
-    reflections = flex.reflection_table()
+    input_reflections = flex.reflection_table()
     global_id = 0
     from dxtbx.model.experiment.experiment_list import ExperimentList
     experiments=ExperimentList()
@@ -359,7 +363,7 @@ class Script(object):
         sub_ref = refs.select(sel)
         nrefs_per_exp.append(len(sub_ref))
         sub_ref['id'] = flex.int(len(sub_ref), global_id)
-        reflections.extend(sub_ref)
+        input_reflections.extend(sub_ref)
         experiments.append(exp)
         global_id += 1
 
@@ -369,12 +373,12 @@ class Script(object):
       print "No Experiments found in the input"
       self.parser.print_help()
       return
-    if len(reflections) == 0:
+    if len(input_reflections) == 0:
       print "No reflection data found in the input"
       self.parser.print_help()
       return
 
-    self.check_input(reflections)
+    self.check_input(input_reflections)
 
     # Configure the logging
     log.config(info=params.output.log,
@@ -389,7 +393,7 @@ class Script(object):
 
     # Convert to P 1?
     if params.refinement.triclinic:
-      reflections, experiments = self.convert_to_P1(reflections, experiments)
+      input_reflections, experiments = self.convert_to_P1(input_reflections, experiments)
 
     # Combine crystals?
     if params.refinement.combine_crystal_models and len(experiments) > 1:
@@ -398,7 +402,9 @@ class Script(object):
 
     # Filter integrated centroids?
     if params.refinement.filter_integrated_centroids:
-      reflections = self.filter_integrated_centroids(reflections)
+      reflections = self.filter_integrated_centroids(input_reflections)
+    else:
+      reflections = input_reflections
 
     # Get the refiner
     info('Configuring refiner')
@@ -469,7 +475,7 @@ class Script(object):
         info(msg)
 
     if params.output.cif is not None:
-      self.generate_cif(crystals[0], reflections, file=params.output.cif)
+      self.generate_cif(experiments, crystals[0], input_reflections, refiner, file=params.output.cif)
 
     # Log the total time taken
     info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
