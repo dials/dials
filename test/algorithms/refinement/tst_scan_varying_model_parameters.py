@@ -29,6 +29,8 @@ from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameter
            ScanVaryingCrystalUnitCellParameterisation
 from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters \
     import ScanVaryingBeamParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_detector_parameters \
+    import ScanVaryingDetectorParameterisationSinglePanel
 
 class SmootherTest(object):
   """Test a bare parameter set with the smoother"""
@@ -171,6 +173,36 @@ class TestBeamModel(ScanVaryingBeamParameterisation):
     self.compose()
     return ScanVaryingBeamParameterisation.get_state(self)
 
+class TestDetectorModel(ScanVaryingDetectorParameterisationSinglePanel):
+
+  def __init__(self, image_number, *args):
+
+    ScanVaryingDetectorParameterisationSinglePanel.__init__(self, *args)
+
+    # set overloads now, after construction of the base class
+    self.compose = self._compose
+    self.get_state = self._get_state
+
+    self.set_time_point(image_number)
+
+  def set_time_point(self, t):
+
+    self.image_number = t
+    self.compose()
+
+  def _compose(self):
+    """override for compose to pass in the requested t"""
+
+    ScanVaryingDetectorParameterisationSinglePanel.compose(self,
+            self.image_number)
+
+  def _get_state(self):
+    """override for get_state to do so only at the requested t"""
+
+    # ensure the state is updated by re-composing
+    self.compose()
+    return ScanVaryingDetectorParameterisationSinglePanel.get_state(self)
+
 class TestScanVaryingModelParameterisation(object):
 
   def __init__(self, plots = False):
@@ -198,6 +230,17 @@ class TestScanVaryingModelParameterisation(object):
 
     # Make a standard goniometer model along X
     self.goniometer = Goniometer((1,0,0))
+
+    # Make a simple single panel detector
+    d1 = matrix.col((1, 0, 0))
+    d2 = matrix.col((0, -1, 0))
+    npx_fast = 1475
+    npx_slow = 1679
+    pix_size_f = pix_size_s = 0.172
+    from dxtbx.model.experiment import detector_factory
+    self.detector = detector_factory.make_detector("PAD", d1, d2,
+      matrix.col((0, 0, -110)), (pix_size_f, pix_size_s),
+      (npx_fast, npx_slow), (0, 2e20))
 
   def random_direction_close_to(self, vector):
     return vector.rotate_around_origin(matrix.col(
@@ -454,6 +497,49 @@ class TestScanVaryingBeamParameterisation(TestScanVaryingModelParameterisation):
 
     return
 
+class TestScanVaryingDetectorParameterisation(TestScanVaryingModelParameterisation):
+  """Basic test of a ScanVaryingDetectorParameterisationSinglePanel"""
+
+  def test_num_intervals(self, nintervals):
+    """Test a range of different numbers of intervals"""
+
+    # Parameterise the detector with the image range and five intervals. Init
+    # TestOrientationModel to explore gradients at image 50
+    det_p = TestDetectorModel(50, self.detector, self.image_range, nintervals)
+
+    # How many parameters?
+    num_param = det_p.num_free()
+
+    # apply a random parameter shift to the detector, on order of 2% of
+    # the initial values
+    p_vals = det_p.get_param_vals()
+    sigmas = [0.02  * p for p in p_vals]
+    new_vals = random_param_shift(p_vals, sigmas)
+    det_p.set_param_vals(new_vals)
+
+    # calculate state and gradients at image 50
+    det_p.compose()
+
+    null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
+
+    # compare analytical and finite difference derivatives at image 50
+    an_ds_dp = det_p.get_ds_dp()
+    fd_ds_dp = get_fd_gradients(det_p, [1.e-7] * num_param)
+    param_names = det_p.get_param_names()
+
+    for e, f in zip(an_ds_dp, fd_ds_dp):
+      assert(approx_equal((e - f), null_mat, eps = 1.e-6))
+
+    print "OK"
+    return
+
+  def run(self):
+
+    for n in (1, 2, 3, 4, 5, 6, 7):
+      self.test_num_intervals(n)
+
+    return
+
 
 if __name__ == '__main__':
 
@@ -473,4 +559,8 @@ if __name__ == '__main__':
 
   print "Testing the ScanVaryingBeamParameterisation"
   test = TestScanVaryingBeamParameterisation(plots = False)
+  test.run()
+
+  print "Testing the ScanVaryingDetectorParameterisationSinglePanel"
+  test = TestScanVaryingDetectorParameterisation(plots = False)
   test.run()
