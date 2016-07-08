@@ -27,6 +27,10 @@ def generate_phil_scope():
       .type = bool
       .help = "Write the hot mask"
 
+    force_2d = False
+      .type = bool
+      .help = "Do spot finding in 2D"
+
     scan_range = None
       .help = "The range of images to use in finding spots. Number of arguments"
               "must be a factor of two. Specifying \"0 0\" will use all images"
@@ -463,9 +467,24 @@ class SpotFinderFactory(object):
     from dials.util.masking import MaskGenerator
     from dials.algorithms.spot_finding.finder import SpotFinder
     from libtbx.phil import parse
+    from dxtbx.imageset import ImageSweep
 
     if params is None:
       params = phil_scope.fetch(source=parse("")).extract()
+
+    if params.spotfinder.force_2d and params.output.shoeboxes is False:
+      no_shoeboxes_2d = True
+    elif datablock is not None and params.output.shoeboxes is False:
+      no_shoeboxes_2d = False
+      all_stills = True
+      for imageset in datablock.extract_imagesets():
+        if isinstance(imageset, ImageSweep):
+          all_stills = False
+          break
+      if all_stills:
+        no_shoeboxes_2d = True
+    else:
+      no_shoeboxes_2d = False
 
     # Read in the lookup files
     mask = SpotFinderFactory.load_image(params.spotfinder.lookup.mask)
@@ -499,7 +518,8 @@ class SpotFinderFactory(object):
       region_of_interest        = params.spotfinder.region_of_interest,
       mask_generator            = mask_generator,
       min_spot_size             = params.spotfinder.filter.min_spot_size,
-      max_spot_size             = params.spotfinder.filter.max_spot_size)
+      max_spot_size             = params.spotfinder.filter.max_spot_size,
+      no_shoeboxes_2d           = no_shoeboxes_2d)
 
   @staticmethod
   def configure_threshold(params, datablock):

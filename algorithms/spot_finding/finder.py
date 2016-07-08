@@ -152,6 +152,78 @@ class ExtractPixelsFromImage(object):
     return Result(pixel_list)
 
 
+class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
+  '''
+  A class to extract pixels from a single image
+
+  '''
+
+  def __init__(self,
+               imageset,
+               threshold_function,
+               mask,
+               region_of_interest,
+               max_strong_pixel_fraction,
+               min_spot_size,
+               max_spot_size,
+               filter_spots):
+    '''
+    Initialise the class
+
+    :param imageset: The imageset to extract from
+    :param threshold_function: The function to threshold with
+    :param mask: The image mask
+    :param region_of_interest: A region of interest to process
+    :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
+
+    '''
+    super(ExtractPixelsFromImage2DNoShoeboxes, self).__init__(
+      imageset,
+      threshold_function,
+      mask,
+      region_of_interest,
+      max_strong_pixel_fraction)
+
+    # Save some stuff
+    self.min_spot_size = min_spot_size
+    self.max_spot_size = max_spot_size
+    self.filter_spots = filter_spots
+
+  def __call__(self, index):
+    '''
+    Extract strong pixels from an image
+
+    :param index: The index of the image
+
+    '''
+    from dials.model.data import PixelListLabeller
+
+    # Initialise the pixel labeller
+    num_panels = len(self.imageset.get_detector())
+    pixel_labeller = [PixelListLabeller() for p in range(num_panels)]
+
+    # Call the super function
+    result = super(ExtractPixelsFromImage2DNoShoeboxes, self).__call__(index)
+
+    # Add pixel lists to the labeller
+    assert len(pixel_labeller) == len(result.pixel_list), "Inconsistent size"
+    for plabeller, plist in zip(pixel_labeller, result.pixel_list):
+      plabeller.add(plist)
+
+    # Create shoeboxes from pixel list
+    converter = PixelListToReflectionTable(
+      self.min_spot_size,
+      self.max_spot_size,
+      self.filter_spots)
+    reflections = converter(self.imageset, pixel_labeller)
+
+    # Delete the shoeboxes
+    del reflections["shoeboxes"]
+
+    # Return the reflections
+    return reflections
+
+
 class ExtractSpotsParallelTask(object):
   '''
   Execute the spot finder task in parallel
@@ -285,6 +357,39 @@ class ShoeboxesToReflectionTable(object):
     return flex.reflection_table(observed, shoeboxes)
 
 
+class PixelListToReflectionTable(object):
+  '''
+  Helper class to convert the pixel list to reflection table
+
+  '''
+
+  def __init__(self, min_spot_size, max_spot_size, filter_spots):
+    '''
+    Initialise the converter
+
+    '''
+
+    # Setup the pixel list to shoebox converter
+    self.pixel_list_to_shoeboxes = PixelListToShoeboxes(
+      min_spot_size,
+      max_spot_size)
+
+    # Setup the reflection table converter
+    self.shoeboxes_to_reflection_table = ShoeboxesToReflectionTable(
+      filter_spots)
+
+  def __call__(self, imageset, pixel_labeller):
+    '''
+    Convert to reflection table
+
+    '''
+    return self.shoeboxes_to_reflection_table(
+      imageset,
+      self.pixel_list_to_shoeboxes(
+        imageset,
+        pixel_labeller))
+
+
 class ExtractSpots(object):
   '''
   Class to find spots in an image and extract them into shoeboxes.
@@ -302,7 +407,8 @@ class ExtractSpots(object):
                mp_chunksize=1,
                min_spot_size=1,
                max_spot_size=20,
-               filter_spots=None):
+               filter_spots=None,
+               no_shoeboxes_2d=False):
     '''
     Initialise the class with the strategy
 
@@ -325,8 +431,22 @@ class ExtractSpots(object):
     self.min_spot_size = min_spot_size
     self.max_spot_size = max_spot_size
     self.filter_spots = filter_spots
+    self.no_shoeboxes_2d = no_shoeboxes_2d
 
   def __call__(self, imageset):
+    '''
+    Find the spots in the imageset
+
+    :param imageset: The imageset to process
+    :return: The list of spot shoeboxes
+
+    '''
+    if not self.no_shoeboxes_2d:
+      return self._find_spots(imageset)
+    else:
+      return self._find_spots_2d_no_shoeboxes(imageset)
+
+  def _find_spots(self, imageset):
     '''
     Find the spots in the imageset
 
@@ -423,12 +543,103 @@ class ExtractSpots(object):
           result.pixel_list = None
 
     # Create shoeboxes from pixel list
-    creator = PixelListToShoeboxes(self.min_spot_size, self.max_spot_size)
-    shoeboxes = creator(imageset, pixel_labeller)
+    converter = PixelListToReflectionTable(
+      self.min_spot_size,
+      self.max_spot_size,
+      self.filter_spots)
+    return converter(imageset, pixel_labeller)
 
-    # Create reflection table
-    creator = ShoeboxesToReflectionTableCreator(self.filter_spots)
-    reflections = creator(imageset, shoeboxes)
+  def _find_spots_2d_no_shoeboxes(self, imageset):
+    '''
+    Find the spots in the imageset
+
+    :param imageset: The imageset to process
+    :return: The list of spot shoeboxes
+
+    '''
+    from dials.util.command_line import Command
+    from dials.array_family import flex
+    from dxtbx.imageset import ImageSweep
+    from dials.model.data import PixelListLabeller
+    from dials.util.mp import batch_multi_node_parallel_map
+    from logging import info, warn
+    from math import floor, ceil
+    import platform
+    from logging import warn
+
+    # Change the number of processors if necessary
+    mp_nproc = self.mp_nproc
+    mp_njobs = self.mp_njobs
+    if platform.system() == "Windows" and (mp_nproc > 1 or mp_njobs > 1):
+      warn("")
+      warn("*" * 80)
+      warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")
+      warn("*" * 80)
+      warn("")
+      mp_nproc = 1
+      mp_njobs = 1
+    if mp_nproc * mp_njobs > len(imageset):
+      mp_nproc = min(mp_nproc, len(imageset))
+      mp_njobs = int(ceil(len(imageset) / mp_nproc))
+
+    mp_method = self.mp_method
+    mp_chunksize = self.mp_chunksize
+
+    import libtbx
+    if mp_chunksize == libtbx.Auto:
+      import math
+      mp_chunksize = int(math.ceil(len(imageset) / (mp_njobs * mp_nproc)))
+      info("Setting chunksize=%i" %mp_chunksize)
+
+    len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
+    if mp_chunksize > len_by_nproc:
+      mp_chunksize = len_by_nproc
+    assert mp_nproc > 0, "Invalid number of processors"
+    assert mp_njobs > 0, "Invalid number of jobs"
+    assert mp_njobs == 1 or mp_method is not None, "Invalid cluster method"
+    assert mp_chunksize > 0, "Invalid chunk size"
+
+    # The extract pixels function
+    function = ExtractPixelsFromImage2DNoShoeboxes(
+        imageset                  = imageset,
+        threshold_function        = self.threshold_function,
+        mask                      = self.mask,
+        max_strong_pixel_fraction = self.max_strong_pixel_fraction,
+        region_of_interest        = self.region_of_interest,
+        min_spot_size             = self.min_spot_size,
+        max_spot_size             = self.max_spot_size,
+        filter_spots              = self.filter_spots)
+
+    # The indices to iterate over
+    indices = list(range(len(imageset)))
+
+    # The resulting reflections
+    reflections = flex.reflection_table()
+
+    # Do the processing
+    info('Extracting strong spots from images')
+    if mp_njobs > 1:
+      info(' Using %s with %d parallel job(s) and %d processes per node\n' % (mp_method, mp_njobs, mp_nproc))
+    else:
+      info(' Using multiprocessing with %d parallel job(s)\n' % (mp_nproc))
+    if mp_nproc > 1 or mp_njobs > 1:
+      def process_output(result):
+        import logging
+        for message in result[1]:
+          logging.log(message.levelno, message.msg)
+        reflections.extend(result.reflections)
+        result[0].reflections = None
+      batch_multi_node_parallel_map(
+        func           = ExtractSpotsParallelTask(function),
+        iterable       = indices,
+        nproc          = mp_nproc,
+        njobs          = mp_njobs,
+        cluster_method = mp_method,
+        chunksize      = mp_chunksize,
+        callback       = process_output)
+    else:
+      for task in indices:
+        reflections.extend(function(task))
 
     # Return the reflections
     return reflections
@@ -454,7 +665,8 @@ class SpotFinder(object):
                scan_range=None,
                write_hot_mask=True,
                min_spot_size=1,
-               max_spot_size=20):
+               max_spot_size=20,
+               no_shoeboxes_2d=False):
     '''
     Initialise the class.
 
@@ -479,6 +691,7 @@ class SpotFinder(object):
     self.mp_chunksize = mp_chunksize
     self.mp_nproc = mp_nproc
     self.mp_njobs = mp_njobs
+    self.no_shoeboxes_2d = no_shoeboxes_2d
 
   def __call__(self, datablock):
     '''
@@ -562,7 +775,8 @@ class SpotFinder(object):
       mp_chunksize              = self.mp_chunksize,
       min_spot_size             = self.min_spot_size,
       max_spot_size             = self.max_spot_size,
-      filter_spots              = self.filter_spots)
+      filter_spots              = self.filter_spots,
+      no_shoeboxes_2d           = self.no_shoeboxes_2d)
 
     # Get the max scan range
     if isinstance(imageset, ImageSweep):
