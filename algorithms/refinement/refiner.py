@@ -147,11 +147,11 @@ refinement
 
         %(uc_restraints_phil)s
 
-      force_static = False
-        .type = bool
-        .help = "Force a static parameterisation for the crystal orientation"
-                "when doing scan-varying refinement"
-        .expert_level = 1
+        force_static = False
+          .type = bool
+          .help = "Force a static parameterisation for the crystal unit cell"
+                  "when doing scan-varying refinement"
+          .expert_level = 1
 
         %(sv_phil_str)s
       }
@@ -165,11 +165,11 @@ refinement
                   "partial names to match"
           .expert_level = 1
 
-      force_static = False
-        .type = bool
-        .help = "Force a static parameterisation for the crystal unit cell"
-                "when doing scan-varying refinement"
-        .expert_level = 1
+        force_static = False
+          .type = bool
+          .help = "Force a static parameterisation for the crystal orientation"
+                  "when doing scan-varying refinement"
+          .expert_level = 1
 
         %(sv_phil_str)s
       }
@@ -202,6 +202,14 @@ refinement
         .help = "Fix specified parameters by a list of 0-based indices or"
                 "partial names to match"
         .expert_level = 1
+
+      force_static = True
+        .type = bool
+        .help = "Force a static parameterisation for the detector"
+                "when doing scan-varying refinement"
+        .expert_level = 1
+
+      %(sv_phil_str)s
     }
 
     sparse = Auto
@@ -575,8 +583,7 @@ class RefinerFactory(object):
       goniometer, scan = assoc_models[0]
 
       if options.scan_varying:
-        if (not options.beam.force_static or
-            not options.beam.force_static):
+        if not options.beam.force_static:
           # If a beam is scan-varying, then it must always be found alongside
           # the same Scan and Goniometer in any Experiments in which it appears
           if [goniometer, scan].count(None) != 0:
@@ -763,11 +770,17 @@ class RefinerFactory(object):
     # Parameterise unique Detectors
     det_params = []
     for idetector, detector in enumerate(experiments.detectors()):
-
+      # keep associated gonio and scan in case we are scan-varying
       exp_ids = experiments.indices(detector)
-      # Detector
+      assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
+                      for i in exp_ids]
+      goniometer, scan = assoc_models[0]
+
       if options.detector.panels == "automatic":
         if len(detector) > 1:
+          if options.scan_varying and not options.detector.force_static:
+            raise Sorry('Scan-varying multiple panel detectors are not '
+                        'currently supported')
           try:
             h = detector.hierarchy()
             det_param = par.DetectorParameterisationHierarchical(detector,
@@ -775,38 +788,98 @@ class RefinerFactory(object):
           except AttributeError:
             det_param = par.DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
+        elif options.scan_varying and not options.detector.force_static:
+          # If a detector is scan-varying, then it must always be found alongside
+          # the same Scan and Goniometer in any Experiments in which it appears
+          if [goniometer, scan].count(None) != 0:
+            raise Sorry('A scan-varying detector model cannot be created '
+                        'because a scan or goniometer model is missing')
+          if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+            raise Sorry('A single scan-varying detector model cannot be '
+              'refined when associated with more than one scan or goniometer')
+          sweep_range_deg = scan.get_oscillation_range(deg=True)
+          array_range = scan.get_array_range()
+          if options.detector.smoother.num_intervals == "fixed_width":
+            deg_per_interval = options.detector.smoother.interval_width_degrees
+            n_intervals = max(int(
+              abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+          else:
+            n_intervals = options.detector.smoother.absolute_num_intervals
+          det_param = par.ScanVaryingDetectorParameterisationSinglePanel(
+              detector,
+              array_range,
+              n_intervals,
+              experiment_ids=exp_ids)
         else:
           det_param = par.DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
       elif options.detector.panels == "single":
-        det_param = par.DetectorParameterisationSinglePanel(detector,
+        if options.scan_varying and not options.detector.force_static:
+          # If a detector is scan-varying, then it must always be found alongside
+          # the same Scan and Goniometer in any Experiments in which it appears
+          if [goniometer, scan].count(None) != 0:
+            raise Sorry('A scan-varying detector model cannot be created '
+                        'because a scan or goniometer model is missing')
+          if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+            raise Sorry('A single scan-varying detector model cannot be '
+              'refined when associated with more than one scan or goniometer')
+          sweep_range_deg = scan.get_oscillation_range(deg=True)
+          array_range = scan.get_array_range()
+          if options.detector.smoother.num_intervals == "fixed_width":
+            deg_per_interval = options.detector.smoother.interval_width_degrees
+            n_intervals = max(int(
+              abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+          else:
+            n_intervals = options.detector.smoother.absolute_num_intervals
+          det_param = par.ScanVaryingDetectorParameterisationSinglePanel(
+              detector,
+              array_range,
+              n_intervals,
+              experiment_ids=exp_ids)
+        else:
+          det_param = par.DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
       elif options.detector.panels == "multiple":
+        if options.scan_varying and not options.detector.force_static:
+          raise Sorry('Scan-varying multiple panel detectors are not '
+                      'currently supported')
         det_param = par.DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
       elif options.detector.panels == "hierarchical":
+        if options.scan_varying and not options.detector.force_static:
+          raise Sorry('Scan-varying hierarchical detectors are not '
+                      'currently supported')
         det_param = par.DetectorParameterisationHierarchical(detector, beam,
                 experiment_ids=exp_ids, level=options.detector.hierarchy_level)
       else: # can only get here if refinement.phil is broken
         raise RuntimeError("detector.panels value not recognised")
 
+      # get number of fixable units, either parameters or parameter sets in
+      # the scan-varying case
+      try:
+        num_det = det_param.num_sets()
+      except AttributeError:
+        num_det = det_param.num_total()
+
+      fix_list = []
+      if options.detector.fix_list:
+        fix_list.extend(options.detector.fix_list)
+
       if options.detector.fix:
         if options.detector.fix == "all":
-          det_param.set_fixed([True] * det_param.num_total())
+          det_param.set_fixed([True] * num_det)
         elif options.detector.fix == "position":
-          to_fix = [e.param_type.startswith('length') \
-                    for e in det_param.get_params(only_free = False)]
-          det_param.set_fixed(to_fix)
+          fix_list.extend(['Dist', 'Shift1', 'Shift2'])
         elif options.detector.fix == "orientation":
-          to_fix = [e.param_type.startswith('angle') \
-                    for e in det_param.get_params(only_free = False)]
-          det_param.set_fixed(to_fix)
+          fix_list.extend(['Tau'])
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("detector.fix value not recognised")
 
-      if options.detector.fix_list:
-        to_fix = string_sel(options.detector.fix_list,
-                            det_param.get_param_names(only_free=False),
+      if fix_list:
+        names = filter_parameter_names(det_param)
+        assert len(names) == num_det
+        to_fix = string_sel(fix_list,
+                            names,
                             "Detector{0}".format(idetector + 1))
         det_param.set_fixed(to_fix)
 
