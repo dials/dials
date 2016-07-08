@@ -221,7 +221,7 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
     del reflections["shoeboxes"]
 
     # Return the reflections
-    return reflections
+    return [reflections]
 
 
 class ExtractSpotsParallelTask(object):
@@ -627,8 +627,8 @@ class ExtractSpots(object):
         import logging
         for message in result[1]:
           logging.log(message.levelno, message.msg)
-        reflections.extend(result.reflections)
-        result[0].reflections = None
+        reflections.extend(result[0][0])
+        result[0][0] = None
       batch_multi_node_parallel_map(
         func           = ExtractSpotsParallelTask(function),
         iterable       = indices,
@@ -639,7 +639,7 @@ class ExtractSpots(object):
         callback       = process_output)
     else:
       for task in indices:
-        reflections.extend(function(task))
+        reflections.extend(function(task)[0])
 
     # Return the reflections
     return reflections
