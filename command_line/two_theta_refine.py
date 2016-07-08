@@ -50,7 +50,7 @@ phil_scope = parse('''
 
     cif = None
       .type = str
-      .help = "Write unit cell error information in a Crystallographic"
+      .help = "Write unit cell error information to a Crystallographic"
               "Information File (CIF)"
 
     # FIXME include this directly from the original rather than copy here
@@ -228,6 +228,8 @@ class Script(object):
                                        xlo_params, xluc_params)
 
     # ReflectionManager, currently without outlier rejection
+    # Note: If not all reflections are used, then the filtering must be
+    # communicated to generate_cif() to be included in the CIF file!
     refman = TwoThetaReflectionManager(reflections, experiments,
        outlier_detector=None, verbosity=verb)
 
@@ -285,8 +287,9 @@ class Script(object):
     return st.format()
 
   @staticmethod
-  def generate_cif(crystal, file):
+  def generate_cif(crystal, reflections, file):
     info('Saving CIF information to %s' % file)
+    from cctbx import miller
     import datetime
     import iotbx.cif.model
     block = iotbx.cif.model.block()
@@ -301,18 +304,23 @@ class Script(object):
                                   crystal.get_cell_parameter_sd(),
                                   ['length_a', 'length_b', 'length_c', 'angle_alpha', 'angle_beta', 'angle_gamma']):
       block['_cell_%s' % cifname] = format_value_with_esd(cell, esd, 4)
+    block['_cell_volume'] = format_value_with_esd(crystal.get_unit_cell().volume(), crystal.get_cell_volume_sd(), 4)
+
+    miller_span = miller.index_span(reflections['miller_index'])
+    min_h, min_k, min_l = miller_span.min()
+    max_h, max_k, max_l = miller_span.max()
+
 #   TODOs:
-#   block['_cell_volume'] = format_value_with_esd(1, 1, 4)
-#   block['_cell_measurement_reflns_used'] = unit_cell_data['sampling']['used_reflections']
+    block['_cell_measurement_reflns_used'] = len(reflections)
 #   block['_cell_measurement_theta_min'] = unit_cell_data['sampling']['used_min_2theta'] / 2
 #   block['_cell_measurement_theta_max'] = unit_cell_data['sampling']['used_max_2theta'] / 2
-#   block['_diffrn_reflns_number'] = unit_cell_data['reflections']['count']
-#   block['_diffrn_reflns_limit_h_min'] = unit_cell_data['reflections']['min_miller'][0]
-#   block['_diffrn_reflns_limit_h_max'] = unit_cell_data['reflections']['max_miller'][0]
-#   block['_diffrn_reflns_limit_k_min'] = unit_cell_data['reflections']['min_miller'][1]
-#   block['_diffrn_reflns_limit_k_max'] = unit_cell_data['reflections']['max_miller'][1]
-#   block['_diffrn_reflns_limit_l_min'] = unit_cell_data['reflections']['min_miller'][2]
-#   block['_diffrn_reflns_limit_l_max'] = unit_cell_data['reflections']['max_miller'][2]
+    block['_diffrn_reflns_number'] = len(reflections)
+    block['_diffrn_reflns_limit_h_min'] = min_h
+    block['_diffrn_reflns_limit_h_max'] = max_h
+    block['_diffrn_reflns_limit_k_min'] = min_k
+    block['_diffrn_reflns_limit_k_max'] = max_k
+    block['_diffrn_reflns_limit_l_min'] = min_l
+    block['_diffrn_reflns_limit_l_max'] = max_l
 #   block['_diffrn_reflns_theta_min'] = unit_cell_data['reflections']['min_2theta'] / 2
 #   block['_diffrn_reflns_theta_max'] = unit_cell_data['reflections']['max_2theta'] / 2
 
@@ -460,12 +468,10 @@ class Script(object):
         info(msg)
 
     if params.output.cif is not None:
-      self.generate_cif(crystals[0], file=params.output.cif)
+      self.generate_cif(crystals[0], reflections, file=params.output.cif)
 
     # Log the total time taken
     info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
-
-    return
 
 if __name__ == '__main__':
   from dials.util import halraiser
