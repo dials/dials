@@ -232,9 +232,9 @@ class better_experimental_model_discovery(object):
     from dials.algorithms.indexing.indexer import indexer_base
     # Key point for this is that the spots must correspond to detector
     # positions not to the correct RS position => reset any fixed rotation
-    # to identity
+    # to identity - copy in case called from elsewhere
     import copy
-    gonio = imageset.get_goniometer()
+    gonio = copy.deepcopy(imageset.get_goniometer())
     gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
     indexer_base.map_centroids_to_reciprocal_space(
       spots_mm, trial_detector, imageset.get_beam(), gonio)
