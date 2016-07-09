@@ -94,7 +94,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(index[1] > index[0]);
       if (groups_.size() > 0) {
         DIALS_ASSERT(expr[0] == groups_[groups_.size()-1].expr()[1]);
-        DIALS_ASSERT(index[0] == groups_[groups_.size()-1].expr()[1]);
+        DIALS_ASSERT(index[0] == groups_[groups_.size()-1].index()[1]);
       } else {
         DIALS_ASSERT(expr[0] == 0);
       }
