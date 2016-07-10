@@ -189,7 +189,7 @@ class ComputeEsdReflectingRange(object):
       from scitbx import simplex
       from scitbx.array_family import flex
       from math import pi, exp
-      import random
+      # import random FIXME #168 do not start simplex at random point
 
       # FIXME in here this code is very unstable or actually broken if
       # we pass in a few lone images i.e. screening shots - propose need
@@ -208,9 +208,12 @@ class ComputeEsdReflectingRange(object):
       self._R = FractionOfObservedIntensity(crystal, beam, detector, goniometer,
                                             scan, reflections)
 
-      # Set the starting values to try
-      start = random.random() * pi / 180
-      stop = random.random() * pi / 180
+      # Set the starting values to try 1, 3 degrees seems sensible for
+      # crystal mosaic spread
+      # start = random.random() * pi / 180
+      # stop = random.random() * pi / 180
+      start = 1 * pi / 180
+      stop = 3 * pi / 180
       starting_simplex = [flex.double([start]), flex.double([stop])]
 
       # Initialise the optimizer
