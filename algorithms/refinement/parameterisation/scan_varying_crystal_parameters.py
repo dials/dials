@@ -15,7 +15,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
                GaussianSmoother
 from dials.algorithms.refinement.parameterisation.crystal_parameters \
     import CrystalOrientationMixin, CrystalUnitCellMixin
-from dials.algorithms.refinement.refinement_helpers CrystalOrientationCompose
+from dials.algorithms.refinement.refinement_helpers import CrystalOrientationCompose
 
 class ScanVaryingCrystalOrientationParameterisation(
   ScanVaryingModelParameterisation, CrystalOrientationMixin):
