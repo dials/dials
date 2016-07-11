@@ -399,6 +399,11 @@ class SpotFrame(XrayFrame) :
       step = d_star_sq_max/n_rings
       spacings = flex.double(
         [uctbx.d_star_sq_as_d((i+1)*step) for i in range(0, n_rings)])
+    resolution_text_data = []
+    if self.settings.color_scheme > 1 : # heatmap or invert
+      textcolour = 'white'
+    else:
+      textcolour = 'black'
 
     wavelength = beam.get_wavelength()
     distance = detector[0].get_distance()
@@ -410,6 +415,11 @@ class SpotFrame(XrayFrame) :
     L_pixels = []
     for tt in twotheta: L_mm.append(distance * math.tan(tt))
     for lmm in L_mm: L_pixels.append(lmm/pixel_size)
+
+    from scitbx import matrix
+    beamvec = matrix.col(beam.get_s0())
+    bor1 = beamvec.ortho()
+    bor2 = beamvec.cross(bor1)
 
     if len(detector) > 1:
       beam_pixel_fast, beam_pixel_slow = detector[0].millimeter_to_pixel(  # FIXME assumes all detector elements use the same
@@ -428,16 +438,39 @@ class SpotFrame(XrayFrame) :
       self.pyslip.DeleteLayer(self._ring_layer)
       self._ring_layer = None
     ring_data = []
-    for pxl in L_pixels:
-      # ellipse axes
-      xext = (center[0], center[1] + pxl)
-      yext = (center[0] + pxl, center[1])
-      p = (center, xext, yext)
+    pan = detector[0]
+    for tt, d, pxl in zip(twotheta, spacings, L_pixels):
+      try:
+        cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
+        cb2 = beamvec.rotate_around_origin(axis=bor1, angle=-tt)
+        cb3 = beamvec.rotate_around_origin(axis=bor2, angle=tt)
+        cb4 = beamvec.rotate_around_origin(axis=bor2, angle=-tt)
+        dp1 = pan.get_ray_intersection_px(cb1)
+        dp2 = pan.get_ray_intersection_px(cb2)
+        dp3 = pan.get_ray_intersection_px(cb3)
+        dp4 = pan.get_ray_intersection_px(cb4)
+      except RuntimeError:
+        continue
+      dp1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp1[0], dp1[1])
+      dp2 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp2[0], dp2[1])
+      dp3 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp3[0], dp3[1])
+      dp4 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp4[0], dp4[1])
+      altctr = ((dp1[0] + dp2[0] + dp3[0] + dp4[0])/4, (dp1[1] + dp2[1] + dp3[1] + dp4[1])/4)
+      p = (altctr, dp1, dp3)
       ring_data.append((p, self.pyslip.DefaultPolygonPlacement,
                         self.pyslip.DefaultPolygonWidth, 'red', True,
                         self.pyslip.DefaultPolygonFilled, self.pyslip.DefaultPolygonFillcolour,
                         self.pyslip.DefaultPolygonOffsetX, self.pyslip.DefaultPolygonOffsetY, None))
 
+      if unit_cell is None and space_group is None:
+        for angle in (45, 135, 225, 315):
+          txtvec = cb1.rotate_around_origin(axis=beamvec, angle=angle/180*3.14159)
+          txtpos = pan.get_ray_intersection_px(txtvec)
+          x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(txtpos[0], txtpos[1])
+          resolution_text_data.append(
+            (x, y, "%.2f" %d, {
+              'placement':'cc', 'colour': 'red',
+              'textcolour': textcolour}))
     self._ring_layer = self.pyslip.AddLayer(
       self.pyslip.DrawLightweightEllipticalSpline,
       ring_data,
@@ -457,21 +490,6 @@ class SpotFrame(XrayFrame) :
       x_rot = x_centre + math.cos(angle) * (x - x_centre) - math.sin(angle) * (y - y_centre)
       y_rot = y_centre + math.sin(angle) * (x - x_centre) - math.cos(angle) * (y - y_centre)
       return (x_rot, y_rot)
-
-    resolution_text_data = []
-    if self.settings.color_scheme > 1 : # heatmap or invert
-      textcolour = 'white'
-    else:
-      textcolour = 'black'
-    if unit_cell is None and space_group is None:
-      for d, pxl in zip(spacings, L_pixels):
-        for angle in (45, 135, 225, 315):
-          x, y = rotate_around_point(
-            (center[0], center[1]+pxl), center, angle, deg=True)
-          resolution_text_data.append(
-            (x, y, "%.2f" %d, {
-              'placement':'cc', 'colour': 'red',
-              'textcolour': textcolour}))
 
     # Remove the old resolution text layer, and draw a new one.
     if hasattr(self, "_resolution_text_layer") and self._resolution_text_layer is not None:
