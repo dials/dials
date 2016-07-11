@@ -32,9 +32,6 @@ from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters \
 from dials.algorithms.refinement.parameterisation.scan_varying_detector_parameters \
     import ScanVaryingDetectorParameterisationSinglePanel
 
-# Import helper function
-from dials.algorithms.refinement.refinement_helpers import random_param_shift
-
 class Test(object):
 
   def __init__(self, fast_pred_param=False):

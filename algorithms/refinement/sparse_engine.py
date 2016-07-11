@@ -10,7 +10,7 @@ from __future__ import division
 import libtbx
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
-from logging import info, debug
+from logging import info
 from engine import DisableMPmixin
 
 try:

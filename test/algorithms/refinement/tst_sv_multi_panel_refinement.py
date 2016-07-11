@@ -17,7 +17,6 @@ Test scan-varying refinement of a multiple panel detector.
 # python imports
 from __future__ import division
 import os
-import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory

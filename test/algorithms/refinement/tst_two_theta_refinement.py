@@ -22,8 +22,8 @@ from libtbx.test_utils import approx_equal
 from math import pi
 from copy import deepcopy
 
-from dials.algorithms.refinement.two_theta_refiner import (
-  TwoThetaReflectionManager, TwoThetaTarget, TwoThetaExperimentsPredictor,
+from dials.algorithms.refinement.two_theta_refiner import ( TwoThetaTarget,
+  TwoThetaReflectionManager, TwoThetaExperimentsPredictor,
   TwoThetaPredictionParameterisation)
 
 def generate_reflections(experiments):

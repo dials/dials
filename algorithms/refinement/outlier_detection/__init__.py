@@ -11,7 +11,9 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from outlier_base import CentroidOutlier, CentroidOutlierFactory # import dependency
-from outlier_base import phil_str, phil_scope # import dependency
+from outlier_base import CentroidOutlier # import dependency
+from outlier_base import CentroidOutlierFactory # import dependency
+from outlier_base import phil_str # import dependency
+from outlier_base import phil_scope # import dependency
 from mcd import MCD # import dependency
 from tukey import Tukey # import dependency
