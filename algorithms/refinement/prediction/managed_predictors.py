@@ -19,7 +19,6 @@
 from __future__ import division
 
 from math import pi
-from scitbx import matrix
 from dials.algorithms.spot_prediction import ScanStaticRayPredictor
 
 from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor as sc

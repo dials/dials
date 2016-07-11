@@ -12,7 +12,6 @@
 
 from __future__ import division
 from dials.array_family import flex
-from scitbx.math import angle_derivative_wrt_vectors
 from scitbx import matrix
 from math import sqrt, pi
 from logging import info

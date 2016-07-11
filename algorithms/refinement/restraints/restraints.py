@@ -13,8 +13,7 @@
 from __future__ import division
 from scitbx.array_family import flex
 from scitbx import sparse
-from math import pi, sin, cos, sqrt
-from scitbx.math import angle_derivative_wrt_vectors
+from math import pi
 from dials_refinement_helpers_ext import CalculateCellGradients
 from logging import debug
 DEG2RAD = pi/180.0

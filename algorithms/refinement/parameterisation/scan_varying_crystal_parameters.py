@@ -8,17 +8,14 @@
 #
 
 from __future__ import division
-from logging import debug
 from scitbx import matrix
-from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import ScanVaryingParameterSet, \
                ScanVaryingModelParameterisation, \
                GaussianSmoother
 from dials.algorithms.refinement.parameterisation.crystal_parameters \
     import CrystalOrientationMixin, CrystalUnitCellMixin
-from dials.algorithms.refinement.refinement_helpers \
-    import dR_from_axis_and_angle, CrystalOrientationCompose
+from dials.algorithms.refinement.refinement_helpers CrystalOrientationCompose
 
 class ScanVaryingCrystalOrientationParameterisation(
   ScanVaryingModelParameterisation, CrystalOrientationMixin):

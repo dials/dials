@@ -11,12 +11,9 @@
 
 from __future__ import division
 from logging import debug
-from math import sqrt, pi, acos
 from model_parameters import Parameter, ModelParameterisation
 from dxtbx.model.crystal import crystal_model # implicit import
 from scitbx import matrix
-from dials.algorithms.refinement.refinement_helpers \
-    import dR_from_axis_and_angle
 from rstbx.symmetry.constraints.parameter_reduction \
     import symmetrize_reduce_enlarge
 from dials.algorithms.refinement.refinement_helpers \

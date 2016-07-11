@@ -10,7 +10,7 @@
 """Auxiliary functions for the refinement package"""
 
 from __future__ import division
-from math import sin, cos, acos
+from math import sin, cos
 from scitbx import matrix
 from scitbx.array_family import flex #import dependency
 from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp

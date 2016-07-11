@@ -11,4 +11,4 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from restraints_parameterisation import RestraintsParameterisation
+from restraints_parameterisation import RestraintsParameterisation # import dependency

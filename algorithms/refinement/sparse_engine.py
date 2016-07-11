@@ -11,8 +11,6 @@ import libtbx
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
 from logging import info, debug
-from engine import TARGET_ACHIEVED,RMSD_CONVERGED,STEP_TOO_SMALL
-from engine import MAX_ITERATIONS,MAX_TRIAL_ITERATIONS,DOF_TOO_LOW
 from engine import DisableMPmixin
 
 try:
