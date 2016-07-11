@@ -205,7 +205,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         else:
           dmat  = self._get_state_from_parameterisation(dp, frame)
         if dmat is None: dmat = exp.detector[panel].get_d_matrix()
-        Dmat = exp.detector[panel].get_D_matrix() # actually need D, but need
+        Dmat = exp.detector[pnl].get_D_matrix() # actually need D, but need
         # the above to compose at the right frame
 
         # set states and their derivatives into reflections
@@ -228,7 +228,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
               colname = "ds0_dp{0}".format(j)
               row[colname] = ds0
           if dp is not None and self._varying_detectors:
-            if dp.is_multi_state:
+            if dp.is_multi_state():
               dds = dp.get_ds_dp(multi_state_elt=pnl)
             else:
               dds = dp.get_ds_dp()
