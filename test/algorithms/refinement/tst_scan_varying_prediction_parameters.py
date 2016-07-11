@@ -10,222 +10,216 @@
 #
 
 from __future__ import division
-
-#### Python and general cctbx imports
-
 import sys
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 from libtbx.phil import parse
 from math import pi
 from scitbx.array_family import flex
-
-##### Import model builders
-
 from setup_geometry import Extract
 from dxtbx.model.scan import scan_factory
-
-##### Imports for reflection prediction
-
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor, \
   ExperimentsPredictor
-
-#### Import model parameterisations
-
 from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import \
     ScanVaryingPredictionParameterisation, ScanVaryingPredictionParameterisationFast
-from dials.algorithms.refinement.parameterisation.detector_parameters import \
-    DetectorParameterisationSinglePanel
-from dials.algorithms.refinement.parameterisation.beam_parameters import \
-    BeamParameterisation
-from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters import \
-    ScanVaryingCrystalOrientationParameterisation, \
-    ScanVaryingCrystalUnitCellParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters \
+    import ScanVaryingCrystalOrientationParameterisation, \
+           ScanVaryingCrystalUnitCellParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters \
+    import ScanVaryingBeamParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_detector_parameters \
+    import ScanVaryingDetectorParameterisationSinglePanel
 
-#### Import helper functions
-
+# Import helper function
 from dials.algorithms.refinement.refinement_helpers import random_param_shift
 
-from time import time
-start_time = time()
+class Test(object):
 
-#### Create models and parameterisations
+  def __init__(self, fast_pred_param=False):
+    if fast_pred_param:
+      self._pred_param_type = ScanVaryingPredictionParameterisationFast
+    else:
+      self._pred_param_type = ScanVaryingPredictionParameterisation
 
-args = sys.argv[1:]
-overrides = """geometry.parameters.crystal.a.length.range = 10 50
+  def create_models(self, cmdline_overrides=None):
+
+    if cmdline_overrides is None:
+      cmdline_overrides = []
+    overrides = """geometry.parameters.crystal.a.length.range = 10 50
 geometry.parameters.crystal.b.length.range = 10 50
 geometry.parameters.crystal.c.length.range = 10 50"""
 
-master_phil = parse("""
+    master_phil = parse("""
     include scope dials.test.algorithms.refinement.geometry_phil
     """, process_includes=True)
 
-models = Extract(master_phil, overrides, cmdline_args = args)
+    # Extract models
+    models = Extract(master_phil, overrides, cmdline_args = cmdline_overrides)
+    self.detector = models.detector
+    self.goniometer = models.goniometer
+    self.crystal = models.crystal
+    self.beam = models.beam
 
-mydetector = models.detector
-mygonio = models.goniometer
-mycrystal = models.crystal
-mybeam = models.beam
+    # Make a scan of 1-360 * 0.5 deg images
+    sf = scan_factory()
+    self.scan = sf.make_scan((1,360), 0.5, (0, 0.5), range(360))
 
-# Make a scan of 1-360 * 0.5 deg images
-sf = scan_factory()
-myscan = sf.make_scan((1,360), 0.5, (0, 0.5), range(360))
+    # Generate an ExperimentList
+    self.experiments = ExperimentList()
+    self.experiments.append(Experiment(
+          beam=self.beam, detector=self.detector, goniometer=self.goniometer,
+          scan=self.scan, crystal=self.crystal, imageset=None))
 
-# Create parameterisations of these models, with 5 samples for the
-# scan-varying crystal parameterisations
+    # Create a reflection predictor for the experiments
+    self.ref_predictor = ExperimentsPredictor(self.experiments)
 
-det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisation(mybeam, mygonio)
-xlo_param = ScanVaryingCrystalOrientationParameterisation(
-        mycrystal, myscan.get_array_range(), 5)
-xluc_param = ScanVaryingCrystalUnitCellParameterisation(
-        mycrystal, myscan.get_array_range(), 5)
+    # Create scan-varying parameterisations of these models, with 5 samples
+    self.det_param = ScanVaryingDetectorParameterisationSinglePanel(
+            self.detector, self.scan.get_array_range(), 5)
+    self.s0_param = ScanVaryingBeamParameterisation(
+            self.beam, self.scan.get_array_range(), 5, self.goniometer)
+    self.xlo_param = ScanVaryingCrystalOrientationParameterisation(
+            self.crystal, self.scan.get_array_range(), 5)
+    self.xluc_param = ScanVaryingCrystalUnitCellParameterisation(
+            self.crystal, self.scan.get_array_range(), 5)
+    return
 
-#### Cause the crystal U and B to vary over the scan
+  def generate_reflections(self):
+    sweep_range = self.scan.get_oscillation_range(deg=False)
+    resolution = 2.0
+    index_generator = IndexGenerator(self.crystal.get_unit_cell(),
+                          space_group(space_group_symbols(1).hall()).type(),
+                          resolution)
+    indices = index_generator.to_array()
 
-# Vary orientation angles by ~1.0 mrad each checkpoint
-p_vals = xlo_param.get_param_vals()
-sigmas = [1.0] * len(p_vals)
-new_vals = random_param_shift(p_vals, sigmas)
-xlo_param.set_param_vals(new_vals)
+    # Predict rays within the sweep range
+    ray_predictor = ScansRayPredictor(self.experiments, sweep_range)
+    obs_refs = ray_predictor(indices)
 
-# Vary unit cell parameters, on order of 1% of the initial metrical
-# matrix parameters
-p_vals = xluc_param.get_param_vals()
-sigmas = [0.01 * p for p in p_vals]
-new_vals = random_param_shift(p_vals, sigmas)
-xluc_param.set_param_vals(new_vals)
+    # Take only those rays that intersect the detector
+    intersects = ray_intersection(self.detector, obs_refs)
+    obs_refs = obs_refs.select(intersects)
 
-# Generate an ExperimentList
-experiments = ExperimentList()
-experiments.append(Experiment(
-      beam=mybeam, detector=mydetector, goniometer=mygonio, scan=myscan,
-      crystal=mycrystal, imageset=None))
-sweep_range = myscan.get_oscillation_range(deg=False)
+    # Re-predict using the Experiments predictor for all these reflections. The
+    # result is the same, but we gain also the flags and xyzcal.px columns
+    obs_refs['id'] = flex.int(len(obs_refs), 0)
+    obs_refs = self.ref_predictor(obs_refs)
 
-#### Unit tests
+    # Set 'observed' centroids from the predicted ones
+    obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
 
-# Build a prediction equation parameterisation
-#pred_param = ScanVaryingPredictionParameterisation(experiments, [det_param],
-#                                        [s0_param], [xlo_param], [xluc_param])
-# Use the 'fast' version as this is the default and is expected to have larger
-# errors in the analytical gradients
-pred_param = ScanVaryingPredictionParameterisationFast(experiments, [det_param],
-                                        [s0_param], [xlo_param], [xluc_param])
+    # Invent some variances for the centroid positions of the simulated data
+    im_width = 0.1 * pi / 180.
+    px_size = self.detector[0].get_pixel_size()
+    var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
+    var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
+    var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
+    obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
-# Generate some reflections
-resolution = 2.0
-index_generator = IndexGenerator(mycrystal.get_unit_cell(),
-                      space_group(space_group_symbols(1).hall()).type(),
-                      resolution)
-indices = index_generator.to_array()
+    # set the flex random seed to an 'uninteresting' number
+    flex.set_random_seed(12407)
 
-# Predict rays within the sweep range
-ray_predictor = ScansRayPredictor(experiments, sweep_range)
-obs_refs = ray_predictor(indices)
+    # take 5 random reflections for speed
+    reflections = obs_refs.select(flex.random_selection(len(obs_refs), 5))
 
-# Take only those rays that intersect the detector
-intersects = ray_intersection(mydetector, obs_refs)
-obs_refs = obs_refs.select(intersects)
+    # use a BlockCalculator to calculate the blocks per image
+    from dials.algorithms.refinement.reflection_manager import BlockCalculator
+    block_calculator = BlockCalculator(self.experiments, reflections)
+    reflections = block_calculator.per_image()
 
-# Make a reflection predictor and re-predict for all these reflections. The
-# result is the same, but we gain also the flags and xyzcal.px columns
-ref_predictor = ExperimentsPredictor(experiments)
-obs_refs['id'] = flex.int(len(obs_refs), 0)
-obs_refs = ref_predictor(obs_refs)
+    return reflections
 
-# Set 'observed' centroids from the predicted ones
-obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
+  def __call__(self, cmdline_overrides):
 
-# Invent some variances for the centroid positions of the simulated data
-im_width = 0.1 * pi / 180.
-px_size = mydetector[0].get_pixel_size()
-var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
-var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
-var_phi = flex.double(len(obs_refs), (im_width / 2.)**2)
-obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
+    self.create_models(cmdline_overrides)
+    reflections = self.generate_reflections()
 
-# set the flex random seed to an 'uninteresting' number
-flex.set_random_seed(12407)
+    # use a ReflectionManager to exclude reflections too close to the spindle,
+    # plus set the frame numbers
+    from dials.algorithms.refinement.reflection_manager import ReflectionManager
+    refman = ReflectionManager(reflections, self.experiments,
+      outlier_detector=None)
 
-# take 5 random reflections for speed
-reflections = obs_refs.select(flex.random_selection(len(obs_refs), 5))
+    # create prediction parameterisation of the requested type
+    pred_param = self._pred_param_type(self.experiments, [self.det_param],
+                          [self.s0_param], [self.xlo_param], [self.xluc_param])
 
-# use a BlockCalculator to calculate the blocks per image
-from dials.algorithms.refinement.reflection_manager import BlockCalculator
-block_calculator = BlockCalculator(experiments, reflections)
-reflections = block_calculator.per_image()
+    # make a target to ensure reflections are predicted and refman is finalised
+    from dials.algorithms.refinement.target import \
+      LeastSquaresPositionalResidualWithRmsdCutoff
+    target = LeastSquaresPositionalResidualWithRmsdCutoff(self.experiments,
+        self.ref_predictor, refman, pred_param, restraints_parameterisation=None)
 
-# use a ReflectionManager to exclude reflections too close to the spindle,
-# plus set the frame numbers
-from dials.algorithms.refinement.reflection_manager import ReflectionManager
-refman = ReflectionManager(reflections, experiments,
-  outlier_detector=None)
+    # keep only those reflections that pass inclusion criteria and have predictions
+    reflections = refman.get_matches()
 
-# make a target to ensure reflections are predicted and refman is finalised
-from dials.algorithms.refinement.target import \
-  LeastSquaresPositionalResidualWithRmsdCutoff
-target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-    ref_predictor, refman, pred_param, restraints_parameterisation=None)
+    # get analytical gradients
+    pred_param.compose(reflections)
+    an_grads = pred_param.get_gradients(reflections)
 
-# keep only those reflections that pass inclusion criteria and have predictions
-reflections = refman.get_matches()
+    # get finite difference gradients
+    p_vals = pred_param.get_param_vals()
+    p_names = pred_param.get_param_names()
+    deltas = [1.e-7] * len(p_vals)
 
-# get analytical gradients
-pred_param.compose(reflections)
-an_grads = pred_param.get_gradients(reflections)
+    for i in range(len(deltas)):
 
-# get finite difference gradients
-p_vals = pred_param.get_param_vals()
-deltas = [1.e-7] * len(p_vals)
+      val = p_vals[i]
 
-for i in range(len(deltas)):
+      p_vals[i] -= deltas[i] / 2.
+      pred_param.set_param_vals(p_vals)
+      pred_param.compose(reflections)
 
-  val = p_vals[i]
+      self.ref_predictor(reflections)
 
-  p_vals[i] -= deltas[i] / 2.
-  pred_param.set_param_vals(p_vals)
-  pred_param.compose(reflections)
+      rev_state = reflections['xyzcal.mm'].deep_copy()
 
-  ref_predictor(reflections)
+      p_vals[i] += deltas[i]
+      pred_param.set_param_vals(p_vals)
+      pred_param.compose(reflections)
 
-  rev_state = reflections['xyzcal.mm'].deep_copy()
+      self.ref_predictor(reflections)
 
-  p_vals[i] += deltas[i]
-  pred_param.set_param_vals(p_vals)
-  pred_param.compose(reflections)
+      fwd_state = reflections['xyzcal.mm'].deep_copy()
+      p_vals[i] = val
 
-  ref_predictor(reflections)
+      fd = (fwd_state - rev_state)
+      x_grads, y_grads, phi_grads = fd.parts()
+      x_grads /= deltas[i]
+      y_grads /= deltas[i]
+      phi_grads /= deltas[i]
 
-  fwd_state = reflections['xyzcal.mm'].deep_copy()
-  p_vals[i] = val
+      try:
+        for n, (a,b) in enumerate(zip(x_grads, an_grads[i]["dX_dp"])):
+          assert approx_equal(a, b, eps=1.e-6)
+        for n, (a,b) in enumerate(zip(y_grads, an_grads[i]["dY_dp"])):
+          assert approx_equal(a, b, eps=1.e-6)
+        for n, (a,b) in enumerate(zip(phi_grads, an_grads[i]["dphi_dp"])):
+          assert approx_equal(a, b, eps=1.e-6)
+      except AssertionError:
+        print "Failure for {0}".format(p_names[i])
 
-  fd = (fwd_state - rev_state)
-  x_grads, y_grads, phi_grads = fd.parts()
-  x_grads /= deltas[i]
-  y_grads /= deltas[i]
-  phi_grads /= deltas[i]
+    # return to the initial state
+    pred_param.set_param_vals(p_vals)
+    pred_param.compose(reflections)
+    print "OK"
 
-  for n, (a,b) in enumerate(zip(x_grads, an_grads[i]["dX_dp"])):
-    assert approx_equal(a, b, eps=5.e-6)
-  for n, (a,b) in enumerate(zip(y_grads, an_grads[i]["dY_dp"])):
-    assert approx_equal(a, b, eps=5.e-6)
-  for n, (a,b) in enumerate(zip(phi_grads, an_grads[i]["dphi_dp"])):
-    assert approx_equal(a, b, eps=5.e-6)
+    return
 
-  # compare with analytical calculation
-  #assert approx_equal(x_grads, an_grads[0][i], eps=5.e-6)
-  #assert approx_equal(y_grads, an_grads[1][i], eps=5.e-6)
-  #assert approx_equal(phi_grads, an_grads[2][i], eps=5.e-6)
+if __name__ == "__main__":
 
-# return to the initial state
-pred_param.set_param_vals(p_vals)
-pred_param.compose(reflections)
+  from time import time
+  start_time = time()
 
-finish_time = time()
-print "Time Taken: ",finish_time - start_time
+  cmdline_overrides = sys.argv[1:]
 
-# if we got this far,
-print "OK"
+  test1 = Test()
+  test1(cmdline_overrides)
+
+  test2 = Test(fast_pred_param=True)
+  test2(cmdline_overrides)
+
+  finish_time = time()
+  print "Time Taken: ",finish_time - start_time
