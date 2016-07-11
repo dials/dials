@@ -12,8 +12,6 @@
 from __future__ import division
 
 #### Python and general cctbx imports
-
-import sys
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.phil import parse
 from scitbx.math import five_number_summary

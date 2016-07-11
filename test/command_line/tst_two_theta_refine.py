@@ -18,12 +18,10 @@ data and comparing with expected output.
 # python imports
 from __future__ import division
 import os
-import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory, approx_equal
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-from dials.array_family import flex
 
 def test1():
 

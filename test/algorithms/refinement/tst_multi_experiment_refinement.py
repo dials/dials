@@ -23,9 +23,8 @@ from scitbx.array_family import flex
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
-# Get modules to build models and minimiser using PHIL
+# Get module to build models using PHIL
 import setup_geometry
-import setup_minimiser
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
@@ -58,8 +57,6 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 # Imports for the target function
 from dials.algorithms.refinement.target import \
     LeastSquaresPositionalResidualWithRmsdCutoff # implicit import
-
-from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
 #############################
 # Setup experimental models #

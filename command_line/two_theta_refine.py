@@ -336,7 +336,6 @@ class Script(object):
     from dials.algorithms.refinement.two_theta_refiner import \
       TwoThetaReflectionManager, TwoThetaTarget, \
       TwoThetaPredictionParameterisation
-    from dials.util.options import flatten_reflections, flatten_experiments
 
     start_time = time()
 

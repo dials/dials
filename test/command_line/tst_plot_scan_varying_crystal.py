@@ -1,7 +1,6 @@
 from __future__ import division
 from dials.array_family import flex # import dependency
 
-
 class Test(object):
 
   def __init__(self):
@@ -23,9 +22,7 @@ class Test(object):
       "sv_refined_experiments.json")
 
   def run(self):
-    from os.path import join, exists
     from libtbx import easy_run
-    import os
 
     # Call dials.integrate
     easy_run.fully_buffered([

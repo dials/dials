@@ -18,7 +18,6 @@ with 300 crystals.
 # python imports
 from __future__ import division
 import os
-import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
@@ -88,7 +87,7 @@ def run():
     print "Skipping tests in " + __file__ + " as dials_regression not present"
     return
   try:
-    from scitbx.examples.bevington import non_linear_ls_eigen_wrapper
+    from scitbx.examples.bevington import non_linear_ls_eigen_wrapper # import dependency
   except ImportError:
     print "Skipping tests in " + __file__ + " as SparseLevMar engine not available"
     return

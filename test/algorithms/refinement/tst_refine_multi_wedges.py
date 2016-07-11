@@ -17,13 +17,11 @@ Test refinement of multiple narrow sweeps.
 # python imports
 from __future__ import division
 import os
-import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
 from scitbx import matrix
 from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-from dials.array_family import flex
 
 phil_input = """experiments={0}/data/sweep_002/experiments.json \
   reflections={0}/data/sweep_002/reflections.pickle \

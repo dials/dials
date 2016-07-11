@@ -21,7 +21,6 @@ import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import approx_equal
 from math import pi
 from copy import deepcopy
-from logging import info, debug, warning
 
 from dials.algorithms.refinement.two_theta_refiner import (
   TwoThetaReflectionManager, TwoThetaTarget, TwoThetaExperimentsPredictor,

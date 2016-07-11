@@ -26,19 +26,14 @@ from libtbx.test_utils import approx_equal
 # Import for surgery on reflection_tables
 from dials.array_family import flex
 
-# Get modules to build models and minimiser using PHIL
+# Get module to build models using PHIL
 import setup_geometry
-import setup_minimiser
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 
-# Model parameterisations
-from dials.algorithms.refinement.parameterisation.detector_parameters import \
-    DetectorParameterisationSinglePanel
-from dials.algorithms.refinement.parameterisation.beam_parameters import \
-    BeamParameterisation
+# Crystal parameterisations
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
