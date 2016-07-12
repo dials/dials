@@ -282,10 +282,11 @@ refinement
               "of absolute values to use as the cutoffs"
       .type = choice
 
-    bin_size_fraction = 0.1
-      .help = "Cut off in the natural discrete units of positional data, viz.,"
-              "(pixel width, pixel height, image thickness in phi) to use to"
-              "determine when the RMSD target is achieved. Only used if"
+    bin_size_fraction = 0.0
+      .help = "Set this to a fractional value, say 0.2, to make a cut off in"
+              "the natural discrete units of positional data, viz.,"
+              "(pixel width, pixel height, image thickness in phi). This would"
+              "then determine when the RMSD target is achieved. Only used if"
               "rmsd_cutoff = fraction_of_bin_size."
       .type = float(value_min=0.)
 
