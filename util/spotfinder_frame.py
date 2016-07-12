@@ -416,47 +416,92 @@ class SpotFrame(XrayFrame) :
     for tt in twotheta: L_mm.append(distance * math.tan(tt))
     for lmm in L_mm: L_pixels.append(lmm/pixel_size)
 
-    from scitbx import matrix
+    # Get beam vector and two orthogonal vectors
     beamvec = matrix.col(beam.get_s0())
     bor1 = beamvec.ortho()
     bor2 = beamvec.cross(bor1)
 
-    if len(detector) > 1:
-      beam_pixel_fast, beam_pixel_slow = detector[0].millimeter_to_pixel(  # FIXME assumes all detector elements use the same
-        detector.hierarchy().get_beam_centre(beam.get_s0()))               # millimeter-to-pixel convention
-    else:
-      beam_pixel_fast, beam_pixel_slow = detector[0].millimeter_to_pixel(
-        detector[0].get_beam_centre(beam.get_s0()))
-
-    self._center = [0,0]
-    center = self.pyslip.tiles.picture_fast_slow_to_map_relative(
-      beam_pixel_fast + self._center[0], beam_pixel_slow + self._center[1])
-
-    # XXX Transparency?
-    # Remove the old ring layer, and draw a new one.
-    if hasattr(self, "_ring_layer") and self._ring_layer is not None:
-      self.pyslip.DeleteLayer(self._ring_layer)
-      self._ring_layer = None
     ring_data = []
+
+    # FIXME Currently assuming that all panels are in same plane
     pan = detector[0]
     for tt, d, pxl in zip(twotheta, spacings, L_pixels):
       try:
+        # Find 4 rays for given d spacing / two theta angle
         cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
         cb2 = beamvec.rotate_around_origin(axis=bor1, angle=-tt)
         cb3 = beamvec.rotate_around_origin(axis=bor2, angle=tt)
         cb4 = beamvec.rotate_around_origin(axis=bor2, angle=-tt)
+
+        # Find intersection points with panel plane
         dp1 = pan.get_ray_intersection_px(cb1)
         dp2 = pan.get_ray_intersection_px(cb2)
         dp3 = pan.get_ray_intersection_px(cb3)
         dp4 = pan.get_ray_intersection_px(cb4)
+
+        # If all four points are in positive beam direction, draw an ellipse.
+        # Otherwise it's a hyperbola (not implemented yet)
       except RuntimeError:
         continue
+
+      # find ellipse centre, the only point equidistant to each axial pair
+      xs1 = dp1[0] + dp2[0]
+      xs2 = dp3[0] + dp4[0]
+      ys1 = dp1[1] + dp2[1]
+      ys2 = dp3[1] + dp4[1]
+      xd1 = dp2[0] - dp1[0]
+      xd2 = dp4[0] - dp3[0]
+      yd1 = dp1[1] - dp2[1]
+      yd2 = dp3[1] - dp4[1]
+      if abs(xd1) < 0.00001:
+        cy = ys1 / 2
+      elif abs(xd2) < 0.00001:
+        cy = ys2 / 2
+      else:
+        t2 = (xs1 - xs2 + (ys2 - ys1) * yd1 / xd1) / (yd2 - xd2 * yd1 / xd1)
+        t1 = (ys2  + t2 * xd2 - ys1) / xd1
+        cy = (ys1 + t1 * xd1) / 2
+        assert abs(cy - (ys2 + t2 * xd2) / 2) < 0.1
+      if abs(yd1) < 0.00001:
+        cx = xs1 / 2
+      elif abs(yd2) < 0.00001:
+        cx = xs2 / 2
+      else:
+        t2 = (xs1 - xs2 + (ys2 - ys1) * yd1 / xd1) / (yd2 - xd2 * yd1 / xd1)
+        t1 = (ys2  + t2 * xd2 - ys1) / xd1
+        cx = (xs1 + t1 * yd1) / 2
+        assert abs(cx - (xs2 + t2 * yd2) / 2) < 0.1
+
+      # translate ellipse centre and four points to map coordinates
+      centre = self.pyslip.tiles.picture_fast_slow_to_map_relative(cx, cy)
       dp1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp1[0], dp1[1])
       dp2 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp2[0], dp2[1])
       dp3 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp3[0], dp3[1])
       dp4 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp4[0], dp4[1])
-      altctr = ((dp1[0] + dp2[0] + dp3[0] + dp4[0])/4, (dp1[1] + dp2[1] + dp3[1] + dp4[1])/4)
-      p = (altctr, dp1, dp3)
+
+      # Determine eccentricity, cf. https://en.wikipedia.org/wiki/Eccentricity_(mathematics)
+      ecc = math.sin(matrix.col(pan.get_normal()).angle(beamvec)) \
+            / math.sin(math.pi/2 - tt)
+
+      # Assuming that one detector axis is aligned with a major axis of
+      # the ellipse, obtain the semimajor axis length a to calculate the
+      # semiminor axis length b using the eccentricity ecc.
+      ldp1 = math.hypot(dp1[0] - centre[0], dp1[1] - centre[1])
+      ldp3 = math.hypot(dp3[0] - centre[0], dp3[1] - centre[1])
+      if ldp1 >= ldp3:
+        major = dp1
+        a = ldp1
+      else:
+        major = dp3
+        a = ldp3
+      b = math.sqrt(a * a * (1 - (ecc * ecc)))
+      # since e = f / a and f = sqrt(a^2 - b^2), cf. https://en.wikipedia.org/wiki/Ellipse
+
+      # calculate co-vertex
+      minor = matrix.col([-centre[1] - dp1[1], centre[0] - dp1[0]]).normalize() * b
+      minor = (minor[0] + centre[0], minor[1] + centre[1])
+
+      p = (centre, major, minor)
       ring_data.append((p, self.pyslip.DefaultPolygonPlacement,
                         self.pyslip.DefaultPolygonWidth, 'red', True,
                         self.pyslip.DefaultPolygonFilled, self.pyslip.DefaultPolygonFillcolour,
@@ -471,39 +516,37 @@ class SpotFrame(XrayFrame) :
             (x, y, "%.2f" %d, {
               'placement':'cc', 'colour': 'red',
               'textcolour': textcolour}))
-    self._ring_layer = self.pyslip.AddLayer(
-      self.pyslip.DrawLightweightEllipticalSpline,
-      ring_data,
-      True,
-      True,
-      show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-      selectable=False,
-      type=self.pyslip.TypeEllipse,
-      name="<ring_layer>")
 
-    def rotate_around_point(vector, point, angle, deg=False):
-      # http://benn.org/2007/01/06/rotating-coordinates-around-a-centre/
-      x, y = vector
-      x_centre, y_centre = point
-      if deg:
-        angle = math.pi * angle / 180
-      x_rot = x_centre + math.cos(angle) * (x - x_centre) - math.sin(angle) * (y - y_centre)
-      y_rot = y_centre + math.sin(angle) * (x - x_centre) - math.cos(angle) * (y - y_centre)
-      return (x_rot, y_rot)
+    # XXX Transparency?
+    # Remove the old ring layer, and draw a new one.
+    if hasattr(self, "_ring_layer") and self._ring_layer is not None:
+      self.pyslip.DeleteLayer(self._ring_layer)
+      self._ring_layer = None
+    if ring_data:
+      self._ring_layer = self.pyslip.AddLayer(
+        self.pyslip.DrawLightweightEllipticalSpline,
+        ring_data,
+        True,
+        True,
+        show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+        selectable=False,
+        type=self.pyslip.TypeEllipse,
+        name="<ring_layer>")
 
     # Remove the old resolution text layer, and draw a new one.
     if hasattr(self, "_resolution_text_layer") and self._resolution_text_layer is not None:
       self.pyslip.DeleteLayer(self._resolution_text_layer)
       self._resolution_text_layer = None
-    self._resolution_text_layer = self.pyslip.AddTextLayer(
-      resolution_text_data,
-      map_rel=True,
-      visible=True,
-      show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-      selectable=False,
-      name="<resolution_text_layer>",
-      colour='red',
-      fontsize=15)
+    if resolution_text_data:
+      self._resolution_text_layer = self.pyslip.AddTextLayer(
+        resolution_text_data,
+        map_rel=True,
+        visible=True,
+        show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+        selectable=False,
+        name="<resolution_text_layer>",
+        colour='red',
+        fontsize=15)
 
   def sum_images(self):
     if self.params.sum_images > 1:
