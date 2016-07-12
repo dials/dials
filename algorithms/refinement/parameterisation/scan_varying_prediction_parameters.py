@@ -116,7 +116,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       state = parameterisation.get_state(multi_state_elt = multi_state_elt)
     return state
 
-  def _prepare_for_compose(self, reflections):
+  def _prepare_for_compose(self, reflections, skip_derivatives=False):
     """Add columns to the reflection table to hold the varying state matrices
     or vectors for the experimental models, if required. Also add columns for
     the derivatives of states that are scan-varying"""
@@ -136,28 +136,29 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     # set columns in the reflection table to store the derivative of state for
     # each reflection, if needed
-    null9 = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
-    null3 = (0., 0., 0.)
-    if self._varying_xl_orientations and "dU_dp0" not in reflections:
-      max_free_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
-      for i in range(max_free_params):
-        colname = "dU_dp{0}".format(i)
-        reflections[colname] = flex.mat3_double(nref, null9)
-    if self._varying_xl_unit_cells and "dB_dp0" not in reflections:
-      max_free_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
-      for i in range(max_free_params):
-        colname = "dB_dp{0}".format(i)
-        reflections[colname] = flex.mat3_double(nref, null9)
-    if self._varying_detectors and "dd_dp0" not in reflections:
-      max_free_params = max([e.num_free() for e in self._detector_parameterisations])
-      for i in range(max_free_params):
-        colname = "dd_dp{0}".format(i)
-        reflections[colname] = flex.mat3_double(nref, null9)
-    if self._varying_beams and "ds0_dp0" not in reflections:
-      max_free_params = max([e.num_free() for e in self._beam_parameterisations])
-      for i in range(max_free_params):
-        colname = "ds0_dp{0}".format(i)
-        reflections[colname] = flex.vec3_double(nref, null3)
+    if not skip_derivatives:
+      null9 = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
+      null3 = (0., 0., 0.)
+      if self._varying_xl_orientations and "dU_dp0" not in reflections:
+        max_free_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
+        for i in range(max_free_params):
+          colname = "dU_dp{0}".format(i)
+          reflections[colname] = flex.mat3_double(nref, null9)
+      if self._varying_xl_unit_cells and "dB_dp0" not in reflections:
+        max_free_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
+        for i in range(max_free_params):
+          colname = "dB_dp{0}".format(i)
+          reflections[colname] = flex.mat3_double(nref, null9)
+      if self._varying_detectors and "dd_dp0" not in reflections:
+        max_free_params = max([e.num_free() for e in self._detector_parameterisations])
+        for i in range(max_free_params):
+          colname = "dd_dp{0}".format(i)
+          reflections[colname] = flex.mat3_double(nref, null9)
+      if self._varying_beams and "ds0_dp0" not in reflections:
+        max_free_params = max([e.num_free() for e in self._beam_parameterisations])
+        for i in range(max_free_params):
+          colname = "ds0_dp{0}".format(i)
+          reflections[colname] = flex.vec3_double(nref, null3)
 
     return
 
@@ -166,7 +167,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     number, for each experiment, for all reflections. Put the U, B and UB
     matrices in the reflection table, and cache the derivatives if requested"""
 
-    self._prepare_for_compose(reflections)
+    self._prepare_for_compose(reflections, skip_derivatives)
 
     for iexp, exp in enumerate(self._experiments):
 
@@ -402,7 +403,7 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
     number, for the specified experiment, for each image. Put the U, B and
     UB matrices in the reflection table, and cache the derivatives."""
 
-    self._prepare_for_compose(reflections)
+    self._prepare_for_compose(reflections, skip_derivatives)
 
     for iexp, exp in enumerate(self._experiments):
 
