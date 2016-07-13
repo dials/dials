@@ -9,14 +9,15 @@ from dials.array_family import flex
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
 class LoadImageEvent(wx.PyCommandEvent):
-    """Event to signal that an image should be loaded"""
-    def __init__(self, etype, eid, filename=None):
-        """Creates the event object"""
-        wx.PyCommandEvent.__init__(self, etype, eid)
-        self._filename = filename
+  """Event to signal that an image should be loaded"""
+  def __init__(self, etype, eid, filename=None):
+    """Creates the event object"""
+    wx.PyCommandEvent.__init__(self, etype, eid)
+    self._filename = filename
 
-    def get_filename(self):
-        return self._filename
+  def get_filename(self):
+    return self._filename
+
 def create_load_image_event(destination, filename):
   wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
 
@@ -724,47 +725,47 @@ class SpotFrame(XrayFrame) :
       if self.settings.show_all_pix:
         self.draw_all_pix_timer.start()
         if len(all_pix_data) > 1:
-         if not self.display_foreground_circles_patch:
-          for key, value in all_pix_data.items():
-            base_color = self.prediction_colours[key][1:]
-            #dim the color so it stands apart from the prediction
-            r = base_color[0:2]; g = base_color[2:4]; b = base_color[4:6]
-            r = max(int(r,16)-int("50",16),0)
-            g = max(int(g,16)-int("50",16),0)
-            b = max(int(b,16)-int("50",16),0)
-            color = "#%02x%02x%02x"%(r,g,b)
-            self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
-              value, color=color, name="<all_pix_layer_%d>"%key,
-              radius=2,
-              renderer = self.pyslip.LightweightDrawPointLayer2,
-              show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
-         else:
-          e1 = matrix.col((1.,0.))
-          e2 = matrix.col((0.,1.))
-          for key, value in all_foreground_circles.items():
-            base_color = self.prediction_colours[key][1:]
-            positions = [i["position"] for i in value]
-            good_radius = flex.mean(flex.double([i["radius"] for i in value]))
-            vertices = []
-            for model_center in positions:
-              for vertex in [model_center + good_radius*(e1+e2),
-                             model_center + good_radius*(e1-e2),
-                             model_center + good_radius*(-e1-e2),
-                             model_center + good_radius*(-e1+e2),
-                             model_center + good_radius*(e1+e2)]:
-                vertices.append(vertex)
+          if not self.display_foreground_circles_patch:
+            for key, value in all_pix_data.items():
+              base_color = self.prediction_colours[key][1:]
+              #dim the color so it stands apart from the prediction
+              r = base_color[0:2]; g = base_color[2:4]; b = base_color[4:6]
+              r = max(int(r,16)-int("50",16),0)
+              g = max(int(g,16)-int("50",16),0)
+              b = max(int(b,16)-int("50",16),0)
+              color = "#%02x%02x%02x"%(r,g,b)
+              self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
+                value, color=color, name="<all_pix_layer_%d>"%key,
+                radius=2,
+                renderer = self.pyslip.LightweightDrawPointLayer2,
+                show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+          else:
+            e1 = matrix.col((1.,0.))
+            e2 = matrix.col((0.,1.))
+            for key, value in all_foreground_circles.items():
+              base_color = self.prediction_colours[key][1:]
+              positions = [i["position"] for i in value]
+              good_radius = flex.mean(flex.double([i["radius"] for i in value]))
+              vertices = []
+              for model_center in positions:
+                for vertex in [model_center + good_radius*(e1+e2),
+                               model_center + good_radius*(e1-e2),
+                               model_center + good_radius*(-e1-e2),
+                               model_center + good_radius*(-e1+e2),
+                               model_center + good_radius*(e1+e2)]:
+                  vertices.append(vertex)
 
-            if False: self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
-              positions, color="#%s"%base_color, name="<all_pix_layer_%d>"%key,
-              radius=2,
-              renderer = self.pyslip.LightweightDrawPointLayer2,
-              show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
-            if True:
-              self.dials_spotfinder_layers.append(self.pyslip.AddEllipseLayer(
-                  vertices, color="#%s"%base_color, name="<all_foreground_circles_%d>"%key,
-                  width=2,
-                  show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
-              print "Circles: center of foreground masks for the %d spots actually integrated"%(len(vertices)//5)
+              if False: self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
+                positions, color="#%s"%base_color, name="<all_pix_layer_%d>"%key,
+                radius=2,
+                renderer = self.pyslip.LightweightDrawPointLayer2,
+                show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+              if True:
+                self.dials_spotfinder_layers.append(self.pyslip.AddEllipseLayer(
+                    vertices, color="#%s"%base_color, name="<all_foreground_circles_%d>"%key,
+                    width=2,
+                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+                print "Circles: center of foreground masks for the %d spots actually integrated"%(len(vertices)//5)
         else:
           if len(all_pix_data) > 0:
             self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
