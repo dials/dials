@@ -237,6 +237,8 @@ namespace dials { namespace viewer { namespace boost_python {
         //std::cout << "\n ncol =" << ncol << " \n";
         //std::cout << "\n nrow =" << nrow << " \n";
 
+        std::cout << "\n palette_num =" << palette_num << "\n";
+
         for (col = 0; col < ncol; col++) {
           for (row = 0; row < nrow; row++) {
             loc_cel_int = int(mask2d(row, col));
@@ -383,10 +385,24 @@ namespace dials { namespace viewer { namespace boost_python {
               }
 
             }else{
+              if(palette_num == 1 ){
+                  bmp_dat(row, col, 0) = gray_all_rgb_byte[int(scaled_array(row, col))];
+                  bmp_dat(row, col, 1) = gray_all_rgb_byte[int(scaled_array(row, col))];
+                  bmp_dat(row, col, 2) = gray_all_rgb_byte[int(scaled_array(row, col))];
+              }else if( palette_num == 2 ){
+                bmp_dat(row, col, 0) = gray_all_rgb_byte[int(765 - scaled_array(row, col))];
+                bmp_dat(row, col, 1) = gray_all_rgb_byte[int(765 - scaled_array(row, col))];
+                bmp_dat(row, col, 2) = gray_all_rgb_byte[int(765 - scaled_array(row, col))];
+              }else if( palette_num == 3 ){
+                bmp_dat(row, col, 0) = hot_pal_red_byte[int(scaled_array(row, col))];
+                bmp_dat(row, col, 1) = hot_pal_green_byte[int(scaled_array(row, col))];
+                bmp_dat(row, col, 2) = hot_pal_blue_byte[int(scaled_array(row, col))];
+              }else{
+                bmp_dat(row, col, 0) = hot_pal_red_byte[int(765 - scaled_array(row, col))];
+                bmp_dat(row, col, 1) = hot_pal_green_byte[int(765 - scaled_array(row, col))];
+                bmp_dat(row, col, 2) = hot_pal_blue_byte[int(765 - scaled_array(row, col))];
+              }
 
-              bmp_dat(row, col, 0) = hot_pal_red_byte[int(scaled_array(row, col))];
-              bmp_dat(row, col, 1) = hot_pal_green_byte[int(scaled_array(row, col))];
-              bmp_dat(row, col, 2) = hot_pal_blue_byte[int(scaled_array(row, col))];
             }
 
           }
