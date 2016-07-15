@@ -596,7 +596,7 @@ class OptionParserBase(optparse.OptionParser, object):
       dest='verbose',
       help='Increase verbosity')
 
-  def parse_args(self, args=None):
+  def parse_args(self, args=None, quick_parse=False):
     '''
     Parse the command line arguments and get system configuration.
 
@@ -614,7 +614,7 @@ class OptionParserBase(optparse.OptionParser, object):
     options, args = super(OptionParserBase, self).parse_args(args=args)
 
     # Read stdin if data is available
-    if os.name is not 'nt':
+    if not quick_parse and os.name is not 'nt':
       while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         l = sys.stdin.readline()
         if l:
@@ -696,7 +696,8 @@ class OptionParser(OptionParserBase):
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.
-    options, args = super(OptionParser, self).parse_args(args=args)
+    options, args = super(OptionParser, self).parse_args(
+      args=args, quick_parse=quick_parse)
 
     # Show config
     if hasattr(options, 'show_config') and options.show_config:
