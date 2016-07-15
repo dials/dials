@@ -236,8 +236,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
         //std::cout << "\n ncol =" << ncol << " \n";
         //std::cout << "\n nrow =" << nrow << " \n";
-
-        std::cout << "\n palette_num =" << palette_num << "\n";
+        //std::cout << "\n palette_num =" << palette_num << "\n";
 
         for (col = 0; col < ncol; col++) {
           for (row = 0; row < nrow; row++) {
