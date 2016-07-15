@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 from __future__ import division
 from dials.array_family import flex
-#import numpy as np
 
 from bitmap_from_array import wxbmp_from_np_array
 
