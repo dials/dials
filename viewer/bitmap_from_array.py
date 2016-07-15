@@ -12,10 +12,14 @@
 from __future__ import division
 import wx
 import numpy as np
+
+no_longer_needeed_deps = '''
 # set backend before importing pyplot
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+'''
+
 from dials.algorithms.shoebox import MaskCode
 
 from dials.array_family import flex

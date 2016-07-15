@@ -13,7 +13,7 @@ import wx
 from viewer_low_level_util import flex_arr_img_panel, MyGrid, \
                                   flex_3d_frame, grid_frame
 
-import wx.grid as gridlib
+#import wx.grid as gridlib
 
 class show_3d(object):
 

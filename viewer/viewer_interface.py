@@ -11,7 +11,8 @@
 #
 from __future__ import division
 
-import cPickle as pickle
+#import cPickle as pickle
+
 import sys
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_reflections
