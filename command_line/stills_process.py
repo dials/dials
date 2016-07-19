@@ -44,6 +44,9 @@ control_phil_str = '''
     integration_pickle = int-%d-%s.pickle
       .type = str
       .help = Filename for cctbx.xfel-style integration pickle files
+    shoeboxes = True
+      .type = bool
+      .help = Save the raw pixel values inside the reflection shoeboxes.
   }
 
   mp {
