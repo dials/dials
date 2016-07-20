@@ -917,7 +917,7 @@ class SpotFrame(XrayFrame) :
           ny = y1 - y0 # size of reflection box in y-direction
           #nz = z1 - z0 # number of frames this spot appears on
           if (self.settings.show_all_pix and 'shoebox' in reflection
-              and reflection['shoebox'].mask.size() > 0 and n == 1):
+              and reflection['shoebox'].mask.size() > 0 and n == 0):
             self.show_all_pix_timer.start()
             shoebox = reflection['shoebox']
             iz = i_frame - z0
