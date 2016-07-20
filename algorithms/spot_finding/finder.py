@@ -41,7 +41,8 @@ class ExtractPixelsFromImage(object):
                threshold_function,
                mask,
                region_of_interest,
-               max_strong_pixel_fraction):
+               max_strong_pixel_fraction,
+               compute_mean_background):
     '''
     Initialise the class
 
@@ -57,6 +58,7 @@ class ExtractPixelsFromImage(object):
     self.mask = mask
     self.region_of_interest = region_of_interest
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
+    self.compute_mean_background = compute_mean_background
     if self.mask is not None:
       detector = self.imageset.get_detector()
       assert(len(self.mask) == len(detector))
@@ -107,6 +109,7 @@ class ExtractPixelsFromImage(object):
 
     # Add the images to the pixel lists
     num_strong = 0
+    average_background = 0
     for im, mk in zip(image, mask):
       if self.region_of_interest is not None:
         x0, x1, y0, y1 = self.region_of_interest
@@ -129,8 +132,16 @@ class ExtractPixelsFromImage(object):
       plist = PixelList(frame, im, threshold_mask)
       pixel_list.append(plist)
 
+      # Get average background
+      if self.compute_mean_background:
+        background = im.as_1d().select((mk & ~threshold_mask).as_1d())
+        average_background += flex.mean(background)
+
       # Add to the spot count
       num_strong += len(plist)
+
+    # Make average background
+    average_background /= len(image)
 
     # Check total number of strong pixels
     if self.max_strong_pixel_fraction < 1:
@@ -146,7 +157,13 @@ class ExtractPixelsFromImage(object):
         ''' % (num_strong, max_strong))
 
     # Print some info
-    info("Found %d strong pixels on image %d" % (num_strong, index + 1))
+    if self.compute_mean_background:
+      info("Found %d strong pixels on image %d with average background %f"
+           % (num_strong,
+              index + 1,
+              average_background))
+    else:
+      info("Found %d strong pixels on image %d" % (num_strong, index + 1))
 
     # Return the result
     return Result(pixel_list)
@@ -164,6 +181,7 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
                mask,
                region_of_interest,
                max_strong_pixel_fraction,
+               compute_mean_background,
                min_spot_size,
                max_spot_size,
                filter_spots):
@@ -182,7 +200,8 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
       threshold_function,
       mask,
       region_of_interest,
-      max_strong_pixel_fraction)
+      max_strong_pixel_fraction,
+      compute_mean_background)
 
     # Save some stuff
     self.min_spot_size = min_spot_size
@@ -401,6 +420,7 @@ class ExtractSpots(object):
                mask=None,
                region_of_interest=None,
                max_strong_pixel_fraction=0.1,
+               compute_mean_background=False,
                mp_method=None,
                mp_nproc=1,
                mp_njobs=1,
@@ -427,6 +447,7 @@ class ExtractSpots(object):
     self.mp_nproc = mp_nproc
     self.mp_njobs = mp_njobs
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
+    self.compute_mean_background = compute_mean_background
     self.region_of_interest = region_of_interest
     self.min_spot_size = min_spot_size
     self.max_spot_size = max_spot_size
@@ -502,6 +523,7 @@ class ExtractSpots(object):
         threshold_function        = self.threshold_function,
         mask                      = self.mask,
         max_strong_pixel_fraction = self.max_strong_pixel_fraction,
+        compute_mean_background   = self.compute_mean_background,
         region_of_interest        = self.region_of_interest)
 
     # The indices to iterate over
@@ -605,6 +627,7 @@ class ExtractSpots(object):
         threshold_function        = self.threshold_function,
         mask                      = self.mask,
         max_strong_pixel_fraction = self.max_strong_pixel_fraction,
+        compute_mean_background   = self.compute_mean_background,
         region_of_interest        = self.region_of_interest,
         min_spot_size             = self.min_spot_size,
         max_spot_size             = self.max_spot_size,
@@ -656,6 +679,7 @@ class SpotFinder(object):
                mask=None,
                region_of_interest=None,
                max_strong_pixel_fraction=0.1,
+               compute_mean_background=False,
                mp_method=None,
                mp_nproc=1,
                mp_njobs=1,
@@ -681,6 +705,7 @@ class SpotFinder(object):
     self.mask = mask
     self.region_of_interest = region_of_interest
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
+    self.compute_mean_background = compute_mean_background
     self.mask_generator = mask_generator
     self.filter_spots = filter_spots
     self.scan_range = scan_range
@@ -769,6 +794,7 @@ class SpotFinder(object):
       mask                      = mask,
       region_of_interest        = self.region_of_interest,
       max_strong_pixel_fraction = self.max_strong_pixel_fraction,
+      compute_mean_background   = self.compute_mean_background,
       mp_method                 = self.mp_method,
       mp_nproc                  = self.mp_nproc,
       mp_njobs                  = self.mp_njobs,

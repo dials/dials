@@ -50,6 +50,10 @@ def generate_phil_scope():
               "are not. To specify an ROI covering the whole image set"
               "region_of_interest=0,width,0,height."
 
+    compute_mean_background = False
+      .type = bool
+      .help = "Compute the mean background for each image"
+
     filter
       .help = "Parameters used in the spot finding filter strategy."
 
@@ -515,6 +519,7 @@ class SpotFinderFactory(object):
       mp_njobs                  = params.spotfinder.mp.njobs,
       mp_chunksize              = params.spotfinder.mp.chunksize,
       max_strong_pixel_fraction = params.spotfinder.filter.max_strong_pixel_fraction,
+      compute_mean_background   = params.spotfinder.compute_mean_background,
       region_of_interest        = params.spotfinder.region_of_interest,
       mask_generator            = mask_generator,
       min_spot_size             = params.spotfinder.filter.min_spot_size,
