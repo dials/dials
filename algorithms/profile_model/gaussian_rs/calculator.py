@@ -229,6 +229,59 @@ class ComputeEsdReflectingRange(object):
       from math import exp
       return -flex.sum(self._R(exp(log_sigma[0])))
 
+  class CrudeEstimator(object):
+    ''' If the main estimator failed make a crude estimate '''
+    def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
+
+      from dials.array_family import flex
+      from math import sqrt
+
+      # Get the oscillation width
+      dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
+
+      # Calculate a list of angles and zeta's
+      tau, zeta = self._calculate_tau_and_zeta(crystal, beam, detector,
+                                               goniometer, scan, reflections)
+
+      # Calculate zeta * (tau +- dphi / 2) / sqrt(2)
+      X = tau * zeta
+      mv = flex.mean_and_variance(X)
+      self.sigma = sqrt(mv.unweighted_sample_variance())
+
+    def _calculate_tau_and_zeta(self, crystal, beam, detector, goniometer, scan, reflections):
+      '''Calculate the list of tau and zeta needed for the calculation.
+
+      Params:
+          reflections The list of reflections
+          experiment The experiment object.
+
+      Returns:
+          (list of tau, list of zeta)
+
+      '''
+      from scitbx.array_family import flex
+
+      # Calculate the list of frames and z coords
+      bbox = reflections['bbox']
+      phi = reflections['xyzcal.mm'].parts()[2]
+
+      # Calculate the zeta list
+      zeta = reflections['zeta']
+
+      # Calculate the list of tau values
+      tau = []
+      zeta2 = []
+      scan = scan
+      for b, p, z in zip(bbox, phi, zeta):
+        for f in range(b[4], b[5]):
+          phi0 = scan.get_angle_from_array_index(int(f), deg=False)
+          phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
+          tau.append((phi1 + phi0) / 2.0 - p)
+          zeta2.append(z)
+
+      # Return the list of tau and zeta
+      return flex.double(tau), flex.double(zeta2)
+
   def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
     '''initialise the algorithm with the scan.
 
@@ -238,8 +291,12 @@ class ComputeEsdReflectingRange(object):
     '''
 
     # Calculate sigma_m
-    estimator = ComputeEsdReflectingRange.Estimator(
-      crystal, beam, detector, goniometer, scan, reflections)
+    try:
+      estimator = ComputeEsdReflectingRange.Estimator(
+        crystal, beam, detector, goniometer, scan, reflections)
+    except Exception:
+      estimator = ComputeEsdReflectingRange.CrudeEstimator(
+        crystal, beam, detector, goniometer, scan, reflections)
 
     # Save the solution
     self._sigma = estimator.sigma
