@@ -116,6 +116,10 @@ def generate_phil_scope():
       chunksize = auto
         .type = int(value_min=1)
         .help = "The number of jobs to process per process"
+
+      min_chunksize = 20
+        .type = int(value_min=1)
+        .help = "When chunksize is auto, this is the minimum chunksize"
     }
   }
 
@@ -524,7 +528,8 @@ class SpotFinderFactory(object):
       mask_generator            = mask_generator,
       min_spot_size             = params.spotfinder.filter.min_spot_size,
       max_spot_size             = params.spotfinder.filter.max_spot_size,
-      no_shoeboxes_2d           = no_shoeboxes_2d)
+      no_shoeboxes_2d           = no_shoeboxes_2d,
+      min_chunksize             = params.spotfinder.mp.min_chunksize)
 
   @staticmethod
   def configure_threshold(params, datablock):

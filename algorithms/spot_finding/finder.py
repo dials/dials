@@ -428,7 +428,8 @@ class ExtractSpots(object):
                min_spot_size=1,
                max_spot_size=20,
                filter_spots=None,
-               no_shoeboxes_2d=False):
+               no_shoeboxes_2d=False,
+               min_chunksize=50):
     '''
     Initialise the class with the strategy
 
@@ -453,6 +454,7 @@ class ExtractSpots(object):
     self.max_spot_size = max_spot_size
     self.filter_spots = filter_spots
     self.no_shoeboxes_2d = no_shoeboxes_2d
+    self.min_chunksize = min_chunksize
 
   def __call__(self, imageset):
     '''
@@ -466,6 +468,23 @@ class ExtractSpots(object):
       return self._find_spots(imageset)
     else:
       return self._find_spots_2d_no_shoeboxes(imageset)
+
+  def _compute_chunksize(self, nimg, nproc, min_chunksize):
+    '''
+    Compute the chunk size for a given number of images and processes
+
+    '''
+    from math import ceil
+    chunksize = int(ceil(nimg / nproc))
+    remainder = nimg % (chunksize * nproc)
+    test_chunksize = chunksize-1
+    while test_chunksize >= min_chunksize:
+      test_remainder = nimg % (test_chunksize * nproc)
+      if test_remainder <= remainder:
+        chunksize = test_chunksize
+        remainder = test_remainder
+      test_chunksize -= 1
+    return chunksize
 
   def _find_spots(self, imageset):
     '''
@@ -505,8 +524,10 @@ class ExtractSpots(object):
 
     import libtbx
     if mp_chunksize == libtbx.Auto:
-      import math
-      mp_chunksize = int(math.ceil(len(imageset) / (mp_njobs * mp_nproc)))
+      mp_chunksize = self._compute_chunksize(
+        len(imageset),
+        mp_njobs * mp_nproc,
+        self.min_chunksize)
       info("Setting chunksize=%i" %mp_chunksize)
 
     len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
@@ -609,8 +630,10 @@ class ExtractSpots(object):
 
     import libtbx
     if mp_chunksize == libtbx.Auto:
-      import math
-      mp_chunksize = int(math.ceil(len(imageset) / (mp_njobs * mp_nproc)))
+      mp_chunksize = self._compute_chunksize(
+        len(imageset),
+        mp_njobs * mp_nproc,
+        self.min_chunksize)
       info("Setting chunksize=%i" %mp_chunksize)
 
     len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
@@ -690,7 +713,8 @@ class SpotFinder(object):
                write_hot_mask=True,
                min_spot_size=1,
                max_spot_size=20,
-               no_shoeboxes_2d=False):
+               no_shoeboxes_2d=False,
+               min_chunksize=50):
     '''
     Initialise the class.
 
@@ -717,6 +741,7 @@ class SpotFinder(object):
     self.mp_nproc = mp_nproc
     self.mp_njobs = mp_njobs
     self.no_shoeboxes_2d = no_shoeboxes_2d
+    self.min_chunksize = min_chunksize
 
   def __call__(self, datablock):
     '''
@@ -802,7 +827,8 @@ class SpotFinder(object):
       min_spot_size             = self.min_spot_size,
       max_spot_size             = self.max_spot_size,
       filter_spots              = self.filter_spots,
-      no_shoeboxes_2d           = self.no_shoeboxes_2d)
+      no_shoeboxes_2d           = self.no_shoeboxes_2d,
+      min_chunksize             = self.min_chunksize)
 
     # Get the max scan range
     if isinstance(imageset, ImageSweep):
