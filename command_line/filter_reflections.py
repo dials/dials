@@ -68,6 +68,14 @@ class Script(object):
           .multiple = True
       }
 
+      d_min = None
+        .type = float
+        .help = "The maximum resolution"
+
+      d_max = None
+        .type = float
+        .help = "The minimum resolution"
+
     ''' % tuple([' '.join(self.flag_names)] * 2)
 
     phil_scope = parse(phil_str)
@@ -117,9 +125,19 @@ class Script(object):
       raise Sorry('Exactly 1 reflection file must be specified')
     reflections = reflections[0]
 
+    # Check params
+    if params.d_min is not None and params.d_max is not None:
+      if params.d_min > params.d_max:
+        raise Sorry("d_min must be less than d_max")
+    if params.d_min is not None or params.d_max is not None:
+      if 'd' not in reflections:
+        raise Sorry("Reflection table has no resolution information")
+
     print "{0} reflections loaded".format(len(reflections))
 
-    if len(params.inclusions.flag) == 0 and len(params.exclusions.flag) == 0:
+    if (len(params.inclusions.flag) == 0 and
+        len(params.exclusions.flag) == 0 and
+        params.d_min is None and params.d_max is None):
       print "No filter specified. Performing analysis instead."
       return self.analysis(reflections)
 
@@ -142,6 +160,18 @@ class Script(object):
     reflections = reflections.select(~exc)
 
     print "{0} reflections excluded from the working set".format(exc.count(True))
+
+    # Filter based on resolution
+    if params.d_min is not None:
+      selection = reflections['d'] >= params.d_min
+      reflections = reflections.select(selection)
+      print "Selected %d reflections with d >= %f" % (len(reflections), params.d_min)
+
+    # Filter based on resolution
+    if params.d_max is not None:
+      selection = reflections['d'] <= params.d_max
+      reflections = reflections.select(selection)
+      print "Selected %d reflections with d <= %f" % (len(reflections), params.d_max)
 
     # Save filtered reflections to file
     if params.output.reflections:
