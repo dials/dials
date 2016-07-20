@@ -33,6 +33,16 @@ phil_scope = parse('''
         .help = "The minimum number of spots needed to do the profile modelling"
     }
 
+    parameters {
+      sigma_b = None
+        .type = float(value_min=0)
+        .help = "Override the sigma_b value (degrees)"
+
+      sigma_m = None
+        .type = float(value_min=0)
+        .help = "Override the sigma_m value (degrees)"
+    }
+
     filter
     {
       min_zeta = 0.05
@@ -224,6 +234,19 @@ class Model(ProfileModelIface):
           ''' % (
             params.gaussian_rs.min_spots.overall,
             len(reflections)))
+
+    # Check the override parameters
+    if [params.gaussian_rs.parameters.sigma_b,
+        params.gaussian_rs.parameters.sigma_m].count(None) == 1:
+      raise RuntimeError('sigma_b and sigma_m parameters must both be set')
+    if (params.gaussian_rs.parameters.sigma_b is not None and
+        params.gaussian_rs.parameters.sigma_m is not None):
+      return cls(
+        params=params,
+        n_sigma=3.0,
+        sigma_b=params.gaussian_rs.parameters.sigma_b,
+        sigma_m=params.gaussian_rs.parameters.sigma_m,
+        deg=True)
 
     if not params.gaussian_rs.scan_varying:
       Calculator = ProfileModelCalculator
