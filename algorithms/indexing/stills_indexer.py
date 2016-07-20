@@ -196,8 +196,7 @@ class stills_indexer(indexer_base):
         self.reflections = self._best_indexed
       else:
         self.index_reflections(
-          experiments, self.reflections,
-          verbosity=self.params.refinement_protocol.verbosity)
+          experiments, self.reflections)
 
       if len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
