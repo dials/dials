@@ -869,10 +869,10 @@ class SpotFinder(object):
     from logging import info
 
     # Write the hot mask
-    if self.write_hot_mask and "shoeboxes" in reflections:
+    if self.write_hot_mask and "shoebox" in reflections:
 
       # Get the shoeboxes
-      shoeboxes = reflections['shoeboxes']
+      shoeboxes = reflections['shoebox']
 
       # Find spots which cover the whole scan range
       bbox = flex.int6([sbox.bbox for sbox in shoeboxes])
