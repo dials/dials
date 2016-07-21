@@ -212,8 +212,14 @@ namespace dials { namespace viewer { namespace boost_python {
 
         for (int col = 0; col < ncol; col++) {
           for (int row = 0; row < nrow; row++) {
-            scaled_array(row, col) = 255.0 * 3 * (( data2d(row, col) - min)
-                                                          / dif );
+            loc_cel = data2d(row, col);
+            if( loc_cel > max ){
+              loc_cel = max;
+            }
+            if( loc_cel < min ){
+              loc_cel = min;
+            }
+            scaled_array(row, col) = 255.0 * 3 * (( loc_cel - min) / dif );
           }
         }
         int px_scale = 0;
