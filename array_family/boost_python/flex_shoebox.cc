@@ -76,7 +76,8 @@ namespace dials { namespace af { namespace boost_python {
         std::size_t zstart,
         bool twod,
         std::size_t min_pixels,
-        std::size_t max_pixels) {
+        std::size_t max_pixels,
+        bool find_hot_pixels) {
 
       // Check the input
       DIALS_ASSERT(min_pixels > 0);
@@ -151,6 +152,30 @@ namespace dials { namespace af { namespace boost_python {
         }
       }
 
+      // Find hot pixels
+      if (find_hot_pixels) {
+        int first_frame = minmaxz[0];
+        int last_frame = minmaxz[1];
+        af::versa< int, af::c_grid<2> > hot_mask(af::c_grid<2>(ysize, xsize), first_frame-1);
+        for (std::size_t i = 0; i < coords.size(); ++i) {
+          vec3<int> c = coords[i];
+          if (c[0] == first_frame) {
+            hot_mask(c[1], c[2]) = c[0];
+          } else {
+            if (hot_mask(c[1], c[2]) != c[0]-1) {
+              hot_mask(c[1], c[2]) = first_frame-1;
+            } else {
+              hot_mask(c[1], c[2]) = c[0];
+            }
+          }
+        }
+        for (std::size_t i = 0; i < hot_mask.size(); ++i) {
+          if (hot_mask[i] == last_frame-1) {
+            hot_pixels_.push_back(i);
+          }
+        }
+      }
+
       // Shift bbox z start position
       for (std::size_t i = 0; i < result_.size(); ++i) {
         result_[i].bbox[4] += zstart;
@@ -168,10 +193,15 @@ namespace dials { namespace af { namespace boost_python {
       return spot_size_;
     }
 
+    af::shared<std::size_t> hot_pixels() const {
+      return hot_pixels_;
+    }
+
   private:
 
     af::shared< Shoebox<FloatType> > result_;
     af::shared< std::size_t > spot_size_;
+    af::shared< std::size_t > hot_pixels_;
   };
 
   /**
@@ -951,15 +981,18 @@ namespace dials { namespace af { namespace boost_python {
                 std::size_t,
                 bool,
                 std::size_t,
-                std::size_t>((
+                std::size_t,
+                bool>((
             boost::python::arg("pixel"),
             boost::python::arg("panel") = 0,
             boost::python::arg("zstart") = 0,
             boost::python::arg("twod") = false,
             boost::python::arg("min_pixels") = 1,
-            boost::python::arg("max_pixels") = 20)))
+            boost::python::arg("max_pixels") = 20,
+            boost::python::arg("find_hot_pixels") = false)))
       .def("result", &PixelListShoeboxCreator<ProfileFloatType>::result)
       .def("spot_size", &PixelListShoeboxCreator<ProfileFloatType>::spot_size)
+      .def("hot_pixels", &PixelListShoeboxCreator<ProfileFloatType>::hot_pixels)
       ;
   }
 
