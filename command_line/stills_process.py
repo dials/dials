@@ -44,9 +44,6 @@ control_phil_str = '''
     integration_pickle = int-%d-%s.pickle
       .type = str
       .help = Filename for cctbx.xfel-style integration pickle files
-    shoeboxes = True
-      .type = bool
-      .help = Save the raw pixel values inside the reflection shoeboxes.
   }
 
   mp {
@@ -60,6 +57,11 @@ control_phil_str = '''
 '''
 
 dials_phil_str = '''
+  output {
+    shoeboxes = True
+      .type = bool
+      .help = Save the raw pixel values inside the reflection shoeboxes.
+  }
 
   include scope dials.algorithms.spot_finding.factory.phil_scope
   include scope dials.algorithms.indexing.indexer.index_only_phil_scope
