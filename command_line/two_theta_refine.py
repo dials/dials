@@ -15,7 +15,7 @@ import cPickle as pickle
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
-from libtbx.utils import Sorry
+from libtbx.utils import Sorry, format_float_with_standard_uncertainty
 from logging import info
 from time import time
 
@@ -300,14 +300,11 @@ class Script(object):
     block["_audit_creation_date"] = datetime.date.today().isoformat()
 #   block["_publ_section_references"] = '' # once there is a reference...
 
-    def format_value_with_esd(value, esd, decimal_places):
-      return "%%.%df(%%d)" % decimal_places % (value, round(esd * (10 ** decimal_places)))
-
     for cell, esd, cifname in zip(crystal.get_unit_cell().parameters(),
                                   crystal.get_cell_parameter_sd(),
                                   ['length_a', 'length_b', 'length_c', 'angle_alpha', 'angle_beta', 'angle_gamma']):
-      block['_cell_%s' % cifname] = format_value_with_esd(cell, esd, 4)
-    block['_cell_volume'] = format_value_with_esd(crystal.get_unit_cell().volume(), crystal.get_cell_volume_sd(), 4)
+      block['_cell_%s' % cifname] = format_float_with_standard_uncertainty(cell, esd)
+    block['_cell_volume'] = format_float_with_standard_uncertainty(crystal.get_unit_cell().volume(), crystal.get_cell_volume_sd())
 
     used_reflections = refiner.get_matches()
     block['_cell_measurement_reflns_used'] = len(used_reflections)

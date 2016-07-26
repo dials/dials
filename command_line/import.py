@@ -849,11 +849,10 @@ class Script(object):
   def assert_single_sweep(self, sweeps, params):
     '''
     Print an error message if more than 1 sweep
-
     '''
     if len(sweeps) > 1:
 
-      # Print some info about multuple sweeps
+      # Print some info about multiple sweeps
       self.diagnose_multiple_sweeps(sweeps, params)
 
       # Raise exception
