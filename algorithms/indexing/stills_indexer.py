@@ -451,6 +451,8 @@ class stills_indexer(indexer_base):
 
     params = copy.deepcopy(self.all_params)
 
+    n_cand = len(candidate_orientation_matrices)
+
     for icm,cm in enumerate(candidate_orientation_matrices):
       sel = ((self.reflections['id'] == -1))
              #(1/self.reflections['rlp'].norms() > self.d_min))
@@ -471,12 +473,12 @@ class stills_indexer(indexer_base):
                                          indexed = indexed,
                                          experiments = experiments))
       else:
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification"%icm
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"%(icm, n_cand)
         acceptance_flags = self.identify_outliers(params, experiments, indexed)
         #create a new "indexed" list with outliers thrown out:
         indexed = indexed.select(acceptance_flags)
 
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection"%icm
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d refinement before outlier rejection"%(icm, n_cand)
         R = e_refine(params = params, experiments=experiments, reflections=indexed, graph_verbose=False)
         ref_experiments = R.get_experiments()
 
@@ -489,16 +491,24 @@ class stills_indexer(indexer_base):
         acceptance_flags_nv0 = nv0.nv_acceptance_flags
         indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection"%icm
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d after positional and delta-psi outlier rejection"%(icm, n_cand)
         R = e_refine(params = params, experiments=ref_experiments, reflections=indexed, graph_verbose=False)
         ref_experiments = R.get_experiments()
 
         nv = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
         crystal_model = nv()
 
+        # Drop candidates that after refinement can no longer be converted to the known target space group
+        if self.params.known_symmetry.space_group is not None:
+          target_space_group = self.target_symmetry_primitive.space_group()
+          new_crystal, cb_op_to_primitive = self.apply_symmetry(crystal_model, target_space_group)
+          if new_crystal is None:
+            print "P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand)
+            continue
+
         rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
 
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done"%icm
+        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"%(icm, n_cand)
         candidates.append(candidate_info(crystal = crystal_model,
                                          green_curve_area = nv.green_curve_area,
                                          ewald_proximal_volume = nv.ewald_proximal_volume(),
