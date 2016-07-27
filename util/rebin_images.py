@@ -14,7 +14,7 @@ def split_counts(image, split):
   positive = image.as_1d() > 0
 
   for new_image in new_images:
-    new_image.as_1d().set_selected(negative, image)
+    new_image.as_1d().set_selected(negative, image.as_1d())
 
   for p in positive.iselection():
     counts = image[p]
@@ -26,10 +26,10 @@ def split_counts(image, split):
 def merge_counts(images):
   from scitbx.array_family import flex
   image = flex.int(flex.grid(images[0].focus()), 0)
-  negative = image[0].as_1d() < 0
+  negative = images[0].as_1d() < 0
   for i in images:
     image += i
-  image.as_1d().set_selected(negative, images[0])
+  image.as_1d().set_selected(negative, images[0].as_1d())
   return image
 
 def read_image(in_image):
@@ -86,11 +86,14 @@ def main(in_images, out_images):
   in_image_headers = []
 
   for i in in_images:
-    pixel, header = read_image(in_image)
+    print "Reading %s" % i
+    pixel, header = read_image(i)
     in_image_data.append(pixel)
     in_image_headers.append(header)
 
   sum_image = merge_counts(in_image_data)
   rebin_images = split_counts(sum_image, n)
-  for out_image, pixel, header in zip(out_images, rebin_images, in_image_headers):
-    write_image(out_image, pixel, header)
+
+  for o, pixel, header in zip(out_images, rebin_images, in_image_headers):
+    print "Writing %s" % o
+    write_image(o, pixel, header)
