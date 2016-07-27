@@ -302,10 +302,10 @@ indexing {
       .type = float
       .help = For still images, this high-resolution cutoff is used to calculate
       .help = the acceptable volume of reciprocal space for spot prediction
-    index_only = False
+    refine_all_candidates = True
       .type = bool
-      .help = If true, no attempt is made to refine the model. The indexing \
-              solution with the best RMSD is chosen.
+      .help = If False, no attempt is made to refine the model from initial basis \
+              vector selection. The indexing solution with the best RMSD is chosen.
     rmsd_min_px = 1.5
       .type = float
       .help = Minimum acceptable RMSD for choosing candidate basis solutions \

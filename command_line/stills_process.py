@@ -302,11 +302,30 @@ class Processor(object):
 
   def refine(self, experiments, centroids):
     print "Skipping refinement because the crystal orientation is refined during indexing"
+# TODO add dispatch.refine as option and use this code
+#    from dials.algorithms.refinement import RefinerFactory
+#    from logging import info
+#    from time import time
+#    st = time()
+#
+#    info('*' * 80)
+#    info('Refining Model')
+#    info('*' * 80)
+#
+#    refiner = RefinerFactory.from_parameters_data_experiments(
+#      self.params, centroids, experiments)
+#
+#    refiner.run()
+#    experiments = refiner.get_experiments()
+
     # Dump experiments to disk
     if self.params.output.refined_experiments_filename:
       from dxtbx.model.experiment.experiment_list import ExperimentListDumper
       dump = ExperimentListDumper(experiments)
       dump.as_json(self.params.output.refined_experiments_filename)
+
+#    info('')
+#    info('Time Taken = %f seconds' % (time() - st))
 
     return experiments
 
@@ -383,8 +402,11 @@ class Processor(object):
     rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
     rmsd_integrated, _ = calc_2D_rmsd_and_displacements(integrated)
     crystal_model = experiments.crystals()[0]
-    print "Integrated. RMSD indexed,", rmsd_indexed, "RMSD integrated", rmsd_integrated, \
-      "Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"%(crystal_model._ML_domain_size_ang, crystal_model._ML_half_mosaicity_deg)
+
+    log_str = "Integrated. RMSD indexed: %f, RMSD integrated: %f"%(rmsd_indexed, rmsd_integrated)
+    if hasattr(crystal_model, '._ML_domain_size_ang'):
+      log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"%(crystal_model._ML_domain_size_ang, crystal_model._ML_half_mosaicity_deg)
+    info(log_str)
 
     info('')
     info('Time Taken = %f seconds' % (time() - st))

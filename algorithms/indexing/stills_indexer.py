@@ -232,7 +232,9 @@ class stills_indexer(indexer_base):
                 self.reflections['miller_index'].set_selected(
                   self.reflections['id'] == i_expt, miller_indices)
 
-        if self.params.stills.index_only:
+        self.indexed_reflections = (self.reflections['id'] > -1)
+
+        if len(self.params.stills.isoforms) == 0:
           refined_experiments = experiments
           refined_reflections = self.reflections
         else:
@@ -241,7 +243,6 @@ class stills_indexer(indexer_base):
           info("Starting refinement")
           info("#" * 80)
           info("")
-          self.indexed_reflections = (self.reflections['id'] > -1)
 
           sel = flex.bool(len(self.reflections), False)
           lengths = 1/self.reflections['rlp'].norms()
@@ -253,63 +254,62 @@ class stills_indexer(indexer_base):
           reflections_for_refinement = self.reflections.select(
             self.indexed_reflections)
 
-          if len(self.params.stills.isoforms) > 0:
-            import copy
-            isoform_experiments = ExperimentList()
-            isoform_reflections = flex.reflection_table()
-            # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
-            self.all_params.refinement.reflections.outlier.algorithm = "null"
-            self.all_params.refinement.parameterisation.crystal.fix = "cell"
-            self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
+          import copy
+          isoform_experiments = ExperimentList()
+          isoform_reflections = flex.reflection_table()
+          # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
+          self.all_params.refinement.reflections.outlier.algorithm = "null"
+          self.all_params.refinement.parameterisation.crystal.fix = "cell"
+          self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
 
-            for expt_id, experiment in enumerate(experiments):
-              reflections = reflections_for_refinement.select(reflections_for_refinement['id'] == expt_id)
-              reflections['id'] = flex.int(len(reflections),0)
-              refiners = []
-              for isoform in self.params.stills.isoforms:
-                iso_experiment = copy.deepcopy(experiment)
-                crystal = iso_experiment.crystal
-                if isoform.lookup_symbol != crystal.get_space_group().type().lookup_symbol():
-                  info("Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"%(crystal.get_space_group().type().lookup_symbol(), isoform.name, isoform.lookup_symbol))
-                  continue
-                crystal.set_B(isoform.cell.fractionalization_matrix())
+          for expt_id, experiment in enumerate(experiments):
+            reflections = reflections_for_refinement.select(reflections_for_refinement['id'] == expt_id)
+            reflections['id'] = flex.int(len(reflections),0)
+            refiners = []
+            for isoform in self.params.stills.isoforms:
+              iso_experiment = copy.deepcopy(experiment)
+              crystal = iso_experiment.crystal
+              if isoform.lookup_symbol != crystal.get_space_group().type().lookup_symbol():
+                info("Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"%(crystal.get_space_group().type().lookup_symbol(), isoform.name, isoform.lookup_symbol))
+                continue
+              crystal.set_B(isoform.cell.fractionalization_matrix())
 
-                info("Refining isoform %s"%isoform.name)
-                refiners.append(e_refine(params=self.all_params, experiments=ExperimentList([iso_experiment]), reflections=reflections, graph_verbose=False))
+              info("Refining isoform %s"%isoform.name)
+              refiners.append(e_refine(params=self.all_params, experiments=ExperimentList([iso_experiment]), reflections=reflections, graph_verbose=False))
 
-              positional_rmsds = [math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2) for P in refiners]
-              info("Positional rmsds for all isoforms:" + str(positional_rmsds))
-              minrmsd_mm = min(positional_rmsds)
-              minindex = positional_rmsds.index(minrmsd_mm)
-              info("The smallest rmsd is %5.1f um from isoform %s" % (
-                1000. * minrmsd_mm, self.params.stills.isoforms[minindex].name))
-              if self.params.stills.isoforms[minindex].rmsd_target_mm is not None:
-                info("Asserting %f < %f"%(minrmsd_mm, self.params.stills.isoforms[minindex].rmsd_target_mm))
-                assert minrmsd_mm < self.params.stills.isoforms[minindex].rmsd_target_mm
-              info("Acceptable rmsd for isoform %s." % (self.params.stills.isoforms[minindex].name))
-              if len(self.params.stills.isoforms) == 2:
-                info("Rmsd gain over the other isoform %5.1f um." % (
-                1000. * abs(positional_rmsds[0] - positional_rmsds[1])))
-              R = refiners[minindex]
-              # Now one last check to see if direct beam is out of bounds
-              if self.params.stills.isoforms[minindex].beam_restraint is not None:
-                from scitbx import matrix
-                refined_beam = matrix.col(
-                  R.get_experiments()[0].detector[0].get_beam_centre_lab(experiments[0].beam.get_s0())[0:2])
-                known_beam = matrix.col(self.params.stills.isoforms[minindex].beam_restraint)
-                info("Asserting difference in refined beam center and expected beam center %f < %f"%((refined_beam - known_beam).length(), self.params.stills.isoforms[
-                  minindex].rmsd_target_mm))
-                assert (refined_beam - known_beam).length() < self.params.stills.isoforms[minindex].rmsd_target_mm
-                # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
+            positional_rmsds = [math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2) for P in refiners]
+            info("Positional rmsds for all isoforms:" + str(positional_rmsds))
+            minrmsd_mm = min(positional_rmsds)
+            minindex = positional_rmsds.index(minrmsd_mm)
+            info("The smallest rmsd is %5.1f um from isoform %s" % (
+              1000. * minrmsd_mm, self.params.stills.isoforms[minindex].name))
+            if self.params.stills.isoforms[minindex].rmsd_target_mm is not None:
+              info("Asserting %f < %f"%(minrmsd_mm, self.params.stills.isoforms[minindex].rmsd_target_mm))
+              assert minrmsd_mm < self.params.stills.isoforms[minindex].rmsd_target_mm
+            info("Acceptable rmsd for isoform %s." % (self.params.stills.isoforms[minindex].name))
+            if len(self.params.stills.isoforms) == 2:
+              info("Rmsd gain over the other isoform %5.1f um." % (
+              1000. * abs(positional_rmsds[0] - positional_rmsds[1])))
+            R = refiners[minindex]
+            # Now one last check to see if direct beam is out of bounds
+            if self.params.stills.isoforms[minindex].beam_restraint is not None:
+              from scitbx import matrix
+              refined_beam = matrix.col(
+                R.get_experiments()[0].detector[0].get_beam_centre_lab(experiments[0].beam.get_s0())[0:2])
+              known_beam = matrix.col(self.params.stills.isoforms[minindex].beam_restraint)
+              info("Asserting difference in refined beam center and expected beam center %f < %f"%((refined_beam - known_beam).length(), self.params.stills.isoforms[
+                minindex].rmsd_target_mm))
+              assert (refined_beam - known_beam).length() < self.params.stills.isoforms[minindex].rmsd_target_mm
+              # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
 
-              experiment = R.get_experiments()[0]
-              experiment.crystal.identified_isoform = self.params.stills.isoforms[minindex].name
+            experiment = R.get_experiments()[0]
+            experiment.crystal.identified_isoform = self.params.stills.isoforms[minindex].name
 
-              isoform_experiments.append(experiment)
-              reflections['id'] = flex.int(len(reflections),expt_id)
-              isoform_reflections.extend(reflections)
-            experiments = isoform_experiments
-            reflections_for_refinement = isoform_reflections
+            isoform_experiments.append(experiment)
+            reflections['id'] = flex.int(len(reflections),expt_id)
+            isoform_reflections.extend(reflections)
+          experiments = isoform_experiments
+          reflections_for_refinement = isoform_reflections
 
           try:
             refined_experiments, refined_reflections = self.refine(
@@ -396,33 +396,34 @@ class stills_indexer(indexer_base):
       info("model %i (%i reflections):" %(i+1, n_indexed))
       info(crystal_model)
 
-    self.refined_reflections['xyzcal.px'] = flex.vec3_double(
-      len(self.refined_reflections))
-    for i, imageset in enumerate(self.imagesets):
-      imgset_sel = self.refined_reflections['imageset_id'] == i
-      # set xyzcal.px field in self.refined_reflections
-      refined_reflections = self.refined_reflections.select(imgset_sel)
-      panel_numbers = flex.size_t(refined_reflections['panel'])
-      xyzcal_mm = refined_reflections['xyzcal.mm']
-      x_mm, y_mm, z_rad = xyzcal_mm.parts()
-      xy_cal_mm = flex.vec2_double(x_mm, y_mm)
-      xy_cal_px = flex.vec2_double(len(xy_cal_mm))
-      for i_panel in range(len(imageset.get_detector())):
-        panel = imageset.get_detector()[i_panel]
-        sel = (panel_numbers == i_panel)
-        isel = sel.iselection()
-        ref_panel = refined_reflections.select(panel_numbers == i_panel)
-        xy_cal_px.set_selected(
-          sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel)))
-      x_px, y_px = xy_cal_px.parts()
-      scan = imageset.get_scan()
-      if scan is not None:
-        z_px = scan.get_array_index_from_angle(z_rad, deg=False)
-      else:
-        # must be a still image, z centroid not meaningful
-        z_px = z_rad
-      xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
-      self.refined_reflections['xyzcal.px'].set_selected(imgset_sel, xyzcal_px)
+    if 'xyzcal.mm' in self.refined_reflections: # won't be there if refine_all_candidates = False and no isoforms
+      self.refined_reflections['xyzcal.px'] = flex.vec3_double(
+        len(self.refined_reflections))
+      for i, imageset in enumerate(self.imagesets):
+        imgset_sel = self.refined_reflections['imageset_id'] == i
+        # set xyzcal.px field in self.refined_reflections
+        refined_reflections = self.refined_reflections.select(imgset_sel)
+        panel_numbers = flex.size_t(refined_reflections['panel'])
+        xyzcal_mm = refined_reflections['xyzcal.mm']
+        x_mm, y_mm, z_rad = xyzcal_mm.parts()
+        xy_cal_mm = flex.vec2_double(x_mm, y_mm)
+        xy_cal_px = flex.vec2_double(len(xy_cal_mm))
+        for i_panel in range(len(imageset.get_detector())):
+          panel = imageset.get_detector()[i_panel]
+          sel = (panel_numbers == i_panel)
+          isel = sel.iselection()
+          ref_panel = refined_reflections.select(panel_numbers == i_panel)
+          xy_cal_px.set_selected(
+            sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel)))
+        x_px, y_px = xy_cal_px.parts()
+        scan = imageset.get_scan()
+        if scan is not None:
+          z_px = scan.get_array_index_from_angle(z_rad, deg=False)
+        else:
+          # must be a still image, z centroid not meaningful
+          z_px = z_rad
+        xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
+        self.refined_reflections['xyzcal.px'].set_selected(imgset_sel, xyzcal_px)
 
   def experiment_list_for_crystal(self, crystal):
     experiments = ExperimentList()
@@ -462,17 +463,7 @@ class stills_indexer(indexer_base):
       indexed = refl.select(refl['id'] >= 0)
       indexed = indexed.select(indexed.get_flags(indexed.flags.indexed))
 
-      if params.indexing.stills.index_only:
-        from dials.algorithms.refinement.prediction import ExperimentsPredictor
-        ref_predictor = ExperimentsPredictor(experiments, force_stills=True,
-                                             spherical_relp=params.refinement.parameterisation.spherical_relp_model)
-        rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
-        candidates.append(candidate_info(crystal = cm,
-                                         n_indexed = len(indexed),
-                                         rmsd = rmsd,
-                                         indexed = indexed,
-                                         experiments = experiments))
-      else:
+      if params.indexing.stills.refine_all_candidates:
         print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"%(icm, n_cand)
         acceptance_flags = self.identify_outliers(params, experiments, indexed)
         #create a new "indexed" list with outliers thrown out:
@@ -516,7 +507,16 @@ class stills_indexer(indexer_base):
                                          rmsd = rmsd,
                                          indexed = indexed,
                                          experiments = ref_experiments))
-
+      else:
+        from dials.algorithms.refinement.prediction import ExperimentsPredictor
+        ref_predictor = ExperimentsPredictor(experiments, force_stills=True,
+                                             spherical_relp=params.refinement.parameterisation.spherical_relp_model)
+        rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
+        candidates.append(candidate_info(crystal = cm,
+                                         n_indexed = len(indexed),
+                                         rmsd = rmsd,
+                                         indexed = indexed,
+                                         experiments = experiments))
     if len(candidates) == 0:
       raise Sorry("No suitable indexing solution found")
 
@@ -533,7 +533,7 @@ class stills_indexer(indexer_base):
     best = candidates[flex.min_index(results)]
     print best
 
-    if not params.indexing.stills.index_only:
+    if params.indexing.stills.refine_all_candidates:
       if best.rmsd > params.indexing.stills.rmsd_min_px:
         raise Sorry ("RMSD too high, %f" %rmsd)
 
