@@ -2,6 +2,26 @@
 
 from __future__ import division
 
+def weighted_mean_variance(values, variances):
+  import math
+  weights = [1.0 / v for v in variances]
+  sum_weights = sum(weights)
+  weighted_mean = sum([v * w for v, w in zip(values, weights)]) / sum_weights
+  weighted_variance = len(values) / sum_weights
+  return weighted_mean, weighted_variance
+
+def npp(values, input_mean_variance):
+  import math
+  from scitbx.math import distributions
+  from scitbx.array_family import flex
+  distribution = distributions.normal_distribution()
+  values = flex.sorted(values)
+  mean, variance = input_mean_variance
+  scaled = (values - mean) / math.sqrt(variance)
+  expected = distribution.quantiles(values.size())
+
+  return expected, scaled
+
 def semisynthetic_variance_analysis(semisynthetic_integrated_data_files):
   import cPickle as pickle
   from logging import info
@@ -16,25 +36,37 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files):
 
   hash_set = None
 
-  for j, integrated_data in enumerate(integrated_data_sets):
+  hashed_data_sets = []
+
+  for integrated_data in integrated_data_sets:
     sel = integrated_data.get_flags(integrated_data.flags.integrated)
     integrated_data = integrated_data.select(sel)
     sel = integrated_data['partiality'] > 0.99
     integrated_data = integrated_data.select(sel)
     integrated_data = add_hash(integrated_data)
-    integrated_data['intensity.prf.weight'] = 1.0 / integrated_data['intensity.prf.variance']
-    integrated_data['intensity.sum.weight'] = 1.0 / integrated_data['intensity.sum.variance']
-    print 'For file %s have %d reflections' % (semisynthetic_integrated_data_files[j], integrated_data.size())
-    integrated_data = add_hash(integrated_data)
-    hashes = set(integrated_data['hash'])
+    hashed_data_sets.append(integrated_data)
     if hash_set is None:
-      hash_set = hashes
+      hash_set = set(integrated_data['hash'])
     else:
-      hash_set = hash_set.intersection(hashes)
+      hash_set = hash_set.intersection(set(integrated_data['hash']))
 
-  print 'Union of all reflections has %d elements' % len(hash_set)
+  # now analyse those reflections found to be in all data sets (here looking
+  # at the profile fitted intensity and variance thereof)
 
-  # now figure a list of hashed reflections
+  for h in hash_set:
+    values_profile = flex.double()
+    variances_profile = flex.double()
+    for i in hashed_data_sets:
+      sel = i['hash'] == h
+      isel = sel.iselection()
+      assert(len(isel) == 1)
+      values_profile.append(i[isel[0]]['intensity.prf.value'])
+      variances_profile.append(i[isel[0]]['intensity.prf.variance'])
+    weighted_mean, weighted_variance = weighted_mean_variance(values_profile,
+                                                              variances_profile)
+    expected, scaled = npp(values_profile, (weighted_mean, weighted_variance))
+    for e, s in zip(expected, scaled):
+      print e, s
 
 if __name__ == '__main__':
   import sys
