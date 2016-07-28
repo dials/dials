@@ -79,6 +79,8 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
     j0 = partial_map[p_id][0]
     jrest = partial_map[p_id][1:]
 
+    # FIXME revisiting this calculation am not sure it is correct - why
+    # weighting by (I/sig(I))^2 not just 1/variance?
     if we_got_profiles:
       prf_value = integrated_data['intensity.prf.value'][j0]
       prf_variance = integrated_data['intensity.prf.variance'][j0]
