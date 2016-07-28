@@ -2,11 +2,6 @@
 
 from __future__ import division
 
-def joiner(args):
-  from dials.util.scale_down_image import scale_down_image
-  scale_down_image(*args)
-  print args[1]
-
 def rebin_images(in_template, out_template, start, end):
   from dials.util.rebin_images import main
   in_images = [in_template % j for j in range(start, end + 1)]
