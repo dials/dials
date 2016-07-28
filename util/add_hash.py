@@ -4,10 +4,16 @@ def enhash(e, h, k, l):
   return e * (2 ** 30) + (h+512) * (2 ** 20) + (k+512) * (2 ** 10) + (l+512)
 
 def dehash(hash_value):
-  e = hash_value // 2 ** 30
-  h = (hash_value % (2 ** 30)) // (2 ** 20) - 512
-  k = (hash_value % (2 ** 20)) // (2 ** 10) - 512
-  l = (hash_value % (2 ** 10)) - 512
+  if type(hash_value) == type(42):
+    e = hash_value // 2 ** 30
+    h = (hash_value % (2 ** 30)) // (2 ** 20) - 512
+    k = (hash_value % (2 ** 20)) // (2 ** 10) - 512
+    l = (hash_value % (2 ** 10)) - 512
+  else:
+    e = hash_value / 2 ** 30
+    h = (hash_value % (2 ** 30)) / (2 ** 20) - 512
+    k = (hash_value % (2 ** 20)) / (2 ** 10) - 512
+    l = (hash_value % (2 ** 10)) - 512
   return e, h, k, l
 
 def add_hash(integrated_data):
