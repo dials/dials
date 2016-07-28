@@ -4,11 +4,11 @@ from __future__ import division
 #  1. a common prefix
 __dials_version_format = "DIALS %s"
 #  2. the most recent annotated git tag (or failing that: a default string)
-__dials_version_default = "1.dev"
+__dials_version_default = "1.3"
 #  3. a dash followed by the number of commits since that tag
 #  4. a dash followed by a lowercase 'g' and the current commit id
 
-def get_git_version(dials_path, treat_merges_as_single_commit=False):
+def get_git_version(dials_path, treat_merges_as_single_commit=True):
   import os
   import subprocess
   version = None
