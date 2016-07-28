@@ -24,7 +24,7 @@ def npp(values, input_mean_variance):
 
 def semisynthetic_variance_analysis(semisynthetic_integrated_data_files):
   import cPickle as pickle
-  from logging import info
+  import math
   from dials.array_family import flex
   from dials.util.add_hash import add_hash, dehash
 
@@ -65,8 +65,9 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files):
     weighted_mean, weighted_variance = weighted_mean_variance(values_profile,
                                                               variances_profile)
     expected, scaled = npp(values_profile, (weighted_mean, weighted_variance))
-    for e, s in zip(expected, scaled):
-      print e, s
+    fit = flex.linear_regression(expected, scaled)
+    print '%.3f %3f' % (weighted_mean / math.sqrt(weighted_variance),
+                        fit.slope())
 
 if __name__ == '__main__':
   import sys
