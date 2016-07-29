@@ -42,6 +42,11 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
       variance_column = column
       break
   assert(variance_column)
+  data = integrated_data[value_column]
+  if hasattr(data, 'parts'):
+    multicolumn = len(data.parts())
+  else:
+    multicolumn = 0
 
   # first prepare the data files i.e. remove partials, keep only integrated
   # reflections, add the hash column, add weight column
@@ -51,7 +56,7 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
   hashed_data_sets = []
 
   for integrated_data in integrated_data_sets:
-    if 'intensity' in value_column:
+    if 'intensity.sum.value' in integrated_data:
       sel = integrated_data.get_flags(integrated_data.flags.integrated)
       integrated_data = integrated_data.select(sel)
       sel = integrated_data['partiality'] > 0.99
@@ -67,20 +72,45 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
   # at the profile fitted intensity and variance thereof)
 
   for h in hash_set:
-    values = flex.double()
-    variances = flex.double()
-    for i in hashed_data_sets:
-      sel = i['hash'] == h
-      isel = sel.iselection()
-      assert(len(isel) == 1)
-      values.append(i[isel[0]][value_column])
-      variances.append(i[isel[0]][variance_column])
-    weighted_mean, weighted_variance = weighted_mean_variance(values,
-                                                              variances)
-    expected, scaled = npp(values, (weighted_mean, weighted_variance))
-    fit = flex.linear_regression(expected, scaled)
-    print '%.3f %3f' % (weighted_mean / math.sqrt(weighted_variance),
-                        fit.slope())
+    if not multicolumn:
+      values = flex.double()
+      variances = flex.double()
+      for i in hashed_data_sets:
+        sel = i['hash'] == h
+        isel = sel.iselection()
+        assert(len(isel) == 1)
+        values.append(i[isel[0]][value_column])
+        variances.append(i[isel[0]][variance_column])
+      weighted_mean, weighted_variance = weighted_mean_variance(values,
+                                                                variances)
+      expected, scaled = npp(values, (weighted_mean, weighted_variance))
+      fit = flex.linear_regression(expected, scaled)
+      print '%.3f %.3f' % (weighted_mean / math.sqrt(weighted_variance),
+                           fit.slope())
+    else:
+      values = { }
+      variances = { }
+      for m in range(multicolumn):
+        values[m] = flex.double()
+        variances[m] = flex.double()
+      for i in hashed_data_sets:
+        sel = i['hash'] == h
+        isel = sel.iselection()
+        assert(len(isel) == 1)
+        data = i[isel[0]][value_column]
+        variance = i[isel[0]][variance_column]
+        for m in range(multicolumn):
+          values[m].append(data[m])
+          variances[m].append(variance[m])
+      result = ''
+      for m in range(multicolumn):
+        weighted_mean, weighted_variance = weighted_mean_variance(values[m],
+                                                                  variances[m])
+        expected, scaled = npp(values[m], (weighted_mean, weighted_variance))
+        fit = flex.linear_regression(expected, scaled)
+        result += '%.3f %.3f ' % (weighted_mean / math.sqrt(weighted_variance),
+                                  fit.slope())
+      print result
 
 if __name__ == '__main__':
   import sys
