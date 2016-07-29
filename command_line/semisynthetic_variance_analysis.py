@@ -56,10 +56,14 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
   hashed_data_sets = []
 
   for integrated_data in integrated_data_sets:
-    if 'intensity.sum.value' in integrated_data:
+    size0 = integrated_data.size()
+    if 'intensity' in value_column:
       sel = integrated_data.get_flags(integrated_data.flags.integrated)
       integrated_data = integrated_data.select(sel)
       sel = integrated_data['partiality'] > 0.99
+      integrated_data = integrated_data.select(sel)
+    elif 'xyzobs' in value_column:
+      sel = integrated_data.get_flags(integrated_data.flags.indexed)
       integrated_data = integrated_data.select(sel)
     integrated_data = add_hash(integrated_data)
     hashed_data_sets.append(integrated_data)
@@ -67,6 +71,19 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
       hash_set = set(integrated_data['hash'])
     else:
       hash_set = hash_set.intersection(set(integrated_data['hash']))
+    size1 = integrated_data.size()
+
+  duplicate = []
+  for h in hash_set:
+    # check for duplicates i.e. reflection at 0, 2pi
+    for i in hashed_data_sets:
+      sel = i['hash'] == h
+      isel = sel.iselection()
+      if len(isel) > 1:
+        duplicate.append(h)
+
+  for d in duplicate:
+    hash_set.discard(d)
 
   # now analyse those reflections found to be in all data sets (here looking
   # at the profile fitted intensity and variance thereof)
@@ -108,8 +125,7 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
                                                                   variances[m])
         expected, scaled = npp(values[m], (weighted_mean, weighted_variance))
         fit = flex.linear_regression(expected, scaled)
-        result += '%.3f %.3f ' % (weighted_mean / math.sqrt(weighted_variance),
-                                  fit.slope())
+        result += '%.6f %.3f ' % (math.sqrt(weighted_variance), fit.slope())
       print result
 
 if __name__ == '__main__':
