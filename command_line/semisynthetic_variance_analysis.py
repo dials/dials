@@ -103,10 +103,9 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
       expected, scaled = npp(values, (weighted_mean, weighted_variance))
       fit = flex.linear_regression(expected, scaled)
       # since I have everything needed to compute chi-square here...
-      sd = math.sqrt(weighted_variance)
       n = len(values)
-      chi2 = sum([((v - weighted_mean) ** 2) / sd for v in values]) / n
-      print '%.3f %.3f %.3f' % (weighted_mean / sd, fit.slope(), chi2)
+      chi2 = sum([((v - weighted_mean) ** 2) / weighted_variance for v in values]) / n
+      print '%.3f %.3f %.3f' % (weighted_mean / math.sqrt(weighted_variance), fit.slope(), chi2)
     else:
       values = { }
       variances = { }
@@ -129,10 +128,9 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
         expected, scaled = npp(values[m], (weighted_mean, weighted_variance))
         fit = flex.linear_regression(expected, scaled)
         # since I have everything needed to compute chi-square here...
-        sd = math.sqrt(weighted_variance)
         n = len(values[m])
-        chi2 = sum([((v - weighted_mean) ** 2) / sd for v in values[m]]) / n
-        result += '%f %.3f %.3f ' % (sd, fit.slope(), chi2)
+        chi2 = sum([((v - weighted_mean) ** 2) / weighted_variance for v in values[m]]) / n
+        result += '%f %.3f %.3f ' % (math.sqrt(weighted_variance), fit.slope(), chi2)
       print result
 
 if __name__ == '__main__':
