@@ -67,17 +67,17 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
   # at the profile fitted intensity and variance thereof)
 
   for h in hash_set:
-    values_profile = flex.double()
-    variances_profile = flex.double()
+    values = flex.double()
+    variances = flex.double()
     for i in hashed_data_sets:
       sel = i['hash'] == h
       isel = sel.iselection()
       assert(len(isel) == 1)
-      values_profile.append(i[isel[0]][value_column])
-      variances_profile.append(i[isel[0]][variance_column])
-    weighted_mean, weighted_variance = weighted_mean_variance(values_profile,
-                                                              variances_profile)
-    expected, scaled = npp(values_profile, (weighted_mean, weighted_variance))
+      values.append(i[isel[0]][value_column])
+      variances.append(i[isel[0]][variance_column])
+    weighted_mean, weighted_variance = weighted_mean_variance(values,
+                                                              variances)
+    expected, scaled = npp(values, (weighted_mean, weighted_variance))
     fit = flex.linear_regression(expected, scaled)
     print '%.3f %3f' % (weighted_mean / math.sqrt(weighted_variance),
                         fit.slope())
