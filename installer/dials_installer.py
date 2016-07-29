@@ -58,40 +58,68 @@ class installer(install_distribution.installer):
       f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
       return '%s %s' % (f, suffixes[i])
 
+    self._cleaned_size, self._cleaned_files = 0, 0
     def rmdir(subdir):
       fullpath = os.path.join(directory, subdir)
       num_files, total_size = 0, 0
       if not os.path.exists(fullpath):
-        print "Skipping", subdir
+        print "Skipping", " " * 26, subdir
         return
       for dirpath, dirnames, filenames in os.walk(fullpath):
         for f in filenames:
           fp = os.path.join(dirpath, f)
           total_size += os.path.getsize(fp)
           num_files += 1
-      print "Removing %s" % subdir
-      print "  %s, %d files" % (humansize(total_size), num_files)
+      print "Removing %9s, %4d files from %s" % \
+          (humansize(total_size), num_files, subdir)
       shutil.rmtree(fullpath)
-      print
+      self._cleaned_size = self._cleaned_size + total_size
+      self._cleaned_files = self._cleaned_files + num_files
 
-    rmdir('base/lib/python2.7/site-packages/matplotlib-1.3.1-py2.7-linux-x86_64.egg/matplotlib/tests')
-    # TODO: deduce path using something like
-    # import matplotlib
-    # import inspect
-    # inspect.getsourcefile(matplotlib)
-    # => '/scratch/wra62962/files/dials/base/lib/python2.7/site-packages/matplotlib-1.3.1-py2.7-linux-x86_64.egg/matplotlib/__init__.py'
+    # Deduce matplotlib path
+    # (base/lib/python2.??/site-packages/matplotlib-????/matplotlib)
+    try:
+      import matplotlib
+      import inspect
+      matplotpath = os.path.dirname(os.path.dirname(inspect.getsourcefile(matplotlib)))
+      relpath = []
+      matplotpath, d = os.path.split(matplotpath)
+      relpath.append(d)
+      while d and (d != 'base'):
+        matplotpath, d = os.path.split(matplotpath)
+        relpath.append(d)
+      if d == 'base':
+        relpath.reverse()
+        # delete matplotlib tests
+        matplotpath = os.path.join(*relpath)
+        rmdir(os.path.join(matplotpath, 'matplotlib', 'tests'))
+        rmdir(os.path.join(matplotpath, 'mpl_toolkits', 'tests'))
+    except Exception:
+      print "Could not deduce matplotlib path"
 
+    rmdir('base/lib/python2.7/site-packages/numpy/core/tests')
+    rmdir('base/lib/python2.7/site-packages/numpy/doc')
+    rmdir('base/lib/python2.7/site-packages/numpy/distutils/tests')
+    rmdir('base/lib/python2.7/site-packages/numpy/f2py/docs')
     rmdir('base/lib/python2.7/test')
-    rmdir('base/man')
     rmdir('base/share/doc')
     rmdir('base/share/gtk-doc')
     rmdir('base/share/hdf5_examples')
-    rmdir('modules/boost/libs/python/example')
+    rmdir('base/share/man')
+    for p in ['date_time', 'filesystem', 'program_options', 'python', 'thread']:
+      rmdir(os.path.join('modules/boost/libs', p, 'example'))
+      rmdir(os.path.join('modules/boost/libs', p, 'doc'))
+      rmdir(os.path.join('modules/boost/libs', p, 'test'))
+      rmdir(os.path.join('modules/boost/libs', p, 'tutorial'))
     rmdir('modules/cbflib/doc')
     rmdir('modules/cbflib/examples')
     rmdir('modules/cbflib/ply-3.2/doc')
     rmdir('modules/cbflib/ply-3.2/example')
     rmdir('modules/cbflib/ply-3.2/test')
+    rmdir('modules/clipper/examples')
+    print "-" * 60
+    print "Deleted %d files, decrufting installation by %s\n" % \
+        (self._cleaned_files, humansize(self._cleaned_size))
 
 if __name__ == "__main__":
   installer(sys.argv[1:]).install()
