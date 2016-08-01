@@ -47,7 +47,7 @@ control_phil_str = '''
   }
 
   mp {
-    method = *multiprocessing sge lsf pbs
+    method = *multiprocessing sge lsf pbs mpi
       .type = choice
       .help = "The multiprocessing method to use"
     nproc = 1
@@ -152,13 +152,21 @@ class Script(object):
     if len(all_paths) == 1:
       datablocks = [do_import(all_paths[0])]
     else:
-      datablocks = easy_mp.parallel_map(
-        func=do_import,
-        iterable=all_paths,
-        processes=params.mp.nproc,
-        method=params.mp.method,
-        preserve_order=True,
-        preserve_exception_message=True)
+      if params.mp.method == 'mpi':
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
+        size = comm.Get_size() # size: number of processes running in this job
+
+        datablocks = [do_import(all_paths[i]) for i in xrange(len(all_paths)) if (i+rank)%size == 0]
+      else:
+        datablocks = easy_mp.parallel_map(
+          func=do_import,
+          iterable=all_paths,
+          processes=params.mp.nproc,
+          method=params.mp.method,
+          preserve_order=True,
+          preserve_exception_message=True)
 
     if len(datablocks) == 0:
       raise Abort('No datablocks specified')
@@ -188,13 +196,18 @@ class Script(object):
       Processor(copy.deepcopy(params)).process_datablock(item[0], item[1])
 
     # Process the data
-    easy_mp.parallel_map(
-      func=do_work,
-      iterable=zip(tags, split_datablocks),
-      processes=params.mp.nproc,
-      method=params.mp.method,
-      preserve_order=True,
-      preserve_exception_message=True)
+    if params.mp.method == 'mpi':
+      for i, item in enumerate(zip(tags, split_datablocks)):
+        if (i+rank)%size == 0:
+          do_work(item)
+    else:
+      easy_mp.parallel_map(
+        func=do_work,
+        iterable=zip(tags, split_datablocks),
+        processes=params.mp.nproc,
+        method=params.mp.method,
+        preserve_order=True,
+        preserve_exception_message=True)
 
      # Total Time
     info("")
