@@ -233,8 +233,8 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
     converter = PixelListToReflectionTable(
       self.min_spot_size,
       self.max_spot_size,
-      False,
-      self.filter_spots)
+      self.filter_spots,
+      False)
     reflections, _ = converter(self.imageset, pixel_labeller)
 
     # Delete the shoeboxes
