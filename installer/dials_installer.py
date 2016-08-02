@@ -78,6 +78,7 @@ class installer(install_distribution.installer):
 
     # Deduce matplotlib path
     # (base/lib/python2.??/site-packages/matplotlib-????/matplotlib)
+    # (base/Python.framework/Versions/?.?/lib/python?.?/site-packages/matplotlib-(...) on MacOS)
     try:
       import matplotlib
       import inspect
@@ -94,14 +95,19 @@ class installer(install_distribution.installer):
         matplotpath = os.path.join(*relpath)
         rmdir(os.path.join(matplotpath, 'matplotlib', 'tests'))
         rmdir(os.path.join(matplotpath, 'mpl_toolkits', 'tests'))
-    except Exception:
-      print "Could not deduce matplotlib path"
 
-    rmdir('base/lib/python2.7/site-packages/numpy/core/tests')
-    rmdir('base/lib/python2.7/site-packages/numpy/doc')
-    rmdir('base/lib/python2.7/site-packages/numpy/distutils/tests')
-    rmdir('base/lib/python2.7/site-packages/numpy/f2py/docs')
-    rmdir('base/lib/python2.7/test')
+        # ...while we're here
+        sitepath = os.path.dirname(matplotpath)
+        rmdir(os.path.join(sitepath, 'numpy/core/tests'))
+        rmdir(os.path.join(sitepath, 'numpy/doc'))
+        rmdir(os.path.join(sitepath, 'numpy/distutils/tests'))
+        rmdir(os.path.join(sitepath, 'numpy/f2py/docs'))
+
+        pythonpath = os.path.dirname(sitepath)
+        rmdir(os.path.join(pythonpath, 'test'))
+    except Exception:
+      print "Could not deduce python package paths"
+
     rmdir('base/share/doc')
     rmdir('base/share/gtk-doc')
     rmdir('base/share/hdf5_examples')
