@@ -92,6 +92,8 @@ class Script(object):
     # The script usage
     usage = "usage: %s [options] [param.phil] filenames" % libtbx.env.dispatcher_name
 
+    self.tag = None
+
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
@@ -232,6 +234,7 @@ class Processor(object):
       self.params.output.refined_experiments_filename = os.path.join(self.params.output.output_dir, self.params.output.refined_experiments_filename%("idx-" + s))
     if "%s" in self.params.output.integrated_filename:
       self.params.output.integrated_filename = os.path.join(self.params.output.output_dir, self.params.output.integrated_filename%("idx-" + s))
+    self.tag = tag
 
     if self.params.output.datablock_filename:
       from dxtbx.datablock import DataBlockDumper
@@ -457,15 +460,18 @@ class Processor(object):
         frame = ConstructFrame(reflections, experiment).make_frame()
         frame["pixel_size"] = experiment.detector[0].get_pixel_size()[0]
 
-        try:
-          # if the data was a file on disc, get the path
-          event_timestamp = os.path.splitext(experiments[0].imageset.paths()[0])[0]
-        except NotImplementedError:
-          # if the data is in memory only, check if the reader set a timestamp on the format object
-          event_timestamp = experiment.imageset.reader().get_format(0).timestamp
-        event_timestamp = os.path.basename(event_timestamp)
-        if event_timestamp.find("shot-")==0:
-           event_timestamp = os.path.splitext(event_timestamp)[0] # micromanage the file name
+        if self.tag is None:
+          try:
+            # if the data was a file on disc, get the path
+            event_timestamp = os.path.splitext(experiments[0].imageset.paths()[0])[0]
+          except NotImplementedError:
+            # if the data is in memory only, check if the reader set a timestamp on the format object
+            event_timestamp = experiment.imageset.reader().get_format(0).timestamp
+          event_timestamp = os.path.basename(event_timestamp)
+          if event_timestamp.find("shot-")==0:
+             event_timestamp = os.path.splitext(event_timestamp)[0] # micromanage the file name
+        else:
+          event_timestamp = self.tag
         if hasattr(self.params.output, "output_dir"):
           outfile = os.path.join(self.params.output.output_dir, self.params.output.integration_pickle%(e_number,event_timestamp))
         else:
