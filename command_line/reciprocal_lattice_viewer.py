@@ -87,16 +87,11 @@ class render_3d(object):
     self.set_points()
 
   def map_points_to_reciprocal_space(self):
-    goniometer = self.imagesets[0].get_goniometer()
-    if self.goniometer_orig is not None and not self.settings.reverse_phi:
-      self.imagesets[0].set_goniometer(self.goniometer_orig)
-      self.goniometer_orig = None
-    elif goniometer is not None and self.settings.reverse_phi:
-      self.goniometer_orig = copy.deepcopy(goniometer)
-      goniometer.set_rotation_axis([-i for i in goniometer.get_rotation_axis()])
-    from dials.algorithms.indexing import indexer
 
+    from dials.algorithms.indexing import indexer
     from dials.array_family import flex
+    import copy
+
     reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
       if 'imageset_id' in self.reflections_input:
@@ -112,16 +107,26 @@ class render_3d(object):
           self.reflections_input.select(sel),
           imageset.get_detector(), imageset.get_scan())
 
+        goniometer = copy.deepcopy(imageset.get_goniometer())
+        if self.settings.reverse_phi:
+          goniometer.set_rotation_axis(
+            [-i for i in goniometer.get_rotation_axis()])
         indexer.indexer_base.map_centroids_to_reciprocal_space(
           refl, imageset.get_detector(), imageset.get_beam(),
-          imageset.get_goniometer())
+          goniometer)
 
       else:
         # work on xyzcal.mm
         refl = self.reflections_input.select(sel)
+
+        goniometer = copy.deepcopy(imageset.get_goniometer())
+        if self.settings.reverse_phi:
+          goniometer.set_rotation_axis(
+            [-i for i in goniometer.get_rotation_axis()])
+
         indexer.indexer_base.map_centroids_to_reciprocal_space(
           refl, imageset.get_detector(), imageset.get_beam(),
-          imageset.get_goniometer(), calculated=True)
+          goniometer, calculated=True)
 
       reflections.extend(refl)
       self.reflections = reflections
@@ -318,7 +323,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
           self.settings.beam_centre)))
         self.imagesets[0].set_detector(detector)
         self.imagesets[0].set_beam(beam)
-        self.map_points_to_reciprocal_space()
+    self.map_points_to_reciprocal_space()
     self.set_points()
     self.viewer.update_settings(*args, **kwds)
 
@@ -375,12 +380,15 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       setting="show_beam_vector",
       label="Show beam vector")
     self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
-    ctrls = self.create_controls(
+    self.reverse_phi_ctrl = self.create_controls(
       setting="reverse_phi",
-      label="Reverse phi direction")
-    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
+      label="Invert rotation axis")[0]
+    self.panel_sizer.Add(self.reverse_phi_ctrl, 0, wx.ALL, 5)
+    self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings,
+              self.reverse_phi_ctrl)
 
-    self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
+    self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01,
+                                              digits=2)
     self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
     if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
       self.beam_fast_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -389,9 +397,11 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     label = wx.StaticText(self,-1,"Beam fast")
     box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.beam_fast_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_fast_ctrl)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings,
+              self.beam_fast_ctrl)
 
-    self.beam_slow_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
+    self.beam_slow_ctrl = floatspin.FloatSpin(parent=self, increment=0.01,
+                                              digits=2)
     self.beam_slow_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
     if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
       self.beam_slow_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -470,6 +480,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.settings.z_max = self.z_max_ctrl.GetValue()
     self.settings.beam_centre = (
       self.beam_fast_ctrl.GetValue(), self.beam_slow_ctrl.GetValue())
+    self.settings.reverse_phi = self.reverse_phi_ctrl.GetValue()
     self.settings.marker_size = self.marker_size_ctrl.GetValue()
     for i, display in enumerate(("all", "indexed", "unindexed", "integrated")):
       if self.btn.values[i]:
