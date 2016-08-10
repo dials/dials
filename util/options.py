@@ -615,7 +615,7 @@ class OptionParserBase(optparse.OptionParser, object):
 
     # Read stdin if data is available
     if not quick_parse and os.name is not 'nt':
-      while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+      while sys.stdin in select.select([sys.stdin], [], [], 1)[0]:
         l = sys.stdin.readline()
         if l:
           args.append(l.strip())
