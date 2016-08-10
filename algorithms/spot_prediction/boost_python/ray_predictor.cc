@@ -51,10 +51,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init <vec3<double>,
                  vec3<double>,
                  mat3<double>,
+                 mat3<double>,
                  vec2<double> > ((
         arg("s0"),
         arg("m2"),
         arg("fixed_rotation"),
+        arg("setting_rotation"),
         arg("dphi"))))
       .def("__call__", &ScanStaticRayPredictor::operator(), (
         arg("miller_index"),

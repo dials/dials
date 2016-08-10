@@ -108,6 +108,7 @@ namespace dials { namespace algorithms {
             beam.get_s0(),
             goniometer.get_rotation_axis(),
             goniometer.get_fixed_rotation(),
+            goniometer.get_setting_rotation(),
             vec2<double>(0.0, two_pi)){}
 
 
@@ -589,6 +590,7 @@ namespace dials { namespace algorithms {
         s0,
         goniometer_.get_rotation_axis(),
         goniometer_.get_fixed_rotation(),
+        goniometer_.get_setting_rotation(),
         vec2<double>(0.0, two_pi));
       af::small<Ray, 2> rays = local_predict_rays_(h, ub);
       for (std::size_t i = 0; i < rays.size(); ++i) {
