@@ -305,6 +305,7 @@ class PredictionParameterisation(object):
     self._B = flex.mat3_double(self._nref)
     self._axis = flex.vec3_double(self._nref)
     self._fixed_rotation = flex.mat3_double(self._nref)
+    self._setting_rotation = flex.mat3_double(self._nref)
 
     # Set up experiment to index mapping
     self._experiment_to_idx = []
@@ -325,6 +326,7 @@ class PredictionParameterisation(object):
       if exp.goniometer:
         self._axis.set_selected(sel, exp.goniometer.get_rotation_axis())
         self._fixed_rotation.set_selected(sel, exp.goniometer.get_fixed_rotation())
+        self._setting_rotation.set_selected(sel, exp.goniometer.get_setting_rotation())
 
     # Other derived values
     self._h = reflections['miller_index'].as_vec3_double()
@@ -685,7 +687,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # r is the reciprocal lattice vector, in the lab frame
     self._phi_calc = reflections['xyzcal.mm'].parts()[2]
     q = self._fixed_rotation * (self._UB * self._h)
-    self._r = q.rotate_around_origin(self._axis, self._phi_calc)
+    self._r = self._setting_rotation * q.rotate_around_origin(self._axis, self._phi_calc)
 
     # All of the derivatives of phi have a common denominator, given by
     # (e X r).s0, where e is the rotation axis. Calculate this once, here.
@@ -775,6 +777,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # Get required data
     axis = self._axis.select(isel)
     fixed_rotation = self._fixed_rotation.select(isel)
+    setting_rotation = self._setting_rotation.select(isel)
     phi_calc = self._phi_calc.select(isel)
     h = self._h.select(isel)
     s1 = self._s1.select(isel)
@@ -803,7 +806,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       # calculate the derivative of r for this parameter
       # FIXME COULD DO THIS BETTER WITH __rmul__?!
       tmp = fixed_rotation * (der * B * h)
-      dr = tmp.rotate_around_origin(axis, phi_calc)
+      dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
 
       # calculate the derivative of phi for this parameter
       dphi = -1.0 * dr.dot(s1) / e_r_s0
@@ -822,6 +825,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # Get required data
     axis = self._axis.select(isel)
     fixed_rotation = self._fixed_rotation.select(isel)
+    setting_rotation = self._setting_rotation.select(isel)
     phi_calc = self._phi_calc.select(isel)
     h = self._h.select(isel)
     s1 = self._s1.select(isel)
@@ -849,7 +853,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # calculate the derivative of r for this parameter
       tmp = fixed_rotation * (U * der * h)
-      dr = tmp.rotate_around_origin(axis, phi_calc)
+      dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
 
       # calculate the derivative of phi for this parameter
       dphi = -1.0 * dr.dot(s1) / e_r_s0
