@@ -53,6 +53,7 @@ class ScansRayPredictor(object):
       e.beam.get_s0(),
       e.goniometer.get_rotation_axis(),
       e.goniometer.get_fixed_rotation(),
+      e.goniometer.get_setting_rotation(),
       self._sweep_range)
 
     UB_ = UB if UB else e.crystal.get_A()
