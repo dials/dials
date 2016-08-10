@@ -1067,11 +1067,11 @@ class indexer_base(object):
       S = s1 - beam.get_s0()
       if goniometer is not None:
         setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
-        rotation_axis = matrix.col(goniometer.get_rotation_axis())
+        rotation_axis = setting_rotation.inverse() * matrix.col(
+          goniometer.get_rotation_axis())
         fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
-        spots_mm['rlp'].set_selected(sel, S)
         spots_mm['rlp'].set_selected(
-          sel, tuple(setting_rotation.inverse()) * spots_mm['rlp'].select(sel))
+          sel, tuple(setting_rotation.inverse()) * S)
         spots_mm['rlp'].set_selected(
           sel, spots_mm['rlp'].select(sel).rotate_around_origin(
             rotation_axis, -rot_angle))
