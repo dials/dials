@@ -42,7 +42,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     # all experiments then absolute cutoffs should be used instead.
     detector = experiments[0].detector
     if not absolute_cutoffs:
-      print detector
       pixel_sizes = [p.get_pixel_size() for p in detector]
       min_px_size_x = min(e[0] for e in pixel_sizes)
       min_px_size_y = min(e[1] for e in pixel_sizes)

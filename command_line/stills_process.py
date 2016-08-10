@@ -460,7 +460,7 @@ class Processor(object):
         frame = ConstructFrame(reflections, experiment).make_frame()
         frame["pixel_size"] = experiment.detector[0].get_pixel_size()[0]
 
-        if self.tag is None:
+        if not hasattr(self, 'tag') or self.tag is None:
           try:
             # if the data was a file on disc, get the path
             event_timestamp = os.path.splitext(experiments[0].imageset.paths()[0])[0]

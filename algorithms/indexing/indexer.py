@@ -510,11 +510,14 @@ class indexer_base(object):
 
       if use_stills_indexer:
         # Ensure the indexer and downstream applications treat this as set of stills
-        from dxtbx.imageset import ImageSet
+        from dxtbx.imageset import ImageSet, MemImageSet
         reset_sets = []
         for i in xrange(len(imagesets)):
           imagesweep = imagesets.pop(0)
-          imageset = ImageSet(imagesweep.reader(), imagesweep.indices())
+          if isinstance(imageset, MemImageSet):
+            imageset = MemImageSet(imagesweep._images, imagesweep.indices())
+          else:
+            imageset = ImageSet(imagesweep.reader(), imagesweep.indices())
           imageset.set_scan(None)
           imageset.set_goniometer(None)
           reset_sets.append(imageset)
