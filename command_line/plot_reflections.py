@@ -183,9 +183,9 @@ def run(args):
               for i_panel in range(len(detector))])
   ymax = max([detector[i_panel].get_image_size_mm()[1] + panel_origin_shifts[i_panel][1]
               for i_panel in range(len(detector))])
-  if hierarchy is not None:
+  try:
     beam_centre = hierarchy.get_beam_centre(imageset.get_beam().get_s0())
-  else:
+  except Exception:
     beam_centre = detector[0].get_beam_centre(imageset.get_beam().get_s0())
   pyplot.scatter([beam_centre[0]], [beam_centre[1]], marker='+', c='blue', s=100)
   pyplot.xlim(0, xmax)

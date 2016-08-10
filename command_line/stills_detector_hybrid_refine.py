@@ -132,10 +132,10 @@ def detector_parallel_refiners(params, experiments, reflections):
   def recursive_add_child(d, parent, child):
     """ Creates either a panel group or a panel on the parent,
         and sets it up to match the child """
-    if hasattr(child, "children"):
+    if child.is_group():
       newchild = parent.add_group()
     else:
-      newchild = parent.add_panel(d.add_panel())
+      newchild = parent.add_panel()
       newchild.set_image_size(child.get_image_size())
       newchild.set_trusted_range(child.get_trusted_range())
       newchild.set_pixel_size(child.get_pixel_size())
@@ -144,22 +144,22 @@ def detector_parallel_refiners(params, experiments, reflections):
     m = child.get_local_d_matrix()
     newchild.set_local_frame(m[0::3],m[1::3],m[2::3])
     newchild.set_name(child.get_name())
-    if hasattr(child, "children"):
+    if child.is_group():
       for c in child.children():
         recursive_add_child(d, newchild, c)
 
-  from dxtbx.model.detector import HierarchicalDetector
-  sub_detectors = [HierarchicalDetector() for e in groups]
+  from dxtbx.model import Detector
+  sub_detectors = [Detector() for e in groups]
   for d, g in zip(sub_detectors, groups):
     d.hierarchy().set_name(g.get_name())
     d.hierarchy().set_frame(g.get_fast_axis(),
                             g.get_slow_axis(),
                             g.get_origin())
-    if hasattr(g, "children"):
+    if g.is_group():
       for c in g.children():
         recursive_add_child(d, d.hierarchy(), c)
     else: # at the bottom of the hierarchy. Note the new panel's frame will be the identity matrix.
-      p = d.hierarchy().add_panel(d.add_panel())
+      p = d.hierarchy().add_panel()
       p.set_image_size(g.get_image_size())
       p.set_trusted_range(g.get_trusted_range())
       p.set_pixel_size(g.get_pixel_size())
