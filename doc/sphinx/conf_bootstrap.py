@@ -145,7 +145,7 @@ html_theme_options = {
     # Note the "1" or "True" value above as the third argument to indicate
     # an arbitrary url.
     'navbar_links': [
-        ("Downloads", "http://cci.lbl.gov/dials/installers/", True)
+        ("Downloads", "https://github.com/dials/dials/releases/", True)
         #("Examples", "examples"),
         #("Link", "http://example.com", True),
     ],

@@ -10,3 +10,6 @@ _*.nb
 *.swp
 .git-notifier*
 .gitversion
+
+doc/sphinx/build
+doc/sphinx/installation.stable_release.json
