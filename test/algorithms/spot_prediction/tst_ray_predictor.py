@@ -197,7 +197,7 @@ class TestRayPredictor:
     dphi = self.scan.get_oscillation_range(deg=False)
 
     # Create the ray predictor
-    self.predict_rays = ScanStaticRayPredictor(s0, m2, fixed_rotation, 
+    self.predict_rays = ScanStaticRayPredictor(s0, m2, fixed_rotation,
                                                setting_rotation, dphi)
 
     # Predict the spot locations
