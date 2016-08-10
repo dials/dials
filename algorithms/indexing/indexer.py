@@ -1069,10 +1069,12 @@ class indexer_base(object):
         setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
         rotation_axis = matrix.col(goniometer.get_rotation_axis())
         fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
+        spots_mm['rlp'].set_selected(sel, S)
         spots_mm['rlp'].set_selected(
           sel, tuple(setting_rotation.inverse()) * spots_mm['rlp'].select(sel))
-        spots_mm['rlp'].set_selected(sel, S.rotate_around_origin(
-          goniometer.get_rotation_axis(), -rot_angle))
+        spots_mm['rlp'].set_selected(
+          sel, spots_mm['rlp'].select(sel).rotate_around_origin(
+            rotation_axis, -rot_angle))
         spots_mm['rlp'].set_selected(
           sel, tuple(fixed_rotation.inverse()) * spots_mm['rlp'].select(sel))
       else:
