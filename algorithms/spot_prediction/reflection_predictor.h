@@ -211,6 +211,23 @@ namespace dials { namespace algorithms {
       table["miller_index"] = new_table["miller_index"];
       table["entering"] = new_table["entering"];
       table["panel"] = new_table["panel"];
+      // Begin debugging code
+      // Assert that angle between observed and calculated s1 vectors is small
+      const af::const_ref<vec3<double> > &s1_obs = table["s1"];
+      const af::const_ref<vec3<double> > &s1_calc = new_table["s1"];
+      for (std::size_t i = 0; i < table.size(); i++) {
+        vec3<double> s1o = s1_obs[i];
+        vec3<double> s1c = s1_calc[i];
+        if (s1o.length() > 0 && s1c.length() > 0) {
+          double angle = s1o.angle(s1c) * 180 / dxtbx::model::pi;
+          double max_angle = 5;
+          if (angle > max_angle) {
+            std::cout << "*** " << angle << " ***\n" ;
+          }
+          DIALS_ASSERT(angle < max_angle);
+        }
+      }
+      // End debugging code
       table["s1"] = new_table["s1"];
       table["xyzcal.px"] = new_table["xyzcal.px"];
       table["xyzcal.mm"] = new_table["xyzcal.mm"];
