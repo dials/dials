@@ -581,6 +581,31 @@ def exercise_16():
                             expected_rmsds, expected_hall_symbol)
   assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
+def exercise_17():
+  # test for small molecule multi-sweep indexing, 3 sweeps with different values
+  # of goniometer setting rotation (i.e. phi scans)
+  data_dir = os.path.join(dials_regression, "dials-191")
+  import glob
+  pickle_paths = [
+    glob.glob(os.path.join(data_dir, "*SWEEP%i*_strong.pickle" %(i+1)))[0]
+    for i in range(3)]
+  sweep_paths = [
+    glob.glob(os.path.join(data_dir, "*SWEEP%i*_datablock.json" %(i+1)))[0]
+    for i in range(3)]
+  extra_args = ["filter_ice=False"]
+  expected_unit_cell = uctbx.unit_cell(
+    (9.385, 15.219, 17.019, 90.076, 89.980, 100.816))
+  expected_rmsds = (0.30, 0.32, 0.005 )
+  expected_hall_symbol = ' P 1'
+
+  result = run_one_indexing(" ".join(pickle_paths),  " ".join(sweep_paths),
+                            extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol)
+  assert len(result.indexed_reflections) > 12000, len(result.indexed_reflections)
+  # expect at least indexed 2000 reflections per experiment
+  for i in range(3):
+    assert (result.indexed_reflections['id'] == i).count(True) > 2000
+
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
@@ -589,7 +614,7 @@ def run(args):
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
                exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
                exercise_11, exercise_12, exercise_13, exercise_14, exercise_15,
-               exercise_16)
+               exercise_16, exercise_17)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
