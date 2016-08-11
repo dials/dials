@@ -985,8 +985,9 @@ class indexer_base(object):
     # points to the hemisphere in which reflections cross from inside to outside
     # of the sphere (reflections are exiting). NB this vector is in +ve Y
     # direction when using imgCIF coordinate frame.
-    vec = s0.cross(axis)
-    return reflections['s1'].dot(vec) < 0.
+    vec = s0.cross(matrix.sqr(goniometer.get_setting_rotation()) * axis)
+    entering = reflections['s1'].dot(vec) < 0.
+    return entering
 
   @staticmethod
   def map_spots_pixel_to_mm_rad(spots, detector, scan):
