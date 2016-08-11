@@ -47,13 +47,13 @@ namespace dials { namespace algorithms {
                            mat3 <double> fixed_rotation,
                            mat3 <double> setting_rotation,
                            vec2 <double> dphi)
-      : calculate_rotation_angles_(s0, m2),
+      : calculate_rotation_angles_(setting_rotation.inverse() * s0, m2),
         fixed_rotation_(fixed_rotation),
         setting_rotation_(setting_rotation),
         dphi_(dphi),
         s0_(s0),
         m2_(m2.normalize()),
-        s0_m2_plane(s0.cross(m2).normalize()){}
+        s0_m2_plane(s0.cross(setting_rotation * m2).normalize()){}
 
     /** Virtual destructor to allow inheritance */
     virtual ~ScanStaticRayPredictor() {}
@@ -102,8 +102,12 @@ namespace dials { namespace algorithms {
         }
 
         // Calculate the reciprocal space vector and diffracted beam vector
-        vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
+        vec3 <double> pstar = setting_rotation_ * pstar0.unit_rotate_around_origin(m2_, phi[i]);
         vec3 <double> s1 = s0_ + pstar;
+
+        double small = 1.0e-8;
+
+        DIALS_ASSERT(std::abs(s1.length() - s0_.length()) < small);
 
         // Calculate the direction of reflection passage
         bool entering = s1 * s0_m2_plane < 0.;

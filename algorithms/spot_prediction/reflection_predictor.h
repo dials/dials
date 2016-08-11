@@ -483,10 +483,11 @@ namespace dials { namespace algorithms {
       double phi_beg = scan_.get_angle_from_array_index(frame);
       double phi_end = scan_.get_angle_from_array_index(frame + 1);
       mat3<double> r_fixed =  goniometer_.get_fixed_rotation();
+      mat3<double> r_setting =  goniometer_.get_setting_rotation();
       mat3<double> r_beg = axis_and_angle_as_matrix(m2, phi_beg);
       mat3<double> r_end = axis_and_angle_as_matrix(m2, phi_end);
-      A1 = r_beg * r_fixed * A1;
-      A2 = r_end * r_fixed * A2;
+      A1 = r_setting * r_beg * r_fixed * A1;
+      A2 = r_setting * r_end * r_fixed * A2;
     }
 
     /**

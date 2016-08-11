@@ -7,6 +7,7 @@ def rebin_images(in_template, out_template, start, end):
   in_images = [in_template % j for j in range(start, end + 1)]
   out_images = [out_template % j for j in range(start, end + 1)]
   main(in_images, out_images)
+  return
 
 if __name__ == '__main__':
   import sys
