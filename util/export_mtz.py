@@ -281,14 +281,16 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   if not ignore_panels:
     assert(len(experiment.detector) == 1)
 
+  from scitbx import matrix
+
   if experiment.goniometer:
-    axis = experiment.goniometer.get_rotation_axis()
+    setting_rotation = matrix.sqr(experiment.goniometer.get_setting_rotation())
+    axis = setting_rotation * matrix.col(
+      experiment.goniometer.get_rotation_axis())
   else:
     axis = 0.0, 0.0, 0.0
   s0 = experiment.beam.get_s0()
   wavelength = experiment.beam.get_wavelength()
-
-  from scitbx import matrix
 
   panel = experiment.detector[0]
   origin = matrix.col(panel.get_origin())
