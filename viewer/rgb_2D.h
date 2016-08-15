@@ -189,8 +189,8 @@ namespace dials { namespace viewer { namespace boost_python {
         flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
         if(max == -1 && min == -1){
-          for (int col = 0; col < ncol; col++) {
-            for (int row = 0; row < nrow ; row++) {
+          for (int row = 0; row < nrow ; row++) {
+            for (int col = 0; col < ncol; col++) {
               loc_cel = data2d(row, col);
               if(row == 0 && col == 0){
                 max = loc_cel;
@@ -209,9 +209,8 @@ namespace dials { namespace viewer { namespace boost_python {
 
 
         dif = max - min;
-
-        for (int col = 0; col < ncol; col++) {
-          for (int row = 0; row < nrow; row++) {
+        for (int row = 0; row < nrow; row++) {
+          for (int col = 0; col < ncol; col++) {
             loc_cel = data2d(row, col);
             if( loc_cel > max ){
               loc_cel = max;
@@ -244,8 +243,9 @@ namespace dials { namespace viewer { namespace boost_python {
         //std::cout << "\n nrow =" << nrow << " \n";
         //std::cout << "\n palette_num =" << palette_num << "\n";
 
-        for (col = 0; col < ncol; col++) {
-          for (row = 0; row < nrow; row++) {
+        for (row = 0; row < nrow; row++) {
+          for (col = 0; col < ncol; col++) {
+
             loc_cel_int = int(mask2d(row, col));
 
             if(px_scale > 1){
@@ -390,6 +390,7 @@ namespace dials { namespace viewer { namespace boost_python {
               }
 
             }else{
+
               if(palette_num == 1 ){
                   bmp_dat(row, col, 0) = gray_all_rgb_byte[int(scaled_array(row, col))];
                   bmp_dat(row, col, 1) = gray_all_rgb_byte[int(scaled_array(row, col))];
