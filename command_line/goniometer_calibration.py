@@ -71,10 +71,20 @@ def run(args):
 
   rows = []
 
+  from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+  from scitbx import matrix
+  R_to_mosflm = align_reference_frame(
+    experiments[0].beam.get_s0(), (1.0, 0.0, 0.0),
+    experiments[0].goniometer.get_rotation_axis(), (0.0, 0.0, 1.0))
+
+  axes = []
+  angles = []
+
   for i in range(len(crystals) - 1):
     R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
       crystals[i], crystals[i+1])
-    print "Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis
+    axes.append(axis)
+    angles.append(angle)
     depends_on = '.'
     if i+1 < len(params.axis):
       depends_on = params.axis[i+1].name
@@ -82,6 +92,18 @@ def run(args):
       params.axis[i].name, 'rotation', 'goniometer', depends_on,
       '%.4f' %axis[0], '%.4f' %axis[1], '%.4f' %axis[2], 0, 0, 0))
 
+  print "Goniometer axes and angles (ImgCIF coordinate system):"
+  for axis, angle in zip(axes, angles):
+    print "Rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %axis
+
+  print
+  print "Goniometer axes and angles (MOSFLM coordinate system):"
+  for axis, angle in zip(axes, angles):
+    print "Rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %(
+      R_to_mosflm * matrix.col(axis)).elems
+
+  print
+  print "ImgCIF _axis loop template:"
   from iotbx import cif
   loop = cif.model.loop(
     header=['_axis.id', '_axis.type', '_axis.equipment', '_axis.depends_on',
