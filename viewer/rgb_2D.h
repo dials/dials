@@ -182,15 +182,15 @@ namespace dials { namespace viewer { namespace boost_python {
 
         int nrow=data2d.accessor().all()[0];
         int ncol=data2d.accessor().all()[1];
-
+        int col, row;
         double loc_cel, dif = 0;
         int loc_cel_int;
 
         //flex_double scaled_array(flex_grid<>(nrow, ncol),0);
 
         if(max == -1 && min == -1){
-          for (int row = 0; row < nrow ; row++) {
-            for (int col = 0; col < ncol; col++) {
+          for (row = 0; row < nrow ; row++) {
+            for (col = 0; col < ncol; col++) {
               loc_cel = data2d(row, col);
               if(row == 0 && col == 0){
                 max = loc_cel;
@@ -209,21 +209,6 @@ namespace dials { namespace viewer { namespace boost_python {
 
 
         dif = max - min;
-        /*
-        for (int row = 0; row < nrow; row++) {
-          for (int col = 0; col < ncol; col++) {
-            loc_cel = data2d(row, col);
-            if( loc_cel > max ){
-              loc_cel = max;
-            }
-            if( loc_cel < min ){
-              loc_cel = min;
-            }
-            scaled_array(row, col) = 255.0 * 3 * (( loc_cel - min) / dif );
-          }
-        }
-        */
-
 
         int px_scale = 0;
 
@@ -240,7 +225,7 @@ namespace dials { namespace viewer { namespace boost_python {
 
         int digit_val[15];
         int pix_row, pix_col;
-        int col, row;
+
         int mask_pix_col, mask_pix_row;
         double scaled_pixel;
 
@@ -251,21 +236,6 @@ namespace dials { namespace viewer { namespace boost_python {
         for (row = 0; row < nrow; row++) {
           for (col = 0; col < ncol; col++) {
 
-        /*
-        for (int row = 0; row < nrow; row++) {
-          for (int col = 0; col < ncol; col++) {
-            loc_cel = data2d(row, col);
-            if( loc_cel > max ){
-              loc_cel = max;
-            }
-            if( loc_cel < min ){
-              loc_cel = min;
-            }
-            scaled_array(row, col) = 255.0 * 3 * (( loc_cel - min) / dif );
-          }
-        }
-        */
-
             loc_cel = data2d(row, col);
             if( loc_cel > max ){
               loc_cel = max;
@@ -274,7 +244,6 @@ namespace dials { namespace viewer { namespace boost_python {
               loc_cel = min;
             }
             scaled_pixel = 255.0 * 3 * (( loc_cel - min) / dif );
-
 
             loc_cel_int = int(mask2d(row, col));
 
