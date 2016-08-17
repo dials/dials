@@ -16,11 +16,9 @@ phil_scope = iotbx.phil.parse(
 '''
 space_group = None
   .type = space_group
-axis
-  .multiple = True
-{
-  name = None
-    .type = str
+output {
+  xoalign = None
+    .type = path
 }
 ''')
 
@@ -47,8 +45,6 @@ def run(args):
     parser.print_help()
     return
 
-  assert len(params.axis) == len(experiments) - 1
-
   from dials.algorithms.indexing.compare_orientation_matrices import \
        difference_rotation_matrix_axis_angle
   from scitbx import matrix
@@ -56,6 +52,7 @@ def run(args):
   for experiment in experiments:
     crystal = experiment.crystal
     gonio = experiment.goniometer
+    assert len(experiments) == (len(gonio.get_axes())+1)
     scan = experiment.scan
     fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
     setting_rotation = matrix.sqr(gonio.get_setting_rotation())
@@ -67,7 +64,6 @@ def run(args):
     crystal.set_U(U)
     if params.space_group is not None:
       crystal.set_space_group(params.space_group.group())
-    crystals.append(crystal)
 
   rows = []
 
@@ -80,26 +76,29 @@ def run(args):
   axes = []
   angles = []
 
-  for i in range(len(crystals) - 1):
+  for i in range(len(experiments) - 1):
     R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
-      crystals[i], crystals[i+1])
+      experiments[i].crystal, experiments[i+1].crystal)
+    gonio = experiments[i+1].goniometer
+    axis_names = gonio.get_names()
     axes.append(axis)
     angles.append(angle)
     depends_on = '.'
-    if i+1 < len(params.axis):
-      depends_on = params.axis[i+1].name
+    if i+1 < len(axis_names):
+      depends_on = axis_names[i+1]
     rows.insert(0, (
-      params.axis[i].name, 'rotation', 'goniometer', depends_on,
-      '%.4f' %axis[0], '%.4f' %axis[1], '%.4f' %axis[2], 0, 0, 0))
+      axis_names[i], 'rotation', 'goniometer', depends_on,
+      '%.4f' %axis[0], '%.4f' %axis[1], '%.4f' %axis[2], '.', '.', '.'))
 
+  axis_names = experiments[0].goniometer.get_names()
   print "Goniometer axes and angles (ImgCIF coordinate system):"
-  for axis, angle in zip(axes, angles):
-    print "Rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %axis
+  for axis, angle, name in zip(axes, angles, axis_names):
+    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %axis
 
   print
   print "Goniometer axes and angles (MOSFLM coordinate system):"
-  for axis, angle in zip(axes, angles):
-    print "Rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %(
+  for axis, angle, name in zip(axes, angles, axis_names):
+    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %(
       R_to_mosflm * matrix.col(axis)).elems
 
   print
@@ -113,6 +112,16 @@ def run(args):
     loop.add_row(row)
 
   print loop
+
+  if params.output.xoalign is not None:
+    write_xoalign_config(params.output.xoalign, axes, axis_names)
+
+def write_xoalign_config(file_name, axes, names):
+  with open(file_name, 'wb') as f:
+    print >> f, 'GONIOMETER_AXES_NAMES = ' + str(tuple(names))
+    print >> f, 'GONIOMETER_AXES = ' + '[' + ', '.join(
+      '(' + ', '.join('%.5f' %x for x in axis) + ')' for axis in axes) + ']'
+    print >> f, 'GONIOMETER_DATUM = (0,0,0) # in degrees'
 
 if __name__ == '__main__':
   import sys
