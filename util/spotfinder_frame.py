@@ -810,7 +810,7 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<vector_text_layer>',
           colour='#F62817')
-    if self.mask:
+    if self.mask or self.params.show_mask:
       if self.mask_layer is not None:
         self.pyslip.DeleteLayer(self.mask_layer)
         self.mask_layer = None
@@ -837,8 +837,10 @@ class SpotFrame(XrayFrame) :
     from scitbx.array_family import flex
     import math
 
-    if self.mask is None:
-      return
+    if self.mask is not None:
+      mask = self.mask
+    else:
+      mask = self.pyslip.tiles.raw_image.get_mask()
 
     def map_coords(x, y, p):
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
@@ -848,7 +850,7 @@ class SpotFrame(XrayFrame) :
         x, y)
 
     all_mask_data = []
-    for p, mask_p in enumerate(self.mask):
+    for p, mask_p in enumerate(mask):
       for i in (~mask_p).iselection():
         y, x = i//mask_p.focus()[1],i%mask_p.focus()[1]
         assert not mask_p[y,x]

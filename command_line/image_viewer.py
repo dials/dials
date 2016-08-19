@@ -61,6 +61,8 @@ image_viewer {
     .type = bool
   show_integrated = False
     .type = bool
+  show_mask = False
+    .type = bool
   display = *image mean variance dispersion sigma_b \
             sigma_s threshold global_threshold
     .type = choice
