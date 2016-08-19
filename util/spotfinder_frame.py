@@ -818,7 +818,7 @@ class SpotFrame(XrayFrame) :
       self.mask_layer = self.pyslip.AddPointLayer(
         all_mask_data, name="<mask_layer>",
         radius=3,
-        renderer = self.pyslip.DrawPointLayer,
+        renderer = self.pyslip.LightweightDrawPointLayer2,
         show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
 
     self.sum_images()
