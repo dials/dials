@@ -11,6 +11,7 @@
 
 from __future__ import division
 from iotbx.phil import parse
+from scitbx.array_family import flex
 
 phil_scope = parse("""
   border = 0
@@ -257,3 +258,67 @@ class MaskGenerator(object):
 
     # Return the mask
     return tuple(masks)
+
+
+class GoniometerShadowMaskGenerator(object):
+
+  def __init__(self, goniometer, extrema_at_datum, axis):
+    self.goniometer = goniometer
+    self._extrema_at_datum = extrema_at_datum
+    self.axis = axis
+
+  def extrema_at_scan_angle(self, scan_angle):
+    from scitbx import matrix
+
+    axes = self.goniometer.get_axes()
+    angles = self.goniometer.get_angles()
+    scan_axis = self.goniometer.get_scan_axis()
+    angles[scan_axis] = scan_angle
+    extrema = self._extrema_at_datum.deep_copy()
+
+    for i in range(len(axes)):
+      sel = (self.axis <= i)
+      rotation = matrix.col(
+        axes[i]).axis_and_angle_as_r3_rotation_matrix(angles[i], deg=True)
+      extrema.set_selected(sel, rotation.elems * extrema.select(sel))
+
+    return extrema
+
+  def project_extrema(self, detector, scan_angle):
+    shadow_boundary = [flex.vec2_double() for i in range(len(detector))]
+    coords = self.extrema_at_scan_angle(scan_angle)
+
+    for c in coords:
+      p_id = detector.get_panel_intersection(c)
+      if p_id == -1: continue
+      px = detector[p_id].get_ray_intersection_px(c)
+      shadow_boundary[p_id].append(px)
+
+    for p_id, shadow in enumerate(shadow_boundary):
+      if shadow.size() == 0:
+        continue
+      x, y = shadow.parts()
+      n_px = detector[p_id].get_image_size()
+      if (flex.min(x) < 20 and flex.min(y) < 20):
+        # top left
+        shadow.append((0, 0))
+      elif (flex.max(x) > (n_px[0]-20) and flex.min(y) < 20):
+        # top right
+        shadow.append((n_px[0], 0))
+      elif (flex.max(x) > (n_px[0]-20) and flex.max(y) > (n_px[1]-20)):
+        # bottom right
+        shadow.append(n_px)
+      elif (flex.min(x) < 20 and flex.max(y) > (n_px[1]-20)):
+        # bottom left
+        shadow.append((0, n_px[1]))
+
+    return shadow_boundary
+
+  def get_mask(self, detector, scan_angle):
+    shadow_boundary = self.project_extrema(detector, scan_angle)
+    from dials.util import mask_untrusted_polygon
+    mask = [flex.bool(flex.grid(reversed(p.get_image_size())), True) for p in detector]
+    for panel_id in range(len(detector)):
+      if shadow_boundary[panel_id].size():
+        mask_untrusted_polygon(mask[panel_id], shadow_boundary[panel_id])
+    return mask
