@@ -387,6 +387,16 @@ class Processor(object):
     # Integrate the reflections
     integrated = integrator.integrate()
 
+    # Select only those reflections which were integrated
+    if 'intensity.prf.variance' in integrated:
+      selection = integrated.get_flags(
+        integrated.flags.integrated,
+        all=True)
+    else:
+      selection = integrated.get_flags(
+        integrated.flags.integrated_sum)
+    integrated = integrated.select(selection)
+
     len_all = len(integrated)
     integrated = integrated.select(~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels))
     print "Filtering %d reflections with at least one bad foreground pixel out of %d"%(len_all-len(integrated), len_all)
