@@ -1434,7 +1434,7 @@ class SpotSettingsPanel (SettingsPanel) :
     imagesets = self.GetParent().GetParent().imagesets # XXX
     detector = imagesets[0].get_detector()
 
-    from dials.algorithms.spot_finding.factory import polygon
+    from dials.algorithms.polygon import polygon
     polygons = self.settings.untrusted_polygon
 
     if len(detector) > 1:
@@ -1474,6 +1474,14 @@ class SpotSettingsPanel (SettingsPanel) :
       # Add to the list
       masks.append(mask)
       #print mask.count(True), mask.count(False)
+
+    # Combine with an existing mask, if specified
+    if self.GetParent().GetParent().mask is not None:
+      for p1, p2 in zip(self.GetParent().GetParent().mask, masks):
+        p2 &= p1
+      self.GetParent().GetParent().mask = tuple(masks)
+      self.collect_values()
+      self.GetParent().GetParent().update_settings(layout=False)
 
     from libtbx import easy_pickle
     easy_pickle.dump('mask.pickle', tuple(masks))
