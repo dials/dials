@@ -425,11 +425,19 @@ class Processor(object):
 
     self.write_integration_pickles(integrated, experiments)
     from dials.algorithms.indexing.stills_indexer import calc_2D_rmsd_and_displacements
+
     rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
-    rmsd_integrated, _ = calc_2D_rmsd_and_displacements(integrated)
+    log_str = "RMSD indexed (px): %f\n"%(rmsd_indexed)
+    for i in xrange(6):
+      bright_integrated = integrated.select((integrated['intensity.sum.value']/integrated['intensity.sum.variance'])>=i)
+      if len(bright_integrated) > 0:
+        rmsd_integrated, _ = calc_2D_rmsd_and_displacements(bright_integrated)
+      else:
+        rmsd_integrated = 0
+      log_str += "N reflections integrated at I/sigI >= %d: % 4d, RMSD (px): %f\n"%(i, len(bright_integrated), rmsd_integrated)
+
     crystal_model = experiments.crystals()[0]
 
-    log_str = "Integrated. RMSD indexed: %f, RMSD integrated: %f"%(rmsd_indexed, rmsd_integrated)
     if hasattr(crystal_model, '._ML_domain_size_ang'):
       log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"%(crystal_model._ML_domain_size_ang, crystal_model._ML_half_mosaicity_deg)
     info(log_str)
