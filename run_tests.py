@@ -8,6 +8,7 @@ tst_list = (
     "$B/test/algorithms/spatial_indexing/tst_quadtree",
     "$B/test/algorithms/spot_prediction/tst_reeke_model",
     "$D/test/algorithms/background/tst_creator.py",
+    "$D/test/algorithms/background/tst_gmodel.py",
     "$D/test/algorithms/background/tst_modeller.py",
     "$D/test/algorithms/background/tst_mosflm_outlier_rejector.py",
     "$D/test/algorithms/background/tst_outlier_rejector.py",
