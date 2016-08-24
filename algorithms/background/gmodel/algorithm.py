@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# general.py
+# algorithm.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -11,34 +11,66 @@
 
 from __future__ import division
 
+class ModelCache(object):
+  '''
+  A class to cache the model
+
+  '''
+  def __init__(self):
+    '''
+    Create a model dictionary
+
+    '''
+    self.model = dict()
+
+  def get(self, name):
+    '''
+    Get the model
+
+    '''
+    if name is None:
+      raise RuntimeError('Model is not specified')
+    try:
+      model = self.model[name]
+    except KeyError:
+      import cPickle as pickle
+      with open(name) as infile:
+        model = pickle.load(infile)
+        self.model[name] = model
+    return model
+
+
+# Instance of the model cache
+global_model_cache = ModelCache()
+
+
 class BackgroundAlgorithm(object):
   ''' Class to do background subtraction. '''
 
-  def __init__(self, experiments,
-               model='constant3d',
+  def __init__(self,
+               experiments,
+               model=None,
+               robust=False,
                tuning_constant=1.345):
     '''
     Initialise the algorithm.
 
     :param experiments: The list of experiments
     :param model: The background model
+    :param robust: Use the robust background algorithm
     :param tuning_constant: The robust tuning constant
 
     '''
-    from dials.algorithms.background.glm import Creator
-    if model == 'constant2d':
-      model = Creator.model.constant2d
-    elif model == 'constant3d':
-      model = Creator.model.constant3d
-    elif model == 'loglinear2d':
-      model = Creator.model.loglinear2d
-    elif model == 'loglinear3d':
-      model = Creator.model.loglinear3d
-    else:
-      raise RuntimeError('Unknown background model')
+    from dials.algorithms.background.gmodel import Creator
+
+    # Get the model
+    model = global_model_cache.get(model)
+
+    # Create the background creator
     self._create = Creator(
-      model=model,
-      tuning_constant=tuning_constant,
+      model           = model,
+      robust          = robust,
+      tuning_constant = tuning_constant,
       max_iter=100)
 
   def compute_background(self, reflections, image_volume=None):
@@ -52,7 +84,7 @@ class BackgroundAlgorithm(object):
 
     # Do the background subtraction
     if image_volume is None:
-      success = self._create(reflections['shoebox'])
+      success = self._create(reflections)
       reflections['background.mean'] = reflections['shoebox'].mean_background()
     else:
       success = self._create(reflections, image_volume)
