@@ -12,6 +12,7 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/background/gmodel/creator.h>
 #include <dials/algorithms/background/gmodel/model.h>
+#include <dials/algorithms/background/gmodel/fill_gaps.h>
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {
