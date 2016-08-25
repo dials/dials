@@ -73,7 +73,7 @@ namespace dials { namespace algorithms {
       af::ref< int, af::c_grid<2> > mask, int2 size, int min_count) {
 
     // Check the input is valid
-    DIALS_ASSERT(size.all_gt(0));
+    DIALS_ASSERT(size.all_ge(0));
     DIALS_ASSERT(image.accessor().all_gt(0));
     DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 

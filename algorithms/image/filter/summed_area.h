@@ -64,7 +64,7 @@ namespace dials { namespace algorithms {
   af::versa< T, af::c_grid<2> > summed_area(
       const af::const_ref< T, af::c_grid<2> > &image, int2 size) {
     // Check the sizes are valid
-    DIALS_ASSERT(size.all_gt(0));
+    DIALS_ASSERT(size.all_ge(0));
 
     // Calculate the summed area table
     af::versa< T, af::c_grid<2> > I_arr = summed_area_table<T>(image);
