@@ -285,32 +285,76 @@ class GoniometerShadowMaskGenerator(object):
     return extrema
 
   def project_extrema(self, detector, scan_angle):
-    shadow_boundary = [flex.vec2_double() for i in range(len(detector))]
     coords = self.extrema_at_scan_angle(scan_angle)
+    shadow_boundary = []
 
-    for c in coords:
-      p_id = detector.get_panel_intersection(c)
-      if p_id == -1: continue
-      px = detector[p_id].get_ray_intersection_px(c)
-      shadow_boundary[p_id].append(px)
+    for p_id, p in enumerate(detector):
+      # project coordinates onto panel plane
+      a = p.get_D_matrix() * coords
+      x, y, z = a.parts()
+      valid = z > 0
+      x.set_selected(valid, x/z)
+      y.set_selected(valid, y/z)
 
-    for p_id, shadow in enumerate(shadow_boundary):
-      if shadow.size() == 0:
+      if valid.count(True) == 0:
+        # no shadow projected onto this panel
+        shadow_boundary.append(flex.vec2_double())
         continue
+
+      # Compute convex hull of shadow points
+      from scipy.spatial import ConvexHull
+      import numpy as np
+      points = np.array([list(x.select(valid)), list(y.select(valid))]).transpose()
+      hull = ConvexHull(points, incremental=False)
+      vertices = hull.vertices
+      shadow = flex.vec2_double(points[v] for v in vertices)
+      shadow *= 1/p.get_pixel_size()[0]
+
+      # Use delaunay triangulation to find out which pixels around the edge of
+      # a panel are within the shadow region
+      from scipy.spatial import Delaunay
+      delaunay = Delaunay(np.array(list(shadow)))
+
+      for i in (0, p.get_image_size()[0]):
+        points = flex.vec2_double(flex.double(p.get_image_size()[1], i),
+                                  flex.double_range(0, p.get_image_size()[1]))
+        inside = flex.bool(delaunay.find_simplex(list(points)) >= 0)
+        # only add those points needed to define vertices of shadow
+        for j in range(len(points)):
+          if j == 0 and inside[j]:
+            shadow.append(points[j])
+          elif inside[j] and not inside[j-1]:
+            shadow.append(points[j])
+          elif not inside[j] and inside[j-1]:
+            shadow.append(points[j-1])
+
+      for i in (0, p.get_image_size()[1]):
+        points = flex.vec2_double(flex.double_range(1, p.get_image_size()[0]),
+                                  flex.double(p.get_image_size()[0]-1, i))
+        inside = flex.bool(delaunay.find_simplex(list(points)) >= 0)
+        # only add those points needed to define vertices of shadow
+        for j in range(len(points)):
+          if j == 0 and inside[j]:
+            shadow.append(points[j])
+          elif inside[j] and not inside[j-1]:
+            shadow.append(points[j])
+          elif not inside[j] and inside[j-1]:
+            shadow.append(points[j-1])
+
+      # Select only those vertices that are within the panel dimensions
+      n_px = p.get_image_size()
       x, y = shadow.parts()
-      n_px = detector[p_id].get_image_size()
-      if (flex.min(x) < 20 and flex.min(y) < 20):
-        # top left
-        shadow.append((0, 0))
-      elif (flex.max(x) > (n_px[0]-20) and flex.min(y) < 20):
-        # top right
-        shadow.append((n_px[0], 0))
-      elif (flex.max(x) > (n_px[0]-20) and flex.max(y) > (n_px[1]-20)):
-        # bottom right
-        shadow.append(n_px)
-      elif (flex.min(x) < 20 and flex.max(y) > (n_px[1]-20)):
-        # bottom left
-        shadow.append((0, n_px[1]))
+      valid = (x >= 0) & (x <= n_px[0]) & (y >= 0) & (y <= n_px[1])
+      shadow = shadow.select(valid)
+
+      # sort vertices clockwise from centre of mass
+      from scitbx.math import principal_axes_of_inertia_2d
+      com = principal_axes_of_inertia_2d(shadow).center_of_mass()
+      sx, sy = shadow.parts()
+      shadow = shadow.select(
+        flex.sort_permutation(flex.atan2(sy-com[1],sx-com[0])))
+
+      shadow_boundary.append(shadow)
 
     return shadow_boundary
 
