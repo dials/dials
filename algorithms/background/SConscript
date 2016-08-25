@@ -9,6 +9,12 @@ env.SharedLibrary(target='#/lib/dials_algorithms_background_ext',
       ],
     LIBS=env["LIBS"])
 
+env.SharedLibrary(target='#/lib/dials_algorithms_background_modeller_ext', 
+    source = [
+      'boost_python/modeller_ext.cc'
+      ],
+    LIBS=env["LIBS"])
+
 env.SharedLibrary(target='#/lib/dials_algorithms_background_simple_ext', 
     source = [
       'simple/boost_python/outlier_rejector.cc',
@@ -36,8 +42,3 @@ env.SharedLibrary(target='#/lib/dials_algorithms_background_gmodel_ext',
       ],
     LIBS=env["LIBS"])
 
-env.SharedLibrary(target='#/lib/dials_algorithms_background_const_d_ext', 
-    source = [
-      'const_d/boost_python/ext.cc'
-      ],
-    LIBS=env["LIBS"])
