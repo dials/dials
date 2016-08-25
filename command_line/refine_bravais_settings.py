@@ -143,6 +143,10 @@ def run(args):
 
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
+  if len(reflections) == 0 or len(experiments) == 0:
+    parser.print_help()
+    return
+
   assert(len(reflections) == 1)
   reflections = reflections[0]
 
