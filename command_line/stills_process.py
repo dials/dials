@@ -429,7 +429,7 @@ class Processor(object):
     rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
     log_str = "RMSD indexed (px): %f\n"%(rmsd_indexed)
     for i in xrange(6):
-      bright_integrated = integrated.select((integrated['intensity.sum.value']/integrated['intensity.sum.variance'])>=i)
+      bright_integrated = integrated.select((integrated['intensity.sum.value']/flex.sqrt(integrated['intensity.sum.variance']))>=i)
       if len(bright_integrated) > 0:
         rmsd_integrated, _ = calc_2D_rmsd_and_displacements(bright_integrated)
       else:
