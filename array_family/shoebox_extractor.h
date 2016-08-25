@@ -64,6 +64,8 @@ namespace dials { namespace af {
       std::vector<std::size_t> num(size, 0);
       std::vector<std::size_t> count(size, 0);
       for (std::size_t i = 0; i < bbox.size(); ++i) {
+        DIALS_ASSERT(bbox[i][4] >= frame0_);
+        DIALS_ASSERT(bbox[i][5] <= frame1_);
         DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
         DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
         DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
