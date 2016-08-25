@@ -19,6 +19,8 @@ tst_list = (
     "$D/test/algorithms/image/filter/tst_median.py",
     "$D/test/algorithms/image/filter/tst_summed_area.py",
     "$D/test/algorithms/image/threshold/tst_local.py",
+    "$D/test/algorithms/image/fill_holes/tst_simple_fill.py",
+    "$D/test/algorithms/image/filter/tst_distance.py",
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/integration/profile/tst_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_empirical_modeller.py",
