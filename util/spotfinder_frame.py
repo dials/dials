@@ -656,7 +656,11 @@ class SpotFrame(XrayFrame) :
           self.settings.show_global_threshold_filter or
           self.settings.show_threshold_map):
         raw_data = (500 * d for d in raw_data)
-    return tuple(raw_data)
+
+    raw_data = tuple(raw_data)
+    if self.params.show_mask2:
+      self.mask_raw_data(raw_data)
+    return raw_data
 
   def show_filters(self):
     raw_data = self.get_raw_data(self.pyslip.tiles.raw_image)
@@ -856,6 +860,14 @@ class SpotFrame(XrayFrame) :
         assert not mask_p[y,x]
         all_mask_data.append(map_coords(x + 0.5, y + 0.5, p))
     return all_mask_data
+
+  def mask_raw_data(self, raw_data):
+    if self.mask is not None:
+      mask = self.mask
+    else:
+      mask = self.pyslip.tiles.raw_image.get_mask()
+    for rd, m in zip(raw_data, mask):
+      rd.set_selected(~m, -1)
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
