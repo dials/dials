@@ -49,6 +49,14 @@ phil_scope = parse('''
     mask_image_prefix = 'mask'
       .type = str
       .help = "The mask background image"
+
+    model_image_prefix = 'model'
+      .type = str
+      .help = "The model background image"
+
+    polar_model_image_prefix = 'polar'
+      .type = str
+      .help = "The polar model background image"
   }
 
   verbosity = 1
@@ -152,6 +160,38 @@ class ImageGenerator(object):
       info("Saving mask image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
+  def save_model(self, filename):
+    '''
+    Save the model image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      model = self.model.get(i).model()
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        mask.as_numpy_array(),
+        interpolation = 'none')
+      info("Saving model image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
+
+  def save_polar_model(self, filename):
+    '''
+    Save the polar model image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      model = self.model.get(i).model()
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        mask.as_numpy_array(),
+        interpolation = 'none')
+      info("Saving polar model image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
+
 
 class Script(object):
   '''A class for running the script.'''
@@ -247,6 +287,8 @@ class Script(object):
     image_generator.save_variance(params.output.variance_image_prefix)
     image_generator.save_dispersion(params.output.dispersion_image_prefix)
     image_generator.save_mask(params.output.mask_image_prefix)
+    #image_generator.save_model(params.output.model_image_prefix)
+    #image_generator.save_polar_model(params.output.polar_model_image_prefix)
 
     # Print the time
     info("Time Taken: %f" % (time() - start_time))
