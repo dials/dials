@@ -321,9 +321,8 @@ class GoniometerShadowMaskGenerator(object):
         inside = flex.bool(delaunay.find_simplex(list(points)) >= 0)
         # only add those points needed to define vertices of shadow
         for j in range(len(points)):
-          if j == 0 or j == len(points) - 1:
-            if inside[j]:
-              shadow.append(points[j])
+          if inside[j] and (j == 0 or j == len(points) - 1):
+            shadow.append(points[j])
             continue
           elif inside[j] and not inside[j-1]:
             shadow.append(points[j])
@@ -331,14 +330,13 @@ class GoniometerShadowMaskGenerator(object):
             shadow.append(points[j-1])
 
       for i in (0, p.get_image_size()[1]):
-        points = flex.vec2_double(flex.double_range(1, p.get_image_size()[0]),
-                                  flex.double(p.get_image_size()[0]-1, i))
+        points = flex.vec2_double(flex.double_range(0, p.get_image_size()[0]),
+                                  flex.double(p.get_image_size()[0], i))
         inside = flex.bool(delaunay.find_simplex(list(points)) >= 0)
         # only add those points needed to define vertices of shadow
         for j in range(len(points)):
-          if j == 0 or j == len(points) - 1:
-            if inside[j]:
-              shadow.append(points[j])
+          if inside[j] and (j == 0 or j == len(points) - 1):
+            shadow.append(points[j])
             continue
           elif inside[j] and not inside[j-1]:
             shadow.append(points[j])
