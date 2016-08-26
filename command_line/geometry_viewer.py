@@ -67,6 +67,7 @@ class render_3d(object):
     gonio_masker = self.imageset.reader().get_format().get_goniometer_shadow_masker(gonio)
     points = gonio_masker.extrema_at_scan_angle(
       gonio.get_angles()[gonio.get_scan_axis()])
+    points.insert(0, (0,0,0))
 
     line_i_seqs = flex.vec2_double(((0,i) for i in range(1, points.size())))
     line_i_seqs += (self.viewer.points.size(), self.viewer.points.size())
