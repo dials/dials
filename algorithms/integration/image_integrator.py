@@ -287,7 +287,7 @@ class Task(object):
 
     # Process the data
     st = time()
-    self.executor.process(
+    data = self.executor.process(
       image_volume,
       self.experiments,
       self.reflections)
@@ -298,6 +298,7 @@ class Task(object):
     result.read_time = read_time
     result.process_time = process_time
     result.total_time = time() - start_time
+    result.data = data
     return result
 
 
@@ -391,6 +392,8 @@ class ManagerImage(object):
 
     '''
     self.manager.accumulate(result.index, result.reflections)
+    if result.data is not None:
+      self.executor.accumulate(result.index, result.data)
     self.time.read += result.read_time
     self.time.process += result.process_time
     self.time.total += result.total_time

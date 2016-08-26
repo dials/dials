@@ -33,6 +33,18 @@ phil_scope = parse('''
     debug_log = 'dials.model_background.debug.log'
       .type = str
       .help = "The debug log filename"
+
+    mean_image_prefix = 'mean'
+      .type = str
+      .help = "The mean background image"
+
+    variance_image_prefix = 'variance'
+      .type = str
+      .help = "The variance background image"
+
+    dispersion_image_prefix = 'dispersion'
+      .type = str
+      .help = "The dispersion background image"
   }
 
   verbosity = 1
@@ -43,6 +55,83 @@ phil_scope = parse('''
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
 ''', process_includes=True)
+
+
+class ImageGenerator(object):
+  '''
+  Generate diagnostic images
+
+  '''
+
+  def __init__(self, model):
+    '''
+    Init the model
+
+    '''
+    import matplotlib
+    matplotlib.use("Agg")
+    self.model = model
+
+  def save_mean(self, filename):
+    '''
+    Save the mean image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      mean = self.model.get(i).mean()
+      vmax = sorted(list(mean))[int(0.99 * len(mean))]
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        mean.as_numpy_array(),
+        interpolation = 'none',
+        vmin          = 0,
+        vmax          = vmax)
+      pylab.colorbar()
+      info("Saving mean image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
+
+  def save_variance(self, filename):
+    '''
+    Save the variance image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      variance = self.model.get(i).variance()
+      vmax = sorted(list(variance))[int(0.99 * len(variance))]
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        variance.as_numpy_array(),
+        interpolation = 'none',
+        vmin          = 0,
+        vmax          = vmax
+      )
+      pylab.colorbar()
+      info("Saving variance image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
+
+  def save_dispersion(self, filename):
+    '''
+    Save the dispersion image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      dispersion = self.model.get(i).dispersion()
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        dispersion.as_numpy_array(),
+        interpolation = 'none',
+        vmin          = 0,
+        vmax          = 2)
+      pylab.colorbar()
+      info("Saving dispersion image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
+
 
 
 class Script(object):
@@ -125,9 +214,19 @@ class Script(object):
 
     # Save the background model
     info("Saving background model to %s" % params.output.model)
+    from dials.algorithms.background.gmodel import StaticBackgroundModel
+    static_model = StaticBackgroundModel()
+    for i in range(len(model)):
+      static_model.add(model.get(i).mean())
     with open(params.output.model, "w") as outfile:
       import cPickle as pickle
-      pickle.dump(model, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+      pickle.dump(static_model, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # Output some diagnostic images
+    image_generator = ImageGenerator(model)
+    image_generator.save_mean(params.output.mean_image_prefix)
+    image_generator.save_variance(params.output.variance_image_prefix)
+    image_generator.save_dispersion(params.output.dispersion_image_prefix)
 
     # Print the time
     info("Time Taken: %f" % (time() - start_time))
