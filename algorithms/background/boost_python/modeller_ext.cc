@@ -28,6 +28,7 @@ namespace dials { namespace algorithms { namespace background {
       .def("mean", &BackgroundStatistics::mean)
       .def("variance", &BackgroundStatistics::variance)
       .def("dispersion", &BackgroundStatistics::dispersion)
+      .def("mask", &BackgroundStatistics::mask)
       ;
 
     class_<MultiPanelBackgroundStatistics>("MultiPanelBackgroundStatistics", no_init)

@@ -20,9 +20,16 @@ namespace dials { namespace algorithms {
   using dials::model::ImageVolume;
   using dials::model::MultiPanelImageVolume;
 
+  /**
+   * Class to compute background statistics
+   */
   class BackgroundStatistics {
   public:
 
+    /**
+     * Initialize from an image volume
+     * @param volume The image volume
+     */
     BackgroundStatistics(const ImageVolume<> &volume)
       : accessor_(
           volume.accessor()[1],
@@ -49,6 +56,10 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /**
+     * Add results from another object
+     * @param other The other object
+     */
     BackgroundStatistics operator+=(const BackgroundStatistics &other) {
       DIALS_ASSERT(accessor_.all_eq(other.accessor_));
       for (std::size_t i = 0; i < sum_.size(); ++i) {
@@ -59,18 +70,30 @@ namespace dials { namespace algorithms {
       return *this;
     }
 
+    /**
+     * @returns The image sum at each pixel
+     */
     af::versa< double, af::c_grid<2> > sum() const {
       return sum_;
     }
 
+    /**
+     * @returns The image sum_sq at each pixel
+     */
     af::versa< double, af::c_grid<2> > sum_sq() const {
       return sum_sq_;
     }
 
+    /**
+     * @returns The number of images contributing for each pixel
+     */
     af::versa< int, af::c_grid<2> > num() const {
       return num_;
     }
 
+    /**
+     * @returns The mean at each pixel
+     */
     af::versa< double, af::c_grid<2> > mean() const {
       af::versa <double, af::c_grid<2> > result(accessor_);
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -81,6 +104,9 @@ namespace dials { namespace algorithms {
       return result;
     }
 
+    /**
+     * @returns The variance at each pixel
+     */
     af::versa< double, af::c_grid<2> > variance() const {
       af::versa <double, af::c_grid<2> > result(accessor_);
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -92,6 +118,9 @@ namespace dials { namespace algorithms {
       return result;
     }
 
+    /**
+     * @returns The dispersion at each pixel
+     */
     af::versa< double, af::c_grid<2> > dispersion() const {
       af::versa<double, af::c_grid<2> > m = mean();
       af::versa<double, af::c_grid<2> > v = variance();
@@ -104,6 +133,9 @@ namespace dials { namespace algorithms {
       return result;
     }
 
+    /**
+     * @returns The mask at each pixel
+     */
     af::versa < bool, af::c_grid<2> > mask() const {
       af::versa <bool, af::c_grid<2> > result(accessor_);
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -120,24 +152,42 @@ namespace dials { namespace algorithms {
     af::versa< int, af::c_grid<2> > num_;
   };
 
+
+  /**
+   * A class to do multi panel background statistics
+   */
   class MultiPanelBackgroundStatistics {
   public:
 
+    /**
+     * Initialize with multipanel image volume
+     * @param volume The multi panel image volume
+     */
     MultiPanelBackgroundStatistics(const MultiPanelImageVolume<> &volume) {
       for (std::size_t i = 0; i < volume.size(); ++i) {
         statistics_.push_back(BackgroundStatistics(volume.get(i)));
       }
     }
 
+    /**
+     * @returns the statistics for the given panel
+     */
     BackgroundStatistics get(std::size_t index) const {
       DIALS_ASSERT(index < statistics_.size());
       return statistics_[index];
     }
 
+    /**
+     * @returns The number of panels
+     */
     std::size_t size() const {
       return statistics_.size();
     }
 
+    /**
+     * Add results from another object
+     * @param other The other object
+     */
     MultiPanelBackgroundStatistics operator+=(const MultiPanelBackgroundStatistics &other) {
       DIALS_ASSERT(size() == other.size());
       for (std::size_t i = 0; i < size(); ++i) {

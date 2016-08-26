@@ -39,12 +39,6 @@ class BackgroundModellerExecutor(object):
     info("Finalizing model")
     return self.result
 
-#     mean = self.result.get(0).mean()
-#     var = self.result.get(0).variance()
-#     disp = self.result.get(0).dispersion()
-
-#     return (mean, var, disp)
-
 
 class BackgroundModeller(object):
   '''

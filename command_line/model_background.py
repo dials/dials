@@ -45,6 +45,10 @@ phil_scope = parse('''
     dispersion_image_prefix = 'dispersion'
       .type = str
       .help = "The dispersion background image"
+
+    mask_image_prefix = 'mask'
+      .type = str
+      .help = "The mask background image"
   }
 
   verbosity = 1
@@ -132,6 +136,21 @@ class ImageGenerator(object):
       info("Saving dispersion image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
+  def save_mask(self, filename):
+    '''
+    Save the dispersion image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      mask = self.model.get(i).mask()
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        mask.as_numpy_array(),
+        interpolation = 'none')
+      info("Saving mask image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
 
 class Script(object):
@@ -227,6 +246,7 @@ class Script(object):
     image_generator.save_mean(params.output.mean_image_prefix)
     image_generator.save_variance(params.output.variance_image_prefix)
     image_generator.save_dispersion(params.output.dispersion_image_prefix)
+    image_generator.save_mask(params.output.mask_image_prefix)
 
     # Print the time
     info("Time Taken: %f" % (time() - start_time))
