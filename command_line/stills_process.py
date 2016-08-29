@@ -57,6 +57,13 @@ control_phil_str = '''
 '''
 
 dials_phil_str = '''
+  input {
+    reference_geometry = None
+      .type = str
+      .help = Provide an experiments.json file with exactly one detector model. Data processing will use \
+              that geometry instead of the geometry found in the image headers.
+  }
+
   output {
     shoeboxes = True
       .type = bool
@@ -93,6 +100,7 @@ class Script(object):
     usage = "usage: %s [options] [param.phil] filenames" % libtbx.env.dispatcher_name
 
     self.tag = None
+    self.reference_detector = None
 
     # Create the parser
     self.parser = OptionParser(
@@ -100,6 +108,26 @@ class Script(object):
       phil=phil_scope,
       epilog=help_message
       )
+
+  def load_reference_geometry(self):
+    if self.params.input.reference_geometry is None: return
+
+    from dxtbx.datablock import DataBlockFactory
+    try:
+      ref_datablocks = DataBlockFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
+    except Exception:
+      ref_datablocks = None
+    if ref_datablocks is None:
+      from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+      try:
+        ref_experiments = ExperimentListFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
+      except Exception:
+        raise Sorry("Couldn't load geometry file %s"%self.params.input.reference_geometry)
+      assert len(ref_experiments.detectors()) == 1
+      self.reference_detector = ref_experiments.detectors()[0]
+    else:
+      assert len(ref_datablocks) == 1 and len(ref_datablocks[0].unique_detectors()) == 1
+      self.reference_detector = ref_datablocks[0].unique_detectors()
 
   def run(self):
     '''Execute the script.'''
@@ -137,6 +165,8 @@ class Script(object):
       info('The following parameters have been modified:\n')
       info(diff_phil)
 
+    self.load_reference_geometry()
+
     # Import stuff
     info("Loading files...")
     def do_import(filename):
@@ -172,6 +202,11 @@ class Script(object):
 
     if len(datablocks) == 0:
       raise Abort('No datablocks specified')
+
+    if self.reference_detector is not None:
+      for datablock in datablocks:
+        for imageset in datablock.extract_imagesets():
+          imageset.set_detector(self.reference_detector)
 
     # Handle still imagesets by breaking them apart into multiple datablocks
     # Further handle single file still imagesets (like HDF5) by tagging each
