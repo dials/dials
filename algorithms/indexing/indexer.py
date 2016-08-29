@@ -518,7 +518,7 @@ class indexer_base(object):
             imageset = MemImageSet(imagesweep._images, imagesweep.indices())
           else:
             imageset = ImageSet(imagesweep.reader(), imagesweep.indices())
-          imageset._models = imagesweep._models
+            imageset._models = imagesweep._models
           imageset.set_scan(None)
           imageset.set_goniometer(None)
           reset_sets.append(imageset)

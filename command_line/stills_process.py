@@ -127,7 +127,7 @@ class Script(object):
       self.reference_detector = ref_experiments.detectors()[0]
     else:
       assert len(ref_datablocks) == 1 and len(ref_datablocks[0].unique_detectors()) == 1
-      self.reference_detector = ref_datablocks[0].unique_detectors()
+      self.reference_detector = ref_datablocks[0].unique_detectors()[0]
 
   def run(self):
     '''Execute the script.'''
