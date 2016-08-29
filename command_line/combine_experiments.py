@@ -224,7 +224,7 @@ class Script(object):
 
           target.set_local_frame(sum_fast,sum_slow,sum_ori)
 
-        if hasattr(target, "children"):
+        if target.is_group():
           # Recurse
           for i, target_pg in enumerate(target):
             average_detectors(target_pg, [pg[i] for pg in panelgroups], depth+1)
