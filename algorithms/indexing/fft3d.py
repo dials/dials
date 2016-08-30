@@ -215,7 +215,7 @@ class indexer_fft3d(indexer_base):
     sites_frac = xs.sites_frac()
     vectors = xs.sites_cart()
     norms = vectors.norms()
-    sel = (norms > self.params.min_cell) & (norms < self.params.max_cell)
+    sel = (norms > self.params.min_cell) & (norms < (2 * self.params.max_cell))
     vectors = vectors.select(sel)
     vectors = [matrix.col(v) for v in vectors]
     volumes = volumes.select(sel)
@@ -230,7 +230,7 @@ class indexer_fft3d(indexer_base):
     orth = self.fft_cell.orthogonalize
     for v, volume in zip(vectors, volumes):
       length = v.length()
-      if length < self.params.min_cell or length > self.params.max_cell:
+      if length < self.params.min_cell or length > (2 * self.params.max_cell):
         continue
       matched_group = False
       for group in vector_groups:
