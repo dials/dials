@@ -13,7 +13,7 @@ outlier rejection parameters automatically"""
 from __future__ import division
 from math import pi, floor, ceil
 from dials.array_family import flex
-from scitbx import fftpack
+from periodogram import Periodogram
 
 RAD2DEG = 180./pi
 
@@ -58,11 +58,11 @@ class CentroidAnalyser(object):
 
     self._reflections = reflections
 
-
   def __call__(self):
-    """Perform power spectrum analysis and return the results as a dictionary"""
+    """Perform power spectrum analysis and return the results as a list
+    of dictionaries (one for each experiment)"""
 
-    results = {}
+    results = []
     for iexp in range(self._nexp + 1):
       reflections = self._reflections.select(self._reflections['id'] == iexp)
       x_resid = reflections['x_resid']
@@ -72,10 +72,11 @@ class CentroidAnalyser(object):
 
       # Calculate average residuals in equal-width blocks
       phi_range = flex.min(phi_obs_deg), flex.max(phi_obs_deg)
+      phi_width = phi_range[1] - phi_range[0]
       ideal_block_size = 1.0
       while True:
-        nblocks = int((phi_range[1] - phi_range[0]) // ideal_block_size)
-        block_size = (phi_range[1] - phi_range[0]) / nblocks
+        nblocks = int(phi_width // ideal_block_size)
+        block_size = phi_width / nblocks
         xr_per_blk = flex.double()
         yr_per_blk = flex.double()
         pr_per_blk = flex.double()
@@ -84,7 +85,7 @@ class CentroidAnalyser(object):
           blk_start = phi_range[0] + i * block_size
           blk_end = blk_start + block_size
           sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
-          nr.append(len(sel))
+          nr.append(sel.count(True))
           xr_per_blk.append(self._av_callback(x_resid.select(sel)))
           yr_per_blk.append(self._av_callback(y_resid.select(sel)))
           pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
@@ -92,22 +93,36 @@ class CentroidAnalyser(object):
         blk_start = phi_range[0] + (nblocks - 1) * block_size
         blk_end = phi_range[1]
         sel = (phi_obs_deg >= blk_start) & (phi_obs_deg <= blk_end)
-        nr.append(len(sel))
+        nr.append(sel.count(True))
         xr_per_blk.append(self._av_callback(x_resid.select(sel)))
         yr_per_blk.append(self._av_callback(y_resid.select(sel)))
         pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
 
         # Break if there are enough reflections, otherwise increase block size
-        if flex.min(nr) > 20: break
-        ideal_block_size += 1.0
+        min_nr = flex.min(nr)
+        if min_nr > 50: break
+        fac = 50 / min_nr
+        ideal_block_size *= fac
 
-      print block_size
+      results_this_exp = {'block_size':block_size}
+
+      # Perform power spectrum analysis on the residuals
+      px = Periodogram(xr_per_blk)
+      # FIXME here extract information from the power spectrum
+
+      # collect results
+      results.append(results_this_exp)
+
+      print "block_size", block_size
+      print "#refs per block"
+      print list(nr)
 
       import matplotlib.pyplot as plt
-      plt.plot(pr_per_blk)
+      plt.plot(xr_per_blk)
       plt.ylabel('some numbers')
       plt.show()
-    pass
+
+    return results
 
 if __name__ == "__main__":
 
