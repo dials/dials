@@ -109,20 +109,32 @@ class CentroidAnalyser(object):
       results_this_exp = {'block_size':block_size}
 
       # Perform power spectrum analysis on the residuals
+      import matplotlib.pyplot as plt
+      plt.plot(xr_per_blk)
+      plt.ylabel('x residuals per block')
+      plt.show()
       px = Periodogram(xr_per_blk)
+      px.plot()
+
+      plt.plot(yr_per_blk)
+      plt.ylabel('y residuals per block')
+      plt.show()
+      py = Periodogram(yr_per_blk)
+      py.plot()
+
+      plt.plot(pr_per_blk)
+      plt.ylabel('phi residuals per block')
+      plt.show()
+      pz = Periodogram(pr_per_blk)
+      pz.plot()
       # FIXME here extract information from the power spectrum
 
       # collect results
       results.append(results_this_exp)
 
-      print "block_size", block_size
-      print "#refs per block"
-      print list(nr)
-
-      import matplotlib.pyplot as plt
-      plt.plot(xr_per_blk)
-      plt.ylabel('some numbers')
-      plt.show()
+      #print "block_size", block_size
+      #print "#refs per block"
+      #print list(nr)
 
     return results
 

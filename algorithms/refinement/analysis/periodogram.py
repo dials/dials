@@ -39,5 +39,11 @@ class Periodogram(object):
     # normalise by n to produce the raw periodogram
     self.spec = flex.norm(xf[1:]) / n
 
-  def plot(self):
-    pass
+  def plot(self, show=True):
+
+    import matplotlib.pyplot as plt
+    line, = plt.semilogy(self.freq, self.spec)
+    plt.xlabel('frequency')
+    plt.ylabel('spectrum')
+    if show: plt.show()
+    return plt
