@@ -204,9 +204,10 @@ class Script(object):
       raise Abort('No datablocks specified')
 
     if self.reference_detector is not None:
+      from dxtbx.model import Detector
       for datablock in datablocks:
         for imageset in datablock.extract_imagesets():
-          imageset.set_detector(self.reference_detector)
+          imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
 
     # Handle still imagesets by breaking them apart into multiple datablocks
     # Further handle single file still imagesets (like HDF5) by tagging each
