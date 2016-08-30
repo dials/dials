@@ -36,7 +36,9 @@ class CentroidAnalyser(object):
 
     # FIXME - better way to recognise non-predictions. Can't rely on flags
     # in e.g. indexed.pickle I think.
-    reflections = reflections.select(reflections['xyzcal.mm'].norms() > 1.e-6)
+    x, y, z = reflections['xyzcal.mm'].parts()
+    sel = (x == 0) & (y == 0)
+    reflections = reflections.select(~sel)
     self._nexp = flex.max(reflections['id'])
 
     # Ensure required keys are present
