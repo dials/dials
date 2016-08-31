@@ -21,6 +21,8 @@ phil_scope= libtbx.phil.parse("""
   angle = None
     .type = float
     .multiple = True
+  detector_distance = None
+    .type = float
   z_min = None
     .type = float
   z_max = None
@@ -58,11 +60,33 @@ class render_3d(object):
     gonio = self.imageset.get_goniometer()
     scan = self.imageset.get_scan()
     detector = self.imageset.get_detector()
+    beam = self.imageset.get_beam()
 
     angle = self.settings.angle
     if angle:
       assert len(angle) == len(gonio.get_angles())
       gonio.set_angles(angle)
+
+    distance = self.settings.detector_distance
+    if distance:
+      import math
+      from scitbx import matrix
+      p_id = detector.get_panel_intersection(beam.get_s0())
+      if p_id >= 0:
+        if len(detector) > 1:
+          p = detector.hierarchy()
+        else:
+          p = detector[0]
+        d_normal = matrix.col(p.get_normal())
+        d_origin = matrix.col(p.get_origin())
+        d_distance = math.fabs(d_origin.dot(d_normal) - p.get_directed_distance())
+        assert d_distance < 0.001, d_distance
+        translation = d_normal * (distance - p.get_directed_distance())
+        new_origin = d_origin + translation
+        d_distance = math.fabs(new_origin.dot(d_normal) - distance)
+        assert d_distance < 0.001, d_distance
+        p.set_frame(p.get_fast_axis(), p.get_slow_axis(), new_origin.elems)
+
 
     gonio_masker = self.imageset.reader().get_format().get_goniometer_shadow_masker(gonio)
     points = gonio_masker.extrema_at_scan_angle(
@@ -237,6 +261,18 @@ class settings_window (wxtbx.utils.SettingsPanel) :
   def add_goniometer_controls(self, goniometer):
     from wx.lib.agw import floatspin
 
+    self.distance_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=1)
+    self.distance_ctrl.SetValue(self.settings.detector_distance)
+    self.distance_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.distance_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Detector distance")
+    box.Add(self.distance_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.distance_ctrl)
+
     self.rotation_angle_ctrls = []
     names = goniometer.get_names()
     axes = goniometer.get_axes()
@@ -256,6 +292,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       self.rotation_angle_ctrls.append(ctrl)
 
   def OnChangeSettings(self, event):
+    self.settings.detector_distance = self.distance_ctrl.GetValue()
     for i, ctrl in enumerate(self.rotation_angle_ctrls):
       self.settings.angle[i] = ctrl.GetValue()
     self.parent.update_settings()
@@ -398,7 +435,6 @@ def run(args):
     phil=phil_scope,
     read_datablocks=True,
     read_experiments=True,
-    #read_reflections=True,
     check_format=True,
     epilog=help_message)
 
@@ -420,6 +456,12 @@ def run(args):
   assert len(imagesets) == 1
   imageset = imagesets[0]
   gonio = imageset.get_goniometer()
+  if not params.detector_distance:
+    detector = imageset.get_detector()
+    if len(detector) > 1:
+      params.detector_distance = detector.hierarchy().get_directed_distance()
+    else:
+      params.detector_distance = detector[0].get_directed_distance()
   if params.angle:
     assert len(params.angle) == len(gonio.get_angles())
   else:
