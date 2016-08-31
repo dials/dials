@@ -53,6 +53,11 @@ phil_scope = parse('''
       .help = "Write unit cell error information to a Crystallographic"
               "Information File (CIF)"
 
+    mmcif = None
+      .type = str
+      .help = "Write unit cell error information to a macromolecular"
+              "Crystallographic Information File (mmCIF)"
+
     # FIXME include this directly from the original rather than copy here
     correlation_plot
       .expert_level = 1
@@ -230,7 +235,7 @@ class Script(object):
 
     # ReflectionManager, currently without outlier rejection
     # Note: If not all reflections are used, then the filtering must be
-    # communicated to generate_cif() to be included in the CIF file!
+    # communicated to generate_cif/mmcif() to be included in the CIF file!
     refman = TwoThetaReflectionManager(reflections, experiments,
        outlier_detector=None, verbosity=verb)
 
@@ -322,6 +327,49 @@ class Script(object):
     block['_diffrn_reflns_limit_l_max'] = max_l
     block['_diffrn_reflns_theta_min'] = flex.min(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
     block['_diffrn_reflns_theta_max'] = flex.max(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
+
+    cif = iotbx.cif.model.cif()
+    cif['two_theta_refine'] = block
+    with open(file, 'w') as fh:
+      cif.show(out=fh)
+
+  @staticmethod
+  def generate_mmcif(crystal, refiner, file):
+    info('Saving mmCIF information to %s' % file)
+    from cctbx import miller
+    import datetime
+    import iotbx.cif.model
+    import math
+
+    block = iotbx.cif.model.block()
+    block["_audit.creation_method"] = dials_version()
+    block["_audit.creation_date"] = datetime.date.today().isoformat()
+#   block["_publ.section_references"] = '' # once there is a reference...
+
+    for cell, esd, cifname in zip(crystal.get_unit_cell().parameters(),
+                                  crystal.get_cell_parameter_sd(),
+                                  ['length_a', 'length_b', 'length_c', 'angle_alpha', 'angle_beta', 'angle_gamma']):
+      block['_cell.%s' % cifname] = "%.8f" % cell
+      block['_cell.%s_esd' % cifname] = "%.8f" % esd
+    block['_cell.volume'] = "%f" % crystal.get_unit_cell().volume()
+    block['_cell.volume_esd'] = "%f" % crystal.get_cell_volume_sd()
+
+    used_reflections = refiner.get_matches()
+    block['_cell_measurement.reflns_used'] = len(used_reflections)
+    block['_cell_measurement.theta_min'] = flex.min(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
+    block['_cell_measurement.theta_max'] = flex.max(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
+    block['_diffrn_reflns.number'] = len(used_reflections)
+    miller_span = miller.index_span(used_reflections['miller_index'])
+    min_h, min_k, min_l = miller_span.min()
+    max_h, max_k, max_l = miller_span.max()
+    block['_diffrn_reflns.limit_h_min'] = min_h
+    block['_diffrn_reflns.limit_h_max'] = max_h
+    block['_diffrn_reflns.limit_k_min'] = min_k
+    block['_diffrn_reflns.limit_k_max'] = max_k
+    block['_diffrn_reflns.limit_l_min'] = min_l
+    block['_diffrn_reflns.limit_l_max'] = max_l
+    block['_diffrn_reflns.theta_min'] = flex.min(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
+    block['_diffrn_reflns.theta_max'] = flex.max(used_reflections['2theta_obs.rad']) * 180 / math.pi / 2
 
     cif = iotbx.cif.model.cif()
     cif['two_theta_refine'] = block
@@ -468,6 +516,9 @@ class Script(object):
 
     if params.output.cif is not None:
       self.generate_cif(crystals[0], refiner, file=params.output.cif)
+
+    if params.output.mmcif is not None:
+      self.generate_mmcif(crystals[0], refiner, file=params.output.mmcif)
 
     # Log the total time taken
     info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
