@@ -296,7 +296,7 @@ class GoniometerShadowMaskGenerator(object):
       x.set_selected(valid, x/z)
       y.set_selected(valid, y/z)
 
-      if valid.count(True) == 0:
+      if valid.count(True) < 3:
         # no shadow projected onto this panel
         shadow_boundary.append(flex.vec2_double())
         continue
