@@ -322,14 +322,20 @@ class GoniometerShadowMaskGenerator(object):
         inside = flex.bool(
           delaunay.find_simplex(vec2_double_to_numpy(points)) >= 0)
         # only add those points needed to define vertices of shadow
-        for j in range(len(points)):
-          if inside[j] and (j == 0 or j == len(points) - 1):
-            shadow.append(points[j])
-            continue
-          elif inside[j] and not inside[j-1]:
-            shadow.append(points[j])
-          elif not inside[j] and inside[j-1]:
-            shadow.append(points[j-1])
+        inside_isel = inside.iselection()
+        outside_isel = (~inside).iselection()
+        while inside_isel.size():
+          j = inside_isel[0]
+          shadow.append(points[j])
+          outside_isel = outside_isel.select(outside_isel > j)
+          if outside_isel.size() == 0:
+            shadow.append(points[inside_isel[-1]])
+            break
+          sel = inside_isel >= outside_isel[0]
+          if sel.count(True) == 0:
+            shadow.append(points[inside_isel[-1]])
+            break
+          inside_isel = inside_isel.select(sel)
 
       for i in (0, p.get_image_size()[1]):
         points = flex.vec2_double(flex.double_range(0, p.get_image_size()[0]),
@@ -337,14 +343,20 @@ class GoniometerShadowMaskGenerator(object):
         inside = flex.bool(
           delaunay.find_simplex(vec2_double_to_numpy(points)) >= 0)
         # only add those points needed to define vertices of shadow
-        for j in range(len(points)):
-          if inside[j] and (j == 0 or j == len(points) - 1):
-            shadow.append(points[j])
-            continue
-          elif inside[j] and not inside[j-1]:
-            shadow.append(points[j])
-          elif not inside[j] and inside[j-1]:
-            shadow.append(points[j-1])
+        inside_isel = inside.iselection()
+        outside_isel = (~inside).iselection()
+        while inside_isel.size():
+          j = inside_isel[0]
+          shadow.append(points[j])
+          outside_isel = outside_isel.select(outside_isel > j)
+          if outside_isel.size() == 0:
+            shadow.append(points[inside_isel[-1]])
+            break
+          sel = inside_isel >= outside_isel[0]
+          if sel.count(True) == 0:
+            shadow.append(points[inside_isel[-1]])
+            break
+          inside_isel = inside_isel.select(sel)
 
       # Select only those vertices that are within the panel dimensions
       n_px = p.get_image_size()
