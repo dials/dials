@@ -2,7 +2,6 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.check_strategy
 
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import division
 from scitbx.array_family import flex
 import libtbx.phil
