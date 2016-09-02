@@ -331,8 +331,12 @@ class SpotFrame(XrayFrame) :
       self.image_chooser.SetClientData(
         self.image_chooser.GetCount() - 1, key)
 
+    show_untrusted = False
+    if self.params.show_mask2:
+      show_untrusted = True
     super(SpotFrame, self).load_image(
-      file_name_or_data, get_raw_data=self.get_raw_data)
+      file_name_or_data, get_raw_data=self.get_raw_data,
+      show_untrusted=show_untrusted)
 
   def OnShowSettings (self, event) :
     if self.settings_frame is None:
@@ -867,7 +871,7 @@ class SpotFrame(XrayFrame) :
     else:
       mask = self.pyslip.tiles.raw_image.get_mask()
     for rd, m in zip(raw_data, mask):
-      rd.set_selected(~m, -1)
+      rd.set_selected(~m, -2)
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
