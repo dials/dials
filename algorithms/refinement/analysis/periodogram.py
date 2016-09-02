@@ -18,12 +18,18 @@ class Periodogram(object):
   the same spectrum as R's spec.pgram function when called using
   spec.pgram(x, detrend=F, taper=0, fast=F)"""
 
-  def __init__(self, x, demean=True):
+  def __init__(self, x, demean=True, detrend=True):
 
     # Ensure x is copied as it will be changed in-place
     x = flex.double(x).deep_copy()
     n = len(x)
-    if demean: x -= flex.mean(x)
+
+    if detrend:
+      t = flex.size_t_range(n).as_double() + 1 - (n + 1)/2
+      inv_sumt2 = 1./t.dot(t)
+      x = x - flex.mean(x) - x.dot(t) * t * inv_sumt2
+    elif demean:
+      x -= flex.mean(x)
 
     # determine frequencies
     stop = ((n - (n % 2)) // 2) + 1
@@ -47,3 +53,4 @@ class Periodogram(object):
     plt.ylabel('spectrum')
     if show: plt.show()
     return plt
+

@@ -21,14 +21,19 @@ from libtbx.test_utils import approx_equal
 
 class rpgram(object):
   """Calculate a raw periodogram using R"""
-  def __init__(self, x):
+  def __init__(self, x, detrend=True):
     dat = robjects.FloatVector(list(x))
     pgram = robjects.r['spec.pgram']
-    result = pgram(dat, detrend=False, taper=0, fast=False, plot=False)
+    result = pgram(dat, detrend=detrend, taper=0, fast=False, plot=False)
     self.result = result
     self.spec = flex.double(result.rx2('spec'))
     self.freq = flex.double(result.rx2('freq'))
     return
+
+  def plot(self):
+    rplot = robjects.r('plot')
+    rplot(self.result, main="Periodogram")
+
 
 def test1():
   # Compare over a range of lengths from 2 to 1000 with random data
@@ -39,7 +44,20 @@ def test1():
 
     assert approx_equal(a.freq, b.freq)
     assert approx_equal(a.spec, b.spec)
+    print "OK"
+
+def test2():
+  dat = flex.random_double(50)
+  a = Periodogram(dat)
+  b = rpgram(dat)
+
+  from matplotlib.pyplot import ion
+  ion()
+  a.plot()
+  b.plot()
+  from dials.util.command_line import interactive_console; interactive_console(); 1/0 #XXXXX DEBUG
 
 if __name__=="__main__":
   test1()
+  #test2()
   print "OK"
