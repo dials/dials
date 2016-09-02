@@ -53,6 +53,8 @@ gain = 1
   .type = float(value_min=0)
 saturation = 0
   .type = int
+show_mask = False
+  .type = bool
 """)
 
 colour_schemes = {
@@ -106,20 +108,26 @@ def run(args):
   for imageset in imagesets:
     detector = imageset.get_detector()
     panel = detector[0]
+    scan = imageset.get_scan()
     # XXX is this inclusive or exclusive?
     saturation = panel.get_trusted_range()[1]
     if params.saturation:
       saturation = params.saturation
-    for i_image, image in enumerate(imageset):
+    start, end = scan.get_image_range()
+    for i_image in range(start, end+1):
+      image = imageset.get_raw_data(i_image-start)
 
-      if len(detector) == 1:
-        image = [image]
+      #if len(detector) == 1:
+        #image = [image]
 
       trange = [p.get_trusted_range() for p in detector]
-      mask = []
-      mask = imageset.get_mask(i_image)
+      mask = imageset.get_mask(i_image-start)
       if mask is None:
         mask = [p.get_trusted_range_mask(im) for im, p in zip(image, detector)]
+
+      if params.show_mask:
+        for rd, m in zip(image, mask):
+          rd.set_selected(~m, -2)
 
       image = image_filter(image, mask, display=params.display, gain_value=params.gain,
                            nsigma_b=params.nsigma_b,
@@ -128,6 +136,7 @@ def run(args):
                            min_local=params.min_local,
                            kernel_size=params.kernel_size)
 
+      show_untrusted = params.show_mask
       if len(detector) > 1:
         # FIXME This doesn't work properly, as flex_image.size2() is incorrect
         # also binning doesn't work
@@ -135,14 +144,16 @@ def run(args):
         flex_image = _get_flex_image_multipanel(
           brightness=brightness,
           panels=detector,
-          raw_data=image)
+          raw_data=image,
+          show_untrusted=show_untrusted)
       else:
         flex_image = _get_flex_image(
           brightness=brightness,
           data=image[0],
           binning=binning,
           saturation=saturation,
-          vendortype=vendortype)
+          vendortype=vendortype,
+          show_untrusted=show_untrusted)
 
       flex_image.setWindow(0, 0, 1)
       flex_image.adjust(color_scheme=colour_schemes.get(params.colour_scheme))
