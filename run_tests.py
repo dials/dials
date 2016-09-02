@@ -127,6 +127,7 @@ tst_list = (
     "$D/test/util/tst_ascii_art.py",
     "$D/test/util/tst_nexus.py",
     "$D/test/util/tst_nexus_multi_experiment.py",
+    "$D/test/util/tst_masking.py",
     ["$D/test/algorithms/indexing/tst_index.py", "1"],
     ["$D/test/algorithms/indexing/tst_index.py", "2"],
     ["$D/test/algorithms/indexing/tst_index.py", "3"],
