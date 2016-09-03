@@ -18,7 +18,7 @@ def exercise_export_bitmaps():
   print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
 
-  assert os.path.exists('image0000.png')
+  assert os.path.exists('image0001.png')
 
   cmd = ' '.join([
     'dials.export_bitmaps', '%s/datablock.json' %data_dir, 'prefix=variance_',
@@ -27,7 +27,7 @@ def exercise_export_bitmaps():
   print cmd
   result = easy_run.fully_buffered(cmd).raise_if_errors()
 
-  for i in range(7):
+  for i in range(1, 8):
     assert os.path.exists('variance_000%i.png' %i)
 
 def run():
