@@ -43,7 +43,6 @@ class SpotFrame(XrayFrame) :
     self._ring_layer = None
     self._resolution_text_layer = None
     self.sel_image_layer = None
-    self.mask_layer = None
     self.mask = self.params.mask
 
     from libtbx.utils import time_log
@@ -332,7 +331,7 @@ class SpotFrame(XrayFrame) :
         self.image_chooser.GetCount() - 1, key)
 
     show_untrusted = False
-    if self.params.show_mask2:
+    if self.params.show_mask:
       show_untrusted = True
     super(SpotFrame, self).load_image(
       file_name_or_data, get_raw_data=self.get_raw_data,
@@ -662,7 +661,7 @@ class SpotFrame(XrayFrame) :
         raw_data = (500 * d for d in raw_data)
 
     raw_data = tuple(raw_data)
-    if self.params.show_mask2:
+    if self.params.show_mask:
       self.mask_raw_data(raw_data)
     return raw_data
 
@@ -818,16 +817,6 @@ class SpotFrame(XrayFrame) :
           selectable=False,
           name='<vector_text_layer>',
           colour='#F62817')
-    if self.mask or self.params.show_mask:
-      if self.mask_layer is not None:
-        self.pyslip.DeleteLayer(self.mask_layer)
-        self.mask_layer = None
-      all_mask_data = self.get_mask_data()
-      self.mask_layer = self.pyslip.AddPointLayer(
-        all_mask_data, name="<mask_layer>",
-        radius=3,
-        renderer = self.pyslip.LightweightDrawPointLayer2,
-        show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
 
     self.sum_images()
     #if self.params.sum_images == 1:
@@ -1152,6 +1141,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_integrated = self.params.show_integrated
     self.settings.show_predictions = self.params.show_predictions
     self.settings.show_miller_indices = self.params.show_miller_indices
+    self.settings.show_mask = self.params.show_mask
     self.settings.show_mean_filter = self.params.display == "mean"
     self.settings.show_variance_filter = self.params.display == "variance"
     self.settings.show_dispersion = self.params.display == "dispersion"
@@ -1257,6 +1247,11 @@ class SpotSettingsPanel (SettingsPanel) :
     self.miller_indices = wx.CheckBox(self, -1, "Show hkl")
     self.miller_indices.SetValue(self.settings.show_miller_indices)
     grid.Add(self.miller_indices, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
+    # Spot predictions control
+    self.show_mask = wx.CheckBox(self, -1, "Show mask")
+    self.show_mask.SetValue(self.settings.show_mask)
+    grid.Add(self.show_mask, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Integration shoeboxes only
     self.integrated = wx.CheckBox(self, -1, "Integrated only")
@@ -1372,6 +1367,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.integrated)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
     self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
 
@@ -1408,6 +1404,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_integrated = self.integrated.GetValue()
       self.settings.show_predictions = self.predictions.GetValue()
       self.settings.show_miller_indices = self.miller_indices.GetValue()
+      self.settings.show_mask = self.show_mask.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
       self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
       self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
@@ -1425,10 +1422,15 @@ class SpotSettingsPanel (SettingsPanel) :
     self.collect_values()
     self.GetParent().GetParent().update_settings(layout=False)
 
+  def OnUpdateShowMask(self, event):
+    self.OnUpdateCM(event)
+    self.params.show_mask = self.settings.show_mask
+    self.GetParent().GetParent().OnChooseImage(event)
+
   def OnClearAll(self, event):
     for btn in (self.center_ctrl, self.ctr_mass, self.max_pix, self.all_pix,
                 self.shoebox, self.predictions, self.miller_indices,
-                self.ice_rings_ctrl, self.resolution_rings_ctrl):
+                self.show_mask, self.ice_rings_ctrl, self.resolution_rings_ctrl):
       btn.SetValue(False)
     self.OnUpdateCM(event)
 
