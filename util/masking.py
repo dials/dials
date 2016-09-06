@@ -285,6 +285,7 @@ class GoniometerShadowMaskGenerator(object):
     return extrema
 
   def project_extrema(self, detector, scan_angle):
+    from dials.util import is_inside_polygon
     coords = self.extrema_at_scan_angle(scan_angle)
     shadow_boundary = []
 
@@ -311,16 +312,11 @@ class GoniometerShadowMaskGenerator(object):
       shadow = flex.vec2_double(points[vertices])
       shadow *= 1/p.get_pixel_size()[0]
 
-      # Use delaunay triangulation to find out which pixels around the edge of
-      # a panel are within the shadow region
-      from scipy.spatial import Delaunay
-      delaunay = Delaunay(vec2_double_to_numpy(shadow))
 
       for i in (0, p.get_image_size()[0]):
         points = flex.vec2_double(flex.double(p.get_image_size()[1], i),
                                   flex.double_range(0, p.get_image_size()[1]))
-        inside = flex.bool(
-          delaunay.find_simplex(vec2_double_to_numpy(points)) >= 0)
+        inside = is_inside_polygon(shadow, points)
         # only add those points needed to define vertices of shadow
         inside_isel = inside.iselection()
         outside_isel = (~inside).iselection()
@@ -340,8 +336,7 @@ class GoniometerShadowMaskGenerator(object):
       for i in (0, p.get_image_size()[1]):
         points = flex.vec2_double(flex.double_range(0, p.get_image_size()[0]),
                                   flex.double(p.get_image_size()[0], i))
-        inside = flex.bool(
-          delaunay.find_simplex(vec2_double_to_numpy(points)) >= 0)
+        inside = is_inside_polygon(shadow, points)
         # only add those points needed to define vertices of shadow
         inside_isel = inside.iselection()
         outside_isel = (~inside).iselection()
@@ -383,6 +378,3 @@ class GoniometerShadowMaskGenerator(object):
       if shadow_boundary[panel_id].size() > 3:
         mask_untrusted_polygon(mask[panel_id], shadow_boundary[panel_id])
     return mask
-
-def vec2_double_to_numpy(vec2):
-  return vec2.as_double().as_numpy_array().reshape(vec2.size(), 2)
