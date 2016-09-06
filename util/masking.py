@@ -307,11 +307,12 @@ class GoniometerShadowMaskGenerator(object):
       shadow = flex.vec2_double(convex_hull(points))
       shadow *= 1/p.get_pixel_size()[0]
 
+      shadow_orig = shadow.deep_copy()
 
       for i in (0, p.get_image_size()[0]):
         points = flex.vec2_double(flex.double(p.get_image_size()[1], i),
                                   flex.double_range(0, p.get_image_size()[1]))
-        inside = is_inside_polygon(shadow, points)
+        inside = is_inside_polygon(shadow_orig, points)
         # only add those points needed to define vertices of shadow
         inside_isel = inside.iselection()
         outside_isel = (~inside).iselection()
@@ -331,7 +332,7 @@ class GoniometerShadowMaskGenerator(object):
       for i in (0, p.get_image_size()[1]):
         points = flex.vec2_double(flex.double_range(0, p.get_image_size()[0]),
                                   flex.double(p.get_image_size()[0], i))
-        inside = is_inside_polygon(shadow, points)
+        inside = is_inside_polygon(shadow_orig, points)
         # only add those points needed to define vertices of shadow
         inside_isel = inside.iselection()
         outside_isel = (~inside).iselection()
