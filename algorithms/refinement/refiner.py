@@ -993,7 +993,6 @@ class RefinerFactory(object):
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
             if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
-              print panel_gp_nparam_minus_nref(dp, gp, igp, reflections)
               msg = ('Too few reflections to parameterise Detector{0} '
                      'panel group {1}').format(i + 1, igp + 1)
               warning(msg + '\nAttempting reduction of non-essential parameters')
