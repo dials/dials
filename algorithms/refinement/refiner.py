@@ -540,6 +540,8 @@ class RefinerFactory(object):
         params.refinement.parameterisation.sparse = True
       else:
         params.refinement.parameterisation.sparse = False
+      if params.refinement.refinery.engine == "SparseLevMar":
+        params.refinement.parameterisation.sparse = True
       if params.refinement.mp.nproc > 1:
         if params.refinement.refinery.engine != "SparseLevMar":
           # sparse vectors cannot be pickled, so can't use easy_mp here
