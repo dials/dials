@@ -93,14 +93,16 @@ refinement
                 "details."
         .expert_level = 1
 
-      detector_reduce_list = Tau2 Tau3
+      detector_reduce_list = Dist Tau2 Tau3
         .type = strings
         .help = "Partial names to match to detector parameters to try fixing."
                 "If there are still not"
                 "enough parameters for refinement after fixing these, then"
                 "fail. This is to ensure that metrology refinement never"
                 "completes if it is not able to refine some panels. The default"
-                "is to try fixing Tau2 and Tau3 rotations of detector panel"
+                "is to try fixing the distance as well as Tau2 and Tau3"
+                "rotations of detector panel, leaving the in-plane shifts and"
+                "the rotation around the detector normal for refinement."
                 "groups only."
         .expert_level = 1
     }
