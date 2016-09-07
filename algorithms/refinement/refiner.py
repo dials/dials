@@ -85,6 +85,24 @@ refinement
                 "still form residuals and will contribute to detector and beam"
                 "refinement."
         .type = choice
+
+      detector_reduce = False
+        .type = bool
+        .help = "Special case designed for detector metrology refinement"
+                "(particularly of the CSPAD). See detector_reduce_list for"
+                "details."
+        .expert_level = 1
+
+      detector_reduce_list = Tau2 Tau3
+        .type = strings
+        .help = "Partial names to match to detector parameters to try fixing."
+                "If there are still not"
+                "enough parameters for refinement after fixing these, then"
+                "fail. This is to ensure that metrology refinement never"
+                "completes if it is not able to refine some panels. The default"
+                "is to try fixing Tau2 and Tau3 rotations of detector panel"
+                "groups only."
+        .expert_level = 1
     }
 
     scan_varying = False
@@ -964,6 +982,36 @@ class RefinerFactory(object):
               'panels':panels,
               'panel_group_id':pnl_gp,
               'name':name}
+
+    # As a special case for detector metrology, try reducing the number of
+    # detector parameters if there are too few for some panel group. If this is
+    # unsuccessful, fail outright.
+    if options.auto_reduction.detector_reduce:
+      reduce_list = options.auto_reduction.detector_reduce_list
+      for i, dp in enumerate(det_params):
+        try: # test for hierarchical detector parameterisation
+          pnl_groups = dp.get_panel_ids_by_group()
+          for igp, gp in enumerate(pnl_groups):
+            if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
+              print panel_gp_nparam_minus_nref(dp, gp, igp, reflections)
+              msg = ('Too few reflections to parameterise Detector{0} '
+                     'panel group {1}').format(i + 1, igp + 1)
+              warning(msg + '\nAttempting reduction of non-essential parameters')
+              names = filter_parameter_names(dp)
+              prefix = 'Group{0}'.format(igp + 1)
+              reduce_this_group = [prefix + e for e in reduce_list]
+              to_fix = string_sel(reduce_this_group, names)
+              dp.set_fixed(to_fix)
+              # try again, and fail if still unsuccessful
+              if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
+                msg = msg.format(i + 1, igp + 1)
+                raise Sorry(msg + '\nFailing.')
+
+        except AttributeError:
+          if model_nparam_minus_nref(dp, reflections) < 0:
+            mdl = 'Detector{0}'.format(i + 1)
+            msg = failmsg.format(mdl)
+            raise Sorry(msg)
 
     if options.auto_reduction.action == 'fail':
       failmsg = 'Too few reflections to parameterise {0}'
