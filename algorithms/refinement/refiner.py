@@ -917,7 +917,7 @@ class RefinerFactory(object):
       nref = len(isel)
       return nref - cutoff
 
-    def panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections):
+    def panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections, verbose=False):
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
       gp_params = [gp == group for gp in p.get_param_panel_groups()]
@@ -932,7 +932,10 @@ class RefinerFactory(object):
         for pnl in pnl_ids:
           isel.extend(subsel.select(panels == pnl))
       nref = len(isel)
-      return nref - cutoff
+      surplus = nref - cutoff
+      if surplus < 0 and verbose:
+        warning('{0} reflections with a cutoff of {1}'.format(nref, cutoff))
+      return surplus
 
     def weak_parameterisation_search(
       beam_params, xl_ori_params, xl_uc_params, det_params, reflections):
@@ -992,7 +995,7 @@ class RefinerFactory(object):
         try: # test for hierarchical detector parameterisation
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
-            surplus = panel_gp_nparam_minus_nref(dp, gp, igp, reflections)
+            surplus = panel_gp_nparam_minus_nref(dp, gp, igp, reflections, verbose=True)
             if surplus < 0:
               msg = ('Require {0} more reflections to parameterise Detector{1} '
                      'panel group {2}').format(-1*surplus, i + 1, igp + 1)
@@ -1003,7 +1006,7 @@ class RefinerFactory(object):
               to_fix = string_sel(reduce_this_group, names)
               dp.set_fixed(to_fix)
               # try again, and fail if still unsuccessful
-              surplus = panel_gp_nparam_minus_nref(dp, gp, igp, reflections)
+              surplus = panel_gp_nparam_minus_nref(dp, gp, igp, reflections, verbose=True)
               if surplus < 0:
                 msg = msg.format(-1*surplus, i + 1, igp + 1)
                 raise Sorry(msg + '\nFailing.')
