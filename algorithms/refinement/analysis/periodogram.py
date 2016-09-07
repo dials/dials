@@ -72,7 +72,7 @@ class Periodogram(object):
   the same spectrum as R's spec.pgram function when called using
   spec.pgram(x, detrend=F, taper=0, fast=F)"""
 
-  def __init__(self, x, demean=True, detrend=True):
+  def __init__(self, x, spans=None, demean=True, detrend=True):
 
     # Ensure x is copied as it will be changed in-place
     x = flex.double(x).deep_copy()
@@ -95,9 +95,26 @@ class Periodogram(object):
     x.extend(flex.double(m-n, 0.))
     xf = fft.forward(x)
 
-    # remove the first term (DC offset), get abs length of complex number and
-    # normalise by n to produce the raw periodogram
-    self.spec = flex.norm(xf[1:]) / n
+    # get abs length of complex and normalise by n to get the raw periodogram
+    spec = flex.norm(xf) / n
+
+    if spans is None:
+      # if not doing smoothing, the spectrum is just the raw periodogram with
+      # the uninteresting DC offset removed
+      self.spec = spec[1:]
+    else:
+      # for smoothing replace the DC offset term and extend the rest of the
+      # sequence by its reverse conjugate, omitting the Nyquist term if it is
+      # present
+      spec[0] = spec[1]
+      end = fft.n_complex() - (fft.n_real() + 1) % 2
+      spec.extend(spec[1:end].reversed())
+
+      # single integer spans only for now
+      m = int(spans) // 2
+      k = Kernel('modified.daniell', m)
+      spec = kernapply(spec, k, circular=True)
+      self.spec = spec[1:fft.n_complex()]
 
   def plot(self, show=True):
 
