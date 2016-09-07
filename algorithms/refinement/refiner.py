@@ -934,7 +934,7 @@ class RefinerFactory(object):
       nref = len(isel)
       surplus = nref - cutoff
       if surplus < 0 and verbose:
-        warning('{0} reflections with a cutoff of {1}'.format(nref, cutoff))
+        warning('{0} reflections on panels {1} with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
       return surplus
 
     def weak_parameterisation_search(
