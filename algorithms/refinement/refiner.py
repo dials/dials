@@ -992,9 +992,10 @@ class RefinerFactory(object):
         try: # test for hierarchical detector parameterisation
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
-            if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
-              msg = ('Too few reflections to parameterise Detector{0} '
-                     'panel group {1}').format(i + 1, igp + 1)
+            surplus = panel_gp_nparam_minus_nref(dp, gp, igp, reflections)
+            if surplus < 0:
+              msg = ('Require {0} more reflections to parameterise Detector{1} '
+                     'panel group {2}').format(-1*surplus, i + 1, igp + 1)
               warning(msg + '\nAttempting reduction of non-essential parameters')
               names = filter_parameter_names(dp)
               prefix = 'Group{0}'.format(igp + 1)
@@ -1002,8 +1003,9 @@ class RefinerFactory(object):
               to_fix = string_sel(reduce_this_group, names)
               dp.set_fixed(to_fix)
               # try again, and fail if still unsuccessful
-              if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
-                msg = msg.format(i + 1, igp + 1)
+              surplus = panel_gp_nparam_minus_nref(dp, gp, igp, reflections)
+              if surplus < 0:
+                msg = msg.format(-1*surplus, i + 1, igp + 1)
                 raise Sorry(msg + '\nFailing.')
 
         except AttributeError:
