@@ -15,7 +15,7 @@ from scitbx import matrix
 """A Python version of the Rotation::euler_explicit method from Pointless"""
 
 def solve_r3_rotation_for_angles_given_axes(R, e1, e2, e3,
-  smaller_phi2_solution=True, deg=False):
+  smaller_phi2_solution=True, return_both_solutions=False, deg=False):
   """decompose 3*3 rotation matrix R into three rotations about the axes
   e1, e2 and e3
 
@@ -86,42 +86,51 @@ def solve_r3_rotation_for_angles_given_axes(R, e1, e2, e3,
   phi2b = a + amb
   if phi2b > math.pi: phi2b -= 2.0*math.pi
   elif phi2b < -math.pi: phi2b += 2.0*math.pi
-  if smaller_phi2_solution:
+  if return_both_solutions:
+    phi2_ = (phi2a, phi2b)
+  elif smaller_phi2_solution:
     if abs(phi2a) < abs(phi2b):
-      phi2 = phi2a
+      phi2_ = (phi2a,)
     else:
-      phi2 = phi2b
+      phi2_ = (phi2b,)
   else:
     if abs(phi2a) > abs(phi2b):
-      phi2 = phi2a
+      phi2_ = (phi2a,)
     else:
-      phi2 = phi2b
-  # ** Step 2 ** Calculation of phi1
-  R2 = e2.axis_and_angle_as_r3_rotation_matrix(phi2, deg=False)
-  R2inv = R2.transpose()
-  v = R2 * e3
-  w = Re3
-  v1 = v - (v.dot(e1)) * e1
-  w1 = w - (w.dot(e1)) * e1
-  norm = v1.dot(v1)*w1.dot(w1)
-  # If norm = 0, rotations 1 & 3 are around same axis (for this phi2),
-  # so any value for phi1 is OK
-  if norm > 1.0e-8:
-    norm = math.sqrt(norm)
-    # cos(phi1) = (v1.w1)/norm
-    # sin(phi1) = (v1.w1 x e1)/norm
-    phi1 = math.atan2(v1.dot(w1.cross(e1))/norm, v1.dot(w1)/norm)
-    if phi1 >  math.pi: phi1 -= 2.0*math.pi
-    if phi1 < -math.pi: phi1 += 2.0*math.pi
+      phi2_ = (phi2b,)
+  solutions = []
+  for phi2 in phi2_:
+    # ** Step 2 ** Calculation of phi1
+    R2 = e2.axis_and_angle_as_r3_rotation_matrix(phi2, deg=False)
+    R2inv = R2.transpose()
+    v = R2 * e3
+    w = Re3
+    v1 = v - (v.dot(e1)) * e1
+    w1 = w - (w.dot(e1)) * e1
+    norm = v1.dot(v1)*w1.dot(w1)
+    # If norm = 0, rotations 1 & 3 are around same axis (for this phi2),
+    # so any value for phi1 is OK
+    if norm > 1.0e-8:
+      norm = math.sqrt(norm)
+      # cos(phi1) = (v1.w1)/norm
+      # sin(phi1) = (v1.w1 x e1)/norm
+      phi1 = math.atan2(v1.dot(w1.cross(e1))/norm, v1.dot(w1)/norm)
+      if phi1 >  math.pi: phi1 -= 2.0*math.pi
+      if phi1 < -math.pi: phi1 += 2.0*math.pi
+    else:
+      phi1 = 0.0
+    # ** Step 3 ** Calculation of phi3
+    R1inv = e1.axis_and_angle_as_r3_rotation_matrix(-1.*phi1, deg=False)
+    R3 = R2inv * R1inv * R
+    R3u = R3 * u;
+    # sin(phi3) = u.R3u x e3
+    # cos(phi3) = u.R3u
+    phi3 = math.atan2(u.dot(R3u.cross(e3)), u.dot(R3u))
+    if deg:
+      phi1, phi2, phi3 = tuple([x * 180/math.pi for x in (phi1, phi2, phi3)])
+    solutions.append((phi1, phi2, phi3))
+
+  if return_both_solutions:
+    return solutions
   else:
-    phi1 = 0.0
-  # ** Step 3 ** Calculation of phi3
-  R1inv = e1.axis_and_angle_as_r3_rotation_matrix(-1.*phi1, deg=False)
-  R3 = R2inv * R1inv * R
-  R3u = R3 * u;
-  # sin(phi3) = u.R3u x e3
-  # cos(phi3) = u.R3u
-  phi3 = math.atan2(u.dot(R3u.cross(e3)), u.dot(R3u))
-  if deg:
-    phi1, phi2, phi3 = tuple([x * 180/math.pi for x in (phi1, phi2, phi3)])
-  return phi1, phi2, phi3
+    return solutions[0]
