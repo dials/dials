@@ -124,6 +124,24 @@ class PlotData(object):
             'size_fast':size_fast,
             'size_slow':size_slow}
 
+  def angles(self, ipanel=0):
+    from scitbx import matrix
+    panel_a = self.det1[ipanel]
+    panel_b = self.det2[ipanel]
+    size_fast, size_slow = panel_a.get_image_size_mm()
+    assert size_fast, size_slow == panel_b.get_image_size_mm()
+    fast_a = matrix.col(panel_a.get_fast_axis())
+    slow_a = matrix.col(panel_a.get_slow_axis())
+    norm_a = fast_a.cross(slow_a)
+
+    fast_b = matrix.col(panel_b.get_fast_axis())
+    slow_b = matrix.col(panel_b.get_slow_axis())
+    norm_b = fast_b.cross(slow_b)
+
+    print 'Panel: %d dFast %.3f dSlow %.3f dNorm %.3f' % (ipanel, 
+      fast_a.angle(fast_b, deg=True), slow_a.angle(slow_b, deg=True),
+      norm_a.angle(norm_b, deg=True))
+
 def plot_grid_of_panels(panel_data, nrow, ncol, direction='fast', tag = ''):
   '''Plot data for each panel in a stack of subplots, with the first panel
   at the top. This is appropriate for e.g. the 24 panel model for the I23
@@ -358,7 +376,8 @@ class Script(object):
     # do calculations in advance and store in a dictionary
     dat=[]
     for ipanel in range(len(det1)):
-      print "Calc for panel", ipanel
+      #print "Calc for panel", ipanel
+      plot_data.angles(ipanel)
       dat.append(plot_data(ipanel))
 
     if self.params.tag is None:
