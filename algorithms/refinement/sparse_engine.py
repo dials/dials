@@ -85,7 +85,7 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
   def report_progress(self, objective):
     '''Override for the Eigen wrapper to provide live feedback of progress
     of the refinement'''
-    if self._verbosity > 1:
+    if self._verbosity > 2:
       info("Iteration: %5d Objective: %18.4f Mu: %12.7f" % (self.n_iterations, objective, self.mu))
     else:
       debug("Iteration: %5d Objective: %18.4f Mu: %12.7f" % (self.n_iterations, objective, self.mu))
