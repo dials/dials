@@ -138,7 +138,7 @@ class PlotData(object):
     slow_b = matrix.col(panel_b.get_slow_axis())
     norm_b = fast_b.cross(slow_b)
 
-    print 'Panel: %d dFast %.3f dSlow %.3f dNorm %.3f' % (ipanel, 
+    print 'Panel: %d dFast %.3f dSlow %.3f dNorm %.3f' % (ipanel,
       fast_a.angle(fast_b, deg=True), slow_a.angle(slow_b, deg=True),
       norm_a.angle(norm_b, deg=True))
 
