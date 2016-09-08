@@ -15,9 +15,19 @@ from scitbx import fftpack
 
 class Kernel(object):
   """A discrete symmetric normalized smoothing kernel for use with kernapply.
-  Currently allowed types are 'daniell' or 'modified.daniell'"""
+  Currently allowed types are 'daniell' or 'modified.daniell', with 'm' giving
+  the kernel dimension. Alternatively, provide the upper half of the smoothing
+  kernel coefficients as 'coef' directly"""
 
-  def __init__(self, name='daniell', m=2):
+  def __init__(self, name='daniell', m=2, coef=None):
+    if coef is not None:
+      self.m = len(coef) - 1
+      self.name = None
+      self.coef = flex.double(coef)
+      if abs(2.0 * flex.sum(self.coef[1:]) + self.coef[0] - 1) > 1.e-10:
+        raise ValueError('Coefficients do not add to 1')
+      return
+
     if not name in ['daniell', 'modified.daniell']:
       raise TypeError('Unknown kernel type "{0}"'.format(name))
 
