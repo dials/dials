@@ -66,70 +66,8 @@ phil_scope = parse('''
               "to do averaging at."
       .type = int(value_min=0)
 
-    tolerance
-        .help = "Tolerances used to determine shared models"
-      {
+    include scope dials.util.options.tolerance_phil_scope
 
-      beam {
-
-        wavelength = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The wavelength tolerance"
-
-        direction = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The direction tolerance"
-
-        polarization_normal = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The polarization normal tolerance"
-
-        polarization_fraction = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The polarization fraction tolerance"
-
-      }
-
-      detector {
-
-        fast_axis = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The fast axis tolerance"
-
-        slow_axis = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The slow axis tolerance"
-
-        origin = 1e-3
-          .type = float(value_min=0.0)
-          .help = "The origin tolerance"
-
-      }
-
-      goniometer {
-
-        rotation_axis = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The rotation axis tolerance"
-
-        fixed_rotation = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The fixed rotation tolerance"
-
-        setting_rotation = 1e-6
-          .type = float(value_min=0.0)
-          .help = "The setting rotation tolerance"
-
-      }
-
-      scan {
-
-        oscillation = 0.01
-          .type = float(value_min=0.0)
-          .help = "The oscillation tolerance for the scan"
-
-      }
-    }
   }
 
   output {
