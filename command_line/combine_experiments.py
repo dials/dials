@@ -65,6 +65,71 @@ phil_scope = parse('''
       .help = "For hierarchical detectors, optionally provide a single level"
               "to do averaging at."
       .type = int(value_min=0)
+
+    tolerance
+        .help = "Tolerances used to determine shared models"
+      {
+
+      beam {
+
+        wavelength = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The wavelength tolerance"
+
+        direction = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The direction tolerance"
+
+        polarization_normal = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The polarization normal tolerance"
+
+        polarization_fraction = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The polarization fraction tolerance"
+
+      }
+
+      detector {
+
+        fast_axis = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The fast axis tolerance"
+
+        slow_axis = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The slow axis tolerance"
+
+        origin = 1e-3
+          .type = float(value_min=0.0)
+          .help = "The origin tolerance"
+
+      }
+
+      goniometer {
+
+        rotation_axis = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The rotation axis tolerance"
+
+        fixed_rotation = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The fixed rotation tolerance"
+
+        setting_rotation = 1e-6
+          .type = float(value_min=0.0)
+          .help = "The setting rotation tolerance"
+
+      }
+
+      scan {
+
+        oscillation = 0.01
+          .type = float(value_min=0.0)
+          .help = "The oscillation tolerance for the scan"
+
+      }
+    }
   }
 
   output {
@@ -81,26 +146,64 @@ phil_scope = parse('''
 class CombineWithReference(object):
 
   def __init__(self, beam=None, goniometer=None, scan=None,
-                     crystal=None, detector=None):
+                     crystal=None, detector=None, params=None):
 
     self.ref_beam = beam
     self.ref_goniometer = goniometer
     self.ref_scan = scan
     self.ref_crystal = crystal
     self.ref_detector = detector
+    if params:
+      self.tolerance = params.reference_from_experiment.tolerance
 
     return
 
   def __call__(self, experiment):
+    from dxtbx.datablock import BeamComparison
+    from dxtbx.datablock import DetectorComparison
+    from dxtbx.datablock import GoniometerComparison
 
-    beam = experiment.beam if self.ref_beam is None else self.ref_beam
-    goniometer = experiment.goniometer if self.ref_goniometer is None \
-      else self.ref_goniometer
-    scan = experiment.scan if self.ref_scan is None else self.ref_scan
-    crystal = experiment.crystal if self.ref_crystal is None \
-      else self.ref_crystal
-    detector = experiment.detector if self.ref_detector is None \
-      else self.ref_detector
+    compare_beam = BeamComparison(
+      wavelength_tolerance=self.tolerance.beam.wavelength,
+      direction_tolerance=self.tolerance.beam.direction,
+      polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
+      polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction)
+    compare_detector = DetectorComparison(
+      fast_axis_tolerance=self.tolerance.detector.fast_axis,
+      slow_axis_tolerance=self.tolerance.detector.slow_axis,
+      origin_tolerance=self.tolerance.detector.origin)
+    compare_goniometer = GoniometerComparison(
+      rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
+      fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
+      setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation)
+
+    if self.ref_beam:
+      assert(compare_beam(self.ref_beam, experiment.beam))
+      beam = self.ref_beam
+    else:
+      beam = experiment.beam
+
+    if self.ref_detector:
+      assert(compare_detector(self.ref_detector, experiment.detector))
+      detector = self.ref_detector
+    else:
+      detector = experiment.detector
+
+    if self.ref_goniometer:
+      assert(compare_goniometer(self.ref_goniometer, experiment.goniometer))
+      goniometer = self.ref_goniometer
+    else:
+      goniometer = experiment.goniometer
+
+    if self.ref_scan:
+      scan = self.ref_scan
+    else:
+      scan = experiment.scan
+
+    if self.ref_crystal:
+      crystal = self.ref_crystal
+    else:
+      crystal = experiment.crystal
 
     from dxtbx.model.experiment.experiment_list import Experiment
     return Experiment(beam=beam,
@@ -233,7 +336,8 @@ class Script(object):
       average_detectors(ref_detector.hierarchy(), [e.detector.hierarchy() for e in flat_exps], 0)
 
     combine = CombineWithReference(beam=ref_beam, goniometer=ref_goniometer,
-                  scan=ref_scan, crystal=ref_crystal, detector=ref_detector)
+                  scan=ref_scan, crystal=ref_crystal, detector=ref_detector,
+                  params=params)
 
     # set up global experiments and reflections lists
     from dials.array_family import flex
