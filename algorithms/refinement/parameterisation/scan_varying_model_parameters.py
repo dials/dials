@@ -414,8 +414,9 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
       self._var_cov = var_cov
       return None
 
-    # later calls, make sure it has been cached!
-    assert self._var_cov is not None
+    # later calls, make sure it has been cached! Otherwise ESDs cannot be
+    # calculated, so return None
+    if self._var_cov is None: return None
 
     # later calls, assumes compose has been called at image number t, so that
     # get_ds_dp will be specific for that image. Now call the base class method
