@@ -155,6 +155,8 @@ class CombineWithReference(object):
     self.ref_detector = detector
     if params:
       self.tolerance = params.reference_from_experiment.tolerance
+    else:
+      self.tolerance = None
 
     return
 
@@ -163,34 +165,43 @@ class CombineWithReference(object):
     from dxtbx.datablock import DetectorComparison
     from dxtbx.datablock import GoniometerComparison
 
-    compare_beam = BeamComparison(
-      wavelength_tolerance=self.tolerance.beam.wavelength,
-      direction_tolerance=self.tolerance.beam.direction,
-      polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
-      polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction)
-    compare_detector = DetectorComparison(
-      fast_axis_tolerance=self.tolerance.detector.fast_axis,
-      slow_axis_tolerance=self.tolerance.detector.slow_axis,
-      origin_tolerance=self.tolerance.detector.origin)
-    compare_goniometer = GoniometerComparison(
-      rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
-      fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
-      setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation)
+    if self.tolerance:
+      compare_beam = BeamComparison(
+        wavelength_tolerance=self.tolerance.beam.wavelength,
+        direction_tolerance=self.tolerance.beam.direction,
+        polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
+        polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction)
+      compare_detector = DetectorComparison(
+        fast_axis_tolerance=self.tolerance.detector.fast_axis,
+        slow_axis_tolerance=self.tolerance.detector.slow_axis,
+        origin_tolerance=self.tolerance.detector.origin)
+      compare_goniometer = GoniometerComparison(
+        rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
+        fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
+        setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation)
+
+    else:
+      compare_beam = None
+      compare_detector = None
+      compare_goniometer = None
 
     if self.ref_beam:
-      assert(compare_beam(self.ref_beam, experiment.beam))
+      if compare_beam:
+        assert(compare_beam(self.ref_beam, experiment.beam))
       beam = self.ref_beam
     else:
       beam = experiment.beam
 
     if self.ref_detector:
-      assert(compare_detector(self.ref_detector, experiment.detector))
+      if compare_detector:
+        assert(compare_detector(self.ref_detector, experiment.detector))
       detector = self.ref_detector
     else:
       detector = experiment.detector
 
     if self.ref_goniometer:
-      assert(compare_goniometer(self.ref_goniometer, experiment.goniometer))
+      if compare_goniometer:
+        assert(compare_goniometer(self.ref_goniometer, experiment.goniometer))
       goniometer = self.ref_goniometer
     else:
       goniometer = experiment.goniometer
