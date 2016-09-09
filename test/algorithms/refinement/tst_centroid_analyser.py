@@ -26,7 +26,6 @@ def test_raw_even_and_odd_length():
 
   # even-length
   pgram = Periodogram(dat)
-  b = rpgram(dat)
   rspec = flex.double([28.95417436723208,
                        8.804110562933733,
                        18.49821426322232,
@@ -147,7 +146,6 @@ def test_smoothed_even_and_odd_length():
 
   # single kernel smoother, even length
   pgram = Periodogram(dat, spans=4)
-  b = rpgram(dat, spans=4)
   rspec = flex.double([22.60966340315627,
                        18.195262628604752,
                        12.801658008106513,
@@ -203,7 +201,6 @@ def test_smoothed_even_and_odd_length():
   # three kernel smoothers with differing lengths, odd length sequence
   dat2 = dat[0:99]
   pgram = Periodogram(dat2, spans=[4,6,4])
-  b = rpgram(dat2, spans=robjects.FloatVector([4,6,4]))
   rspec = flex.double([17.314055274775985,
                        15.746715010053997,
                        13.51918957394817,
