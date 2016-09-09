@@ -112,19 +112,51 @@ class Periodogram(object):
       # if not doing smoothing, the spectrum is just the raw periodogram with
       # the uninteresting DC offset removed
       self.spec = spec[1:]
-    else:
-      # for smoothing replace the DC offset term and extend the rest of the
-      # sequence by its reverse conjugate, omitting the Nyquist term if it is
-      # present
-      spec[0] = spec[1]
-      end = fft.n_complex() - (fft.n_real() + 1) % 2
-      spec.extend(spec[1:end].reversed())
+      return
 
-      # single integer spans only for now
+    # for smoothing replace the DC offset term and extend the rest of the
+    # sequence by its reverse conjugate, omitting the Nyquist term if it is
+    # present
+    spec[0] = spec[1]
+    end = fft.n_complex() - (fft.n_real() + 1) % 2
+    spec.extend(spec[1:end].reversed())
+
+    try:
+      # multiple integer spans
+      nspans = len(spans)
+      m = int(spans[0]) // 2
+      multiple = True
+    except TypeError:
+      # single integer span
       m = int(spans) // 2
-      k = Kernel('modified.daniell', m)
-      spec = kernapply(spec, k, circular=True)
-      self.spec = spec[1:fft.n_complex()]
+      multiple = False
+
+    # construct smoothing kernel
+    k = Kernel('modified.daniell', m)
+
+    if multiple:
+      for i in range(1, nspans):
+        # construct kernel for convolution
+        m1 = int(spans[i]) // 2
+        k1 = Kernel('modified.daniell', m1)
+
+        # expand coefficients of k to full kernel and zero pad for smoothing
+        x1 = flex.double(k1.m, 0.0)
+        x1.extend(k.coef.reversed())
+        x1.extend(k.coef[1:])
+        x1.extend(flex.double(k1.m, 0.0))
+
+        # convolve kernels
+        coef = kernapply(x1, k1, circular = True)
+        m = len(coef)//2
+        coef = coef[m:(len(coef))]
+        k = Kernel(coef=coef)
+
+    # apply smoothing kernel
+    spec = kernapply(spec, k, circular=True)
+    self.spec = spec[1:fft.n_complex()]
+
+    return
 
   def plot(self, show=True):
 

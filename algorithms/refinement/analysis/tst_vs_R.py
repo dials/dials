@@ -94,10 +94,29 @@ def test4():
     assert approx_equal(e1, e2)
   print "OK"
 
+def test5():
+  # compare smoothed pgrams with convolved kernel, even and odd length sequences
+  for i in range(2):
+    dat = flex.random_double(50+i)
+
+    a = Periodogram(dat, spans=[4,4])
+    b = rpgram(dat, spans=robjects.FloatVector(list([4,4])))
+
+    #from matplotlib.pyplot import ion
+    #ion()
+    #a.plot()
+    #b.plot()
+
+    assert approx_equal(a.freq, b.freq)
+    assert approx_equal(a.spec, b.spec)
+
+    print "OK"
+
 if __name__=="__main__":
   test1()
   #test2()
   test3()
   test4()
+  test5()
 
   print "OK"
