@@ -371,7 +371,7 @@ refinement
       .help = "Parameters to configure weighting strategy overrides"
       .expert_level = 1
     {
-      override = statistical stills constant
+      override = statistical stills constant external_deltapsi
         .help = "selection of a strategy to override default weighting behaviour"
         .type = choice
 
@@ -1378,9 +1378,10 @@ class RefinerFactory(object):
     else:
       from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
       # check incompatible weighting strategy
-      if options.weighting_strategy.override == "stills":
-        raise Sorry('The "stills" weighting strategy is not compatible with '
-                    'scan refinement')
+      if options.weighting_strategy.override in ["stills", "external_deltapsi"]:
+        msg = ('The "{0}" weighting strategy is not compatible with '
+               'scan refinement').format(options.weighting_strategy.override)
+        raise Sorry(msg)
 
     # set automatic outlier rejection options
     if options.outlier.algorithm in ('auto', libtbx.Auto):
@@ -1424,6 +1425,10 @@ class RefinerFactory(object):
         import StillsWeightingStrategy
       weighting_strategy = StillsWeightingStrategy(
         options.weighting_strategy.delpsi_constant)
+    elif options.weighting_strategy.override == "external_deltapsi":
+      from dials.algorithms.refinement.weighting_strategies \
+        import ExternalDelPsiWeightingStrategy
+      weighting_strategy = ExternalDelPsiWeightingStrategy()
     elif options.weighting_strategy.override == "constant":
       from dials.algorithms.refinement.weighting_strategies \
         import ConstantWeightingStrategy

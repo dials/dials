@@ -49,6 +49,26 @@ class StillsWeightingStrategy(StatisticalWeightingStrategy):
 
     return reflections
 
+class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
+  """Defines a single method that provides a ReflectionManager with a strategy
+  for calculating weights for stills refinement. This version uses statistical
+   weights for X and Y and assume that the Delta Psi part is already provided in
+  the reflection table"""
+
+  def calculate_weights(self, reflections):
+    """Statistical weights for X, Y. Weights for DeltaPsi must be already
+    provided in the reflection table"""
+
+    # call parent class method to set X and Y weights
+    reflections = super(ExternalDelPsiWeightingStrategy,
+                        self).calculate_weights(reflections)
+
+    if not 'delpsical.weights' in reflections:
+      from libtbx.utils import Sorry
+      raise Sorry('The key "delpsical.weights" is expected within the input reflections')
+
+    return reflections
+
 class ConstantWeightingStrategy(object):
 
   def __init__(self, wx, wy, wz, stills=False):
