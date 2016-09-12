@@ -21,6 +21,7 @@ class CentroidAnalyser(object):
 
   def __init__(self, reflections, av_callback=flex.mean):
 
+    self._spectral_analysis = False
     self._av_callback = av_callback
 
     # Remove invalid/bad reflections
@@ -82,23 +83,38 @@ class CentroidAnalyser(object):
           blk_start = phi_range[0] + i * block_size
           blk_end = blk_start + block_size
           sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
-          nr.append(sel.count(True))
-          xr_per_blk.append(self._av_callback(x_resid.select(sel)))
-          yr_per_blk.append(self._av_callback(y_resid.select(sel)))
-          pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+          nref_in_block = sel.count(True)
+          nr.append(nref_in_block)
+          if nref_in_block > 0:
+            xr_per_blk.append(self._av_callback(x_resid.select(sel)))
+            yr_per_blk.append(self._av_callback(y_resid.select(sel)))
+            pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+          else:
+            xr_per_blk.append(0.0)
+            yr_per_blk.append(0.0)
+            pr_per_blk.append(0.0)
         # include max phi in the final block
         blk_start = phi_range[0] + (nblocks - 1) * block_size
         blk_end = phi_range[1]
         sel = (phi_obs_deg >= blk_start) & (phi_obs_deg <= blk_end)
-        nr.append(sel.count(True))
-        xr_per_blk.append(self._av_callback(x_resid.select(sel)))
-        yr_per_blk.append(self._av_callback(y_resid.select(sel)))
-        pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+        nref_in_block = sel.count(True)
+        nr.append(nref_in_block)
+        if nref_in_block > 0:
+          xr_per_blk.append(self._av_callback(x_resid.select(sel)))
+          yr_per_blk.append(self._av_callback(y_resid.select(sel)))
+          pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+        else:
+            xr_per_blk.append(0.0)
+            yr_per_blk.append(0.0)
+            pr_per_blk.append(0.0)
 
         # Break if there are enough reflections, otherwise increase block size
         min_nr = flex.min(nr)
         if min_nr > 50: break
-        fac = 50 / min_nr
+        if min_nr < 5:
+          fac = 2
+        else:
+          fac = 50 / min_nr
         ideal_block_size *= fac
 
       results_this_exp = {'block_size':block_size,
@@ -106,8 +122,6 @@ class CentroidAnalyser(object):
                           'av_x_resid_per_block':xr_per_blk,
                           'av_y_resid_per_block':yr_per_blk,
                           'av_phi_resid_per_block':pr_per_blk,}
-
-      self._spectral_analysis = False
 
       # collect results
       self._results.append(results_this_exp)
