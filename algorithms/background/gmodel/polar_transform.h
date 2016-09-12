@@ -30,9 +30,49 @@ namespace dials { namespace algorithms {
   using dials::algorithms::polygon::spatial_interpolation::grid_to_quad;
   using dials::algorithms::polygon::spatial_interpolation::Match;
 
+  namespace detail {
+    template <typename T> int sign(T val) {
+        return (T(0) < val) - (val < T(0));
+    }
+  }
+
+  class PolarTransformResult {
+  public:
+
+    PolarTransformResult(
+        af::versa<double, af::c_grid<2> > data,
+        af::versa<bool, af::c_grid<2> > mask)
+      : data_(data),
+        mask_(mask) {}
+
+    af::versa< double, af::c_grid<2> > data() const {
+      return data_;
+    }
+
+    af::versa< bool, af::c_grid<2> > mask() const {
+      return mask_;
+    }
+
+  protected:
+
+    af::versa< double, af::c_grid<2> > data_;
+    af::versa< bool, af::c_grid<2> > mask_;
+
+  };
+
+
+  /**
+   * A class to do a polar transform along resolution
+   */
   class PolarTransform {
   public:
 
+    /**
+     * Initialise the class
+     * @param beam The beam model
+     * @param panel The panel model
+     * @param goniometer The goniometer model
+     */
     PolarTransform(
         const Beam &beam,
         const Panel &panel,
@@ -47,6 +87,7 @@ namespace dials { namespace algorithms {
       // Allocate map arrays
       image_xmap_ = af::versa<double, af::c_grid<2> >(af::c_grid<2>(image_size[1]+1, image_size[0]+1));
       image_ymap_ = af::versa<double, af::c_grid<2> >(af::c_grid<2>(image_size[1]+1, image_size[0]+1));
+      discontinuity_ = af::versa<bool, af::c_grid<2> >(af::c_grid<2>(image_size[1]+1, image_size[0]+1));
 
       // Setup x, y, z axis for transform
       vec3<double> s0 = beam.get_s0().normalize();
@@ -55,15 +96,44 @@ namespace dials { namespace algorithms {
       vec3<double> yaxis = zaxis.cross(m2);
       vec3<double> xaxis = zaxis.cross(yaxis);
 
-      // Generate polar coords from image pixels
+      // Generate temporary array of x, y z coords
+      af::versa< double, af::c_grid<2> > temp_x(af::c_grid<2>(image_size[1]+1, image_size[0]+1));
+      af::versa< double, af::c_grid<2> > temp_y(af::c_grid<2>(image_size[1]+1, image_size[0]+1));
+      af::versa< double, af::c_grid<2> > temp_z(af::c_grid<2>(image_size[1]+1, image_size[0]+1));
       for (std::size_t j = 0; j < image_size[1]+1; ++j) {
         for (std::size_t i = 0; i < image_size[0]+1; ++i) {
           vec3<double> s1 = panel.get_pixel_lab_coord(vec2<double>(i,j)).normalize();
           double z = s1 * zaxis;
           double y = s1 * yaxis;
           double x = s1 * xaxis;
+          temp_x(j,i) = x;
+          temp_y(j,i) = y;
+          temp_z(j,i) = z;
+        }
+      }
+
+      // Generate polar coords from image pixels
+      for (std::size_t j = 0; j < image_size[1]+1; ++j) {
+        for (std::size_t i = 0; i < image_size[0]+1; ++i) {
+          double z = temp_z(j,i);
+          double y = temp_y(j,i);
+          double x = temp_x(j,i);
           image_xmap_(j, i) = std::acos(z);
           image_ymap_(j, i) = std::atan2(y, x);
+
+          // Create an image with the discontinuity shown
+          discontinuity_(j,i) = false;
+          if (x <= 0) {
+            if (j < image_size[1]) {
+              int s1 = detail::sign(temp_y(j,i));
+              int s2 = detail::sign(temp_y(j+1,i));
+              int s3 = detail::sign(temp_y(j,i+1));
+              int s4 = detail::sign(temp_y(j+1,i+1));
+              if (s1 != s2 || s1 != s3 || s1 != s4 || s2 != s3 || s2 != s4 || s3 != s4) {
+                discontinuity_(j,i) = true;
+              }
+            }
+          }
         }
       }
 
@@ -96,23 +166,6 @@ namespace dials { namespace algorithms {
             std::max(d3, d4)));
       std::size_t polar_ysize = (std::size_t) std::ceil((image_size[0] * image_size[1]) / polar_xsize);
 
-      // Compute polar y grid size
-      /* int xind2 = std::min((int)(image_size[0]-2), (int)(map_xmax_ind % (image_size[0]))); */
-      /* int yind2 = std::min((int)(image_size[0]-2), (int)(map_xmax_ind / (image_size[1]))); */
-      /* double t[4] = { */
-      /*   image_ymap_(yind2,xind2), */
-      /*   image_ymap_(yind2+1,xind2), */
-      /*   image_ymap_(yind2,xind2+1), */
-      /*   image_ymap_(yind2+1,xind2+1), */
-      /* }; */
-      /* double td = 0; */
-      /* for (std::size_t j = 0; j < 4; ++j) { */
-      /*   for (std::size_t i = 0; i < 4; ++i) { */
-      /*     double tdd = std::abs(t[i] - t[j]); */
-      /*     if (tdd > td) tdd = td; */
-      /*   } */
-      /* } */
-      /* std::size_t polar_ysize = (std::size_t)std::ceil(2*scitbx::constants::pi / td); */
       polar_grid_ = af::c_grid<2>(polar_ysize, polar_xsize);
 
       // The polar grid limits
@@ -136,14 +189,32 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /**
+     * @returns The x map coordinates
+     */
     af::versa< double, af::c_grid<2> > image_xmap() const {
       return image_xmap_;
     }
 
+    /**
+     * @returns The y map coordinates
+     */
     af::versa< double, af::c_grid<2> > image_ymap() const {
       return image_ymap_;
     }
 
+    /**
+     * @returns The discontinuity coordinates
+     */
+    af::versa<bool, af::c_grid<2> > discontinuity() const {
+      return discontinuity_;
+    }
+
+    /**
+     * @param j The y index
+     * @param i The x index
+     * @returns The grid coordinate
+     */
     vec2<double> gc(std::size_t j, std::size_t i) const {
       DIALS_ASSERT(j <= image_grid_[0]);
       DIALS_ASSERT(i <= image_grid_[1]);
@@ -152,14 +223,29 @@ namespace dials { namespace algorithms {
           image_ymap_(j,i));
     }
 
-    af::versa< double, af::c_grid<2> > to_polar(
-        const af::const_ref< double, af::c_grid<2> > &data) const {
+    /**
+     * transform to polar
+     * @param data The image data
+     * @param mask The image mask
+     * @returns The transformed data
+     */
+    PolarTransformResult to_polar(
+        const af::const_ref< double, af::c_grid<2> > &data,
+        const af::const_ref< bool, af::c_grid<2> > &mask) const {
 
       DIALS_ASSERT(data.accessor().all_eq(image_grid_));
       af::versa< double, af::c_grid<2> > data_out(polar_grid_);
+      af::versa< bool, af::c_grid<2> > mask_out(polar_grid_, true);
 
       for (std::size_t j = 0; j < image_grid_[0]; ++j) {
         for (std::size_t i = 0; i < image_grid_[1]; ++i) {
+
+          // FIXME - Discarding pixels where the angle wraps round. Need to
+          // handle this better
+
+          if (discontinuity_(j,i)) {
+            continue;
+          }
           vert4 input(gc(j, i),
                       gc(j, i+1),
                       gc(j+1, i+1),
@@ -170,21 +256,40 @@ namespace dials { namespace algorithms {
             int index = matches[m].out;
             int ii = index % polar_grid_[1];
             int jj = index / polar_grid_[1];
-            data_out(jj, ii) += data(j,i) * fraction;
+            if (mask_out(jj,ii) && mask(j,i)) {
+              data_out(jj,ii) += data(j,i) * fraction;
+            } else {
+              mask_out(jj,ii) = false;
+            }
           }
         }
       }
 
-      return data_out;
+      return PolarTransformResult(data_out, mask_out);
     }
 
-    af::versa< double, af::c_grid<2> > from_polar(
-        const af::const_ref< double, af::c_grid<2> > &data) const {
+    /**
+     * transform from polar
+     * @param data The polar data
+     * @param mask The polar mask
+     * @returns The transformed data
+     */
+    PolarTransformResult from_polar(
+        const af::const_ref< double, af::c_grid<2> > &data,
+        const af::const_ref< bool, af::c_grid<2> > &mask) const {
 
       DIALS_ASSERT(data.accessor().all_eq(polar_grid_));
       af::versa< double, af::c_grid<2> > data_out(image_grid_);
+      af::versa< bool, af::c_grid<2> > mask_out(image_grid_, true);
       for (std::size_t j = 0; j < image_grid_[0]; ++j) {
         for (std::size_t i = 0; i < image_grid_[1]; ++i) {
+
+          // FIXME - Discarding pixels where the angle wraps round. Need to
+          // handle this better
+
+          if (discontinuity_(j,i)) {
+            continue;
+          }
           vert4 input(gc(j, i),
                       gc(j, i+1),
                       gc(j+1, i+1),
@@ -199,12 +304,16 @@ namespace dials { namespace algorithms {
             DIALS_ASSERT(jj < polar_grid_[0]);
             DIALS_ASSERT(ii >= 0);
             DIALS_ASSERT(jj >= 0);
-            data_out(j,i) += data(jj,ii) * fraction;
+            if (mask_out(j,i) && mask(jj,ii)) {
+              data_out(j,i) += data(jj,ii) * fraction;
+            } else {
+              mask_out(j,i) = false;
+            }
           }
         }
       }
 
-      return data_out;
+      return PolarTransformResult(data_out, mask_out);
     }
 
   protected:
@@ -214,6 +323,7 @@ namespace dials { namespace algorithms {
     af::c_grid<2> polar_grid_;
     af::versa< double, af::c_grid<2> > image_xmap_;
     af::versa< double, af::c_grid<2> > image_ymap_;
+    af::versa< bool, af::c_grid<2> > discontinuity_;
 
   };
 

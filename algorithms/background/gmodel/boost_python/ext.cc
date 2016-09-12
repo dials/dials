@@ -47,6 +47,11 @@ namespace dials { namespace algorithms { namespace background {
 
   BOOST_PYTHON_MODULE(dials_algorithms_background_gmodel_ext)
   {
+    class_<PolarTransformResult>("PolarTransfrormResult", no_init)
+      .def("data", &PolarTransformResult::data)
+      .def("mask", &PolarTransformResult::mask)
+      ;
+
     class_<PolarTransform>("PolarTransform", no_init)
       .def(init<
           const Beam&,
@@ -54,6 +59,7 @@ namespace dials { namespace algorithms { namespace background {
           const Goniometer&>())
       .def("image_xmap", &PolarTransform::image_xmap)
       .def("image_ymap", &PolarTransform::image_ymap)
+      .def("discontinuity", &PolarTransform::discontinuity)
       .def("to_polar", &PolarTransform::to_polar)
       .def("from_polar", &PolarTransform::from_polar)
       ;
