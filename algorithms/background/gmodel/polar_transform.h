@@ -143,10 +143,8 @@ namespace dials { namespace algorithms {
       double map_ymin = image_ymap_[1];
       double map_ymax = image_ymap_[1];
       std::size_t map_xmin_ind = 0;
-      std::size_t map_xmax_ind = 0;
       for (std::size_t i = 1; i < image_xmap_.size(); ++i) {
         if (image_xmap_[i] < map_xmin) map_xmin_ind = i;
-        if (image_xmap_[i] > map_xmax) map_xmax_ind = i;
         if (image_xmap_[i] < map_xmin) map_xmin = image_xmap_[i];
         if (image_xmap_[i] > map_xmax) map_xmax = image_xmap_[i];
         if (image_ymap_[i] < map_ymin) map_ymin = image_ymap_[i];
@@ -318,7 +316,6 @@ namespace dials { namespace algorithms {
 
   protected:
 
-    std::size_t multiplier_;
     af::c_grid<2> image_grid_;
     af::c_grid<2> polar_grid_;
     af::versa< double, af::c_grid<2> > image_xmap_;
@@ -326,6 +323,7 @@ namespace dials { namespace algorithms {
     af::versa< bool, af::c_grid<2> > discontinuity_;
 
   };
+
 
 }} // namespace dials::algorithms
 
