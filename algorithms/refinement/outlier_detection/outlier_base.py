@@ -40,6 +40,12 @@ class CentroidOutlier(object):
 
     return
 
+  def get_block_width(self):
+    return self._block_width
+
+  def set_block_width(self, block_width):
+    self._block_width = block_width
+
   def set_verbosity(self, verbosity):
     self._verbosity = verbosity
 
