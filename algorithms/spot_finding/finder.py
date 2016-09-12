@@ -514,7 +514,7 @@ class ExtractSpots(object):
     # Change the number of processors if necessary
     mp_nproc = self.mp_nproc
     mp_njobs = self.mp_njobs
-    if platform.system() == "Windows" and (mp_nproc > 1 or mp_njobs > 1):
+    if (mp_nproc > 1 or mp_njobs > 1) and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
       warn("")
       warn("*" * 80)
       warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")
@@ -621,7 +621,7 @@ class ExtractSpots(object):
     # Change the number of processors if necessary
     mp_nproc = self.mp_nproc
     mp_njobs = self.mp_njobs
-    if platform.system() == "Windows" and (mp_nproc > 1 or mp_njobs > 1):
+    if (mp_nproc > 1 or mp_njobs > 1) and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
       warn("")
       warn("*" * 80)
       warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")

@@ -91,7 +91,7 @@ class ProcessorImageBase(object):
     self.manager.initialize()
     mp_method = self.manager.params.integration.mp.method
     mp_nproc = min(len(self.manager), self.manager.params.integration.mp.nproc)
-    if platform.system() == "Windows" and mp_nproc > 1:
+    if mp_nproc > 1 and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
       warn("")
       warn("*" * 80)
       warn("Multiprocessing is not available on windows. Setting nproc = 1")
