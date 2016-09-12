@@ -14,9 +14,12 @@ from __future__ import division
 from math import pi
 from logging import info, debug, warning
 
+import libtbx
 from scitbx import matrix
 from dials.array_family import flex
 from dials.algorithms.refinement import weighting_strategies
+from dials.algorithms.refinement.analysis.centroid_analysis import \
+  CentroidAnalyser
 from dials.algorithms.refinement.refinement_helpers import \
   calculate_frame_numbers, set_obs_s1
 
@@ -105,7 +108,6 @@ class BlockCalculator(object):
                                           (exp_phi <= (b_start + _width)))
         self._reflections['block'].set_selected(sub_isel, b_num)
         self._reflections['block_centre'].set_selected(sub_isel, b_cent)
-
 
     return self._reflections
 
@@ -214,7 +216,19 @@ class ReflectionManager(object):
     # not known until the manager is finalised
     self._sample_size = None
 
+    # to be used if optional analysis is performed on the centroids
+    self._centroid_analyser = None
+
     return
+
+  def centroid_analysis(self, spectra=True):
+    """Perform centroid analysis on the reflections, optionally with power
+    spectrum analysis"""
+
+    if self._centroid_analyser is None:
+      self._centroid_analyser = CentroidAnalyser(self._reflections)
+
+    return self._centroid_analyser(do_spectral_analysis=spectra)
 
   def finalise(self):
     """Complete initialisation by performing outlier rejection and any
@@ -236,6 +250,13 @@ class ReflectionManager(object):
     if self._outlier_detector is None:
       rejection_occurred = False
     else:
+      if self._outlier_detector.get_block_width() is libtbx.Auto:
+        analysis = self.centroid_analysis(spectra=False)
+        # experiments may have different block sizes used in the analysis. Find
+        # the largest and choose the maximum of this or 18 degrees to set a
+        # suitable block width for outlier rejection for all experiments
+        width = max([e['block_size'] for e in analysis])
+        self._outlier_detector.set_block_width(max([width, 18.0]))
       rejection_occurred = self._outlier_detector(self._reflections)
 
     # set the centroid_outlier flag in the original indexed reflections
