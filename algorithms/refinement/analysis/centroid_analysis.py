@@ -58,19 +58,14 @@ class CentroidAnalyser(object):
       reflections['y_resid'] = y_cal - y_obs
       reflections['phi_resid'] = phi_cal - phi_obs
 
-    self._reflections = reflections
-
-  def __call__(self):
-    """Perform power spectrum analysis and return the results as a list
-    of dictionaries (one for each experiment)"""
-
-    results = []
+    # start populating results dictionary
+    self._results = []
     for iexp in range(self._nexp + 1):
-      reflections = self._reflections.select(self._reflections['id'] == iexp)
-      x_resid = reflections['x_resid']
-      y_resid = reflections['y_resid']
-      phi_resid = reflections['phi_resid']
-      phi_obs_deg = reflections['xyzobs.mm.value'].parts()[2] * RAD2DEG
+      ref_this_exp = reflections.select(reflections['id'] == iexp)
+      x_resid = ref_this_exp['x_resid']
+      y_resid = ref_this_exp['y_resid']
+      phi_resid = ref_this_exp['phi_resid']
+      phi_obs_deg = ref_this_exp['xyzobs.mm.value'].parts()[2] * RAD2DEG
 
       # Calculate average residuals in equal-width blocks
       phi_range = flex.min(phi_obs_deg), flex.max(phi_obs_deg)
@@ -106,45 +101,62 @@ class CentroidAnalyser(object):
         fac = 50 / min_nr
         ideal_block_size *= fac
 
-      results_this_exp = {'block_size':block_size}
+      results_this_exp = {'block_size':block_size,
+                          'nref_per_block':nr,
+                          'av_x_resid_per_block':xr_per_blk,
+                          'av_y_resid_per_block':yr_per_blk,
+                          'av_phi_resid_per_block':pr_per_blk,}
 
-      # Perform power spectrum analysis on the residuals
-      import matplotlib.pyplot as plt
-      plt.plot(xr_per_blk)
-      plt.ylabel('x residuals per block')
-      plt.show()
-      px = Periodogram(xr_per_blk)
-      px.plot()
-
-      plt.plot(yr_per_blk)
-      plt.ylabel('y residuals per block')
-      plt.show()
-      py = Periodogram(yr_per_blk)
-      py.plot()
-
-      plt.plot(pr_per_blk)
-      plt.ylabel('phi residuals per block')
-      plt.show()
-      pz = Periodogram(pr_per_blk)
-      pz.plot()
-      # FIXME here extract information from the power spectrum
+      self._spectral_analysis = False
 
       # collect results
-      results.append(results_this_exp)
+      self._results.append(results_this_exp)
 
-      #print "block_size", block_size
-      #print "#refs per block"
-      #print list(nr)
+  def __call__(self, do_spectral_analysis=True):
+    """Perform analysis and return the results as a list of dictionaries (one
+    for each experiment)"""
 
-    return results
+    if do_spectral_analysis:
+      if self._spectral_analysis: return self._results
+
+      # Perform power spectrum analysis on the residuals
+      for exp_data in self._results:
+        px = Periodogram(exp_data['av_x_resid_per_block'])
+        exp_data['x_periodogram'] = px
+        py = Periodogram(exp_data['av_y_resid_per_block'])
+        exp_data['y_periodogram'] = py
+        pz = Periodogram(exp_data['av_phi_resid_per_block'])
+        exp_data['phi_periodogram'] = pz
+
+        # FIXME here extract further information from the power spectrum
+
+    return self._results
 
 if __name__ == "__main__":
 
   import sys
-  ref = sys.argv[1]
-
+  import matplotlib.pyplot as plt
   from dials.array_family import flex
+
+  ref = sys.argv[1]
   refs = flex.reflection_table.from_pickle(ref)
 
   ca = CentroidAnalyser(refs)
-  ca()
+  results = ca()
+
+  for e in results:
+
+    plt.plot(e['av_x_resid_per_block'])
+    plt.ylabel('x residuals per block')
+    plt.show()
+    e['x_periodogram'].plot()
+
+    plt.plot(e['av_y_resid_per_block'])
+    plt.ylabel('y residuals per block')
+    plt.show()
+    e['y_periodogram'].plot()
+
+    plt.plot(e['av_phi_resid_per_block'])
+    plt.ylabel('phi residuals per block')
+    plt.show()
+    e['phi_periodogram'].plot()
