@@ -51,8 +51,7 @@ namespace dials { namespace algorithms { namespace background {
       .def(init<
           const Beam&,
           const Panel&,
-          const Goniometer&,
-          std::size_t>())
+          const Goniometer&>())
       .def("image_xmap", &PolarTransform::image_xmap)
       .def("image_ymap", &PolarTransform::image_ymap)
       .def("to_polar", &PolarTransform::to_polar)
