@@ -255,8 +255,10 @@ class ReflectionManager(object):
         # experiments may have different block sizes used in the analysis. Find
         # the largest and choose the maximum of this or 18 degrees to set a
         # suitable block width for outlier rejection for all experiments
-        width = max([e['block_size'] for e in analysis])
-        self._outlier_detector.set_block_width(max([width, 18.0]))
+        widths = [e.get('block_size') for e in analysis]
+        widths = [e for e in widths if e is not None]
+        widths.append(18.0)
+        self._outlier_detector.set_block_width(max(widths))
       rejection_occurred = self._outlier_detector(self._reflections)
 
     # set the centroid_outlier flag in the original indexed reflections

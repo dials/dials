@@ -24,16 +24,8 @@ class CentroidAnalyser(object):
     self._spectral_analysis = False
     self._av_callback = av_callback
 
-    # Remove invalid/bad reflections
-    reflections = reflections.select(reflections.get_flags(
-      reflections.flags.indexed))
+    # Remove invalid reflections
     reflections = reflections.select(~(reflections['miller_index'] == (0,0,0)))
-
-    # Trim extrema of the scan as they have the worst phi residuals
-    phi_obs = reflections['xyzobs.mm.value'].parts()[2]
-    phi_max, phi_min = flex.max(phi_obs), flex.min(phi_obs)
-    sel = (phi_obs > phi_min + 0.005) & (phi_obs < phi_max - 0.005)
-    reflections = reflections.select(sel)
 
     # FIXME - better way to recognise non-predictions. Can't rely on flags
     # in e.g. indexed.pickle I think.
@@ -63,6 +55,9 @@ class CentroidAnalyser(object):
     self._results = []
     for iexp in range(self._nexp + 1):
       ref_this_exp = reflections.select(reflections['id'] == iexp)
+      if len(ref_this_exp) == 0:
+        self._results.append({})
+        continue
       x_resid = ref_this_exp['x_resid']
       y_resid = ref_this_exp['y_resid']
       phi_resid = ref_this_exp['phi_resid']
@@ -73,7 +68,7 @@ class CentroidAnalyser(object):
       phi_width = phi_range[1] - phi_range[0]
       ideal_block_size = 1.0
       while True:
-        nblocks = int(phi_width // ideal_block_size)
+        nblocks = max(int(phi_width // ideal_block_size), 1)
         block_size = phi_width / nblocks
         xr_per_blk = flex.double()
         yr_per_blk = flex.double()
@@ -108,7 +103,9 @@ class CentroidAnalyser(object):
             yr_per_blk.append(0.0)
             pr_per_blk.append(0.0)
 
-        # Break if there are enough reflections, otherwise increase block size
+        # Break if there are enough reflections, otherwise increase block size,
+        # unless only one block remains
+        if nblocks == 1: break
         min_nr = flex.min(nr)
         if min_nr > 50: break
         if min_nr < 5:
