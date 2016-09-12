@@ -13,6 +13,8 @@
 #include <dials/algorithms/background/gmodel/creator.h>
 #include <dials/algorithms/background/gmodel/model.h>
 #include <dials/algorithms/background/gmodel/fill_gaps.h>
+#include <dials/algorithms/background/gmodel/polar_transform.h>
+
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {
@@ -45,6 +47,19 @@ namespace dials { namespace algorithms { namespace background {
 
   BOOST_PYTHON_MODULE(dials_algorithms_background_gmodel_ext)
   {
+    class_<PolarTransform>("PolarTransform", no_init)
+      .def(init<
+          const Beam&,
+          const Panel&,
+          const Goniometer&,
+          std::size_t>())
+      .def("image_xmap", &PolarTransform::image_xmap)
+      .def("image_ymap", &PolarTransform::image_ymap)
+      .def("to_polar", &PolarTransform::to_polar)
+      .def("from_polar", &PolarTransform::from_polar)
+      ;
+
+
     class_<BackgroundModel, boost::noncopyable, boost::shared_ptr<BackgroundModel> >("BackgroundModel", no_init)
       .def("extract", pure_virtual(&BackgroundModel::extract))
       ;
@@ -71,16 +86,16 @@ namespace dials { namespace algorithms { namespace background {
       .def("__call__", &Creator::volume)
       ;
 
-    class_<DispersionThreshold>("DispersionThreshold", no_init)
-      .def(init< std::size_t,
-                 std::size_t,
-                 double,
-                 double,
-                 double,
-                 int >())
-      .def("__call__", &DispersionThreshold::threshold<int>)
-      .def("__call__", &DispersionThreshold::threshold<double>)
-      ;
+    /* class_<DispersionThreshold>("DispersionThreshold", no_init) */
+    /*   .def(init< std::size_t, */
+    /*              std::size_t, */
+    /*              double, */
+    /*              double, */
+    /*              double, */
+    /*              int >()) */
+    /*   .def("__call__", &DispersionThreshold::threshold<int>) */
+    /*   .def("__call__", &DispersionThreshold::threshold<double>) */
+    /*   ; */
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python
