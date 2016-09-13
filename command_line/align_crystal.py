@@ -216,7 +216,7 @@ def run(args):
     usage=usage,
     phil=phil_scope,
     read_experiments=True,
-    check_format=True,
+    check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
