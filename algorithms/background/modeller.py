@@ -122,6 +122,11 @@ class FinalizeModel(object):
     info('  mean: %d' % int(flex.mean(sub_data)))
     info('')
 
+    # Fill in any discontinuities
+    # FIXME NEED TO HANDLE DISCONTINUITY
+    # mask = ~self.transform.discontinuity()[:-1,:-1]
+    # data = diffusion_fill(data, mask, self.niter)
+
     # Get and apply the mask
     mask = self.experiment.imageset.get_mask(0)[0]
     mask = mask.as_1d().as_int().as_double()
