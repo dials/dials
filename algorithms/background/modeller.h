@@ -36,7 +36,9 @@ namespace dials { namespace algorithms {
           volume.accessor()[2]),
         sum_(accessor_, 0.0),
         sum_sq_(accessor_, 0.0),
-        num_(accessor_, 0) {
+        num_(accessor_, 0),
+        min_(accessor_, -1),
+        max_(accessor_, -1) {
       DIALS_ASSERT(volume.is_consistent());
       typedef ImageVolume<>::float_type FloatType;
       af::const_ref< FloatType, af::c_grid<3> > data = volume.data().const_ref();
@@ -50,6 +52,8 @@ namespace dials { namespace algorithms {
               sum_(j,i) += d;
               sum_sq_(j,i) += d * d;
               num_(j,i) += 1;
+              if (min_(j,i) == -1 || min_(j,i) > d) min_(j,i) = d;
+              if (max_(j,i) == -1 || max_(j,i) < d) max_(j,i) = d;
             }
           }
         }
@@ -92,12 +96,27 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * @returns The minimum image
+     */
+    af::versa< double, af::c_grid<2> > min() const {
+      return min_;
+    }
+
+    /**
+     * @returns The maximum image
+     */
+    af::versa< double, af::c_grid<2> > max() const {
+      return max_;
+    }
+
+    /**
      * @returns The mean at each pixel
      */
-    af::versa< double, af::c_grid<2> > mean() const {
+    af::versa< double, af::c_grid<2> > mean(std::size_t min_images) const {
+      DIALS_ASSERT(min_images > 0);
       af::versa <double, af::c_grid<2> > result(accessor_);
       for (std::size_t i = 0; i < result.size(); ++i) {
-        if (num_[i] > 0) {
+        if (num_[i] >= min_images) {
           result[i] = sum_[i] / num_[i];
         }
       }
@@ -107,10 +126,11 @@ namespace dials { namespace algorithms {
     /**
      * @returns The variance at each pixel
      */
-    af::versa< double, af::c_grid<2> > variance() const {
+    af::versa< double, af::c_grid<2> > variance(std::size_t min_images) const {
+      DIALS_ASSERT(min_images > 0);
       af::versa <double, af::c_grid<2> > result(accessor_);
       for (std::size_t i = 0; i < result.size(); ++i) {
-        if (num_[i] > 0) {
+        if (num_[i] >= min_images) {
           result[i] = (sum_sq_[i] - sum_[i]*sum_[i] / num_[i]) / num_[i];
           DIALS_ASSERT(result[i] >= 0);
         }
@@ -121,9 +141,10 @@ namespace dials { namespace algorithms {
     /**
      * @returns The dispersion at each pixel
      */
-    af::versa< double, af::c_grid<2> > dispersion() const {
-      af::versa<double, af::c_grid<2> > m = mean();
-      af::versa<double, af::c_grid<2> > v = variance();
+    af::versa< double, af::c_grid<2> > dispersion(std::size_t min_images) const {
+      DIALS_ASSERT(min_images > 0);
+      af::versa<double, af::c_grid<2> > m = mean(min_images);
+      af::versa<double, af::c_grid<2> > v = variance(min_images);
       af::versa <double, af::c_grid<2> > result(accessor_);
       for (std::size_t i = 0; i < result.size(); ++i) {
         if (m[i] > 0) {
@@ -136,10 +157,11 @@ namespace dials { namespace algorithms {
     /**
      * @returns The mask at each pixel
      */
-    af::versa < bool, af::c_grid<2> > mask() const {
+    af::versa < bool, af::c_grid<2> > mask(std::size_t min_images) const {
+      DIALS_ASSERT(min_images > 0);
       af::versa <bool, af::c_grid<2> > result(accessor_);
       for (std::size_t i = 0; i < result.size(); ++i) {
-        result[i] = num_[i] > 0;
+        result[i] = num_[i] >= min_images;
       }
       return result;
     }
@@ -150,6 +172,8 @@ namespace dials { namespace algorithms {
     af::versa< double, af::c_grid<2> > sum_;
     af::versa< double, af::c_grid<2> > sum_sq_;
     af::versa< int, af::c_grid<2> > num_;
+    af::versa< double, af::c_grid<2> > min_;
+    af::versa< double, af::c_grid<2> > max_;
   };
 
 

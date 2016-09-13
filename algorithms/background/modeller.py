@@ -4,18 +4,33 @@ from dials_algorithms_background_modeller_ext import *
 
 
 class FinalizeModel(object):
+  '''
+  A class to finalize the background model
+
+  '''
 
   def __init__(self, experiments, kernel_size=10, niter=100):
+    '''
+    Initialize the finalizer
+
+    :param experiments: The experiment list
+    :param kernel_size: The median filter kernel size
+    :param niter: The number of iterations for filling holes
+
+    '''
     from dials.algorithms.background.gmodel import PolarTransform
 
     # Set some parameters
-    self.kernel_size = (10, 1)
+    self.kernel_size = kernel_size
     self.niter = niter
 
     # Check the input
     assert len(experiments) == 1
     experiment = experiments[0]
     assert len(experiment.detector) == 1
+
+    # Save the experiment
+    self.experiment = experiment
 
     # Create the transform object
     self.transform = PolarTransform(
@@ -24,6 +39,13 @@ class FinalizeModel(object):
       experiment.goniometer)
 
   def finalize(self, data, mask):
+    '''
+    Finalize the model
+
+    :param data: The data array
+    :param mask: The mask array
+
+    '''
     from logging import info
     from dials.algorithms.image.filter import median_filter
     from dials.algorithms.image.fill_holes import diffusion_fill
@@ -36,6 +58,7 @@ class FinalizeModel(object):
     info('  min:  %d' % int(flex.min(sub_data)))
     info('  max:  %d' % int(flex.max(sub_data)))
     info('  mean: %d' % int(flex.mean(sub_data)))
+    info('')
 
     # Transform to polar
     info('Transforming image data to polar grid')
@@ -47,22 +70,18 @@ class FinalizeModel(object):
     info('  min:  %d' % int(flex.min(sub_data)))
     info('  max:  %d' % int(flex.max(sub_data)))
     info('  mean: %d' % int(flex.mean(sub_data)))
-
-    from matplotlib import pylab
-    pylab.imshow(mask.as_numpy_array())
-    pylab.show()
-    pylab.imshow(data.as_numpy_array(), vmax=200)
-    pylab.show()
-
+    info('')
 
     # Filter the image to remove noise
-    info('Applying median filter')
-    data = median_filter(data, mask, self.kernel_size)
-    sub_data = data.as_1d().select(mask.as_1d())
-    info('Median polar image statistics:')
-    info('  min:  %d' % int(flex.min(sub_data)))
-    info('  max:  %d' % int(flex.max(sub_data)))
-    info('  mean: %d' % int(flex.mean(sub_data)))
+    if self.kernel_size > 0:
+      info('Applying median filter')
+      data = median_filter(data, mask, (self.kernel_size, 1))
+      sub_data = data.as_1d().select(mask.as_1d())
+      info('Median polar image statistics:')
+      info('  min:  %d' % int(flex.min(sub_data)))
+      info('  max:  %d' % int(flex.max(sub_data)))
+      info('  mean: %d' % int(flex.mean(sub_data)))
+      info('')
 
     # Fill any remaining holes
     info("Filling holes")
@@ -74,6 +93,7 @@ class FinalizeModel(object):
     info('  min:  %d' % int(flex.min(sub_data)))
     info('  max:  %d' % int(flex.max(sub_data)))
     info('  mean: %d' % int(flex.mean(sub_data)))
+    info('')
 
     # Transform back
     info('Transforming image data from polar grid')
@@ -85,18 +105,59 @@ class FinalizeModel(object):
     info('  min:  %d' % int(flex.min(sub_data)))
     info('  max:  %d' % int(flex.max(sub_data)))
     info('  mean: %d' % int(flex.mean(sub_data)))
+    info('')
 
-    from matplotlib import pylab
-    pylab.imshow(data.as_numpy_array())
-    pylab.show()
+    # Get and apply the mask
+    mask = self.experiment.imageset.get_mask(0)[0]
+    mask = mask.as_1d().as_int().as_double()
+    mask.reshape(data.accessor())
+    data *= mask
+
     # Return the result
     return data
 
 
+class BackgroundModellerResult(object):
+  '''
+  A class to contain the modelling result
+
+  '''
+  def __init__(self,
+               mean = None,
+               variance = None,
+               dispersion = None,
+               mask = None,
+               min_image = None,
+               max_image = None,
+               model = None,
+               polar_model = None):
+    '''
+    Init the result
+
+    '''
+    self.mean = mean
+    self.variance = variance
+    self.dispersion = dispersion
+    self.mask = mask
+    self.min_image = min_image
+    self.max_image = max_image
+    self.model = model
+    self.polar_model = polar_model
+
 
 class BackgroundModellerExecutor(object):
 
-  def __init__(self):
+  def __init__(self, experiments, params):
+    assert len(experiments) == 1
+    self.min_images = params.modeller.min_images
+    if self.min_images > len(experiments[0].imageset):
+      self.min_images = len(experiments[0].imageset)
+    self.image_type = params.modeller.image_type
+
+    self.finalizer = FinalizeModel(
+      experiments = experiments,
+      kernel_size = params.modeller.kernel_size,
+      niter       = params.modeller.niter)
     self.result = None
 
   def process(self, image_volume, experiments, reflections):
@@ -126,8 +187,42 @@ class BackgroundModellerExecutor(object):
 
   def finalize_model(self):
     from logging import info
+    info("")
+    info("=" * 80)
     info("Finalizing model")
-    return self.result
+    info("")
+
+    result = []
+    for i in range(len(self.result)):
+
+      # Get the statistics
+      stats = self.result.get(i)
+      mean = stats.mean(self.min_images)
+      variance = stats.variance(self.min_images)
+      dispersion = stats.dispersion(self.min_images)
+      mask = stats.mask(self.min_images)
+      min_image = stats.min()
+      max_image = stats.max()
+
+      # Create the model
+      if self.image_type == 'min':
+        model = self.finalizer.finalize(min_image, mask)
+      elif self.image_type == 'mean':
+        model = self.finalizer.finalize(mean_image, mask)
+      else:
+        raise RuntimeError('Unknown image_type: %s' % self.image_type)
+
+      # Add to the list
+      result.append(BackgroundModellerResult(
+        mean       = mean,
+        variance   = variance,
+        dispersion = dispersion,
+        mask       = mask,
+        min_image  = min_image,
+        max_image  = max_image,
+        model      = model))
+
+    return result
 
 
 class BackgroundModeller(object):
@@ -211,7 +306,9 @@ class BackgroundModeller(object):
       self.experiments,
       self.reflections,
       self.params)
-    processor.executor = BackgroundModellerExecutor()
+    processor.executor = BackgroundModellerExecutor(
+      self.experiments,
+      self.params)
 
     # Do the processing
     _, time_info = processor.process()

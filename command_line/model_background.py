@@ -50,6 +50,14 @@ phil_scope = parse('''
       .type = str
       .help = "The mask background image"
 
+    min_image_prefix = 'min'
+      .type = str
+      .help = "The min background image"
+
+    max_image_prefix = 'max'
+      .type = str
+      .help = "The max background image"
+
     model_image_prefix = 'model'
       .type = str
       .help = "The model background image"
@@ -62,6 +70,26 @@ phil_scope = parse('''
   verbosity = 1
     .type = int(value_min=0)
     .help = "The verbosity level"
+
+  modeller {
+
+    min_images = 10
+      .type = int(value_min=1)
+      .help = "The minimum number of images per pixel"
+
+    kernel_size = 10
+      .type = int(value_min=0)
+      .help = "The kernel size for the median filter"
+
+    niter = 100
+      .type = int(value_min=1)
+      .help = "The number of iterations for filling holes"
+
+    image_type = *min mean
+      .type = choice
+      .help = "Which image to use"
+
+  }
 
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
@@ -84,6 +112,46 @@ class ImageGenerator(object):
     matplotlib.use("Agg")
     self.model = model
 
+  def save_min(self, filename):
+    '''
+    Save the mean image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      min_image = self.model[i].min_image
+      vmax = sorted(list(min_image))[int(0.99 * len(min_image))]
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        min_image.as_numpy_array(),
+        interpolation = 'none',
+        vmin          = 0,
+        vmax          = vmax)
+      pylab.colorbar()
+      info("Saving min image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
+
+  def save_max(self, filename):
+    '''
+    Save the mean image
+
+    '''
+    from matplotlib import pylab
+    from logging import info
+    for i in range(len(self.model)):
+      max_image = self.model[i].max_image
+      vmax = sorted(list(max_image))[int(0.99 * len(max_image))]
+      figure = pylab.figure(figsize=(6,4))
+      pylab.imshow(
+        max_image.as_numpy_array(),
+        interpolation = 'none',
+        vmin          = 0,
+        vmax          = vmax)
+      pylab.colorbar()
+      info("Saving max image for panel %d to %s_%d.png" % (i, filename, i))
+      pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
+
   def save_mean(self, filename):
     '''
     Save the mean image
@@ -92,7 +160,7 @@ class ImageGenerator(object):
     from matplotlib import pylab
     from logging import info
     for i in range(len(self.model)):
-      mean = self.model.get(i).mean()
+      mean = self.model[i].mean
       vmax = sorted(list(mean))[int(0.99 * len(mean))]
       figure = pylab.figure(figsize=(6,4))
       pylab.imshow(
@@ -112,7 +180,7 @@ class ImageGenerator(object):
     from matplotlib import pylab
     from logging import info
     for i in range(len(self.model)):
-      variance = self.model.get(i).variance()
+      variance = self.model[i].variance
       vmax = sorted(list(variance))[int(0.99 * len(variance))]
       figure = pylab.figure(figsize=(6,4))
       pylab.imshow(
@@ -133,7 +201,7 @@ class ImageGenerator(object):
     from matplotlib import pylab
     from logging import info
     for i in range(len(self.model)):
-      dispersion = self.model.get(i).dispersion()
+      dispersion = self.model[i].dispersion
       figure = pylab.figure(figsize=(6,4))
       pylab.imshow(
         dispersion.as_numpy_array(),
@@ -152,7 +220,7 @@ class ImageGenerator(object):
     from matplotlib import pylab
     from logging import info
     for i in range(len(self.model)):
-      mask = self.model.get(i).mask()
+      mask = self.model[i].mask
       figure = pylab.figure(figsize=(6,4))
       pylab.imshow(
         mask.as_numpy_array(),
@@ -168,11 +236,15 @@ class ImageGenerator(object):
     from matplotlib import pylab
     from logging import info
     for i in range(len(self.model)):
-      model = self.model.get(i).model()
+      model = self.model[i].model
+      vmax = sorted(list(model))[int(0.99 * len(model))]
       figure = pylab.figure(figsize=(6,4))
       pylab.imshow(
-        mask.as_numpy_array(),
-        interpolation = 'none')
+        model.as_numpy_array(),
+        interpolation = 'none',
+        vmin = 0,
+        vmax = vmax)
+      pylab.colorbar()
       info("Saving model image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -184,10 +256,10 @@ class ImageGenerator(object):
     from matplotlib import pylab
     from logging import info
     for i in range(len(self.model)):
-      model = self.model.get(i).model()
+      polar_model = self.model[i].polar_model
       figure = pylab.figure(figsize=(6,4))
       pylab.imshow(
-        mask.as_numpy_array(),
+        polar_model.as_numpy_array(),
         interpolation = 'none')
       info("Saving polar model image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
@@ -276,7 +348,7 @@ class Script(object):
     from dials.algorithms.background.gmodel import StaticBackgroundModel
     static_model = StaticBackgroundModel()
     for i in range(len(model)):
-      static_model.add(model.get(i).mean())
+      static_model.add(model[i].model)
     with open(params.output.model, "w") as outfile:
       import cPickle as pickle
       pickle.dump(static_model, outfile, protocol=pickle.HIGHEST_PROTOCOL)
@@ -287,7 +359,9 @@ class Script(object):
     image_generator.save_variance(params.output.variance_image_prefix)
     image_generator.save_dispersion(params.output.dispersion_image_prefix)
     image_generator.save_mask(params.output.mask_image_prefix)
-    #image_generator.save_model(params.output.model_image_prefix)
+    image_generator.save_min(params.output.min_image_prefix)
+    image_generator.save_max(params.output.max_image_prefix)
+    image_generator.save_model(params.output.model_image_prefix)
     #image_generator.save_polar_model(params.output.polar_model_image_prefix)
 
     # Print the time

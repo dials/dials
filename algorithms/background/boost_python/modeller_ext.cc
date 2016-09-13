@@ -24,6 +24,8 @@ namespace dials { namespace algorithms { namespace background {
       .def("sum", &BackgroundStatistics::sum)
       .def("sum_sq", &BackgroundStatistics::sum_sq)
       .def("num", &BackgroundStatistics::num)
+      .def("min", &BackgroundStatistics::min)
+      .def("max", &BackgroundStatistics::max)
       .def("__iadd__", &BackgroundStatistics::operator+=)
       .def("mean", &BackgroundStatistics::mean)
       .def("variance", &BackgroundStatistics::variance)
