@@ -22,6 +22,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       &simple_fill, (
         arg("data"),
         arg("mask")));
+
+    def ("diffusion_fill",
+      &diffusion_fill, (
+        arg("data"),
+        arg("mask"),
+        arg("niter")=10));
   }
 
 }}} // namespace = dials::algorithms::boost_python

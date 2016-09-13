@@ -113,6 +113,62 @@ namespace dials { namespace algorithms {
     return result;
   }
 
+  /**
+   * A simple function to fill holes in images
+   * @param data The data array
+   * @param mask The mask array
+   * @returns The filled image
+   */
+  inline
+  af::versa< double, af::c_grid<2> > diffusion_fill(
+      const af::const_ref< double, af::c_grid<2> > &data,
+      const af::const_ref< bool, af::c_grid<2> > &mask,
+      std::size_t niter) {
+
+    // Check input
+    DIALS_ASSERT(niter > 0);
+    DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
+    std::size_t height = data.accessor()[0];
+    std::size_t width = data.accessor()[1];
+
+    // Copy initial values
+    af::versa< double, af::c_grid<2> > result(data.accessor());
+    for (std::size_t i = 0; i < data.size(); ++i) {
+      result[i] = data[i];
+    }
+
+    // Fill missing values
+    for (std::size_t iter = 0; iter < niter; ++iter) {
+      for (std::size_t j = 0; j < height; ++j) {
+        for (std::size_t i = 0; i < width; ++i) {
+          if (!mask(j,i)) {
+            double sum = 0;
+            int cnt = 0;
+            if (i > 0) {
+              sum += result(j,i-1);
+              cnt += 1;
+            }
+            if (j > 0) {
+              sum += result(j-1,i);
+              cnt += 1;
+            }
+            if (i < width-1) {
+              sum += result(j,i+1);
+              cnt += 1;
+            }
+            if (j < height-1) {
+              sum += result(j+1,i);
+              cnt += 1;
+            }
+            result(j,i) = sum / (double)cnt;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
 }}
 
 #endif // DIALS_ALGORITHMS_IMAGE_FILL_HOLES_SIMPLE_H
