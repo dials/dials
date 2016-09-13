@@ -3,6 +3,92 @@ from __future__ import division
 from dials_algorithms_background_modeller_ext import *
 
 
+class FinalizeModel(object):
+
+  def __init__(self, experiments, kernel_size=10, niter=100):
+    from dials.algorithms.background.gmodel import PolarTransform
+
+    # Set some parameters
+    self.kernel_size = (10, 1)
+    self.niter = niter
+
+    # Check the input
+    assert len(experiments) == 1
+    experiment = experiments[0]
+    assert len(experiment.detector) == 1
+
+    # Create the transform object
+    self.transform = PolarTransform(
+      experiment.beam,
+      experiment.detector[0],
+      experiment.goniometer)
+
+  def finalize(self, data, mask):
+    from logging import info
+    from dials.algorithms.image.filter import median_filter
+    from dials.algorithms.image.fill_holes import diffusion_fill
+    from dials.algorithms.image.fill_holes import simple_fill
+    from dials.array_family import flex
+
+    from matplotlib import pylab
+    pylab.imshow(mask.as_numpy_array())
+    pylab.show()
+    pylab.imshow(data.as_numpy_array(), vmax=200)
+    pylab.show()
+
+    # Print some image properties
+    sub_data = data.as_1d().select(mask.as_1d())
+    info('Raw image statistics:')
+    info('  min:  %d' % int(flex.min(sub_data)))
+    info('  max:  %d' % int(flex.max(sub_data)))
+    info('  mean: %d' % int(flex.mean(sub_data)))
+
+    # Transform to polar
+    info('Transforming image data to polar grid')
+    result = self.transform.to_polar(data, mask)
+    data = result.data()
+    mask = result.mask()
+    sub_data = data.as_1d().select(mask.as_1d())
+    info('Polar image statistics:')
+    info('  min:  %d' % int(flex.min(sub_data)))
+    info('  max:  %d' % int(flex.max(sub_data)))
+    info('  mean: %d' % int(flex.mean(sub_data)))
+
+    # Filter the image to remove noise
+    info('Applying median filter')
+    data = median_filter(data, mask, self.kernel_size)
+    sub_data = data.as_1d().select(mask.as_1d())
+    info('Median polar image statistics:')
+    info('  min:  %d' % int(flex.min(sub_data)))
+    info('  max:  %d' % int(flex.max(sub_data)))
+    info('  mean: %d' % int(flex.mean(sub_data)))
+
+    # Fill any remaining holes
+    info("Filling holes")
+    data = simple_fill(data, mask)
+    data = diffusion_fill(data, mask, self.niter)
+    mask = flex.bool(data.accessor(), True)
+    sub_data = data.as_1d().select(mask.as_1d())
+    info('Filled polar image statistics:')
+    info('  min:  %d' % int(flex.min(sub_data)))
+    info('  max:  %d' % int(flex.max(sub_data)))
+    info('  mean: %d' % int(flex.mean(sub_data)))
+
+    # Transform back
+    info('Transforming image data from polar grid')
+    result = self.transform.from_polar(data, mask)
+    data = result.data()
+    mask = result.mask()
+    sub_data = data.as_1d().select(mask.as_1d())
+    info('Final image statistics:')
+    info('  min:  %d' % int(flex.min(sub_data)))
+    info('  max:  %d' % int(flex.max(sub_data)))
+    info('  mean: %d' % int(flex.mean(sub_data)))
+
+    # Return the result
+    return data
+
+
 
 class BackgroundModellerExecutor(object):
 

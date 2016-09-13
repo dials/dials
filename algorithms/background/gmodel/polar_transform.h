@@ -231,9 +231,11 @@ namespace dials { namespace algorithms {
         const af::const_ref< double, af::c_grid<2> > &data,
         const af::const_ref< bool, af::c_grid<2> > &mask) const {
 
+      DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(data.accessor().all_eq(image_grid_));
       af::versa< double, af::c_grid<2> > data_out(polar_grid_);
       af::versa< bool, af::c_grid<2> > mask_out(polar_grid_, true);
+      af::versa< bool, af::c_grid<2> > mask_tmp(polar_grid_, false);
 
       for (std::size_t j = 0; j < image_grid_[0]; ++j) {
         for (std::size_t i = 0; i < image_grid_[1]; ++i) {
@@ -256,10 +258,16 @@ namespace dials { namespace algorithms {
             int jj = index / polar_grid_[1];
             if (mask_out(jj,ii) && mask(j,i)) {
               data_out(jj,ii) += data(j,i) * fraction;
+              mask_tmp(jj,ii) = true;
             } else {
               mask_out(jj,ii) = false;
             }
           }
+        }
+
+        // Apply both masks
+        for (std::size_t i = 0; i < mask_out.size(); ++i) {
+          mask_out[i] = mask_out[i] && mask_tmp[i];
         }
       }
 
@@ -286,6 +294,7 @@ namespace dials { namespace algorithms {
           // handle this better
 
           if (discontinuity_(j,i)) {
+            mask_out(j,i) = false;
             continue;
           }
           vert4 input(gc(j, i),
