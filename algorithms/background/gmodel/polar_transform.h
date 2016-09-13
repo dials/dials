@@ -233,7 +233,7 @@ namespace dials { namespace algorithms {
 
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(data.accessor().all_eq(image_grid_));
-      af::versa< double, af::c_grid<2> > data_out(polar_grid_);
+      af::versa< double, af::c_grid<2> > data_out(polar_grid_, 0);
       af::versa< bool, af::c_grid<2> > mask_out(polar_grid_, true);
       af::versa< bool, af::c_grid<2> > mask_tmp(polar_grid_, false);
 
@@ -264,10 +264,14 @@ namespace dials { namespace algorithms {
             }
           }
         }
+      }
 
-        // Apply both masks
-        for (std::size_t i = 0; i < mask_out.size(); ++i) {
-          mask_out[i] = mask_out[i] && mask_tmp[i];
+      // Apply both masks
+      for (std::size_t i = 0; i < mask_out.size(); ++i) {
+        if (mask_out[i] && mask_tmp[i]) {
+          mask_out[i] = true;
+        } else {
+          mask_out[i] = false;
         }
       }
 
@@ -284,8 +288,9 @@ namespace dials { namespace algorithms {
         const af::const_ref< double, af::c_grid<2> > &data,
         const af::const_ref< bool, af::c_grid<2> > &mask) const {
 
+      DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(data.accessor().all_eq(polar_grid_));
-      af::versa< double, af::c_grid<2> > data_out(image_grid_);
+      af::versa< double, af::c_grid<2> > data_out(image_grid_, 0);
       af::versa< bool, af::c_grid<2> > mask_out(image_grid_, true);
       for (std::size_t j = 0; j < image_grid_[0]; ++j) {
         for (std::size_t i = 0; i < image_grid_[1]; ++i) {

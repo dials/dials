@@ -30,12 +30,6 @@ class FinalizeModel(object):
     from dials.algorithms.image.fill_holes import simple_fill
     from dials.array_family import flex
 
-    from matplotlib import pylab
-    pylab.imshow(mask.as_numpy_array())
-    pylab.show()
-    pylab.imshow(data.as_numpy_array(), vmax=200)
-    pylab.show()
-
     # Print some image properties
     sub_data = data.as_1d().select(mask.as_1d())
     info('Raw image statistics:')
@@ -53,6 +47,13 @@ class FinalizeModel(object):
     info('  min:  %d' % int(flex.min(sub_data)))
     info('  max:  %d' % int(flex.max(sub_data)))
     info('  mean: %d' % int(flex.mean(sub_data)))
+
+    from matplotlib import pylab
+    pylab.imshow(mask.as_numpy_array())
+    pylab.show()
+    pylab.imshow(data.as_numpy_array(), vmax=200)
+    pylab.show()
+
 
     # Filter the image to remove noise
     info('Applying median filter')
@@ -85,6 +86,9 @@ class FinalizeModel(object):
     info('  max:  %d' % int(flex.max(sub_data)))
     info('  mean: %d' % int(flex.mean(sub_data)))
 
+    from matplotlib import pylab
+    pylab.imshow(data.as_numpy_array())
+    pylab.show()
     # Return the result
     return data
 
