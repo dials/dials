@@ -32,7 +32,7 @@ namespace dials { namespace algorithms {
       int2 size) {
 
     // Check the input is valid
-    DIALS_ASSERT(size.all_gt(0));
+    DIALS_ASSERT(size.all_ge(0));
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output
@@ -80,7 +80,7 @@ namespace dials { namespace algorithms {
       int2 size) {
 
     // Check the input is valid
-    DIALS_ASSERT(size.all_gt(0));
+    DIALS_ASSERT(size.all_ge(0));
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output

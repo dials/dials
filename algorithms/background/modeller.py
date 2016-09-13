@@ -9,7 +9,7 @@ class FinalizeModel(object):
 
   '''
 
-  def __init__(self, experiments, kernel_size=10, niter=100):
+  def __init__(self, experiments, filter_type='median', kernel_size=10, niter=100):
     '''
     Initialize the finalizer
 
@@ -21,6 +21,7 @@ class FinalizeModel(object):
     from dials.algorithms.background.gmodel import PolarTransform
 
     # Set some parameters
+    self.filter_type = filter_type
     self.kernel_size = kernel_size
     self.niter = niter
 
@@ -47,7 +48,7 @@ class FinalizeModel(object):
 
     '''
     from logging import info
-    from dials.algorithms.image.filter import median_filter
+    from dials.algorithms.image.filter import median_filter, mean_filter
     from dials.algorithms.image.fill_holes import diffusion_fill
     from dials.algorithms.image.fill_holes import simple_fill
     from dials.array_family import flex
@@ -74,14 +75,28 @@ class FinalizeModel(object):
 
     # Filter the image to remove noise
     if self.kernel_size > 0:
-      info('Applying median filter')
-      data = median_filter(data, mask, (self.kernel_size, 1))
-      sub_data = data.as_1d().select(mask.as_1d())
-      info('Median polar image statistics:')
-      info('  min:  %d' % int(flex.min(sub_data)))
-      info('  max:  %d' % int(flex.max(sub_data)))
-      info('  mean: %d' % int(flex.mean(sub_data)))
-      info('')
+      if self.filter_type == 'median':
+        info('Applying median filter')
+        data = median_filter(data, mask, (self.kernel_size, 0))
+        sub_data = data.as_1d().select(mask.as_1d())
+        info('Median polar image statistics:')
+        info('  min:  %d' % int(flex.min(sub_data)))
+        info('  max:  %d' % int(flex.max(sub_data)))
+        info('  mean: %d' % int(flex.mean(sub_data)))
+        info('')
+      elif self.filter_type == 'mean':
+        info('Applying mean filter')
+        mask_as_int = mask.as_1d().as_int()
+        mask_as_int.reshape(mask.accessor())
+        data = mean_filter(data, mask_as_int, (self.kernel_size, 0), 1)
+        sub_data = data.as_1d().select(mask.as_1d())
+        info('Mean polar image statistics:')
+        info('  min:  %d' % int(flex.min(sub_data)))
+        info('  max:  %d' % int(flex.max(sub_data)))
+        info('  mean: %d' % int(flex.mean(sub_data)))
+        info('')
+      else:
+        raise RuntimeError('Unknown filter_type: %s' % self.filter_type)
 
     # Fill any remaining holes
     info("Filling holes")
@@ -156,6 +171,7 @@ class BackgroundModellerExecutor(object):
 
     self.finalizer = FinalizeModel(
       experiments = experiments,
+      filter_type = params.modeller.filter_type,
       kernel_size = params.modeller.kernel_size,
       niter       = params.modeller.niter)
     self.result = None
@@ -208,7 +224,7 @@ class BackgroundModellerExecutor(object):
       if self.image_type == 'min':
         model = self.finalizer.finalize(min_image, mask)
       elif self.image_type == 'mean':
-        model = self.finalizer.finalize(mean_image, mask)
+        model = self.finalizer.finalize(mean, mask)
       else:
         raise RuntimeError('Unknown image_type: %s' % self.image_type)
 

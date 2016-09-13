@@ -70,6 +70,16 @@ namespace dials { namespace algorithms {
         sum_[i] += other.sum_[i];
         sum_sq_[i] += other.sum_sq_[i];
         num_[i] += other.num_[i];
+        if (min_[i] == -1) {
+          min_[i] = other.min_[i];
+        } else if (other.min_[i] != -1) {
+          min_[i] = std::min(min_[i], other.min_[i]);
+        }
+        if (max_[i] == -1) {
+          max_[i] = other.max_[i];
+        } else if (other.max_[i] != -1) {
+          max_[i] = std::max(max_[i], other.max_[i]);
+        }
       }
       return *this;
     }

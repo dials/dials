@@ -77,6 +77,10 @@ phil_scope = parse('''
       .type = int(value_min=1)
       .help = "The minimum number of images per pixel"
 
+    filter_type = *median mean
+      .type = choice
+      .help = "The filter to use on the polar transformed image"
+
     kernel_size = 10
       .type = int(value_min=0)
       .help = "The kernel size for the median filter"
@@ -85,7 +89,7 @@ phil_scope = parse('''
       .type = int(value_min=1)
       .help = "The number of iterations for filling holes"
 
-    image_type = *min mean
+    image_type = min *mean
       .type = choice
       .help = "Which image to use"
 
