@@ -262,6 +262,7 @@ def run(args):
     vectors = [(vectors[2*i], vectors[2*i+1])
                for i in range(len(vectors)//2)]
   else:
+    frame = 'reciprocal'
     vectors = ((a_star, b_star), # a*, b*
                (a_star, c_star), # a*, c*
                (b_star, a_star), # b*, a*
