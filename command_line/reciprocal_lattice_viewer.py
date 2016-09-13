@@ -603,6 +603,11 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     self.was_dragged = True
     super(RLVWindow, self).OnLeftUp(event)
 
+  def initialize_modelview(self, eye_vector=None, angle=None):
+    super(RLVWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
+    self.rotation_center = (0,0,0)
+    self.move_to_center_of_viewport(self.rotation_center)
+
 
 def run(args):
 
