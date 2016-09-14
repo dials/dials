@@ -52,6 +52,8 @@ phil_scope= libtbx.phil.parse("""
     .type = ints(value_min=-1)
   autospin = False
     .type = bool
+  model_view_matrix = None
+    .type = floats(size=16)
 """)
 
 def settings():
@@ -327,6 +329,11 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.set_points()
     self.viewer.update_settings(*args, **kwds)
 
+  def update_statusbar (self) :
+    model_view_matrix = gltbx.util.get_gl_modelview_matrix()
+    txt = 'Model view matrix: ' + '[' + ', '.join(
+      '%.4f' %m for m in model_view_matrix) + ']'
+    self.statusbar.SetStatusText(txt)
 
 class settings_window (wxtbx.utils.SettingsPanel) :
   def __init__ (self, *args, **kwds) :
@@ -571,6 +578,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
       self.draw_axis(self.rotation_axis, "phi")
     if self.beam_vector is not None and self.settings.show_beam_vector:
       self.draw_axis(self.beam_vector, "beam")
+    self.GetParent().update_statusbar()
 
   def draw_axis(self, axis, label):
     if self.minimum_covering_sphere is None:
@@ -607,6 +615,8 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     super(RLVWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
     self.rotation_center = (0,0,0)
     self.move_to_center_of_viewport(self.rotation_center)
+    if self.settings.model_view_matrix is not None:
+      glLoadMatrixd(self.settings.model_view_matrix)
 
 
 def run(args):
