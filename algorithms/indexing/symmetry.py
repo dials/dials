@@ -209,10 +209,13 @@ def refine_subgroup(args):
       unit_cell=subgroup.refined_crystal.get_unit_cell(),
       space_group=subgroup.refined_crystal.get_space_group())
     if 'intensity.sum.value' in used_reflections:
+      # remove refl with -ve variance
+      sel = used_reflections['intensity.sum.variance'] > 0
+      good_reflections = used_reflections.select(sel)
       from cctbx import miller
-      ms = miller.set(cs, used_reflections['miller_index'])
-      ms = ms.array(used_reflections['intensity.sum.value'] /
-                    flex.sqrt(used_reflections['intensity.sum.variance']))
+      ms = miller.set(cs, good_reflections['miller_index'])
+      ms = ms.array(good_reflections['intensity.sum.value'] /
+                    flex.sqrt(good_reflections['intensity.sum.variance']))
       if params.normalise:
         if params.normalise_bins:
           ms = normalise_intensities(ms, n_bins=params.normalise_bins)
