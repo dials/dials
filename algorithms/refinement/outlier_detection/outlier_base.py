@@ -40,10 +40,20 @@ class CentroidOutlier(object):
 
     return
 
-  def get_block_width(self):
-    return self._block_width
+  def get_block_width(self, exp_id=None):
+    if exp_id is None:
+      return self._block_width
+    else:
+      try:
+        bw = self._block_width[exp_id]
+      except TypeError:
+        bw = self._block_width
+      return bw
 
   def set_block_width(self, block_width):
+    """Set the block width for outlier detection in degrees. This can be either
+    a single value or a list with one value per experiment. None is accepted
+    to mean that the dataset will not be split into blocks."""
     self._block_width = block_width
 
   def set_verbosity(self, verbosity):
@@ -104,7 +114,7 @@ class CentroidOutlier(object):
       jobs2 = jobs
 
     jobs3 = []
-    if self._block_width is not None:
+    if self.get_block_width() is not None:
       # split into equal-sized phi ranges
       for job in jobs2:
         data = job['data']
@@ -119,7 +129,11 @@ class CentroidOutlier(object):
         if phi_range == 0.0: # detect stills and do not split
           jobs3.append(job)
           continue
-        nblocks = int(round(RAD2DEG * phi_range / self._block_width))
+        bw = self.get_block_width(iexp)
+        if bw is None: # detect no split for this experiment
+          jobs3.append(job)
+          continue
+        nblocks = int(round(RAD2DEG * phi_range / bw))
         nblocks = max(1, nblocks)
         real_width = phi_range / nblocks
         block_end = 0.0
@@ -149,7 +163,7 @@ class CentroidOutlier(object):
       header = ['Job']
       if self._separate_experiments: header.append('Exp\nid')
       if self._separate_panels: header.append('Panel\nid')
-      if self._block_width is not None: header.append('Block range\n(deg)')
+      if self.get_block_width() is not None: header.append('Block range\n(deg)')
       header.extend(['Nref', 'Nout', '%out'])
       rows = []
 
@@ -190,7 +204,7 @@ class CentroidOutlier(object):
         row = [str(i + 1)]
         if self._separate_experiments: row.append(str(iexp))
         if self._separate_panels: row.append(str(ipanel))
-        if self._block_width is not None:
+        if self.get_block_width() is not None:
           try:
             row.append('{phi_start:.2f} - {phi_end:.2f}'.format(**job))
           except KeyError:
