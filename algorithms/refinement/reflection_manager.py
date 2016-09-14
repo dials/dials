@@ -216,23 +216,18 @@ class ReflectionManager(object):
     # not known until the manager is finalised
     self._sample_size = None
 
-    # to be used if optional analysis is performed on the centroids
-    self._centroid_analyser = None
-
     return
 
-  def centroid_analysis(self, spectra=True):
-    """Perform centroid analysis on the reflections, optionally with power
-    spectrum analysis"""
+  def get_centroid_analyser(self):
+    """Create a CentroidAnalysis object for the current reflections"""
 
-    if self._centroid_analyser is None:
-      self._centroid_analyser = CentroidAnalyser(self._reflections)
+    return CentroidAnalyser(self._reflections)
 
-    return self._centroid_analyser(do_spectral_analysis=spectra)
-
-  def finalise(self):
+  def finalise(self, analysis=None):
     """Complete initialisation by performing outlier rejection and any
-    requested subsetting. This function to be called by a Target object"""
+    requested subsetting. If a list of results from a CentroidAnalysis
+    object is provided, these may be used to determine outlier rejection
+    block widths"""
 
     if self._verbosity > 0: debug("Finalising the Reflection Manager")
 
@@ -251,13 +246,15 @@ class ReflectionManager(object):
       rejection_occurred = False
     else:
       if self._outlier_detector.get_block_width() is libtbx.Auto:
-        analysis = self.centroid_analysis(spectra=False)
-        # experiments may have different block sizes used in the analysis. Find
-        # the largest and choose the maximum of this or 18 degrees to set a
-        # suitable block width for outlier rejection for all experiments
-        widths = [e.get('block_size') for e in analysis]
-        widths = [max(e, 18.0) if e is not None else None for e in widths]
-        self._outlier_detector.set_block_width(widths)
+        if analysis is None:
+          # without analysis available, set 18.0 degrees universally
+          self._outlier_detector.set_block_width(18.0)
+        else:
+          # with analysis, choose the maximum of 18 degrees or the block size
+          # for each experiment
+          widths = [e.get('block_size') for e in analysis]
+          widths = [max(e, 18.0) if e is not None else None for e in widths]
+          self._outlier_detector.set_block_width(widths)
       rejection_occurred = self._outlier_detector(self._reflections)
 
     # set the centroid_outlier flag in the original indexed reflections

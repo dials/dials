@@ -52,7 +52,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     # predict reflections and finalise reflection manager
     self.predict()
-    self._reflection_manager.finalise()
 
     return
 

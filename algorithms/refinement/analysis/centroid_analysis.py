@@ -21,7 +21,10 @@ class CentroidAnalyser(object):
 
   def __init__(self, reflections, av_callback=flex.mean):
 
+    # flags to indicate at what level the analysis has been performed
+    self._average_residuals = False
     self._spectral_analysis = False
+
     self._av_callback = av_callback
 
     # Remove invalid reflections
@@ -51,19 +54,17 @@ class CentroidAnalyser(object):
       reflections['y_resid'] = y_cal - y_obs
       reflections['phi_resid'] = phi_cal - phi_obs
 
-    # start populating results dictionary
+    # create empty results list
     self._results = []
+
+    # first, just determine a suitable blocksize for analysis
     for iexp in range(self._nexp + 1):
       ref_this_exp = reflections.select(reflections['id'] == iexp)
       if len(ref_this_exp) == 0:
+        # can't do anything, just keep an empty dictionary
         self._results.append({})
         continue
-      x_resid = ref_this_exp['x_resid']
-      y_resid = ref_this_exp['y_resid']
-      phi_resid = ref_this_exp['phi_resid']
       phi_obs_deg = ref_this_exp['xyzobs.mm.value'].parts()[2] * RAD2DEG
-
-      # Calculate average residuals in equal-width blocks
       phi_range = flex.min(phi_obs_deg), flex.max(phi_obs_deg)
       phi_width = phi_range[1] - phi_range[0]
       ideal_block_size = 1.0
@@ -72,9 +73,6 @@ class CentroidAnalyser(object):
         nblocks = max(int(phi_width // ideal_block_size), 1)
         if nblocks == old_nblocks: nblocks += 1
         block_size = phi_width / nblocks
-        xr_per_blk = flex.double()
-        yr_per_blk = flex.double()
-        pr_per_blk = flex.double()
         nr = flex.int()
         for i in range(nblocks - 1):
           blk_start = phi_range[0] + i * block_size
@@ -82,29 +80,12 @@ class CentroidAnalyser(object):
           sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
           nref_in_block = sel.count(True)
           nr.append(nref_in_block)
-          if nref_in_block > 0:
-            xr_per_blk.append(self._av_callback(x_resid.select(sel)))
-            yr_per_blk.append(self._av_callback(y_resid.select(sel)))
-            pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
-          else:
-            xr_per_blk.append(0.0)
-            yr_per_blk.append(0.0)
-            pr_per_blk.append(0.0)
         # include max phi in the final block
         blk_start = phi_range[0] + (nblocks - 1) * block_size
         blk_end = phi_range[1]
         sel = (phi_obs_deg >= blk_start) & (phi_obs_deg <= blk_end)
         nref_in_block = sel.count(True)
         nr.append(nref_in_block)
-        if nref_in_block > 0:
-          xr_per_blk.append(self._av_callback(x_resid.select(sel)))
-          yr_per_blk.append(self._av_callback(y_resid.select(sel)))
-          pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
-        else:
-            xr_per_blk.append(0.0)
-            yr_per_blk.append(0.0)
-            pr_per_blk.append(0.0)
-
         # Break if there are enough reflections, otherwise increase block size,
         # unless only one block remains
         if nblocks == 1: break
@@ -117,23 +98,66 @@ class CentroidAnalyser(object):
         ideal_block_size *= fac
         old_nblocks = nblocks
 
-      results_this_exp = {'block_size':block_size,
-                          'nref_per_block':nr,
-                          'av_x_resid_per_block':xr_per_blk,
-                          'av_y_resid_per_block':yr_per_blk,
-                          'av_phi_resid_per_block':pr_per_blk,}
+      # collect the basic data for this experiment
+      self._results.append({'block_size':block_size,
+                            'nref_per_block':nr,
+                            'nblocks':nblocks,
+                            'phi_range':phi_range})
 
-      # collect results
-      self._results.append(results_this_exp)
+    # keep reflections for analysis
+    self._reflections = reflections
 
-  def __call__(self, do_spectral_analysis=True):
+  def __call__(self, calc_average_residuals=True,
+                     calc_periodograms=True):
     """Perform analysis and return the results as a list of dictionaries (one
     for each experiment)"""
 
-    if do_spectral_analysis:
+    # if not doing further analysis, return the basic data
+    if not calc_average_residuals and not calc_periodograms:
+      return self._results
+
+    # if we don't have average residuals already, calculate them
+    if not self._average_residuals:
+      for iexp in range(self._nexp + 1):
+        results_this_exp = self._results[iexp]
+        block_size = results_this_exp.get('block_size')
+        if block_size is None: continue
+        phi_range = results_this_exp['phi_range']
+        phi_width = phi_range[1] - phi_range[0]
+        nblocks = results_this_exp['nblocks']
+        block_size = phi_width / nblocks
+        ref_this_exp = reflections.select(self._reflections['id'] == iexp)
+        x_resid = ref_this_exp['x_resid']
+        y_resid = ref_this_exp['y_resid']
+        phi_resid = ref_this_exp['phi_resid']
+        phi_obs_deg = ref_this_exp['xyzobs.mm.value'].parts()[2] * RAD2DEG
+        for i in range(nblocks - 1):
+          xr_per_blk = flex.double()
+          yr_per_blk = flex.double()
+          pr_per_blk = flex.double()
+          blk_start = phi_range[0] + i * block_size
+          blk_end = blk_start + block_size
+          sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
+          xr_per_blk.append(self._av_callback(x_resid.select(sel)))
+          yr_per_blk.append(self._av_callback(y_resid.select(sel)))
+          pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+        # include max phi in the final block
+        blk_start = phi_range[0] + (nblocks - 1) * block_size
+        blk_end = phi_range[1]
+        sel = (phi_obs_deg >= blk_start) & (phi_obs_deg <= blk_end)
+        xr_per_blk.append(self._av_callback(x_resid.select(sel)))
+        yr_per_blk.append(self._av_callback(y_resid.select(sel)))
+        pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+
+        results_this_exp['av_x_resid_per_block'] = xr_per_blk
+        results_this_exp['av_y_resid_per_block'] = xr_per_blk
+        results_this_exp['av_phi_resid_per_block'] = xr_per_blk
+      self._average_residuals = True
+
+    # Perform power spectrum analysis on the residuals
+    if calc_periodograms:
       if self._spectral_analysis: return self._results
 
-      # Perform power spectrum analysis on the residuals
       for exp_data in self._results:
         px = Periodogram(exp_data['av_x_resid_per_block'])
         exp_data['x_periodogram'] = px
@@ -141,8 +165,9 @@ class CentroidAnalyser(object):
         exp_data['y_periodogram'] = py
         pz = Periodogram(exp_data['av_phi_resid_per_block'])
         exp_data['phi_periodogram'] = pz
+      self._spectral_analysis = True
 
-        # FIXME here extract further information from the power spectrum
+      # FIXME here extract further information from the power spectrum
 
     return self._results
 

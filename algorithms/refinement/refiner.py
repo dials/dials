@@ -504,6 +504,16 @@ class RefinerFactory(object):
 
     if verbosity > 0: debug("Target function built")
 
+    # Now predictions are available, so we can finalise the reflection manager.
+    # Do we need centroid analysis for doing outlier rejection?
+    if params.refinement.reflections.outlier.block_width is libtbx.Auto:
+      ca = refman.get_centroid_analyser()
+      # just get the basic data here
+      analysis = ca(calc_average_residuals=False, calc_periodograms=False)
+    else:
+      analysis = None
+    refman.finalise(analysis)
+
     # create parameterisations
     pred_param, param_reporter, restraints_parameterisation = \
             cls.config_parameterisation(params, experiments, refman, do_stills)
