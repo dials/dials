@@ -12,7 +12,6 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/background/gmodel/creator.h>
 #include <dials/algorithms/background/gmodel/model.h>
-#include <dials/algorithms/background/gmodel/fill_gaps.h>
 #include <dials/algorithms/background/gmodel/polar_transform.h>
 
 
@@ -90,17 +89,6 @@ namespace dials { namespace algorithms { namespace background {
       .def("__call__", &Creator::shoebox)
       .def("__call__", &Creator::volume)
       ;
-
-    /* class_<DispersionThreshold>("DispersionThreshold", no_init) */
-    /*   .def(init< std::size_t, */
-    /*              std::size_t, */
-    /*              double, */
-    /*              double, */
-    /*              double, */
-    /*              int >()) */
-    /*   .def("__call__", &DispersionThreshold::threshold<int>) */
-    /*   .def("__call__", &DispersionThreshold::threshold<double>) */
-    /*   ; */
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python
