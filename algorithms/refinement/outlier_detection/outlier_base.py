@@ -264,9 +264,12 @@ outlier
             "outlier.block_width."
     .type = bool
 
-  block_width = 18.0
+  block_width = Auto
     .help = "If separate_blocks, a scan will be divided into equal-sized blocks"
             "with width (in degrees) close to this value for outlier rejection."
+            "If Auto, a width of at least 18 degrees will be determined,"
+            "such that each block contains enough reflections to perform"
+            "outlier rejection."
     .type = float(value_min=1.0)
 
   tukey
