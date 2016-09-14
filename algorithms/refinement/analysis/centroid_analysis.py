@@ -67,8 +67,10 @@ class CentroidAnalyser(object):
       phi_range = flex.min(phi_obs_deg), flex.max(phi_obs_deg)
       phi_width = phi_range[1] - phi_range[0]
       ideal_block_size = 1.0
+      old_nblocks = 0
       while True:
         nblocks = max(int(phi_width // ideal_block_size), 1)
+        if nblocks == old_nblocks: nblocks += 1
         block_size = phi_width / nblocks
         xr_per_blk = flex.double()
         yr_per_blk = flex.double()
@@ -113,6 +115,7 @@ class CentroidAnalyser(object):
         else:
           fac = 50 / min_nr
         ideal_block_size *= fac
+        old_nblocks = nblocks
 
       results_this_exp = {'block_size':block_size,
                           'nref_per_block':nr,
