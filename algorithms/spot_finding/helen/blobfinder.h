@@ -360,6 +360,41 @@ public:
         }
 
         template <typename T>
+        void correlation_image(T *image, bool *mask, double *result)
+        {
+                int index = 0;
+
+                while (true)
+                {
+                        index = find_next_index(image, mask, index + 1);
+
+                        if (index < 0)
+                        {
+                                break;
+                        }
+
+                        int max_index = index;
+
+                        /* We would like to 'test' the spot at its centre */
+                        max_index = focus_on_maximum(image, mask, index);
+
+                        /* Is this spot on an edge of the image, or too
+                         * many masked pixels in the spot window?
+                         */
+                        bool viable = is_viable_position(mask, index);
+
+                        if (!viable)
+                        {
+                                continue;
+                        }
+
+                        double score;
+                        score = blob_like_spot_score(image, mask, index);
+                        result[index] = score;
+                }
+        }
+
+        template <typename T>
         void threshold(T *image, bool *mask, bool *result)
         {
                 int index = 0;

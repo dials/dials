@@ -74,9 +74,7 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
 
     if self.params.spotfinder.threshold.helen.debug:
       from dials.array_family import flex
-      corr = flex.double(image.accessor())
-      for i in range(len(image)):
-        corr[i] = self._algorithm.correlation(image, mask, i)
+      corr = self._algorithm.correlation(image, mask)
       import cPickle as pickle
       pickle.dump(corr, open("correlation.pickle", "wb"))
     return result

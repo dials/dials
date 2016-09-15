@@ -56,6 +56,25 @@ namespace dials { namespace algorithms { namespace boost_python {
       return result;
     }
 
+    template <typename T>
+    af::versa<double, af::c_grid<2> > correlation_image(
+      const af::const_ref<T, af::c_grid<2> > &image,
+      const af::const_ref<bool, af::c_grid<2> > &mask) {
+
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+
+      // FIXME Make a copy (blob finder not marked as const)
+      af::shared<T> image_tmp(image.size());
+      af::shared<bool> mask_tmp(mask.size());
+      std::copy(image.begin(), image.end(), image_tmp.begin());
+      std::copy(mask.begin(), mask.end(), mask_tmp.begin());
+      af::versa<double, af::c_grid<2> > result(image.accessor());
+
+      alg_.correlation_image(&image_tmp[0], &mask_tmp[0], &result[0]);
+
+      return result;
+    }
+
   private:
 
     BlobThresholdAlgorithm alg_;
@@ -75,6 +94,8 @@ namespace dials { namespace algorithms { namespace boost_python {
               arg("exp_spot_dimension") = 3,
               arg("global_threshold") = 100,
               arg("min_blob_score") = 0.7)))
+      .def("correlation", &BlobFinderWrapper::correlation_image<double>)
+      .def("correlation", &BlobFinderWrapper::correlation_image<int>)
       .def("threshold", &BlobFinderWrapper::threshold<double>)
       .def("threshold", &BlobFinderWrapper::threshold<int>)
       .def("threshold", &BlobFinderWrapper::threshold_w_return<int>)
