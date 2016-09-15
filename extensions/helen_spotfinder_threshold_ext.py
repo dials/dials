@@ -20,7 +20,7 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
 
   name = 'helen'
 
-  default = True
+  default = False
 
   @classmethod
   def phil(cls):
@@ -38,6 +38,10 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
       min_blob_score = 0.7
         .type = float
         .help = "The minimum score for a blob"
+
+      debug = False
+        .type = bool
+        .help = "Write out correlation"
 
     ''')
     return phil
@@ -68,4 +72,13 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
       global_threshold=self.params.spotfinder.threshold.helen.global_threshold,
       min_blob_score=self.params.spotfinder.threshold.helen.min_blob_score)
 
-    return self._algorithm.threshold(image, mask)
+    result = self._algorithm.threshold(image, mask)
+
+    if self.params.spotfinder.threshold.helen.debug:
+      from dials.array_family import flex
+      corr = flex.double(image.accessor())
+      for i in range(len(image)):
+        corr[i] = self._algorithm.correlation(image, mask, i)
+      import cPickle as pickle
+      pickle.dump(corr, open("correlation.pickle", "wb"))
+    return result
