@@ -20,8 +20,6 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
 
   name = 'helen'
 
-  default = False
-
   @classmethod
   def phil(cls):
     from libtbx.phil import parse
