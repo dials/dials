@@ -26,8 +26,10 @@ namespace dials { namespace algorithms { namespace boost_python {
         int row_count,
         int exp_spot_dimension,
         double global_threshold,
-        double min_blob_score)
-      : alg_(pixels_per_row, row_count, exp_spot_dimension, global_threshold, min_blob_score) {}
+        double min_blob_score,
+        int num_passes)
+      : alg_(pixels_per_row, row_count, exp_spot_dimension,
+             global_threshold, min_blob_score, num_passes) {}
 
     template <typename T>
     void threshold(
@@ -88,12 +90,14 @@ namespace dials { namespace algorithms { namespace boost_python {
           int,
           int,
           double,
-          double>((
+          double,
+          int>((
               arg("pixels_per_row"),
               arg("row_count"),
               arg("exp_spot_dimension") = 3,
               arg("global_threshold") = 100,
-              arg("min_blob_score") = 0.7)))
+              arg("min_blob_score") = 0.7,
+              arg("num_passes") = 1)))
       .def("correlation", &BlobFinderWrapper::correlation_image<double>)
       .def("correlation", &BlobFinderWrapper::correlation_image<int>)
       .def("threshold", &BlobFinderWrapper::threshold<double>)

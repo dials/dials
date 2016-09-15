@@ -37,6 +37,10 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
         .type = float
         .help = "The minimum score for a blob"
 
+      num_passes = 0
+        .type = int
+        .help = "Number of passes after updating ideal spot"
+
       debug = False
         .type = bool
         .help = "Write out correlation"
@@ -68,7 +72,8 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
       row_count = image.all()[0],
       exp_spot_dimension=self.params.spotfinder.threshold.helen.exp_spot_dimension,
       global_threshold=self.params.spotfinder.threshold.helen.global_threshold,
-      min_blob_score=self.params.spotfinder.threshold.helen.min_blob_score)
+      min_blob_score=self.params.spotfinder.threshold.helen.min_blob_score,
+      num_passes=self.params.spotfinder.threshold.helen.num_passes)
 
     result = self._algorithm.threshold(image, mask)
 
