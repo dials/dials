@@ -140,7 +140,7 @@ class align_crystal(object):
 
     rows = []
     names = self.experiment.goniometer.get_names()
-    rows.append(['v1', 'v2', names[0], names[1]])
+    rows.append(['v1', 'v2', names[1], names[0]])
 
     def vector_as_str(v):
       v = v.elems
