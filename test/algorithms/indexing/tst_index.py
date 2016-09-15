@@ -194,7 +194,7 @@ def exercise_3():
                 "reciprocal_space_grid.d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.05, 0.041, 0.0004)
+  expected_rmsds = (0.05, 0.042, 0.0004)
 
   # now enforce symmetry
   extra_args.append("known_symmetry.space_group=P4")

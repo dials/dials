@@ -1317,6 +1317,13 @@ class indexer_base(object):
     params.refinement.refinery.max_iterations = 4
     params.refinement.reflections.reflections_per_degree = min(
       params.refinement.reflections.reflections_per_degree, 20)
+    if params.refinement.reflections.outlier.block_width is libtbx.Auto:
+      # auto block_width determination is potentially too expensive to do at
+      # this stage: instead set separate_blocks=False and increase value
+      # of tukey.iqr_multiplier to be more tolerant of outliers
+      params.refinement.reflections.outlier.separate_blocks = False
+      params.refinement.reflections.outlier.tukey.iqr_multiplier = \
+        2 * params.refinement.reflections.outlier.tukey.iqr_multiplier
 
     args = []
 
