@@ -1947,42 +1947,12 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
     entering_flags = flex.bool(len(reflections), False)
   from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
   phi_deg = reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
-  if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
-    NN = neighbor_analysis(reflections['rlp'],
-                           entering_flags=entering_flags,
-                           tolerance=max_cell_multiplier,
-                           percentile=nearest_neighbor_percentile)
-    max_cell = NN.max_cell
-  else:
-    max_cell = flex.double()
-    for imageset_id in range(flex.max(reflections['imageset_id'])+1):
-      sel = reflections['imageset_id'] == imageset_id
-      phi_min = flex.min(phi_deg.select(sel))
-      phi_max = flex.max(phi_deg.select(sel))
-      d_phi = phi_max - phi_min
-      n_steps = max(int(math.ceil(d_phi / step_size)), 1)
-      for n in range(n_steps):
-        sel &= (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
-        if sel.count(True) == 0:
-          continue
-        try:
-          NN = neighbor_analysis(
-            reflections['rlp'].select(sel),
-            entering_flags=entering_flags.select(sel),
-            tolerance=max_cell_multiplier,
-            percentile=nearest_neighbor_percentile)
-          max_cell.append(NN.max_cell)
-        except AssertionError, e:
-          continue
-        debug("%s %s %s"  %(
-          phi_min+n*step_size, phi_min+(n+1)*step_size, NN.max_cell))
-    if len(max_cell) == 0:
-      raise Sorry(
-        "Couldn't determine suitable max_cell from %i reflections" %len(reflections))
-    debug(list(max_cell))
-    debug("median: %s" %flex.median(max_cell))
-    debug("mean: %s" %flex.mean(max_cell))
-    max_cell = flex.median(max_cell) # mean or max or median?
+
+  NN = neighbor_analysis(reflections,
+                         step_size=step_size,
+                         tolerance=max_cell_multiplier,
+                         percentile=nearest_neighbor_percentile)
+  max_cell = NN.max_cell
 
   return max_cell
 

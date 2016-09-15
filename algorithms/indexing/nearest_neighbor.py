@@ -2,7 +2,7 @@ from __future__ import division
 import math
 
 class neighbor_analysis(object):
-  def __init__(self, rs_vectors, entering_flags, tolerance=1.5,
+  def __init__(self, reflections, step_size=45, tolerance=1.5,
                max_height_fraction=0.25, percentile=0.05):
     self.tolerance = tolerance # Margin of error for max unit cell estimate
     from scitbx.array_family import flex
@@ -11,24 +11,40 @@ class neighbor_analysis(object):
 
     direct = flex.double()
 
+    if 'entering' in reflections:
+      entering_flags = reflections['entering']
+    else:
+      entering_flags = flex.bool(reflections.size(), True)
+    rs_vectors = reflections['rlp']
+    phi_deg = reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
+
     # nearest neighbor analysis
     from annlib_ext import AnnAdaptor
-    for entering in (True, False):
-      entering_sel = entering_flags == entering
-      query = flex.double()
-      for spot in rs_vectors.select(entering_sel): # spots, in reciprocal space xyz
-        query.append(spot[0])
-        query.append(spot[1])
-        query.append(spot[2])
+    for imageset_id in range(flex.max(reflections['imageset_id'])+1):
+      sel = reflections['imageset_id'] == imageset_id
+      phi_min = flex.min(phi_deg.select(sel))
+      phi_max = flex.max(phi_deg.select(sel))
+      d_phi = phi_max - phi_min
+      n_steps = max(int(math.ceil(d_phi / step_size)), 1)
 
-      if query.size() == 0:
-        continue
+      for n in range(n_steps):
+        sel &= (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
 
-      IS_adapt = AnnAdaptor(data=query,dim=3,k=1)
-      IS_adapt.query(query)
+        for entering in (True, False):
+          sel  &= entering_flags == entering
+          if sel.count(True) == 0:
+            continue
 
-      for i in xrange(len(IS_adapt.distances)):
-        direct.append(1.0/math.sqrt(IS_adapt.distances[i]))
+          query = flex.double()
+          query.extend(rs_vectors.select(sel).as_double())
+
+          if query.size() == 0:
+            continue
+
+          IS_adapt = AnnAdaptor(data=query,dim=3,k=1)
+          IS_adapt.query(query)
+
+          direct.extend(1/flex.sqrt(IS_adapt.distances))
 
     assert len(direct)>NEAR, (
       "Too few spots (%d) for nearest neighbour analysis." %len(direct))
@@ -64,7 +80,7 @@ class neighbor_analysis(object):
 
     # determine the 5th-percentile direct-space distance
     perm = flex.sort_permutation(direct, reverse=True)
-    self.percentile = direct[perm[int(percentile * len(rs_vectors))]]
+    self.percentile = direct[perm[int(percentile * len(direct))]]
 
     #MAXTOL = 1.5 # Margin of error for max unit cell estimate
     #self.max_cell = max(MAXTOL * most_probable_neighbor,
@@ -84,4 +100,4 @@ class neighbor_analysis(object):
     ymin, ymax = plt.ylim()
     plt.vlines(self.percentile, ymin, ymax, colors='r')
     plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g')
-    plt.show()
+    plt.savefig('nn_hist.png')
