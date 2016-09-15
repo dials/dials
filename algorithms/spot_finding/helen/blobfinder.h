@@ -1,13 +1,15 @@
 /*
  * blobfinder.h
  *
- * An exploratory coding adventure into finding spot-shaped blobs on
- * XFEL detectors.
+ *  An exploratory coding adventure into finding spot-shaped blobs on
+ *  XFEL detectors.
  *
- * Copyright © 2016 Helen Ginn
+ *  Copyright (C) 2016 Helen Ginn
  *
- * Authors:
- *   2016           Helen Ginn <helen@strubi.ox.ac.uk>
+ *  Author:  Helen Ginn <helen@strubi.ax.ac.uk>
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
  *
  * Notes:
  *
