@@ -329,7 +329,7 @@ refinement
 
     reflections_per_degree = None
       .help = "The number of centroids per degree of the sweep to use in"
-              "refinement."
+              "refinement. Set to None to use all suitable reflections."
       .type = float(value_min=0.)
 
     minimum_sample_size = 1000
