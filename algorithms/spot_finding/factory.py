@@ -23,6 +23,12 @@ def generate_phil_scope():
   {
     include scope dials.data.lookup.phil_scope
 
+    goniometer_shadow_mask = False
+      .type = bool
+      .help = "Mask out any goniometer shadowing (requires a goniometer shadow"
+              "model to be specified in the dxtbx format class)."
+      .expert_level = 1
+
     write_hot_mask = False
       .type = bool
       .help = "Write the hot mask"
@@ -515,6 +521,7 @@ class SpotFinderFactory(object):
     return SpotFinder(
       threshold_function        = threshold_function,
       mask                      = params.spotfinder.lookup.mask,
+      goniometer_shadow_mask    = params.spotfinder.goniometer_shadow_mask,
       filter_spots              = filter_spots,
       scan_range                = params.spotfinder.scan_range,
       write_hot_mask            = params.spotfinder.write_hot_mask,
