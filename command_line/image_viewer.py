@@ -91,6 +91,11 @@ image_viewer {
   mask = None
     .type = str
     .help = path to mask pickle file
+  goniometer_shadow_mask = False
+    .type = bool
+    .help = "Mask out any goniometer shadowing (requires a goniometer shadow"
+            "model to be specified in the dxtbx format class)."
+    .expert_level = 1
 }
 """)
 
