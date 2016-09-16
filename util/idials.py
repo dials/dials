@@ -282,7 +282,7 @@ class ImportParameterManager(ParameterManager):
     phil_scope = parse('''
       description=None
         .type = str
-      include scope dials.command_line.import.phil_scope
+      include scope dials.command_line.dials_import.phil_scope
     ''', process_includes=True)
     super(ImportParameterManager, self).__init__(phil_scope)
 
