@@ -154,15 +154,15 @@ namespace dials { namespace algorithms {
       // Compute the polar grid x size
       int xind1 = (map_xmin_ind % (image_size[0]+1));
       int yind1 = (map_xmin_ind / (image_size[0]+1));
-      double d1 = std::sqrt((xind1 - 0)*(xind1 - 0) + (yind1 - 0)*(yind1 - 0));
-      double d2 = std::sqrt((xind1 - 0)*(xind1 - 0) + (yind1 - image_size[1])*(yind1 - image_size[1]));
-      double d3 = std::sqrt((xind1 - image_size[0])*(xind1 - image_size[0]) + (yind1 - 0)*(yind1 - 0));
-      double d4 = std::sqrt((xind1 - image_size[0])*(xind1 - image_size[0]) + (yind1 - image_size[1])*(yind1 - image_size[1]));
+      double d1 = std::sqrt((double)(xind1 - 0)*(xind1 - 0) + (yind1 - 0)*(yind1 - 0));
+      double d2 = std::sqrt((double)(xind1 - 0)*(xind1 - 0) + (yind1 - image_size[1])*(yind1 - image_size[1]));
+      double d3 = std::sqrt((double)(xind1 - image_size[0])*(xind1 - image_size[0]) + (yind1 - 0)*(yind1 - 0));
+      double d4 = std::sqrt((double)(xind1 - image_size[0])*(xind1 - image_size[0]) + (yind1 - image_size[1])*(yind1 - image_size[1]));
       std::size_t polar_xsize = (std::size_t)std::ceil(
           std::max(
             std::max(d1, d2),
             std::max(d3, d4)));
-      std::size_t polar_ysize = (std::size_t) std::ceil((image_size[0] * image_size[1]) / polar_xsize);
+      std::size_t polar_ysize = (std::size_t) std::ceil((double)(image_size[0] * image_size[1]) / polar_xsize);
 
       polar_grid_ = af::c_grid<2>(polar_ysize, polar_xsize);
 
