@@ -180,23 +180,31 @@ class align_crystal(object):
     def smallest_angle(angle):
       return min(angle, 180-angle)
 
+    names = self.experiment.goniometer.get_names()
+    axes = self.experiment.goniometer.get_axes()
     rows = [['Experimental axis', 'a*', 'b*', 'c*']]
-    rows.append(['Rotation'] + [
-      '%.3f' %smallest_angle(axis.angle(self.rotation_axis, deg=True))
+    rows.append([names[0]] + [
+      '%.3f' %smallest_angle(axis.angle(matrix.col(axes[0]), deg=True))
       for axis in (a_star_, b_star_, c_star_)])
     rows.append(['Beam'] + [
       '%.3f' %smallest_angle(axis.angle(self.s0, deg=True))
+      for axis in (a_star_, b_star_, c_star_)])
+    rows.append([names[2]] + [
+      '%.3f' %smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
       for axis in (a_star_, b_star_, c_star_)])
     print 'Angles between reciprocal cell axes and principal experimental axes:'
     print table_utils.format(rows=rows, has_header=True)
     print
 
     rows = [['Experimental axis', 'a', 'b', 'c']]
-    rows.append(['Rotation'] + [
-      '%.3f' %smallest_angle(axis.angle(self.rotation_axis, deg=True))
+    rows.append([names[0]] + [
+      '%.3f' %smallest_angle(axis.angle(matrix.col(axes[0]), deg=True))
       for axis in (a_, b_, c_)])
     rows.append(['Beam'] + [
       '%.3f' %smallest_angle(axis.angle(self.s0, deg=True))
+      for axis in (a_, b_, c_)])
+    rows.append([names[2]] + [
+      '%.3f' %smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
       for axis in (a_, b_, c_)])
     print 'Angles between unit cell axes and principal experimental axes:'
     print table_utils.format(rows=rows, has_header=True)
