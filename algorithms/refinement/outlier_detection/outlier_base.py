@@ -119,6 +119,7 @@ class CentroidOutlier(object):
       for job in jobs2:
         data = job['data']
         iexp = job['id']
+        ipanel = job['panel']
         indices = job['indices']
         phi = data['xyzobs.mm.value'].parts()[2]
         if len(phi) == 0: # detect no data in the job
