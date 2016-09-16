@@ -83,6 +83,123 @@ tolerance
 }
 ''')
 
+geometry_phil_scope = libtbx.phil.parse('''
+geometry {
+
+  beam {
+
+    wavelength = None
+      .type = float
+      .help = "Override the beam wavelength"
+
+    direction = None
+      .type = floats(size=3)
+      .help = "Override the beam direction"
+
+  }
+
+  detector {
+
+    panel
+      .multiple = True
+    {
+      id = 0
+        .type = int
+        .help = "The panel number"
+
+      name = None
+        .type = str
+        .help = "Override the panel name"
+
+      type = None
+        .type = str
+        .help = "Override the panel type"
+
+      pixel_size = None
+        .type = floats(size=2)
+        .help = "Override the panel pixel size"
+
+      image_size = None
+        .type = ints(size=2)
+        .help = "Override the panel image size"
+
+      trusted_range = None
+        .type = floats(size=2)
+        .help = "Override the panel trusted range"
+
+      thickness = None
+        .type = float
+        .help = "Override the panel thickness"
+
+      material = None
+        .type = str
+        .help = "Override the panel material"
+
+      fast_axis = None
+        .type = floats(size=3)
+        .help = "Override the panel fast axis. Requires slow_axis and origin."
+
+      slow_axis = None
+        .type = floats(size=3)
+        .help = "Override the panel slow axis. Requires fast_axis and origin."
+
+      origin = None
+        .type = floats(size=3)
+        .help = "Override the panel origin. Requires fast_axis and slow_axis."
+
+    }
+
+  }
+
+  goniometer {
+
+    axis = None
+      .type = floats(size=3)
+      .help = "Override the goniometer axes"
+      .multiple = True
+
+    angle = None
+      .type = float
+      .help = "Override the goniometer angles"
+      .multiple = True
+
+    fixed_rotation = None
+      .type = floats(size=9)
+      .help = "Override the fixed rotation matrix"
+
+    setting_rotation = None
+      .type = floats(size=9)
+      .help = "Override the setting rotation matrix"
+
+  }
+
+  scan {
+
+    image_range = None
+      .type = ints(size=2)
+      .help = "Override the image range"
+
+    extrapolate_scan = False
+      .type = bool
+      .help = "When overriding the image range, extrapolate exposure and epoch information from existing images"
+
+    oscillation = None
+      .type = floats(size=2)
+      .help = "Override the image oscillation"
+
+    convert_stills_to_sweeps = False
+      .type = bool
+      .help = "When overriding the scan, convert stills into sweeps"
+
+  }
+
+  mosflm_beam_centre = None
+    .type = floats(size=2)
+    .help = "Override the beam centre from the image headers, following "
+            "the mosflm convention."
+}
+''')
+
 
 class ConfigWriter(object):
   '''Class to write configuration to file.'''

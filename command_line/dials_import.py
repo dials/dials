@@ -55,6 +55,7 @@ Examples::
 
 '''
 
+
 # Create the phil parameters
 from libtbx.phil import parse
 phil_scope = parse('''
@@ -113,114 +114,7 @@ phil_scope = parse('''
       .help = "If importing as a grid scan set the size"
   }
 
-  geometry {
-
-    beam {
-
-      wavelength = None
-        .type = float
-        .help = "Override the beam wavelength"
-
-      direction = None
-        .type = floats(size=3)
-        .help = "Override the beam direction"
-
-    }
-
-    detector {
-
-      panel
-        .multiple = True
-      {
-        id = 0
-          .type = int
-          .help = "The panel number"
-
-        name = None
-          .type = str
-          .help = "Override the panel name"
-
-        type = None
-          .type = str
-          .help = "Override the panel type"
-
-        pixel_size = None
-          .type = floats(size=2)
-          .help = "Override the panel pixel size"
-
-        image_size = None
-          .type = ints(size=2)
-          .help = "Override the panel image size"
-
-        trusted_range = None
-          .type = floats(size=2)
-          .help = "Override the panel trusted range"
-
-        thickness = None
-          .type = float
-          .help = "Override the panel thickness"
-
-        material = None
-          .type = str
-          .help = "Override the panel material"
-
-        fast_axis = None
-          .type = floats(size=3)
-          .help = "Override the panel fast axis. Requires slow_axis and origin."
-
-        slow_axis = None
-          .type = floats(size=3)
-          .help = "Override the panel slow axis. Requires fast_axis and origin."
-
-        origin = None
-          .type = floats(size=3)
-          .help = "Override the panel origin. Requires fast_axis and slow_axis."
-
-      }
-
-    }
-
-    goniometer {
-
-      rotation_axis = None
-        .type = floats(size=3)
-        .help = "Override the rotation axis"
-
-      fixed_rotation = None
-        .type = floats(size=9)
-        .help = "Override the fixed rotation matrix"
-
-      setting_rotation = None
-        .type = floats(size=9)
-        .help = "Override the setting rotation matrix"
-
-    }
-
-    scan {
-
-      image_range = None
-        .type = ints(size=2)
-        .help = "Override the image range"
-
-      extrapolate_scan = False
-        .type = bool
-        .help = "When overriding the image range, extrapolate exposure and epoch information from existing images"
-
-      oscillation = None
-        .type = floats(size=2)
-        .help = "Override the image oscillation"
-
-      convert_stills_to_sweeps = False
-        .type = bool
-        .help = "When overriding the scan, convert stills into sweeps"
-
-    }
-
-    mosflm_beam_centre = None
-      .type = floats(size=2)
-      .help = "Override the beam centre from the image headers, following "
-              "the mosflm convention."
-  }
+  include scope dials.util.options.geometry_phil_scope
 
   lookup {
     mask = None
@@ -235,7 +129,7 @@ phil_scope = parse('''
       .type = str
       .help = "Apply a pedestal to the imported data"
   }
-''')
+''', process_includes=True)
 
 
 class DataBlockImporter(object):
@@ -565,8 +459,23 @@ class ManualGeometryUpdater(object):
 
     '''
     if goniometer is not None:
-      if params.rotation_axis is not None:
-        goniometer.set_rotation_axis(params.rotation_axis)
+      if len(params.axis) == 1:
+        goniometer.set_rotation_axis(params.axis[0])
+      elif len(params.axis) > 1:
+        if not hasattr(goniometer, 'get_axes'):
+          raise Sorry("Current goniometer is not a multi-axis goniometer")
+        if len(goniometer.get_axes()) != len(params.axis):
+          raise Sorry("Number of axes must match the current goniometer (%s)"
+             %len(goniometer.get_axes()))
+        from scitbx.array_family import flex
+        goniometer.set_axes(flex.vec3_double(params.axis))
+      if len(params.angle) > 1:
+        if not hasattr(goniometer, 'get_axes'):
+          raise Sorry("Current goniometer is not a multi-axis goniometer")
+        if len(goniometer.get_angles()) != len(params.angle):
+          raise Sorry("Number of angles must match the current goniometer (%s)"
+             %len(goniometer.get_angles()))
+        goniometer.set_angles(params.angle)
       if params.fixed_rotation is not None:
         goniometer.set_fixed_rotation(params.fixed_rotation)
       if params.setting_rotation is not None:
