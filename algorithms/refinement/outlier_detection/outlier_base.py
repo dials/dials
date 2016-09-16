@@ -187,17 +187,24 @@ class CentroidOutlier(object):
         # get positions of outliers from the original matches
         ioutliers = indices.select(outliers)
 
-      else:
-        msg = "For job {0}, only {1} reflections are present.".format(i, nref)
-        msg += " All of these flagged as possible outliers."
+      elif nref > 0:
+        # too few reflections in the job
+        msg = "For job {0}, fewer than {1} reflections are present.".format(
+          i + 1, self._min_num_obs)
+        msg += " All reflections flagged as possible outliers."
         if self._verbosity > 0: debug(msg)
         ioutliers = indices
 
-      # set those reflections as outliers in the original reflection table
-      reflections.set_flags(ioutliers,
-        reflections.flags.centroid_outlier)
+      else:
+        # no reflections in the job
+        ioutliers = indices
+
+      # set the centroid_outlier flag in the original reflection table
       nout = len(ioutliers)
-      self.nreject += nout
+      if nout > 0:
+        reflections.set_flags(ioutliers,
+          reflections.flags.centroid_outlier)
+        self.nreject += nout
 
       # Add job data to the table
       if self._verbosity > 0:
@@ -211,13 +218,11 @@ class CentroidOutlier(object):
             row.append('{0:.2f} - {1:.2f}'.format(0.0,0.0))
         if nref == 0:
           p100 = 0
-          msg = ("No reflections associated with job {0}").format(i)
-          debug(msg)
         else:
           p100 = nout / nref * 100.0
           if p100 > 30.0:
             msg = ("{0:3.1f}% of reflections were flagged as outliers from job"
-                   " {1}").format(p100, i)
+                   " {1}").format(p100, i + 1)
         row.extend([str(nref), str(nout), '%3.1f' % p100])
         rows.append(row)
 
