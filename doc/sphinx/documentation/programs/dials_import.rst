@@ -4,12 +4,12 @@ dials.import
 Introduction
 ------------
 
-.. python_string:: dials.command_line.import.help_message
+.. python_string:: dials.command_line.dials_import.help_message
 
 Basic parameters
 ----------------
 
-.. phil:: dials.command_line.import.phil_scope
+.. phil:: dials.command_line.dials_import.phil_scope
    :expert-level: 0
    :attributes-level: 0
 
@@ -17,6 +17,6 @@ Basic parameters
 Full parameter definitions
 --------------------------
 
-.. phil:: dials.command_line.import.phil_scope
+.. phil:: dials.command_line.dials_import.phil_scope
    :expert-level: 2
    :attributes-level: 2
