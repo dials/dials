@@ -23,11 +23,7 @@ def generate_phil_scope():
   {
     include scope dials.data.lookup.phil_scope
 
-    goniometer_shadow_mask = False
-      .type = bool
-      .help = "Mask out any goniometer shadowing (requires a goniometer shadow"
-              "model to be specified in the dxtbx format class)."
-      .expert_level = 1
+    include scope dials.util.masking.shadowing_phil_scope
 
     write_hot_mask = False
       .type = bool
