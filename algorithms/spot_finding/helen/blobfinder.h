@@ -155,7 +155,7 @@ private:
                 /* add two "background" pixels for comparison */
                 _model_diameter = _exp_spot_dimension + EXTRA_BACKGROUND_PIXELS;
 
-                _spot_pix_num = pow(_model_diameter, 2);
+                _spot_pix_num = pow((double)_model_diameter, 2);
 
                 _ideal_spot = new double[_spot_pix_num];
                 _shifts = new int[_spot_pix_num];
