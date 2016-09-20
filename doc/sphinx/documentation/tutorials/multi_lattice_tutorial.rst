@@ -11,7 +11,7 @@ datasets which are contained in the file `semisynthetic_multilattice_data_2.tar.
 
 .. _semisynthetic_multilattice_data_2.tar.bz2: https://zenodo.org/record/10820/files/semisynthetic_multilattice_data_2.tar.bz2
 
-.. |semisynthetic| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10820.png
+.. |semisynthetic| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10820.svg
                :target: http://dx.doi.org/10.5281/zenodo.10820
 
 Import
