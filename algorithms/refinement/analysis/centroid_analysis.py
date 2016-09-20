@@ -35,7 +35,7 @@ class CentroidAnalyser(object):
     x, y, z = reflections['xyzcal.mm'].parts()
     sel = (x == 0) & (y == 0)
     reflections = reflections.select(~sel)
-    self._nexp = flex.max(reflections['id'])
+    self._nexp = flex.max(reflections['id']) + 1
 
     # Ensure required keys are present
     if not all([k in reflections for k in ['x_resid', 'y_resid', 'phi_resid']]):
@@ -58,7 +58,7 @@ class CentroidAnalyser(object):
     self._results = []
 
     # first, just determine a suitable blocksize for analysis
-    for iexp in range(self._nexp + 1):
+    for iexp in range(self._nexp):
       ref_this_exp = reflections.select(reflections['id'] == iexp)
       if len(ref_this_exp) == 0:
         # can't do anything, just keep an empty dictionary
@@ -108,7 +108,7 @@ class CentroidAnalyser(object):
     self._reflections = reflections
 
   def __call__(self, calc_average_residuals=True,
-                     calc_periodograms=True):
+                     calc_periodograms=True, spans=[4,4]):
     """Perform analysis and return the results as a list of dictionaries (one
     for each experiment)"""
 
@@ -118,7 +118,7 @@ class CentroidAnalyser(object):
 
     # if we don't have average residuals already, calculate them
     if not self._average_residuals:
-      for iexp in range(self._nexp + 1):
+      for iexp in range(self._nexp):
         results_this_exp = self._results[iexp]
         block_size = results_this_exp.get('block_size')
         if block_size is None: continue
@@ -131,10 +131,10 @@ class CentroidAnalyser(object):
         y_resid = ref_this_exp['y_resid']
         phi_resid = ref_this_exp['phi_resid']
         phi_obs_deg = ref_this_exp['xyzobs.mm.value'].parts()[2] * RAD2DEG
+        xr_per_blk = flex.double()
+        yr_per_blk = flex.double()
+        pr_per_blk = flex.double()
         for i in range(nblocks - 1):
-          xr_per_blk = flex.double()
-          yr_per_blk = flex.double()
-          pr_per_blk = flex.double()
           blk_start = phi_range[0] + i * block_size
           blk_end = blk_start + block_size
           sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
@@ -150,8 +150,8 @@ class CentroidAnalyser(object):
         pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
 
         results_this_exp['av_x_resid_per_block'] = xr_per_blk
-        results_this_exp['av_y_resid_per_block'] = xr_per_blk
-        results_this_exp['av_phi_resid_per_block'] = xr_per_blk
+        results_this_exp['av_y_resid_per_block'] = yr_per_blk
+        results_this_exp['av_phi_resid_per_block'] = pr_per_blk
       self._average_residuals = True
 
     # Perform power spectrum analysis on the residuals
@@ -159,11 +159,11 @@ class CentroidAnalyser(object):
       if self._spectral_analysis: return self._results
 
       for exp_data in self._results:
-        px = Periodogram(exp_data['av_x_resid_per_block'])
+        px = Periodogram(exp_data['av_x_resid_per_block'], spans=spans)
         exp_data['x_periodogram'] = px
-        py = Periodogram(exp_data['av_y_resid_per_block'])
+        py = Periodogram(exp_data['av_y_resid_per_block'], spans=spans)
         exp_data['y_periodogram'] = py
-        pz = Periodogram(exp_data['av_phi_resid_per_block'])
+        pz = Periodogram(exp_data['av_phi_resid_per_block'], spans=spans)
         exp_data['phi_periodogram'] = pz
       self._spectral_analysis = True
 
@@ -185,17 +185,24 @@ if __name__ == "__main__":
 
   for e in results:
 
-    plt.plot(e['av_x_resid_per_block'])
+    nblocks = e['nblocks']
+    block_size = e['block_size']
+    phistart = e['phi_range'][0]
+    block_centres = block_size * flex.double_range(nblocks) + phistart + block_size/2.0
+    plt.plot(block_centres, e['av_x_resid_per_block'])
+    plt.xlabel('phi (degrees)')
     plt.ylabel('x residuals per block')
     plt.show()
-    e['x_periodogram'].plot()
+    e['x_periodogram'].plot(sample_interval=block_size)
 
-    plt.plot(e['av_y_resid_per_block'])
+    plt.plot(block_centres, e['av_y_resid_per_block'])
+    plt.xlabel('phi (degrees)')
     plt.ylabel('y residuals per block')
     plt.show()
-    e['y_periodogram'].plot()
+    e['y_periodogram'].plot(sample_interval=block_size)
 
-    plt.plot(e['av_phi_resid_per_block'])
+    plt.plot(block_centres, e['av_phi_resid_per_block'])
+    plt.xlabel('phi (degrees)')
     plt.ylabel('phi residuals per block')
     plt.show()
-    e['phi_periodogram'].plot()
+    e['phi_periodogram'].plot(sample_interval=block_size)

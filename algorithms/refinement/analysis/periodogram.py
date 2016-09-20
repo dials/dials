@@ -147,7 +147,7 @@ class Periodogram(object):
         x1.extend(flex.double(k1.m, 0.0))
 
         # convolve kernels
-        coef = kernapply(x1, k1, circular = True)
+        coef = kernapply(x1, k1, circular=True)
         m = len(coef)//2
         coef = coef[m:(len(coef))]
         k = Kernel(coef=coef)
@@ -158,10 +158,15 @@ class Periodogram(object):
 
     return
 
-  def plot(self, show=True):
+  def plot(self, sample_interval=1.0, show=True):
 
     import matplotlib.pyplot as plt
-    line, = plt.semilogy(self.freq, self.spec)
+
+    # convert frequency to natural units given the sample_interval
+    sample_freq = 1./sample_interval
+    freq = self.freq * sample_freq
+
+    line, = plt.semilogy(freq, self.spec)
     plt.xlabel('frequency')
     plt.ylabel('spectrum')
     if show: plt.show()
