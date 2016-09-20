@@ -30,7 +30,7 @@ numbers in the filenames are replaced with '#' characters.
 
 The geometry can be set manually by either specifying a datablock.json file
 containing the reference geometry, by setting the mosflm beam centre or by
-setting each variable to be overriden.
+setting each variable to be overridden.
 
 Examples::
 
