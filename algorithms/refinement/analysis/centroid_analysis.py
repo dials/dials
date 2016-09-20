@@ -126,7 +126,7 @@ class CentroidAnalyser(object):
         phi_width = phi_range[1] - phi_range[0]
         nblocks = results_this_exp['nblocks']
         block_size = phi_width / nblocks
-        ref_this_exp = reflections.select(self._reflections['id'] == iexp)
+        ref_this_exp = self._reflections.select(self._reflections['id'] == iexp)
         x_resid = ref_this_exp['x_resid']
         y_resid = ref_this_exp['y_resid']
         phi_resid = ref_this_exp['phi_resid']
