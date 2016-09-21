@@ -54,6 +54,9 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
   model_view_matrix = None
     .type = floats(size=16)
+  background_rgb = None
+    .type = floats(size=3)
+    .help = "Set background RGB (0-1) x 3"
 """)
 
 def settings():
@@ -297,9 +300,13 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     v.OnRedraw()
 
   def create_viewer_panel (self) :
-    self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
-      #orthographic=True
-      )
+    if self.settings.background_rgb is None:
+      self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
+        #orthographic=True
+        )
+    else:
+      self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600), background_rgb=self.settings.background_rgb)
+
 
   def create_settings_panel (self) :
     self.settings_panel = settings_window(self, -1, style=wx.RAISED_BORDER)
