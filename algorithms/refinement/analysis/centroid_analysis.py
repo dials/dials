@@ -70,8 +70,9 @@ class CentroidAnalyser(object):
       ideal_block_size = 1.0
       old_nblocks = 0
       while True:
-        nblocks = max(int(phi_width // ideal_block_size), 1)
-        if nblocks == old_nblocks: nblocks += 1
+        nblocks = int(phi_width // ideal_block_size)
+        if nblocks == old_nblocks: nblocks -= 1
+        nblocks = max(nblocks, 1)
         block_size = phi_width / nblocks
         nr = flex.int()
         for i in range(nblocks - 1):
@@ -90,7 +91,7 @@ class CentroidAnalyser(object):
         # unless only one block remains
         if nblocks == 1: break
         min_nr = flex.min(nr)
-        if min_nr > 50: break
+        if min_nr >= 50: break
         if min_nr < 5:
           fac = 2
         else:
