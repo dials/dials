@@ -55,7 +55,7 @@ phil_scope= libtbx.phil.parse("""
   model_view_matrix = None
     .type = floats(size=16)
   background_rgb = None
-    .type = floats(size=3)
+    .type = floats(size=3, value_min=0, value_max=1)
     .help = "Set background RGB (0-1) x 3"
 """)
 
