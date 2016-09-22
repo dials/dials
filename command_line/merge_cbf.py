@@ -97,7 +97,12 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
       elif len(rsplit) > 3 and rsplit[1] in { \
         'Exposure_time', 'Angle_increment', 'Exposure_period', 'Count_cutoff', \
         'Phi_increment', 'Omega_increment', 'Chi_increment' }:
-        new_header.append('%s\n' % ' '.join(rsplit[:2] + ['%f' % (n_images * float(rsplit[2]))] + rsplit[3:]))
+
+        if rsplit[1] == 'Count_cutoff': # needs to be an integer
+          new_header.append('%s\n' % ' '.join(rsplit[:2] + ['%d' % (n_images * int(rsplit[2]))] + rsplit[3:]))
+        else:
+          new_header.append('%s\n' % ' '.join(rsplit[:2] + ['%f' % (n_images * float(rsplit[2]))] + rsplit[3:]))
+
       else:
         new_header.append('%s\n' % record)
 
