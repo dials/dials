@@ -211,6 +211,11 @@ class render_3d(object):
         (255,255,255), (230,159,0), (86,180,233), (0,158,115),
         (240,228,66), (0,114,178), (213,94,0), (204,121,167)))
       palette *= (1/255)
+      if self.viewer.settings.background_rgb:
+        bkg = flex.vec3_double()
+        for j in range(len(palette)):
+          bkg.append(tuple(self.viewer.settings.background_rgb))
+        palette = bkg - palette
       n = palette.size() - 1
       colors.set_selected(reflections['id'] == -1, palette[0])
       for i in range(0, flex.max(reflections['id'])+1):
