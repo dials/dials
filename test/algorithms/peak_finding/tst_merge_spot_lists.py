@@ -37,7 +37,6 @@ def exercise_merge_spot_lists():
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder3.pickle")
 
-  import pickle
   spot1 = pickle.load(open('spotfinder.pickle'))
   spot2 = pickle.load(open('spotfinder3.pickle'))
   assert(len(spot1) == len(spot2))

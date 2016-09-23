@@ -41,7 +41,7 @@ if __name__ == '__main__':
   from dials.algorithms.image.centroid import CentroidMaskedImage3d
   from scitbx import matrix
   from scitbx.array_family import flex
-  import pickle
+  import cPickle as pickle
   from dials.algorithms.background import NormalDiscriminator
   from dials.algorithms.background import MeanSubtractor
 
