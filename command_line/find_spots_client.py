@@ -51,6 +51,7 @@ def response_to_xml(d):
 
 def work_all(host, port, filenames, params, plot=False, table=False,
              json_file=None, grid=None, nproc=None):
+  import json
   from multiprocessing.pool import ThreadPool as thread_pool
   if nproc is None:
     nproc=_nproc()
@@ -61,8 +62,6 @@ def work_all(host, port, filenames, params, plot=False, table=False,
   results = []
   for filename in filenames:
     response = threads[filename].get()
-
-    import json
     d = json.loads(response)
     results.append(d)
     print response_to_xml(d)
