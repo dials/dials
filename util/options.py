@@ -94,7 +94,7 @@ geometry {
 
     direction = None
       .type = floats(size=3)
-      .help = "Override the beam direction"
+      .help = "Override the sample to source direction"
 
   }
 
