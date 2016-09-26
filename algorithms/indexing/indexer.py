@@ -143,9 +143,10 @@ indexing {
   basis_vector_combinations
     .expert_level = 1
   {
-    max_try = 50
+    max_try = Auto
       .type = int(value_min=1)
-      .help = "Number of putative basis vector combinations to try."
+      .help = "Number of putative basis vector combinations to try. Default"
+              "for rotation sweeps: 50, for still images: 5"
       .expert_level = 1
     sys_absent_threshold = 0.9
       .type = float(value_min=0.0, value_max=1.0)
@@ -507,6 +508,12 @@ class indexer_base(object):
           use_stills_indexer = False
         else:
           assert False
+
+      if params.indexing.basis_vector_combinations.max_try is libtbx.Auto:
+        if use_stills_indexer:
+          params.indexing.basis_vector_combinations.max_try = 5
+        else:
+          params.indexing.basis_vector_combinations.max_try = 50
 
       if use_stills_indexer:
         # Ensure the indexer and downstream applications treat this as set of stills
