@@ -2,6 +2,7 @@
 #ifndef DIALS_REFINEMENT_GALLEGO_YEZZI_H
 #define DIALS_REFINEMENT_GALLEGO_YEZZI_H
 
+#include <cmath>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 #include <scitbx/math/r3_rotation.h>
@@ -39,7 +40,20 @@ namespace dials { namespace refinement {
     af::shared< mat3<double> > result(theta.size(),
       af::init_functor_null< mat3<double> >());
 
+    // I(3)
+    mat3<double> I3(1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0);
+
+    // null matrix
+    mat3<double> null_mat(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+
     for(std::size_t i = 0; i < result.size(); i++) {
+
+      // for angle near zero immediately return null mat
+      if( abs(theta[i]) < 1.e-10)
+      {
+        result[i] = null_mat;
+        continue;
+      }
 
       // ensure the axis is unit
       vec3 <double> e1_u = e1[i].normalize();
@@ -64,11 +78,9 @@ namespace dials { namespace refinement {
       // R^T
       mat3<double> Rt = R.transpose();
 
-      // I(3)
-      mat3<double> I3(1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0);
-
       // do calculation and put this element in the result
       result[i] = (-1.0/theta[i]) * R * q_x * (vvt + (Rt - I3) * v_x);
+
     }
 
     return result;
