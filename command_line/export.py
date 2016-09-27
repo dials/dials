@@ -89,9 +89,9 @@ phil_scope = parse('''
 
   hklf4 {
 
-    hklout = integrated.hkl
+    hklout = integrated.raw
       .type = path
-      .help = "The output hkl file"
+      .help = "The output raw hkl file"
     run = 0
       .type = int
       .help = "Batch number / run number for hkl file"

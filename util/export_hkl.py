@@ -83,11 +83,6 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   beam = matrix.col(experiment.beam.get_direction())
   s0 = matrix.col(experiment.beam.get_s0())
 
-  cb_op_to_ref = experiment.crystal.get_space_group().info(
-    ).change_of_basis_op_to_reference_setting()
-
-  experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
-
   F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
   S = matrix.sqr(experiment.goniometer.get_setting_rotation())
   unit_cell = experiment.crystal.get_unit_cell()
@@ -123,7 +118,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   # only using this to index into RUBs above
   iframe = flex.floor(zdet).iround()
 
-  miller_index = cb_op_to_ref.apply(integrated_data['miller_index'])
+  miller_index = integrated_data['miller_index']
 
   I = None
   sigI = None
@@ -156,6 +151,8 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
   Imax = flex.max(I)
 
+  info('Maximum intensity in file: %8.2f' % Imax)
+
   if Imax > 99999.0:
     scale = 99999.0 / Imax
     I = I * scale
@@ -179,4 +176,5 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f\n' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
   fout.close()
+  info('Output %d reflections to %s' % (nref, hklout))
   return
