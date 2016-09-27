@@ -58,6 +58,10 @@ phil_scope = parse('''
       .help = "Write unit cell error information to a macromolecular"
               "Crystallographic Information File (mmCIF)"
 
+    p4p = None
+      .type = str
+      .help = "Write output to SHELX / XPREP .p4p file"
+
     # FIXME include this directly from the original rather than copy here
     correlation_plot
       .expert_level = 1
@@ -293,6 +297,23 @@ class Script(object):
     return st.format()
 
   @staticmethod
+  def generate_p4p(crystal, beam, file):
+    info('Saving P4P info to %s' % file)
+    cell = crystal.get_unit_cell().parameters()
+    esd = crystal.get_cell_parameter_sd()
+    vol = crystal.get_unit_cell().volume()
+    vol_esd = crystal.get_cell_volume_sd()
+
+    open(file, 'w').write('\n'.join([
+        'TITLE    Auto-generated .p4p file from dials.two_theta_refine',
+        'CELL     %.4f %.4f %.4f %.4f %.4f %.4f %.4f' % tuple(
+            cell + (vol,)),
+        'CELLSD   %.4f %.4f %.4f %.4f %.4f %.4f %.4f' % tuple(
+            esd + (vol_esd,)),
+        'SOURCE   SYNCH   %.6f' % beam.get_wavelength(), '']))
+    return
+
+  @staticmethod
   def generate_cif(crystal, refiner, file):
     info('Saving CIF information to %s' % file)
     from cctbx import miller
@@ -516,6 +537,10 @@ class Script(object):
 
     if params.output.cif is not None:
       self.generate_cif(crystals[0], refiner, file=params.output.cif)
+
+    if params.output.p4p is not None:
+      self.generate_p4p(crystals[0], experiments[0].beam,
+                        file=params.output.p4p)
 
     if params.output.mmcif is not None:
       self.generate_mmcif(crystals[0], refiner, file=params.output.mmcif)
