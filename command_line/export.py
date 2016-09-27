@@ -427,7 +427,6 @@ if __name__ == '__main__':
     usage = usage,
     read_experiments=True,
     read_reflections=True,
-    check_format=False,
     phil=phil_scope,
     epilog=help_message)
 
