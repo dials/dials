@@ -49,7 +49,7 @@ namespace dials { namespace refinement {
     for(std::size_t i = 0; i < result.size(); i++) {
 
       // for angle near zero immediately return null mat
-      if( abs(theta[i]) < 1.e-10)
+      if( fabs(theta[i]) < 1.e-20)
       {
         result[i] = null_mat;
         continue;
