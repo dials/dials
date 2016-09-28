@@ -68,6 +68,17 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
   experiment = experiment_list[0]
 
+  # map to ASU first
+  from cctbx.miller import map_to_asu
+  map_to_asu(experiment.crystal.get_space_group().type(), False,
+      integrated_data['miller_index'])
+
+  # sort data before output
+  nref = len(integrated_data['miller_index'])
+  indices = flex.size_t_range(nref)
+  perm = sorted(indices, key=lambda k: integrated_data['miller_index'][k])
+  integrated_data = integrated_data.select(flex.size_t(perm))
+
   # tricky bit here will be calculating direction cosines of the incoming
   # beam and the outgoing beam w.r.t. the crystal unit cell axes at the time
   # so need to compute R U B for each reflection then - cache these in RUBs
