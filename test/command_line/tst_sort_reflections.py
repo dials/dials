@@ -49,6 +49,21 @@ class Test(object):
     sorted1 = flex.reflection_table.from_pickle("sorted2.pickle")
     self.assert_sorted(sorted1['intensity.sum.value'], reverse=True)
 
+    # test default sort on miller_index
+    easy_run.fully_buffered([
+      'dev.dials.sort_reflections',
+      input_filename,
+      'output=sorted3.pickle'
+    ]).raise_if_errors()
+
+    assert(exists("sorted3.pickle"))
+
+    sorted1 = flex.reflection_table.from_pickle("sorted3.pickle")
+    mi1 = sorted1['miller_index']
+    orig = flex.reflection_table.from_pickle(input_filename)
+    mi2 = flex.miller_index(sorted(orig['miller_index']))
+    assert mi1.all_eq(mi2)
+
     print 'OK'
 
   def assert_sorted(self, x, reverse=False):
