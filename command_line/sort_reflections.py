@@ -91,7 +91,7 @@ class Sort(object):
     # Sort the reflections
     print "Sorting by %s with reverse=%r" % (params.key, params.reverse)
     perm = self.sort_permutation(reflections[params.key])
-    reflections = reflections.select[perm]
+    reflections = reflections.select(perm)
 
     if options.verbose > 0:
       print "Head of sorted list " + attr + ":"
