@@ -13,6 +13,7 @@
 
 from __future__ import division
 import libtbx.load_env
+from dials.array_family import flex
 
 help_message = '''
 
@@ -36,7 +37,7 @@ class Sort(object):
 
       key = 'miller_index'
         .type = str
-        .help = "The chosen sort key. This should be an column of "
+        .help = "The chosen sort key. This should be a column of "
                 "the reflection table."
 
       reverse = False
@@ -62,6 +63,12 @@ class Sort(object):
       read_reflections=True,
       epilog=help_message)
 
+  @staticmethod
+  def sort_permutation(column, reverse=False):
+    indices = flex.size_t_range(len(column))
+    perm = sorted(indices, key=lambda k: column[k], reverse=reverse)
+    return flex.size_t(perm)
+
   def run(self):
     '''Execute the script.'''
     from dials.array_family import flex # import dependency
@@ -83,7 +90,8 @@ class Sort(object):
 
     # Sort the reflections
     print "Sorting by %s with reverse=%r" % (params.key, params.reverse)
-    reflections.sort(params.key, params.reverse)
+    perm = self.sort_permutation(reflections[params.key])
+    reflections = reflections.select[perm]
 
     if options.verbose > 0:
       print "Head of sorted list " + attr + ":"
