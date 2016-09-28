@@ -154,16 +154,17 @@ namespace dials { namespace algorithms {
       // Compute the polar grid x size
       int xind1 = (map_xmin_ind % (image_size[0]+1));
       int yind1 = (map_xmin_ind / (image_size[0]+1));
-      double d1 = std::sqrt((double)(xind1 - 0)*(xind1 - 0) + (yind1 - 0)*(yind1 - 0));
-      double d2 = std::sqrt((double)(xind1 - 0)*(xind1 - 0) + (yind1 - image_size[1])*(yind1 - image_size[1]));
-      double d3 = std::sqrt((double)(xind1 - image_size[0])*(xind1 - image_size[0]) + (yind1 - 0)*(yind1 - 0));
-      double d4 = std::sqrt((double)(xind1 - image_size[0])*(xind1 - image_size[0]) + (yind1 - image_size[1])*(yind1 - image_size[1]));
+      int xsize = (int)image_size[0];
+      int ysize = (int)image_size[1];
+      double d1 = std::sqrt((double)((xind1 - 0)*(xind1 - 0) + (yind1 - 0)*(yind1 - 0)));
+      double d2 = std::sqrt((double)((xind1 - 0)*(xind1 - 0) + (yind1 - ysize)*(yind1 - ysize)));
+      double d3 = std::sqrt((double)((xind1 - xsize)*(xind1 - xsize) + (yind1 - 0)*(yind1 - 0)));
+      double d4 = std::sqrt((double)((xind1 - xsize)*(xind1 - xsize) + (yind1 - ysize)*(yind1 - ysize)));
       std::size_t polar_xsize = (std::size_t)std::ceil(
           std::max(
             std::max(d1, d2),
             std::max(d3, d4)));
       std::size_t polar_ysize = (std::size_t) std::ceil((double)(image_size[0] * image_size[1]) / polar_xsize);
-
       polar_grid_ = af::c_grid<2>(polar_ysize, polar_xsize);
 
       // The polar grid limits
@@ -214,6 +215,9 @@ namespace dials { namespace algorithms {
      * @returns The grid coordinate
      */
     vec2<double> gc(std::size_t j, std::size_t i) const {
+      DIALS_ASSERT(image_xmap_.accessor().all_eq(image_ymap_.accessor()));
+      DIALS_ASSERT(image_xmap_.accessor()[0] == image_grid_[0]+1);
+      DIALS_ASSERT(image_xmap_.accessor()[1] == image_grid_[1]+1);
       DIALS_ASSERT(j <= image_grid_[0]);
       DIALS_ASSERT(i <= image_grid_[1]);
       return vec2<double>(
@@ -230,9 +234,10 @@ namespace dials { namespace algorithms {
     PolarTransformResult to_polar(
         const af::const_ref< double, af::c_grid<2> > &data,
         const af::const_ref< bool, af::c_grid<2> > &mask) const {
-
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(data.accessor().all_eq(image_grid_));
+      DIALS_ASSERT(data.accessor()[0] + 1 == discontinuity_.accessor()[0]);
+      DIALS_ASSERT(data.accessor()[1] + 1 == discontinuity_.accessor()[1]);
       af::versa< double, af::c_grid<2> > data_out(polar_grid_, 0);
       af::versa< bool, af::c_grid<2> > mask_out(polar_grid_, true);
       af::versa< bool, af::c_grid<2> > mask_tmp(polar_grid_, false);
@@ -256,6 +261,8 @@ namespace dials { namespace algorithms {
             int index = matches[m].out;
             int ii = index % polar_grid_[1];
             int jj = index / polar_grid_[1];
+            DIALS_ASSERT(jj >= 0 && jj < polar_grid_[0]);
+            DIALS_ASSERT(ii >= 0 && ii < polar_grid_[1]);
             if (mask_out(jj,ii) && mask(j,i)) {
               data_out(jj,ii) += data(j,i) * fraction;
               mask_tmp(jj,ii) = true;
