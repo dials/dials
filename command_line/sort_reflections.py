@@ -44,7 +44,7 @@ class Sort(object):
         .type = bool
         .help = "Reverse the sort direction"
 
-      output = None
+      output = sorted.pickle
         .type = str
         .help = "The output reflection filename"
 
