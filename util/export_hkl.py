@@ -116,7 +116,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     phi_start, phi_range = experiment.scan.get_image_oscillation(b)
     phi = phi_start + 0.5 * phi_range
     R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
-    RUBs[b] = S * R * F * UB
+    RUBs[b - image_range[0]] = S * R * F * UB
 
   from cctbx.array_family import flex as cflex # implicit import
   from cctbx.miller import map_to_asu_isym # implicit import
@@ -169,9 +169,18 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     I = I * scale
     sigI = sigI * scale
 
+  # detector scaling info
+  assert(len(experiment.detector) == 1)
+  panel = experiment.detector[0]
+  scl_x = 512.0 / panel.get_image_size()[0]
+  scl_y = 512.0 / panel.get_image_size()[1]
+
   fout = open(hklout, 'w')
   for j in range(nref):
     h, k, l = miller_index[j]
+    x_px, y_px, z_px = integrated_data['xyzcal.px'][j]
+    lp = scl[j]
+    istol = int(round(10000 * unit_cell.stol((h, k, l))))
     RUB = RUBs[iframe[j]]
     x = RUB * (h, k, l)
     s = (s0 + x).normalize()
@@ -184,8 +193,11 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     dx = s.dot(astar)
     dy = s.dot(bstar)
     dz = s.dot(cstar)
-    fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f\n' % \
+    x = x_px * scl_x
+    y = y_px * scl_y
+    fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
+    fout.write('%7.2f%7.2f%8.2f%6.3f%5d\n' % (x, y, z_px, lp, istol))
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
   return
