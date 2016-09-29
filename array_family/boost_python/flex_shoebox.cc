@@ -649,6 +649,34 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Get the mean background.
+   */
+  template <typename FloatType>
+  af::shared<double> mean_modelled_background(
+      const const_ref< Shoebox<FloatType> > &a) {
+    af::shared<double> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      af::versa<FloatType, af::c_grid<3> > data = a[i].background;
+      af::versa<int, af::c_grid<3> > mask = a[i].mask;
+      double mean = 0.0;
+      std::size_t count = 0;
+      for (std::size_t j = 0; j < data.size(); ++j) {
+        if (mask[j] & BackgroundUsed) {
+          mean += data[j];
+          count += 1;
+        }
+      }
+      if (count > 0) {
+        mean /= count;
+      } else {
+        mean = 0;
+      }
+      result[i] = mean;
+    }
+    return result;
+  }
+
+  /**
    * Flatten the shoeboxes
    */
   template <typename FloatType>
@@ -964,6 +992,8 @@ namespace dials { namespace af { namespace boost_python {
           &summed_intensity<FloatType>)
         .def("mean_background",
           &mean_background<FloatType>)
+        .def("mean_modelled_background",
+          &mean_modelled_background<FloatType>)
         .def("flatten", &flatten<FloatType>)
         .def("apply_background_mask", &apply_background_mask<FloatType>)
         .def("apply_pixel_data", &apply_pixel_data<FloatType>)

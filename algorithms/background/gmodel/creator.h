@@ -18,6 +18,7 @@
 #include <dials/model/data/image_volume.h>
 #include <dials/algorithms/background/gmodel/model.h>
 #include <dials/algorithms/background/gmodel/robust_estimator.h>
+#include <dials/algorithms/background/glm/robust_poisson_mean.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -25,6 +26,17 @@ namespace dials { namespace algorithms {
   using model::Shoebox;
   using model::ImageVolume;
   using model::MultiPanelImageVolume;
+
+  namespace detail {
+
+    template <typename T>
+    T median(const af::const_ref<T> &x) {
+      af::shared<T> temp(x.begin(), x.end());
+      std::nth_element(temp.begin(), temp.begin() + temp.size() / 2, temp.end());
+      return temp[temp.size() / 2];
+    }
+
+  }
 
   /**
    * A class to create the background model
@@ -197,54 +209,104 @@ namespace dials { namespace algorithms {
 
       // Compute number of background pixels
       std::size_t num_background = 0;
+      double sum_model = 0.0;
       int mask_code = Valid | Background;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           num_background++;
+          sum_model += model[i];
         }
       }
+      DIALS_ASSERT(sum_model > 0);
       DIALS_ASSERT(num_background > 0);
 
       // Allocate some arrays
-      af::versa<double> X(num_background,0);
+      af::shared<double> X(num_background, 0);
       af::shared<double> Y(num_background, 0);
       std::size_t l = 0;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           DIALS_ASSERT(l < Y.size());
           DIALS_ASSERT(data[i] >= 0);
-          Y[l] = data[i];
           X[l] = model[i];
+          Y[l] = data[i];
           l++;
         }
       }
       DIALS_ASSERT(l == Y.size());
 
-      // Setup the initial parameters
-      double B = std::log(1.0);
+      // Compute the median value for the starting value
+      double median = detail::median(Y.const_ref());
+      if (median == 0) {
+        median = 1.0;
+      }
 
-      // Compute the result
-      robust_estimator result(
-          X.const_ref(),
+      // Compute robust Poisson mean as in the GLM algorithm
+      RobustPoissonMean result(
           Y.const_ref(),
-          B,
+          median,
           tuning_constant_,
           1e-3,
           max_iter_);
       DIALS_ASSERT(result.converged());
 
-      // Compute the background
-      B = result.scale_parameter();
-      double scale = std::exp(B);
-      DIALS_ASSERT(B > -300 && B < 300);
+      // Get the mean value
+      double mean = result.mean();
+      double svar = std::sqrt(mean);
+
+      // Compute am initial scale
+      double sum1 = 0.0;
+      double sum2 = 0.0;
+      for (std::size_t i = 0; i < Y.size(); ++i) {
+        double res = (Y[i] - mean) / svar;
+        double y = Y[i];
+        if (res < -tuning_constant_) {
+          y = mean - tuning_constant_ * svar;
+        } else if (res > tuning_constant_) {
+          y = mean + tuning_constant_ * svar;
+        }
+        if (std::abs(res) < tuning_constant_) {
+          sum1 += y;
+          sum2 += X[i];
+        }
+      }
+      DIALS_ASSERT(sum1 >= 0);
+      DIALS_ASSERT(sum2 > 0);
+      double scale = sum1 / sum2;
 
       // Fill in the background shoebox values
       for (std::size_t i = 0; i < data.size(); ++i) {
-        background[i] = std::exp(B * model[i]);
+        background[i] = scale * model[i];
         if ((mask[i] & mask_code) == mask_code) {
           mask[i] |= BackgroundUsed;
         }
       }
+
+      // Setup the initial parameters
+      //double B = std::log(1.0);
+
+      //// Compute the result
+      //robust_estimator result(
+      //    X.const_ref(),
+      //    Y.const_ref(),
+      //    B,
+      //    tuning_constant_,
+      //    1e-3,
+      //    max_iter_);
+      //DIALS_ASSERT(result.converged());
+
+      //// Compute the background
+      //B = result.scale_parameter();
+      //double scale = std::exp(B);
+      //DIALS_ASSERT(B > -300 && B < 300);
+
+      //// Fill in the background shoebox values
+      //for (std::size_t i = 0; i < data.size(); ++i) {
+      //  background[i] = std::exp(B * model[i]);
+      //  if ((mask[i] & mask_code) == mask_code) {
+      //    mask[i] |= BackgroundUsed;
+      //  }
+      //}
       return scale;
     }
 

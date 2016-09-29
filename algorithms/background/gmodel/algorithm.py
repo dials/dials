@@ -85,7 +85,7 @@ class BackgroundAlgorithm(object):
     # Do the background subtraction
     if image_volume is None:
       success = self._create(reflections)
-      reflections['background.mean'] = reflections['shoebox'].mean_background()
+      reflections['background.mean'] = reflections['shoebox'].mean_modelled_background()
     else:
       success = self._create(reflections, image_volume)
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
