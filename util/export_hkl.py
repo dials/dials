@@ -68,11 +68,6 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
   experiment = experiment_list[0]
 
-  # map to ASU first
-  from cctbx.miller import map_to_asu
-  map_to_asu(experiment.crystal.get_space_group().type(), False,
-      integrated_data['miller_index'])
-
   # sort data before output
   nref = len(integrated_data['miller_index'])
   indices = flex.size_t_range(nref)
@@ -158,7 +153,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     sigI = flex.sqrt(V)
 
   # figure out scaling to make sure data fit into format
-  # 3I4, 2F8.2, I4, 6F8.5
+  # 2F8.2
 
   Imax = flex.max(I)
 
@@ -179,9 +174,8 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   for j in range(nref):
     h, k, l = miller_index[j]
     x_px, y_px, z_px = integrated_data['xyzcal.px'][j]
-    lp = scl[j]
     istol = int(round(10000 * unit_cell.stol((h, k, l))))
-    RUB = RUBs[iframe[j]]
+    RUB = RUBs[iframe[j] - image_range[0]]
     x = RUB * (h, k, l)
     s = (s0 + x).normalize()
     astar = (RUB * (1, 0, 0)).normalize()
@@ -197,7 +191,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     y = y_px * scl_y
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
-    fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z_px, lp, istol))
+    fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z_px, scl[j], istol))
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
   return
