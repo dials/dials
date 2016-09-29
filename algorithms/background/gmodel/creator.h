@@ -12,12 +12,12 @@
 #ifndef DIALS_ALGORITHMS_BACKGROUND_GLM_CREATOR_H
 #define DIALS_ALGORITHMS_BACKGROUND_GLM_CREATOR_H
 
-#include <scitbx/glmtbx/robust_glm.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/image_volume.h>
 #include <dials/algorithms/background/gmodel/model.h>
+#include <dials/algorithms/background/gmodel/robust_estimator.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -206,7 +206,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(num_background > 0);
 
       // Allocate some arrays
-      af::versa<double, af::c_grid<2> > X(af::c_grid<2>(num_background,1),0);
+      af::versa<double> X(num_background,0);
       af::shared<double> Y(num_background, 0);
       std::size_t l = 0;
       for (std::size_t i = 0; i < data.size(); ++i) {
@@ -214,36 +214,33 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(l < Y.size());
           DIALS_ASSERT(data[i] >= 0);
           Y[l] = data[i];
-          X(l,0) = model[i];
+          X[l] = model[i];
           l++;
         }
       }
       DIALS_ASSERT(l == Y.size());
 
       // Setup the initial parameters
-      af::shared<double> B(1);
-      B[0] = std::log(1.0);
+      double B = std::log(1.0);
 
       // Compute the result
-      scitbx::glmtbx::robust_glm<scitbx::glmtbx::poisson> result(
+      robust_estimator result(
           X.const_ref(),
           Y.const_ref(),
-          B.const_ref(),
+          B,
           tuning_constant_,
           1e-3,
           max_iter_);
       DIALS_ASSERT(result.converged());
 
       // Compute the background
-      B = result.parameters();
-      DIALS_ASSERT(B.size() == 1);
-      double b = B[0];
-      double scale = std::exp(b);
-      DIALS_ASSERT(b > -300 && b < 300);
+      B = result.scale_parameter();
+      double scale = std::exp(B);
+      DIALS_ASSERT(B > -300 && B < 300);
 
       // Fill in the background shoebox values
       for (std::size_t i = 0; i < data.size(); ++i) {
-        background[i] = std::exp(b * model[i]);
+        background[i] = std::exp(B * model[i]);
         if ((mask[i] & mask_code) == mask_code) {
           mask[i] |= BackgroundUsed;
         }
