@@ -197,7 +197,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     y = y_px * scl_y
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
-    fout.write('%7.2f%7.2f%8.2f%6.3f%5d\n' % (x, y, z_px, lp, istol))
+    fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z_px, lp, istol))
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
   return

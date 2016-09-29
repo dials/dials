@@ -89,7 +89,7 @@ phil_scope = parse('''
 
   hklf4 {
 
-    hklout = integrated.raw
+    hklout = integrated.sad
       .type = path
       .help = "The output raw hkl file"
     run = 0
