@@ -3,11 +3,10 @@ from __future__ import division
 from export_mtz import sum_partial_reflections
 from export_mtz import scale_partial_reflections
 
-def export_hkl(integrated_data, experiment_list, hklout, run=0,
-               summation=False, include_partials=False, keep_partials=False):
-  '''Export data from integrated_data corresponding to experiment_list to a
-  HKL file for input to SADABS. FIXME probably need to make a .p4p file as
-  well...'''
+def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
+                     include_partials=False, keep_partials=False):
+  '''Export data from integrated_data corresponding to experiment_list to
+  an XDS_ASCII.HKL formatted text file.'''
 
   from logging import info
   from dials.array_family import flex
@@ -23,10 +22,6 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
   if not summation:
     assert('intensity.prf.value' in integrated_data)
-
-  # strip out negative variance reflections: these should not really be there
-  # FIXME Doing select on summation results. Should do on profile result if
-  # present? Yes
 
   if 'intensity.prf.variance' in integrated_data:
     selection = integrated_data.get_flags(
@@ -50,11 +45,6 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
       info('Removing %d profile reflections with negative variance' % \
             selection.count(True))
 
-  # FIXME in here work on including partial reflections => at this stage best
-  # to split off the partial refections into a different selection & handle
-  # gracefully... better to work on a short list as will need to "pop" them &
-  # find matching parts to combine.
-
   if include_partials:
     integrated_data = sum_partial_reflections(integrated_data)
     integrated_data = scale_partial_reflections(integrated_data)
@@ -74,23 +64,10 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   perm = sorted(indices, key=lambda k: integrated_data['miller_index'][k])
   integrated_data = integrated_data.select(flex.size_t(perm))
 
-  # tricky bit here will be calculating direction cosines of the incoming
-  # beam and the outgoing beam w.r.t. the crystal unit cell axes at the time
-  # so need to compute R U B for each reflection then - cache these in RUBs
-
   from scitbx import matrix
 
   assert (not experiment.goniometer is None)
 
-  setting_rotation = matrix.sqr(experiment.goniometer.get_setting_rotation())
-  axis = setting_rotation * matrix.col(
-    experiment.goniometer.get_rotation_axis())
-
-  beam = matrix.col(experiment.beam.get_direction())
-  s0 = matrix.col(experiment.beam.get_s0())
-
-  F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
-  S = matrix.sqr(experiment.goniometer.get_setting_rotation())
   unit_cell = experiment.crystal.get_unit_cell()
 
   from scitbx.array_family import flex
@@ -98,29 +75,15 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
   assert(not experiment.scan is None)
   image_range = experiment.scan.get_image_range()
+  phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
 
-  # somewhere to stash R*U*B for each frame where R is full goniometer
-  # matrix i.e. setting * scan * fixed matrix
-
-  RUBs = { }
-
-  for b in range(image_range[0], image_range[1] + 1):
-    UB = experiment.crystal.get_A_at_scan_point(b - image_range[0])
-    phi_start, phi_range = experiment.scan.get_image_oscillation(b)
-    phi = phi_start + 0.5 * phi_range
-    R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
-    RUBs[b - image_range[0]] = S * R * F * UB
-
-  from cctbx.array_family import flex as cflex # implicit import
-  from cctbx.miller import map_to_asu_isym # implicit import
+  UB = matrix.sqr(experiment.crystal.get_A())
+  real_space_ABC = UB.inverse().elems
 
   # gather the required information for the reflection file
 
   nref = len(integrated_data['miller_index'])
   zdet = flex.double(integrated_data['xyzcal.px'].parts()[2])
-
-  # only using this to index into RUBs above
-  iframe = flex.floor(zdet).iround()
 
   miller_index = integrated_data['miller_index']
 
@@ -150,46 +113,61 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     assert V.all_gt(0)
     sigI = flex.sqrt(V)
 
-  # figure out scaling to make sure data fit into format
-  # 2F8.2
-
-  Imax = flex.max(I)
-
-  info('Maximum intensity in file: %8.2f' % Imax)
-
-  if Imax > 99999.0:
-    scale = 99999.0 / Imax
-    I = I * scale
-    sigI = sigI * scale
-
-  # detector scaling info
-  assert(len(experiment.detector) == 1)
-  panel = experiment.detector[0]
-  scl_x = 512.0 / panel.get_image_size()[0]
-  scl_y = 512.0 / panel.get_image_size()[1]
-
   fout = open(hklout, 'w')
+
+  # first write the header
+
+  panel = experiment.detector[0]
+  qx, qy = panel.get_pixel_size()
+  nx, ny = panel.get_image_size()
+  distance = matrix.col(panel.get_origin()).dot(
+      matrix.col(panel.get_normal()))
+
+  fout.write('\n'.join([
+    '!FORMAT=XDS_ASCII    MERGE=FALSE    FRIEDEL\'S_LAW=FALSE',
+    '!Generated by dials.export',
+    '!DATA_RANGE= %d %d' % image_range,
+    '!ROTATION_AXIS= %f %f %f' % experiment.goniometer.get_rotation_axis(),
+    '!OSCILLATION_RANGE= %f' % phi_range,
+    '!START_ANGLE= %f' % phi_start,
+    '!START_FRAME= %d' % image_range[0],
+    '!SPACE_GROUP_NUMBER= %d' % experiment.crystal.get_space_group().type().number(),
+    '!UNIT_CELL_CONSTANTS= %f %f %f %f %f %f' % unit_cell.parameters(),
+    '!UNIT_CELL_A-AXIS= %f %f %f' % real_space_ABC[0:3],
+    '!UNIT_CELL_B-AXIS= %f %f %f' % real_space_ABC[3:6],
+    '!UNIT_CELL_C-AXIS= %f %f %f' % real_space_ABC[6:9],
+    '!X-RAY_WAVELENGTH= %f' % experiment.beam.get_wavelength(),
+    '!INCIDENT_BEAM_DIRECTION= %f %f %f' % experiment.beam.get_s0(),
+    '!NX= %d NY= %d QX= %f QY= %f' % (nx, ny, qx, qy),
+    '!DETECTOR_DISTANCE= %f' % distance,
+    '!DIRECTION_OF_DETECTOR_X-AXIS= %f %f %f' % panel.get_fast_axis(),
+    '!DIRECTION_OF_DETECTOR_Y-AXIS= %f %f %f' % panel.get_slow_axis(),
+    '!VARIANCE_MODEL= 1 0',
+    '!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=12',
+    '!ITEM_H=1',
+    '!ITEM_K=2',
+    '!ITEM_L=3',
+    '!ITEM_IOBS=4',
+    '!ITEM_SIGMA(IOBS)=5',
+    '!ITEM_XD=6',
+    '!ITEM_YD=7',
+    '!ITEM_ZD=8',
+    '!ITEM_RLP=9',
+    '!ITEM_PEAK=10',
+    '!ITEM_CORR=11',
+    '!ITEM_PSI=12',
+    '!END_OF_HEADER']))
+
+  # then write the data records
+
   for j in range(nref):
     h, k, l = miller_index[j]
-    x_px, y_px, z_px = integrated_data['xyzcal.px'][j]
-    istol = int(round(10000 * unit_cell.stol((h, k, l))))
-    RUB = RUBs[iframe[j] - image_range[0]]
-    x = RUB * (h, k, l)
-    s = (s0 + x).normalize()
-    astar = (RUB * (1, 0, 0)).normalize()
-    bstar = (RUB * (0, 1, 0)).normalize()
-    cstar = (RUB * (0, 0, 1)).normalize()
-    ix = beam.dot(astar)
-    iy = beam.dot(bstar)
-    iz = beam.dot(cstar)
-    dx = s.dot(astar)
-    dy = s.dot(bstar)
-    dz = s.dot(cstar)
-    x = x_px * scl_x
-    y = y_px * scl_y
-    fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
-               (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
-    fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z_px, scl[j], istol))
+    x, y, z = integrated_data['xyzcal.px'][j]
+
+    # FIXME need to compute psi correctly
+    psi = 0.0
+    fout.write('%d %d %d %f %f %f %f %f %f 1 1 %f\n' %
+               (h, k, l, I[j], sigI[j], x, y, z, lp[j], psi))
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
   return

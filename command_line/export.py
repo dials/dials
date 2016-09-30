@@ -56,7 +56,7 @@ Examples::
 
 phil_scope = parse('''
 
-  format = *mtz hkl nxs mosflm xds best
+  format = *mtz hkl nxs mosflm xds best xds_ascii
     .type = choice
     .help = "The output file format"
 
@@ -95,6 +95,17 @@ phil_scope = parse('''
     run = 0
       .type = int
       .help = "Batch number / run number for hkl file"
+    summation = False
+      .type = bool
+      .help = "Output summation integrated data (default profile fitted)"
+
+  }
+
+  xds_ascii {
+
+    hklout = DIALS.HKL
+      .type = path
+      .help = "The output raw hkl file"
     summation = False
       .type = bool
       .help = "Output summation integrated data (default profile fitted)"
@@ -199,17 +210,6 @@ class MTZExporter(object):
     m.show_summary(out=summary)
     info(summary.getvalue())
 
-  def hkl(self):
-    from dials.util.export_hkl import export_hkl
-    export_hkl(
-      self.reflections,
-      self.experiments,
-      self.params.hklf4.hklout,
-      run=self.params.hklf4.run,
-      summation=self.params.hklf4.summation,
-      include_partials=params.mtz.include_partials,
-      keep_partials=params.mtz.keep_partials)
-
 class HKLExporter(object):
   '''
   A class to export stuff in HKL format
@@ -244,6 +244,43 @@ class HKLExporter(object):
       self.experiments,
       self.params.hklf4.hklout,
       run=self.params.hklf4.run,
+      summation=self.params.hklf4.summation,
+      include_partials=params.mtz.include_partials,
+      keep_partials=params.mtz.keep_partials)
+
+class XDSASCIIExporter(object):
+  '''
+  A class to export stuff in XDS_ASCII format
+
+  '''
+
+  def __init__(self, params, experiments, reflections):
+    '''
+    Initialise the exporter
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+
+    '''
+
+    # Check the input
+    if len(experiments) == 0:
+      raise Sorry('XDS_ASCII exporter requires an experiment list')
+    if len(reflections) != 1:
+      raise Sorry('XDS_ASCII exporter requires 1 reflection table')
+
+    # Save the stuff
+    self.params = params
+    self.experiments = experiments
+    self.reflections = reflections[0]
+
+  def export(self):
+    from dials.util.export_xds_ascii import export_xds_ascii
+    export_xds_ascii(
+      self.reflections,
+      self.experiments,
+      self.params.xds_ascii.hklout,
       summation=self.params.hklf4.summation,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials)
@@ -459,6 +496,8 @@ if __name__ == '__main__':
     exporter = MTZExporter(params, experiments, reflections)
   elif params.format == 'hkl':
     exporter = HKLExporter(params, experiments, reflections)
+  elif params.format == 'xds_ascii':
+    exporter = XDSASCIIExporter(params, experiments, reflections)
   elif params.format == 'nxs':
     exporter = NexusExporter(params, experiments, reflections)
   elif params.format == 'mosflm':
