@@ -10,6 +10,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
 
   from logging import info
   from dials.array_family import flex
+  import math
 
   # for the moment assume (and assert) that we will convert data from exactly
   # one lattice...
@@ -160,13 +161,31 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
 
   # then write the data records
 
+  beam = matrix.col(experiment.beam.get_direction())
+  s0 = matrix.col(experiment.beam.get_s0())
+
   for j in range(nref):
     h, k, l = miller_index[j]
+    x = UB * (h, k, l)
+    s = s0 + x
+    g = s0.cross(s).normalize()
+    f = (UB * (h, k, l)).normalize()
+
+    # find component of beam perpendicular to f, e
+    e = (beam - (beam.dot(f) * f)).normalize()
+    if h == k and k == l:
+      u = (h, -h, 0)
+    else:
+      u = (k - l, l - h, h - k)
+    q = (matrix.col(u).transpose() * UB.inverse()).normalize()
+
+    psi = q.angle(g, deg=True)
+    if q.dot(e) < 0:
+      psi *= -1
+
     x, y, z = integrated_data['xyzcal.px'][j]
 
-    # FIXME need to compute psi correctly
-    psi = 0.0
-    fout.write('%d %d %d %f %f %f %f %f %f 1 1 %f\n' %
+    fout.write('%d %d %d %f %f %f %f %f %f 100 100 %f\n' %
                (h, k, l, I[j], sigI[j], x, y, z, lp[j], psi))
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
