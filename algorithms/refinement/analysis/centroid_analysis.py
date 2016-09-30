@@ -155,16 +155,17 @@ class CentroidAnalyser(object):
         results_this_exp['av_phi_resid_per_block'] = pr_per_blk
       self._average_residuals = True
 
-    # Perform power spectrum analysis on the residuals
+    # Perform power spectrum analysis on the residuals, converted to microns
+    # and mrad to avoid tiny numbers
     if calc_periodograms:
       if self._spectral_analysis: return self._results
 
       for exp_data in self._results:
-        px = Periodogram(exp_data['av_x_resid_per_block'], spans=spans)
+        px = Periodogram(1000. * exp_data['av_x_resid_per_block'], spans=spans)
         exp_data['x_periodogram'] = px
-        py = Periodogram(exp_data['av_y_resid_per_block'], spans=spans)
+        py = Periodogram(1000. * exp_data['av_y_resid_per_block'], spans=spans)
         exp_data['y_periodogram'] = py
-        pz = Periodogram(exp_data['av_phi_resid_per_block'], spans=spans)
+        pz = Periodogram(1000. * exp_data['av_phi_resid_per_block'], spans=spans)
         exp_data['phi_periodogram'] = pz
       self._spectral_analysis = True
 
@@ -190,20 +191,20 @@ if __name__ == "__main__":
     block_size = e['block_size']
     phistart = e['phi_range'][0]
     block_centres = block_size * flex.double_range(nblocks) + phistart + block_size/2.0
-    plt.plot(block_centres, e['av_x_resid_per_block'])
+    plt.plot(block_centres, 1000. * e['av_x_resid_per_block'])
     plt.xlabel('phi (degrees)')
-    plt.ylabel('x residuals per block')
+    plt.ylabel('x residuals per block (microns)')
     plt.show()
     e['x_periodogram'].plot(sample_interval=block_size)
 
-    plt.plot(block_centres, e['av_y_resid_per_block'])
+    plt.plot(block_centres, 1000. * e['av_y_resid_per_block'])
     plt.xlabel('phi (degrees)')
-    plt.ylabel('y residuals per block')
+    plt.ylabel('y residuals per block (microns)')
     plt.show()
     e['y_periodogram'].plot(sample_interval=block_size)
 
-    plt.plot(block_centres, e['av_phi_resid_per_block'])
+    plt.plot(block_centres, 1000. * e['av_phi_resid_per_block'])
     plt.xlabel('phi (degrees)')
-    plt.ylabel('phi residuals per block')
+    plt.ylabel('phi residuals per block (mrad)')
     plt.show()
     e['phi_periodogram'].plot(sample_interval=block_size)
