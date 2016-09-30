@@ -173,10 +173,83 @@ class CentroidAnalyser(object):
 
     return self._results
 
+def save_plots(exp_data, suffix=''):
+  """Create plots for the centroid analysis results for a single experiment"""
+
+  import matplotlib.pyplot as plt
+
+  nblocks = exp_data['nblocks']
+  block_size = exp_data['block_size']
+  sample_freq = 1./block_size
+  phistart = exp_data['phi_range'][0]
+  block_centres = block_size * flex.double_range(nblocks) + phistart + block_size/2.0
+
+  # X residuals plot
+  plt.figure(1)
+  plt.subplot(211)
+  plt.plot(block_centres, 1000. * exp_data['av_x_resid_per_block'])
+  plt.xlabel('phi (degrees)')
+  plt.ylabel('x residuals per block (microns)')
+
+  # X periodogram
+  plt.subplot(212)
+  px = exp_data['x_periodogram']
+  freq = px.freq * sample_freq
+  line, = plt.semilogy(freq, px.spec)
+  plt.xlabel('frequency')
+  plt.ylabel('spectrum')
+
+  # write them out
+  fname = 'x-residual-analysis' + suffix + '.png'
+  print "Saving {0}".format(fname)
+  plt.savefig(fname)
+
+  # Y residuals plot
+  plt.figure(2)
+  plt.subplot(211)
+  plt.plot(block_centres, 1000. * exp_data['av_y_resid_per_block'])
+  plt.xlabel('phi (degrees)')
+  plt.ylabel('y residuals per block (microns)')
+
+  # Y periodogram
+  plt.subplot(212)
+  py = exp_data['y_periodogram']
+  freq = py.freq * sample_freq
+  line, = plt.semilogy(freq, py.spec)
+  plt.xlabel('frequency')
+  plt.ylabel('spectrum')
+
+  # write them out
+  fname = 'y-residual-analysis' + suffix + '.png'
+  print "Saving {0}".format(fname)
+  plt.savefig(fname)
+
+  # phi residuals plot
+  plt.figure(3)
+  plt.subplot(211)
+  plt.plot(block_centres, 1000. * exp_data['av_phi_resid_per_block'])
+  plt.xlabel('phi (degrees)')
+  plt.ylabel('phi residuals per block (mrad)')
+
+  # phi periodogram
+  plt.subplot(212)
+  pz = exp_data['phi_periodogram']
+
+  freq = pz.freq * sample_freq
+  line, = plt.semilogy(freq, pz.spec)
+  plt.xlabel('frequency')
+  plt.ylabel('spectrum')
+
+  # write them out
+  fname = 'phi-residual-analysis' + suffix + '.png'
+  print "Saving {0}".format(fname)
+  plt.savefig(fname)
+
+  return
+
 if __name__ == "__main__":
 
   import sys
-  import matplotlib.pyplot as plt
   from dials.array_family import flex
 
   ref = sys.argv[1]
@@ -185,26 +258,10 @@ if __name__ == "__main__":
   ca = CentroidAnalyser(refs)
   results = ca()
 
-  for e in results:
+  if len(results) == 1:
+    save_plots(results[0])
+  else:
+    for i, result in enumerate(results):
+      suffix = 'exp_{0}'.format(i)
+      save_plots(result, suffix)
 
-    nblocks = e['nblocks']
-    block_size = e['block_size']
-    phistart = e['phi_range'][0]
-    block_centres = block_size * flex.double_range(nblocks) + phistart + block_size/2.0
-    plt.plot(block_centres, 1000. * e['av_x_resid_per_block'])
-    plt.xlabel('phi (degrees)')
-    plt.ylabel('x residuals per block (microns)')
-    plt.show()
-    e['x_periodogram'].plot(sample_interval=block_size)
-
-    plt.plot(block_centres, 1000. * e['av_y_resid_per_block'])
-    plt.xlabel('phi (degrees)')
-    plt.ylabel('y residuals per block (microns)')
-    plt.show()
-    e['y_periodogram'].plot(sample_interval=block_size)
-
-    plt.plot(block_centres, 1000. * e['av_phi_resid_per_block'])
-    plt.xlabel('phi (degrees)')
-    plt.ylabel('phi residuals per block (mrad)')
-    plt.show()
-    e['phi_periodogram'].plot(sample_interval=block_size)
