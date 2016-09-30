@@ -265,10 +265,8 @@ namespace dials { namespace algorithms {
         } else if (res > tuning_constant_) {
           y = mean + tuning_constant_ * svar;
         }
-        if (std::abs(res) < tuning_constant_) {
-          sum1 += y;
-          sum2 += X[i];
-        }
+        sum1 += y;
+        sum2 += X[i];
       }
       DIALS_ASSERT(sum1 >= 0);
       DIALS_ASSERT(sum2 > 0);
@@ -282,31 +280,6 @@ namespace dials { namespace algorithms {
         }
       }
 
-      // Setup the initial parameters
-      //double B = std::log(1.0);
-
-      //// Compute the result
-      //robust_estimator result(
-      //    X.const_ref(),
-      //    Y.const_ref(),
-      //    B,
-      //    tuning_constant_,
-      //    1e-3,
-      //    max_iter_);
-      //DIALS_ASSERT(result.converged());
-
-      //// Compute the background
-      //B = result.scale_parameter();
-      //double scale = std::exp(B);
-      //DIALS_ASSERT(B > -300 && B < 300);
-
-      //// Fill in the background shoebox values
-      //for (std::size_t i = 0; i < data.size(); ++i) {
-      //  background[i] = std::exp(B * model[i]);
-      //  if ((mask[i] & mask_code) == mask_code) {
-      //    mask[i] |= BackgroundUsed;
-      //  }
-      //}
       return scale;
     }
 
