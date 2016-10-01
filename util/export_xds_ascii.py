@@ -103,15 +103,19 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     dqe = flex.double(nref, 1.0)
   scl = lp / dqe
 
+  var_model = 4.0, 1e-4
+
   if summation:
     I = integrated_data['intensity.sum.value'] * scl
     V = integrated_data['intensity.sum.variance'] * scl * scl
     assert V.all_gt(0)
+    V = var_model[0] * (V + var_model[1] * I * I)
     sigI = flex.sqrt(V)
   else:
     I = integrated_data['intensity.prf.value'] * scl
     V = integrated_data['intensity.prf.variance'] * scl * scl
     assert V.all_gt(0)
+    V = var_model[0] * (V + var_model[1] * I * I)
     sigI = flex.sqrt(V)
 
   fout = open(hklout, 'w')
@@ -123,6 +127,10 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   nx, ny = panel.get_image_size()
   distance = matrix.col(panel.get_origin()).dot(
       matrix.col(panel.get_normal()))
+  org = matrix.col(panel.get_origin()) - distance * matrix.col(
+      panel.get_normal())
+  orgx = - org.dot(matrix.col(panel.get_fast_axis())) / qx
+  orgy = - org.dot(matrix.col(panel.get_slow_axis())) / qy
 
   fout.write('\n'.join([
     '!FORMAT=XDS_ASCII    MERGE=FALSE    FRIEDEL\'S_LAW=FALSE',
@@ -140,10 +148,11 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     '!X-RAY_WAVELENGTH= %f' % experiment.beam.get_wavelength(),
     '!INCIDENT_BEAM_DIRECTION= %f %f %f' % experiment.beam.get_s0(),
     '!NX= %d NY= %d QX= %f QY= %f' % (nx, ny, qx, qy),
+    '!ORGX= %f ORGY= %f' % (orgx, orgy),
     '!DETECTOR_DISTANCE= %f' % distance,
     '!DIRECTION_OF_DETECTOR_X-AXIS= %f %f %f' % panel.get_fast_axis(),
     '!DIRECTION_OF_DETECTOR_Y-AXIS= %f %f %f' % panel.get_slow_axis(),
-    '!VARIANCE_MODEL= 1 0',
+    '!VARIANCE_MODEL= %f %f' % var_model,
     '!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=12',
     '!ITEM_H=1',
     '!ITEM_K=2',
@@ -162,6 +171,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   # then write the data records
 
   beam = matrix.col(experiment.beam.get_direction())
+
   s0 = matrix.col(experiment.beam.get_s0())
 
   for j in range(nref):
