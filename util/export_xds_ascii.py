@@ -62,7 +62,13 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   # sort data before output
   nref = len(integrated_data['miller_index'])
   indices = flex.size_t_range(nref)
-  perm = sorted(indices, key=lambda k: integrated_data['miller_index'][k])
+
+  import copy
+  unique = copy.deepcopy(integrated_data['miller_index'])
+  from cctbx.miller import map_to_asu
+  map_to_asu(experiment.crystal.get_space_group().type(), False, unique)
+
+  perm = sorted(indices, key=lambda k: unique[k])
   integrated_data = integrated_data.select(flex.size_t(perm))
 
   from scitbx import matrix
@@ -166,7 +172,8 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     '!ITEM_PEAK=10',
     '!ITEM_CORR=11',
     '!ITEM_PSI=12',
-    '!END_OF_HEADER']))
+    '!END_OF_HEADER',
+    '']))
 
   # then write the data records
 
@@ -178,7 +185,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     h, k, l = miller_index[j]
     x = UB * (h, k, l)
     s = s0 + x
-    g = s0.cross(s).normalize()
+    g = s.cross(s0).normalize()
     f = (UB * (h, k, l)).normalize()
 
     # find component of beam perpendicular to f, e
