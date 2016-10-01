@@ -186,15 +186,15 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     x = UB * (h, k, l)
     s = s0 + x
     g = s.cross(s0).normalize()
-    f = (UB * (h, k, l)).normalize()
+    f = (s - s0).normalize()
 
     # find component of beam perpendicular to f, e
-    e = (beam - (beam.dot(f) * f)).normalize()
+    e = - (s + s0).normalize()
     if h == k and k == l:
       u = (h, -h, 0)
     else:
       u = (k - l, l - h, h - k)
-    q = (matrix.col(u).transpose() * UB.inverse()).normalize()
+    q = (matrix.col(u).transpose() * UB.inverse()).normalize().transpose()
 
     psi = q.angle(g, deg=True)
     if q.dot(e) < 0:
