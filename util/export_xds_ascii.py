@@ -178,13 +178,16 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   # then write the data records
 
   beam = matrix.col(experiment.beam.get_direction())
+  axis = matrix.col(experiment.goniometer.get_rotation_axis())
 
   s0 = matrix.col(experiment.beam.get_s0())
 
   for j in range(nref):
+    x, y, z = integrated_data['xyzcal.px'][j]
+    phi = phi_start + z * phi_range
     h, k, l = miller_index[j]
-    x = UB * (h, k, l)
-    s = s0 + x
+    X = (UB * (h, k, l)).rotate(axis, phi, deg=True)
+    s = s0 + X
     g = s.cross(s0).normalize()
     f = (s - s0).normalize()
 
@@ -194,13 +197,12 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
       u = (h, -h, 0)
     else:
       u = (k - l, l - h, h - k)
-    q = (matrix.col(u).transpose() * UB.inverse()).normalize().transpose()
+    q = (matrix.col(u).transpose() * UB.inverse()).normalize(
+        ).transpose().rotate(axis, phi, deg=True)
 
     psi = q.angle(g, deg=True)
     if q.dot(e) < 0:
       psi *= -1
-
-    x, y, z = integrated_data['xyzcal.px'][j]
 
     fout.write('%d %d %d %f %f %f %f %f %f 100 100 %f\n' %
                (h, k, l, I[j], sigI[j], x, y, z, lp[j], psi))
