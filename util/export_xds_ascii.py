@@ -150,6 +150,8 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
 
   axis = Rd * experiment.goniometer.get_rotation_axis()
   beam = Rd * experiment.beam.get_s0()
+  cell_fmt = '%9.3f %9.3f %9.3f %8.3f %8.3f %8.3f'
+  axis_fmt = '%9.3f %9.3f %9.3f'
 
   fout.write('\n'.join([
     '!FORMAT=XDS_ASCII    MERGE=FALSE    FRIEDEL\'S_LAW=TRUE',
@@ -160,18 +162,18 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     '!START_ANGLE= %f' % phi_start,
     '!START_FRAME= %d' % image_range[0],
     '!SPACE_GROUP_NUMBER= %d' % experiment.crystal.get_space_group().type().number(),
-    '!UNIT_CELL_CONSTANTS= %f %f %f %f %f %f' % unit_cell.parameters(),
-    '!UNIT_CELL_A-AXIS= %f %f %f' % real_space_ABC[0:3],
-    '!UNIT_CELL_B-AXIS= %f %f %f' % real_space_ABC[3:6],
-    '!UNIT_CELL_C-AXIS= %f %f %f' % real_space_ABC[6:9],
+    '!UNIT_CELL_CONSTANTS= %s' % (cell_fmt % unit_cell.parameters()),
+    '!UNIT_CELL_A-AXIS= %s' % (axis_fmt % real_space_ABC[0:3]),
+    '!UNIT_CELL_B-AXIS= %s' % (axis_fmt % real_space_ABC[3:6]),
+    '!UNIT_CELL_C-AXIS= %s' % (axis_fmt % real_space_ABC[6:9]),
     '!X-RAY_WAVELENGTH= %f' % experiment.beam.get_wavelength(),
     '!INCIDENT_BEAM_DIRECTION= %f %f %f' % beam.elems,
     '!NX= %d NY= %d QX= %f QY= %f' % (nx, ny, qx, qy),
-    '!ORGX= %f ORGY= %f' % (orgx, orgy),
-    '!DETECTOR_DISTANCE= %f' % distance,
-    '!DIRECTION_OF_DETECTOR_X-AXIS= %f %f %f' % fast.elems,
-    '!DIRECTION_OF_DETECTOR_Y-AXIS= %f %f %f' % slow.elems,
-    '!VARIANCE_MODEL= %f %f' % var_model,
+    '!ORGX= %9.2f ORGY= %9.2f' % (orgx, orgy),
+    '!DETECTOR_DISTANCE= %8.3f' % distance,
+    '!DIRECTION_OF_DETECTOR_X-AXIS= %9.5f %9.5f %9.5f' % fast.elems,
+    '!DIRECTION_OF_DETECTOR_Y-AXIS= %9.5f %9.5f %9.5f' % slow.elems,
+    '!VARIANCE_MODEL= %7.3e %7.3e' % var_model,
     '!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=12',
     '!ITEM_H=1',
     '!ITEM_K=2',
