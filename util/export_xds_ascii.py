@@ -4,7 +4,7 @@ from export_mtz import sum_partial_reflections
 from export_mtz import scale_partial_reflections
 
 def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
-                     include_partials=False, keep_partials=False):
+                     include_partials=False, keep_partials=False, var_model=(1,0)):
   '''Export data from integrated_data corresponding to experiment_list to
   an XDS_ASCII.HKL formatted text file.'''
 
@@ -107,7 +107,17 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     dqe = flex.double(nref, 1.0)
   scl = lp / dqe
 
-  var_model = 4.0, 1e-4
+  # profile correlation
+  if 'profile.correlation' in integrated_data:
+    prof_corr = 100.0 * integrated_data['profile.correlation']
+  else:
+    prof_corr = flex.double(nref, 100.0)
+
+  # partiality
+  if 'partiality' in integrated_data:
+    partiality = 100 * integrated_data['partiality']
+  else:
+    prof_corr = flex.double(nref, 100.0)
 
   if summation:
     I = integrated_data['intensity.sum.value'] * scl
@@ -216,8 +226,8 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     if q.dot(e) < 0:
       psi *= -1
 
-    fout.write('%d %d %d %f %f %f %f %f %f 100 100 %f\n' %
-               (h, k, l, I[j], sigI[j], x, y, z, lp[j], psi))
+    fout.write('%d %d %d %f %f %f %f %f %f %.1f %.1f %f\n' %
+               (h, k, l, I[j], sigI[j], x, y, z, scl[j], partiality[j], prof_corr[j], psi))
 
   fout.write('!END_OF_DATA\n')
   fout.close()
