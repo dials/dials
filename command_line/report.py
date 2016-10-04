@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 #
-# analyse_output.py
+# report.py
 #
 #  Copyright (C) 2015 Diamond Light Source
 #
@@ -1130,12 +1130,12 @@ class CentroidAnalyser(object):
         ],
         'layout': {
           'title': 'RMSD between observed and calculated centroids vs phi',
-          'yaxis3': {'domain': [0, 0.266]},
+          'yaxis3': {'domain': [0, 0.266], 'rangemode': 'tozero'},
           #'legend': {'traceorder': 'reversed'},
           'xaxis3': {'anchor': 'y3'},
           'xaxis2': {'anchor': 'y2'},
-          'yaxis2': {'domain': [0.366, 0.633]},
-          'yaxis': {'domain': [0.733, 1]}
+          'yaxis2': {'domain': [0.366, 0.633], 'rangemode': 'tozero'},
+          'yaxis': {'domain': [0.733, 1], 'rangemode': 'tozero'}
         },
       },
     }
