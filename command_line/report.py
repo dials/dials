@@ -1094,7 +1094,7 @@ class CentroidAnalyser(object):
           },
         ],
         'layout': {
-          'title': 'Difference between observed and calculated centroids vs z',
+          'title': 'Difference between observed and calculated centroids vs phi',
           'yaxis3': {'domain': [0, 0.266]},
           #'legend': {'traceorder': 'reversed'},
           'xaxis3': {'anchor': 'y3'},
