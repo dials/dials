@@ -223,6 +223,7 @@ namespace dials { namespace algorithms {
       // Allocate some arrays
       af::shared<double> X(num_background, 0);
       af::shared<double> Y(num_background, 0);
+      af::shared<double> W(num_background, 1.0);
       std::size_t l = 0;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
@@ -235,42 +236,11 @@ namespace dials { namespace algorithms {
       }
       DIALS_ASSERT(l == Y.size());
 
-      // Compute the median value for the starting value
-      double median = detail::median(Y.const_ref());
-      if (median == 0) {
-        median = 1.0;
-      }
+      // Estimate the weights for each pixel
+      estimate_pixel_weights(X.const_ref(), Y.const_ref(), W.ref());
 
-      // Compute robust Poisson mean as in the GLM algorithm
-      RobustPoissonMean result(
-          Y.const_ref(),
-          median,
-          tuning_constant_,
-          1e-3,
-          max_iter_);
-      DIALS_ASSERT(result.converged());
-
-      // Get the mean value
-      double mean = result.mean();
-      double svar = std::sqrt(mean);
-
-      // Compute am initial scale
-      double sum1 = 0.0;
-      double sum2 = 0.0;
-      for (std::size_t i = 0; i < Y.size(); ++i) {
-        double res = (Y[i] - mean) / svar;
-        double y = Y[i];
-        if (res < -tuning_constant_) {
-          y = mean - tuning_constant_ * svar;
-        } else if (res > tuning_constant_) {
-          y = mean + tuning_constant_ * svar;
-        }
-        sum1 += y;
-        sum2 += X[i];
-      }
-      DIALS_ASSERT(sum1 >= 0);
-      DIALS_ASSERT(sum2 > 0);
-      double scale = sum1 / sum2;
+      // Estimate the scale parameter
+      double scale = estimate_scale_parameter(X.const_ref(), Y.const_ref(), W.const_ref());
 
       // Fill in the background shoebox values
       for (std::size_t i = 0; i < data.size(); ++i) {
@@ -281,6 +251,52 @@ namespace dials { namespace algorithms {
       }
 
       return scale;
+    }
+
+    void estimate_pixel_weights(
+        const af::const_ref<double> &X,
+        const af::const_ref<double> &Y,
+        af::ref<double> W) const {
+
+      af::shared<double> tX(X.size());
+      af::shared<double> tY(X.size());
+      for (std::size_t i = 0; i < X.size(); ++i) {
+        tX[i] = 2.0 * std::sqrt(X[i] + 3.0 / 8.0);
+        tY[i] = 2.0 * std::sqrt(Y[i] + 3.0 / 8.0);
+      }
+
+      double B = 1.0;
+      for (std::size_t iter = 0; iter < 10; ++iter) {
+        double XWX = 0.0;
+        double XWY = 0.0;
+        for (std::size_t i = 0; i < X.size(); ++i) {
+          double mu = B * tX[i];
+          double r = std::abs(tY[i] - mu);
+          W[i] = 1.0;
+          if (r > 3.0) {
+            W[i] = 3.0 / r;
+          }
+          XWX += tX[i] * W[i] * tX[i];
+          XWY += tX[i] * W[i] * tY[i];
+        }
+        DIALS_ASSERT(XWX > 0);
+        B = XWY / XWX;
+      }
+
+    }
+
+    double estimate_scale_parameter(
+        const af::const_ref<double> &X,
+        const af::const_ref<double> &Y,
+        const af::const_ref<double> &W) const {
+      double XWX = 0.0;
+      double XWY = 0.0;
+      for (std::size_t i = 0; i < X.size(); ++i) {
+        XWX += X[i] * W[i] * X[i];
+        XWY += X[i] * W[i] * Y[i];
+      }
+      DIALS_ASSERT(XWX > 0);
+      return XWY / XWX;
     }
 
     boost::shared_ptr<BackgroundModel> model_;
