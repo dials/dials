@@ -23,8 +23,10 @@ def run():
   result = easy_run.fully_buffered(cmd).raise_if_errors()
 
   from dxtbx.serialize import load
-  orig_expt = load.experiment_list(orig_expt_json)
-  new_expt = load.experiment_list(new_expt_json)
+  assert os.path.exists(orig_expt_json), orig_expt_json
+  orig_expt = load.experiment_list(orig_expt_json, check_format=False)
+  assert os.path.exists(new_expt_json), new_expt_json
+  new_expt = load.experiment_list(new_expt_json, check_format=False)
 
   orig_gonio = orig_expt.goniometers()[0]
   new_gonio = new_expt.goniometers()[0]
