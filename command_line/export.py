@@ -60,6 +60,10 @@ phil_scope = parse('''
     .type = choice
     .help = "The output file format"
 
+  summation = False
+    .type = bool
+    .help = "Output summation integrated data (default profile fitted)"
+
   mtz {
 
     ignore_panels = False
@@ -95,9 +99,6 @@ phil_scope = parse('''
     run = 0
       .type = int
       .help = "Batch number / run number for hkl file"
-    summation = False
-      .type = bool
-      .help = "Output summation integrated data (default profile fitted)"
 
   }
 
@@ -106,9 +107,6 @@ phil_scope = parse('''
     hklout = DIALS.HKL
       .type = path
       .help = "The output raw hkl file"
-    summation = False
-      .type = bool
-      .help = "Output summation integrated data (default profile fitted)"
 
   }
 
@@ -244,7 +242,7 @@ class HKLExporter(object):
       self.experiments,
       self.params.hklf4.hklout,
       run=self.params.hklf4.run,
-      summation=self.params.hklf4.summation,
+      summation=self.params.summation,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials)
 
@@ -281,7 +279,7 @@ class XDSASCIIExporter(object):
       self.reflections,
       self.experiments,
       self.params.xds_ascii.hklout,
-      summation=self.params.hklf4.summation,
+      summation=self.params.summation,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials)
 
