@@ -128,8 +128,10 @@ class Strategy(object):
   def compute_stats(self, n_bins=8):
     from cctbx import crystal, miller
 
-    cs = crystal.symmetry(unit_cell=self.experiment.crystal.get_unit_cell(),
-                          space_group=self.experiment.crystal.get_space_group())
+    sg = self.experiment.crystal.get_space_group() \
+      .build_derived_reflection_intensity_group(anomalous_flag=True)
+    cs = crystal.symmetry(
+      unit_cell=self.experiment.crystal.get_unit_cell(), space_group=sg)
     ms = miller.set(cs, indices=self.predicted['miller_index'], anomalous_flag=True)
     ma = miller.array(ms, data=flex.double(ms.size(), 1),
                       sigmas=flex.double(ms.size(), 1))
