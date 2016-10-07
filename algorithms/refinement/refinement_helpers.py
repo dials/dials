@@ -15,6 +15,7 @@ from scitbx import matrix
 from scitbx.array_family import flex # import dependency
 from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
 from dials_refinement_helpers_ext import CrystalOrientationCompose as xloc_cpp
+from logging import info
 import random
 
 def ordinal_number(array_index=None, cardinal_number=None):
