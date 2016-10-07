@@ -94,7 +94,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   unit_cell = experiment.crystal.get_unit_cell()
 
   from scitbx.array_family import flex
-  from math import floor, sqrt
+  from math import floor, sqrt, pi
 
   assert(not experiment.scan is None)
   image_range = experiment.scan.get_image_range()
@@ -165,13 +165,15 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   # detector scaling info
   assert(len(experiment.detector) == 1)
   panel = experiment.detector[0]
-  scl_x = 512.0 / panel.get_image_size()[0]
-  scl_y = 512.0 / panel.get_image_size()[1]
-
+  dims = panel.get_image_size()
+  pixel = panel.get_pixel_size()
+  scl_x = 512.0 / (dims[0] * pixel[0])
+  scl_y = 512.0 / (dims[1] * pixel[1])
+  phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
   fout = open(hklout, 'w')
   for j in range(nref):
     h, k, l = miller_index[j]
-    x_px, y_px, z_px = integrated_data['xyzcal.px'][j]
+    x_mm, y_mm, z_rad = integrated_data['xyzobs.mm.value'][j]
     istol = int(round(10000 * unit_cell.stol((h, k, l))))
     RUB = RUBs[iframe[j] - image_range[0]]
     x = RUB * (h, k, l)
@@ -185,11 +187,12 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     dx = s.dot(astar)
     dy = s.dot(bstar)
     dz = s.dot(cstar)
-    x = x_px * scl_x
-    y = y_px * scl_y
+    x = x_mm * scl_x
+    y = y_mm * scl_y
+    z = (z_rad * 180 / pi - phi_start) / phi_range
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
-    fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z_px, scl[j], istol))
+    fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z, scl[j], istol))
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
   return
