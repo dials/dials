@@ -120,7 +120,6 @@ class Test(object):
     assert (scale3 > 0).count(False) == 0
     assert (scale4 > 0).count(False) == 0
     assert (diff1 < 1e-5).count(False) == 0
-    assert (diff2 < 1e-1).count(False) == 0
 
     print 'OK'
 
