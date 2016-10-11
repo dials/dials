@@ -4,6 +4,8 @@
 
 from __future__ import division
 from libtbx.utils import Sorry
+from dxtbx.datablock import DataBlockFactory
+import os
 
 help_message = '''
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image
@@ -15,6 +17,14 @@ control_phil_str = '''
   verbosity = 1
     .type = int(value_min=0)
     .help = "The verbosity level"
+
+  dispatch {
+    pre_import = False
+      .type = bool
+      .expert_level = 2
+      .help = If True, before processing import all the data. Needed only if processing \
+              multiple multi-image files at once (not a recommended use case)
+  }
 
   output {
     output_dir = .
@@ -88,6 +98,19 @@ dials_phil_str = '''
 
 phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True)
 
+def do_import(filename):
+  from logging import info
+  info("Loading %s"%os.path.basename(filename))
+  try:
+    datablocks = DataBlockFactory.from_json_file(filename)
+  except ValueError:
+    datablocks = DataBlockFactory.from_filenames([filename])
+  if len(datablocks) == 0:
+    raise Abort("Could not load %s"%filename)
+  if len(datablocks) > 1:
+    raise Abort("Got multiple datablocks from file %s"%filename)
+  return datablocks[0]
+
 class Script(object):
   '''A class for running the script.'''
 
@@ -112,7 +135,6 @@ class Script(object):
   def load_reference_geometry(self):
     if self.params.input.reference_geometry is None: return
 
-    from dxtbx.datablock import DataBlockFactory
     try:
       ref_datablocks = DataBlockFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
     except Exception:
@@ -136,8 +158,7 @@ class Script(object):
     from time import time
     from libtbx.utils import Abort
     from libtbx import easy_mp
-    import os, copy
-    from dxtbx.datablock import DataBlockFactory
+    import copy
 
     # Parse the command line
     params, options, all_paths = self.parser.parse_args(show_diff_phil=False, return_unhandled=True)
@@ -169,79 +190,83 @@ class Script(object):
 
     # Import stuff
     info("Loading files...")
-    def do_import(filename):
-      info("Loading %s"%os.path.basename(filename))
-      try:
-        datablocks = DataBlockFactory.from_json_file(filename)
-      except ValueError:
-        datablocks = DataBlockFactory.from_filenames([filename])
-      if len(datablocks) == 0:
-        raise Abort("Could not load %s"%filename)
-      if len(datablocks) > 1:
-        raise Abort("Got multiple datablocks from file %s"%filename)
-      return datablocks[0]
+    pre_import = params.dispatch.pre_import or len(all_paths) == 1
+    if pre_import:
+      # Handle still imagesets by breaking them apart into multiple datablocks
+      # Further handle single file still imagesets (like HDF5) by tagging each
+      # frame using its index
 
-    if len(all_paths) == 1:
-      datablocks = [do_import(all_paths[0])]
-    else:
-      if params.mp.method == 'mpi':
-        from mpi4py import MPI
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
-        size = comm.Get_size() # size: number of processes running in this job
+      datablocks = [do_import(path) for path in all_paths]
+      if self.reference_detector is not None:
+        from dxtbx.model import Detector
+        for datablock in datablocks:
+          for imageset in datablock.extract_imagesets():
+            imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
 
-        datablocks = [do_import(all_paths[i]) for i in xrange(len(all_paths)) if (i+rank)%size == 0]
-      else:
-        datablocks = easy_mp.parallel_map(
-          func=do_import,
-          iterable=all_paths,
-          processes=params.mp.nproc,
-          method=params.mp.method,
-          preserve_order=True,
-          preserve_exception_message=True)
-
-    if len(datablocks) == 0:
-      raise Abort('No datablocks specified')
-
-    if self.reference_detector is not None:
-      from dxtbx.model import Detector
+      indices = []
+      basenames = []
+      split_datablocks = []
       for datablock in datablocks:
         for imageset in datablock.extract_imagesets():
-          imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+          for i in xrange(len(imageset)):
+            subset = imageset[i:i+1]
+            split_datablocks.append(DataBlockFactory.from_imageset(subset)[0])
+            indices.append(i)
+            basenames.append(os.path.splitext(os.path.basename(subset.paths()[0]))[0])
+      tags = []
+      for i, basename in zip(indices, basenames):
+        if basenames.count(basename) > 1:
+          tags.append("%s_%d"%(basename, i))
+        else:
+          tags.append(basename)
 
-    # Handle still imagesets by breaking them apart into multiple datablocks
-    # Further handle single file still imagesets (like HDF5) by tagging each
-    # frame using its index
-    indices = []
-    basenames = []
-    split_datablocks = []
-    for datablock in datablocks:
-      for imageset in datablock.extract_imagesets():
-        for i in xrange(len(imageset)):
-          subset = imageset[i:i+1]
-          split_datablocks.append(DataBlockFactory.from_imageset(subset)[0])
-          indices.append(i)
-          basenames.append(os.path.splitext(os.path.basename(subset.paths()[0]))[0])
-    tags = []
-    for i, basename in zip(indices, basenames):
-      if basenames.count(basename) > 1:
-        tags.append("%s_%d"%(basename, i))
-      else:
-        tags.append(basename)
+      # Wrapper function
+      def do_work(item):
+        Processor(copy.deepcopy(params)).process_datablock(item[0], item[1])
 
-    # Wrapper function
-    def do_work(item):
-      Processor(copy.deepcopy(params)).process_datablock(item[0], item[1])
+      iterable = zip(tags, split_datablocks)
+
+    else:
+      basenames = []
+      tags = []
+      for i, filename in enumerate(all_paths):
+        basename = os.path.splitext(filename)[0]
+        if basenames.count(basename) > 1:
+          tags.append("%s_%d"%(basename, i))
+        else:
+          tags.append(basename)
+
+      # Wrapper function
+      def do_work(item):
+        tag, filename = item
+
+        datablock = do_import(filename)
+        imagesets = datablock.extract_imagesets()
+        if len(imagesets) == 0 or len(imagesets[0]) == 0:
+          info("Zero length imageset in file: %s"%filename)
+          return
+        if len(imagesets) > 1:
+          raise Abort("Found more than one imageset in file: %s"%filename)
+        if len(imagesets[0]) > 1:
+          raise Abort("Found a multi-image file. Run again with pre_import=True")
+
+        if self.reference_detector is not None:
+          from dxtbx.model import Detector
+          imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+
+        Processor(copy.deepcopy(params)).process_datablock(tag, datablock)
+
+      iterable = zip(tags, all_paths)
 
     # Process the data
     if params.mp.method == 'mpi':
-      for i, item in enumerate(zip(tags, split_datablocks)):
+      for i, item in enumerate(iterable):
         if (i+rank)%size == 0:
           do_work(item)
     else:
       easy_mp.parallel_map(
         func=do_work,
-        iterable=zip(tags, split_datablocks),
+        iterable=iterable,
         processes=params.mp.nproc,
         method=params.mp.method,
         preserve_order=True,
