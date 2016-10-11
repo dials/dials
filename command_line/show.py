@@ -274,20 +274,6 @@ def run(args):
         print columns[j][i],
       print
 
-
-    #for i in range(max_reflections):
-      #r = rlist[i]
-      #rows.append([formats[k] %r[k] for k in keys])
-
-    #print "Printing %i of %i reflections:" %(max_reflections, len(rlist))
-    ##print table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
-    ##print table_utils.format(rows, has_header=False, prefix="", postfix="",
-                             ##delim=" ")
-    ##from dials.util.tabulate import tabulate
-    ##print tabulate(rows)
-    #import asciitable
-    #asciitable.write(rows)
-
   return
 
 if __name__ == '__main__':
