@@ -210,9 +210,8 @@ class Strategy(object):
     import matplotlib
     matplotlib.use('Agg')
     from matplotlib import pyplot as plt
-    plt.style.use('ggplot')
-    #plt.style.use('seaborn-colorblind')
-    #plt.style.use('fivethirtyeight')
+    if hasattr(plt, 'style'):
+      plt.style.use('ggplot')
     line,  = plt.plot(x, self.ieither_completeness, label='Unique reflections')
     plt.plot([self.cutoff_non_anom, self.cutoff_non_anom], plt.ylim(), c=line.get_color(), linestyle='dashed')
     line,  = plt.plot(x, self.iboth_completeness, label='Bijvoet pairs')
