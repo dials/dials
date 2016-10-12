@@ -132,7 +132,11 @@ class ImageGenerator(object):
         interpolation = 'none',
         vmin          = 0,
         vmax          = vmax)
-      pylab.colorbar()
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
+      cb = pylab.colorbar()
+      cb.ax.tick_params(labelsize=8)
       info("Saving min image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -152,7 +156,11 @@ class ImageGenerator(object):
         interpolation = 'none',
         vmin          = 0,
         vmax          = vmax)
-      pylab.colorbar()
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
+      cb = pylab.colorbar()
+      cb.ax.tick_params(labelsize=8)
       info("Saving max image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -172,7 +180,11 @@ class ImageGenerator(object):
         interpolation = 'none',
         vmin          = 0,
         vmax          = vmax)
-      pylab.colorbar()
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
+      cb = pylab.colorbar()
+      cb.ax.tick_params(labelsize=8)
       info("Saving mean image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -193,7 +205,11 @@ class ImageGenerator(object):
         vmin          = 0,
         vmax          = vmax
       )
-      pylab.colorbar()
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
+      cb = pylab.colorbar()
+      cb.ax.tick_params(labelsize=8)
       info("Saving variance image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -212,7 +228,11 @@ class ImageGenerator(object):
         interpolation = 'none',
         vmin          = 0,
         vmax          = 2)
-      pylab.colorbar()
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
+      cb = pylab.colorbar()
+      cb.ax.tick_params(labelsize=8)
       info("Saving dispersion image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -229,6 +249,9 @@ class ImageGenerator(object):
       pylab.imshow(
         mask.as_numpy_array(),
         interpolation = 'none')
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
       info("Saving mask image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -248,7 +271,11 @@ class ImageGenerator(object):
         interpolation = 'none',
         vmin = 0,
         vmax = vmax)
-      pylab.colorbar()
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
+      cb = pylab.colorbar()
+      cb.ax.tick_params(labelsize=8)
       info("Saving model image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
@@ -265,6 +292,11 @@ class ImageGenerator(object):
       pylab.imshow(
         polar_model.as_numpy_array(),
         interpolation = 'none')
+      ax1 = pylab.gca()
+      ax1.get_xaxis().set_visible(False)
+      ax1.get_yaxis().set_visible(False)
+      cb = pylab.colorbar()
+      cb.ax.tick_params(labelsize=8)
       info("Saving polar model image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
