@@ -149,10 +149,25 @@ class SpotFrame(XrayFrame) :
     self.toolbar.AddControl(self.jump_to_image)
     self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
 
+  def OnChooseImage (self, event) :
+    super(SpotFrame, self).OnChooseImage(event)
+    self.jump_to_image.SetValue(self.image_chooser.GetSelection()+1)
+
+  def OnPrevious (self, event) :
+    super(SpotFrame, self).OnPrevious(event)
+    self.jump_to_image.SetValue(self.image_chooser.GetSelection()+1)
+
+  def OnNext (self, event) :
+    super(SpotFrame, self).OnNext(event)
+    self.jump_to_image.SetValue(self.image_chooser.GetSelection()+1)
+
   def OnJumpToImage (self, event) :
-    self.jump_to_image.SetMax(self.image_chooser.GetCount())
-    self.load_image(self.image_chooser.GetClientData(
-      self.jump_to_image.GetPhilValue()-1))
+    if (self.image_chooser.GetSelection() !=
+        (self.jump_to_image.GetPhilValue() - 1)):
+      self.jump_to_image.SetMax(self.image_chooser.GetCount())
+      self.load_image(self.image_chooser.GetClientData(
+        self.jump_to_image.GetPhilValue()-1))
+    event.Skip()
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
