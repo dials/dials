@@ -4,7 +4,8 @@ from export_mtz import sum_partial_reflections
 from export_mtz import scale_partial_reflections
 
 def export_hkl(integrated_data, experiment_list, hklout, run=0,
-               summation=False, include_partials=False, keep_partials=False):
+               summation=False, include_partials=False, keep_partials=False,
+               debug=False):
   '''Export data from integrated_data corresponding to experiment_list to a
   HKL file for input to SADABS. FIXME probably need to make a .p4p file as
   well...'''
@@ -174,8 +175,11 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   for j in range(nref):
     h, k, l = miller_index[j]
     x_mm, y_mm, z_rad = integrated_data['xyzobs.mm.value'][j]
+    z0 = integrated_data['xyzcal.px'][j][2] % 1
     istol = int(round(10000 * unit_cell.stol((h, k, l))))
-    RUB = RUBs[iframe[j] - image_range[0]]
+    # weighted average UB based on how far through the image the spot is
+    RUB = (1 - z0) * RUBs[iframe[j] - image_range[0]] + \
+      z0 * RUBs[iframe[j] - image_range[0] + 1]
     x = RUB * (h, k, l)
     s = (s0 + x).normalize()
     astar = (RUB * (1, 0, 0)).normalize()
@@ -193,6 +197,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
     fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z, scl[j], istol))
+
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
   return

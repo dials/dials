@@ -64,6 +64,10 @@ phil_scope = parse('''
     .type = bool
     .help = "Output summation integrated data (default profile fitted)"
 
+  debug = False
+    .type = bool
+    .help = "Output additional debugging information"
+
   mtz {
 
     ignore_panels = False
@@ -244,7 +248,8 @@ class HKLExporter(object):
       run=self.params.hklf4.run,
       summation=self.params.summation,
       include_partials=params.mtz.include_partials,
-      keep_partials=params.mtz.keep_partials)
+      keep_partials=params.mtz.keep_partials,
+      debug=params.debug)
 
 class XDSASCIIExporter(object):
   '''
