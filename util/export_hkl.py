@@ -12,6 +12,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
   from logging import info
   from dials.array_family import flex
+  from scitbx import matrix
   import math
 
   # for the moment assume (and assert) that we will convert data from exactly
@@ -76,8 +77,6 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   perm = sorted(indices, key=lambda k: integrated_data['miller_index'][k])
   integrated_data = integrated_data.select(flex.size_t(perm))
 
-  from scitbx import matrix
-
   assert (not experiment.goniometer is None)
 
   setting_rotation = matrix.sqr(experiment.goniometer.get_setting_rotation())
@@ -91,17 +90,34 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   S = matrix.sqr(experiment.goniometer.get_setting_rotation())
   unit_cell = experiment.crystal.get_unit_cell()
 
-  info('Unit cell parameters from experiment: %.2f %.2f %.2f %.2f %.2f %.2f' %
-       unit_cell.parameters())
+  if debug:
+    info('Unit cell parameters from experiment: %.2f %.2f %.2f %.2f %.2f %.2f' %
+         unit_cell.parameters())
+    info('Symmetry: %s' % experiment.crystal.get_space_group().type(
+         ).lookup_symbol())
 
-  m_format = '%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f'
+    m_format = '%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f'
 
-  info('Goniometer fixed matrix:\n%s' % (m_format % F.elems))
-  info('Goniometer setting matrix:\n%s' % (m_format % S.elems))
-  info('Goniometer scan axis:\n%6.3f%6.3f%6.3f' % (axis.elems))
+    info('Goniometer fixed matrix:\n%s' % (m_format % F.elems))
+    info('Goniometer setting matrix:\n%s' % (m_format % S.elems))
+    info('Goniometer scan axis:\n%6.3f%6.3f%6.3f' % (axis.elems))
 
-  from scitbx.array_family import flex
-  from math import floor, sqrt, pi
+  # detector scaling info
+  assert(len(experiment.detector) == 1)
+  panel = experiment.detector[0]
+  dims = panel.get_image_size()
+  pixel = panel.get_pixel_size()
+  fast_axis = matrix.col(panel.get_fast_axis())
+  slow_axis = matrix.col(panel.get_slow_axis())
+  origin = matrix.col(panel.get_origin())
+
+  if debug:
+    info('Detector fast, slow axes:')
+    info('%6.3f%6.3f%6.3f' % (fast_axis.elems))
+    info('%6.3f%6.3f%6.3f' % (slow_axis.elems))
+
+  scl_x = 512.0 / (dims[0] * pixel[0])
+  scl_y = 512.0 / (dims[1] * pixel[1])
 
   assert(not experiment.scan is None)
   image_range = experiment.scan.get_image_range()
@@ -147,29 +163,16 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
   Imax = flex.max(I)
 
-  info('Maximum intensity in file: %8.2f' % Imax)
+  if debug:
+    info('Maximum intensity in file: %8.2f' % Imax)
 
   if Imax > 99999.0:
     scale = 99999.0 / Imax
     I = I * scale
     sigI = sigI * scale
 
-  # detector scaling info
-  assert(len(experiment.detector) == 1)
-  panel = experiment.detector[0]
-  dims = panel.get_image_size()
-  pixel = panel.get_pixel_size()
-  fast_axis = matrix.col(panel.get_fast_axis())
-  slow_axis = matrix.col(panel.get_slow_axis())
-
-  info('Detector axes:')
-  info('%6.3f%6.3f%6.3f' % (fast_axis.elems))
-  info('%6.3f%6.3f%6.3f' % (slow_axis.elems))
-
-  origin = matrix.col(panel.get_origin())
-  scl_x = 512.0 / (dims[0] * pixel[0])
-  scl_y = 512.0 / (dims[1] * pixel[1])
   phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
+
   fout = open(hklout, 'w')
   for j in range(nref):
     h, k, l = miller_index[j]
@@ -203,7 +206,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
     x = x_mm * scl_x
     y = y_mm * scl_y
-    z = (z_rad * 180 / pi - phi_start) / phi_range
+    z = (z_rad * 180 / math.pi - phi_start) / phi_range
 
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
