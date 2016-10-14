@@ -78,7 +78,6 @@ class Script(object):
     from dials.util.command_line import heading
     from dials.util.options import flatten_datablocks, flatten_experiments
     from dials.util import log
-    from logging import info, debug
     from time import time
     from libtbx.utils import Sorry
     from dials.array_family import flex
@@ -123,7 +122,7 @@ class Script(object):
 
     # Loop through images
     for i in range(*scan_range):
-      info("Reading image %d" % i)
+      logger.info("Reading image %d" % i)
 
       # Read image
       data = imageset.get_raw_data(i)
@@ -150,9 +149,9 @@ class Script(object):
     vmax = (1.0 / params.d_min)**2
 
     # Print some info
-    info("Min 1/d^2: %f" % vmin)
-    info("Max 1/d^2: %f" % vmax)
-    info("Num bins:  %d" % num_bins)
+    logger.info("Min 1/d^2: %f" % vmin)
+    logger.info("Max 1/d^2: %f" % vmax)
+    logger.info("Num bins:  %d" % num_bins)
 
     # Compute the radial average
     from dials.algorithms.background import RadialAverage
@@ -162,7 +161,7 @@ class Script(object):
     mean = radial_average.mean()
     reso = radial_average.inv_d2()
 
-    info("Writing to %s" % params.output.filename)
+    logger.info("Writing to %s" % params.output.filename)
     with open(params.output.filename, "w") as outfile:
       for r, m in zip(reso, mean):
         outfile.write("%f, %f\n" % (r, m))

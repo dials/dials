@@ -67,7 +67,6 @@ class SpotMatcher(object):
 
     '''
     from scitbx.array_family import flex
-    from logging import warn
 
     # Get the predicted coordinates
     predicted_panel = predicted['panel']

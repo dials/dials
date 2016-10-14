@@ -14,7 +14,8 @@
 what should usually be used to construct a Refiner."""
 
 from __future__ import division
-from logging import info, debug, warning
+import logging
+logger = logging.getLogger(__name__)
 
 from dxtbx.model.experiment.experiment_list import ExperimentList
 from dials.array_family import flex
@@ -480,29 +481,29 @@ class RefinerFactory(object):
     do_stills = exps_are_stills[0]
 
     if verbosity > 0:
-      debug("\nBuilding reflection manager")
-      debug("Input reflection list size = %d observations", len(reflections))
+      logger.debug("\nBuilding reflection manager")
+      logger.debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
     refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
 
     if verbosity > 0:
-      debug("Number of observations that pass initial inclusion criteria = %d",
+      logger.debug("Number of observations that pass initial inclusion criteria = %d",
             refman.get_accepted_refs_size())
     sample_size = refman.get_sample_size()
     if sample_size and verbosity > 0:
-      debug("Working set size = %d observations", sample_size)
-    if verbosity > 0: debug("Reflection manager built\n")
+      logger.debug("Working set size = %d observations", sample_size)
+    if verbosity > 0: logger.debug("Reflection manager built\n")
 
     # configure use of sparse data types
     params = cls.config_sparse(params, experiments)
 
-    if verbosity > 0: debug("Building target function")
+    if verbosity > 0: logger.debug("Building target function")
 
     # create target function
     target = cls.config_target(params, experiments, refman, do_stills)
 
-    if verbosity > 0: debug("Target function built")
+    if verbosity > 0: logger.debug("Target function built")
 
     # Now predictions are available, so we can finalise the reflection manager.
     # Do we need centroid analysis for doing outlier rejection?
@@ -519,22 +520,22 @@ class RefinerFactory(object):
             cls.config_parameterisation(params, experiments, refman, do_stills)
 
     if verbosity > 0:
-      debug("Prediction equation parameterisation built")
-      debug("Parameter order : name mapping")
+      logger.debug("Prediction equation parameterisation built")
+      logger.debug("Parameter order : name mapping")
       for i, e in enumerate(pred_param.get_param_names()):
-        debug("Parameter %03d : %s", i + 1, e)
+        logger.debug("Parameter %03d : %s", i + 1, e)
 
     # Set the prediction equation and restraints parameterisations
     # in the target object
     target.set_prediction_parameterisation(pred_param)
     target.set_restraints_parameterisation(restraints_parameterisation)
 
-    if verbosity > 0: debug("Building refinement engine")
+    if verbosity > 0: logger.debug("Building refinement engine")
 
     # create refinery
     refinery = cls.config_refinery(params, target, pred_param, verbosity)
 
-    if verbosity > 0: debug("Refinement engine built")
+    if verbosity > 0: logger.debug("Refinement engine built")
 
     # build refiner interface and return
     return Refiner(reflections, experiments,
@@ -561,9 +562,9 @@ class RefinerFactory(object):
     # Check incompatible selection
     elif params.refinement.parameterisation.sparse and \
       params.refinement.mp.nproc > 1:
-        warning("Could not set sparse=True and nproc={0}".format(
+        logger.warning("Could not set sparse=True and nproc={0}".format(
           params.refinement.mp.nproc))
-        warning("Resetting sparse=False")
+        logger.warning("Resetting sparse=False")
         params.refinement.parameterisation.sparse = False
     return params
 
@@ -948,7 +949,7 @@ class RefinerFactory(object):
       nref = len(isel)
       surplus = nref - cutoff
       if surplus < 0 and verbose:
-        warning('{0} reflections on panels {1} with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
+        logger.warning('{0} reflections on panels {1} with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
       return surplus
 
     def weak_parameterisation_search(
@@ -1013,7 +1014,7 @@ class RefinerFactory(object):
             if surplus < 0:
               msg = ('Require {0} more reflections to parameterise Detector{1} '
                      'panel group {2}').format(-1*surplus, i + 1, igp + 1)
-              warning(msg + '\nAttempting reduction of non-essential parameters')
+              logger.warning(msg + '\nAttempting reduction of non-essential parameters')
               names = filter_parameter_names(dp)
               prefix = 'Group{0}'.format(igp + 1)
               reduce_this_group = [prefix + e for e in reduce_list]
@@ -1076,7 +1077,7 @@ class RefinerFactory(object):
         else:
           mdl = 'Beam{0}'.format(i + 1)
           msg = warnmsg.format(mdl)
-          warning(msg)
+          logger.warning(msg)
       beam_params = tmp
 
       tmp = []
@@ -1086,7 +1087,7 @@ class RefinerFactory(object):
         else:
           mdl = 'Crystal{0} orientation'.format(i + 1)
           msg = warnmsg.format(mdl)
-          warning(msg)
+          logger.warning(msg)
       xl_ori_params = tmp
 
       tmp = []
@@ -1096,7 +1097,7 @@ class RefinerFactory(object):
         else:
           mdl = 'Crystal{0} unit cell'.format(i + 1)
           msg = warnmsg.format(mdl)
-          warning(msg)
+          logger.warning(msg)
       xl_uc_params = tmp
 
       tmp = []
@@ -1108,7 +1109,7 @@ class RefinerFactory(object):
             if panel_gp_nparam_minus_nref(dp, gp, igp, reflections) < 0:
               msg = 'Too few reflections to parameterise Detector{0}PanelGroup{1}'
               msg = msg.format(i + 1, igp + 1)
-              warning(msg)
+              logger.warning(msg)
               gp_params = [gp == igp for gp in dp.get_param_panel_groups()]
               for j, val in enumerate(gp_params):
                 if val: fixlist[j] = True
@@ -1117,14 +1118,14 @@ class RefinerFactory(object):
             tmp.append(dp)
           else:
             msg = 'No parameters remain free for Detector{0}'.format(i + 1)
-            warning(msg)
+            logger.warning(msg)
         except AttributeError:
           if model_nparam_minus_nref(dp, reflections) >= 0:
             tmp.append(dp)
           else:
             mdl = 'Detector{0}'.format(i + 1)
             msg = warnmsg.format(mdl)
-            warning(msg)
+            logger.warning(msg)
       det_params = tmp
 
     elif options.auto_reduction.action == 'remove':
@@ -1164,7 +1165,7 @@ class RefinerFactory(object):
         sel.set_selected(isel, False)
         refman.filter_obs(sel)
         reflections = refman.get_matches()
-        warning(msg)
+        logger.warning(msg)
 
       # Strip out parameterisations with zero free parameters
       beam_params = [p for p in beam_params if p.num_free() > 0]
@@ -1333,7 +1334,7 @@ class RefinerFactory(object):
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")
 
-    if verbosity > 0: debug("Selected refinement engine type: %s", options.engine)
+    if verbosity > 0: logger.debug("Selected refinement engine type: %s", options.engine)
 
     engine = refinery(target = target,
             prediction_parameterisation = pred_param,
@@ -1350,7 +1351,7 @@ class RefinerFactory(object):
       try:
         engine.set_nproc(nproc)
       except NotImplementedError:
-        warning("Could not set nproc={0} for refinement engine of type {1}".format(
+        logger.warning("Could not set nproc={0} for refinement engine of type {1}".format(
           nproc, options.engine))
 
     return engine
@@ -1375,7 +1376,7 @@ class RefinerFactory(object):
       import random
       random.seed(options.random_seed)
       flex.set_random_seed(options.random_seed)
-      if verbosity > 0: debug("Random seed set to %d", options.random_seed)
+      if verbosity > 0: logger.debug("Random seed set to %d", options.random_seed)
 
     # check whether we deal with stills or scans
     if do_stills:
@@ -1659,7 +1660,7 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    info("\nRefinement steps:")
+    logger.info("\nRefinement steps:")
 
     rmsd_multipliers = []
     header = ["Step", "Nref"]
@@ -1680,8 +1681,8 @@ class Refiner(object):
         ["%.5g" % r for r in rmsds])
 
     st = simple_table(rows, header)
-    info(st.format())
-    info(self._refinery.history.reason_for_termination)
+    logger.info(st.format())
+    logger.info(self._refinery.history.reason_for_termination)
 
     return
 
@@ -1697,7 +1698,7 @@ class Refiner(object):
     nref = len(self.get_free_reflections())
     if nref < 10: return # don't do anything if very few refs
 
-    info("\nRMSDs for out-of-sample (free) reflections:")
+    logger.info("\nRMSDs for out-of-sample (free) reflections:")
 
     rmsd_multipliers = []
     header = ["Step", "Nref"]
@@ -1718,7 +1719,7 @@ class Refiner(object):
       rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
 
     st = simple_table(rows, header)
-    info(st.format())
+    logger.info(st.format())
 
     return
 
@@ -1729,7 +1730,7 @@ class Refiner(object):
     from math import pi
     rad2deg = 180/pi
 
-    info("\nRMSDs by experiment:")
+    logger.info("\nRMSDs by experiment:")
 
     header = ["Exp\nid", "Nref"]
     for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1752,7 +1753,7 @@ class Refiner(object):
       it = iter(px_sizes)
       px_size = next(it)
       if not all(tst == px_size for tst in it):
-        info("The detector in experiment %d does not have the same pixel " + \
+        logger.info("The detector in experiment %d does not have the same pixel " + \
              "sizes on each panel. Skipping...", iexp)
         continue
       px_per_mm = [1./e for e in px_size]
@@ -1786,10 +1787,10 @@ class Refiner(object):
         rows = rows[0:max_rows]
         truncated = True
       st = simple_table(rows, header)
-      info(st.format())
+      logger.info(st.format())
       if truncated:
-        info("Table truncated to show the first %d experiments only", max_rows)
-        info("Re-run with verbosity >= 3 to show all experiments")
+        logger.info("Table truncated to show the first %d experiments only", max_rows)
+        logger.info("Re-run with verbosity >= 3 to show all experiments")
 
     return
 
@@ -1801,7 +1802,7 @@ class Refiner(object):
     rad2deg = 180/pi
 
     if len(self._experiments.scans()) > 1:
-      warning('Multiple scans present. Only the first scan will be used '
+      logger.warning('Multiple scans present. Only the first scan will be used '
          'to determine the image width for reporting RMSDs')
     scan = self._experiments.scans()[0]
     try:
@@ -1812,7 +1813,7 @@ class Refiner(object):
 
     for idetector, detector in enumerate(self._experiments.detectors()):
       if len(detector) == 1: continue
-      info("\nDetector {0} RMSDs by panel:".format(idetector + 1))
+      logger.info("\nDetector {0} RMSDs by panel:".format(idetector + 1))
 
       header = ["Panel\nid", "Nref"]
       for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -1848,7 +1849,7 @@ class Refiner(object):
 
       if len(rows) > 0:
         st = simple_table(rows, header)
-        info(st.format())
+        logger.info(st.format())
 
     return
 
@@ -1860,19 +1861,19 @@ class Refiner(object):
     ####################################
 
     if self._verbosity > 1:
-      debug("\nExperimental models before refinement:")
+      logger.debug("\nExperimental models before refinement:")
       for i, beam in enumerate(self._experiments.beams()):
-        debug(ordinal_number(i) + ' ' + str(beam))
+        logger.debug(ordinal_number(i) + ' ' + str(beam))
       for i, detector in enumerate(self._experiments.detectors()):
-        debug(ordinal_number(i) + ' ' + str(detector))
+        logger.debug(ordinal_number(i) + ' ' + str(detector))
       for i, goniometer in enumerate(self._experiments.goniometers()):
         if goniometer is None: continue
-        debug(ordinal_number(i) + ' ' + str(goniometer))
+        logger.debug(ordinal_number(i) + ' ' + str(goniometer))
       for i, scan in enumerate(self._experiments.scans()):
         if scan is None: continue
-        debug(ordinal_number(i) + ' ' + str(scan))
+        logger.debug(ordinal_number(i) + ' ' + str(scan))
       for i, crystal in enumerate(self._experiments.crystals()):
-        debug(ordinal_number(i) + ' ' + str(crystal))
+        logger.debug(ordinal_number(i) + ' ' + str(crystal))
 
     self._refinery.run()
 
@@ -1920,22 +1921,22 @@ class Refiner(object):
           u_cov_list, b_cov_list, iexp)
 
     if self._verbosity > 1:
-      debug("\nExperimental models after refinement:")
+      logger.debug("\nExperimental models after refinement:")
       for i, beam in enumerate(self._experiments.beams()):
-        debug(ordinal_number(i) + ' ' + str(beam))
+        logger.debug(ordinal_number(i) + ' ' + str(beam))
       for i, detector in enumerate(self._experiments.detectors()):
-        debug(ordinal_number(i) + ' ' + str(detector))
+        logger.debug(ordinal_number(i) + ' ' + str(detector))
       for i, goniometer in enumerate(self._experiments.goniometers()):
         if goniometer is None: continue
-        debug(ordinal_number(i) + ' ' + str(goniometer))
+        logger.debug(ordinal_number(i) + ' ' + str(goniometer))
       for i, scan in enumerate(self._experiments.scans()):
         if scan is None: continue
-        debug(ordinal_number(i) + ' ' + str(scan))
+        logger.debug(ordinal_number(i) + ' ' + str(scan))
       for i, crystal in enumerate(self._experiments.crystals()):
-        debug(ordinal_number(i) + ' ' + str(crystal))
+        logger.debug(ordinal_number(i) + ' ' + str(crystal))
 
       # Report on the refined parameters
-      debug(str(self._param_report))
+      logger.debug(str(self._param_report))
 
     # Return the refinement history
     return self._refinery.history

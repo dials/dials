@@ -318,7 +318,6 @@ class Importer(object):
     from dxtbx.datablock import DataBlockFactory
     from dials.phil import FilenameDataWrapper, DataBlockConverters
     from glob import glob
-    from logging import info
 
     # If filenames contain wildcards, expand
     args_new = []

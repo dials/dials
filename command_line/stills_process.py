@@ -3,6 +3,9 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
+
 from libtbx.utils import Sorry
 from dxtbx.datablock import DataBlockFactory
 import os
@@ -99,8 +102,7 @@ dials_phil_str = '''
 phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True)
 
 def do_import(filename):
-  from logging import info
-  info("Loading %s"%os.path.basename(filename))
+  logger.info("Loading %s"%os.path.basename(filename))
   try:
     datablocks = DataBlockFactory.from_json_file(filename)
   except ValueError:
@@ -154,7 +156,6 @@ class Script(object):
   def run(self):
     '''Execute the script.'''
     from dials.util import log
-    from logging import info
     from time import time
     from libtbx.utils import Abort
     from libtbx import easy_mp
@@ -183,13 +184,13 @@ class Script(object):
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     self.load_reference_geometry()
 
     # Import stuff
-    info("Loading files...")
+    logger.info("Loading files...")
     pre_import = params.dispatch.pre_import or len(all_paths) == 1
     if pre_import:
       # Handle still imagesets by breaking them apart into multiple datablocks
@@ -243,7 +244,7 @@ class Script(object):
         datablock = do_import(filename)
         imagesets = datablock.extract_imagesets()
         if len(imagesets) == 0 or len(imagesets[0]) == 0:
-          info("Zero length imageset in file: %s"%filename)
+          logger.info("Zero length imageset in file: %s"%filename)
           return
         if len(imagesets) > 1:
           raise Abort("Found more than one imageset in file: %s"%filename)
@@ -273,8 +274,8 @@ class Script(object):
         preserve_exception_message=True)
 
      # Total Time
-    info("")
-    info("Total Time Taken = %f seconds" % (time() - st))
+    logger.info("")
+    logger.info("Total Time Taken = %f seconds" % (time() - st))
 
 class Processor(object):
   def __init__(self, params):
@@ -326,35 +327,33 @@ class Processor(object):
 
   def find_spots(self, datablock):
     from time import time
-    from logging import info
     from dials.array_family import flex
     st = time()
 
-    info('*' * 80)
-    info('Finding Strong Spots')
-    info('*' * 80)
+    logger.info('*' * 80)
+    logger.info('Finding Strong Spots')
+    logger.info('*' * 80)
 
     # Find the strong spots
     observed = flex.reflection_table.from_observations(datablock, self.params)
 
     # Save the reflections to file
-    info('\n' + '-' * 80)
+    logger.info('\n' + '-' * 80)
     if self.params.output.strong_filename:
       self.save_reflections(observed, self.params.output.strong_filename)
 
-    info('')
-    info('Time Taken = %f seconds' % (time() - st))
+    logger.info('')
+    logger.info('Time Taken = %f seconds' % (time() - st))
     return observed
 
   def index(self, datablock, reflections):
     from time import time
-    from logging import info
     import copy
     st = time()
 
-    info('*' * 80)
-    info('Indexing Strong Spots')
-    info('*' * 80)
+    logger.info('*' * 80)
+    logger.info('Indexing Strong Spots')
+    logger.info('*' * 80)
 
     imagesets = datablock.extract_imagesets()
 
@@ -373,21 +372,20 @@ class Processor(object):
     if self.params.output.indexed_filename:
       self.save_reflections(indexed, self.params.output.indexed_filename)
 
-    info('')
-    info('Time Taken = %f seconds' % (time() - st))
+    logger.info('')
+    logger.info('Time Taken = %f seconds' % (time() - st))
     return experiments, indexed
 
   def refine(self, experiments, centroids):
     print "Skipping refinement because the crystal orientation is refined during indexing"
 # TODO add dispatch.refine as option and use this code
 #    from dials.algorithms.refinement import RefinerFactory
-#    from logging import info
 #    from time import time
 #    st = time()
 #
-#    info('*' * 80)
-#    info('Refining Model')
-#    info('*' * 80)
+#    logger.info('*' * 80)
+#    logger.info('Refining Model')
+#    logger.info('*' * 80)
 #
 #    refiner = RefinerFactory.from_parameters_data_experiments(
 #      self.params, centroids, experiments)
@@ -401,26 +399,25 @@ class Processor(object):
       dump = ExperimentListDumper(experiments)
       dump.as_json(self.params.output.refined_experiments_filename)
 
-#    info('')
-#    info('Time Taken = %f seconds' % (time() - st))
+#    logger.info('')
+#    logger.info('Time Taken = %f seconds' % (time() - st))
 
     return experiments
 
   def integrate(self, experiments, indexed):
     from time import time
-    from logging import info
 
     st = time()
 
-    info('*' * 80)
-    info('Integrating Reflections')
-    info('*' * 80)
+    logger.info('*' * 80)
+    logger.info('Integrating Reflections')
+    logger.info('*' * 80)
 
 
     indexed,_ = self.process_reference(indexed)
 
     # Get the integrator from the input parameters
-    info('Configuring integrator from input parameters')
+    logger.info('Configuring integrator from input parameters')
     from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.algorithms.integration.integrator import IntegratorFactory
     from dials.array_family import flex
@@ -430,11 +427,11 @@ class Processor(object):
     # Match the predictions with the reference
     # Create the integrator
     experiments = ProfileModelFactory.create(self.params, experiments, indexed)
-    info("")
-    info("=" * 80)
-    info("")
-    info("Predicting reflections")
-    info("")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info("Predicting reflections")
+    logger.info("")
     predicted = flex.reflection_table.from_predictions_multi(
       experiments,
       dmin=self.params.prediction.d_min,
@@ -442,7 +439,7 @@ class Processor(object):
       margin=self.params.prediction.margin,
       force_static=self.params.prediction.force_static)
     predicted.match_with_reference(indexed)
-    info("")
+    logger.info("")
     integrator = IntegratorFactory.create(self.params, experiments, predicted)
 
     # Integrate the reflections
@@ -501,10 +498,10 @@ class Processor(object):
 
     if hasattr(crystal_model, '._ML_domain_size_ang'):
       log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"%(crystal_model._ML_domain_size_ang, crystal_model._ML_half_mosaicity_deg)
-    info(log_str)
+    logger.info(log_str)
 
-    info('')
-    info('Time Taken = %f seconds' % (time() - st))
+    logger.info('')
+    logger.info('Time Taken = %f seconds' % (time() - st))
     return integrated
 
   def write_integration_pickles(self, integrated, experiments, callback = None):
@@ -564,20 +561,19 @@ class Processor(object):
   def process_reference(self, reference):
     ''' Load the reference spots. '''
     from dials.array_family import flex
-    from logging import info
     from time import time
     if reference is None:
       return None, None
     st = time()
     assert("miller_index" in reference)
     assert("id" in reference)
-    info('Processing reference reflections')
-    info(' read %d strong spots' % len(reference))
+    logger.info('Processing reference reflections')
+    logger.info(' read %d strong spots' % len(reference))
     mask = reference.get_flags(reference.flags.indexed)
     rubbish = reference.select(mask == False)
     if mask.count(False) > 0:
       reference.del_selected(mask == False)
-      info(' removing %d unindexed reflections' %  mask.count(True))
+      logger.info(' removing %d unindexed reflections' %  mask.count(True))
     if len(reference) == 0:
       raise Sorry('''
         Invalid input for reference reflections.
@@ -587,26 +583,25 @@ class Processor(object):
     if mask.count(True) > 0:
       rubbish.extend(reference.select(mask))
       reference.del_selected(mask)
-      info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
+      logger.info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
     mask = reference['id'] < 0
     if mask.count(True) > 0:
       raise Sorry('''
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
       ''' % mask.count(True))
-    info(' using %d indexed reflections' % len(reference))
-    info(' found %d junk reflections' % len(rubbish))
-    info(' time taken: %g' % (time() - st))
+    logger.info(' using %d indexed reflections' % len(reference))
+    logger.info(' found %d junk reflections' % len(rubbish))
+    logger.info(' time taken: %g' % (time() - st))
     return reference, rubbish
 
   def save_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
-    from logging import info
     from time import time
     st = time()
-    info('Saving %d reflections to %s' % (len(reflections), filename))
+    logger.info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
-    info(' time taken: %g' % (time() - st))
+    logger.info(' time taken: %g' % (time() - st))
 
 if __name__ == '__main__':
   from dials.util import halraiser

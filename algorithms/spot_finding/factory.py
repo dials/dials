@@ -11,6 +11,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 def generate_phil_scope():
   from iotbx.phil import parse
   import dials.extensions # import dependency
@@ -229,11 +232,10 @@ class PeakCentroidDistanceFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from logging import info
     num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
     num_after = flags.count(True)
-    info('Filtered {0} of {1} spots by peak-centroid distance'.format(
+    logger.info('Filtered {0} of {1} spots by peak-centroid distance'.format(
       num_after,
       num_before))
     return flags
@@ -309,7 +311,7 @@ class BackgroundGradientFilter(object):
                        z1, z2)
       shoebox.bbox = expanded_bbox
     t1 = time.time()
-    info("Time expand_shoebox: %s" %(t1-t0))
+    logger.info("Time expand_shoebox: %s" %(t1-t0))
 
     rlist = flex.reflection_table()
     rlist['shoebox'] = shoeboxes
@@ -355,11 +357,10 @@ class BackgroundGradientFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from logging import info
     num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
     num_after = flags.count(True)
-    info('Filtered {0} or {1} spots by background gradient'.format(
+    logger.info('Filtered {0} or {1} spots by background gradient'.format(
       num_after,
       num_before))
     return flags
@@ -449,11 +450,10 @@ class SpotDensityFilter(object):
 
   def __call__(self, flags, **kwargs):
     ''' Call the filter and print information. '''
-    from logging import info
     num_before = flags.count(True)
     flags = self.run(flags, **kwargs)
     num_after = flags.count(True)
-    info('Filtered {0} of {1} spots by spot density'.format(
+    logger.info('Filtered {0} of {1} spots by spot density'.format(
       num_after,
       num_before))
     return flags

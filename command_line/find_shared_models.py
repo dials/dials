@@ -12,6 +12,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program attempts to find sets of images with shared models
@@ -69,7 +72,6 @@ class Script(object):
     from dials.util.options import flatten_datablocks
     from time import time
     from dials.util import log
-    from logging import info, debug
     from libtbx.utils import Sorry
     import datetime
     start_time = time()
@@ -84,13 +86,13 @@ class Script(object):
       debug=params.output.debug_log)
 
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Ensure we have a data block
     datablocks = flatten_datablocks(params.input.datablock)
@@ -110,10 +112,10 @@ class Script(object):
     sweeps = datablock.extract_sweeps()
     if len(stills) > 0:
       raise Sorry("Sets of still images are currently unsupported")
-    info("Number of sweeps = %d" % len(sweeps))
+    logger.info("Number of sweeps = %d" % len(sweeps))
 
     # Sort the sweeps by timestamps
-    info("Sorting sweeps based on timestamp")
+    logger.info("Sorting sweeps based on timestamp")
     sweeps = sorted(sweeps, key=lambda x: x.get_scan().get_epochs()[0])
 
     # Count the number of datasets from each day
@@ -127,7 +129,7 @@ class Script(object):
 
     # Print the number of datasets on each day
     for timestamp in sorted(counter.keys()):
-      info("%d datasets collected on %s" % (counter[timestamp], timestamp))
+      logger.info("%d datasets collected on %s" % (counter[timestamp], timestamp))
 
     # Loop though and see if any models might be shared
     b_list = [ s.get_beam() for s in sweeps ]
@@ -174,10 +176,10 @@ class Script(object):
         '%s' % date_str,
         '%s' % time_str]
       rows.append(row)
-    info(table(rows, has_header=True, justify='left', prefix=' '))
+    logger.info(table(rows, has_header=True, justify='left', prefix=' '))
 
     # Print the time
-    info("Time Taken: %f" % (time() - start_time))
+    logger.info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == '__main__':

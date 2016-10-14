@@ -13,6 +13,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program takes an experiment list and reflections with shoeboxes and
@@ -66,7 +69,6 @@ class Script(object):
     from dials.util import log
     from dials.array_family import flex
     from libtbx.utils import Sorry
-    from logging import info
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)
@@ -77,8 +79,8 @@ class Script(object):
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Get the data
     reflections = flatten_reflections(params.input.reflections)
@@ -116,7 +118,7 @@ class Script(object):
 
     # Add some padding but limit to image volume
     if params.padding > 0:
-      info('Adding %d pixels as padding' % params.padding)
+      logger.info('Adding %d pixels as padding' % params.padding)
       x0, x1, y0, y1, z0, z1 = reflections['bbox'].parts()
       x0 -= params.padding
       x1 += params.padding
@@ -148,7 +150,7 @@ class Script(object):
 
     # Preserve masking
     if old_shoebox is not None:
-      info("Applying old shoebox mask")
+      logger.info("Applying old shoebox mask")
       new_shoebox = reflections['shoebox']
       for i in range(len(reflections)):
         bbox0 = old_shoebox[i].bbox
@@ -169,7 +171,7 @@ class Script(object):
 
     # Saving the reflections to disk
     filename = params.output.reflections
-    info('Saving %d reflections to %s' % (len(reflections), filename))
+    logger.info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
 
 if __name__ == '__main__':

@@ -12,6 +12,8 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
 from libtbx.utils import Sorry
 from dials.array_family import flex
 
@@ -197,7 +199,6 @@ class Script(object):
     '''Execute the script.'''
     from time import time
     import cPickle as pickle
-    from logging import info
     from dials.util import log
     from dials.algorithms.refinement import RefinerFactory
     from dials.util.options import flatten_reflections, flatten_experiments
@@ -229,34 +230,34 @@ class Script(object):
     log.config(info=params.output.log,
       debug=params.output.debug_log)
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:
       params.refinement.refinery.track_parameter_correlation = True
 
     # Get the refiner
-    info('Configuring refiner')
+    logger.info('Configuring refiner')
     refiner = RefinerFactory.from_parameters_data_experiments(params,
         reflections, experiments)
 
     # Refine the geometry
     if nexp == 1:
-      info('Performing refinement of a single Experiment...')
+      logger.info('Performing refinement of a single Experiment...')
     else:
-      info('Performing refinement of {0} Experiments...'.format(nexp))
+      logger.info('Performing refinement of {0} Experiments...'.format(nexp))
 
     # Refine and get the refinement history
     history = refiner.run()
 
     if params.output.centroids:
-      info("Writing table of centroids to '{0}'".format(
+      logger.info("Writing table of centroids to '{0}'".format(
         params.output.centroids))
       self.write_centroids_table(refiner, params.output.centroids)
 
@@ -267,31 +268,31 @@ class Script(object):
     if params.output.parameter_table:
       scans = experiments.scans()
       if len(scans) > 1:
-        info("Writing a scan-varying parameter table is only supported "
+        logger.info("Writing a scan-varying parameter table is only supported "
              "for refinement of a single scan")
       else:
         scan = scans[0]
         text = refiner.get_param_reporter().varying_params_vs_image_number(
             scan.get_array_range())
         if text:
-          info("Writing scan-varying parameter table to {0}".format(
+          logger.info("Writing scan-varying parameter table to {0}".format(
             params.output.parameter_table))
           f = open(params.output.parameter_table,"w")
           f.write(text)
           f.close()
         else:
-          info("No scan-varying parameter table to write")
+          logger.info("No scan-varying parameter table to write")
 
     crystals = experiments.crystals()
     if len(crystals) == 1:
       # output the refined model for information
-      info('')
-      info('Final refined crystal model:')
-      info(crystals[0])
+      logger.info('')
+      logger.info('Final refined crystal model:')
+      logger.info(crystals[0])
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
-    info('Saving refined experiments to {0}'.format(output_experiments_filename))
+    logger.info('Saving refined experiments to {0}'.format(output_experiments_filename))
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
@@ -300,7 +301,7 @@ class Script(object):
     # this off if it is a time-consuming step)
     if params.output.reflections:
       # Update predictions for all indexed reflections
-      info('Updating predictions for indexed reflections')
+      logger.info('Updating predictions for indexed reflections')
       preds = refiner.predict_for_indexed()
 
       # just copy over the columns of interest, leaving behind things
@@ -321,7 +322,7 @@ class Script(object):
       mask = preds.get_flags(preds.flags.used_in_refinement)
       reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
-      info('Saving reflections with updated predictions to {0}'.format(
+      logger.info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
       if params.output.include_unused_reflections:
         reflections.as_pickle(params.output.reflections)
@@ -332,7 +333,7 @@ class Script(object):
     # For debugging, if requested save matches to file
     if params.output.matches:
       matches = refiner.get_matches()
-      info('Saving matches (use for debugging purposes) to {0}'.format(
+      logger.info('Saving matches (use for debugging purposes) to {0}'.format(
         params.output.matches))
       matches.as_pickle(params.output.matches)
 
@@ -358,30 +359,30 @@ class Script(object):
           from dials.algorithms.refinement.refinement_helpers import corrgram
           plt = corrgram(corrmat, labels)
           if plt is not None:
-            info('Saving parameter correlation plot to {}'.format(plot_fname))
+            logger.info('Saving parameter correlation plot to {}'.format(plot_fname))
             plt.savefig(plot_fname)
             num_plots += 1
           mat_fname = fname_base + ".pickle"
           with open(mat_fname, 'wb') as handle:
             py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
-            info('Saving parameter correlation matrix to {0}'.format(mat_fname))
+            logger.info('Saving parameter correlation matrix to {0}'.format(mat_fname))
             pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
 
       if num_plots == 0:
         msg = "Sorry, no parameter correlation plots were produced. Please set " \
               "track_parameter_correlation=True to ensure correlations are " \
               "tracked, and make sure correlation_plot.col_select is valid."
-        info(msg)
+        logger.info(msg)
 
     # Write out refinement history, if requested
     if params.output.history:
       with open(params.output.history, 'wb') as handle:
-        info('Saving refinement step history to {0}'.format(
+        logger.info('Saving refinement step history to {0}'.format(
           params.output.history))
         pickle.dump(history, handle)
 
     # Log the total time taken
-    info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
+    logger.info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
 
     return
 

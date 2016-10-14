@@ -11,12 +11,13 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
 import cPickle as pickle
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
 from libtbx.utils import Sorry, format_float_with_standard_uncertainty
-from logging import info
 from time import time
 
 help_message = '''
@@ -189,7 +190,7 @@ class Script(object):
     mask = reflections.get_flags(reflections.flags.strong)
     reflections = reflections.select(mask)
 
-    info('{0} out of {1} reflections remain after filtering to keep only strong'
+    logger.info('{0} out of {1} reflections remain after filtering to keep only strong'
         ' and integrated centroids'.format(len(reflections), orig_len))
     return reflections
 
@@ -298,7 +299,7 @@ class Script(object):
 
   @staticmethod
   def generate_p4p(crystal, beam, file):
-    info('Saving P4P info to %s' % file)
+    logger.info('Saving P4P info to %s' % file)
     cell = crystal.get_unit_cell().parameters()
     esd = crystal.get_cell_parameter_sd()
     vol = crystal.get_unit_cell().volume()
@@ -315,7 +316,7 @@ class Script(object):
 
   @staticmethod
   def generate_cif(crystal, refiner, file):
-    info('Saving CIF information to %s' % file)
+    logger.info('Saving CIF information to %s' % file)
     from cctbx import miller
     import datetime
     import iotbx.cif.model
@@ -356,7 +357,7 @@ class Script(object):
 
   @staticmethod
   def generate_mmcif(crystal, refiner, file):
-    info('Saving mmCIF information to %s' % file)
+    logger.info('Saving mmCIF information to %s' % file)
     from cctbx import miller
     import datetime
     import iotbx.cif.model
@@ -446,13 +447,13 @@ class Script(object):
     # Configure the logging
     log.config(info=params.output.log,
       debug=params.output.debug_log)
-    info(dials_version())
+    logger.info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Convert to P 1?
     if params.refinement.triclinic:
@@ -460,7 +461,7 @@ class Script(object):
 
     # Combine crystals?
     if params.refinement.combine_crystal_models and len(experiments) > 1:
-      info('Combining {0} crystal models'.format(len(experiments)))
+      logger.info('Combining {0} crystal models'.format(len(experiments)))
       experiments = self.combine_crystals(experiments)
 
     # Filter integrated centroids?
@@ -468,14 +469,14 @@ class Script(object):
       reflections = self.filter_integrated_centroids(reflections)
 
     # Get the refiner
-    info('Configuring refiner')
+    logger.info('Configuring refiner')
     refiner = self.create_refiner(params, reflections, experiments)
 
     # Refine the geometry
     if nexp == 1:
-      info('Performing refinement of a single Experiment...')
+      logger.info('Performing refinement of a single Experiment...')
     else:
-      info('Performing refinement of {0} Experiments...'.format(nexp))
+      logger.info('Performing refinement of {0} Experiments...'.format(nexp))
 
     # Refine and get the refinement history
     history = refiner.run()
@@ -486,14 +487,14 @@ class Script(object):
 
     if len(crystals) == 1:
       # output the refined model for information
-      info('')
-      info('Final refined crystal model:')
-      info(crystals[0])
-      info(self.cell_param_table(crystals[0]))
+      logger.info('')
+      logger.info('Final refined crystal model:')
+      logger.info(crystals[0])
+      logger.info(self.cell_param_table(crystals[0]))
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
-    info('Saving refined experiments to {0}'.format(output_experiments_filename))
+    logger.info('Saving refined experiments to {0}'.format(output_experiments_filename))
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
@@ -520,20 +521,20 @@ class Script(object):
           from dials.algorithms.refinement.refinement_helpers import corrgram
           plt = corrgram(corrmat, labels)
           if plt is not None:
-            info('Saving parameter correlation plot to {}'.format(plot_fname))
+            logger.info('Saving parameter correlation plot to {}'.format(plot_fname))
             plt.savefig(plot_fname)
             num_plots += 1
           mat_fname = fname_base + ".pickle"
           with open(mat_fname, 'wb') as handle:
             py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
-            info('Saving parameter correlation matrix to {0}'.format(mat_fname))
+            logger.info('Saving parameter correlation matrix to {0}'.format(mat_fname))
             pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
 
       if num_plots == 0:
         msg = "Sorry, no parameter correlation plots were produced. Please set " \
               "track_parameter_correlation=True to ensure correlations are " \
               "tracked, and make sure correlation_plot.col_select is valid."
-        info(msg)
+        logger.info(msg)
 
     if params.output.cif is not None:
       self.generate_cif(crystals[0], refiner, file=params.output.cif)
@@ -546,7 +547,7 @@ class Script(object):
       self.generate_mmcif(crystals[0], refiner, file=params.output.mmcif)
 
     # Log the total time taken
-    info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
+    logger.info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
 
 if __name__ == '__main__':
   from dials.util import halraiser

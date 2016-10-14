@@ -1,5 +1,8 @@
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
   '''Sum partial reflections; weighted sum for summation integration; weighted
   average for profile fitted reflections. N.B. this will report total
@@ -66,8 +69,7 @@ def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
   # if total partiality less than min, delete. if summing, delete extra parts
 
   we_got_profiles = 'intensity.prf.value' in integrated_data
-  from logging import info
-  info('Profile fitted reflections: %s' % we_got_profiles)
+  logger.info('Profile fitted reflections: %s' % we_got_profiles)
 
   for p_id in partial_ids:
     p_tot = sum([integrated_data['partiality'][j] for j in partial_map[p_id]])
@@ -190,7 +192,6 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
-  from logging import info
   from dials.array_family import flex
 
   # for the moment assume (and assert) that we will convert data from exactly
@@ -221,14 +222,14 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
-    info('Removing %d reflections with negative variance' % \
+    logger.info('Removing %d reflections with negative variance' % \
           selection.count(True))
 
   if 'intensity.prf.variance' in integrated_data:
     selection = integrated_data['intensity.prf.variance'] <= 0
     if selection.count(True) > 0:
       integrated_data.del_selected(selection)
-      info('Removing %d profile reflections with negative variance' % \
+      logger.info('Removing %d profile reflections with negative variance' % \
             selection.count(True))
 
   if min_isigi is not None:
@@ -237,7 +238,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
       integrated_data['intensity.sum.value']/
       flex.sqrt(integrated_data['intensity.sum.variance'])) < min_isigi
     integrated_data.del_selected(selection)
-    info('Removing %d reflections with I/Sig(I) < %s' %(
+    logger.info('Removing %d reflections with I/Sig(I) < %s' %(
       selection.count(True), min_isigi))
 
     if 'intensity.prf.variance' in integrated_data:
@@ -245,7 +246,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
         integrated_data['intensity.prf.value']/
         flex.sqrt(integrated_data['intensity.prf.variance'])) < min_isigi
       integrated_data.del_selected(selection)
-      info('Removing %d profile reflections with I/Sig(I) < %s' %(
+      logger.info('Removing %d profile reflections with I/Sig(I) < %s' %(
         selection.count(True), min_isigi))
 
   # FIXME in here work on including partial reflections => at this stage best
@@ -261,7 +262,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     selection = integrated_data['partiality'] < 0.99
     if selection.count(True) > 0 and not keep_partials:
       integrated_data.del_selected(selection)
-      info('Removing %d incomplete reflections' % \
+      logger.info('Removing %d incomplete reflections' % \
         selection.count(True))
 
   # FIXME TODO for more than one experiment into an MTZ file:

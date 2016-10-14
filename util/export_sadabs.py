@@ -1,5 +1,8 @@
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 from export_mtz import sum_partial_reflections
 from export_mtz import scale_partial_reflections
 
@@ -10,7 +13,6 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   file for input to SADABS. FIXME probably need to make a .p4p file as
   well...'''
 
-  from logging import info
   from dials.array_family import flex
   from scitbx import matrix
   import math
@@ -43,14 +45,14 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
-    info('Removing %d reflections with negative variance' % \
+    logger.info('Removing %d reflections with negative variance' % \
           selection.count(True))
 
   if 'intensity.prf.variance' in integrated_data:
     selection = integrated_data['intensity.prf.variance'] <= 0
     if selection.count(True) > 0:
       integrated_data.del_selected(selection)
-      info('Removing %d profile reflections with negative variance' % \
+      logger.info('Removing %d profile reflections with negative variance' % \
             selection.count(True))
 
   if include_partials:
@@ -61,7 +63,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     selection = integrated_data['partiality'] < 0.99
     if selection.count(True) > 0 and not keep_partials:
       integrated_data.del_selected(selection)
-      info('Removing %d incomplete reflections' % \
+      logger.info('Removing %d incomplete reflections' % \
         selection.count(True))
 
   experiment = experiment_list[0]
@@ -90,14 +92,14 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     m_format = '%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f'
     c_format = '%.2f %.2f %.2f %.2f %.2f %.2f'
 
-    info('Unit cell parameters from experiment: %s' % (c_format %
+    logger.info('Unit cell parameters from experiment: %s' % (c_format %
          unit_cell.parameters()))
-    info('Symmetry: %s' % experiment.crystal.get_space_group().type(
+    logger.info('Symmetry: %s' % experiment.crystal.get_space_group().type(
          ).lookup_symbol())
 
-    info('Goniometer fixed matrix:\n%s' % (m_format % F.elems))
-    info('Goniometer setting matrix:\n%s' % (m_format % S.elems))
-    info('Goniometer scan axis:\n%6.3f%6.3f%6.3f' % (axis.elems))
+    logger.info('Goniometer fixed matrix:\n%s' % (m_format % F.elems))
+    logger.info('Goniometer setting matrix:\n%s' % (m_format % S.elems))
+    logger.info('Goniometer scan axis:\n%6.3f%6.3f%6.3f' % (axis.elems))
 
   # detector scaling info
   assert(len(experiment.detector) == 1)
@@ -111,10 +113,10 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   origin = matrix.col(panel.get_origin())
 
   if debug:
-    info('Detector fast, slow axes:')
-    info('%6.3f%6.3f%6.3f' % (fast_axis.elems))
-    info('%6.3f%6.3f%6.3f' % (slow_axis.elems))
-    info('Detector two theta (degrees): %.2f' % detector2t)
+    logger.info('Detector fast, slow axes:')
+    logger.info('%6.3f%6.3f%6.3f' % (fast_axis.elems))
+    logger.info('%6.3f%6.3f%6.3f' % (slow_axis.elems))
+    logger.info('Detector two theta (degrees): %.2f' % detector2t)
 
   scl_x = 512.0 / (dims[0] * pixel[0])
   scl_y = 512.0 / (dims[1] * pixel[1])
@@ -162,7 +164,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   Imax = flex.max(I)
 
   if debug:
-    info('Maximum intensity in file: %8.2f' % Imax)
+    logger.info('Maximum intensity in file: %8.2f' % Imax)
 
   if Imax > 99999.0:
     scale = 99999.0 / Imax
@@ -172,7 +174,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
 
   if predict:
-    info('Using scan static predicted spot locations')
+    logger.info('Using scan static predicted spot locations')
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
     predictor = ScanStaticReflectionPredictor(experiment)
     UB = experiment.crystal.get_A()
@@ -231,5 +233,5 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     fout.write('%7.2f%7.2f%8.2f%7.2f%5d\n' % (x, y, z, detector2t, istol))
 
   fout.close()
-  info('Output %d reflections to %s' % (nref, hklout))
+  logger.info('Output %d reflections to %s' % (nref, hklout))
   return

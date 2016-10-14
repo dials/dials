@@ -46,8 +46,6 @@ class Script(object):
     ''' Analyse the background '''
     from dials.util.command_line import heading
     from dials.util.options import flatten_experiments
-    from dials.util import log
-    from logging import info, debug
     from time import time
     from libtbx.utils import Sorry
 

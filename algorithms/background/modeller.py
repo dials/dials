@@ -1,5 +1,7 @@
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
 from dials_algorithms_background_modeller_ext import *
 
 
@@ -47,7 +49,6 @@ class FinalizeModel(object):
     :param mask: The mask array
 
     '''
-    from logging import info
     from dials.algorithms.image.filter import median_filter, mean_filter
     from dials.algorithms.image.fill_holes import diffusion_fill
     from dials.algorithms.image.fill_holes import simple_fill
@@ -55,72 +56,72 @@ class FinalizeModel(object):
 
     # Print some image properties
     sub_data = data.as_1d().select(mask.as_1d())
-    info('Raw image statistics:')
-    info('  min:  %d' % int(flex.min(sub_data)))
-    info('  max:  %d' % int(flex.max(sub_data)))
-    info('  mean: %d' % int(flex.mean(sub_data)))
-    info('')
+    logger.info('Raw image statistics:')
+    logger.info('  min:  %d' % int(flex.min(sub_data)))
+    logger.info('  max:  %d' % int(flex.max(sub_data)))
+    logger.info('  mean: %d' % int(flex.mean(sub_data)))
+    logger.info('')
 
     # Transform to polar
-    info('Transforming image data to polar grid')
+    logger.info('Transforming image data to polar grid')
     result = self.transform.to_polar(data, mask)
     data = result.data()
     mask = result.mask()
     sub_data = data.as_1d().select(mask.as_1d())
-    info('Polar image statistics:')
-    info('  min:  %d' % int(flex.min(sub_data)))
-    info('  max:  %d' % int(flex.max(sub_data)))
-    info('  mean: %d' % int(flex.mean(sub_data)))
-    info('')
+    logger.info('Polar image statistics:')
+    logger.info('  min:  %d' % int(flex.min(sub_data)))
+    logger.info('  max:  %d' % int(flex.max(sub_data)))
+    logger.info('  mean: %d' % int(flex.mean(sub_data)))
+    logger.info('')
 
     # Filter the image to remove noise
     if self.kernel_size > 0:
       if self.filter_type == 'median':
-        info('Applying median filter')
+        logger.info('Applying median filter')
         data = median_filter(data, mask, (self.kernel_size, 0))
         sub_data = data.as_1d().select(mask.as_1d())
-        info('Median polar image statistics:')
-        info('  min:  %d' % int(flex.min(sub_data)))
-        info('  max:  %d' % int(flex.max(sub_data)))
-        info('  mean: %d' % int(flex.mean(sub_data)))
-        info('')
+        logger.info('Median polar image statistics:')
+        logger.info('  min:  %d' % int(flex.min(sub_data)))
+        logger.info('  max:  %d' % int(flex.max(sub_data)))
+        logger.info('  mean: %d' % int(flex.mean(sub_data)))
+        logger.info('')
       elif self.filter_type == 'mean':
-        info('Applying mean filter')
+        logger.info('Applying mean filter')
         mask_as_int = mask.as_1d().as_int()
         mask_as_int.reshape(mask.accessor())
         data = mean_filter(data, mask_as_int, (self.kernel_size, 0), 1)
         sub_data = data.as_1d().select(mask.as_1d())
-        info('Mean polar image statistics:')
-        info('  min:  %d' % int(flex.min(sub_data)))
-        info('  max:  %d' % int(flex.max(sub_data)))
-        info('  mean: %d' % int(flex.mean(sub_data)))
-        info('')
+        logger.info('Mean polar image statistics:')
+        logger.info('  min:  %d' % int(flex.min(sub_data)))
+        logger.info('  max:  %d' % int(flex.max(sub_data)))
+        logger.info('  mean: %d' % int(flex.mean(sub_data)))
+        logger.info('')
       else:
         raise RuntimeError('Unknown filter_type: %s' % self.filter_type)
 
     # Fill any remaining holes
-    info("Filling holes")
+    logger.info("Filling holes")
     data = simple_fill(data, mask)
     data = diffusion_fill(data, mask, self.niter)
     mask = flex.bool(data.accessor(), True)
     sub_data = data.as_1d().select(mask.as_1d())
-    info('Filled polar image statistics:')
-    info('  min:  %d' % int(flex.min(sub_data)))
-    info('  max:  %d' % int(flex.max(sub_data)))
-    info('  mean: %d' % int(flex.mean(sub_data)))
-    info('')
+    logger.info('Filled polar image statistics:')
+    logger.info('  min:  %d' % int(flex.min(sub_data)))
+    logger.info('  max:  %d' % int(flex.max(sub_data)))
+    logger.info('  mean: %d' % int(flex.mean(sub_data)))
+    logger.info('')
 
     # Transform back
-    info('Transforming image data from polar grid')
+    logger.info('Transforming image data from polar grid')
     result = self.transform.from_polar(data, mask)
     data = result.data()
     mask = result.mask()
     sub_data = data.as_1d().select(mask.as_1d())
-    info('Final image statistics:')
-    info('  min:  %d' % int(flex.min(sub_data)))
-    info('  max:  %d' % int(flex.max(sub_data)))
-    info('  mean: %d' % int(flex.mean(sub_data)))
-    info('')
+    logger.info('Final image statistics:')
+    logger.info('  min:  %d' % int(flex.min(sub_data)))
+    logger.info('  max:  %d' % int(flex.max(sub_data)))
+    logger.info('  mean: %d' % int(flex.mean(sub_data)))
+    logger.info('')
 
     # Fill in any discontinuities
     # FIXME NEED TO HANDLE DISCONTINUITY
@@ -183,10 +184,9 @@ class BackgroundModellerExecutor(object):
 
   def process(self, image_volume, experiments, reflections):
     from dials.algorithms.integration.processor import job
-    from logging import info
 
     # Write some output
-    info(" Background modelling; job: %d; frames: %d -> %d; # Reflections: %d" % (
+    logger.info(" Background modelling; job: %d; frames: %d -> %d; # Reflections: %d" % (
       job.index,
       image_volume.frame0(),
       image_volume.frame1(),
@@ -207,11 +207,10 @@ class BackgroundModellerExecutor(object):
       self.result += data
 
   def finalize_model(self):
-    from logging import info
-    info("")
-    info("=" * 80)
-    info("Finalizing model")
-    info("")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info("Finalizing model")
+    logger.info("")
 
     result = []
     for i in range(len(self.result)):
@@ -282,7 +281,6 @@ class BackgroundModeller(object):
     '''
     from dials.algorithms.integration.image_integrator import ProcessorImage
     from dials.util.command_line import heading
-    from logging import info, debug
 
     # Init the report
     self.profile_model_report = None
@@ -302,7 +300,7 @@ class BackgroundModeller(object):
     )
 
     # Print the summary
-    info(fmt % (
+    logger.info(fmt % (
       len(self.experiments),
       len(self.experiments.beams()),
       len(self.experiments.detectors()),
@@ -312,10 +310,10 @@ class BackgroundModeller(object):
       len(self.experiments.imagesets())))
 
     # Print a heading
-    info("=" * 80)
-    info("")
-    info(heading("Modelling background"))
-    info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Modelling background"))
+    logger.info("")
 
     # Compute some reflection properties
     self.reflections.compute_zeta_multi(self.experiments)
@@ -338,8 +336,8 @@ class BackgroundModeller(object):
     self.model = processor.executor.finalize_model()
 
     # Print the time info
-    info(str(time_info))
-    info("")
+    logger.info(str(time_info))
+    logger.info("")
 
     # Return the reflections
     return self.model

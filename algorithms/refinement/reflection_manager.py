@@ -12,7 +12,8 @@ principally ReflectionManager."""
 from __future__ import division
 
 from math import pi
-from logging import info, debug, warning
+import logging
+logger = logging.getLogger(__name__)
 
 import libtbx
 from scitbx import matrix
@@ -177,7 +178,7 @@ class ReflectionManager(object):
     # check that the observed beam vectors are stored: if not, compute them
     n_s1_set = set_obs_s1(reflections, experiments)
     if n_s1_set > 0 and verbosity > 0:
-      debug("Set scattering vectors for %d reflections", n_s1_set)
+      logger.debug("Set scattering vectors for %d reflections", n_s1_set)
 
     # keep track of the original indices of the reflections
     reflections['iobs'] = flex.size_t_range(len(reflections))
@@ -229,7 +230,7 @@ class ReflectionManager(object):
     object is provided, these may be used to determine outlier rejection
     block widths"""
 
-    if self._verbosity > 0: debug("Finalising the Reflection Manager")
+    if self._verbosity > 0: logger.debug("Finalising the Reflection Manager")
 
     # print summary before outlier rejection
     if self._verbosity > 1: self.print_stats_on_matches()
@@ -265,7 +266,7 @@ class ReflectionManager(object):
     if self._verbosity > 0:
       msg = "Removing reflections not matched to predictions"
       if rejection_occurred: msg += " or marked as outliers"
-      debug(msg)
+      logger.debug(msg)
 
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
@@ -274,7 +275,7 @@ class ReflectionManager(object):
     self._reflections = self._reflections.select(has_pred & inlier)
 
     if self._verbosity > 0:
-      debug("%d reflections remain in the manager", len(self._reflections))
+      logger.debug("%d reflections remain in the manager", len(self._reflections))
 
     # print summary after outlier rejection
     if rejection_occurred and self._verbosity > 1: self.print_stats_on_matches()
@@ -283,7 +284,7 @@ class ReflectionManager(object):
     self._create_working_set()
 
     if self._verbosity > 0:
-      debug("Working set size = %d observations", self.get_sample_size())
+      logger.debug("Working set size = %d observations", self.get_sample_size())
 
     return
 
@@ -461,20 +462,20 @@ class ReflectionManager(object):
       # zero length reflection list
       warning("Unable to calculate summary statistics for zero observations")
       return
-    info(msg)
-    info(st.format())
-    info("")
+    logger.info(msg)
+    logger.info(st.format())
+    logger.info("")
 
     # sorting is expensive and the following table is only of interest in
     # special cases, so return now if verbosity is not high
     if self._verbosity < 3: return
 
     if nref < 20:
-      debug("Fewer than 20 reflections matched!")
+      logger.debug("Fewer than 20 reflections matched!")
       return
 
     sl = self._sort_obs_by_residual(l)
-    debug("Reflections with the worst 20 positional residuals:")
+    logger.debug("Reflections with the worst 20 positional residuals:")
     header = ['Miller index', 'x_resid', 'y_resid', 'phi_resid', 'pnl',
               'x_obs', 'y_obs', 'phi_obs', 'x_obs\nweight', 'y_obs\nweight',
               'phi_obs\nweight']
@@ -493,10 +494,10 @@ class ReflectionManager(object):
                    '%5.3f'%e['xyzobs.mm.weights'][0],
                    '%5.3f'%e['xyzobs.mm.weights'][1],
                    '%6.4f'%(e['xyzobs.mm.weights'][2] * DEG2RAD**2)])
-    debug(simple_table(rows, header).format())
+    logger.debug(simple_table(rows, header).format())
 
     sl = self._sort_obs_by_residual(sl, angular=True)
-    debug("\nReflections with the worst 20 angular residuals:")
+    logger.debug("\nReflections with the worst 20 angular residuals:")
     rows=[]
     for i in xrange(20):
       e = sl[i]
@@ -512,8 +513,8 @@ class ReflectionManager(object):
                    '%5.3f'%e['xyzobs.mm.weights'][0],
                    '%5.3f'%e['xyzobs.mm.weights'][1],
                    '%6.4f'%(e['xyzobs.mm.weights'][2] * DEG2RAD**2)])
-    debug(simple_table(rows, header).format())
-    debug("")
+    logger.debug(simple_table(rows, header).format())
+    logger.debug("")
 
     return
 
@@ -582,21 +583,21 @@ class StillsReflectionManager(ReflectionManager):
       # zero length reflection list
       warning("Unable to calculate summary statistics for zero observations")
       return
-    info(msg)
+    logger.info(msg)
     st = simple_table(rows, header)
-    info(st.format())
-    info("")
+    logger.info(st.format())
+    logger.info("")
 
     # sorting is expensive and the following table is only of interest in
     # special cases, so return now if verbosity is not high
     if self._verbosity < 3: return
 
     if nref < 20:
-      debug("Fewer than 20 reflections matched!")
+      logger.debug("Fewer than 20 reflections matched!")
       return
 
     sl = self._sort_obs_by_residual(l)
-    debug("Reflections with the worst 20 positional residuals:")
+    logger.debug("Reflections with the worst 20 positional residuals:")
     header = ['Miller index', 'x_resid', 'y_resid', 'pnl',
               'x_obs', 'y_obs', 'x_obs\nweight', 'y_obs\nweight']
     rows = []
@@ -611,7 +612,7 @@ class StillsReflectionManager(ReflectionManager):
                    '%5.3f'%y_obs,
                    '%5.3f'%e['xyzobs.mm.weights'][0],
                    '%5.3f'%e['xyzobs.mm.weights'][1]])
-    debug(simple_table(rows, header).format())
-    debug("")
+    logger.debug(simple_table(rows, header).format())
+    logger.debug("")
 
     return

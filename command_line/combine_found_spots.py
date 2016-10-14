@@ -13,6 +13,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 
@@ -125,7 +128,6 @@ def combine(datablock_list, reflections_list, params):
   from dxtbx.datablock import DataBlock
   from dxtbx.imageset import ImageSetFactory
   from dials.algorithms.spot_finding import StrongSpotCombiner
-  from logging import info
   from dials.array_family import flex
   assert len(datablock_list) == len(reflections_list)
 
@@ -195,18 +197,18 @@ def combine(datablock_list, reflections_list, params):
   combiner = StrongSpotCombiner()
   for index, rlist in enumerate(reflections_list, start=1):
     assert rlist['id'].all_eq(0)
-    info("Combining %d reflections from reflection list %d" % (
+    logger.info("Combining %d reflections from reflection list %d" % (
       len(rlist),
       index))
     combiner.add(rlist['shoebox'])
   shoeboxes = combiner.shoeboxes()
 
   # Calculate the spot centroids and intensities
-  info('Combined into %d reflections' % len(shoeboxes))
+  logger.info('Combined into %d reflections' % len(shoeboxes))
   centroid = shoeboxes.centroid_valid()
-  info('Calculated {0} spot centroids'.format(len(shoeboxes)))
+  logger.info('Calculated {0} spot centroids'.format(len(shoeboxes)))
   intensity = shoeboxes.summed_intensity()
-  info('Calculated {0} spot intensities'.format(len(shoeboxes)))
+  logger.info('Calculated {0} spot intensities'.format(len(shoeboxes)))
 
   # Construct the reflection table
   reflections = flex.reflection_table(
@@ -252,7 +254,6 @@ class Script(object):
     from dials.util.options import flatten_reflections
     from time import time
     from dials.util import log
-    from logging import info, debug
     from libtbx.utils import Sorry
     start_time = time()
 
@@ -266,13 +267,13 @@ class Script(object):
       debug=params.output.debug_log)
 
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Ensure we have a data block
     datablocks = flatten_datablocks(params.input.datablock)
@@ -290,21 +291,21 @@ class Script(object):
       params)
 
     # Save the reflections to file
-    info('\n' + '-' * 80)
+    logger.info('\n' + '-' * 80)
     reflections.as_pickle(params.output.reflections)
-    info('Saved {0} reflections to {1}'.format(
+    logger.info('Saved {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
 
     # Save the datablock
     from dxtbx.datablock import DataBlockDumper
-    info('Saving datablocks to {0}'.format(
+    logger.info('Saving datablocks to {0}'.format(
       params.output.datablock))
     dump = DataBlockDumper(datablocks)
     dump.as_file(params.output.datablock)
 
 
     # Print the time
-    info("Time Taken: %f" % (time() - start_time))
+    logger.info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == '__main__':

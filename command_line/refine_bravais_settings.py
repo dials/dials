@@ -1,5 +1,7 @@
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
 from cStringIO import StringIO
 from libtbx.phil import command_line
 from libtbx.utils import Sorry
@@ -93,14 +95,13 @@ def bravais_lattice_to_space_groups(chiral_only=True):
   return bravais_lattice_to_sg
 
 def bravais_lattice_to_space_group_table(bravais_settings=None, chiral_only=True):
-  from logging import info
   bravais_lattice_to_sg = bravais_lattice_to_space_groups(
     chiral_only=chiral_only)
-  info('Chiral space groups corresponding to each Bravais lattice:')
+  logger.info('Chiral space groups corresponding to each Bravais lattice:')
   for bravais_lattice, space_groups in bravais_lattice_to_sg.iteritems():
     if bravais_settings is not None and bravais_lattice not in bravais_settings:
       continue
-    info(': '.join(
+    logger.info(': '.join(
       [bravais_lattice,
        ' '.join(
          [short_space_group_name(sg) for sg in space_groups])]))
@@ -115,7 +116,6 @@ def short_space_group_name(space_group):
 
 def run(args):
   from dials.util import log
-  from logging import info
   import libtbx.load_env
   usage = "%s experiments.json indexed.pickle [options]" %libtbx.env.dispatcher_name
 
@@ -133,13 +133,13 @@ def run(args):
   log.config(info=params.output.log, debug=params.output.debug_log)
 
   from dials.util.version import dials_version
-  info(dials_version())
+  logger.info(dials_version())
 
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':
-    info('The following parameters have been modified:\n')
-    info(diff_phil)
+    logger.info('The following parameters have been modified:\n')
+    logger.info(diff_phil)
 
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
@@ -198,7 +198,7 @@ def run(args):
   possible_bravais_settings = set(solution['bravais'] for solution in Lfat)
   bravais_lattice_to_space_group_table(possible_bravais_settings)
   Lfat.labelit_printout(out=s)
-  info(s.getvalue())
+  logger.info(s.getvalue())
   from json import dumps
   from os.path import join
   open(join(params.output.directory, 'bravais_summary.json'), 'wb').write(dumps(Lfat.as_dict()))

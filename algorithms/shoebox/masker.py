@@ -10,6 +10,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 class MaskerBase(object):
   '''A root class to that does overlap masking'''
 
@@ -36,16 +39,15 @@ class MaskerBase(object):
         The masked reflection list
 
     '''
-    from logging import info
 
     # Mask the overlaps if an adjacency list is given
     if adjacency_list:
-      info('Masking overlapping reflections')
+      logger.info('Masking overlapping reflections')
       self.mask_overlapping(
         reflections['shoebox'],
         reflections['xyzcal.px'],
         adjacency_list)
-      info('Masked {0} overlapping reflections'.format(
+      logger.info('Masked {0} overlapping reflections'.format(
           len(adjacency_list)))
 
     # Return the reflections
@@ -121,8 +123,6 @@ class MaskerEmpirical(MaskerBase):
 
     '''
     reflections = super(MaskerEmpirical, self).__call__(reflections, adjacency_list)
-
-    from logging import info
 
     if self.mask_empirical:
       # Mask the foreground region

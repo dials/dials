@@ -1,5 +1,8 @@
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 from export_mtz import sum_partial_reflections
 from export_mtz import scale_partial_reflections
 
@@ -8,7 +11,6 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   '''Export data from integrated_data corresponding to experiment_list to
   an XDS_ASCII.HKL formatted text file.'''
 
-  from logging import info
   from dials.array_family import flex
   import math
 
@@ -36,14 +38,14 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
-    info('Removing %d reflections with negative variance' % \
+    logger.info('Removing %d reflections with negative variance' % \
           selection.count(True))
 
   if 'intensity.prf.variance' in integrated_data:
     selection = integrated_data['intensity.prf.variance'] <= 0
     if selection.count(True) > 0:
       integrated_data.del_selected(selection)
-      info('Removing %d profile reflections with negative variance' % \
+      logger.info('Removing %d profile reflections with negative variance' % \
             selection.count(True))
 
   if include_partials:
@@ -54,7 +56,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     selection = integrated_data['partiality'] < 0.99
     if selection.count(True) > 0 and not keep_partials:
       integrated_data.del_selected(selection)
-      info('Removing %d incomplete reflections' % \
+      logger.info('Removing %d incomplete reflections' % \
         selection.count(True))
 
   experiment = experiment_list[0]
@@ -231,5 +233,5 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
 
   fout.write('!END_OF_DATA\n')
   fout.close()
-  info('Output %d reflections to %s' % (nref, hklout))
+  logger.info('Output %d reflections to %s' % (nref, hklout))
   return

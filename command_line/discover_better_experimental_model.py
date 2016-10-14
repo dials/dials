@@ -3,7 +3,6 @@ from __future__ import division
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import math
-from logging import info, debug
 from libtbx.phil import command_line
 import iotbx.phil
 from scitbx import matrix
@@ -12,6 +11,9 @@ from dials.util.options import OptionParser
 from dials.util.options import flatten_datablocks, flatten_reflections
 from dials.algorithms.indexing.indexer \
      import indexer_base, filter_reflections_by_scan_range
+
+import logging
+logger = logging.getLogger(__name__)
 
 help_message = '''
 
@@ -314,11 +316,11 @@ def run_dps(args):
   #plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
   #plt.show()
 
-  info("Running DPS using %i reflections" %len(data))
+  logger.info("Running DPS using %i reflections" %len(data))
 
   DPS.index(raw_spot_input=data,
             panel_addresses=flex.int([s['panel'] for s in spots_mm]))
-  info("Found %i solutions with max unit cell %.2f Angstroms." %(
+  logger.info("Found %i solutions with max unit cell %.2f Angstroms." %(
     len(DPS.getSolutions()), DPS.amax))
   return dict(solutions=flex.vec3_double(
     [s.dvec for s in DPS.getSolutions()]), amax=DPS.amax)
@@ -374,7 +376,7 @@ def discover_better_experimental_model(
 
     if (params.max_reflections is not None and
         spots_mm.size() > params.max_reflections):
-      info('Selecting subset of %i reflections for analysis'
+      logger.info('Selecting subset of %i reflections for analysis'
            %params.max_reflections)
       perm = flex.random_permutation(spots_mm.size())
       sel = perm[:params.max_reflections]
@@ -413,9 +415,9 @@ def discover_better_experimental_model(
     new_detector = discoverer.optimize_origin_offset_local_scope()
     old_beam_centre = detector.get_ray_intersection(beam.get_s0())[1]
     new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())[1]
-    info("Old beam centre: %.2f mm, %.2f mm" %old_beam_centre)
-    info("New beam centre: %.2f mm, %.2f mm" %new_beam_centre)
-    info("Shift: %.2f mm, %.2f mm" %(
+    logger.info("Old beam centre: %.2f mm, %.2f mm" %old_beam_centre)
+    logger.info("New beam centre: %.2f mm, %.2f mm" %new_beam_centre)
+    logger.info("Shift: %.2f mm, %.2f mm" %(
       matrix.col(old_beam_centre)-matrix.col(new_beam_centre)).elems)
     return new_detector, beam
   elif dps_params.indexing.improve_local_scope=="S0_vector":
@@ -451,8 +453,8 @@ def run(args):
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':
-    info('The following parameters have been modified:\n')
-    info(diff_phil)
+    logger.info('The following parameters have been modified:\n')
+    logger.info(diff_phil)
 
   imagesets = []
   for datablock in datablocks:

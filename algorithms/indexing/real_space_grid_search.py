@@ -12,6 +12,8 @@
 
 from __future__ import division
 import math
+import logging
+logger = logging.getLogger(__name__)
 
 from scitbx import matrix
 from scitbx.array_family import flex
@@ -20,8 +22,6 @@ from dials.algorithms.indexing.indexer import \
 from dials.algorithms.indexing.indexer import \
      is_approximate_integer_multiple
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
-
-from logging import info, debug
 
 
 class indexer_real_space_grid_search(indexer_base):
@@ -52,7 +52,7 @@ class indexer_real_space_grid_search(indexer_base):
       sel &= (1/self.reflections['rlp'].norms() > d_min)
     reciprocal_lattice_points = self.reflections['rlp'].select(sel)
 
-    info("Indexing from %i reflections" %len(reciprocal_lattice_points))
+    logger.info("Indexing from %i reflections" %len(reciprocal_lattice_points))
 
     def compute_functional(vector):
       two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_points.dot(vector)
@@ -67,7 +67,7 @@ class indexer_real_space_grid_search(indexer_base):
     SST.construct_hemisphere_grid(SST.incr)
     cell_dimensions = self.target_symmetry_primitive.unit_cell().parameters()[:3]
     unique_cell_dimensions = set(cell_dimensions)
-    info(
+    logger.info(
       "Number of search vectors: %i" %(len(SST.angles) * len(unique_cell_dimensions)))
     vectors = flex.vec3_double()
     function_values = flex.double()
@@ -102,7 +102,7 @@ class indexer_real_space_grid_search(indexer_base):
 
     for i in range(30):
       v = matrix.col(vectors[i])
-      debug("%s %s %s" %(str(v.elems), str(v.length()), str(function_values[i])))
+      logger.debug("%s %s %s" %(str(v.elems), str(v.length()), str(function_values[i])))
 
     basis_vectors = [v.elems for v in unique_vectors]
     self.candidate_basis_vectors = basis_vectors
@@ -119,10 +119,10 @@ class indexer_real_space_grid_search(indexer_base):
 
       unique_vectors = [matrix.col(v) for v in optimised_basis_vectors]
 
-    info("Number of unique vectors: %i" %len(unique_vectors))
+    logger.info("Number of unique vectors: %i" %len(unique_vectors))
 
     for i in range(len(unique_vectors)):
-      debug("%s %s %s" %(
+      logger.debug("%s %s %s" %(
         str(compute_functional(unique_vectors[i].elems)),
         str(unique_vectors[i].length()),
         str(unique_vectors[i].elems)))

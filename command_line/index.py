@@ -1,6 +1,9 @@
 from __future__ import division
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
+import logging
+logger = logging.getLogger(__name__)
+
 try:
   # try importing scipy.linalg before any cctbx modules, otherwise we
   # sometimes get a segmentation fault/core dump if it is imported after
@@ -75,7 +78,6 @@ def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
   from dials.util import log
-  from logging import info
   usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
@@ -96,13 +98,13 @@ def run(args):
     debug=params.output.debug_log)
 
   from dials.util.version import dials_version
-  info(dials_version())
+  logger.info(dials_version())
 
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':
-    info('The following parameters have been modified:\n')
-    info(diff_phil)
+    logger.info('The following parameters have been modified:\n')
+    logger.info(diff_phil)
 
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
@@ -155,15 +157,15 @@ def run(args):
   reflections = copy.deepcopy(idxr.refined_reflections)
   reflections.extend(idxr.unindexed_reflections)
   if len(refined_experiments):
-    info("Saving refined experiments to %s" %params.output.experiments)
+    logger.info("Saving refined experiments to %s" %params.output.experiments)
     idxr.export_as_json(refined_experiments,
                         file_name=params.output.experiments)
-    info("Saving refined reflections to %s" %params.output.reflections)
+    logger.info("Saving refined reflections to %s" %params.output.reflections)
     idxr.export_reflections(
       reflections, file_name=params.output.reflections)
 
     if params.output.unindexed_reflections is not None:
-      info("Saving unindexed reflections to %s"
+      logger.info("Saving unindexed reflections to %s"
            %params.output.unindexed_reflections)
       idxr.export_reflections(idxr.unindexed_reflections,
                               file_name=params.output.unindexed_reflections)

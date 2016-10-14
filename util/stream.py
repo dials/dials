@@ -1,5 +1,8 @@
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class ZMQStream():
   '''
@@ -25,11 +28,10 @@ class ZMQStream():
 
     """
     import zmq
-    from logging import info
 
     # Set the URL
     url = "tcp://{0}:{1}".format(self.host, self.port)
-    info("Connecting to ZMQ stream at %s" % url)
+    logger.info("Connecting to ZMQ stream at %s" % url)
 
     # Get the zmq context
     context = zmq.Context()
@@ -44,8 +46,7 @@ class ZMQStream():
     Receive and return zmq frames
 
     """
-    from logging import info
-    info("Waiting for frame")
+    logger.info("Waiting for frame")
     frames = self.receiver.recv_multipart(copy = False)
     return frames
 
@@ -54,8 +55,7 @@ class ZMQStream():
     Close and disable stream
 
     """
-    from logging import info
-    info("Closing stream")
+    logger.info("Closing stream")
     return self.receiver.close()
 
 

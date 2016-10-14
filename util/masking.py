@@ -13,6 +13,9 @@ from __future__ import division
 from iotbx.phil import parse
 from scitbx.array_family import flex
 
+import logging
+logger = logging.getLogger(__name__)
+
 phil_scope = parse("""
   border = 0
     .type = int
@@ -145,7 +148,6 @@ class MaskGenerator(object):
     from dials.util import mask_untrusted_resolution_range
     from dials.array_family import flex
     from math import floor, ceil
-    from logging import info
 
     # Get the detector and beam
     detector = imageset.get_detector()
@@ -172,8 +174,8 @@ class MaskGenerator(object):
 
       # Add a border around the image
       if self.params.border > 0:
-        info("Generating border mask:")
-        info(" border = %d" % self.params.border)
+        logger.info("Generating border mask:")
+        logger.info(" border = %d" % self.params.border)
         border = self.params.border
         height, width = mask.all()
         borderx = flex.bool(flex.grid(border, width), False)
@@ -188,20 +190,20 @@ class MaskGenerator(object):
         if region.panel == index:
           if region.circle is not None:
             xc, yc, radius = region.circle
-            info("Generating circle mask:")
-            info(" panel = %d" % region.panel)
-            info(" xc = %d" % xc)
-            info(" yc = %d" % yc)
-            info(" radius = %d" % radius)
+            logger.info("Generating circle mask:")
+            logger.info(" panel = %d" % region.panel)
+            logger.info(" xc = %d" % xc)
+            logger.info(" yc = %d" % yc)
+            logger.info(" radius = %d" % radius)
             mask_untrusted_circle(mask, xc, yc, radius)
           if region.rectangle is not None:
             x0, x1, y0, y1 = region.rectangle
-            info("Generating rectangle mask:")
-            info(" panel = %d" % region.panel)
-            info(" x0 = %d" % x0)
-            info(" y0 = %d" % y0)
-            info(" x1 = %d" % x1)
-            info(" y1 = %d" % y1)
+            logger.info("Generating rectangle mask:")
+            logger.info(" panel = %d" % region.panel)
+            logger.info(" x0 = %d" % x0)
+            logger.info(" y0 = %d" % y0)
+            logger.info(" x1 = %d" % x1)
+            logger.info(" y1 = %d" % y1)
             mask_untrusted_rectangle(mask, x0, x1, y0, y1)
           if region.polygon is not None:
             assert len(region.polygon) % 2 == 0, "Polygon must contain 2D coords"
@@ -211,10 +213,10 @@ class MaskGenerator(object):
               y = region.polygon[2*i+1]
               vertices.append((x,y))
             polygon = flex.vec2_double(vertices)
-            info("Generating polygon mask:")
-            info(" panel = %d" % region.panel)
+            logger.info("Generating polygon mask:")
+            logger.info(" panel = %d" % region.panel)
             for vertex in vertices:
-              info(" coord = (%d, %d)" % (vertex))
+              logger.info(" coord = (%d, %d)" % (vertex))
             mask_untrusted_polygon(mask, polygon)
 
       # Create the resolution mask generator
@@ -231,12 +233,12 @@ class MaskGenerator(object):
 
       # Generate high and low resolution masks
       if self.params.d_min is not None:
-        info("Generating high resolution mask:")
-        info(" d_min = %f" % self.params.d_min)
+        logger.info("Generating high resolution mask:")
+        logger.info(" d_min = %f" % self.params.d_min)
         get_resolution_mask_generator().apply(mask, 0, self.params.d_min)
       if self.params.d_max is not None:
-        info("Generating low resolution mask:")
-        info(" d_max = %f" % self.params.d_max)
+        logger.info("Generating low resolution mask:")
+        logger.info(" d_max = %f" % self.params.d_max)
         d_min = self.params.d_max
         d_max = max(d_min + 1, 1e9)
         get_resolution_mask_generator().apply(mask, d_min, d_max)
@@ -246,9 +248,9 @@ class MaskGenerator(object):
         d_min=min(drange)
         d_max=max(drange)
         assert d_min < d_max, "d_min must be < d_max"
-        info("Generating resolution range mask:")
-        info(" d_min = %f" % d_min)
-        info(" d_max = %f" % d_max)
+        logger.info("Generating resolution range mask:")
+        logger.info(" d_min = %f" % d_min)
+        logger.info(" d_max = %f" % d_max)
         get_resolution_mask_generator().apply(mask, d_min, d_max)
 
       # Mask out the resolution ranges for the ice rings
@@ -257,9 +259,9 @@ class MaskGenerator(object):
         d_min=min(drange)
         d_max=max(drange)
         assert d_min < d_max, "d_min must be < d_max"
-        info("Generating ice ring mask:")
-        info(" d_min = %f" % d_min)
-        info(" d_max = %f" % d_max)
+        logger.info("Generating ice ring mask:")
+        logger.info(" d_min = %f" % d_min)
+        logger.info(" d_max = %f" % d_max)
         get_resolution_mask_generator().apply(mask, d_min, d_max)
 
       # Add to the list

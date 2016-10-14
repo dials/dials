@@ -12,6 +12,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 
@@ -122,7 +125,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       min_image = self.model[i].min_image
       vmax = sorted(list(min_image))[int(0.99 * len(min_image))]
@@ -146,7 +148,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       max_image = self.model[i].max_image
       vmax = sorted(list(max_image))[int(0.99 * len(max_image))]
@@ -170,7 +171,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       mean = self.model[i].mean
       vmax = sorted(list(mean))[int(0.99 * len(mean))]
@@ -194,7 +194,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       variance = self.model[i].variance
       vmax = sorted(list(variance))[int(0.99 * len(variance))]
@@ -219,7 +218,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       dispersion = self.model[i].dispersion
       figure = pylab.figure(figsize=(6,4))
@@ -242,7 +240,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       mask = self.model[i].mask
       figure = pylab.figure(figsize=(6,4))
@@ -261,7 +258,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       model = self.model[i].model
       vmax = sorted(list(model))[int(0.99 * len(model))]
@@ -285,7 +281,6 @@ class ImageGenerator(object):
 
     '''
     from matplotlib import pylab
-    from logging import info
     for i in range(len(self.model)):
       polar_model = self.model[i].polar_model
       figure = pylab.figure(figsize=(6,4))
@@ -328,7 +323,6 @@ class Script(object):
     from dials.util.options import flatten_experiments
     from time import time
     from dials.util import log
-    from logging import info, debug
     from libtbx.utils import Sorry
     from dials.algorithms.background.modeller import BackgroundModeller
     start_time = time()

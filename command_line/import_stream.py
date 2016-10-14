@@ -12,6 +12,9 @@ from __future__ import division
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
 from libtbx.utils import Sorry
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 
@@ -89,7 +92,6 @@ class Script(object):
   def run(self):
     ''' Parse the options. '''
     from dials.util import log
-    from logging import info, debug
     import libtbx
     from uuid import uuid4
     from dials.util.stream import ZMQStream, Decoder
@@ -107,7 +109,7 @@ class Script(object):
       info=params.output.log,
       debug=params.output.debug_log)
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Parse the command line arguments completely
     params, options = self.parser.parse_args(show_diff_phil=False)
@@ -115,8 +117,8 @@ class Script(object):
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Check a stream is given
     if params.input.host is None:
@@ -183,10 +185,9 @@ class Script(object):
     Output the datablock to file.
 
     '''
-    from logging import info
     if params.output.datablock:
-      info("-" * 80)
-      info('Writing datablocks to %s' % params.output.datablock)
+      logger.info("-" * 80)
+      logger.info('Writing datablocks to %s' % params.output.datablock)
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock, compact=params.output.compact)
 

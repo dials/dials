@@ -2,7 +2,6 @@ from __future__ import division
 
 from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import *
-from logging import info, debug
 
 def index_reflections(reflections, experiments, d_min=None, tolerance=0.3):
   reciprocal_lattice_points = reflections['rlp']

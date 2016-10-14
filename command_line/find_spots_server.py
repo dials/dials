@@ -6,6 +6,9 @@ from multiprocessing import current_process
 import os
 import signal
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''\
 A client/server version of dials.find_spots with additional analysis including
 estimation of resolution limits. Intended for quick feedback of image quality
@@ -190,13 +193,12 @@ indexing_min_spots = 10
             Zero reference spots were matched to predictions
           ''')
         elif matched.count(True) != len(reference):
-          from logging import info
-          info('')
-          info('*' * 80)
-          info('Warning: %d reference spots were not matched to predictions' % (
+          logger.info('')
+          logger.info('*' * 80)
+          logger.info('Warning: %d reference spots were not matched to predictions' % (
             len(reference) - matched.count(True)))
-          info('*' * 80)
-          info('')
+          logger.info('*' * 80)
+          logger.info('')
 
         # Compute the profile model
         experiments = ProfileModelFactory.create(params, experiments, reference)

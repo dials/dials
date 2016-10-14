@@ -1,9 +1,11 @@
 from __future__ import division
-from logging import info, debug
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
 from math import pi
+
+import logging
+logger = logging.getLogger(__name__)
 
 RAD2DEG = 180./pi
 
@@ -72,7 +74,7 @@ class CentroidOutlier(object):
     Return True if any outliers were detected, otherwise False"""
 
     if self._verbosity > 0:
-      info("Detecting centroid outliers using the {0} algorithm".format(
+      logger.info("Detecting centroid outliers using the {0} algorithm".format(
         type(self).__name__))
 
     # check the columns are present
@@ -193,7 +195,7 @@ class CentroidOutlier(object):
         msg = "For job {0}, fewer than {1} reflections are present.".format(
           i + 1, self._min_num_obs)
         msg += " All reflections flagged as possible outliers."
-        if self._verbosity > 0: debug(msg)
+        if self._verbosity > 0: logger.debug(msg)
         ioutliers = indices
 
       else:
@@ -229,10 +231,10 @@ class CentroidOutlier(object):
 
     if self.nreject == 0: return False
     if self._verbosity > 0:
-      info("{0} reflections have been flagged as outliers".format(self.nreject))
-      debug("Outlier rejections per job:")
+      logger.info("{0} reflections have been flagged as outliers".format(self.nreject))
+      logger.debug("Outlier rejections per job:")
       st = simple_table(rows, header)
-      debug(st.format())
+      logger.debug(st.format())
 
     return True
 

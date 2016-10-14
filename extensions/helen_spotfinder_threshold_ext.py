@@ -12,7 +12,6 @@
 from __future__ import division
 from libtbx.utils import Sorry
 from dials.interfaces import SpotFinderThresholdIface
-from logging import info
 
 
 class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):

@@ -10,7 +10,8 @@ from __future__ import division
 import libtbx
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
-from logging import debug, info
+import logging
+logger = logging.getLogger(__name__)
 from engine import DisableMPmixin
 
 try:
@@ -86,9 +87,9 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
     '''Override for the Eigen wrapper to provide live feedback of progress
     of the refinement'''
     if self._verbosity > 2:
-      info("Iteration: %5d Objective: %18.4f Mu: %12.7f" % (self.n_iterations, objective, self.mu))
+      logger.info("Iteration: %5d Objective: %18.4f Mu: %12.7f" % (self.n_iterations, objective, self.mu))
     else:
-      debug("Iteration: %5d Objective: %18.4f Mu: %12.7f" % (self.n_iterations, objective, self.mu))
+      logger.debug("Iteration: %5d Objective: %18.4f Mu: %12.7f" % (self.n_iterations, objective, self.mu))
 
   def run(self):
     self._run_core()
@@ -99,5 +100,5 @@ class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquard
     # matrix.
 
     if self._verbosity > 0:
-      info(self.get_eigen_summary())
+      logger.info(self.get_eigen_summary())
     return

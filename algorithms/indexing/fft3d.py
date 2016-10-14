@@ -25,7 +25,9 @@ from dials.algorithms.indexing.indexer \
      import vector_group, is_approximate_integer_multiple
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
-from logging import info, debug
+import logging
+logger = logging.getLogger(__name__)
+
 
 class indexer_fft3d(indexer_base):
 
@@ -50,7 +52,7 @@ class indexer_fft3d(indexer_base):
       d_spacings = 1/self.reflections['rlp'].norms()
       self.params.fft3d.reciprocal_space_grid.d_min = max(
         d_min, min(d_spacings))
-      info("Setting d_min: %.2f" %self.params.fft3d.reciprocal_space_grid.d_min)
+      logger.info("Setting d_min: %.2f" %self.params.fft3d.reciprocal_space_grid.d_min)
     n_points = self.params.fft3d.reciprocal_space_grid.n_points
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
@@ -58,7 +60,7 @@ class indexer_fft3d(indexer_base):
     self.map_centroids_to_reciprocal_space_grid()
     self.d_min = self.params.fft3d.reciprocal_space_grid.d_min
 
-    info("Number of centroids used: %i" %(
+    logger.info("Number of centroids used: %i" %(
       (self.reciprocal_space_grid>0).count(True)))
     self.fft()
     if self.params.debug:
@@ -113,7 +115,7 @@ class indexer_fft3d(indexer_base):
     self.crystal_symmetry = crystal.symmetry(unit_cell=self.fft_cell,
                                              space_group_symbol="P1")
 
-    info("FFT gridding: (%i,%i,%i)" %self.gridding)
+    logger.info("FFT gridding: (%i,%i,%i)" %self.gridding)
 
     grid = flex.double(flex.grid(self.gridding), 0)
 
@@ -121,7 +123,7 @@ class indexer_fft3d(indexer_base):
 
     if self.params.b_iso is libtbx.Auto:
       self.params.b_iso = -4 * d_min**2 * math.log(0.05)
-      debug("Setting b_iso = %.1f" %self.params.b_iso)
+      logger.debug("Setting b_iso = %.1f" %self.params.b_iso)
     from dials.algorithms.indexing import map_centroids_to_reciprocal_space_grid
     map_centroids_to_reciprocal_space_grid(
       grid, self.reflections['rlp'], selection,
@@ -183,7 +185,7 @@ class indexer_fft3d(indexer_base):
       flex.min_max_mean_double(norms).show()
       perm = flex.sort_permutation(norms, reverse=True)
       for p in perm[:10]:
-        debug(sites_cart[p], sites_cart_optimised[p], norms[p])
+        logger.debug(sites_cart[p], sites_cart_optimised[p], norms[p])
 
       # only use those vectors which haven't shifted too far from starting point
       sel = norms < (5 * self.fft_cell.parameters()[0]/self.gridding[0])
@@ -264,7 +266,7 @@ class indexer_fft3d(indexer_base):
     vectors = [vectors[i] for i in perm]
 
     for i, (v, volume) in enumerate(zip(vectors, volumes)):
-      debug("%s %s %s" %(i, v.length(), volume))
+      logger.debug("%s %s %s" %(i, v.length(), volume))
 
     lengths = flex.double(v.length() for v in vectors)
     perm = flex.sort_permutation(lengths)
@@ -279,7 +281,7 @@ class indexer_fft3d(indexer_base):
       for i, v_u in enumerate(unique_vectors):
         if ((unique_volumes[i] > volumes[p])
             and is_approximate_integer_multiple(v_u, v)):
-          debug("rejecting %s: integer multiple of %s" %(v.length(), v_u.length()))
+          logger.debug("rejecting %s: integer multiple of %s" %(v.length(), v_u.length()))
           is_unique = False
           break
       if is_unique:
@@ -292,7 +294,7 @@ class indexer_fft3d(indexer_base):
     volumes = unique_volumes.select(perm)
 
     #for i, (v, volume) in enumerate(zip(vectors, volumes)):
-      #debug("%s %s %s" %(i, v.length(), volume))
+      #logger.debug("%s %s %s" %(i, v.length(), volume))
 
     self.candidate_basis_vectors = vectors
 
@@ -418,11 +420,11 @@ class indexer_fft3d(indexer_base):
         this_set = set()
         for i_cluster in clique:
           this_set = this_set.union(cluster_point_sets[i_cluster])
-        info("Clique %i: %i lattice points" %(i+1, len(this_set)))
+        logger.info("Clique %i: %i lattice points" %(i+1, len(this_set)))
 
     assert len(distinct_cliques) > 0
 
-    info("Estimated number of lattices: %i" %len(distinct_cliques))
+    logger.info("Estimated number of lattices: %i" %len(distinct_cliques))
 
     self.candidate_basis_vectors = []
     self.candidate_crystal_models = []
@@ -479,7 +481,7 @@ class indexer_fft3d(indexer_base):
         print >> f, xs.as_pdb_file()
 
     for crystal_model in self.candidate_crystal_models:
-      debug(crystal_model)
+      logger.debug(crystal_model)
 
   def cluster_analysis_hcluster(self, vectors):
     from hcluster import linkage, fcluster
@@ -519,7 +521,7 @@ class indexer_fft3d(indexer_base):
     # Number of clusters in labels, ignoring noise if present.
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
 
-    info('Estimated number of clusters: %d' % n_clusters_)
+    logger.info('Estimated number of clusters: %d' % n_clusters_)
 
     return labels
 

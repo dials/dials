@@ -12,6 +12,9 @@
 from __future__ import division
 from libtbx.phil import parse
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program computes the profile model from the input reflections. It then
@@ -65,7 +68,6 @@ class Script(object):
     from dials.util.options import flatten_reflections, flatten_experiments
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     from libtbx.utils import Sorry
-    from logging import info
     from dials.util import log
 
     log.config()
@@ -87,11 +89,11 @@ class Script(object):
     reflections, _ = self.process_reference(reflections[0], params)
 
     # Predict the reflections
-    info("")
-    info("=" * 80)
-    info("")
-    info("Predicting reflections")
-    info("")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info("Predicting reflections")
+    logger.info("")
     predicted = flex.reflection_table.from_predictions_multi(
       experiments,
       dmin=params.prediction.d_min,
@@ -109,12 +111,12 @@ class Script(object):
         Zero reference spots were matched to predictions
       ''')
     elif len(unmatched) != 0:
-      info('')
-      info('*' * 80)
-      info('Warning: %d reference spots were not matched to predictions' % (
+      logger.info('')
+      logger.info('*' * 80)
+      logger.info('Warning: %d reference spots were not matched to predictions' % (
         len(unmatched)))
-      info('*' * 80)
-      info('')
+      logger.info('*' * 80)
+      logger.info('')
 
     # Create the profile model
     experiments = ProfileModelFactory.create(params, experiments, reflections)
@@ -122,13 +124,13 @@ class Script(object):
       sigma_b = model.profile.sigma_b(deg=True)
       sigma_m = model.profile.sigma_m(deg=True)
       if type(sigma_b) == type(1.0):
-        info('Sigma B: %f' % sigma_b)
-        info('Sigma M: %f' % sigma_m)
+        logger.info('Sigma B: %f' % sigma_b)
+        logger.info('Sigma M: %f' % sigma_m)
       else: # scan varying
         mean_sigma_b = sum(sigma_b) / len(sigma_b)
         mean_sigma_m = sum(sigma_m) / len(sigma_m)
-        info('Sigma B: %f' % mean_sigma_b)
-        info('Sigma M: %f' % mean_sigma_m)
+        logger.info('Sigma B: %f' % mean_sigma_b)
+        logger.info('Sigma M: %f' % mean_sigma_m)
 
     # Wrtie the parameters
     Command.start("Writing experiments to %s" % params.output)
@@ -140,7 +142,6 @@ class Script(object):
   def process_reference(self, reference, params):
     ''' Load the reference spots. '''
     from dials.array_family import flex
-    from logging import info
     from time import time
     from libtbx.utils import Sorry
     if reference is None:
@@ -148,13 +149,13 @@ class Script(object):
     st = time()
     assert("miller_index" in reference)
     assert("id" in reference)
-    info('Processing reference reflections')
-    info(' read %d strong spots' % len(reference))
+    logger.info('Processing reference reflections')
+    logger.info(' read %d strong spots' % len(reference))
     mask = reference.get_flags(reference.flags.indexed)
     rubbish = reference.select(mask == False)
     if mask.count(False) > 0:
       reference.del_selected(mask == False)
-      info(' removing %d unindexed reflections' %  mask.count(True))
+      logger.info(' removing %d unindexed reflections' %  mask.count(True))
     if len(reference) == 0:
       raise Sorry('''
         Invalid input for reference reflections.
@@ -164,22 +165,22 @@ class Script(object):
     if mask.count(True) > 0:
       rubbish.extend(reference.select(mask))
       reference.del_selected(mask)
-      info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
+      logger.info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
     mask = reference['id'] < 0
     if mask.count(True) > 0:
       raise Sorry('''
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
       ''' % mask.count(True))
-    info(' using %d indexed reflections' % len(reference))
-    info(' found %d junk reflections' % len(rubbish))
+    logger.info(' using %d indexed reflections' % len(reference))
+    logger.info(' found %d junk reflections' % len(rubbish))
     from dials.array_family import flex
     if 'background.mean' in reference and params.subtract_background:
-      info(' subtracting background from %d reference reflections' %
+      logger.info(' subtracting background from %d reference reflections' %
            len(reference))
       for spot in reference:
         spot['shoebox'].data -= spot['background.mean']
-    info(' time taken: %g' % (time() - st))
+    logger.info(' time taken: %g' % (time() - st))
 
     return reference, rubbish
 

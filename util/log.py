@@ -82,7 +82,7 @@ def config(verbosity=1, info='', debug=''):
     },
 
     'loggers' : {
-      '' : {
+      'dials' : {
         'handlers' : handlers,
         'level' : 'DEBUG',
         'propagate' : True
@@ -119,7 +119,7 @@ def config_simple_stdout():
     },
 
     'loggers' : {
-      '' : {
+      'dials' : {
         'handlers' : ['stream'],
         'level' : 'DEBUG',
         'propagate' : True
@@ -173,7 +173,7 @@ def config_simple_cached():
     },
 
     'loggers' : {
-      '' : {
+      'dials' : {
         'handlers' : ['cache'],
         'level' : 'DEBUG',
         'propagate' : True
@@ -185,13 +185,14 @@ def config_simple_cached():
 class LoggerIO(object):
   ''' Wrap the logger with file type object '''
 
-  def __init__(self, level):
+  def __init__(self, logger, level):
     '''
     Initialise the logger io
 
     :param level: The logging level
 
     '''
+    self.logger = logger
     self.level = level
 
   def write(self, buf):
@@ -201,8 +202,7 @@ class LoggerIO(object):
     :param buf: The buffer
 
     '''
-    from logging import log
-    log(self.level, buf)
+    self.logger.log(self.level, buf)
 
   def flush(self):
     '''
@@ -212,19 +212,19 @@ class LoggerIO(object):
     pass
 
 
-def info_handle():
+def info_handle(logger):
   '''
   :return: A handle to an INFO logger file object
 
   '''
   from logging import INFO
-  return LoggerIO(INFO)
+  return LoggerIO(logger, INFO)
 
 
-def debug_handle():
+def debug_handle(logger):
   '''
   :return: A handle to an DEBUG logger file object
 
   '''
   from logging import DEBUG
-  return LoggerIO(DEBUG)
+  return LoggerIO(logger, DEBUG)

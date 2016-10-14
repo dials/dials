@@ -13,6 +13,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program tries to find strong spots on a sequence of images. The program can
@@ -108,7 +111,6 @@ class Script(object):
     from dials.util.options import flatten_datablocks
     from time import time
     from dials.util import log
-    from logging import info, debug
     from libtbx.utils import Sorry
     start_time = time()
 
@@ -122,13 +124,13 @@ class Script(object):
       debug=params.output.debug_log)
 
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Ensure we have a data block
     datablocks = flatten_datablocks(params.input.datablock)
@@ -153,19 +155,19 @@ class Script(object):
       ascii_plot = spot_counts_per_image_plot(
         reflections.select(reflections['id'] == i))
       if len(ascii_plot):
-        info('\nHistogram of per-image spot count for imageset %i:' %i)
-        info(ascii_plot)
+        logger.info('\nHistogram of per-image spot count for imageset %i:' %i)
+        logger.info(ascii_plot)
 
     # Save the reflections to file
-    info('\n' + '-' * 80)
+    logger.info('\n' + '-' * 80)
     reflections.as_pickle(params.output.reflections)
-    info('Saved {0} reflections to {1}'.format(
+    logger.info('Saved {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
 
     # Save the datablock
     if params.output.datablock:
       from dxtbx.datablock import DataBlockDumper
-      info('Saving datablocks to {0}'.format(
+      logger.info('Saving datablocks to {0}'.format(
         params.output.datablock))
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock)
@@ -181,10 +183,10 @@ class Script(object):
           imageset, reflections.select(reflections['id'] == i),
           resolution_analysis=False)
         per_image_analysis.print_table(stats, out=s)
-      info(s.getvalue())
+      logger.info(s.getvalue())
 
     # Print the time
-    info("Time Taken: %f" % (time() - start_time))
+    logger.info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == '__main__':

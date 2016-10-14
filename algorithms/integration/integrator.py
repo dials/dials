@@ -21,6 +21,8 @@ from dials.algorithms.integration.image_integrator import ImageIntegrator
 from dials import phil
 import libtbx
 
+import logging
+logger = logging.getLogger(__name__)
 
 def generate_phil_scope():
   '''
@@ -504,7 +506,6 @@ class ProfileModellerExecutor(Executor):
     :param reflections: The reflections that will be processed
 
     '''
-    from logging import info
 
     # Get some info
     EPS = 1e-7
@@ -516,24 +517,24 @@ class ProfileModellerExecutor(Executor):
     ntot = len(reflections)
 
     # Write some output
-    info(" Beginning modelling job %d" % job.index)
-    info("")
-    info(" Frames: %d -> %d" % (frame0, frame1))
-    info("")
-    info(" Number of reflections")
-    info("  Partial:     %d" % npart)
-    info("  Full:        %d" % nfull)
-    info("  In ice ring: %d" % nice)
-    info("  Total:       %d" % ntot)
-    info("")
+    logger.info(" Beginning modelling job %d" % job.index)
+    logger.info("")
+    logger.info(" Frames: %d -> %d" % (frame0, frame1))
+    logger.info("")
+    logger.info(" Number of reflections")
+    logger.info("  Partial:     %d" % npart)
+    logger.info("  Full:        %d" % nfull)
+    logger.info("  In ice ring: %d" % nice)
+    logger.info("  Total:       %d" % ntot)
+    logger.info("")
 
     # Print a histogram of reflections on frames
     if frame1 - frame0 > 1:
-      info(' The following histogram shows the number of reflections predicted')
-      info(' to have all or part of their intensity on each frame.')
-      info('')
-      info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
-      info('')
+      logger.info(' The following histogram shows the number of reflections predicted')
+      logger.info(' to have all or part of their intensity on each frame.')
+      logger.info('')
+      logger.info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
+      logger.info('')
 
   def process(self, frame, reflections):
     '''
@@ -543,7 +544,6 @@ class ProfileModellerExecutor(Executor):
     :param reflections: The reflections to process
 
     '''
-    from logging import info
     from dials.array_family import flex
 
     # Check if pixels are overloaded
@@ -564,7 +564,7 @@ class ProfileModellerExecutor(Executor):
     fmt = ' Modelled % 5d / % 5d reflection profiles on image %d'
     nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
     ntot = len(reflections)
-    info(fmt % (nmod, ntot, frame))
+    logger.info(fmt % (nmod, ntot, frame))
 
   def finalize(self):
     '''
@@ -607,7 +607,6 @@ class ProfileValidatorExecutor(Executor):
     :param reflections: The reflections that will be processed
 
     '''
-    from logging import info
 
     # Get some info
     EPS = 1e-7
@@ -619,24 +618,24 @@ class ProfileValidatorExecutor(Executor):
     ntot = len(reflections)
 
     # Write some output
-    info(" Beginning modelling job %d" % job.index)
-    info("")
-    info(" Frames: %d -> %d" % (frame0, frame1))
-    info("")
-    info(" Number of reflections")
-    info("  Partial:     %d" % npart)
-    info("  Full:        %d" % nfull)
-    info("  In ice ring: %d" % nice)
-    info("  Total:       %d" % ntot)
-    info("")
+    logger.info(" Beginning modelling job %d" % job.index)
+    logger.info("")
+    logger.info(" Frames: %d -> %d" % (frame0, frame1))
+    logger.info("")
+    logger.info(" Number of reflections")
+    logger.info("  Partial:     %d" % npart)
+    logger.info("  Full:        %d" % nfull)
+    logger.info("  In ice ring: %d" % nice)
+    logger.info("  Total:       %d" % ntot)
+    logger.info("")
 
     # Print a histogram of reflections on frames
     if frame1 - frame0 > 1:
-      info(' The following histogram shows the number of reflections predicted')
-      info(' to have all or part of their intensity on each frame.')
-      info('')
-      info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
-      info('')
+      logger.info(' The following histogram shows the number of reflections predicted')
+      logger.info(' to have all or part of their intensity on each frame.')
+      logger.info('')
+      logger.info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
+      logger.info('')
 
     self.results = None
 
@@ -648,7 +647,6 @@ class ProfileValidatorExecutor(Executor):
     :param reflections: The reflections to process
 
     '''
-    from logging import info
     from dials.array_family import flex
 
     # Check if pixels are overloaded
@@ -669,7 +667,7 @@ class ProfileValidatorExecutor(Executor):
     fmt = ' Validated % 5d / % 5d reflection profiles on image %d'
     nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
     ntot = len(reflections)
-    info(fmt % (nmod, ntot, frame))
+    logger.info(fmt % (nmod, ntot, frame))
 
   def finalize(self):
     '''
@@ -713,7 +711,6 @@ class IntegratorExecutor(Executor):
     :param reflections: The reflections to process
 
     '''
-    from logging import info
 
     # Get some info
     EPS = 1e-7
@@ -726,25 +723,25 @@ class IntegratorExecutor(Executor):
     ntot = len(reflections)
 
     # Write some output
-    info(" Beginning integration job %d" % job.index)
-    info("")
-    info(" Frames: %d -> %d" % (frame0, frame1))
-    info("")
-    info(" Number of reflections")
-    info("  Partial:     %d" % npart)
-    info("  Full:        %d" % nfull)
-    info("  In ice ring: %d" % nice)
-    info("  Integrate:   %d" % nint)
-    info("  Total:       %d" % ntot)
-    info("")
+    logger.info(" Beginning integration job %d" % job.index)
+    logger.info("")
+    logger.info(" Frames: %d -> %d" % (frame0, frame1))
+    logger.info("")
+    logger.info(" Number of reflections")
+    logger.info("  Partial:     %d" % npart)
+    logger.info("  Full:        %d" % nfull)
+    logger.info("  In ice ring: %d" % nice)
+    logger.info("  Integrate:   %d" % nint)
+    logger.info("  Total:       %d" % ntot)
+    logger.info("")
 
     # Print a histogram of reflections on frames
     if frame1 - frame0 > 1:
-      info(' The following histogram shows the number of reflections predicted')
-      info(' to have all or part of their intensity on each frame.')
-      info('')
-      info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
-      info('')
+      logger.info(' The following histogram shows the number of reflections predicted')
+      logger.info(' to have all or part of their intensity on each frame.')
+      logger.info('')
+      logger.info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
+      logger.info('')
 
     # Find any overlaps
     self.overlaps = reflections.find_overlaps(self.experiments)
@@ -757,7 +754,6 @@ class IntegratorExecutor(Executor):
     :param reflections: The reflections to process
 
     '''
-    from logging import info
     from dials.algorithms.shoebox import MaskCode
 
     # Check if pixels are overloaded
@@ -815,7 +811,7 @@ class IntegratorExecutor(Executor):
     nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
     nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
     ntot = len(reflections)
-    info(fmt % (nsum, nprf, ntot, frame))
+    logger.info(fmt % (nsum, nprf, ntot, frame))
 
   def finalize(self):
     '''
@@ -867,7 +863,6 @@ class Integrator(object):
     from dials.algorithms.integration.report import ProfileModelReport
     from dials.algorithms.integration.report import ProfileValidationReport
     from dials.util.command_line import heading
-    from logging import info, debug
     from dials.util import pprint
     from random import shuffle, seed
     from math import floor, ceil
@@ -883,10 +878,10 @@ class Integrator(object):
     self.integration_report = None
 
     # Heading
-    info("=" * 80)
-    info("")
-    info(heading("Processing reflections"))
-    info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Processing reflections"))
+    logger.info("")
 
     # Create summary format
     fmt = (
@@ -902,7 +897,7 @@ class Integrator(object):
     )
 
     # Print the summary
-    info(fmt % (
+    logger.info(fmt % (
       len(self.experiments),
       len(self.experiments.beams()),
       len(self.experiments.detectors()),
@@ -930,10 +925,10 @@ class Integrator(object):
     # Do profile modelling
     if profile_fitting:
 
-      info("=" * 80)
-      info("")
-      info(heading("Modelling reflection profiles"))
-      info("")
+      logger.info("=" * 80)
+      logger.info("")
+      logger.info(heading("Modelling reflection profiles"))
+      logger.info("")
 
       # Get the selection
       selection = self.reflections.get_flags(
@@ -944,7 +939,7 @@ class Integrator(object):
 
       # Check if we need to skip
       if len(reference) == 0:
-        info("** Skipping profile modelling - no reference profiles given **")
+        logger.info("** Skipping profile modelling - no reference profiles given **")
       else:
 
         # Try to set up the validation
@@ -1022,27 +1017,27 @@ class Integrator(object):
 
         for i in range(len(finalized_profile_fitter)):
           m = finalized_profile_fitter[i]
-          debug("")
-          debug("Profiles for experiment %d" % i)
+          logger.debug("")
+          logger.debug("Profiles for experiment %d" % i)
           for j in range(len(m)):
-            debug("Profile %d" % j)
+            logger.debug("Profile %d" % j)
             try:
-              debug(pprint.profile3d(m.data(j)))
+              logger.debug(pprint.profile3d(m.data(j)))
             except Exception:
-              debug("** NO PROFILE **")
+              logger.debug("** NO PROFILE **")
 
         # Print the modeller report
         self.profile_model_report = ProfileModelReport(
           self.experiments,
           finalized_profile_fitter,
           reference)
-        info("")
-        info(self.profile_model_report.as_str(prefix=' '))
+        logger.info("")
+        logger.info(self.profile_model_report.as_str(prefix=' '))
 
         # Print the time info
-        info("")
-        info(str(time_info))
-        info("")
+        logger.info("")
+        logger.info(str(time_info))
+        logger.info("")
 
         # If we have more than 1 fold then do the validation
         if num_folds > 1:
@@ -1067,21 +1062,21 @@ class Integrator(object):
             profile_fitter,
             reference,
             num_folds)
-          info("")
-          info(self.profile_validation_report.as_str(prefix=' '))
+          logger.info("")
+          logger.info(self.profile_validation_report.as_str(prefix=' '))
 
           # Print the time info
-          info("")
-          info(str(time_info))
-          info("")
+          logger.info("")
+          logger.info(str(time_info))
+          logger.info("")
 
         # Set to the finalized fitter
         profile_fitter = finalized_profile_fitter
 
-    info("=" * 80)
-    info("")
-    info(heading("Integrating reflections"))
-    info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Integrating reflections"))
+    logger.info("")
 
     # Create the data processor
     executor = IntegratorExecutor(
@@ -1107,12 +1102,12 @@ class Integrator(object):
     self.integration_report = IntegrationReport(
       self.experiments,
       self.reflections)
-    info("")
-    info(self.integration_report.as_str(prefix=' '))
+    logger.info("")
+    logger.info(self.integration_report.as_str(prefix=' '))
 
     # Print the time info
-    info(str(time_info))
-    info("")
+    logger.info(str(time_info))
+    logger.info("")
 
     # Return the reflections
     return self.reflections
@@ -1133,7 +1128,6 @@ class Integrator(object):
     ''' Print a summary of the integration stuff. '''
     from libtbx.table_utils import format as table
     from dials.util.command_line import heading
-    from logging import info
 
     # Compute the task table
     if self._experiments.all_stills():

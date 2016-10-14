@@ -15,7 +15,9 @@ from scitbx.array_family import flex
 from scitbx import sparse
 from math import pi
 from dials_refinement_helpers_ext import CalculateCellGradients
-from logging import debug
+import logging
+logger = logging.getLogger(__name__)
+
 DEG2RAD = pi/180.0
 RAD2DEG = 180.0/pi
 
@@ -229,7 +231,7 @@ class MeanUnitCellTie(object):
           # a and b are equal for this crystal, therefore keep only the
           # strongest requested restraint
           if sigma[0] > 0.0 and sigma[1] > 0.0:
-            debug(msg.format('a', 'b', xlucp.get_experiment_ids()[0]))
+            logger.debug(msg.format('a', 'b', xlucp.get_experiment_ids()[0]))
             strong, weak = sorted([sigma[0], sigma[1]])
             sigma[0] = strong
             sigma[1] = 0.0
@@ -239,7 +241,7 @@ class MeanUnitCellTie(object):
           # a and c are equal for this crystal, therefore keep only the
           # strongest requested restraint
           if sigma[0] > 0.0 and sigma[2] > 0.0:
-            debug(msg.format('a', 'c', xlucp.get_experiment_ids()[0]))
+            logger.debug(msg.format('a', 'c', xlucp.get_experiment_ids()[0]))
             strong, weak = sorted([sigma[0], sigma[2]])
             sigma[0] = strong
             sigma[2] = 0.0
@@ -266,7 +268,7 @@ class MeanUnitCellTie(object):
           # this parameter is constrained, so remove any requested restraints
           # at this position
           if sigma[i] > 0.0:
-            debug(msg.format(xlucp.get_experiment_ids()[0], pname[i]))
+            logger.debug(msg.format(xlucp.get_experiment_ids()[0], pname[i]))
             sigma[i] = 0.0
 
     # set the selection for gradient calculations to the unconstrained parameters

@@ -9,6 +9,8 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
 from dials_algorithms_integration_integrator_ext import *
 from dials import phil
 import libtbx
@@ -202,7 +204,6 @@ class Processor(object):
     '''
     from time import time
     from libtbx import easy_mp
-    from logging import info, warn
     import platform
     start_time = time()
     self.manager.initialize()
@@ -210,22 +211,21 @@ class Processor(object):
     mp_nproc = min(len(self.manager), self.manager.params.mp.nproc)
     mp_nthreads = self.manager.params.mp.nthreads
     if mp_nproc > 1 and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-      warn("")
-      warn("*" * 80)
-      warn("Multiprocessing is not available on windows. Setting nproc = 1")
-      warn("*" * 80)
-      warn("")
+      logger.warn("")
+      logger.warn("*" * 80)
+      logger.warn("Multiprocessing is not available on windows. Setting nproc = 1")
+      logger.warn("*" * 80)
+      logger.warn("")
       mp_nproc = 1
     assert mp_nproc > 0, "Invalid number of processors"
     job.nthreads = mp_nthreads
-    info(self.manager.summary())
-    info(' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
+    logger.info(self.manager.summary())
+    logger.info(' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
       mp_method, mp_nproc, mp_nthreads))
     if mp_nproc > 1:
       def process_output(result):
-        import logging
         for message in result[1]:
-          logging.log(message.levelno, message.msg)
+          logger.log(message.levelno, message.msg)
         self.manager.accumulate(result[0])
         result[0].reflections = None
         result[0].data = None
@@ -235,7 +235,7 @@ class Processor(object):
         import logging
         log.config_simple_cached()
         result = task()
-        handlers = logging.getLogger().handlers
+        handlers = logging.getLogger('dials').handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
         return result, handlers[0].messages()
       easy_mp.parallel_map(
@@ -356,7 +356,6 @@ class Task(object):
     from time import time
     from dials.model.data import make_image
     from libtbx.introspection import machine_memory_info
-    from logging import info
 
     # Get the start time
     start_time = time()
@@ -434,11 +433,11 @@ class Task(object):
           Required shoebox memory: %g GB
         ''' % (total_memory/1e9, limit_memory/1e9, sbox_memory/1e9))
       else:
-        info(' Memory usage:')
-        info('  Total system memory: %g GB' % (total_memory/1e9))
-        info('  Limit shoebox memory: %g GB' % (limit_memory/1e9))
-        info('  Required shoebox memory: %g GB' % (sbox_memory/1e9))
-        info('')
+        logger.info(' Memory usage:')
+        logger.info('  Total system memory: %g GB' % (total_memory/1e9))
+        logger.info('  Limit shoebox memory: %g GB' % (limit_memory/1e9))
+        logger.info('  Required shoebox memory: %g GB' % (sbox_memory/1e9))
+        logger.info('')
 
     # Loop through the imageset, extract pixels and process reflections
     read_time = 0.0
@@ -561,7 +560,6 @@ class Manager(object):
     Get a task.
 
     '''
-    from logging import warn
     job = self.manager.job(index)
     frames = job.frames()
     expr_id = job.expr()
@@ -571,7 +569,7 @@ class Manager(object):
     experiments = self.experiments#[expr_id[0]:expr_id[1]]
     reflections = self.manager.split(index)
     if len(reflections) == 0:
-      warn("*** WARNING: no reflections in job %d ***" % index)
+      logger.warn("*** WARNING: no reflections in job %d ***" % index)
       task = NullTask(
         index=index,
         reflections=reflections)
@@ -652,7 +650,6 @@ class Manager(object):
     Compute the processing block size.
 
     '''
-    from logging import info
     from math import ceil, pi
     if self.params.block.size == libtbx.Auto:
       if self.params.mp.nproc == 1 \
@@ -711,7 +708,6 @@ class Manager(object):
     Split the reflections into partials or over job boundaries
 
     '''
-    from logging import info
 
     # Optionally split the reflection table into partials, otherwise,
     # split over job boundaries
@@ -721,7 +717,7 @@ class Manager(object):
       num_partial = len(self.reflections)
       assert num_partial >= num_full, "Invalid number of partials"
       if num_partial > num_full:
-        info(' Split %d reflections into %d partial reflections\n' % (
+        logger.info(' Split %d reflections into %d partial reflections\n' % (
           num_full,
           num_partial))
     else:
@@ -731,7 +727,7 @@ class Manager(object):
       assert num_partial >= num_full, "Invalid number of partials"
       if num_partial > num_full:
         num_split = num_partial - num_full
-        info(' Split %d reflections overlapping job boundaries\n' % num_split)
+        logger.info(' Split %d reflections overlapping job boundaries\n' % num_split)
 
     # Compute the partiality
     self.reflections.compute_partiality(self.experiments)

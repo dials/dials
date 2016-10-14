@@ -11,6 +11,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 from dials.phil import parse
 
 phil_scope = parse('''
@@ -124,9 +127,8 @@ class Creator(object):
     self.modeller = None
     if self.params.debug.output:
       import cPickle as pickle
-      from logging import info
       filename = self.params.debug.filename
-      info("Writing background model to %s" % filename)
+      logger.info("Writing background model to %s" % filename)
       with open(filename, "w") as outfile:
         pickle.dump(self.background, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 

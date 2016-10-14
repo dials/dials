@@ -13,11 +13,12 @@
 from __future__ import division
 import math
 import logging
-from logging import info, debug
+logger = logging.getLogger(__name__)
+
 from dials.util import log
 
-debug_handle = log.debug_handle()
-info_handle = log.info_handle()
+debug_handle = log.debug_handle(logger)
+info_handle = log.info_handle(logger)
 
 import libtbx
 from libtbx.utils import Sorry
@@ -643,13 +644,13 @@ class indexer_base(object):
         = self.cb_op_ref_inp * self.cb_op_reference_to_primitive.inverse()
 
       if self.target_symmetry_reference_setting is not None:
-        debug("Target symmetry (reference setting):")
+        logger.debug("Target symmetry (reference setting):")
         self.target_symmetry_reference_setting.show_summary(f=debug_handle)
       if self.target_symmetry_primitive is not None:
-        debug("Target symmetry (primitive cell):")
+        logger.debug("Target symmetry (primitive cell):")
         self.target_symmetry_primitive.show_summary(f=debug_handle)
-      debug("cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive))
-      debug("cb_op primitive->input: " + str(self.cb_op_primitive_inp))
+      logger.debug("cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive))
+      logger.debug("cb_op primitive->input: " + str(self.cb_op_primitive_inp))
 
   def index(self):
     self.reflections_input = self.reflections
@@ -716,7 +717,7 @@ class indexer_base(object):
           cutoff_fraction * len(self.reflections.select(d_spacings > d_min_indexed))
         crystal_ids = self.reflections.select(d_spacings > d_min_indexed)['id']
         if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
-          info("Finish searching for more lattices: %i unindexed reflections remaining." %(
+          logger.info("Finish searching for more lattices: %i unindexed reflections remaining." %(
             min_reflections_for_indexing))
           break
 
@@ -736,7 +737,7 @@ class indexer_base(object):
           d_min_all = flex.min(d_spacings)
           self.params.refinement_protocol.d_min_step \
             = (self.d_min - d_min_all)/(n_cycles-1)
-          info("Using d_min_step %.1f"
+          logger.info("Using d_min_step %.1f"
                %self.params.refinement_protocol.d_min_step)
 
       if len(experiments) == 0:
@@ -752,7 +753,7 @@ class indexer_base(object):
           d_min = max(d_min, self.params.refinement_protocol.d_min_final)
           if d_min >= 0:
             self.d_min = d_min
-            info("Increasing resolution to %.2f Angstrom" %d_min)
+            logger.info("Increasing resolution to %.2f Angstrom" %d_min)
 
         # reset reflection lattice flags
         # the lattice a given reflection belongs to: a value of -1 indicates
@@ -789,7 +790,7 @@ class indexer_base(object):
                   miller_indices = self.cb_op_primitive_inp.apply(miller_indices)
                   self.reflections['miller_index'].set_selected(
                     self.reflections['id'] == i_expt, miller_indices)
-          info("\nIndexed crystal models:")
+          logger.info("\nIndexed crystal models:")
           self.show_experiments(experiments, self.reflections, d_min=self.d_min)
 
         if len(experiments) > 1:
@@ -802,12 +803,12 @@ class indexer_base(object):
               difference_rotation_matrix_axis_angle(cryst_a, cryst_b)
             min_angle = self.params.multiple_lattice_search.minimum_angular_separation
             if abs(angle) < min_angle: # degrees
-              info("Crystal models too similar, rejecting crystal %i:" %(
+              logger.info("Crystal models too similar, rejecting crystal %i:" %(
                 len(experiments)))
-              info("Rotation matrix to transform crystal %i to crystal %i" %(
+              logger.info("Rotation matrix to transform crystal %i to crystal %i" %(
                 i_a+1, len(experiments)))
-              info(R_ab)
-              info("Rotation of %.3f degrees" %angle + " about axis (%.3f, %.3f, %.3f)" %axis)
+              logger.info(R_ab)
+              logger.info("Rotation of %.3f degrees" %angle + " about axis (%.3f, %.3f, %.3f)" %axis)
               #show_rotation_matrix_differences([cryst_a, cryst_b])
               have_similar_crystal_models = True
               del experiments[-1]
@@ -815,11 +816,11 @@ class indexer_base(object):
           if have_similar_crystal_models:
             break
 
-        info("")
-        info("#" * 80)
-        info("Starting refinement (macro-cycle %i)" %(i_cycle+1))
-        info("#" * 80)
-        info("")
+        logger.info("")
+        logger.info("#" * 80)
+        logger.info("Starting refinement (macro-cycle %i)" %(i_cycle+1))
+        logger.info("#" * 80)
+        logger.info("")
         self.indexed_reflections = (self.reflections['id'] > -1)
 
         sel = flex.bool(len(self.reflections), False)
@@ -843,8 +844,8 @@ class indexer_base(object):
             if len(experiments) == 1:
               raise Sorry(e)
             had_refinement_error = True
-            info("Refinement failed:")
-            info(s)
+            logger.info("Refinement failed:")
+            logger.info(s)
             del experiments[-1]
             break
           raise
@@ -903,13 +904,13 @@ class indexer_base(object):
         experiments = refined_experiments
         self.refined_experiments = refined_experiments
 
-        info("\nRefined crystal models:")
+        logger.info("\nRefined crystal models:")
         self.show_experiments(
           self.refined_experiments, self.reflections, d_min=self.d_min)
 
         if (i_cycle >=2 and
             self.d_min == self.params.refinement_protocol.d_min_final):
-          info("Target d_min_final reached: finished with refinement")
+          logger.info("Target d_min_final reached: finished with refinement")
           break
 
     if not 'refined_experiments' in locals():
@@ -956,12 +957,12 @@ class indexer_base(object):
         d_spacings = 1/reciprocal_lattice_points.norms()
         reflections = reflections.select(d_spacings > d_min)
     for i_expt, expt in enumerate(experiments):
-      info("model %i (%i reflections):" %(
+      logger.info("model %i (%i reflections):" %(
         i_expt+1, (reflections['id'] == i_expt).count(True)))
-      info(expt.crystal)
+      logger.info(expt.crystal)
 
     indexed = reflections.get_flags(reflections.flags.indexed)
-    info("%i unindexed reflections" %indexed.count(False))
+    logger.info("%i unindexed reflections" %indexed.count(False))
 
   def find_max_cell(self):
     params = self.params.max_cell_estimation
@@ -969,7 +970,7 @@ class indexer_base(object):
       if self.params.known_symmetry.unit_cell is not None:
         uc_params = self.target_symmetry_primitive.unit_cell().parameters()
         self.params.max_cell = params.multiplier * max(uc_params[:3])
-        info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
+        logger.info("Using max_cell: %.1f Angstrom" %(self.params.max_cell))
       else:
         self.params.max_cell = find_max_cell(
           self.reflections, max_cell_multiplier=params.multiplier,
@@ -978,7 +979,7 @@ class indexer_base(object):
           filter_ice=params.filter_ice,
           filter_overlaps=params.filter_overlaps,
           overlaps_border=params.overlaps_border)
-        info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
+        logger.info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
 
   def filter_reflections_by_scan_range(self):
     if len(self.params.scan_range):
@@ -1288,7 +1289,7 @@ class indexer_base(object):
           #print best_offset, best_nref, '%.2f' %best_cc
 
           if best_offset != (0,0,0):
-            debug('Applying h,k,l offset: (%i, %i, %i)' %best_offset
+            logger.debug('Applying h,k,l offset: (%i, %i, %i)' %best_offset
                  + ' [cc = %.2f]' %best_cc)
             indexed_reflections['miller_index'] = apply_hkl_offset(
               indexed_reflections['miller_index'], best_offset)
@@ -1396,7 +1397,7 @@ class indexer_base(object):
             orientation_too_similar = True
             break
         if orientation_too_similar:
-          debug("skipping crystal: too similar to other crystals")
+          logger.debug("skipping crystal: too similar to other crystals")
           continue
 
       args.append((params, refl, experiments))
@@ -1415,10 +1416,10 @@ class indexer_base(object):
       solutions.append(soln)
 
     if len(solutions):
-      debug(str(solutions))
+      logger.debug(str(solutions))
       best_solution = solutions.best_solution()
-      debug("best model_likelihood: %.2f" %best_solution.model_likelihood)
-      debug("best n_indexed: %i" %best_solution.n_indexed)
+      logger.debug("best model_likelihood: %.2f" %best_solution.model_likelihood)
+      logger.debug("best n_indexed: %i" %best_solution.n_indexed)
       self.hkl_offset = best_solution.hkl_offset
       return best_solution.crystal, best_solution.n_indexed
     else:
@@ -1544,9 +1545,9 @@ class indexer_base(object):
 
     vectors = self.candidate_basis_vectors
 
-    debug("Candidate basis vectors:")
+    logger.debug("Candidate basis vectors:")
     for i, v in enumerate(vectors):
-      debug("%s %s" %(i, v.length()))# , vector_heights[i]
+      logger.debug("%s %s" %(i, v.length()))# , vector_heights[i]
 
     if self.params.debug:
       # print a table of the angles between each pair of vectors
@@ -1576,7 +1577,7 @@ class indexer_base(object):
             print >> s, "%5.1f  " %angles[i,j],
         print >> s
 
-      debug(s.getvalue())
+      logger.debug(s.getvalue())
 
   def debug_plot_candidate_basis_vectors(self):
     from matplotlib import pyplot
@@ -1878,9 +1879,9 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
     for counter in xrange(test['mod']):
       if float(cum[counter])/miller_indices.size() > threshold and counter==0:
         # (if counter != 0 there is no obvious way to correct this)
-        debug("Detected exclusive presence of %dH %dK %dL = %dn, remainder %d"%(
+        logger.debug("Detected exclusive presence of %dH %dK %dL = %dn, remainder %d"%(
           test['vec'][0], test['vec'][1], test['vec'][2], test['mod'],counter))
-        debug("%s, %s, %s" %(
+        logger.debug("%s, %s, %s" %(
           test['vec'], test['mod'], float(cum[counter])/miller_indices.size()))
         #flag = {'vec':test['vec'],'mod':test['mod'],
                 #'remainder':counter, 'trans':test['trans'].elems}
@@ -1890,14 +1891,14 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 def find_max_cell(reflections, max_cell_multiplier, step_size,
                   nearest_neighbor_percentile, filter_ice=True,
                   filter_overlaps=True, overlaps_border=0):
-  debug('Finding suitable max_cell based on %i reflections' % len(reflections))
+  logger.debug('Finding suitable max_cell based on %i reflections' % len(reflections))
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
     from dials.algorithms.spot_finding.per_image_analysis import \
      ice_rings_selection
     ice_sel = ice_rings_selection(reflections)
     reflections = reflections.select(~ice_sel)
-    debug('Rejecting %i reflections at ice ring resolution' %ice_sel.count(True))
+    logger.debug('Rejecting %i reflections at ice ring resolution' %ice_sel.count(True))
 
   # need bounding box in reflections to find overlaps; this is not there if
   # spots are from XDS (for example)
@@ -1910,9 +1911,9 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
       i1 = overlaps.target(item)
       overlap_sel[i0] = True
       overlap_sel[i1] = True
-    debug('Rejecting %i overlapping bounding boxes' %overlap_sel.count(True))
+    logger.debug('Rejecting %i overlapping bounding boxes' %overlap_sel.count(True))
     reflections = reflections.select(~overlap_sel)
-  debug('%i reflections remain for max_cell identification' % len(reflections))
+  logger.debug('%i reflections remain for max_cell identification' % len(reflections))
 
   # Histogram spot counts in resolution bins: filter out outlier bin counts
   # according to the Tukey method

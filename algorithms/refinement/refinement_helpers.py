@@ -15,7 +15,8 @@ from scitbx import matrix
 from scitbx.array_family import flex # import dependency
 from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
 from dials_refinement_helpers_ext import CrystalOrientationCompose as xloc_cpp
-from logging import info
+import logging
+logger = logging.getLogger(__name__)
 import random
 
 def ordinal_number(array_index=None, cardinal_number=None):
@@ -218,7 +219,7 @@ def corrgram(corrmat, labels):
     import matplotlib.cm as cm
   except ImportError as e:
     msg = "matplotlib modules not available " + str(e)
-    info(msg)
+    logger.info(msg)
     return None
 
   plt.figure(1)

@@ -11,6 +11,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class TimingInfo(object):
   '''
@@ -85,28 +88,26 @@ class ProcessorImageBase(object):
     '''
     from time import time
     from libtbx import easy_mp
-    from logging import info, warn
     import platform
     start_time = time()
     self.manager.initialize()
     mp_method = self.manager.params.integration.mp.method
     mp_nproc = min(len(self.manager), self.manager.params.integration.mp.nproc)
     if mp_nproc > 1 and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-      warn("")
-      warn("*" * 80)
-      warn("Multiprocessing is not available on windows. Setting nproc = 1")
-      warn("*" * 80)
-      warn("")
+      logger.warn("")
+      logger.warn("*" * 80)
+      logger.warn("Multiprocessing is not available on windows. Setting nproc = 1")
+      logger.warn("*" * 80)
+      logger.warn("")
       mp_nproc = 1
     assert mp_nproc > 0, "Invalid number of processors"
-    info(self.manager.summary())
-    info(' Using %s with %d parallel job(s)\n' % (
+    logger.info(self.manager.summary())
+    logger.info(' Using %s with %d parallel job(s)\n' % (
       mp_method, mp_nproc))
     if mp_nproc > 1:
       def process_output(result):
-        import logging
         for message in result[1]:
-          logging.log(message.levelno, message.msg)
+          logger.log(message.levelno, message.msg)
         self.manager.accumulate(result[0])
         result[0].reflections = None
         result[0].data = None
@@ -116,7 +117,7 @@ class ProcessorImageBase(object):
         import logging
         log.config_simple_cached()
         result = task()
-        handlers = logging.getLogger().handlers
+        handlers = logging.getLogger('dials').handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
         return result, handlers[0].messages()
       easy_mp.parallel_map(
@@ -221,7 +222,6 @@ class Task(object):
     from dials.model.data import ImageVolume
     from dials.algorithms.integration.processor import job
     from time import time
-    from logging import info
 
     # Set the job index
     job.index = self.index
@@ -451,7 +451,6 @@ class ManagerImage(object):
     Split the reflections into partials or over job boundaries
 
     '''
-    from logging import info
 
     # Optionally split the reflection table into partials, otherwise,
     # split over job boundaries
@@ -460,7 +459,7 @@ class ManagerImage(object):
     num_partial = len(self.reflections)
     assert num_partial >= num_full, "Invalid number of partials"
     if num_partial > num_full:
-      info(' Split %d reflections into %d partial reflections\n' % (
+      logger.info(' Split %d reflections into %d partial reflections\n' % (
         num_full,
         num_partial))
 
@@ -549,7 +548,6 @@ class ImageIntegratorExecutor(object):
 
   def process(self, image_volume, experiments, reflections):
     from dials.algorithms.integration.processor import job
-    from logging import info
 
     # Compute the partiality
     reflections.compute_partiality(experiments)
@@ -564,26 +562,26 @@ class ImageIntegratorExecutor(object):
     ntot = len(reflections)
 
     # Write some output
-    info("")
-    info(" Beginning integration job %d" % job.index)
-    info("")
-    info(" Frames: %d -> %d" % (image_volume.frame0(), image_volume.frame1()))
-    info("")
-    info(" Number of reflections")
-    info("  Partial:     %d" % npart)
-    info("  Full:        %d" % nfull)
-    info("  In ice ring: %d" % nice)
-    info("  Integrate:   %d" % nint)
-    info("  Total:       %d" % ntot)
-    info("")
+    logger.info("")
+    logger.info(" Beginning integration job %d" % job.index)
+    logger.info("")
+    logger.info(" Frames: %d -> %d" % (image_volume.frame0(), image_volume.frame1()))
+    logger.info("")
+    logger.info(" Number of reflections")
+    logger.info("  Partial:     %d" % npart)
+    logger.info("  Full:        %d" % nfull)
+    logger.info("  In ice ring: %d" % nice)
+    logger.info("  Integrate:   %d" % nint)
+    logger.info("  Total:       %d" % ntot)
+    logger.info("")
 
     # Print a histogram of reflections on frames
     if image_volume.frame1() - image_volume.frame0() > 1:
-      info(' The following histogram shows the number of reflections predicted')
-      info(' to have all or part of their intensity on each frame.')
-      info('')
-      info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
-      info('')
+      logger.info(' The following histogram shows the number of reflections predicted')
+      logger.info(' to have all or part of their intensity on each frame.')
+      logger.info('')
+      logger.info(frame_hist(reflections['bbox'], prefix=' ', symbol='*'))
+      logger.info('')
 
     # Compute the shoebox mask
     reflections.compute_mask(
@@ -612,7 +610,7 @@ class ImageIntegratorExecutor(object):
     nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
     nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
     ntot = len(reflections)
-    info(fmt % (nsum, nprf, ntot))
+    logger.info(fmt % (nsum, nprf, ntot))
 
 
 class ImageIntegrator(object):
@@ -653,17 +651,16 @@ class ImageIntegrator(object):
     '''
     from dials.algorithms.integration.report import IntegrationReport
     from dials.util.command_line import heading
-    from logging import info, debug
 
     # Init the report
     self.profile_model_report = None
     self.integration_report = None
 
     # Heading
-    info("=" * 80)
-    info("")
-    info(heading("Processing reflections"))
-    info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Processing reflections"))
+    logger.info("")
 
     # Create summary format
     fmt = (
@@ -679,7 +676,7 @@ class ImageIntegrator(object):
     )
 
     # Print the summary
-    info(fmt % (
+    logger.info(fmt % (
       len(self.experiments),
       len(self.experiments.beams()),
       len(self.experiments.detectors()),
@@ -689,10 +686,10 @@ class ImageIntegrator(object):
       len(self.experiments.imagesets())))
 
     # Print a heading
-    info("=" * 80)
-    info("")
-    info(heading("Integrating reflections"))
-    info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Integrating reflections"))
+    logger.info("")
 
     # Initialise the processing
     initialize = InitializerRot(
@@ -720,12 +717,12 @@ class ImageIntegrator(object):
     self.integration_report = IntegrationReport(
       self.experiments,
       self.reflections)
-    info("")
-    info(self.integration_report.as_str(prefix=' '))
+    logger.info("")
+    logger.info(self.integration_report.as_str(prefix=' '))
 
     # Print the time info
-    info(str(time_info))
-    info("")
+    logger.info(str(time_info))
+    logger.info("")
 
     # Return the reflections
     return self.reflections

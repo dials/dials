@@ -13,6 +13,9 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program makes a polar background image
@@ -70,7 +73,6 @@ class Script(object):
     from dials.util.command_line import heading
     from dials.util.options import flatten_experiments
     from dials.util import log
-    from logging import info, debug
     from time import time
     from libtbx.utils import Sorry
     from dials.array_family import flex
@@ -119,7 +121,7 @@ class Script(object):
     ax1.get_yaxis().set_visible(False)
     cb = pylab.colorbar()
     cb.ax.tick_params(labelsize=8)
-    info("Saving polar model %s" % (params.output.image))
+    logger.info("Saving polar model %s" % (params.output.image))
     pylab.savefig("%s" % (params.output.image), dpi=600, bbox_inches='tight')
 
 

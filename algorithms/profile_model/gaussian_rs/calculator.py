@@ -18,6 +18,8 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
 
 class ComputeEsdBeamDivergence(object):
   '''Calculate the E.s.d of the beam divergence.'''
@@ -311,7 +313,6 @@ class ProfileModelCalculator(object):
 
   def __init__(self, reflections, crystal, beam, detector, goniometer, scan, min_zeta=0.05):
     ''' Calculate the profile model. '''
-    from logging import info
     from dxtbx.model.experiment.experiment_list import Experiment
     from dials.array_family import flex
     from math import pi
@@ -325,7 +326,7 @@ class ProfileModelCalculator(object):
     assert("xyzcal.mm" in reflections)
 
     # Calculate the E.S.D of the beam divergence
-    info('Calculating E.S.D Beam Divergence.')
+    logger.info('Calculating E.S.D Beam Divergence.')
     beam_divergence = ComputeEsdBeamDivergence(detector, reflections)
 
     # Set the sigma b
@@ -348,7 +349,7 @@ class ProfileModelCalculator(object):
       reflections = reflections.select(mask)
 
       # Calculate the E.S.D of the reflecting range
-      info('Calculating E.S.D Reflecting Range.')
+      logger.info('Calculating E.S.D Reflecting Range.')
       reflecting_range = ComputeEsdReflectingRange(crystal, beam, detector,
                                                    goniometer, scan, reflections)
 
@@ -356,8 +357,8 @@ class ProfileModelCalculator(object):
       self._sigma_m = reflecting_range.sigma()
 
     # Print the output
-    info(' sigma b: %f degrees' % (self._sigma_b * 180 / pi))
-    info(' sigma m: %f degrees' % (self._sigma_m * 180 / pi))
+    logger.info(' sigma b: %f degrees' % (self._sigma_b * 180 / pi))
+    logger.info(' sigma m: %f degrees' % (self._sigma_m * 180 / pi))
 
   def sigma_b(self):
     ''' Return the E.S.D beam divergence. '''
@@ -372,7 +373,6 @@ class ScanVaryingProfileModelCalculator(object):
 
   def __init__(self, reflections, crystal, beam, detector, goniometer, scan, min_zeta=0.05):
     ''' Calculate the profile model. '''
-    from logging import info
     from copy import deepcopy
     from collections import defaultdict
     from dials.array_family import flex
@@ -429,7 +429,7 @@ class ScanVaryingProfileModelCalculator(object):
 
       self._num.append(len(reflections))
 
-      info('Computing profile model for frame %d' % i)
+      logger.info('Computing profile model for frame %d' % i)
 
       # Calculate the E.S.D of the beam divergence
       beam_divergence = ComputeEsdBeamDivergence(detector, reflections)
@@ -483,8 +483,8 @@ class ScanVaryingProfileModelCalculator(object):
     # Print the output - mean as is scan varying
     mean_sigma_b = sum(self._sigma_b) / len(self._sigma_b)
     mean_sigma_m = sum(self._sigma_m) / len(self._sigma_m)
-    info(' sigma b: %f degrees' % (mean_sigma_b * 180 / pi))
-    info(' sigma m: %f degrees' % (mean_sigma_m * 180 / pi))
+    logger.info(' sigma b: %f degrees' % (mean_sigma_b * 180 / pi))
+    logger.info(' sigma m: %f degrees' % (mean_sigma_m * 180 / pi))
 
   def num(self):
     ''' The number of reflections used. '''

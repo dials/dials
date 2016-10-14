@@ -7,6 +7,9 @@ from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
 from dials.util.options import flatten_experiments
 
+import logging
+logger = logging.getLogger(__name__)
+
 phil_scope = iotbx.phil.parse("""\
 output {
   mask = hot_pixels.pickle
@@ -42,7 +45,6 @@ def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
   from dials.util import log
-  from logging import info
   import cPickle as pickle
   usage = "%s [options] datablock.json strong.pickle" % \
     libtbx.env.dispatcher_name
@@ -68,8 +70,8 @@ def run(args):
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':
-    info('The following parameters have been modified:\n')
-    info(diff_phil)
+    logger.info('The following parameters have been modified:\n')
+    logger.info(diff_phil)
 
   datablocks = flatten_datablocks(params.input.datablock)
   reflections = flatten_reflections(params.input.reflections)

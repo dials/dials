@@ -10,6 +10,8 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 help_message = '''
@@ -144,7 +146,6 @@ class Script(object):
     from dials.util.command_line import heading
     from dials.util.options import flatten_reflections, flatten_experiments
     from dials.util import log
-    from logging import info, debug
     from time import time
     from libtbx.utils import Sorry
 
@@ -179,42 +180,42 @@ class Script(object):
       debug=params.output.debug_log)
 
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Print if we're using a mask
     for i, exp in enumerate(experiments):
       mask = exp.imageset.external_lookup.mask
       if mask.filename is not None:
         if mask.data:
-          info('Using external mask: %s' % mask.filename)
-          info(' Mask has %d pixels masked' % mask.data.count(False))
+          logger.info('Using external mask: %s' % mask.filename)
+          logger.info(' Mask has %d pixels masked' % mask.data.count(False))
 
     # Print the experimental models
     for i, exp in enumerate(experiments):
-      debug("Models for experiment %d" % i)
-      debug("")
-      debug(str(exp.beam))
-      debug(str(exp.detector))
+      logger.debug("Models for experiment %d" % i)
+      logger.debug("")
+      logger.debug(str(exp.beam))
+      logger.debug(str(exp.detector))
       if exp.goniometer:
-        debug(str(exp.goniometer))
+        logger.debug(str(exp.goniometer))
       if exp.scan:
-        debug(str(exp.scan))
-      debug(str(exp.crystal))
+        logger.debug(str(exp.scan))
+      logger.debug(str(exp.crystal))
 
-    info("=" * 80)
-    info("")
-    info(heading("Initialising"))
-    info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Initialising"))
+    logger.info("")
 
     # Load the data
     reference, rubbish = self.process_reference(reference)
-    info("")
+    logger.info("")
 
     # Initialise the integrator
     from dials.algorithms.profile_model.factory import ProfileModelFactory
@@ -228,11 +229,11 @@ class Script(object):
       params.scan_range)
 
     # Predict the reflections
-    info("")
-    info("=" * 80)
-    info("")
-    info(heading("Predicting reflections"))
-    info("")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Predicting reflections"))
+    logger.info("")
     predicted = flex.reflection_table.from_predictions_multi(
       experiments,
       dmin=params.prediction.d_min,
@@ -251,12 +252,12 @@ class Script(object):
           Zero reference spots were matched to predictions
         ''')
       elif len(unmatched) != 0:
-        info('')
-        info('*' * 80)
-        info('Warning: %d reference spots were not matched to predictions' % (
+        logger.info('')
+        logger.info('*' * 80)
+        logger.info('Warning: %d reference spots were not matched to predictions' % (
           len(unmatched)))
-        info('*' * 80)
-        info('')
+        logger.info('*' * 80)
+        logger.info('')
       rubbish.extend(unmatched)
 
     # Select a random sample of the predicted reflections
@@ -279,7 +280,7 @@ class Script(object):
     predicted.compute_bbox(experiments)
 
     # Create the integrator
-    info("")
+    logger.info("")
     integrator = IntegratorFactory.create(params, experiments, predicted)
 
     # Integrate the reflections
@@ -302,12 +303,11 @@ class Script(object):
       integrator.report().as_file(params.output.report)
 
     # Print the total time taken
-    info("\nTotal time taken: %f" % (time() - start_time))
+    logger.info("\nTotal time taken: %f" % (time() - start_time))
 
   def process_reference(self, reference):
     ''' Load the reference spots. '''
     from dials.array_family import flex
-    from logging import info
     from time import time
     from libtbx.utils import Sorry
     if reference is None:
@@ -315,13 +315,13 @@ class Script(object):
     st = time()
     assert("miller_index" in reference)
     assert("id" in reference)
-    info('Processing reference reflections')
-    info(' read %d strong spots' % len(reference))
+    logger.info('Processing reference reflections')
+    logger.info(' read %d strong spots' % len(reference))
     mask = reference.get_flags(reference.flags.indexed)
     rubbish = reference.select(mask == False)
     if mask.count(False) > 0:
       reference.del_selected(mask == False)
-      info(' removing %d unindexed reflections' %  mask.count(True))
+      logger.info(' removing %d unindexed reflections' %  mask.count(True))
     if len(reference) == 0:
       raise Sorry('''
         Invalid input for reference reflections.
@@ -331,43 +331,41 @@ class Script(object):
     if mask.count(True) > 0:
       rubbish.extend(reference.select(mask))
       reference.del_selected(mask)
-      info(' removing %d reflections marked as centroid outliers' %  mask.count(True))
+      logger.info(' removing %d reflections marked as centroid outliers' %  mask.count(True))
     mask = reference['miller_index'] == (0, 0, 0)
     if mask.count(True) > 0:
       rubbish.extend(reference.select(mask))
       reference.del_selected(mask)
-      info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
+      logger.info(' removing %d reflections with hkl (0,0,0)' %  mask.count(True))
     mask = reference['id'] < 0
     if mask.count(True) > 0:
       raise Sorry('''
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
       ''' % mask.count(True))
-    info(' using %d indexed reflections' % len(reference))
-    info(' found %d junk reflections' % len(rubbish))
-    info(' time taken: %g' % (time() - st))
+    logger.info(' using %d indexed reflections' % len(reference))
+    logger.info(' found %d junk reflections' % len(rubbish))
+    logger.info(' time taken: %g' % (time() - st))
     return reference, rubbish
 
   def save_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
-    from logging import info
     from time import time
     st = time()
-    info('Saving %d reflections to %s' % (len(reflections), filename))
+    logger.info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
-    info(' time taken: %g' % (time() - st))
+    logger.info(' time taken: %g' % (time() - st))
 
   def save_experiments(self, experiments, filename):
     ''' Save the profile model parameters. '''
-    from logging import info
     from time import time
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     st = time()
-    info('Saving the experiments to %s' % filename)
+    logger.info('Saving the experiments to %s' % filename)
     dump = ExperimentListDumper(experiments)
     with open(filename, "w") as outfile:
       outfile.write(dump.as_json())
-    info(' time taken: %g' % (time() - st))
+    logger.info(' time taken: %g' % (time() - st))
 
   def sample_predictions(self, experiments, predicted, params):
     ''' Select a random sample of the predicted reflections to integrate. '''
@@ -418,7 +416,6 @@ class Script(object):
     ''' Update experiments when scan range is set. '''
     from dxtbx.model.experiment.experiment_list import ExperimentList
     from dxtbx.model.experiment.experiment_list import Experiment
-    from logging import info
     from dials.array_family import flex
 
     # Only do anything is the scan range is set
@@ -482,10 +479,10 @@ class Script(object):
       reference = new_reference
 
       # Print some information
-      info('Modified experiment list to integrate over requested scan range')
+      logger.info('Modified experiment list to integrate over requested scan range')
       for frame00, frame01 in scan_range:
-        info(' scan_range = %d -> %d' % (frame00, frame01))
-      info('')
+        logger.info(' scan_range = %d -> %d' % (frame00, frame01))
+      logger.info('')
 
     # Return the experiments
     return experiments, reference

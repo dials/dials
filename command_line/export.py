@@ -12,6 +12,9 @@
 from __future__ import division
 from libtbx.phil import parse
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program is used to export the results of dials processing in various
@@ -213,7 +216,7 @@ class MTZExporter(object):
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)
-    info(summary.getvalue())
+    logger.info(summary.getvalue())
 
 class SadabsExporter(object):
   '''
@@ -461,7 +464,6 @@ if __name__ == '__main__':
   from dials.util.version import dials_version
   from dials.util import log
   from libtbx.utils import Sorry
-  from logging import info
 
   usage = '%s experiments.json reflections.pickle [options]' % (
               libtbx.env.dispatcher_name)
@@ -483,13 +485,13 @@ if __name__ == '__main__':
     debug=params.output.debug_log)
 
   # Print the version number
-  info(dials_version())
+  logger.info(dials_version())
 
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':
-    info('The following parameters have been modified:\n')
-    info(diff_phil)
+    logger.info('The following parameters have been modified:\n')
+    logger.info(diff_phil)
 
   # Get the experiments and reflections
   experiments = flatten_experiments(params.input.experiments)

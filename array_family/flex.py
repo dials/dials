@@ -14,6 +14,9 @@ from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 
+import logging
+logger = logging.getLogger(__name__)
+
 # Set the 'real' type to either float or double
 if get_real_type() == "float":
   real = flex.float
@@ -152,7 +155,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from dials.algorithms.spot_finding.factory \
       import SpotFinderFactory
-    from logging import info
     from libtbx import Auto
 
     if params.spotfinder.filter.min_spot_size is Auto:
@@ -162,11 +164,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         params.spotfinder.filter.min_spot_size = 3
       else:
         params.spotfinder.filter.min_spot_size = 6
-      info('Setting spotfinder.filter.min_spot_size=%i' %(
+      logger.info('Setting spotfinder.filter.min_spot_size=%i' %(
         params.spotfinder.filter.min_spot_size))
 
     # Get the integrator from the input parameters
-    info('Configuring spot finder from input parameters')
+    logger.info('Configuring spot finder from input parameters')
     find_spots = SpotFinderFactory.from_parameters(
       datablock=datablock,
       params=params)
@@ -363,11 +365,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from math import pi
     from collections import defaultdict
-    from logging import info
     import __builtin__
-    info("Matching reference spots with predicted reflections")
-    info(' %d observed reflections input' % len(other))
-    info(' %d reflections predicted' % len(self))
+    logger.info("Matching reference spots with predicted reflections")
+    logger.info(' %d observed reflections input' % len(other))
+    logger.info(' %d reflections predicted' % len(self))
 
     # Get the miller index, entering flag and turn number for
     # Both sets of reflections
@@ -442,8 +443,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     x2, y2, z2 = o2['xyzcal.px'].parts()
     distance = flex.sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
     mask = distance < 2
-    info(' %d reflections matched' % len(o2))
-    info(' %d reflections accepted' % mask.count(True))
+    logger.info(' %d reflections matched' % len(o2))
+    logger.info(' %d reflections accepted' % mask.count(True))
     self.set_flags(
       sind.select(mask),
       self.flags.reference_spot)
@@ -715,7 +716,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     from dials.model.data import make_image
-    from logging import info
     from time import time
     assert("shoebox" in self)
     detector = imageset.get_detector()
@@ -724,12 +724,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     except Exception:
       frame0, frame1 = (0, len(imageset))
     extractor = ShoeboxExtractor(self, len(detector), frame0, frame1)
-    info(" Beginning to read images")
+    logger.info(" Beginning to read images")
     read_time = 0
     extract_time = 0
     for i in range(len(imageset)):
       if verbose:
-        info('  reading image %d' % i)
+        logger.info('  reading image %d' % i)
       st = time()
       image = imageset.get_corrected_data(i)
       mask2 = imageset.get_mask(i)
@@ -742,9 +742,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       extract_time += time() - st
       del image
     assert(extractor.finished())
-    info('  successfully read %d images' % (frame1 - frame0))
-    info('  read time: %g seconds' % read_time)
-    info('  extract time: %g seconds' % extract_time)
+    logger.info('  successfully read %d images' % (frame1 - frame0))
+    logger.info('  read time: %g seconds' % read_time)
+    logger.info('  extract time: %g seconds' % extract_time)
     return read_time, extract_time
 
   def is_overloaded(self, experiments_or_datablock):

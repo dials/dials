@@ -3,11 +3,13 @@
 #
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
+
 from dials.array_family import flex
-from logging import info, debug
 from dials.util import log
-debug_handle = log.debug_handle()
-info_handle = log.info_handle()
+debug_handle = log.debug_handle(logger)
+info_handle = log.info_handle(logger)
 import libtbx
 from libtbx.utils import Sorry
 from dials.algorithms.indexing.indexer import indexer_base
@@ -182,7 +184,7 @@ class stills_indexer(indexer_base):
           cutoff_fraction * len(self.reflections.select(d_spacings > d_min_indexed))
         crystal_ids = self.reflections.select(d_spacings > d_min_indexed)['id']
         if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
-          info("Finish searching for more lattices: %i unindexed reflections remaining." %(
+          logger.info("Finish searching for more lattices: %i unindexed reflections remaining." %(
             min_reflections_for_indexing))
           break
 
@@ -212,7 +214,7 @@ class stills_indexer(indexer_base):
               cryst, target_space_group)
             if self.cb_op_primitive_inp is not None:
               new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
-              info(new_cryst.get_space_group().info())
+              logger.info(new_cryst.get_space_group().info())
             cryst.update(new_cryst)
             cryst.set_space_group(
               self.params.known_symmetry.space_group.group())
@@ -244,11 +246,11 @@ class stills_indexer(indexer_base):
           refined_experiments = experiments
           refined_reflections = self.reflections
         else:
-          info("")
-          info("#" * 80)
-          info("Starting refinement")
-          info("#" * 80)
-          info("")
+          logger.info("")
+          logger.info("#" * 80)
+          logger.info("Starting refinement")
+          logger.info("#" * 80)
+          logger.info("")
 
           reflections_for_refinement = self.reflections.select(
             self.indexed_reflections)
@@ -269,25 +271,25 @@ class stills_indexer(indexer_base):
               iso_experiment = copy.deepcopy(experiment)
               crystal = iso_experiment.crystal
               if isoform.lookup_symbol != crystal.get_space_group().type().lookup_symbol():
-                info("Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"%(crystal.get_space_group().type().lookup_symbol(), isoform.name, isoform.lookup_symbol))
+                logger.info("Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"%(crystal.get_space_group().type().lookup_symbol(), isoform.name, isoform.lookup_symbol))
                 continue
               crystal.set_B(isoform.cell.fractionalization_matrix())
 
-              info("Refining isoform %s"%isoform.name)
+              logger.info("Refining isoform %s"%isoform.name)
               refiners.append(e_refine(params=self.all_params, experiments=ExperimentList([iso_experiment]), reflections=reflections, graph_verbose=False))
 
             positional_rmsds = [math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2) for P in refiners]
-            info("Positional rmsds for all isoforms:" + str(positional_rmsds))
+            logger.info("Positional rmsds for all isoforms:" + str(positional_rmsds))
             minrmsd_mm = min(positional_rmsds)
             minindex = positional_rmsds.index(minrmsd_mm)
-            info("The smallest rmsd is %5.1f um from isoform %s" % (
+            logger.info("The smallest rmsd is %5.1f um from isoform %s" % (
               1000. * minrmsd_mm, self.params.stills.isoforms[minindex].name))
             if self.params.stills.isoforms[minindex].rmsd_target_mm is not None:
-              info("Asserting %f < %f"%(minrmsd_mm, self.params.stills.isoforms[minindex].rmsd_target_mm))
+              logger.info("Asserting %f < %f"%(minrmsd_mm, self.params.stills.isoforms[minindex].rmsd_target_mm))
               assert minrmsd_mm < self.params.stills.isoforms[minindex].rmsd_target_mm
-            info("Acceptable rmsd for isoform %s." % (self.params.stills.isoforms[minindex].name))
+            logger.info("Acceptable rmsd for isoform %s." % (self.params.stills.isoforms[minindex].name))
             if len(self.params.stills.isoforms) == 2:
-              info("Rmsd gain over the other isoform %5.1f um." % (
+              logger.info("Rmsd gain over the other isoform %5.1f um." % (
               1000. * abs(positional_rmsds[0] - positional_rmsds[1])))
             R = refiners[minindex]
             # Now one last check to see if direct beam is out of bounds
@@ -296,7 +298,7 @@ class stills_indexer(indexer_base):
               refined_beam = matrix.col(
                 R.get_experiments()[0].detector[0].get_beam_centre_lab(experiments[0].beam.get_s0())[0:2])
               known_beam = matrix.col(self.params.stills.isoforms[minindex].beam_restraint)
-              info("Asserting difference in refined beam center and expected beam center %f < %f"%((refined_beam - known_beam).length(), self.params.stills.isoforms[
+              logger.info("Asserting difference in refined beam center and expected beam center %f < %f"%((refined_beam - known_beam).length(), self.params.stills.isoforms[
                 minindex].rmsd_target_mm))
               assert (refined_beam - known_beam).length() < self.params.stills.isoforms[minindex].rmsd_target_mm
               # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
@@ -320,8 +322,8 @@ class stills_indexer(indexer_base):
               if len(experiments) == 1:
                 raise Sorry(e)
               had_refinement_error = True
-              info("Refinement failed:")
-              info(s)
+              logger.info("Refinement failed:")
+              logger.info(s)
               del experiments[-1]
               break
             raise
@@ -387,13 +389,13 @@ class stills_indexer(indexer_base):
       show_rotation_matrix_differences(
         self.refined_experiments.crystals(), out=info_handle)
 
-    info("Final refined crystal models:")
+    logger.info("Final refined crystal models:")
     for i, crystal_model in enumerate(self.refined_experiments.crystals()):
       n_indexed = 0
       for i_expt in experiments.where(crystal=crystal_model):
         n_indexed += (self.reflections['id'] == i).count(True)
-      info("model %i (%i reflections):" %(i+1, n_indexed))
-      info(crystal_model)
+      logger.info("model %i (%i reflections):" %(i+1, n_indexed))
+      logger.info(crystal_model)
 
     if 'xyzcal.mm' in self.refined_reflections: # won't be there if refine_all_candidates = False and no isoforms
       self.refined_reflections['xyzcal.px'] = flex.vec3_double(
@@ -437,12 +439,11 @@ class stills_indexer(indexer_base):
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
     from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
-    from logging import info
     import copy
 
-    info('*' * 80)
-    info('Selecting the best orientation matrix')
-    info('*' * 80)
+    logger.info('*' * 80)
+    logger.info('Selecting the best orientation matrix')
+    logger.info('*' * 80)
 
     from libtbx import group_args
     class candidate_info(group_args):

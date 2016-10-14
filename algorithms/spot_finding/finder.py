@@ -10,6 +10,8 @@
 
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Result(object):
   '''
@@ -77,7 +79,6 @@ class ExtractPixelsFromImage(object):
     from dxtbx.imageset import ImageSweep
     from dials.array_family import flex
     from math import ceil
-    from logging import info
 
     # Parallel reading of HDF5 from the same handle is not allowed. Python
     # multiprocessing is a bit messed up and used fork on linux so need to
@@ -161,12 +162,12 @@ class ExtractPixelsFromImage(object):
 
     # Print some info
     if self.compute_mean_background:
-      info("Found %d strong pixels on image %d with average background %f"
+      logger.info("Found %d strong pixels on image %d with average background %f"
            % (num_strong,
               index + 1,
               average_background))
     else:
-      info("Found %d strong pixels on image %d" % (num_strong, index + 1))
+      logger.info("Found %d strong pixels on image %d" % (num_strong, index + 1))
 
     # Return the result
     return Result(pixel_list)
@@ -273,7 +274,7 @@ class ExtractSpotsParallelTask(object):
     import logging
     log.config_simple_cached()
     result = self.function(task)
-    handlers = logging.getLogger().handlers
+    handlers = logging.getLogger('dials').handlers
     assert len(handlers) == 1, "Invalid number of logging handlers"
     return result, handlers[0].messages()
 
@@ -298,7 +299,6 @@ class PixelListToShoeboxes(object):
 
     '''
     from dxtbx.imageset import ImageSweep
-    from logging import info
     from dials.array_family import flex
 
     # Extract the pixel lists into a list of reflections
@@ -322,8 +322,8 @@ class PixelListToShoeboxes(object):
         shoeboxes.extend(creator.result())
         spotsizes.extend(creator.spot_size())
         hp.extend(creator.hot_pixels())
-    info('')
-    info('Extracted {0} spots'.format(len(shoeboxes)))
+    logger.info('')
+    logger.info('Extracted {0} spots'.format(len(shoeboxes)))
 
     # Get the unallocated spots and print some info
     selection = shoeboxes.is_allocated()
@@ -331,10 +331,10 @@ class PixelListToShoeboxes(object):
     ntoosmall = (spotsizes < self.min_spot_size).count(True)
     ntoolarge = (spotsizes > self.max_spot_size).count(True)
     assert ntoosmall + ntoolarge == selection.count(False)
-    info('Removed %d spots with size < %d pixels' % (
+    logger.info('Removed %d spots with size < %d pixels' % (
       ntoosmall,
       self.min_spot_size))
-    info('Removed %d spots with size > %d pixels' % (
+    logger.info('Removed %d spots with size > %d pixels' % (
       ntoolarge,
       self.max_spot_size))
 
@@ -361,15 +361,14 @@ class ShoeboxesToReflectionTable(object):
 
     '''
     from dials.array_family import flex
-    from logging import info
 
     # Calculate the spot centroids
     centroid = shoeboxes.centroid_valid()
-    info('Calculated {0} spot centroids'.format(len(shoeboxes)))
+    logger.info('Calculated {0} spot centroids'.format(len(shoeboxes)))
 
     # Calculate the spot intensities
     intensity = shoeboxes.summed_intensity()
-    info('Calculated {0} spot intensities'.format(len(shoeboxes)))
+    logger.info('Calculated {0} spot intensities'.format(len(shoeboxes)))
 
     # Create the observations
     observed = flex.observation(shoeboxes.panels(), centroid, intensity)
@@ -513,20 +512,18 @@ class ExtractSpots(object):
     from dxtbx.imageset import ImageSweep
     from dials.model.data import PixelListLabeller
     from dials.util.mp import batch_multi_node_parallel_map
-    from logging import info, warn
     from math import floor, ceil
     import platform
-    from logging import warn
 
     # Change the number of processors if necessary
     mp_nproc = self.mp_nproc
     mp_njobs = self.mp_njobs
     if (mp_nproc > 1 or mp_njobs > 1) and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-      warn("")
-      warn("*" * 80)
-      warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")
-      warn("*" * 80)
-      warn("")
+      logger.warn("")
+      logger.warn("*" * 80)
+      logger.warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")
+      logger.warn("*" * 80)
+      logger.warn("")
       mp_nproc = 1
       mp_njobs = 1
     if mp_nproc * mp_njobs > len(imageset):
@@ -542,7 +539,7 @@ class ExtractSpots(object):
         len(imageset),
         mp_njobs * mp_nproc,
         self.min_chunksize)
-      info("Setting chunksize=%i" %mp_chunksize)
+      logger.info("Setting chunksize=%i" %mp_chunksize)
 
     len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
     if mp_chunksize > len_by_nproc:
@@ -570,16 +567,15 @@ class ExtractSpots(object):
     pixel_labeller = [PixelListLabeller() for p in range(num_panels)]
 
     # Do the processing
-    info('Extracting strong pixels from images')
+    logger.info('Extracting strong pixels from images')
     if mp_njobs > 1:
-      info(' Using %s with %d parallel job(s) and %d processes per node\n' % (mp_method, mp_njobs, mp_nproc))
+      logger.info(' Using %s with %d parallel job(s) and %d processes per node\n' % (mp_method, mp_njobs, mp_nproc))
     else:
-      info(' Using multiprocessing with %d parallel job(s)\n' % (mp_nproc))
+      logger.info(' Using multiprocessing with %d parallel job(s)\n' % (mp_nproc))
     if mp_nproc > 1 or mp_njobs > 1:
       def process_output(result):
-        import logging
         for message in result[1]:
-          logging.log(message.levelno, message.msg)
+          logger.log(message.levelno, message.msg)
         assert len(pixel_labeller) == len(result[0].pixel_list), "Inconsistent size"
         for plabeller, plist in zip(pixel_labeller, result[0].pixel_list):
           plabeller.add(plist)
@@ -621,20 +617,18 @@ class ExtractSpots(object):
     from dxtbx.imageset import ImageSweep
     from dials.model.data import PixelListLabeller
     from dials.util.mp import batch_multi_node_parallel_map
-    from logging import info, warn
     from math import floor, ceil
     import platform
-    from logging import warn
 
     # Change the number of processors if necessary
     mp_nproc = self.mp_nproc
     mp_njobs = self.mp_njobs
     if (mp_nproc > 1 or mp_njobs > 1) and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-      warn("")
-      warn("*" * 80)
-      warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")
-      warn("*" * 80)
-      warn("")
+      logger.warn("")
+      logger.warn("*" * 80)
+      logger.warn("Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1")
+      logger.warn("*" * 80)
+      logger.warn("")
       mp_nproc = 1
       mp_njobs = 1
     if mp_nproc * mp_njobs > len(imageset):
@@ -650,7 +644,7 @@ class ExtractSpots(object):
         len(imageset),
         mp_njobs * mp_nproc,
         self.min_chunksize)
-      info("Setting chunksize=%i" %mp_chunksize)
+      logger.info("Setting chunksize=%i" %mp_chunksize)
 
     len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
     if mp_chunksize > len_by_nproc:
@@ -680,16 +674,15 @@ class ExtractSpots(object):
     reflections = flex.reflection_table()
 
     # Do the processing
-    info('Extracting strong spots from images')
+    logger.info('Extracting strong spots from images')
     if mp_njobs > 1:
-      info(' Using %s with %d parallel job(s) and %d processes per node\n' % (mp_method, mp_njobs, mp_nproc))
+      logger.info(' Using %s with %d parallel job(s) and %d processes per node\n' % (mp_method, mp_njobs, mp_nproc))
     else:
-      info(' Using multiprocessing with %d parallel job(s)\n' % (mp_nproc))
+      logger.info(' Using multiprocessing with %d parallel job(s)\n' % (mp_nproc))
     if mp_nproc > 1 or mp_njobs > 1:
       def process_output(result):
-        import logging
         for message in result[1]:
-          logging.log(message.levelno, message.msg)
+          logger.log(message.levelno, message.msg)
         reflections.extend(result[0][0])
         result[0][0] = None
       batch_multi_node_parallel_map(
@@ -771,7 +764,6 @@ class SpotFinder(object):
 
     '''
     from dials.array_family import flex
-    from logging import info
     import cPickle as pickle
 
     # Loop through all the imagesets and find the strong spots
@@ -779,10 +771,10 @@ class SpotFinder(object):
     for i, imageset in enumerate(datablock.extract_imagesets()):
 
       # Find the strong spots in the sweep
-      info('-' * 80)
-      info('Finding strong spots in imageset %d' % i)
-      info('-' * 80)
-      info('')
+      logger.info('-' * 80)
+      logger.info('Finding strong spots in imageset %d' % i)
+      logger.info('-' * 80)
+      logger.info('')
       table, hot_mask = self._find_spots_in_imageset(imageset)
       table['id'] = flex.int(table.nrows(), i)
       reflections.extend(table)
@@ -825,7 +817,6 @@ class SpotFinder(object):
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep
-    from logging import info
 
     # The input mask
     mask = self.mask_generator.generate(imageset)
@@ -869,7 +860,7 @@ class SpotFinder(object):
     for scan in scan_range:
       j0, j1 = scan
       assert(j1 >= j0 and j0 > max_scan_range[0] and j1 <= max_scan_range[1])
-      info('\nFinding spots in image {0} to {1}...'.format(j0, j1))
+      logger.info('\nFinding spots in image {0} to {1}...'.format(j0, j1))
       j0 -= 1
       if isinstance(imageset, ImageSweep):
         j0 -= imageset.get_array_range()[0]
@@ -892,7 +883,6 @@ class SpotFinder(object):
 
     '''
     from dials.array_family import flex
-    from logging import info
 
     # Write the hot mask
     if self.write_hot_mask:
@@ -906,7 +896,7 @@ class SpotFinder(object):
           for i in range(len(hp)):
             hm[hp[i]] = False
           num_hot += len(hp)
-      info('Found %d possible hot pixel(s)' % num_hot)
+      logger.info('Found %d possible hot pixel(s)' % num_hot)
 
     else:
       hot_mask = None

@@ -13,6 +13,9 @@ from __future__ import division
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
 from libtbx.utils import Sorry
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program is used to import image data files into a format that can be used
@@ -640,7 +643,6 @@ class MetaDataUpdater(object):
     Convert the imagesets to grid scans
 
     '''
-    from logging import info
     from dxtbx.datablock import DataBlock
     from dxtbx.imageset import ImageGrid
     if params.input.grid_size is None:
@@ -673,7 +675,6 @@ class Script(object):
   def run(self):
     ''' Parse the options. '''
     from dials.util import log
-    from logging import info, debug
 
     # Parse the command line arguments in two passes to set up logging early
     params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
@@ -684,7 +685,7 @@ class Script(object):
       info=params.output.log,
       debug=params.output.debug_log)
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Parse the command line arguments completely
     params, options = self.parser.parse_args(show_diff_phil=False)
@@ -692,8 +693,8 @@ class Script(object):
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Setup the datablock importer
     datablock_importer = DataBlockImporter(params)
@@ -718,24 +719,24 @@ class Script(object):
     # if appropriate
     image_range = params.geometry.scan.image_range
 
-    info("-" * 80)
-    info("  format: %s" % str(datablock.format_class()))
+    logger.info("-" * 80)
+    logger.info("  format: %s" % str(datablock.format_class()))
     if image_range is None:
-      info("  num images: %d" % datablock.num_images())
+      logger.info("  num images: %d" % datablock.num_images())
     else:
-      info("  num images: %d" % (image_range[1] - image_range[0] + 1))
-    info("  num sweeps: %d" % len(sweeps))
-    info("  num stills: %d" % num_stills)
+      logger.info("  num images: %d" % (image_range[1] - image_range[0] + 1))
+    logger.info("  num sweeps: %d" % len(sweeps))
+    logger.info("  num stills: %d" % num_stills)
 
     # Loop through all the sweeps
     for j, sweep in enumerate(sweeps):
-      debug("")
-      debug("Sweep %d" % j)
-      debug("  Length %d" % len(sweep))
-      debug(sweep.get_beam())
-      debug(sweep.get_goniometer())
-      debug(sweep.get_detector())
-      debug(sweep.get_scan())
+      logger.debug("")
+      logger.debug("Sweep %d" % j)
+      logger.debug("  Length %d" % len(sweep))
+      logger.debug(sweep.get_beam())
+      logger.debug(sweep.get_goniometer())
+      logger.debug(sweep.get_detector())
+      logger.debug(sweep.get_scan())
 
     # Only allow a single sweep
     if params.input.allow_multiple_sweeps is False:
@@ -749,10 +750,9 @@ class Script(object):
     Output the datablock to file.
 
     '''
-    from logging import info
     if params.output.datablock:
-      info("-" * 80)
-      info('Writing datablocks to %s' % params.output.datablock)
+      logger.info("-" * 80)
+      logger.info('Writing datablocks to %s' % params.output.datablock)
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock, compact=params.output.compact)
 
@@ -785,15 +785,14 @@ class Script(object):
     Print a diff between sweeps.
 
     '''
-    from logging import info
-    info("")
+    logger.info("")
     for i in range(1, len(sweeps)):
-      info("=" * 80)
-      info("Diff between sweep %d and %d" % (i-1, i))
-      info("")
+      logger.info("=" * 80)
+      logger.info("Diff between sweep %d and %d" % (i-1, i))
+      logger.info("")
       self.print_sweep_diff(sweeps[i-1], sweeps[i], params)
-    info("=" * 80)
-    info("")
+    logger.info("=" * 80)
+    logger.info("")
 
   def print_sweep_diff(self, sweep1, sweep2, params):
     '''

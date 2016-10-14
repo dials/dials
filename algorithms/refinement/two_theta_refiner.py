@@ -11,10 +11,12 @@
 """Versions of refinement classes for two theta refinement of the unit cell"""
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
+
 from dials.array_family import flex
 from scitbx import matrix
 from math import sqrt, pi
-from logging import info
 
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 from dials.algorithms.refinement.prediction import ExperimentsPredictor
@@ -95,9 +97,9 @@ class TwoThetaReflectionManager(ReflectionManager):
       # zero length reflection list
       warning("Unable to calculate summary statistics for zero observations")
       return
-    info(msg)
-    info(st.format())
-    info("")
+    logger.info(msg)
+    logger.info(st.format())
+    logger.info("")
 
 class TwoThetaExperimentsPredictor(ExperimentsPredictor):
 

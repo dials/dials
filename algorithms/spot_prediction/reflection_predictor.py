@@ -10,6 +10,9 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
+
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 
@@ -127,10 +130,9 @@ class ReflectionPredictor(object):
     :return: A reflection table
 
     '''
-    from logging import info
-    info('Prediction type: %s' % self._predict.name)
+    logger.info('Prediction type: %s' % self._predict.name)
     table = self._predict()
-    info('Predicted %d reflections' % len(table))
+    logger.info('Predicted %d reflections' % len(table))
     return table
 
   def predictor(self, index):

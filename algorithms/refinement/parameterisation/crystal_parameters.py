@@ -10,7 +10,9 @@
 #
 
 from __future__ import division
-from logging import debug
+import logging
+logger = logging.getLogger(__name__)
+
 from model_parameters import Parameter, ModelParameterisation
 from dxtbx.model.crystal import crystal_model # implicit import
 from scitbx import matrix
@@ -131,9 +133,9 @@ class CrystalUnitCellMixin(object):
     except RuntimeError as e:
       from libtbx.utils import Sorry
       # write original error to debug log
-      debug('Unable to compose the crystal model')
-      debug('Original error message: {0}'.format(str(e)))
-      debug('Failing now.')
+      logger.debug('Unable to compose the crystal model')
+      logger.debug('Original error message: {0}'.format(str(e)))
+      logger.debug('Failing now.')
       raise Sorry('Unable to compose the crystal model. Please check that the '
                   'experiments match the indexing of the reflections.')
 

@@ -12,7 +12,9 @@
 from __future__ import division
 from libtbx.utils import Sorry
 from dials.interfaces import SpotFinderThresholdIface
-from logging import info
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
@@ -97,7 +99,7 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
     if params.spotfinder.threshold.xds.global_threshold is libtbx.Auto:
       params.spotfinder.threshold.xds.global_threshold \
         = int(estimate_global_threshold(image, mask))
-      info("Setting global_threshold: %i" %(
+      logger.info("Setting global_threshold: %i" %(
         params.spotfinder.threshold.xds.global_threshold))
 
     from dials.algorithms.spot_finding.threshold import XDSThresholdStrategy
