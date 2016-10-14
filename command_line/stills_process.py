@@ -80,6 +80,7 @@ dials_phil_str = '''
       .help = Save the raw pixel values inside the reflection shoeboxes.
   }
 
+  include scope dials.util.options.geometry_phil_scope
   include scope dials.algorithms.spot_finding.factory.phil_scope
   include scope dials.algorithms.indexing.indexer.index_only_phil_scope
   include scope dials.algorithms.refinement.refiner.phil_scope
@@ -187,6 +188,8 @@ class Script(object):
       info(diff_phil)
 
     self.load_reference_geometry()
+    from dials.command_line.dials_import import ManualGeometryUpdater
+    update_geometry = ManualGeometryUpdater(params)
 
     # Import stuff
     info("Loading files...")
@@ -202,6 +205,10 @@ class Script(object):
         for datablock in datablocks:
           for imageset in datablock.extract_imagesets():
             imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+      
+      for datablock in datablocks:
+        for imageset in datablock.extract_imagesets():
+          update_geometry(imageset)
 
       indices = []
       basenames = []
@@ -216,7 +223,7 @@ class Script(object):
       tags = []
       for i, basename in zip(indices, basenames):
         if basenames.count(basename) > 1:
-          tags.append("%s_%d"%(basename, i))
+          tags.append("%s_%05d"%(basename, i))
         else:
           tags.append(basename)
 
@@ -232,7 +239,7 @@ class Script(object):
       for i, filename in enumerate(all_paths):
         basename = os.path.splitext(filename)[0]
         if basenames.count(basename) > 1:
-          tags.append("%s_%d"%(basename, i))
+          tags.append("%s_%05d"%(basename, i))
         else:
           tags.append(basename)
 
@@ -254,6 +261,8 @@ class Script(object):
           from dxtbx.model import Detector
           imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
 
+        update_geometry(imagesets[0])
+        
         Processor(copy.deepcopy(params)).process_datablock(tag, datablock)
 
       iterable = zip(tags, all_paths)
