@@ -106,12 +106,15 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
   pixel = panel.get_pixel_size()
   fast_axis = matrix.col(panel.get_fast_axis())
   slow_axis = matrix.col(panel.get_slow_axis())
+  normal = fast_axis.cross(slow_axis)
+  detector2t = s0.angle(normal, deg=True)
   origin = matrix.col(panel.get_origin())
 
   if debug:
     info('Detector fast, slow axes:')
     info('%6.3f%6.3f%6.3f' % (fast_axis.elems))
     info('%6.3f%6.3f%6.3f' % (slow_axis.elems))
+    info('Detector two theta (degrees): %.2f' % detector2t)
 
   scl_x = 512.0 / (dims[0] * pixel[0])
   scl_y = 512.0 / (dims[1] * pixel[1])
@@ -225,7 +228,7 @@ def export_hkl(integrated_data, experiment_list, hklout, run=0,
 
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
                (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
-    fout.write('%7.2f%7.2f%8.2f%7.3f%5d\n' % (x, y, z, scl[j], istol))
+    fout.write('%7.2f%7.2f%8.2f%7.2f%5d\n' % (x, y, z, detector2t, istol))
 
   fout.close()
   info('Output %d reflections to %s' % (nref, hklout))
