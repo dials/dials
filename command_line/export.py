@@ -56,7 +56,7 @@ Examples::
 
 phil_scope = parse('''
 
-  format = *mtz hkl nxs mosflm xds best xds_ascii
+  format = *mtz sadabs nxs mosflm xds best xds_ascii
     .type = choice
     .help = "The output file format"
 
@@ -95,15 +95,15 @@ phil_scope = parse('''
       .help = "The output MTZ file"
   }
 
-  hklf4 {
+  sadabs {
 
     hklout = integrated.sad
       .type = path
-      .help = "The output raw hkl file"
+      .help = "The output raw sadabs file"
     run = 0
       .type = int
-      .help = "Batch number / run number for hkl file"
-    predict = True
+      .help = "Batch number / run number for output file"
+    predict = False
       .type = bool
       .help = "Compute centroids with static model, not observations"
 
@@ -215,7 +215,7 @@ class MTZExporter(object):
     m.show_summary(out=summary)
     info(summary.getvalue())
 
-class HKLExporter(object):
+class SadabsExporter(object):
   '''
   A class to export stuff in HKL format
 
@@ -233,9 +233,9 @@ class HKLExporter(object):
 
     # Check the input
     if len(experiments) == 0:
-      raise Sorry('HKL exporter requires an experiment list')
+      raise Sorry('SADABS exporter requires an experiment list')
     if len(reflections) != 1:
-      raise Sorry('HKL exporter requires 1 reflection table')
+      raise Sorry('SADABS exporter requires 1 reflection table')
 
     # Save the stuff
     self.params = params
@@ -243,17 +243,17 @@ class HKLExporter(object):
     self.reflections = reflections[0]
 
   def export(self):
-    from dials.util.export_hkl import export_hkl
-    export_hkl(
+    from dials.util.export_sadabs import export_sadabs
+    export_sadabs(
       self.reflections,
       self.experiments,
-      self.params.hklf4.hklout,
-      run=self.params.hklf4.run,
+      self.params.sadabs.hklout,
+      run=self.params.sadabs.run,
       summation=self.params.summation,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials,
       debug=params.debug,
-      predict=params.hklf4.predict)
+      predict=params.sadabs.predict)
 
 class XDSASCIIExporter(object):
   '''
@@ -501,8 +501,8 @@ if __name__ == '__main__':
   # Choose the exporter
   if params.format == 'mtz':
     exporter = MTZExporter(params, experiments, reflections)
-  elif params.format == 'hkl':
-    exporter = HKLExporter(params, experiments, reflections)
+  elif params.format == 'sadabs':
+    exporter = SadabsExporter(params, experiments, reflections)
   elif params.format == 'xds_ascii':
     exporter = XDSASCIIExporter(params, experiments, reflections)
   elif params.format == 'nxs':

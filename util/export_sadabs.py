@@ -3,11 +3,11 @@ from __future__ import division
 from export_mtz import sum_partial_reflections
 from export_mtz import scale_partial_reflections
 
-def export_hkl(integrated_data, experiment_list, hklout, run=0,
-               summation=False, include_partials=False, keep_partials=False,
-               debug=False, predict=True):
+def export_sadabs(integrated_data, experiment_list, hklout, run=0,
+                  summation=False, include_partials=False, keep_partials=False,
+                  debug=False, predict=True):
   '''Export data from integrated_data corresponding to experiment_list to a
-  HKL file for input to SADABS. FIXME probably need to make a .p4p file as
+  file for input to SADABS. FIXME probably need to make a .p4p file as
   well...'''
 
   from logging import info
