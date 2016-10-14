@@ -103,6 +103,9 @@ phil_scope = parse('''
     run = 0
       .type = int
       .help = "Batch number / run number for hkl file"
+    predict = True
+      .type = bool
+      .help = "Compute centroids with static model, not observations"
 
   }
 
@@ -249,7 +252,8 @@ class HKLExporter(object):
       summation=self.params.summation,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials,
-      debug=params.debug)
+      debug=params.debug,
+      predict=params.hklf4.predict)
 
 class XDSASCIIExporter(object):
   '''
