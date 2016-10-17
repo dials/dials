@@ -207,7 +207,7 @@ class Script(object):
         for datablock in datablocks:
           for imageset in datablock.extract_imagesets():
             imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
-      
+
       for datablock in datablocks:
         for imageset in datablock.extract_imagesets():
           update_geometry(imageset)
@@ -236,10 +236,9 @@ class Script(object):
       iterable = zip(tags, split_datablocks)
 
     else:
-      basenames = []
+      basenames = [os.path.splitext(os.path.basename(filename))[0] for filename in all_paths]
       tags = []
-      for i, filename in enumerate(all_paths):
-        basename = os.path.splitext(filename)[0]
+      for i, basename in enumerate(basenames):
         if basenames.count(basename) > 1:
           tags.append("%s_%05d"%(basename, i))
         else:
@@ -264,7 +263,7 @@ class Script(object):
           imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
 
         update_geometry(imagesets[0])
-        
+
         Processor(copy.deepcopy(params)).process_datablock(tag, datablock)
 
       iterable = zip(tags, all_paths)
