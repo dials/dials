@@ -8,7 +8,8 @@ import signal
 
 import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger(
+  __name__ if __name__ != '__main__' else libtbx.env.dispatcher_name)
 
 help_message = '''\
 A client/server version of dials.find_spots with additional analysis including
@@ -87,8 +88,8 @@ indexing_min_spots = 10
   interp = find_spots_phil_scope.command_line_argument_interpreter()
   phil_scope, unhandled = interp.process_and_fetch(
     unhandled, custom_processor='collect_remaining')
-  print 'The following spotfinding parameters have been modified:'
-  find_spots_phil_scope.fetch_diff(source=phil_scope).show()
+  logger.info('The following spotfinding parameters have been modified:')
+  logger.info(find_spots_phil_scope.fetch_diff(source=phil_scope).as_str())
   params = phil_scope.extract()
   # no need to write the hot mask in the server/client
   params.spotfinder.write_hot_mask = False
@@ -96,7 +97,7 @@ indexing_min_spots = 10
   t0 = time.time()
   reflections = flex.reflection_table.from_observations(datablock, params)
   t1 = time.time()
-  print 'Spotfinding took %.2f seconds' %(t1-t0)
+  logger.info('Spotfinding took %.2f seconds' %(t1-t0))
   from dials.algorithms.spot_finding import per_image_analysis
   imageset = datablock.extract_imagesets()[0]
   scan = imageset.get_scan()
@@ -108,7 +109,7 @@ indexing_min_spots = 10
     imageset, reflections, i=i, plot=False)
   stats = stats.__dict__
   t2 = time.time()
-  print 'Resolution analysis took %.2f seconds' %(t2-t1)
+  logger.info('Resolution analysis took %.2f seconds' %(t2-t1))
 
   if index and stats['n_spots_no_ice'] > indexing_min_spots:
     import logging
@@ -119,7 +120,7 @@ indexing_min_spots = 10
     phil_scope, unhandled = interp.process_and_fetch(
       unhandled, custom_processor='collect_remaining')
     imagesets = [imageset]
-    print 'The following indexing parameters have been modified:'
+    logger.info('The following indexing parameters have been modified:')
     indexer.master_phil_scope.fetch_diff(source=phil_scope).show()
     params = phil_scope.extract()
     params.indexing.scan_range=[]
@@ -149,14 +150,14 @@ indexing_min_spots = 10
       stats['n_indexed'] = indexed_sel.count(True)
       stats['fraction_indexed'] = indexed_sel.count(True)/len(reflections)
     except Exception, e:
-      print e
+      logger.error(e)
       stats['error'] = str(e)
       #stats.crystal = None
       #stats.n_indexed = None
       #stats.fraction_indexed = None
     finally:
       t3 = time.time()
-      print 'Indexing took %.2f seconds' %(t3-t2)
+      logger.info('Indexing took %.2f seconds' %(t3-t2))
 
     if integrate and 'lattices' in stats:
 
@@ -167,7 +168,7 @@ indexing_min_spots = 10
       phil_scope, unhandled = interp.process_and_fetch(
         unhandled, custom_processor='collect_remaining')
       imagesets = [imageset]
-      print 'The following integration parameters have been modified:'
+      logger.error('The following integration parameters have been modified:')
       integrate_phil_scope.fetch_diff(source=phil_scope).show()
       params = phil_scope.extract()
 
@@ -217,11 +218,11 @@ indexing_min_spots = 10
 
         stats['integrated_intensity'] = flex.sum(reflections['intensity.sum.value'])
       except Exception, e:
-        print e
+        logger.error(e)
         stats['error'] = str(e)
       finally:
         t4 = time.time()
-        print 'Integration took %.2f seconds' %(t4-t3)
+        logger.info('Integration took %.2f seconds' %(t4-t3))
 
   return stats
 
