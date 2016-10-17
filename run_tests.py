@@ -117,6 +117,7 @@ tst_list = (
     "$D/test/command_line/tst_spotfinder.py",
     "$D/test/command_line/tst_stereographic_projections.py",
     "$D/test/command_line/tst_stills_detector_hybrid_refine.py",
+    "$D/test/command_line/tst_stills_process.py",
     "$D/test/command_line/tst_two_theta_refine.py",
     "$D/test/command_line/tst_align_crystal.py",
     "$D/test/framework/tst_interface.py",
