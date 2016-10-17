@@ -471,7 +471,7 @@ if __name__ == '__main__':
 
   # Create the option parser
   parser = OptionParser(
-    usage = usage,
+    usage=usage,
     read_experiments=True,
     read_reflections=True,
     phil=phil_scope,
