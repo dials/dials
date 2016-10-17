@@ -1,7 +1,8 @@
 from __future__ import division
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 from cStringIO import StringIO
 from libtbx.phil import command_line
 from libtbx.utils import Sorry

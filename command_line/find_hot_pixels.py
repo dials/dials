@@ -7,8 +7,9 @@ from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
 from dials.util.options import flatten_experiments
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 phil_scope = iotbx.phil.parse("""\
 output {

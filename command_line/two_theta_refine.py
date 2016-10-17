@@ -11,8 +11,9 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 import cPickle as pickle
 from dials.array_family import flex
 from dials.util import log

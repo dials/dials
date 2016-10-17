@@ -12,8 +12,9 @@
 
 from __future__ import division
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 help_message = '''
 

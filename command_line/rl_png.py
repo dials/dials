@@ -9,8 +9,9 @@ import matplotlib
 # Offline backend
 matplotlib.use("Agg")
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 import libtbx.phil
 from scitbx import matrix

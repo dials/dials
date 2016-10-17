@@ -3,8 +3,9 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process
 
 from __future__ import division
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 from libtbx.utils import Sorry
 from dxtbx.datablock import DataBlockFactory

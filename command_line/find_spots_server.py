@@ -6,8 +6,9 @@ from multiprocessing import current_process
 import os
 import signal
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 help_message = '''\
 A client/server version of dials.find_spots with additional analysis including

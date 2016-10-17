@@ -12,8 +12,9 @@ from __future__ import division
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
 from libtbx.utils import Sorry
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 help_message = '''
 

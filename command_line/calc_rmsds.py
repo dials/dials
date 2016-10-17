@@ -15,8 +15,9 @@ from copy import deepcopy
 from libtbx.utils import Sorry
 from dials.array_family import flex
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 help_message = '''
 

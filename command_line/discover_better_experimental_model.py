@@ -12,8 +12,9 @@ from dials.util.options import flatten_datablocks, flatten_reflections
 from dials.algorithms.indexing.indexer \
      import indexer_base, filter_reflections_by_scan_range
 
+import libtbx.load_env
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 
 help_message = '''
 
