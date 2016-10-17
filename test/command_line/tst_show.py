@@ -45,6 +45,7 @@ Beam centre: (212.48,220.00)
 Scan:
     image range:   {1,9}
     oscillation:   {0,0.2}
+    exposure time: 0.2
 
 Goniometer:
     Rotation axis:   {1,0,0}
@@ -96,6 +97,7 @@ Beam centre: (210.76,205.28)
 Scan:
     image range:   {1,540}
     oscillation:   {82,0.15}
+    exposure time: 0.067
 
 Goniometer:
     Rotation axis:   {1,0,0}
@@ -141,6 +143,7 @@ Beam centre: (212.48,220.00)
 Scan:
     image range:   {1,9}
     oscillation:   {0,0.2}
+    exposure time: 0.2
 
 Goniometer:
     Rotation axis:   {1,0,0}
