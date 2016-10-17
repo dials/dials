@@ -64,7 +64,6 @@ phil_scope = parse('''
   }
 
   scan_range = None
-    .type = str
     .help = "Scan range in images to slice a sweep. Number of arguments"
             "must be a factor of two. Specifying \"0 0\" will use all images"
             "by default. The given range follows C conventions"
