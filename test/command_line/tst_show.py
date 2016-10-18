@@ -19,6 +19,9 @@ def run():
 Experiment 0:
 Detector:
 Panel:
+  name: Panel
+  type: SENSOR_PAD
+  identifier:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,495976}
@@ -73,6 +76,9 @@ Crystal:
   assert not show_diff("\n".join(result.stdout_lines[7:]), """\
 Detector:
 Panel:
+  name: Panel
+  type: SENSOR_PAD
+  identifier:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,161977}
@@ -119,6 +125,9 @@ Goniometer:
   assert not show_diff("\n".join(result.stdout_lines[8:]), """\
 Detector:
 Panel:
+  name: Panel
+  type: SENSOR_PAD
+  identifier:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,495976}
