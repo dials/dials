@@ -330,15 +330,43 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from scitbx.array_family import flex
     return self.select(flex.bool(len(self), True))
 
-  def sort(self, name, reverse=False):
+  def sort(self, name, reverse=False, order=None):
     '''
     Sort the reflection table by a key.
 
     :param name: The name of the column
     :param reverse: Reverse the sort order
+    :param order: For multi element items specify order
 
     '''
-    perm = flex.sort_permutation(self[name], reverse=reverse)
+    import __builtin__
+    if type(self[name]) in [
+        vec2_double,
+        vec3_double,
+        mat3_double,
+        int6,
+        miller_index ]:
+      data = self[name]
+      if order is None:
+        perm = flex.size_t(
+          __builtin__.sorted(
+            range(len(self)),
+            key=lambda x: data[x],
+            reverse=reverse))
+      else:
+        assert len(order) == len(data[0])
+        def compare(x, y):
+          a = tuple(x[i] for i in order)
+          b = tuple(y[i] for i in order)
+          return cmp(a, b)
+        perm = flex.size_t(
+          __builtin__.sorted(
+            range(len(self)),
+            key=lambda x: data[x],
+            cmp=compare,
+            reverse=reverse))
+    else:
+      perm = flex.sort_permutation(self[name], reverse=reverse)
     self.reorder(perm)
 
   def match(self, other):

@@ -24,6 +24,7 @@ class Test(object):
     self.tst_serialize()
     self.tst_delete()
     self.tst_del_selected()
+    self.tst_sort()
     self.tst_flags()
     self.tst_copy()
     self.tst_extract_shoeboxes()
@@ -660,6 +661,28 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
     assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
     print 'OK'
+
+  def tst_sort(self):
+
+    from dials.array_family import flex
+    table = flex.reflection_table()
+    table['a'] = flex.int([2, 4, 3, 1, 5])
+    table['b'] = flex.vec2_double([(3, 2), (3, 1), (1, 3), (4, 5), (4, 3)])
+    table['c'] = flex.miller_index([(3,2,1), (3,1,1), (2,4,2), (2,1,1), (1,1,1)])
+
+    table.sort("a")
+    assert list(table['a']) == [1, 2, 3, 4, 5]
+
+    table.sort("b")
+    assert list(table['b']) == [(1,3), (3,1), (3,2), (4,3), (4,5)]
+
+    table.sort("c")
+    assert list(table['c']) == [(1,1,1),(2,1,1),(2,4,2),(3,1,1),(3,2,1)]
+
+    table.sort("c", order=(1,2,0))
+    assert list(table['c']) == [(1, 1, 1), (2, 1, 1), (3, 1, 1), (3, 2, 1), (2, 4, 2)]
+
+    print "OK"
 
   def tst_flags(self):
 
