@@ -58,6 +58,7 @@ def exercise_refine_bravais_settings():
     bravais_summary['9']['unit_cell'],
     [57.78, 57.78, 150.0, 90.0, 90.0, 90.0], eps=1e-1)
   assert bravais_summary['9']['bravais'] == 'tP'
+  assert bravais_summary['9']['recommended'] == True
   assert approx_equal(bravais_summary['9']['rmsd'], 0.047, eps=1e-2)
   os.chdir(cwd)
 
@@ -98,6 +99,7 @@ def exercise_refine_bravais_settings_2():
     [7.31, 7.31, 6.82, 90.00, 90.00, 90.00], eps=1e-1)
   assert bravais_summary['9']['bravais'] == 'tI'
   assert approx_equal(bravais_summary['9']['rmsd'], 0.103, eps=1e-2)
+  assert bravais_summary['9']['recommended'] == True
   os.chdir(cwd)
 
 def exercise_refine_bravais_settings_3():
@@ -140,6 +142,8 @@ def exercise_refine_bravais_settings_3():
     [54.37, 58.29, 66.51, 90.00, 90.00, 90.00], eps=1e-1)
   assert bravais_summary['5']['bravais'] == 'oP'
   assert approx_equal(bravais_summary['5']['rmsd'], 0.1200, eps=1e-2)
+  assert bravais_summary['5']['recommended'] == True
+  assert bravais_summary['9']['recommended'] == False
   os.chdir(cwd)
 
 

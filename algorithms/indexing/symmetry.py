@@ -52,6 +52,7 @@ class refined_settings_list(list):
         'min_cc':item.min_cc,
         'correlation_coefficients':list(item.correlation_coefficients),
         'cc_nrefs':list(item.cc_nrefs),
+        'recommended':item.recommended,
         }
 
     return result
@@ -70,7 +71,9 @@ class refined_settings_list(list):
       min_max_cc_str = "-/-"
       if item.min_cc is not None and item.max_cc is not None:
         min_max_cc_str = "%.3f/%.3f" %(item.min_cc, item.max_cc)
-      table_data.append(['%6d'%item.setting_number,
+      if item.recommended: status = '*'
+      else: status = ''
+      table_data.append(["%1s%7d"%(status, item.setting_number),
                          "%(max_angular_difference)6.4f"%item,
                          "%5.3f"%item.rmsd,
                          min_max_cc_str,
@@ -82,6 +85,7 @@ class refined_settings_list(list):
 
     print >> out, table_utils.format(
         table_data, has_header=1, justify='right', delim=' ')
+    print >> out, "* = recommended solution"
 
 # Mapping of Bravais lattice type to corresponding lowest possible symmetry
 bravais_lattice_to_lowest_symmetry_spacegroup_number = {
@@ -149,7 +153,25 @@ def refined_settings_factory_from_refined_triclinic(
 
   for i, result in enumerate(results):
     Lfat[i] = result
+  identify_likely_solutions(Lfat)
   return Lfat
+
+def identify_likely_solutions(all_solutions):
+  p1_solution = all_solutions[-1]
+  assert p1_solution.setting_number == 1, p1_solution.setting_number
+  rmsd_p1 = p1_solution.rmsd
+
+  for solution in all_solutions:
+    solution.recommended = False
+    if solution['max_angular_difference'] < 0.5:
+      if solution.min_cc < 0.5 and solution.rmsd > 1.5 * rmsd_p1:
+        continue
+    elif solution.min_cc < 0.7 and solution.rmsd > 2.0 * rmsd_p1:
+      continue
+    elif solution.rmsd > 3 * rmsd_p1:
+      continue
+    solution.recommended = True
+
 
 def refine_subgroup(args):
   assert len(args) == 5
