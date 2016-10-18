@@ -180,7 +180,14 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     UB = experiment.crystal.get_A()
     predictor.for_reflection_table(integrated_data, UB)
 
+  if not experiment.crystal.num_scan_points:
+    logger.info('No scan varying model: use static')
+    static = True
+  else:
+    static = False
+
   fout = open(hklout, 'w')
+
   for j in range(nref):
 
     h, k, l = miller_index[j]
@@ -193,8 +200,9 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     z0 = integrated_data['xyzcal.px'][j][2]
     istol = int(round(10000 * unit_cell.stol((h, k, l))))
 
-    if predict:
+    if predict or static:
       # work from a scan static model & assume perfect goniometer
+      # FIXME maybe should work back in the option to predict spot positions
       UB = experiment.crystal.get_A()
       phi = phi_start + z0 * phi_range
       R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
