@@ -140,7 +140,7 @@ class ImageGenerator(object):
       ax1.get_yaxis().set_visible(False)
       cb = pylab.colorbar()
       cb.ax.tick_params(labelsize=8)
-      info("Saving min image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving min image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
   def save_max(self, filename):
@@ -163,7 +163,7 @@ class ImageGenerator(object):
       ax1.get_yaxis().set_visible(False)
       cb = pylab.colorbar()
       cb.ax.tick_params(labelsize=8)
-      info("Saving max image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving max image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
   def save_mean(self, filename):
@@ -186,7 +186,7 @@ class ImageGenerator(object):
       ax1.get_yaxis().set_visible(False)
       cb = pylab.colorbar()
       cb.ax.tick_params(labelsize=8)
-      info("Saving mean image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving mean image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
   def save_variance(self, filename):
@@ -210,7 +210,7 @@ class ImageGenerator(object):
       ax1.get_yaxis().set_visible(False)
       cb = pylab.colorbar()
       cb.ax.tick_params(labelsize=8)
-      info("Saving variance image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving variance image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
   def save_dispersion(self, filename):
@@ -232,7 +232,7 @@ class ImageGenerator(object):
       ax1.get_yaxis().set_visible(False)
       cb = pylab.colorbar()
       cb.ax.tick_params(labelsize=8)
-      info("Saving dispersion image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving dispersion image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
   def save_mask(self, filename):
@@ -250,7 +250,7 @@ class ImageGenerator(object):
       ax1 = pylab.gca()
       ax1.get_xaxis().set_visible(False)
       ax1.get_yaxis().set_visible(False)
-      info("Saving mask image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving mask image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
   def save_model(self, filename):
@@ -273,7 +273,7 @@ class ImageGenerator(object):
       ax1.get_yaxis().set_visible(False)
       cb = pylab.colorbar()
       cb.ax.tick_params(labelsize=8)
-      info("Saving model image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving model image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
   def save_polar_model(self, filename):
@@ -293,7 +293,7 @@ class ImageGenerator(object):
       ax1.get_yaxis().set_visible(False)
       cb = pylab.colorbar()
       cb.ax.tick_params(labelsize=8)
-      info("Saving polar model image for panel %d to %s_%d.png" % (i, filename, i))
+      logger.info("Saving polar model image for panel %d to %s_%d.png" % (i, filename, i))
       pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches='tight')
 
 
@@ -338,13 +338,13 @@ class Script(object):
       debug=params.output.debug_log)
 
     from dials.util.version import dials_version
-    info(dials_version())
+    logger.info(dials_version())
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
-      info('The following parameters have been modified:\n')
-      info(diff_phil)
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
     # Ensure we have a data block
     experiments = flatten_experiments(params.input.experiments)
@@ -358,11 +358,11 @@ class Script(object):
       raise Sorry("Can only process a single imageset at a time")
 
     # Predict the reflections
-    info("")
-    info("=" * 80)
-    info("")
-    info(heading("Predicting reflections"))
-    info("")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Predicting reflections"))
+    logger.info("")
     predicted = flex.reflection_table.from_predictions_multi(
       experiments,
       dmin=params.prediction.d_min,
@@ -375,7 +375,7 @@ class Script(object):
     model = modeller.compute()
 
     # Save the background model
-    info("Saving background model to %s" % params.output.model)
+    logger.info("Saving background model to %s" % params.output.model)
     from dials.algorithms.background.gmodel import StaticBackgroundModel
     static_model = StaticBackgroundModel()
     for i in range(len(model)):
@@ -396,7 +396,7 @@ class Script(object):
     #image_generator.save_polar_model(params.output.polar_model_image_prefix)
 
     # Print the time
-    info("Time Taken: %f" % (time() - start_time))
+    logger.info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == '__main__':
