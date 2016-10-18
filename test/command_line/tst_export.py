@@ -27,6 +27,8 @@ class Test(object):
   def run(self):
     self.test_mtz()
     self.test_nxs()
+    self.test_xds_ascii()
+    self.test_sadabs()
 
   def test_nxs(self):
     from libtbx import easy_run
@@ -57,6 +59,44 @@ class Test(object):
     ]).raise_if_errors()
 
     assert exists("integrated.mtz")
+
+    print 'OK'
+
+  def test_xds_ascii(self):
+    from libtbx import easy_run
+    from os.path import exists
+
+    # Call dials.export
+    easy_run.fully_buffered([
+      'dials.export',
+      'summation=true',
+      'format=xds_ascii',
+      self.experiments,
+      self.reflections
+    ]).raise_if_errors()
+
+    assert exists("DIALS.HKL")
+
+    # FIXME add test that psi is calculated correctly
+
+    print 'OK'
+
+  def test_sadabs(self):
+    from libtbx import easy_run
+    from os.path import exists
+
+    # Call dials.export
+    easy_run.fully_buffered([
+      'dials.export',
+      'summation=true',
+      'format=sadabs',
+      self.experiments,
+      self.reflections
+    ]).raise_if_errors()
+
+    assert exists("integrated.sad")
+
+    # fixme add test that direction cosine etc. are calculated correctly
 
     print 'OK'
 
