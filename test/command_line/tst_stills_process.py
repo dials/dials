@@ -86,21 +86,21 @@ class Test(object):
     f.close()
 
     # Call dials.stills_process
-    easy_run.fully_buffered([
+    result = easy_run.fully_buffered([
       'dials.stills_process',
       join(self.path, 'run266702-0-subset.h5'),
       'process.phil',
     ]).raise_if_errors()
+    result.show_stdout()
 
     import cPickle as pickle
     for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
                                 "idx-run266702-0-subset_00001_integrated.pickle"],
                                 [range(109,114), range(80,85)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
-      assert(len(table) in n_refls)
-
-      assert('id' in table)
-      assert((table['id'] == 0).count(False) == 0)
+      assert len(table) in n_refls, len(table)
+      assert 'id' in table
+      assert (table['id'] == 0).count(False) == 0
     print 'OK'
 
 if __name__ == '__main__':
